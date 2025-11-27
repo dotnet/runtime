@@ -451,7 +451,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // Sine we are jumping over some code, check that its OK to skip that code
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG &&
                        (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
-                goto DONE;
+
+                goto DEVIRT;
             }
 
             case CORINFO_CALL:
@@ -967,6 +968,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_NONVIRT_SAME_THIS;
         }
     }
+
+DEVIRT:
 
     bool probing;
     probing = impConsiderCallProbe(call->AsCall(), rawILOffset);
@@ -7627,11 +7630,11 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     // Iterate over the guesses
     for (int candidateId = 0; candidateId < candidatesCount; candidateId++)
     {
-        CORINFO_CLASS_HANDLE  likelyClass       = likelyClasses[candidateId];
-        CORINFO_METHOD_HANDLE likelyMethod      = likelyMethods[candidateId];
-        unsigned              likelihood        = likelihoods[candidateId];
-        bool                  arrayInterface    = false;
-        bool                  instantiatingStub = false;
+        CORINFO_CLASS_HANDLE  likelyClass        = likelyClasses[candidateId];
+        CORINFO_METHOD_HANDLE likelyMethod       = likelyMethods[candidateId];
+        unsigned              likelihood         = likelihoods[candidateId];
+        bool                  needsMethodContext = false;
+        bool                  instantiatingStub  = false;
 
         CORINFO_CONTEXT_HANDLE likelyContext = originalContext;
 
@@ -7674,10 +7677,10 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 break;
             }
 
-            likelyContext     = dvInfo.exactContext;
-            likelyMethod      = dvInfo.devirtualizedMethod;
-            arrayInterface    = dvInfo.needsMethodContext;
-            instantiatingStub = dvInfo.isInstantiatingStub;
+            likelyContext      = dvInfo.exactContext;
+            likelyMethod       = dvInfo.devirtualizedMethod;
+            needsMethodContext = dvInfo.needsMethodContext;
+            instantiatingStub  = dvInfo.isInstantiatingStub;
         }
         else
         {
@@ -7752,7 +7755,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         // Add this as a potential candidate.
         //
         addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyContext, likelyMethodAttribs,
-                                            likelyClassAttribs, likelihood, arrayInterface, instantiatingStub,
+                                            likelyClassAttribs, likelihood, needsMethodContext, instantiatingStub,
                                             baseMethod, originalContext);
     }
 }
@@ -7778,7 +7781,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 //    methodAttr - attributes of the method
 //    classAttr - attributes of the class
 //    likelihood - odds that this class is the class seen at runtime
-//    arrayInterface - devirtualization of an array interface call
+//    needsMethodContext - devirtualized method needs generic method context (e.g. array interfaces, generic virtuals)
 //    instantiatingStub - devirtualized method in an instantiating stub
 //    originalMethodHandle - method handle of base method (before devirt)
 //    originalContextHandle - context for the original call
@@ -7790,7 +7793,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
                                                    unsigned               methodAttr,
                                                    unsigned               classAttr,
                                                    unsigned               likelihood,
-                                                   bool                   arrayInterface,
+                                                   bool                   needsMethodContext,
                                                    bool                   instantiatingStub,
                                                    CORINFO_METHOD_HANDLE  originalMethodHandle,
                                                    CORINFO_CONTEXT_HANDLE originalContextHandle)
@@ -7869,7 +7872,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
     pInfo->originalContextHandle                = originalContextHandle;
     pInfo->likelihood                           = likelihood;
     pInfo->exactContextHandle                   = contextHandle;
-    pInfo->arrayInterface                       = arrayInterface;
+    pInfo->needsMethodContext                   = needsMethodContext;
 
     // If the guarded method is an instantiating stub, find the instantiated method
     //
@@ -8603,6 +8606,12 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                                                                      &rootCompiler->info.compMethodInfo->args);
 #endif // DEBUG
 
+    if (JitConfig.JitEnableGenericVirtualDevirtualization() == 0 && call->IsGenericVirtual(this))
+    {
+        JITDUMP("\nimpDevirtualizeCall: generic virtual devirtualization disabled\n");
+        return;
+    }
+
     // Fetch information about the virtual method we're calling.
     CORINFO_METHOD_HANDLE baseMethod        = *method;
     unsigned              baseMethodAttribs = *methodFlags;
@@ -8643,7 +8652,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // In non-R2R modes CALLVIRT <nonvirtual> will be turned into a
     // regular call+nullcheck by normal call importation.
     //
-    if ((baseMethodAttribs & CORINFO_FLG_VIRTUAL) == 0)
+    if (!call->IsGenericVirtual(this) && (baseMethodAttribs & CORINFO_FLG_VIRTUAL) == 0)
     {
         assert(call->IsVirtualStub());
         assert(IsAot());
@@ -8737,7 +8746,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // It may or may not know enough to devirtualize...
     if (isInterface)
     {
-        assert(call->IsVirtualStub());
+        assert(call->IsVirtualStub() || call->IsGenericVirtual(this));
         JITDUMP("--- base class is interface\n");
     }
 
@@ -8795,17 +8804,18 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     if (dvInfo.isInstantiatingStub)
     {
-        // We should only end up with generic methods that needs a method context (eg. array interface).
+        // We should only end up with generic methods that needs a method context (eg. array interface, generic virtuals).
         //
         assert(dvInfo.needsMethodContext);
 
         // We don't expect NAOT to end up here, since it has Array<T>
         // and normal devirtualization.
+        // As for generic virtual methods, NAOT uses fat pointers that we can't devirtualize yet.
         //
         assert(!IsTargetAbi(CORINFO_NATIVEAOT_ABI));
 
         // We don't expect R2R to end up here, since it does not (yet) support
-        // array interface devirtualization.
+        // array interface devirtualization or generic virtual method devirtualization.
         //
         assert(!IsAot());
 
@@ -8818,12 +8828,12 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        // If we don't know the array type exactly we may have the wrong interface type here.
+        // If we don't know the exactly type we may have the wrong interface type here.
         // Bail out.
         //
         if (!isExact)
         {
-            JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
+            JITDUMP("%s devirt: type is inexact, sorry.\n", call->IsGenericVirtual(this) ? "Generic virtual method" : "Array interface");
             return;
         }
 
@@ -8927,7 +8937,24 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         // Note different embedding would be needed for NAOT/R2R,
         // but we have ruled those out above.
         //
-        GenTree* const instParam = gtNewIconEmbMethHndNode(instantiatingStub);
+        GenTree* instParam = nullptr;
+        // See if this is a generic virtual method call.
+        if (call->IsGenericVirtual(this))
+        {
+            // If we have a RUNTIMELOOKUP helper call for the method handle,
+            // we need to pass that as the inst param instead.
+            GenTree* const methHndNode =
+                call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetEarlyNode();
+            if (methHndNode->OperIs(GT_RUNTIMELOOKUP))
+            {
+                instParam = methHndNode;
+            }
+        }
+        // For cases where we don't have a RUNTIMELOOKUP helper call, we pass the instantiating stub.
+        if (instParam == nullptr)
+        {
+            instParam = gtNewIconEmbHndNode(instantiatingStub, nullptr, GTF_ICON_METHOD_HDL, instantiatingStub);
+        }
         call->gtArgs.InsertInstParam(this, instParam);
     }
 
@@ -9663,8 +9690,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
     param.result                = inlineResult;
     param.ppInlineCandidateInfo = ppInlineCandidateInfo;
 
-    bool success = eeRunWithErrorTrap<Param>(
-        [](Param* pParam) {
+    bool success = eeRunWithErrorTrap<Param>([](Param* pParam) {
         // Cache some frequently accessed state.
         //
         Compiler* const       compiler     = pParam->pThis;
@@ -9798,7 +9824,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             pInfo->originalMethodHandle                 = nullptr;
             pInfo->originalContextHandle                = nullptr;
             pInfo->likelihood                           = 0;
-            pInfo->arrayInterface                       = false;
+            pInfo->needsMethodContext                   = false;
         }
 
         pInfo->methInfo                       = methInfo;
@@ -9817,8 +9843,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         // over in impMarkInlineCandidate.
         //
         *(pParam->ppInlineCandidateInfo) = pInfo;
-    },
-        &param);
+    }, &param);
 
     if (!success)
     {

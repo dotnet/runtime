@@ -8576,9 +8576,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     // Method better be from a fully loaded class
     _ASSERTE(pBaseMT->IsFullyLoaded());
 
-    //@GENERICS: shouldn't be doing this for instantiated methods as they live elsewhere
-    _ASSERTE(!pBaseMD->HasMethodInstantiation());
-
     // Method better be virtual
     _ASSERTE(pBaseMD->IsVirtual());
 
@@ -8786,6 +8783,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     MethodTable* pApproxMT = pDevirtMD->GetMethodTable();
     MethodTable* pExactMT = pApproxMT;
     bool isArray = false;
+    bool isGenericVirtual = false;
 
     if (pApproxMT->IsInterface())
     {
@@ -8802,10 +8800,28 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     {
         pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
     }
+    
+    // This is generic virtual method devirtualization.
+    if (!isArray && pBaseMD->HasMethodInstantiation())
+    {
+        // If we're in a shared context we'll devirt to a shared
+        // generic method and won't be able to inline, so just bail.
+        //
+        if (pExactMT->IsSharedByGenericInstantiations())
+        {
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
+        }
+
+        pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(
+            pDevirtMD, pExactMT, pExactMT->IsValueType() && !pDevirtMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
+
+        isGenericVirtual = true;
+    }
 
     // Success! Pass back the results.
     //
-    if (isArray)
+    if (isArray || isGenericVirtual)
     {
         // Note if array devirtualization produced an instantiation stub
         // so jit can try and inline it.
