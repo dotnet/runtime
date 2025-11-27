@@ -1130,7 +1130,7 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 1);
 
             GenTree* size = tree->gtGetOp1();
-            if (size->IsCnsIntOrI() && size->isContained())
+            if (size->isContainedIntOrIImmed())
             {
                 srcCount = 0;
 
