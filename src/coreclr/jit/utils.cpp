@@ -123,6 +123,7 @@ const char* varTypeName(var_types vt)
     return varTypeNames[vt];
 }
 
+#if HAS_FIXED_REGISTER_SET
 /*****************************************************************************
  *
  *  Return the name of the given register.
@@ -147,6 +148,7 @@ const char* getRegName(regNumber reg)
     assert(reg < ArrLen(regNames));
     return regNames[reg];
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 const char* getRegName(unsigned reg) // this is for gcencode.cpp and disasm.cpp that dont use the regNumber type
 {

@@ -2123,20 +2123,27 @@ extern "C" void InterpreterStubRetI4();
 extern "C" void InterpreterStubRetFloat();
 #endif // TARGET_32BIT
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#ifdef TARGET_AMD64
+#ifdef TARGET_WINDOWS
 extern "C" void CallJittedMethodRetBuffRCX(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void CallJittedMethodRetBuffRDX(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void InterpreterStubRetBuffRCX();
 extern "C" void InterpreterStubRetBuffRDX();
+#else // TARGET_WINDOWS
+extern "C" void CallJittedMethodRetBuffRDI(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetBuffRSI(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void InterpreterStubRetBuffRDI();
+extern "C" void InterpreterStubRetBuffRSI();
+#endif // TARGET_WINDOWS
 #elif defined(TARGET_ARM) // TARGET_ARM
 extern "C" void CallJittedMethodRetBuffR0(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void CallJittedMethodRetBuffR1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void InterpreterStubRetBuffR0();
 extern "C" void InterpreterStubRetBuffR1();
-#else // TARGET_WINDOWS && TARGET_AMD64
+#else // !TARGET_AMD64 && !TARGET_ARM
 extern "C" void CallJittedMethodRetBuff(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void InterpreterStubRetBuff();
-#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // TARGET_AMD64
 
 #ifdef UNIX_AMD64_ABI
 extern "C" void CallJittedMethodRetI8I8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
@@ -2223,20 +2230,27 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
         case ReturnTypeI4:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetI4);
 #endif // TARGET_32BIT
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#ifdef TARGET_AMD64
+#ifdef TARGET_WINDOWS
         case ReturnTypeBuffArg1:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRCX);
         case ReturnTypeBuffArg2:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRDX);
+#else // TARGET_WINDOWS
+        case ReturnTypeBuffArg1:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRDI);
+        case ReturnTypeBuffArg2:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRSI);
+#endif // TARGET_WINDOWS
 #elif defined(TARGET_ARM)
         case ReturnTypeBuffArg1:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffR0);
         case ReturnTypeBuffArg2:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffR1);
-#else // TARGET_WINDOWS && TARGET_AMD64
+#else // !TARGET_AMD64 && !TARGET_ARM
         case ReturnTypeBuff:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuff);
-#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // TARGET_AMD64
 #ifdef UNIX_AMD64_ABI
         case ReturnTypeI8I8:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetI8I8);
@@ -2325,20 +2339,28 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
         case ReturnTypeI4:
             RETURN_TYPE_HANDLER(InterpreterStubRetI4);
 #endif // TARGET_32BIT
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#ifdef TARGET_AMD64
         case ReturnTypeBuffArg1:
+#ifdef TARGET_WINDOWS
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffRCX);
+#else
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuffRDI);
+#endif
         case ReturnTypeBuffArg2:
+#ifdef TARGET_WINDOWS
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffRDX);
+#else
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuffRSI);
+#endif
 #elif defined(TARGET_ARM)
         case ReturnTypeBuffArg1:
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffR0);
         case ReturnTypeBuffArg2:
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffR1);
-#else // TARGET_WINDOWS && TARGET_AMD64
+#else // !TARGET_AMD64 && !TARGET_ARM
         case ReturnTypeBuff:
             RETURN_TYPE_HANDLER(InterpreterStubRetBuff);
-#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // TARGET_AMD64
 #ifdef UNIX_AMD64_ABI
         case ReturnTypeI8I8:
             RETURN_TYPE_HANDLER(InterpreterStubRetI8I8);
@@ -2654,7 +2676,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
     if (argIt.HasParamType())
     {
 #if LOG_COMPUTE_CALL_STUB
-            printf("argIt.HasParamType\n");
+        printf("argIt.HasParamType\n");
 #endif
         // In the Interpreter calling convention the argument after the "this" pointer is the parameter type
         ArgLocDesc paramArgLocDesc;
@@ -3033,7 +3055,7 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
 {
     if (pArgIt->HasRetBuffArg())
     {
-#if (defined(TARGET_WINDOWS) && defined(TARGET_AMD64)) || defined(TARGET_ARM)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM)
         if (pArgIt->HasThis())
         {
             return ReturnTypeBuffArg2;
@@ -3044,7 +3066,7 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
         }
 #else
         return ReturnTypeBuff;
-#endif
+#endif // TARGET_AMD64
     }
     else
     {
