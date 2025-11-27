@@ -457,7 +457,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 }
 #endif
 
-                // Sine we are jumping over some code, check that its OK to skip that code
+                // Since we are jumping over some code, check that its OK to skip that code
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG &&
                        (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
@@ -8838,7 +8838,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        // If we don't know the exactly type we may have the wrong interface type here.
+        // If we don't know the exact type we may have the wrong interface type here.
         // Bail out.
         //
         if (!isExact)
@@ -8954,8 +8954,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         {
             // If we have a RUNTIMELOOKUP helper call for the method handle,
             // we need to pass that as the inst param instead.
-            GenTree* const methHndNode =
-                call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetEarlyNode();
+            CallArg* const methHndArg = call->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
+            assert(methHndArg != nullptr);
+            GenTree* const methHndNode = methHndArg->GetEarlyNode();
             if (methHndNode->OperIs(GT_RUNTIMELOOKUP))
             {
                 instParam = methHndNode;
@@ -8964,7 +8965,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         // For cases where we don't have a RUNTIMELOOKUP helper call, we pass the instantiating stub.
         if (instParam == nullptr)
         {
-            instParam = gtNewIconEmbHndNode(instantiatingStub, nullptr, GTF_ICON_METHOD_HDL, instantiatingStub);
+            instParam = gtNewIconEmbMethHndNode(instantiatingStub);
         }
         call->gtArgs.InsertInstParam(this, instParam);
     }
