@@ -17,6 +17,7 @@
     <ResolveWasmOutputsDependsOn>
       $(ResolveWasmOutputsDependsOn);
       WasmTriggerPublishApp;
+      ReadWasmNativeAssetsFromFileSystem;
       UpdateWasmNativeAssetOriginalItemSpec
     </ResolveWasmOutputsDependsOn>
 
@@ -60,7 +61,7 @@
   <PropertyGroup Condition="'$(TestTrimming)' == 'true'">
     <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
     <BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' == 'false' and '$(WasmIncludeFullIcuData)' == 'true'">true</BlazorWebAssemblyLoadAllGlobalizationData>
@@ -253,6 +254,45 @@
     >
       <Output TaskParameter="Endpoints" ItemName="StaticWebAssetEndpoint" />
     </DefineStaticWebAssetEndpoints>
+  </Target>
+
+  <Target Name="ReadWasmNativeAssetsFromFileSystem" DependsOnTargets="_InitializeCommonProperties" Condition="'$(WasmBuildingForNestedPublish)' == 'true' and '@(ResolvedRuntimePack->Count())' == '0'">
+    <PropertyGroup>
+      <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'">true</_HasDotnetWasm>
+      <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.worker.mjs'">true</_HasDotnetJsWorker>
+      <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js.symbols'">true</_HasDotnetJsSymbols>
+      <_HasDotnetNativeJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js'">true</_HasDotnetNativeJs>
+      <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and Exists('$(WasmIcuDataFileName)')">$(WasmIcuDataFileName)</_WasmIcuDataFileName>
+      <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and !Exists('$(WasmIcuDataFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)</_WasmIcuDataFileName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js" Condition="'$(EnableDiagnostics)' == 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js" Condition="'$(_HasDotnetNativeJs)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs')" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js.symbols"
+                       Condition="'$(WasmEmitSymbolMap)' == 'true' and
+                                  '$(_HasDotnetJsSymbols)' != 'true' and
+                                  Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js.symbols')" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.map"
+                       Condition="'$(WasmEmitSourceMap)' != 'false'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js.map"
+                       Condition="'$(WasmEmitSourceMap)' != 'false'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js.map"
+                       Condition="'$(WasmEmitSourceMap)' != 'false' and '$(EnableDiagnostics)' == 'true'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
+      <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*" Exclude="$(_WasmIcuDataFileName)"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' == ''" Include="@(_IcuAvailableDataFiles)"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' != ''" Include="$(_WasmIcuDataFileName)"/>
+      <WasmNativeAsset Include="@(WasmIcuDataFileNames)"/>
+    </ItemGroup>
   </Target>
 
   <Target Name="PrepareForWasmBuildApp">
