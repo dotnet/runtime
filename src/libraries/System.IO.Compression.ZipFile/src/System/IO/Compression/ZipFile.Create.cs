@@ -463,7 +463,11 @@ namespace System.IO.Compression
 
         private static FileStream GetFileStreamForOpen(ZipArchiveMode mode, string archiveFileName, bool useAsync)
         {
-            // Relies on FileStream's ctor for checking of archiveFileName
+            // Check if the path is a directory before attempting to open.
+            if (Directory.Exists(archiveFileName))
+            {
+                throw new UnauthorizedAccessException(SR.Format(SR.IO_DirectoryNotAllowed, archiveFileName));
+            }
 
             (FileMode fileMode, FileAccess access, FileShare fileShare) = mode switch
             {
@@ -473,15 +477,8 @@ namespace System.IO.Compression
                 _ => throw new ArgumentOutOfRangeException(nameof(mode)),
             };
 
-            try
-            {
-                return new FileStream(archiveFileName, fileMode, access, fileShare, bufferSize: FileStreamBufferSize, useAsync);
-            }
-            catch (UnauthorizedAccessException) when (Directory.Exists(archiveFileName))
-            {
-                // If we get UnauthorizedAccessException and the path is a directory, provide a clearer error message
-                throw new UnauthorizedAccessException(SR.Format(SR.IO_DirectoryNotAllowed, archiveFileName));
-            }
+            // Relies on FileStream's ctor for checking of archiveFileName
+            return new FileStream(archiveFileName, fileMode, access, fileShare, bufferSize: FileStreamBufferSize, useAsync);
         }
 
         private static (string, string) GetFullPathsForDoCreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName)
