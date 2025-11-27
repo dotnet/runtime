@@ -12,8 +12,17 @@ public class ValueTaskSourceAndStubs
     [Fact]
     public static void EntryPoint()
     {
+        SynchronizationContext? original = SynchronizationContext.Current;
         SynchronizationContext.SetSynchronizationContext(new MySyncContext());
-        new ValueTaskSourceAndStubs().TestAsync(new C()).GetAwaiter().GetResult();
+
+        try
+        {
+            new ValueTaskSourceAndStubs().TestAsync(new C()).GetAwaiter().GetResult();
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(original);
+        }
     }
 
     private async Task TestAsync(IFace i)
