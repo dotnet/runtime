@@ -45,14 +45,11 @@ jobs:
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
-      - ${{ if eq(parameters.jobParameters.isExtraPlatformsBuild, true) }}:
-        - OSX.26.Arm64.Open
-      - ${{ if ne(parameters.jobParameters.isExtraPlatformsBuild, true) }}:
-        - osx.13.Arm64.Open
+      - $(helix_macos_arm64)
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:
-      - OSX.13.Amd64.Open
+      - $(helix_macos_x64)
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:

@@ -716,12 +716,10 @@ public:
             void                    *location,
             void                    *locationRW,
             void                    *target,
-            uint16_t                 fRelocType,
+            CorInfoReloc             fRelocType,
             int32_t                  addlDelta) override;
 
-    uint16_t getRelocTypeHint(void * target) override;
-
-    uint32_t getExpectedTargetArchitecture() override;
+    CorInfoReloc getRelocTypeHint(void * target) override;
 
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
 

@@ -1362,11 +1362,11 @@ enum class PhaseStatus : unsigned
                          // the main jit data strutures.
 };
 
-// interface to hide linearscan implementation from rest of compiler
-class LinearScanInterface
+// Interface to hide the RA implementation from the rest of the compiler.
+class RegAllocInterface
 {
 public:
-    virtual PhaseStatus doLinearScan()                                = 0;
+    virtual PhaseStatus doRegisterAllocation()                        = 0;
     virtual void        recordVarLocationsAtStartOfBB(BasicBlock* bb) = 0;
     virtual bool        willEnregisterLocalVars() const               = 0;
 #if TRACK_LSRA_STATS
@@ -1375,7 +1375,7 @@ public:
 #endif // TRACK_LSRA_STATS
 };
 
-LinearScanInterface* getLinearScanAllocator(Compiler* comp);
+RegAllocInterface* GetRegisterAllocator(Compiler* comp);
 
 // This enumeration names the phases into which we divide compilation.  The phases should completely
 // partition a compilation.
@@ -2764,6 +2764,7 @@ public:
     bool bbInHandlerRegions(unsigned regionIndex, BasicBlock* blk);
     bool bbInCatchHandlerRegions(BasicBlock* tryBlk, BasicBlock* hndBlk);
     unsigned short bbFindInnermostCommonTryRegion(BasicBlock* bbOne, BasicBlock* bbTwo);
+    unsigned short bbFindInnermostCommonTryRegion(unsigned tryIndex, BasicBlock* bbTwo);
 
     unsigned short bbFindInnermostTryRegionContainingHandlerRegion(unsigned handlerIndex);
     unsigned short bbFindInnermostHandlerRegionContainingTryRegion(unsigned tryIndex);
@@ -3992,6 +3993,10 @@ public:
                                         // or if the inlinee has GC ref locals.
 
     bool lvaInlineeReturnSpillTempFreshlyCreated = false; // True if the temp was freshly created for the inlinee return
+
+    unsigned lvaNextCallGenericContext = BAD_VAR_NUM; // Local number of argument passed as WellKnownArg::InstParam to next call
+
+    unsigned lvaNextCallAsyncContinuation = BAD_VAR_NUM; // Local number of argument passed as WellKnownArg::AsyncContinuation to next call
 
 #if FEATURE_FIXED_OUT_ARGS
     unsigned            lvaOutgoingArgSpaceVar = BAD_VAR_NUM;  // var that represents outgoing argument space
@@ -5588,7 +5593,7 @@ public:
 
     bool backendRequiresLocalVarLifetimes()
     {
-        return !opts.MinOpts() || m_pLinearScan->willEnregisterLocalVars();
+        return !opts.MinOpts() || m_regAlloc->willEnregisterLocalVars();
     }
 
     void fgLocalVarLiveness();
@@ -6250,6 +6255,7 @@ public:
 
     FlowGraphDfsTree* fgWasmDfs();
     PhaseStatus fgWasmControlFlow();
+    PhaseStatus fgWasmTransformSccs();
 
     // method that returns if you should split here
     typedef bool(fgSplitPredicate)(GenTree* tree, GenTree* parent, fgWalkData* data);
@@ -8249,8 +8255,8 @@ protected:
     bool rpMustCreateEBPFrame(INDEBUG(const char** wbReason));
 
 private:
-    Lowering*            m_pLowering = nullptr; // Lowering; needed to Lower IR that's added or modified after Lowering.
-    LinearScanInterface* m_pLinearScan = nullptr; // Linear Scan allocator
+    Lowering*          m_pLowering = nullptr; // Lowering; needed to Lower IR that's added or modified after Lowering.
+    RegAllocInterface* m_regAlloc  = nullptr; // Register allocator
 
 public:
     ArrayStack<ParameterRegisterLocalMapping>* m_paramRegLocalMappings = nullptr;
@@ -8573,7 +8579,7 @@ public:
 
     void eeSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* clause);
 
-    WORD eeGetRelocTypeHint(void* target);
+    CorInfoReloc eeGetRelocTypeHint(void* target);
 
     // ICorStaticInfo wrapper functions
 
@@ -10871,10 +10877,12 @@ public:
 
     unsigned compLclFrameSize; // secObject+lclBlk+locals+temps
 
+#if HAS_FIXED_REGISTER_SET
     // Count of callee-saved regs we pushed in the prolog.
     // Does not include EBP for isFramePointerUsed() and double-aligned frames.
     // In case of Amd64 this doesn't include float regs saved on stack.
     unsigned compCalleeRegsPushed;
+#endif // HAS_FIXED_REGISTER_SET
 
 #if defined(TARGET_XARCH)
     // Mask of callee saved float regs on stack.

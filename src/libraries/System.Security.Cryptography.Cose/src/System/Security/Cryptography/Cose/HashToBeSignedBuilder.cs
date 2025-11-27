@@ -23,6 +23,11 @@ namespace System.Security.Cryptography.Cose
             _incrementalHash.AppendData(data);
         }
 
+        internal override void AppendToBeSigned(byte[] data, int offset, int length)
+        {
+            _incrementalHash.AppendData(data, offset, length);
+        }
+
         internal override void WithDataAndResetAfterOperation(Span<byte> arg, ToBeSignedOperation operation)
         {
 #if NETSTANDARD2_0 || NETFRAMEWORK
