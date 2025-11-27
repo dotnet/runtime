@@ -256,6 +256,7 @@
     </DefineStaticWebAssetEndpoints>
   </Target>
 
+  <!-- In RuntimeTests we don't have RuntimePack, instead search for files on disk -->
   <Target Name="ReadWasmNativeAssetsFromFileSystem" DependsOnTargets="_InitializeCommonProperties" Condition="'$(WasmBuildingForNestedPublish)' == 'true' and '@(ResolvedRuntimePack->Count())' == '0'">
     <PropertyGroup>
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'">true</_HasDotnetWasm>
