@@ -27,10 +27,31 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void InvalidInputs_WithoutResultSelector_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("outer", () => AsyncEnumerable.GroupJoin((IAsyncEnumerable<string>)null, AsyncEnumerable.Empty<string>(), outer => outer, inner => inner));
+            AssertExtensions.Throws<ArgumentNullException>("inner", () => AsyncEnumerable.GroupJoin(AsyncEnumerable.Empty<string>(), (IAsyncEnumerable<string>)null, outer => outer, inner => inner));
+            AssertExtensions.Throws<ArgumentNullException>("outerKeySelector", () => AsyncEnumerable.GroupJoin(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>(), (Func<string, string>)null, inner => inner));
+            AssertExtensions.Throws<ArgumentNullException>("innerKeySelector", () => AsyncEnumerable.GroupJoin(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>(), outer => outer, (Func<string, string>)null));
+
+            AssertExtensions.Throws<ArgumentNullException>("outer", () => AsyncEnumerable.GroupJoin((IAsyncEnumerable<string>)null, AsyncEnumerable.Empty<string>(), async (outer, ct) => outer, async (inner, ct) => inner));
+            AssertExtensions.Throws<ArgumentNullException>("inner", () => AsyncEnumerable.GroupJoin(AsyncEnumerable.Empty<string>(), (IAsyncEnumerable<string>)null, async (outer, ct) => outer, async (inner, ct) => inner));
+            AssertExtensions.Throws<ArgumentNullException>("outerKeySelector", () => AsyncEnumerable.GroupJoin(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>(), (Func<string, CancellationToken, ValueTask<string>>)null, async (inner, ct) => inner));
+            AssertExtensions.Throws<ArgumentNullException>("innerKeySelector", () => AsyncEnumerable.GroupJoin(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>(), async (outer, ct) => outer, (Func<string, CancellationToken, ValueTask<string>>)null));
+        }
+
+        [Fact]
         public void Empty_ProducesEmpty() // validating an optimization / implementation detail
         {
             Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().GroupJoin(CreateSource(1, 2, 3), s => s, i => i.ToString(), (s, e) => s));
             Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().GroupJoin(CreateSource(1, 2, 3), async (s, ct) => s, async (i, ct) => i.ToString(), async (s, e, ct) => s));
+        }
+
+        [Fact]
+        public void Empty_WithoutResultSelector_ProducesEmpty()
+        {
+            Assert.Same(AsyncEnumerable.Empty<IGrouping<string, int>>(), AsyncEnumerable.Empty<string>().GroupJoin(CreateSource(1, 2, 3), s => s, i => i.ToString()));
+            Assert.Same(AsyncEnumerable.Empty<IGrouping<string, int>>(), AsyncEnumerable.Empty<string>().GroupJoin(CreateSource(1, 2, 3), async (s, ct) => s, async (i, ct) => i.ToString()));
         }
 
         [Fact]
@@ -51,6 +72,36 @@ namespace System.Linq.Tests
                     await AssertEqual(
                         values.GroupJoin(values, s => s.Length > 0 ? s[0] : ' ', s => s.Length > 1 ? s[1] : ' ', (outer, inner) => outer + string.Concat(inner)),
                         source.GroupJoin(source, async (s, ct) => s.Length > 0 ? s[0] : ' ', async (s, ct) => s.Length > 1 ? s[1] : ' ', async (outer, inner, ct) => outer + string.Concat(inner)));
+                }
+            }
+        }
+
+        [Fact]
+        public async Task VariousValues_WithoutResultSelector_MatchesEnumerable()
+        {
+            int[] outer = [1, 2, 3];
+            int[] inner = [1, 2, 2, 3, 3, 3];
+
+            foreach (IAsyncEnumerable<int> outerSource in CreateSources(outer))
+            foreach (IAsyncEnumerable<int> innerSource in CreateSources(inner))
+            {
+                var expected = outer.GroupJoin(inner, o => o, i => i);
+                var result = await outerSource.GroupJoin(innerSource, o => o, i => i).ToListAsync();
+
+                Assert.Equal(expected.Count(), result.Count);
+                foreach (var (exp, act) in expected.Zip(result))
+                {
+                    Assert.Equal(exp.Key, act.Key);
+                    Assert.Equal(exp.ToList(), act.ToList());
+                }
+
+                var resultAsync = await outerSource.GroupJoin(innerSource, async (o, ct) => o, async (i, ct) => i).ToListAsync();
+
+                Assert.Equal(expected.Count(), resultAsync.Count);
+                foreach (var (exp, act) in expected.Zip(resultAsync))
+                {
+                    Assert.Equal(exp.Key, act.Key);
+                    Assert.Equal(exp.ToList(), act.ToList());
                 }
             }
         }
@@ -160,6 +211,32 @@ namespace System.Linq.Tests
             outer = CreateSource(2, 4, 8, 16).Track();
             inner = CreateSource(1, 2, 3, 4).Track();
             await ConsumeAsync(outer.GroupJoin(inner, async (outer, ct) => outer, async (inner, ct) => inner, async (outer, inner, ct) => outer + inner.Sum()));
+            Assert.Equal(5, outer.MoveNextAsyncCount);
+            Assert.Equal(4, outer.CurrentCount);
+            Assert.Equal(1, outer.DisposeAsyncCount);
+            Assert.Equal(5, inner.MoveNextAsyncCount);
+            Assert.Equal(4, inner.CurrentCount);
+            Assert.Equal(1, inner.DisposeAsyncCount);
+        }
+
+        [Fact]
+        public async Task InterfaceCalls_WithoutResultSelector_ExpectedCounts()
+        {
+            TrackingAsyncEnumerable<int> outer, inner;
+
+            outer = CreateSource(2, 4, 8, 16).Track();
+            inner = CreateSource(1, 2, 3, 4).Track();
+            await ConsumeAsync(outer.GroupJoin(inner, outer => outer, inner => inner));
+            Assert.Equal(5, outer.MoveNextAsyncCount);
+            Assert.Equal(4, outer.CurrentCount);
+            Assert.Equal(1, outer.DisposeAsyncCount);
+            Assert.Equal(5, inner.MoveNextAsyncCount);
+            Assert.Equal(4, inner.CurrentCount);
+            Assert.Equal(1, inner.DisposeAsyncCount);
+
+            outer = CreateSource(2, 4, 8, 16).Track();
+            inner = CreateSource(1, 2, 3, 4).Track();
+            await ConsumeAsync(outer.GroupJoin(inner, async (outer, ct) => outer, async (inner, ct) => inner));
             Assert.Equal(5, outer.MoveNextAsyncCount);
             Assert.Equal(4, outer.CurrentCount);
             Assert.Equal(1, outer.DisposeAsyncCount);
