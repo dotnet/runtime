@@ -409,33 +409,6 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Correlates the elements of two sequences based on matching keys.
-        /// </summary>
-        /// <param name="outer">The first sequence to join.</param>
-        /// <param name="inner">The sequence to join to the first sequence.</param>
-        /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
-        /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
-        /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
-        /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
-        /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
-        /// <returns>An <see cref="IQueryable{T}" /> that has elements of type <c>(TOuter Outer, TInner Inner)</c> that are obtained by performing an inner join on two sequences.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> is <see langword="null" />.</exception>
-        [DynamicDependency("Join`3", typeof(Enumerable))]
-        public static IQueryable<(TOuter Outer, TInner Inner)> Join<TOuter, TInner, TKey>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector)
-        {
-            ArgumentNullException.ThrowIfNull(outer);
-            ArgumentNullException.ThrowIfNull(inner);
-            ArgumentNullException.ThrowIfNull(outerKeySelector);
-            ArgumentNullException.ThrowIfNull(innerKeySelector);
-
-            return outer.Provider.CreateQuery<(TOuter Outer, TInner Inner)>(
-                Expression.Call(
-                    null,
-                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, IQueryable<(TOuter Outer, TInner Inner)>>(Join).Method,
-                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector)));
-        }
-
-        /// <summary>
         /// Correlates the elements of two sequences based on matching keys. A specified <see cref="IEqualityComparer{T}" /> is used to compare keys.
         /// </summary>
         /// <param name="outer">The first sequence to join.</param>
@@ -449,7 +422,7 @@ namespace System.Linq
         /// <returns>An <see cref="IQueryable{T}" /> that has elements of type <c>(TOuter Outer, TInner Inner)</c> that are obtained by performing an inner join on two sequences.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> is <see langword="null" />.</exception>
         [DynamicDependency("Join`3", typeof(Enumerable))]
-        public static IQueryable<(TOuter Outer, TInner Inner)> Join<TOuter, TInner, TKey>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, IEqualityComparer<TKey>? comparer)
+        public static IQueryable<(TOuter Outer, TInner Inner)> Join<TOuter, TInner, TKey>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, IEqualityComparer<TKey>? comparer = null)
         {
             ArgumentNullException.ThrowIfNull(outer);
             ArgumentNullException.ThrowIfNull(inner);
@@ -725,33 +698,6 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Correlates the elements of two sequences based on matching keys.
-        /// </summary>
-        /// <param name="outer">The first sequence to join.</param>
-        /// <param name="inner">The sequence to join to the first sequence.</param>
-        /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
-        /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
-        /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
-        /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
-        /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
-        /// <returns>An <see cref="IQueryable{T}" /> that has elements of type <c>(TOuter Outer, TInner? Inner)</c> that are obtained by performing a left outer join on two sequences.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> is <see langword="null" />.</exception>
-        [DynamicDependency("LeftJoin`3", typeof(Enumerable))]
-        public static IQueryable<(TOuter Outer, TInner? Inner)> LeftJoin<TOuter, TInner, TKey>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector)
-        {
-            ArgumentNullException.ThrowIfNull(outer);
-            ArgumentNullException.ThrowIfNull(inner);
-            ArgumentNullException.ThrowIfNull(outerKeySelector);
-            ArgumentNullException.ThrowIfNull(innerKeySelector);
-
-            return outer.Provider.CreateQuery<(TOuter Outer, TInner? Inner)>(
-                Expression.Call(
-                    null,
-                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, IQueryable<(TOuter Outer, TInner? Inner)>>(LeftJoin).Method,
-                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector)));
-        }
-
-        /// <summary>
         /// Correlates the elements of two sequences based on matching keys. A specified <see cref="IEqualityComparer{T}" /> is used to compare keys.
         /// </summary>
         /// <param name="outer">The first sequence to join.</param>
@@ -765,7 +711,7 @@ namespace System.Linq
         /// <returns>An <see cref="IQueryable{T}" /> that has elements of type <c>(TOuter Outer, TInner? Inner)</c> that are obtained by performing a left outer join on two sequences.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> is <see langword="null" />.</exception>
         [DynamicDependency("LeftJoin`3", typeof(Enumerable))]
-        public static IQueryable<(TOuter Outer, TInner? Inner)> LeftJoin<TOuter, TInner, TKey>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, IEqualityComparer<TKey>? comparer)
+        public static IQueryable<(TOuter Outer, TInner? Inner)> LeftJoin<TOuter, TInner, TKey>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, IEqualityComparer<TKey>? comparer = null)
         {
             ArgumentNullException.ThrowIfNull(outer);
             ArgumentNullException.ThrowIfNull(inner);
@@ -1205,33 +1151,6 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// Correlates the elements of two sequences based on matching keys.
-        /// </summary>
-        /// <param name="outer">The first sequence to join.</param>
-        /// <param name="inner">The sequence to join to the first sequence.</param>
-        /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
-        /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
-        /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
-        /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
-        /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
-        /// <returns>An <see cref="IQueryable{T}" /> that has elements of type <c>(TOuter? Outer, TInner Inner)</c> that are obtained by performing a right outer join on two sequences.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> is <see langword="null" />.</exception>
-        [DynamicDependency("RightJoin`3", typeof(Enumerable))]
-        public static IQueryable<(TOuter? Outer, TInner Inner)> RightJoin<TOuter, TInner, TKey>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector)
-        {
-            ArgumentNullException.ThrowIfNull(outer);
-            ArgumentNullException.ThrowIfNull(inner);
-            ArgumentNullException.ThrowIfNull(outerKeySelector);
-            ArgumentNullException.ThrowIfNull(innerKeySelector);
-
-            return outer.Provider.CreateQuery<(TOuter? Outer, TInner Inner)>(
-                Expression.Call(
-                    null,
-                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, IQueryable<(TOuter? Outer, TInner Inner)>>(RightJoin).Method,
-                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector)));
-        }
-
-        /// <summary>
         /// Correlates the elements of two sequences based on matching keys. A specified <see cref="IEqualityComparer{T}" /> is used to compare keys.
         /// </summary>
         /// <param name="outer">The first sequence to join.</param>
@@ -1245,7 +1164,7 @@ namespace System.Linq
         /// <returns>An <see cref="IQueryable{T}" /> that has elements of type <c>(TOuter? Outer, TInner Inner)</c> that are obtained by performing a right outer join on two sequences.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> is <see langword="null" />.</exception>
         [DynamicDependency("RightJoin`3", typeof(Enumerable))]
-        public static IQueryable<(TOuter? Outer, TInner Inner)> RightJoin<TOuter, TInner, TKey>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, IEqualityComparer<TKey>? comparer)
+        public static IQueryable<(TOuter? Outer, TInner Inner)> RightJoin<TOuter, TInner, TKey>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, IEqualityComparer<TKey>? comparer = null)
         {
             ArgumentNullException.ThrowIfNull(outer);
             ArgumentNullException.ThrowIfNull(inner);
