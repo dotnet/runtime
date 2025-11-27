@@ -678,8 +678,10 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "StackArrayLocal";
         case WellKnownArg::RuntimeMethodHandle:
             return "RuntimeMethodHandle";
-        case WellKnownArg::AsyncSuspendedIndicator:
-            return "AsyncSuspendedIndicator";
+        case WellKnownArg::AsyncExecutionContext:
+            return "AsyncExecutionContext";
+        case WellKnownArg::AsyncSynchronizationContext:
+            return "AsyncSynchronizationContext";
     }
 
     return "N/A";
@@ -1773,6 +1775,11 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeCookie));
         // put destination into R10/EAX
         arg = comp->gtClone(call->gtCallAddr, true);
+        // On x64 the pinvoke target is passed in r10 which is the same
+        // register as the gs cookie check may use. That would be a problem if
+        // this was a tailcall, but we do not tailcall functions with
+        // non-standard added args except indirection cells currently.
+        assert(!call->IsFastTailCall());
         InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeTarget));
 
         // finally change this call to a helper call
@@ -1848,24 +1855,22 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // These should not affect the placement of any other args or stack space required.
         // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
         // TODO-Cleanup: Integrate this into the new style ABI classifiers.
-        regNumber nonStdRegNum = GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg.GetWellKnownArg());
-
-        if (nonStdRegNum == REG_NA)
+        regNumber nonStdRegNum;
+        if (GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg.GetWellKnownArg(), &nonStdRegNum))
         {
-            if (arg.GetWellKnownArg() == WellKnownArg::AsyncSuspendedIndicator)
+            if (nonStdRegNum != REG_NA)
             {
-                // Represents definition of a local. Expanded out by async transformation.
-                arg.AbiInfo = ABIPassingInformation(comp, 0);
+                ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
+                arg.AbiInfo               = ABIPassingInformation::FromSegmentByValue(comp, segment);
             }
             else
             {
-                arg.AbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
+                arg.AbiInfo = ABIPassingInformation(comp, 0);
             }
         }
         else
         {
-            ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
-            arg.AbiInfo               = ABIPassingInformation::FromSegmentByValue(comp, segment);
+            arg.AbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
         }
 
         JITDUMP("Argument %u ABI info: ", GetIndex(&arg));
@@ -1925,13 +1930,6 @@ void CallArgs::DetermineABIInfo(Compiler* comp, GenTreeCall* call)
 
     for (CallArg& arg : Args())
     {
-        if (arg.GetWellKnownArg() == WellKnownArg::AsyncSuspendedIndicator)
-        {
-            // Represents definition of a local. Expanded out by async transformation.
-            arg.AbiInfo = ABIPassingInformation(comp, 0);
-            continue;
-        }
-
         const var_types            argSigType  = arg.GetSignatureType();
         const CORINFO_CLASS_HANDLE argSigClass = arg.GetSignatureClassHandle();
         ClassLayout* argLayout = argSigClass == NO_CLASS_HANDLE ? nullptr : comp->typGetObjLayout(argSigClass);
@@ -1940,16 +1938,22 @@ void CallArgs::DetermineABIInfo(Compiler* comp, GenTreeCall* call)
         // These should not affect the placement of any other args or stack space required.
         // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
         // TODO-Cleanup: Integrate this into the new style ABI classifiers.
-        regNumber nonStdRegNum = GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg.GetWellKnownArg());
-
-        if (nonStdRegNum == REG_NA)
+        regNumber nonStdRegNum;
+        if (GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg.GetWellKnownArg(), &nonStdRegNum))
         {
-            arg.AbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
+            if (nonStdRegNum != REG_NA)
+            {
+                ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
+                arg.AbiInfo               = ABIPassingInformation::FromSegmentByValue(comp, segment);
+            }
+            else
+            {
+                arg.AbiInfo = ABIPassingInformation(comp, 0);
+            }
         }
         else
         {
-            ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
-            arg.AbiInfo               = ABIPassingInformation::FromSegmentByValue(comp, segment);
+            arg.AbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
         }
     }
 
@@ -4209,18 +4213,6 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         reportFastTailCallDecision("Localloc used");
         return false;
     }
-
-#ifdef TARGET_AMD64
-    // Needed for Jit64 compat.
-    // In future, enabling fast tail calls from methods that need GS cookie
-    // check would require codegen side work to emit GS cookie check before a
-    // tail call.
-    if (getNeedsGSSecurityCookie())
-    {
-        reportFastTailCallDecision("GS Security cookie check required");
-        return false;
-    }
-#endif
 
     // If the NextCallReturnAddress intrinsic is used we should do normal calls.
     if (info.compHasNextCallRetAddr)
@@ -13707,9 +13699,14 @@ PhaseStatus Compiler::fgMorphBlocks()
         {
             genReturnBB->SetFlags(BBF_CAN_ADD_PRED);
         }
-        // TODO-Cleanup: Remove this by transforming tailcalls to loops earlier.
-        BasicBlock* firstILBB = opts.IsOSR() ? fgEntryBB : fgGetFirstILBlock();
-        firstILBB->SetFlags(BBF_CAN_ADD_PRED);
+
+        BasicBlock* firstILBB = nullptr;
+        if (doesMethodHaveRecursiveTailcall())
+        {
+            // TODO-Cleanup: Remove this by transforming tailcalls to loops earlier.
+            firstILBB = opts.IsOSR() ? fgEntryBB : fgGetFirstILBlock();
+            firstILBB->SetFlags(BBF_CAN_ADD_PRED);
+        }
 
         // Remember this so we can sanity check that no new blocks will get created.
         //
@@ -13734,7 +13731,10 @@ PhaseStatus Compiler::fgMorphBlocks()
         {
             genReturnBB->RemoveFlags(BBF_CAN_ADD_PRED);
         }
-        firstILBB->RemoveFlags(BBF_CAN_ADD_PRED);
+        if (firstILBB != nullptr)
+        {
+            firstILBB->RemoveFlags(BBF_CAN_ADD_PRED);
+        }
     }
 
     // Under OSR, we no longer need to specially protect the original method entry

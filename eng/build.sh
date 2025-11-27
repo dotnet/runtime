@@ -46,6 +46,7 @@ usage()
   echo "                                 '--subset' can be omitted if the subset is given as the first argument."
   echo "                                  [Default: Builds the entire repo.]"
   echo "  --usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
+  echo "  --clrinterpreter                Enables CoreCLR interpreter for Release builds of targets where it is a Debug only feature."
   echo "  --verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   echo "                                  [Default: Minimal]"
   echo "  --use-bootstrap                 Use the results of building the bootstrap subset to build published tools on the target machine."
@@ -170,7 +171,7 @@ declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "pu
 actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
 firstArgumentChecked=0
 
-while [[ $# > 0 ]]; do
+while [[ $# -gt 0 ]]; do
   opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
 
   if [[ $firstArgumentChecked -eq 0 && $opt =~ ^[a-zA-Z.+]+$ ]]; then
@@ -378,6 +379,11 @@ while [[ $# > 0 ]]; do
 
      -usemonoruntime)
       arguments+=("/p:PrimaryRuntimeFlavor=Mono")
+      shift 1
+      ;;
+
+     -clrinterpreter)
+      arguments+=("/p:FeatureInterpreter=true")
       shift 1
       ;;
 

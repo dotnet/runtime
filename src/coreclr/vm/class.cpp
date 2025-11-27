@@ -660,13 +660,8 @@ HRESULT EEClass::AddMethodDesc(
     if (FAILED(hr = pImport->GetSigOfMethodDef(methodDef, &sigLen, &sig)))
         return hr;
 
-    SigParser sigParser(sig, sigLen);
-    ULONG offsetOfAsyncDetails;
-    bool isValueTask;
-    MethodReturnKind returnKind = ClassifyMethodReturnKind(sigParser, pModule, &offsetOfAsyncDetails, &isValueTask);
-    if (returnKind != MethodReturnKind::NormalMethod)
+    if (IsMiAsync(dwImplFlags))
     {
-        // TODO: (async) revisit and examine if this can be supported
         LOG((LF_ENC, LL_INFO100, "**Error** EnC for Async methods is NYI"));
         return E_FAIL;
     }
@@ -739,7 +734,7 @@ HRESULT EEClass::AddMethodDesc(
                                 pImport,
                                 NULL,
                                 Signature(),
-                                AsyncMethodKind::NotAsync
+                                AsyncMethodFlags::None
                                 COMMA_INDEBUG(debug_szMethodName)
                                 COMMA_INDEBUG(pMT->GetDebugClassName())
                                 COMMA_INDEBUG(NULL)
@@ -941,7 +936,7 @@ EEClass::CheckVarianceInSig(
                 uint32_t cArgs;
                 IfFailThrow(psig.GetData(&cArgs));
 
-                // Conservatively, assume non-variance of function pointer types
+                // Conservatively, assume non-variance of function pointer types, if we ever change this, update the TypeValidationChecker in crossgen2 also
                 if (!CheckVarianceInSig(numGenericArgs, pVarianceInfo, pModule, psig, gpNonVariant))
                     return FALSE;
 
@@ -1359,7 +1354,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
         return;
 
     // Step 1: Validate compatibility of return types on overriding methods
-    if (pMT->GetClass()->HasCovariantOverride() && (!pMT->GetModule()->IsReadyToRun() || !pMT->GetModule()->GetReadyToRunInfo()->SkipTypeValidation()))
+    if (pMT->GetClass()->HasCovariantOverride() && !pMT->GetModule()->SkipTypeValidation())
     {
         for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
         {

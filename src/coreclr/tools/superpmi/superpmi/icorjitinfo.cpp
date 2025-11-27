@@ -465,13 +465,13 @@ void MyICJI::LongLifetimeFree(void* obj)
     DebugBreakorAV(33);
 }
 
-size_t MyICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* MyICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getClassThreadStaticDynamicInfo");
     return jitInstance->mc->repGetClassThreadStaticDynamicInfo(cls);
 }
 
-size_t MyICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* MyICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getClassStaticDynamicInfo");
     return jitInstance->mc->repGetClassStaticDynamicInfo(cls);
@@ -1052,9 +1052,21 @@ void MyICJI::reportRichMappings(
     uint32_t                          numMappings)
 {
     jitInstance->mc->cr->AddCall("reportRichMappings");
-    // TODO: record these mappings
+    // Compile output that we do not currently save
     freeArray(inlineTreeNodes);
     freeArray(mappings);
+}
+
+void MyICJI::reportAsyncDebugInfo(
+    ICorDebugInfo::AsyncInfo*             asyncInfo,
+    ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
+    ICorDebugInfo::AsyncContinuationVarInfo* vars,
+    uint32_t                              numVars)
+{
+    jitInstance->mc->cr->AddCall("reportAsyncDebugInfo");
+    // Compile output that we do not currently save
+    freeArray(suspensionPoints);
+    freeArray(vars);
 }
 
 void MyICJI::reportMetadata(const char* key, const void* value, size_t length)
@@ -1502,10 +1514,17 @@ bool MyICJI::getTailCallHelpers(
     return jitInstance->mc->repGetTailCallHelpers(callToken, sig, flags, pResult);
 }
 
-CORINFO_METHOD_HANDLE MyICJI::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE MyICJI::getAsyncResumptionStub(void** entryPoint)
 {
     jitInstance->mc->cr->AddCall("getAsyncResumptionStub");
-    return jitInstance->mc->repGetAsyncResumptionStub();;
+    return jitInstance->mc->repGetAsyncResumptionStub(entryPoint);
+}
+
+CORINFO_CLASS_HANDLE MyICJI::getContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize)
+{
+    jitInstance->mc->cr->AddCall("getContinuationType");
+    CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetContinuationType(dataSize, objRefs, objRefsSize);
+    return result;
 }
 
 bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)
@@ -1806,21 +1825,21 @@ void MyICJI::recordCallSite(uint32_t              instrOffset, /* IN */
 
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
-void MyICJI::recordRelocation(void*    location,   /* IN  */
-                              void*    locationRW, /* IN  */
-                              void*    target,     /* IN  */
-                              uint16_t fRelocType, /* IN  */
-                              int32_t  addlDelta   /* IN  */
+void MyICJI::recordRelocation(void*        location,   /* IN  */
+                              void*        locationRW, /* IN  */
+                              void*        target,     /* IN  */
+                              CorInfoReloc fRelocType, /* IN  */
+                              int32_t      addlDelta   /* IN  */
                               )
 {
     jitInstance->mc->cr->AddCall("recordRelocation");
     jitInstance->mc->cr->repRecordRelocation(location, target, fRelocType, addlDelta);
 }
 
-uint16_t MyICJI::getRelocTypeHint(void* target)
+CorInfoReloc MyICJI::getRelocTypeHint(void* target)
 {
     jitInstance->mc->cr->AddCall("getRelocTypeHint");
-    uint16_t result = jitInstance->mc->repGetRelocTypeHint(target);
+    CorInfoReloc result = jitInstance->mc->repGetRelocTypeHint(target);
     return result;
 }
 

@@ -579,7 +579,7 @@ namespace ILCompiler
                 AppendName(sb, type.ElementType);
                 sb.Append('[');
                 if (type.Rank > 1)
-                    sb.Append(new string(',', type.Rank - 1));
+                    sb.Append(',', type.Rank - 1);
                 sb.Append(']');
             }
             public override void AppendName(StringBuilder sb, ByRefType type)

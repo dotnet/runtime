@@ -12,7 +12,7 @@ schedules:
   branches:
     include:
     - main
-    - release/*-staging
+    - release/*.0
 
 variables:
   - template: ../variables.yml
