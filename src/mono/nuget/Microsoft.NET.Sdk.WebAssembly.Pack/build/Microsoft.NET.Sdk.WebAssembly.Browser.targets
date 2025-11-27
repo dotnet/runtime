@@ -324,7 +324,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ComputeWasmBuildAssets>
 
     <ItemGroup Condition="'$(_WasmInlineBootConfig)' == 'true'">
-      <_WasmDotnetJsForBuild Include="@(ReferenceCopyLocalPaths)" Condition="'%(FileName)%(Extension)' == 'dotnet.js'" />
+      <_WasmDotnetJsForBuild Include="@(_WasmBuildAssetCandidates)" Condition="'%(FileName)%(Extension)' == 'dotnet.js'" />
       <_BuildAssetsCandidates Remove="@(_WasmDotnetJsForBuild)" />
     </ItemGroup>
 
