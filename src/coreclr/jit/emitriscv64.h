@@ -169,7 +169,7 @@ enum class MajorOpcode
     /* inst[1:0] */
     /*        00 */ Addi4Spn, Fld,   Lw,   Ld,          Reserved2,   Fsd,   Sw,   Sd,
     /*        01 */ Addi,     Addiw, Li,   LuiAddi16Sp, MiscAlu,     J,     Beqz, Bnez,
-    /*        10 */ Slli,     FldSp, LwSp, Ldsp,        JrJalrMvAdd, FsdSp, SwSp, SdSp,
+    /*        10 */ Slli,     FldSp, LwSp, LdSp,        JrJalrMvAdd, FsdSp, SwSp, SdSp,
     // clang-format on
 };
 
