@@ -4,7 +4,7 @@
 import type { AssetEntryInternal } from "./types/internal";
 
 import cwraps from "./cwraps";
-import { mono_wasm_load_icu_data } from "./icu";
+import { wasm_load_icu_data } from "./icu";
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_log_info, mono_log_debug, parseSymbolMapFile } from "./logging";
 import { mono_wasm_load_bytes_into_heap_persistent } from "./memory";
@@ -87,7 +87,7 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
     } else if (asset.behavior === "pdb") {
         cwraps.mono_wasm_add_assembly(virtualName, offset!, bytes.length);
     } else if (asset.behavior === "icu") {
-        mono_wasm_load_icu_data(offset!);
+        wasm_load_icu_data(offset!);
     } else if (asset.behavior === "resource") {
         cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture || "", offset!, bytes.length);
     }

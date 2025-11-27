@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { LoadBootResourceCallback, JsModuleExports, JsAsset, AssemblyAsset, PdbAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, LoaderConfig, DotnetHostBuilder } from "./types";
-import { GlobalizationMode } from "./types";
 import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateInternals } from "./cross-module";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB } from "./per-module";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
+import { getIcuResourceName } from "./icu";
 import { getLoaderConfig } from "./config";
 import { BrowserHost_InitializeCoreCLR } from "./run";
 import { createPromiseCompletionSource } from "./promise-completion-source";
@@ -76,53 +76,6 @@ async function fetchIcu(asset: IcuAsset): Promise<void> {
     const bytes = await fetchBytes(asset);
     await nativeModulePromiseController.promise;
     dotnetBrowserHostExports.loadIcuData(bytes);
-}
-
-function getIcuResourceName(config: LoaderConfig): string | null {
-    if (config.resources?.icu && config.globalizationMode != GlobalizationMode.Invariant) {
-        const culture = config.applicationCulture || (ENVIRONMENT_IS_WEB ? (globalThis.navigator && globalThis.navigator.languages && globalThis.navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
-        if (!config.applicationCulture) {
-            config.applicationCulture = culture;
-        }
-
-        const icuFiles = config.resources.icu;
-        let icuFile = null;
-        if (config.globalizationMode === GlobalizationMode.Custom) {
-            // custom ICU file is saved in the resources with fingerprinting and does not require mapping
-            if (icuFiles.length >= 1) {
-                return icuFiles[0].name;
-            }
-        } else if (!culture || config.globalizationMode === GlobalizationMode.All) {
-            icuFile = "icudt.dat";
-        } else if (config.globalizationMode === GlobalizationMode.Sharded) {
-            icuFile = getShardedIcuResourceName(culture);
-        }
-
-        if (icuFile) {
-            for (let i = 0; i < icuFiles.length; i++) {
-                const asset = icuFiles[i];
-                if (asset.virtualPath === icuFile) {
-                    return asset.name;
-                }
-            }
-        }
-    }
-
-    config.globalizationMode = GlobalizationMode.Invariant;
-    return null;
-}
-
-function getShardedIcuResourceName(culture: string): string {
-    const prefix = culture.split("-")[0];
-    if (prefix === "en" || ["fr", "fr-FR", "it", "it-IT", "de", "de-DE", "es", "es-ES"].includes(culture)) {
-        return "icudt_EFIGS.dat";
-    }
-
-    if (["zh", "ko", "ja"].includes(prefix)) {
-        return "icudt_CJK.dat";
-    }
-
-    return "icudt_no_CJK.dat";
 }
 
 async function fetchDll(asset: AssemblyAsset): Promise<void> {

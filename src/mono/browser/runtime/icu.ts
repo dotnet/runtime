@@ -4,8 +4,8 @@
 import cwraps from "./cwraps";
 import { VoidPtr } from "./types/emscripten";
 
-export function mono_wasm_load_icu_data (offset: VoidPtr) {
-    if (!cwraps.mono_wasm_load_icu_data(offset)) {
+export function wasm_load_icu_data (offset: VoidPtr) {
+    if (!cwraps.wasm_load_icu_data(offset)) {
         throw new Error("Failed to load ICU data");
     }
 }

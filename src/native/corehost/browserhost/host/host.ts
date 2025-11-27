@@ -36,7 +36,7 @@ export function loadIcuData(bytes: Uint8Array) {
         const ptr = Module.HEAPU32[ptrPtr as any >>> 2];
         Module.HEAPU8.set(bytes, ptr >>> 0);
 
-        const result = Module.ccall("coreclr_wasm_load_icu_data", "number", ["number"], [ptr]) as number;
+        const result = Module.ccall("wasm_load_icu_data", "number", ["number"], [ptr]) as number;
         if (!result) {
             throw new Error("Failed to initialize ICU data");
         }
