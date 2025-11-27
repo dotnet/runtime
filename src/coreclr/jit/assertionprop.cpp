@@ -2533,11 +2533,16 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
         return nullptr;
     }
 
-    uint8_t* buffer1 = new (this, CMK_AssertionProp) uint8_t[len];
-    uint8_t* buffer2 = new (this, CMK_AssertionProp) uint8_t[len];
-    if (GetImmutableDataFromAddress(arg1->GetNode(), (int)len, buffer1) &&
-        GetImmutableDataFromAddress(arg2->GetNode(), (int)len, buffer2))
+    auto getImmutableData = [this](GenTree* tree, int length, uint8_t** outBuffer) -> bool {
+        *outBuffer = new (this, CMK_AssertionProp) uint8_t[(size_t)length];
+        return GetImmutableDataFromAddress(tree, length, *outBuffer);
+    };
+
+    uint8_t* buffer1 = nullptr;
+    uint8_t* buffer2 = nullptr;
+    if (getImmutableData(arg1->GetNode(), (int)len, &buffer1) && getImmutableData(arg2->GetNode(), (int)len, &buffer2))
     {
+        assert(buffer1 != nullptr && buffer2 != nullptr);
         // If both memory regions are known at compile time, we can fold to a constant.
         bool areEqual = (memcmp(buffer1, buffer2, len) == 0);
         JITDUMP("...both memory regions are known at compile time -> optimize to constant %s.\n",
