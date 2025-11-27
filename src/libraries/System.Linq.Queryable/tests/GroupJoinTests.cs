@@ -336,5 +336,18 @@ namespace System.Linq.Tests
 
             AssertExtensions.Throws<ArgumentNullException>("innerKeySelector", () => outer.AsQueryable().GroupJoin<int, int, int>(inner.AsQueryable(), n1 => n1, null));
         }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_CustomComparer()
+        {
+            var result = new[] { "Tim", "Bob", "Robert" }.AsQueryable().GroupJoin(new[] { "miT", "Robert" }, n1 => n1, n2 => n2, new AnagramEqualityComparer()).ToList();
+            Assert.Equal(3, result.Count);
+            Assert.Equal("Tim", result[0].Key);
+            Assert.Single(result[0]);
+            Assert.Equal("Bob", result[1].Key);
+            Assert.Empty(result[1]);
+            Assert.Equal("Robert", result[2].Key);
+            Assert.Single(result[2]);
+        }
     }
 }

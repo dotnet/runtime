@@ -8,7 +8,10 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        public static IEnumerable<IGrouping<TOuter, TInner>> GroupJoin<TOuter, TInner, TKey>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector)
+        public static IEnumerable<IGrouping<TOuter, TInner>> GroupJoin<TOuter, TInner, TKey>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector) =>
+            GroupJoin(outer, inner, outerKeySelector, innerKeySelector, comparer: null);
+
+        public static IEnumerable<IGrouping<TOuter, TInner>> GroupJoin<TOuter, TInner, TKey>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, IEqualityComparer<TKey>? comparer)
         {
             if (outer is null)
             {
@@ -35,7 +38,7 @@ namespace System.Linq
                 return [];
             }
 
-            return GroupJoinIterator(outer, inner, outerKeySelector, innerKeySelector, comparer: null);
+            return GroupJoinIterator(outer, inner, outerKeySelector, innerKeySelector, comparer);
         }
 
         public static IEnumerable<TResult> GroupJoin<TOuter, TInner, TKey, TResult>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter, IEnumerable<TInner>, TResult> resultSelector) =>

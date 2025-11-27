@@ -659,5 +659,33 @@ namespace System.Linq.Tests
             Assert.Equal(inner[0], result[0].First());
             Assert.Equal(inner[0], result[0].First());
         }
+
+        [Fact]
+        public void GroupJoinWithoutResultSelector_CustomComparer()
+        {
+            CustomerRec[] outer =
+            [
+                new CustomerRec{ name = "Tim", custID = 1234 },
+                new CustomerRec{ name = "Bob", custID = 9865 },
+                new CustomerRec{ name = "Robert", custID = 9895 }
+            ];
+            AnagramRec[] inner =
+            [
+                new AnagramRec{ name = "Robert", orderID = 93483, total = 19 },
+                new AnagramRec{ name = "miT", orderID = 93489, total = 45 }
+            ];
+
+            var result = outer.GroupJoin(inner, e => e.name, e => e.name, new AnagramEqualityComparer()).ToList();
+
+            Assert.Equal(3, result.Count);
+            Assert.Equal(outer[0], result[0].Key);
+            Assert.Single(result[0]);
+            Assert.Equal(inner[1], result[0].First());
+            Assert.Equal(outer[1], result[1].Key);
+            Assert.Empty(result[1]);
+            Assert.Equal(outer[2], result[2].Key);
+            Assert.Single(result[2]);
+            Assert.Equal(inner[0], result[2].First());
+        }
     }
 }
