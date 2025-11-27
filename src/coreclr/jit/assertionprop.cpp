@@ -2533,14 +2533,10 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
         return nullptr;
     }
 
-    auto getImmutableData = [this](GenTree* tree, int length, uint8_t** outBuffer) -> bool {
-        *outBuffer = new (this, CMK_AssertionProp) uint8_t[(size_t)length];
-        return GetImmutableDataFromAddress(tree, length, *outBuffer);
-    };
-
     uint8_t* buffer1 = nullptr;
     uint8_t* buffer2 = nullptr;
-    if (getImmutableData(arg1->GetNode(), (int)len, &buffer1) && getImmutableData(arg2->GetNode(), (int)len, &buffer2))
+    if (GetImmutableDataFromAddress(arg1->GetNode(), (int)len, getAllocator(CMK_AssertionProp), &buffer1) &&
+        GetImmutableDataFromAddress(arg2->GetNode(), (int)len, getAllocator(CMK_AssertionProp), &buffer2))
     {
         assert(buffer1 != nullptr && buffer2 != nullptr);
         // If both memory regions are known at compile time, we can fold to a constant.
@@ -2682,8 +2678,8 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
 
     // if GetImmutableDataFromAddress returns true, it means that the src is a read-only constant.
     // Thus, dst and src do not overlap (if they do - it's an UB).
-    uint8_t* buffer = new (this, CMK_AssertionProp) uint8_t[len];
-    if (!GetImmutableDataFromAddress(srcArg->GetNode(), (int)len, buffer))
+    uint8_t* buffer = nullptr;
+    if (!GetImmutableDataFromAddress(srcArg->GetNode(), (int)len, getAllocator(CMK_AssertionProp), &buffer))
     {
         JITDUMP("...src is not a constant - fallback to LowerCallMemmove.\n");
         return nullptr;
