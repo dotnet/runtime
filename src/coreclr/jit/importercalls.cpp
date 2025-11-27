@@ -417,10 +417,19 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 thisPtr          = impTransformThis(thisPtr, pConstrainedResolvedToken, callInfo->thisTransform);
                 assert(thisPtr != nullptr);
 
+                GenTree* origThisPtr = thisPtr;
+
                 // Clone the (possibly transformed) "this" pointer
                 GenTree* thisPtrCopy;
                 thisPtr =
                     impCloneExpr(thisPtr, &thisPtrCopy, CHECK_SPILL_ALL, nullptr DEBUGARG("LDVIRTFTN this pointer"));
+
+                // We cloned the "this" pointer, mark it as a single def and set the class for it
+                if (thisPtr->OperIsLocal() && thisPtr->TypeIs(TYP_REF) && (origThisPtr != thisPtr))
+                {
+                    lvaGetDesc(thisPtr->AsLclVarCommon())->lvSingleDef = 1;
+                    lvaSetClass(thisPtr->AsLclVarCommon()->GetLclNum(), origThisPtr);
+                }
 
                 GenTree* fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
                 assert(fptr != nullptr);
@@ -8804,7 +8813,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     if (dvInfo.isInstantiatingStub)
     {
-        // We should only end up with generic methods that needs a method context (eg. array interface, generic virtuals).
+        // We should only end up with generic methods that needs a method context (eg. array interface, generic
+        // virtuals).
         //
         assert(dvInfo.needsMethodContext);
 
@@ -8833,7 +8843,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         //
         if (!isExact)
         {
-            JITDUMP("%s devirt: type is inexact, sorry.\n", call->IsGenericVirtual(this) ? "Generic virtual method" : "Array interface");
+            JITDUMP("%s devirt: type is inexact, sorry.\n",
+                    call->IsGenericVirtual(this) ? "Generic virtual method" : "Array interface");
             return;
         }
 
