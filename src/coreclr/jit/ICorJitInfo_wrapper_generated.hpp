@@ -1723,7 +1723,7 @@ void WrapICorJitInfo::recordRelocation(
           void* location,
           void* locationRW,
           void* target,
-          uint16_t fRelocType,
+          CorInfoReloc fRelocType,
           int32_t addlDelta)
 {
     API_ENTER(recordRelocation);
@@ -1731,11 +1731,11 @@ void WrapICorJitInfo::recordRelocation(
     API_LEAVE(recordRelocation);
 }
 
-uint16_t WrapICorJitInfo::getRelocTypeHint(
+CorInfoReloc WrapICorJitInfo::getRelocTypeHint(
           void* target)
 {
     API_ENTER(getRelocTypeHint);
-    uint16_t temp = wrapHnd->getRelocTypeHint(target);
+    CorInfoReloc temp = wrapHnd->getRelocTypeHint(target);
     API_LEAVE(getRelocTypeHint);
     return temp;
 }

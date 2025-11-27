@@ -16,6 +16,7 @@ export function SystemJS_RandomBytes (bufferPtr: number, bufferLength: number): 
         return -1;
     }
 
+    bufferPtr = bufferPtr >>> 0;
     const memoryView = localHeapViewU8();
     const targetView = memoryView.subarray(bufferPtr, bufferPtr + bufferLength);
 
