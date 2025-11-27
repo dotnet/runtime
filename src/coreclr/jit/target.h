@@ -221,7 +221,11 @@ enum _regMask_enum : unsigned
 // be lost.
 
 typedef _regNumber_enum regNumber;
-typedef unsigned char   regNumberSmall;
+#ifdef TARGET_WASM
+typedef unsigned regNumberSmall; // An 'unlimited' number of registers.
+#else
+typedef unsigned char regNumberSmall;
+#endif
 
 #if REGMASK_BITS == 8
 typedef unsigned char regMaskSmall;
@@ -611,6 +615,8 @@ static uint32_t BitScanForward(const regMaskTP& mask)
 #error Unsupported or unset target architecture
 #endif
 
+#include "targetcommon.h"
+
 #ifdef TARGET_XARCH
 
   #define JMP_DIST_SMALL_MAX_NEG  (-128)
@@ -869,13 +875,6 @@ inline bool isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv)
 {
     return (genSingleTypeRegMask(reg) & fullIntArgRegMask(callConv)) != 0;
 }
-
-//-------------------------------------------------------------------------------------------
-// genRegArgNext:
-//     Given a register that is an integer or floating point argument register
-//     returns the next argument register
-//
-regNumber genRegArgNext(regNumber argReg);
 
 //-------------------------------------------------------------------------------------------
 // isValidFloatArgReg:

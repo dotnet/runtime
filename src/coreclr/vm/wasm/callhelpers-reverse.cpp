@@ -12,7 +12,7 @@
 // WASM-TODO: The method lookup would ideally be fully qualified assembly and then methodDef token.
 // The current approach has limitations with overloaded methods.
 extern "C" void LookupMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
-extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret);
+extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp);
 
 static MethodDesc* MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid(void * arg0)
@@ -35,7 +35,7 @@ static void Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJo
     {
         LookupMethodByName("System.Threading.ThreadPool, System.Private.CoreLib", "BackgroundJobHandler", &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
     }
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, nullptr, 0, nullptr);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, nullptr, 0, nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler);
 }
 
 extern "C" void SystemJS_ExecuteBackgroundJobCallback()
@@ -205,7 +205,7 @@ static void Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler
     {
         LookupMethodByName("System.Threading.TimerQueue, System.Private.CoreLib", "TimerHandler", &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
     }
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, nullptr, 0, nullptr);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, nullptr, 0, nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler);
 }
 
 extern "C" void SystemJS_ExecuteTimerCallback()
