@@ -612,8 +612,8 @@ private:
 
         if (tree->OperIs(GT_CALL))
         {
-            GenTreeCall* call = tree->AsCall();
-            bool tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler);
+            GenTreeCall* call          = tree->AsCall();
+            bool         tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler);
             if (tryLateDevirt && call->gtCallType == CT_INDIRECT)
             {
                 // For indirect calls, we can only late devirt if it's a generic virtual method for now.
@@ -1377,8 +1377,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     param.fncHandle           = fncHandle;
     param.inlineCandidateInfo = inlineCandidateInfo;
     param.inlineInfo          = &inlineInfo;
-    bool success              = eeRunWithErrorTrap<Param>(
-        [](Param* pParam) {
+    bool success              = eeRunWithErrorTrap<Param>([](Param* pParam) {
         // Init the local var info of the inlinee
         pParam->pThis->impInlineInitVars(pParam->inlineInfo);
 
@@ -1454,8 +1453,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                 }
             }
         }
-    },
-        &param);
+    }, &param);
     if (!success)
     {
 #ifdef DEBUG
