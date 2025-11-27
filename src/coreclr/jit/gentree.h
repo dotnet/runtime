@@ -116,20 +116,6 @@ enum gtCallTypes : BYTE
     CT_COUNT // fake entry (must be last)
 };
 
-enum class ExceptionSetFlags : uint32_t
-{
-    None                     = 0x0,
-    OverflowException        = 0x1,
-    DivideByZeroException    = 0x2,
-    ArithmeticException      = 0x4,
-    NullReferenceException   = 0x8,
-    IndexOutOfRangeException = 0x10,
-    StackOverflowException   = 0x20,
-
-    All = OverflowException | DivideByZeroException | ArithmeticException | NullReferenceException |
-          IndexOutOfRangeException | StackOverflowException,
-};
-
 inline constexpr ExceptionSetFlags operator~(ExceptionSetFlags a)
 {
     return (ExceptionSetFlags)(~(uint32_t)a);

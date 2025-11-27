@@ -6306,15 +6306,12 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
 {
     assert((call->gtCallType == CT_INDIRECT) && (call->gtCallAddr != nullptr));
 
-    if (!call->gtCallAddr->IsHelperCall(comp, CORINFO_HELP_VIRTUAL_FUNC_PTR) &&
-        !call->gtCallAddr->IsHelperCall(comp, CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR) &&
-        !call->gtCallAddr->IsHelperCall(comp, CORINFO_HELP_GVMLOOKUP_FOR_SLOT) &&
-        !call->gtCallAddr->IsHelperCall(comp, CORINFO_HELP_READYTORUN_GENERIC_HANDLE))
+    if (!call->gtCallAddr->IsCall())
     {
         return;
     }
 
-    JITDUMP("Target is a GVM; seeing if we can move arguments ahead of resolution\n");
+    JITDUMP("Indirect call target is itself a call; trying to reorder its evaluation with arguments\n");
 
     m_scratchSideEffects.Clear();
 
@@ -6357,9 +6354,9 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
 
         if (cur == call->gtCallAddr)
         {
-            // Start moving this range. Do not add its side effects as we will
-            // check the NRE manually for precision.
+            // Start moving this range.
             movingRange = LIR::ReadOnlyRange(cur, cur);
+            m_scratchSideEffects.AddNode(comp, cur);
             continue;
         }
 
@@ -6374,41 +6371,12 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
         {
             // This node is in the dataflow. See if we can move it ahead of the
             // range we are moving.
-            bool interferes = false;
             if (m_scratchSideEffects.InterferesWith(comp, cur, /* strict */ true))
-            {
-                JITDUMP("  Stopping at [%06u]; it interferes with the current range we are moving\n",
-                        Compiler::dspTreeID(cur));
-                interferes = true;
-            }
-
-            if (!interferes)
-            {
-                // No problem so far. However the side effect set does not
-                // include the GVM call itself, which can throw NRE. Check the
-                // NRE now for precision.
-                GenTreeFlags flags = cur->OperEffects(comp);
-                if ((flags & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
-                {
-                    JITDUMP("  Stopping at [%06u]; it has persistent side effects\n", Compiler::dspTreeID(cur));
-                    interferes = true;
-                }
-                else if ((flags & GTF_EXCEPT) != 0)
-                {
-                    ExceptionSetFlags preciseExceptions = cur->OperExceptions(comp);
-                    if (preciseExceptions != ExceptionSetFlags::NullReferenceException)
-                    {
-                        JITDUMP("  Stopping at [%06u]; it throws an exception that is not NRE\n",
-                                Compiler::dspTreeID(cur));
-                        interferes = true;
-                    }
-                }
-            }
-
-            if (interferes)
             {
                 // Stop moving the range, but keep going through the rest
                 // of the nodes to unmark them
+                JITDUMP("  Stopping at [%06u]; it interferes with the current range we are moving\n",
+                        Compiler::dspTreeID(cur));
                 movingRange = LIR::ReadOnlyRange();
             }
             else

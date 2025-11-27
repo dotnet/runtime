@@ -911,8 +911,10 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     exceptionFlags = comp->gtCollectExceptions(argx);
                 }
 
-                bool exactlyOne       = isPow2(static_cast<unsigned>(exceptionFlags));
-                bool throwsSameAsPrev = exactlyOne && (exceptionFlags == prevExceptionFlags);
+                bool exactlyOneKnown =
+                    isPow2(static_cast<unsigned>(exceptionFlags)) &&
+                    ((exceptionFlags & ExceptionSetFlags::UnknownException) == ExceptionSetFlags::None);
+                bool throwsSameAsPrev = exactlyOneKnown && (exceptionFlags == prevExceptionFlags);
                 if (!throwsSameAsPrev)
                 {
                     JITDUMP("Exception set for arg [%06u] interferes with previous tree [%06u]; must evaluate previous "

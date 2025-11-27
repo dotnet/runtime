@@ -7183,8 +7183,9 @@ bool GenTree::OperIsImplicitIndir() const
 //    A bit set of exceptions this tree may throw.
 //
 // Remarks:
-//    Should not be used on calls given that we can say nothing precise about
-//    those.
+//   The ExceptionSetFlags::UnknownException must generally be handled
+//   specially by the consumer; when it is present it means we can say nothing
+//   precise about the thrown exceptions.
 //
 ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 {
@@ -7236,9 +7237,14 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
             return ExceptionSetFlags::None;
 
         case GT_CALL:
-            assert(!"Unexpected GT_CALL in OperExceptions");
-            return ExceptionSetFlags::All;
+            CorInfoHelpFunc helper;
+            helper = comp->eeGetHelperNum(this->AsCall()->gtCallMethHnd);
+            if (helper == CORINFO_HELP_UNDEF)
+            {
+                return ExceptionSetFlags::UnknownException;
+            }
 
+            return Compiler::s_helperCallProperties.ThrownExceptions(helper);
         case GT_LOCKADD:
         case GT_XAND:
         case GT_XORR:
@@ -7286,7 +7292,10 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
         {
-            assert((gtFlags & GTF_HW_USER_CALL) == 0);
+            if ((gtFlags & GTF_HW_USER_CALL) != 0)
+            {
+                return ExceptionSetFlags::UnknownException;
+            }
 
             GenTreeHWIntrinsic* hwIntrinsicNode = this->AsHWIntrinsic();
 
@@ -7332,32 +7341,6 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 //
 bool GenTree::OperMayThrow(Compiler* comp)
 {
-    if (OperIs(GT_CALL))
-    {
-        CorInfoHelpFunc helper;
-        helper = comp->eeGetHelperNum(this->AsCall()->gtCallMethHnd);
-        return ((helper == CORINFO_HELP_UNDEF) || !comp->s_helperCallProperties.NoThrow(helper));
-    }
-#ifdef FEATURE_HW_INTRINSICS
-    else if (OperIsHWIntrinsic())
-    {
-        if ((gtFlags & GTF_HW_USER_CALL) != 0)
-        {
-            return true;
-        }
-
-#ifdef TARGET_XARCH
-        NamedIntrinsic intrinsicId = this->AsHWIntrinsic()->GetHWIntrinsicId();
-        if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division ||
-            intrinsicId == NI_Vector512_op_Division)
-        {
-            assert(varTypeIsInt(AsHWIntrinsic()->GetSimdBaseType()));
-            return true;
-        }
-#endif // TARGET_XARCH
-    }
-#endif // FEATURE_HW_INTRINSICS
-
     return OperExceptions(comp) != ExceptionSetFlags::None;
 }
 
@@ -17907,11 +17890,6 @@ ExceptionSetFlags Compiler::gtCollectExceptions(GenTree* tree)
             return WALK_CONTINUE;
         }
     };
-
-    // We only expect the caller to ask for precise exceptions for cases where
-    // it may help with disambiguating between exceptions. If the tree contains
-    // a call it can always throw arbitrary exceptions.
-    assert((tree->gtFlags & GTF_CALL) == 0);
 
     ExceptionsWalker walker(this);
     walker.WalkTree(&tree, nullptr);

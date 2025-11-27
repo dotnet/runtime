@@ -14367,6 +14367,18 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_BoxNullable;
             break;
 
+        case CORINFO_HELP_VIRTUAL_FUNC_PTR:
+            vnf = VNF_VirtualFuncPtr;
+            break;
+
+        case CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
+            vnf = VNF_GVMLookupForSlot;
+            break;
+
+        case CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
+            vnf = VNF_ReadyToRunVirtualFuncPtr;
+            break;
+
         default:
             unreached();
     }
