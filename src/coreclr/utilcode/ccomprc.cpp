@@ -21,94 +21,6 @@ __attribute__((visibility("default"))) DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATI
 extern void* GetClrModuleBase();
 
 //*****************************************************************************
-// Do the mapping from an langId to an hinstance node
-//*****************************************************************************
-HRESOURCEDLL CCompRC::LookupNode(LocaleID langId, BOOL &fMissing)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (m_pHash == NULL) return NULL;
-
-// Linear search
-    int i;
-    for(i = 0; i < m_nHashSize; i ++) {
-        if (m_pHash[i].IsSet() && m_pHash[i].HasID(langId)) {
-            return m_pHash[i].GetLibraryHandle();
-        }
-        if (m_pHash[i].IsMissing() && m_pHash[i].HasID(langId))
-        {
-            fMissing = TRUE;
-            return NULL;
-        }
-    }
-
-    return NULL;
-}
-
-//*****************************************************************************
-// Add a new node to the map and return it.
-//*****************************************************************************
-const int MAP_STARTSIZE = 7;
-const int MAP_GROWSIZE = 5;
-
-HRESULT CCompRC::AddMapNode(LocaleID langId, HRESOURCEDLL hInst, BOOL fMissing)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
-    }
-    CONTRACTL_END;
-
-
-    if (m_pHash == NULL) {
-        m_pHash = new (nothrow)CCulturedHInstance[MAP_STARTSIZE];
-        if (m_pHash==NULL)
-            return E_OUTOFMEMORY;
-        m_nHashSize = MAP_STARTSIZE;
-    }
-
-// For now, place in first open slot
-    int i;
-    for(i = 0; i < m_nHashSize; i ++) {
-        if (!m_pHash[i].IsSet() && !m_pHash[i].IsMissing()) {
-            if (fMissing)
-            {
-                m_pHash[i].SetMissing(langId);
-            }
-            else
-            {
-                m_pHash[i].Set(langId,hInst);
-            }
-
-            return S_OK;
-        }
-    }
-
-// Out of space, regrow
-    CCulturedHInstance * pNewHash = new (nothrow)CCulturedHInstance[m_nHashSize + MAP_GROWSIZE];
-    if (pNewHash)
-    {
-        memcpy(pNewHash, m_pHash, sizeof(CCulturedHInstance) * m_nHashSize);
-        delete [] m_pHash;
-        m_pHash = pNewHash;
-        if (fMissing)
-        {
-            m_pHash[m_nHashSize].SetMissing(langId);
-        }
-        else
-        {
-            m_pHash[m_nHashSize].Set(langId,hInst);
-        }
-        m_nHashSize += MAP_GROWSIZE;
-    }
-    else
-        return E_OUTOFMEMORY;
-    return S_OK;
-}
-
-//*****************************************************************************
 // Initialize
 //*****************************************************************************
 LPCWSTR CCompRC::m_pDefaultResource = W("mscorrc.dll");
@@ -229,16 +141,6 @@ void CCompRC::Destroy()
     if (m_Primary.GetLibraryHandle()) {
         ::FreeLibrary(m_Primary.GetLibraryHandle());
     }
-
-    if (m_pHash != NULL) {
-        int i;
-        for(i = 0; i < m_nHashSize; i ++) {
-            if (m_pHash[i].GetLibraryHandle() != NULL) {
-                ::FreeLibrary(m_pHash[i].GetLibraryHandle());
-                break;
-            }
-        }
-    }
 #endif
 
     // destroy map structure
@@ -249,11 +151,6 @@ void CCompRC::Destroy()
     if(m_csMap) {
         ClrDeleteCriticalSection(m_csMap);
         ZeroMemory(&(m_csMap), sizeof(CRITSEC_COOKIE));
-    }
-
-    if(m_pHash != NULL) {
-        delete [] m_pHash;
-        m_pHash = NULL;
     }
 }
 
@@ -319,11 +216,8 @@ HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
     // Try to match the primary entry, or else use the primary if we don't care.
     if (m_Primary.IsSet())
     {
-        if (langId == UICULTUREID_DONTCARE || m_Primary.HasID(langId))
-        {
-            hInst = m_Primary.GetLibraryHandle();
-            hr = S_OK;
-        }
+        hInst = m_Primary.GetLibraryHandle();
+        hr = S_OK;
     }
     else if(m_Primary.IsMissing())
     {
@@ -349,25 +243,18 @@ HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
             hInst  = hLibInst;
             if (SUCCEEDED(hr))
             {
-                m_Primary.Set(langId,hLibInst);
+                m_Primary.Set(hLibInst);
             }
             else
             {
-                m_Primary.SetMissing(langId);
+                m_Primary.SetMissing();
             }
         }
 
         // Someone got into this critical section before us and set the primary already
-        else if (m_Primary.HasID(langId))
-        {
-            hInst = m_Primary.GetLibraryHandle();
-            fLibAlreadyOpen = TRUE;
-        }
-
-        // If neither case is true, someone got into this critical section before us and
-        //  set the primary to other than the language we want...
         else
         {
+            hInst = m_Primary.GetLibraryHandle();
             fLibAlreadyOpen = TRUE;
         }
 
@@ -381,74 +268,7 @@ HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
     }
 #endif
 
-    // If we enter here, we know that the primary is set to something other than the
-    // language we want - multiple languages use the hash table
-    if (hInst == NULL && !m_Primary.IsMissing())
-    {
-        // See if the resource exists in the hash table
-        {
-            CRITSEC_Holder csh(m_csMap);
-            BOOL fMissing = FALSE;
-            hInst = LookupNode(langId, fMissing);
-            if (fMissing == TRUE)
-            {
-                hr = HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
-                goto Exit;
-            }
-        }
-
-#ifndef DACCESS_COMPILE
-        // If we didn't find it, we have to load the library and insert it into the hash
-        if (hInst == NULL)
-        {
-            hr = LoadLibrary(&hLibInst);
-            // If it's a transient failure, don't cache the failure
-            if (FAILED(hr) && Exception::IsTransient(hr))
-            {
-                return hr;
-            }
-            {
-                CRITSEC_Holder csh (m_csMap);
-
-                // Double check - someone may have entered this section before us
-                BOOL fMissing = FALSE;
-                hInst = LookupNode(langId, fMissing);
-                if (hInst == NULL && !fMissing)
-                {
-                    if (SUCCEEDED(hr))
-                    {
-                        hInst = hLibInst;
-                        hr = AddMapNode(langId, hInst);
-                    } else
-                    {
-                        HRESULT hrLoadLibrary = hr;
-                        hr = AddMapNode(langId, hInst, TRUE /* fMissing */);
-                        if (SUCCEEDED(hr))
-                        {
-                            hr = hrLoadLibrary;
-                        }
-                    }
-                }
-                else
-                {
-                    fLibAlreadyOpen = TRUE;
-                }
-            }
-
-            if (fLibAlreadyOpen || FAILED(hr))
-            {
-                FreeLibrary(hLibInst);
-            }
-        }
-
-        // We found the node, so set hr to be a success.
-        else
-        {
-            hr = S_OK;
-        }
-#endif // DACCESS_COMPILE
-    }
-Exit:
+    _ASSERTE(SUCCEEDED(hr) || hInst == NULL);
     *phInst = hInst;
     return hr;
 }

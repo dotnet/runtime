@@ -414,7 +414,6 @@ typedef HINSTANCE HRESOURCEDLL;
 
 class CCulturedHInstance
 {
-    LocaleIDValue   m_LangId;
     HRESOURCEDLL    m_hInst;
     BOOL            m_fMissing;
 
@@ -424,15 +423,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_hInst = NULL;
         m_fMissing = FALSE;
-    }
-
-    BOOL HasID(LocaleID id)
-    {
-        _ASSERTE(m_hInst != NULL || m_fMissing);
-        if (id == UICULTUREID_DONTCARE)
-            return FALSE;
-
-        return u16_strcmp(id, m_LangId) == 0;
     }
 
     HRESOURCEDLL GetLibraryHandle()
@@ -450,32 +440,17 @@ public:
         return m_fMissing;
     }
 
-    void SetMissing(LocaleID id)
+    void SetMissing()
     {
         _ASSERTE(m_hInst == NULL);
-        SetId(id);
         m_fMissing = TRUE;
     }
 
-    void Set(LocaleID id, HRESOURCEDLL hInst)
+    void Set(HRESOURCEDLL hInst)
     {
         _ASSERTE(m_hInst == NULL);
         _ASSERTE(m_fMissing == FALSE);
-        SetId(id);
         m_hInst = hInst;
-    }
-  private:
-    void SetId(LocaleID id)
-    {
-        if (id != UICULTUREID_DONTCARE)
-        {
-            wcsncpy_s(m_LangId, ARRAY_SIZE(m_LangId), id, ARRAY_SIZE(m_LangId));
-            m_LangId[STRING_LENGTH(m_LangId)] = W('\0');
-        }
-        else
-        {
-            m_LangId[0] = W('\0');
-        }
     }
  };
 
@@ -518,8 +493,6 @@ public:
         m_fpGetThreadUICultureId = NULL;
         m_fpGetThreadUICultureNames = NULL;
 
-        m_pHash = NULL;
-        m_nHashSize = 0;
         m_csMap = NULL;
         m_pResourceFile = NULL;
     }// CCompRC
@@ -585,20 +558,12 @@ private:
     static CCompRC  m_DefaultResourceDll;
     static LPCWSTR  m_pDefaultResource;
 
-    // We must map between a thread's int and a dll instance.
-    // Since we only expect 1 language almost all of the time, we'll special case
-    // that and then use a variable size map for everything else.
+    // Use a singleton since we don't support localization any more.
     CCulturedHInstance m_Primary;
-    CCulturedHInstance * m_pHash;
-    int m_nHashSize;
 
     CRITSEC_COOKIE m_csMap;
 
     LPCWSTR m_pResourceFile;
-
-    // Main accessors for hash
-    HRESOURCEDLL LookupNode(LocaleID langId, BOOL &fMissing);
-    HRESULT AddMapNode(LocaleID langId, HRESOURCEDLL hInst, BOOL fMissing = FALSE);
 
     FPGETTHREADUICULTUREID m_fpGetThreadUICultureId;
     FPGETTHREADUICULTURENAMES m_fpGetThreadUICultureNames;
