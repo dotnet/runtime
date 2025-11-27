@@ -10,6 +10,7 @@ using Xunit.Abstractions;
 using Xunit.Sdk;
 using Microsoft.Playwright;
 using System.Runtime.InteropServices;
+using System;
 
 #nullable enable
 
@@ -60,11 +61,45 @@ public class BuildPublishTests : BlazorWasmTestBase
     public void DefaultTemplate_AOT_WithLongPath()
     {
         Configuration config = Configuration.Release;
-        string longIdPrefix = $"blz_aot_{config}_{GetRandomId()}_{new string('x', 300)}";
-        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, longIdPrefix, appendUnicodeToPath: true);
-        BlazorBuild(info, config);
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "lp", appendUnicodeToPath: true);
 
+        // Move the test project into a nested directory to create a long path that exceeds MAX_PATH
+        info = NestProjectInLongPath(info);
+
+        BlazorBuild(info, config);
         PublishProject(info, config, new PublishOptions(AOT: true, UseCache: false));
+    }
+
+    private ProjectInfo NestProjectInLongPath(ProjectInfo info)
+    {
+        string testProjectDir = Path.GetDirectoryName(_projectDir)!;
+        string testProjectDirName = Path.GetFileName(testProjectDir);
+        string baseDir = Path.GetDirectoryName(testProjectDir)!;
+
+        // The problematic path is in a form of:
+        // {_projectDir}\obj\..\Microsoft_Extensions_DependencyInjection_dll_compiled_methods.txt
+        // Its length is at least 100 characters, so we can subtract it from the nesting target
+        const int longestBuildSubpathLength = 100;
+        const int windowsMaxPath = 260;
+
+        int currentLength = _projectDir.Length;
+        int targetPathLength = windowsMaxPath - longestBuildSubpathLength;
+        int additionalLength = Math.Max(0, targetPathLength - currentLength);
+        
+        if (additionalLength == 0)
+            return info;
+
+        string dirName = new string('x', additionalLength);
+        string nestedPath = Path.Combine(baseDir, dirName);
+        Directory.CreateDirectory(nestedPath);
+
+        string newTestProjectDir = Path.Combine(nestedPath, testProjectDirName);
+        Directory.Move(testProjectDir, newTestProjectDir);
+
+        _projectDir = Path.Combine(newTestProjectDir, "App");
+        string nestedProjectFilePath = Path.Combine(_projectDir, "BlazorBasicTestApp.csproj");
+
+        return new ProjectInfo(info.ProjectName, nestedProjectFilePath, info.LogPath, info.NugetDir);
     }
 
     // Disabling for now - publish folder can have more than one dotnet*hash*js, and not sure
