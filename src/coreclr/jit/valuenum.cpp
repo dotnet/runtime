@@ -12338,7 +12338,7 @@ bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, CompAlloc
         {
             return false;
         }
-        *ppValue = new (alloc) uint8_t[size];
+        *ppValue = new (alloc) uint8_t[(size_t)size];
         return info.compCompHnd->getObjectContent(obj, *ppValue, size, (int)byteOffset);
     }
 
@@ -12350,7 +12350,7 @@ bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, CompAlloc
         {
             return false;
         }
-        *ppValue = new (alloc) uint8_t[size];
+        *ppValue = new (alloc) uint8_t[(size_t)size];
         return info.compCompHnd->getStaticFieldContent(fld, *ppValue, size, (int)byteOffset);
     }
 
