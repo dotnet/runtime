@@ -45,15 +45,10 @@
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
       <!-- .NETCoreApp -->
-      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\$(MSBuildProjectName)*"
+      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*"
                       TargetPath="tasks\$(NetCoreAppToolCurrent)" />
-      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\Microsoft.NET.WebAssembly.Webcil.dll"
+      <FilesToPackage Include="$(OutputPath)Microsoft.NET.WebAssembly.Webcil.dll"
                       TargetPath="tasks\$(NetCoreAppToolCurrent)" />
-
-
-      <!-- For .NETFramework we need all the dependent assemblies too, so copy from the publish folder -->
-      <FilesToPackage Include="$(OutputPath)$(NetFrameworkToolCurrent)\*"
-                      TargetPath="tasks\$(NetFrameworkToolCurrent)" />
     </ItemGroup>
   </Target>
 
