@@ -2194,5 +2194,247 @@ namespace System.IO.Compression.Tests
             // comment length
             0x00, 0x00
         };
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_ReadMode_ReadAccess_Succeeds(bool async)
+        {
+            using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+
+            ZipArchiveEntry entry = archive.GetEntry("first.txt");
+            Assert.NotNull(entry);
+
+            using Stream stream = entry.Open(FileAccess.Read);
+            Assert.True(stream.CanRead);
+            Assert.False(stream.CanWrite);
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_ReadMode_WriteAccess_Throws(bool async)
+        {
+            using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+
+            ZipArchiveEntry entry = archive.GetEntry("first.txt");
+            Assert.NotNull(entry);
+
+            Assert.Throws<ArgumentException>("access", () => entry.Open(FileAccess.Write));
+            Assert.Throws<ArgumentException>("access", () => entry.Open(FileAccess.ReadWrite));
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_CreateMode_WriteAccess_Succeeds(bool async)
+        {
+            using var ms = new MemoryStream();
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
+
+            ZipArchiveEntry entry = archive.CreateEntry("test.txt");
+
+            using Stream stream = entry.Open(FileAccess.Write);
+            Assert.False(stream.CanRead);
+            Assert.True(stream.CanWrite);
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_CreateMode_ReadWriteAccess_Succeeds(bool async)
+        {
+            using var ms = new MemoryStream();
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
+
+            ZipArchiveEntry entry = archive.CreateEntry("test.txt");
+
+            // ReadWrite should be allowed in Create mode (it opens in write mode)
+            using Stream stream = entry.Open(FileAccess.ReadWrite);
+            Assert.True(stream.CanWrite);
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_CreateMode_ReadAccess_Throws(bool async)
+        {
+            using var ms = new MemoryStream();
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
+
+            ZipArchiveEntry entry = archive.CreateEntry("test.txt");
+
+            Assert.Throws<ArgumentException>("access", () => entry.Open(FileAccess.Read));
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_UpdateMode_ReadAccess_Succeeds(bool async)
+        {
+            using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update);
+
+            ZipArchiveEntry entry = archive.GetEntry("first.txt");
+            Assert.NotNull(entry);
+
+            using Stream stream = entry.Open(FileAccess.Read);
+            Assert.True(stream.CanRead);
+            Assert.False(stream.CanWrite);
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_UpdateMode_WriteAccess_Succeeds(bool async)
+        {
+            using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update);
+
+            ZipArchiveEntry entry = archive.GetEntry("first.txt");
+            Assert.NotNull(entry);
+
+            // In Update mode, FileAccess.Write uses OpenInUpdateMode which returns a read/write stream
+            using Stream stream = entry.Open(FileAccess.Write);
+            Assert.True(stream.CanWrite);
+            Assert.True(stream.CanRead); // Update mode streams are always read/write
+            Assert.True(stream.CanSeek);
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_UpdateMode_ReadWriteAccess_Succeeds(bool async)
+        {
+            using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update);
+
+            ZipArchiveEntry entry = archive.GetEntry("first.txt");
+            Assert.NotNull(entry);
+
+            using Stream stream = entry.Open(FileAccess.ReadWrite);
+            Assert.True(stream.CanRead);
+            Assert.True(stream.CanWrite);
+            Assert.True(stream.CanSeek);
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_UpdateMode_InvalidAccess_Throws(bool async)
+        {
+            using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update);
+
+            ZipArchiveEntry entry = archive.GetEntry("first.txt");
+            Assert.NotNull(entry);
+
+            // Test with an invalid FileAccess value (0 is not a valid FileAccess)
+            Assert.Throws<ArgumentException>("access", () => entry.Open((FileAccess)0));
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_MatchesParameterlessOpen_ReadMode(bool async)
+        {
+            using MemoryStream ms1 = await StreamHelpers.CreateTempCopyStream(zfile("small.zip"));
+            using MemoryStream ms2 = await StreamHelpers.CreateTempCopyStream(zfile("small.zip"));
+
+            ZipArchive archive1 = await CreateZipArchive(async, ms1, ZipArchiveMode.Read);
+            ZipArchive archive2 = await CreateZipArchive(async, ms2, ZipArchiveMode.Read);
+
+            ZipArchiveEntry entry1 = archive1.Entries[0];
+            ZipArchiveEntry entry2 = archive2.Entries[0];
+
+            byte[] contents1, contents2;
+
+            using (Stream stream1 = entry1.Open())
+            {
+                using var reader = new MemoryStream();
+                stream1.CopyTo(reader);
+                contents1 = reader.ToArray();
+            }
+
+            using (Stream stream2 = entry2.Open(FileAccess.Read))
+            {
+                using var reader = new MemoryStream();
+                stream2.CopyTo(reader);
+                contents2 = reader.ToArray();
+            }
+
+            Assert.Equal(contents1, contents2);
+
+            await DisposeZipArchive(async, archive1);
+            await DisposeZipArchive(async, archive2);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_MatchesParameterlessOpen_UpdateMode(bool async)
+        {
+            using MemoryStream ms1 = await StreamHelpers.CreateTempCopyStream(zfile("small.zip"));
+            using MemoryStream ms2 = await StreamHelpers.CreateTempCopyStream(zfile("small.zip"));
+
+            ZipArchive archive1 = await CreateZipArchive(async, ms1, ZipArchiveMode.Update);
+            ZipArchive archive2 = await CreateZipArchive(async, ms2, ZipArchiveMode.Update);
+
+            ZipArchiveEntry entry1 = archive1.Entries[0];
+            ZipArchiveEntry entry2 = archive2.Entries[0];
+
+            byte[] contents1, contents2;
+
+            using (Stream stream1 = entry1.Open())
+            {
+                Assert.True(stream1.CanRead);
+                Assert.True(stream1.CanWrite);
+                Assert.True(stream1.CanSeek);
+
+                using var reader = new MemoryStream();
+                stream1.CopyTo(reader);
+                contents1 = reader.ToArray();
+            }
+
+            using (Stream stream2 = entry2.Open(FileAccess.ReadWrite))
+            {
+                Assert.True(stream2.CanRead);
+                Assert.True(stream2.CanWrite);
+                Assert.True(stream2.CanSeek);
+
+                using var reader = new MemoryStream();
+                stream2.CopyTo(reader);
+                contents2 = reader.ToArray();
+            }
+
+            Assert.Equal(contents1, contents2);
+
+            await DisposeZipArchive(async, archive1);
+            await DisposeZipArchive(async, archive2);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_DisposedArchive_Throws(bool async)
+        {
+            using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+
+            ZipArchiveEntry entry = archive.GetEntry("first.txt");
+            Assert.NotNull(entry);
+
+            await DisposeZipArchive(async, archive);
+
+            Assert.Throws<ObjectDisposedException>(() => entry.Open(FileAccess.Read));
+        }
     }
 }
