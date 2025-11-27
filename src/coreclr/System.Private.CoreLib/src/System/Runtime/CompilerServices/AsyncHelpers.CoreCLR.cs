@@ -577,10 +577,7 @@ namespace System.Runtime.CompilerServices
                     ContinuationFlags.ContinueOnThreadPool |
                     ContinuationFlags.ContinueOnCapturedTaskScheduler;
 
-                // Note: One place that relies on these invariants is the path that deals with ValueTaskSource.
-                //       We have the asserts here though, since ValueTaskSource is a relatively rare scenario.
                 Debug.Assert((headContinuation.Flags & continueFlags) == 0);
-                Debug.Assert(headContinuation.Next != null);
 
                 TOps.SetContinuationState(task, headContinuation);
 
@@ -612,7 +609,10 @@ namespace System.Runtime.CompilerServices
                         // notifier is created we do not know yet if the caller wants to continue on a context.
                         ValueTaskSourceOnCompletedFlags configFlags = ValueTaskSourceOnCompletedFlags.None;
 
-                        // skip to a nontransparent continuation, if such exists.
+                        // Skip to a nontransparent/user continuation. Such continuaton must exist.
+                        // Since we see a VTS notifier, something was directly or indirectly
+                        // awaiting an async thunk for a ValueTask-returning method.
+                        // That can only happen in nontransparent/user code.
                         Continuation nextUserContinuation = headContinuation.Next!;
                         while ((nextUserContinuation.Flags & continueFlags) == 0 && nextUserContinuation.Next != null)
                         {
