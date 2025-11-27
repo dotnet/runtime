@@ -127,7 +127,7 @@ CONFIG_INTEGER(JitLongAddress, "JitLongAddress", 0) // Force using the large pse
 CONFIG_INTEGER(JitMaxUncheckedOffset, "JitMaxUncheckedOffset", 8)
 
 // Enable devirtualization for generic virtual methods
-CONFIG_INTEGER(JitEnableGenericVirtualDevirtualization, "JitEnableGenericVirtualDevirtualization", 1)
+RELEASE_CONFIG_INTEGER(JitEnableGenericVirtualDevirtualization, "JitEnableGenericVirtualDevirtualization", 1)
 
 //
 // MinOpts
