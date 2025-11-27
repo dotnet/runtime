@@ -613,8 +613,12 @@ private:
         if (tree->OperIs(GT_CALL))
         {
             GenTreeCall* call = tree->AsCall();
-            // TODO-CQ: Drop `call->gtCallType == CT_USER_FUNC` once we have GVM devirtualization
-            bool tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler) && (call->gtCallType == CT_USER_FUNC);
+            bool tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler);
+            if (tryLateDevirt && call->gtCallType == CT_INDIRECT)
+            {
+                // For indirect calls, we can only late devirt if it's a generic virtual method for now.
+                tryLateDevirt = call->IsGenericVirtual(m_compiler);
+            }
 
 #ifdef DEBUG
             tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization() == 1);
