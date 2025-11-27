@@ -95,29 +95,6 @@ HRESULT CCompRC::Init(LPCWSTR pResourceFile)
     return S_OK;
 }
 
-void CCompRC::SetResourceCultureCallbacks(
-        FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,
-        FPGETTHREADUICULTUREID fpGetThreadUICultureId)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_fpGetThreadUICultureNames = fpGetThreadUICultureNames;
-    m_fpGetThreadUICultureId = fpGetThreadUICultureId;
-}
-
-void CCompRC::GetResourceCultureCallbacks(
-        FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
-        FPGETTHREADUICULTUREID* fpGetThreadUICultureId)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if(fpGetThreadUICultureNames)
-        *fpGetThreadUICultureNames=m_fpGetThreadUICultureNames;
-
-    if(fpGetThreadUICultureId)
-        *fpGetThreadUICultureId=m_fpGetThreadUICultureId;
-}
-
 void CCompRC::Destroy()
 {
     CONTRACTL

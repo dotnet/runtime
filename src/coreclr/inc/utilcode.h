@@ -342,28 +342,6 @@ inline HRESULT OutOfMemory()
 }
 #endif
 
-//*****************************************************************************
-// Handle accessing localizable resource strings
-//*****************************************************************************
-typedef WCHAR LocaleIDValue[LOCALE_NAME_MAX_LENGTH];
-
-// Notes about the culture callbacks:
-// - The language we're operating in can change at *runtime*!
-// - A process may operate in *multiple* languages.
-//     (ex: Each thread may have it's own language)
-// - If we don't care what language we're in (or have no way of knowing),
-//     then return a 0-length name and UICULTUREID_DONTCARE for the culture ID.
-// - GetCultureName() and the GetCultureId() must be in sync (refer to the
-//     same language).
-// - We have two functions separate functions for better performance.
-//     - The name is used to resolve a directory for MsCorRC.dll.
-//     - The id is used as a key to map to a dll hinstance.
-
-// Callback to obtain both the culture name and the culture's parent culture name
-typedef HRESULT (*FPGETTHREADUICULTURENAMES)(__inout StringArrayList* pCultureNames);
-
-typedef int (*FPGETTHREADUICULTUREID)(LocaleIDValue*);
-
 HMODULE CLRLoadLibrary(LPCWSTR lpLibFileName);
 
 HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
@@ -372,19 +350,6 @@ BOOL CLRFreeLibrary(HMODULE hModule);
 
 // Load a string using the resources for the current module.
 STDAPI UtilLoadStringRC(UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax, int bQuiet=FALSE);
-
-// Specify callbacks so that UtilLoadStringRC can find out which language we're in.
-// If no callbacks specified (or both parameters are NULL), we default to the
-// resource dll in the root (which is probably english).
-void SetResourceCultureCallbacks(
-    FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,
-    FPGETTHREADUICULTUREID fpGetThreadUICultureId
-);
-
-void GetResourceCultureCallbacks(
-        FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
-        FPGETTHREADUICULTUREID* fpGetThreadUICultureId
-);
 
 //*****************************************************************************
 // Use this class by privately deriving from noncopyable to disallow copying of
@@ -452,13 +417,9 @@ public:
     }
  };
 
-#ifndef DACCESS_COMPILE
-void AddThreadPreferredUILanguages(StringArrayList* pArray);
-#endif
 //*****************************************************************************
 // CCompRC manages string Resource access for CLR. This includes loading
-// the MsCorRC.dll for resources as well allowing each thread to use a
-// a different localized version.
+// the MsCorRC.dll for resources. No localization is supported.
 //*****************************************************************************
 class CCompRC
 {
@@ -488,9 +449,6 @@ public:
     {
         // This constructor will be fired up on startup. Make sure it doesn't
         // do anything besides zero-out out values.
-        m_fpGetThreadUICultureId = NULL;
-        m_fpGetThreadUICultureNames = NULL;
-
         m_csMap = NULL;
         m_pResourceFile = NULL;
     }// CCompRC
@@ -500,42 +458,8 @@ public:
 
     HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
 
-    void SetResourceCultureCallbacks(
-        FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,
-        FPGETTHREADUICULTUREID fpGetThreadUICultureId
-    );
-
-    void GetResourceCultureCallbacks(
-        FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
-        FPGETTHREADUICULTUREID* fpGetThreadUICultureId
-    );
-
     // Get the default resource location (mscorrc.dll)
     static CCompRC* GetDefaultResourceDll();
-
-    static void GetDefaultCallbacks(
-                    FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
-                    FPGETTHREADUICULTUREID* fpGetThreadUICultureId)
-    {
-        WRAPPER_NO_CONTRACT;
-        m_DefaultResourceDll.GetResourceCultureCallbacks(
-                    fpGetThreadUICultureNames,
-                    fpGetThreadUICultureId);
-    }
-
-    static void SetDefaultCallbacks(
-                FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,
-                FPGETTHREADUICULTUREID fpGetThreadUICultureId)
-    {
-        WRAPPER_NO_CONTRACT;
-        // Either both are NULL or neither are NULL
-        _ASSERTE((fpGetThreadUICultureNames != NULL) ==
-                 (fpGetThreadUICultureId != NULL));
-
-        m_DefaultResourceDll.SetResourceCultureCallbacks(
-                fpGetThreadUICultureNames,
-                fpGetThreadUICultureId);
-    }
 
 private:
 // String resources packaged as PE files only exist on Windows
@@ -561,9 +485,6 @@ private:
     CRITSEC_COOKIE m_csMap;
 
     LPCWSTR m_pResourceFile;
-
-    FPGETTHREADUICULTUREID m_fpGetThreadUICultureId;
-    FPGETTHREADUICULTURENAMES m_fpGetThreadUICultureNames;
 };
 
 HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax);
