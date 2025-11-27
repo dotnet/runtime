@@ -613,13 +613,13 @@ namespace System.Runtime.CompilerServices
                         ValueTaskSourceOnCompletedFlags configFlags = ValueTaskSourceOnCompletedFlags.None;
 
                         // skip to a nontransparent continuation, if such exists.
-                        Continuation nextUserContinuaton = headContinuation.Next!;
-                        while ((nextUserContinuaton.Flags & continueFlags) == 0 && nextUserContinuaton.Next != null)
+                        Continuation nextUserContinuation = headContinuation.Next!;
+                        while ((nextUserContinuation.Flags & continueFlags) == 0 && nextUserContinuation.Next != null)
                         {
-                            nextUserContinuaton = nextUserContinuaton.Next;
+                            nextUserContinuation = nextUserContinuation.Next;
                         }
 
-                        ContinuationFlags continuationFlags = nextUserContinuaton.Flags;
+                        ContinuationFlags continuationFlags = nextUserContinuation.Flags;
                         const ContinuationFlags continueOnContextFlags =
                             ContinuationFlags.ContinueOnCapturedSynchronizationContext |
                             ContinuationFlags.ContinueOnCapturedTaskScheduler;
@@ -631,7 +631,7 @@ namespace System.Runtime.CompilerServices
                         }
 
                         // Clear continuation flags, so that continuation runs transparently
-                        nextUserContinuaton.Flags &= ~continueFlags;
+                        nextUserContinuation.Flags &= ~continueFlags;
                         TOps.ValueTaskSourceOnCompleted(task, vtsNotifier, configFlags);
                     }
                     else
