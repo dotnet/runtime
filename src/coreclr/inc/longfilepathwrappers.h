@@ -29,7 +29,7 @@ CreateFileWrapper(
 
 int u16_fopen_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode);
 
-MemoryMappedFile CreateMappedFileWrapper(const WCHAR* filename);
+MemoryMappedFile* CreateMappedFileWrapper(const WCHAR* filename);
 
 BOOL
 CopyFileExWrapper(

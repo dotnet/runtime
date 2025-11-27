@@ -140,15 +140,15 @@ void DisplayArchive(_In_z_ WCHAR* szFile, ULONG DumpFilter, _In_opt_z_ WCHAR* sz
     HRESULT     hr;
 	char		szString[1024];
 
-    MemoryMappedFile f = CreateMappedFile(szFile);
-    if (!f.Valid() || f.Size() >= UINT32_MAX)
+    MemoryMappedFile* f = CreateMappedFile(szFile);
+    if (f == nullptr || f->Size() >= UINT32_MAX)
     {
         MDInfo::Error("MapViewOfFile failed!");
         return;
     }
 
-    pbMapAddress = (PBYTE)f.Address();
-    dwFileSize = (DWORD)f.Size();
+    pbMapAddress = (PBYTE)f->Address();
+    dwFileSize = (DWORD)f->Size();
     pbStartAddress = pbMapAddress;
 
     // Verify and skip archive signature.
@@ -211,6 +211,8 @@ void DisplayArchive(_In_z_ WCHAR* szFile, ULONG DumpFilter, _In_opt_z_ WCHAR* sz
         // Skip past the object file.
         pbMapAddress = SkipMember(pbMapAddress);
     }
+
+    delete f;
 } // void DisplayArchive()
 
 // DisplayFile() function

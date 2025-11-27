@@ -97,6 +97,7 @@ class MappedFileStream : public ReadStream {
 public:
     MappedFileStream(_In_ __nullterminated WCHAR* wFileName)
         : m_fileNameUtf8(NULL)
+        , m_File(nullptr)
         , m_FileSize(0)
     {
         m_pStart = open(wFileName);
@@ -112,6 +113,8 @@ public:
     }
     ~MappedFileStream()
     {
+        if (m_File)
+            delete m_File;
         if (m_fileNameUtf8 != NULL)
             delete [] m_fileNameUtf8;
     }
@@ -164,15 +167,18 @@ private:
             return NULL;
 
         m_File = CreateMappedFile(moduleName);
-        if (m_File.Size() > UINT_MAX)
-            m_File = MemoryMappedFile();
+        if (m_File->Size() > UINT_MAX)
+        {
+            delete m_File;
+            m_File = nullptr;
+        }
 
-        m_FileSize = (DWORD)m_File.Size();
-        return (char*)m_File.Address();
+        m_FileSize = (DWORD)m_File->Size();
+        return (char*)m_File->Address();
     }
 
     char*	m_fileNameUtf8; // FileName (for error reporting)
-    MemoryMappedFile m_File; // File we are reading from
+    MemoryMappedFile* m_File; // File we are reading from
     DWORD   m_FileSize;
     char*   m_pStart;
     char*   m_pEnd;

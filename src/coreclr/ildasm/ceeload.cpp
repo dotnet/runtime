@@ -17,6 +17,7 @@
 /*************************************************************************************/
 PELoader::PELoader()
 {
+    m_File = nullptr;
     m_hMod = NULL;
     m_pNT64 = NULL;
     m_bIsPE32 = FALSE;
@@ -34,7 +35,8 @@ PELoader::~PELoader()
 /*************************************************************************************/
 void PELoader::close()
 {
-    m_File = MemoryMappedFile();
+    delete m_File;
+    m_File = nullptr;
 }
 
 BOOL PELoader::open(const WCHAR* moduleName)
@@ -46,11 +48,12 @@ BOOL PELoader::open(const WCHAR* moduleName)
         return FALSE;
 
     m_File = CreateMappedFile(moduleName);
-    m_FileSize = m_File.Size();
-
-    newhMod = (HMODULE)m_File.Address();
-    if (newhMod == NULL)
+    if (m_File == nullptr)
         return FALSE;
+
+    m_FileSize = m_File->Size();
+
+    newhMod = (HMODULE)m_File->Address();
    return open(newhMod);
 }
 

@@ -16,8 +16,7 @@ class MemoryMappedFile
     HANDLE m_hFile;
     HANDLE m_hFileMapping;
 #endif
-
-public:
+    
     MemoryMappedFile()
         : m_size(0)
         , m_address(nullptr)
@@ -28,18 +27,15 @@ public:
     {
     }
 
-    MemoryMappedFile(const WCHAR* path);
+public:
+    static MemoryMappedFile* Open(const WCHAR* path);
     ~MemoryMappedFile();
     
     MemoryMappedFile(const MemoryMappedFile&) = delete;
     MemoryMappedFile& operator=(const MemoryMappedFile&) = delete;
 
-    MemoryMappedFile(MemoryMappedFile&&) noexcept = default;
-    MemoryMappedFile& operator=(MemoryMappedFile&&) noexcept = default;
-
     void* Address() { return m_address; }
     size_t Size() { return m_size; }
-    bool Valid() { return m_address != nullptr; }
 };
 
 #endif // DN_MEMMAP_H

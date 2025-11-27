@@ -5,49 +5,36 @@
 #include <dn-memmap.h>
 #include <minipal/utils.h>
 
-MemoryMappedFile::MemoryMappedFile(const WCHAR* path)
-: m_size(0)
-, m_address(nullptr)
-, m_hFile(NULL)
-, m_hFileMapping(NULL)
+MemoryMappedFile* MemoryMappedFile::Open(const WCHAR* path)
 {
-    HANDLE hFile = NULL;
-    HANDLE hFileMapping = NULL;
-    void* address = nullptr;
+    MemoryMappedFile* result = new MemoryMappedFile();
 
-    hFile = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if (hFile == NULL)
+    result->m_hFile = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    if (result->m_hFile == NULL)
         goto Fail;
 
     LARGE_INTEGER size;
-    if (!GetFileSizeEx(hFile, &size))
+    if (!GetFileSizeEx(result->m_hFile, &size))
         goto Fail;
 
     if (size.QuadPart > SIZE_MAX)
         goto Fail;
 
-    hFileMapping = CreateFileMappingW(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-    if (hFileMapping == NULL)
+    result->m_size = (size_t)size.QuadPart;
+
+    result->m_hFileMapping = CreateFileMappingW(result->m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+    if (result->m_hFileMapping == NULL)
         goto Fail;
 
-    address = MapViewOfFile(hFileMapping, FILE_MAP_READ, 0, 0, 0);
-    if (address == nullptr)
+    result->m_address = MapViewOfFile(result->m_hFileMapping, FILE_MAP_READ, 0, 0, 0);
+    if (result->m_address == nullptr)
         goto Fail;
 
-    m_hFile = hFile;
-    m_hFileMapping = hFileMapping;
-    m_address = address;
-    m_size = (size_t)size.QuadPart;
-    return;
+    return result;
 
 Fail:
-    int error = GetLastError();
-    if (address != nullptr)
-        UnmapViewOfFile(address);
-    if (hFileMapping != NULL)
-        CloseHandle(hFileMapping);
-    if (hFile != NULL)
-        CloseHandle(hFile);
+    delete result;
+    return nullptr;
 }
 
 MemoryMappedFile::~MemoryMappedFile()

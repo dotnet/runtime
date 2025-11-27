@@ -48,7 +48,7 @@
 #define WszLoadLibrary         LoadLibraryExW
 #define WszCreateFile          CreateFileW
 #define fopen_lp               u16_fopen_s
-#define CreateMappedFile       MemoryMappedFile
+#define CreateMappedFile       MemoryMappedFile::Open
 #endif // HOST_WINDOWS
 
 //APIS which have a buffer as an out parameter

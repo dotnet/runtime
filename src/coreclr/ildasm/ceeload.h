@@ -35,7 +35,7 @@ class PELoader {
   protected:
 
     HMODULE m_hMod;
-    MemoryMappedFile m_File;
+    MemoryMappedFile* m_File;
     BOOL   m_bIsPE32;
     size_t m_FileSize;
     size_t m_FileSizeAligned;

@@ -12,9 +12,7 @@ typedef char16_t WCHAR;
 #include <sys/mman.h>
 #include <sys/stat.h>
 
-MemoryMappedFile::MemoryMappedFile(const WCHAR* path)
-: m_size(0)
-, m_address(nullptr)
+MemoryMappedFile* MemoryMappedFile::Open(const WCHAR* path)
 {
     size_t pathLen = u16_strlen(path);
     size_t pathU8Len = minipal_get_length_utf16_to_utf8((CHAR16_T*)path, pathLen, 0);
@@ -23,6 +21,7 @@ MemoryMappedFile::MemoryMappedFile(const WCHAR* path)
     pathU8[ret] = '\0';
 
     void* address = nullptr;
+    MemoryMappedFile* result = nullptr;
 
     int fd = open(pathU8, O_RDONLY);
     delete[] pathU8;
@@ -43,14 +42,16 @@ MemoryMappedFile::MemoryMappedFile(const WCHAR* path)
     if (address == MAP_FAILED)
         goto Fail;
     
-    m_address = address;
-    m_size = (size_t)st.st_size;
     close(fd);
-    return;
+    result = new MemoryMappedFile();
+    result->m_address = address;
+    result->m_size = (size_t)st.st_size;
+    return result;
 
 Fail:
     if (fd != -1)
         close(fd);
+    return nullptr;
 }
 
 MemoryMappedFile::~MemoryMappedFile()
