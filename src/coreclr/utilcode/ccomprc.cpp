@@ -193,7 +193,7 @@ CCompRC* CCompRC::GetDefaultResourceDll()
 
 // String resources packaged as PE files only exist on Windows
 #ifdef HOST_WINDOWS
-HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
+HRESULT CCompRC::GetLibrary(HRESOURCEDLL* phInst)
 {
     CONTRACTL
     {
@@ -281,32 +281,6 @@ HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
 //*****************************************************************************
 HRESULT CCompRC::LoadString(ResourceCategory eCategory, UINT iResourceID, _Out_writes_(iMax) LPWSTR szBuffer, int iMax,  int *pcwchUsed)
 {
-    WRAPPER_NO_CONTRACT;
-    LocaleIDValue langIdValue;
-    LocaleID langId;
-    // Must resolve current thread's langId to a dll.
-    if(m_fpGetThreadUICultureId) {
-        int ret = (*m_fpGetThreadUICultureId)(&langIdValue);
-
-        // Callback can't return 0, since that indicates empty.
-        // To indicate empty, callback should return UICULTUREID_DONTCARE
-        _ASSERTE(ret != 0);
-
-        if (ret == 0)
-            return E_UNEXPECTED;
-        langId=langIdValue;
-
-    }
-    else {
-        langId = UICULTUREID_DONTCARE;
-    }
-
-
-    return LoadString(eCategory, langId, iResourceID, szBuffer, iMax, pcwchUsed);
-}
-
-HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iResourceID, _Out_writes_(iMax) LPWSTR szBuffer, int iMax, int *pcwchUsed)
-{
 #ifdef DBI_COMPONENT_MONO
     return E_NOTIMPL;
 #else
@@ -325,7 +299,7 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
     HRESOURCEDLL    hInst = 0; //instance of cultured resource dll
     int length;
 
-    hr = GetLibrary(langId, &hInst);
+    hr = GetLibrary(&hInst);
 
     if (SUCCEEDED(hr))
     {

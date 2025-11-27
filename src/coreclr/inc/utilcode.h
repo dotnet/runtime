@@ -345,7 +345,6 @@ inline HRESULT OutOfMemory()
 //*****************************************************************************
 // Handle accessing localizable resource strings
 //*****************************************************************************
-typedef LPCWSTR LocaleID;
 typedef WCHAR LocaleIDValue[LOCALE_NAME_MAX_LENGTH];
 
 // Notes about the culture callbacks:
@@ -362,7 +361,6 @@ typedef WCHAR LocaleIDValue[LOCALE_NAME_MAX_LENGTH];
 
 // Callback to obtain both the culture name and the culture's parent culture name
 typedef HRESULT (*FPGETTHREADUICULTURENAMES)(__inout StringArrayList* pCultureNames);
-const LPCWSTR UICULTUREID_DONTCARE = NULL;
 
 typedef int (*FPGETTHREADUICULTUREID)(LocaleIDValue*);
 
@@ -501,7 +499,6 @@ public:
     void Destroy();
 
     HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
-    HRESULT LoadString(ResourceCategory eCategory, LocaleID langId, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax, int *pcwchUsed);
 
     void SetResourceCultureCallbacks(
         FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,
@@ -543,7 +540,7 @@ public:
 private:
 // String resources packaged as PE files only exist on Windows
 #ifdef HOST_WINDOWS
-    HRESULT GetLibrary(LocaleID langId, HRESOURCEDLL* phInst);
+    HRESULT GetLibrary(HRESOURCEDLL* phInst);
 #ifndef DACCESS_COMPILE
     HRESULT LoadLibraryHelper(HRESOURCEDLL *pHInst,
                               SString& rcPath);
