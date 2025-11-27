@@ -679,4 +679,214 @@ namespace System.IO.Compression
             await base.DisposeAsync().ConfigureAwait(false);
         }
     }
+
+    internal sealed class CrcValidatingReadStream : Stream
+    {
+        private readonly Stream _baseStream;
+        private uint _runningCrc;
+        private readonly uint _expectedCrc;
+        private long _totalBytesRead;
+        private readonly long _expectedLength;
+        private bool _isDisposed;
+
+        public CrcValidatingReadStream(Stream baseStream, uint expectedCrc, long expectedLength)
+        {
+            _baseStream = baseStream;
+            _expectedCrc = expectedCrc;
+            _expectedLength = expectedLength;
+            _runningCrc = 0;
+            _totalBytesRead = 0;
+        }
+
+        public override bool CanRead => !_isDisposed && _baseStream.CanRead;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+
+        public override long Length => _baseStream.Length;
+
+        public override long Position
+        {
+            get => _baseStream.Position;
+            set => throw new NotSupportedException(SR.SeekingNotSupported);
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            ThrowIfDisposed();
+            ValidateBufferArguments(buffer, offset, count);
+
+            int bytesRead = _baseStream.Read(buffer, offset, count);
+
+            if (bytesRead > 0)
+            {
+                _runningCrc = Crc32Helper.UpdateCrc32(_runningCrc, buffer, offset, bytesRead);
+                _totalBytesRead += bytesRead;
+            }
+            else if (bytesRead == 0)
+            {
+                // End of stream reached, validate CRC
+                ValidateCrc();
+            }
+
+            return bytesRead;
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
+            ThrowIfDisposed();
+
+            int bytesRead = _baseStream.Read(buffer);
+
+            if (bytesRead > 0)
+            {
+                _runningCrc = Crc32Helper.UpdateCrc32(_runningCrc, buffer.Slice(0, bytesRead));
+                _totalBytesRead += bytesRead;
+            }
+            else if (bytesRead == 0)
+            {
+                // End of stream reached, validate CRC
+                ValidateCrc();
+            }
+
+            return bytesRead;
+        }
+
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            ValidateBufferArguments(buffer, offset, count);
+
+            int bytesRead = await _baseStream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
+
+            if (bytesRead > 0)
+            {
+                _runningCrc = Crc32Helper.UpdateCrc32(_runningCrc, buffer, offset, bytesRead);
+                _totalBytesRead += bytesRead;
+            }
+            else if (bytesRead == 0)
+            {
+                // End of stream reached, validate CRC
+                ValidateCrc();
+            }
+
+            return bytesRead;
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+
+            int bytesRead = await _baseStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+            if (bytesRead > 0)
+            {
+                _runningCrc = Crc32Helper.UpdateCrc32(_runningCrc, buffer.Span.Slice(0, bytesRead));
+                _totalBytesRead += bytesRead;
+            }
+            else if (bytesRead == 0)
+            {
+                // End of stream reached, validate CRC
+                ValidateCrc();
+            }
+
+            return bytesRead;
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.WritingNotSupported);
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.WritingNotSupported);
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.WritingNotSupported);
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.WritingNotSupported);
+        }
+
+        public override void Flush()
+        {
+            ThrowIfDisposed();
+            _baseStream.Flush();
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            return _baseStream.FlushAsync(cancellationToken);
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.SeekingNotSupported);
+        }
+
+        public override void SetLength(long value)
+        {
+            ThrowIfDisposed();
+            throw new NotSupportedException(SR.SetLengthRequiresSeekingAndWriting);
+        }
+
+        private void ValidateCrc()
+        {
+            if (_totalBytesRead == _expectedLength && _runningCrc != _expectedCrc)
+            {
+                throw new InvalidDataException(
+                    $"CRC mismatch. Expected: 0x{_expectedCrc:X8}, Got: 0x{_runningCrc:X8}");
+            }
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException(GetType().ToString(), SR.HiddenStreamName);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && !_isDisposed)
+            {
+                // Validate CRC when stream is closed (if all data was read)
+                if (_totalBytesRead == _expectedLength && _runningCrc != _expectedCrc)
+                {
+                    throw new InvalidDataException(
+                        $"CRC mismatch. Expected: 0x{_expectedCrc:X8}, Got: 0x{_runningCrc:X8}");
+                }
+
+                _baseStream.Dispose();
+                _isDisposed = true;
+            }
+            base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            if (!_isDisposed)
+            {
+                // Validate CRC when stream is closed (if all data was read)
+                if (_totalBytesRead == _expectedLength && _runningCrc != _expectedCrc)
+                {
+                    throw new InvalidDataException(
+                        $"CRC mismatch. Expected: 0x{_expectedCrc:X8}, Got: 0x{_runningCrc:X8}");
+                }
+
+                await _baseStream.DisposeAsync().ConfigureAwait(false);
+                _isDisposed = true;
+            }
+            await base.DisposeAsync().ConfigureAwait(false);
+        }
+    }
 }

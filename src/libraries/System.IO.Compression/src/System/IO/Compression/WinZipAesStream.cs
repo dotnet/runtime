@@ -14,8 +14,6 @@ namespace System.IO.Compression
         private readonly Stream _baseStream;
         private readonly bool _encrypting;
         private readonly int _keySizeBits;
-        private readonly bool _ae2;
-        private readonly uint? _crc32ForHeader;
         private readonly Aes _aes;
         private ICryptoTransform? _aesEncryptor;
 #pragma warning disable CA1416 // HMACSHA1 is available on all platforms
@@ -37,8 +35,7 @@ namespace System.IO.Compression
         private readonly bool _leaveOpen;
         private readonly MemoryStream? _encryptionBuffer;
 
-
-        public WinZipAesStream(Stream baseStream, ReadOnlyMemory<char> password, bool encrypting, int keySizeBits = 256, bool ae2 = true, uint? crc32 = null, long totalStreamSize = -1, bool leaveOpen = false)
+        public WinZipAesStream(Stream baseStream, ReadOnlyMemory<char> password, bool encrypting, int keySizeBits = 256, long totalStreamSize = -1, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(baseStream);
 
@@ -47,8 +44,6 @@ namespace System.IO.Compression
             _password = password;
             _encrypting = encrypting;
             _keySizeBits = keySizeBits;
-            _ae2 = ae2;
-            _crc32ForHeader = crc32;
             _totalStreamSize = totalStreamSize; // Store the total size
             _bytesReadFromBase = 0;
             _leaveOpen = leaveOpen;
@@ -138,6 +133,29 @@ namespace System.IO.Compression
                 // Read the 10-byte stored authentication code from the stream
                 byte[] storedAuth = new byte[10];
                 _baseStream.ReadExactly(storedAuth);
+
+                // Compare the first 10 bytes of the expected hash
+                if (!storedAuth.AsSpan().SequenceEqual(expectedAuth.AsSpan(0, 10)))
+                    throw new InvalidDataException("Authentication code mismatch.");
+            }
+
+            _authCodeValidated = true;
+        }
+
+        private async Task ValidateAuthCodeAsync(CancellationToken cancellationToken)
+        {
+            if (_encrypting || _authCodeValidated)
+                return;
+
+            // Finalize HMAC computation
+            _hmac.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+            byte[]? expectedAuth = _hmac.Hash;
+
+            if (expectedAuth is not null)
+            {
+                // Read the 10-byte stored authentication code from the stream
+                byte[] storedAuth = new byte[10];
+                await _baseStream.ReadExactlyAsync(storedAuth, cancellationToken).ConfigureAwait(false);
 
                 // Compare the first 10 bytes of the expected hash
                 if (!storedAuth.AsSpan().SequenceEqual(expectedAuth.AsSpan(0, 10)))
@@ -292,7 +310,6 @@ namespace System.IO.Compression
 
             Debug.WriteLine($"Final counter after processing: {BitConverter.ToString(_counterBlock)}");
         }
-
 
         private void IncrementCounter()
         {
@@ -540,7 +557,7 @@ namespace System.IO.Compression
                 {
                     if (!_authCodeValidated)
                     {
-                        ValidateAuthCode();
+                        await ValidateAuthCodeAsync(cancellationToken).ConfigureAwait(false);
                     }
                     return 0;
                 }
@@ -552,7 +569,7 @@ namespace System.IO.Compression
             {
                 if (!_authCodeValidated && _totalStreamSize > 0)
                 {
-                    ValidateAuthCode();
+                    await ValidateAuthCodeAsync(cancellationToken).ConfigureAwait(false);
                 }
                 return 0;
             }
@@ -571,7 +588,7 @@ namespace System.IO.Compression
             }
             else if (!_authCodeValidated)
             {
-                ValidateAuthCode();
+                await ValidateAuthCodeAsync(cancellationToken).ConfigureAwait(false);
             }
 
             return n;
@@ -605,6 +622,11 @@ namespace System.IO.Compression
                         {
                             _baseStream.Flush();
                         }
+                    }
+                    else if (!_encrypting && !_authCodeValidated && _headerRead)
+                    {
+                        // For decryption, validate auth code and CRC if not already done
+                        ValidateAuthCode();
                     }
                 }
                 finally
@@ -656,6 +678,11 @@ namespace System.IO.Compression
                     {
                         await _baseStream.FlushAsync(CancellationToken.None).ConfigureAwait(false);
                     }
+                }
+                else if (!_encrypting && !_authCodeValidated && _headerRead)
+                {
+                    // For decryption, validate auth code and CRC if not already done
+                    await ValidateAuthCodeAsync(CancellationToken.None).ConfigureAwait(false);
                 }
             }
             finally

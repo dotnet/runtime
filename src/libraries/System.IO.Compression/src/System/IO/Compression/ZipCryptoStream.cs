@@ -250,8 +250,6 @@ namespace System.IO.Compression
             return plain;
         }
 
-        // ---- Stream overrides ----
-
         public override bool CanRead => !_encrypting;
         public override bool CanSeek => false;
         public override bool CanWrite => _encrypting;
@@ -322,6 +320,16 @@ namespace System.IO.Compression
             base.Dispose(disposing);
         }
 
+        public override async ValueTask DisposeAsync()
+        {
+            // If encrypted empty entry (no payload written), still must emit 12-byte header:
+            if (_encrypting && !_headerWritten)
+                await EnsureHeaderAsync(CancellationToken.None).ConfigureAwait(false);
+            if (!_leaveOpen)
+                await _base.DisposeAsync().ConfigureAwait(false);
+            await base.DisposeAsync().ConfigureAwait(false);
+        }
+
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
@@ -356,7 +364,7 @@ namespace System.IO.Compression
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            EnsureHeader();
+            await EnsureHeaderAsync(cancellationToken).ConfigureAwait(false);
 
             byte[] tmp = new byte[buffer.Length];
             ReadOnlySpan<byte> span = buffer.Span;
@@ -375,18 +383,6 @@ namespace System.IO.Compression
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             return _base.FlushAsync(cancellationToken);
-        }
-
-        public override async ValueTask DisposeAsync()
-        {
-            // If encrypted empty entry (no payload written), still must emit 12-byte header:
-            if (_encrypting && !_headerWritten)
-                EnsureHeader();
-
-            if (!_leaveOpen)
-                await _base.DisposeAsync().ConfigureAwait(false);
-
-            await base.DisposeAsync().ConfigureAwait(false);
         }
 
         private static uint Crc32Update(uint crc, byte b)

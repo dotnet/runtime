@@ -671,11 +671,12 @@ namespace System.IO.Compression
             return TrySkipBlockFinalize(stream, blockBytes, bytesRead);
         }
 
-        public static bool TrySkipBlockAESAware(Stream stream, out byte? aesStrength, out ushort? originalCompressionMethod, out ushort? aesVersion)
+        public static bool TrySkipBlockAESAware(Stream stream, out byte? aesStrength, out ushort? originalCompressionMethod, out ushort? aesVersion, out uint? crc32)
         {
             aesStrength = null;
             originalCompressionMethod = null;
             aesVersion = null;
+            crc32 = null;
             BinaryReader reader = new BinaryReader(stream);
 
             // Read the first 4 bytes (local file header signature)
@@ -684,12 +685,16 @@ namespace System.IO.Compression
             {
                 return false; // Not a valid local file header
             }
+
             // Read fixed-size fields after signature
             // Local file header layout:
             // signature (4) + version (2) + flags (2) + compression (2) +
             // mod time (2) + mod date (2) + CRC32 (4) + compressed size (4) +
             // uncompressed size (4) + name length (2) + extra length (2)
-            reader.ReadBytes(22); // Skip version through sizes
+
+            reader.ReadBytes(10); // Skip version through mod date
+            crc32 = reader.ReadUInt32(); // Read CRC32
+            reader.ReadBytes(8); // Skip compressed and uncompressed sizes
             ushort nameLength = reader.ReadUInt16();
             ushort extraLength = reader.ReadUInt16();
 
@@ -721,7 +726,6 @@ namespace System.IO.Compression
 
             return true;
         }
-
     }
 
     internal sealed partial class ZipCentralDirectoryFileHeader

@@ -237,7 +237,6 @@ namespace System.IO.Compression.Tests
         public void ExtractEncryptedEntryToFile_ShouldCreatePlaintextFile()
         {
 
-
             string ZipPath = @"C:\Users\spahontu\Downloads\test.zip";
             string EntryName = "hello.txt";
             string CorrectPassword = "123456789";
@@ -694,7 +693,309 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [Fact]
+        public async Task ZipCrypto_AsyncWrite_ThenAsyncRead_ContentMatches()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string zipPath = NewPath("zipcrypto_async_test.zip");
+            const string entryName = "async_test.txt";
+            const string password = "AsyncP@ss123";
+            const string expectedContent = "This is async ZipCrypto content";
 
+            if (File.Exists(zipPath)) File.Delete(zipPath);
+
+            // Act 1: Create archive with async write
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            {
+                var entry = za.CreateEntry(entryName);
+                using var stream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+
+                byte[] data = Encoding.UTF8.GetBytes(expectedContent);
+                await stream.WriteAsync(data, 0, data.Length);
+                await stream.FlushAsync();
+            }
+
+            // Act 2: Read back with async read
+            string actualContent;
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+            {
+                var entry = za.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                using var stream = entry!.Open(password);
+                using var reader = new StreamReader(stream, Encoding.UTF8);
+                actualContent = await reader.ReadToEndAsync();
+            }
+
+            // Assert
+            Assert.Equal(expectedContent, actualContent);
+        }
+
+        [Fact]
+        public async Task ZipCrypto_MultipleAsyncWrites_SingleEntry_ContentMatches()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string zipPath = NewPath("zipcrypto_multi_write.zip");
+            const string entryName = "multi_write.txt";
+            const string password = "MultiWrite123";
+
+            var parts = new[] { "Part1-", "Part2-", "Part3" };
+            string expectedContent = string.Concat(parts);
+
+            if (File.Exists(zipPath)) File.Delete(zipPath);
+
+            // Act 1: Create with multiple async writes
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            {
+                var entry = za.CreateEntry(entryName);
+                using var stream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+
+                foreach (var part in parts)
+                {
+                    byte[] data = Encoding.UTF8.GetBytes(part);
+                    await stream.WriteAsync(data, 0, data.Length);
+                }
+                await stream.FlushAsync();
+            }
+
+            // Act 2: Read back
+            string actualContent;
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+            {
+                var entry = za.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                using var reader = new StreamReader(entry!.Open(password), Encoding.UTF8);
+                actualContent = await reader.ReadToEndAsync();
+            }
+
+            // Assert
+            Assert.Equal(expectedContent, actualContent);
+        }
+
+        [Fact]
+        public async Task ZipCrypto_ChunkedAsyncRead_ContentMatches()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string zipPath = NewPath("zipcrypto_chunked_read.zip");
+            const string entryName = "chunked.txt";
+            const string password = "ChunkedRead!";
+
+            // Create larger content
+            string expectedContent = string.Concat(Enumerable.Repeat("0123456789ABCDEF", 100));
+
+            if (File.Exists(zipPath)) File.Delete(zipPath);
+
+            // Act 1: Create entry
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            {
+                var entry = za.CreateEntry(entryName);
+                using var writer = new StreamWriter(entry.Open(password, ZipArchiveEntry.EncryptionMethod.ZipCrypto), Encoding.UTF8);
+                await writer.WriteAsync(expectedContent);
+            }
+
+            // Act 2: Read in chunks asynchronously using StreamReader to handle BOM properly
+            string actualContent;
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+            {
+                var entry = za.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                using var stream = entry!.Open(password);
+                using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+                actualContent = await reader.ReadToEndAsync();
+            }
+
+            // Assert
+            Assert.Equal(expectedContent, actualContent);
+        }
+
+        [Fact]
+        public async Task ZipCrypto_MixedSyncAsyncOperations_ContentMatches()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string zipPath = NewPath("zipcrypto_mixed_ops.zip");
+            const string syncEntryName = "sync.txt";
+            const string asyncEntryName = "async.txt";
+            const string password = "MixedOps123";
+            const string syncContent = "Synchronous write content";
+            const string asyncContent = "Asynchronous write content";
+
+            if (File.Exists(zipPath)) File.Delete(zipPath);
+
+            // Act 1: Create with mixed sync/async writes
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            {
+                // Synchronous write
+                var syncEntry = za.CreateEntry(syncEntryName);
+                using (var syncWriter = new StreamWriter(syncEntry.Open(password, ZipArchiveEntry.EncryptionMethod.ZipCrypto), Encoding.UTF8))
+                {
+                    syncWriter.Write(syncContent);
+                }
+
+                // Asynchronous write
+                var asyncEntry = za.CreateEntry(asyncEntryName);
+                using (var asyncWriter = new StreamWriter(asyncEntry.Open(password, ZipArchiveEntry.EncryptionMethod.ZipCrypto), Encoding.UTF8))
+                {
+                    await asyncWriter.WriteAsync(asyncContent);
+                }
+            }
+
+            // Act 2: Read with mixed sync/async reads
+            string actualSyncContent, actualAsyncContent;
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+            {
+                // Async read of sync-written entry
+                var syncEntry = za.GetEntry(syncEntryName);
+                Assert.NotNull(syncEntry);
+                using (var reader1 = new StreamReader(syncEntry!.Open(password), Encoding.UTF8))
+                {
+                    actualSyncContent = await reader1.ReadToEndAsync();
+                }
+
+                // Sync read of async-written entry
+                var asyncEntry = za.GetEntry(asyncEntryName);
+                Assert.NotNull(asyncEntry);
+                using (var reader2 = new StreamReader(asyncEntry!.Open(password), Encoding.UTF8))
+                {
+                    actualAsyncContent = reader2.ReadToEnd();
+                }
+            }
+
+            // Assert
+            Assert.Equal(syncContent, actualSyncContent);
+            Assert.Equal(asyncContent, actualAsyncContent);
+        }
+
+        [Fact]
+        public async Task ZipCrypto_LargeFileAsyncOperations_ContentMatches()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string zipPath = NewPath("zipcrypto_large_async.zip");
+            const string entryName = "large.bin";
+            const string password = "LargeFile123";
+
+            // Create 1MB of random data
+            var random = new Random(42);
+            var expectedData = new byte[1024 * 1024];
+            random.NextBytes(expectedData);
+
+            if (File.Exists(zipPath)) File.Delete(zipPath);
+
+            // Act 1: Write large data asynchronously
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            {
+                var entry = za.CreateEntry(entryName);
+                using var stream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+
+                // Write in 64KB chunks
+                const int chunkSize = 65536;
+                for (int offset = 0; offset < expectedData.Length; offset += chunkSize)
+                {
+                    int count = Math.Min(chunkSize, expectedData.Length - offset);
+                    await stream.WriteAsync(expectedData, offset, count);
+                }
+                await stream.FlushAsync();
+            }
+
+            // Act 2: Read large data asynchronously
+            byte[] actualData;
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+            {
+                var entry = za.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                using var stream = entry!.Open(password);
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                actualData = ms.ToArray();
+            }
+
+            // Assert
+            Assert.Equal(expectedData.Length, actualData.Length);
+            Assert.Equal(expectedData, actualData);
+        }
+
+        [Fact]
+        public async Task ZipCrypto_StreamCopyToAsync_ContentMatches()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string zipPath = NewPath("zipcrypto_copyto.zip");
+            const string entryName = "copyto.dat";
+            const string password = "CopyTo123!";
+
+            var expectedData = new byte[32768];
+            new Random(123).NextBytes(expectedData);
+
+            if (File.Exists(zipPath)) File.Delete(zipPath);
+
+            // Act 1: Write using CopyToAsync
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            {
+                var entry = za.CreateEntry(entryName);
+                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+                using var sourceStream = new MemoryStream(expectedData);
+
+                await sourceStream.CopyToAsync(entryStream);
+            }
+
+            // Act 2: Read using CopyToAsync
+            byte[] actualData;
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+            {
+                var entry = za.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                using var entryStream = entry!.Open(password);
+                using var destStream = new MemoryStream();
+
+                await entryStream.CopyToAsync(destStream);
+                actualData = destStream.ToArray();
+            }
+
+            // Assert
+            Assert.Equal(expectedData, actualData);
+        }
+
+        [Fact]
+        public async Task ZipCrypto_AsyncWithWrongPassword_ThrowsInvalidDataException()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string zipPath = NewPath("zipcrypto_wrong_pw_async.zip");
+            const string entryName = "secure.txt";
+            const string correctPassword = "Correct123";
+            const string wrongPassword = "Wrong123";
+            const string content = "Secret content";
+
+            if (File.Exists(zipPath)) File.Delete(zipPath);
+
+            // Create encrypted entry
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            {
+                var entry = za.CreateEntry(entryName);
+                using var writer = new StreamWriter(entry.Open(correctPassword, ZipArchiveEntry.EncryptionMethod.ZipCrypto), Encoding.UTF8);
+                await writer.WriteAsync(content);
+            }
+
+            // Act & Assert - Try to read with wrong password
+            await Assert.ThrowsAsync<InvalidDataException>(async () =>
+            {
+                using var za = ZipFile.Open(zipPath, ZipArchiveMode.Read);
+                var entry = za.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                using var stream = entry!.Open(wrongPassword);
+                byte[] buffer = new byte[100];
+                await stream.ReadAsync(buffer, 0, buffer.Length);
+            });
+        }
 
         [Fact]
         public async Task Update_AddEncryptedEntry_RoundTrip()
@@ -1896,6 +2197,27 @@ namespace System.IO.Compression.Tests
                     }
                 }
             }
+        }
+
+        [Fact]
+        public void OpenAESEncryptedTxtFile_AE1_ShouldReturnPlaintext()
+        {
+            // Arrange
+            string zipPath = Path.Join(DownloadsDir, "source_plain_ae1.zip");
+            const string entryName = "source_plain.txt";
+            const string password = "123456789";
+            const string expectedContent = "this is plain";
+
+            // Act
+            using var archive = ZipFile.OpenRead(zipPath);
+            var entry = archive.Entries.First(e => e.FullName.EndsWith(entryName));
+
+            using var stream = entry.Open(password);
+            using var reader = new StreamReader(stream);
+            string actualContent = reader.ReadToEnd();
+
+            // Assert
+            Assert.Equal(expectedContent, actualContent);
         }
 
         [Fact]

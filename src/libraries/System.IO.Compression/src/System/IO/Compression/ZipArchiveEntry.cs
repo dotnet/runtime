@@ -446,7 +446,7 @@ namespace System.IO.Compression
                 else
                 {
                     // AES case
-                    if (!ZipLocalFileHeader.TrySkipBlockAESAware(_archive.ArchiveStream, out _, out _, out _))
+                    if (!ZipLocalFileHeader.TrySkipBlockAESAware(_archive.ArchiveStream, out _, out _, out _, out _))
                         throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
 
                     baseOffset = _archive.ArchiveStream.Position;
@@ -954,21 +954,27 @@ namespace System.IO.Compression
                     EncryptionMethod.Aes128 => 128,
                     EncryptionMethod.Aes192 => 192,
                     EncryptionMethod.Aes256 => 256,
-                    _ => 256 // Default to AES-256
+                    _ => 256 // default for aes
                 };
 
-                // AES implementation placeholder as indicated in the original code
-                // When AES is implemented, create the appropriate decryption stream here
                 streamToDecompress = new WinZipAesStream(
                     baseStream: compressedStream,
                     password: password,
-                    encrypting: false,      // false for decryption
+                    encrypting: false,
                     keySizeBits: keySizeBits,
-                    ae2: _aeVersion == 2,             // AE-2 format (standard)
-                    crc32: null,
                     totalStreamSize: _compressedSize);
             }
-            return GetDataDecompressor(streamToDecompress);
+
+            // Get decompressed stream
+            Stream decompressedStream = GetDataDecompressor(streamToDecompress);
+
+            if (ForAesEncryption() && _aeVersion == 1)
+            {
+                // Wrap with CRC validator for AE-1
+                return new CrcValidatingReadStream(decompressedStream, _crc32, _uncompressedSize);
+            }
+
+            return decompressedStream;
         }
 
         private WrappedStream OpenInWriteMode(string? password = null, EncryptionMethod encryptionMethod = EncryptionMethod.None)
@@ -1024,7 +1030,6 @@ namespace System.IO.Compression
                        password: password.AsMemory(),
                        encrypting: true,
                        keySizeBits: keysizebits,
-                       ae2: true,
                        leaveOpen: true);
             }
 
@@ -1090,7 +1095,8 @@ namespace System.IO.Compression
                     byte? aesStrength;
                     ushort? originalCompressionMethod;
                     ushort? aeVersion;
-                    if (!ZipLocalFileHeader.TrySkipBlockAESAware(_archive.ArchiveStream, out aesStrength, out originalCompressionMethod, out aeVersion))
+                    uint? crc32;
+                    if (!ZipLocalFileHeader.TrySkipBlockAESAware(_archive.ArchiveStream, out aesStrength, out originalCompressionMethod, out aeVersion, out crc32))
                     {
                         message = SR.LocalFileHeaderCorrupt;
                         return false;
@@ -1114,12 +1120,16 @@ namespace System.IO.Compression
                         _aeVersion = aeVersion.Value;
                     }
 
-                    // CRITICAL: Store the actual compression method that will be used after decryption
+                    if (crc32.HasValue && aeVersion == 1)
+                    {
+                        _crc32 = crc32.Value;
+                    }
+
+                    // Store the actual compression method that will be used after decryption
                     // This is needed for GetDataDecompressor to work correctly
                     if (originalCompressionMethod.HasValue)
                     {
-                        // Temporarily set the compression method to the actual method for decompression
-                        // Note: We're modifying _storedCompressionMethod, not the property
+                        // Set the compression method to the actual method for decompression
                         CompressionMethod = (CompressionMethodValues)originalCompressionMethod.Value;
                     }
                 }
