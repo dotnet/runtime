@@ -452,7 +452,7 @@ void* GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
     return GenericHandleWorkerCore(pMD, pMT, signature, 0xFFFFFFFF, NULL);
 }
 
-#if defined(DEBUG) || defined(DEBUGGING_SUPPORTED)
+#ifdef DEBUGGING_SUPPORTED
 static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack)
 {
     ULONG_PTR info[3] = {
@@ -471,7 +471,7 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
     }
     PAL_ENDTRY
 }
-#endif
+#endif // DEBUGGING_SUPPORTED
 
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
@@ -832,7 +832,7 @@ MAIN_LOOP:
 
             switch (*ip)
             {
-#if defined(DEBUG) || defined(DEBUGGING_SUPPORTED)
+#ifdef DEBUGGING_SUPPORTED
                 case INTOP_BREAKPOINT:
                 {
                     // Adjust ip to point to the breakpoint instruction
@@ -841,7 +841,7 @@ MAIN_LOOP:
                     InterpBreakpoint(ip, pFrame, stack);
                     break;
                 }
-#endif // DEBUG || DEBUGGING_SUPPORTED
+#endif // DEBUGGING_SUPPORTED
                 case INTOP_INITLOCALS:
                     memset(LOCAL_VAR_ADDR(ip[1], void), 0, ip[2]);
                     ip += 3;
