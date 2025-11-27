@@ -563,12 +563,7 @@ HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
 }
 
 //*****************************************************************************
-// Load the library for this thread's current language
-// Called once per language.
-// Search order is:
-//  1. Dll in localized path (<dir passed>\<lang name (en-US format)>\mscorrc.dll)
-//  2. Dll in localized (parent) path (<dir passed>\<lang name> (en format)\mscorrc.dll)
-//  3. Dll in root path (<dir passed>\mscorrc.dll)
+// Load the library from root path (<dir passed>\mscorrc.dll). No locale support.
 //*****************************************************************************
 HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
                                    SString& rcPath)
@@ -591,58 +586,23 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
     // must initialize before calling SString::Empty()
     SString::Startup();
 
-    // Try and get both the culture fallback sequence
-
-    StringArrayList cultureNames;
-
-    if (m_fpGetThreadUICultureNames)
-    {
-        hr = (*m_fpGetThreadUICultureNames)(&cultureNames);
-    }
-    else
-    {
-        EX_TRY
-        {
-            cultureNames.Append(SString::Empty());
-        }
-        EX_CATCH_HRESULT(hr);
-    }
-
-    if (hr == E_OUTOFMEMORY)
-        return hr;
     EX_TRY
     {
-        for (DWORD i=0; i< cultureNames.GetCount();i++)
+        PathString rcPathName(rcPath);
+
+        if (!rcPathName.EndsWith(SL(W("\\"))))
         {
-            SString& sLang = cultureNames[i];
-
-            PathString rcPathName(rcPath);
-
-            if (!rcPathName.EndsWith(SL(W("\\"))))
-            {
-                rcPathName.Append(W("\\"));
-            }
-
-            if (!sLang.IsEmpty())
-            {
-                rcPathName.Append(sLang);
-                rcPathName.Append(W("\\"));
-                rcPathName.Append(m_pResourceFile);
-            }
-            else
-            {
-                rcPathName.Append(m_pResourceFile);
-            }
-
-            // Load the resource library as a data file, so that the OS doesn't have
-            // to allocate it as code.  This only works so long as the file contains
-            // only strings.
-            hr = LoadResourceFile(pHInst, rcPathName);
-            if (SUCCEEDED(hr))
-            {
-                break;
-            }
+            rcPathName.Append(W("\\"));
         }
+
+        {
+            rcPathName.Append(m_pResourceFile);
+        }
+
+        // Load the resource library as a data file, so that the OS doesn't have
+        // to allocate it as code.  This only works so long as the file contains
+        // only strings.
+        hr = LoadResourceFile(pHInst, rcPathName);
     }
     EX_CATCH_HRESULT(hr);
 
