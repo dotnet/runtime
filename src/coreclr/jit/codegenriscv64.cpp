@@ -1055,7 +1055,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
             emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, op1->GetRegNum(), 32);
             emit->emitIns_R_R_I(INS_slli, EA_8BYTE, targetReg, op2->GetRegNum(), 32);
             emit->emitIns_R_R_R(INS_mulhu, EA_8BYTE, targetReg, tempReg, targetReg);
-            emit->emitIns_R_R_I(INS_srai, attr, targetReg, targetReg, 32);
+            emit->emitIns_R_R_I(INS_srli, attr, targetReg, targetReg, 32);
         }
         else
         {
