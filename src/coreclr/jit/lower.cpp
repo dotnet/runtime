@@ -2834,10 +2834,12 @@ GenTree* Lowering::LowerCall(GenTree* node)
 
     call->ClearOtherRegs();
 
+#if HAS_FIXED_REGISTER_SET
     if ((call->gtCallType == CT_INDIRECT) && comp->opts.Tier0OptimizationEnabled())
     {
         OptimizeCallIndirectTargetEvaluation(call);
     }
+#endif
 
     LowerArgsForCall(call);
 
