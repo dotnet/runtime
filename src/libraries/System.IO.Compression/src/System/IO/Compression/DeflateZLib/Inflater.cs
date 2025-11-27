@@ -173,6 +173,8 @@ namespace System.IO.Compression
 
         public bool NonEmptyInput() => _nonEmptyInput;
 
+        internal int GetAvailableInput() => (int)_zlibStream.AvailIn;
+
         public void SetInput(byte[] inputBuffer, int startIndex, int count)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");

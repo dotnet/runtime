@@ -2764,6 +2764,7 @@ public:
     bool bbInHandlerRegions(unsigned regionIndex, BasicBlock* blk);
     bool bbInCatchHandlerRegions(BasicBlock* tryBlk, BasicBlock* hndBlk);
     unsigned short bbFindInnermostCommonTryRegion(BasicBlock* bbOne, BasicBlock* bbTwo);
+    unsigned short bbFindInnermostCommonTryRegion(unsigned tryIndex, BasicBlock* bbTwo);
 
     unsigned short bbFindInnermostTryRegionContainingHandlerRegion(unsigned handlerIndex);
     unsigned short bbFindInnermostHandlerRegionContainingTryRegion(unsigned tryIndex);
@@ -3992,6 +3993,10 @@ public:
                                         // or if the inlinee has GC ref locals.
 
     bool lvaInlineeReturnSpillTempFreshlyCreated = false; // True if the temp was freshly created for the inlinee return
+
+    unsigned lvaNextCallGenericContext = BAD_VAR_NUM; // Local number of argument passed as WellKnownArg::InstParam to next call
+
+    unsigned lvaNextCallAsyncContinuation = BAD_VAR_NUM; // Local number of argument passed as WellKnownArg::AsyncContinuation to next call
 
 #if FEATURE_FIXED_OUT_ARGS
     unsigned            lvaOutgoingArgSpaceVar = BAD_VAR_NUM;  // var that represents outgoing argument space
@@ -6250,6 +6255,7 @@ public:
 
     FlowGraphDfsTree* fgWasmDfs();
     PhaseStatus fgWasmControlFlow();
+    PhaseStatus fgWasmTransformSccs();
 
     // method that returns if you should split here
     typedef bool(fgSplitPredicate)(GenTree* tree, GenTree* parent, fgWalkData* data);
@@ -8573,7 +8579,7 @@ public:
 
     void eeSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* clause);
 
-    WORD eeGetRelocTypeHint(void* target);
+    CorInfoReloc eeGetRelocTypeHint(void* target);
 
     // ICorStaticInfo wrapper functions
 

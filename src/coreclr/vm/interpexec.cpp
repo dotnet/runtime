@@ -2563,7 +2563,17 @@ MAIN_LOOP:
 
                     int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
 
-                    ip += 4;
+                    // Used only for INTOP_CALLDELEGATE to allow removal of the delegate object from the argument list
+                    size_t firstTargetArgOffset = 0;
+                    if (*ip == INTOP_CALLDELEGATE)
+                    {
+                        firstTargetArgOffset = (size_t)ip[4];
+                        ip += 5;
+                    }
+                    else
+                    {
+                        ip += 4;
+                    }
 
                     DELEGATEREF* delegateObj = LOCAL_VAR_ADDR(callArgsOffset, DELEGATEREF);
                     NULL_CHECK(*delegateObj);
@@ -2624,7 +2634,7 @@ MAIN_LOOP:
                             else
                             {
                                 // Shift args down by one slot to remove the delegate obj pointer
-                                memmove(LOCAL_VAR_ADDR(callArgsOffset, int8_t), LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int8_t), pTargetMethod->argsSize);
+                                memmove(LOCAL_VAR_ADDR(callArgsOffset, int8_t), LOCAL_VAR_ADDR(callArgsOffset + firstTargetArgOffset, int8_t), pTargetMethod->argsSize);
                                 // Allocate child frame.
                                 InterpMethodContextFrame *pChildFrame = pFrame->pNext;
                                 if (!pChildFrame)
