@@ -111,7 +111,6 @@
 #include <exception>
 #include "vars.hpp"
 #include "util.hpp"
-#include "eventstore.hpp"
 #include "argslot.h"
 #include "regdisp.h"
 #include "mscoree.h"
@@ -147,7 +146,6 @@ typedef void(*ADCallBackFcnType)(LPVOID);
 #include "excep.h"
 #include "synch.h"
 #include "exstate.h"
-#include "threaddebugblockinginfo.h"
 #include "interoputil.h"
 #include "eventtrace.h"
 
@@ -209,20 +207,6 @@ struct TailCallArgBuffer
 // A thread doesn't receive its id until fully constructed.
 #define UNINITIALIZED_THREADID 0xbaadf00d
 #endif //_DEBUG
-
-// Capture all the synchronization requests, for debugging purposes
-#if defined(_DEBUG) && defined(TRACK_SYNC)
-
-// Each thread has a stack that tracks all enter and leave requests
-struct Dbg_TrackSync
-{
-    virtual ~Dbg_TrackSync() = default;
-
-    virtual void EnterSync    (UINT_PTR caller, void *pAwareLock) = 0;
-    virtual void LeaveSync    (UINT_PTR caller, void *pAwareLock) = 0;
-};
-
-#endif  // TRACK_SYNC
 
 //***************************************************************************
 #ifdef FEATURE_HIJACK
@@ -2126,16 +2110,11 @@ public:
 
     // Either perform WaitForSingleObject or MsgWaitForSingleObject as appropriate.
     DWORD          DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
-                                     DWORD millis, WaitMode mode,
-                                     PendingSync *syncInfo = 0);
+                                     DWORD millis, WaitMode mode);
 
-    DWORD          DoSignalAndWait(HANDLE *handles, DWORD millis, BOOL alertable,
-                                     PendingSync *syncState = 0);
+    DWORD          DoSignalAndWait(HANDLE *handles, DWORD millis, BOOL alertable);
 private:
-    void           DoAppropriateWaitWorkerAlertableHelper(WaitMode mode);
-    DWORD          DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL waitAll,
-                                           DWORD millis, WaitMode mode, void *associatedObjectForMonitorWait);
-    DWORD          DoSignalAndWaitWorker(HANDLE* pHandles, DWORD millis,BOOL alertable);
+    void           DoAppropriateWaitAlertableHelper(WaitMode mode);
     DWORD          DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll, DWORD timeout, WaitMode mode);
     DWORD          DoSyncContextWait(OBJECTREF *pSyncCtxObj, int countHandles, HANDLE *handles, BOOL waitAll, DWORD millis);
 public:
@@ -2603,9 +2582,8 @@ private:
 #endif // FEATURE_HIJACK
 
     // Support for Wait/Notify
-    BOOL        Block(INT32 timeOut, PendingSync *syncInfo);
-    DWORD       Wait(HANDLE *objs, int cntObjs, INT32 timeOut, PendingSync *syncInfo);
-    DWORD       Wait(CLREvent* pEvent, INT32 timeOut, PendingSync *syncInfo);
+    DWORD       Wait(HANDLE *objs, int cntObjs, INT32 timeOut);
+    DWORD       Wait(CLREvent* pEvent, INT32 timeOut);
 
     // support for Thread.Interrupt() which breaks out of Waits, Sleeps, Joins
     LONG        m_UserInterrupt;
@@ -2624,14 +2602,6 @@ private:
 
 public:
     static void WINAPI UserInterruptAPC(ULONG_PTR ignore);
-
-#if defined(_DEBUG) && defined(TRACK_SYNC)
-
-// Each thread has a stack that tracks all enter and leave requests
-public:
-    Dbg_TrackSync   *m_pTrackSync;
-
-#endif // TRACK_SYNC
 
     // Access to thread handle and ThreadId.
     HANDLE      GetThreadHandle()
@@ -2654,25 +2624,6 @@ public:
 private:
     // For suspends:
     CLREvent        m_DebugSuspendEvent;
-
-    // For Object::Wait, Notify and NotifyAll, we use an Event inside the
-    // thread and we queue the threads onto the SyncBlock of the object they
-    // are waiting for.
-    CLREvent        m_EventWait;
-    WaitEventLink   m_WaitEventLink;
-    WaitEventLink* WaitEventLinkForSyncBlock (SyncBlock *psb)
-    {
-        LIMITED_METHOD_CONTRACT;
-        WaitEventLink *walk = &m_WaitEventLink;
-        while (walk->m_Next) {
-            _ASSERTE (walk->m_Next->m_Thread == this);
-            if ((SyncBlock*)(((DWORD_PTR)walk->m_Next->m_WaitSB) & ~1)== psb) {
-                break;
-            }
-            walk = walk->m_Next;
-        }
-        return walk;
-    }
 
     void        SetThreadHandle(HANDLE h)
     {
@@ -2858,9 +2809,6 @@ private:
 #endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
 private:
-    UINT32 m_monitorLockContentionCount;
-    static UINT64 s_monitorLockContentionCountOverflow;
-
 #ifndef DACCESS_COMPILE
 private:
     static UINT32 *GetThreadLocalCountRef(Thread *pThread, SIZE_T threadLocalCountOffset)
@@ -2909,25 +2857,6 @@ private:
     }
 
     static UINT64 GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCount);
-
-public:
-    static void IncrementMonitorLockContentionCount(Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        IncrementCount(pThread, offsetof(Thread, m_monitorLockContentionCount), &s_monitorLockContentionCountOverflow);
-    }
-
-    static UINT64 GetMonitorLockContentionCountOverflow()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetOverflowCount(&s_monitorLockContentionCountOverflow);
-    }
-
-    static UINT64 GetTotalMonitorLockContentionCount()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetTotalCount(offsetof(Thread, m_monitorLockContentionCount), &s_monitorLockContentionCountOverflow);
-    }
 #endif // !DACCESS_COMPILE
 
 public:
@@ -3617,11 +3546,6 @@ private:
     DWORD       m_dwIndexClauseForCatch;
     StackFrame  m_sfEstablisherOfActualHandlerFrame;
 #endif // FEATURE_EH_FUNCLETS
-
-public:
-    // Holds per-thread information the debugger uses to expose locking information
-    // See ThreadDebugBlockingInfo.h for more details
-    ThreadDebugBlockingInfo DebugBlockingInfo;
 
 private:
 
@@ -4412,30 +4336,6 @@ inline void Thread::DecrementTraceCallCount()
     ThreadStore::DecrementTrapReturningThreads();
     InterlockedDecrement(&m_TraceCallCount);
 }
-
-// When we enter an Object.Wait() we are logically inside the synchronized
-// region of that object.  Of course, we've actually completely left the region,
-// or else nobody could Notify us.  But if we throw ThreadInterruptedException to
-// break out of the Wait, all the catchers are going to expect the synchronized
-// state to be correct.  So we carry it around in case we need to restore it.
-struct PendingSync
-{
-    void*           m_Object;
-    LONG            m_EnterCount;
-    WaitEventLink  *m_WaitEventLink;
-#ifdef _DEBUG
-    Thread         *m_OwnerThread;
-#endif
-
-    PendingSync(WaitEventLink *s) : m_WaitEventLink(s)
-    {
-        WRAPPER_NO_CONTRACT;
-#ifdef _DEBUG
-        m_OwnerThread = GetThread();
-#endif
-    }
-    void Restore(BOOL bRemoveFromSB);
-};
 
 // --------------------------------------------------------------------------------
 // GCHolder is used to implement the normal GCX_ macros.

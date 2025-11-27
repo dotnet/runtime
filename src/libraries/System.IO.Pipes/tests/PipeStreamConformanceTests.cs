@@ -171,7 +171,7 @@ namespace System.IO.Pipes.Tests
 
             if (writeable is NamedPipeServerStream server)
             {
-                using (NamedPipeClientStream client = new NamedPipeClientStream(PipeDirection.In, false, true, ((NamedPipeClientStream)readable).SafePipeHandle))
+                using (NamedPipeClientStream client = new NamedPipeClientStream(PipeDirection.In, false, ((NamedPipeClientStream)readable).SafePipeHandle))
                 {
                     if (OperatingSystem.IsWindows())
                     {
@@ -186,7 +186,7 @@ namespace System.IO.Pipes.Tests
             }
             else
             {
-                using (NamedPipeClientStream client = new NamedPipeClientStream(PipeDirection.Out, false, true, ((NamedPipeClientStream)writeable).SafePipeHandle))
+                using (NamedPipeClientStream client = new NamedPipeClientStream(PipeDirection.Out, false, ((NamedPipeClientStream)writeable).SafePipeHandle))
                 {
                     Task clientTask = client.WriteAsync(msg1, 0, msg1.Length);
                     int receivedLength = readable.Read(received1, 0, msg1.Length);
