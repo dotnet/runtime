@@ -2329,6 +2329,39 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_ReadMode_InvalidAccess_Throws(bool async)
+        {
+            using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+
+            ZipArchiveEntry entry = archive.GetEntry("first.txt");
+            Assert.NotNull(entry);
+
+            // Test with invalid FileAccess values
+            Assert.Throws<ArgumentException>("access", () => entry.Open((FileAccess)0));
+            Assert.Throws<ArgumentException>("access", () => entry.Open((FileAccess)4));
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_CreateMode_InvalidAccess_Throws(bool async)
+        {
+            using var ms = new MemoryStream();
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
+
+            ZipArchiveEntry entry = archive.CreateEntry("test.txt");
+
+            // Test with invalid FileAccess values
+            Assert.Throws<ArgumentException>("access", () => entry.Open((FileAccess)0));
+            Assert.Throws<ArgumentException>("access", () => entry.Open((FileAccess)4));
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
         public static async Task OpenWithFileAccess_UpdateMode_InvalidAccess_Throws(bool async)
         {
             using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
@@ -2337,8 +2370,9 @@ namespace System.IO.Compression.Tests
             ZipArchiveEntry entry = archive.GetEntry("first.txt");
             Assert.NotNull(entry);
 
-            // Test with an invalid FileAccess value (0 is not a valid FileAccess)
+            // Test with invalid FileAccess values
             Assert.Throws<ArgumentException>("access", () => entry.Open((FileAccess)0));
+            Assert.Throws<ArgumentException>("access", () => entry.Open((FileAccess)4));
 
             await DisposeZipArchive(async, archive);
         }
