@@ -375,6 +375,9 @@ namespace System.IO.Compression
         {
             ThrowIfInvalidArchive();
 
+            if (access is not FileAccess.Read and not FileAccess.Write and not FileAccess.ReadWrite)
+                throw new ArgumentException(SR.InvalidFileAccess, nameof(access));
+
             // Validate that the requested access is compatible with the archive's mode
             switch (_archive.Mode)
             {
@@ -395,8 +398,7 @@ namespace System.IO.Compression
                     {
                         FileAccess.Read => OpenInReadMode(checkOpenable: true),
                         FileAccess.Write => OpenInWriteMode(),
-                        FileAccess.ReadWrite => OpenInUpdateMode(),
-                        _ => throw new ArgumentException(SR.InvalidFileAccess, nameof(access))
+                        FileAccess.ReadWrite => OpenInUpdateMode()
                     };
             }
         }
