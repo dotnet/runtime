@@ -2615,16 +2615,10 @@ bool DebuggerController::MatchPatch(Thread *thread,
 {
     LOG((LF_CORDB, LL_INFO100000, "DC::MP: EIP:0x%p\n", GetIP(context)));
 
-    // For interpreter patches, we can't compare against the context IP because:
-    // - patch->address is the bytecode address
-    // - GetIP(context) is the native C++ address inside the interpreter loop
-    if (patch->kind != PATCH_KIND_NATIVE_INTERPRETER)
+    // Caller should have already matched our addresses.
+    if (patch->address != dac_cast<PTR_CORDB_ADDRESS_TYPE>(GetIP(context)))
     {
-        // Caller should have already matched our addresses.
-        if (patch->address != dac_cast<PTR_CORDB_ADDRESS_TYPE>(GetIP(context)))
-        {
-            return false;
-        }
+        return false;
     }
 
     // <BUGNUM>RAID 67173 -</BUGNUM> we'll make sure that intermediate patches have NULL
@@ -3089,7 +3083,6 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
     CrstHolderWithState lockController(&g_criticalSection);
 
     TADDR originalAddress = 0;
-    bool isInterpreterBreakpoint = false;
 
 #ifdef FEATURE_METADATA_UPDATER
     DebuggerControllerPatch *dcpEnCOriginal = NULL;
@@ -3140,17 +3133,6 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
 
     LOG((LF_CORDB|LF_ENC, LL_EVERYTHING, "DC::DPOSS ScanForTriggers called and returned.\n"));
 
-    // Check if we're debugging with the interpreter by checking the JIT manager for this address
-#ifdef FEATURE_INTERPRETER
-    {
-        IJitManager* pJitManager = ExecutionManager::FindJitMan((PCODE)address);
-        if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
-        {
-            isInterpreterBreakpoint = true;
-            LOG((LF_CORDB, LL_EVERYTHING, "DC::DPOSS Interpreter breakpoint detected at %p\n", address));
-        }
-    }
-#endif // FEATURE_INTERPRETER
 
     // If we setip, then that will change the address in the context.
     // Remeber the old address so that we can compare it to the context's ip and see if it changed.
@@ -3178,7 +3160,7 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
         SENDIPCEVENT_BEGIN(g_pDebugger, thread);
 
         // Now that we've resumed from blocking, check if somebody did a SetIp on us.
-        bool fIpChanged = isInterpreterBreakpoint ? false : (originalAddress != GetIP(context));
+        bool fIpChanged = (originalAddress != GetIP(context));
 
         // Send the events outside of the controller lock
         bool anyEventsSent = false;
@@ -3255,7 +3237,7 @@ Exit:
     }
 #endif
 
-    ActivatePatchSkip(thread, isInterpreterBreakpoint ? dac_cast<PTR_CBYTE>((CORDB_ADDRESS_TYPE*)originalAddress) : dac_cast<PTR_CBYTE>(GetIP(pCtx)), FALSE
+    ActivatePatchSkip(thread, dac_cast<PTR_CBYTE>(GetIP(pCtx)), FALSE
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
     , pDebuggerSteppingInfo
 #endif
