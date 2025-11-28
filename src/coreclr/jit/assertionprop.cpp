@@ -4461,6 +4461,31 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                 return optAssertionProp_Update(newTree, tree, stmt);
             }
         }
+
+        // If op1VN is actually ADD(X, CNS), we can try peeling the constant offset and adjusting op2Cns accordingly.
+        //
+        ValueNum peeledOp1VN  = op1VN;
+        int      peeledOffset = 0;
+        vnStore->PeelOffsetsI32(&peeledOp1VN, &peeledOffset);
+
+        if (peeledOffset != 0)
+        {
+            Range peeledOp1Rng = Range(Limit(Limit::keUnknown));
+            if (RangeCheck::TryGetRangeFromAssertions(this, peeledOp1VN, assertions, &peeledOp1Rng))
+            {
+                Range peeledOffsetRng = Range(Limit(Limit::keConstant, peeledOffset));
+                rng2                  = RangeOps::Add(rng2, peeledOffsetRng); // Add handles overflow internally.
+
+                RangeOps::RelationKind kind =
+                    RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), peeledOp1Rng, rng2);
+                if ((kind != RangeOps::RelationKind::Unknown))
+                {
+                    newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
+                    newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+                    return optAssertionProp_Update(newTree, tree, stmt);
+                }
+            }
+        }
     }
 
     // Else check if we have an equality check involving a local or an indir
