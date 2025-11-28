@@ -389,21 +389,15 @@ namespace System.IO.Compression
                     return OpenInWriteMode();
 
                 case ZipArchiveMode.Update:
-                    switch (access)
-                    {
-                        case FileAccess.Read:
-                            return OpenInReadMode(checkOpenable: true);
-                        case FileAccess.Write:
-                            return OpenInWriteMode();
-                        case FileAccess.ReadWrite:
-                            return OpenInUpdateMode();
-                        default:
-                            throw new ArgumentException(SR.InvalidFileAccess, nameof(access));
-                    }
-
                 default:
                     Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
-                    return OpenInUpdateMode();
+                    return access switch
+                    {
+                        FileAccess.Read => OpenInReadMode(checkOpenable: true),
+                        FileAccess.Write => OpenInWriteMode(),
+                        FileAccess.ReadWrite => OpenInUpdateMode(),
+                        _ => throw new ArgumentException(SR.InvalidFileAccess, nameof(access))
+                    };
             }
         }
 
