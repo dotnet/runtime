@@ -22,7 +22,7 @@ extern void* GetClrModuleBase();
 // We load the localized libraries and cache the handle for future use.
 // Mutliple threads may call this, so the cache structure is thread safe.
 //*****************************************************************************
-HRESULT CCompRC::LoadString(ResourceCategory eCategory, UINT iResourceID, _Out_writes_(iMax) LPWSTR szBuffer, int iMax,  int *pcwchUsed)
+HRESULT CCompRC::LoadString(UINT iResourceID, _Out_writes_(iMax) LPWSTR szBuffer, int iMax,  int *pcwchUsed)
 {
 #ifdef DBI_COMPONENT_MONO
     return E_NOTIMPL;

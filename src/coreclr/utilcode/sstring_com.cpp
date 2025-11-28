@@ -45,7 +45,7 @@ HRESULT SString::LoadResourceAndReturnHR(CCompRC::ResourceCategory eCategory, in
             // In fatal error reporting scenarios, we may not have enough memory to
             // allocate a larger buffer.
 
-            hr = CCompRC::LoadString(eCategory, resourceID, GetRawUnicode(), GetRawCount()+1, &size);
+            hr = CCompRC::LoadString(resourceID, GetRawUnicode(), GetRawCount()+1, &size);
             if (hr != HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
             {
                 if (FAILED(hr))

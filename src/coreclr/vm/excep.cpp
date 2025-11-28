@@ -4766,7 +4766,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
     GCPROTECT_BEGIN(throwable);
     if (throwable != NULL)
     {
-        if (FAILED(UtilLoadResourceString(CCompRC::Error, IDS_EE_UNHANDLED_EXCEPTION, buf, buf_size)))
+        if (FAILED(CCompRC::LoadString(IDS_EE_UNHANDLED_EXCEPTION, buf, buf_size)))
         {
             wcsncpy_s(buf, buf_size, SZ_UNHANDLED_EXCEPTION, SZ_UNHANDLED_EXCEPTION_CHARLEN);
         }
@@ -4961,7 +4961,7 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 
                     _ASSERTE(buf_size > 6);
                     wcscpy_s(buf, buf_size, W("\n   "));
-                    UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf + 4, buf_size - 6);
+                    CCompRC::LoadString(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf + 4, buf_size - 6);
                     wcscat_s(buf, buf_size, W("\n"));
 
                     PrintToStdErrW(buf);

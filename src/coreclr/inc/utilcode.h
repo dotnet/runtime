@@ -348,9 +348,6 @@ HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 
 BOOL CLRFreeLibrary(HMODULE hModule);
 
-// Load a string using the resources for the current module.
-STDAPI UtilLoadStringRC(UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax, int bQuiet=FALSE);
-
 //*****************************************************************************
 // Use this class by privately deriving from noncopyable to disallow copying of
 // your class.
@@ -396,7 +393,7 @@ public:
         Optional
     };
 
-    static HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
+    static HRESULT LoadString(UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
 };
 
 // The HRESULT_FROM_WIN32 macro evaluates its arguments three times.
