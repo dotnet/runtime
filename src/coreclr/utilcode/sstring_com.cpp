@@ -15,12 +15,12 @@
 //----------------------------------------------------------------------------
 // Load the string resource into this string.
 //----------------------------------------------------------------------------
-BOOL SString::LoadResource(CCompRC::ResourceCategory eCategory, int resourceID)
+BOOL SString::LoadResource(int resourceID)
 {
-    return SUCCEEDED(LoadResourceAndReturnHR(eCategory, resourceID));
+    return SUCCEEDED(LoadResourceAndReturnHR(resourceID));
 }
 
-HRESULT SString::LoadResourceAndReturnHR(CCompRC::ResourceCategory eCategory, int resourceID)
+HRESULT SString::LoadResourceAndReturnHR(int resourceID)
 {
     CONTRACT(HRESULT)
     {

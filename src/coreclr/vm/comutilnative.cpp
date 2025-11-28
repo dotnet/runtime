@@ -376,21 +376,21 @@ extern "C" void QCALLTYPE ExceptionNative_GetMessageFromNativeResources(Exceptio
 
     switch(kind) {
     case ExceptionMessageKind::ThreadAbort:
-        hr = buffer.LoadResourceAndReturnHR(CCompRC::Error, IDS_EE_THREAD_ABORT);
+        hr = buffer.LoadResourceAndReturnHR(IDS_EE_THREAD_ABORT);
         if (FAILED(hr)) {
             wszFallbackString = W("Thread was being aborted.");
         }
         break;
 
     case ExceptionMessageKind::ThreadInterrupted:
-        hr = buffer.LoadResourceAndReturnHR(CCompRC::Error, IDS_EE_THREAD_INTERRUPTED);
+        hr = buffer.LoadResourceAndReturnHR(IDS_EE_THREAD_INTERRUPTED);
         if (FAILED(hr)) {
             wszFallbackString = W("Thread was interrupted from a waiting state.");
         }
         break;
 
     case ExceptionMessageKind::OutOfMemory:
-        hr = buffer.LoadResourceAndReturnHR(CCompRC::Error, IDS_EE_OUT_OF_MEMORY);
+        hr = buffer.LoadResourceAndReturnHR(IDS_EE_OUT_OF_MEMORY);
         if (FAILED(hr)) {
             wszFallbackString = W("Insufficient memory to continue the execution of the program.");
         }

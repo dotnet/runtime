@@ -366,32 +366,11 @@ private:
 };
 
 //*****************************************************************************
-// CCompRC manages string Resource access for CLR. This includes loading
-// the MsCorRC.dll for resources. No localization is supported.
+// CCompRC manages string Resource access for CLR.
 //*****************************************************************************
 class CCompRC
 {
 public:
-
-    enum ResourceCategory
-    {
-        // must be present
-        Required,
-
-        // present in Desktop CLR and Core CLR + debug pack, an error
-        // If missing, get a generic error message instead
-        Error,
-
-        // present in Desktop CLR and Core CLR + debug pack, normal operation (e.g tracing)
-        // if missing, get a generic "resource not found" message instead
-        Debugging,
-
-        // present in Desktop CLR, optional for CoreCLR
-        DesktopCLR,
-
-        // might not be present, non essential
-        Optional
-    };
 
     static HRESULT LoadString(UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
 };

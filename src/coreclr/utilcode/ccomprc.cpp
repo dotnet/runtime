@@ -17,11 +17,6 @@ __attribute__((visibility("default"))) DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATI
 // External prototypes.
 extern void* GetClrModuleBase();
 
-//*****************************************************************************
-// Load the string
-// We load the localized libraries and cache the handle for future use.
-// Mutliple threads may call this, so the cache structure is thread safe.
-//*****************************************************************************
 HRESULT CCompRC::LoadString(UINT iResourceID, _Out_writes_(iMax) LPWSTR szBuffer, int iMax,  int *pcwchUsed)
 {
 #ifdef DBI_COMPONENT_MONO
@@ -38,7 +33,7 @@ HRESULT CCompRC::LoadString(UINT iResourceID, _Out_writes_(iMax) LPWSTR szBuffer
     CONTRACTL_END;
 
 #ifdef HOST_WINDOWS
-    HRESULT         hr = S_OK;
+    HRESULT         hr;
     int length;
 
     length = ::LoadString((HINSTANCE)GetClrModuleBase(), iResourceID, szBuffer, iMax);
@@ -50,10 +45,10 @@ HRESULT CCompRC::LoadString(UINT iResourceID, _Out_writes_(iMax) LPWSTR szBuffer
         }
         return (S_OK);
     }
-    if (SUCCEEDED(GetLastError()))
-        hr = HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+    if(SUCCEEDED(GetLastError()))
+        hr=HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
     else
-        hr = HRESULT_FROM_GetLastError();
+        hr=HRESULT_FROM_GetLastError();
 
     // Return an empty string to save the people with a bad error handling
     if (szBuffer && iMax)

@@ -1050,7 +1050,7 @@ BOOL EEException::GetResourceMessage(UINT iResourceID, SString &result,
     BOOL ok;
 
     StackSString temp;
-    ok = temp.LoadResource(CCompRC::Error, iResourceID);
+    ok = temp.LoadResource(iResourceID);
 
     if (ok)
         result.FormatMessage(FORMAT_MESSAGE_FROM_STRING,
