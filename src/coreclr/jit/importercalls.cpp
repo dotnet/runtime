@@ -8954,10 +8954,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         {
             // If we have a RUNTIMELOOKUP helper call for the method handle,
             // we need to pass that as the inst param instead.
-            CallArg* const methHndArg = call->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
-            assert(methHndArg != nullptr);
-            GenTree* const methHndNode = methHndArg->GetEarlyNode();
-            if (methHndNode->OperIs(GT_RUNTIMELOOKUP))
+            CallArg* const methHndArg  = call->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
+            GenTree* const methHndNode = methHndArg != nullptr ? methHndArg->GetEarlyNode() : nullptr;
+            if (methHndNode && methHndNode->OperIs(GT_RUNTIMELOOKUP))
             {
                 instParam = methHndNode;
             }
