@@ -15,7 +15,7 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 # Don't resolve runtime, shared framework, or SDK from other locations to ensure build determinism
 export DOTNET_MULTILEVEL_LOOKUP=0
 
-# Disable first run since we want to control all package sources
+# Suppress the .NET startup banner
 export DOTNET_NOLOGO=1
 
 source $scriptroot/eng/common/tools.sh
