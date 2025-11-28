@@ -3482,55 +3482,35 @@ namespace System
                 original = original.Slice(0, original.Length - 1);
             }
 
-            int pathLength = original.Length;
+            int pathLength = (flags & Flags.ImplicitFile) != 0 || (syntaxFlags & UriSyntaxFlags.MayHaveQuery) == 0
+                ? -1 // We can't have a query
+                : original.IndexOfAny('?', '#');
 
-            if ((flags & Flags.ImplicitFile) == 0 && (syntaxFlags & (UriSyntaxFlags.MayHaveQuery | UriSyntaxFlags.MayHaveFragment)) != 0)
+            if ((uint)pathLength >= (uint)original.Length || original[pathLength] == '#')
             {
-                if ((syntaxFlags & UriSyntaxFlags.MayHaveQuery) != 0)
+                // Everything is considered either the path or fragment
+                IriHelper.EscapeUnescapeIri(ref vsb, original, isQuery: false);
+            }
+            else
+            {
+                IriHelper.EscapeUnescapeIri(ref vsb, original.Slice(0, pathLength), isQuery: false); // Path
+                original = original.Slice(pathLength);
+
+                Debug.Assert(original.StartsWith('?'));
+
+                int fragmentOffset = (syntaxFlags & UriSyntaxFlags.MayHaveFragment) == 0
+                    ? -1 // We can't have a fragment
+                    : original.IndexOf('#');
+
+                if ((uint)fragmentOffset >= (uint)original.Length)
                 {
-                    pathLength = (syntaxFlags & UriSyntaxFlags.MayHaveFragment) != 0
-                        ? original.IndexOfAny('?', '#')
-                        : original.IndexOf('?');
+                    IriHelper.EscapeUnescapeIri(ref vsb, original, isQuery: true); // Query
                 }
                 else
                 {
-                    Debug.Assert((syntaxFlags & UriSyntaxFlags.MayHaveFragment) != 0);
-                    pathLength = original.IndexOf('#');
+                    IriHelper.EscapeUnescapeIri(ref vsb, original.Slice(0, fragmentOffset), isQuery: true); // Query
+                    IriHelper.EscapeUnescapeIri(ref vsb, original.Slice(fragmentOffset), isQuery: false); // Fragment
                 }
-
-                if (pathLength < 0)
-                {
-                    pathLength = original.Length;
-                }
-            }
-
-            IriHelper.EscapeUnescapeIri(ref vsb, original.Slice(0, pathLength), isQuery: false);
-            original = original.Slice(pathLength);
-
-            // Now we've got to parse the Query if any. Note that Query requires the presence of '?'
-            if (original.StartsWith('?'))
-            {
-                ReadOnlySpan<char> query = original;
-
-                if ((syntaxFlags & (UriSyntaxFlags.MayHaveFragment)) != 0)
-                {
-                    int queryLength = query.IndexOf('#');
-                    if (queryLength >= 0)
-                    {
-                        query = query.Slice(0, queryLength);
-                    }
-                }
-
-                original = original.Slice(query.Length);
-
-                IriHelper.EscapeUnescapeIri(ref vsb, query, isQuery: true);
-            }
-
-            // Now we've got to parse the Fragment if any. Note that Fragment requires the presence of '#'
-            if (!original.IsEmpty)
-            {
-                Debug.Assert(original.StartsWith('#'));
-                IriHelper.EscapeUnescapeIri(ref vsb, original, isQuery: false);
             }
 
             _string = vsb.ToString();
