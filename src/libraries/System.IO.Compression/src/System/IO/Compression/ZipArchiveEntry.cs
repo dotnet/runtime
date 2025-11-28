@@ -398,7 +398,7 @@ namespace System.IO.Compression
                     {
                         FileAccess.Read => OpenInReadMode(checkOpenable: true),
                         FileAccess.Write => OpenInWriteMode(),
-                        FileAccess.ReadWrite => OpenInUpdateMode()
+                        _ => OpenInUpdateMode()
                     };
             }
         }
