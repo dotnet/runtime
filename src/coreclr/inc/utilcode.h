@@ -369,55 +369,6 @@ private:
 };
 
 //*****************************************************************************
-// Must associate each handle to an instance of a resource dll with the int
-// that it represents
-//*****************************************************************************
-typedef HINSTANCE HRESOURCEDLL;
-
-
-class CCulturedHInstance
-{
-    HRESOURCEDLL    m_hInst;
-    BOOL            m_fMissing;
-
-public:
-    CCulturedHInstance()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_hInst = NULL;
-        m_fMissing = FALSE;
-    }
-
-    HRESOURCEDLL GetLibraryHandle()
-    {
-        return m_hInst;
-    }
-
-    BOOL IsSet()
-    {
-        return m_hInst != NULL;
-    }
-
-    BOOL IsMissing()
-    {
-        return m_fMissing;
-    }
-
-    void SetMissing()
-    {
-        _ASSERTE(m_hInst == NULL);
-        m_fMissing = TRUE;
-    }
-
-    void Set(HRESOURCEDLL hInst)
-    {
-        _ASSERTE(m_hInst == NULL);
-        _ASSERTE(m_fMissing == FALSE);
-        m_hInst = hInst;
-    }
- };
-
-//*****************************************************************************
 // CCompRC manages string Resource access for CLR. This includes loading
 // the MsCorRC.dll for resources. No localization is supported.
 //*****************************************************************************
@@ -445,46 +396,14 @@ public:
         Optional
     };
 
-    CCompRC()
-    {
-        // This constructor will be fired up on startup. Make sure it doesn't
-        // do anything besides zero-out out values.
-        m_csMap = NULL;
-        m_pResourceFile = NULL;
-    }// CCompRC
-
-    HRESULT Init(LPCWSTR pResourceFile);
-    void Destroy();
-
     HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
 
     // Get the default resource location (mscorrc.dll)
     static CCompRC* GetDefaultResourceDll();
 
 private:
-// String resources packaged as PE files only exist on Windows
-#ifdef HOST_WINDOWS
-    HRESULT GetLibrary(HRESOURCEDLL* phInst);
-#ifndef DACCESS_COMPILE
-    HRESULT LoadLibraryHelper(HRESOURCEDLL *pHInst,
-                              SString& rcPath);
-    HRESULT LoadLibraryThrows(HRESOURCEDLL * pHInst);
-    HRESULT LoadLibrary(HRESOURCEDLL * pHInst);
-    HRESULT LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName);
-#endif // DACCESS_COMPILE
-#endif // HOST_WINDOWS
-
     // We do not have global constructors any more
-    static LONG     m_dwDefaultInitialized;
     static CCompRC  m_DefaultResourceDll;
-    static LPCWSTR  m_pDefaultResource;
-
-    // Use a singleton since we don't support localization any more.
-    CCulturedHInstance m_Primary;
-
-    CRITSEC_COOKIE m_csMap;
-
-    LPCWSTR m_pResourceFile;
 };
 
 HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax);
