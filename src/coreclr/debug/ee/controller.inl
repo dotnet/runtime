@@ -47,7 +47,7 @@ inline BOOL DebuggerControllerPatch::IsManagedPatch()
 
 inline BOOL DebuggerControllerPatch::IsNativePatch()
 {
-    return (kind == PATCH_KIND_NATIVE_MANAGED || kind == PATCH_KIND_NATIVE_UNMANAGED ||(IsILReplicaPatch() && !offsetIsIL));
+    return (kind == PATCH_KIND_NATIVE_MANAGED || kind == PATCH_KIND_NATIVE_UNMANAGED || (IsILReplicaPatch() && !offsetIsIL));
 }
 
 inline BOOL DebuggerControllerPatch::IsEnCRemapPatch()
