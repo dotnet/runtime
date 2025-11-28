@@ -81,6 +81,7 @@ This file should be imported by eng/Versions.props
     <SystemTextJsonPackageVersion>10.0.0-rc.1.25528.108</SystemTextJsonPackageVersion>
     <!-- dotnet/runtime-assets dependencies -->
     <MicrosoftDotNetCilStripSourcesPackageVersion>11.0.0-beta.25553.1</MicrosoftDotNetCilStripSourcesPackageVersion>
+    <MicrosoftDotnetFuzzingTestDataPackageVersion>11.0.0-beta.25574.4</MicrosoftDotnetFuzzingTestDataPackageVersion>
     <MicrosoftNETHostModelTestDataPackageVersion>11.0.0-beta.25553.1</MicrosoftNETHostModelTestDataPackageVersion>
     <SystemComponentModelTypeConverterTestDataPackageVersion>11.0.0-beta.25553.1</SystemComponentModelTypeConverterTestDataPackageVersion>
     <SystemDataCommonTestDataPackageVersion>11.0.0-beta.25553.1</SystemDataCommonTestDataPackageVersion>
@@ -196,6 +197,7 @@ This file should be imported by eng/Versions.props
     <SystemTextJsonVersion>$(SystemTextJsonPackageVersion)</SystemTextJsonVersion>
     <!-- dotnet/runtime-assets dependencies -->
     <MicrosoftDotNetCilStripSourcesVersion>$(MicrosoftDotNetCilStripSourcesPackageVersion)</MicrosoftDotNetCilStripSourcesVersion>
+    <MicrosoftDotnetFuzzingTestDataVersion>$(MicrosoftDotnetFuzzingTestDataPackageVersion)</MicrosoftDotnetFuzzingTestDataVersion>
     <MicrosoftNETHostModelTestDataVersion>$(MicrosoftNETHostModelTestDataPackageVersion)</MicrosoftNETHostModelTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>$(SystemComponentModelTypeConverterTestDataPackageVersion)</SystemComponentModelTypeConverterTestDataVersion>
     <SystemDataCommonTestDataVersion>$(SystemDataCommonTestDataPackageVersion)</SystemDataCommonTestDataVersion>
