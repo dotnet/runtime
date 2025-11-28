@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UseMonoRuntime>false</UseMonoRuntime>
+    <MonoForceInterpreter>false</MonoForceInterpreter>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <TestRuntime>true</TestRuntime>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
+    <MainLibraryFileName>iOS.Simulator.CoreCLR.R2R.Test.dll</MainLibraryFileName>
+    <IncludesTestRunner>false</IncludesTestRunner>
+    <ExpectedExitCode>42</ExpectedExitCode>
+    <PublishReadyToRun>true</PublishReadyToRun>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+
+  <!-- Tracking issue: https://github.com/dotnet/runtime/issues/119006
+      Use the repo's CrossGen props/targets.
+       This can be removed once we upstream Mach-O support in the targets to the SDK -->
+  <Import Project="$(Crossgen2SdkOverridePropsPath)" Condition="'$(PublishReadyToRun)' == 'true' and '$(Crossgen2SdkOverridePropsPath)' != ''" />
+  <PropertyGroup>
+    <!-- Import after SDK targets in order to override R2R-related targets in the SDK -->
+    <AfterMicrosoftNETSdkTargets Condition="'$(PublishReadyToRun)' == 'true' and '$(Crossgen2SdkOverrideTargetsPath)' != ''">$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
+    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets</AfterMicrosoftNETSdkTargets>
+  </PropertyGroup>
+</Project>

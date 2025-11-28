@@ -26,16 +26,12 @@
     <BuildAppBundleDependsOnTargets Condition="'$(ArchiveTests)' == 'true'">Publish</BuildAppBundleDependsOnTargets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true'">
-    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
-    <PublishReadyToRunContainerFormat>macho</PublishReadyToRunContainerFormat>
-  </PropertyGroup>
-
   <ItemGroup>
     <RuntimeComponents Condition="'$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
   </ItemGroup>
 
-  <!-- Use the repo's CrossGen props/targets.
+  <!-- Tracking issue: https://github.com/dotnet/runtime/issues/119006
+       Use the repo's CrossGen props/targets.
        This can be removed once we upstream Mach-O support in the targets to the SDK -->
   <Import Project="$(Crossgen2SdkOverridePropsPath)" Condition="'$(PublishReadyToRun)' == 'true' and '$(Crossgen2SdkOverridePropsPath)' != ''" />
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />

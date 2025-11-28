@@ -331,7 +331,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') and ('$(RuntimeFlavor)' == 'Mono' or '$(UseNativeAOTRuntime)' == 'true') and '$(RunDisablediOSTests)' != 'true'">
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR.Interpreter\*.Test.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\CoreCLR\*.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' != 'true'">
@@ -631,7 +631,7 @@
 
   <ItemGroup Condition="('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst') and '$(RuntimeFlavor)' == 'CoreCLR' and '$(UseNativeAOTRuntime)' != 'true'">
     <SmokeTestProject Remove="@(SmokeTestProject)" />
-    <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR.Interpreter\*.Test.csproj"/>
+    <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\CoreCLR\*.Test.csproj"/>
   </ItemGroup>
 
   <!--
