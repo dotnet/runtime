@@ -15,7 +15,7 @@ export function selfRun() {
             }
         }
 
-        Module.ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
+        // Module.ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
     };
     Module.preRun = [corePreRun];
 
