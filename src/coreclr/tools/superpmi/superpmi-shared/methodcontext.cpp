@@ -4454,7 +4454,7 @@ void MethodContext::recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo)
 
     value.continuationClsHnd = CastHandle(pAsyncInfo->continuationClsHnd);
     value.continuationNextFldHnd = CastHandle(pAsyncInfo->continuationNextFldHnd);
-    value.continuationResumeFldHnd = CastHandle(pAsyncInfo->continuationResumeFldHnd);
+    value.continuationResumeInfoFldHnd = CastHandle(pAsyncInfo->continuationResumeInfoFldHnd);
     value.continuationStateFldHnd = CastHandle(pAsyncInfo->continuationStateFldHnd);
     value.continuationFlagsFldHnd = CastHandle(pAsyncInfo->continuationFlagsFldHnd);
     value.captureExecutionContextMethHnd = CastHandle(pAsyncInfo->captureExecutionContextMethHnd);
@@ -4462,15 +4462,16 @@ void MethodContext::recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo)
     value.captureContinuationContextMethHnd = CastHandle(pAsyncInfo->captureContinuationContextMethHnd);
     value.captureContextsMethHnd = CastHandle(pAsyncInfo->captureContextsMethHnd);
     value.restoreContextsMethHnd = CastHandle(pAsyncInfo->restoreContextsMethHnd);
+    value.restoreContextsOnSuspensionMethHnd = CastHandle(pAsyncInfo->restoreContextsOnSuspensionMethHnd);
 
     GetAsyncInfo->Add(0, value);
     DEBUG_REC(dmpGetAsyncInfo(0, value));
 }
 void MethodContext::dmpGetAsyncInfo(DWORD key, const Agnostic_CORINFO_ASYNC_INFO& value)
 {
-    printf("GetAsyncInfo key %u value contClsHnd-%016" PRIX64 " contNextFldHnd-%016" PRIX64 " contResumeFldHnd-%016" PRIX64
+    printf("GetAsyncInfo key %u value contClsHnd-%016" PRIX64 " contNextFldHnd-%016" PRIX64 " contResumeInfoFldHnd-%016" PRIX64
            " contStateFldHnd-%016" PRIX64 " contFlagsFldHnd-%016" PRIX64,
-        key, value.continuationClsHnd, value.continuationNextFldHnd, value.continuationResumeFldHnd,
+        key, value.continuationClsHnd, value.continuationNextFldHnd, value.continuationResumeInfoFldHnd,
         value.continuationStateFldHnd, value.continuationFlagsFldHnd);
 }
 void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
@@ -4478,7 +4479,7 @@ void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     Agnostic_CORINFO_ASYNC_INFO value = LookupByKeyOrMissNoMessage(GetAsyncInfo, 0);
     pAsyncInfoOut->continuationClsHnd = (CORINFO_CLASS_HANDLE)value.continuationClsHnd;
     pAsyncInfoOut->continuationNextFldHnd = (CORINFO_FIELD_HANDLE)value.continuationNextFldHnd;
-    pAsyncInfoOut->continuationResumeFldHnd = (CORINFO_FIELD_HANDLE)value.continuationResumeFldHnd;
+    pAsyncInfoOut->continuationResumeInfoFldHnd = (CORINFO_FIELD_HANDLE)value.continuationResumeInfoFldHnd;
     pAsyncInfoOut->continuationStateFldHnd = (CORINFO_FIELD_HANDLE)value.continuationStateFldHnd;
     pAsyncInfoOut->continuationFlagsFldHnd = (CORINFO_FIELD_HANDLE)value.continuationFlagsFldHnd;
     pAsyncInfoOut->captureExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.captureExecutionContextMethHnd;
@@ -4486,6 +4487,7 @@ void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->captureContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.captureContinuationContextMethHnd;
     pAsyncInfoOut->captureContextsMethHnd = (CORINFO_METHOD_HANDLE)value.captureContextsMethHnd;
     pAsyncInfoOut->restoreContextsMethHnd = (CORINFO_METHOD_HANDLE)value.restoreContextsMethHnd;
+    pAsyncInfoOut->restoreContextsOnSuspensionMethHnd = (CORINFO_METHOD_HANDLE)value.restoreContextsOnSuspensionMethHnd;
     DEBUG_REP(dmpGetAsyncInfo(0, value));
 }
 
@@ -6454,7 +6456,7 @@ void MethodContext::repGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORIN
     }
 }
 
-void MethodContext::recGetRelocTypeHint(void* target, WORD result)
+void MethodContext::recGetRelocTypeHint(void* target, CorInfoReloc result)
 {
     if (GetRelocTypeHint == nullptr)
         GetRelocTypeHint = new LightWeightMap<DWORDLONG, DWORD>();
@@ -6468,7 +6470,7 @@ void MethodContext::dmpGetRelocTypeHint(DWORDLONG key, DWORD value)
 {
     printf("GetRelocTypeHint key tgt-%016" PRIX64 ", value hint-%u", key, value);
 }
-WORD MethodContext::repGetRelocTypeHint(void* target)
+CorInfoReloc MethodContext::repGetRelocTypeHint(void* target)
 {
     DWORDLONG key = CastPointer(target);
 
@@ -6476,21 +6478,21 @@ WORD MethodContext::repGetRelocTypeHint(void* target)
     {
 #ifdef sparseMC
         LogDebug("Sparse - repGetRelocTypeHint yielding fake answer...");
-        return 65535;
+        return CorInfoReloc::NONE;
 #else
         LogException(EXCEPTIONCODE_MC, "Didn't find %016" PRIX64 "", key);
 #endif
     }
 
     int  index  = GetRelocTypeHint->GetIndex(key);
-    WORD retVal = 0;
+    CorInfoReloc retVal;
     if (index == -1)
     {
-        retVal = IMAGE_REL_BASED_REL32;
+        retVal = CorInfoReloc::RELATIVE32;
     }
     else
     {
-        retVal = (WORD)GetRelocTypeHint->Get(key);
+        retVal = (CorInfoReloc)GetRelocTypeHint->Get(key);
     }
 
     DEBUG_REP(dmpGetRelocTypeHint(key, (DWORD)retVal));
@@ -6923,22 +6925,26 @@ bool MethodContext::repGetTailCallHelpers(
 }
 
 
-void MethodContext::recGetAsyncResumptionStub(CORINFO_METHOD_HANDLE hnd)
+void MethodContext::recGetAsyncResumptionStub(CORINFO_METHOD_HANDLE hnd, void* entryPoint)
 {
     if (GetAsyncResumptionStub == nullptr)
-        GetAsyncResumptionStub = new LightWeightMap<DWORD, DWORDLONG>();
+        GetAsyncResumptionStub = new LightWeightMap<DWORD, DLDL>();
 
-    GetAsyncResumptionStub->Add(0, CastHandle(hnd));
-    DEBUG_REC(dmpGetAsyncResumptionStub(CastHandle(hnd)));
+    DLDL result;
+    result.A = CastHandle(hnd);
+    result.B = CastPointer(entryPoint);
+    GetAsyncResumptionStub->Add(0, result);
+    DEBUG_REC(dmpGetAsyncResumptionStub(CastHandle(hnd), CastPointer(entryPoint)));
 }
-void MethodContext::dmpGetAsyncResumptionStub(DWORD key, DWORDLONG hnd)
+void MethodContext::dmpGetAsyncResumptionStub(DWORD key, const DLDL& value)
 {
-    printf("GetAsyncResumptionStub key-%u, value-%016" PRIX64, key, hnd);
+    printf("GetAsyncResumptionStub key-%u, hnd-%016" PRIX64 ", entrypoint-%016" PRIX64, key, value.A, value.B);
 }
-CORINFO_METHOD_HANDLE MethodContext::repGetAsyncResumptionStub()
+CORINFO_METHOD_HANDLE MethodContext::repGetAsyncResumptionStub(void** entryPoint)
 {
-    DWORDLONG hnd = LookupByKeyOrMissNoMessage(GetAsyncResumptionStub, 0);
-    return (CORINFO_METHOD_HANDLE)hnd;
+    DLDL value = LookupByKeyOrMissNoMessage(GetAsyncResumptionStub, 0);
+    *entryPoint = (void*)value.B;
+    return (CORINFO_METHOD_HANDLE)value.A;
 }
 
 void MethodContext::recGetContinuationType(size_t dataSize,

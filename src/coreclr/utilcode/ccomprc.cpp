@@ -21,94 +21,6 @@ __attribute__((visibility("default"))) DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATI
 extern void* GetClrModuleBase();
 
 //*****************************************************************************
-// Do the mapping from an langId to an hinstance node
-//*****************************************************************************
-HRESOURCEDLL CCompRC::LookupNode(LocaleID langId, BOOL &fMissing)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (m_pHash == NULL) return NULL;
-
-// Linear search
-    int i;
-    for(i = 0; i < m_nHashSize; i ++) {
-        if (m_pHash[i].IsSet() && m_pHash[i].HasID(langId)) {
-            return m_pHash[i].GetLibraryHandle();
-        }
-        if (m_pHash[i].IsMissing() && m_pHash[i].HasID(langId))
-        {
-            fMissing = TRUE;
-            return NULL;
-        }
-    }
-
-    return NULL;
-}
-
-//*****************************************************************************
-// Add a new node to the map and return it.
-//*****************************************************************************
-const int MAP_STARTSIZE = 7;
-const int MAP_GROWSIZE = 5;
-
-HRESULT CCompRC::AddMapNode(LocaleID langId, HRESOURCEDLL hInst, BOOL fMissing)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
-    }
-    CONTRACTL_END;
-
-
-    if (m_pHash == NULL) {
-        m_pHash = new (nothrow)CCulturedHInstance[MAP_STARTSIZE];
-        if (m_pHash==NULL)
-            return E_OUTOFMEMORY;
-        m_nHashSize = MAP_STARTSIZE;
-    }
-
-// For now, place in first open slot
-    int i;
-    for(i = 0; i < m_nHashSize; i ++) {
-        if (!m_pHash[i].IsSet() && !m_pHash[i].IsMissing()) {
-            if (fMissing)
-            {
-                m_pHash[i].SetMissing(langId);
-            }
-            else
-            {
-                m_pHash[i].Set(langId,hInst);
-            }
-
-            return S_OK;
-        }
-    }
-
-// Out of space, regrow
-    CCulturedHInstance * pNewHash = new (nothrow)CCulturedHInstance[m_nHashSize + MAP_GROWSIZE];
-    if (pNewHash)
-    {
-        memcpy(pNewHash, m_pHash, sizeof(CCulturedHInstance) * m_nHashSize);
-        delete [] m_pHash;
-        m_pHash = pNewHash;
-        if (fMissing)
-        {
-            m_pHash[m_nHashSize].SetMissing(langId);
-        }
-        else
-        {
-            m_pHash[m_nHashSize].Set(langId,hInst);
-        }
-        m_nHashSize += MAP_GROWSIZE;
-    }
-    else
-        return E_OUTOFMEMORY;
-    return S_OK;
-}
-
-//*****************************************************************************
 // Initialize
 //*****************************************************************************
 LPCWSTR CCompRC::m_pDefaultResource = W("mscorrc.dll");
@@ -183,29 +95,6 @@ HRESULT CCompRC::Init(LPCWSTR pResourceFile)
     return S_OK;
 }
 
-void CCompRC::SetResourceCultureCallbacks(
-        FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,
-        FPGETTHREADUICULTUREID fpGetThreadUICultureId)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_fpGetThreadUICultureNames = fpGetThreadUICultureNames;
-    m_fpGetThreadUICultureId = fpGetThreadUICultureId;
-}
-
-void CCompRC::GetResourceCultureCallbacks(
-        FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
-        FPGETTHREADUICULTUREID* fpGetThreadUICultureId)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if(fpGetThreadUICultureNames)
-        *fpGetThreadUICultureNames=m_fpGetThreadUICultureNames;
-
-    if(fpGetThreadUICultureId)
-        *fpGetThreadUICultureId=m_fpGetThreadUICultureId;
-}
-
 void CCompRC::Destroy()
 {
     CONTRACTL
@@ -229,16 +118,6 @@ void CCompRC::Destroy()
     if (m_Primary.GetLibraryHandle()) {
         ::FreeLibrary(m_Primary.GetLibraryHandle());
     }
-
-    if (m_pHash != NULL) {
-        int i;
-        for(i = 0; i < m_nHashSize; i ++) {
-            if (m_pHash[i].GetLibraryHandle() != NULL) {
-                ::FreeLibrary(m_pHash[i].GetLibraryHandle());
-                break;
-            }
-        }
-    }
 #endif
 
     // destroy map structure
@@ -249,11 +128,6 @@ void CCompRC::Destroy()
     if(m_csMap) {
         ClrDeleteCriticalSection(m_csMap);
         ZeroMemory(&(m_csMap), sizeof(CRITSEC_COOKIE));
-    }
-
-    if(m_pHash != NULL) {
-        delete [] m_pHash;
-        m_pHash = NULL;
     }
 }
 
@@ -296,7 +170,7 @@ CCompRC* CCompRC::GetDefaultResourceDll()
 
 // String resources packaged as PE files only exist on Windows
 #ifdef HOST_WINDOWS
-HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
+HRESULT CCompRC::GetLibrary(HRESOURCEDLL* phInst)
 {
     CONTRACTL
     {
@@ -319,11 +193,8 @@ HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
     // Try to match the primary entry, or else use the primary if we don't care.
     if (m_Primary.IsSet())
     {
-        if (langId == UICULTUREID_DONTCARE || m_Primary.HasID(langId))
-        {
-            hInst = m_Primary.GetLibraryHandle();
-            hr = S_OK;
-        }
+        hInst = m_Primary.GetLibraryHandle();
+        hr = S_OK;
     }
     else if(m_Primary.IsMissing())
     {
@@ -349,25 +220,18 @@ HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
             hInst  = hLibInst;
             if (SUCCEEDED(hr))
             {
-                m_Primary.Set(langId,hLibInst);
+                m_Primary.Set(hLibInst);
             }
             else
             {
-                m_Primary.SetMissing(langId);
+                m_Primary.SetMissing();
             }
         }
 
         // Someone got into this critical section before us and set the primary already
-        else if (m_Primary.HasID(langId))
-        {
-            hInst = m_Primary.GetLibraryHandle();
-            fLibAlreadyOpen = TRUE;
-        }
-
-        // If neither case is true, someone got into this critical section before us and
-        //  set the primary to other than the language we want...
         else
         {
+            hInst = m_Primary.GetLibraryHandle();
             fLibAlreadyOpen = TRUE;
         }
 
@@ -381,74 +245,7 @@ HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
     }
 #endif
 
-    // If we enter here, we know that the primary is set to something other than the
-    // language we want - multiple languages use the hash table
-    if (hInst == NULL && !m_Primary.IsMissing())
-    {
-        // See if the resource exists in the hash table
-        {
-            CRITSEC_Holder csh(m_csMap);
-            BOOL fMissing = FALSE;
-            hInst = LookupNode(langId, fMissing);
-            if (fMissing == TRUE)
-            {
-                hr = HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
-                goto Exit;
-            }
-        }
-
-#ifndef DACCESS_COMPILE
-        // If we didn't find it, we have to load the library and insert it into the hash
-        if (hInst == NULL)
-        {
-            hr = LoadLibrary(&hLibInst);
-            // If it's a transient failure, don't cache the failure
-            if (FAILED(hr) && Exception::IsTransient(hr))
-            {
-                return hr;
-            }
-            {
-                CRITSEC_Holder csh (m_csMap);
-
-                // Double check - someone may have entered this section before us
-                BOOL fMissing = FALSE;
-                hInst = LookupNode(langId, fMissing);
-                if (hInst == NULL && !fMissing)
-                {
-                    if (SUCCEEDED(hr))
-                    {
-                        hInst = hLibInst;
-                        hr = AddMapNode(langId, hInst);
-                    } else
-                    {
-                        HRESULT hrLoadLibrary = hr;
-                        hr = AddMapNode(langId, hInst, TRUE /* fMissing */);
-                        if (SUCCEEDED(hr))
-                        {
-                            hr = hrLoadLibrary;
-                        }
-                    }
-                }
-                else
-                {
-                    fLibAlreadyOpen = TRUE;
-                }
-            }
-
-            if (fLibAlreadyOpen || FAILED(hr))
-            {
-                FreeLibrary(hLibInst);
-            }
-        }
-
-        // We found the node, so set hr to be a success.
-        else
-        {
-            hr = S_OK;
-        }
-#endif // DACCESS_COMPILE
-    }
-Exit:
+    _ASSERTE(SUCCEEDED(hr) || hInst == NULL);
     *phInst = hInst;
     return hr;
 }
@@ -460,32 +257,6 @@ Exit:
 // Mutliple threads may call this, so the cache structure is thread safe.
 //*****************************************************************************
 HRESULT CCompRC::LoadString(ResourceCategory eCategory, UINT iResourceID, _Out_writes_(iMax) LPWSTR szBuffer, int iMax,  int *pcwchUsed)
-{
-    WRAPPER_NO_CONTRACT;
-    LocaleIDValue langIdValue;
-    LocaleID langId;
-    // Must resolve current thread's langId to a dll.
-    if(m_fpGetThreadUICultureId) {
-        int ret = (*m_fpGetThreadUICultureId)(&langIdValue);
-
-        // Callback can't return 0, since that indicates empty.
-        // To indicate empty, callback should return UICULTUREID_DONTCARE
-        _ASSERTE(ret != 0);
-
-        if (ret == 0)
-            return E_UNEXPECTED;
-        langId=langIdValue;
-
-    }
-    else {
-        langId = UICULTUREID_DONTCARE;
-    }
-
-
-    return LoadString(eCategory, langId, iResourceID, szBuffer, iMax, pcwchUsed);
-}
-
-HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iResourceID, _Out_writes_(iMax) LPWSTR szBuffer, int iMax, int *pcwchUsed)
 {
 #ifdef DBI_COMPONENT_MONO
     return E_NOTIMPL;
@@ -505,7 +276,7 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
     HRESOURCEDLL    hInst = 0; //instance of cultured resource dll
     int length;
 
-    hr = GetLibrary(langId, &hInst);
+    hr = GetLibrary(&hInst);
 
     if (SUCCEEDED(hr))
     {
@@ -563,12 +334,7 @@ HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
 }
 
 //*****************************************************************************
-// Load the library for this thread's current language
-// Called once per language.
-// Search order is:
-//  1. Dll in localized path (<dir passed>\<lang name (en-US format)>\mscorrc.dll)
-//  2. Dll in localized (parent) path (<dir passed>\<lang name> (en format)\mscorrc.dll)
-//  3. Dll in root path (<dir passed>\mscorrc.dll)
+// Load the library from root path (<dir passed>\mscorrc.dll). No locale support.
 //*****************************************************************************
 HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
                                    SString& rcPath)
@@ -591,58 +357,23 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
     // must initialize before calling SString::Empty()
     SString::Startup();
 
-    // Try and get both the culture fallback sequence
-
-    StringArrayList cultureNames;
-
-    if (m_fpGetThreadUICultureNames)
-    {
-        hr = (*m_fpGetThreadUICultureNames)(&cultureNames);
-    }
-    else
-    {
-        EX_TRY
-        {
-            cultureNames.Append(SString::Empty());
-        }
-        EX_CATCH_HRESULT(hr);
-    }
-
-    if (hr == E_OUTOFMEMORY)
-        return hr;
     EX_TRY
     {
-        for (DWORD i=0; i< cultureNames.GetCount();i++)
+        PathString rcPathName(rcPath);
+
+        if (!rcPathName.EndsWith(SL(W("\\"))))
         {
-            SString& sLang = cultureNames[i];
-
-            PathString rcPathName(rcPath);
-
-            if (!rcPathName.EndsWith(SL(W("\\"))))
-            {
-                rcPathName.Append(W("\\"));
-            }
-
-            if (!sLang.IsEmpty())
-            {
-                rcPathName.Append(sLang);
-                rcPathName.Append(W("\\"));
-                rcPathName.Append(m_pResourceFile);
-            }
-            else
-            {
-                rcPathName.Append(m_pResourceFile);
-            }
-
-            // Load the resource library as a data file, so that the OS doesn't have
-            // to allocate it as code.  This only works so long as the file contains
-            // only strings.
-            hr = LoadResourceFile(pHInst, rcPathName);
-            if (SUCCEEDED(hr))
-            {
-                break;
-            }
+            rcPathName.Append(W("\\"));
         }
+
+        {
+            rcPathName.Append(m_pResourceFile);
+        }
+
+        // Load the resource library as a data file, so that the OS doesn't have
+        // to allocate it as code.  This only works so long as the file contains
+        // only strings.
+        hr = LoadResourceFile(pHInst, rcPathName);
     }
     EX_CATCH_HRESULT(hr);
 

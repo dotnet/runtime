@@ -1,14 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { DotnetHostBuilder } from "../types";
+import { findResources, isNodeHosted, isShellHosted } from "./bootstrap";
 import { Module, dotnetAssert } from "./cross-module";
 import { exit } from "./exit";
-import { createPromiseController } from "./promise-controller";
+import { createPromiseCompletionSource } from "./promise-completion-source";
 
 let CoreCLRInitialized = false;
-const runMainPromiseController = createPromiseController<number>();
+const runMainPromiseController = createPromiseCompletionSource<number>();
 
-export function BrowserHost_InitializeCoreCLR():void {
+export function BrowserHost_InitializeCoreCLR(): void {
     dotnetAssert.check(!CoreCLRInitialized, "CoreCLR should be initialized just once");
     CoreCLRInitialized = true;
 
@@ -22,14 +24,29 @@ export function BrowserHost_InitializeCoreCLR():void {
     }
 }
 
-export function resolveRunMainPromise(exitCode:number):void {
+export function resolveRunMainPromise(exitCode: number): void {
     runMainPromiseController.resolve(exitCode);
 }
 
-export function rejectRunMainPromise(reason:any):void {
+export function rejectRunMainPromise(reason: any): void {
     runMainPromiseController.reject(reason);
 }
 
-export function getRunMainPromise():Promise<number> {
+export function getRunMainPromise(): Promise<number> {
     return runMainPromiseController.promise;
+}
+
+// Auto-start when in NodeJS environment as a entry script
+export async function selfHostNodeJS(dotnet: DotnetHostBuilder): Promise<void> {
+    try {
+        if (isNodeHosted()) {
+            await findResources(dotnet);
+            await dotnet.run();
+        } else if (isShellHosted()) {
+            // because in V8 we can't probe directories to find assemblies
+            throw new Error("Shell/V8 hosting is not supported");
+        }
+    } catch (err: any) {
+        exit(1, err);
+    }
 }

@@ -70,7 +70,7 @@ class CallStubGenerator
         ReturnTypeVoid,
         ReturnTypeI8,
         ReturnTypeDouble,
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#ifdef TARGET_AMD64
         ReturnTypeBuffArg1,
         ReturnTypeBuffArg2,
 #else
@@ -98,8 +98,14 @@ class CallStubGenerator
         ReturnTypeVector128,
         ReturnType2Vector128,
         ReturnType3Vector128,
-        ReturnType4Vector128
+        ReturnType4Vector128,
 #endif // TARGET_ARM64
+#if defined(TARGET_RISCV64)
+        ReturnType2I8,
+        ReturnType2Double,
+        ReturnTypeFloatInt,
+        ReturnTypeIntFloat,
+#endif // TARGET_RISCV64
     };
 
     enum class RoutineType
