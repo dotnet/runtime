@@ -74,7 +74,7 @@ namespace System.IO.Strategies
 
         public sealed override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
 
-        public sealed override unsafe long Length => _fileHandle.GetFileLength();
+        public sealed override long Length => _fileHandle.GetFileLength();
 
         // in case of concurrent incomplete reads, there can be multiple threads trying to update the position
         // at the same time. That is why we are using Interlocked here.
@@ -93,7 +93,7 @@ namespace System.IO.Strategies
         internal sealed override bool IsClosed => _fileHandle.IsClosed;
 
         // Flushing is the responsibility of BufferedFileStreamStrategy
-        internal sealed override SafeFileHandle SafeFileHandle
+        internal override SafeFileHandle SafeFileHandle
         {
             get
             {
@@ -158,8 +158,8 @@ namespace System.IO.Strategies
             }
             else
             {
-                // keep throwing the same exception we did when seek was causing actual offset change
-                FileStreamHelpers.ThrowInvalidArgument(_fileHandle);
+                // keep throwing the same exception type we did when seek was causing actual offset change
+                throw new IOException(SR.IO_SeekBeforeBegin);
             }
 
             // Prevent users from overwriting data in a file that was opened in append mode.
@@ -184,7 +184,7 @@ namespace System.IO.Strategies
             SetLengthCore(value);
         }
 
-        protected unsafe void SetLengthCore(long value)
+        protected void SetLengthCore(long value)
         {
             Debug.Assert(value >= 0);
 

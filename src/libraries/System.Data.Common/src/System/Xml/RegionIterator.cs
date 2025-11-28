@@ -148,7 +148,7 @@ namespace System.Xml
                 _rowElement.ElementState = oldState;
                 return NextRight();
             }
-            Debug.Assert(!XmlDataDocument.IsTextLikeNode(n));
+            Debug.Assert(!XmlDataDocument.Helpers.IsTextLikeNode(n));
             _currentNode = n;
 
             // If we have been defoliated, we should have stayed that way
@@ -175,7 +175,7 @@ namespace System.Xml
                     }
                 }
 
-                if (XmlDataDocument.IsTextLikeNode(n) && (n.NextSibling == null || !XmlDataDocument.IsTextLikeNode(n.NextSibling)))
+                if (XmlDataDocument.Helpers.IsTextLikeNode(n) && (n.NextSibling == null || !XmlDataDocument.Helpers.IsTextLikeNode(n.NextSibling)))
                 {
                     // don't use string builder if only one text node exists
                     value = n.Value;
@@ -184,7 +184,7 @@ namespace System.Xml
                 else
                 {
                     StringBuilder sb = new StringBuilder();
-                    while (n != null && XmlDataDocument.IsTextLikeNode(n))
+                    while (n != null && XmlDataDocument.Helpers.IsTextLikeNode(n))
                     {
                         // Ignore non-significant whitespace nodes
                         if (n.NodeType != XmlNodeType.Whitespace)

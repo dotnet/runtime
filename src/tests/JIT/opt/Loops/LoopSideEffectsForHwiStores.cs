@@ -39,7 +39,7 @@ public unsafe class LoopSideEffectsForHwiStores
     {
         Vector128<int> vtor = Vector128<int>.Zero;
 
-        a.VtorField = Vector128.Create(1);
+        a.VtorField = Vector128<int>.One;
         a.VtorField = Sse2.Add(a.VtorField, a.VtorField);
 
         for (int i = 0; i < 10; i++)
@@ -56,7 +56,7 @@ public unsafe class LoopSideEffectsForHwiStores
     {
         Vector128<int> vtor = Vector128<int>.Zero;
 
-        a.VtorField = Vector128.Create(1);
+        a.VtorField = Vector128<int>.One;
         a.VtorField = AdvSimd.Add(a.VtorField, a.VtorField);
 
         for (int i = 0; i < 10; i++)

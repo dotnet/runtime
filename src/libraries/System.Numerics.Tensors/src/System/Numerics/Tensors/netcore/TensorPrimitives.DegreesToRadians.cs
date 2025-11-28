@@ -19,8 +19,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void DegreesToRadians<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : ITrigonometricFunctions<T> =>
+            where T : ITrigonometricFunctions<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, DegreesToRadiansOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, DegreesToRadiansOperator<T>>(x, destination);
+        }
 
         /// <summary>T.DegreesToRadians(x)</summary>
         private readonly struct DegreesToRadiansOperator<T> : IUnaryOperator<T, T> where T : ITrigonometricFunctions<T>

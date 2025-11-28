@@ -62,8 +62,8 @@ HRESULT DefaultAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName 
         //
         // Attempt to resolve the assembly via managed ALC instance. This can either fail the bind or return reference to an existing
         // assembly that has been loaded
-        INT_PTR pManagedAssemblyLoadContext = GetManagedAssemblyLoadContext();
-        if (pManagedAssemblyLoadContext == (INT_PTR)NULL)
+        INT_PTR pAssemblyLoadContext = GetAssemblyLoadContext();
+        if (pAssemblyLoadContext == (INT_PTR)NULL)
         {
             // For satellite assemblies, the managed ALC has additional resolution logic (defined by the runtime) which
             // should be run even if the managed default ALC has not yet been used. (For non-satellite assemblies, any
@@ -77,14 +77,14 @@ HRESULT DefaultAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName 
                 DECLARE_ARGHOLDER_ARRAY(args, 0);
                 CALL_MANAGED_METHOD_NORET(args)
 
-                pManagedAssemblyLoadContext = GetManagedAssemblyLoadContext();
-                _ASSERTE(pManagedAssemblyLoadContext != (INT_PTR)NULL);
+                pAssemblyLoadContext = GetAssemblyLoadContext();
+                _ASSERTE(pAssemblyLoadContext != (INT_PTR)NULL);
             }
         }
 
-        if (pManagedAssemblyLoadContext != (INT_PTR)NULL)
+        if (pAssemblyLoadContext != (INT_PTR)NULL)
         {
-            hr = AssemblyBinderCommon::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName,
+            hr = AssemblyBinderCommon::BindUsingHostAssemblyResolver(pAssemblyLoadContext, pAssemblyName,
                                                                      NULL, this, &pCoreCLRFoundAssembly);
             if (SUCCEEDED(hr))
             {

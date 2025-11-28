@@ -90,7 +90,7 @@ namespace ILCompiler.DependencyAnalysis
                     for (int i = 0; i < nativeType.Fields.Length; i++)
                     {
                         var row = writer.GetTuple(
-                            writer.GetStringConstant(nativeType.Fields[i].Name),
+                            writer.GetStringConstant(nativeType.Fields[i].GetName()),
                             writer.GetUnsignedConstant((uint)nativeType.Fields[i].Offset.AsInt)
                             );
 

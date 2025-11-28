@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
@@ -58,9 +60,9 @@ namespace ILCompiler
             MetadataType metadataType = owningType as MetadataType;
             if (metadataType != null && metadataType.Module == factory.TypeSystemContext.SystemModule)
             {
-                if (metadataType.Name == "Marshal" && metadataType.Namespace == "System.Runtime.InteropServices")
+                if (metadataType.Name.SequenceEqual("Marshal"u8) && metadataType.Namespace.SequenceEqual("System.Runtime.InteropServices"u8))
                 {
-                    string methodName = method.Name;
+                    string methodName = method.GetName();
                     if (methodName == "GetFunctionPointerForDelegate" ||
                         methodName == "GetDelegateForFunctionPointer" ||
                         methodName == "PtrToStructure" ||

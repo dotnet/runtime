@@ -4,6 +4,7 @@
     <MergedWrapperProjectReference Include="perffix/**/*.??proj" />
     <MergedWrapperProjectReference Include="PREFIX/**/*.??proj" />
     <MergedWrapperProjectReference Include="shift/**/*.??proj" />
+    <MergedWrapperProjectReference Include="compare/**/*.??proj" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

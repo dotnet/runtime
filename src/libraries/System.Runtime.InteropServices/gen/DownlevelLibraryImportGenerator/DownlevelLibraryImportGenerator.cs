@@ -375,7 +375,7 @@ namespace Microsoft.Interop
                 NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.CharSet));
                 ExpressionSyntax value = MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
-                    ParseTypeName(typeof(CharSet).FullName),
+                    AliasQualifiedName("global", IdentifierName(typeof(CharSet).FullName)),
                     IdentifierName(nameof(CharSet.Unicode)));
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }

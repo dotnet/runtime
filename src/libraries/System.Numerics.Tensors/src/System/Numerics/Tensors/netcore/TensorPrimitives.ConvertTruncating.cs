@@ -103,7 +103,12 @@ namespace System.Numerics.Tensors
         /// <summary>(float)int</summary>
         private readonly struct ConvertSingleToInt32 : IUnaryOperator<float, int>
         {
-            public static bool Vectorizable => false; // TODO https://github.com/dotnet/runtime/pull/97529: make this true once vectorized behavior matches scalar
+            public static bool Vectorizable =>
+#if NET9_0_OR_GREATER
+                true; // .NET 9+ includes https://github.com/dotnet/runtime/pull/97529
+#else
+                false;
+#endif
 
             public static int Invoke(float x) => int.CreateTruncating(x);
             public static Vector128<int> Invoke(Vector128<float> x) => Vector128.ConvertToInt32(x);
@@ -114,7 +119,12 @@ namespace System.Numerics.Tensors
         /// <summary>(float)uint</summary>
         private readonly struct ConvertSingleToUInt32 : IUnaryOperator<float, uint>
         {
-            public static bool Vectorizable => false; // TODO https://github.com/dotnet/runtime/pull/97529: make this true once vectorized behavior matches scalar
+            public static bool Vectorizable =>
+#if NET9_0_OR_GREATER
+                true; // .NET 9+ includes https://github.com/dotnet/runtime/pull/97529
+#else
+                false;
+#endif
 
             public static uint Invoke(float x) => uint.CreateTruncating(x);
             public static Vector128<uint> Invoke(Vector128<float> x) => Vector128.ConvertToUInt32(x);
@@ -125,7 +135,12 @@ namespace System.Numerics.Tensors
         /// <summary>(ulong)double</summary>
         private readonly struct ConvertDoubleToUInt64 : IUnaryOperator<double, ulong>
         {
-            public static bool Vectorizable => false; // TODO https://github.com/dotnet/runtime/pull/97529: make this true once vectorized behavior matches scalar
+            public static bool Vectorizable =>
+#if NET9_0_OR_GREATER
+                true; // .NET 9+ includes https://github.com/dotnet/runtime/pull/97529
+#else
+                false;
+#endif
 
             public static ulong Invoke(double x) => ulong.CreateTruncating(x);
             public static Vector128<ulong> Invoke(Vector128<double> x) => Vector128.ConvertToUInt64(x);
@@ -136,7 +151,12 @@ namespace System.Numerics.Tensors
         /// <summary>(long)double</summary>
         private readonly struct ConvertDoubleToInt64 : IUnaryOperator<double, long>
         {
-            public static bool Vectorizable => false; // TODO https://github.com/dotnet/runtime/pull/97529: make this true once vectorized behavior matches scalar
+            public static bool Vectorizable =>
+#if NET9_0_OR_GREATER
+                true; // .NET 9+ includes https://github.com/dotnet/runtime/pull/97529
+#else
+                false;
+#endif
 
             public static long Invoke(double x) => long.CreateTruncating(x);
             public static Vector128<long> Invoke(Vector128<double> x) => Vector128.ConvertToInt64(x);

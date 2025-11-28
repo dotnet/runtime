@@ -39,7 +39,6 @@ namespace System.Globalization
     /// </remarks>
     public sealed class NumberFormatInfo : IFormatProvider, ICloneable
     {
-        private static NumberFormatInfo? s_invariantInfo;
         internal static readonly string[] s_asciiDigits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
         internal static readonly int[] s_intArrayWithElement3 = [3];
 
@@ -204,7 +203,7 @@ namespace System.Globalization
         /// supported and constant irrespective of the current culture.
         /// Used by FromString methods.
         /// </summary>
-        public static NumberFormatInfo InvariantInfo => s_invariantInfo ??=
+        public static NumberFormatInfo InvariantInfo => field ??=
             // Lazy create the invariant info. This cannot be done in a .cctor because exceptions can
             // be thrown out of a .cctor stack that will need this.
             CultureInfo.InvariantCulture.NumberFormat;
@@ -218,9 +217,9 @@ namespace System.Globalization
             static NumberFormatInfo GetProviderNonNull(IFormatProvider provider)
             {
                 // Fast path for a regular CultureInfo
-                if (provider is CultureInfo cultureProvider && !cultureProvider._isInherited)
+                if (provider.GetType() == typeof(CultureInfo) && ((CultureInfo)provider)._numInfo is { } info)
                 {
-                    return cultureProvider._numInfo ?? cultureProvider.NumberFormat;
+                    return info;
                 }
 
                 return

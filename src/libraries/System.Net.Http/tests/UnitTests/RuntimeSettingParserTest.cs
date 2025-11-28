@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -13,7 +14,7 @@ namespace System.Net.Http.Tests
         [ConditionalTheory(nameof(SupportsRemoteExecutor))]
         [InlineData(false)]
         [InlineData(true)]
-        public void QueryRuntimeSettingSwitch_WhenNotSet_DefaultIsUsed(bool defaultValue)
+        public async Task QueryRuntimeSettingSwitch_WhenNotSet_DefaultIsUsed(bool defaultValue)
         {
             static void RunTest(string defaultValueStr)
             {
@@ -22,11 +23,11 @@ namespace System.Net.Http.Tests
                 Assert.Equal(expected, actual);
             }
 
-            RemoteExecutor.Invoke(RunTest, defaultValue.ToString()).Dispose();
+            await RemoteExecutor.Invoke(RunTest, defaultValue.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(nameof(SupportsRemoteExecutor))]
-        public void QueryRuntimeSettingSwitch_AppContextHasPriority()
+        public async Task QueryRuntimeSettingSwitch_AppContextHasPriority()
         {
             static void RunTest()
             {
@@ -37,11 +38,11 @@ namespace System.Net.Http.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "true";
 
-            RemoteExecutor.Invoke(RunTest, options).Dispose();
+            await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
         [ConditionalFact(nameof(SupportsRemoteExecutor))]
-        public void QueryRuntimeSettingSwitch_EnvironmentVariable()
+        public async Task QueryRuntimeSettingSwitch_EnvironmentVariable()
         {
             static void RunTest()
             {
@@ -51,11 +52,11 @@ namespace System.Net.Http.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "false";
 
-            RemoteExecutor.Invoke(RunTest, options).Dispose();
+            await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
         [ConditionalFact(nameof(SupportsRemoteExecutor))]
-        public void QueryRuntimeSettingSwitch_InvalidValue_FallbackToDefault()
+        public async Task QueryRuntimeSettingSwitch_InvalidValue_FallbackToDefault()
         {
             static void RunTest()
             {
@@ -65,13 +66,13 @@ namespace System.Net.Http.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "cheese";
 
-            RemoteExecutor.Invoke(RunTest, options).Dispose();
+            await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
         [ConditionalTheory(nameof(SupportsRemoteExecutor))]
         [InlineData(0)]
         [InlineData(42)]
-        public void QueryRuntimeSettingInt32_WhenNotSet_DefaultIsUsed(int defaultValue)
+        public async Task QueryRuntimeSettingInt32_WhenNotSet_DefaultIsUsed(int defaultValue)
         {
             static void RunTest(string defaultValueStr)
             {
@@ -80,11 +81,11 @@ namespace System.Net.Http.Tests
                 Assert.Equal(expected, actual);
             }
 
-            RemoteExecutor.Invoke(RunTest, defaultValue.ToString()).Dispose();
+            await RemoteExecutor.Invoke(RunTest, defaultValue.ToString()).DisposeAsync();
         }
 
         [ConditionalFact(nameof(SupportsRemoteExecutor))]
-        public void QueryRuntimeSettingInt32_AppContextHasPriority()
+        public async Task QueryRuntimeSettingInt32_AppContextHasPriority()
         {
             static void RunTest()
             {
@@ -95,11 +96,11 @@ namespace System.Net.Http.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "3";
 
-            RemoteExecutor.Invoke(RunTest, options).Dispose();
+            await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
         [ConditionalFact(nameof(SupportsRemoteExecutor))]
-        public void QueryRuntimeSettingInt32_EnvironmentVariable()
+        public async Task QueryRuntimeSettingInt32_EnvironmentVariable()
         {
             static void RunTest()
             {
@@ -109,12 +110,12 @@ namespace System.Net.Http.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "1";
 
-            RemoteExecutor.Invoke(RunTest, options).Dispose();
+            await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
 
         [ConditionalFact(nameof(SupportsRemoteExecutor))]
-        public void QueryRuntimeSettingInt32_InvalidValue_FallbackToDefault()
+        public async Task QueryRuntimeSettingInt32_InvalidValue_FallbackToDefault()
         {
             static void RunTest()
             {
@@ -124,22 +125,22 @@ namespace System.Net.Http.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "cheese";
 
-            RemoteExecutor.Invoke(RunTest, options).Dispose();
+            await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
         [ConditionalFact(nameof(SupportsRemoteExecutor))]
-        public void ParseInt32EnvironmentVariableValue_WhenNotSet_DefaultIsUsed()
+        public async Task ParseInt32EnvironmentVariableValue_WhenNotSet_DefaultIsUsed()
         {
             static void RunTest()
             {
                 int actual = RuntimeSettingParser.ParseInt32EnvironmentVariableValue("FOO_BAR", -42);
                 Assert.Equal(-42, actual);
             }
-            RemoteExecutor.Invoke(RunTest).Dispose();
+            await RemoteExecutor.Invoke(RunTest).DisposeAsync();
         }
 
         [ConditionalFact(nameof(SupportsRemoteExecutor))]
-        public void ParseInt32EnvironmentVariableValue_ValidValue()
+        public async Task ParseInt32EnvironmentVariableValue_ValidValue()
         {
             static void RunTest()
             {
@@ -150,11 +151,11 @@ namespace System.Net.Http.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "84";
 
-            RemoteExecutor.Invoke(RunTest, options).Dispose();
+            await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
         [ConditionalFact(nameof(SupportsRemoteExecutor))]
-        public void ParseInt32EnvironmentVariableValue_InvalidValue_FallbackToDefault()
+        public async Task ParseInt32EnvironmentVariableValue_InvalidValue_FallbackToDefault()
         {
             static void RunTest()
             {
@@ -165,22 +166,22 @@ namespace System.Net.Http.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "-~4!";
 
-            RemoteExecutor.Invoke(RunTest, options).Dispose();
+            await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
         [ConditionalFact(nameof(SupportsRemoteExecutor))]
-        public void ParseDoubleEnvironmentVariableValue_WhenNotSet_DefaultIsUsed()
+        public async Task ParseDoubleEnvironmentVariableValue_WhenNotSet_DefaultIsUsed()
         {
             static void RunTest()
             {
                 double actual = RuntimeSettingParser.ParseDoubleEnvironmentVariableValue("FOO_BAR", -0.42);
                 Assert.Equal(-0.42, actual);
             }
-            RemoteExecutor.Invoke(RunTest).Dispose();
+            await RemoteExecutor.Invoke(RunTest).DisposeAsync();
         }
 
         [ConditionalFact(nameof(SupportsRemoteExecutor))]
-        public void ParseDoubleEnvironmentVariableValue_ValidValue()
+        public async Task ParseDoubleEnvironmentVariableValue_ValidValue()
         {
             static void RunTest()
             {
@@ -191,11 +192,11 @@ namespace System.Net.Http.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "0.84";
 
-            RemoteExecutor.Invoke(RunTest, options).Dispose();
+            await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
 
         [ConditionalFact(nameof(SupportsRemoteExecutor))]
-        public void ParseDoubleEnvironmentVariableValue_InvalidValue_FallbackToDefault()
+        public async Task ParseDoubleEnvironmentVariableValue_InvalidValue_FallbackToDefault()
         {
             static void RunTest()
             {
@@ -206,7 +207,7 @@ namespace System.Net.Http.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["FOO_BAR"] = "-~4!";
 
-            RemoteExecutor.Invoke(RunTest, options).Dispose();
+            await RemoteExecutor.Invoke(RunTest, options).DisposeAsync();
         }
     }
 }

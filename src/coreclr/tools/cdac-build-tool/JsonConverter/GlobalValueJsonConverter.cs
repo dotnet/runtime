@@ -15,18 +15,25 @@ public class GlobalValueJsonConverter : JsonConverter<DataDescriptorModel.Global
 
     public override void Write(Utf8JsonWriter writer, DataDescriptorModel.GlobalValue value, JsonSerializerOptions options)
     {
-        if (!value.Indirect)
+        switch (value.Kind)
         {
-            // no type: just write value as a number.
-            // we always write as a string containing a hex number
-            writer.WriteStringValue($"0x{value.Value:x}");
-        }
-        else
-        {
-            // pointer data index.  write as a 1-element array containing a decimal number
-            writer.WriteStartArray();
-            writer.WriteNumberValue(value.Value);
-            writer.WriteEndArray();
+            case DataDescriptorModel.GlobalValue.KindEnum.Direct:
+                // no type: just write value as a number.
+                // we always write as a string containing a hex number
+                writer.WriteStringValue($"0x{value.NumericValue:x}");
+                break;
+            case DataDescriptorModel.GlobalValue.KindEnum.Indirect:
+                // pointer data index.  write as a 1-element array containing a decimal number
+                writer.WriteStartArray();
+                writer.WriteNumberValue(value.NumericValue);
+                writer.WriteEndArray();
+                break;
+            case DataDescriptorModel.GlobalValue.KindEnum.String:
+                // string data. write as a JSON string value
+                writer.WriteStringValue(value.StringValue);
+                break;
+            default:
+                throw new InvalidOperationException("Unknown GlobalValue type");
         }
     }
 }

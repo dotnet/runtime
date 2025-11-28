@@ -172,6 +172,8 @@ Some environment variables such as `DOTNET_JitDisasm` take a list of patterns sp
   + The simplest method list is a single method name specified using just the method name (no class name), e.g. `Main`.
   + A list of simple method names can be used, e.g., `Main Test1 Test2`.
 * The string matched against depends on characters in the pattern:
+  + If the pattern contains a '!' character, the string matched against is prefixed by the assembly name and an exclamation mark.
+    - Example: `testassembly!*` - specifies all methods from the assembly named `testassembly`.
   + If the pattern contains a ':' character, the string matched against is prefixed by the class name and a colon.
     - Example: `TestClass:Main` - specifies a single method named `Main` in the class named `TestClass`.
   + If the pattern contains a '(' character, the string matched against is suffixed by the signature.
@@ -281,7 +283,7 @@ by a third-party disassembler for a particular set of code bytes.
 
 The late disassembler currently is only available in Debug/Checked builds.
 
-(Note: coredistools is curently version 1.4.0, based on LLVM 17.0.6. The source code is [here](https://github.com/dotnet/jitutils)).
+(Note: coredistools is currently version 1.6.0, based on LLVM 20.1.0. The source code is [here](https://github.com/dotnet/jitutils)).
 
 To invoke the late disassembler, use:
 * `DOTNET_JitLateDisasm`={method-list} - output late disassembly for the specified functions. E.g., `DOTNET_JitLateDisasm=Main`,

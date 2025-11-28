@@ -73,14 +73,7 @@ namespace System.Numerics
 
             int resultLength = leftLength + right.Length;
 
-            if (leftLength >= right.Length)
-            {
-                Multiply(left.Slice(0, leftLength), right, temp.Slice(0, resultLength));
-            }
-            else
-            {
-                Multiply(right, left.Slice(0, leftLength), temp.Slice(0, resultLength));
-            }
+            Multiply(left.Slice(0, leftLength), right, temp.Slice(0, resultLength));
 
             left.Clear();
             //switch buffers
@@ -227,7 +220,7 @@ namespace System.Numerics
 
             if (value.Length > modulus.Length)
             {
-                Remainder(value, modulus, valueCopy);
+                Remainder(value, modulus, valueCopy.Slice(0, value.Length));
             }
             else
             {
@@ -276,7 +269,7 @@ namespace System.Numerics
 
             if (value.Length > modulus.Length)
             {
-                Remainder(value, modulus, valueCopy);
+                Remainder(value, modulus, valueCopy.Slice(0, value.Length));
             }
             else
             {

@@ -15,8 +15,6 @@ namespace System.Runtime.Serialization
     /// </remarks>
     public class ExportOptions
     {
-        private Collection<Type>? _knownTypes;
-
         /// <summary>
         /// Gets or sets a serialization surrogate provider.
         /// </summary>
@@ -25,6 +23,6 @@ namespace System.Runtime.Serialization
         /// <summary>
         /// Gets the collection of types that may be encountered during serialization or deserialization.
         /// </summary>
-        public Collection<Type> KnownTypes => _knownTypes ??= new Collection<Type>();
+        public Collection<Type> KnownTypes => field ??= new Collection<Type>();
     }
 }

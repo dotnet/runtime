@@ -4,6 +4,7 @@
 using System.Diagnostics.Tracing;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 
 namespace System
 {
@@ -147,6 +148,20 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(obj);
             _ReRegisterForFinalize(obj);
+        }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(Finalize))]
+        private static extern void CallFinalize(object o);
+        private static void GuardedFinalize(object o)
+        {
+            try
+            {
+                CallFinalize(o);
+            }
+            catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
+            {
+                // the handler returned "true" means the exception is now "handled" and we should continue.
+            }
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

@@ -170,7 +170,7 @@ namespace ILCompiler
         {
             if (type is EcmaType ecmaType)
             {
-                string assemblyName = ((EcmaAssembly)ecmaType.EcmaModule).GetName().Name;
+                string assemblyName = ((EcmaAssembly)ecmaType.Module).GetName().Name;
                 bool isSystemPrivate = assemblyName.StartsWith("System.Private.");
 
                 // Abbreviate System.Private to S.P. This might conflict with user defined assembly names,
@@ -190,7 +190,7 @@ namespace ILCompiler
 
                     if (!_mangledTypeNames.ContainsKey(type))
                     {
-                        foreach (MetadataType t in ecmaType.EcmaModule.GetAllTypes())
+                        foreach (MetadataType t in ecmaType.Module.GetAllTypes())
                         {
                             string name = t.GetFullName();
 
@@ -421,7 +421,7 @@ namespace ILCompiler
                     {
                         foreach (var m in method.OwningType.GetMethods())
                         {
-                            string name = SanitizeName(m.Name);
+                            string name = SanitizeName(m.GetName());
 
                             name = DisambiguateName(name, deduplicator);
                             deduplicator.Add(name);
@@ -480,7 +480,7 @@ namespace ILCompiler
                 else
                 {
                     // Assume that Name is unique for all other methods
-                    utf8MangledName = new Utf8String(SanitizeName(method.Name));
+                    utf8MangledName = new Utf8String(SanitizeName(method.GetName()));
                 }
             }
 
@@ -517,7 +517,7 @@ namespace ILCompiler
                     {
                         foreach (var f in field.OwningType.GetFields())
                         {
-                            string name = SanitizeName(f.Name);
+                            string name = SanitizeName(f.GetName());
 
                             name = DisambiguateName(name, deduplicator);
                             deduplicator.Add(name);
@@ -533,7 +533,7 @@ namespace ILCompiler
             }
 
 
-            string mangledName = SanitizeName(field.Name);
+            string mangledName = SanitizeName(field.GetName());
 
             if (prependTypeName != null)
                 mangledName = prependTypeName + "__" + mangledName;

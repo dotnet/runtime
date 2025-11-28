@@ -282,7 +282,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
 #pragma warning restore CS3016
         // TODO ideally this would be public API callable from generated C# code for JSExport
         public static void BeforeSyncJSExport(JSMarshalerArgument* arguments_buffer)
@@ -291,7 +291,7 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
                 var ctx = arg_exc.AssertCurrentThreadContext();
-                // note that this method is only executed when the caller is on another thread, via mono_wasm_invoke_jsexport_sync -> mono_wasm_install_js_worker_interop_wrapper
+                // note that this method is only executed when the caller is on another thread, via mono_wasm_invoke_jsexport_sync -> SystemInteropJS_InstallWebWorkerInterop
                 ctx.IsPendingSynchronousCall = true;
                 if (ctx.IsMainThread)
                 {
@@ -312,7 +312,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
 #pragma warning restore CS3016
         // TODO ideally this would be public API callable from generated C# code for JSExport
         public static void AfterSyncJSExport(JSMarshalerArgument* arguments_buffer)

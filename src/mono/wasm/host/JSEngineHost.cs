@@ -58,12 +58,6 @@ internal sealed class JSEngineHost
 
         var args = new List<string>();
 
-        if (_args.Host == WasmHost.V8)
-        {
-            // v8 needs this flag to enable WASM support
-            args.Add("--expose_wasm");
-        }
-
         args.AddRange(_args.CommonConfig.HostArguments);
 
         args.Add(_args.JSPath!);

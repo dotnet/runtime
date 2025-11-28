@@ -11,6 +11,7 @@ using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class ExpressionTreeCallRewriter : ExprVisitorBase
     {
         /////////////////////////////////////////////////////////////////////////////////

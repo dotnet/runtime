@@ -85,7 +85,11 @@ namespace System.Threading
         /// depends on the likelihood of the spin being successful and how long the wait would be but those are not accounted
         /// for here.
         /// </remarks>
+#if FEATURE_SINGLE_THREADED
+        internal const int SpinCountforSpinBeforeWait = 1;
+#else
         internal static readonly int SpinCountforSpinBeforeWait = Environment.IsSingleProcessor ? 1 : 35;
+#endif
 
         // The number of times we've spun already.
         private int _count;
@@ -163,7 +167,7 @@ namespace System.Threading
             //   - When there are no threads to switch to, Yield and Sleep(0) become no-op and it turns the spin loop into a
             //     busy-spin that may quickly reach the max spin count and cause the thread to enter a wait state, or may
             //     just busy-spin for longer than desired before a Sleep(1). Completing the spin loop too early can cause
-            //     excessive context switcing if a wait follows, and entering the Sleep(1) stage too early can cause
+            //     excessive context switching if a wait follows, and entering the Sleep(1) stage too early can cause
             //     excessive delays.
             //   - If there are multiple threads doing Yield and Sleep(0) (typically from the same spin loop due to
             //     contention), they may switch between one another, delaying work that can make progress.
@@ -311,7 +315,7 @@ namespace System.Threading
             uint startTime = 0;
             if (millisecondsTimeout != 0 && millisecondsTimeout != Timeout.Infinite)
             {
-                startTime = TimeoutHelper.GetTime();
+                startTime = (uint)Environment.TickCount;
             }
             SpinWait spinner = default;
             while (!condition())
@@ -325,7 +329,7 @@ namespace System.Threading
 
                 if (millisecondsTimeout != Timeout.Infinite && spinner.NextSpinWillYield)
                 {
-                    if (millisecondsTimeout <= (TimeoutHelper.GetTime() - startTime))
+                    if (millisecondsTimeout <= (uint)Environment.TickCount - startTime)
                     {
                         return false;
                     }

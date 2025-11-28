@@ -17,7 +17,7 @@ public class SwiftInlineArray
         private byte _element0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc02a0SiAA2F0V_tF")]
     private static extern nint SwiftFunc0(F0 a0);
 
@@ -73,7 +73,7 @@ public class SwiftInlineArray
         private int _element0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc12a0SiAA2F1V_tF")]
     private static extern nint SwiftFunc1(F1 a0);
 
@@ -104,7 +104,7 @@ public class SwiftInlineArray
         private ulong _element0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc22a0SiAA2F2V_tF")]
     private static extern nint SwiftFunc2(F2 a0);
 
@@ -133,7 +133,7 @@ public class SwiftInlineArray
         private byte _element0;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc32a0SiAA2F3V_tF")]
     private static extern nint SwiftFunc3(F3 a0);
 
@@ -159,7 +159,7 @@ public class SwiftInlineArray
         private static int _staticField2 = 2;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftInlineArray10swiftFunc42a0SiAA2F4V_tF")]
     private static extern nint SwiftFunc4(F4 a0);
 

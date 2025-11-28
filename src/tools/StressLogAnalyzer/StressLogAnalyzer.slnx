@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/tests/" />
+  <Project Path="../../native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Abstractions/Microsoft.Diagnostics.DataContractReader.Abstractions.csproj" />
+  <Project Path="../../native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Microsoft.Diagnostics.DataContractReader.Contracts.csproj" />
+  <Project Path="../../native/managed/cdac/Microsoft.Diagnostics.DataContractReader/Microsoft.Diagnostics.DataContractReader.csproj" />
+  <Project Path="src/StressLogAnalyzer.csproj" />
+</Solution>

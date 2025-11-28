@@ -11,24 +11,22 @@
 #ifndef _VIRTUAL_CALL_STUB_H
 #define _VIRTUAL_CALL_STUB_H
 
-#define CHAIN_LOOKUP
+#include "switches.h"
 
-#if defined(TARGET_X86)
-// If this is uncommented, leaves a file "StubLog_<pid>.log" with statistics on the behavior
-// of stub-based interface dispatch.
-//#define STUB_LOGGING
-#endif
+bool UseCachedInterfaceDispatch();
 
 #include "stubmgr.h"
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Forward class declarations
+class VirtualCallStubManager;
+class VirtualCallStubManagerManager;
+
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 class FastTable;
 class BucketTable;
 class Entry;
 class Prober;
-class VirtualCallStubManager;
-class VirtualCallStubManagerManager;
 struct LookupHolder;
 struct DispatchHolder;
 struct ResolveHolder;
@@ -93,6 +91,7 @@ enum
     e_resolveCacheElem_offset_target             = e_resolveCacheElem_offset_token + e_resolveCacheElem_sizeof_token,
     e_resolveCacheElem_offset_next               = e_resolveCacheElem_offset_target + e_resolveCacheElem_sizeof_target,
 };
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 /////////////////////////////////////////////////////////////////////////////////////
 // A utility class to help manipulate a call site
@@ -143,6 +142,8 @@ public:
     PCODE           GetReturnAddress() { LIMITED_METHOD_CONTRACT; return m_returnAddr; }
 };
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+
 // These are the assembly language entry points that the stubs use when they want to go into the EE
 
 extern "C" void ResolveWorkerAsmStub();               // resolve a token and transfer control to that method
@@ -150,13 +151,20 @@ extern "C" void ResolveWorkerChainLookupAsmStub();    // for chaining of entries
 
 #ifdef TARGET_X86
 extern "C" void BackPatchWorkerAsmStub();             // backpatch a call site to point to a different stub
-#ifdef TARGET_UNIX
 extern "C" void BackPatchWorkerStaticStub(PCODE returnAddr, TADDR siteAddrForRegisterIndirect);
-#endif // TARGET_UNIX
+#ifdef CHAIN_LOOKUP
+extern "C" ResolveCacheElem* __fastcall VSD_PromoteChainEntry(ResolveCacheElem *pElem);
+#endif
 #endif // TARGET_X86
+
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 
 typedef VPTR(class VirtualCallStubManager) PTR_VirtualCallStubManager;
+
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+struct CachedIndirectionCellBlockListNode;
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 // VirtualCallStubManager is the heart of the stub dispatch logic. See the book of the runtime entry
 //
@@ -167,6 +175,7 @@ typedef VPTR(class VirtualCallStubManager) PTR_VirtualCallStubManager;
 //
 //     call [DispatchCell]
 //
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 // Where we make sure 'DispatchCell' points at stubs that will do the right thing. DispatchCell is writable
 // so we can update the code over time. There are three basic types of stubs that the dispatch cell can point
 // to.
@@ -202,6 +211,8 @@ typedef VPTR(class VirtualCallStubManager) PTR_VirtualCallStubManager;
 // (in)efficiency forever.
 //
 // see code:#StubDispatchNotes for more
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+
 class VirtualCallStubManager : public StubManager
 {
     friend class VirtualCallStubManagerManager;
@@ -219,6 +230,7 @@ public:
     virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "VirtualCallStubManager"; }
 #endif
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     // The reason for our existence, return a callstub for type id and slot number
     // where type id = 0 for the class contract (i.e. a virtual call), and type id > 0 for an
     // interface invoke where the id indicates which interface it is.
@@ -226,13 +238,15 @@ public:
     // The function is idempotent, i.e.
     // you'll get the same callstub twice if you call it with identical inputs.
     PCODE GetCallStub(TypeHandle ownerType, MethodDesc *pMD);
-    PCODE GetCallStub(TypeHandle ownerType, DWORD slot);
-
+    PCODE GetCallStub(DispatchToken token);
     // Stubs for vtable-based virtual calls with no lookups
     PCODE GetVTableCallStub(DWORD slot);
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+
+    static DispatchToken GetTokenFromOwnerAndSlot(TypeHandle ownerType, uint32_t slot);
 
     // Generate an fresh indirection cell.
-    BYTE* GenerateStubIndirection(PCODE stub, BOOL fUseRecycledCell = FALSE);
+    BYTE* GenerateStubIndirection(PCODE stub, DispatchToken token, BOOL fUseRecycledCell = FALSE);
 
     // Set up static data structures - called during EEStartup
     static void InitStatic();
@@ -261,12 +275,18 @@ public:
 #ifndef DACCESS_COMPILE
     VirtualCallStubManager()
         : StubManager(),
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
           cache_entry_rangeList(),
+#endif
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+          indcell_rangeList(),
+#endif
           m_loaderAllocator(NULL),
           m_initialReservedMemForHeaps(NULL),
           m_FreeIndCellList(NULL),
           m_RecycledIndCellList(NULL),
           indcell_heap(NULL),
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
           cache_entry_heap(NULL),
           lookup_heap(NULL),
           dispatch_heap(NULL),
@@ -278,11 +298,15 @@ public:
           cache_entries(NULL),
           dispatchers(NULL),
           resolvers(NULL),
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
           m_counters(NULL),
           m_cur_counter_block(NULL),
           m_cur_counter_block_for_reclaim(NULL),
           m_cur_counter_block_for_reclaim_index(0),
           m_pNext(NULL)
+#if defined FEATURE_CACHED_INTERFACE_DISPATCH
+          , m_indirectionBlocks (0)
+#endif
     {
         LIMITED_METHOD_CONTRACT;
         ZeroMemory(&stats, sizeof(stats));
@@ -291,17 +315,31 @@ public:
     ~VirtualCallStubManager();
 #endif // !DACCESS_COMPILE
 
+    static bool isCachedInterfaceDispatchStub(PCODE addr);
+    static bool isCachedInterfaceDispatchStubAVLocation(PCODE addr);
+
     static BOOL isStubStatic(PCODE addr)
     {
         WRAPPER_NO_CONTRACT;
+
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+        if (isCachedInterfaceDispatchStub(addr))
+            return TRUE;
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
         StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(addr);
 
         return sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB ||
                sk == STUB_CODE_BLOCK_VSD_LOOKUP_STUB ||
                sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB ||
                sk == STUB_CODE_BLOCK_VSD_VTABLE_STUB;
+#else
+        return FALSE;
+#endif //  FEATURE_VIRTUAL_STUB_DISPATCH
     }
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     static BOOL isDispatchingStubStatic(PCODE addr)
     {
         WRAPPER_NO_CONTRACT;
@@ -344,9 +382,16 @@ public:
         TADDR addr = PTR_HOST_MEMBER_TADDR(VirtualCallStubManager, this, cache_entry_rangeList);
         return PTR_RangeList(addr);
     }
+#endif //  FEATURE_VIRTUAL_STUB_DISPATCH
+
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    //use range lists to track the chunks of memory that are part of each heap
+    LockedRangeList indcell_rangeList;
+#endif
 
 private:
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     //allocate and initialize a stub of the desired kind
     DispatchHolder *GenerateDispatchStub(PCODE addrOfCode,
                                          PCODE addrOfFail,
@@ -386,6 +431,12 @@ private:
     ResolveCacheElem *GetResolveCacheElem(void *pMT,
                                           size_t token,
                                           void *target);
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+
+    // This can be used to find a target without needing the ability to throw
+    static BOOL TraceResolver(Object *pObj, DispatchToken token, TraceDestination *trace);
+
+public:
 
     //Given a dispatch token, an object and a method table, determine the
     //target address to go to.  The return value (BOOL) states whether this address
@@ -396,24 +447,22 @@ private:
                          PCODE         * ppTarget,
                          BOOL          throwOnConflict);
 
-    // This can be used to find a target without needing the ability to throw
-    static BOOL TraceResolver(Object *pObj, DispatchToken token, TraceDestination *trace);
-
-public:
     // Return the MethodDesc corresponding to this token.
     static MethodDesc *GetRepresentativeMethodDescFromToken(DispatchToken token, MethodTable *pMT);
     static MethodDesc *GetInterfaceMethodDescFromToken(DispatchToken token);
     static MethodTable *GetTypeFromToken(DispatchToken token);
 
     //This is used to get the token out of a stub
-    static size_t GetTokenFromStub(PCODE stub);
+    static size_t GetTokenFromStub(PCODE stub, T_CONTEXT *pContext);
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     //This is used to get the token out of a stub and we know the stub manager and stub kind
     static size_t GetTokenFromStubQuick(VirtualCallStubManager * pMgr, PCODE stub, StubCodeBlockKind kind);
 
     // General utility functions
     // Quick lookup in the cache. NOTHROW, GC_NOTRIGGER
     static PCODE CacheLookup(size_t token, UINT16 tokenHash, MethodTable *pMT);
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
     // Full exhaustive lookup. THROWS, GC_TRIGGERS
     static PCODE GetTarget(DispatchToken token, MethodTable *pMT, BOOL throwOnConflict);
@@ -425,6 +474,7 @@ private:
     // Given a dispatch token, return true if the token represents a slot on the target.
     static BOOL IsClassToken(DispatchToken token);
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 #ifdef CHAIN_LOOKUP
     static ResolveCacheElem* __fastcall PromoteChainEntry(ResolveCacheElem *pElem);
 #endif
@@ -444,8 +494,11 @@ private:
 #endif
                                    );
 
-#if defined(TARGET_X86) && defined(TARGET_UNIX)
+#if defined(TARGET_X86)
     friend void BackPatchWorkerStaticStub(PCODE returnAddr, TADDR siteAddrForRegisterIndirect);
+#ifdef CHAIN_LOOKUP
+    friend ResolveCacheElem* __fastcall VSD_PromoteChainEntry(ResolveCacheElem *pElem);
+#endif
 #endif
 
     //These are the entrypoints that the stubs actually end up calling via the
@@ -458,7 +511,7 @@ public:
 
     //Change the callsite to point to stub
     void BackPatchSite(StubCallSite* pCallSite, PCODE stub);
-
+#endif // VIRTUAL_STUB_DISPATCH
 public:
     /* the following two public functions are to support tracing or stepping thru
     stubs via the debugger. */
@@ -473,8 +526,10 @@ public:
         size_t retval=0;
         if(indcell_heap)
             retval+=indcell_heap->GetSize();
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
         if(cache_entry_heap)
             retval+=cache_entry_heap->GetSize();
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
          return retval;
     };
 
@@ -561,6 +616,16 @@ private:
             PRECONDITION(m_indCellLock.OwnedByCurrentThread());
         } CONTRACTL_END;
 
+#ifdef DEBUG
+        // Assert that head and tail are actually linked together
+        BYTE **p = (BYTE**)head;
+        while (p != (BYTE**)tail)
+        {
+            p = (BYTE **)*p;
+            _ASSERTE(p != NULL);
+        }
+#endif // DEBUG
+
         BYTE * temphead = *ppList;
         *((BYTE**)tail) = temphead;
         *ppList = head;
@@ -568,6 +633,8 @@ private:
 #endif // !DACCESS_COMPILE
 
     PTR_LoaderHeap  indcell_heap;       // indirection cells go here
+
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     PTR_LoaderHeap  cache_entry_heap;   // resolve cache elem entries go here
     PTR_CodeFragmentHeap  lookup_heap;        // lookup stubs go here
     PTR_CodeFragmentHeap  dispatch_heap;      // dispatch stubs go here
@@ -594,6 +661,7 @@ private:
     BucketTable *   dispatchers;        // hash table of dispatching stubs keyed by tokens/actualtype
     BucketTable *   resolvers;          // hash table of resolvers keyed by tokens/resolverstub
     BucketTable *   vtableCallers;      // hash table of vtable call stubs keyed by slot values
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
     // This structure is used to keep track of the fail counters.
     // We only need one fail counter per ResolveStub,
@@ -616,10 +684,16 @@ private:
     // Used to keep track of all the VCSManager objects in the system.
     PTR_VirtualCallStubManager m_pNext;            // Linked list pointer
 
+#if defined FEATURE_CACHED_INTERFACE_DISPATCH
+    CachedIndirectionCellBlockListNode *m_indirectionBlocks;
+#endif
+
 public:
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     // Given a stub address, find the VCSManager that owns it.
     static VirtualCallStubManager *FindStubManager(PCODE addr,
                                                    StubCodeBlockKind* wbStubKind = NULL);
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifndef DACCESS_COMPILE
     // insert a linked list of indirection cells at the beginning of m_RecycledIndCellList
@@ -698,7 +772,19 @@ class VirtualCallStubManagerManager : public StubManager
 #ifdef DACCESS_COMPILE
     virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     virtual LPCWSTR GetStubManagerName(PCODE addr)
-        { WRAPPER_NO_CONTRACT; return FindVirtualCallStubManager(addr)->GetStubManagerName(addr); }
+        {
+            WRAPPER_NO_CONTRACT;
+#ifndef FEATURE_VIRTUAL_STUB_DISPATCH
+            return W("CachedInterfaceDispatchStubManagerManager");
+#else
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+            if (UseCachedInterfaceDispatch() && VirtualCallStubManager::isCachedInterfaceDispatchStub(addr))
+                return W("CachedInterfaceDispatchStubManagerManager");
+            else
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+                return FindVirtualCallStubManager(addr)->GetStubManagerName(addr);
+#endif
+        }
 #endif
 
   private:
@@ -716,9 +802,17 @@ class VirtualCallStubManagerManager : public StubManager
     // RW lock for reading entries and removing them.
     SimpleRWLock m_RWLock;
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    DPTR(PCODE) pCachedInterfaceDispatchHelpers;
+    DPTR(PCODE) pCachedInterfaceDispatchHelpersAVLocation;
+    size_t countCachedInterfaceDispatchHelpers = 0;
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+
     // This will look through all the managers in an intelligent fashion to
     // find the manager that owns the address.
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     VirtualCallStubManager *FindVirtualCallStubManager(PCODE stubAddress);
+#endif
 
   protected:
     // Add a VCSManager to the linked list.
@@ -741,6 +835,30 @@ class VirtualCallStubManagerManager : public StubManager
         { LIMITED_METHOD_DAC_CONTRACT; CONSISTENCY_CHECK(CheckPointer(g_pManager)); return g_pManager; }
 
     VirtualCallStubManagerIterator IterateVirtualCallStubManagers();
+
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    bool isCachedInterfaceDispatchStub(PCODE addr)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        for (size_t i = 0; i < countCachedInterfaceDispatchHelpers; i++)
+        {
+            if (pCachedInterfaceDispatchHelpers[i] == addr)
+                return true;
+        }
+        return false;
+    }
+
+    bool isCachedInterfaceDispatchStubAVLocation(PCODE addr)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        for (size_t i = 0; i < countCachedInterfaceDispatchHelpers; i++)
+        {
+            if (pCachedInterfaceDispatchHelpersAVLocation[i] == addr)
+                return true;
+        }
+        return false;
+    }
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #ifdef _DEBUG
     // Debug helper to help identify stub-managers.
@@ -888,7 +1006,7 @@ public:
 };
 
 /* define the platform specific Stubs and stub holders */
-
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 #include <virtualcallstubcpu.hpp>
 
 #if USES_LOOKUP_STUBS
@@ -1098,7 +1216,7 @@ public:
         {
             ResolveHolder * resolveHolder = ResolveHolder::FromFailEntry(stub->failTarget());
             size_t token = resolveHolder->stub()->token();
-            _ASSERTE(token == VirtualCallStubManager::GetTokenFromStub((PCODE)stub));
+            _ASSERTE(token == VirtualCallStubManager::GetTokenFromStub((PCODE)stub, NULL));
             return token;
         }
         else
@@ -1432,6 +1550,11 @@ private:
     {
         return ::operator new(baseSize + (numCallStubs + CALL_STUB_FIRST_INDEX) * sizeof(size_t));
     }
+public:
+    static void operator delete(void* ptr)
+    {
+        ::operator delete(ptr);
+    }
 };
 #ifdef _MSC_VER
 #pragma warning(pop)
@@ -1535,5 +1658,25 @@ private:
     static FastTable* dead;             //linked list head of to be deleted (abandoned) buckets
 };
 
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+
+BYTE* GenerateDispatchStubCellEntryMethodDesc(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, MethodDesc *pMD, LCGMethodResolver *pResolver);
+BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, int methodSlot, LCGMethodResolver *pResolver);
+
+
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+inline bool UseCachedInterfaceDispatch() { return g_pConfig->UseCachedInterfaceDispatch(); }
+
+// INTERFACE_DISPATCH_CACHED_OR_VSD is a macro used to swap between cached interface dispatch and virtual stub dispatch.
+#define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispatch) if (UseCachedInterfaceDispatch()) { cachedDispatch; } else { vsdDispatch; }
+#elif defined(FEATURE_CACHED_INTERFACE_DISPATCH)
+inline bool UseCachedInterfaceDispatch() { return true; }
+#define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispatch) { cachedDispatch; }
+#elif defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+inline bool UseCachedInterfaceDispatch() { return false; }
+#define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispatch) { vsdDispatch; }
+#else
+#error "No dispatch mechanism defined"
+#endif
 
 #endif // !_VIRTUAL_CALL_STUB_H

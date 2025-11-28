@@ -19,10 +19,6 @@ namespace System.IO.Tests
             AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamReader((string)null, null, true));
             AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamReader((string)null, null, true, null));
             AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamReader((string)null, null, true, -1));
-            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamReader("path", (Encoding)null));
-            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamReader("path", null, true));
-            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamReader("path", null, true, null));
-            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamReader("path", null, true, -1));
             AssertExtensions.Throws<ArgumentNullException>("options", () => new StreamReader("path", (FileStreamOptions)null));
             AssertExtensions.Throws<ArgumentNullException>("options", () => new StreamReader("path", Encoding.UTF8, true, null));
 
@@ -41,10 +37,38 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public static void NullEncodingParamInCtor_ShouldNotThrowException()
+        {
+            // Call the constructor with overloads that has Stream and null encoding parameters.
+            // It should not throw exception, to test passing the nullable encoding parameter..
+            StreamReader streamReaderTest = new StreamReader(new MemoryStream(), null);
+            streamReaderTest = new StreamReader(new MemoryStream(), null, false);
+            streamReaderTest = new StreamReader(new MemoryStream(), null, false, 100);
+            streamReaderTest = new StreamReader(new MemoryStream(), null, false, 100, false);
+        }
+
+        [Fact]
         public static void NegativeBufferSize_ThrowsArgumentOutOfRangeException()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamReader("path", Encoding.UTF8, true, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamReader("path", Encoding.UTF8, true, -2));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamReader("path", Encoding.UTF8, true, 0));
+        }
+
+        [Fact]
+        public static void NegativeOneBufferSize_ShouldNotThrowException()
+        {
+            string testfile = Path.GetTempFileName();
+            try
+            {
+                using (var sr = new StreamReader(testfile, Encoding.UTF8, true, -1))
+                {
+                    Assert.NotNull(sr);
+                }
+            }
+            finally
+            {
+                File.Delete(testfile);
+            }
         }
 
         [Fact]

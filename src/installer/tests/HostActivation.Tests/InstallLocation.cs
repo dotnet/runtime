@@ -64,7 +64,7 @@ namespace HostActivation.Tests
         [Fact]
         public void EnvironmentVariable_DotNetRootIsUsedOverInstallLocationIfSet()
         {
-            var app = sharedTestState.App.Copy();
+            var app = sharedTestState.TestBehaviourEnabledApp;
             var appExe = app.AppExe;
             var arch = TestContext.BuildArchitecture.ToUpper();
             var dotnet = TestContext.BuiltDotNet.BinPath;
@@ -87,86 +87,83 @@ namespace HostActivation.Tests
         [Fact]
         public void EnvironmentVariable_DotnetRootPathDoesNotExist()
         {
-            var app = sharedTestState.App.Copy();
-            using (TestOnlyProductBehavior.Enable(app.AppExe))
-            {
-                Command.Create(app.AppExe)
-                    .EnableTracingAndCaptureOutputs()
-                    .DotNetRoot("non_existent_path")
-                    .MultilevelLookup(false)
-                    .EnvironmentVariable(
-                        Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath,
-                        TestContext.BuiltDotNet.BinPath)
-                    .Execute()
-                    .Should().Pass()
-                    .And.HaveStdErrContaining("Did not find [DOTNET_ROOT] directory [non_existent_path]")
-                    // If DOTNET_ROOT points to a folder that does not exist, we fall back to the global install path.
-                    .And.HaveUsedGlobalInstallLocation(TestContext.BuiltDotNet.BinPath)
-                    .And.HaveStdOutContaining("Hello World");
-            }
+            var app = sharedTestState.TestBehaviourEnabledApp;
+            Command.Create(app.AppExe)
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot("non_existent_path")
+                .MultilevelLookup(false)
+                .EnvironmentVariable(
+                    Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath,
+                    TestContext.BuiltDotNet.BinPath)
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdErrContaining("Did not find [DOTNET_ROOT] directory [non_existent_path]")
+                // If DOTNET_ROOT points to a folder that does not exist, we fall back to the global install path.
+                .And.HaveUsedGlobalInstallLocation(TestContext.BuiltDotNet.BinPath)
+                .And.HaveStdOutContaining("Hello World");
         }
 
         [Fact]
         public void EnvironmentVariable_DotnetRootPathExistsButHasNoHost()
         {
-            var app = sharedTestState.App.Copy();
-            using (TestOnlyProductBehavior.Enable(app.AppExe))
+            var app = sharedTestState.TestBehaviourEnabledApp;
+            Command.Create(app.AppExe)
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(app.Location)
+                .MultilevelLookup(false)
+                .EnvironmentVariable(
+                    Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath,
+                    TestContext.BuiltDotNet.BinPath)
+                .Execute()
+                .Should().Fail()
+                .And.HaveUsedDotNetRootInstallLocation(app.Location, TestContext.BuildRID)
+                // If DOTNET_ROOT points to a folder that exists we assume that there's a dotnet installation in it
+                .And.HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
+        }
+
+        [Fact]
+        public void DefaultInstallLocation()
+        {
+            TestApp app = sharedTestState.TestBehaviourEnabledApp;
+
+            // Ensure no install locations are registered, so the default install location is used
+            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(app.AppExe))
             {
                 Command.Create(app.AppExe)
                     .EnableTracingAndCaptureOutputs()
-                    .DotNetRoot(app.Location)
-                    .MultilevelLookup(false)
-                    .EnvironmentVariable(
-                        Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath,
-                        TestContext.BuiltDotNet.BinPath)
+                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                    .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, TestContext.BuiltDotNet.BinPath)
+                    .DotNetRoot(null)
                     .Execute()
-                    .Should().Fail()
-                    .And.HaveUsedDotNetRootInstallLocation(app.Location, TestContext.BuildRID)
-                    // If DOTNET_ROOT points to a folder that exists we assume that there's a dotnet installation in it
-                    .And.HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
+                    .Should().Pass()
+                    .And.HaveUsedGlobalInstallLocation(TestContext.BuiltDotNet.BinPath);
             }
         }
 
         [Fact]
-        public void EnvironmentVariable_DotNetInfo_ListEnvironment()
+        public void RegisteredInstallLocation()
         {
-            var command = TestContext.BuiltDotNet.Exec("--info")
-                .CaptureStdOut();
-
-            var envVars = new (string Architecture, string Path)[] {
-                ("arm64", "/arm64/dotnet/root"),
-                ("x64", "/x64/dotnet/root"),
-                ("x86", "/x86/dotnet/root")
-            };
-            foreach(var envVar in envVars)
+            TestApp app = sharedTestState.TestBehaviourEnabledApp;
+            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(app.AppExe))
             {
-                command = command.DotNetRoot(envVar.Path, envVar.Architecture);
-            }
+                registeredInstallLocationOverride.SetInstallLocation(
+                    (TestContext.BuildArchitecture, TestContext.BuiltDotNet.BinPath));
 
-            string dotnetRootNoArch = "/dotnet/root";
-            command = command.DotNetRoot(dotnetRootNoArch);
-
-            (string Architecture, string Path) unknownEnvVar = ("unknown", "/unknown/dotnet/root");
-            command = command.DotNetRoot(unknownEnvVar.Path, unknownEnvVar.Architecture);
-
-            var result = command.Execute();
-            result.Should().Pass()
-                .And.HaveStdOutContaining("Environment variables:")
-                .And.HaveStdOutMatching($@"{Constants.DotnetRoot.EnvironmentVariable}\s*\[{dotnetRootNoArch}\]")
-                .And.NotHaveStdOutContaining($"{Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix}{unknownEnvVar.Architecture.ToUpper()}")
-                .And.NotHaveStdOutContaining($"[{unknownEnvVar.Path}]");
-
-            foreach ((string architecture, string path) in envVars)
-            {
-                result.Should()
-                    .HaveStdOutMatching($@"{Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix}{architecture.ToUpper()}\s*\[{path}\]");
+                Command.Create(app.AppExe)
+                    .EnableTracingAndCaptureOutputs()
+                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                    .DotNetRoot(null)
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveUsedRegisteredInstallLocation(TestContext.BuiltDotNet.BinPath)
+                    .And.HaveUsedGlobalInstallLocation(TestContext.BuiltDotNet.BinPath);
             }
         }
 
         [Fact]
         public void RegisteredInstallLocation_ArchSpecificLocationIsPickedFirst()
         {
-            var app = sharedTestState.App.Copy();
+            var app = sharedTestState.TestBehaviourEnabledApp;
             var arch1 = "someArch";
             var path1 = "x/y/z";
             var arch2 = TestContext.BuildArchitecture;
@@ -202,7 +199,7 @@ namespace HostActivation.Tests
         [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         public void InstallLocationFile_ReallyLongInstallPathIsParsedCorrectly()
         {
-            var app = sharedTestState.App.Copy();
+            var app = sharedTestState.TestBehaviourEnabledApp;
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(app.AppExe))
             {
                 var reallyLongPath =
@@ -225,9 +222,8 @@ namespace HostActivation.Tests
         [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         public void InstallLocationFile_MissingFile()
         {
-            var app = sharedTestState.App.Copy();
+            var app = sharedTestState.TestBehaviourEnabledApp;
             using (var testArtifact = TestArtifact.Create("missingInstallLocation"))
-            using (var testOnlyProductBehavior = TestOnlyProductBehavior.Enable(app.AppExe))
             {
                 string installLocationDirectory = Path.Combine(testArtifact.Location, "installLocationOverride");
                 Directory.CreateDirectory(installLocationDirectory);
@@ -290,6 +286,51 @@ namespace HostActivation.Tests
             }
         }
 
+        [Fact]
+        public void NotFound()
+        {
+            TestApp app = sharedTestState.TestBehaviourEnabledApp;
+
+            // Ensure no install locations are registered
+            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(app.AppExe))
+            {
+                string defaultLocation = Path.GetTempPath();
+                string registeredLocationOverride = OperatingSystem.IsWindows() // Host uses short form of base key for Windows
+                    ? registeredInstallLocationOverride.PathValueOverride.Replace(Microsoft.Win32.Registry.CurrentUser.Name, "HKCU")
+                    : registeredInstallLocationOverride.PathValueOverride;
+                Command.Create(app.AppExe)
+                    .CaptureStdOut()
+                    .CaptureStdErr()
+                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                    .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, defaultLocation)
+                    .DotNetRoot(null)
+                    .Execute()
+                    .Should().Fail()
+                    .And.HaveStdErrContaining("The following locations were searched:")
+                    .And.HaveStdErrContaining(
+                        $"""
+                          Application directory:
+                            {app.Location}
+                        """)
+                    .And.HaveStdErrContaining(
+                        $"""
+                          Environment variable:
+                            DOTNET_ROOT_{TestContext.BuildArchitecture.ToUpper()} = <not set>
+                            DOTNET_ROOT = <not set>
+                        """)
+                    .And.HaveStdErrMatching(
+                        $"""
+                          Registered location:
+                            {System.Text.RegularExpressions.Regex.Escape(registeredLocationOverride)}.*{TestContext.BuildArchitecture}.* = <not set>
+                        """)
+                    .And.HaveStdErrContaining(
+                        $"""
+                          Default location:
+                            {defaultLocation}
+                        """);
+            }
+        }
+
         [Theory]
         [InlineData(SearchLocation.AppLocal)]
         [InlineData(SearchLocation.AppRelative)]
@@ -345,7 +386,7 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        public void AppHost_AppRelative_MissingPath()
+        public void SearchOptions_AppRelative_MissingPath()
         {
             TestApp app = sharedTestState.App.Copy();
             app.CreateAppHost(dotNetRootOptions: new HostWriter.DotNetSearchOptions()
@@ -450,16 +491,25 @@ namespace HostActivation.Tests
         public class SharedTestState : IDisposable
         {
             public TestApp App { get; }
+            public TestApp TestBehaviourEnabledApp { get; }
 
             public SharedTestState()
             {
                 App = TestApp.CreateFromBuiltAssets("HelloWorld");
                 App.CreateAppHost();
+
+                TestBehaviourEnabledApp = TestApp.CreateFromBuiltAssets("HelloWorld");
+                TestBehaviourEnabledApp.CreateAppHost();
+
+                // Enable test-only behavior for the app. We don't bother disabling the behaviour later,
+                // as we just delete the entire app after the tests run.
+                _ = TestOnlyProductBehavior.Enable(TestBehaviourEnabledApp.AppExe);
             }
 
             public void Dispose()
             {
                 App?.Dispose();
+                TestBehaviourEnabledApp?.Dispose();
             }
         }
     }

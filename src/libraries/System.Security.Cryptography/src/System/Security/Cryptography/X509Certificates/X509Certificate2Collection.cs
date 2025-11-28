@@ -107,10 +107,74 @@ namespace System.Security.Cryptography.X509Certificates
 
         public byte[]? Export(X509ContentType contentType)
         {
-            using (var safePasswordHandle = new SafePasswordHandle((string?)null, passwordProvided: false))
             using (IExportPal storePal = StorePal.LinkFromCertificateCollection(this))
             {
-                return storePal.Export(contentType, safePasswordHandle);
+                return storePal.Export(contentType, SafePasswordHandle.InvalidHandle);
+            }
+        }
+
+        /// <summary>
+        ///   Exports the certificate and private key in PKCS#12 / PFX format.
+        /// </summary>
+        /// <param name="exportParameters">The algorithm parameters to use for the export.</param>
+        /// <param name="password">The password to use for the export.</param>
+        /// <returns>A byte array containing the encoded PKCS#12.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="password"/> contains a Unicode 'NULL' character.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="exportParameters"/> is not a valid value.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The export operation failed.</para>
+        /// </exception>
+        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, string? password)
+        {
+            Helpers.ThrowIfInvalidPkcs12ExportParameters(exportParameters);
+            Helpers.ThrowIfPasswordContainsNullCharacter(password);
+
+            using (SafePasswordHandle safePasswordHandle = new(password, passwordProvided: true))
+            using (IExportPal storePal = StorePal.LinkFromCertificateCollection(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, safePasswordHandle);
+            }
+        }
+
+        /// <summary>
+        ///   Exports the certificates and private keys in PKCS#12 / PFX format.
+        /// </summary>
+        /// <param name="exportParameters">The algorithm parameters to use for the export.</param>
+        /// <param name="password">The password to use for the export.</param>
+        /// <returns>A byte array containing the encoded PKCS#12.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="password"/> contains a Unicode 'NULL' character.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="exportParameters"/> is <see langword="null"/> .
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The export operation failed.</para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="exportParameters"/> specifies a <see cref="PbeParameters.HashAlgorithm"/> value that is
+        ///     not supported for the <see cref="PbeParameters.EncryptionAlgorithm"/> value.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="exportParameters"/> contains an invalid encryption algorithm for
+        ///     <see cref="PbeParameters.EncryptionAlgorithm"/>.
+        ///   </para>
+        /// </exception>
+        public byte[] ExportPkcs12(PbeParameters exportParameters, string? password)
+        {
+            ArgumentNullException.ThrowIfNull(exportParameters);
+            Helpers.ThrowIfInvalidPkcs12ExportParameters(exportParameters);
+            Helpers.ThrowIfPasswordContainsNullCharacter(password);
+
+            using (SafePasswordHandle safePasswordHandle = new(password, passwordProvided: true))
+            using (IExportPal storePal = StorePal.LinkFromCertificateCollection(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, safePasswordHandle);
             }
         }
 
@@ -154,8 +218,7 @@ namespace System.Security.Cryptography.X509Certificates
         [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Import(ReadOnlySpan<byte> rawData)
         {
-            using (var safePasswordHandle = new SafePasswordHandle((string?)null, passwordProvided: false))
-            using (ILoaderPal storePal = StorePal.FromBlob(rawData, safePasswordHandle, X509KeyStorageFlags.DefaultKeySet))
+            using (ILoaderPal storePal = StorePal.FromBlob(rawData, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.DefaultKeySet))
             {
                 storePal.MoveTo(this);
             }
@@ -216,8 +279,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(fileName);
 
-            using (var safePasswordHandle = new SafePasswordHandle((string?)null, passwordProvided: false))
-            using (ILoaderPal storePal = StorePal.FromFile(fileName, safePasswordHandle, X509KeyStorageFlags.DefaultKeySet))
+            using (ILoaderPal storePal = StorePal.FromFile(fileName, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.DefaultKeySet))
             {
                 storePal.MoveTo(this);
             }
@@ -378,7 +440,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             try
             {
-                foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(certPem))
+                foreach ((ReadOnlySpan<char> contents, PemFields fields) in PemEnumerator.Utf16(certPem))
                 {
                     ReadOnlySpan<char> label = contents[fields.Label];
 

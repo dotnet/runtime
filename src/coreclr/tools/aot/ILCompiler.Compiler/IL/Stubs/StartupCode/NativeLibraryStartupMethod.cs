@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
@@ -39,11 +40,11 @@ namespace Internal.IL.Stubs.StartupCode
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return "NativeLibraryStartup";
+                return "NativeLibraryStartup"u8;
             }
         }
 
@@ -69,10 +70,10 @@ namespace Internal.IL.Stubs.StartupCode
                 }
             }
 
-            MetadataType startup = Context.GetOptionalHelperType("StartupCodeHelpers");
+            MetadataType startup = Context.GetOptionalHelperType("StartupCodeHelpers"u8);
 
             // Run module initializers
-            MethodDesc runModuleInitializers = startup?.GetMethod("RunModuleInitializers", null);
+            MethodDesc runModuleInitializers = startup?.GetMethod("RunModuleInitializers"u8, null);
             if (runModuleInitializers != null)
             {
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(runModuleInitializers));

@@ -127,7 +127,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <exception cref="ArgumentNullException"><paramref name="filter" /> is <see langword="null"/>.</exception>
         public IChangeToken CreateFileChangeToken(string filter)
         {
-            ThrowHelper.ThrowIfNull(filter);
+            ArgumentNullException.ThrowIfNull(filter);
 
             filter = NormalizePath(filter);
 

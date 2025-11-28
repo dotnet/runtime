@@ -51,6 +51,7 @@ static GENERATE_GET_CLASS_WITH_CACHE (custom_attribute_typed_argument, "System.R
 static GENERATE_GET_CLASS_WITH_CACHE (custom_attribute_named_argument, "System.Reflection", "CustomAttributeNamedArgument");
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (customattribute_data, "System.Reflection", "RuntimeCustomAttributeData");
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unsafe_accessor_attribute, "System.Runtime.CompilerServices", "UnsafeAccessorAttribute");
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (unsafe_accessor_type_attribute, "System.Runtime.CompilerServices", "UnsafeAccessorTypeAttribute");
 
 static MonoCustomAttrInfo*
 mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, MonoArrayHandle cattrs, gboolean respect_cattr_visibility);
@@ -115,9 +116,9 @@ get_attr_ctor_method_from_handle (MonoReflectionCustomAttrHandle cattr, MonoRefl
  * \param ctor_method (out param) the custom attribute constructor as MonoMethod if the custom attribute is visible, otherwise NULL
  *
  * \returns TRUE if the custom attribute is visible on a decorated type, otherwise FALSE
- * 
+ *
  * Determines if a custom attribute is visible for a decorated target \p target_image
- * 
+ *
  * FIXME: the return value is also TRUE when custom attribute constructor is NULL, which is probably a bug
  */
 static gboolean
@@ -312,7 +313,7 @@ load_cattr_value (MonoImage *image, MonoType *t, MonoObject **out_obj, const cha
 {
 	int type = t->type;
 	guint32 slen;
-	MonoClass *tklass = t->data.klass;
+	MonoClass *tklass = m_type_data_get_klass (t);
 
 	if (out_obj)
 		*out_obj = NULL;
@@ -320,7 +321,7 @@ load_cattr_value (MonoImage *image, MonoType *t, MonoObject **out_obj, const cha
 	error_init (error);
 
 	if (type == MONO_TYPE_GENERICINST) {
-		MonoGenericClass * mgc = t->data.generic_class;
+		MonoGenericClass * mgc = m_type_data_get_generic_class_unchecked (t);
 		MonoClass * cc = mgc->container_class;
 		if (m_class_is_enumtype (cc)) {
 			tklass = m_class_get_element_class (cc);
@@ -332,6 +333,8 @@ load_cattr_value (MonoImage *image, MonoType *t, MonoObject **out_obj, const cha
 	}
 
 handle_enum:
+	// the _unchecked MonoType accessors are not used here because the gotos to handle_enum doesn't necessarily keep
+	//  type and t in sync so it's not guaranteed that accessing the union members is safe
 	switch (type) {
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I1:
@@ -388,15 +391,16 @@ handle_enum:
 		*end = p + 8;
 		return val;
 	}
-	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (t->data.klass)) {
-			type = mono_class_enum_basetype_internal (t->data.klass)->type;
+	case MONO_TYPE_VALUETYPE: {
+		MonoClass *klass_of_t = m_type_data_get_klass (t);
+		if (m_class_is_enumtype (klass_of_t)) {
+			type = mono_class_enum_basetype_internal (klass_of_t)->type;
 			goto handle_enum;
 		} else {
-			g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (t->data.klass));
+			g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (klass_of_t));
 		}
 		break;
-
+	}
 	case MONO_TYPE_STRING: {
 		if (!bcheck_blob (p, 0, boundp, error))
 			return NULL;
@@ -525,7 +529,7 @@ MONO_RESTORE_WARNING
 			basetype = mono_class_enum_basetype_internal (tklass)->type;
 
 		if (basetype == MONO_TYPE_GENERICINST) {
-			MonoGenericClass * mgc = m_class_get_byval_arg (tklass)->data.generic_class;
+			MonoGenericClass * mgc = m_type_data_get_generic_class (m_class_get_byval_arg (tklass));
 			MonoClass * cc = mgc->container_class;
 			if (m_class_is_enumtype (cc)) {
 				basetype = m_class_get_byval_arg (m_class_get_element_class (cc))->type;
@@ -637,14 +641,14 @@ load_cattr_value_noalloc (MonoImage *image, MonoType *t, const char *p, const ch
 {
 	int type = t->type;
 	guint32 slen;
-	MonoClass *tklass = t->data.klass;
+	MonoClass *tklass = m_type_data_get_klass (t);
 	MonoCustomAttrValue* result = (MonoCustomAttrValue *)g_malloc (sizeof (MonoCustomAttrValue));
 
 	g_assert (boundp);
 	error_init (error);
 
 	if (type == MONO_TYPE_GENERICINST) {
-		MonoGenericClass * mgc = t->data.generic_class;
+		MonoGenericClass * mgc = m_type_data_get_generic_class (t);
 		MonoClass * cc = mgc->container_class;
 		if (m_class_is_enumtype (cc)) {
 			tklass = m_class_get_element_class (cc);
@@ -657,6 +661,8 @@ load_cattr_value_noalloc (MonoImage *image, MonoType *t, const char *p, const ch
 	result->type = type;
 
 handle_enum:
+	// the _unchecked MonoType accessors are not used here because the gotos to handle_enum doesn't necessarily keep
+	//  type and t in sync so it's not guaranteed that accessing the union members is safe
 	switch (type) {
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I1:
@@ -718,14 +724,16 @@ handle_enum:
 		result->value.primitive = val;
 		return result;
 	}
-	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (t->data.klass)) {
-			type = mono_class_enum_basetype_internal (t->data.klass)->type;
+	case MONO_TYPE_VALUETYPE: {
+		MonoClass *klass_of_t = m_type_data_get_klass (t);
+		if (m_class_is_enumtype (klass_of_t)) {
+			type = mono_class_enum_basetype_internal (klass_of_t)->type;
 			goto handle_enum;
 		} else {
-			g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (t->data.klass));
+			g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (klass_of_t));
 		}
 		break;
+	}
 
 	case MONO_TYPE_STRING: {
 		const char *start = p;
@@ -2062,7 +2070,7 @@ mono_method_get_unsafe_accessor_attr_data (MonoMethod *method, int *accessor_kin
 	}
 
 	MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (attr->ctor->klass), attr->ctor, attr->data, attr->data_size, error);
-	
+
 	if (!is_ok (error)) {
 		mono_error_cleanup (error);
 		mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
@@ -2084,6 +2092,58 @@ mono_method_get_unsafe_accessor_attr_data (MonoMethod *method, int *accessor_kin
 			*member_name = (char*)name;
 		}
 	}
+
+	mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
+	if (!cinfo->cached)
+		mono_custom_attrs_free(cinfo);
+
+	return TRUE;
+}
+
+gboolean
+mono_method_param_get_unsafe_accessor_type_attr_data (MonoMethod *method, int param_seq, char **type_name, MonoError *error)
+{
+	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_param_checked (method, param_seq, error);
+
+	if (!cinfo || !is_ok (error)) {
+		mono_error_cleanup (error);
+		return FALSE;
+	}
+
+	MonoClass *unsafeAccessorType = mono_class_try_get_unsafe_accessor_type_attribute_class ();
+	MonoCustomAttrEntry *attr = NULL;
+
+	for (int idx = 0; idx < cinfo->num_attrs; ++idx) {
+		MonoClass *ctor_class = cinfo->attrs [idx].ctor->klass;
+		if (ctor_class == unsafeAccessorType) {
+			attr = &cinfo->attrs [idx];
+			break;
+		}
+	}
+
+	if (!attr){
+		if (!cinfo->cached)
+			mono_custom_attrs_free(cinfo);
+		return FALSE;
+	}
+
+	MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (attr->ctor->klass), attr->ctor, attr->data, attr->data_size, error);
+
+	if (!is_ok (error)) {
+		mono_error_cleanup (error);
+		mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
+		if (!cinfo->cached)
+			mono_custom_attrs_free(cinfo);
+		return FALSE;
+	}
+
+	g_assert (decoded_args->typed_args_num == 1);
+	const char *ptr = (const char*)decoded_args->typed_args [0]->value.primitive;
+	uint32_t len = mono_metadata_decode_value (ptr, &ptr);
+	char *name = m_method_alloc0 (method, len + 1);
+	memcpy (name, ptr, len);
+	name[len] = 0;
+	*type_name = (char*)name;
 
 	mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 	if (!cinfo->cached)

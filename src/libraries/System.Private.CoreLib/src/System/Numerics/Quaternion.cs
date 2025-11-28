@@ -27,7 +27,7 @@ namespace System.Numerics
 
         internal const int Count = 4;
 
-        /// <summary>Constructs a quaternion from the specified components.</summary>
+        /// <summary>Initializes a <see cref="Quaternion" /> from the specified components.</summary>
         /// <param name="x">The value to assign to the X component of the quaternion.</param>
         /// <param name="y">The value to assign to the Y component of the quaternion.</param>
         /// <param name="z">The value to assign to the Z component of the quaternion.</param>
@@ -38,7 +38,7 @@ namespace System.Numerics
             this = Create(x, y, z, w);
         }
 
-        /// <summary>Creates a quaternion from the specified vector and rotation parts.</summary>
+        /// <summary>Initializes a <see cref="Quaternion" /> from the specified vector and rotation parts.</summary>
         /// <param name="vectorPart">The vector part of the quaternion.</param>
         /// <param name="scalarPart">The rotation part of the quaternion.</param>
         [Intrinsic]
@@ -191,21 +191,21 @@ namespace System.Numerics
             return (value.AsVector128() * Vector128.Create(-1.0f, -1.0f, -1.0f, 1.0f)).AsQuaternion();
         }
 
-        /// <summary>Creates a quaternion from the specified components.</summary>
+        /// <summary>Creates a <see cref="Quaternion" /> from the specified components.</summary>
         /// <param name="x">The value to assign to the X component of the quaternion.</param>
         /// <param name="y">The value to assign to the Y component of the quaternion.</param>
         /// <param name="z">The value to assign to the Z component of the quaternion.</param>
         /// <param name="w">The value to assign to the W component of the quaternion.</param>
-        /// <returns>A new quaternion created from the specified components.</returns>>
+        /// <returns>A <see cref="Quaternion" /> created from the specified components.</returns>>
         [Intrinsic]
-        internal static Quaternion Create(float x, float y, float z, float w) => Vector128.Create(x, y, z, w).AsQuaternion();
+        public static Quaternion Create(float x, float y, float z, float w) => Vector128.Create(x, y, z, w).AsQuaternion();
 
-        /// <summary>Creates a quaternion from the specified vector and rotation parts.</summary>
+        /// <summary>Creates a <see cref="Quaternion" /> from the specified vector and rotation parts.</summary>
         /// <param name="vectorPart">The vector part of the quaternion.</param>
         /// <param name="scalarPart">The rotation part of the quaternion.</param>
-        /// <returns>A new quaternion created from the specified vector and rotation parts.</returns>
+        /// <returns>A <see cref="Quaternion" /> created from the specified vector and rotation parts.</returns>
         [Intrinsic]
-        internal static Quaternion Create(Vector3 vectorPart, float scalarPart) => Vector4.Create(vectorPart, scalarPart).AsQuaternion();
+        public static Quaternion Create(Vector3 vectorPart, float scalarPart) => Vector4.Create(vectorPart, scalarPart).AsQuaternion();
 
         /// <summary>Creates a quaternion from a unit vector and an angle to rotate around the vector.</summary>
         /// <param name="axis">The unit vector to rotate around.</param>

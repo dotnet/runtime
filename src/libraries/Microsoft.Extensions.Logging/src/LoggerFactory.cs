@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
@@ -172,7 +173,7 @@ namespace Microsoft.Extensions.Logging
                 throw new ObjectDisposedException(nameof(LoggerFactory));
             }
 
-            ThrowHelper.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(provider);
 
             lock (_sync)
             {
@@ -211,12 +212,19 @@ namespace Microsoft.Extensions.Logging
 
         private LoggerInformation[] CreateLoggers(string categoryName)
         {
-            var loggers = new LoggerInformation[_providerRegistrations.Count];
+            var loggers = new List<LoggerInformation>(_providerRegistrations.Count);
             for (int i = 0; i < _providerRegistrations.Count; i++)
             {
-                loggers[i] = new LoggerInformation(_providerRegistrations[i].Provider, categoryName);
+                var loggerInformation = new LoggerInformation(_providerRegistrations[i].Provider, categoryName);
+
+                // We do not need to check for NullLogger<T>.Instance as no provider would reasonably return it (the <T> handling is at
+                // outer loggers level, not inner level loggers in Logger/LoggerProvider).
+                if (loggerInformation.Logger != NullLogger.Instance)
+                {
+                    loggers.Add(loggerInformation);
+                }
             }
-            return loggers;
+            return loggers.ToArray();
         }
 
         private (MessageLogger[] MessageLoggers, ScopeLogger[]? ScopeLoggers) ApplyFilters(LoggerInformation[] loggers)

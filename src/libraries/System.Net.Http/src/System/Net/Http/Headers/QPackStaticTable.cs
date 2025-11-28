@@ -102,7 +102,7 @@ namespace System.Net.Http.Headers
             (new HeaderDescriptor(KnownHeaders.Origin), ""), // 90
             (new HeaderDescriptor("purpose"), "prefetch"), // 91
             (new HeaderDescriptor(KnownHeaders.Server), ""), // 92
-            (new HeaderDescriptor("timing-allow-origin"), "*"), // 93
+            (new HeaderDescriptor(KnownHeaders.TimingAllowOrigin), "*"), // 93
             (new HeaderDescriptor(KnownHeaders.UpgradeInsecureRequests), "1"), // 94
             (new HeaderDescriptor(KnownHeaders.UserAgent), ""), // 95
             (new HeaderDescriptor("x-forwarded-for"), ""), // 96

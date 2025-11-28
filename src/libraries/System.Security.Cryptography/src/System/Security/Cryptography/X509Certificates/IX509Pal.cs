@@ -5,7 +5,7 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal interface IX509Pal
     {
-        AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal? certificatePal);
+        AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[]? encodedParameters, ICertificatePal? certificatePal);
         ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal);
         ECDiffieHellman DecodeECDiffieHellmanPublicKey(ICertificatePal? certificatePal);
         string X500DistinguishedNameDecode(byte[] encodedDistinguishedName, X500DistinguishedNameFlags flag);

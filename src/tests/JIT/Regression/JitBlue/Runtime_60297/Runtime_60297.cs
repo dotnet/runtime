@@ -5,6 +5,9 @@
 // Run on .NET 6.0.0-rc.1.21451.13 on X64 Windows
 // Seed: 4133580165890247722
 
+
+namespace Runtime_60297;
+
 using System.Runtime.CompilerServices;
 using Xunit;
 

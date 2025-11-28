@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
@@ -59,7 +60,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             RunTest(testAssemblyName, appAsmVersion, appFileVersion, appWins);
         }
 
-        protected abstract void RunTest(string testAssemblyName, string appAsmVersion, string appFileVersion, bool appWins);
+        protected abstract void RunTest(string testAssemblyName, string appAsmVersion, string appFileVersion, bool appWins, [CallerMemberName] string caller = "");
 
         public class SharedTestState : ComponentSharedTestStateBase
         {
@@ -99,7 +100,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         {
         }
 
-        protected override void RunTest(string testAssemblyName, string appAsmVersion, string appFileVersion, bool appWins)
+        protected override void RunTest(string testAssemblyName, string appAsmVersion, string appFileVersion, bool appWins, [CallerMemberName] string caller = "")
         {
             var app = SharedState.CreateTestFrameworkReferenceApp(b => b
                 .WithPackage(TestVersionsPackage, "1.0.0", lib => lib
@@ -112,7 +113,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             SharedState.DotNetWithNetCoreApp.Exec(app.AppDll)
                 .EnableTracingAndCaptureOutputs()
-                .Execute()
+                .Execute(caller)
                 .Should().Pass()
                 .And.HaveResolvedAssembly(expectedTestAssemblyPath)
                 .And.HaveUsedFrameworkProbe(SharedState.DotNetWithNetCoreApp.GreatestVersionSharedFxPath, level: 1);
@@ -128,7 +129,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         {
         }
 
-        protected override void RunTest(string testAssemblyName, string appAsmVersion, string appFileVersion, bool appWins)
+        protected override void RunTest(string testAssemblyName, string appAsmVersion, string appFileVersion, bool appWins, [CallerMemberName] string caller = "")
         {
             using (TestApp additionalDependency = TestApp.CreateEmpty("additionalDeps"))
             {
@@ -151,7 +152,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     : Path.Combine(SharedState.DotNetWithNetCoreApp.GreatestVersionSharedFxPath, $"{testAssemblyName}.dll");
                 SharedState.DotNetWithNetCoreApp.Exec(Constants.AdditionalDeps.CommandLineArgument, additionalDependency.DepsJson, app.AppDll)
                     .EnableTracingAndCaptureOutputs()
-                    .Execute()
+                    .Execute(caller)
                     .Should().Pass()
                     .And.HaveUsedAdditionalDeps(additionalDependency.DepsJson)
                     .And.HaveResolvedAssembly(expectedTestAssemblyPath)
@@ -169,7 +170,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         {
         }
 
-        protected override void RunTest(string testAssemblyName, string appAsmVersion, string appFileVersion, bool appWins)
+        protected override void RunTest(string testAssemblyName, string appAsmVersion, string appFileVersion, bool appWins, [CallerMemberName] string caller = "")
         {
             var component = SharedState.CreateComponentWithNoDependencies(b => b
                 .WithPackage(TestVersionsPackage, "1.0.0", lib => lib
@@ -180,7 +181,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             // For component dependency resolution, frameworks are not considered, so the assembly from the component always wins
             string expectedTestAssemblyPath = Path.Combine(component.Location, testAssemblyName + ".dll");
 
-            SharedState.RunComponentResolutionTest(component)
+            SharedState.RunComponentResolutionTest(component, caller: caller)
                 .Should().Pass()
                 .And.HaveSuccessfullyResolvedComponentDependencies()
                 .And.HaveResolvedComponentDependencyAssembly($"{component.AppDll};{expectedTestAssemblyPath}");

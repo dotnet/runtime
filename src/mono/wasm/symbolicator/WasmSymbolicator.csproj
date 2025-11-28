@@ -1,16 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- this DLL is loaded into xharness via reflection. 
+         It could be running on machine with $(NetCoreAppPrevious) installed and it would be $(NetCoreAppPrevious) process.
+         Because xharness is built for $(NetPrevious).
+         That prevents dependencies from $(AspNetCoreAppCurrent) to be loaded -->
+    <TargetFramework>$(NetCoreAppPrevious)</TargetFramework>
     <OutputType>Exe</OutputType>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);CA1873</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.XHarness.Common" Version="$(MicrosoftDotNetXHarnessTestRunnersCommonVersion)" />
-    <!-- Update and drop package assets from Json, we'll use the framework version -->
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" PrivateAssets="All" ExcludeAssets="All" />
   </ItemGroup>
 
   <ItemGroup>

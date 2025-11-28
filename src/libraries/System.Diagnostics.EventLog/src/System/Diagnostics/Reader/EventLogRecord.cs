@@ -55,7 +55,7 @@ namespace System.Diagnostics.Eventing.Reader
 
             lock (_syncObject)
             {
-                if (_systemProperties.filled == false)
+                if (!_systemProperties.filled)
                 {
                     NativeWrapper.EvtRenderBufferWithContextSystem(_session.renderContextHandleSystem, Handle, UnsafeNativeMethods.EvtRenderFlags.EvtRenderEventValues, _systemProperties);
                     _systemProperties.filled = true;
@@ -257,11 +257,13 @@ namespace System.Diagnostics.Eventing.Reader
         {
             get
             {
-                EventLogHandle bookmarkHandle = NativeWrapper.EvtCreateBookmark(null);
-                NativeWrapper.EvtUpdateBookmark(bookmarkHandle, Handle);
-                string bookmarkText = NativeWrapper.EvtRenderBookmark(bookmarkHandle);
+                using (EventLogHandle bookmarkHandle = NativeWrapper.EvtCreateBookmark(null))
+                {
+                    NativeWrapper.EvtUpdateBookmark(bookmarkHandle, Handle);
+                    string bookmarkText = NativeWrapper.EvtRenderBookmark(bookmarkHandle);
 
-                return new EventBookmark(bookmarkText);
+                    return new EventBookmark(bookmarkText);
+                }
             }
         }
 
@@ -304,7 +306,7 @@ namespace System.Diagnostics.Eventing.Reader
                     return _levelName;
                 lock (_syncObject)
                 {
-                    if (_levelNameReady == false)
+                    if (!_levelNameReady)
                     {
                         _levelNameReady = true;
                         _levelName = _cachedMetadataInformation.GetLevelDisplayName(this.ProviderName, Handle);
@@ -320,7 +322,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 lock (_syncObject)
                 {
-                    if (_opcodeNameReady == false)
+                    if (!_opcodeNameReady)
                     {
                         _opcodeNameReady = true;
                         _opcodeName = _cachedMetadataInformation.GetOpcodeDisplayName(this.ProviderName, Handle);

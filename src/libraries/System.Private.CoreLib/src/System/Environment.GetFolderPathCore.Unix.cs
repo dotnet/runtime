@@ -19,9 +19,9 @@ namespace System
     {
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
         {
-            // Get the path for the SpecialFolder
-            string path = GetFolderPathCoreWithoutValidation(folder) ?? string.Empty;
-            Debug.Assert(path != null);
+            // No need to validate if 'folder' is defined; GetSpecialFolder handles this check.
+
+            string path = GetSpecialFolder(folder) ?? string.Empty;
 
             // If we didn't get one, or if we got one but we're not supposed to verify it,
             // or if we're supposed to verify it and it passes verification, return the path.
@@ -46,7 +46,7 @@ namespace System
             return path;
         }
 
-        private static string? GetFolderPathCoreWithoutValidation(SpecialFolder folder)
+        private static string? GetSpecialFolder(SpecialFolder folder)
         {
             // First handle any paths that involve only static paths, avoiding the overheads of getting user-local paths.
             // https://www.freedesktop.org/software/systemd/man/file-hierarchy.html
@@ -143,8 +143,11 @@ namespace System
 #endif
             }
 
+            if (!Enum.IsDefined(folder))
+                throw new ArgumentOutOfRangeException(nameof(folder), folder, SR.Format(SR.Arg_EnumIllegalVal, folder));
+
             // No known path for the SpecialFolder
-            return string.Empty;
+            return null;
         }
 
         private static string GetXdgConfig(string home)

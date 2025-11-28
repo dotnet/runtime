@@ -5,6 +5,9 @@
 // Reduced from 121.36 KB to 3.38 
 // Further redued by hand
 
+
+namespace Runtime_106480;
+
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;

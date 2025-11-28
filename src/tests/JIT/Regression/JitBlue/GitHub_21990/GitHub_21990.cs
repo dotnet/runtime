@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 // Test to stress FP-relative addressing of generics context slot on ARM64. "str" instruction has a 32760 byte offset limit.
 // And normally, the frame pointer is at the bottom of the frame and the stored generics context at the top. If the locals
@@ -573,6 +574,7 @@ public class Test_GitHub_21990
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/46622", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
     public static int TestEntryPoint()
     {
         const int Pass = 100;

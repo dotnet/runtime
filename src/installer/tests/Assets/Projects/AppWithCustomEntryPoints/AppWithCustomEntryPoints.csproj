@@ -5,4 +5,8 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Include="..\CoreDump.cs" />
+  </ItemGroup>
+
 </Project>

@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             AssertExtensions.Throws<ArgumentException>("descriptors", () => new CallSiteFactory(serviceDescriptors));
         }
 
-        public static TheoryData Constructor_WithInstance_ThrowsIfServiceTypeIsOpenGenericData =>
+        public static TheoryData<object> Constructor_WithInstance_ThrowsIfServiceTypeIsOpenGenericData =>
             new TheoryData<object>
             {
                 new List<int>(),

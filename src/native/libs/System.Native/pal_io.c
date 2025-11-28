@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <fnmatch.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -342,7 +343,9 @@ intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
 
 int32_t SystemNative_Close(intptr_t fd)
 {
-    return close(ToFileDescriptor(fd));
+    int result = close(ToFileDescriptor(fd));
+    if (result < 0 && errno == EINTR) result = 0; // on all supported platforms, close(2) returning EINTR still means it was released
+    return result;
 }
 
 intptr_t SystemNative_Dup(intptr_t oldfd)
@@ -498,97 +501,13 @@ static void ConvertDirent(const struct dirent* entry, DirectoryEntry* outputEntr
 #endif
 }
 
-#if HAVE_READDIR_R
-// struct dirent typically contains 64-bit numbers (e.g. d_ino), so we align it at 8-byte.
-static const size_t dirent_alignment = 8;
-#endif
-
-int32_t SystemNative_GetReadDirRBufferSize(void)
-{
-#if HAVE_READDIR_R
-    size_t result = sizeof(struct dirent);
-#ifdef TARGET_SUNOS
-    // The d_name array is declared with only a single byte in it.
-    // We have to add pathconf("dir", _PC_NAME_MAX) more bytes.
-    // MAXNAMELEN is the largest possible value returned from pathconf.
-    result += MAXNAMELEN;
-#endif
-    // dirent should be under 2k in size
-    assert(result < 2048);
-    // add some extra space so we can align the buffer to dirent.
-    return (int32_t)(result + dirent_alignment - 1);
-#else
-    return 0;
-#endif
-}
-
-// To reduce the number of string copies, the caller of this function is responsible to ensure the memory
-// referenced by outputEntry remains valid until it is read.
-// If the platform supports readdir_r, the caller provides a buffer into which the data is read.
-// If the platform uses readdir, the caller must ensure no calls are made to readdir/closedir since those will invalidate
+// The caller must ensure no calls are made to readdir/closedir since those will invalidate
 // the current dirent. We assume the platform supports concurrent readdir calls to different DIRs.
-int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, DirectoryEntry* outputEntry)
+int32_t SystemNative_ReadDir(DIR* dir, DirectoryEntry* outputEntry)
 {
     assert(dir != NULL);
     assert(outputEntry != NULL);
 
-#if HAVE_READDIR_R
-    assert(buffer != NULL);
-
-    // align to dirent
-    struct dirent* entry = (struct dirent*)((size_t)(buffer + dirent_alignment - 1) & ~(dirent_alignment - 1));
-
-    // check there is dirent size available at entry
-    if ((buffer + bufferSize) < ((uint8_t*)entry + sizeof(struct dirent)))
-    {
-        assert(false && "Buffer size too small; use GetReadDirRBufferSize to get required buffer size");
-        return ERANGE;
-    }
-
-    struct dirent* result = NULL;
-#ifdef _AIX
-    // AIX returns 0 on success, but bizarrely, it returns 9 for both error and
-    // end-of-directory. result is NULL for both cases. The API returns the
-    // same thing for EOD/error, so disambiguation between the two is nearly
-    // impossible without clobbering errno for yourself and seeing if the API
-    // changed it. See:
-    // https://www.ibm.com/support/knowledgecenter/ssw_aix_71/com.ibm.aix.basetrf2/readdir_r.htm
-
-    errno = 0; // create a success condition for the API to clobber
-    int error = readdir_r(dir, entry, &result);
-
-    if (error == 9)
-    {
-        memset(outputEntry, 0, sizeof(*outputEntry)); // managed out param must be initialized
-        return errno == 0 ? -1 : errno;
-    }
-#else
-    int error;
-
-    // EINTR isn't documented, happens in practice on macOS.
-    while ((error = readdir_r(dir, entry, &result)) && errno == EINTR);
-
-    // positive error number returned -> failure
-    if (error != 0)
-    {
-        assert(error > 0);
-        memset(outputEntry, 0, sizeof(*outputEntry)); // managed out param must be initialized
-        return error;
-    }
-
-    // 0 returned with null result -> end-of-stream
-    if (result == NULL)
-    {
-        memset(outputEntry, 0, sizeof(*outputEntry)); // managed out param must be initialized
-        return -1;         // shim convention for end-of-stream
-    }
-#endif
-
-    // 0 returned with non-null result (guaranteed to be set to entry arg) -> success
-    assert(result == entry);
-#else
-    (void)buffer;     // unused
-    (void)bufferSize; // unused
     errno = 0;
     struct dirent* entry = readdir(dir);
 
@@ -605,7 +524,7 @@ int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, Dir
         }
         return -1;
     }
-#endif
+
     ConvertDirent(entry, outputEntry);
     return 0;
 }
@@ -1949,6 +1868,53 @@ int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64
     return (int32_t)count;
 }
 
+#if (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
+static int GetAllowedVectorCount(IOVector* vectors, int32_t vectorCount)
+{
+#if defined(IOV_MAX)
+    const int IovMax = IOV_MAX;
+#else
+    // In theory all the platforms that we support define IOV_MAX,
+    // but we want to be extra safe and provde a fallback
+    // in case it turns out to not be true.
+    // 16 is low, but supported on every platform.
+    const int IovMax = 16;
+#endif
+
+    int allowedCount = (int)vectorCount;
+
+    // We need to respect the limit of items that can be passed in iov.
+    // In case of writes, the managed code is responsible for handling incomplete writes.
+    // In case of reads, we simply returns the number of bytes read and it's up to the users.
+    if (IovMax < allowedCount)
+    {
+        allowedCount = IovMax;
+    }
+
+#if defined(TARGET_APPLE)
+    // For macOS preadv and pwritev can fail with EINVAL when the total length
+    // of all vectors overflows a 32-bit integer.
+    size_t totalLength = 0;
+    for (int i = 0; i < allowedCount; i++) 
+    {
+        assert(INT_MAX >= vectors[i].Count);
+
+        totalLength += vectors[i].Count;
+
+        if (totalLength > INT_MAX)
+        {
+            allowedCount = i;
+            break;
+        }
+    }
+#else
+    (void)vectors;
+#endif
+
+    return allowedCount;
+}
+#endif // (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
+
 int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
 {
     assert(vectors != NULL);
@@ -1957,7 +1923,8 @@ int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount,
     int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
 #if HAVE_PREADV && !defined(TARGET_WASM) // preadv is buggy on WASM
-    while ((count = preadv(fileDescriptor, (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+    int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
+    while ((count = preadv(fileDescriptor, (struct iovec*)vectors, allowedVectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
     int64_t current;
     for (int i = 0; i < vectorCount; i++)
@@ -1997,7 +1964,8 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
     int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
 #if HAVE_PWRITEV && !defined(TARGET_WASM) // pwritev is buggy on WASM
-    while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+    int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
+    while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
     int64_t current;
     for (int i = 0; i < vectorCount; i++)

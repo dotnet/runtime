@@ -10,11 +10,18 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography
 {
     internal static partial class Helpers
     {
+        internal static readonly PbeParameters Windows3desPbe =
+            new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 2000);
+
+        internal static readonly PbeParameters WindowsAesPbe =
+            new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 2000);
+
         internal static void AddRange<T>(this ICollection<T> coll, IEnumerable<T> newData)
         {
             foreach (T datum in newData)
@@ -385,6 +392,179 @@ namespace Internal.Cryptography
             else
             {
                 throw new ArgumentOutOfRangeException(nameof(hashAlgorithmName));
+            }
+        }
+
+        internal static PbeParameters MapExportParametersToPbeParameters(Pkcs12ExportPbeParameters exportParameters)
+        {
+            return exportParameters switch
+            {
+                Pkcs12ExportPbeParameters.Pkcs12TripleDesSha1 => Windows3desPbe,
+                Pkcs12ExportPbeParameters.Default or Pkcs12ExportPbeParameters.Pbes2Aes256Sha256 => WindowsAesPbe,
+                _ => throw new CryptographicException(),
+            };
+        }
+
+        internal static void ThrowIfInvalidPkcs12ExportParameters(Pkcs12ExportPbeParameters exportParameters)
+        {
+            if (exportParameters is < Pkcs12ExportPbeParameters.Default or > Pkcs12ExportPbeParameters.Pbes2Aes256Sha256)
+            {
+                throw new ArgumentOutOfRangeException(nameof(exportParameters));
+            }
+        }
+
+        internal static void ThrowIfInvalidPkcs12ExportParameters(PbeParameters exportParameters)
+        {
+            if (exportParameters.EncryptionAlgorithm is
+                PbeEncryptionAlgorithm.Aes128Cbc or PbeEncryptionAlgorithm.Aes192Cbc or PbeEncryptionAlgorithm.Aes256Cbc)
+            {
+                switch (exportParameters.HashAlgorithm.Name)
+                {
+                    case HashAlgorithmNames.SHA1:
+                    case HashAlgorithmNames.SHA256:
+                    case HashAlgorithmNames.SHA384:
+                    case HashAlgorithmNames.SHA512:
+                        return;
+                    case null or "":
+                        throw new CryptographicException(SR.Cryptography_HashAlgorithmNameNullOrEmpty);
+                    default:
+                        // Let SHA-3 fall in to default since SHA-3 has not been brought up for PKCS12.
+                        throw new CryptographicException(SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, exportParameters.HashAlgorithm.Name));
+                }
+            }
+            else if (exportParameters.EncryptionAlgorithm is PbeEncryptionAlgorithm.TripleDes3KeyPkcs12)
+            {
+                switch (exportParameters.HashAlgorithm.Name)
+                {
+                    case HashAlgorithmNames.SHA1:
+                        return;
+                    case null or "":
+                        throw new CryptographicException(SR.Cryptography_HashAlgorithmNameNullOrEmpty);
+                    default:
+                        throw new CryptographicException(SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, exportParameters.HashAlgorithm.Name));
+                }
+            }
+
+            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, exportParameters.EncryptionAlgorithm));
+        }
+
+        internal static void ThrowIfPasswordContainsNullCharacter(string? password)
+        {
+            if (password is not null && password.Contains('\0'))
+            {
+                throw new ArgumentException(SR.Argument_PasswordNullChars, nameof(password));
+            }
+        }
+
+        internal static ReadOnlyMemory<byte>? ToNullableMemory(this byte[]? array)
+        {
+            if (array is null)
+            {
+                return default(ReadOnlyMemory<byte>?);
+            }
+
+            return array;
+        }
+
+        internal static bool IsSlhDsaOid(string? oid) =>
+            SlhDsaAlgorithm.GetAlgorithmFromOid(oid) is not null;
+
+        internal delegate TResult PreHashFuncCallback<TKey, TSignature, TResult>(
+            TKey key,
+            ReadOnlySpan<byte> encodedMessage,
+            TSignature signatureBuffer)
+            where TSignature : allows ref struct;
+
+        /// <summary>
+        /// Encodes the message for ML-DSA pre-hash signing.
+        /// Algorithm is described in FIPS 205: Algorithm 23.
+        /// </summary>
+        internal static TResult MLDsaPreHash<TKey, TSignature, TResult>(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            ReadOnlySpan<char> hashAlgorithmOid,
+            TKey key,
+            TSignature signatureBuffer,
+            PreHashFuncCallback<TKey, TSignature, TResult> callback)
+            where TSignature : allows ref struct
+            => MLDsaSlhDsaPreHash(hash, context, hashAlgorithmOid, key, signatureBuffer, callback);
+
+        /// <summary>
+        /// Encodes the message for SLH-DSA pre-hash signing.
+        /// Algorithm is described in FIPS 204: Algorithm 4.
+        /// </summary>
+        internal static TResult SlhDsaPreHash<TKey, TSignature, TResult>(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            ReadOnlySpan<char> hashAlgorithmOid,
+            TKey key,
+            TSignature signatureBuffer,
+            PreHashFuncCallback<TKey, TSignature, TResult> callback)
+            where TSignature : allows ref struct
+            => MLDsaSlhDsaPreHash(hash, context, hashAlgorithmOid, key, signatureBuffer, callback);
+
+        /// <summary>
+        /// Encodes the message for ML-DSA and SLH-DSA pre-hash signing.
+        /// Algorithm is described in FIPS 204: Algorithm 4 and equivalent algorithm in FIPS 205: Algorithm 23.
+        /// </summary>
+        private static TResult MLDsaSlhDsaPreHash<TKey, TSignature, TResult>(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            ReadOnlySpan<char> hashAlgorithmOid,
+            TKey key,
+            TSignature signatureBuffer,
+            PreHashFuncCallback<TKey, TSignature, TResult> callback)
+            where TSignature : allows ref struct
+        {
+            // The OIDs for the algorithms above have max length 11. We'll just round up for a conservative initial estimate.
+            const int MaxEncodedOidLengthForCommonHashAlgorithms = 16;
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, MaxEncodedOidLengthForCommonHashAlgorithms);
+            writer.WriteObjectIdentifier(hashAlgorithmOid);
+
+            int encodedOidLength = writer.GetEncodedLength();
+            int messageLength = checked(
+                1 +                 // Pre-hash encoding flag
+                1 +                 // Context length
+                context.Length +    // Context
+                encodedOidLength +  // OID
+                hash.Length);       // Hash
+
+            // Common hash algorithms are at most 64 bytes, but unknown hash algorithms or long contexts
+            // might overshoot the estimate.
+            const int StackAllocThreshold = 128;
+            byte[]? rented = null;
+            Span<byte> message =
+                messageLength > StackAllocThreshold
+                    ? (rented = CryptoPool.Rent(messageLength))
+                    : stackalloc byte[StackAllocThreshold];
+
+            try
+            {
+                // Pre-hash encoding flag
+                message[0] = 0x01;
+
+                // Context length
+                message[1] = checked((byte)context.Length);
+
+                // Context
+                context.CopyTo(message.Slice(2));
+
+                // OID
+                writer.Encode(
+                    message.Slice(2 + context.Length),
+                    (dest, encoded) => encoded.CopyTo(dest));
+
+                // Hash
+                hash.CopyTo(message.Slice(2 + context.Length + encodedOidLength));
+
+                return callback(key, message.Slice(0, messageLength), signatureBuffer);
+            }
+            finally
+            {
+                if (rented != null)
+                {
+                    CryptoPool.Return(rented);
+                }
             }
         }
     }

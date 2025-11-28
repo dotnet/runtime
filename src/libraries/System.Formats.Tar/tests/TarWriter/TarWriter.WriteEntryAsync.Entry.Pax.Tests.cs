@@ -198,12 +198,10 @@ namespace System.Formats.Tar.Tests
                     Assert.NotNull(regularFile.ExtendedAttributes);
 
                     // path, mtime, atime and ctime are always collected by default
-                    AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 5);
+                    AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 3);
 
                     Assert.Contains(PaxEaName, regularFile.ExtendedAttributes);
                     Assert.Contains(PaxEaMTime, regularFile.ExtendedAttributes);
-                    Assert.Contains(PaxEaATime, regularFile.ExtendedAttributes);
-                    Assert.Contains(PaxEaCTime, regularFile.ExtendedAttributes);
 
                     Assert.Contains(expectedKey, regularFile.ExtendedAttributes);
                     Assert.Equal(expectedValue, regularFile.ExtendedAttributes[expectedKey]);
@@ -228,10 +226,8 @@ namespace System.Formats.Tar.Tests
                 {
                     PaxTarEntry regularFile = await reader.GetNextEntryAsync() as PaxTarEntry;
 
-                    AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 4);
+                    AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 2);
                     VerifyExtendedAttributeTimestamp(regularFile, PaxEaMTime, minimumTime);
-                    VerifyExtendedAttributeTimestamp(regularFile, PaxEaATime, minimumTime);
-                    VerifyExtendedAttributeTimestamp(regularFile, PaxEaCTime, minimumTime);
                 }
             }
         }
@@ -291,12 +287,10 @@ namespace System.Formats.Tar.Tests
                 Assert.NotNull(regularFile.ExtendedAttributes);
 
                 // path, mtime, atime and ctime are always collected by default
-                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 6);
+                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 4);
 
                 Assert.Contains(PaxEaName, regularFile.ExtendedAttributes);
                 Assert.Contains(PaxEaMTime, regularFile.ExtendedAttributes);
-                Assert.Contains(PaxEaATime, regularFile.ExtendedAttributes);
-                Assert.Contains(PaxEaCTime, regularFile.ExtendedAttributes);
 
                 Assert.Contains(PaxEaUName, regularFile.ExtendedAttributes);
                 Assert.Equal(userName, regularFile.ExtendedAttributes[PaxEaUName]);
@@ -325,7 +319,7 @@ namespace System.Formats.Tar.Tests
             {
                 PaxTarEntry regularFile = await reader.GetNextEntryAsync() as PaxTarEntry;
 
-                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 4);
+                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 2);
                 Assert.Contains(PaxEaName, regularFile.ExtendedAttributes);
             }
         }
@@ -353,7 +347,7 @@ namespace System.Formats.Tar.Tests
             {
                 PaxTarEntry symlink = await reader.GetNextEntryAsync() as PaxTarEntry;
 
-                AssertExtensions.GreaterThanOrEqualTo(symlink.ExtendedAttributes.Count, 5);
+                AssertExtensions.GreaterThanOrEqualTo(symlink.ExtendedAttributes.Count, 3);
 
                 Assert.Contains(PaxEaName, symlink.ExtendedAttributes);
                 Assert.Equal("symlink", symlink.ExtendedAttributes[PaxEaName]);
@@ -362,7 +356,7 @@ namespace System.Formats.Tar.Tests
 
                 PaxTarEntry hardlink = await reader.GetNextEntryAsync() as PaxTarEntry;
 
-                AssertExtensions.GreaterThanOrEqualTo(hardlink.ExtendedAttributes.Count, 5);
+                AssertExtensions.GreaterThanOrEqualTo(hardlink.ExtendedAttributes.Count, 3);
 
                 Assert.Contains(PaxEaName, hardlink.ExtendedAttributes);
                 Assert.Equal("hardlink", hardlink.ExtendedAttributes[PaxEaName]);

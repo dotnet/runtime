@@ -268,6 +268,16 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        public void AltSvc_Clear_RoundTrip_Success()
+        {
+            headers.Add("Alt-Svc", "clear");
+            string value = headers.GetValues("Alt-Svc").Single();
+            Assert.Equal("clear", value);
+            headers.Clear();
+            headers.Add("Alt-Svc", value);
+        }
+
+        [Fact]
         public void Expect_Add100Continue_Success()
         {
             // use non-default casing to make sure we do case-insensitive comparison.

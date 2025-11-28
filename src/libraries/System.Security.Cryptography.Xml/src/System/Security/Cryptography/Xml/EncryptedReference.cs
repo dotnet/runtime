@@ -10,7 +10,6 @@ namespace System.Security.Cryptography.Xml
     {
         private string _uri;
         private string? _referenceType;
-        private TransformChain? _transformChain;
         internal XmlElement? _cachedXml;
 
         protected EncryptedReference() : this(string.Empty, new TransformChain())
@@ -44,10 +43,10 @@ namespace System.Security.Cryptography.Xml
 
         public TransformChain TransformChain
         {
-            get => _transformChain ??= new TransformChain();
+            get => field ??= new TransformChain();
             set
             {
-                _transformChain = value;
+                field = value;
                 _cachedXml = null;
             }
         }
@@ -106,10 +105,7 @@ namespace System.Security.Cryptography.Xml
         [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public virtual void LoadXml(XmlElement value)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             ReferenceType = value.LocalName;
 

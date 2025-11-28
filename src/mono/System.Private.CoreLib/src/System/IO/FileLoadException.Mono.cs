@@ -5,11 +5,11 @@ namespace System.IO
 {
     public partial class FileLoadException
     {
-#pragma warning disable IDE0060
-        internal static string FormatFileLoadExceptionMessage(string? fileName, int hResult)
+        internal static string FormatFileLoadExceptionMessage(string? fileName, int _ /*hResult*/)
         {
-            return "";
+            return fileName != null ?
+                $"Could not load file or assembly '{fileName}' or one of its dependencies." :
+                "Could not load file or assembly or one of its dependencies.";
         }
-#pragma warning restore IDE0060
     }
 }

@@ -10,20 +10,20 @@ using ILLink.Shared.TypeSystemProxy;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	/// <summary>
-	/// This represents a type handle obtained from a Type with DynamicallyAccessedMembers annotations.
-	/// </summary>
-	internal sealed record RuntimeTypeHandleForValueWithDynamicallyAccessedMembers : SingleValue
-	{
-		public RuntimeTypeHandleForValueWithDynamicallyAccessedMembers (in ValueWithDynamicallyAccessedMembers underlyingTypeValue)
-		{
-			UnderlyingTypeValue = underlyingTypeValue;
-		}
+    /// <summary>
+    /// This represents a type handle obtained from a Type with DynamicallyAccessedMembers annotations.
+    /// </summary>
+    internal sealed record RuntimeTypeHandleForValueWithDynamicallyAccessedMembers : SingleValue
+    {
+        public RuntimeTypeHandleForValueWithDynamicallyAccessedMembers(in ValueWithDynamicallyAccessedMembers underlyingTypeValue)
+        {
+            UnderlyingTypeValue = underlyingTypeValue;
+        }
 
-		public readonly ValueWithDynamicallyAccessedMembers UnderlyingTypeValue;
+        public readonly ValueWithDynamicallyAccessedMembers UnderlyingTypeValue;
 
-		public override SingleValue DeepCopy () => this; // This value is immutable
+        public override SingleValue DeepCopy() => this; // This value is immutable
 
-		public override string ToString () => this.ValueToString (UnderlyingTypeValue);
-	}
+        public override string ToString() => this.ValueToString(UnderlyingTypeValue);
+    }
 }

@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace GitHub_25039;
+
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -33,32 +36,29 @@ public class GitHub_25039
         return ConvertToVector256Int32(pBase + pvbyte * 8);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(Avx2), nameof(Avx2.IsSupported))]
     public static unsafe int TestEntryPoint()
     {
-        if (System.Runtime.Intrinsics.X86.Avx2.IsSupported)
+        try
         {
-            try
+            var src = new int[1024];
+            fixed (int* pSrc = &src[0])
+            fixed (byte* pBase = &PermTable[0])
             {
-                var src = new int[1024];
-                fixed (int* pSrc = &src[0])
-                fixed (byte* pBase = &PermTable[0])
-                {
 
-                    for (var i = 0; i < 100; i++)
-                    {
-                        var srcv = LoadDquVector256(pSrc + i);
-                        var pe = i & 0x7;
-                        var permuted = PermuteVar8x32(srcv, GetPermutation(pBase, (int)pe));
-                        Store(pSrc + i, permuted);
-                    }
+                for (var i = 0; i < 100; i++)
+                {
+                    var srcv = LoadDquVector256(pSrc + i);
+                    var pe = i & 0x7;
+                    var permuted = PermuteVar8x32(srcv, GetPermutation(pBase, (int)pe));
+                    Store(pSrc + i, permuted);
                 }
             }
-            catch (Exception e)
-            {
-                Console.WriteLine("Failed with exception " + e.Message);
-                return -1;
-            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Failed with exception " + e.Message);
+            return -1;
         }
         return 100;
     }

@@ -54,7 +54,15 @@ namespace System.Runtime.CompilerServices
         {
             return feature switch
             {
-                PortablePdb or CovariantReturnsOfClasses or ByRefFields or ByRefLikeGenerics or UnmanagedSignatureCallingConvention or DefaultImplementationsOfInterfaces or VirtualStaticsInInterfaces or NumericIntPtr => true,
+                PortablePdb or
+                CovariantReturnsOfClasses or
+                ByRefFields or
+                ByRefLikeGenerics or
+                UnmanagedSignatureCallingConvention or
+                DefaultImplementationsOfInterfaces or
+                VirtualStaticsInInterfaces or
+                NumericIntPtr => true,
+
                 nameof(IsDynamicCodeSupported) => IsDynamicCodeSupported,
                 nameof(IsDynamicCodeCompiled) => IsDynamicCodeCompiled,
                 _ => false,

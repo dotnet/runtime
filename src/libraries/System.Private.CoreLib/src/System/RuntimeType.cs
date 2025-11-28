@@ -93,7 +93,26 @@ namespace System
             return members ?? Array.Empty<MemberInfo>();
         }
 
-        public override Type GetElementType() => RuntimeTypeHandle.GetElementType(this);
+        private static bool IsFullNameRoundtripCompatible(RuntimeType runtimeType)
+        {
+            // We exclude the types that contain generic parameters because their names cannot be round-tripped.
+            // We allow generic type definitions (and their refs, ptrs, and arrays) because their names can be round-tripped.
+            // Theoretically generic types instantiated with generic type definitions can be round-tripped, e.g. List`1<Dictionary`2>.
+            // But these kind of types are useless, rare, and hard to identity. We would need to recursively examine all the
+            // generic arguments with the same criteria. We will exclude them unless we see a real user scenario.
+            Type rootElementType = runtimeType.GetRootElementType();
+            if (!rootElementType.IsGenericTypeDefinition && rootElementType.ContainsGenericParameters)
+                return false;
+
+            // Exclude function pointer; it requires a grammar update and parsing support for Type.GetType() and friends.
+            // See https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names.
+            if (rootElementType.IsFunctionPointer)
+                return false;
+
+            return true;
+        }
+
+        public override Type? GetElementType() => RuntimeTypeHandle.GetElementType(this);
 
         public override string? GetEnumName(object value)
         {
@@ -268,7 +287,6 @@ namespace System
             // For runtime type, let the VM decide.
             if (c.UnderlyingSystemType is RuntimeType fromType)
             {
-                // both this and c (or their underlying system types) are runtime types
                 return RuntimeTypeHandle.CanCastTo(fromType, this);
             }
 
@@ -279,7 +297,7 @@ namespace System
                 if (c.IsSubclassOf(this))
                     return true;
 
-                if (IsInterface)
+                if (IsActualInterface)
                 {
                     return c.ImplementInterface(this);
                 }
@@ -300,7 +318,7 @@ namespace System
 
         [DebuggerStepThrough]
         [DebuggerHidden]
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object? InvokeMember(
             string name, BindingFlags bindingFlags, Binder? binder, object? target,
             object?[]? providedArgs, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParams)
@@ -448,7 +466,12 @@ namespace System
 
                 // Lookup Field
                 FieldInfo? selFld = null;
-                FieldInfo[]? flds = GetMember(name, MemberTypes.Field, bindingFlags) as FieldInfo[];
+                FieldInfo[]? flds = GetFields(this, name, bindingFlags);
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070",
+                    Justification = $"MemberTypes.Field is satisfied by ({nameof(InvokeMemberMembers)}) on this method")]
+                static FieldInfo[]? GetFields(RuntimeType thisType, string name, BindingFlags bindingFlags)
+                    => thisType.GetMember(name, MemberTypes.Field, bindingFlags) as FieldInfo[];
 
                 Debug.Assert(flds != null);
 
@@ -560,7 +583,13 @@ namespace System
             if ((bindingFlags & BindingFlags.InvokeMethod) != 0)
             {
                 // Lookup Methods
-                MethodInfo[] semiFinalists = (GetMember(name, MemberTypes.Method, bindingFlags) as MethodInfo[])!;
+                MethodInfo[] semiFinalists = GetMethods(this, name, bindingFlags)!;
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070",
+                    Justification = $"MemberTypes.Method is satisfied by ({nameof(InvokeMemberMembers)}) on this method")]
+                static MethodInfo[]? GetMethods(RuntimeType thisType, string name, BindingFlags bindingFlags)
+                    => thisType.GetMember(name, MemberTypes.Method, bindingFlags) as MethodInfo[];
+
                 List<MethodInfo>? results = null;
 
                 for (int i = 0; i < semiFinalists.Length; i++)
@@ -595,7 +624,13 @@ namespace System
             if (finalist == null && isGetProperty || isSetProperty)
             {
                 // Lookup Property
-                PropertyInfo[] semiFinalists = (GetMember(name, MemberTypes.Property, bindingFlags) as PropertyInfo[])!;
+                PropertyInfo[] semiFinalists = GetProperties(this, name, bindingFlags)!;
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070",
+                    Justification = $"MemberTypes.Property is satisfied by ({nameof(InvokeMemberMembers)}) on this method")]
+                static PropertyInfo[]? GetProperties(RuntimeType thisType, string name, BindingFlags bindingFlags)
+                    => thisType.GetMember(name, MemberTypes.Property, bindingFlags) as PropertyInfo[];
+
                 List<MethodInfo>? results = null;
 
                 for (int i = 0; i < semiFinalists.Length; i++)
@@ -651,7 +686,7 @@ namespace System
                 object? state = null;
                 MethodBase? invokeMethod = null;
 
-                try { invokeMethod = binder.BindToMethod(bindingFlags, finalists, ref providedArgs!, modifiers, culture, namedParams, out state); }
+                try { invokeMethod = binder.BindToMethod(bindingFlags, finalists, ref providedArgs, modifiers, culture, namedParams, out state); }
                 catch (MissingMethodException) { }
 
                 if (invokeMethod == null)
@@ -668,9 +703,15 @@ namespace System
             throw new MissingMethodException(FullName, name);
         }
 
+        // Returns the type from which the current type directly inherits from with reflection quirks.
+        // The base type is null for interfaces, pointers, byrefs.
+        // The base type of a generic argument with a direct class constraint is the class constrain type, `System.Object` otherwise. For example:
+        // `class G1<T> where T:Stream`: `typeof(G1<>).GetGenericArguments()[0].BaseType` is Stream
+        // `class G2<T> where T:IDisposable`: typeof(G2<>).GetGenericArguments()[0].BaseType is Object
+        // `class G3<T,U> where T:U where U:Stream`: typeof(G3<,>).GetGenericArguments()[0].BaseType is Object (!)
         private RuntimeType? GetBaseType()
         {
-            if (IsInterface)
+            if (IsActualInterface)
                 return null;
 
             if (RuntimeTypeHandle.IsGenericVariable(this))
@@ -683,7 +724,7 @@ namespace System
                 {
                     RuntimeType constraint = (RuntimeType)constraints[i];
 
-                    if (constraint.IsInterface)
+                    if (constraint.IsActualInterface)
                         continue;
 
                     if (constraint.IsGenericParameter)
@@ -708,7 +749,7 @@ namespace System
                 return baseType;
             }
 
-            return RuntimeTypeHandle.GetBaseType(this);
+            return GetParentType();
         }
 
         private static void ThrowIfTypeNeverValidGenericArgument(RuntimeType type)
@@ -751,7 +792,7 @@ namespace System
             CorElementType corElemType = type.GetCorElementType();
             if (corElemType == CorElementType.ELEMENT_TYPE_BYREF)
             {
-                elementType = RuntimeTypeHandle.GetElementType(type);
+                elementType = RuntimeTypeHandle.GetElementType(type)!;
                 return true;
             }
 

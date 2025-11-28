@@ -4840,5 +4840,39 @@ namespace System.Text.Json.Tests
                 return dataList;
             }
         }
+
+        [Fact]
+        public static void SkipComment_SingleLineComment()
+        {
+            byte[] data = "// This is a comment\n{}"u8.ToArray();
+            var reader = new Utf8JsonReader(data, new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip });
+            
+            Assert.True(reader.Read());
+            Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
+        }
+
+        [Fact]
+        public static void SkipComment_MultiLineComment()
+        {
+            byte[] data = "/* This is a\nmultiline comment */\n{}"u8.ToArray();
+            var reader = new Utf8JsonReader(data, new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip });
+            
+            Assert.True(reader.Read());
+            Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
+        }
+
+        [Fact]
+        public static void AllowComment_ReadsCommentToken()
+        {
+            byte[] data = "// comment\n{}"u8.ToArray();
+            var reader = new Utf8JsonReader(data, new JsonReaderOptions { CommentHandling = JsonCommentHandling.Allow });
+            
+            Assert.True(reader.Read());
+            Assert.Equal(JsonTokenType.Comment, reader.TokenType);
+            Assert.Equal(" comment", reader.GetComment());
+            
+            Assert.True(reader.Read());
+            Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
+        }
     }
 }

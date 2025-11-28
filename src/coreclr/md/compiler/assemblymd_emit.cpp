@@ -15,10 +15,6 @@
 #include "mdlog.h"
 #include "importhelper.h"
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4102)
-#endif
-
 #ifdef FEATURE_METADATA_EMIT
 
 //*******************************************************************************

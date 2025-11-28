@@ -126,6 +126,7 @@ System.Diagnostics.EventLog</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerLoweringPreserveAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -137,6 +138,7 @@ System.Diagnostics.EventLog</PackageDescription>
                       ReferenceOutputAssembly="false"
                       OutputItemType="TfmRuntimeSpecificPackageFile"
                       PrivateAssets="true" />
+    <ProjectReference Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '10.0'))" Include="$(LibrariesProjectRoot)System.Threading.AccessControl\src\System.Threading.AccessControl.csproj" />
   </ItemGroup>
 
 </Project>

@@ -21,8 +21,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void BitwiseAnd<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : IBitwiseOperators<T, T, T> =>
+            where T : IBitwiseOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryBitwiseInvokeHalfAsInt16<T, BitwiseAndOperator<short>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, BitwiseAndOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise bitwise AND of numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -36,8 +43,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void BitwiseAnd<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
-            where T : IBitwiseOperators<T, T, T> =>
+            where T : IBitwiseOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryBitwiseInvokeHalfAsInt16<T, BitwiseAndOperator<short>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarIntoSpan<T, BitwiseAndOperator<T>>(x, y, destination);
+        }
 
         /// <summary>x &amp; y</summary>
         private readonly struct BitwiseAndOperator<T> : IBinaryOperator<T> where T : IBitwiseOperators<T, T, T>

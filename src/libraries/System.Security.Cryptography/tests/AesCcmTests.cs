@@ -708,17 +708,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void CheckIsSupported()
         {
-            bool expectedIsSupported = !PlatformDetection.IsBrowser;
-
-            if (PlatformDetection.IsOSX)
-            {
-                expectedIsSupported = PlatformDetection.OpenSslPresentOnSystem;
-            }
-            else if (PlatformDetection.UsesMobileAppleCrypto)
-            {
-                expectedIsSupported = false;
-            }
-
+            bool expectedIsSupported = !PlatformDetection.IsBrowser && !PlatformDetection.IsApplePlatform;
             Assert.Equal(expectedIsSupported, AesCcm.IsSupported);
         }
     }

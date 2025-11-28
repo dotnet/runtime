@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Options
     /// Configures an option instance by using <see cref="ConfigurationBinder.Bind(IConfiguration, object)"/> against an <see cref="IConfiguration"/>.
     /// </summary>
     /// <typeparam name="TOptions">The type of options to bind.</typeparam>
-    public class NamedConfigureFromConfigurationOptions<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions> : ConfigureNamedOptions<TOptions>
+    public class NamedConfigureFromConfigurationOptions<TOptions> : ConfigureNamedOptions<TOptions>
         where TOptions : class
     {
         /// <summary>
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Options
         public NamedConfigureFromConfigurationOptions(string? name, IConfiguration config, Action<BinderOptions>? configureBinder)
             : base(name, options => config.Bind(options, configureBinder))
         {
-            ThrowHelper.ThrowIfNull(config);
+            ArgumentNullException.ThrowIfNull(config);
         }
     }
 }

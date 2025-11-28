@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("value")]
-        public void Ctor_Alias(string alias)
+        public void Ctor_Alias(string? alias)
         {
             var attribute = new ComAliasNameAttribute(alias);
             Assert.Equal(alias, attribute.Value);

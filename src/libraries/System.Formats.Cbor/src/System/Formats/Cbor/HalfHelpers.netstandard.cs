@@ -28,7 +28,7 @@ namespace System.Formats.Cbor
         public static double HalfToDouble(ushort value)
             => (double)HalfToFloat(value);
 
-        public static unsafe float HalfToFloat(ushort value)
+        public static float HalfToFloat(ushort value)
         {
             const ushort ExponentMask = 0x7C00;
             const ushort ExponentShift = 10;
@@ -107,12 +107,9 @@ namespace System.Formats.Cbor
             value |= value >> 08;
             value |= value >> 16;
 
-            // uint.MaxValue >> 27 is always in range [0 - 31] so we use Unsafe.AddByteOffset to avoid bounds check
-            return Unsafe.AddByteOffset(
-                // Using deBruijn sequence, k=2, n=5 (2^5=32) : 0b_0000_0111_1100_0100_1010_1100_1101_1101u
-                ref MemoryMarshal.GetReference(Log2DeBruijn),
-                // uint|long -> IntPtr cast on 32-bit platforms does expensive overflow checks not needed here
-                (IntPtr)(int)((value * 0x07C4ACDDu) >> 27));
+            // Using deBruijn sequence, k=2, n=5 (2^5=32) : 0b_0000_0111_1100_0100_1010_1100_1101_1101u
+            // uint.MaxValue >> 27 is always in range [0 - 31] so no bounds check
+            return Log2DeBruijn[(int)((value * 0x07C4ACDDu) >> 27)];
         }
 
         private static float CreateSingleNaN(bool sign, ulong significand)

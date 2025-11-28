@@ -7,56 +7,78 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-	internal partial struct ParameterProxy
-	{
-		public ParameterProxy (IParameterSymbol parameter)
-		{
-			Method = new ((IMethodSymbol) parameter.ContainingSymbol);
-			Index = (ParameterIndex) parameter.Ordinal + (Method.HasImplicitThis () ? 1 : 0);
-		}
+    internal partial struct ParameterProxy
+    {
+        public ParameterProxy(IParameterSymbol parameter, IMethodSymbol method)
+        {
+            Method = new(method);
+            Index = (ParameterIndex)parameter.Ordinal +
+                (Method.HasImplicitThis() ? 1 : 0) +
+                (method.HasExtensionParameterOnType() && parameter.ContainingSymbol is IMethodSymbol ? 1 : 0);
+        }
 
-		public partial ReferenceKind GetReferenceKind ()
-		{
-			if (IsImplicitThis)
-				return Method.Method.ContainingType.IsValueType
-					? ReferenceKind.Ref
-					: ReferenceKind.None;
+        public partial ReferenceKind GetReferenceKind()
+        {
+            if (IsImplicitThis)
+                return Method.Method.ContainingType.IsValueType
+                    ? ReferenceKind.Ref
+                    : ReferenceKind.None;
 
-			switch (Method.Method.Parameters[MetadataIndex].RefKind) {
-			case RefKind.Ref: return ReferenceKind.Ref;
-			case RefKind.In: return ReferenceKind.In;
-			case RefKind.Out: return ReferenceKind.Out;
-			case RefKind.None: return ReferenceKind.None;
-			default:
-				Debug.Fail ($"Unexpected RefKind {Method.Method.Parameters[MetadataIndex].RefKind} found on parameter {GetDisplayName ()}");
-				return ReferenceKind.None;
-			}
-		}
+            switch (ParameterSymbol!.RefKind)
+            {
+                case RefKind.Ref: return ReferenceKind.Ref;
+                case RefKind.In: return ReferenceKind.In;
+                case RefKind.Out: return ReferenceKind.Out;
+                case RefKind.None: return ReferenceKind.None;
+                default:
+                    Debug.Fail($"Unexpected RefKind {ParameterSymbol!.RefKind} found on parameter {GetDisplayName()}");
+                    return ReferenceKind.None;
+            }
+        }
 
-		/// <summary>
-		/// Returns the IParameterSymbol representing the parameter. Returns null for the implicit this paramter.
-		/// </summary>
-		public IParameterSymbol? ParameterSymbol => IsImplicitThis ? null : Method.Method.Parameters[MetadataIndex];
+        /// <summary>
+        /// Returns the IParameterSymbol representing the parameter. Returns null for the implicit this paramter.
+        /// </summary>
+        public IParameterSymbol? ParameterSymbol
+        {
+            get
+            {
+                if (IsImplicitThis)
+                {
+                    return null;
+                }
 
-		/// <summary>
-		/// Returns the IParameterSymbol.Location[0] for the parameter. Returns null for the implicit this paramter.
-		/// </summary>
-		public Location? Location => ParameterSymbol?.Locations[0];
+                var method = Method.Method;
+                int hasExtensionParameter = 0;
+                if (method.HasExtensionParameterOnType())
+                {
+                    if (MetadataIndex == 0)
+                    {
+                        return method.ContainingType.ExtensionParameter;
+                    }
+                    hasExtensionParameter = 1;
+                }
 
-		public TypeProxy ParameterType
-			=> IsImplicitThis
-				? new TypeProxy (Method.Method.ContainingType)
-				: new TypeProxy (Method.Method.Parameters[MetadataIndex].Type);
+                return method.Parameters[MetadataIndex - hasExtensionParameter];
+            }
+        }
 
-		public partial string GetDisplayName ()
-		{
-			if (IsImplicitThis)
-				return "this";
-			return ParameterSymbol!.GetDisplayName ();
-		}
+        /// <summary>
+        /// Returns the IParameterSymbol.Location[0] for the parameter. Returns null for the implicit this paramter.
+        /// </summary>
+        public Location? Location => ParameterSymbol?.Locations[0];
 
-		public partial bool IsTypeOf (string typeName) => ParameterType.IsTypeOf (typeName.Substring (0, typeName.LastIndexOf ('.')), typeName.Substring (1 + typeName.LastIndexOf ('.')));
+        public TypeProxy ParameterType => new TypeProxy(ParameterSymbol?.Type ?? Method.Method.ContainingType);
 
-		public bool IsTypeOf (WellKnownType type) => ParameterType.IsTypeOf (type);
-	}
+        public partial string GetDisplayName()
+        {
+            if (IsImplicitThis)
+                return "this";
+            return ParameterSymbol!.GetDisplayName();
+        }
+
+        public partial bool IsTypeOf(string typeName) => ParameterType.IsTypeOf(typeName.Substring(0, typeName.LastIndexOf('.')), typeName.Substring(1 + typeName.LastIndexOf('.')));
+
+        public bool IsTypeOf(WellKnownType type) => ParameterType.IsTypeOf(type);
+    }
 }

@@ -29,16 +29,17 @@ namespace System
             return type ?? GetTypeFromMethodTableSlow(pMT);
         }
 
-        private static class AllocationLockHolder
+        private static class AllocationLock
         {
-            public static readonly Lock AllocationLock = new Lock(useTrivialWaits: true);
+            public static Lock Instance =>
+                field ?? Interlocked.CompareExchange(ref field, new Lock(useTrivialWaits: true), null) ?? field;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT)
         {
             // Allocate and set the RuntimeType under a lock - there's no way to free it if there is a race.
-            using (AllocationLockHolder.AllocationLock.EnterScope())
+            lock (AllocationLock.Instance)
             {
                 ref RuntimeType? runtimeTypeCache = ref Unsafe.AsRef<RuntimeType?>(pMT->WritableData);
                 if (runtimeTypeCache != null)

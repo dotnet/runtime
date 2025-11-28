@@ -11,24 +11,22 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 {
-	[SetupLinkerArgument ("--skip-unresolved", "true")]
-	[SetupLinkerArgument ("-a", "test.exe", "library")]
-	[SetupLinkerArgument ("-a", "library.dll", "library")]
-	[TestCaseRequirements (TestRunCharacteristics.SupportsDefaultInterfaceMethods, "Requires support for default interface methods")]
-	[Define ("IL_ASSEMBLY_AVAILABLE")]
-	[SetupCompileBefore ("library.dll", new[] { "Dependencies/InterfaceImplementedThroughBaseInterface.il" })]
-	[SkipILVerify]
+    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SetupLinkerArgument("-a", "test.exe", "library")]
+    [SetupLinkerArgument("-a", "library.dll", "library")]
+    [TestCaseRequirements(TestRunCharacteristics.SupportsDefaultInterfaceMethods, "Requires support for default interface methods")]
+    [Define("IL_ASSEMBLY_AVAILABLE")]
+    [SetupCompileBefore("library.dll", new[] { "Dependencies/InterfaceImplementedThroughBaseInterface.il" })]
+    [SkipILVerify]
 
 #if IL_ASSEMBLY_AVAILABLE
-	[KeptMemberInAssembly ("library.dll", typeof(C), "IBase.M()")]
+    [KeptMemberInAssembly("library.dll", typeof(C), "IBase.M()")]
 #endif
-	[KeptMember(".ctor()")]
-	public class InterfaceImplementedThroughBaseInterface
-	{
-		public static void Main ()
-		{
-		}
-	}
+    [KeptMember(".ctor()")]
+    public class InterfaceImplementedThroughBaseInterface
+    {
+        public static void Main()
+        {
+        }
+    }
 }
-
-

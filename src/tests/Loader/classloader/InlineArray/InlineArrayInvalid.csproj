@@ -5,6 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Make sure that invalid operations are not optimized out by Roslyn -->
     <Optimize>false</Optimize>
+    <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="InlineArrayInvalid.cs" />

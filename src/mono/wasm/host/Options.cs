@@ -1738,10 +1738,7 @@ namespace Mono.Options
                 throw new ArgumentException("Command instances can only be added to a single CommandSet.", nameof(value));
             }
             value.CommandSet = this;
-            if (value.Options != null)
-            {
-                value.Options.MessageLocalizer = options.MessageLocalizer;
-            }
+            value.Options?.MessageLocalizer = options.MessageLocalizer;
 
             base.Add(value);
 

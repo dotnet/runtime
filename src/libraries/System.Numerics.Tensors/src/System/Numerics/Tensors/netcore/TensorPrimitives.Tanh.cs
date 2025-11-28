@@ -30,8 +30,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Tanh<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IHyperbolicFunctions<T> =>
+            where T : IHyperbolicFunctions<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, TanhOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, TanhOperator<T>>(x, destination);
+        }
 
         /// <summary>T.Tanh(x)</summary>
         internal readonly struct TanhOperator<T> : IUnaryOperator<T, T>

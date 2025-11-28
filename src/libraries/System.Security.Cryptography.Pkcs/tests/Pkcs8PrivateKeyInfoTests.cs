@@ -334,7 +334,7 @@ D9fVWpuVzYpEDfZm");
         [InlineData("0....0")]
         [InlineData("0.0...0")]
         [InlineData("potato")]
-        public static void InvalidAlgorithmId(string oidValue)
+        public static void InvalidAlgorithmId(string? oidValue)
         {
             Pkcs8PrivateKeyInfo info = new Pkcs8PrivateKeyInfo(
                 new Oid(oidValue, "friendly name"),

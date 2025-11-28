@@ -66,7 +66,7 @@ namespace System.Reflection.Runtime.TypeInfos
             #endregion
 
             #region Check that any named parameters are not null
-            if (namedParams != null && Array.IndexOf(namedParams, null) != -1)
+            if (namedParams != null && Array.IndexOf(namedParams, null) >= 0)
                 // "Named parameter value must not be null."
                 throw new ArgumentException(SR.Arg_NamedParamNull, nameof(namedParams));
             #endregion

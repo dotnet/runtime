@@ -7,8 +7,6 @@ namespace System
 {
     public static partial class Environment
     {
-        public static long TickCount64 => (long)Interop.Kernel32.GetTickCount64();
-
         [DoesNotReturn]
         private static void ExitRaw() => Interop.Kernel32.ExitProcess(s_latchedExitCode);
     }

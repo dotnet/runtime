@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
 using System.Runtime.Remoting;
@@ -23,8 +24,6 @@ namespace System
 
         private IPrincipal? _defaultPrincipal;
         private PrincipalPolicy _principalPolicy = PrincipalPolicy.NoPrincipal;
-        private Func<IPrincipal>? s_getWindowsPrincipal;
-        private Func<IPrincipal>? s_getUnauthenticatedPrincipal;
 
         private AppDomain() { }
 
@@ -404,34 +403,32 @@ namespace System
                 switch (_principalPolicy)
                 {
                     case PrincipalPolicy.UnauthenticatedPrincipal:
-                        if (s_getUnauthenticatedPrincipal == null)
-                        {
-                            Type type = Type.GetType("System.Security.Principal.GenericPrincipal, System.Security.Claims", throwOnError: true)!;
-                            MethodInfo? mi = type.GetMethod("GetDefaultInstance", BindingFlags.NonPublic | BindingFlags.Static);
-                            Debug.Assert(mi != null);
-                            // Don't throw PNSE if null like for WindowsPrincipal as UnauthenticatedPrincipal should
-                            // be available on all platforms.
-                            s_getUnauthenticatedPrincipal = mi.CreateDelegate<Func<IPrincipal>>();
-                        }
-
-                        principal = s_getUnauthenticatedPrincipal();
+                        principal = (IPrincipal)GetDefaultPrincipal(null);
                         break;
-
                     case PrincipalPolicy.WindowsPrincipal:
-                        if (s_getWindowsPrincipal == null)
-                        {
-                            Type type = Type.GetType("System.Security.Principal.WindowsPrincipal, System.Security.Principal.Windows", throwOnError: true)!;
-                            MethodInfo mi = type.GetMethod("GetDefaultInstance", BindingFlags.NonPublic | BindingFlags.Static) ??
-                                throw new PlatformNotSupportedException(SR.PlatformNotSupported_Principal);
-                            s_getWindowsPrincipal = mi.CreateDelegate<Func<IPrincipal>>();
-                        }
-
-                        principal = s_getWindowsPrincipal();
+#if TARGET_WINDOWS
+                        principal = (IPrincipal)GetDefaultWindowsPrincipal(null);
                         break;
+#else
+                        // WindowsPrincipal is not available, throw PNSE
+                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_Principal);
+#endif
                 }
             }
 
             return principal;
+
+            [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetDefaultInstance")]
+            [return: UnsafeAccessorType("System.Security.Principal.GenericPrincipal, System.Security.Claims")]
+            static extern object GetDefaultPrincipal(
+                [UnsafeAccessorType("System.Security.Principal.GenericPrincipal, System.Security.Claims")] object? _);
+
+#if TARGET_WINDOWS
+            [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetDefaultInstance")]
+            [return: UnsafeAccessorType("System.Security.Principal.WindowsPrincipal, System.Security.Principal.Windows")]
+            static extern object GetDefaultWindowsPrincipal(
+                [UnsafeAccessorType("System.Security.Principal.WindowsPrincipal, System.Security.Principal.Windows")] object? _);
+#endif
         }
     }
 }

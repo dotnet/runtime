@@ -19,13 +19,12 @@ public class IcuTests : IcuTestsBase
     public IcuTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext) { }
 
-    public static IEnumerable<object[]> FullIcuWithICustomIcuTestData(string config) =>
-        from templateType in templateTypes
-            from aot in boolOptions
+    public static IEnumerable<object[]> FullIcuWithICustomIcuTestData(Configuration config) =>
+        from aot in boolOptions
             from fullIcu in boolOptions
-            select new object[] { config, templateType, aot, fullIcu };
+            select new object[] { config, aot, fullIcu };
 
-    public static IEnumerable<object[]> FullIcuWithInvariantTestData(string config)
+    public static IEnumerable<object[]> FullIcuWithInvariantTestData(Configuration config)
     {
         var locales = new object[][]
         {
@@ -35,31 +34,29 @@ public class IcuTests : IcuTestsBase
             new object[] { false, false, GetEfigsTestedLocales() },
             new object[] { false, true,  s_fullIcuTestedLocales }
         }; 
-        return from templateType in templateTypes
-            from aot in boolOptions
+        return from aot in boolOptions
             from locale in locales
-            select new object[] { config, templateType, aot, locale[0], locale[1], locale[2] };
+            select new object[] { config, aot, locale[0], locale[1], locale[2] };
     }
 
-    public static IEnumerable<object[]> IncorrectIcuTestData(string config)
+    public static IEnumerable<object[]> IncorrectIcuTestData(Configuration config)
     {
         var customFiles = new Dictionary<string, bool>
         {
             { "icudtNonExisting.dat", true },
             { "incorrectName.dat", false }
         };
-        return from templateType in templateTypes
-            from customFile in customFiles
-            select new object[] { config, templateType, customFile.Key, customFile.Value };
+        return from customFile in customFiles
+            select new object[] { config, customFile.Key, customFile.Value };
     }
         
 
     [Theory]
-    [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { "Release" })]
-    public async Task FullIcuFromRuntimePackWithInvariant(string config, string templateType, bool aot, bool invariant, bool fullIcu, string testedLocales) =>
-        await BuildAndRunIcuTest(
+    [MemberData(nameof(FullIcuWithInvariantTestData), parameters: new object[] { Configuration.Release })]
+    public async Task FullIcuFromRuntimePackWithInvariant(Configuration config=Configuration.Release, bool aot=false, bool invariant=true, bool fullIcu=true, string testedLocales="Array.Empty<Locale>()") =>
+        await PublishAndRunIcuTest(
             config,
-            templateType,
+            Template.WasmBrowser,
             aot,
             testedLocales,
             globalizationMode: invariant ? GlobalizationMode.Invariant : fullIcu ? GlobalizationMode.FullIcu : GlobalizationMode.Sharded,
@@ -68,38 +65,35 @@ public class IcuTests : IcuTestsBase
                 $"<InvariantGlobalization>{invariant}</InvariantGlobalization><BlazorWebAssemblyLoadAllGlobalizationData>{fullIcu}</BlazorWebAssemblyLoadAllGlobalizationData><RunAOTCompilation>{aot}</RunAOTCompilation>");
 
     [Theory]
-    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { "Release" })]
-    public async Task FullIcuFromRuntimePackWithCustomIcu(string config, string templateType, bool aot, bool fullIcu)
+    [MemberData(nameof(FullIcuWithICustomIcuTestData), parameters: new object[] { Configuration.Release })]
+    public async Task FullIcuFromRuntimePackWithCustomIcu(Configuration config, bool aot, bool fullIcu)
     {
-        bool isBrowser = templateType == "wasmbrowser";
-        string customIcuProperty = isBrowser ? "BlazorIcuDataFileName" : "WasmIcuDataFileName";
-        string fullIcuProperty = isBrowser ? "BlazorWebAssemblyLoadAllGlobalizationData" : "WasmIncludeFullIcuData";
+        string customIcuProperty = "BlazorIcuDataFileName";
+        string fullIcuProperty = "BlazorWebAssemblyLoadAllGlobalizationData";
         string extraProperties = $"<{customIcuProperty}>{CustomIcuPath}</{customIcuProperty}><{fullIcuProperty}>{fullIcu}</{fullIcuProperty}><RunAOTCompilation>{aot}</RunAOTCompilation>";
         
         string testedLocales = fullIcu ? s_fullIcuTestedLocales : s_customIcuTestedLocales;
         GlobalizationMode globalizationMode = fullIcu ? GlobalizationMode.FullIcu : GlobalizationMode.Custom;
         string customIcuFile = fullIcu ? "" : CustomIcuPath;
-        string output = await BuildAndRunIcuTest(config, templateType, aot, testedLocales, globalizationMode, extraProperties, icuFileName: customIcuFile);
+        string output = await PublishAndRunIcuTest(config, Template.WasmBrowser, aot, testedLocales, globalizationMode, extraProperties, icuFileName: customIcuFile);
         if (fullIcu)
             Assert.Contains($"$({customIcuProperty}) has no effect when $({fullIcuProperty}) is set to true.", output);
     }
 
     [Theory]
-    [MemberData(nameof(IncorrectIcuTestData), parameters: new object[] { "Release" })]
-    public void NonExistingCustomFileAssertError(string config, string templateType, string customIcu, bool isFilenameFormCorrect)
+    [MemberData(nameof(IncorrectIcuTestData), parameters: new object[] { Configuration.Release })]
+    public void NonExistingCustomFileAssertError(Configuration config, string customIcu, bool isFilenameFormCorrect)
     {        
         string customIcuProperty = "BlazorIcuDataFileName";
         string extraProperties = $"<{customIcuProperty}>{customIcu}</{customIcuProperty}>";
     
-        (BuildArgs buildArgs, string projectFile) = CreateIcuProject(
-            config, templateType, aot: false, "Array.Empty<Locale>()", extraProperties);
-        string output = BuildIcuTest(
-            buildArgs,
-            GlobalizationMode.Custom,
-            customIcu,
-            expectSuccess: false,
-            assertAppBundle: false);
-        
+        ProjectInfo info = CreateIcuProject(config, Template.WasmBrowser, aot: false, "Array.Empty<Locale>()", extraProperties);
+        (string _, string output) = BuildProject(info, config, new BuildOptions(
+            GlobalizationMode: GlobalizationMode.Custom,
+            CustomIcuFile: customIcu,
+            ExpectSuccess: false,
+            AssertAppBundle: false
+        ));
         if (isFilenameFormCorrect)
         {
             Assert.Contains($"Could not find $({customIcuProperty})={customIcu}, or when used as a path relative to the runtime pack", output);

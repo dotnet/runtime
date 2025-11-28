@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Net.Http.Headers;
 using Microsoft.WebAssembly.AppHost;
 
 namespace Microsoft.WebAssembly.AppHost.DevServer;
@@ -67,7 +69,6 @@ internal sealed class DevServerStartup
             ServeUnknownFileTypes = true,
         });
 
-        app.UseRouting();
         app.UseWebSockets();
 
         if (options.OnConsoleConnected is not null)
@@ -100,6 +101,14 @@ internal sealed class DevServerStartup
             {
                 OnPrepareResponse = fileContext =>
                 {
+                    // Avoid caching index.html during development.
+                    // When hot reload is enabled, a middleware injects a hot reload script into the response HTML.
+                    // We don't want the browser to bypass this injection by using a cached response that doesn't
+                    // contain the injected script. In the future, if script injection is removed in favor of a
+                    // different mechanism, we can delete this comment and the line below it.
+                    // See also: https://github.com/dotnet/aspnetcore/issues/45213
+                    fileContext.Context.Response.Headers[HeaderNames.CacheControl] = "no-store";
+
                     if (options.WebServerUseCrossOriginPolicy)
                     {
                         // Browser multi-threaded runtime requires cross-origin policy headers to enable SharedArrayBuffer.
@@ -107,6 +116,58 @@ internal sealed class DevServerStartup
                     }
                 }
             });
+
+            // Add general-purpose file upload endpoint when DEVSERVER_UPLOAD_PATH is set
+            string? fileUploadPath = Environment.GetEnvironmentVariable("DEVSERVER_UPLOAD_PATH");
+            if (!string.IsNullOrEmpty(fileUploadPath))
+            {
+                // Ensure the upload directory exists
+                if (!Directory.Exists(fileUploadPath))
+                {
+                    Directory.CreateDirectory(fileUploadPath!);
+                }
+
+                // Route with filename parameter
+                endpoints.MapPost("/upload/{filename}", async context =>
+                {
+                    try
+                    {
+                        // Get the filename from the route
+                        var routeValues = context.Request.RouteValues;
+                        string? rawFileName = routeValues["filename"]?.ToString();
+
+                        // Generate a unique name if none provided
+                        if (string.IsNullOrEmpty(rawFileName))
+                        {
+                            rawFileName = $"upload_{Guid.NewGuid():N}";
+                        }
+
+                        // Sanitize filename - IMPORTANT: Only use GetFileName to strip any path components
+                        // This prevents directory traversal attacks like "../../../etc/passwd"
+                        string fileName = Path.GetFileName(rawFileName);
+
+                        if (string.IsNullOrEmpty(fileName))
+                        {
+                            fileName = $"upload_{Guid.NewGuid():N}";
+                        }
+
+                        string filePath = Path.Combine(fileUploadPath!, fileName);
+
+                        using (var outputStream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await context.Request.Body.CopyToAsync(outputStream);
+                        }
+
+                        await context.Response.WriteAsync($"File saved to {filePath}");
+                    }
+                    catch (Exception ex)
+                    {
+                        context.Response.StatusCode = 500;
+                        await context.Response.WriteAsync($"Error processing upload: {ex.Message}");
+                    }
+                });
+            }
+
         });
 
         ServerURLsProvider.ResolveServerUrlsOnApplicationStarted(app, logger, applicationLifetime, realUrlsAvailableTcs, "/_framework/debug");

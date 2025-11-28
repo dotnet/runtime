@@ -13,7 +13,7 @@ namespace System.Windows.Markup.Tests
         [InlineData("propertyName", null)]
         [InlineData("System.Int32", typeof(int))]
         [InlineData("System.int32", null)]
-        public void Ctor_String(string valueSerializerTypeName, Type expectedValueSerializerType)
+        public void Ctor_String(string? valueSerializerTypeName, Type? expectedValueSerializerType)
         {
             var attribute = new ValueSerializerAttribute(valueSerializerTypeName);
             Assert.Equal(valueSerializerTypeName, attribute.ValueSerializerTypeName);
@@ -23,7 +23,7 @@ namespace System.Windows.Markup.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void Ctor_Type(Type valueSerializerType)
+        public void Ctor_Type(Type? valueSerializerType)
         {
             var attribute = new ValueSerializerAttribute(valueSerializerType);
             Assert.Equal(valueSerializerType?.AssemblyQualifiedName, attribute.ValueSerializerTypeName);

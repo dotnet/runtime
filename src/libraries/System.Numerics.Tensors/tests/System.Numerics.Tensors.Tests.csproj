@@ -1,10 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- SYSLIB5001: Tensor<T> and related APIs in System.Numerics.Tensors are experimental in .NET 9 -->
-    <NoWarn>$(NoWarn);SYSLIB5001</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,23 +17,21 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="TensorTests.cs" />
-    <Compile Include="TensorSpanTests.cs" />
-    <Compile Include="ReadOnlyTensorSpanTests.cs" />
-    <Compile Include="NRangeTests.cs" />
     <Compile Include="NIndexTests.cs" />
+    <Compile Include="NRangeTests.cs" />
+    <Compile Include="ReadOnlyTensorSpanTests.cs" />
+    <Compile Include="TensorDimensionSpanTests.cs" />
+    <Compile Include="TensorMarshalTests.cs" />
     <Compile Include="TensorPrimitives.ConvertTo.cs" />
     <Compile Include="TensorPrimitives.Generic.cs" />
     <Compile Include="TensorPrimitivesTests.Reference.cs" />
+    <Compile Include="TensorSpanTests.cs" />
+    <Compile Include="TensorTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
     <ProjectReference Include="..\src\System.Numerics.Tensors.csproj" SkipUseReferenceAssembly="true" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
 
 </Project>

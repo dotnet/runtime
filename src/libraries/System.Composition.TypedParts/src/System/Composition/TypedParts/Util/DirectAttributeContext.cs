@@ -22,10 +22,7 @@ namespace System.Composition.TypedParts.Util
 
         public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, Reflection.ParameterInfo parameter)
         {
-            if (parameter is null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
-            }
+            ArgumentNullException.ThrowIfNull(parameter);
 
             if (reflectedType == null) throw new ArgumentNullException(nameof(reflectedType));
 

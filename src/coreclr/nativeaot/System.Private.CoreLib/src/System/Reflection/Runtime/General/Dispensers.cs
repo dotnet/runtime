@@ -39,42 +39,6 @@ namespace System.Reflection.Runtime.Assemblies
         }
 
         /// <summary>
-        /// Returns non-null or throws.
-        /// </summary>
-        internal static RuntimeAssembly GetRuntimeAssemblyFromByteArray(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> pdbSymbolStore)
-        {
-            AssemblyBinder binder = ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder;
-            if (!binder.Bind(rawAssembly, pdbSymbolStore, out AssemblyBindResult bindResult, out Exception exception))
-            {
-                if (exception != null)
-                    throw exception;
-                else
-                    throw new BadImageFormatException();
-            }
-
-            RuntimeAssembly result = GetRuntimeAssembly(bindResult);
-            return result;
-        }
-
-        /// <summary>
-        /// Returns non-null or throws.
-        /// </summary>
-        internal static RuntimeAssembly GetRuntimeAssemblyFromPath(string assemblyPath)
-        {
-            AssemblyBinder binder = ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder;
-            if (!binder.Bind(assemblyPath, out AssemblyBindResult bindResult, out Exception exception))
-            {
-                if (exception != null)
-                    throw exception;
-                else
-                    throw new BadImageFormatException();
-            }
-
-            RuntimeAssembly result = GetRuntimeAssembly(bindResult, assemblyPath);
-            return result;
-        }
-
-        /// <summary>
         /// Returns null if no assembly matches the assemblyRefName. Throws for other error cases.
         /// </summary>
         internal static RuntimeAssemblyInfo GetRuntimeAssemblyIfExists(RuntimeAssemblyName assemblyRefName)

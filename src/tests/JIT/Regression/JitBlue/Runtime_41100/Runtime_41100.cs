@@ -4,6 +4,9 @@
 // The test was showing a wrong copy propagation when a struct field was rewritten by
 // a call assignment to the parent struct but that assignment was not supported by copyprop.
 
+
+namespace Runtime_41100;
+
 using System;
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;

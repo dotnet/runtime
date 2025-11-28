@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <PackageType>Template</PackageType>
+    <!-- when changing the net version also change it in template.json in the templates -->
     <PackageId>Microsoft.NET.Runtime.WebAssembly.Templates.net10</PackageId>
     <Title>WebAssembly Templates</Title>
     <Authors>Microsoft</Authors>

@@ -1020,7 +1020,7 @@ namespace System.Net.Security
             get { return handle == new IntPtr(0) || handle == new IntPtr(-1); }
         }
 
-        internal unsafe void Set(IntPtr value)
+        internal void Set(IntPtr value)
         {
             this.handle = value;
         }

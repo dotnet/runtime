@@ -14,6 +14,9 @@ namespace System.Runtime
         private void** _pObjRefs;
         private uint _numObjRefs;
         private int _maybeInterior;
+#if FEATURE_INTERPRETER
+        private nuint _osStackLocation;
+#endif
 
         public GCFrameRegistration(void** allocation, uint elemCount, bool areByRefs = true)
         {
@@ -22,14 +25,17 @@ namespace System.Runtime
             _pObjRefs = allocation;
             _numObjRefs = elemCount;
             _maybeInterior = areByRefs ? 1 : 0;
+#if FEATURE_INTERPRETER
+            _osStackLocation = 0;
+#endif
         }
 
 #if CORECLR
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RegisterForGCReporting(GCFrameRegistration* pRegistration);
+        internal static extern void RegisterForGCReporting(GCFrameRegistration* pRegistration);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void UnregisterForGCReporting(GCFrameRegistration* pRegistration);
+        internal static extern void UnregisterForGCReporting(GCFrameRegistration* pRegistration);
 #endif
     }
 }

@@ -11,7 +11,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(null, new string[0])]
         [InlineData("", new string[] { "" })]
         [InlineData("server", new string[] { "server" })]
-        public void Ctor_Server(string server, string[] expectedServers)
+        public void Ctor_Server(string? server, string[] expectedServers)
         {
             var identifier = new LdapDirectoryIdentifier(server);
             Assert.False(identifier.Connectionless);
@@ -24,7 +24,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(null, 389, new string[0])]
         [InlineData("", -1, new string[] { "" })]
         [InlineData("server", int.MaxValue, new string[] { "server" })]
-        public void Ctor_Server_PortNumber(string server, int portNumber, string[] expectedServers)
+        public void Ctor_Server_PortNumber(string? server, int portNumber, string[] expectedServers)
         {
             var identifier = new LdapDirectoryIdentifier(server, portNumber);
             Assert.False(identifier.Connectionless);
@@ -37,7 +37,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(null, true, false, new string[0])]
         [InlineData("", false, true, new string[] { "" })]
         [InlineData("server", true, true, new string[] { "server" })]
-        public void Ctor_Server_FullQualifiedDnsHostName_Conectionless(string server, bool fullyQualifiedDnsHostName, bool connectionless, string[] expectedServers)
+        public void Ctor_Server_FullQualifiedDnsHostName_Conectionless(string? server, bool fullyQualifiedDnsHostName, bool connectionless, string[] expectedServers)
         {
             var identifier = new LdapDirectoryIdentifier(server, fullyQualifiedDnsHostName, connectionless);
             Assert.Equal(connectionless, identifier.Connectionless);
@@ -50,7 +50,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(null, -1, true, false, new string[0])]
         [InlineData("", 389, false, true, new string[] { "" })]
         [InlineData("server", int.MaxValue, true, true, new string[] { "server" })]
-        public void Ctor_PortNumber_Server_FullQualifiedDnsHostName_Conectionless(string server, int portNumber, bool fullyQualifiedDnsHostName, bool connectionless, string[] expectedServers)
+        public void Ctor_PortNumber_Server_FullQualifiedDnsHostName_Conectionless(string? server, int portNumber, bool fullyQualifiedDnsHostName, bool connectionless, string[] expectedServers)
         {
             var identifier = new LdapDirectoryIdentifier(server, portNumber, fullyQualifiedDnsHostName, connectionless);
             Assert.Equal(connectionless, identifier.Connectionless);
@@ -64,7 +64,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(new string[0], true, false)]
         [InlineData(new string[] { "server" }, true, true)]
         [InlineData(new string[] { "server", null }, false, false)]
-        public void Ctor_Servers_FullQualifiedDnsHostName_Conectionless(string[] servers, bool fullyQualifiedDnsHostName, bool connectionless)
+        public void Ctor_Servers_FullQualifiedDnsHostName_Conectionless(string[]? servers, bool fullyQualifiedDnsHostName, bool connectionless)
         {
             var identifier = new LdapDirectoryIdentifier(servers, fullyQualifiedDnsHostName, connectionless);
             Assert.Equal(connectionless, identifier.Connectionless);

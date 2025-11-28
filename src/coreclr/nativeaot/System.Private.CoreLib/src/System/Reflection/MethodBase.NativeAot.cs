@@ -9,8 +9,8 @@ namespace System.Reflection
 {
     public abstract partial class MethodBase : MemberInfo
     {
-        public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle) => ReflectionAugments.ReflectionCoreCallbacks.GetMethodFromHandle(handle);
-        public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle, RuntimeTypeHandle declaringType) => ReflectionAugments.ReflectionCoreCallbacks.GetMethodFromHandle(handle, declaringType);
+        public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle) => ReflectionAugments.GetMethodFromHandle(handle);
+        public static MethodBase GetMethodFromHandle(RuntimeMethodHandle handle, RuntimeTypeHandle declaringType) => ReflectionAugments.GetMethodFromHandle(handle, declaringType);
 
         [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
         [System.Runtime.CompilerServices.Intrinsic]

@@ -56,7 +56,7 @@ struct  ARG_NAME_LIST
     DWORD     dwAttr;
     CustomDescrList CustDList;
     ARG_NAME_LIST *pNext;
-    __forceinline ARG_NAME_LIST(int i, LPCUTF8 sz, BinStr *pbSig, BinStr *pbMarsh, DWORD attr)
+    FORCEINLINE ARG_NAME_LIST(int i, LPCUTF8 sz, BinStr *pbSig, BinStr *pbMarsh, DWORD attr)
     {
         nNum = i;
         //dwName = (DWORD)strlen(sz);

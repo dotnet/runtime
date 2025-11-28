@@ -101,8 +101,23 @@ namespace System.Tests
             yield return new object[] { "http://hostold/", "http://host/path/page", UriKind.Absolute, "http://host/path/page" };
         }
 
+        public static IEnumerable<object[]> Create_Uri_WithExtraWhiteSpace_TestData()
+        {
+            foreach (object[] testData in Create_Uri_TestData())
+            {
+                string uriString1 = (string)testData[0];
+                string uriString2 = (string)testData[1];
+                UriKind uriKind = (UriKind)testData[2];
+                string expectedUriString = (string)testData[3];
+
+                yield return new object[] { uriString1, uriString2, uriKind, expectedUriString };
+                yield return new object[] { $"{new string(' ', 100_000)}{uriString1}", uriString2, uriKind, expectedUriString };
+                yield return new object[] { uriString1, $"{new string(' ', 100_000)}{uriString2}", uriKind, expectedUriString };
+            }
+        }
+
         [Theory]
-        [MemberData(nameof(Create_Uri_TestData))]
+        [MemberData(nameof(Create_Uri_WithExtraWhiteSpace_TestData))]
         public void Create_Uri(string uriString1, string uriString2, UriKind uriKind, string expectedUriString)
         {
             Uri baseUri = new Uri(uriString1, UriKind.Absolute);

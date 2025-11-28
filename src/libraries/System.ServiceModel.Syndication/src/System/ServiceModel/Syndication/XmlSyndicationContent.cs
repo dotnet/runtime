@@ -19,10 +19,7 @@ namespace System.ServiceModel.Syndication
         // Reader must be positioned at an element
         public XmlSyndicationContent(XmlReader reader)
         {
-            if (reader is null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
+            ArgumentNullException.ThrowIfNull(reader);
 
             SyndicationFeedFormatter.MoveToStartElement(reader);
             if (reader.HasAttributes)
@@ -67,10 +64,7 @@ namespace System.ServiceModel.Syndication
 
         public XmlSyndicationContent(string type, SyndicationElementExtension extension)
         {
-            if (extension is null)
-            {
-                throw new ArgumentNullException(nameof(extension));
-            }
+            ArgumentNullException.ThrowIfNull(extension);
 
             _type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;
             Extension = extension;
@@ -139,10 +133,7 @@ namespace System.ServiceModel.Syndication
         // does not write start element or type attribute, writes other attributes and rest of content
         protected override void WriteContentsTo(XmlWriter writer)
         {
-            if (writer is null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             if (Extension != null)
             {

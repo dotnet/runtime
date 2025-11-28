@@ -15,15 +15,15 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         public ServiceFactoryAdapter(IServiceProviderFactory<TContainerBuilder> serviceProviderFactory)
         {
-            ThrowHelper.ThrowIfNull(serviceProviderFactory);
+            ArgumentNullException.ThrowIfNull(serviceProviderFactory);
 
             _serviceProviderFactory = serviceProviderFactory;
         }
 
         public ServiceFactoryAdapter(Func<HostBuilderContext> contextResolver, Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factoryResolver)
         {
-            ThrowHelper.ThrowIfNull(contextResolver);
-            ThrowHelper.ThrowIfNull(factoryResolver);
+            ArgumentNullException.ThrowIfNull(contextResolver);
+            ArgumentNullException.ThrowIfNull(factoryResolver);
 
             _contextResolver = contextResolver;
             _factoryResolver = factoryResolver;

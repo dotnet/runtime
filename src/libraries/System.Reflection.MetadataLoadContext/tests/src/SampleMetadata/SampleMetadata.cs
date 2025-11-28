@@ -526,6 +526,33 @@ namespace SampleMetadata
 
     public class DerivedFromPropertyHolder1<T> : PropertyHolder1<T> { }
 
+    public class PropertyWithNonPublicAccessors
+    {
+        // Property with public setter but private getter - should be considered public
+        public string? PublicSetterPrivateGetter { private get; set; }
+        
+        // Property with both public getter and setter - should be considered public  
+        public string? PublicGetterPublicSetter { get; set; }
+        
+        // Property with only public setter (no getter) - should be considered public
+        public string? OnlyPublicSetter { set { } }
+        
+        // Property with both private getter and setter - should not be considered public
+        private string? PrivateGetterPrivateSetter { get; set; }
+        
+        // Property with both internal getter and setter - should not be considered public
+        internal string? InternalGetterInternalSetter { get; set; }
+        
+        // Property with public getter but internal setter - should be considered public
+        public string? PublicGetterInternalSetter { get; internal set; }
+        
+        // Property with internal getter but public setter - should be considered public  
+        public string? InternalGetterPublicSetter { internal get; set; }
+        
+        // Property with internal getter but public init - should be considered public (just like public setter as they are the same from Reflection's perspective)  
+        public string? InternalGetterPublicInit { internal get; init; }
+    }
+
     public class EventHolder1<T>
     {
         public event Action<T> MyEvent { add { throw null!; } remove { throw null!; } }

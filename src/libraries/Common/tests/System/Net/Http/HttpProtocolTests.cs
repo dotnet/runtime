@@ -287,44 +287,33 @@ namespace System.Net.Http.Functional.Tests
             }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
 
-        public static IEnumerable<string> GetInvalidStatusLine()
-        {
-            yield return "HTTP/1.1 2345";
-            yield return "HTTP/A.1 200 OK";
-            yield return "HTTP/X.Y.Z 200 OK";
-
-            yield return "HTTP/0.1 200 OK";
-            yield return "HTTP/3.5 200 OK";
-            yield return "HTTP/1.12 200 OK";
-            yield return "HTTP/12.1 200 OK";
-            yield return "HTTP/1.1 200 O\rK";
-
-            yield return "HTTP/1.A 200 OK";
-            yield return "HTTP/1.1 ";
-            yield return "HTTP/1.1 !11";
-            yield return "HTTP/1.1 a11";
-            yield return "HTTP/1.1 abc";
-            yield return "HTTP/1.1\t\t";
-            yield return "HTTP/1.1\t";
-            yield return "HTTP/1.1  ";
-
-            yield return "HTTP/1.1 200OK";
-            yield return "HTTP/1.1 20c";
-            yield return "HTTP/1.1 23";
-            yield return "HTTP/1.1 2bc";
-
-            yield return "NOTHTTP/1.1";
-            yield return "HTTP 1.1 200 OK";
-            yield return "ABCD/1.1 200 OK";
-            yield return "HTTP/1.1";
-            yield return "HTTP\\1.1 200 OK";
-            yield return "NOTHTTP/1.1 200 OK";
-        }
-
-        public static TheoryData InvalidStatusLine = GetInvalidStatusLine().ToTheoryData();
-
         [Theory]
-        [MemberData(nameof(InvalidStatusLine))]
+        [InlineData("HTTP/1.1 2345")]
+        [InlineData("HTTP/A.1 200 OK")]
+        [InlineData("HTTP/X.Y.Z 200 OK")]
+        [InlineData("HTTP/0.1 200 OK")]
+        [InlineData("HTTP/3.5 200 OK")]
+        [InlineData("HTTP/1.12 200 OK")]
+        [InlineData("HTTP/12.1 200 OK")]
+        [InlineData("HTTP/1.1 200 O\rK")]
+        [InlineData("HTTP/1.A 200 OK")]
+        [InlineData("HTTP/1.1 ")]
+        [InlineData("HTTP/1.1 !11")]
+        [InlineData("HTTP/1.1 a11")]
+        [InlineData("HTTP/1.1 abc")]
+        [InlineData("HTTP/1.1\t\t")]
+        [InlineData("HTTP/1.1\t")]
+        [InlineData("HTTP/1.1  ")]
+        [InlineData("HTTP/1.1 200OK")]
+        [InlineData("HTTP/1.1 20c")]
+        [InlineData("HTTP/1.1 23")]
+        [InlineData("HTTP/1.1 2bc")]
+        [InlineData("NOTHTTP/1.1")]
+        [InlineData("HTTP 1.1 200 OK")]
+        [InlineData("ABCD/1.1 200 OK")]
+        [InlineData("HTTP/1.1")]
+        [InlineData("HTTP\\1.1 200 OK")]
+        [InlineData("NOTHTTP/1.1 200 OK")]
         public async Task GetAsync_InvalidStatusLine_ThrowsException(string responseString)
         {
             await GetAsyncThrowsExceptionHelper(responseString);

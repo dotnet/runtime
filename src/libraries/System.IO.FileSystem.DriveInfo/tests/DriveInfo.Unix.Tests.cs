@@ -94,5 +94,16 @@ namespace System.IO.FileSystem.Tests
             var root = new DriveInfo("/");
             Assert.Throws<PlatformNotSupportedException>(() => root.VolumeLabel = root.Name);
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void CanGetTempPathDriveFormat()
+        {
+            var driveInfo = new DriveInfo(Path.GetTempPath());
+
+            string format = driveInfo.DriveFormat;
+            Assert.NotNull(driveInfo.DriveFormat);
+            Assert.NotEmpty(driveInfo.DriveFormat);
+        }
     }
 }

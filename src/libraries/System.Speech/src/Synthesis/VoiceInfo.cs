@@ -26,7 +26,7 @@ namespace System.Speech.Synthesis
         internal VoiceInfo(CultureInfo culture)
         {
             // Fails if no culture is provided
-            Helpers.ThrowIfNull(culture, nameof(culture));
+            ArgumentNullException.ThrowIfNull(culture);
 
             if (culture.Equals(CultureInfo.InvariantCulture))
             {

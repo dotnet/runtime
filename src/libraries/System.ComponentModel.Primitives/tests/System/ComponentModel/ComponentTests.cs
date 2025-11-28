@@ -234,7 +234,7 @@ namespace System.ComponentModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void GetService_InvokeWithoutSite_ReturnsNull(Type serviceType)
+        public void GetService_InvokeWithoutSite_ReturnsNull(Type? serviceType)
         {
             var component = new SubComponent();
             Assert.Null(component.GetService(serviceType));
@@ -245,7 +245,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null, typeof(bool))]
         [InlineData(typeof(int), null)]
         [InlineData(typeof(int), typeof(bool))]
-        public void GetService_InvokeWithSite_ReturnsExpected(Type serviceType, Type result)
+        public void GetService_InvokeWithSite_ReturnsExpected(Type? serviceType, Type? result)
         {
             var site = new MockSite
             {

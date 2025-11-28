@@ -21,7 +21,7 @@ namespace System.Tests
         [InlineData(null, null)]
         [InlineData("", "BCL0006")]
         [InlineData("message", "")]
-        public void Ctor_String_Id(string message, string id)
+        public void Ctor_String_Id(string? message, string? id)
         {
             var attribute = new ObsoleteAttribute(message) { DiagnosticId = id };
             Assert.Equal(message, attribute.Message);
@@ -34,7 +34,7 @@ namespace System.Tests
         [InlineData(null, true, "")]
         [InlineData("", false, null)]
         [InlineData("message", true, "https://aka.ms/obsolete/{0}")]
-        public void Ctor_String_Bool_Url(string message, bool error, string url)
+        public void Ctor_String_Bool_Url(string? message, bool error, string? url)
         {
             var attribute = new ObsoleteAttribute(message, error) { UrlFormat = url };
             Assert.Equal(message, attribute.Message);

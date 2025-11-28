@@ -2190,20 +2190,20 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         ///   <para>__m256i _mm256_permutevar8x32_epi32 (__m256i a, __m256i idx)</para>
-        ///   <para>  VPERMD ymm1,         ymm2/m256,         imm8</para>
-        ///   <para>  VPERMD ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8</para>
+        ///   <para>  VPERMD ymm1,         ymm2, ymm3/m256,       </para>
+        ///   <para>  VPERMD ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst</para>
         /// </summary>
         public static Vector256<int> PermuteVar8x32(Vector256<int> left, Vector256<int> control) => PermuteVar8x32(left, control);
         /// <summary>
         ///   <para>__m256i _mm256_permutevar8x32_epi32 (__m256i a, __m256i idx)</para>
-        ///   <para>  VPERMD ymm1,         ymm2/m256,         imm8</para>
-        ///   <para>  VPERMD ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8</para>
+        ///   <para>  VPERMD ymm1,         ymm2, ymm3/m256,       </para>
+        ///   <para>  VPERMD ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst</para>
         /// </summary>
         public static Vector256<uint> PermuteVar8x32(Vector256<uint> left, Vector256<uint> control) => PermuteVar8x32(left, control);
         /// <summary>
         ///   <para>__m256 _mm256_permutevar8x32_ps (__m256 a, __m256i idx)</para>
-        ///   <para>  VPERMPS ymm1,         ymm2/m256,         imm8</para>
-        ///   <para>  VPERMPS ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8</para>
+        ///   <para>  VPERMPS ymm1,         ymm2, ymm3/m256,       </para>
+        ///   <para>  VPERMPS ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst</para>
         /// </summary>
         public static Vector256<float> PermuteVar8x32(Vector256<float> left, Vector256<int> control) => PermuteVar8x32(left, control);
 

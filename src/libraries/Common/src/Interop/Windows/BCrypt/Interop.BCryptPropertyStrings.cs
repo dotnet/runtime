@@ -13,6 +13,7 @@ internal static partial class Interop
             internal const string BCRYPT_HASH_LENGTH = "HashDigestLength";
             internal const string BCRYPT_KEY_STRENGTH = "KeyStrength";
             internal const string BCRYPT_MESSAGE_BLOCK_LENGTH = "MessageBlockLength";
+            internal const string BCRYPT_PARAMETER_SET_NAME = "ParameterSetName";
         }
     }
 }

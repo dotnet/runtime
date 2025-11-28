@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace System.ComponentModel
@@ -14,7 +15,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Checks the syntax of the machine name (no "\" anywhere in it).
         /// </summary>
-        public static bool CheckMachineName(string value)
+        public static bool CheckMachineName([NotNullWhen(true)] string? value)
         {
             if (value == null)
                 return false;
@@ -30,7 +31,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Checks the syntax of the path (must start with "\\").
         /// </summary>
-        public static bool CheckPath(string value)
+        public static bool CheckPath([NotNullWhen(true)] string? value)
         {
             if (value == null)
                 return false;
@@ -47,7 +48,7 @@ namespace System.ComponentModel
         /// Checks the syntax of the path (must start with "\" or drive letter "C:").
         /// NOTE:  These denote a file or directory path!!
         /// </summary>
-        public static bool CheckRootedPath(string value)
+        public static bool CheckRootedPath([NotNullWhen(true)] string? value)
         {
             if (value == null)
                 return false;

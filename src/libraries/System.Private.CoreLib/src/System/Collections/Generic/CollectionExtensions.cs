@@ -66,6 +66,17 @@ namespace System.Collections.Generic
             new ReadOnlyCollection<T>(list);
 
         /// <summary>
+        /// Returns a read-only <see cref="ReadOnlySet{T}"/> wrapper
+        /// for the specified set.
+        /// </summary>
+        /// <typeparam name="T">The type of elements in the set.</typeparam>
+        /// <param name="set">The set to wrap.</param>
+        /// <returns>An object that acts as a read-only wrapper around the current <see cref="ISet{T}"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="set"/> is null.</exception>
+        public static ReadOnlySet<T> AsReadOnly<T>(this ISet<T> set) =>
+            new ReadOnlySet<T>(set);
+
+        /// <summary>
         /// Returns a read-only <see cref="ReadOnlyDictionary{TKey, TValue}"/> wrapper
         /// for the current dictionary.
         /// </summary>
@@ -125,14 +136,13 @@ namespace System.Collections.Generic
             {
                 if (list._items.Length - list._size < source.Length)
                 {
-                    list.Grow(checked(list._size + source.Length));
+                    list.GrowForInsertion(index, source.Length);
                 }
-
-                // If the index at which to insert is less than the number of items in the list,
-                // shift all items past that location in the list down to the end, making room
-                // to copy in the new data.
-                if (index < list._size)
+                else if (index < list._size)
                 {
+                    // If the index at which to insert is less than the number of items in the list,
+                    // shift all items past that location in the list down to the end, making room
+                    // to copy in the new data.
                     Array.Copy(list._items, index, list._items, index + source.Length, list._size - index);
                 }
 

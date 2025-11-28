@@ -147,7 +147,7 @@ namespace System.Threading
         {
             // Note: ExecutionContext.RunInternal is an extremely hot function and used by every await, ThreadPool execution, etc.
             // Note: Manual enregistering may be addressed by "Exception Handling Write Through Optimization"
-            //       https://github.com/dotnet/runtime/blob/main/docs/design/features/eh-writethru.md
+            //       https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/eh-writethru.md
 
             // Enregister previousExecutionCtx0 so they can be used in registers without EH forcing them to stack
 

@@ -40,9 +40,6 @@ if (MSVC)
     # LTCG must be disabled to ensure that non-MSVC toolchains can work with it.
 
     set_target_properties(libhostfxr PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
-
-    string(REPLACE "/LTCG" "" CMAKE_STATIC_LINKER_FLAGS_RELEASE ${CMAKE_STATIC_LINKER_FLAGS_RELEASE})
-    string(REPLACE "/LTCG" "" CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO ${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO})
 endif()
 
 # Only Windows creates a symbols file for static libs.
@@ -52,4 +49,4 @@ else()
     install(TARGETS libhostfxr DESTINATION corehost)
 endif(WIN32)
 
-target_link_libraries(libhostfxr PRIVATE hostmisc)
+target_link_libraries(libhostfxr PRIVATE hostmisc::public)

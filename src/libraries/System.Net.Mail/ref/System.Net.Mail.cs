@@ -340,6 +340,7 @@ namespace System.Net.Mime
             public const string Xml = "application/xml";
             public const string XmlDtd = "application/xml-dtd";
             public const string XmlPatch = "application/xml-patch+xml";
+            public const string Yaml = "application/yaml";
             public const string Zip = "application/zip";
         }
         public static partial class Font
@@ -383,6 +384,13 @@ namespace System.Net.Mime
             public const string Rtf = "text/rtf";
             public const string Xml = "text/xml";
         }
+    }
+    public static partial class MediaTypeMap
+    {
+        public static string? GetExtension(System.ReadOnlySpan<char> mediaType) { throw null; }
+        public static string? GetExtension(string mediaType) { throw null; }
+        public static string? GetMediaType(System.ReadOnlySpan<char> pathOrExtension) { throw null; }
+        public static string? GetMediaType(string pathOrExtension) { throw null; }
     }
     public enum TransferEncoding
     {

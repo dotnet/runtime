@@ -223,20 +223,6 @@ namespace System.IO
             }
         }
 
-        /// <summary>Allocates a buffer of the requested internal buffer size.</summary>
-        /// <returns>The allocated buffer.</returns>
-        private byte[] AllocateBuffer()
-        {
-            try
-            {
-                return new byte[_internalBufferSize];
-            }
-            catch (OutOfMemoryException)
-            {
-                throw new OutOfMemoryException(SR.Format(SR.BufferSizeTooLarge, _internalBufferSize));
-            }
-        }
-
         /// <devdoc>
         ///    Gets or sets the path of the directory to watch.
         /// </devdoc>
@@ -747,7 +733,7 @@ namespace System.IO
 
                 public void Clear() => Items = Array.Empty<string>();
 
-                public bool Contains(string item) => Array.IndexOf(Items, item) != -1;
+                public bool Contains(string item) => Array.IndexOf(Items, item) >= 0;
 
                 public void CopyTo(string[] array, int arrayIndex) => Items.CopyTo(array, arrayIndex);
 

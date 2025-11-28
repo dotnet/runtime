@@ -1,5 +1,9 @@
 project(System.Net.Security.Native C)
 
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+    message(FATAL_ERROR "Not implemented for WASM")
+endif()
+
 add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)

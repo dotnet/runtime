@@ -33,7 +33,7 @@ const unsigned MODULE_MASK             = 0xffff;    // mask to get module index 
 const unsigned MODULE_LEVEL_OFFSET     = 16;        // offset of module load level
 const unsigned MAX_MODULE_LEVELS       = 0x100;     // maximum allowed number of module levels (2^8 values)
 
-const unsigned MAX_METHODS             = 0x4000;    // Maximum allowed number of methods (2^14 values) (in principle this is also limited by "unsigned short" counters)
+const unsigned MAX_METHODS             = 0xffff;    // Maximum allowed number of methods (2^16-1 values) (in principle this is also limited by "unsigned short" counters)
 
 const unsigned SIGNATURE_LENGTH_MASK   = 0xffff;    // mask to get signature from packed data (2^16-1 max signature length)
 
@@ -626,13 +626,13 @@ private:
     unsigned FindModule(Module * pModule);
     unsigned GetOrAddModuleIndex(Module * pModule);
 
-    HRESULT WriteModuleRecord(IStream * pStream,  const RecorderModuleInfo & module);
+    HRESULT WriteModuleRecord(FILE * fp,  const RecorderModuleInfo & module);
 
     void RecordMethodInfo(unsigned moduleIndex, MethodDesc * pMethod, bool application);
     unsigned RecordModuleInfo(Module * pModule);
     void RecordOrUpdateModuleInfo(FileLoadLevel needLevel, unsigned moduleIndex);
 
-    HRESULT WriteOutput(IStream * pStream);
+    HRESULT WriteOutput(FILE * fp);
 
     HRESULT WriteOutput();
 

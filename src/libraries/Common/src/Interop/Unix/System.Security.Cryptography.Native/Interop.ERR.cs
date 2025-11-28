@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography;
 
 internal static partial class Interop
@@ -24,7 +25,7 @@ internal static partial class Interop
         internal static partial ulong ErrPeekLastError();
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrReasonErrorString")]
-        internal static partial IntPtr ErrReasonErrorString(ulong error);
+        internal static unsafe partial byte* ErrReasonErrorString(ulong error);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrErrorStringN")]
         private static unsafe partial void ErrErrorStringN(ulong e, byte* buf, int len);
@@ -37,7 +38,7 @@ internal static partial class Interop
             fixed (byte* buf = &buffer[0])
             {
                 ErrErrorStringN(error, buf, buffer.Length);
-                ret = Marshal.PtrToStringUTF8((IntPtr)buf)!;
+                ret = Utf8StringMarshaller.ConvertToManaged(buf)!;
             }
 
             ArrayPool<byte>.Shared.Return(buffer);

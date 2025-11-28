@@ -50,8 +50,8 @@ namespace System.Reflection
 
         public virtual Type GetModifiedParameterType() => throw new NotSupportedException();
 
-        public virtual Type[] GetOptionalCustomModifiers() => Type.EmptyTypes;
-        public virtual Type[] GetRequiredCustomModifiers() => Type.EmptyTypes;
+        public virtual Type[] GetOptionalCustomModifiers() => [];
+        public virtual Type[] GetRequiredCustomModifiers() => [];
 
         public virtual int MetadataToken => MetadataToken_ParamDef;
 

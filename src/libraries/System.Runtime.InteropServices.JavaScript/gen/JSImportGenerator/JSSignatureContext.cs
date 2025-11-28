@@ -48,6 +48,7 @@ namespace Microsoft.Interop.JavaScript
 
             // there could be multiple method signatures with the same name, get unique signature name
             uint hash = 17;
+            int typesHash;
             unchecked
             {
                 foreach (var param in sigContext.ElementTypeInformation)
@@ -57,8 +58,8 @@ namespace Microsoft.Interop.JavaScript
                     foreach (char c in param.ManagedType.FullTypeName)
                         hash = hash * 31 + c;
                 }
+                typesHash = (int)(hash & int.MaxValue);
             };
-            int typesHash = Math.Abs((int)hash);
 
             var fullName = $"{method.ContainingType.ToDisplayString()}.{method.Name}";
             string qualifiedName = GetFullyQualifiedMethodName(env, method);

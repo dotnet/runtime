@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -596,6 +596,24 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
+        [Fact]
+        public async Task GetAsync_WithCustomHandlerReturningStringContent_PreCanceledToken_ThrowsTaskCanceledException()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/121810
+            // Ensures that when using a custom handler that returns pre-buffered content (StringContent),
+            // calling GetAsync with a pre-canceled token properly throws TaskCanceledException
+            using var handler = new HttpClientTest.CustomResponseHandler((req, ct) => Task.FromResult(new HttpResponseMessage()
+            {
+                Content = new StringContent("Hello from CustomHandler")
+            }));
+            using var httpClient = new HttpClient(handler);
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            await Assert.ThrowsAsync<TaskCanceledException>(() =>
+                httpClient.GetAsync("https://example.com", cts.Token));
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -689,6 +707,18 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(sourceString, result);
         }
 
+        [Fact]
+        public async Task ReadAsStringAsync_UsesCharsetEncoding()
+        {
+            var content = new ByteArrayContent(Encoding.UTF8.GetBytes("ő"));
+
+            content.Headers.ContentType = new MediaTypeHeaderValue("text/plain", Encoding.Latin1.WebName);
+
+            string result = await content.ReadAsStringAsync();
+
+            Assert.Equal(['\xC5', '\x91'], result);
+        }
+
         [Theory]
         [InlineData("\"\"invalid")]
         [InlineData("invalid\"\"")]
@@ -709,6 +739,24 @@ namespace System.Net.Http.Functional.Tests
             string result = await content.ReadAsStringAsync();
 
             Assert.Equal(sourceString, result);
+        }
+
+        [Theory]
+        [InlineData(65001)] // UTF8
+        [InlineData(12000)] // UTF32
+        [InlineData(1200)] // Unicode
+        [InlineData(1201)] // BigEndianUnicode
+        public async Task ReadAsStringAsync_NoCharSet_EncodingIsInferredFromPreamble(int codePage)
+        {
+            Encoding encoding = Encoding.GetEncoding(codePage);
+
+            byte[] stringBytes = encoding.GetBytes("oő");
+
+            var content = new ByteArrayContent([..encoding.GetPreamble(), ..stringBytes]);
+
+            string result = await content.ReadAsStringAsync();
+
+            Assert.Equal(encoding.GetString(stringBytes), result);
         }
 
         [Fact]

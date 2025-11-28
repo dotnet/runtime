@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
+using Internal.Runtime;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -73,17 +74,18 @@ namespace ILCompiler.DependencyAnalysis
                     arguments.Append(nativeWriter.GetUnsignedConstant(_externalReferences.GetIndex(argNode)));
                 }
 
-                // Get the name and sig of the method.
-                // Note: the method name and signature are stored in the NativeLayoutInfo blob, not in the hashtable we build here.
+                int flags = 0;
+                MethodDesc methodForMetadata = GetMethodForMetadata(method, out bool isAsyncVariant);
+                if (isAsyncVariant)
+                    flags |= GenericMethodsHashtableConstants.IsAsyncVariant; // Same flag as the other hashtable! Readers are shared.
 
-                NativeLayoutMethodNameAndSignatureVertexNode nameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition());
-                NativeLayoutPlacedSignatureVertexNode placedNameAndSig = factory.NativeLayout.PlacedSignatureVertex(nameAndSig);
-                Debug.Assert(placedNameAndSig.SavedVertex != null);
-                Vertex placedNameAndSigOffsetSig = nativeWriter.GetOffsetSignature(placedNameAndSig.SavedVertex);
+                int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, methodForMetadata);
+
+                int flagsAndToken = (token & MetadataManager.MetadataOffsetMask) | flags;
 
                 // Get the vertex for the completed method signature
 
-                Vertex methodSignature = nativeWriter.GetTuple(declaringType, placedNameAndSigOffsetSig, arguments);
+                Vertex methodSignature = nativeWriter.GetTuple(declaringType, nativeWriter.GetUnsignedConstant((uint)flagsAndToken), arguments);
 
                 // Make the generic method entry vertex
 
@@ -118,9 +120,19 @@ namespace ILCompiler.DependencyAnalysis
             foreach (var arg in method.Instantiation)
                 dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(arg), "Exact method instantiation entry"));
 
-            // Get native layout dependencies for the method signature.
-            NativeLayoutMethodNameAndSignatureVertexNode nameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition());
-            dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(nameAndSig), "Exact method instantiation entry"));
+            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, GetMethodForMetadata(method, out _));
+        }
+
+        private static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant)
+        {
+            MethodDesc result = method.GetTypicalMethodDefinition();
+            if (result is AsyncMethodVariant asyncVariant)
+            {
+                isAsyncVariant = true;
+                return asyncVariant.Target;
+            }
+            isAsyncVariant = false;
+            return result;
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

@@ -6,6 +6,12 @@
 #ifndef __unwinder_h__
 #define __unwinder_h__
 
+// Report failure in the unwinder if the condition is FALSE
+#ifdef DACCESS_COMPILE
+#define UNWINDER_ASSERT(Condition) if (!(Condition)) DacError(CORDBG_E_TARGET_INCONSISTENT)
+#else // !DACCESS_COMPILE
+#define UNWINDER_ASSERT _ASSERTE
+#endif // DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
 //
@@ -14,7 +20,7 @@
 // are actually borrowed from dbghelp.dll.  (StackWalk64() is built on top of these classes.)  We have ripped
 // out everything we don't need such as symbol lookup and various state, and keep just enough code to support
 // VirtualUnwind().  The managed debugging infrastructure can't call RtlVirtualUnwind() because it doesn't
-// work from out-of-processr
+// work from out-of-processor
 //
 // Notes:
 //    To see what we have changed in the borrowed source, you can diff the original version and our version.

@@ -219,40 +219,13 @@ namespace Microsoft.Interop
                 set => _edgeMap[to * NodeCount + from] = value;
             }
 
-            public bool AnyEdges => Array.IndexOf(_edgeMap, true) != -1;
+            public bool AnyEdges => Array.IndexOf(_edgeMap, true) >= 0;
 
             public int NodeCount { get; }
 
             public bool AnyIncomingEdge(int to)
             {
-                return Array.IndexOf(_edgeMap, true, to * NodeCount, NodeCount) != -1;
-            }
-        }
-
-        public static IEnumerable<TypePositionInfo> GetDependentElementsOfMarshallingInfo(
-            MarshallingInfo elementMarshallingInfo)
-        {
-            if (elementMarshallingInfo is NativeLinearCollectionMarshallingInfo nestedCollection)
-            {
-                if (nestedCollection.ElementCountInfo is CountElementCountInfo { ElementInfo: TypePositionInfo nestedCountElement })
-                {
-                    // Do not include dependent elements with no managed or native index.
-                    // These values are dummy values that are inserted earlier to avoid emitting extra diagnostics.
-                    if (nestedCountElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedCountElement.NativeIndex != TypePositionInfo.UnsetIndex)
-                    {
-                        yield return nestedCountElement;
-                    }
-                }
-                foreach (KeyValuePair<MarshalMode, CustomTypeMarshallerData> mode in nestedCollection.Marshallers.Modes)
-                {
-                    foreach (TypePositionInfo nestedElement in GetDependentElementsOfMarshallingInfo(mode.Value.CollectionElementMarshallingInfo))
-                    {
-                        if (nestedElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedElement.NativeIndex != TypePositionInfo.UnsetIndex)
-                        {
-                            yield return nestedElement;
-                        }
-                    }
-                }
+                return Array.IndexOf(_edgeMap, true, to * NodeCount, NodeCount) >= 0;
             }
         }
 

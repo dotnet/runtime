@@ -1,14 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using NuGet.Frameworks;
-using NuGet.Packaging.Core;
-using NuGet.ProjectModel;
 using NuGet.RuntimeModel;
 
 namespace Microsoft.NET.Build.Tasks
@@ -32,7 +25,7 @@ namespace Microsoft.NET.Build.Tasks
             return separator == '\\' || separator == '/';
         }
 
-        public static string GetLockFileLanguageName(string projectLanguage)
+        public static string? GetLockFileLanguageName(string? projectLanguage)
         {
             switch (projectLanguage)
             {
@@ -42,7 +35,7 @@ namespace Microsoft.NET.Build.Tasks
             }
         }
 
-        public static NuGetFramework ParseFrameworkName(string frameworkName)
+        public static NuGetFramework? ParseFrameworkName(string? frameworkName)
         {
             return frameworkName == null ? null : NuGetFramework.Parse(frameworkName);
         }
@@ -59,8 +52,8 @@ namespace Microsoft.NET.Build.Tasks
                     && !file.EndsWith(".resources.dll", StringComparison.OrdinalIgnoreCase);
             }
 
-            bool CS() => file.Contains("/cs/", StringComparison.OrdinalIgnoreCase);
-            bool VB() => file.Contains("/vb/", StringComparison.OrdinalIgnoreCase);
+            bool CS() => file.IndexOf("/cs/", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool VB() => file.IndexOf("/vb/", StringComparison.OrdinalIgnoreCase) >= 0;
 
             bool FileMatchesProjectLanguage()
             {
@@ -80,22 +73,39 @@ namespace Microsoft.NET.Build.Tasks
             return IsAnalyzer() && FileMatchesProjectLanguage();
         }
 
-        public static string GetBestMatchingRid(RuntimeGraph runtimeGraph, string runtimeIdentifier,
+        public static string? GetBestMatchingRid(RuntimeGraph runtimeGraph, string runtimeIdentifier,
+            IEnumerable<string> availableRuntimeIdentifiers, out bool wasInGraph)
+        {
+            return GetBestMatchingRidWithExclusion(runtimeGraph, runtimeIdentifier,
+                runtimeIdentifiersToExclude: null,
+                availableRuntimeIdentifiers, out wasInGraph);
+        }
+
+        public static string? GetBestMatchingRidWithExclusion(RuntimeGraph runtimeGraph, string runtimeIdentifier,
+            IEnumerable<string>? runtimeIdentifiersToExclude,
             IEnumerable<string> availableRuntimeIdentifiers, out bool wasInGraph)
         {
             wasInGraph = runtimeGraph.Runtimes.ContainsKey(runtimeIdentifier);
 
-            HashSet<string> availableRids = new HashSet<string>(availableRuntimeIdentifiers);
+            string? bestMatch = null;
+
+            HashSet<string> availableRids = new(availableRuntimeIdentifiers, StringComparer.Ordinal);
+            HashSet<string>? excludedRids = runtimeIdentifiersToExclude switch { null => null, _ => new HashSet<string>(runtimeIdentifiersToExclude, StringComparer.Ordinal) };
             foreach (var candidateRuntimeIdentifier in runtimeGraph.ExpandRuntime(runtimeIdentifier))
             {
-                if (availableRids.Contains(candidateRuntimeIdentifier))
+                if (bestMatch == null && availableRids.Contains(candidateRuntimeIdentifier))
                 {
-                    return candidateRuntimeIdentifier;
+                    bestMatch = candidateRuntimeIdentifier;
+                }
+
+                if (excludedRids != null && excludedRids.Contains(candidateRuntimeIdentifier))
+                {
+                    //  Don't treat this as a match
+                    return null;
                 }
             }
 
-            //  No compatible RID found in availableRuntimeIdentifiers
-            return null;
+            return bestMatch;
         }
     }
 }

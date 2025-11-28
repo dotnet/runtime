@@ -8,55 +8,55 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability
 {
-	[SetupLinkerArgument ("-a", "test.exe", "library")]
+    [SetupLinkerArgument("-a", "test.exe", "library")]
 
-	[SkipKeptItemsValidation]
-	[ExpectedNoWarnings]
-	public class RequiresInLibraryAssembly
-	{
-		public static void Main ()
-		{
-		}
+    [SkipKeptItemsValidation]
+    [ExpectedNoWarnings]
+    public class RequiresInLibraryAssembly
+    {
+        public static void Main()
+        {
+        }
 
-		[RequiresDynamicCode ("--MethodWhichRequires--")]
-		public static void MethodWhichRequires () { }
+        [RequiresDynamicCode("--MethodWhichRequires--")]
+        public static void MethodWhichRequires() { }
 
-		[RequiresDynamicCode ("--InstanceMethodWhichRequires--")]
-		public void InstanceMethodWhichRequires () { }
-	}
+        [RequiresDynamicCode("--InstanceMethodWhichRequires--")]
+        public void InstanceMethodWhichRequires() { }
+    }
 
-	[ExpectedNoWarnings]
-	public sealed class ClassWithDAMAnnotatedMembers
-	{
-		public static void Method ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) { }
+    [ExpectedNoWarnings]
+    public sealed class ClassWithDAMAnnotatedMembers
+    {
+        public static void Method([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type) { }
 
-		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
-		public static Type Field;
-	}
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+        public static Type Field;
+    }
 
-	[ExpectedNoWarnings]
-	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
-	public sealed class ClassWithDAMAnnotation
-	{
-		public void Method () { }
-	}
+    [ExpectedNoWarnings]
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+    public sealed class ClassWithDAMAnnotation
+    {
+        public void Method() { }
+    }
 
-	[ExpectedNoWarnings]
-	[RequiresUnreferencedCode ("--ClassWithRequires--")]
-	public sealed class ClassWithRequires
-	{
-		public static int Field;
+    [ExpectedNoWarnings]
+    [RequiresUnreferencedCode("--ClassWithRequires--")]
+    public sealed class ClassWithRequires
+    {
+        public static int Field;
 
-		internal static int InternalField;
+        internal static int InternalField;
 
-		private static int PrivateField;
+        private static int PrivateField;
 
-		public static void Method () { }
+        public static void Method() { }
 
-		public void InstanceMethod () { }
+        public void InstanceMethod() { }
 
-		public static int Property { get; set; }
+        public static int Property { get; set; }
 
-		public static event EventHandler PropertyChanged;
-	}
+        public static event EventHandler PropertyChanged;
+    }
 }

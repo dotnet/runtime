@@ -221,14 +221,14 @@ namespace ILCompiler
 
                 if (!closed)
                 {
-                    initMethod = systemDelegate.GetKnownMethod("InitializeOpenStaticThunk", null);
+                    initMethod = systemDelegate.GetKnownMethod("InitializeOpenStaticThunk"u8, null);
                     invokeThunk = delegateInfo.Thunks[DelegateThunkKind.OpenStaticThunk];
                 }
                 else
                 {
                     // Closed delegate to a static method (i.e. delegate to an extension method that locks the first parameter)
                     invokeThunk = delegateInfo.Thunks[DelegateThunkKind.ClosedStaticThunk];
-                    initMethod = systemDelegate.GetKnownMethod("InitializeClosedStaticThunk", null);
+                    initMethod = systemDelegate.GetKnownMethod("InitializeClosedStaticThunk"u8, null);
                 }
 
                 var instantiatedDelegateType = delegateType as InstantiatedType;
@@ -248,14 +248,14 @@ namespace ILCompiler
                 if (!closed)
                     throw new NotImplementedException("Open instance delegates");
 
-                string initializeMethodName = "InitializeClosedInstance";
+                ReadOnlySpan<byte> initializeMethodName = "InitializeClosedInstance"u8;
                 MethodDesc targetCanonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 TargetKind kind;
                 if (targetMethod.HasInstantiation)
                 {
                     if (followVirtualDispatch && targetMethod.IsVirtual)
                     {
-                        initializeMethodName = "InitializeClosedInstanceWithGVMResolution";
+                        initializeMethodName = "InitializeClosedInstanceWithGVMResolution"u8;
                         kind = TargetKind.MethodHandle;
                     }
                     else
@@ -266,7 +266,7 @@ namespace ILCompiler
                             // checks for the fat function pointer case (function pointer + instantiation argument in a single
                             // pointer) and injects an invocation thunk to unwrap the fat function pointer as part of
                             // the invocation if necessary.
-                            initializeMethodName = "InitializeClosedInstanceSlow";
+                            initializeMethodName = "InitializeClosedInstanceSlow"u8;
                         }
 
                         kind = TargetKind.ExactCallableAddress;
@@ -279,7 +279,7 @@ namespace ILCompiler
                         if (targetMethod.OwningType.IsInterface)
                         {
                             kind = TargetKind.InterfaceDispatch;
-                            initializeMethodName = "InitializeClosedInstanceToInterface";
+                            initializeMethodName = "InitializeClosedInstanceToInterface"u8;
                         }
                         else
                         {

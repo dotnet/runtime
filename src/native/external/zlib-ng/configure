@@ -87,7 +87,6 @@ mandir=${mandir-'${prefix}/share/man'}
 shared_ext='.so'
 shared=1
 gzfileops=1
-unalignedok=1
 compat=0
 cover=0
 build32=0
@@ -99,6 +98,7 @@ buildaltivec=1
 buildpower8=1
 buildpower9=1
 buildneon=1
+buildrvv=1
 builddfltccdeflate=0
 builddfltccinflate=0
 buildcrc32vx=1
@@ -106,9 +106,9 @@ floatabi=
 forcesse2=0
 # For CPUs that can benefit from AVX512, it seems GCC generates suboptimal
 # instruction scheduling unless you specify a reasonable -mtune= target
-avx512flag="-mavx512f -mavx512dq -mavx512bw -mavx512vl"
+avx512flag="-mavx512f -mavx512dq -mavx512bw -mavx512vl -mbmi2"
 avx512vnniflag="${avx512flag} -mavx512vnni"
-avx2flag="-mavx2"
+avx2flag="-mavx2 -mbmi2"
 sse2flag="-msse2"
 ssse3flag="-mssse3"
 sse42flag="-msse4.2"
@@ -117,6 +117,7 @@ vpclmulflag="-mvpclmulqdq -mavx512f"
 xsaveflag="-mxsave"
 acleflag=
 neonflag=
+rvvflag=
 armv6flag=
 noltoflag="-fno-lto"
 vgfmaflag="-march=z13"
@@ -159,18 +160,18 @@ case "$1" in
       echo 'usage:' | tee -a configure.log
       echo '  configure [--prefix=PREFIX]  [--eprefix=EXPREFIX]' | tee -a configure.log
       echo '    [--static] [--32] [--64] [--libdir=LIBDIR] [--sharedlibdir=LIBDIR]' | tee -a configure.log
-      echo '    [--includedir=INCLUDEDIR] [--archs="-arch i386 -arch x86_64"]' | tee -a configure.log
+      echo '    [--includedir=INCLUDEDIR] [--mandir=MANDIR] [--archs="-arch i386 -arch x86_64"]' | tee -a configure.log
       echo '    [--sprefix=SYMBOL_PREFIX]   Adds a prefix to all exported symbols' | tee -a configure.log
       echo '    [--warn]                    Enables extra compiler warnings' | tee -a configure.log
       echo '    [--debug]                   Enables extra debug prints during operation' | tee -a configure.log
       echo '    [--zlib-compat]             Compiles for zlib-compatible API instead of zlib-ng API' | tee -a configure.log
-      echo '    [--without-unaligned]       Compiles without fast unaligned access' | tee -a configure.log
       echo '    [--without-gzfileops]       Compiles without the gzfile parts of the API enabled' | tee -a configure.log
       echo '    [--without-optimizations]   Compiles without support for optional instruction sets' | tee -a configure.log
       echo '    [--without-new-strategies]  Compiles without using new additional deflate strategies' | tee -a configure.log
       echo '    [--without-acle]            Compiles without ARM C Language Extensions' | tee -a configure.log
       echo '    [--without-neon]            Compiles without ARM Neon SIMD instruction set' | tee -a configure.log
       echo '    [--without-armv6]           Compiles without ARMv6 SIMD instruction set' | tee -a configure.log
+      echo '    [--without-rvv]             Compiles without RVV instruction set' | tee -a configure.log
       echo '    [--without-altivec]         Compiles without PPC AltiVec support' | tee -a configure.log
       echo '    [--without-power8]          Compiles without Power8 instruction set' | tee -a configure.log
       echo '    [--with-dfltcc-deflate]     Use DEFLATE CONVERSION CALL instruction for compression on IBM Z' | tee -a configure.log
@@ -185,6 +186,7 @@ case "$1" in
     -l*=* | --libdir=*) libdir=$(echo $1 | sed 's/.*=//'); shift ;;
     --sharedlibdir=*) sharedlibdir=$(echo $1 | sed 's/.*=//'); shift ;;
     -i*=* | --includedir=*) includedir=$(echo $1 | sed 's/.*=//');shift ;;
+    --mandir=*) mandir=$(echo $1 | sed 's/.*=//');shift ;;
     -u*=* | --uname=*) uname=$(echo $1 | sed 's/.*=//');shift ;;
     -p* | --prefix) prefix="$2"; shift; shift ;;
     -e* | --eprefix) exec_prefix="$2"; shift; shift ;;
@@ -194,7 +196,6 @@ case "$1" in
     -s* | --shared | --enable-shared) shared=1; shift ;;
     -t | --static) shared=0; shift ;;
     --zlib-compat) compat=1; shift ;;
-    --without-unaligned) unalignedok=0; shift ;;
     --without-gzfileops) gzfileops=0; shift ;;
     --cover) cover=1; shift ;;
     -3* | --32) build32=1; shift ;;
@@ -204,6 +205,7 @@ case "$1" in
     --without-neon) buildneon=0; shift ;;
     --without-armv6) buildarmv6=0; shift ;;
     --without-altivec) buildaltivec=0 ; shift ;;
+    --without-rvv) buildrvv=0 ; shift ;;
     --without-power8) buildpower8=0 ; shift ;;
     --without-power9) buildpower9=0 ; shift ;;
     --with-dfltcc-deflate) builddfltccdeflate=1; shift ;;
@@ -341,6 +343,8 @@ if test "$gcc" -eq 1 && ($cc $CFLAGS -c $test.c) >> configure.log 2>&1; then
       ARCH=powerpc64 ;;
     powerpc64le | ppc64le)
       ARCH=powerpc64le ;;
+    riscv64)
+      ARCH=riscv64 ;;
   esac
   CFLAGS="-O2 ${CFLAGS}"
   if test -n "${ARCHS}"; then
@@ -363,7 +367,7 @@ if test "$gcc" -eq 1 && ($cc $CFLAGS -c $test.c) >> configure.log 2>&1; then
     uname=$( (uname -s || echo unknown) 2>/dev/null)
   fi
   case "$uname" in
-  Linux* | linux* | GNU | GNU/* | solaris*)
+  Linux* | linux* | GNU | GNU/* | solaris* | Haiku)
         LDSHARED=${LDSHARED-"$cc"}
         LDSHAREDFLAGS="-shared -Wl,-soname,${LIBNAME}.so.${VER1}" ;;
   *BSD | *bsd* | DragonFly)
@@ -630,6 +634,32 @@ fi
 
 echo >> configure.log
 
+ADDITIONAL_CHECK_FLAGS=""
+
+# Check for -Werror=unguarded-availability compiler support
+echo "" > test.c
+  cat > $test.c <<EOF
+int main() { return 0; }
+EOF
+if $cc $CFLAGS -Werror=unguarded-availability -c $test.c >> configure.log 2>&1; then
+  echo "Checking for -Werror=unguarded-availability... Yes." | tee -a configure.log
+  ADDITIONAL_CHECK_FLAGS="$ADDITIONAL_CHECK_FLAGS -Werror=unguarded-availability"
+else
+  echo "Checking for -Werror=unguarded-availability... No." | tee -a configure.log
+fi
+
+# Check for -Werror=unguarded-availability-new compiler support
+echo "" > test.c
+  cat > $test.c <<EOF
+int main() { return 0; }
+EOF
+if $cc $CFLAGS -Werror=unguarded-availability-new -c $test.c >> configure.log 2>&1; then
+  echo "Checking for -Werror=unguarded-availability-new... Yes." | tee -a configure.log
+  ADDITIONAL_CHECK_FLAGS="$ADDITIONAL_CHECK_FLAGS -Werror=unguarded-availability-new"
+else
+  echo "Checking for -Werror=unguarded-availability-new... No." | tee -a configure.log
+fi
+
 # check for version script support
 cat > $test.c <<EOF
 int foo(void) { return 0; }
@@ -686,7 +716,7 @@ int main(void) {
   return 0;
 }
 EOF
-  if try $CC $CFLAGS -o $test $test.c $LDSHAREDLIBC; then
+  if try $CC $CFLAGS $ADDITIONAL_CHECK_FLAGS -o $test $test.c $LDSHAREDLIBC; then
     echo "Checking for fseeko... Yes." | tee -a configure.log
   else
     CFLAGS="${CFLAGS} -DNO_FSEEKO"
@@ -698,6 +728,7 @@ echo >> configure.log
 
 cat > $test.c <<EOF
 #define _POSIX_C_SOURCE 200112L
+#define _ISOC11_SOURCE 1
 #include <stdlib.h>
 int main(void) {
   void *ptr = 0;
@@ -707,7 +738,7 @@ int main(void) {
   return ret;
 }
 EOF
-if try $CC $CFLAGS -o $test $test.c $LDSHAREDLIBC; then
+if try $CC $CFLAGS $ADDITIONAL_CHECK_FLAGS -o $test $test.c $LDSHAREDLIBC; then
   echo "Checking for posix_memalign... Yes." | tee -a configure.log
   CFLAGS="${CFLAGS} -DHAVE_POSIX_MEMALIGN"
   SFLAGS="${SFLAGS} -DHAVE_POSIX_MEMALIGN"
@@ -717,6 +748,7 @@ fi
 echo >> configure.log
 
 cat > $test.c <<EOF
+#define _POSIX_C_SOURCE 200112L
 #define _ISOC11_SOURCE 1
 #include <stdlib.h>
 int main(void) {
@@ -726,7 +758,7 @@ int main(void) {
   return 0;
 }
 EOF
-if try $CC $CFLAGS -o $test $test.c $LDSHAREDLIBC; then
+if try $CC $CFLAGS $ADDITIONAL_CHECK_FLAGS -o $test $test.c $LDSHAREDLIBC; then
   echo "Checking for aligned_alloc... Yes." | tee -a configure.log
   CFLAGS="${CFLAGS} -DHAVE_ALIGNED_ALLOC"
   SFLAGS="${SFLAGS} -DHAVE_ALIGNED_ALLOC"
@@ -741,7 +773,7 @@ cat > $test.c <<EOF
 #include <errno.h>
 int main() { return strlen(strerror(errno)); }
 EOF
-if try $CC $CFLAGS -o $test $test.c $LDSHAREDLIBC; then
+if try $CC $CFLAGS $ADDITIONAL_CHECK_FLAGS -o $test $test.c $LDSHAREDLIBC; then
   echo "Checking for strerror... Yes." | tee -a configure.log
 else
   CFLAGS="${CFLAGS} -DNO_STRERROR"
@@ -873,13 +905,6 @@ if test $gzfileops -eq 1; then
 else
   TESTOBJG="\$(OBJG)"
   PIC_TESTOBJG="\$(OBJG)"
-fi
-
-# set architecture alignment requirements
-if test $unalignedok -eq 0; then
-  CFLAGS="${CFLAGS} -DNO_UNALIGNED"
-  SFLAGS="${SFLAGS} -DNO_UNALIGNED"
-  echo "Unaligned reads manually disabled." | tee -a configure.log
 fi
 
 # enable reduced memory configuration
@@ -1115,11 +1140,15 @@ check_avx512vnni_intrinsics() {
     # Check whether compiler supports AVX512-VNNI intrinsics
     cat > $test.c << EOF
 #include <immintrin.h>
-__m512i f(__m512i x, __m512i y) {
-    __m512i z = _mm512_setzero_epi32();
-    return _mm512_dpbusd_epi32(z, x, y);
+int main(void) {
+    const __m512i z512 = _mm512_setzero_si512();
+    const __m256i z256 = _mm256_setzero_si256();
+    volatile __m512i r512 = _mm512_dpbusd_epi32(z512, z512, z512);
+    volatile __m256i r256 = _mm256_dpbusd_epi32(z256, z256, z256);
+    (void)r512;
+    (void)r256;
+    return 0;
 }
-int main(void) { return 0; }
 EOF
     if try ${CC} ${CFLAGS} ${avx512vnniflag} $test.c; then
         echo "Checking for AVX512VNNI intrinsics ... Yes." | tee -a configure.log
@@ -1243,7 +1272,7 @@ EOF
 unsigned int f(unsigned int a, unsigned int b) {
     return __uqsub16(a, b);
 }
-int main(void) { return 0; }
+int main(void) { return f(1, 2); }
 EOF
     if try ${CC} ${CFLAGS} ${armv6flag} $test.c; then
         echo "Checking for ARMv6 intrinsics ... Yes." | tee -a configure.log
@@ -1500,6 +1529,40 @@ EOF
     fi
 }
 
+check_rvv_compiler_flag() {
+    cat > $test.c << EOF
+int main() { return 0; }
+EOF
+    if try $CC -c $CFLAGS -march=rv64gcv $test.c; then
+        echo "Check whether -march=rv64gcv works ... Yes." | tee -a configure.log
+        rvvflag="-march=rv64gcv"
+    else
+        echo "Check whether -march=rv64gcv works ... No." | tee -a configure.log
+        if try $CC -c $CFLAGS -march=rv64gc_zve64x $test.c; then
+            echo "Check whether -march=rv64gc_zve64x works ... Yes." | tee -a configure.log
+            rvvflag="-march=rv64gc_zve64x"
+        else
+            echo "Check whether -march=rv64gc_zve64x works ... No." | tee -a configure.log
+            rvvflag=""
+        fi
+    fi
+
+    cat > $test.c << EOF
+#include <riscv_vector.h>
+int main(void) {
+    size_t vl = __riscv_vsetvlmax_e8m1();
+    return vl;
+}
+EOF
+    if [ -n "$rvvflag" ] && try ${CC} ${CFLAGS} ${rvvflag} $test.c; then
+        echo "Checking for RISC-V Vector intrinsics ... Yes." | tee -a configure.log
+        HAVE_RVV_INTRIN=1
+    else
+        echo "Checking for RISC-V Vector intrinsics ... No." | tee -a configure.log
+        HAVE_RVV_INTRIN=0
+    fi
+}
+
 # Check whether to disable deflate_medium and deflate_quick
 if test $without_new_strategies -eq 1; then
     CFLAGS="${CFLAGS} -DNO_QUICK_STRATEGY -DNO_MEDIUM_STRATEGY"
@@ -1588,8 +1651,8 @@ case "${ARCH}" in
             if test ${HAVE_AVX512_INTRIN} -eq 1; then
                 CFLAGS="${CFLAGS} -DX86_AVX512"
                 SFLAGS="${SFLAGS} -DX86_AVX512"
-                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_avx512.o"
-                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_avx512.lo"
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_avx512.o chunkset_avx512.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_avx512.lo chunkset_avx512.lo"
             fi
 
             check_mtune_cascadelake_compiler_flag
@@ -1856,6 +1919,29 @@ EOF
             fi
         fi
     ;;
+    riscv64)
+        [ ! -z $CROSS_PREFIX ] && QEMU_ARCH=riscv64
+        ARCHDIR=arch/riscv
+
+        if test $without_optimizations -eq 0; then
+            if test $buildrvv -eq 1; then
+            check_rvv_compiler_flag
+
+                if test $HAVE_RVV_INTRIN -eq 1; then
+                    CFLAGS="${CFLAGS} -DRISCV_FEATURES -DRISCV_RVV"
+                    SFLAGS="${SFLAGS} -DRISCV_FEATURES -DRISCV_RVV"
+
+                    ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} riscv_features.o"
+                    ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} riscv_features.lo"
+
+                    ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_rvv.o chunkset_rvv.o compare256_rvv.o slide_hash_rvv.o"
+                    ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_rvv.lo chunkset_rvv.lo compare256_rvv.lo slide_hash_rvv.lo"
+
+                    ARCH="${ARCH}+rvv"
+                fi
+            fi
+        fi
+    ;;
     s390x)
         [ ! -z $CROSS_PREFIX ] && QEMU_ARCH=s390x
         ARCHDIR=arch/s390
@@ -1976,7 +2062,7 @@ replace_in_file() {
 
 # update Makefile with the configure results
 
-INCLUDES="-I$SRCDIR -I$SRCDIR/$ARCHDIR -I$SRCDIR/arch/generic"
+INCLUDES="-I$SRCDIR"
 if [ "$SRCDIR" != "$BUILDDIR" ]; then INCLUDES="-I$BUILDDIR ${INCLUDES}"; fi
 
 sed < $SRCDIR/Makefile.in "
@@ -2105,6 +2191,7 @@ sed < $SRCDIR/$ARCHDIR/Makefile.in "
 /^NOLTOFLAG *=/s#=.*#=$noltoflag#
 /^VGFMAFLAG *=/s#=.*#=$vgfmaflag#
 /^PPCFLAGS *=/s#=.*#=$vmxflag#
+/^RVVFLAG *=/s#=.*#=$rvvflag#
 " > $ARCHDIR/Makefile
 
 # Append header files dependencies.

@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -980,6 +982,66 @@ namespace System.Text.Json.Serialization.Tests
             {
                 yield return 42;
                 throw new DivideByZeroException();
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(5)]
+        [InlineData(43)]
+        public async Task WriteIEnumerableOfT_Cancellation_DisposesEnumerators(int depth)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/120010
+
+            if (StreamingSerializer?.IsAsyncSerializer is not true)
+            {
+                return; // require serializers with cancellation support.
+            }
+
+            JsonSerializerOptions options = Serializer.CreateOptions(opts => opts.DefaultBufferSize = 1); // Force early async writes
+            using SelfCancellingEnumerable enumerable = new();
+            using Utf8MemoryStream stream = new();
+
+            object wrappingValue = enumerable;
+            while (depth-- > 0)
+            {
+                // Use a LINQ enumerable instead of array/list
+                // to force use of enumerators in every layer.
+                wrappingValue = Enumerable.Repeat(wrappingValue, 1);
+            }
+
+            await Assert.ThrowsAsync<TaskCanceledException>(() => StreamingSerializer.SerializeWrapper(stream, wrappingValue, options, enumerable.CancellationToken));
+            Assert.True(enumerable.IsEnumeratorDisposed);
+        }
+
+        public sealed class SelfCancellingEnumerable : IEnumerable<int>, IDisposable
+        {
+            private readonly CancellationTokenSource _cts = new();
+            public bool IsEnumeratorDisposed { get; private set; }
+            public CancellationToken CancellationToken => _cts.Token;
+            public IEnumerator<int> GetEnumerator() => new Enumerator(this);
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            public void Dispose() => _cts.Dispose();
+
+            private sealed class Enumerator(SelfCancellingEnumerable parent) : IEnumerator<int>
+            {
+                public int Current { get; private set; }
+                object IEnumerator.Current => Current;
+                public bool MoveNext()
+                {
+                    if (++Current == 10)
+                    {
+                        parent._cts.Cancel();
+                    }
+
+                    return true;
+                }
+
+                public void Dispose() => parent.IsEnumeratorDisposed = true;
+                public void Reset() { }
             }
         }
 

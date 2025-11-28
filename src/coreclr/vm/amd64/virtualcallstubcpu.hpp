@@ -17,8 +17,6 @@
 
 #include "dbginterface.h"
 
-//#define STUB_LOGGING
-
 #pragma pack(push, 1)
 // since we are placing code, we want byte packing of the structs
 
@@ -558,7 +556,7 @@ extern size_t g_miss_cache_counter;
 
 void LookupHolder::InitializeStatic()
 {
-    static_assert_no_msg((sizeof(LookupHolder) % sizeof(void*)) == 0);
+    static_assert((sizeof(LookupHolder) % sizeof(void*)) == 0);
 
     // The first instruction of a LookupStub is nop
     // and we use it in order to differentiate the first two bytes
@@ -592,12 +590,12 @@ void  LookupHolder::Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorke
 void DispatchHolder::InitializeStatic()
 {
     // Check that _implTarget is aligned in the DispatchStub for backpatching
-    static_assert_no_msg(((sizeof(DispatchStub) + offsetof(DispatchStubShort, _implTarget)) % sizeof(void *)) == 0);
-    static_assert_no_msg(((sizeof(DispatchStub) + offsetof(DispatchStubLong, _implTarget)) % sizeof(void *)) == 0);
+    static_assert(((sizeof(DispatchStub) + offsetof(DispatchStubShort, _implTarget)) % sizeof(void *)) == 0);
+    static_assert(((sizeof(DispatchStub) + offsetof(DispatchStubLong, _implTarget)) % sizeof(void *)) == 0);
 
-    static_assert_no_msg(((sizeof(DispatchStub) + sizeof(DispatchStubShort)) % sizeof(void*)) == 0);
-    static_assert_no_msg(((sizeof(DispatchStub) + sizeof(DispatchStubLong)) % sizeof(void*)) == 0);
-    static_assert_no_msg((DispatchStubLong_offsetof_failLabel - DispatchStubLong_offsetof_failDisplBase) < INT8_MAX);
+    static_assert(((sizeof(DispatchStub) + sizeof(DispatchStubShort)) % sizeof(void*)) == 0);
+    static_assert(((sizeof(DispatchStub) + sizeof(DispatchStubLong)) % sizeof(void*)) == 0);
+    static_assert((DispatchStubLong_offsetof_failLabel - DispatchStubLong_offsetof_failDisplBase) < INT8_MAX);
 
     // Common dispatch stub initialization
     dispatchInit._entryPoint [0]      = 0x48;
@@ -686,7 +684,7 @@ void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTa
 
 void ResolveHolder::InitializeStatic()
 {
-    static_assert_no_msg((sizeof(ResolveHolder) % sizeof(void*)) == 0);
+    static_assert((sizeof(ResolveHolder) % sizeof(void*)) == 0);
 
     resolveInit._resolveEntryPoint [0] = X64_INSTR_MOV_RAX_IND_THIS_REG & 0xff;
     resolveInit._resolveEntryPoint [1] = (X64_INSTR_MOV_RAX_IND_THIS_REG >> 8) & 0xff;

@@ -41,19 +41,14 @@ namespace System.Net.NetworkInformation.Tests
 
                     Assert.Throws<PlatformNotSupportedException>(() => ipProperties.DhcpServerAddresses);
 
-                    try
+                    Assert.NotNull(ipProperties.DnsAddresses);
+                    _log.WriteLine("- Dns Addresses: " + ipProperties.DnsAddresses.Count);
+                    foreach (IPAddress dns in ipProperties.DnsAddresses)
                     {
-                        Assert.NotNull(ipProperties.DnsAddresses);
-                        _log.WriteLine("- Dns Addresses: " + ipProperties.DnsAddresses.Count);
-                        foreach (IPAddress dns in ipProperties.DnsAddresses)
-                        {
-                            _log.WriteLine("-- " + dns.ToString());
-                        }
-                        Assert.NotNull(ipProperties.DnsSuffix);
-                        _log.WriteLine("- Dns Suffix: " + ipProperties.DnsSuffix);
+                        _log.WriteLine("-- " + dns.ToString());
                     }
-                    // If /etc/resolv.conf does not exist, DNS values cannot be retrieved.
-                    catch (PlatformNotSupportedException) { }
+                    Assert.NotNull(ipProperties.DnsSuffix);
+                    _log.WriteLine("- Dns Suffix: " + ipProperties.DnsSuffix);
 
                     Assert.NotNull(ipProperties.GatewayAddresses);
                     _log.WriteLine("- Gateway Addresses: " + ipProperties.GatewayAddresses.Count);

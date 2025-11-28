@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    internal static class PemKeyHelpers
+    internal static partial class PemKeyHelpers
     {
         public delegate bool TryExportKeyAction<T>(T arg, Span<byte> destination, out int bytesWritten);
         public delegate bool TryExportEncryptedKeyAction<T, TPassword>(

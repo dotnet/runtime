@@ -3,29 +3,29 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Attributes
 {
-	class AttributeOnUsedMethodIsKept
-	{
-		public static void Main ()
-		{
-			new A ().Method ();
-		}
+    class AttributeOnUsedMethodIsKept
+    {
+        public static void Main()
+        {
+            new A().Method();
+        }
 
-		[KeptMember (".ctor()")]
-		class A
-		{
-			[Foo]
-			[Kept]
-			[KeptAttributeAttribute (typeof (FooAttribute))]
-			public void Method ()
-			{
-			}
-		}
+        [KeptMember(".ctor()")]
+        class A
+        {
+            [Foo]
+            [Kept]
+            [KeptAttributeAttribute(typeof(FooAttribute))]
+            public void Method()
+            {
+            }
+        }
 
-		[Kept]
-		[KeptMember (".ctor()")]
-		[KeptBaseType (typeof (System.Attribute))]
-		class FooAttribute : Attribute
-		{
-		}
-	}
+        [Kept]
+        [KeptMember(".ctor()")]
+        [KeptBaseType(typeof(System.Attribute))]
+        class FooAttribute : Attribute
+        {
+        }
+    }
 }

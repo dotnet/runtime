@@ -103,7 +103,6 @@ BOOL SpinLock::OwnedByCurrentThread()
 
 DEBUG_NOINLINE void SpinLock::AcquireLock(SpinLock *s)
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
     s->GetLock();
@@ -111,8 +110,6 @@ DEBUG_NOINLINE void SpinLock::AcquireLock(SpinLock *s)
 
 DEBUG_NOINLINE void SpinLock::ReleaseLock(SpinLock *s)
 {
-    SCAN_SCOPE_END;
-
     s->FreeLock();
 }
 

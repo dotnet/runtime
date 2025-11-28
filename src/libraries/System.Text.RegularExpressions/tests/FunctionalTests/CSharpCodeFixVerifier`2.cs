@@ -57,7 +57,8 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             // CS8795: Partial method '{0}' must have an implementation part because it has accessibility modifiers.
-            protected override bool IsCompilerDiagnosticIncluded(Diagnostic diagnostic, CompilerDiagnostics compilerDiagnostics) => base.IsCompilerDiagnosticIncluded(diagnostic, compilerDiagnostics) && diagnostic.Id != "CS8795";
+            // CS9248: Partial property '{0}' must have an implementation part.
+            protected override bool IsCompilerDiagnosticIncluded(Diagnostic diagnostic, CompilerDiagnostics compilerDiagnostics) => base.IsCompilerDiagnosticIncluded(diagnostic, compilerDiagnostics) && diagnostic.Id != "CS8795" && diagnostic.Id != "CS9248";
         }
     }
 }

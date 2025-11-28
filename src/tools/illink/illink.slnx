@@ -1,0 +1,28 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/analyzer/">
+    <Project Path="src/analyzer/analyzer.csproj" />
+    <Project Path="src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj" />
+    <Project Path="src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj" />
+  </Folder>
+  <Folder Name="/ref/">
+    <Project Path="src/linker/ref/Mono.Linker.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="../../coreclr/tools/ILVerification/ILVerification.csproj" />
+    <Project Path="test/ILLink.RoslynAnalyzer.Tests.Generator/ILLink.RoslynAnalyzer.Tests.Generator.csproj" />
+    <Project Path="test/ILLink.RoslynAnalyzer.Tests/ILLink.RoslynAnalyzer.Tests.csproj" />
+    <Project Path="test/ILLink.Tasks.Tests/ILLink.Tasks.Tests.csproj" />
+    <Project Path="test/Mono.Linker.Tests.Cases.Expectations/Mono.Linker.Tests.Cases.Expectations.csproj" />
+    <Project Path="test/Mono.Linker.Tests.Cases/Mono.Linker.Tests.Cases.csproj" />
+    <Project Path="test/Mono.Linker.Tests/Mono.Linker.Tests.csproj" />
+  </Folder>
+  <Project Path="src/ILLink.Shared/ILLink.Shared.shproj" />
+  <Project Path="src/ILLink.Tasks/ILLink.Tasks.csproj" />
+  <Project Path="src/linker/Mono.Linker.csproj" />
+  <Project Path="src/tlens/tlens.csproj" />
+</Solution>

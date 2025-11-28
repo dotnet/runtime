@@ -127,7 +127,7 @@ PALTEST(composite_wfmo_paltest_composite_wfmo, "composite/wfmo/paltest_composite
     }
 
      /* Register the start time */
-    dwStartTime = GetTickCount();
+    dwStartTime = (DWORD)minipal_lowres_ticks();
     testStats.relationId = 0;
     testStats.relationId   = RELATION_ID;
     testStats.processCount = PROCESS_COUNT;

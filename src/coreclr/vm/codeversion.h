@@ -29,7 +29,7 @@ typedef DPTR(class ILCodeVersioningState) PTR_ILCodeVersioningState;
 class CodeVersionManager;
 typedef DPTR(class CodeVersionManager) PTR_CodeVersionManager;
 
-#endif
+#endif // FEATURE_CODE_VERSIONING
 
 #ifdef HAVE_GCCOVER
 class GCCoverageInfo;
@@ -46,14 +46,14 @@ class NativeCodeVersion
 #ifdef FEATURE_CODE_VERSIONING
     friend class MethodDescVersioningState;
     friend class ILCodeVersion;
-#endif
+#endif // FEATURE_CODE_VERSIONING
 
 public:
     NativeCodeVersion();
     NativeCodeVersion(const NativeCodeVersion & rhs);
 #ifdef FEATURE_CODE_VERSIONING
     NativeCodeVersion(PTR_NativeCodeVersionNode pVersionNode);
-#endif
+#endif // FEATURE_CODE_VERSIONING
     explicit NativeCodeVersion(PTR_MethodDesc pMethod);
 
     BOOL IsNull() const;
@@ -61,15 +61,17 @@ public:
     NativeCodeVersionId GetVersionId() const;
     BOOL IsDefaultVersion() const;
     PCODE GetNativeCode() const;
+    ReJITID GetILCodeVersionId() const;
 
 #ifdef FEATURE_CODE_VERSIONING
     ILCodeVersion GetILCodeVersion() const;
-    ReJITID GetILCodeVersionId() const;
-#endif
+#endif // FEATURE_CODE_VERSIONING
 
 #ifndef DACCESS_COMPILE
     BOOL SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected = 0);
 #endif
+
+    bool IsFinalTier() const;
 
     // NOTE: Don't change existing values to avoid breaking changes in event tracing
     enum OptimizationTier
@@ -83,7 +85,7 @@ public:
     };
 #ifdef FEATURE_TIERED_COMPILATION
     OptimizationTier GetOptimizationTier() const;
-    bool IsFinalTier() const;
+
 #ifndef DACCESS_COMPILE
     void SetOptimizationTier(OptimizationTier tier);
 #endif
@@ -145,7 +147,34 @@ private:
 
 #ifdef FEATURE_CODE_VERSIONING
 
+enum class RejitFlags : uint32_t
+{
+    // The profiler has requested a ReJit, so we've allocated stuff, but we haven't
+    // called back to the profiler to get any info or indicate that the ReJit has
+    // started. (This Info can be 'reused' for a new ReJit if the
+    // profiler calls RequestRejit again before we transition to the next state.)
+    kStateRequested = 0x00000000,
 
+    // The CLR has initiated the call to the profiler's GetReJITParameters() callback
+    // but it hasn't completed yet. At this point we have to assume the profiler has
+    // committed to a specific IL body, even if the CLR doesn't know what it is yet.
+    // If the profiler calls RequestRejit we need to allocate a new ILCodeVersion
+    // and call GetReJITParameters() again.
+    kStateGettingReJITParameters = 0x00000001,
+
+    // We have asked the profiler about this method via ICorProfilerFunctionControl,
+    // and have thus stored the IL and codegen flags the profiler specified.
+    kStateActive = 0x00000002,
+
+    kStateMask = 0x0000000F,
+
+    // Indicates that the method being ReJITted is an inliner of the actual
+    // ReJIT request and we should not issue the GetReJITParameters for this
+    // method.
+    kSuppressParams = 0x80000000,
+
+    support_use_as_flags // Enable the template functions in enum_class_flags.h
+};
 
 class ILCodeVersion
 {
@@ -183,33 +212,6 @@ public:
     HRESULT GetOrCreateActiveNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion* pNativeCodeVersion);
     HRESULT SetActiveNativeCodeVersion(NativeCodeVersion activeNativeCodeVersion);
 #endif //DACCESS_COMPILE
-
-    enum RejitFlags
-    {
-        // The profiler has requested a ReJit, so we've allocated stuff, but we haven't
-        // called back to the profiler to get any info or indicate that the ReJit has
-        // started. (This Info can be 'reused' for a new ReJit if the
-        // profiler calls RequestRejit again before we transition to the next state.)
-        kStateRequested = 0x00000000,
-
-        // The CLR has initiated the call to the profiler's GetReJITParameters() callback
-        // but it hasn't completed yet. At this point we have to assume the profiler has
-        // committed to a specific IL body, even if the CLR doesn't know what it is yet.
-        // If the profiler calls RequestRejit we need to allocate a new ILCodeVersion
-        // and call GetReJITParameters() again.
-        kStateGettingReJITParameters = 0x00000001,
-
-        // We have asked the profiler about this method via ICorProfilerFunctionControl,
-        // and have thus stored the IL and codegen flags the profiler specified.
-        kStateActive = 0x00000002,
-
-        kStateMask = 0x0000000F,
-
-        // Indicates that the method being ReJITted is an inliner of the actual
-        // ReJIT request and we should not issue the GetReJITParameters for this
-        // method.
-        kSuppressParams = 0x80000000
-    };
 
     RejitFlags GetRejitState() const;
     BOOL GetEnableReJITCallback() const;
@@ -289,7 +291,7 @@ public:
 #endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
-    PatchpointInfo * GetOSRInfo(unsigned * ilOffset) const;
+    PatchpointInfo * GetOSRInfo(unsigned * ilOffset);
 #endif
 
 private:
@@ -328,6 +330,11 @@ struct cdac_data<NativeCodeVersionNode>
     static constexpr size_t Next = offsetof(NativeCodeVersionNode, m_pNextMethodDescSibling);
     static constexpr size_t MethodDesc = offsetof(NativeCodeVersionNode, m_pMethodDesc);
     static constexpr size_t NativeCode = offsetof(NativeCodeVersionNode, m_pNativeCode);
+    static constexpr size_t Flags = offsetof(NativeCodeVersionNode, m_flags);
+    static constexpr size_t ILVersionId = offsetof(NativeCodeVersionNode, m_parentId);
+#ifdef HAVE_GCCOVER
+    static constexpr size_t GCCoverageInfo = offsetof(NativeCodeVersionNode, m_gcCover);
+#endif // HAVE_GCCOVER
 };
 
 class NativeCodeVersionCollection
@@ -386,7 +393,7 @@ public:
     PTR_COR_ILMETHOD GetIL() const;
     DWORD GetJitFlags() const;
     const InstrumentedILOffsetMapping* GetInstrumentedILMap() const;
-    ILCodeVersion::RejitFlags GetRejitState() const;
+    RejitFlags GetRejitState() const;
     BOOL GetEnableReJITCallback() const;
     PTR_ILCodeVersionNode GetNextILVersionNode() const;
     BOOL IsDeoptimized() const;
@@ -394,7 +401,7 @@ public:
     void SetIL(COR_ILMETHOD* pIL);
     void SetJitFlags(DWORD flags);
     void SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap);
-    void SetRejitState(ILCodeVersion::RejitFlags newState);
+    void SetRejitState(RejitFlags newState);
     void SetEnableReJITCallback(BOOL state);
     void SetNextILVersionNode(ILCodeVersionNode* pNextVersionNode);
 #endif
@@ -404,11 +411,22 @@ private:
     const mdMethodDef m_methodDef;
     const ReJITID m_rejitId;
     PTR_ILCodeVersionNode m_pNextILVersionNode; // Never modified after being added to the linked list
-    Volatile<ILCodeVersion::RejitFlags> m_rejitState;
+    Volatile<RejitFlags> m_rejitState;
     VolatilePtr<COR_ILMETHOD, PTR_COR_ILMETHOD> m_pIL;
     Volatile<DWORD> m_jitFlags;
     InstrumentedILOffsetMapping m_instrumentedILMap;
     BOOL m_deoptimized;
+
+    friend struct ::cdac_data<ILCodeVersionNode>;
+};
+
+template<>
+struct cdac_data<ILCodeVersionNode>
+{
+    static constexpr size_t VersionId = offsetof(ILCodeVersionNode, m_rejitId);
+    static constexpr size_t Next = offsetof(ILCodeVersionNode, m_pNextILVersionNode);
+    static constexpr size_t RejitState = offsetof(ILCodeVersionNode, m_rejitState);
+    static constexpr size_t ILAddress = offsetof(ILCodeVersionNode, m_pIL);
 };
 
 class ILCodeVersionCollection
@@ -533,6 +551,7 @@ private:
 template<>
 struct cdac_data<ILCodeVersioningState>
 {
+    static constexpr size_t FirstVersionNode = offsetof(ILCodeVersioningState, m_pFirstVersionNode);
     static constexpr size_t ActiveVersionKind = offsetof(ILCodeVersioningState, m_activeVersion.m_storageKind);
     static constexpr size_t ActiveVersionNode = offsetof(ILCodeVersioningState, m_activeVersion.m_pVersionNode);
     static constexpr size_t ActiveVersionModule = offsetof(ILCodeVersioningState, m_activeVersion.m_synthetic.m_pModule);
@@ -677,7 +696,7 @@ inline NativeCodeVersion::NativeCodeVersion()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 #ifdef FEATURE_CODE_VERSIONING
-    static_assert_no_msg(sizeof(m_pVersionNode) == sizeof(m_synthetic));
+    static_assert(sizeof(m_pVersionNode) == sizeof(m_synthetic));
 #endif
 }
 
@@ -690,7 +709,7 @@ inline NativeCodeVersion::NativeCodeVersion(const NativeCodeVersion & rhs)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 #ifdef FEATURE_CODE_VERSIONING
-    static_assert_no_msg(sizeof(m_pVersionNode) == sizeof(m_synthetic));
+    static_assert(sizeof(m_pVersionNode) == sizeof(m_synthetic));
 #endif
 }
 
@@ -734,7 +753,7 @@ inline bool NativeCodeVersion::operator==(const NativeCodeVersion & rhs) const
     LIMITED_METHOD_DAC_CONTRACT;
 
 #ifdef FEATURE_CODE_VERSIONING
-    static_assert_no_msg(sizeof(m_pVersionNode) == sizeof(m_synthetic));
+    static_assert(sizeof(m_pVersionNode) == sizeof(m_synthetic));
     return m_storageKind == rhs.m_storageKind && m_pVersionNode == rhs.m_pVersionNode;
 #else
     return m_pMethodDesc == rhs.m_pMethodDesc;

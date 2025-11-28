@@ -675,8 +675,8 @@ g_str_hash (gconstpointer v1)
 	guint hash = 0;
 	unsigned char *p = (unsigned char *) v1;
 
-	while (*p++)
-		hash = (hash << 5) - (hash + *p);
+	while (*p)
+		hash = (hash << 5) - hash + *p++;
 
 	return hash;
 }

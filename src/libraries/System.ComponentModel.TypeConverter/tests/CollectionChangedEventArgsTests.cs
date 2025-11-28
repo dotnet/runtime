@@ -13,7 +13,7 @@ namespace System.ComponentModel.Tests
         [InlineData(CollectionChangeAction.Refresh, "element")]
         [InlineData(CollectionChangeAction.Add - 1, "element")]
         [InlineData(CollectionChangeAction.Refresh + 1, "element")]
-        public void Ctor_Action_Element(CollectionChangeAction action, object element)
+        public void Ctor_Action_Element(CollectionChangeAction action, object? element)
         {
             var args = new CollectionChangeEventArgs(action, element);
             Assert.Equal(action, args.Action);

@@ -48,7 +48,7 @@ namespace System.Tests
         [InlineData((sbyte)-114, sbyte.MaxValue, -1)]
         [InlineData(sbyte.MaxValue, sbyte.MaxValue, 0)]
         [InlineData((sbyte)114, null, 1)]
-        public void CompareTo_Other_ReturnsExpected(sbyte i, object value, int expected)
+        public void CompareTo_Other_ReturnsExpected(sbyte i, object? value, int expected)
         {
             if (value is sbyte sbyteValue)
             {
@@ -77,7 +77,7 @@ namespace System.Tests
         [InlineData((sbyte)78, null, false)]
         [InlineData((sbyte)78, "78", false)]
         [InlineData((sbyte)78, 78, false)]
-        public static void EqualsTest(sbyte i1, object obj, bool expected)
+        public static void EqualsTest(sbyte i1, object? obj, bool expected)
         {
             if (obj is sbyte)
             {

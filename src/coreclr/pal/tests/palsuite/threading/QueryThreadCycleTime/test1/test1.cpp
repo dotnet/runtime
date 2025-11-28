@@ -56,7 +56,7 @@ PALTEST(threading_QueryThreadCycleTime_test1_paltest_querythreadcycletime_test1,
         
         LONG64 x;
         /* Init is in milliseconds, so we will convert later */
-        Init = (LONG64)GetTickCount();
+        Init = minipal_lowres_ticks();
         x = Init + 3;
         volatile int counter;
         do {
@@ -65,8 +65,8 @@ PALTEST(threading_QueryThreadCycleTime_test1_paltest_querythreadcycletime_test1,
                 // spin to consume CPU time
             }
 
-        } while (x > GetTickCount());
-        Expected += (GetTickCount() - Init) * MSEC_TO_NSEC;
+        } while (x > minipal_lowres_ticks());
+        Expected += (minipal_lowres_ticks() - Init) * MSEC_TO_NSEC;
         /* Get a second count */
         if (!QueryThreadCycleTime(cThread, (PULONG64)&SecondCount))
         {

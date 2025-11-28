@@ -5,11 +5,11 @@ using System;
 
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 {
-	[AttributeUsage (AttributeTargets.GenericParameter, Inherited = false)]
-	public class KeptAttributeOnConstraintAttribute : KeptAttribute
-	{
-		public KeptAttributeOnConstraintAttribute (Type constraintType, Type attributeType)
-		{
-		}
-	}
+    [AttributeUsage(AttributeTargets.GenericParameter, Inherited = false)]
+    public class KeptAttributeOnConstraintAttribute : KeptAttribute
+    {
+        public KeptAttributeOnConstraintAttribute(Type constraintType, Type attributeType)
+        {
+        }
+    }
 }

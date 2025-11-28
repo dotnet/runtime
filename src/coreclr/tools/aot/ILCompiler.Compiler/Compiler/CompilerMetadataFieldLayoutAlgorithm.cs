@@ -41,20 +41,16 @@ namespace ILCompiler
 
         protected override ComputedInstanceFieldLayout ComputeInstanceFieldLayout(MetadataType type, int numInstanceFields)
         {
-            if (type.IsExplicitLayout)
+            ClassLayoutMetadata layoutMetadata = type.GetClassLayout();
+            return layoutMetadata.Kind switch
             {
-                return ComputeExplicitFieldLayout(type, numInstanceFields);
-            }
-            // Sequential layout has to be respected for blittable types only. We use approximation and respect it for
-            // all types without GC references (ie C# unmanaged types).
-            else if (type.IsSequentialLayout && !type.ContainsGCPointers)
-            {
-                return ComputeSequentialFieldLayout(type, numInstanceFields);
-            }
-            else
-            {
-                return ComputeAutoFieldLayout(type, numInstanceFields);
-            }
+                MetadataLayoutKind.Explicit => ComputeExplicitFieldLayout(type, numInstanceFields, layoutMetadata),
+                // Sequential layout has to be respected for blittable types only. We use approximation and respect it for
+                // all types without GC references (ie C# unmanaged types).
+                MetadataLayoutKind.Sequential when !type.ContainsGCPointers => ComputeSequentialFieldLayout(type, numInstanceFields, layoutMetadata),
+                MetadataLayoutKind.CStruct => ComputeCStructFieldLayout(type, numInstanceFields),
+                _ => ComputeAutoFieldLayout(type, numInstanceFields, layoutMetadata),
+            };
         }
     }
 }

@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace GitHub_10714;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -17,6 +20,7 @@ public class GitHub_10714
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Test() => Interlocked.Exchange(ref intToExchange, innerShort);
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

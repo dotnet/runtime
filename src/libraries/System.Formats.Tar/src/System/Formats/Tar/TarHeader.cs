@@ -82,10 +82,6 @@ namespace System.Formats.Tar
         internal DateTimeOffset _aTime;
         internal DateTimeOffset _cTime;
 
-        // If the archive is GNU and the offset, longnames, unused, sparse, isextended and realsize
-        // fields have data, we store it to avoid data loss, but we don't yet expose it publicly.
-        internal byte[]? _gnuUnusedBytes;
-
         // Constructor called when creating an entry with default common fields.
         internal TarHeader(TarEntryFormat format, string name = "", int mode = 0, DateTimeOffset mTime = default, TarEntryType typeFlag = TarEntryType.RegularFile)
         {
@@ -112,7 +108,7 @@ namespace System.Formats.Tar
             _dataStream = other._dataStream;
         }
 
-        internal void InitializeExtendedAttributesWithExisting(IEnumerable<KeyValuePair<string, string>> existing)
+        internal void AddExtendedAttributes(IEnumerable<KeyValuePair<string, string>> existing)
         {
             Debug.Assert(_ea == null);
             Debug.Assert(existing != null);

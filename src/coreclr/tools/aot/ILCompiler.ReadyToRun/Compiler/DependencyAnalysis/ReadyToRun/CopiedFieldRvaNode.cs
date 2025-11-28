@@ -24,7 +24,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _module = module;
         }
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+        {
+            // Put the CLR metadata into the correct section for the PE writer to
+            // hook up the CLR header entry in the PE header.
+            // Don't emit a separate section for other formats to reduce cost.
+            return factory.Format switch
+            {
+                ReadyToRunContainerFormat.PE => ObjectNodeSection.CorMetaSection,
+                _ => ObjectNodeSection.ReadOnlyDataSection
+            };
+        }
 
         public override bool IsShareable => false;
 
@@ -62,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             BlobReader metadataBlob = new BlobReader(_module.PEReader.GetMetadata().Pointer, _module.PEReader.GetMetadata().Length);
             metadataBlob.Offset = metadataReader.GetTableMetadataOffset(TableIndex.FieldRva);
             bool compressedFieldRef = 6 == metadataReader.GetTableRowSize(TableIndex.FieldRva);
-            
+
             for (int i = 1; i <= metadataReader.GetTableRowCount(TableIndex.FieldRva); i++)
             {
                 int currentFieldRva = metadataBlob.ReadInt32();
@@ -78,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (currentFieldRva != _rva)
                     continue;
 
-                EcmaField field = (EcmaField)_module.GetField(MetadataTokens.FieldDefinitionHandle(currentFieldRid));
+                EcmaField field = _module.GetField(MetadataTokens.FieldDefinitionHandle(currentFieldRid));
                 Debug.Assert(field.HasRva);
 
                 int currentSize = field.FieldType.GetElementSize().AsInt;

@@ -7,9 +7,6 @@
 
 #ifdef FEATURE_DBGIPC_TRANSPORT_DI
 
-#include "coreclrremotedebugginginterfaces.h"
-
-
 // TODO: Ideally we'd like to remove this class and don't do any process related book keeping in DBI.
 
 // This is a registry of all the processes a debugger knows about, different components call it in order to
@@ -82,7 +79,7 @@ private:
     ProcessEntry *LocateProcessByPID(DWORD dwPID);
 };
 
-extern DbgTransportTarget *g_pDbgTransportTarget;
+extern DbgTransportTarget g_DbgTransportTarget;
 
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
 

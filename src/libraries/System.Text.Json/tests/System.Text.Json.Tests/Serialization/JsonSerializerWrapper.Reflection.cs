@@ -10,6 +10,7 @@ using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -34,7 +35,8 @@ namespace System.Text.Json.Serialization.Tests
         public static JsonSerializerWrapper DocumentSerializer { get; } = new DocumentSerializerWrapper();
         public static JsonSerializerWrapper ElementSerializer { get; } = new ElementSerializerWrapper();
         public static JsonSerializerWrapper NodeSerializer { get; } = new NodeSerializerWrapper();
-        public static JsonSerializerWrapper AsyncPipeSerializer { get; } = new AsyncPipelinesSerializerWrapper();
+        public static PipeJsonSerializerWrapper AsyncPipeSerializer { get; } = new AsyncPipelinesSerializerWrapper();
+        public static PipeJsonSerializerWrapper AsyncPipeSerializerWithSmallBuffer { get; } = new AsyncPipelinesSerializerWrapper(forceSmallBufferInOptions: true);
 
         private class SpanSerializerWrapper : JsonSerializerWrapper
         {
@@ -95,6 +97,11 @@ namespace System.Text.Json.Serialization.Tests
             {
                 return Task.FromResult(JsonSerializer.Deserialize(json.AsSpan(), jsonTypeInfo));
             }
+
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, bool topLevelValues, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, bool topLevelValues, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         }
 
         private class StringSerializerWrapper : JsonSerializerWrapper
@@ -151,6 +158,11 @@ namespace System.Text.Json.Serialization.Tests
             {
                 return Task.FromResult(JsonSerializer.Deserialize(value, jsonTypeInfo));
             }
+
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, bool topLevelValues, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, bool topLevelValues, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         }
 
         private class AsyncStreamSerializerWrapper : StreamingJsonSerializerWrapper
@@ -174,54 +186,74 @@ namespace System.Text.Json.Serialization.Tests
             private Stream ResolveReadStream(Stream stream)
                 => stream is not null && _forceBomInsertions ? new Utf8BomInsertingStream(stream) : stream;
 
-            public override Task SerializeWrapper<T>(Stream utf8Json, T value, JsonSerializerOptions options = null)
+            public override Task SerializeWrapper<T>(Stream utf8Json, T value, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
             {
-                return JsonSerializer.SerializeAsync<T>(utf8Json, value, ResolveOptionsInstance(options));
+                return JsonSerializer.SerializeAsync<T>(utf8Json, value, ResolveOptionsInstance(options), cancellationToken);
             }
 
-            public override Task SerializeWrapper(Stream utf8Json, object value, Type inputType, JsonSerializerOptions options = null)
+            public override Task SerializeWrapper(Stream utf8Json, object value, Type inputType, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
             {
-                return JsonSerializer.SerializeAsync(utf8Json, value, inputType, ResolveOptionsInstance(options));
+                return JsonSerializer.SerializeAsync(utf8Json, value, inputType, ResolveOptionsInstance(options), cancellationToken);
             }
 
-            public override Task SerializeWrapper<T>(Stream stream, T value, JsonTypeInfo<T> jsonTypeInfo)
+            public override Task SerializeWrapper<T>(Stream stream, T value, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
             {
-                return JsonSerializer.SerializeAsync(stream, value, jsonTypeInfo);
+                return JsonSerializer.SerializeAsync(stream, value, jsonTypeInfo, cancellationToken);
             }
 
-            public override Task SerializeWrapper(Stream stream, object value, JsonTypeInfo jsonTypeInfo)
+            public override Task SerializeWrapper(Stream stream, object value, JsonTypeInfo jsonTypeInfo, CancellationToken cancellationToken = default)
             {
-                return JsonSerializer.SerializeAsync(stream, value, jsonTypeInfo);
+                return JsonSerializer.SerializeAsync(stream, value, jsonTypeInfo, cancellationToken);
             }
 
-            public override Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerContext context)
+            public override Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerContext context, CancellationToken cancellationToken = default)
             {
-                return JsonSerializer.SerializeAsync(stream, value, inputType, context);
+                return JsonSerializer.SerializeAsync(stream, value, inputType, context, cancellationToken);
             }
 
-            public override async Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions options = null)
+            public override async Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
             {
-                return await JsonSerializer.DeserializeAsync<T>(ResolveReadStream(utf8Json), ResolveOptionsInstance(options));
+                return await JsonSerializer.DeserializeAsync<T>(ResolveReadStream(utf8Json), ResolveOptionsInstance(options), cancellationToken);
             }
 
-            public override async Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerOptions options = null)
+            public override async Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
             {
-                return await JsonSerializer.DeserializeAsync(ResolveReadStream(utf8Json), returnType, ResolveOptionsInstance(options));
+                return await JsonSerializer.DeserializeAsync(ResolveReadStream(utf8Json), returnType, ResolveOptionsInstance(options), cancellationToken);
             }
 
-            public override async Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo)
+            public override async Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
             {
-                return await JsonSerializer.DeserializeAsync<T>(ResolveReadStream(utf8Json), jsonTypeInfo);
+                return await JsonSerializer.DeserializeAsync<T>(ResolveReadStream(utf8Json), jsonTypeInfo, cancellationToken);
             }
 
-            public override async Task<object> DeserializeWrapper(Stream utf8Json, JsonTypeInfo jsonTypeInfo)
+            public override async Task<object> DeserializeWrapper(Stream utf8Json, JsonTypeInfo jsonTypeInfo, CancellationToken cancellationToken = default)
             {
-                return await JsonSerializer.DeserializeAsync(ResolveReadStream(utf8Json), jsonTypeInfo);
+                return await JsonSerializer.DeserializeAsync(ResolveReadStream(utf8Json), jsonTypeInfo, cancellationToken);
             }
 
-            public override async Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerContext context)
+            public override async Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerContext context, CancellationToken cancellationToken = default)
             {
-                return await JsonSerializer.DeserializeAsync(ResolveReadStream(utf8Json), returnType, context);
+                return await JsonSerializer.DeserializeAsync(ResolveReadStream(utf8Json), returnType, context, cancellationToken);
+            }
+
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
+            {
+                return JsonSerializer.DeserializeAsyncEnumerable<T>(ResolveReadStream(utf8Json), ResolveOptionsInstance(options), cancellationToken);
+            }
+
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
+            {
+                return JsonSerializer.DeserializeAsyncEnumerable<T>(ResolveReadStream(utf8Json), jsonTypeInfo, cancellationToken);
+            }
+
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, bool topLevelValues, CancellationToken cancellationToken = default)
+            {
+                return JsonSerializer.DeserializeAsyncEnumerable<T>(ResolveReadStream(utf8Json), jsonTypeInfo, topLevelValues, cancellationToken);
+            }
+
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, bool topLevelValues, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+            {
+                return JsonSerializer.DeserializeAsyncEnumerable<T>(ResolveReadStream(utf8Json), topLevelValues, ResolveOptionsInstance(options), cancellationToken);
             }
         }
 
@@ -246,65 +278,70 @@ namespace System.Text.Json.Serialization.Tests
             private Stream ResolveReadStream(Stream stream)
                 => stream is not null && _forceBomInsertions ? new Utf8BomInsertingStream(stream) : stream;
 
-            public override Task SerializeWrapper<T>(Stream utf8Json, T value, JsonSerializerOptions options = null)
+            public override Task SerializeWrapper<T>(Stream utf8Json, T value, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
             {
-                JsonSerializer.Serialize<T>(utf8Json, value, ResolveOptionsInstance(options));
+                JsonSerializer.Serialize(utf8Json, value, ResolveOptionsInstance(options));
                 return Task.CompletedTask;
             }
 
-            public override Task SerializeWrapper(Stream utf8Json, object value, Type inputType, JsonSerializerOptions options = null)
+            public override Task SerializeWrapper(Stream utf8Json, object value, Type inputType, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
             {
                 JsonSerializer.Serialize(utf8Json, value, inputType, ResolveOptionsInstance(options));
                 return Task.CompletedTask;
             }
 
-            public override Task SerializeWrapper<T>(Stream stream, T value, JsonTypeInfo<T> jsonTypeInfo)
+            public override Task SerializeWrapper<T>(Stream stream, T value, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
             {
                 JsonSerializer.Serialize(stream, value, jsonTypeInfo);
                 return Task.CompletedTask;
             }
 
-            public override Task SerializeWrapper(Stream stream, object value, JsonTypeInfo jsonTypeInfo)
+            public override Task SerializeWrapper(Stream stream, object value, JsonTypeInfo jsonTypeInfo, CancellationToken cancellationToken = default)
             {
                 JsonSerializer.Serialize(stream, value, jsonTypeInfo);
                 return Task.CompletedTask;
             }
 
-            public override Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerContext context)
+            public override Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerContext context, CancellationToken cancellationToken = default)
             {
                 JsonSerializer.Serialize(stream, value, inputType, context);
                 return Task.CompletedTask;
             }
 
-            public override Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions options = null)
+            public override Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
             {
                 T result = JsonSerializer.Deserialize<T>(ResolveReadStream(utf8Json), ResolveOptionsInstance(options));
                 return Task.FromResult(result);
             }
 
-            public override Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerOptions options = null)
+            public override Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
             {
                 object result = JsonSerializer.Deserialize(ResolveReadStream(utf8Json), returnType, ResolveOptionsInstance(options));
                 return Task.FromResult(result);
             }
 
-            public override Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo)
+            public override Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
             {
                 T result = JsonSerializer.Deserialize<T>(ResolveReadStream(utf8Json), jsonTypeInfo);
                 return Task.FromResult(result);
             }
 
-            public override Task<object> DeserializeWrapper(Stream utf8Json, JsonTypeInfo jsonTypeInfo)
+            public override Task<object> DeserializeWrapper(Stream utf8Json, JsonTypeInfo jsonTypeInfo, CancellationToken cancellationToken = default)
             {
                 object result = JsonSerializer.Deserialize(ResolveReadStream(utf8Json), jsonTypeInfo);
                 return Task.FromResult(result);
             }
 
-            public override Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerContext context)
+            public override Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerContext context, CancellationToken cancellationToken = default)
             {
                 object result = JsonSerializer.Deserialize(ResolveReadStream(utf8Json), returnType, context);
                 return Task.FromResult(result);
             }
+
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, bool topLevelValues, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, bool topLevelValues, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         }
 
         private class ReaderWriterSerializerWrapper : JsonSerializerWrapper
@@ -394,6 +431,11 @@ namespace System.Text.Json.Serialization.Tests
                 Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json), OptionsHelpers.GetReaderOptions(context?.Options));
                 return Task.FromResult(JsonSerializer.Deserialize(ref reader, type, context));
             }
+
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, bool topLevelValues, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, bool topLevelValues, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         }
 
         private class DocumentSerializerWrapper : JsonSerializerWrapper
@@ -505,6 +547,11 @@ namespace System.Text.Json.Serialization.Tests
                 using JsonDocument document = JsonDocument.Parse(json, OptionsHelpers.GetDocumentOptions(context?.Options));
                 return Task.FromResult(document.Deserialize(type, context));
             }
+
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, bool topLevelValues, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, bool topLevelValues, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         }
 
         private class ElementSerializerWrapper : JsonSerializerWrapper
@@ -579,6 +626,11 @@ namespace System.Text.Json.Serialization.Tests
                 using JsonDocument document = JsonDocument.Parse(json, OptionsHelpers.GetDocumentOptions(context?.Options));
                 return Task.FromResult(document.RootElement.Deserialize(type, context));
             }
+
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, bool topLevelValues, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, bool topLevelValues, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         }
 
         private class NodeSerializerWrapper : JsonSerializerWrapper
@@ -710,6 +762,11 @@ namespace System.Text.Json.Serialization.Tests
                 JsonNode node = JsonNode.Parse(json, OptionsHelpers.GetNodeOptions(context?.Options), OptionsHelpers.GetDocumentOptions(context?.Options));
                 return Task.FromResult(node.Deserialize(type, context));
             }
+
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, bool topLevelValues, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, bool topLevelValues, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         }
 
         private static class OptionsHelpers
@@ -885,40 +942,92 @@ namespace System.Text.Json.Serialization.Tests
             public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         }
 
-        // TODO: Deserialize to use PipeReader overloads once implemented
-        private class AsyncPipelinesSerializerWrapper : JsonSerializerWrapper
+        private class AsyncPipelinesSerializerWrapper : PipeJsonSerializerWrapper
         {
+            private readonly bool _forceSmallBufferInOptions;
+
             public override JsonSerializerOptions DefaultOptions => JsonSerializerOptions.Default;
             public override bool SupportsNullValueOnDeserialize => true;
 
+            public override bool IsAsyncSerializer => true;
+
+            public AsyncPipelinesSerializerWrapper(bool forceSmallBufferInOptions = false)
+            {
+                _forceSmallBufferInOptions = forceSmallBufferInOptions;
+            }
+
+            private JsonSerializerOptions? ResolveOptionsInstance(JsonSerializerOptions? options)
+                => _forceSmallBufferInOptions ? JsonSerializerOptionsSmallBufferMapper.ResolveOptionsInstanceWithSmallBuffer(options) : options;
+
             public override async Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
             {
-                return await JsonSerializer.DeserializeAsync<T>(new MemoryStream(Encoding.UTF8.GetBytes(json)), options);
+                Pipe pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 0));
+                await pipe.Writer.WriteAsync(Encoding.UTF8.GetBytes(json));
+                pipe.Writer.Complete();
+                return await JsonSerializer.DeserializeAsync<T>(pipe.Reader, ResolveOptionsInstance(options));
             }
+
             public override async Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
             {
-                return await JsonSerializer.DeserializeAsync(new MemoryStream(Encoding.UTF8.GetBytes(json)), type, options);
+                Pipe pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 0));
+                await pipe.Writer.WriteAsync(Encoding.UTF8.GetBytes(json));
+                pipe.Writer.Complete();
+                return await JsonSerializer.DeserializeAsync(pipe.Reader, type, ResolveOptionsInstance(options));
             }
 
             public override async Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
             {
-                return await JsonSerializer.DeserializeAsync(new MemoryStream(Encoding.UTF8.GetBytes(json)), jsonTypeInfo);
+                Pipe pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 0));
+                await pipe.Writer.WriteAsync(Encoding.UTF8.GetBytes(json));
+                pipe.Writer.Complete();
+                return await JsonSerializer.DeserializeAsync(pipe.Reader, jsonTypeInfo);
             }
 
             public override async Task<object> DeserializeWrapper(string value, JsonTypeInfo jsonTypeInfo)
             {
-                return await JsonSerializer.DeserializeAsync(new MemoryStream(Encoding.UTF8.GetBytes(value)), jsonTypeInfo);
+                Pipe pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 0));
+                await pipe.Writer.WriteAsync(Encoding.UTF8.GetBytes(value));
+                pipe.Writer.Complete();
+                return await JsonSerializer.DeserializeAsync(pipe.Reader, jsonTypeInfo);
             }
 
             public override async Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
             {
-                return await JsonSerializer.DeserializeAsync(new MemoryStream(Encoding.UTF8.GetBytes(json)), type, context);
+                Pipe pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 0));
+                await pipe.Writer.WriteAsync(Encoding.UTF8.GetBytes(json));
+                pipe.Writer.Complete();
+                return await JsonSerializer.DeserializeAsync(pipe.Reader, type, context);
+            }
+
+            public override Task<object> DeserializeWrapper(PipeReader utf8Json, Type returnType, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+            {
+                return JsonSerializer.DeserializeAsync(utf8Json, returnType, ResolveOptionsInstance(options), cancellationToken).AsTask();
+            }
+
+            public override Task<T> DeserializeWrapper<T>(PipeReader utf8Json, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+            {
+                return JsonSerializer.DeserializeAsync<T>(utf8Json, ResolveOptionsInstance(options), cancellationToken).AsTask();
+            }
+
+            public override Task<object> DeserializeWrapper(PipeReader utf8Json, Type returnType, JsonSerializerContext context, CancellationToken cancellationToken = default)
+            {
+                return JsonSerializer.DeserializeAsync(utf8Json, returnType, context, cancellationToken).AsTask();
+            }
+
+            public override Task<T> DeserializeWrapper<T>(PipeReader utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
+            {
+                return JsonSerializer.DeserializeAsync(utf8Json, jsonTypeInfo, cancellationToken).AsTask();
+            }
+
+            public override Task<object> DeserializeWrapper(PipeReader utf8Json, JsonTypeInfo jsonTypeInfo, CancellationToken cancellationToken = default)
+            {
+                return JsonSerializer.DeserializeAsync(utf8Json, jsonTypeInfo, cancellationToken).AsTask();
             }
 
             public override async Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
-                Pipe pipe = new Pipe();
-                await JsonSerializer.SerializeAsync(pipe.Writer, value, inputType, options);
+                Pipe pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 0));
+                await JsonSerializer.SerializeAsync(pipe.Writer, value, inputType, ResolveOptionsInstance(options));
                 ReadResult result = await pipe.Reader.ReadAsync();
 
                 string stringResult = Encoding.UTF8.GetString(result.Buffer.ToArray());
@@ -928,8 +1037,8 @@ namespace System.Text.Json.Serialization.Tests
 
             public override async Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions options = null)
             {
-                Pipe pipe = new Pipe();
-                await JsonSerializer.SerializeAsync(pipe.Writer, value, options);
+                Pipe pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 0));
+                await JsonSerializer.SerializeAsync(pipe.Writer, value, ResolveOptionsInstance(options));
                 ReadResult result = await pipe.Reader.ReadAsync();
 
                 string stringResult = Encoding.UTF8.GetString(result.Buffer.ToArray());
@@ -939,7 +1048,7 @@ namespace System.Text.Json.Serialization.Tests
 
             public override async Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerContext context)
             {
-                Pipe pipe = new Pipe();
+                Pipe pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 0));
                 await JsonSerializer.SerializeAsync(pipe.Writer, value, inputType, context);
                 ReadResult result = await pipe.Reader.ReadAsync();
 
@@ -950,7 +1059,7 @@ namespace System.Text.Json.Serialization.Tests
 
             public override async Task<string> SerializeWrapper<T>(T value, JsonTypeInfo<T> jsonTypeInfo)
             {
-                Pipe pipe = new Pipe();
+                Pipe pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 0));
                 await JsonSerializer.SerializeAsync(pipe.Writer, value, jsonTypeInfo);
                 ReadResult result = await pipe.Reader.ReadAsync();
 
@@ -961,13 +1070,196 @@ namespace System.Text.Json.Serialization.Tests
 
             public override async Task<string> SerializeWrapper(object value, JsonTypeInfo jsonTypeInfo)
             {
-                Pipe pipe = new Pipe();
+                Pipe pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 0));
                 await JsonSerializer.SerializeAsync(pipe.Writer, value, jsonTypeInfo);
                 ReadResult result = await pipe.Reader.ReadAsync();
 
                 string stringResult = Encoding.UTF8.GetString(result.Buffer.ToArray());
                 pipe.Reader.AdvanceTo(result.Buffer.End);
                 return stringResult;
+            }
+
+            public override async Task SerializeWrapper(PipeWriter utf8Json, object value, Type inputType, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+            {
+                try
+                {
+                    await JsonSerializer.SerializeAsync(utf8Json, value, inputType, ResolveOptionsInstance(options), cancellationToken);
+                }
+                finally
+                {
+                    await utf8Json.FlushAsync(cancellationToken);
+                }
+            }
+
+            public override async Task SerializeWrapper<T>(PipeWriter utf8Json, T value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+            {
+                try
+                {
+                    await JsonSerializer.SerializeAsync(utf8Json, value, ResolveOptionsInstance(options), cancellationToken);
+                }
+                finally
+                {
+                    await utf8Json.FlushAsync(cancellationToken);
+                }
+            }
+
+            public override async Task SerializeWrapper(PipeWriter utf8Json, object value, Type inputType, JsonSerializerContext context, CancellationToken cancellationToken = default)
+            {
+                try
+                {
+                    await JsonSerializer.SerializeAsync(utf8Json, value, inputType, context, cancellationToken);
+                }
+                finally
+                {
+                    await utf8Json.FlushAsync(cancellationToken);
+                }
+            }
+
+            public override async Task SerializeWrapper<T>(PipeWriter utf8Json, T value, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
+            {
+                try
+                {
+                    await JsonSerializer.SerializeAsync(utf8Json, value, jsonTypeInfo, cancellationToken);
+                }
+                finally
+                {
+                    await utf8Json.FlushAsync(cancellationToken);
+                }
+            }
+
+            public override async Task SerializeWrapper(PipeWriter utf8Json, object value, JsonTypeInfo jsonTypeInfo, CancellationToken cancellationToken = default)
+            {
+                try
+                {
+                    await JsonSerializer.SerializeAsync(utf8Json, value, jsonTypeInfo, cancellationToken);
+                }
+                finally
+                {
+                    await utf8Json.FlushAsync(cancellationToken);
+                }
+            }
+
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
+            {
+                var pipeReader = PipeReader.Create(utf8Json, new StreamPipeReaderOptions(leaveOpen: true, bufferSize: ResolveOptionsInstance(options)?.DefaultBufferSize ?? -1));
+                return JsonSerializer.DeserializeAsyncEnumerable<T>(pipeReader, ResolveOptionsInstance(options), cancellationToken);
+            }
+
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
+            {
+                var pipeReader = PipeReader.Create(utf8Json, new StreamPipeReaderOptions(leaveOpen: true, bufferSize: jsonTypeInfo.Options.DefaultBufferSize));
+                return JsonSerializer.DeserializeAsyncEnumerable<T>(pipeReader, jsonTypeInfo, cancellationToken);
+            }
+
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, bool topLevelValues, CancellationToken cancellationToken = default)
+            {
+                var pipeReader = PipeReader.Create(utf8Json, new StreamPipeReaderOptions(leaveOpen: true, bufferSize: jsonTypeInfo.Options.DefaultBufferSize));
+                return JsonSerializer.DeserializeAsyncEnumerable<T>(pipeReader, jsonTypeInfo, topLevelValues, cancellationToken);
+            }
+
+            public override IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(Stream utf8Json, bool topLevelValues, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+            {
+                var pipeReader = PipeReader.Create(utf8Json, new StreamPipeReaderOptions(leaveOpen: true, bufferSize: ResolveOptionsInstance(options)?.DefaultBufferSize ?? -1));
+                return JsonSerializer.DeserializeAsyncEnumerable<T>(pipeReader, topLevelValues, ResolveOptionsInstance(options), cancellationToken);
+            }
+
+            public override async Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+            {
+                PipeWriter writer = PipeWriter.Create(stream,
+                    new StreamPipeWriterOptions(minimumBufferSize: ResolveOptionsInstance(options)?.DefaultBufferSize ?? -1, leaveOpen: true));
+                try
+                {
+                    await JsonSerializer.SerializeAsync(writer, value, inputType, ResolveOptionsInstance(options), cancellationToken);
+                }
+                finally
+                {
+                    await writer.FlushAsync();
+                }
+            }
+
+            public override async Task SerializeWrapper<T>(Stream stream, T value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+            {
+                PipeWriter writer = PipeWriter.Create(stream,
+                    new StreamPipeWriterOptions(minimumBufferSize: ResolveOptionsInstance(options)?.DefaultBufferSize ?? -1, leaveOpen: true));
+                try
+                {
+                    await JsonSerializer.SerializeAsync(writer, value, ResolveOptionsInstance(options), cancellationToken);
+                }
+                finally
+                {
+                    await writer.FlushAsync();
+                }
+            }
+
+            public override async Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerContext context, CancellationToken cancellationToken = default)
+            {
+                PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
+                try
+                {
+                    await JsonSerializer.SerializeAsync(writer, value, inputType, context, cancellationToken);
+                }
+                finally
+                {
+                    await writer.FlushAsync();
+                }
+            }
+
+            public override async Task SerializeWrapper<T>(Stream stream, T value, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
+            {
+                PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
+                try
+                {
+                    await JsonSerializer.SerializeAsync(writer, value, jsonTypeInfo, cancellationToken);
+                }
+                finally
+                {
+                    await writer.FlushAsync();
+                }
+            }
+
+            public override async Task SerializeWrapper(Stream stream, object value, JsonTypeInfo jsonTypeInfo, CancellationToken cancellationToken = default)
+            {
+                PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
+                try
+                {
+                    await JsonSerializer.SerializeAsync(writer, value, jsonTypeInfo, cancellationToken);
+                }
+                finally
+                {
+                    await writer.FlushAsync();
+                }
+            }
+
+            public override Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+            {
+                var pipeReader = PipeReader.Create(utf8Json,
+                    new StreamPipeReaderOptions(leaveOpen: true, bufferSize: ResolveOptionsInstance(options)?.DefaultBufferSize ?? -1));
+                return JsonSerializer.DeserializeAsync(pipeReader, returnType, ResolveOptionsInstance(options), cancellationToken).AsTask();
+            }
+
+            public override Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+            {
+                var pipeReader = PipeReader.Create(utf8Json,
+                    new StreamPipeReaderOptions(leaveOpen: true, bufferSize: ResolveOptionsInstance(options)?.DefaultBufferSize ?? -1));
+                return JsonSerializer.DeserializeAsync<T>(pipeReader, ResolveOptionsInstance(options), cancellationToken).AsTask();
+            }
+
+            public override Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerContext context, CancellationToken cancellationToken = default)
+            {
+                var pipeReader = PipeReader.Create(utf8Json, new StreamPipeReaderOptions(leaveOpen: true));
+                return JsonSerializer.DeserializeAsync(pipeReader, returnType, context, cancellationToken).AsTask();
+            }
+
+            public override Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken = default)
+            {
+                var pipeReader = PipeReader.Create(utf8Json, new StreamPipeReaderOptions(leaveOpen: true));
+                return JsonSerializer.DeserializeAsync<T>(pipeReader, jsonTypeInfo, cancellationToken).AsTask();
+            }
+
+            public override Task<object> DeserializeWrapper(Stream utf8Json, JsonTypeInfo jsonTypeInfo, CancellationToken cancellationToken = default)
+            {
+                var pipeReader = PipeReader.Create(utf8Json, new StreamPipeReaderOptions(leaveOpen: true));
+                return JsonSerializer.DeserializeAsync(pipeReader, jsonTypeInfo, cancellationToken).AsTask();
             }
         }
     }

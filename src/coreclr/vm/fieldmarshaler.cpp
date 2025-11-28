@@ -310,7 +310,7 @@ BOOL IsStructMarshalable(TypeHandle th)
         return FALSE;
 
     MethodTable *pMT= th.GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
 
     return pMT->GetNativeLayoutInfo()->IsMarshalable() ? TRUE : FALSE;
 }
@@ -402,7 +402,7 @@ UINT32 NativeFieldDescriptor::AlignmentRequirement() const
         MethodTable* pMT = GetNestedNativeMethodTable();
         if (pMT->IsBlittable())
         {
-            return pMT->GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers;
+            return pMT->GetLayoutInfo()->GetAlignmentRequirement();
         }
         return pMT->GetNativeLayoutInfo()->GetLargestAlignmentRequirement();
     }

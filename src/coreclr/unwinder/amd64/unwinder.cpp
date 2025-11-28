@@ -54,9 +54,6 @@ static M128A MemoryRead128(PM128A addr)
 
 #ifdef DACCESS_COMPILE
 
-// Report failure in the unwinder if the condition is FALSE
-#define UNWINDER_ASSERT(Condition) if (!(Condition)) DacError(CORDBG_E_TARGET_INCONSISTENT)
-
 //---------------------------------------------------------------------------------------
 //
 // The InstructionBuffer class abstracts accessing assembler instructions in the function
@@ -258,9 +255,6 @@ BOOL OOPStackUnwinderAMD64::Unwind(CONTEXT * pContext)
 }
 
 #else // DACCESS_COMPILE
-
-// Report failure in the unwinder if the condition is FALSE
-#define UNWINDER_ASSERT _ASSERTE
 
 // For unwinding of the jitted code on non-Windows platforms, the Instruction buffer is
 // just a plain pointer to the instruction data.
@@ -1851,4 +1845,3 @@ Return Value:
 
     return Slots;
 }
-

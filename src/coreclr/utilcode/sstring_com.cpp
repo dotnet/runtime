@@ -83,7 +83,7 @@ HRESULT SString::LoadResourceAndReturnHR(CCompRC::ResourceCategory eCategory, in
         {
             hr = E_FAIL;
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 #endif //!FEATURE_UTILCODE_NO_DEPENDENCIES
 

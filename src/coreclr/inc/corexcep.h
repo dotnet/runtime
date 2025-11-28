@@ -11,9 +11,9 @@
 #ifndef __COREXCEP_H__
 #define __COREXCEP_H__
 
-// All COM+ exceptions are expressed as a RaiseException with this exception
+// All CLR exceptions are expressed as a RaiseException with this exception
 // code.  If you change this value, you must also change
-// Exception.cs's _COMPlusExceptionCode value.
+// Exception.cs's EXCEPTION_COMPLUS value.
 
 #define EXCEPTION_MSVC    0xe06d7363    // 0xe0000000 | 'msc'
 

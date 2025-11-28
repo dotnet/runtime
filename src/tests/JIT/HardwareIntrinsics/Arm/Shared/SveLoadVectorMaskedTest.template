@@ -24,7 +24,7 @@ namespace JIT.HardwareIntrinsics.Arm
         [Fact]
         public static void {TestName}()
         {
-            var test = new LoadUnaryOpTest__{TestName}();
+            var test = new LoadVectorMaskTest__{TestName}();
 
             if (test.IsSupported)
             {
@@ -56,7 +56,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class LoadUnaryOpTest__{TestName}
+    public sealed unsafe class LoadVectorMaskTest__{TestName}
     {
         private struct DataTable
         {
@@ -121,7 +121,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return testStruct;
             }
 
-            public void RunStructFldScenario(LoadUnaryOpTest__{TestName} testClass)
+            public void RunStructFldScenario(LoadVectorMaskTest__{TestName} testClass)
             {
                 {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
 
@@ -148,7 +148,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private DataTable _dataTable;
 
-        public LoadUnaryOpTest__{TestName}()
+        public LoadVectorMaskTest__{TestName}()
         {
             Succeeded = true;
 
@@ -263,8 +263,8 @@ namespace JIT.HardwareIntrinsics.Arm
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
 
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref maskArray[0]), firstOp);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(secondOp), (uint)Unsafe.SizeOf<{RetVectorType}<{Op2BaseType}>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(secondOp), (uint)(sizeof({Op2BaseType}) * Op2ElementCount));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)(sizeof({RetBaseType}) * RetElementCount));
 
             ValidateResult(maskArray, inArray, outArray, method);
         }

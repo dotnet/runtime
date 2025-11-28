@@ -465,27 +465,6 @@ __inner_analysis_assume_nullterminated_dec
 }
 #endif
 
-#ifdef _PREFIX_
-/**************************************************************************
-* Definition of __pfx_assume and __pfx_assert. Thse should be the only
-* definitions of these functions.
-***************************************************************************/
-#if __cplusplus
-extern "C" void __pfx_assert(bool, const char *);
-extern "C" void __pfx_assume(bool, const char *);
-#else
-void __pfx_assert(int, const char *);
-void __pfx_assume(int, const char *);
-#endif
-/**************************************************************************
-* Redefinition of __analysis_assume and __analysis_assert for PREFIX build
-**************************************************************************/
-#undef  __analysis_assume
-#undef  __analysis_assert
-#define __analysis_assume(e) (__pfx_assume(e,"pfx_assume"),__assume(e));
-#define __analysis_assert(e) (__pfx_assert(e,"pfx_assert"),__assume(e));
-#endif /* ifdef _PREFIX_ */
-
 /**************************************************************************
 * This include should always be the last thing in this file.
 * Must avoid redfinitions of macros to workaround rc.exe issues.

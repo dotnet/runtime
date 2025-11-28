@@ -15,6 +15,7 @@ terminology.
 | BBT | Microsoft internal early version of C/C++ PGO. See https://www.microsoft.com/windows/cse/bit_projects.mspx. |
 | BOTR | Book Of The Runtime. |
 | BCL | Base Class Library. A set of `System.*` (and to a limited extent `Microsoft.*`) libraries that make up the lower layer of the .NET library stack. See CoreFX. |
+| CDAC | Codename for [Data Contracts](https://github.com/dotnet/runtime/blob/main/docs/design/datacontracts/datacontracts_design.md) |
 | CIL | Common Intermediate Language. Equivalent to IL, also equivalent to [MSIL](https://learn.microsoft.com/dotnet/standard/managed-execution-process#compiling-to-msil). |
 | CLI | Command Line Interface, or Common Language Infastructure. |
 | CLR | [Common Language Runtime](https://learn.microsoft.com/dotnet/standard/clr). |
@@ -29,7 +30,7 @@ terminology.
 | IPC | Inter-Process Communication. |
 | IL | Intermediate Language. Equivalent to CIL, also equivalent to [MSIL](https://learn.microsoft.com/dotnet/standard/managed-execution-process#compiling-to-msil). |
 | JIT | [Just-in-Time](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/ryujit-overview.md) compiler. RyuJIT is the code name for the next generation Just-in-Time(aka "JIT") for the .NET runtime. |
-| LCG | Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/runtime/blob/main/src/coreclr/System.Private.CoreLib/src/System/Reflection/Emit/DynamicMethod.cs). |
+| LCG | Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Reflection/Emit/DynamicMethod.cs). |
 | MD | MetaData. |
 | MDA | Managed Debugging Assistant - see [details](https://learn.microsoft.com/dotnet/framework/debug-trace-profile/diagnosing-errors-with-managed-debugging-assistants) (Note: Not in .NET Core, equivalent diagnostic functionality is made available on a case-by-case basis, e.g. [#9418](https://github.com/dotnet/runtime/issues/9418)) |
 | MIBC | Managed Instrumented Block Counts - used as extension (`*.mibc`) for managed PGO files. |

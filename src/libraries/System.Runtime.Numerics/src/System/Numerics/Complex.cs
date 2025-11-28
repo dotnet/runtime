@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Numerics
 {
@@ -832,6 +834,14 @@ namespace System.Numerics
             return new Complex((double)value, 0.0);
         }
 
+        /// <summary>Implicitly converts a <see cref="BFloat16" /> value to a double-precision complex number.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a double-precision complex number.</returns>
+        public static implicit operator Complex(BFloat16 value)
+        {
+            return new Complex((double)value, 0.0);
+        }
+
         public static implicit operator Complex(short value)
         {
             return new Complex(value, 0.0);
@@ -1464,6 +1474,16 @@ namespace System.Numerics
             return result;
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static Complex Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider)
+        {
+            if (!TryParse(utf8Text, style, provider, out Complex result))
+            {
+                ThrowHelper.ThrowOverflowException();
+            }
+            return result;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(string, NumberStyles, IFormatProvider?)" />
         public static Complex Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
@@ -1525,6 +1545,12 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
+                result = actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
                 result = actualValue;
                 return true;
             }
@@ -1658,6 +1684,12 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualResult = (value.m_imaginary != 0) ? Half.NaN : (Half)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualResult = (value.m_imaginary != 0) ? BFloat16.NaN : (BFloat16)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1854,6 +1886,12 @@ namespace System.Numerics
                 result = (TOther)(object)actualResult;
                 return true;
             }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualResult = (BFloat16)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
             else if (typeof(TOther) == typeof(short))
             {
                 short actualResult = (value.m_real >= short.MaxValue) ? short.MaxValue :
@@ -1990,6 +2028,12 @@ namespace System.Numerics
                 result = (TOther)(object)actualResult;
                 return true;
             }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualResult = (BFloat16)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
             else if (typeof(TOther) == typeof(short))
             {
                 short actualResult = (value.m_real >= short.MaxValue) ? short.MaxValue :
@@ -2088,14 +2132,22 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Complex result)
+            => TryParse(MemoryMarshal.Cast<char, Utf16Char>(s), style, provider, out result);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Complex result)
+            => TryParse(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out result);
+
+        private static bool TryParse<TChar>(ReadOnlySpan<TChar> text, NumberStyles style, IFormatProvider? provider, out Complex result)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             ValidateParseStyleFloatingPoint(style);
 
-            int openBracket = s.IndexOf('<');
-            int semicolon = s.IndexOf(';');
-            int closeBracket = s.IndexOf('>');
+            int openBracket = text.IndexOf(TChar.CastFrom('<'));
+            int semicolon = text.IndexOf(TChar.CastFrom(';'));
+            int closeBracket = text.IndexOf(TChar.CastFrom('>'));
 
-            if ((s.Length < 5) || (openBracket == -1) || (semicolon == -1) || (closeBracket == -1) || (openBracket > semicolon) || (openBracket > closeBracket) || (semicolon > closeBracket))
+            if ((text.Length < 5) || (openBracket == -1) || (semicolon == -1) || (closeBracket == -1) || (openBracket > semicolon) || (openBracket > closeBracket) || (semicolon > closeBracket))
             {
                 // We need at least 5 characters for `<0;0>`
                 // We also expect a to find an open bracket, a semicolon, and a closing bracket in that order
@@ -2104,7 +2156,7 @@ namespace System.Numerics
                 return false;
             }
 
-            if ((openBracket != 0) && (((style & NumberStyles.AllowLeadingWhite) == 0) || !s.Slice(0, openBracket).IsWhiteSpace()))
+            if ((openBracket != 0) && (((style & NumberStyles.AllowLeadingWhite) == 0) || !text.Slice(0, openBracket).IsWhiteSpace()))
             {
                 // The opening bracket wasn't the first and we either didn't allow leading whitespace
                 // or one of the leading characters wasn't whitespace at all.
@@ -2113,26 +2165,37 @@ namespace System.Numerics
                 return false;
             }
 
-            if (!double.TryParse(s.Slice(openBracket + 1, semicolon - openBracket - 1), style, provider, out double real))
+            ReadOnlySpan<TChar> slice = text.Slice(openBracket + 1, semicolon - openBracket - 1);
+
+            if ((typeof(TChar) == typeof(Utf8Char))
+                ? !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(slice), style, provider, out double real)
+                : !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice), style, provider, out real))
             {
                 result = default;
                 return false;
             }
 
-            if (char.IsWhiteSpace(s[semicolon + 1]))
+            if (Number.DecodeFromUtfChar(text[(semicolon + 1)..], out Rune rune, out int elemsConsumed) == OperationStatus.Done)
             {
-                // We allow a single whitespace after the semicolon regardless of style, this is so that
-                // the output of `ToString` can be correctly parsed by default and values will roundtrip.
-                semicolon += 1;
+                if (Rune.IsWhiteSpace(rune))
+                {
+                    // We allow a single whitespace after the semicolon regardless of style, this is so that
+                    // the output of `ToString` can be correctly parsed by default and values will roundtrip.
+                    semicolon += elemsConsumed;
+                }
             }
 
-            if (!double.TryParse(s.Slice(semicolon + 1, closeBracket - semicolon - 1), style, provider, out double imaginary))
+            slice = text.Slice(semicolon + 1, closeBracket - semicolon - 1);
+
+            if ((typeof(TChar) == typeof(Utf8Char))
+                ? !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(slice), style, provider, out double imaginary)
+                : !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice), style, provider, out imaginary))
             {
                 result = default;
                 return false;
             }
 
-            if ((closeBracket != (s.Length - 1)) && (((style & NumberStyles.AllowTrailingWhite) == 0) || !s.Slice(closeBracket).IsWhiteSpace()))
+            if ((closeBracket != (text.Length - 1)) && (((style & NumberStyles.AllowTrailingWhite) == 0) || !text.Slice(closeBracket).IsWhiteSpace()))
             {
                 // The closing bracket wasn't the last and we either didn't allow trailing whitespace
                 // or one of the trailing characters wasn't whitespace at all.
@@ -2143,23 +2206,23 @@ namespace System.Numerics
 
             result = new Complex(real, imaginary);
             return true;
+        }
 
-            static void ValidateParseStyleFloatingPoint(NumberStyles style)
+        private static void ValidateParseStyleFloatingPoint(NumberStyles style)
+        {
+            // Check for undefined flags or hex number
+            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0)
             {
-                // Check for undefined flags or hex number
-                if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0)
+                ThrowInvalid(style);
+
+                static void ThrowInvalid(NumberStyles value)
                 {
-                    ThrowInvalid(style);
-
-                    static void ThrowInvalid(NumberStyles value)
+                    if ((value & InvalidNumberStyles) != 0)
                     {
-                        if ((value & InvalidNumberStyles) != 0)
-                        {
-                            throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
-                        }
-
-                        throw new ArgumentException(SR.Arg_HexStyleNotSupported);
+                        throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
                     }
+
+                    throw new ArgumentException(SR.Arg_HexStyleNotSupported);
                 }
             }
         }
@@ -2198,41 +2261,40 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ISpanFormattable.TryFormat(Span{char}, out int, ReadOnlySpan{char}, IFormatProvider?)" />
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
-            TryFormatCore(destination, out charsWritten, format, provider);
+            TryFormat(MemoryMarshal.Cast<char, Utf16Char>(destination), out charsWritten, format, provider);
 
         /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat(Span{byte}, out int, ReadOnlySpan{char}, IFormatProvider?)" />
         public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
-            TryFormatCore(utf8Destination, out bytesWritten, format, provider);
+            TryFormat(MemoryMarshal.Cast<byte, Utf8Char>(utf8Destination), out bytesWritten, format, provider);
 
-        private bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) where TChar : unmanaged, IBinaryInteger<TChar>
+        private bool TryFormat<TChar>(Span<TChar> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
-            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            Debug.Assert(typeof(TChar) == typeof(Utf8Char) || typeof(TChar) == typeof(Utf16Char));
 
             // We have at least 6 more characters for: <0; 0>
             if (destination.Length >= 6)
             {
-                int realChars;
-                if (typeof(TChar) == typeof(char) ?
-                    m_real.TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(destination.Slice(1)), out realChars, format, provider) :
-                    m_real.TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination.Slice(1)), out realChars, format, provider))
+                if ((typeof(TChar) == typeof(Utf8Char))
+                    ? m_real.TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination.Slice(1)), out int realChars, format, provider)
+                    : m_real.TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(destination.Slice(1)), out realChars, format, provider))
                 {
-                    destination[0] = TChar.CreateTruncating('<');
+                    destination[0] = TChar.CastFrom('<');
                     destination = destination.Slice(1 + realChars); // + 1 for <
 
                     // We have at least 4 more characters for: ; 0>
                     if (destination.Length >= 4)
                     {
-                        int imaginaryChars;
-                        if (typeof(TChar) == typeof(char) ?
-                            m_imaginary.TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(destination.Slice(2)), out imaginaryChars, format, provider) :
-                            m_imaginary.TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination.Slice(2)), out imaginaryChars, format, provider))
+                        if ((typeof(TChar) == typeof(Utf8Char))
+                            ? m_imaginary.TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(destination.Slice(2)), out int imaginaryChars, format, provider)
+                            : m_imaginary.TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(destination.Slice(2)), out imaginaryChars, format, provider))
                         {
                             // We have 1 more character for: >
                             if ((uint)(2 + imaginaryChars) < (uint)destination.Length)
                             {
-                                destination[0] = TChar.CreateTruncating(';');
-                                destination[1] = TChar.CreateTruncating(' ');
-                                destination[2 + imaginaryChars] = TChar.CreateTruncating('>');
+                                destination[0] = TChar.CastFrom(';');
+                                destination[1] = TChar.CastFrom(' ');
+                                destination[2 + imaginaryChars] = TChar.CastFrom('>');
 
                                 charsWritten = realChars + imaginaryChars + 4;
                                 return true;
@@ -2262,5 +2324,15 @@ namespace System.Numerics
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         public static Complex operator +(Complex value) => value;
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static Complex Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, DefaultNumberStyle, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out Complex result) => TryParse(utf8Text, DefaultNumberStyle, provider, out result);
     }
 }

@@ -369,11 +369,11 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("}")]
         [InlineData("[")]
         [InlineData("]")]
-        public void DeserializeDictionaryStartsWithInvalidJson(string json)
+        public async Task DeserializeDictionaryStartsWithInvalidJson(string json)
         {
             foreach (Type type in CollectionTestTypes.DictionaryTypes<string>())
             {
-                Assert.ThrowsAsync<JsonException>(async () =>
+                await Assert.ThrowsAsync<JsonException>(async () =>
                 {
                     using (var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                     {

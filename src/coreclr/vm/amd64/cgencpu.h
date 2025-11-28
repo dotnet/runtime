@@ -43,7 +43,7 @@ class ComCallMethodDesc;
 #define SIZEOF_LOAD_AND_JUMP_THUNK              22   // # bytes to mov r10, X; jmp Z
 #define SIZEOF_LOAD2_AND_JUMP_THUNK             32   // # bytes to mov r10, X; mov r11, Y; jmp Z
 
-#define HAS_NDIRECT_IMPORT_PRECODE              1
+#define HAS_PINVOKE_IMPORT_PRECODE              1
 #define HAS_FIXUP_PRECODE                       1
 
 // ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer
@@ -450,7 +450,47 @@ inline TADDR GetFP(const CONTEXT * context)
     return (TADDR)(context->Rbp);
 }
 
-extern "C" TADDR GetCurrentSP();
+inline void SetFirstArgReg(CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef UNIX_AMD64_ABI
+    context->Rdi = (DWORD64)value;
+#else
+    context->Rcx = (DWORD64)value;
+#endif
+}
+
+inline TADDR GetFirstArgReg(CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef UNIX_AMD64_ABI
+    return (TADDR)(context->Rdi);
+#else
+    return (TADDR)(context->Rcx);
+#endif
+}
+
+inline void SetSecondArgReg(CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef UNIX_AMD64_ABI
+    context->Rsi = (DWORD64)value;
+#else
+    context->Rdx = (DWORD64)value;
+#endif
+}
+
+inline TADDR GetSecondArgReg(CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+#ifdef UNIX_AMD64_ABI
+    return (TADDR)(context->Rsi);
+#else
+    return (TADDR)(context->Rdx);
+#endif
+}
+
+extern "C" void* GetCurrentSP();
 
 // Emits:
 //  mov r10, pv1
@@ -468,89 +508,17 @@ INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCO
 
 void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target);
 
-void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
+void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 
-BOOL isJumpRel32(PCODE pCode);
-PCODE decodeJump32(PCODE pCode);
-
-BOOL isJumpRel64(PCODE pCode);
-PCODE decodeJump64(PCODE pCode);
-
-//
-// On IA64 back to back jumps should be separated by a nop bundle to get
-// the best performance from the hardware's branch prediction logic.
-// For all other platforms back to back jumps don't require anything special
-// That is why we have these two wrapper functions that call emitJump and decodeJump
-//
-inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
-{
-    WRAPPER_NO_CONTRACT;
-
-    emitJump(pBufferRX, pBufferRW, target);
-}
-
-inline PCODE decodeBackToBackJump(PCODE pCode)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    if (isJumpRel32(pCode))
-        return decodeJump32(pCode);
-    else
-    if (isJumpRel64(pCode))
-        return decodeJump64(pCode);
-    else
-        return (PCODE)0;
-}
+bool isBackToBackJump(PCODE pCode);
+PCODE decodeBackToBackJump(PCODE pCode);
 
 extern "C" void setFPReturn(int fpSize, INT64 retVal);
 extern "C" void getFPReturn(int fpSize, INT64 *retval);
 
-
-#include <pshpack1.h>
-struct DECLSPEC_ALIGN(8) UMEntryThunkCode
-{
-    // padding                  // CC CC CC CC
-    // mov r10, pUMEntryThunk   // 49 ba xx xx xx xx xx xx xx xx    // METHODDESC_REGISTER
-    // mov rax, pJmpDest        // 48 b8 xx xx xx xx xx xx xx xx    // need to ensure this imm64 is qword aligned
-    // TAILJMP_RAX              // 48 FF E0
-
-    BYTE            m_padding[4];
-    BYTE            m_movR10[2];    // MOV R10,
-    LPVOID          m_uet;          //          pointer to start of this structure
-    BYTE            m_movRAX[2];    // MOV RAX,
-    DECLSPEC_ALIGN(8)
-    const BYTE*     m_execstub;     //          pointer to destination code // ensure this is qword aligned
-    BYTE            m_jmpRAX[3];    // JMP RAX
-    BYTE            m_padding2[5];
-
-    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
-    void Poison();
-
-    LPCBYTE GetEntryPoint() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (LPCBYTE)&m_movR10;
-    }
-
-    static int GetEntryPointOffset()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return offsetof(UMEntryThunkCode, m_movR10);
-    }
-};
-#include <poppack.h>
-
 struct HijackArgs
 {
-#ifndef FEATURE_MULTIREG_RETURN
-    union
-    {
-        ULONG64 Rax;
-        ULONG64 ReturnValue[1];
-    };
-#else // !FEATURE_MULTIREG_RETURN
+#ifdef UNIX_AMD64_ABI
     union
     {
         struct
@@ -560,7 +528,18 @@ struct HijackArgs
         };
         ULONG64 ReturnValue[2];
     };
-#endif // !FEATURE_MULTIREG_RETURN
+#else // UNIX_AMD64_ABI
+    union
+    {
+        ULONG64 Rax;
+        ULONG64 ReturnValue[1];
+    };
+#endif // UNIX_AMD64_ABI
+    union
+    {
+        ULONG64 Rcx;
+        ULONG64 AsyncRet;
+    };
     CalleeSavedRegisters Regs;
 #ifdef TARGET_WINDOWS
     ULONG64 Rsp;

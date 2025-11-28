@@ -211,6 +211,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private static volatile bool s_fCheckedBetter;
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private void CheckBetterTable()
         {
             if (s_fCheckedBetter)
@@ -240,6 +241,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
 #pragma warning disable CA1822
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private BetterType WhichSimpleConversionIsBetter(PredefinedType pt1, PredefinedType pt2)
         {
 #if DEBUG
@@ -257,6 +259,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             (possibly via a user defined conversion, method group conversion, etc).
         ***************************************************************************************************/
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private BetterType WhichTypeIsBetter(PredefinedType pt1, PredefinedType pt2, CType typeGiven)
         {
             if (pt1 == pt2)
@@ -293,6 +296,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             a user defined conversion, method group conversion, etc).
         ***************************************************************************************************/
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private BetterType WhichTypeIsBetter(CType type1, CType type2, CType typeGiven)
         {
             Debug.Assert(type1 != null && type2 != null);
@@ -336,25 +340,31 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         // returns true if an implicit conversion exists from source type to dest type. flags is an optional parameter.
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool canConvert(CType src, CType dest, CONVERTTYPE flags) => BindImplicitConversion(null, src, dest, flags);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public bool canConvert(CType src, CType dest) => canConvert(src, dest, 0);
 
         // returns true if a implicit conversion exists from source expr to dest type. flags is an optional parameter.
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool canConvert(Expr expr, CType dest) => canConvert(expr, dest, 0);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool canConvert(Expr expr, CType dest, CONVERTTYPE flags) =>
             BindImplicitConversion(expr, expr.Type, dest, flags);
 
         // performs an implicit conversion if it's possible. otherwise displays an error. flags is an optional parameter.
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr mustConvertCore(Expr expr, CType destExpr) => mustConvertCore(expr, destExpr, 0);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr mustConvertCore(Expr expr, CType dest, CONVERTTYPE flags)
         {
             Debug.Assert(!(expr is ExprMemberGroup));
@@ -403,12 +413,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // future conversions.  It will also produce possible binding errors for method groups.
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public Expr tryConvert(Expr expr, CType dest)
         {
             return tryConvert(expr, dest, 0);
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr tryConvert(Expr expr, CType dest, CONVERTTYPE flags)
         {
             if (BindImplicitConversion(expr, expr.Type, dest, out Expr exprResult, flags))
@@ -423,9 +435,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public Expr mustConvert(Expr expr, CType dest) => mustConvert(expr, dest, (CONVERTTYPE)0);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr mustConvert(Expr expr, CType dest, CONVERTTYPE flags) => mustConvertCore(expr, dest, flags);
 
         //        public bool canCast(Expr expr, CType dest)
@@ -436,6 +450,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         // performs an explicit conversion if its possible. otherwise displays an error.
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr mustCastCore(Expr expr, CType dest, CONVERTTYPE flags)
         {
             Debug.Assert(!(expr is ExprMemberGroup));
@@ -511,6 +526,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             throw CantConvert(expr, dest);
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static RuntimeBinderException CantConvert(Expr expr, CType dest)
         {
             // Generic "can't convert" error.
@@ -519,20 +535,25 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public Expr mustCast(Expr expr, CType dest) => mustCast(expr, dest, 0);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public Expr mustCast(Expr expr, CType dest, CONVERTTYPE flags) => mustCastCore(expr, dest, flags);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr MustCastInUncheckedContext(Expr expr, CType dest, CONVERTTYPE flags) =>
             new ExpressionBinder(new BindingContext(Context)).mustCast(expr, dest, flags);
 
         // returns true if an explicit conversion exists from source type to dest type. flags is an optional parameter.
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool canCast(CType src, CType dest, CONVERTTYPE flags) => BindExplicitConversion(null, src, dest, flags);
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool BindImplicitConversion(Expr pSourceExpr, CType pSourceType, CType destinationType, CONVERTTYPE flags)
         {
             ImplicitConversion binder = new ImplicitConversion(this, pSourceExpr, pSourceType, destinationType, false, flags);
@@ -540,6 +561,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool BindImplicitConversion(Expr pSourceExpr, CType pSourceType, CType destinationType, out Expr ppDestinationExpr, CONVERTTYPE flags)
         {
             ImplicitConversion binder = new ImplicitConversion(this, pSourceExpr, pSourceType, destinationType, true, flags);
@@ -549,6 +571,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool BindImplicitConversion(Expr pSourceExpr, CType pSourceType, CType destinationType, bool needsExprDest, out Expr ppDestinationExpr, CONVERTTYPE flags)
         {
             ImplicitConversion binder = new ImplicitConversion(this, pSourceExpr, pSourceType, destinationType, needsExprDest, flags);
@@ -558,6 +581,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool BindExplicitConversion(Expr pSourceExpr, CType pSourceType, CType destinationType, bool needsExprDest, out Expr ppDestinationExpr, CONVERTTYPE flags)
         {
             ExplicitConversion binder = new ExplicitConversion(this, pSourceExpr, pSourceType, destinationType, needsExprDest, flags);
@@ -567,6 +591,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool BindExplicitConversion(Expr pSourceExpr, CType pSourceType, CType destinationType, out Expr ppDestinationExpr, CONVERTTYPE flags)
         {
             ExplicitConversion binder = new ExplicitConversion(this, pSourceExpr, pSourceType, destinationType, true, flags);
@@ -576,6 +601,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool BindExplicitConversion(Expr pSourceExpr, CType pSourceType, CType destinationType, CONVERTTYPE flags)
         {
             ExplicitConversion binder = new ExplicitConversion(this, pSourceExpr, pSourceType, destinationType, false, flags);
@@ -623,6 +649,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
               forms have identical signatures).
         ***************************************************************************************************/
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool bindUserDefinedConversion(Expr exprSrc, CType typeSrc, CType typeDst, bool needExprDest, out Expr pexprDst, bool fImplicitOnly)
         {
             pexprDst = null;
@@ -1052,6 +1079,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return true;
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static RuntimeBinderException HandleAmbiguity(CType typeSrc, CType typeDst, List<UdConvInfo> prguci, int iuciBestSrc, int iuciBestDst)
         {
             Debug.Assert(0 <= iuciBestSrc && iuciBestSrc < prguci.Count);
@@ -1090,12 +1118,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr BindUDConversionCore(Expr pFrom, CType pTypeFrom, CType pTypeTo, CType pTypeDestination, MethWithInst mwiBest)
         {
             return BindUDConversionCore(pFrom, pTypeFrom, pTypeTo, pTypeDestination, mwiBest, out _);
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private Expr BindUDConversionCore(Expr pFrom, CType pTypeFrom, CType pTypeTo, CType pTypeDestination, MethWithInst mwiBest, out Expr ppTransformedArgument)
         {
             Expr pTransformedArgument = mustCastCore(pFrom, pTypeFrom, CONVERTTYPE.NOUDC);
@@ -1112,6 +1142,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
          * Fold a constant cast. Returns true if the constant could be folded.
          */
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private ConstCastResult bindConstantCast(Expr exprSrc, CType typeDest, bool needExprDest, out Expr pexprDest, bool explicitConversion)
         {
             pexprDest = null;
@@ -1322,6 +1353,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             The return value is -1 if type1 is closer, +1 if type2 is closer and 0 if neither is closer.
         ***************************************************************************************************/
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private int CompareSrcTypesBased(CType type1, bool fImplicit1, CType type2, bool fImplicit2)
         {
             Debug.Assert(type1 != type2);
@@ -1356,6 +1388,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             The return value is -1 if type1 is closer, +1 if type2 is closer and 0 if neither is closer.
         ***************************************************************************************************/
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private int CompareDstTypesBased(CType type1, bool fImplicit1, CType type2, bool fImplicit2)
         {
             Debug.Assert(type1 != type2);
@@ -1372,6 +1405,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
          * Bind a constant cast to or from decimal. Return null if cast can't be done.
          */
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static Expr BindDecimalConstCast(CType destType, CType srcType, ExprConstant src)
         {
             CType typeDecimal = SymbolLoader.GetPredefindType(PredefinedType.PT_DECIMAL);
@@ -1482,6 +1516,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private bool CanExplicitConversionBeBoundInUncheckedContext(Expr exprSrc, CType typeSrc, CType typeDest, CONVERTTYPE flags)
         {
             Debug.Assert(typeDest != null);

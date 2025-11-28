@@ -110,7 +110,7 @@ namespace Internal.Runtime.InteropServices
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         [UnmanagedCallersOnly]
-        public static unsafe int LoadAssembly(IntPtr assemblyPathNative, IntPtr loadContext, IntPtr reserved)
+        public static int LoadAssembly(IntPtr assemblyPathNative, IntPtr loadContext, IntPtr reserved)
         {
             if (!IsSupported)
                 return HostFeatureDisabled;
@@ -348,7 +348,7 @@ namespace Internal.Runtime.InteropServices
             }
             else
             {
-                Delegate d = Delegate.CreateDelegate(delegateType, type, methodName)!;
+                Delegate d = Delegate.CreateDelegate(delegateType, type, methodName);
 
                 functionPtr = Marshal.GetFunctionPointerForDelegate(d);
 

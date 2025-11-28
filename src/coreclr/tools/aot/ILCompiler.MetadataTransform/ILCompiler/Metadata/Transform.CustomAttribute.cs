@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 
 using Internal.Metadata.NativeFormat.Writer;
@@ -97,7 +98,8 @@ namespace ILCompiler.Metadata
                     if (type.IsString)
                         return Ecma.SerializationTypeCode.String;
 
-                    if (type is not Cts.MetadataType { Name: "Type", Namespace: "System" })
+                    if (type is not Cts.MetadataType mdType
+                        || !mdType.Name.SequenceEqual("Type"u8) || !mdType.Namespace.SequenceEqual("System"u8))
                         throw new UnreachableException();
 
                     return Ecma.SerializationTypeCode.Type;
@@ -110,7 +112,7 @@ namespace ILCompiler.Metadata
 
             switch (typeCode)
             {
-                case Ecma.SerializationTypeCode.Type: return module.Context.SystemModule.GetType("System", "Type");
+                case Ecma.SerializationTypeCode.Type: return module.Context.SystemModule.GetType("System"u8, "Type"u8);
                 case Ecma.SerializationTypeCode.SZArray: return module.Context.GetArrayType(SerializationTypeToType(module, ref valueReader));
                 case Ecma.SerializationTypeCode.Enum: return Cts.CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(module, valueReader.ReadSerializedString());
                 case Ecma.SerializationTypeCode.String: return module.Context.GetWellKnownType(Cts.WellKnownType.String);

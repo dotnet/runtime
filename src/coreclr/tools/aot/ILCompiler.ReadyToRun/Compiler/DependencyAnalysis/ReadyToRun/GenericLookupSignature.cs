@@ -93,7 +93,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     throw new NotImplementedException();
             }
 
-            ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
+            ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder(factory, relocsOnly);
             dataBuilder.AddSymbol(this);
 
             SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupToEmit, targetModule, factory.SignatureContext);

@@ -312,15 +312,8 @@ tryagain:
     unsigned skip = bitsNeeded % 4; // this works since we are always 4-bit aligned
     if (skip > 0)
     {
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:26000) // "Suppress PREFast warning about index overflow"
-#endif
         // state.next is always 0, because we did "state = emptyDecode;" above
         state = transition[state.next][data.Next()];
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
         state.decoded += skip;
     }
     return result;

@@ -9,6 +9,7 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Threading;
 
 using Internal.Reflection.Augments;
 using Internal.Runtime;
@@ -31,7 +32,7 @@ namespace System
         }
 
         // V1 API: Create open static delegates. Method name matching is case insensitive.
-        protected Delegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method)
+        protected Delegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method)
         {
             // This constructor cannot be used by application code. To create a delegate by specifying the name of a method, an
             // overload of the public static CreateDelegate method is used. This will eventually end up calling into the internal
@@ -244,7 +245,7 @@ namespace System
             }
             else
             {
-                DynamicInvokeInfo dynamicInvokeInfo = ReflectionAugments.ReflectionCoreCallbacks.GetDelegateDynamicInvokeInfo(GetType());
+                DynamicInvokeInfo dynamicInvokeInfo = ReflectionAugments.GetDelegateDynamicInvokeInfo(GetType());
 
                 object? result = dynamicInvokeInfo.Invoke(_firstParameter, _functionPointer,
                     args, binderBundle: null, wrapInTargetInvocationException: true);
@@ -270,7 +271,7 @@ namespace System
                 return GetType().GetMethod("Invoke");
             }
 
-            return ReflectionAugments.ReflectionCoreCallbacks.GetDelegateMethod(this);
+            return ReflectionAugments.GetDelegateMethod(this);
         }
 
         internal DiagnosticMethodInfo GetDiagnosticMethodInfo()
@@ -294,7 +295,7 @@ namespace System
             IntPtr ldftnResult = GetDelegateLdFtnResult(out RuntimeTypeHandle _, out bool isOpenResolver);
             if (isOpenResolver)
             {
-                MethodInfo mi = ReflectionAugments.ReflectionCoreCallbacks.GetDelegateMethod(this);
+                MethodInfo mi = ReflectionAugments.GetDelegateMethod(this);
                 Type? declaringType = mi.DeclaringType;
                 if (declaringType.IsConstructedGenericType)
                     declaringType = declaringType.GetGenericTypeDefinition();
@@ -313,7 +314,11 @@ namespace System
                 }
                 else
                 {
-                    functionPointer = ldftnResult;
+                    nint unboxedPointer = RuntimeAugments.GetCodeTarget(ldftnResult);
+                    if (unboxedPointer == ldftnResult)
+                        unboxedPointer = RuntimeAugments.GetTargetOfUnboxingAndInstantiatingStub(ldftnResult);
+
+                    functionPointer = unboxedPointer != 0 ? unboxedPointer : ldftnResult;
                 }
                 return RuntimeAugments.StackTraceCallbacksIfAvailable?.TryGetDiagnosticMethodInfoFromStartAddress(functionPointer);
             }
@@ -354,17 +359,17 @@ namespace System
         }
 
         // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed.
-        public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure) => ReflectionAugments.ReflectionCoreCallbacks.CreateDelegate(type, firstArgument, method, throwOnBindFailure);
+        public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure) => ReflectionAugments.CreateDelegate(type, firstArgument, method, throwOnBindFailure);
 
         // V1 api: Creates open delegates to static or instance methods - relaxed signature checking allowed.
-        public static Delegate CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure) => ReflectionAugments.ReflectionCoreCallbacks.CreateDelegate(type, method, throwOnBindFailure);
+        public static Delegate CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure) => ReflectionAugments.CreateDelegate(type, method, throwOnBindFailure);
 
         // V1 api: Creates closed delegates to instance methods only, relaxed signature checking disallowed.
         [RequiresUnreferencedCode("The target method might be removed")]
-        public static Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure) => ReflectionAugments.ReflectionCoreCallbacks.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
+        public static Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure) => ReflectionAugments.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
 
         // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
-        public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure) => ReflectionAugments.ReflectionCoreCallbacks.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
+        public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure) => ReflectionAugments.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
 
         internal IntPtr TryGetOpenStaticFunctionPointer() => (GetThunk(OpenStaticThunk) == _functionPointer) ? _extraFunctionPointerOrData : 0;
 
@@ -384,6 +389,8 @@ namespace System
             MethodTable* delegateEEType = typeHandle.ToMethodTable();
             Debug.Assert(delegateEEType != null);
             Debug.Assert(delegateEEType->IsCanonical);
+
+            RuntimeAugments.EnsureMethodTableSafeToAllocate(delegateEEType);
 
             Delegate del = (Delegate)(RuntimeImports.RhNewObject(delegateEEType));
 
@@ -407,6 +414,8 @@ namespace System
         //
         internal static unsafe Delegate CreateDelegate(MethodTable* delegateEEType, IntPtr ldftnResult, object thisObject, bool isStatic, bool isOpen)
         {
+            RuntimeAugments.EnsureMethodTableSafeToAllocate(delegateEEType);
+
             Delegate del = (Delegate)RuntimeImports.RhNewObject(delegateEEType);
 
             // What? No constructor call? That's right, and it's not an oversight. All "construction" work happens in
@@ -457,7 +466,7 @@ namespace System
 
         private static bool TrySetSlot(Wrapper[] a, int index, Delegate o)
         {
-            if (a[index].Value == null && System.Threading.Interlocked.CompareExchange(ref a[index].Value, o, null) == null)
+            if (a[index].Value == null && Interlocked.CompareExchange(ref a[index].Value, o, null) == null)
                 return true;
 
             // The slot may be already set because we have added and removed the same method before.

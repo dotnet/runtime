@@ -238,7 +238,7 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
 void RegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
     UINT_PTR* reg = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    PREFIX_ASSUME(reg != NULL);
+    _ASSERTE(reg != NULL);
     _ASSERTE(sizeof(*reg) == valueOutBuffer.Size());
 
     memcpy(valueOutBuffer.StartAddress(), reg, sizeof(*reg));
@@ -293,10 +293,10 @@ void RegRegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pC
 void RegRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
     UINT_PTR* highWordAddr = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    PREFIX_ASSUME(highWordAddr != NULL);
+    _ASSERTE(highWordAddr != NULL);
 
     UINT_PTR* lowWordAddr = m_pFrame->GetAddressOfRegister(m_reg2Info.m_kRegNumber);
-    PREFIX_ASSUME(lowWordAddr != NULL);
+    _ASSERTE(lowWordAddr != NULL);
 
     _ASSERTE(sizeof(*highWordAddr) + sizeof(*lowWordAddr) == valueOutBuffer.Size());
 
@@ -353,7 +353,7 @@ void RegMemValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
     // Read the high bits from the register...
     UINT_PTR* highBitsAddr = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    PREFIX_ASSUME(highBitsAddr != NULL);
+    _ASSERTE(highBitsAddr != NULL);
 
     // ... and the low bits from the remote process
     DWORD lowBits;
@@ -420,7 +420,7 @@ void MemRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 
     // and the low bits from a register
     UINT_PTR* lowBitsAddr = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    PREFIX_ASSUME(lowBitsAddr != NULL);
+    _ASSERTE(lowBitsAddr != NULL);
 
     _ASSERTE(sizeof(*lowBitsAddr)+sizeof(highBits) == valueOutBuffer.Size());
 
@@ -451,11 +451,6 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
                                              DT_CONTEXT * pContext,
                                              bool        fIsSigned)
 {
-    // TODO: : implement CordbValue::SetEnregisteredValue for RAK_FLOAT
-    #if defined(TARGET_AMD64)
-    PORTABILITY_ASSERT("NYI: SetEnregisteredValue (divalue.cpp): RAK_FLOAT for AMD64");
-    #endif // TARGET_AMD64
-
     _ASSERTE((newValue.Size() == 4) || (newValue.Size() == 8));
 
     // Convert the input to a double.
@@ -463,14 +458,7 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
 
     memcpy(&newVal, newValue.StartAddress(), newValue.Size());
 
-    #if defined(TARGET_X86)
-
-    // This is unfortunately non-portable. Luckily we can live with this for now since we only support
-    // Win/X86 debugging a Mac/X86 platform.
-
-    #if !defined(TARGET_X86)
-    #error Unsupported target platform
-    #endif // !TARGET_X86
+#if defined(TARGET_X86)
 
     // What a pain, on X86 take the floating
     // point state in the context and make it our current FP
@@ -576,7 +564,7 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
         : "m"(currentFPUState)
     );
     #endif
-    #endif // TARGET_X86
+#endif // TARGET_X86
 
     // update the thread's floating point stack
     void * valueAddress = (void *) &(m_pFrame->m_pThread->m_floatValues[m_floatIndex]);
@@ -596,19 +584,19 @@ void FloatRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 // RemoteValueHome implementation
 // ============================================================================
 
-    // constructor
-    // Arguments:
-    //     input: pProcess    - the process to which the value belongs
-    //            remoteValue - a buffer with the target address of the value and its size
-    // Note: It's possible a particular instance of CordbGenericValue may have neither a remote address nor a
-    // register address--FuncEval makes empty GenericValues for literals but for those, we will make a
-    // RegisterValueHome,so we can assert that we have a non-null remote address here
-    RemoteValueHome::RemoteValueHome(CordbProcess * pProcess, TargetBuffer remoteValue):
-      ValueHome(pProcess),
-      m_remoteValue(remoteValue)
-    {
-        _ASSERTE(remoteValue.pAddress != 0);
-    } // RemoteValueHome::RemoteValueHome
+// constructor
+// Arguments:
+//     input: pProcess    - the process to which the value belongs
+//            remoteValue - a buffer with the target address of the value and its size
+// Note: It's possible a particular instance of CordbGenericValue may have neither a remote address nor a
+// register address--FuncEval makes empty GenericValues for literals but for those, we will make a
+// RegisterValueHome,so we can assert that we have a non-null remote address here
+RemoteValueHome::RemoteValueHome(CordbProcess * pProcess, TargetBuffer remoteValue):
+    ValueHome(pProcess),
+    m_remoteValue(remoteValue)
+{
+    _ASSERTE(remoteValue.pAddress != 0);
+} // RemoteValueHome::RemoteValueHome
 
 // Gets a value and returns it in dest
 // virtual
@@ -899,7 +887,7 @@ CORDB_ADDRESS HandleValueHome::GetAddress()
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
     return handle;
 }
 

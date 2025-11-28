@@ -15,15 +15,7 @@ namespace Internal.TypeSystem
     {
         partial void Initialize()
         {
-            SetRuntimeTypeHandleUnsafe(RuntimeAugments.GetCanonType(CanonTypeKind.NormalCanon));
-        }
-    }
-
-    internal partial class UniversalCanonType
-    {
-        partial void Initialize()
-        {
-            SetRuntimeTypeHandleUnsafe(RuntimeAugments.GetCanonType(CanonTypeKind.UniversalCanon));
+            SetRuntimeTypeHandleUnsafe(RuntimeAugments.GetCanonType());
         }
     }
 }

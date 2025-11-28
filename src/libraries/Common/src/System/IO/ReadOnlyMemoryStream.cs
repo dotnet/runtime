@@ -198,10 +198,7 @@ namespace System.IO
 #if NETFRAMEWORK || NETSTANDARD2_0
         private static void ValidateBufferArguments(byte[] buffer, int offset, int count)
         {
-            if (buffer is null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
 
             if (offset < 0)
             {

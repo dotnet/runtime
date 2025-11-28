@@ -1503,7 +1503,7 @@ namespace System.Net.Http
 
                 public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.net_http_content_readonly_stream);
 
-                public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => ValueTask.FromException(new NotSupportedException(SR.net_http_content_readonly_stream));
+                public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.net_http_content_readonly_stream)));
             }
 
             private sealed class Http2WriteStream : Http2ReadWriteStream
@@ -1522,11 +1522,11 @@ namespace System.Net.Http
 
                 public override int Read(Span<byte> buffer) => throw new NotSupportedException(SR.net_http_content_writeonly_stream);
 
-                public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => ValueTask.FromException<int>(new NotSupportedException(SR.net_http_content_writeonly_stream));
+                public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.net_http_content_writeonly_stream)));
 
                 public override void CopyTo(Stream destination, int bufferSize) => throw new NotSupportedException(SR.net_http_content_writeonly_stream);
 
-                public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => Task.FromException(new NotSupportedException(SR.net_http_content_writeonly_stream));
+                public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new NotSupportedException(SR.net_http_content_writeonly_stream)));
 
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {
@@ -1534,7 +1534,7 @@ namespace System.Net.Http
 
                     if ((ulong)BytesWritten > (ulong)ContentLength) // If ContentLength == -1, this will always be false
                     {
-                        return ValueTask.FromException(new HttpRequestException(SR.net_http_content_write_larger_than_content_length));
+                        return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new HttpRequestException(SR.net_http_content_write_larger_than_content_length)));
                     }
 
                     return base.WriteAsync(buffer, cancellationToken);
@@ -1643,7 +1643,7 @@ namespace System.Net.Http
 
                     if (http2Stream == null)
                     {
-                        return ValueTask.FromException(new ObjectDisposedException(nameof(Http2WriteStream)));
+                        return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2WriteStream))));
                     }
 
                     return http2Stream.SendDataAsync(buffer, cancellationToken);

@@ -3,10 +3,10 @@
 
 namespace ILLink.RoslynAnalyzer
 {
-	public class TestFeatures
-	{
-		public static bool IsUnreferencedCodeSupported => true;
+    public class TestFeatures
+    {
+        public static bool IsUnreferencedCodeSupported => true;
 
-		public static bool IsAssemblyFilesSupported => true;
-	}
+        public static bool IsAssemblyFilesSupported => true;
+    }
 }

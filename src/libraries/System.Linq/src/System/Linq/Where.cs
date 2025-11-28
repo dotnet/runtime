@@ -26,6 +26,12 @@ namespace System.Linq
                 return iterator.Where(predicate);
             }
 
+            // Only use IList when size-optimizing (no array or List specializations).
+            if (IsSizeOptimized && source is IList<TSource> sourceList)
+            {
+                return new SizeOptIListWhereIterator<TSource>(sourceList, predicate);
+            }
+
             if (source is TSource[] array)
             {
                 if (array.Length == 0)
@@ -143,7 +149,7 @@ namespace System.Linq
                 new IEnumerableWhereSelectIterator<TSource, TResult>(_source, _predicate, selector);
 
             public override IEnumerable<TSource> Where(Func<TSource, bool> predicate) =>
-                new IEnumerableWhereIterator<TSource>(_source, CombinePredicates(_predicate, predicate));
+                new IEnumerableWhereIterator<TSource>(_source, Utilities.CombinePredicates(_predicate, predicate));
         }
 
         /// <summary>

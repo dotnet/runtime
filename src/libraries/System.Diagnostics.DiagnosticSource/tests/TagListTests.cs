@@ -332,5 +332,3 @@ namespace System.Diagnostics.Tests
         }
     }
 }
-
-

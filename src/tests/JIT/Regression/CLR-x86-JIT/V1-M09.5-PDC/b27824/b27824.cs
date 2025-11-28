@@ -3,7 +3,7 @@
 //
 
 using Xunit;
-namespace Test
+namespace b27824
 {
     using System;
 
@@ -12,6 +12,7 @@ namespace Test
         static AA[] m_axForward3;
         static void GoToEnd() { throw new Exception(); }
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

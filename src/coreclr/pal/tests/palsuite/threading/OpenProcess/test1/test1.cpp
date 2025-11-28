@@ -44,7 +44,7 @@ PALTEST(threading_OpenProcess_test1_paltest_openprocess_test1, "threading/OpenPr
     HANDLE hChildProcess;
 
     char  rgchDirName[_MAX_DIR];
-    char  absPathBuf[_MAX_PATH];
+    char  absPathBuf[MAX_PATH];
     char* rgchAbsPathName;
 
     BOOL ret = FAIL;

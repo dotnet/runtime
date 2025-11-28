@@ -25,7 +25,7 @@ namespace GitHub_23530
         static unsafe float fmaTest()
         {
             vec a;
-            var b = Vector128.Create(1f);
+            var b = Vector128<float>.One;
             var c = Vector128.Create(2f);
             var d = Vector128.Create(3f);
 
@@ -34,16 +34,13 @@ namespace GitHub_23530
             return Sse.Add(c, d).ToScalar();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(Fma), nameof(Fma.IsSupported))]
         public static int TestEntryPoint()
         {
-            if (Fma.IsSupported)
+            float result = fmaTest();
+            if (Math.Abs(result - 5.0F) > System.Single.Epsilon)
             {
-                float result = fmaTest();
-                if (Math.Abs(result - 5.0F) > System.Single.Epsilon)
-                {
-                    return -1;
-                }
+                return -1;
             }
             return 100;
         }

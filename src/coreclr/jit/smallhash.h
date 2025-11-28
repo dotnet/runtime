@@ -583,7 +583,7 @@ public:
 
     //------------------------------------------------------------------------
     // HashTableBase::Remove: removes a key from the hash table and asserts
-    //                        that it did exist in the the table.
+    //                        that it did exist in the table.
     //
     // Arguments:
     //    key   - The key to remove from the table.

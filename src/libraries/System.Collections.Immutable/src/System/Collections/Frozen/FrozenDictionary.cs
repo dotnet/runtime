@@ -18,6 +18,50 @@ namespace System.Collections.Frozen
     {
         /// <summary>Creates a <see cref="FrozenDictionary{TKey, TValue}"/> with the specified key/value pairs.</summary>
         /// <param name="source">The key/value pairs to use to populate the dictionary.</param>
+        /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
+        /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
+        /// <remarks>
+        /// If the same key appears multiple times in the input, the latter one in the sequence takes precedence. This differs from
+        /// <see cref="M:System.Linq.Enumerable.ToDictionary"/>, with which multiple duplicate keys will result in an exception.
+        /// </remarks>
+        /// <returns>A <see cref="FrozenDictionary{TKey, TValue}"/> that contains the specified keys and values.</returns>
+        public static FrozenDictionary<TKey, TValue> Create<TKey, TValue>(params ReadOnlySpan<KeyValuePair<TKey, TValue>> source)
+            where TKey : notnull =>
+            Create(null, source);
+
+        /// <summary>Creates a <see cref="FrozenDictionary{TKey, TValue}"/> with the specified key/value pairs.</summary>
+        /// <param name="source">The key/value pairs to use to populate the dictionary.</param>
+        /// <param name="comparer">The comparer implementation to use to compare keys for equality. If <see langword="null"/>, <see cref="EqualityComparer{TKey}.Default"/> is used.</param>
+        /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
+        /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
+        /// <remarks>
+        /// If the same key appears multiple times in the input, the latter one in the sequence takes precedence. This differs from
+        /// <see cref="M:System.Linq.Enumerable.ToDictionary"/>, with which multiple duplicate keys will result in an exception.
+        /// </remarks>
+        /// <returns>A <see cref="FrozenDictionary{TKey, TValue}"/> that contains the specified keys and values.</returns>
+        public static FrozenDictionary<TKey, TValue> Create<TKey, TValue>(IEqualityComparer<TKey>? comparer, params ReadOnlySpan<KeyValuePair<TKey, TValue>> source)
+            where TKey : notnull
+        {
+            comparer ??= EqualityComparer<TKey>.Default;
+
+            if (source.IsEmpty)
+            {
+                return ReferenceEquals(comparer, FrozenDictionary<TKey, TValue>.Empty.Comparer) ?
+                    FrozenDictionary<TKey, TValue>.Empty :
+                    new EmptyFrozenDictionary<TKey, TValue>(comparer);
+            }
+
+            Dictionary<TKey, TValue> d = new(source.Length, comparer);
+            foreach (KeyValuePair<TKey, TValue> pair in source)
+            {
+                d[pair.Key] = pair.Value;
+            }
+
+            return CreateFromDictionary(d);
+        }
+
+        /// <summary>Creates a <see cref="FrozenDictionary{TKey, TValue}"/> with the specified key/value pairs.</summary>
+        /// <param name="source">The key/value pairs to use to populate the dictionary.</param>
         /// <param name="comparer">The comparer implementation to use to compare keys for equality. If null, <see cref="EqualityComparer{TKey}.Default"/> is used.</param>
         /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
         /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
@@ -72,7 +116,7 @@ namespace System.Collections.Frozen
             out Dictionary<TKey, TValue>? newDictionary)
             where TKey : notnull
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
             comparer ??= EqualityComparer<TKey>.Default;
 
             // If the source is already frozen with the same comparer, it can simply be returned.
@@ -122,6 +166,13 @@ namespace System.Collections.Frozen
             // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
             if (typeof(TKey).IsValueType && ReferenceEquals(comparer, EqualityComparer<TKey>.Default))
             {
+#if NET
+                if (DenseIntegralFrozenDictionary.CreateIfValid(source) is { } denseResult)
+                {
+                    return denseResult;
+                }
+#endif
+
                 if (source.Count <= Constants.MaxItemsInSmallValueTypeFrozenCollection)
                 {
                     // If the key is a something we know we can efficiently compare, use a specialized implementation
@@ -252,6 +303,7 @@ namespace System.Collections.Frozen
     /// the remainder of the life of the application. <see cref="FrozenDictionary{TKey, TValue}"/> should only be
     /// initialized with trusted keys, as the details of the keys impacts construction time.
     /// </remarks>
+    [CollectionBuilder(typeof(FrozenDictionary), nameof(FrozenDictionary.Create))]
     [DebuggerTypeProxy(typeof(ImmutableDictionaryDebuggerProxy<,>))]
     [DebuggerDisplay("Count = {Count}")]
     public abstract partial class FrozenDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary
@@ -321,7 +373,7 @@ namespace System.Collections.Frozen
         /// <param name="destinationIndex">The zero-based index in <paramref name="destination"/> at which copying begins.</param>
         public void CopyTo(KeyValuePair<TKey, TValue>[] destination, int destinationIndex)
         {
-            ThrowHelper.ThrowIfNull(destination);
+            ArgumentNullException.ThrowIfNull(destination);
             CopyTo(destination.AsSpan(destinationIndex));
         }
 
@@ -347,7 +399,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc />
         void ICollection.CopyTo(Array array, int index)
         {
-            ThrowHelper.ThrowIfNull(array);
+            ArgumentNullException.ThrowIfNull(array);
 
             if (array.Rank != 1)
             {
@@ -424,7 +476,7 @@ namespace System.Collections.Frozen
         {
             get
             {
-                ThrowHelper.ThrowIfNull(key);
+                ArgumentNullException.ThrowIfNull(key);
                 return key is TKey tkey && TryGetValue(tkey, out TValue? value) ?
                     value :
                     (object?)null;
@@ -449,20 +501,20 @@ namespace System.Collections.Frozen
         /// <inheritdoc cref="GetValueRefOrNullRef" />
         private protected abstract ref readonly TValue GetValueRefOrNullRefCore(TKey key);
 
-        /// <inheritdoc cref="GetValueRefOrNullRef" />
+        /// <summary>
+        /// Retrieves a delegate which calls a method equivalent to <see cref="GetValueRefOrNullRef(TKey)"/>
+        /// for the <typeparamref name="TAlternateKey"/>.
+        /// </summary>
         /// <remarks>
         /// This is virtual rather than abstract because only some implementations need to support this, e.g. implementations that
         /// are only ever used with the default comparer won't ever hit code paths that use this, at least not
         /// until/if we make `EqualityComparer{string}.Default` implement `IAlternateEqualityComparer{ReadOnlySpan{char}, string}`.
         ///
-        /// This unfortunately needs to be a generic virtual method, but the only other known option involves having a dedicated
-        /// class instance such that the generic can be baked into that, where the methods on it are still virtual but don't have
-        /// extra generic methods. But for most implementations, either a) that class would need to be allocated as part of
-        /// TryGetAlternateLookup, which would be more expensive for use cases where someone needs a lookup for just a few operations,
-        /// or b) a dictionary of those instances would need to be maintained, which just replaces the runtime's dictionary for a GVM
-        /// with a custom one here.
+        /// Generic Virtual method invocation is slower than delegate invocation and could negate
+        /// much of the benefit of using Alternate Keys. By retrieving the delegate up-front when
+        /// the lookup is created, we only pay for generic virtual method invocation once.
         /// </remarks>
-        private protected virtual ref readonly TValue GetValueRefOrNullRefCore<TAlternateKey>(TAlternateKey key)
+        private protected virtual AlternateLookupDelegate<TAlternateKey> GetAlternateLookupDelegate<TAlternateKey>()
             where TAlternateKey : notnull
 #if NET9_0_OR_GREATER
 #pragma warning disable SA1001 // Commas should be spaced correctly
@@ -473,7 +525,34 @@ namespace System.Collections.Frozen
             , allows ref struct
 #pragma warning restore SA1001
 #endif
-            => ref Unsafe.NullRef<TValue>();
+            => AlternateLookupDelegateHolder<TAlternateKey>.ReturnsNullRef;
+
+        /// <summary>
+        /// Invokes a method equivalent to <see cref="GetValueRefOrNullRef(TKey)"/>
+        /// for the <typeparamref name="TAlternateKey"/>.
+        /// </summary>
+        internal delegate ref readonly TValue AlternateLookupDelegate<TAlternateKey>(FrozenDictionary<TKey, TValue> dictionary, TAlternateKey key)
+            where TAlternateKey : notnull
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            , allows ref struct
+#pragma warning restore SA1001
+#endif
+            ;
+
+        /// <summary>
+        /// Holds an implementation of <see cref="AlternateLookupDelegate{TAlternateKey}"/> which always returns a null ref.
+        /// </summary>
+        private static class AlternateLookupDelegateHolder<TAlternateKey>
+            where TAlternateKey : notnull
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            , allows ref struct
+#pragma warning restore SA1001
+#endif
+        {
+            public static readonly AlternateLookupDelegate<TAlternateKey> ReturnsNullRef = (_, _) => ref Unsafe.NullRef<TValue>();
+        }
 
         /// <summary>Gets a reference to the value associated with the specified key.</summary>
         /// <param name="key">The key of the value to get.</param>
@@ -514,7 +593,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc />
         bool IDictionary.Contains(object key)
         {
-            ThrowHelper.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(key);
             return key is TKey tkey && ContainsKey(tkey);
         }
 

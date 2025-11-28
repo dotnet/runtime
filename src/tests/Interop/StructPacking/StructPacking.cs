@@ -30,8 +30,8 @@ struct DefaultLayoutDefaultPacking<T> : ITestStructure
     public T _value;
 
     public int Size => Unsafe.SizeOf<DefaultLayoutDefaultPacking<T>>();
-    public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
-    public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
+    public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -41,8 +41,8 @@ struct SequentialLayoutDefaultPacking<T> : ITestStructure
     public T _value;
 
     public int Size => Unsafe.SizeOf<SequentialLayoutDefaultPacking<T>>();
-    public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
-    public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
+    public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -52,8 +52,8 @@ struct SequentialLayoutMinPacking<T> : ITestStructure
     public T _value;
 
     public int Size => Unsafe.SizeOf<SequentialLayoutMinPacking<T>>();
-    public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
-    public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
+    public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 128)]
@@ -63,8 +63,8 @@ struct SequentialLayoutMaxPacking<T> : ITestStructure
     public T _value;
 
     public int Size => Unsafe.SizeOf<SequentialLayoutMaxPacking<T>>();
-    public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
-    public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
+    public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
 
 [StructLayout(LayoutKind.Auto)]
@@ -74,8 +74,8 @@ struct AutoLayoutDefaultPacking<T> : ITestStructure
     public T _value;
 
     public int Size => Unsafe.SizeOf<AutoLayoutDefaultPacking<T>>();
-    public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
-    public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
+    public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
 
 [StructLayout(LayoutKind.Auto, Pack = 1)]
@@ -85,8 +85,8 @@ struct AutoLayoutMinPacking<T> : ITestStructure
     public T _value;
 
     public int Size => Unsafe.SizeOf<AutoLayoutMinPacking<T>>();
-    public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
-    public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
+    public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
 
 [StructLayout(LayoutKind.Auto, Pack = 128)]
@@ -96,11 +96,22 @@ struct AutoLayoutMaxPacking<T> : ITestStructure
     public T _value;
 
     public int Size => Unsafe.SizeOf<AutoLayoutMaxPacking<T>>();
-    public int OffsetOfByte => Program.OffsetOf(ref this, ref _byte);
-    public int OffsetOfValue => Program.OffsetOf(ref this, ref _value);
+    public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
 }
 
-public unsafe partial class Program
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+struct ManagedAutoUnmanagedSequentialLayoutMinPacking : ITestStructure
+{
+    public Action _value;
+    public byte _byte;
+
+    public int Size => Unsafe.SizeOf<ManagedAutoUnmanagedSequentialLayoutMinPacking>();
+    public int OffsetOfByte => StructPacking.OffsetOf(ref this, ref _byte);
+    public int OffsetOfValue => StructPacking.OffsetOf(ref this, ref _value);
+}
+
+public unsafe partial class StructPacking
 {
     const int Pass = 100;
     const int Fail = 0;
@@ -135,6 +146,9 @@ public unsafe partial class Program
         succeeded &= TestMyVector64();
         succeeded &= TestMyVector128();
         succeeded &= TestMyVector256();
+
+        // Test data types that invalidate managed sequential layout
+        succeeded &= TestAction();
 
         return succeeded ? Pass : Fail;
     }
@@ -1629,6 +1643,45 @@ public unsafe partial class Program
 
         return succeeded;
     }
+    static bool TestAction()
+    {
+        bool succeeded = true;
+
+        if (Environment.Is64BitProcess)
+        {
+            succeeded &= Test<ManagedAutoUnmanagedSequentialLayoutMinPacking>(
+                expectedSize: 16,
+                expectedOffsetByte: 8,
+                expectedOffsetValue: 0,
+                expectedNativeSize: 9
+            );
+
+            succeeded &= Test<ManagedAutoUnmanagedSequentialLayoutMinPacking>(
+                expectedSize: 16,
+                expectedOffsetByte: 8,
+                expectedOffsetValue: 0,
+                expectedNativeSize: 9
+            );
+        }
+        else
+        {
+            succeeded &= Test<ManagedAutoUnmanagedSequentialLayoutMinPacking>(
+                expectedSize: 8,
+                expectedOffsetByte: 4,
+                expectedOffsetValue: 0,
+                expectedNativeSize: 5
+            );
+
+            succeeded &= Test<ManagedAutoUnmanagedSequentialLayoutMinPacking>(
+                expectedSize: 8,
+                expectedOffsetByte: 4,
+                expectedOffsetValue: 0,
+                expectedNativeSize: 5
+            );
+        }
+
+        return succeeded;
+    }
 
     static bool Test<T>(int expectedSize, int expectedOffsetByte, int expectedOffsetValue) where T : ITestStructure
     {
@@ -1656,6 +1709,26 @@ public unsafe partial class Program
         {
             Console.WriteLine($"Unexpected Offset for {testStructure.GetType()}.Value.");
             Console.WriteLine($"     Expected: {expectedOffsetValue}; Actual: {offsetValue}");
+            succeeded = false;
+        }
+
+        if (!succeeded)
+        {
+            Console.WriteLine();
+        }
+
+        return succeeded;
+    }
+
+    static bool Test<T>(int expectedSize, int expectedOffsetByte, int expectedOffsetValue, int expectedNativeSize) where T : ITestStructure
+    {
+        bool succeeded = Test<T>(expectedSize, expectedOffsetByte, expectedOffsetValue);
+
+        int nativeSize = Marshal.SizeOf<T>();
+        if (nativeSize != expectedNativeSize)
+        {
+            Console.WriteLine($"Unexpected Native Size for {typeof(T)}.");
+            Console.WriteLine($"     Expected: {expectedNativeSize}; Actual: {nativeSize}");
             succeeded = false;
         }
 

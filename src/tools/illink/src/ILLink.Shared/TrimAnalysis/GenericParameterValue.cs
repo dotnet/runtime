@@ -8,12 +8,12 @@ using ILLink.Shared.TypeSystemProxy;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	/// <summary>
-	/// This is a System.Type value which represents generic parameter (basically result of typeof(T))
-	/// Its actual type is unknown, but it can have annotations.
-	/// </summary>
-	internal sealed partial record GenericParameterValue : ValueWithDynamicallyAccessedMembers
-	{
-		public readonly GenericParameterProxy GenericParameter;
-	}
+    /// <summary>
+    /// This is a System.Type value which represents generic parameter (basically result of typeof(T))
+    /// Its actual type is unknown, but it can have annotations.
+    /// </summary>
+    internal sealed partial record GenericParameterValue : ValueWithDynamicallyAccessedMembers
+    {
+        public readonly GenericParameterProxy GenericParameter;
+    }
 }

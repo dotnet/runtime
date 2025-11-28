@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Configuration.Memory
         /// <param name="source">The source settings.</param>
         public MemoryConfigurationProvider(MemoryConfigurationSource source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             _source = source;
 

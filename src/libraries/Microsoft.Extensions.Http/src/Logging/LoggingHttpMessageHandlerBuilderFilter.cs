@@ -15,15 +15,14 @@ namespace Microsoft.Extensions.Http
     {
         // we want to prevent a circular depencency between ILoggerFactory and IHttpMessageHandlerBuilderFilter, in case
         // any of ILoggerProvider instances use IHttpClientFactory to send logs to an external server
-        private ILoggerFactory? _loggerFactory;
-        private ILoggerFactory LoggerFactory => _loggerFactory ??= _serviceProvider.GetRequiredService<ILoggerFactory>();
+        private ILoggerFactory LoggerFactory => field ??= _serviceProvider.GetRequiredService<ILoggerFactory>();
         private readonly IServiceProvider _serviceProvider;
         private readonly IOptionsMonitor<HttpClientFactoryOptions> _optionsMonitor;
 
         public LoggingHttpMessageHandlerBuilderFilter(IServiceProvider serviceProvider, IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor)
         {
-            ThrowHelper.ThrowIfNull(serviceProvider);
-            ThrowHelper.ThrowIfNull(optionsMonitor);
+            ArgumentNullException.ThrowIfNull(serviceProvider);
+            ArgumentNullException.ThrowIfNull(optionsMonitor);
 
             _serviceProvider = serviceProvider;
             _optionsMonitor = optionsMonitor;
@@ -31,7 +30,7 @@ namespace Microsoft.Extensions.Http
 
         public Action<HttpMessageHandlerBuilder> Configure(Action<HttpMessageHandlerBuilder> next)
         {
-            ThrowHelper.ThrowIfNull(next);
+            ArgumentNullException.ThrowIfNull(next);
 
             return (builder) =>
             {

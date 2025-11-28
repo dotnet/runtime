@@ -31,7 +31,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                 var proxy = new AssemblyCatalogDebuggerProxy(catalog);
 
-                EqualityExtensions.CheckSequenceEquals(catalog.Parts, proxy.Parts);
+                EqualityExtensions.CheckSequenceEqual(catalog.Parts, proxy.Parts);
             }
         }
 

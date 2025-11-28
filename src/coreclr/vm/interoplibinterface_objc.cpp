@@ -336,7 +336,7 @@ void* ObjCMarshalNative::GetPropagatingExceptionCallback(
         if (CallAvailableUnhandledExceptionPropagation())
         {
             gc.throwableRef = ObjectFromHandle(throwable);
-            gc.methodRef = method->GetStubMethodInfo();
+            gc.methodRef = method->AllocateStubMethodInfo();
 
             callback = CallInvokeUnhandledExceptionPropagation(
                 &gc.throwableRef,

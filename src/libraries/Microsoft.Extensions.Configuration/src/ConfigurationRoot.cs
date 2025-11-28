@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="providers">The <see cref="IConfigurationProvider"/>s for this configuration.</param>
         public ConfigurationRoot(IList<IConfigurationProvider> providers)
         {
-            ThrowHelper.ThrowIfNull(providers);
+            ArgumentNullException.ThrowIfNull(providers);
 
             _providers = providers;
             _changeTokenRegistrations = new List<IDisposable>(providers.Count);

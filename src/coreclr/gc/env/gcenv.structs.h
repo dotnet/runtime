@@ -44,10 +44,6 @@ public:
 
 #else // TARGET_UNIX
 
-#ifndef _INC_WINDOWS
-extern "C" uint32_t __stdcall GetCurrentThreadId();
-#endif
-
 class EEThreadId
 {
     uint64_t m_uiId;
@@ -70,38 +66,5 @@ public:
 };
 
 #endif // TARGET_UNIX
-
-#ifndef _INC_WINDOWS
-
-#ifdef TARGET_UNIX
-
-typedef struct _RTL_CRITICAL_SECTION {
-    pthread_mutex_t mutex;
-} CRITICAL_SECTION, RTL_CRITICAL_SECTION, *PRTL_CRITICAL_SECTION;
-
-#else
-
-#pragma pack(push, 8)
-
-typedef struct _RTL_CRITICAL_SECTION {
-    void* DebugInfo;
-
-    //
-    //  The following three fields control entering and exiting the critical
-    //  section for the resource
-    //
-
-    int32_t LockCount;
-    int32_t RecursionCount;
-    HANDLE OwningThread;        // from the thread's ClientId->UniqueThread
-    HANDLE LockSemaphore;
-    uintptr_t SpinCount;        // force size on 64-bit systems when packed
-} CRITICAL_SECTION, RTL_CRITICAL_SECTION, *PRTL_CRITICAL_SECTION;
-
-#pragma pack(pop)
-
-#endif
-
-#endif // _INC_WINDOWS
 
 #endif // __GCENV_STRUCTS_INCLUDED__

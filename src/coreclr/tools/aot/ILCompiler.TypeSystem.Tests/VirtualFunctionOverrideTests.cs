@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -43,12 +44,12 @@ namespace TypeSystemTests
             // Ensure MethodImpl based overriding works for MethodSpecs
             //
 
-            MetadataType interfaceType = _testModule.GetType("VirtualFunctionOverride", "IIFaceWithGenericMethod");
+            MetadataType interfaceType = _testModule.GetType("VirtualFunctionOverride"u8, "IIFaceWithGenericMethod"u8);
             MethodDesc interfaceMethod = null;
 
             foreach(MethodDesc m in interfaceType.GetMethods())
             {
-                if (m.Name == "GenMethod")
+                if (m.GetName() == "GenMethod")
                 {
                     interfaceMethod = m;
                     break;
@@ -56,11 +57,11 @@ namespace TypeSystemTests
             }
             Assert.NotNull(interfaceMethod);
 
-            MetadataType objectType = _testModule.GetType("VirtualFunctionOverride", "HasMethodInterfaceOverrideOfGenericMethod");
+            MetadataType objectType = _testModule.GetType("VirtualFunctionOverride"u8, "HasMethodInterfaceOverrideOfGenericMethod"u8);
             MethodDesc expectedVirtualMethod = null;
             foreach (MethodDesc m in objectType.GetMethods())
             {
-                if (m.Name.Contains("GenMethod"))
+                if (m.GetName().Contains("GenMethod"))
                 {
                     expectedVirtualMethod = m;
                     break;
@@ -77,11 +78,11 @@ namespace TypeSystemTests
             // Verifies that virtual dispatch to a non-generic method on a generic instantiation works
             DefType objectType = _context.GetWellKnownType(WellKnownType.Object);
             MethodSignature toStringSig = new MethodSignature(MethodSignatureFlags.None, 0, _stringType, Array.Empty<TypeDesc>());
-            MethodDesc objectToString = objectType.GetMethod("ToString", toStringSig);
+            MethodDesc objectToString = objectType.GetMethod("ToString"u8, toStringSig);
             Assert.NotNull(objectToString);
-            MetadataType openTestType = _testModule.GetType("VirtualFunctionOverride", "SimpleGeneric`1");
+            MetadataType openTestType = _testModule.GetType("VirtualFunctionOverride"u8, "SimpleGeneric`1"u8);
             InstantiatedType testInstance = openTestType.MakeInstantiatedType(objectType);
-            MethodDesc targetOnInstance = testInstance.GetMethod("ToString", toStringSig);
+            MethodDesc targetOnInstance = testInstance.GetMethod("ToString"u8, toStringSig);
 
             MethodDesc targetMethod = testInstance.FindVirtualFunctionTargetMethodOnObjectType(objectToString);
             Assert.Equal(targetOnInstance, targetMethod);
@@ -90,17 +91,17 @@ namespace TypeSystemTests
         [Fact]
         public void TestVirtualDispatchOnGenericTypeWithOverload()
         {
-            MetadataType openDerived = _testModule.GetType("VirtualFunctionOverride", "DerivedGenericWithOverload`1");
+            MetadataType openDerived = _testModule.GetType("VirtualFunctionOverride"u8, "DerivedGenericWithOverload`1"u8);
             MetadataType derivedInstance = openDerived.MakeInstantiatedType(_stringType);
             MetadataType baseInstance = (MetadataType)derivedInstance.BaseType;
 
-            MethodDesc baseNongenericOverload = baseInstance.GetMethod("MyMethod", new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { _stringType }));
-            MethodDesc derivedNongenericOverload = derivedInstance.GetMethod("MyMethod", new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { _stringType }));
+            MethodDesc baseNongenericOverload = baseInstance.GetMethod("MyMethod"u8, new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { _stringType }));
+            MethodDesc derivedNongenericOverload = derivedInstance.GetMethod("MyMethod"u8, new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { _stringType }));
             MethodDesc nongenericTargetOverload = derivedInstance.FindVirtualFunctionTargetMethodOnObjectType(baseNongenericOverload);
             Assert.Equal(derivedNongenericOverload, nongenericTargetOverload);
 
-            MethodDesc baseGenericOverload = baseInstance.GetMethod("MyMethod", new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { _context.GetSignatureVariable(0, false) }));
-            MethodDesc derivedGenericOverload = derivedInstance.GetMethod("MyMethod", new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { _context.GetSignatureVariable(0, false) }));
+            MethodDesc baseGenericOverload = baseInstance.GetMethod("MyMethod"u8, new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { _context.GetSignatureVariable(0, false) }));
+            MethodDesc derivedGenericOverload = derivedInstance.GetMethod("MyMethod"u8, new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { _context.GetSignatureVariable(0, false) }));
             MethodDesc genericTargetOverload = derivedInstance.FindVirtualFunctionTargetMethodOnObjectType(baseGenericOverload);
             Assert.Equal(derivedGenericOverload, genericTargetOverload);
         }
@@ -108,9 +109,9 @@ namespace TypeSystemTests
         [Fact]
         public void TestFinalizeOverrideChecking()
         {
-            MetadataType classWithFinalizer = _testModule.GetType("VirtualFunctionOverride", "ClassWithFinalizer");
+            MetadataType classWithFinalizer = _testModule.GetType("VirtualFunctionOverride"u8, "ClassWithFinalizer"u8);
             DefType objectType = _testModule.Context.GetWellKnownType(WellKnownType.Object);
-            MethodDesc finalizeMethod = objectType.GetMethod("Finalize", new MethodSignature(MethodSignatureFlags.None, 0, _voidType, Array.Empty<TypeDesc>()));
+            MethodDesc finalizeMethod = objectType.GetMethod("Finalize"u8, new MethodSignature(MethodSignatureFlags.None, 0, _voidType, Array.Empty<TypeDesc>()));
 
             MethodDesc actualFinalizer = classWithFinalizer.FindVirtualFunctionTargetMethodOnObjectType(finalizeMethod);
             Assert.NotNull(actualFinalizer);
@@ -125,11 +126,11 @@ namespace TypeSystemTests
             //
 
             var ilModule = _context.GetModuleForSimpleName("ILTestAssembly");
-            var explicitOverrideClass = ilModule.GetType("VirtualFunctionOverride", "ExplicitOverride");
+            var explicitOverrideClass = ilModule.GetType("VirtualFunctionOverride"u8, "ExplicitOverride"u8);
 
-            var myGetHashCodeMethod = explicitOverrideClass.GetMethod("MyGetHashCode", null);
+            var myGetHashCodeMethod = explicitOverrideClass.GetMethod("MyGetHashCode"u8, null);
 
-            var objectGetHashCodeMethod = _context.GetWellKnownType(WellKnownType.Object).GetMethod("GetHashCode", null);
+            var objectGetHashCodeMethod = _context.GetWellKnownType(WellKnownType.Object).GetMethod("GetHashCode"u8, null);
 
             var foundOverride = explicitOverrideClass.FindVirtualFunctionTargetMethodOnObjectType(objectGetHashCodeMethod);
 
@@ -141,9 +142,9 @@ namespace TypeSystemTests
         {
             var algo = new MetadataVirtualMethodAlgorithm();
             var ilModule = _context.GetModuleForSimpleName("ILTestAssembly");
-            MetadataType myDerived2Type = ilModule.GetType("VirtualFunctionOverride", "MyDerived2");
+            MetadataType myDerived2Type = ilModule.GetType("VirtualFunctionOverride"u8, "MyDerived2"u8);
             Assert.NotNull(myDerived2Type);
-            MethodDesc method = myDerived2Type.GetMethod("get_foo", null);
+            MethodDesc method = myDerived2Type.GetMethod("get_foo"u8, null);
             Assert.NotNull(method);
 
             MethodDesc virtualMethod = algo.FindVirtualFunctionTargetMethodOnObjectType(method, myDerived2Type);
@@ -156,10 +157,10 @@ namespace TypeSystemTests
         {
             var algo = new MetadataVirtualMethodAlgorithm();
             var ilModule = _context.GetModuleForSimpleName("ILTestAssembly");
-            MetadataType myDerivedType = ilModule.GetType("MethodImplOverride1", "Derived");
-            MetadataType baseType = ilModule.GetType("MethodImplOverride1", "Base`2").MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32), _context.GetWellKnownType(WellKnownType.Int32));
+            MetadataType myDerivedType = ilModule.GetType("MethodImplOverride1"u8, "Derived"u8);
+            MetadataType baseType = ilModule.GetType("MethodImplOverride1"u8, "Base`2"u8).MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32), _context.GetWellKnownType(WellKnownType.Int32));
             var csModule = _context.GetModuleForSimpleName("CoreTestAssembly");
-            var myGenericType = csModule.GetType("GenericTypes", "GenericClass`1");
+            var myGenericType = csModule.GetType("GenericTypes"u8, "GenericClass`1"u8);
             var myGenericTypeInstantiatedOverBang0 = myGenericType.MakeInstantiatedType(_context.GetSignatureVariable(0, false));
             var myGenericTypeInstantiatedOverBang0ByRef = myGenericTypeInstantiatedOverBang0.MakeByRefType();
             var myGenericTypeInstantiatedOverBang1 = myGenericType.MakeInstantiatedType(_context.GetSignatureVariable(1, false));
@@ -167,13 +168,13 @@ namespace TypeSystemTests
             var stringType = _context.GetWellKnownType(WellKnownType.String);
 
             MethodSignature sigBang0Bang1 = new MethodSignature(0, 0, stringType, new TypeDesc[] { myGenericTypeInstantiatedOverBang0ByRef, myGenericTypeInstantiatedOverBang1ByRef });
-            MethodDesc baseMethod0_1 = baseType.GetMethod("Method", sigBang0Bang1);
+            MethodDesc baseMethod0_1 = baseType.GetMethod("Method"u8, sigBang0Bang1);
 
             MethodDesc virtualMethodBang0Bang1 = algo.FindVirtualFunctionTargetMethodOnObjectType(baseMethod0_1, myDerivedType);
             Assert.Equal(virtualMethodBang0Bang1.OwningType, myDerivedType);
 
             MethodSignature sigBang1Bang0 = new MethodSignature(0, 0, stringType, new TypeDesc[] { myGenericTypeInstantiatedOverBang1ByRef, myGenericTypeInstantiatedOverBang0ByRef });
-            MethodDesc baseMethod1_0 = baseType.GetMethod("Method", sigBang1Bang0);
+            MethodDesc baseMethod1_0 = baseType.GetMethod("Method"u8, sigBang1Bang0);
 
             MethodDesc virtualMethodBang1Bang0 = algo.FindVirtualFunctionTargetMethodOnObjectType(baseMethod1_0, myDerivedType);
             Assert.Equal(virtualMethodBang1Bang0.OwningType, baseType);
@@ -189,19 +190,19 @@ namespace TypeSystemTests
             var objectType = _context.GetWellKnownType(WellKnownType.Object);
             var stringType = _context.GetWellKnownType(WellKnownType.String);
             var intType = _context.GetWellKnownType(WellKnownType.Int32);
-            var myGenericType = csModule.GetType("GenericTypes", "GenericClass`1");
+            var myGenericType = csModule.GetType("GenericTypes"u8, "GenericClass`1"u8);
             var genericTypeOfInt = myGenericType.MakeInstantiatedType(intType);
             var doubleArrayType = doubleType.MakeArrayType();
 
-            MetadataType myDerivedType = ilModule.GetType("MethodImplOverride1", "DerivedGenericsShape`1").MakeInstantiatedType(doubleType);
-            MetadataType baseType = ilModule.GetType("MethodImplOverride1", "BaseTestGenericsShape`4").MakeInstantiatedType(objectType, stringType, genericTypeOfInt, doubleArrayType);
+            MetadataType myDerivedType = ilModule.GetType("MethodImplOverride1"u8, "DerivedGenericsShape`1"u8).MakeInstantiatedType(doubleType);
+            MetadataType baseType = ilModule.GetType("MethodImplOverride1"u8, "BaseTestGenericsShape`4"u8).MakeInstantiatedType(objectType, stringType, genericTypeOfInt, doubleArrayType);
 
             var bang0Type = _context.GetSignatureVariable(0, false);
             var bang1Type = _context.GetSignatureVariable(1, false);
             var bang2Type = _context.GetSignatureVariable(2, false);
 
             MethodSignature sigBang0Bang1 = new MethodSignature(0, 0, stringType, new TypeDesc[] { bang0Type, bang1Type });
-            MethodDesc baseMethod0_1 = baseType.GetMethod("Method", sigBang0Bang1);
+            MethodDesc baseMethod0_1 = baseType.GetMethod("Method"u8, sigBang0Bang1);
 
             MethodDesc virtualMethodBang0Bang1 = algo.FindVirtualFunctionTargetMethodOnObjectType(baseMethod0_1, myDerivedType);
             Assert.Equal(virtualMethodBang0Bang1.OwningType, baseType);
@@ -211,7 +212,7 @@ namespace TypeSystemTests
             // it in an ad hoc manner
             foreach (MethodDesc method in baseType.GetMethods())
             {
-                if (method.Name != "Method")
+                if (method.GetName() != "Method")
                     continue;
 
                 if (method.GetTypicalMethodDefinition().Signature[0] == bang2Type)
@@ -236,9 +237,9 @@ namespace TypeSystemTests
             MethodSignature sigBang1Bang0 = new MethodSignature(0, 0, stringType, new TypeDesc[] { bang1Type, bang0Type });
 
             var iMultiGeneric = type.ExplicitlyImplementedInterfaces.First();
-            var method0_1 = iMultiGeneric.GetMethod("Func", sigBang0Bang1);
+            var method0_1 = iMultiGeneric.GetMethod("Func"u8, sigBang0Bang1);
             Assert.NotNull(method0_1);
-            var method1_0 = iMultiGeneric.GetMethod("Func", sigBang1Bang0);
+            var method1_0 = iMultiGeneric.GetMethod("Func"u8, sigBang1Bang0);
             Assert.NotNull(method1_0);
 
             md1 = algo.ResolveInterfaceMethodToVirtualMethodOnType(method0_1, type);
@@ -255,9 +256,9 @@ namespace TypeSystemTests
             var bang0Type = _context.GetSignatureVariable(0, false);
             var bang1Type = _context.GetSignatureVariable(1, false);
 
-            var implementorType = ilModule.GetType("MethodImplOverride1", "Implementor`2").MakeInstantiatedType(intType, intType);
-            var partialIntImplementorType = ilModule.GetType("MethodImplOverride1", "PartialIntImplementor`1").MakeInstantiatedType(intType);
-            var intImplementorType = ilModule.GetType("MethodImplOverride1", "IntImplementor");
+            var implementorType = ilModule.GetType("MethodImplOverride1"u8, "Implementor`2"u8).MakeInstantiatedType(intType, intType);
+            var partialIntImplementorType = ilModule.GetType("MethodImplOverride1"u8, "PartialIntImplementor`1"u8).MakeInstantiatedType(intType);
+            var intImplementorType = ilModule.GetType("MethodImplOverride1"u8, "IntImplementor"u8);
 
             ResolveInterfaceDispatch_ForMultiGenericTest(implementorType, out var md1, out var md2);
             Assert.Equal(bang0Type, md1.GetTypicalMethodDefinition().Signature[0]);
@@ -272,15 +273,15 @@ namespace TypeSystemTests
             Assert.Equal(bang0Type, md2.GetTypicalMethodDefinition().Signature[1]);
 
             ResolveInterfaceDispatch_ForMultiGenericTest(intImplementorType, out md1, out md2);
-            Assert.Contains("!0,!1", md1.Name);
-            Assert.Contains("!1,!0", md2.Name);
+            Assert.Contains("!0,!1", md1.GetName());
+            Assert.Contains("!1,!0", md2.GetName());
         }
 
         [Fact]
         public void TestFunctionPointerOverloads()
         {
-            MetadataType baseClass = _testModule.GetType("VirtualFunctionOverride", "FunctionPointerOverloadBase");
-            MetadataType derivedClass = _testModule.GetType("VirtualFunctionOverride", "FunctionPointerOverloadDerived");
+            MetadataType baseClass = _testModule.GetType("VirtualFunctionOverride"u8, "FunctionPointerOverloadBase"u8);
+            MetadataType derivedClass = _testModule.GetType("VirtualFunctionOverride"u8, "FunctionPointerOverloadDerived"u8);
 
             var resolvedMethods = new List<MethodDesc>();
             foreach (MethodDesc baseMethod in baseClass.GetVirtualMethods())
@@ -410,12 +411,12 @@ namespace TypeSystemTests
             this._logger.WriteLine(exactScenarioName);
             var ilModule = _context.GetModuleForSimpleName("ILTestAssembly");
             (string typeToConstructNamespace, string typeToConstructTypeName) = SplitIntoNameAndNamespace(typeToConstruct);
-            var constructedType = ilModule.GetType(typeToConstructNamespace, typeToConstructTypeName);
+            var constructedType = ilModule.GetType(Encoding.UTF8.GetBytes(typeToConstructNamespace), Encoding.UTF8.GetBytes(typeToConstructTypeName));
 
             (string typeToCallNamespace, string typeToCallTypeName) = SplitIntoNameAndNamespace(typeOfMethodToCallOn);
-            var typeToCall = ilModule.GetType(typeToCallNamespace, typeToCallTypeName);
+            var typeToCall = ilModule.GetType(Encoding.UTF8.GetBytes(typeToCallNamespace), Encoding.UTF8.GetBytes(typeToCallTypeName));
 
-            MethodDesc callMethod = typeToCall.GetMethod(methodName, null);
+            MethodDesc callMethod = typeToCall.GetMethod(Encoding.UTF8.GetBytes(methodName), null);
             Assert.NotNull(callMethod);
 
             MethodDesc resolvedMethod = constructedType.FindVirtualFunctionTargetMethodOnObjectType(callMethod);
@@ -440,21 +441,21 @@ namespace TypeSystemTests
         {
             this._logger.WriteLine(exactScenarioName);
 
-            MetadataType derivedClass = _testModule.GetType("VirtualFunctionOverride", typeToConstruct);
+            MetadataType derivedClass = _testModule.GetType("VirtualFunctionOverride"u8, Encoding.UTF8.GetBytes(typeToConstruct));
             MetadataType baseClass = derivedClass;
 
             while (baseClass != baseClass.Context.GetWellKnownType(WellKnownType.Object))
             {
                 this._logger.WriteLine("-----");
                 this._logger.WriteLine(baseClass.ToString());
-                MethodDesc callMethod = baseClass.GetMethod("FromType", null);
+                MethodDesc callMethod = baseClass.GetMethod("FromType"u8, null);
                 this._logger.WriteLine(callMethod.ToString());
                 Assert.NotNull(callMethod);
 
                 MethodDesc resolvedMethod = derivedClass.FindVirtualFunctionTargetMethodOnObjectType(callMethod);
                 this._logger.WriteLine(resolvedMethod.ToString());
 
-                Assert.Equal(typeToConstruct, ((EcmaType)((EcmaMethod)resolvedMethod).OwningType).Name);
+                Assert.Equal(typeToConstruct, ((EcmaType)((EcmaMethod)resolvedMethod).OwningType).GetName());
 
                 baseClass = (MetadataType)baseClass.BaseType;
             }

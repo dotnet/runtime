@@ -83,7 +83,7 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<Uri>(new("http://example.com"), """{"type":["string","null"],"format":"uri"}""");
             yield return new TestData<Version>(new(1, 2, 3, 4), ExpectedJsonSchema: """{"$comment": "Represents a version string.", "type":["string","null"],"pattern":"^\\d+(\\.\\d+){1,3}$"}""");
             yield return new TestData<JsonDocument>(JsonDocument.Parse("""[{ "x" : 42 }]"""), ExpectedJsonSchema: "true");
-            yield return new TestData<JsonElement>(JsonDocument.Parse("""[{ "x" : 42 }]""").RootElement, ExpectedJsonSchema: "true");
+            yield return new TestData<JsonElement>(JsonElement.Parse("""[{ "x" : 42 }]"""), ExpectedJsonSchema: "true");
             yield return new TestData<JsonNode>(JsonNode.Parse("""[{ "x" : 42 }]"""), ExpectedJsonSchema: "true");
             yield return new TestData<JsonValue>((JsonValue)42, ExpectedJsonSchema: "true");
             yield return new TestData<JsonObject>(new() { ["x"] = 42 }, ExpectedJsonSchema: """{"type":["object","null"]}""");
@@ -103,7 +103,7 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<int?>(42, AdditionalValues: [null], ExpectedJsonSchema: """{"type":["integer","null"]}""");
             yield return new TestData<double?>(3.14, AdditionalValues: [null], ExpectedJsonSchema: """{"type":["number","null"]}""");
             yield return new TestData<Guid?>(Guid.Empty, AdditionalValues: [null], ExpectedJsonSchema: """{"type":["string","null"],"format":"uuid"}""");
-            yield return new TestData<JsonElement?>(JsonDocument.Parse("{}").RootElement, AdditionalValues: [null], ExpectedJsonSchema: "true");
+            yield return new TestData<JsonElement?>(JsonElement.Parse("{}"), AdditionalValues: [null], ExpectedJsonSchema: "true");
             yield return new TestData<IntEnum?>(IntEnum.A, AdditionalValues: [null], ExpectedJsonSchema: """{"type":["integer","null"]}""");
             yield return new TestData<StringEnum?>(StringEnum.A, AdditionalValues: [null], ExpectedJsonSchema: """{"enum":["A","B","C",null]}""");
             yield return new TestData<SimpleRecordStruct?>(
@@ -120,6 +120,18 @@ namespace System.Text.Json.Schema.Tests
                     }
                 }
                 """);
+
+            yield return new TestData<int?>(
+                Value: 42,
+                AdditionalValues: [null],
+                ExpectedJsonSchema: """{"type":["integer","null"]}""",
+                Options: new() { TreatNullObliviousAsNonNullable = true });
+
+            yield return new TestData<DateTimeOffset?>(
+                Value: DateTimeOffset.MinValue,
+                AdditionalValues: [null],
+                ExpectedJsonSchema: """{"type":["string","null"],"format":"date-time"}""",
+                Options: new() { TreatNullObliviousAsNonNullable = true });
 
             // User-defined POCOs
             yield return new TestData<SimplePoco>(
@@ -1102,6 +1114,18 @@ namespace System.Text.Json.Schema.Tests
                         }
                         """);
 
+            yield return new TestData<ClassWithPropertiesUsingCustomConverters>(
+                Value: new() { Prop1 = new() , Prop2 = new() },
+                ExpectedJsonSchema: """
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                          "Prop1": true,
+                          "Prop2": true,
+                        }
+                    }
+                    """);
+
             // Collection types
             yield return new TestData<int[]>([1, 2, 3], ExpectedJsonSchema: """{"type":["array","null"],"items":{"type":"integer"}}""");
             yield return new TestData<List<bool>>([false, true, false], ExpectedJsonSchema: """{"type":["array","null"],"items":{"type":"boolean"}}""");
@@ -1584,6 +1608,29 @@ namespace System.Text.Json.Schema.Tests
             JsonSerializerOptions? SerializerOptions { get; }
 
             IEnumerable<ITestData> GetTestDataForAllValues();
+        }
+
+        public class ClassWithPropertiesUsingCustomConverters
+        {
+            [JsonPropertyOrder(0)]
+            public ClassWithCustomConverter1 Prop1 { get; set; }
+            [JsonPropertyOrder(1)]
+            public ClassWithCustomConverter2 Prop2 { get; set; }
+
+            [JsonConverter(typeof(CustomConverter<ClassWithCustomConverter1>))]
+            public class ClassWithCustomConverter1;
+
+            [JsonConverter(typeof(CustomConverter<ClassWithCustomConverter2>))]
+            public class ClassWithCustomConverter2;
+
+            public sealed class CustomConverter<T> : JsonConverter<T>
+            {
+                public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                    => default;
+
+                public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+                    => writer.WriteNullValue();
+            }
         }
 
         private static TAttribute? GetCustomAttribute<TAttribute>(ICustomAttributeProvider? provider, bool inherit = false) where TAttribute : Attribute

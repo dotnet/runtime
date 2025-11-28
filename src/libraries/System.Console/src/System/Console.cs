@@ -813,6 +813,10 @@ namespace System
             Out.WriteLine(value);
         }
 
+        /// <summary>
+        /// Writes the specified read-only span of characters, followed by the current line terminator, to the standard output stream.
+        /// </summary>
+        /// <param name="value">The span of characters to write.</param>
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void WriteLine(ReadOnlySpan<char> value)
         {
@@ -975,6 +979,10 @@ namespace System
             Out.Write(value);
         }
 
+        /// <summary>
+        /// Writes the specified read-only span of characters to the standard output stream.
+        /// </summary>
+        /// <param name="value">The span of characters to write.</param>
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void Write(ReadOnlySpan<char> value)
         {

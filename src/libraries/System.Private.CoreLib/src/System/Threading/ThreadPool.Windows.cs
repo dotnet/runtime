@@ -56,10 +56,6 @@ namespace System.Threading
             WindowsThreadPool.BindHandle(osHandle) :
             BindHandlePortableCore(osHandle);
 
-#if !CORECLR
-        internal static bool EnsureConfigInitialized() => true;
-#endif
-
         internal static void InitializeForThreadPoolThread()
         {
             if (ThreadPool.UseWindowsThreadPool)
@@ -71,10 +67,10 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void IncrementCompletedWorkItemCount() => WindowsThreadPool.IncrementCompletedWorkItemCount();
 
-        internal static object GetOrCreateThreadLocalCompletionCountObject() =>
+        internal static ThreadInt64PersistentCounter.ThreadLocalNode GetOrCreateThreadLocalCompletionCountNode() =>
             ThreadPool.UseWindowsThreadPool ?
-            WindowsThreadPool.GetOrCreateThreadLocalCompletionCountObject() :
-            PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
+            WindowsThreadPool.GetOrCreateThreadLocalCompletionCountNode() :
+            PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountNode();
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads) =>
             ThreadPool.UseWindowsThreadPool ?
@@ -136,10 +132,10 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool NotifyWorkItemComplete(object threadLocalCompletionCountObject, int currentTimeMs) =>
+        internal static bool NotifyWorkItemComplete(ThreadInt64PersistentCounter.ThreadLocalNode threadLocalCompletionCountNode, int currentTimeMs) =>
             ThreadPool.UseWindowsThreadPool ?
-            WindowsThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTimeMs) :
-            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTimeMs);
+            WindowsThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountNode, currentTimeMs) :
+            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(threadLocalCompletionCountNode, currentTimeMs);
 
         internal static bool NotifyThreadBlocked() =>
             ThreadPool.UseWindowsThreadPool ?
@@ -161,7 +157,7 @@ namespace System.Threading
         /// <summary>
         /// This method is called to request a new thread pool worker to handle pending work.
         /// </summary>
-        internal static unsafe void RequestWorkerThread()
+        internal static void RequestWorkerThread()
         {
             if (ThreadPool.UseWindowsThreadPool)
             {

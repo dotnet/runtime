@@ -35,6 +35,7 @@ struct ComInit
 using ComMTA = ComInit<COINIT_MULTITHREADED>;
 void ValidationTests();
 void ValidationByRefTests();
+void ValidationClassInterfaceTests();
 
 int __cdecl main()
 {
@@ -52,6 +53,16 @@ int __cdecl main()
         CoreShimComActivation csact{ W("NETServer"), W("MiscTypesTesting") };
         ValidationTests();
         ValidationByRefTests();
+    }
+    catch (HRESULT hr)
+    {
+        ::printf("Test Failure: 0x%08x\n", hr);
+        return 101;
+    }
+
+    try
+    {
+        ValidationClassInterfaceTests();
     }
     catch (HRESULT hr)
     {
@@ -78,13 +89,30 @@ struct VariantMarshalTest
     }
 };
 
+class InterfaceImpl :
+    public UnknownImpl,
+    public IInterface2
+{
+public: // IInterface1
+public: // IInterface2
+public: // IUnknown
+    STDMETHOD(QueryInterface)(
+        /* [in] */ REFIID riid,
+        /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
+    {
+        return DoQueryInterface(riid, ppvObject, static_cast<IInterface1 *>(this), static_cast<IInterface2 *>(this));
+    }
+
+    DEFINE_REF_COUNTING();
+};
+
 void ValidationTests()
 {
     ::printf(__FUNCTION__ "() through CoCreateInstance...\n");
 
     HRESULT hr;
 
-    IMiscTypesTesting *miscTypesTesting;
+    ComSmartPtr<IMiscTypesTesting> miscTypesTesting;
     THROW_IF_FAILED(::CoCreateInstance(CLSID_MiscTypesTesting, nullptr, CLSCTX_INPROC, IID_IMiscTypesTesting, (void**)&miscTypesTesting));
 
     ::printf("-- Primitives <=> VARIANT...\n");
@@ -320,6 +348,16 @@ void ValidationTests()
         HRESULT hr = miscTypesTesting->Marshal_Variant(args.Input, &args.Result);
         THROW_FAIL_IF_FALSE(hr == 0x80131531); // COR_E_INVALIDOLEVARIANTTYPE
     }
+
+    ::printf("-- Interfaces...\n");
+    {
+        ComSmartPtr<InterfaceImpl> iface;
+        iface.Attach(new InterfaceImpl());
+
+        ComSmartPtr<IInterface2> result;
+        HRESULT hr = miscTypesTesting->Marshal_Interface(iface, &result);
+        THROW_IF_FAILED(hr);
+    }
 }
 
 void ValidationByRefTests()
@@ -328,7 +366,7 @@ void ValidationByRefTests()
 
     HRESULT hr;
 
-    IMiscTypesTesting *miscTypesTesting;
+    ComSmartPtr<IMiscTypesTesting> miscTypesTesting;
     THROW_IF_FAILED(::CoCreateInstance(CLSID_MiscTypesTesting, nullptr, CLSCTX_INPROC, IID_IMiscTypesTesting, (void**)&miscTypesTesting));
 
     ::printf("-- Primitives <=> BYREF VARIANT...\n");
@@ -365,7 +403,7 @@ void ValidationByRefTests()
         THROW_FAIL_IF_FALSE(CompareStringOrdinal(expected, -1, value, -1, FALSE) == CSTR_EQUAL);
         ::SysFreeString(expected);
     }
-    
+
     ::printf("-- System.Guid <=> BYREF VARIANT...\n");
     {
         /* 8EFAD956-B33D-46CB-90F4-45F55BA68A96 */
@@ -378,7 +416,7 @@ void ValidationByRefTests()
         THROW_FAIL_IF_FALSE(memcmp(V_RECORD(&guidVar.Input), &expected, sizeof(expected)) == 0);
         THROW_IF_FAILED(miscTypesTesting->Marshal_Instance_Variant(W("{00000000-0000-0000-0000-000000000000}"), &guidVar.Result));
         THROW_FAIL_IF_FALSE(V_VT(&guidVar.Result) == VT_RECORD);
-        
+
         // Use the Guid as input.
         VariantMarshalTest args{};
         THROW_IF_FAILED(::VariantCopy(&args.Input, &guidVar.Input));
@@ -397,5 +435,49 @@ void ValidationByRefTests()
         V_VT(&args.Result) = VT_BYREF|VT_I4;
         V_I4REF(&args.Result) = &value;
         THROW_FAIL_IF_FALSE(miscTypesTesting->Marshal_ByRefVariant(&args.Result, args.Input) == 0x80004002); // COR_E_INVALIDCAST
+    }
+}
+
+void ValidationClassInterfaceTests()
+{
+    ::printf(__FUNCTION__ "() through CoCreateInstance...\n");
+
+    HRESULT hr;
+
+    {
+        CoreShimComActivation csact{ W("NETServer"), W("ClassInterfaceNotSetTesting") };
+        ::printf("-- ClassInterfaceType not set ...\n");
+
+        ComSmartPtr<IUnknown> pUnk;
+        THROW_IF_FAILED(::CoCreateInstance(CLSID_ClassInterfaceNotSetTesting, nullptr, CLSCTX_INPROC, IID_IUnknown, (void**)&pUnk));
+        ComSmartPtr<IDispatch> pDisp;
+        THROW_IF_FAILED(::CoCreateInstance(CLSID_ClassInterfaceNotSetTesting, nullptr, CLSCTX_INPROC, IID_IDispatch, (void**)&pDisp));
+    }
+    {
+        CoreShimComActivation csact{ W("NETServer"), W("ClassInterfaceNoneTesting") };
+        ::printf("-- ClassInterfaceType.None ...\n");
+
+        ComSmartPtr<IUnknown> pUnk;
+        THROW_IF_FAILED(::CoCreateInstance(CLSID_ClassInterfaceNoneTesting, nullptr, CLSCTX_INPROC, IID_IUnknown, (void**)&pUnk));
+        ComSmartPtr<IDispatch> pDisp;
+        THROW_FAIL_IF_FALSE(E_NOINTERFACE == ::CoCreateInstance(CLSID_ClassInterfaceNoneTesting, nullptr, CLSCTX_INPROC, IID_IDispatch, (void**)&pDisp));
+    }
+    {
+        CoreShimComActivation csact{ W("NETServer"), W("ClassInterfaceAutoDispatchTesting") };
+        ::printf("-- ClassInterfaceType.AutoDispatch ...\n");
+
+        ComSmartPtr<IUnknown> pUnk;
+        THROW_IF_FAILED(::CoCreateInstance(CLSID_ClassInterfaceAutoDispatchTesting, nullptr, CLSCTX_INPROC, IID_IUnknown, (void**)&pUnk));
+        ComSmartPtr<IDispatch> pDisp;
+        THROW_IF_FAILED(::CoCreateInstance(CLSID_ClassInterfaceAutoDispatchTesting, nullptr, CLSCTX_INPROC, IID_IDispatch, (void**)&pDisp));
+    }
+    {
+        CoreShimComActivation csact{ W("NETServer"), W("ClassInterfaceAutoDualTesting") };
+        ::printf("-- ClassInterfaceType.AutoDual ...\n");
+
+        ComSmartPtr<IUnknown> pUnk;
+        THROW_IF_FAILED(::CoCreateInstance(CLSID_ClassInterfaceAutoDualTesting, nullptr, CLSCTX_INPROC, IID_IUnknown, (void**)&pUnk));
+        ComSmartPtr<IDispatch> pDisp;
+        THROW_IF_FAILED(::CoCreateInstance(CLSID_ClassInterfaceAutoDualTesting, nullptr, CLSCTX_INPROC, IID_IDispatch, (void**)&pDisp));
     }
 }

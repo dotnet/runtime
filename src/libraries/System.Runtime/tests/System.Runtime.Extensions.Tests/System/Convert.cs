@@ -399,8 +399,8 @@ namespace System.Tests
                 // All whitespace characters.
                 yield return Tuple.Create<string, byte[]>(" \t\r\n", Array.Empty<byte>());
 
-                // Pad characters
-                yield return Tuple.Create<string, byte[]>("BQYHCAZ=", "0506070806".HexToByteArray());
+                // Pad characters (using valid encodings with zero unused bits per RFC 4648)
+                yield return Tuple.Create<string, byte[]>("BQYHCAY=", "0506070806".HexToByteArray());
                 yield return Tuple.Create<string, byte[]>("BQYHCA==", "05060708".HexToByteArray());
 
                 // Typical

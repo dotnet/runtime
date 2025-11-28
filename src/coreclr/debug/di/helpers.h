@@ -72,7 +72,7 @@ class BaseSmartPtr
 public:
     BaseSmartPtr () {
         // Ensure that these smart-ptrs are really ptr-sized.
-        static_assert_no_msg(sizeof(*this) == sizeof(void*));
+        static_assert(sizeof(*this) == sizeof(void*));
         m_ptr = NULL;
     }
     explicit BaseSmartPtr (TYPE * ptr) : m_ptr(NULL) {

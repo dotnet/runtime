@@ -273,7 +273,7 @@ public partial class Program
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static Vector128<short> GetVector128Int16One()
     {
-        return Vector128.Create((short)1);
+        return Vector128<short>.One;
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -350,7 +350,7 @@ public partial class Program
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static Vector256<int> GetVector256Int32One()
     {
-        return Vector256.Create(1);
+        return Vector256<int>.One;
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]

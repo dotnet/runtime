@@ -259,7 +259,7 @@ namespace System.Text
                 {
                     firstVector = Sse2.LoadAlignedVector128((ushort*)pBuffer);
                     secondVector = Sse2.LoadAlignedVector128((ushort*)pBuffer + SizeOfVector128InChars);
-                    Vector128<ushort> combinedVector = Sse2.Or(firstVector, secondVector);
+                    Vector128<ushort> combinedVector = firstVector | secondVector;
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
                     if (Sse41.IsSupported)
@@ -267,7 +267,7 @@ namespace System.Text
                     {
                         // If a non-Latin-1 bit is set in any WORD of the combined vector, we have seen non-Latin-1 data.
                         // Jump to the non-Latin-1 handler to figure out which particular vector contained non-Latin-1 data.
-                        if (!Sse41.TestZ(combinedVector, latin1MaskForTestZ))
+                        if ((combinedVector & latin1MaskForTestZ) != Vector128<ushort>.Zero)
                         {
                             goto FoundNonLatin1DataInFirstOrSecondVector;
                         }
@@ -312,7 +312,7 @@ namespace System.Text
             {
                 // If a non-Latin-1 bit is set in any WORD of the combined vector, we have seen non-Latin-1 data.
                 // Jump to the non-Latin-1 handler to figure out which particular vector contained non-Latin-1 data.
-                if (!Sse41.TestZ(firstVector, latin1MaskForTestZ))
+                if ((firstVector & latin1MaskForTestZ) != Vector128<ushort>.Zero)
                 {
                     goto FoundNonLatin1DataInFirstVector;
                 }
@@ -347,7 +347,7 @@ namespace System.Text
                 {
                     // If a non-Latin-1 bit is set in any WORD of the combined vector, we have seen non-Latin-1 data.
                     // Jump to the non-Latin-1 handler to figure out which particular vector contained non-Latin-1 data.
-                    if (!Sse41.TestZ(firstVector, latin1MaskForTestZ))
+                    if ((firstVector & latin1MaskForTestZ) != Vector128<ushort>.Zero)
                     {
                         goto FoundNonLatin1DataInFirstVector;
                     }
@@ -381,7 +381,7 @@ namespace System.Text
             if (Sse41.IsSupported)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
-                if (!Sse41.TestZ(firstVector, latin1MaskForTestZ))
+                if ((firstVector & latin1MaskForTestZ) != Vector128<ushort>.Zero)
                 {
                     goto FoundNonLatin1DataInFirstVector;
                 }
@@ -795,7 +795,7 @@ namespace System.Text
             if (Sse41.IsSupported)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
-                if (!Sse41.TestZ(utf16VectorFirst, latin1MaskForTestZ))
+                if ((utf16VectorFirst & latin1MaskForTestZ) != Vector128<short>.Zero)
                 {
                     return 0;
                 }
@@ -837,7 +837,7 @@ namespace System.Text
                 if (Sse41.IsSupported)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
-                    if (!Sse41.TestZ(utf16VectorFirst, latin1MaskForTestZ))
+                    if ((utf16VectorFirst & latin1MaskForTestZ) != Vector128<short>.Zero)
                     {
                         goto Finish;
                     }
@@ -871,14 +871,14 @@ namespace System.Text
 
                 utf16VectorFirst = Sse2.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements); // unaligned load
                 Vector128<short> utf16VectorSecond = Sse2.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements + SizeOfVector128 / sizeof(short)); // unaligned load
-                Vector128<short> combinedVector = Sse2.Or(utf16VectorFirst, utf16VectorSecond);
+                Vector128<short> combinedVector = utf16VectorFirst | utf16VectorSecond;
 
                 // See comments in GetIndexOfFirstNonLatin1Char_Sse2 for information about how this works.
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
                 if (Sse41.IsSupported)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
-                    if (!Sse41.TestZ(combinedVector, latin1MaskForTestZ))
+                    if ((combinedVector & latin1MaskForTestZ) != Vector128<short>.Zero)
                     {
                         goto FoundNonLatin1DataInLoop;
                     }
@@ -914,7 +914,7 @@ namespace System.Text
             if (Sse41.IsSupported)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
-                if (!Sse41.TestZ(utf16VectorFirst, latin1MaskForTestZ))
+                if ((utf16VectorFirst & latin1MaskForTestZ) != Vector128<short>.Zero)
                 {
                     goto Finish; // found non-Latin-1 data
                 }

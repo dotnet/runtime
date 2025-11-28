@@ -731,8 +731,8 @@ DWORD LCM(DWORD u, DWORD v)
     if (m_nGroups > 1)
     {
         m_enableGCCPUGroups = TRUE;
-        m_threadUseAllCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_UseAllCpuGroups, groupCount > 1) != 0;
-        m_threadAssignCpuGroups = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
+        m_threadUseAllCpuGroups = Configuration::GetKnobBooleanValue(W("System.Threading.Thread.UseAllCpuGroups"), CLRConfig::EXTERNAL_Thread_UseAllCpuGroups, groupCount > 1) != 0;
+        m_threadAssignCpuGroups = Configuration::GetKnobBooleanValue(W("System.Threading.Thread.AssignCpuGroups"), CLRConfig::EXTERNAL_Thread_AssignCpuGroups) != 0;
 
         // Save the processor group affinity of the initial thread
         GROUP_AFFINITY groupAffinity;
@@ -1923,35 +1923,6 @@ HRESULT validateTokenSig(
     return S_OK;
 }   // validateTokenSig()
 
-HRESULT GetImageRuntimeVersionString(PVOID pMetaData, LPCSTR* pString)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(pString);
-    STORAGESIGNATURE* pSig = (STORAGESIGNATURE*) pMetaData;
-
-    // Verify the signature.
-
-    // If signature didn't match, you shouldn't be here.
-    if (pSig->GetSignature() != STORAGE_MAGIC_SIG)
-        return CLDB_E_FILE_CORRUPT;
-
-    // The version started in version 1.1
-    if (pSig->GetMajorVer() < 1)
-        return CLDB_E_FILE_OLDVER;
-
-    if (pSig->GetMajorVer() == 1 && pSig->GetMinorVer() < 1)
-        return CLDB_E_FILE_OLDVER;
-
-    // Header data starts after signature.
-    *pString = (LPCSTR) pSig->pVersion;
-    return S_OK;
-}
-
 //*****************************************************************************
 // Convert a UTF8 string to Unicode, into a CQuickArray<WCHAR>.
 //*****************************************************************************
@@ -2340,7 +2311,7 @@ void PutLoongArch64JIR(UINT32 * pCode, INT64 imm38)
 
     UINT32 pcInstr = *pCode;
 
-    _ASSERTE(pcInstr == 0x1e00000e); // Must be pcaddu18i R14, 0
+    _ASSERTE(pcInstr == 0x1e000010); // Must be pcaddu18i t4, 0
 
     INT64 relOff = imm38 & 0x20000;
     INT64 imm = imm38 + relOff;
@@ -2359,6 +2330,55 @@ void PutLoongArch64JIR(UINT32 * pCode, INT64 imm38)
     *(pCode + 1) = pcInstr; // write the assembled instruction
 
     _ASSERTE(GetLoongArch64JIR(pCode) == imm38);
+}
+
+
+//*****************************************************************************
+//  Extract the PC-Relative offset from auipc + I-type adder (addi/ld/jalr)
+//*****************************************************************************
+INT64 GetRiscV64AuipcItype(UINT32 * pCode)
+{
+    enum
+    {
+        OpcodeAuipc = 0x00000017,
+        OpcodeAddi = 0x00000013,
+        OpcodeLd = 0x00003003,
+        OpcodeJalr = 0x00000067,
+        OpcodeUTypeMask = 0x0000007F,
+        OpcodeITypeMask = 0x0000307F,
+    };
+
+    UINT32 auipc = pCode[0];
+    _ASSERTE((auipc & OpcodeUTypeMask) == OpcodeAuipc);
+    int auipcRegDest = (auipc >> 7) & 0x1F;
+    _ASSERTE(auipcRegDest != 0);
+
+    INT64 hi20 = (INT32(auipc) >> 12) << 12;
+
+    UINT32 iType = pCode[1];
+    UINT32 opcode = iType & OpcodeITypeMask;
+    _ASSERTE(opcode == OpcodeAddi || opcode == OpcodeLd || opcode == OpcodeJalr);
+    int iTypeRegSrc = (iType >> 15) & 0x1F;
+    _ASSERTE(auipcRegDest == iTypeRegSrc);
+
+    INT64 lo12 = INT32(iType) >> 20;
+
+    return hi20 + lo12;
+}
+
+//*****************************************************************************
+//  Deposit the PC-Relative offset into auipc + I-type adder (addi/ld/jalr)
+//*****************************************************************************
+void PutRiscV64AuipcItype(UINT32 * pCode, INT64 offset)
+{
+    INT32 lo12 = (offset << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
+    INT32 hi20 = INT32(offset - lo12);
+    _ASSERTE(INT64(hi20) + INT64(lo12) == offset);
+
+    _ASSERTE(GetRiscV64AuipcItype(pCode) == 0);
+    pCode[0] |= hi20;
+    pCode[1] |= lo12 << 20;
+    _ASSERTE(GetRiscV64AuipcItype(pCode) == offset);
 }
 
 //======================================================================
@@ -2649,7 +2669,7 @@ namespace Com
         {
             STANDARD_VM_CONTRACT;
 
-            WCHAR wszClsid[GUID_STR_BUFFER_LEN];
+            WCHAR wszClsid[MINIPAL_GUID_BUFFER_LEN];
             if (GuidToLPWSTR(rclsid, wszClsid) == 0)
                 return E_UNEXPECTED;
 

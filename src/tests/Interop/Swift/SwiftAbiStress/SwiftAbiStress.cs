@@ -48,7 +48,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress10swiftFunc02a02a12a22a32a42a52a62a7Sis5Int16V_s5Int32Vs6UInt64Vs6UInt16VAA5F0_S0VAA0R3_S1Vs5UInt8VAA0R3_S2VtF")]
     private static extern nint SwiftFunc0(short a0, int a1, ulong a2, ushort a3, F0_S0 a4, F0_S1 a5, byte a6, F0_S2 a7);
 
@@ -102,7 +102,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress10swiftFunc12a02a12a22a3SiAA5F1_S0V_s5UInt8VAA0J3_S1VAA0J3_S2VtF")]
     private static extern nint SwiftFunc1(F1_S0 a0, byte a1, F1_S1 a2, F1_S2 a3);
 
@@ -215,7 +215,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress10swiftFunc22a02a12a22a32a42a52a62a72a82a93a103a113a123a13Sis5Int64V_s5Int16Vs5Int32VAA5F2_S0Vs5UInt8VAvA0W3_S1VAA0W3_S2Vs6UInt16VSfAA0W3_S3VAA0W3_S4VAA0W3_S5VARtF")]
     private static extern nint SwiftFunc2(long a0, short a1, int a2, F2_S0 a3, byte a4, int a5, F2_S1 a6, F2_S2 a7, ushort a8, float a9, F2_S3 a10, F2_S4 a11, F2_S5 a12, long a13);
 
@@ -360,7 +360,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress10swiftFunc32a02a12a22a32a42a52a62a72a82a93a103a113a123a13S2i_AA5F3_S0VAA0T3_S1VSdSiAA0T3_S2VAA0T3_S3VAA0T3_S4VAA0T3_S5Vs6UInt16Vs5Int32VAA0T3_S6VSiAA0T3_S7VtF")]
     private static extern nint SwiftFunc3(nint a0, F3_S0 a1, F3_S1 a2, double a3, nint a4, F3_S2 a5, F3_S3 a6, F3_S4 a7, F3_S5 a8, ushort a9, int a10, F3_S6 a11, nint a12, F3_S7 a13);
 
@@ -451,7 +451,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress10swiftFunc42a02a12a22a32a42a52a62a72a82a93a103a113a123a133a143a15S2i_AA5F4_S0VSus6UInt64Vs4Int8VSdAA0V3_S1Vs5UInt8Vs5Int32Vs6UInt32VAvA0V3_S2Vs5Int16VSiAA0V3_S3VA4_tF")]
     private static extern nint SwiftFunc4(nint a0, F4_S0 a1, nuint a2, ulong a3, sbyte a4, double a5, F4_S1 a6, byte a7, int a8, uint a9, ulong a10, F4_S2 a11, short a12, nint a13, F4_S3 a14, uint a15);
 
@@ -475,7 +475,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress10swiftFunc52a02a12a22a3SiSu_s6UInt64Vs5UInt8VAA5F5_S0VtF")]
     private static extern nint SwiftFunc5(nuint a0, ulong a1, byte a2, F5_S0 a3);
 
@@ -577,7 +577,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress10swiftFunc62a02a12a22a32a42a52a62a72a82a93a103a113a123a133a14Sis5Int64V_AA5F6_S0VAA0V3_S1VSus5UInt8Vs5Int32VAA0V3_S2VSfs5Int16VAA0V3_S3Vs6UInt16VSds6UInt32VAA0V3_S4VAA0V3_S5VtF")]
     private static extern nint SwiftFunc6(long a0, F6_S0 a1, F6_S1 a2, nuint a3, byte a4, int a5, F6_S2 a6, float a7, short a8, F6_S3 a9, ushort a10, double a11, uint a12, F6_S4 a13, F6_S5 a14);
 
@@ -614,7 +614,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress10swiftFunc72a02a12a22a32a42a5Sis5Int64V_Sis5UInt8VAA5F7_S0VAA0N3_S1Vs6UInt32VtF")]
     private static extern nint SwiftFunc7(long a0, nint a1, byte a2, F7_S0 a3, F7_S1 a4, uint a5);
 
@@ -638,7 +638,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress10swiftFunc82a02a12a22a32a42a5Sis6UInt16V_SuAJs6UInt64VAA5F8_S0VALtF")]
     private static extern nint SwiftFunc8(ushort a0, nuint a1, ushort a2, ulong a3, F8_S0 a4, ulong a5);
 
@@ -673,7 +673,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress10swiftFunc92a02a12a22a32a42a5Sis5Int64V_SfAA5F9_S0Vs6UInt16VAA0M3_S1VANtF")]
     private static extern nint SwiftFunc9(long a0, float a1, F9_S0 a2, ushort a3, F9_S1 a4, ushort a5);
 
@@ -749,7 +749,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc102a02a12a22a32a42a52a62a72a82a93a103a113a123a133a143a153a163a173a18Sis6UInt16V_AwA6F10_S0Vs6UInt64VSfs4Int8Vs5Int64VA_A3_Sfs5Int32VA5_A3_A_AA0Z3_S1VA3_AA0Z3_S2VAA0Z3_S3VAA0Z3_S4VtF")]
     private static extern nint SwiftFunc10(ushort a0, ushort a1, F10_S0 a2, ulong a3, float a4, sbyte a5, long a6, ulong a7, long a8, float a9, int a10, int a11, long a12, ulong a13, F10_S1 a14, long a15, F10_S2 a16, F10_S3 a17, F10_S4 a18);
 
@@ -823,7 +823,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc112a02a12a22a32a42a52a62a72a82a93a103a113a12S2i_s6UInt64Vs5UInt8Vs5Int16VAA6F11_S0VAA0V3_S1Vs6UInt16VSdSis6UInt32VAA0V3_S2VAA0V3_S3Vs4Int8VtF")]
     private static extern nint SwiftFunc11(nint a0, ulong a1, byte a2, short a3, F11_S0 a4, F11_S1 a5, ushort a6, double a7, nint a8, uint a9, F11_S2 a10, F11_S3 a11, sbyte a12);
 
@@ -869,7 +869,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc122a02a12a22a32a42a52a62a72a82a93a103a11Sis5UInt8V_s5Int32VAA6F12_S0Vs4Int8VAA0T3_S1VAA0T3_S2Vs6UInt32Vs5Int16VA2VA0_APtF")]
     private static extern nint SwiftFunc12(byte a0, int a1, F12_S0 a2, sbyte a3, F12_S1 a4, F12_S2 a5, uint a6, short a7, sbyte a8, sbyte a9, uint a10, byte a11);
 
@@ -939,7 +939,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc132a02a12a22a32a42a5Sis4Int8V_SdAA6F13_S0VAA0M3_S1VAJSdtF")]
     private static extern nint SwiftFunc13(sbyte a0, double a1, F13_S0 a2, F13_S1 a3, sbyte a4, double a5);
 
@@ -963,7 +963,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc142a02a12a22a32a4Sis4Int8V_SiAA6F14_S0VSfSutF")]
     private static extern nint SwiftFunc14(sbyte a0, nint a1, F14_S0 a2, float a3, nuint a4);
 
@@ -1023,7 +1023,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc152a02a12a22a32a42a52a62a7SiAA6F15_S0V_s6UInt64Vs6UInt32VSuANs5Int16VAA0N3_S1Vs5Int64VtF")]
     private static extern nint SwiftFunc15(F15_S0 a0, ulong a1, uint a2, nuint a3, ulong a4, short a5, F15_S1 a6, long a7);
 
@@ -1103,7 +1103,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc162a02a12a22a32a42a52a6Sis6UInt64V_AA6F16_S0VAA0N3_S1Vs6UInt16Vs5Int16VAA0N3_S2VAA0N3_S3VtF")]
     private static extern nint SwiftFunc16(ulong a0, F16_S0 a1, F16_S1 a2, ushort a3, short a4, F16_S2 a5, F16_S3 a6);
 
@@ -1188,7 +1188,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc172a02a12a22a32a42a52a62a72a82a9SiAA6F17_S0V_s4Int8VAA0P3_S1VAPSuAA0P3_S2Vs5Int64VAA0P3_S3VAA0P3_S4VAA0P3_S5VtF")]
     private static extern nint SwiftFunc17(F17_S0 a0, sbyte a1, F17_S1 a2, sbyte a3, nuint a4, F17_S2 a5, long a6, F17_S3 a7, F17_S4 a8, F17_S5 a9);
 
@@ -1270,7 +1270,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc182a02a12a22a32a42a52a62a72a8Sis5UInt8V_SdAA6F18_S0VAA0P3_S1Vs6UInt16Vs5Int64Vs6UInt64VAA0P3_S2VAWtF")]
     private static extern nint SwiftFunc18(byte a0, double a1, F18_S0 a2, F18_S1 a3, ushort a4, long a5, ulong a6, F18_S2 a7, ulong a8);
 
@@ -1298,7 +1298,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc192a02a12a2SiSu_AA6F19_S0Vs5Int16VtF")]
     private static extern nint SwiftFunc19(nuint a0, F19_S0 a1, short a2);
 
@@ -1341,7 +1341,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc202a02a12a22a32a42a52a6Sis4Int8V_AA6F20_S0Vs6UInt64VSiAA0N3_S1Vs5UInt8Vs5Int64VtF")]
     private static extern nint SwiftFunc20(sbyte a0, F20_S0 a1, ulong a2, nint a3, F20_S1 a4, byte a5, long a6);
 
@@ -1412,7 +1412,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc212a02a12a22a32a42a52a62a72a82a93a103a113a12Sis6UInt64V_s4Int8VSuSdSfSiAA6F21_S0VAA0U3_S1Vs6UInt16VAA0U3_S2Vs5UInt8VAA0U3_S3Vs5Int16VtF")]
     private static extern nint SwiftFunc21(ulong a0, sbyte a1, nuint a2, double a3, float a4, nint a5, F21_S0 a6, F21_S1 a7, ushort a8, F21_S2 a9, byte a10, F21_S3 a11, short a12);
 
@@ -1508,7 +1508,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc222a02a12a22a32a42a52a62a7Sis4Int8V_s5Int32VAA6F22_S0VAA0P3_S1VAA0P3_S2Vs6UInt64VAA0P3_S3VSutF")]
     private static extern nint SwiftFunc22(sbyte a0, int a1, F22_S0 a2, F22_S1 a3, F22_S2 a4, ulong a5, F22_S3 a6, nuint a7);
 
@@ -1564,7 +1564,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc232a02a12a22a32a4SiAA6F23_S0V_AA0K3_S1VAA0K3_S2VSds6UInt64VtF")]
     private static extern nint SwiftFunc23(F23_S0 a0, F23_S1 a1, F23_S2 a2, double a3, ulong a4);
 
@@ -1629,7 +1629,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc242a02a12a22a32a42a5SiAA6F24_S0V_AA0L3_S1VAA0L3_S2VAA0L3_S3VSus6UInt32VtF")]
     private static extern nint SwiftFunc24(F24_S0 a0, F24_S1 a1, F24_S2 a2, F24_S3 a3, nuint a4, uint a5);
 
@@ -1718,7 +1718,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc252a02a12a22a32a42a52a62a72a82a93a103a113a12SiSf_AA6F25_S0Vs5Int64Vs5UInt8VAA0S3_S1VSiAA0S3_S2Vs5Int32VA_Sus6UInt64VAA0S3_S3VAA0S3_S4VtF")]
     private static extern nint SwiftFunc25(float a0, F25_S0 a1, long a2, byte a3, F25_S1 a4, nint a5, F25_S2 a6, int a7, int a8, nuint a9, ulong a10, F25_S3 a11, F25_S4 a12);
 
@@ -1742,7 +1742,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc262a02a12a22a32a4Sis6UInt16V_Sds5Int64VAA6F26_S0Vs5UInt8VtF")]
     private static extern nint SwiftFunc26(ushort a0, double a1, long a2, F26_S0 a3, byte a4);
 
@@ -1833,7 +1833,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc272a02a12a22a32a42a52a62a72a82a93a103a113a12SiAA6F27_S0V_S2ds4Int8VAsA0S3_S1Vs5Int16VAA0S3_S2VASs6UInt16VAA0S3_S3VAA0S3_S4Vs6UInt32VtF")]
     private static extern nint SwiftFunc27(F27_S0 a0, double a1, double a2, sbyte a3, sbyte a4, F27_S1 a5, short a6, F27_S2 a7, sbyte a8, ushort a9, F27_S3 a10, F27_S4 a11, uint a12);
 
@@ -1921,7 +1921,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc282a02a12a22a32a42a52a62a72a82a93a103a113a12Sis5UInt8V_s6UInt16VAA6F28_S0VAA0U3_S1VAA0U3_S2Vs6UInt64Vs5Int32Vs5Int64VSdAsA0U3_S3VAA0U3_S4VSftF")]
     private static extern nint SwiftFunc28(byte a0, ushort a1, F28_S0 a2, F28_S1 a3, F28_S2 a4, ulong a5, int a6, long a7, double a8, ushort a9, F28_S3 a10, F28_S4 a11, float a12);
 
@@ -1988,7 +1988,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc292a02a12a22a32a42a52a62a72a82a93a103a113a123a133a143a15Sis4Int8V_AA6F29_S0Vs5Int32VSuAA0W3_S1Vs6UInt64VAA0W3_S2Vs5Int16Vs5Int64Vs6UInt32VA0_SiAA0W3_S3Vs5UInt8VATSdtF")]
     private static extern nint SwiftFunc29(sbyte a0, F29_S0 a1, int a2, nuint a3, F29_S1 a4, ulong a5, F29_S2 a6, short a7, long a8, uint a9, ulong a10, nint a11, F29_S3 a12, byte a13, sbyte a14, double a15);
 
@@ -2096,7 +2096,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc302a02a12a22a32a42a52a62a72a82a93a103a113a12Sis6UInt16V_s5Int16VAqA6F30_S0VAA0U3_S1VAA0U3_S2Vs6UInt64Vs5Int32VSuAA0U3_S3VAqA0U3_S4Vs4Int8VtF")]
     private static extern nint SwiftFunc30(ushort a0, short a1, ushort a2, F30_S0 a3, F30_S1 a4, F30_S2 a5, ulong a6, int a7, nuint a8, F30_S3 a9, ushort a10, F30_S4 a11, sbyte a12);
 
@@ -2126,7 +2126,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc312a02a12a22a3Sis5Int64V_AA6F31_S0Vs6UInt32Vs6UInt64VtF")]
     private static extern nint SwiftFunc31(long a0, F31_S0 a1, uint a2, ulong a3);
 
@@ -2236,7 +2236,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc322a02a12a22a32a42a52a62a72a82a93a10Sis6UInt64V_AA6F32_S0VSdAA0R3_S1VAA0R3_S2VAOSfAA0R3_S3VAA0R3_S4Vs6UInt32Vs5Int16VtF")]
     private static extern nint SwiftFunc32(ulong a0, F32_S0 a1, double a2, F32_S1 a3, F32_S2 a4, ulong a5, float a6, F32_S3 a7, F32_S4 a8, uint a9, short a10);
 
@@ -2318,7 +2318,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc332a02a12a22a32a42a52a62a72a82a93a10SiSf_AA6F33_S0Vs6UInt64Vs5Int64VAA0Q3_S1Vs6UInt16VSuAwA0Q3_S2VAA0Q3_S3VSitF")]
     private static extern nint SwiftFunc33(float a0, F33_S0 a1, ulong a2, long a3, F33_S1 a4, ushort a5, nuint a6, ushort a7, F33_S2 a8, F33_S3 a9, nint a10);
 
@@ -2342,7 +2342,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc342a02a12a22a32a42a5Sis5Int64V_AA6F34_S0VS2us5UInt8VSdtF")]
     private static extern nint SwiftFunc34(long a0, F34_S0 a1, nuint a2, nuint a3, byte a4, double a5);
 
@@ -2463,7 +2463,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc352a02a12a22a32a42a52a62a72a82a93a10Sis5UInt8V_AA6F35_S0VA2oA0R3_S1Vs5Int32VAA0R3_S2VSis6UInt32VAA0R3_S3VAA0R3_S4VtF")]
     private static extern nint SwiftFunc35(byte a0, F35_S0 a1, byte a2, byte a3, F35_S1 a4, int a5, F35_S2 a6, nint a7, uint a8, F35_S3 a9, F35_S4 a10);
 
@@ -2584,7 +2584,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc362a02a12a22a32a42a52a62a72a82a93a103a11SiAA6F36_S0V_Sds6UInt64VAA0R3_S1VAA0R3_S2VAA0R3_S3VAA0R3_S4VSfAA0R3_S5Vs5UInt8VSdAA0R3_S6VtF")]
     private static extern nint SwiftFunc36(F36_S0 a0, double a1, ulong a2, F36_S1 a3, F36_S2 a4, F36_S3 a5, F36_S4 a6, float a7, F36_S5 a8, byte a9, double a10, F36_S6 a11);
 
@@ -2662,7 +2662,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc372a02a12a22a32a42a52a62a72a82a93a103a113a123a13S2i_s6UInt64Vs6UInt32Vs5Int32Vs4Int8Vs5UInt8VArA6F37_S0VAA0Y3_S1Vs5Int16VAA0Y3_S2VSuAA0Y3_S3VARtF")]
     private static extern nint SwiftFunc37(nint a0, ulong a1, uint a2, int a3, sbyte a4, byte a5, ulong a6, F37_S0 a7, F37_S1 a8, short a9, F37_S2 a10, nuint a11, F37_S3 a12, ulong a13);
 
@@ -2712,7 +2712,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc382a02a12a22a32a4Sis6UInt32V_s5Int32VAA6F38_S0VAA0M3_S1VAA0M3_S2VtF")]
     private static extern nint SwiftFunc38(uint a0, int a1, F38_S0 a2, F38_S1 a3, F38_S2 a4);
 
@@ -2779,7 +2779,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc392a02a12a22a32a4SiSu_SuAA6F39_S0VAA0K3_S1VSftF")]
     private static extern nint SwiftFunc39(nuint a0, nuint a1, F39_S0 a2, F39_S1 a3, float a4);
 
@@ -2792,7 +2792,7 @@ public class SwiftAbiStress
         Console.WriteLine("OK");
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc402a0Sis5Int32V_tF")]
     private static extern nint SwiftFunc40(int a0);
 
@@ -2880,7 +2880,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc412a02a12a22a32a42a52a62a72a8SiSf_AA6F41_S0VAA0O3_S1VAA0O3_S2Vs6UInt32VSuASSis4Int8VtF")]
     private static extern nint SwiftFunc41(float a0, F41_S0 a1, F41_S1 a2, F41_S2 a3, uint a4, nuint a5, uint a6, nint a7, sbyte a8);
 
@@ -3017,7 +3017,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc422a02a12a22a32a42a52a62a72a8SiAA6F42_S0V_AA0O3_S1Vs6UInt16VAA0O3_S2VAA0O3_S3VAA0O3_S4VAA0O3_S5VAA0O3_S6Vs5Int16VtF")]
     private static extern nint SwiftFunc42(F42_S0 a0, F42_S1 a1, ushort a2, F42_S2 a3, F42_S3 a4, F42_S4 a5, F42_S5 a6, F42_S6 a7, short a8);
 
@@ -3052,7 +3052,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc432a02a12a22a32a42a52a6Sis5Int64V_s5UInt8Vs4Int8VSfAKSiAA6F43_S0VtF")]
     private static extern nint SwiftFunc43(long a0, byte a1, sbyte a2, float a3, long a4, nint a5, F43_S0 a6);
 
@@ -3076,7 +3076,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc442a0SiAA6F44_S0V_tF")]
     private static extern nint SwiftFunc44(F44_S0 a0);
 
@@ -3156,7 +3156,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc452a02a12a22a3SiAA6F45_S0V_AA0J3_S1VAA0J3_S2VSitF")]
     private static extern nint SwiftFunc45(F45_S0 a0, F45_S1 a1, F45_S2 a2, nint a3);
 
@@ -3247,7 +3247,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc462a02a12a22a32a42a52a62a72a82a93a103a113a123a13SiAA6F46_S0V_AA0T3_S1Vs4Int8VSfAA0T3_S2Vs5Int16VAA0T3_S3VAZSfAA0T3_S4Vs6UInt16VSfAvA0T3_S5VtF")]
     private static extern nint SwiftFunc46(F46_S0 a0, F46_S1 a1, sbyte a2, float a3, F46_S2 a4, short a5, F46_S3 a6, short a7, float a8, F46_S4 a9, ushort a10, float a11, sbyte a12, F46_S5 a13);
 
@@ -3303,7 +3303,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc472a02a12a22a3S2i_AA6F47_S0VAA0J3_S1Vs5Int64VtF")]
     private static extern nint SwiftFunc47(nint a0, F47_S0 a1, F47_S1 a2, long a3);
 
@@ -3316,7 +3316,7 @@ public class SwiftAbiStress
         Console.WriteLine("OK");
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc482a02a12a22a32a42a52a6Sis4Int8V_s6UInt32Vs5Int16VSfSiSfAMtF")]
     private static extern nint SwiftFunc48(sbyte a0, uint a1, short a2, float a3, nint a4, float a5, uint a6);
 
@@ -3424,7 +3424,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc492a02a12a22a32a42a52a62a72a82a93a103a113a123a13Sis6UInt64V_s5UInt8VAA6F49_S0VAA0V3_S1VSus6UInt32VSdAA0V3_S2VAA0V3_S3Vs4Int8VAA0V3_S4Vs5Int32VArTtF")]
     private static extern nint SwiftFunc49(ulong a0, byte a1, F49_S0 a2, F49_S1 a3, nuint a4, uint a5, double a6, F49_S2 a7, F49_S3 a8, sbyte a9, F49_S4 a10, int a11, ulong a12, byte a13);
 
@@ -3465,7 +3465,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc502a02a12a2SiAA6F50_S0V_s5UInt8VAA0I3_S1VtF")]
     private static extern nint SwiftFunc50(F50_S0 a0, byte a1, F50_S1 a2);
 
@@ -3478,7 +3478,7 @@ public class SwiftAbiStress
         Console.WriteLine("OK");
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc512a02a12a2Sis6UInt16V_s4Int8Vs5Int16VtF")]
     private static extern nint SwiftFunc51(ushort a0, sbyte a1, short a2);
 
@@ -3491,7 +3491,7 @@ public class SwiftAbiStress
         Console.WriteLine("OK");
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc522a02a1Sis5UInt8V_s6UInt64VtF")]
     private static extern nint SwiftFunc52(byte a0, ulong a1);
 
@@ -3571,7 +3571,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc532a02a12a22a32a42a52a62a7SiAA6F53_S0V_Sus6UInt64VSfs6UInt32VAA0N3_S1VAA0N3_S2VAPtF")]
     private static extern nint SwiftFunc53(F53_S0 a0, nuint a1, ulong a2, float a3, uint a4, F53_S1 a5, F53_S2 a6, uint a7);
 
@@ -3617,7 +3617,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc542a02a12a22a32a42a52a6Sis4Int8V_s5Int32Vs6UInt32VAA6F54_S0VSfs5UInt8VAA0P3_S1VtF")]
     private static extern nint SwiftFunc54(sbyte a0, int a1, uint a2, F54_S0 a3, float a4, byte a5, F54_S1 a6);
 
@@ -3641,7 +3641,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc552a0SiAA6F55_S0V_tF")]
     private static extern nint SwiftFunc55(F55_S0 a0);
 
@@ -3741,7 +3741,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc562a02a12a22a32a4SiAA6F56_S0V_AA0K3_S1VAA0K3_S2VAA0K3_S3VAA0K3_S4VtF")]
     private static extern nint SwiftFunc56(F56_S0 a0, F56_S1 a1, F56_S2 a2, F56_S3 a3, F56_S4 a4);
 
@@ -3815,7 +3815,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc572a02a12a22a32a42a5Sis6UInt32V_AA6F57_S0VAA0M3_S1VSuAA0M3_S2Vs5Int16VtF")]
     private static extern nint SwiftFunc57(uint a0, F57_S0 a1, F57_S1 a2, nuint a3, F57_S2 a4, short a5);
 
@@ -3856,7 +3856,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc582a02a12a22a32a42a52a62a72a82a93a10Sis5UInt8V_AOSiAA6F58_S0VSfs6UInt64Vs4Int8VAA0R3_S1Vs6UInt16Vs5Int64VA_tF")]
     private static extern nint SwiftFunc58(byte a0, byte a1, nint a2, F58_S0 a3, float a4, ulong a5, sbyte a6, F58_S1 a7, ushort a8, long a9, long a10);
 
@@ -3951,7 +3951,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc592a02a12a22a32a42a52a62a72a82a93a103a113a123a13SiAA6F59_S0V_Sfs6UInt32VAA0T3_S1VAA0T3_S2Vs6UInt16VSfS2iS2us5Int16VAA0T3_S3VAA0T3_S4VtF")]
     private static extern nint SwiftFunc59(F59_S0 a0, float a1, uint a2, F59_S1 a3, F59_S2 a4, ushort a5, float a6, nint a7, nint a8, nuint a9, nuint a10, short a11, F59_S3 a12, F59_S4 a13);
 
@@ -3986,7 +3986,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc602a02a12a22a32a42a52a6Sis5Int32V_s4Int8VAKs6UInt16VSfAA6F60_S0VAA0P3_S1VtF")]
     private static extern nint SwiftFunc60(int a0, sbyte a1, int a2, ushort a3, float a4, F60_S0 a5, F60_S1 a6);
 
@@ -4089,7 +4089,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc612a02a12a22a32a42a52a62a72a82a9SiAA6F61_S0V_s5UInt8VSfAA0P3_S1Vs4Int8Vs5Int64VAA0P3_S2VAA0P3_S3VAA0P3_S4Vs6UInt32VtF")]
     private static extern nint SwiftFunc61(F61_S0 a0, byte a1, float a2, F61_S1 a3, sbyte a4, long a5, F61_S2 a6, F61_S3 a7, F61_S4 a8, uint a9);
 
@@ -4124,7 +4124,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc622a02a12a22a3SiAA6F62_S0V_s5Int16Vs5Int32VAA0J3_S1VtF")]
     private static extern nint SwiftFunc62(F62_S0 a0, short a1, int a2, F62_S1 a3);
 
@@ -4148,7 +4148,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc632a0SiAA6F63_S0V_tF")]
     private static extern nint SwiftFunc63(F63_S0 a0);
 
@@ -4195,7 +4195,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc642a02a12a22a32a42a52a62a72a8SiSd_AA6F64_S0Vs5UInt8VAA0O3_S1Vs5Int32Vs6UInt64Vs4Int8VAWSftF")]
     private static extern nint SwiftFunc64(double a0, F64_S0 a1, byte a2, F64_S1 a3, int a4, ulong a5, sbyte a6, sbyte a7, float a8);
 
@@ -4208,7 +4208,7 @@ public class SwiftAbiStress
         Console.WriteLine("OK");
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc652a02a12a22a3SiSf_SfSuSftF")]
     private static extern nint SwiftFunc65(float a0, float a1, nuint a2, float a3);
 
@@ -4280,7 +4280,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc662a02a12a22a3SiAA6F66_S0V_AA0J3_S1VAA0J3_S2VAA0J3_S3VtF")]
     private static extern nint SwiftFunc66(F66_S0 a0, F66_S1 a1, F66_S2 a2, F66_S3 a3);
 
@@ -4341,7 +4341,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc672a02a12a22a32a42a52a62a72a82a9Sis6UInt64V_s6UInt32Vs6UInt16Vs4Int8VAA6F67_S0VAnA0T3_S1VSuANs5Int64VtF")]
     private static extern nint SwiftFunc67(ulong a0, uint a1, ushort a2, sbyte a3, F67_S0 a4, ulong a5, F67_S1 a6, nuint a7, ulong a8, long a9);
 
@@ -4445,7 +4445,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc682a02a12a22a32a42a52a62a72a82a93a103a113a123a133a143a15Sis6UInt16V_s5Int64Vs5Int16Vs6UInt64Vs4Int8Vs5Int32Vs5UInt8VAA6F68_S0VA4_AA6F68_S1VAxA6F68_S2VA2xA6F68_S3VAA6F68_S4VtF")]
     private static extern nint SwiftFunc68(ushort a0, long a1, short a2, ulong a3, sbyte a4, int a5, byte a6, F68_S0 a7, byte a8, F68_S1 a9, short a10, F68_S2 a11, short a12, short a13, F68_S3 a14, F68_S4 a15);
 
@@ -4562,7 +4562,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc692a02a12a22a32a42a52a62a72a82a93a103a113a123a13SiAA6F69_S0V_AA0T3_S1VS2is6UInt16Vs5Int16VSdAA0T3_S2VAA0T3_S3VAA0T3_S4VSis5Int32VAA0T3_S5VSftF")]
     private static extern nint SwiftFunc69(F69_S0 a0, F69_S1 a1, nint a2, nint a3, ushort a4, short a5, double a6, F69_S2 a7, F69_S3 a8, F69_S4 a9, nint a10, int a11, F69_S5 a12, float a13);
 
@@ -4625,7 +4625,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc702a02a12a22a32a42a52a62a72a82a9Sis6UInt64V_AA6F70_S0Vs6UInt16Vs4Int8VSfAA0Q3_S1VSiAA0Q3_S2VAA0Q3_S3Vs6UInt32VtF")]
     private static extern nint SwiftFunc70(ulong a0, F70_S0 a1, ushort a2, sbyte a3, float a4, F70_S1 a5, nint a6, F70_S2 a7, F70_S3 a8, uint a9);
 
@@ -4660,7 +4660,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc712a02a12a22a32a42a5Sis5Int64V_AA6F71_S0Vs4Int8VAA0M3_S1VSfs6UInt32VtF")]
     private static extern nint SwiftFunc71(long a0, F71_S0 a1, sbyte a2, F71_S1 a3, float a4, uint a5);
 
@@ -4721,7 +4721,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc722a02a12a2SiAA6F72_S0V_AA0I3_S1VAA0I3_S2VtF")]
     private static extern nint SwiftFunc72(F72_S0 a0, F72_S1 a1, F72_S2 a2);
 
@@ -4734,7 +4734,7 @@ public class SwiftAbiStress
         Console.WriteLine("OK");
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc732a0Sis5Int64V_tF")]
     private static extern nint SwiftFunc73(long a0);
 
@@ -4807,7 +4807,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc742a02a12a22a32a42a52a62a72a82a9SiAA6F74_S0V_AA0P3_S1Vs5Int32VAA0P3_S2VSis5Int64Vs5Int16VArA0P3_S3Vs6UInt64VtF")]
     private static extern nint SwiftFunc74(F74_S0 a0, F74_S1 a1, int a2, F74_S2 a3, nint a4, long a5, short a6, int a7, F74_S3 a8, ulong a9);
 
@@ -4907,7 +4907,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc752a02a12a22a32a42a52a6SiAA6F75_S0V_SdSiSuSiAA0M3_S1VAA0M3_S2VtF")]
     private static extern nint SwiftFunc75(F75_S0 a0, double a1, nint a2, nuint a3, nint a4, F75_S1 a5, F75_S2 a6);
 
@@ -4968,7 +4968,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc762a02a12a22a32a42a52a62a72a82a93a103a113a123a133a143a153a163a173a183a193a20SiSd_s5Int64Vs6UInt16VS2fAA6F76_S0Vs5Int16VAA6F76_S1VAYs6UInt64VA_s5UInt8Vs4Int8VSiAYA11_A11_A3_A_AA6F76_S2VAA6F76_S3VtF")]
     private static extern nint SwiftFunc76(double a0, long a1, ushort a2, float a3, float a4, F76_S0 a5, short a6, F76_S1 a7, long a8, ulong a9, ushort a10, byte a11, sbyte a12, nint a13, long a14, sbyte a15, sbyte a16, short a17, ushort a18, F76_S2 a19, F76_S3 a20);
 
@@ -5108,7 +5108,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc772a02a12a22a32a42a52a62a72a82a93a10SiAA6F77_S0V_s5Int16VAA0Q3_S1Vs6UInt32VAA0Q3_S2VAA0Q3_S3VAA0Q3_S4Vs6UInt64VAA0Q3_S5Vs6UInt16VSftF")]
     private static extern nint SwiftFunc77(F77_S0 a0, short a1, F77_S1 a2, uint a3, F77_S2 a4, F77_S3 a5, F77_S4 a6, ulong a7, F77_S5 a8, ushort a9, float a10);
 
@@ -5134,7 +5134,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc782a02a1SiAA6F78_S0V_s6UInt64VtF")]
     private static extern nint SwiftFunc78(F78_S0 a0, ulong a1);
 
@@ -5158,7 +5158,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc792a02a12a22a3Sis6UInt32V_AA6F79_S0Vs5Int16VSdtF")]
     private static extern nint SwiftFunc79(uint a0, F79_S0 a1, short a2, double a3);
 
@@ -5292,7 +5292,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc802a02a12a22a32a42a52a62a72a82a93a10SiAA6F80_S0V_AA0Q3_S1Vs6UInt16Vs5Int64VAA0Q3_S2VSds6UInt64Vs5Int32VAA0Q3_S3VAA0Q3_S4Vs5UInt8VtF")]
     private static extern nint SwiftFunc80(F80_S0 a0, F80_S1 a1, ushort a2, long a3, F80_S2 a4, double a5, ulong a6, int a7, F80_S3 a8, F80_S4 a9, byte a10);
 
@@ -5335,7 +5335,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc812a02a12a22a3SiAA6F81_S0V_s5Int32VSfAA0J3_S1VtF")]
     private static extern nint SwiftFunc81(F81_S0 a0, int a1, float a2, F81_S1 a3);
 
@@ -5421,7 +5421,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc822a02a12a22a32a42a5SiAA6F82_S0V_AA0L3_S1VAA0L3_S2Vs6UInt32VSiAA0L3_S3VtF")]
     private static extern nint SwiftFunc82(F82_S0 a0, F82_S1 a1, F82_S2 a2, uint a3, nint a4, F82_S3 a5);
 
@@ -5519,7 +5519,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc832a02a12a22a32a42a52a62a7SiSf_AA6F83_S0VAA0N3_S1Vs5Int16VSiSfAA0N3_S2Vs6UInt16VtF")]
     private static extern nint SwiftFunc83(float a0, F83_S0 a1, F83_S1 a2, short a3, nint a4, float a5, F83_S2 a6, ushort a7);
 
@@ -5614,7 +5614,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc842a02a12a22a32a42a52a62a72a82a93a103a113a12SiAA6F84_S0V_AA0S3_S1Vs6UInt64VAA0S3_S2Vs6UInt32VAA0S3_S3VSuAA0S3_S4VA2Us6UInt16Vs5Int16VSftF")]
     private static extern nint SwiftFunc84(F84_S0 a0, F84_S1 a1, ulong a2, F84_S2 a3, uint a4, F84_S3 a5, nuint a6, F84_S4 a7, ulong a8, ulong a9, ushort a10, short a11, float a12);
 
@@ -5692,7 +5692,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc852a02a12a22a32a42a5SiAA6F85_S0V_AA0L3_S1VAA0L3_S2Vs4Int8Vs6UInt32Vs5Int16VtF")]
     private static extern nint SwiftFunc85(F85_S0 a0, F85_S1 a1, F85_S2 a2, sbyte a3, uint a4, short a5);
 
@@ -5790,7 +5790,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc862a02a12a22a32a42a52a62a72a82a9SiAA6F86_S0V_S2iSuAA0P3_S1VAA0P3_S2Vs6UInt64VAA0P3_S3VAA0P3_S4VAA0P3_S5VtF")]
     private static extern nint SwiftFunc86(F86_S0 a0, nint a1, nint a2, nuint a3, F86_S1 a4, F86_S2 a5, ulong a6, F86_S3 a7, F86_S4 a8, F86_S5 a9);
 
@@ -5875,7 +5875,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc872a02a12a22a32a42a52a62a72a82a93a103a113a123a13Sis5Int64V_AA6F87_S0VSus5UInt8VSds5Int16Vs6UInt64VSdSfAA0U3_S1VArA0U3_S2VAA0U3_S3VSftF")]
     private static extern nint SwiftFunc87(long a0, F87_S0 a1, nuint a2, byte a3, double a4, short a5, ulong a6, double a7, float a8, F87_S1 a9, long a10, F87_S2 a11, F87_S3 a12, float a13);
 
@@ -6033,7 +6033,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc882a02a12a22a32a42a52a62a72a82a93a10SiAA6F88_S0V_s4Int8VAA0Q3_S1Vs6UInt64VAA0Q3_S2VAA0Q3_S3VAA0Q3_S4Vs5Int16VAA0Q3_S5VAA0Q3_S6VAA0Q3_S7VtF")]
     private static extern nint SwiftFunc88(F88_S0 a0, sbyte a1, F88_S1 a2, ulong a3, F88_S2 a4, F88_S3 a5, F88_S4 a6, short a7, F88_S5 a8, F88_S6 a9, F88_S7 a10);
 
@@ -6105,7 +6105,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc892a02a12a22a32a42a52a6SiAA6F89_S0V_AA0M3_S1VAA0M3_S2Vs5UInt8VAA0M3_S3VAA0M3_S4Vs5Int32VtF")]
     private static extern nint SwiftFunc89(F89_S0 a0, F89_S1 a1, F89_S2 a2, byte a3, F89_S3 a4, F89_S4 a5, int a6);
 
@@ -6205,7 +6205,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc902a02a12a22a32a42a52a62a7SiAA6F90_S0V_s4Int8VAA0N3_S1VAA0N3_S2VAA0N3_S3Vs6UInt32VAA0N3_S4Vs5UInt8VtF")]
     private static extern nint SwiftFunc90(F90_S0 a0, sbyte a1, F90_S1 a2, F90_S2 a3, F90_S3 a4, uint a5, F90_S4 a6, byte a7);
 
@@ -6244,7 +6244,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc912a02a1SiAA6F91_S0V_s5UInt8VtF")]
     private static extern nint SwiftFunc91(F91_S0 a0, byte a1);
 
@@ -6305,7 +6305,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc922a02a12a22a32a42a52a62a72a82a93a103a113a123a133a143a153a163a173a183a19Sis5Int16V_s6UInt64VSus5Int64VAA6F92_S0VA0_Sds5UInt8Vs4Int8Vs6UInt32VA6_AA6F92_S1VA8_SfAZA4_s5Int32VA8_AA6F92_S2VAA6F92_S3VtF")]
     private static extern nint SwiftFunc92(short a0, ulong a1, nuint a2, long a3, F92_S0 a4, long a5, double a6, byte a7, sbyte a8, uint a9, sbyte a10, F92_S1 a11, uint a12, float a13, ulong a14, byte a15, int a16, uint a17, F92_S2 a18, F92_S3 a19);
 
@@ -6355,7 +6355,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc932a02a12a22a32a4SiAA6F93_S0V_SiAA0K3_S1VSdAA0K3_S2VtF")]
     private static extern nint SwiftFunc93(F93_S0 a0, nint a1, F93_S1 a2, double a3, F93_S2 a4);
 
@@ -6368,7 +6368,7 @@ public class SwiftAbiStress
         Console.WriteLine("OK");
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc942a02a12a22a3Sis6UInt64V_s5Int32VAHs5Int64VtF")]
     private static extern nint SwiftFunc94(ulong a0, int a1, ulong a2, long a3);
 
@@ -6392,7 +6392,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc952a02a1SiAA6F95_S0V_s5Int64VtF")]
     private static extern nint SwiftFunc95(F95_S0 a0, long a1);
 
@@ -6534,7 +6534,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc962a02a12a22a32a42a52a62a72a82a93a103a113a123a133a143a153a163a173a18Sis6UInt16V_AA6F96_S0VAA0Z3_S1VAA0Z3_S2VAWs6UInt64VSis5Int32Vs5Int16VSuAA0Z3_S3VA7_Sis4Int8VA5_s6UInt32VAA0Z3_S4VAA0Z3_S5VAA0Z3_S6VtF")]
     private static extern nint SwiftFunc96(ushort a0, F96_S0 a1, F96_S1 a2, F96_S2 a3, ushort a4, ulong a5, nint a6, int a7, short a8, nuint a9, F96_S3 a10, short a11, nint a12, sbyte a13, int a14, uint a15, F96_S4 a16, F96_S5 a17, F96_S6 a18);
 
@@ -6566,7 +6566,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc972a02a12a22a32a42a52a62a7Sis4Int8V_s5Int32Vs5UInt8Vs6UInt32VApA6F97_S0VALSitF")]
     private static extern nint SwiftFunc97(sbyte a0, int a1, byte a2, uint a3, byte a4, F97_S0 a5, sbyte a6, nint a7);
 
@@ -6618,7 +6618,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc982a02a12a22a32a42a5SiAA6F98_S0V_s6UInt16VALs5Int16Vs4Int8Vs6UInt32VtF")]
     private static extern nint SwiftFunc98(F98_S0 a0, ushort a1, ushort a2, short a3, sbyte a4, uint a5);
 
@@ -6670,7 +6670,7 @@ public class SwiftAbiStress
         }
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s14SwiftAbiStress11swiftFunc992a02a12a22a3SiAA6F99_S0V_s4Int8VAA0J3_S1Vs5Int64VtF")]
     private static extern nint SwiftFunc99(F99_S0 a0, sbyte a1, F99_S1 a2, long a3);
 

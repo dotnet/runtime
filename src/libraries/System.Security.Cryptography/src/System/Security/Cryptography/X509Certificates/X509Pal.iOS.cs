@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         private sealed partial class AppleX509Pal : IX509Pal
         {
-            public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters,
+            public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[]? encodedParameters,
                 ICertificatePal? certificatePal)
             {
                 if (oid.Value != Oids.Rsa)
@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     SafeSecKeyRefHandle key = Interop.AppleCrypto.X509GetPublicKey(applePal.CertificateHandle);
                     Debug.Assert(!key.IsInvalid);
-                    return new RSAImplementation.RSASecurityTransforms(key);
+                    return new RSAImplementation.RSAAppleCrypto(key);
                 }
                 else
                 {

@@ -307,8 +307,6 @@ On Arm64 we have epilog unwind codes and the second SP adjust does not appear to
 
 OSR funclets are more or less normal funclets.
 
-On Arm64, to satisfy PSPSym reporting constraints, the funclet frame must be padded to include the Tier0 frame size. This is conceptually similar to the way the funclet frames also pad for homed varargs arguments -- in both cases the padded space is never used, it is just there to ensure the PSPSym ends up at the same caller-SP relative offset for the main function and any funclet.
-
 #### OSR Unwind Info
 
 On x64 the prolog unwind includes a phantom SP adjustment at offset 0 for the Tier0 frame.

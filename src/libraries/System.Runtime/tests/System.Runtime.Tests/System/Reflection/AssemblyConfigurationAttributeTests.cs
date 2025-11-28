@@ -11,7 +11,7 @@ namespace System.Reflection.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("configuration")]
-        public void Ctor_String(string configuration)
+        public void Ctor_String(string? configuration)
         {
             var attribute = new AssemblyConfigurationAttribute(configuration);
             Assert.Equal(configuration, attribute.Configuration);

@@ -192,6 +192,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/117165", TestPlatforms.Browser)]
         public unsafe void Create_StackFrame()
         {
             StackTrace tr = NonGenericStackTraceClass.TestNonGeneric();

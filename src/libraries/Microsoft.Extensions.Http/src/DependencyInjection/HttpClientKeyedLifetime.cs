@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private HttpClientKeyedLifetime(object serviceKey, ServiceLifetime lifetime)
         {
-            ThrowHelper.ThrowIfNull(serviceKey);
+            ArgumentNullException.ThrowIfNull(serviceKey);
             ServiceKey = serviceKey;
             Client = ServiceDescriptor.DescribeKeyed(typeof(HttpClient), ServiceKey, CreateKeyedClient, lifetime);
             Handler = ServiceDescriptor.DescribeKeyed(typeof(HttpMessageHandler), ServiceKey, CreateKeyedHandler, lifetime);

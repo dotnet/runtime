@@ -27,7 +27,7 @@ namespace System.Xml.XmlSchemaTests
         //[Variation(Desc = "v1.1 - Import: A with NS imports B with no NS", Priority = 0, Params = new object[] { "import_v1_a.xsd", "include_v1_b.xsd", 2, null })]
         [InlineData("import_v1_a.xsd", "include_v1_b.xsd", 2, null)]
         [Theory]
-        public void v1(object param0, object param1, object param2, object param3)
+        public void v1(object param0, object param1, object param2, object? param3)
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
@@ -54,7 +54,7 @@ namespace System.Xml.XmlSchemaTests
         //[Variation(Desc = "v2.1 - Import: Add B(ns-b) , then A(ns-a) which improts B (ns-b)", Priority = 1, Params = new object[] { "import_v2_a.xsd", "import_v2_b.xsd", 2, null, "ns-b" })]
         [InlineData("import_v2_a.xsd", "import_v2_b.xsd", 2, null, "ns-b")]
         [Theory]
-        public void v3(object param0, object param1, object param2, object param3, object param4)
+        public void v3(object param0, object param1, object param2, object? param3, object? param4)
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
@@ -527,7 +527,7 @@ namespace System.Xml.XmlSchemaTests
         //[Variation(Desc = "v101.1 - Improt: A with NS imports B with no NS", Priority = 0, Params = new object[] { "import_v1_a.xsd", "include_v1_b.xsd", 2, null })]
         [InlineData("import_v1_a.xsd", "include_v1_b.xsd", 2, null)]
         [Theory]
-        public void v101(object param0, object param1, object param2, object param3)
+        public void v101(object param0, object param1, object param2, object? param3)
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
@@ -557,7 +557,7 @@ namespace System.Xml.XmlSchemaTests
         //[Variation(Desc = "v102.1 - Import: Add B(ns-b) , then A(ns-a) which improts B (ns-b)", Priority = 1, Params = new object[] { "import_v2_a.xsd", "import_v2_b.xsd", 2, null, "ns-b" })]
         [InlineData("import_v2_a.xsd", "import_v2_b.xsd", 2, null, "ns-b")]
         [Theory]
-        public void v102(object param0, object param1, object param2, object param3, object param4)
+        public void v102(object param0, object param1, object param2, object? param3, object param4)
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
@@ -1225,7 +1225,7 @@ namespace System.Xml.XmlSchemaTests
         //[Variation(Desc = "v201.1 - Improt: A with NS imports B with no NS", Priority = 0, Params = new object[] { "import_v1_a.xsd", "include_v1_b.xsd", 2, null })]
         [InlineData("import_v1_a.xsd", "include_v1_b.xsd", 2, null)]
         [Theory]
-        public void v201(object param0, object param1, object param2, object param3)
+        public void v201(object param0, object param1, object param2, object? param3)
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();
@@ -1253,7 +1253,7 @@ namespace System.Xml.XmlSchemaTests
         //[Variation(Desc = "v202.1 - Import: Add B(ns-b) , then A(ns-a) which improts B (ns-b)", Priority = 1, Params = new object[] { "import_v2_a.xsd", "import_v2_b.xsd", 2, null, "ns-b" })]
         [InlineData("import_v2_a.xsd", "import_v2_b.xsd", 2, null, "ns-b")]
         [Theory]
-        public void v202(object param0, object param1, object param2, object param3, object param4)
+        public void v202(object param0, object param1, object param2, object? param3, object param4)
         {
             XmlSchemaSet sc = new XmlSchemaSet();
             sc.XmlResolver = new XmlUrlResolver();

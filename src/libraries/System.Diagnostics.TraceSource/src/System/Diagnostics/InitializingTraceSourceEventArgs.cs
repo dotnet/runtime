@@ -8,12 +8,23 @@ namespace System.Diagnostics
     /// </summary>
     public sealed class InitializingTraceSourceEventArgs : EventArgs
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InitializingTraceSourceEventArgs"/> class.
+        /// </summary>
+        /// <param name="traceSource">The trace source that is being initialized.</param>
         public InitializingTraceSourceEventArgs(TraceSource traceSource)
         {
             TraceSource = traceSource;
         }
 
+        /// <summary>
+        /// Gets the trace source that is being initialized.
+        /// </summary>
         public TraceSource TraceSource { get; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the trace source was initialized from configuration.
+        /// </summary>
         public bool WasInitialized { get; set; }
     }
 }

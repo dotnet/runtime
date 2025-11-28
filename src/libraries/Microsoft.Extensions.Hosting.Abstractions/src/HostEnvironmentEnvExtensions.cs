@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns><see langword="true"/> if the environment name is <see cref="Environments.Development"/>, otherwise <see langword="false"/>.</returns>
         public static bool IsDevelopment(this IHostEnvironment hostEnvironment)
         {
-            ThrowHelper.ThrowIfNull(hostEnvironment);
+            ArgumentNullException.ThrowIfNull(hostEnvironment);
 
             return hostEnvironment.IsEnvironment(Environments.Development);
         }
@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns><see langword="true"/> if the environment name is <see cref="Environments.Staging"/>, otherwise <see langword="false"/>.</returns>
         public static bool IsStaging(this IHostEnvironment hostEnvironment)
         {
-            ThrowHelper.ThrowIfNull(hostEnvironment);
+            ArgumentNullException.ThrowIfNull(hostEnvironment);
 
             return hostEnvironment.IsEnvironment(Environments.Staging);
         }
@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns><see langword="true"/> if the environment name is <see cref="Environments.Production"/>, otherwise <see langword="false"/>.</returns>
         public static bool IsProduction(this IHostEnvironment hostEnvironment)
         {
-            ThrowHelper.ThrowIfNull(hostEnvironment);
+            ArgumentNullException.ThrowIfNull(hostEnvironment);
 
             return hostEnvironment.IsEnvironment(Environments.Production);
         }
@@ -56,7 +56,7 @@ namespace Microsoft.Extensions.Hosting
             this IHostEnvironment hostEnvironment,
             string environmentName)
         {
-            ThrowHelper.ThrowIfNull(hostEnvironment);
+            ArgumentNullException.ThrowIfNull(hostEnvironment);
 
             return string.Equals(
                 hostEnvironment.EnvironmentName,

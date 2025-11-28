@@ -18,6 +18,8 @@
 
 #include "common.h"
 
+class SigBuilder;
+
 typedef DWORD(*ENCODEMODULE_CALLBACK)(LPVOID pModuleContext, CORINFO_MODULE_HANDLE moduleHandle);
 typedef DWORD (*EncodeModuleCallback)(void* pModuleContext, Module *pReferencedModule);
 enum {

@@ -26,7 +26,7 @@ namespace System.Net
             {
                 EnsureNetworkChangeRegistration();
                 IPAddress[] localAddresses = s_localAddresses ??= Dns.GetHostEntry(Dns.GetHostName()).AddressList;
-                return Array.IndexOf(localAddresses, hostAddress) != -1;
+                return Array.IndexOf(localAddresses, hostAddress) >= 0;
             }
 
             // No dot?  Local.

@@ -131,16 +131,22 @@ enter_alertable_wait_ex (MonoThreadInfo *info, HANDLE io_handle)
 	mono_atomic_xchg_i32 (&info->win32_apc_info, (io_handle == INVALID_HANDLE_VALUE) ? WIN32_APC_INFO_ALERTABLE_WAIT_SLOT : WIN32_APC_INFO_BLOCKING_IO_SLOT);
 }
 
-static void
+static gboolean
 leave_alertable_wait_ex (MonoThreadInfo *info, HANDLE io_handle)
 {
 	// Clear any previous flags. Thread is exiting alertable wait region, and info around pending interrupt/abort APC's
 	// can now be discarded, thread is out of wait operation and can proceed execution.
-	mono_atomic_xchg_i32 (&info->win32_apc_info, WIN32_APC_INFO_CLEARED);
+	gint32 old = mono_atomic_xchg_i32 (&info->win32_apc_info, WIN32_APC_INFO_CLEARED);
 
 	// Only loaded/stored by current thread, here or in APC (also running on current thread).
 	g_assert (info->win32_apc_info_io_handle == io_handle);
 	info->win32_apc_info_io_handle = (gpointer)INVALID_HANDLE_VALUE;
+
+	gboolean alerted = FALSE;
+	if (old & WIN32_APC_INFO_PENDING_INTERRUPT_SLOT || old & WIN32_APC_INFO_PENDING_ABORT_SLOT)
+		alerted = TRUE;
+
+	return alerted;
 }
 
 void
@@ -150,11 +156,14 @@ mono_win32_enter_alertable_wait (THREAD_INFO_TYPE *info)
 		enter_alertable_wait_ex (info, INVALID_HANDLE_VALUE);
 }
 
-void
+gboolean
 mono_win32_leave_alertable_wait (THREAD_INFO_TYPE *info)
 {
+	gboolean alerted = FALSE;
 	if (info)
-		leave_alertable_wait_ex (info, INVALID_HANDLE_VALUE);
+		alerted = leave_alertable_wait_ex (info, INVALID_HANDLE_VALUE);
+
+	return alerted;
 }
 
 void
@@ -164,11 +173,14 @@ mono_win32_enter_blocking_io_call (THREAD_INFO_TYPE *info, HANDLE io_handle)
 		enter_alertable_wait_ex (info, io_handle);
 }
 
-void
+gboolean
 mono_win32_leave_blocking_io_call (THREAD_INFO_TYPE *info, HANDLE io_handle)
 {
+	gboolean alerted = FALSE;
 	if (info)
-		leave_alertable_wait_ex (info, io_handle);
+		alerted = leave_alertable_wait_ex (info, io_handle);
+
+	return alerted;
 }
 
 void

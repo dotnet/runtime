@@ -49,7 +49,7 @@ internal static partial class Interop
 
                 public static void Free(Native native) => native.FreeNative();
 
-                internal unsafe struct Native
+                internal struct Native
                 {
                     private uint dwSize;
                     private IntPtr hwndParent;
@@ -161,7 +161,7 @@ internal static partial class Interop
 
                 public static void Free(Native native) => native.FreeNative();
 
-                internal unsafe struct Native
+                internal struct Native
                 {
                     private uint dwSize;
                     private IntPtr hwndParent;

@@ -742,6 +742,7 @@ namespace System.Tests
         [InlineData(0.561760f, -1)]
         [InlineData(0.774152f, -1)]
         [InlineData(-0.678764f, -1)]
+        [InlineData(1e-44f, -147)]
         public static void ILogB(float value, int expectedResult)
         {
             Assert.Equal(expectedResult, MathF.ILogB(value));

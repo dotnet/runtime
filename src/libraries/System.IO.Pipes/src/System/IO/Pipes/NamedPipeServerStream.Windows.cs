@@ -62,7 +62,11 @@ namespace System.IO.Pipes
             {
                 if (Interlocked.CompareExchange(ref _reusableConnectionValueTaskSource, connectionSource, null) is not null)
                 {
-                    source._preallocatedOverlapped.Dispose();
+                    source.Dispose();
+                }
+                else if (State == PipeState.Closed)
+                {
+                    Interlocked.Exchange(ref _reusableConnectionValueTaskSource, null)?.Dispose();
                 }
             }
         }

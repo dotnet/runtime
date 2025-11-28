@@ -18,10 +18,7 @@ trigger:
     - LICENSE.TXT
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
-    - eng/pipelines/coreclr/perf*yml
-    - eng/pipelines/coreclr/templates/build-perf*
-    - eng/pipelines/coreclr/templates/perf-job.yml
-    - eng/pipelines/coreclr/templates/run-perf*
+    - eng/pipelines/performance/*
     - eng/testing/performance/*
 
 schedules:
@@ -85,7 +82,11 @@ extends:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-            buildArgs: -s tools.illinktests -test -c $(_BuildConfig)
+            # Build libs.sfx subset first so that Roslyn analyzer tests can use live ref pack
+            buildArgs: -s libs.sfx -c $(_BuildConfig)
+            postBuildSteps:
+            - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch $(archType) $(_osParameter) -s tools.illinktests -test -c $(_BuildConfig) $(crossArg) $(_officialBuildParameter)
+              displayName: Run ILLink Tests
 
       #
       # Build Release config vertical for Windows, Linux, and OSX
@@ -106,7 +107,7 @@ extends:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-            buildArgs: -s clr+libs+tools.illink -c $(_BuildConfig)
+            buildArgs: -s clr+libs+tools.illink+host.native -c $(_BuildConfig)
             postBuildSteps:
               - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
 

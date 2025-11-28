@@ -20,11 +20,8 @@ Abstract:
 #define _PAL_THREAD_HPP_
 
 #include "corunix.hpp"
-#include "shm.hpp"
-#include "cs.hpp"
 
 #include <pthread.h>
-#include <sys/syscall.h>
 #if HAVE_MACH_EXCEPTIONS
 #include <mach/mach.h>
 #endif // HAVE_MACH_EXCEPTIONS
@@ -34,6 +31,7 @@ Abstract:
 #include "synchobjects.hpp"
 #include <errno.h>
 #include <minipal/thread.h>
+#include <minipal/mutex.h>
 
 namespace CorUnix
 {
@@ -205,7 +203,7 @@ namespace CorUnix
         CPalThread *m_pNext;
         DWORD m_dwExitCode;
         BOOL m_fExitCodeSet;
-        CRITICAL_SECTION m_csLock;
+        minipal_mutex m_mtxLock;
         bool m_fLockInitialized;
         bool m_fIsDummy;
 
@@ -374,7 +372,7 @@ namespace CorUnix
             CPalThread *pThread
             )
         {
-            InternalEnterCriticalSection(pThread, &m_csLock);
+            minipal_mutex_enter(&m_mtxLock);
         };
 
         void
@@ -382,7 +380,7 @@ namespace CorUnix
             CPalThread *pThread
             )
         {
-            InternalLeaveCriticalSection(pThread, &m_csLock);
+            minipal_mutex_leave(&m_mtxLock);
         };
 
         //
@@ -574,7 +572,7 @@ namespace CorUnix
             m_pNext = pNext;
         };
 
-#if !HAVE_MACH_EXCEPTIONS
+#if !HAVE_MACH_EXCEPTIONS && HAVE_SIGALTSTACK
         BOOL
         EnsureSignalAlternateStack(
             void
@@ -663,24 +661,6 @@ namespace CorUnix
             pThread = CreateCurrentThreadData();
         return pThread;
     }
-
-/***
-
-    $$TODO: These are needed only to support cross-process thread duplication
-
-    class CThreadImmutableData
-    {
-    public:
-        DWORD dwProcessId;
-    };
-
-    class CThreadSharedData
-    {
-    public:
-        DWORD dwThreadId;
-        DWORD dwExitCode;
-    };
-***/
 
     //
     // The process local information for a thread is just a pointer

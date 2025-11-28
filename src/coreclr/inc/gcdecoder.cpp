@@ -197,7 +197,7 @@ PTR_CBYTE FASTCALL decodeHeader(PTR_CBYTE table, UINT32 version, InfoHdr* header
                 header->syncStartOffset ^= HAS_SYNC_OFFSET;
                 break;
             case FLIP_REV_PINVOKE_FRAME:
-                header->revPInvokeOffset = INVALID_REV_PINVOKE_OFFSET ? HAS_REV_PINVOKE_FRAME_OFFSET : INVALID_REV_PINVOKE_OFFSET;
+                header->revPInvokeOffset ^= (INVALID_REV_PINVOKE_OFFSET ^ HAS_REV_PINVOKE_FRAME_OFFSET);
                 break;
 
             case NEXT_OPCODE:
@@ -205,9 +205,22 @@ PTR_CBYTE FASTCALL decodeHeader(PTR_CBYTE table, UINT32 version, InfoHdr* header
                 nextByte = *table++;
                 encoding = nextByte & ADJ_ENCODING_MAX;
                 // encoding here always corresponds to codes in InfoHdrAdjust2 set
-
-                _ASSERTE(encoding < SET_RET_KIND_MAX);
-                header->returnKind = (ReturnKind)encoding;
+                if (encoding <= SET_RET_KIND_MAX)
+                {
+                    header->returnKind = (ReturnKind)encoding;
+                }
+                else if (encoding < FFFF_NOGCREGION_CNT)
+                {
+                    header->noGCRegionCnt = encoding - SET_NOGCREGIONS_CNT;
+                }
+                else if (encoding == FFFF_NOGCREGION_CNT)
+                {
+                    header->noGCRegionCnt = HAS_NOGCREGIONS;
+                }
+                else
+                {
+                    _ASSERTE(!"Unexpected encoding");
+                }
                 break;
             }
         }
@@ -470,7 +483,8 @@ bool InfoHdrSmall::isHeaderMatch(const InfoHdr& target) const
                 target.varPtrTableSize != HAS_VARPTR &&
                 target.gsCookieOffset != HAS_GS_COOKIE_OFFSET &&
                 target.syncStartOffset != HAS_SYNC_OFFSET &&
-                target.revPInvokeOffset != HAS_REV_PINVOKE_FRAME_OFFSET);
+                target.revPInvokeOffset != HAS_REV_PINVOKE_FRAME_OFFSET &&
+                target.noGCRegionCnt != HAS_NOGCREGIONS);
 #endif
 
     // compare two InfoHdr's up to but not including the untrackCnt field
@@ -495,7 +509,10 @@ bool InfoHdrSmall::isHeaderMatch(const InfoHdr& target) const
     if (target.syncStartOffset != INVALID_SYNC_OFFSET)
         return false;
 
-    if (target.revPInvokeOffset!= INVALID_REV_PINVOKE_OFFSET)
+    if (target.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET)
+        return false;
+
+    if (target.noGCRegionCnt > 0)
         return false;
 
     return true;

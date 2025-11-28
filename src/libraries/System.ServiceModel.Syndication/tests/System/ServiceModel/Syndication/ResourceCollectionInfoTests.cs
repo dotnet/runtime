@@ -248,7 +248,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData("name", "http://www.w3.org/2000/xmlns/", "value", "version")]
         [InlineData("type", "ns", "value", "version")]
         [InlineData("name", "http://www.w3.org/2001/XMLSchema-instance", "value", "version")]
-        public void TryParseAttribute_Invoke_ReturnsFalse(string name, string ns, string value, string version)
+        public void TryParseAttribute_Invoke_ReturnsFalse(string? name, string? ns, string? value, string? version)
         {
             var collectionInfo = new ResourceCollectionInfoSubclass();
             Assert.False(collectionInfo.TryParseAttributeEntryPoint(name, ns, value, version));
@@ -273,7 +273,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("version")]
-        public void WriteAttributeExtensions_Invoke_ReturnsExpected(string version)
+        public void WriteAttributeExtensions_Invoke_ReturnsExpected(string? version)
         {
             var collectionInfo = new ResourceCollectionInfoSubclass();
             CompareHelper.AssertEqualWriteOutput("", writer => collectionInfo.WriteAttributeExtensionsEntryPoint(writer, version));
@@ -295,7 +295,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("version")]
-        public void WriteElementExtensions_Invoke_ReturnsExpected(string version)
+        public void WriteElementExtensions_Invoke_ReturnsExpected(string? version)
         {
             var collectionInfo = new ResourceCollectionInfoSubclass();
             CompareHelper.AssertEqualWriteOutput("", writer => collectionInfo.WriteElementExtensionsEntryPoint(writer, version));

@@ -246,9 +246,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 cms.ComputeSignature(signer);
             }
 
-            // DSA is not supported on mobile Apple platforms, so use ECDsa key instead
+            // DSA is not supported on Apple platforms, so use ECDsa key instead
             X509Certificate2 counterSigner1cert =
-                PlatformDetection.UsesMobileAppleCrypto ?
+                PlatformDetection.UsesAppleCrypto ?
                 Certificates.ECDsaP521Win.TryGetCertificateWithPrivateKey() :
                 Certificates.Dsa1024.TryGetCertificateWithPrivateKey();
 

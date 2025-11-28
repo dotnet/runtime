@@ -24,8 +24,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Subtract<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : ISubtractionOperators<T, T, T> =>
+            where T : ISubtractionOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, SubtractOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, SubtractOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise difference between numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -42,8 +49,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Subtract<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
-            where T : ISubtractionOperators<T, T, T> =>
+            where T : ISubtractionOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, SubtractOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarIntoSpan<T, SubtractOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise difference between numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a scalar.</param>
@@ -60,8 +74,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Subtract<T>(T x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : ISubtractionOperators<T, T, T> =>
+            where T : ISubtractionOperators<T, T, T>
+        {
+            if (typeof(T) == typeof(Half) && TryBinaryInvokeHalfAsInt16<T, SubtractOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeScalarSpanIntoSpan<T, SubtractOperator<T>>(x, y, destination);
+        }
 
         /// <summary>x - y</summary>
         internal readonly struct SubtractOperator<T> : IBinaryOperator<T> where T : ISubtractionOperators<T, T, T>

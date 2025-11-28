@@ -10,7 +10,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("TypeName")]
-        public void Ctor_TypeName(string typeName)
+        public void Ctor_TypeName(string? typeName)
         {
             var attribute = new DebuggerTypeProxyAttribute(typeName);
             Assert.Equal(typeName, attribute.ProxyTypeName);
@@ -54,7 +54,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("TargetTypeName")]
-        public void TargetTypeName_Set_GetReturnsExpected(string targetTypeName)
+        public void TargetTypeName_Set_GetReturnsExpected(string? targetTypeName)
         {
             var attribute = new DebuggerTypeProxyAttribute("TypeName") { TargetTypeName = targetTypeName };
             Assert.Equal(targetTypeName, attribute.TargetTypeName);

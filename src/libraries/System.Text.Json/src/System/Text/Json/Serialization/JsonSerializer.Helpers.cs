@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
@@ -67,10 +69,7 @@ namespace System.Text.Json
 
         private static void ValidateInputType(object? value, Type inputType)
         {
-            if (inputType is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(inputType));
-            }
+            ArgumentNullException.ThrowIfNull(inputType);
 
             if (value is not null)
             {
@@ -141,6 +140,43 @@ namespace System.Text.Json
             }
 
             return (T?)value;
+        }
+
+        private static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForRootLevelValueMode<T>(JsonTypeInfo<T> elementTypeInfo)
+        {
+            if (elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo != null)
+            {
+                return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo;
+            }
+
+            var converter = new RootLevelListConverter<T>(elementTypeInfo);
+            var listTypeInfo = new JsonTypeInfo<List<T?>>(converter, elementTypeInfo.Options)
+            {
+                ElementTypeInfo = elementTypeInfo,
+            };
+
+            listTypeInfo.EnsureConfigured();
+            elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo = listTypeInfo;
+            return listTypeInfo;
+        }
+
+        private static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForArrayMode<T>(JsonTypeInfo<T> elementTypeInfo)
+        {
+            if (elementTypeInfo._asyncEnumerableArrayTypeInfo != null)
+            {
+                return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableArrayTypeInfo;
+            }
+
+            var converter = new ListOfTConverter<List<T>, T>();
+            var listTypeInfo = new JsonTypeInfo<List<T?>>(converter, elementTypeInfo.Options)
+            {
+                CreateObject = static () => new List<T?>(),
+                ElementTypeInfo = elementTypeInfo,
+            };
+
+            listTypeInfo.EnsureConfigured();
+            elementTypeInfo._asyncEnumerableArrayTypeInfo = listTypeInfo;
+            return listTypeInfo;
         }
     }
 }

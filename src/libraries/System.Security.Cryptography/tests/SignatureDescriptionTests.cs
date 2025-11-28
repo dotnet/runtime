@@ -4,6 +4,8 @@
 // (C) 2002 Motus Technologies Inc. (http://www.motus.com)
 // (C) 2004 Novell  http://www.novell.com
 
+using System.Security.Cryptography.Dsa.Tests;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -39,7 +41,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS/tvOS/MacCatalyst")]
         public void Constructor_SecurityElement_DSA()
         {
             SecurityElement se = new SecurityElement("DSASignature");
@@ -102,8 +103,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Null(sig.KeyAlgorithm);
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS/tvOS/MacCatalyst")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public void Deformatter()
         {
             AsymmetricSignatureDeformatter def;
@@ -153,8 +153,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Null(sig.CreateDigest());
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS/tvOS/MacCatalyst")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public void Formatter()
         {
             SignatureDescription sig = new SignatureDescription();

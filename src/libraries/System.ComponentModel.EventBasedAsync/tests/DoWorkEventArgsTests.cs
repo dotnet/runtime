@@ -10,7 +10,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("non null test argument")]
-        public static void CtorTest(object expectedArgument)
+        public static void CtorTest(object? expectedArgument)
         {
             var target = new DoWorkEventArgs(expectedArgument);
             Assert.Equal(expectedArgument, target.Argument);
@@ -30,7 +30,7 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("non null test result")]
-        public static void ResultPropertyTest(object expectedResult)
+        public static void ResultPropertyTest(object? expectedResult)
         {
             var target = new DoWorkEventArgs(null) { Result = expectedResult };
             Assert.Equal(expectedResult, target.Result);

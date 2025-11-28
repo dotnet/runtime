@@ -63,6 +63,8 @@ PALEXPORT int32_t CryptoNative_PushX509StackField(STACK_OF(X509) * stack, X509* 
 
 PALEXPORT int32_t CryptoNative_GetRandomBytes(uint8_t* buf, int32_t num);
 
+PALEXPORT int32_t CryptoNative_IsSignatureAlgorithmAvailable(const char* algorithm);
+
 PALEXPORT int32_t CryptoNative_LookupFriendlyNameByOid(const char* oidValue, const char** friendlyName);
 
 PALEXPORT int32_t CryptoNative_EnsureOpenSslInitialized(void);

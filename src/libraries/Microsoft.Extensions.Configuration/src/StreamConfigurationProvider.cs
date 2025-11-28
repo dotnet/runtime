@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="source">The source.</param>
         public StreamConfigurationProvider(StreamConfigurationSource source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             Source = source;
         }

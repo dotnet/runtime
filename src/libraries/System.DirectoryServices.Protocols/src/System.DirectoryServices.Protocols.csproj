@@ -12,7 +12,6 @@
     <PackageDescription>Provides the methods defined in the Lightweight Directory Access Protocol (LDAP) version 3 (V3) and Directory Services Markup Language (DSML) version 2.0 (V2) standards.</PackageDescription>
     <!-- CS3016: Arrays as attribute arguments is not CLS-compliant -->
     <NoWarn>$(NoWarn);CS3016</NoWarn>
-    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
 
     <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
     <Nullable>disable</Nullable>
@@ -26,6 +25,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
+    <Compile Include="System\DirectoryServices\Protocols\common\AsnWriterExtensions.cs" />
     <Compile Include="System\DirectoryServices\Protocols\common\AuthTypes.cs" />
     <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.cs" />
     <Compile Include="System\DirectoryServices\Protocols\common\DereferenceAlias.cs" />
@@ -51,7 +51,6 @@
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapPartialResultsProcessor.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\SafeHandles.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\Interop\SortKeyInterop.cs" />
 
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)Interop\Interop.Ldap.cs" Link="Common\Interop\Interop.Ldap.cs" />
@@ -64,7 +63,6 @@
     <Compile Include="System\DirectoryServices\Protocols\common\QuotaControl.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\LdapPal.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\BerPal.Windows.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\Interop\SortKeyInterop.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Windows.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\SafeHandles.Windows.cs" />
@@ -79,7 +77,6 @@
     <Compile Include="System\DirectoryServices\Protocols\common\QuotaControl.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\LdapPal.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\BerPal.Linux.cs" />
-    <Compile Include="System\DirectoryServices\Protocols\Interop\SortKeyInterop.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LocalAppContextSwitches.cs" />

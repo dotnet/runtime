@@ -10,7 +10,7 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE GetZero()
 
 #ifdef EXE
 
-extern "C" int __cdecl main(int argc,  char **argv)
+int __cdecl main(int argc,  char **argv)
 {
     return 0;
 }

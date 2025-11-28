@@ -79,11 +79,15 @@ namespace NetClient
             return 100;
         }
 
+        private class InterfaceImpl : Server.Contract.IInterface2
+        {
+        }
+
         private static void ValidationTests()
         {
             Console.WriteLine($"Running {nameof(ValidationTests)} ...");
 
-            var miscTypeTesting = (Server.Contract.Servers.MiscTypesTesting)new Server.Contract.Servers.MiscTypesTestingClass();
+            var miscTypeTesting = new Server.Contract.Servers.MiscTypesTesting();
 
             Console.WriteLine("-- Primitives <=> VARIANT...");
             {
@@ -209,13 +213,20 @@ namespace NetClient
                 var expected = new Guid("{8EFAD956-B33D-46CB-90F4-45F55BA68A96}");
                 Assert.Equal(expected, miscTypeTesting.Marshal_Variant(expected));
             }
+
+            Console.WriteLine("-- Interfaces...");
+            {
+                var interfaceMaybe = miscTypeTesting.Marshal_Interface(new InterfaceImpl());
+                Assert.True(interfaceMaybe is Server.Contract.IInterface1);
+                Assert.True(interfaceMaybe is Server.Contract.IInterface2);
+            }
         }
 
         private static void ValidateNegativeTests()
         {
             Console.WriteLine($"Running {nameof(ValidateNegativeTests)} ...");
 
-            var miscTypeTesting = (Server.Contract.Servers.MiscTypesTesting)new Server.Contract.Servers.MiscTypesTestingClass();
+            var miscTypeTesting = new Server.Contract.Servers.MiscTypesTesting();
 
             Console.WriteLine("-- DispatchWrapper with non-IDispatch object <=> VARIANT...");
             {

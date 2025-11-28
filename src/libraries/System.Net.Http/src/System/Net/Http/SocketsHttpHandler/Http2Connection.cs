@@ -9,6 +9,7 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
@@ -193,9 +194,11 @@ namespace System.Net.Http
         {
             try
             {
-                _outgoingBuffer.EnsureAvailableSpace(Http2ConnectionPreface.Length +
-                    FrameHeader.Size + FrameHeader.SettingLength +
-                    FrameHeader.Size + FrameHeader.WindowUpdateLength);
+                int requiredSpace = Http2ConnectionPreface.Length +
+                    FrameHeader.Size + (2 * FrameHeader.SettingLength) +
+                    FrameHeader.Size + FrameHeader.WindowUpdateLength;
+
+                _outgoingBuffer.EnsureAvailableSpace(requiredSpace);
 
                 // Send connection preface
                 Http2ConnectionPreface.CopyTo(_outgoingBuffer.AvailableSpan);
@@ -223,9 +226,16 @@ namespace System.Net.Http
                 BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, windowUpdateAmount);
                 _outgoingBuffer.Commit(4);
 
+                Debug.Assert(requiredSpace == _outgoingBuffer.ActiveLength);
+
                 // Processing the incoming frames before sending the client preface and SETTINGS is necessary when using a NamedPipe as a transport.
                 // If the preface and SETTINGS coming from the server are not read first the below WriteAsync and the ProcessIncomingFramesAsync fall into a deadlock.
-                _ = ProcessIncomingFramesAsync();
+                // Avoid capturing the initial request's ExecutionContext for the entire lifetime of the new connection.
+                using (ExecutionContext.SuppressFlow())
+                {
+                    _ = ProcessIncomingFramesAsync();
+                }
+
                 await _stream.WriteAsync(_outgoingBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
                 _rttEstimator.OnInitialSettingsSent();
                 _outgoingBuffer.ClearAndReturnBuffer();
@@ -249,7 +259,11 @@ namespace System.Net.Http
                 throw new IOException(SR.net_http_http2_connection_not_established, e);
             }
 
-            _ = ProcessOutgoingFramesAsync();
+            // Avoid capturing the initial request's ExecutionContext for the entire lifetime of the new connection.
+            using (ExecutionContext.SuppressFlow())
+            {
+                _ = ProcessOutgoingFramesAsync();
+            }
         }
 
         private void Shutdown()
@@ -1184,7 +1198,7 @@ namespace System.Net.Http
                 // As such, it should not matter that we were not able to actually send the frame.
                 // But just in case, throw ObjectDisposedException. Asynchronous callers will ignore the failure.
                 Debug.Assert(_shutdown && _streamsInUse == 0);
-                return Task.FromException(new ObjectDisposedException(nameof(Http2Connection)));
+                return Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2Connection))));
             }
 
             return writeEntry.Task;
@@ -2015,7 +2029,7 @@ namespace System.Net.Http
                 // our built-in content types do), then we can just proceed to wait for the request body content to
                 // complete before worrying about response headers completing.
                 if (requestBodyTask.IsCompleted ||
-                    duplex == false ||
+                    !duplex ||
                     await Task.WhenAny(requestBodyTask, responseHeadersTask).ConfigureAwait(false) == requestBodyTask ||
                     requestBodyTask.IsCompleted ||
                     http2Stream.SendRequestFinished)
@@ -2160,7 +2174,7 @@ namespace System.Net.Http
             throw new HttpRequestException((innerException as HttpIOException)?.HttpRequestError ?? HttpRequestError.Unknown, message, innerException, RequestRetryType.RetryOnConnectionFailure);
 
         private static Exception GetRequestAbortedException(Exception? innerException = null) =>
-            innerException as HttpIOException ?? new IOException(SR.net_http_request_aborted, innerException);
+            innerException as HttpIOException ?? ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_http_request_aborted, innerException));
 
         [DoesNotReturn]
         private static void ThrowRequestAborted(Exception? innerException = null) =>

@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Configuration.Xml
 
         public XmlConfigurationElement(string elementName, string? name)
         {
-            ThrowHelper.ThrowIfNull(elementName);
+            ArgumentNullException.ThrowIfNull(elementName);
 
             ElementName = elementName;
             Name = name;

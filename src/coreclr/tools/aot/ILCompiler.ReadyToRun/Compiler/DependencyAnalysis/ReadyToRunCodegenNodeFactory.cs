@@ -52,12 +52,14 @@ namespace ILCompiler.DependencyAnalysis
         SkipTypeValidation
     }
 
-    public sealed class NodeFactoryOptimizationFlags
+    public struct NodeFactoryOptimizationFlags
     {
         public bool OptimizeAsyncMethods;
         public TypeValidationRule TypeValidation;
         public int DeterminismStress;
         public bool PrintReproArgs;
+        public bool EnableCachedInterfaceDispatchSupport;
+        public bool IsComponentModule;
     }
 
     // To make the code future compatible to the composite R2R story
@@ -69,6 +71,8 @@ namespace ILCompiler.DependencyAnalysis
         public CompilerTypeSystemContext TypeSystemContext { get; }
 
         public TargetDetails Target { get; }
+
+        public ReadyToRunContainerFormat Format { get; }
 
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
 
@@ -197,10 +201,10 @@ namespace ILCompiler.DependencyAnalysis
             ResourceData win32Resources,
             ReadyToRunFlags flags,
             NodeFactoryOptimizationFlags nodeFactoryOptimizationFlags,
+            ReadyToRunContainerFormat format,
             ulong imageBase,
             EcmaModule associatedModule,
-            int genericCycleDepthCutoff,
-            int genericCycleBreadthCutoff)
+            int genericCycleDepthCutoff, int genericCycleBreadthCutoff)
         {
             OptimizationFlags = nodeFactoryOptimizationFlags;
             TypeSystemContext = context;
@@ -212,6 +216,7 @@ namespace ILCompiler.DependencyAnalysis
             CopiedCorHeaderNode = corHeaderNode;
             DebugDirectoryNode = debugDirectoryNode;
             Resolver = compilationModuleGroup.Resolver;
+            Format = format;
 
             Header = new GlobalHeaderNode(flags, associatedModule);
             ImageBase = imageBase;
@@ -307,7 +312,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new DelayLoadHelperMethodImport(
                     this,
-                    DispatchImports,
+                    HelperImports,
                     ReadyToRunHelper.DelayLoad_Helper_Obj,
                     key.Method,
                     useVirtualCall: false,
@@ -374,7 +379,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public RuntimeFunctionsGCInfoNode RuntimeFunctionsGCInfo;
 
-        public DelayLoadMethodCallThunkNodeRange DelayLoadMethodCallThunks;
+        public SymbolNodeRange DelayLoadMethodCallThunks;
 
         public InstanceEntryPointTableNode InstanceEntryPointTable;
 
@@ -697,7 +702,8 @@ namespace ILCompiler.DependencyAnalysis
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
-            DelayLoadMethodCallThunks = new DelayLoadMethodCallThunkNodeRange();
+            DelayLoadMethodCallThunks = new SymbolNodeRange("DelayLoadMethodCallThunkNodeRange");
+            graph.AddRoot(DelayLoadMethodCallThunks, "DelayLoadMethodCallThunks header entry is always generated");
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
 
             ExceptionInfoLookupTableNode exceptionInfoLookupTableNode = new ExceptionInfoLookupTableNode(this);
@@ -775,7 +781,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null, 
+            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null,
                 CompilationModuleGroup.IsCompositeBuildMode ? InliningInfoNode.InfoType.CrossModuleInliningForCrossModuleDataOnly : InliningInfoNode.InfoType.CrossModuleAllMethods);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.CrossModuleInlineInfo, crossModuleInliningInfoTable, crossModuleInliningInfoTable);
             this.CrossModuleInlningInfo = crossModuleInliningInfoTable;
@@ -867,7 +873,7 @@ namespace ILCompiler.DependencyAnalysis
                 "DispatchImports",
                 ReadyToRunImportSectionType.StubDispatch,
                 ReadyToRunImportSectionFlags.PCode,
-                (byte)Target.PointerSize,
+                this.OptimizationFlags.EnableCachedInterfaceDispatchSupport ? (byte)(2 * Target.PointerSize) : (byte)Target.PointerSize,
                 emitPrecode: false,
                 emitGCRefMap: true);
             ImportSectionsTable.AddEmbeddedObject(DispatchImports);
@@ -1054,6 +1060,16 @@ namespace ILCompiler.DependencyAnalysis
         public void DetectGenericCycles(TypeSystemEntity caller, TypeSystemEntity callee)
         {
             _genericCycleDetector?.DetectCycle(caller, callee);
+        }
+
+        public string GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
+        {
+            isHidden = false;
+            if (node == Header)
+            {
+                return "RTR_HEADER";
+            }
+            return null;
         }
     }
 }

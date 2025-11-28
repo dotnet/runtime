@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="options">The options instance to configure.</param>
         public virtual void Configure(string? name, TOptions options)
         {
-            ThrowHelper.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(options);
 
             // Null name is used to configure all named options.
             if (Name == null || name == Name)
@@ -99,7 +99,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="options">The options instance to configure.</param>
         public virtual void Configure(string? name, TOptions options)
         {
-            ThrowHelper.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(options);
 
             // Null name is used to configure all named options.
             if (Name == null || name == Name)
@@ -168,7 +168,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="options">The options instance to configure.</param>
         public virtual void Configure(string? name, TOptions options)
         {
-            ThrowHelper.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(options);
 
             // Null name is used to configure all named options.
             if (Name == null || name == Name)
@@ -246,7 +246,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="options">The options instance to configure.</param>
         public virtual void Configure(string? name, TOptions options)
         {
-            ThrowHelper.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(options);
 
             // Null name is used to configure all named options.
             if (Name == null || name == Name)
@@ -333,7 +333,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="options">The options instance to configure.</param>
         public virtual void Configure(string? name, TOptions options)
         {
-            ThrowHelper.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(options);
 
             // Null name is used to configure all named options.
             if (Name == null || name == Name)
@@ -429,7 +429,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="options">The options instance to configure.</param>
         public virtual void Configure(string? name, TOptions options)
         {
-            ThrowHelper.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(options);
 
             // Null name is used to configure all named options.
             if (Name == null || name == Name)

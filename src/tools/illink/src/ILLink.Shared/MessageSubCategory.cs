@@ -6,11 +6,11 @@
 
 namespace ILLink.Shared
 {
-	public static class MessageSubCategory
-	{
-		public const string None = "";
-		public const string TrimAnalysis = "Trim analysis";
-		public const string UnresolvedAssembly = "Unresolved assembly";
-		public const string AotAnalysis = "AOT analysis";
-	}
+    public static class MessageSubCategory
+    {
+        public const string None = "";
+        public const string TrimAnalysis = "Trim analysis";
+        public const string UnresolvedAssembly = "Unresolved assembly";
+        public const string AotAnalysis = "AOT analysis";
+    }
 }

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>corerun-wasm</title>
+</head>
+<body>
+    <h1>corerun-wasm</h1>
+    <pre id="log"></pre>
+    <script>
+        Module = {
+            arguments: [
+                "HelloWorld.dll"
+            ],
+            preRun: [ function () {
+                // Build the TPA list and set the APP_ASSEMBLIES environment variable.
+                const path = "/";
+                let tpaList = "";
+                let files = FS.readdir(path);
+                files.forEach(function(file) {
+                    if (file.endsWith(".dll")) {
+                        tpaList += (tpaList.length > 0 ? ":" : "") + path + file;
+                    }
+                });
+
+                ENV["APP_ASSEMBLIES"] = tpaList;
+            } ],
+            onExit: function (code) {
+                console.log("onExit, code: " + code);
+            },
+        };
+
+        const originalConsoleLog = console.log;
+        console.log = function(message) {
+            originalConsoleLog(message);
+            fetch('/log=corerun-wasm-log.txt', {
+                method: 'POST',
+                body: ('stdout: ' + message),
+                headers: {
+                    'Content-Type': 'text/plain'
+                }
+            });
+            const elt = document.createElement("span");
+            elt.textContent = message + "\n";
+            document.querySelector("#log").appendChild(elt);
+        };
+        const originalConsoleError = console.error;
+        console.error = function(message) {
+            originalConsoleError(message);
+            fetch('/log=corerun-wasm-log.txt', {
+                method: 'POST',
+                body: ('stderr: ' + message),
+                headers: {
+                    'Content-Type': 'text/plain'
+                }
+            });
+            const elt = document.createElement("span");
+            elt.textContent = message + "\n";
+            elt.style.color = "red";
+            document.querySelector("#log").appendChild(elt);
+        };
+    </script>
+    <script src="corerun.js"></script>
+</body>

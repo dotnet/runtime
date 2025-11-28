@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(nameof(HashAlgorithmName.SHA512), 1024 / 8 - 1, new byte[] { 0xa4, 0xe5, 0x24, 0xe8, 0x56, 0x2b, 0x48, 0xa4 })]
         [InlineData(nameof(HashAlgorithmName.SHA512), 1024 / 8, new byte[] { 0xba, 0xf6, 0xed, 0xa7, 0x3a, 0xf7, 0x12, 0x27 })]
         [InlineData(nameof(HashAlgorithmName.SHA512), 1024 / 8 + 1, new byte[] { 0x34, 0xdf, 0x2d, 0x21, 0xfd, 0xf1, 0x0e, 0x13 })]
-#if NET8_0_OR_GREATER
+#if NET
         [InlineData("SHA3-256", 1088 / 8 - 1, new byte[] { 0xa1, 0x96, 0xae, 0x83, 0x56, 0xf4, 0x2a, 0x4b })]
         [InlineData("SHA3-256", 1088 / 8, new byte[] { 0xe7, 0xe9, 0xe0, 0x98, 0x09, 0x54, 0x54, 0x2d })]
         [InlineData("SHA3-256", 1088 / 8 + 1, new byte[] { 0x7d, 0x7a, 0x71, 0xdf, 0x1f, 0x5d, 0x5b, 0x44 })]
@@ -108,7 +108,7 @@ namespace System.Security.Cryptography.Tests
 #endif
         public static void Kdk_HmacBlockBoundarySizes(string hashAlgorithmName, int kdkSize, byte[] expected)
         {
-#if NET8_0_OR_GREATER
+#if NET
             if ((hashAlgorithmName == "SHA3-256" && !SHA3_256.IsSupported) ||
                 (hashAlgorithmName == "SHA3-384" && !SHA3_384.IsSupported) ||
                 (hashAlgorithmName == "SHA3-512" && !SHA3_512.IsSupported))
@@ -328,7 +328,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-#if NET8_0_OR_GREATER
+#if NET
             if (HMACSHA3_256.IsSupported)
             {
                 // HMACSHA3_256 output size is 32 bytes

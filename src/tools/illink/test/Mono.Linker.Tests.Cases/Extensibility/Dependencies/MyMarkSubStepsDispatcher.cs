@@ -5,18 +5,18 @@ using Mono.Linker.Steps;
 
 public class MyMarkSubStepsDispatcher : MarkSubStepsDispatcher
 {
-	public MyMarkSubStepsDispatcher ()
-		: base (GetSubSteps ())
-	{
-	}
+    public MyMarkSubStepsDispatcher()
+        : base(GetSubSteps())
+    {
+    }
 
-	public override void Initialize (LinkContext context, MarkContext markContext)
-	{
-		base.Initialize (context, markContext);
-	}
+    public override void Initialize(LinkContext context, MarkContext markContext)
+    {
+        base.Initialize(context, markContext);
+    }
 
-	static IEnumerable<ISubStep> GetSubSteps ()
-	{
-		yield return new CustomSubStep ();
-	}
+    static IEnumerable<ISubStep> GetSubSteps()
+    {
+        yield return new CustomSubStep();
+    }
 }

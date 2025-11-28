@@ -41,7 +41,7 @@ Each IR instruction is represented by a MonoInst structure. The fields of the st
 
 -   ins-\>opcode contains the opcode of the instruction. It is always set.
 
--   ins-\>dreg, ins-\>sreg1, ins-\>sreg2 contain the the destination and source vregs of the instruction. If the instruction doesn't have a destination/and our source, the corresponding field is set to -1.
+-   ins-\>dreg, ins-\>sreg1, ins-\>sreg2 contain the destination and source vregs of the instruction. If the instruction doesn't have a destination/and our source, the corresponding field is set to -1.
 
 -   ins-\>backend is used for various purposes:
     -   for MonoInst's representing vtype variables, it indicates that the variable is in unmanaged format (used during marshalling)

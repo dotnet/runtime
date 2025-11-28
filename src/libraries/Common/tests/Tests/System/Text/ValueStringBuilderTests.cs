@@ -104,25 +104,6 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        public unsafe void Append_PtrInt_MatchesStringBuilder()
-        {
-            var sb = new StringBuilder();
-            var vsb = new ValueStringBuilder();
-            for (int i = 1; i <= 100; i++)
-            {
-                string s = i.ToString();
-                fixed (char* p = s)
-                {
-                    sb.Append(p, s.Length);
-                    vsb.Append(p, s.Length);
-                }
-            }
-
-            Assert.Equal(sb.Length, vsb.Length);
-            Assert.Equal(sb.ToString(), vsb.ToString());
-        }
-
-        [Fact]
         public void AppendSpan_DataAppendedCorrectly()
         {
             var sb = new StringBuilder();
@@ -197,46 +178,6 @@ namespace System.Text.Tests
 
             Assert.Equal(0, vsb.Length);
             Assert.Equal(string.Empty, vsb.ToString());
-            Assert.True(vsb.TryCopyTo(Span<char>.Empty, out _));
-
-            const string Text2 = "another test";
-            vsb.Append(Text2);
-            Assert.Equal(Text2.Length, vsb.Length);
-            Assert.Equal(Text2, vsb.ToString());
-        }
-
-        [Fact]
-        public void TryCopyTo_FailsWhenDestinationIsTooSmall_SucceedsWhenItsLargeEnough()
-        {
-            var vsb = new ValueStringBuilder();
-
-            const string Text = "expected text";
-            vsb.Append(Text);
-            Assert.Equal(Text.Length, vsb.Length);
-
-            Span<char> dst = new char[Text.Length - 1];
-            Assert.False(vsb.TryCopyTo(dst, out int charsWritten));
-            Assert.Equal(0, charsWritten);
-            Assert.Equal(0, vsb.Length);
-        }
-
-        [Fact]
-        public void TryCopyTo_ClearsBuilder_ThenReusable()
-        {
-            const string Text1 = "test";
-            var vsb = new ValueStringBuilder();
-
-            vsb.Append(Text1);
-            Assert.Equal(Text1.Length, vsb.Length);
-
-            Span<char> dst = new char[Text1.Length];
-            Assert.True(vsb.TryCopyTo(dst, out int charsWritten));
-            Assert.Equal(Text1.Length, charsWritten);
-            Assert.Equal(Text1, new string(dst));
-
-            Assert.Equal(0, vsb.Length);
-            Assert.Equal(string.Empty, vsb.ToString());
-            Assert.True(vsb.TryCopyTo(Span<char>.Empty, out _));
 
             const string Text2 = "another test";
             vsb.Append(Text2);
@@ -257,7 +198,6 @@ namespace System.Text.Tests
 
             Assert.Equal(0, vsb.Length);
             Assert.Equal(string.Empty, vsb.ToString());
-            Assert.True(vsb.TryCopyTo(Span<char>.Empty, out _));
 
             const string Text2 = "another test";
             vsb.Append(Text2);
@@ -266,7 +206,7 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        public unsafe void Indexer()
+        public void Indexer()
         {
             const string Text1 = "foobar";
             var vsb = new ValueStringBuilder();

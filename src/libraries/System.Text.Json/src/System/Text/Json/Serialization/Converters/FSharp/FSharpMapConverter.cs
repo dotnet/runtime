@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
@@ -37,7 +38,20 @@ namespace System.Text.Json.Serialization.Converters
         internal sealed override bool IsConvertibleCollection => true;
         protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
-            state.Current.ReturnValue = _mapConstructor((List<Tuple<TKey, TValue>>)state.Current.ReturnValue!);
+            List<Tuple<TKey, TValue>> listToConvert = (List<Tuple<TKey, TValue>>)state.Current.ReturnValue!;
+            TMap map = _mapConstructor(listToConvert);
+            state.Current.ReturnValue = map;
+
+            if (!options.AllowDuplicateProperties)
+            {
+                int totalItemsAdded = listToConvert.Count;
+                int mapCount = ((ICollection<KeyValuePair<TKey, TValue>>)map).Count;
+
+                if (mapCount != totalItemsAdded)
+                {
+                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed();
+                }
+            }
         }
     }
 }

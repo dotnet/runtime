@@ -81,10 +81,7 @@ namespace System.Text.Json.Nodes
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create<T>(T? value, JsonTypeInfo<T> jsonTypeInfo, JsonNodeOptions? options = null)
         {
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             if (value is null)
             {
@@ -143,7 +140,7 @@ namespace System.Text.Json.Nodes
                 {
                     node.WriteTo(writer);
                     writer.Flush();
-                    Utf8JsonReader reader = new(output.WrittenMemory.Span);
+                    Utf8JsonReader reader = new(output.WrittenSpan);
                     backingDocument = JsonDocument.ParseValue(ref reader);
                     return backingDocument.RootElement;
                 }

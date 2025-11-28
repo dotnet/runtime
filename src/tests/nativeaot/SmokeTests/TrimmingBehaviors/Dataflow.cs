@@ -565,10 +565,7 @@ class Dataflow
                 // so that we can tests this doesn't lead to keeping the type.
                 Assert.Equal(666, s_neverAllocatedTypeAskingForNonPublicMethods.GetType().CountMethods());
             }
-            // This is not great - the GetType() call above "wished" NeverAllocatedTypeAskingForNonPublicMethods
-            // into existence, but it shouldn't have. We could do better here if this is a problem.
-            // If we do that, change this .NotNull to .Null.
-            Assert.NotNull(typeof(TestObjectGetTypeDataflow).GetNestedTypeSecretly(nameof(NeverAllocatedTypeAskingForNonPublicMethods)));
+            Assert.Null(typeof(TestObjectGetTypeDataflow).GetNestedTypeSecretly(nameof(NeverAllocatedTypeAskingForNonPublicMethods)));
             // Sanity check
             Assert.NotNull(typeof(TestObjectGetTypeDataflow).GetNestedTypeSecretly(nameof(TypeWithNonPublicMethodsKept)));
 

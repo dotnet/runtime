@@ -202,7 +202,7 @@ namespace ILCompiler
                     if (targetMeth.Signature.IsStatic || !targetMeth.IsTypicalMethodDefinition)
                         continue;
 
-                    bool isDelegateInvoke = targetMeth.OwningType.IsDelegate && targetMeth.Name == "Invoke";
+                    bool isDelegateInvoke = targetMeth.OwningType.IsDelegate && targetMeth.Name.SequenceEqual("Invoke"u8);
 
                     if (opcode != ILOpcode.callvirt && !isDelegateInvoke)
                         continue;

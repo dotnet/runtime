@@ -1,0 +1,9 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+  
+  <PropertyGroup>
+    <BuildDebPackage Condition="'$(TargetsLinuxGlibc)' == 'true'">true</BuildDebPackage>
+    <BuildRpmPackage Condition="'$(TargetsLinuxGlibc)' == 'true'">true</BuildRpmPackage>
+    <UseWix5>true</UseWix5>
+  </PropertyGroup>
+</Project>

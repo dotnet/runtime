@@ -13,273 +13,305 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-	public class DescriptorMarker : ProcessLinkerXmlBase
-	{
-		const string NamespaceElementName = "namespace";
+    public class DescriptorMarker : ProcessLinkerXmlBase
+    {
+        const string NamespaceElementName = "namespace";
 
-		const string _required = "required";
-		const string _preserve = "preserve";
-		const string _accessors = "accessors";
+        const string _required = "required";
+        const string _preserve = "preserve";
+        const string _accessors = "accessors";
 
-		static readonly string[] _accessorsAll = new string[] { "all" };
-		static readonly char[] _accessorsSep = new char[] { ';' };
+        static readonly string[] _accessorsAll = new string[] { "all" };
+        static readonly char[] _accessorsSep = new char[] { ';' };
 
-		protected readonly HashSet<object> _preservedMembers;
+        protected readonly HashSet<object> _preservedMembers;
 
-		public DescriptorMarker (LinkContext context, Stream documentStream, string xmlDocumentLocation)
-			: base (context, documentStream, xmlDocumentLocation)
-		{
-			_preservedMembers = new ();
-		}
+        public DescriptorMarker(LinkContext context, Stream documentStream, string xmlDocumentLocation)
+            : base(context, documentStream, xmlDocumentLocation)
+        {
+            _preservedMembers = new();
+        }
 
-		public DescriptorMarker (LinkContext context, Stream documentStream, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "<unspecified>")
-			: base (context, documentStream, resource, resourceAssembly, xmlDocumentLocation)
-		{
-			_preservedMembers = new ();
-		}
+        public DescriptorMarker(LinkContext context, Stream documentStream, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation = "<unspecified>")
+            : base(context, documentStream, resource, resourceAssembly, xmlDocumentLocation)
+        {
+            _preservedMembers = new();
+        }
 
-		protected void LogDuplicatePreserve(string memberName, XPathNavigator duplicatePosition)
-		{
-			var origin = GetMessageOriginForPosition (duplicatePosition);
-			_context.LogMessage (MessageContainer.CreateInfoMessage (origin, $"Duplicate preserve of '{memberName}'"));
-		}
+        protected void LogDuplicatePreserve(string memberName, XPathNavigator duplicatePosition)
+        {
+            var origin = GetMessageOriginForPosition(duplicatePosition);
+            _context.LogMessage(MessageContainer.CreateInfoMessage(origin, $"Duplicate preserve of '{memberName}'"));
+        }
 
-		public void Mark ()
-		{
-			bool stripDescriptors = _context.IsOptimizationEnabled (CodeOptimizations.RemoveDescriptors, _resource?.Assembly);
-			ProcessXml (stripDescriptors, _context.IgnoreDescriptors);
-		}
+        public void Mark()
+        {
+            bool stripDescriptors = _context.IsOptimizationEnabled(CodeOptimizations.RemoveDescriptors, _resource?.Assembly);
+            ProcessXml(stripDescriptors, _context.IgnoreDescriptors);
+        }
 
-		protected override AllowedAssemblies AllowedAssemblySelector { get => AllowedAssemblies.AnyAssembly; }
+        protected override AllowedAssemblies AllowedAssemblySelector { get => AllowedAssemblies.AnyAssembly; }
 
-		protected override void ProcessAssembly (AssemblyDefinition assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
-		{
-			if (GetTypePreserve (nav) == TypePreserve.All) {
-				foreach (var type in assembly.MainModule.Types)
-					MarkAndPreserveAll (type, nav);
+        protected override void ProcessAssembly(AssemblyDefinition assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
+        {
+            if (GetTypePreserve(nav) == TypePreserve.All)
+            {
+                foreach (var type in assembly.MainModule.Types)
+                    MarkAndPreserveAll(type, nav);
 
-				foreach (var exportedType in assembly.MainModule.ExportedTypes)
-					_context.MarkingHelpers.MarkExportedType (exportedType, assembly.MainModule, new DependencyInfo (DependencyKind.XmlDescriptor, assembly.MainModule), GetMessageOriginForPosition (nav));
-			} else {
-				ProcessTypes (assembly, nav, warnOnUnresolvedTypes);
-				ProcessNamespaces (assembly, nav);
-			}
-		}
+                foreach (var exportedType in assembly.MainModule.ExportedTypes)
+                    _context.MarkingHelpers.MarkExportedType(exportedType, assembly.MainModule, new DependencyInfo(DependencyKind.XmlDescriptor, assembly.MainModule), GetMessageOriginForPosition(nav));
+            }
+            else
+            {
+                ProcessTypes(assembly, nav, warnOnUnresolvedTypes);
+                ProcessNamespaces(assembly, nav);
+            }
+        }
 
-		void ProcessNamespaces (AssemblyDefinition assembly, XPathNavigator nav)
-		{
-			foreach (XPathNavigator namespaceNav in nav.SelectChildren (NamespaceElementName, XmlNamespace)) {
-				if (!ShouldProcessElement (namespaceNav))
-					continue;
+        void ProcessNamespaces(AssemblyDefinition assembly, XPathNavigator nav)
+        {
+            foreach (XPathNavigator namespaceNav in nav.SelectChildren(NamespaceElementName, XmlNamespace))
+            {
+                if (!ShouldProcessElement(namespaceNav))
+                    continue;
 
-				string fullname = GetFullName (namespaceNav);
-				bool foundMatch = false;
-				foreach (TypeDefinition type in assembly.MainModule.Types) {
-					if (type.Namespace != fullname)
-						continue;
+                string fullname = GetFullName(namespaceNav);
+                bool foundMatch = false;
+                foreach (TypeDefinition type in assembly.MainModule.Types)
+                {
+                    if (type.Namespace != fullname)
+                        continue;
 
-					foundMatch = true;
-					MarkAndPreserveAll (type, nav);
-				}
+                    foundMatch = true;
+                    MarkAndPreserveAll(type, nav);
+                }
 
-				if (!foundMatch) {
-					LogWarning (namespaceNav, DiagnosticId.XmlCouldNotFindAnyTypeInNamespace, fullname);
-				}
-			}
-		}
+                if (!foundMatch)
+                {
+                    LogWarning(namespaceNav, DiagnosticId.XmlCouldNotFindAnyTypeInNamespace, fullname);
+                }
+            }
+        }
 
-		void MarkAndPreserveAll (TypeDefinition type, XPathNavigator nav)
-		{
-			_context.Annotations.Mark (type, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
-			_context.Annotations.SetPreserve (type, TypePreserve.All);
+        void MarkAndPreserveAll(TypeDefinition type, XPathNavigator nav)
+        {
+            _context.Annotations.Mark(type, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
+            _context.Annotations.SetPreserve(type, TypePreserve.All);
 
-			if (!type.HasNestedTypes)
-				return;
+            if (!type.HasNestedTypes)
+                return;
 
-			foreach (TypeDefinition nested in type.NestedTypes)
-				MarkAndPreserveAll (nested, nav);
-		}
+            foreach (TypeDefinition nested in type.NestedTypes)
+                MarkAndPreserveAll(nested, nav);
+        }
 
-		protected override TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly, XPathNavigator nav)
-		{
-			_context.MarkingHelpers.MarkExportedType (exported, assembly.MainModule, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
-			return base.ProcessExportedType (exported, assembly, nav);
-		}
+        protected override TypeDefinition? ProcessExportedType(ExportedType exported, AssemblyDefinition assembly, XPathNavigator nav)
+        {
+            _context.MarkingHelpers.MarkExportedType(exported, assembly.MainModule, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
 
-		protected override void ProcessType (TypeDefinition type, XPathNavigator nav)
-		{
-			Debug.Assert (ShouldProcessElement (nav));
+            // If a nested exported type is marked, then the declaring type must also be marked otherwise cecil will write out an invalid exported type table
+            // and anything that tries to read the assembly with cecil will crash
+            if (exported.DeclaringType != null)
+            {
+                var currentType = exported.DeclaringType;
+                while (currentType != null)
+                {
+                    var parent = currentType.DeclaringType;
+                    _context.MarkingHelpers.MarkExportedType(currentType, assembly.MainModule, new DependencyInfo(DependencyKind.DeclaringType, currentType), GetMessageOriginForPosition(nav));
+                    currentType = parent;
+                }
+            }
 
-			TypePreserve preserve = GetTypePreserve (nav);
-			switch (preserve) {
-			case TypePreserve.Fields when !type.HasFields:
-				LogWarning (nav, DiagnosticId.TypeHasNoFieldsToPreserve, type.GetDisplayName ());
-				break;
+            return base.ProcessExportedType(exported, assembly, nav);
+        }
 
-			case TypePreserve.Methods when !type.HasMethods:
-				LogWarning (nav, DiagnosticId.TypeHasNoMethodsToPreserve, type.GetDisplayName ());
-				break;
+        protected override void ProcessType(TypeDefinition type, XPathNavigator nav)
+        {
+            Debug.Assert(ShouldProcessElement(nav));
 
-			case TypePreserve.Fields:
-			case TypePreserve.Methods:
-			case TypePreserve.All:
-				_context.Annotations.SetPreserve (type, preserve);
-				break;
-			}
+            TypePreserve preserve = GetTypePreserve(nav);
+            switch (preserve)
+            {
+                case TypePreserve.Fields when !type.HasFields:
+                    LogWarning(nav, DiagnosticId.TypeHasNoFieldsToPreserve, type.GetDisplayName());
+                    break;
 
-			bool required = IsRequired (nav);
-			ProcessTypeChildren (type, nav, required);
+                case TypePreserve.Methods when !type.HasMethods:
+                    LogWarning(nav, DiagnosticId.TypeHasNoMethodsToPreserve, type.GetDisplayName());
+                    break;
 
-			if (!required)
-				return;
+                case TypePreserve.Fields:
+                case TypePreserve.Methods:
+                case TypePreserve.All:
+                    _context.Annotations.SetPreserve(type, preserve);
+                    break;
+            }
 
-			_context.Annotations.Mark (type, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
+            bool required = IsRequired(nav);
+            ProcessTypeChildren(type, nav, required);
 
-			if (type.IsNested) {
-				var currentType = type;
-				while (currentType.IsNested) {
-					var parent = currentType.DeclaringType;
-					_context.Annotations.Mark (parent, new DependencyInfo (DependencyKind.DeclaringType, currentType), GetMessageOriginForPosition (nav));
-					currentType = parent;
-				}
-			}
-		}
+            if (!required)
+                return;
 
-		protected static TypePreserve GetTypePreserve (XPathNavigator nav)
-		{
-			string attribute = GetAttribute (nav, _preserve);
-			if (string.IsNullOrEmpty (attribute))
-				return nav.HasChildren ? TypePreserve.Nothing : TypePreserve.All;
+            _context.Annotations.Mark(type, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
 
-			if (Enum.TryParse (attribute, true, out TypePreserve result))
-				return result;
-			return TypePreserve.Nothing;
-		}
+            if (type.IsNested)
+            {
+                var currentType = type;
+                while (currentType.IsNested)
+                {
+                    var parent = currentType.DeclaringType;
+                    _context.Annotations.Mark(parent, new DependencyInfo(DependencyKind.DeclaringType, currentType), GetMessageOriginForPosition(nav));
+                    currentType = parent;
+                }
+            }
+        }
 
-		protected override void ProcessField (TypeDefinition type, FieldDefinition field, XPathNavigator nav)
-		{
-			if (!_preservedMembers.Add (field))
-				LogDuplicatePreserve (field.FullName, nav);
+        protected static TypePreserve GetTypePreserve(XPathNavigator nav)
+        {
+            string attribute = GetAttribute(nav, _preserve);
+            if (string.IsNullOrEmpty(attribute))
+                return nav.HasChildren ? TypePreserve.Nothing : TypePreserve.All;
 
-			_context.Annotations.Mark (field, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
-		}
+            if (Enum.TryParse(attribute, true, out TypePreserve result))
+                return result;
+            return TypePreserve.Nothing;
+        }
 
-		protected override void ProcessMethod (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData)
-		{
-			if (!_preservedMembers.Add (method))
-				LogDuplicatePreserve (method.GetDisplayName (), nav);
+        protected override void ProcessField(TypeDefinition type, FieldDefinition field, XPathNavigator nav)
+        {
+            if (!_preservedMembers.Add(field))
+                LogDuplicatePreserve(field.FullName, nav);
 
-			_context.Annotations.MarkIndirectlyCalledMethod (method);
-			_context.Annotations.SetAction (method, MethodAction.Parse);
+            _context.Annotations.Mark(field, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
+        }
 
-			if (customData is bool required && !required) {
-				_context.Annotations.AddPreservedMethod (type, method);
-			} else {
-				_context.Annotations.Mark (method, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
-			}
-		}
+        protected override void ProcessMethod(TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData)
+        {
+            if (!_preservedMembers.Add(method))
+                LogDuplicatePreserve(method.GetDisplayName(), nav);
 
-		void ProcessMethodIfNotNull (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData)
-		{
-			if (method == null)
-				return;
+            _context.Annotations.MarkIndirectlyCalledMethod(method);
+            _context.Annotations.SetAction(method, MethodAction.Parse);
 
-			ProcessMethod (type, method, nav, customData);
-		}
+            if (customData is bool required && !required)
+            {
+                _context.Annotations.AddPreservedMethod(type, method);
+            }
+            else
+            {
+                _context.Annotations.Mark(method, new DependencyInfo(DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition(nav));
+            }
+        }
 
-		protected override MethodDefinition? GetMethod (TypeDefinition type, string signature)
-		{
-			if (type.HasMethods)
-				foreach (MethodDefinition meth in type.Methods)
-					if (signature == GetMethodSignature (meth, false))
-						return meth;
+        void ProcessMethodIfNotNull(TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData)
+        {
+            if (method == null)
+                return;
 
-			return null;
-		}
+            ProcessMethod(type, method, nav, customData);
+        }
 
-		public static string GetMethodSignature (MethodDefinition meth, bool includeGenericParameters)
-		{
-			StringBuilder sb = new StringBuilder ();
-			sb.Append (meth.ReturnType.FullName);
-			sb.Append (' ');
-			sb.Append (meth.Name);
-			if (includeGenericParameters && meth.HasGenericParameters) {
-				sb.Append ('`');
-				sb.Append (meth.GenericParameters.Count);
-			}
+        protected override MethodDefinition? GetMethod(TypeDefinition type, string signature)
+        {
+            if (type.HasMethods)
+                foreach (MethodDefinition meth in type.Methods)
+                    if (signature == GetMethodSignature(meth, false))
+                        return meth;
 
-			sb.Append ('(');
-			if (meth.HasMetadataParameters ()) {
-				int i = 0;
-				foreach (var p in meth.GetMetadataParameters ()) {
-					if (i++ > 0)
-						sb.Append (',');
-					sb.Append (p.ParameterType.FullName);
-				}
-			}
-			sb.Append (')');
-			return sb.ToString ();
-		}
+            return null;
+        }
 
-		protected override void ProcessEvent (TypeDefinition type, EventDefinition @event, XPathNavigator nav, object? customData)
-		{
-			if (!_preservedMembers.Add (@event))
-				LogDuplicatePreserve(@event.FullName, nav);
+        public static string GetMethodSignature(MethodDefinition meth, bool includeGenericParameters)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(meth.ReturnType.FullName);
+            sb.Append(' ');
+            sb.Append(meth.Name);
+            if (includeGenericParameters && meth.HasGenericParameters)
+            {
+                sb.Append('`');
+                sb.Append(meth.GenericParameters.Count);
+            }
 
-			ProcessMethod (type, @event.AddMethod, nav, customData);
-			ProcessMethod (type, @event.RemoveMethod, nav, customData);
-			ProcessMethodIfNotNull (type, @event.InvokeMethod, nav, customData);
-		}
+            sb.Append('(');
+            if (meth.HasMetadataParameters())
+            {
+                int i = 0;
+                foreach (var p in meth.GetMetadataParameters())
+                {
+                    if (i++ > 0)
+                        sb.Append(',');
+                    sb.Append(p.ParameterType.FullName);
+                }
+            }
+            sb.Append(')');
+            return sb.ToString();
+        }
 
-		protected override void ProcessProperty (TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object? customData, bool fromSignature)
-		{
-			string[] accessors = fromSignature ? GetAccessors (nav) : _accessorsAll;
+        protected override void ProcessEvent(TypeDefinition type, EventDefinition @event, XPathNavigator nav, object? customData)
+        {
+            if (!_preservedMembers.Add(@event))
+                LogDuplicatePreserve(@event.FullName, nav);
 
-			if (!_preservedMembers.Add (property))
-				LogDuplicatePreserve(property.FullName, nav);
+            ProcessMethod(type, @event.AddMethod, nav, customData);
+            ProcessMethod(type, @event.RemoveMethod, nav, customData);
+            ProcessMethodIfNotNull(type, @event.InvokeMethod, nav, customData);
+        }
 
-			if (Array.IndexOf (accessors, "all") >= 0) {
-				ProcessMethodIfNotNull (type, property.GetMethod, nav, customData);
-				ProcessMethodIfNotNull (type, property.SetMethod, nav, customData);
-				return;
-			}
+        protected override void ProcessProperty(TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object? customData, bool fromSignature)
+        {
+            string[] accessors = fromSignature ? GetAccessors(nav) : _accessorsAll;
 
-			if (property.GetMethod != null && Array.IndexOf (accessors, "get") >= 0)
-				ProcessMethod (type, property.GetMethod, nav, customData);
-			else if (property.GetMethod == null)
-				LogWarning (nav, DiagnosticId.XmlCouldNotFindGetAccesorOfPropertyOnType, property.Name, type.FullName);
+            if (!_preservedMembers.Add(property))
+                LogDuplicatePreserve(property.FullName, nav);
 
-			if (property.SetMethod != null && Array.IndexOf (accessors, "set") >= 0)
-				ProcessMethod (type, property.SetMethod, nav, customData);
-			else if (property.SetMethod == null)
-				LogWarning (nav, DiagnosticId.XmlCouldNotFindSetAccesorOfPropertyOnType, property.Name, type.FullName);
-		}
+            if (Array.IndexOf(accessors, "all") >= 0)
+            {
+                ProcessMethodIfNotNull(type, property.GetMethod, nav, customData);
+                ProcessMethodIfNotNull(type, property.SetMethod, nav, customData);
+                return;
+            }
 
-		static bool IsRequired (XPathNavigator nav)
-		{
-			string attribute = GetAttribute (nav, _required);
-			if (attribute == null || attribute.Length == 0)
-				return true;
+            if (property.GetMethod != null && Array.IndexOf(accessors, "get") >= 0)
+                ProcessMethod(type, property.GetMethod, nav, customData);
+            else if (property.GetMethod == null)
+                LogWarning(nav, DiagnosticId.XmlCouldNotFindGetAccesorOfPropertyOnType, property.Name, type.FullName);
 
-			return bool.TryParse (attribute, out bool result) && result;
-		}
+            if (property.SetMethod != null && Array.IndexOf(accessors, "set") >= 0)
+                ProcessMethod(type, property.SetMethod, nav, customData);
+            else if (property.SetMethod == null)
+                LogWarning(nav, DiagnosticId.XmlCouldNotFindSetAccesorOfPropertyOnType, property.Name, type.FullName);
+        }
 
-		protected static string[] GetAccessors (XPathNavigator nav)
-		{
-			string accessorsValue = GetAttribute (nav, _accessors);
+        static bool IsRequired(XPathNavigator nav)
+        {
+            string attribute = GetAttribute(nav, _required);
+            if (attribute == null || attribute.Length == 0)
+                return true;
 
-			if (accessorsValue != null) {
-				string[] accessors = accessorsValue.Split (
-					_accessorsSep, StringSplitOptions.RemoveEmptyEntries);
+            return bool.TryParse(attribute, out bool result) && result;
+        }
 
-				if (accessors.Length > 0) {
-					for (int i = 0; i < accessors.Length; ++i)
-						accessors[i] = accessors[i].ToLowerInvariant ();
+        protected static string[] GetAccessors(XPathNavigator nav)
+        {
+            string accessorsValue = GetAttribute(nav, _accessors);
 
-					return accessors;
-				}
-			}
-			return _accessorsAll;
-		}
-	}
+            if (accessorsValue != null)
+            {
+                string[] accessors = accessorsValue.Split(
+                    _accessorsSep, StringSplitOptions.RemoveEmptyEntries);
+
+                if (accessors.Length > 0)
+                {
+                    for (int i = 0; i < accessors.Length; ++i)
+                        accessors[i] = accessors[i].ToLowerInvariant();
+
+                    return accessors;
+                }
+            }
+            return _accessorsAll;
+        }
+    }
 }

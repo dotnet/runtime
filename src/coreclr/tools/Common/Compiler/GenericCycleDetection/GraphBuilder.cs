@@ -9,6 +9,8 @@ using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler
 {
     internal static partial class LazyGenericsSupport
@@ -172,7 +174,7 @@ namespace ILCompiler
                     {
                         try
                         {
-                            var ecmaType = (EcmaType)assembly.GetObject(typeHandle);
+                            var ecmaType = assembly.GetType(typeHandle);
                             WalkAncestorTypes(ecmaType);
                         }
                         catch (TypeSystemException)
@@ -196,11 +198,35 @@ namespace ILCompiler
                         {
                             try
                             {
-                                var ecmaMethod = (EcmaMethod)assembly.GetObject(methodHandle);
+                                var ecmaMethod = assembly.GetMethod(methodHandle);
                                 WalkMethod(ecmaMethod);
 
                                 if (ecmaMethod.IsVirtual)
                                     LookForVirtualOverrides(ecmaMethod);
+                            }
+                            catch (TypeSystemException)
+                            {
+                            }
+                        }
+                    }
+
+                    if (isGenericType)
+                    {
+                        Instantiation typeContext = default;
+
+                        foreach (FieldDefinitionHandle fieldHandle in typeDefinition.GetFields())
+                        {
+                            try
+                            {
+                                var ecmaField = assembly.GetField(fieldHandle);
+
+                                if (typeContext.IsNull)
+                                {
+                                    typeContext = ecmaField.OwningType.Instantiation;
+                                    Debug.Assert(!typeContext.IsNull);
+                                }
+
+                                ProcessTypeReference(ecmaField.FieldType, typeContext, default);
                             }
                             catch (TypeSystemException)
                             {

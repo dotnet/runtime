@@ -4,24 +4,24 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Substitutions
 {
-	[SetupLinkerSubstitutionFile ("StubBodyUnsafe.xml")]
-	[SetupCompileArgument ("/unsafe")]
-	public class StubBodyUnsafe
-	{
-		public static unsafe void Main ()
-		{
-			TestMethod_1 ();
-		}
+    [SetupLinkerSubstitutionFile("StubBodyUnsafe.xml")]
+    [SetupCompileArgument("/unsafe")]
+    public class StubBodyUnsafe
+    {
+        public static unsafe void Main()
+        {
+            TestMethod_1();
+        }
 
-		[Kept]
-		[ExpectedInstructionSequence (new[] {
-				"ldc.i4.0",
-				"conv.i",
-				"ret",
-			})]
-		static unsafe byte* TestMethod_1 ()
-		{
-			throw new NotImplementedException ();
-		}
-	}
+        [Kept]
+        [ExpectedInstructionSequence(new[] {
+                "ldc.i4.0",
+                "conv.i",
+                "ret",
+            })]
+        static unsafe byte* TestMethod_1()
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

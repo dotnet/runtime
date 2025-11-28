@@ -689,7 +689,7 @@ namespace System.Formats.Asn1
         ///   corresponding to the value of the BIT STRING.
         /// </param>
         /// <param name="expectedTag">
-        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 1).
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 3).
         /// </param>
         /// <returns>
         ///   <see langword="true"/> and advances the reader if the BIT STRING value had a primitive encoding,
@@ -752,7 +752,7 @@ namespace System.Formats.Asn1
         ///   On success, receives the number of bytes written to <paramref name="destination"/>.
         /// </param>
         /// <param name="expectedTag">
-        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 1).
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 3).
         /// </param>
         /// <returns>
         ///   <see langword="true"/> and advances the reader if <paramref name="destination"/> had sufficient
@@ -810,7 +810,7 @@ namespace System.Formats.Asn1
         ///   "unused" by the writer.
         /// </param>
         /// <param name="expectedTag">
-        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 1).
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 3).
         /// </param>
         /// <returns>
         ///   A copy of the value in a newly allocated, precisely sized, array.

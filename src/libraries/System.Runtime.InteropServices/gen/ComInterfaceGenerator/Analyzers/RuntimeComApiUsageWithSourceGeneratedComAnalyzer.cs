@@ -24,7 +24,7 @@ namespace Microsoft.Interop.Analyzers
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterCompilationStartAction(context =>
+            context.RegisterCompilationStartAction(static context =>
             {
                 INamedTypeSymbol? marshalType = context.Compilation.GetBestTypeByMetadataName(TypeNames.System_Runtime_InteropServices_Marshal);
                 INamedTypeSymbol? generatedComClassAttribute = context.Compilation.GetBestTypeByMetadataName(TypeNames.GeneratedComClassAttribute);

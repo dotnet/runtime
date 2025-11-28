@@ -80,7 +80,7 @@ namespace System.Net.Http
                     (uint)cookieHeader.Length,
                     Interop.WinHttp.WINHTTP_ADDREQ_FLAG_ADD))
                 {
-                    WinHttpException.ThrowExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpAddRequestHeaders));
+                    throw WinHttpException.CreateExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpAddRequestHeaders));
                 }
             }
         }

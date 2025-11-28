@@ -1,9 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.CompilerServices;
 
 using Debug = System.Diagnostics.Debug;
+
+#if TYPE_LOADER_IMPLEMENTATION
+using MetadataType = Internal.TypeSystem.DefType;
+#endif
 
 namespace Internal.TypeSystem
 {
@@ -26,15 +31,25 @@ namespace Internal.TypeSystem
             return ReferenceEquals(this, o);
         }
 
-        public virtual string Name
+        public virtual ReadOnlySpan<byte> Name
         {
             get
             {
-                return null;
+                return [];
             }
         }
 
-        public abstract DefType OwningType
+        public string GetName()
+        {
+            return System.Text.Encoding.UTF8.GetString(
+                Name
+#if NETSTANDARD
+                .ToArray()
+#endif
+                );
+        }
+
+        public abstract MetadataType OwningType
         {
             get;
         }

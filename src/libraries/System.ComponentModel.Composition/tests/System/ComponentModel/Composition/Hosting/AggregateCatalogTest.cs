@@ -543,7 +543,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
                 else
                 {
-                    EqualityExtensions.CheckSequenceEquals(this._expectedAdds, GetDisplayNames(args.AddedDefinitions));
+                    EqualityExtensions.CheckSequenceEqual(this._expectedAdds, GetDisplayNames(args.AddedDefinitions));
                 }
 
                 if (this._expectedRemoves == null)
@@ -552,7 +552,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
                 else
                 {
-                    EqualityExtensions.CheckSequenceEquals(this._expectedRemoves, GetDisplayNames(args.RemovedDefinitions));
+                    EqualityExtensions.CheckSequenceEqual(this._expectedRemoves, GetDisplayNames(args.RemovedDefinitions));
                 }
 
                 Assert.False(ContainsChanges(), "The catalog should NOT contain the changes yet");
@@ -570,7 +570,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
                 else
                 {
-                    EqualityExtensions.CheckSequenceEquals(this._expectedAdds, GetDisplayNames(args.AddedDefinitions));
+                    EqualityExtensions.CheckSequenceEqual(this._expectedAdds, GetDisplayNames(args.AddedDefinitions));
                 }
 
                 if (this._expectedRemoves == null)
@@ -579,7 +579,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
                 else
                 {
-                    EqualityExtensions.CheckSequenceEquals(this._expectedRemoves, GetDisplayNames(args.RemovedDefinitions));
+                    EqualityExtensions.CheckSequenceEqual(this._expectedRemoves, GetDisplayNames(args.RemovedDefinitions));
                 }
 
                 Assert.Null(args.AtomicComposition);

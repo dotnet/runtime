@@ -30,17 +30,22 @@ namespace TypeSystemTests
 
         protected override ComputedInstanceFieldLayout ComputeInstanceFieldLayout(MetadataType type, int numInstanceFields)
         {
-            if (type.IsExplicitLayout)
+            ClassLayoutMetadata layoutMetadata = type.GetClassLayout();
+            if (layoutMetadata.Kind == MetadataLayoutKind.Explicit)
             {
-                return ComputeExplicitFieldLayout(type, numInstanceFields);
+                return ComputeExplicitFieldLayout(type, numInstanceFields, layoutMetadata);
             }
-            else if (type.IsSequentialLayout || type.IsEnum)
+            else if (layoutMetadata.Kind == MetadataLayoutKind.Sequential || type.IsEnum)
             {
-                return ComputeSequentialFieldLayout(type, numInstanceFields);
+                return ComputeSequentialFieldLayout(type, numInstanceFields, layoutMetadata);
+            }
+            else if (layoutMetadata.Kind == MetadataLayoutKind.CStruct)
+            {
+                return ComputeCStructFieldLayout(type, numInstanceFields);
             }
             else
             {
-                return ComputeAutoFieldLayout(type, numInstanceFields);
+                return ComputeAutoFieldLayout(type, numInstanceFields, layoutMetadata);
             }
         }
     }

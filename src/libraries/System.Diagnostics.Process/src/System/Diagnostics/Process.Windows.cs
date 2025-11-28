@@ -505,6 +505,7 @@ namespace System.Diagnostics
                     // set up the creation flags parameter
                     int creationFlags = 0;
                     if (startInfo.CreateNoWindow) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NO_WINDOW;
+                    if (startInfo.CreateNewProcessGroup) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NEW_PROCESS_GROUP;
 
                     // set up the environment block parameter
                     string? environmentBlock = null;
@@ -544,9 +545,10 @@ namespace System.Diagnostics
                             logonFlags = Interop.Advapi32.LogonFlags.LOGON_NETCREDENTIALS_ONLY;
                         }
 
+                        commandLine.NullTerminate();
                         fixed (char* passwordInClearTextPtr = startInfo.PasswordInClearText ?? string.Empty)
                         fixed (char* environmentBlockPtr = environmentBlock)
-                        fixed (char* commandLinePtr = &commandLine.GetPinnableReference(terminate: true))
+                        fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
                         {
                             IntPtr passwordPtr = (startInfo.Password != null) ?
                                 Marshal.SecureStringToGlobalAllocUnicode(startInfo.Password) : IntPtr.Zero;
@@ -578,8 +580,9 @@ namespace System.Diagnostics
                     }
                     else
                     {
+                        commandLine.NullTerminate();
                         fixed (char* environmentBlockPtr = environmentBlock)
-                        fixed (char* commandLinePtr = &commandLine.GetPinnableReference(terminate: true))
+                        fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
                         {
                             retVal = Interop.Kernel32.CreateProcess(
                                 null,                // we don't need this since all the info is in commandLine

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../BrowserDebugHost/BrowserDebugHost.csproj" />
+  <Project Path="BrowserDebugProxy.csproj" />
+</Solution>

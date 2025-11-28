@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System
 {
@@ -19,7 +20,7 @@ namespace System
 
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed class Version : ICloneable, IComparable, IComparable<Version?>, IEquatable<Version?>, ISpanFormattable, IUtf8SpanFormattable
+    public sealed class Version : ICloneable, IComparable, IComparable<Version?>, IEquatable<Version?>, ISpanFormattable, IUtf8SpanFormattable, IUtf8SpanParsable<Version>
     {
         // AssemblyName depends on the order staying the same
         private readonly int _Major; // Do not rename (binary serialization)
@@ -290,6 +291,30 @@ namespace System
         public static Version Parse(ReadOnlySpan<char> input) =>
             ParseVersion(input, throwOnFailure: true)!;
 
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)"/>
+        static Version IUtf8SpanParsable<Version>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
+        {
+            Version? result = ParseVersion(utf8Text, throwOnFailure: false);
+            // Required to throw FormatException for invalid input according to contract.
+            if (result == null)
+            {
+                ThrowHelper.ThrowFormatInvalidString();
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Converts the specified read-only span of UTF-8 characters that represents a version number to an equivalent Version object.
+        /// </summary>
+        /// <param name="utf8Text">A read-only span of UTF-8 characters that contains a version number to convert.</param>
+        /// <returns>An object that is equivalent to the version number specified in the <paramref name="utf8Text" /> parameter.</returns>
+        /// <exception cref="ArgumentException"><paramref name="utf8Text" /> has fewer than two or more than four version components.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">At least one component in <paramref name="utf8Text" /> is less than zero.</exception>
+        /// <exception cref="FormatException">At least one component in <paramref name="utf8Text" /> is not an integer.</exception>
+        /// <exception cref="OverflowException">At least one component in <paramref name="utf8Text" /> represents a number that is greater than <see cref="int.MaxValue"/>.</exception>
+        public static Version Parse(ReadOnlySpan<byte> utf8Text) =>
+            ParseVersion(utf8Text, throwOnFailure: true)!;
+
         public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out Version? result)
         {
             if (input == null)
@@ -298,16 +323,43 @@ namespace System
                 return false;
             }
 
-            return (result = ParseVersion(input.AsSpan(), throwOnFailure: false)) != null;
+            result = ParseVersion(input.AsSpan(), throwOnFailure: false);
+            return result is not null;
         }
 
-        public static bool TryParse(ReadOnlySpan<char> input, [NotNullWhen(true)] out Version? result) =>
-            (result = ParseVersion(input, throwOnFailure: false)) != null;
+        public static bool TryParse(ReadOnlySpan<char> input, [NotNullWhen(true)] out Version? result)
+        {
+            result = ParseVersion(input, throwOnFailure: false);
+            return result is not null;
+        }
 
-        private static Version? ParseVersion(ReadOnlySpan<char> input, bool throwOnFailure)
+        /// <summary>
+        /// Tries to convert the UTF-8 representation of a version number to an equivalent Version object, and returns a value that indicates whether the conversion succeeded.
+        /// </summary>
+        /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
+        /// <param name="result">
+        ///     When this method returns, contains the Version equivalent of the number that is contained in <paramref name="utf8Text" />, if the conversion succeeded.
+        ///     If <paramref name="utf8Text" /> is empty, or if the conversion fails, result is null when the method returns.
+        /// </param>
+        /// <returns>true if the <paramref name="utf8Text" /> parameter was converted successfully; otherwise, false.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, [NotNullWhen(true)] out Version? result)
+        {
+            result = ParseVersion(utf8Text, throwOnFailure: false);
+            return result is not null;
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)"/>
+        static bool IUtf8SpanParsable<Version>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [NotNullWhen(true)] out Version? result)
+        {
+            result = ParseVersion(utf8Text, throwOnFailure: false);
+            return result is not null;
+        }
+
+        private static Version? ParseVersion<TChar>(ReadOnlySpan<TChar> input, bool throwOnFailure)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             // Find the separator between major and minor.  It must exist.
-            int majorEnd = input.IndexOf('.');
+            int majorEnd = input.IndexOf(TChar.CastFrom('.'));
             if (majorEnd < 0)
             {
                 if (throwOnFailure) throw new ArgumentException(SR.Arg_VersionString, nameof(input));
@@ -317,15 +369,15 @@ namespace System
             // Find the ends of the optional minor and build portions.
             // We musn't have any separators after build.
             int buildEnd = -1;
-            int minorEnd = input.Slice(majorEnd + 1).IndexOf('.');
+            int minorEnd = input.Slice(majorEnd + 1).IndexOf(TChar.CastFrom('.'));
             if (minorEnd >= 0)
             {
                 minorEnd += (majorEnd + 1);
-                buildEnd = input.Slice(minorEnd + 1).IndexOf('.');
+                buildEnd = input.Slice(minorEnd + 1).IndexOf(TChar.CastFrom('.'));
                 if (buildEnd >= 0)
                 {
                     buildEnd += (minorEnd + 1);
-                    if (input.Slice(buildEnd + 1).Contains('.'))
+                    if (input.Slice(buildEnd + 1).Contains(TChar.CastFrom('.')))
                     {
                         if (throwOnFailure) throw new ArgumentException(SR.Arg_VersionString, nameof(input));
                         return null;
@@ -336,7 +388,7 @@ namespace System
             int minor, build, revision;
 
             // Parse the major version
-            if (!TryParseComponent(input.Slice(0, majorEnd), nameof(input), throwOnFailure, out int major))
+            if (!TryParseComponent(input.Slice(0, majorEnd), nameof(input), throwOnFailure, input, out int major))
             {
                 return null;
             }
@@ -344,7 +396,7 @@ namespace System
             if (minorEnd != -1)
             {
                 // If there's more than a major and minor, parse the minor, too.
-                if (!TryParseComponent(input.Slice(majorEnd + 1, minorEnd - majorEnd - 1), nameof(input), throwOnFailure, out minor))
+                if (!TryParseComponent(input.Slice(majorEnd + 1, minorEnd - majorEnd - 1), nameof(input), throwOnFailure, input, out minor))
                 {
                     return null;
                 }
@@ -353,15 +405,15 @@ namespace System
                 {
                     // major.minor.build.revision
                     return
-                        TryParseComponent(input.Slice(minorEnd + 1, buildEnd - minorEnd - 1), nameof(build), throwOnFailure, out build) &&
-                        TryParseComponent(input.Slice(buildEnd + 1), nameof(revision), throwOnFailure, out revision) ?
+                        TryParseComponent(input.Slice(minorEnd + 1, buildEnd - minorEnd - 1), nameof(build), throwOnFailure, input, out build) &&
+                        TryParseComponent(input.Slice(buildEnd + 1), nameof(revision), throwOnFailure, input, out revision) ?
                             new Version(major, minor, build, revision) :
                             null;
                 }
                 else
                 {
                     // major.minor.build
-                    return TryParseComponent(input.Slice(minorEnd + 1), nameof(build), throwOnFailure, out build) ?
+                    return TryParseComponent(input.Slice(minorEnd + 1), nameof(build), throwOnFailure, input, out build) ?
                         new Version(major, minor, build) :
                         null;
                 }
@@ -369,22 +421,45 @@ namespace System
             else
             {
                 // major.minor
-                return TryParseComponent(input.Slice(majorEnd + 1), nameof(input), throwOnFailure, out minor) ?
+                return TryParseComponent(input.Slice(majorEnd + 1), nameof(input), throwOnFailure, input, out minor) ?
                     new Version(major, minor) :
                     null;
             }
         }
 
-        private static bool TryParseComponent(ReadOnlySpan<char> component, string componentName, bool throwOnFailure, out int parsedComponent)
+        private static bool TryParseComponent<TChar>(ReadOnlySpan<TChar> component, string componentName, bool throwOnFailure, ReadOnlySpan<TChar> originalInput, out int parsedComponent)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
-            if (throwOnFailure)
+            Number.ParsingStatus parseStatus = Number.TryParseBinaryIntegerStyle(component, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out parsedComponent);
+
+            if (parseStatus == Number.ParsingStatus.OK && parsedComponent >= 0)
             {
-                parsedComponent = int.Parse(component, NumberStyles.Integer, CultureInfo.InvariantCulture);
-                ArgumentOutOfRangeException.ThrowIfNegative(parsedComponent, componentName);
                 return true;
             }
 
-            return int.TryParse(component, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsedComponent) && parsedComponent >= 0;
+            if (throwOnFailure)
+            {
+                ThrowFailure(parseStatus, parsedComponent, componentName, originalInput);
+            }
+
+            return false;
+
+            [DoesNotReturn]
+            static void ThrowFailure(Number.ParsingStatus parseStatus, int parsedComponent, string componentName, ReadOnlySpan<TChar> originalInput)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(parsedComponent, componentName);
+
+                if (parseStatus == Number.ParsingStatus.Overflow)
+                {
+                    Number.ThrowOverflowException<int>();
+                }
+
+                string inputString = typeof(TChar) == typeof(char) ?
+                    Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(originalInput).ToString() :
+                    Encoding.UTF8.GetString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(originalInput));
+
+                throw new FormatException(SR.Format(SR.Format_InvalidStringWithValue, inputString));
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -398,7 +473,7 @@ namespace System
             }
 
             // Quick reference equality test prior to calling the virtual Equality
-            return ReferenceEquals(v2, v1) ? true : v2.Equals(v1);
+            return ReferenceEquals(v2, v1) || v2.Equals(v1);
         }
 
         public static bool operator !=(Version? v1, Version? v2) => !(v1 == v2);

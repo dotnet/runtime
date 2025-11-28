@@ -107,7 +107,7 @@ namespace System
 
 #if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                 if ((th & ComAwareBit) != 0)
-                    return ComAwareWeakReference.GetWeakHandle(th);
+                    return ComAwareWeakReference.GetFromTaggedReference(th).WeakHandle;
 #endif
                 return th & ~HandleTagBits;
             }
@@ -126,7 +126,11 @@ namespace System
                 if (wh == 0)
                     return false;
 
+#if FEATURE_JAVAMARSHAL
+                bool result = GCHandle.InternalGetBridgeWait(wh) != null;
+#else
                 bool result = GCHandle.InternalGet(wh) != null;
+#endif
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
@@ -162,7 +166,9 @@ namespace System
 #if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                 if ((th & ComAwareBit) != 0)
                 {
-                    target = ComAwareWeakReference.GetTarget(th);
+                    ComAwareWeakReference cwr = ComAwareWeakReference.GetFromTaggedReference(th);
+
+                    target = cwr.Target ?? cwr.RehydrateTarget<object>();
 
                     // must keep the instance alive as long as we use the handle.
                     GC.KeepAlive(this);
@@ -171,8 +177,12 @@ namespace System
                 }
 #endif
 
+#if FEATURE_JAVAMARSHAL
+                target = GCHandle.InternalGetBridgeWait(th);
+#else
                 // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive
                 target = GCHandle.InternalGet(th);
+#endif
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);

@@ -47,7 +47,11 @@ if /I [%XHARNESS_COMMAND%] == [test] (
     )
 
     if [%JS_ENGINE_ARGS%] == [] (
-        set "JS_ENGINE_ARGS=--engine-arg^=--stack-trace-limit^=1000 --engine-arg^=--module"
+        set "JS_ENGINE_ARGS=--engine-arg^=--stack-trace-limit^=1000"
+
+        if [!JS_ENGINE!] == [--engine^=V8] (
+            set "JS_ENGINE_ARGS=!JS_ENGINE_ARGS! --engine-arg^=--module"
+        )
     )
 ) else (
     if /I [%SCENARIO%] == [WasmTestOnChrome] (

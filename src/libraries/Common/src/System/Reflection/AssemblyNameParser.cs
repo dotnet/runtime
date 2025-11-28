@@ -246,7 +246,7 @@ namespace System.Reflection
 
         private static bool TryParseVersion(string attributeValue, ref Version? version)
         {
-#if NET8_0_OR_GREATER
+#if NET
             ReadOnlySpan<char> attributeValueSpan = attributeValue;
             Span<Range> parts = stackalloc Range[5];
             parts = parts.Slice(0, attributeValueSpan.Split(parts, '.'));
@@ -262,7 +262,7 @@ namespace System.Reflection
             for (int i = 0; i < parts.Length; i++)
             {
                 if (!ushort.TryParse(
-#if NET8_0_OR_GREATER
+#if NET
                     attributeValueSpan[parts[i]],
 #else
                     parts[i],

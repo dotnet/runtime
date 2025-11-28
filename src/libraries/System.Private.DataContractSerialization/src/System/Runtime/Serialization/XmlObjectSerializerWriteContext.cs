@@ -25,7 +25,6 @@ namespace System.Runtime.Serialization
         private ObjectReferenceStack _byValObjectsInScope;
         private XmlSerializableWriter? _xmlSerializableWriter;
         private const int depthToCheckCyclicReference = 512;
-        private ObjectToIdCache? _serializedObjects;
         private bool _isGetOnlyCollection;
         private readonly bool _unsafeTypeForwardingEnabled;
         protected bool serializeReadOnlyTypes;
@@ -53,7 +52,7 @@ namespace System.Runtime.Serialization
             _unsafeTypeForwardingEnabled = true;
         }
 
-        protected ObjectToIdCache SerializedObjects => _serializedObjects ??= new ObjectToIdCache();
+        protected ObjectToIdCache SerializedObjects => field ??= new ObjectToIdCache();
 
         internal override bool IsGetOnlyCollection
         {

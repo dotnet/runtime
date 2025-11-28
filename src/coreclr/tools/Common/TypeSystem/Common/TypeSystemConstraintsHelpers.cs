@@ -62,6 +62,11 @@ namespace Internal.TypeSystem
                 if (CanCastConstraint(ref instantiatedConstraints, instantiatedType))
                     continue;
 
+                // CanCastTo below assumes thisType is boxed and that allows additional cases
+                // to be considered castable. But int is not castable to Nullable<int> and neither are enums.
+                if (instantiationParam.IsValueType && instantiatedType.IsValueType && !instantiationParam.IsEquivalentTo(instantiatedType))
+                    return false;
+
                 if (!instantiationParam.CanCastTo(instantiatedType))
                     return false;
             }
@@ -162,7 +167,7 @@ namespace Internal.TypeSystem
 
         public static bool CheckValidInstantiationArguments(this Instantiation instantiation)
         {
-            foreach(var arg in instantiation)
+            foreach (var arg in instantiation)
             {
                 if (arg.IsPointer || arg.IsByRef || arg.IsGenericParameter || arg.IsVoid)
                     return false;

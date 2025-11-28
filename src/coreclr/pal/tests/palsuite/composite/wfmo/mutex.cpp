@@ -146,7 +146,7 @@ PALTEST(composite_wfmo_paltest_composite_wfmo, "composite/wfmo/paltest_composite
     }
 
      /* Register the start time */
-    dwStartTime = GetTickCount();
+    dwStartTime = (DWORD)minipal_lowres_ticks();
     processStats.relationId = RELATION_ID;
     processStats.processId  = USE_PROCESS_COUNT;
 
@@ -306,7 +306,7 @@ void  PALAPI Run_Thread_composite_wfmo (LPVOID lpParam)
     }
 
     /* Register the start time */
-    dwStartTime = GetTickCount();
+    dwStartTime = (DWORD)minipal_lowres_ticks();
 
     /* Run the tests repeat count times */
     for( i = 0; i < REPEAT_COUNT; i++ )

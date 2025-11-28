@@ -111,7 +111,7 @@ namespace System.Data.OleDb
                 }
                 finally
                 {
-                    UnsafeNativeMethods.ReleaseErrorInfoObject(errorInfo);
+                    UnsafeNativeMethods.ReleaseComWrappersObject(errorInfo);
                 }
             }
 

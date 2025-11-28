@@ -278,10 +278,7 @@ namespace System.Data
                     if (name == "DataType")
                     {
                         DataColumn? col = instance as DataColumn;
-                        if (col != null)
-                        {
-                            col.DataType = DataStorage.GetType(value);
-                        }
+                        col?.DataType = DataStorage.GetType(value);
 
                         continue;
                     }
@@ -640,6 +637,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         public void LoadSchema(XmlSchemaSet schemaSet, DataTable dt)
         {
             if (dt.DataSet != null)
@@ -647,6 +645,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         public void LoadSchema(XmlSchemaSet schemaSet, DataSet ds)
         { //Element schemaRoot, DataSet ds) {
             _constraintNodes = new Hashtable();
@@ -824,9 +823,8 @@ namespace System.Data
             }
 
             DataTable? tmpTable = ds.Tables[ds.DataSetName, ds.Namespace];
-            if (tmpTable != null) // this fix is done to support round-trip problem in case if there is one table with same name and NS
-                tmpTable._fNestedInDataset = true;
-
+            // this fix is done to support round-trip problem in case if there is one table with same name and NS
+            tmpTable?._fNestedInDataset = true;
 
             // this fix is for backward compatibility with old inference engine
             if (FromInference && ds.Tables.Count == 0 && string.Equals(ds.DataSetName, "NewDataSet", StringComparison.Ordinal))
@@ -892,6 +890,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void HandleParticle(XmlSchemaParticle pt, DataTable table, ArrayList tableChildren, bool isBase)
         {
             XmlSchemaObjectCollection? items = GetParticleItems(pt);
@@ -981,6 +980,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void HandleAttributes(XmlSchemaObjectCollection attributes, DataTable table, bool isBase)
         {
             foreach (XmlSchemaObject so in attributes)
@@ -1002,6 +1002,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         private void HandleAttributeGroup(XmlSchemaAttributeGroup attributeGroup, DataTable table, bool isBase)
         {
             foreach (XmlSchemaObject obj in attributeGroup.Attributes)
@@ -1031,6 +1032,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void HandleComplexType(XmlSchemaComplexType ct, DataTable table, ArrayList tableChildren, bool isNillable)
         {
             if (_complexTypes!.Contains(ct))
@@ -1432,6 +1434,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal DataTable InstantiateSimpleTable(XmlSchemaElement node)
         {
             DataTable? table;
@@ -1545,6 +1548,7 @@ namespace System.Data
 
         // Sequences of handling Elements, Attributes and Text-only column should be the same as in InferXmlSchema
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal DataTable InstantiateTable(XmlSchemaElement node, XmlSchemaComplexType typeNode, bool isRef)
         {
             DataTable? table;
@@ -1944,6 +1948,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void HandleSimpleTypeSimpleContentColumn(XmlSchemaSimpleType typeNode, string strType, DataTable table, bool isBase, XmlAttribute[]? attrs, bool isNillable)
         {
             // disallow multiple simple content columns for the table
@@ -2081,6 +2086,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void HandleSimpleContentColumn(string strType, DataTable table, bool isBase, XmlAttribute[]? attrs, bool isNillable)
         {
             // for Named Simple type support : We should not received anything here other than string.
@@ -2182,6 +2188,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void HandleAttributeColumn(XmlSchemaAttribute attrib, DataTable table, bool isBase)
         {
             Type? type;
@@ -2345,6 +2352,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void HandleElementColumn(XmlSchemaElement elem, DataTable table, bool isBase)
         {
             Type? type;
@@ -2546,6 +2554,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void HandleDataSet(XmlSchemaElement node, bool isNewDataSet)
         {
             string? dsName = node.Name;
@@ -2647,10 +2656,7 @@ namespace System.Data
                         }
 
                         DataTable? child = HandleTable((XmlSchemaElement)el);
-                        if (child != null)
-                        {
-                            child._fNestedInDataset = true;
-                        }
+                        child?._fNestedInDataset = true;
                         if (FromInference)
                         {
                             tableSequenceList.Add(child!);
@@ -2675,10 +2681,7 @@ namespace System.Data
                                 {
                                     tableSequenceList.Add(child);
                                 }
-                                if (child != null)
-                                {
-                                    child._fNestedInDataset = true;
-                                }
+                                child?._fNestedInDataset = true;
                             }
                         }
                     }
@@ -2834,6 +2837,7 @@ namespace System.Data
         //            return (elements.IndexOf(node) != -1);
         //        }
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal DataTable? HandleTable(XmlSchemaElement node)
         {
             if (!IsTable(node))

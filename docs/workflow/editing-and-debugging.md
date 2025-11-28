@@ -15,26 +15,26 @@ more on Markdown in general.
 
 # Visual Studio Solutions
 
-The repository has a number of Visual Studio Solutions files (`*.sln`) that are useful for editing parts of the repository. In particular
+The repository has a number of Visual Studio Solutions files (`*.slnx`) that are useful for editing parts of the repository. In particular
 
-   * `src\coreclr\System.Private.CoreLib\System.Private.CoreLib.sln` - This solution is for all managed (C#) code that is defined
+   * `src\coreclr\System.Private.CoreLib\System.Private.CoreLib.slnx` - This solution is for all managed (C#) code that is defined
    in the runtime itself.   This is all class library support of one form or another.
-   * `artifacts\obj\coreclr\windows.<Arch>.<BuildType>\ide\CoreCLR.sln` - this solution contains most native (C++) projects
+   * `artifacts\obj\coreclr\windows.<Arch>.<BuildType>\ide\CoreCLR.slnx` - this solution contains most native (C++) projects
    associated with the repository, including
      * `coreclr` - This is the main runtime DLL (the GC, class loader, interop are all here)
      * `corjit` - This is the Just In Time (JIT) compiler that compiles .NET Intermediate language to native code.
      * `corerun` - This is the simple host program that can run a .NET application
      * `crossgen` - This is the host program that runs the JIT compiler and produces .NET Native images (`*.ni.dll`)
      for C# code.
-     * This project can be automatically generated and opened in Visual Studio by running `./build.cmd -vs CoreCLR.sln -a <Arch> -c <BuildType>` from the root of the repository.
-   * `artifacts\obj\win-<Arch>.<BuildType>\corehost\ide\corehost.sln` - this solution contains the native (C++) projects for the [host components](../design/features/host-components.md)
-     * This project can be automatically generated and opened in Visual Studio by running `./build.cmd -vs corehost.sln -a <Arch> -c <BuildType>` from the root of the repository.
+     * This project can be automatically generated and opened in Visual Studio by running `./build.cmd -vs CoreCLR.slnx -a <Arch> -c <BuildType>` from the root of the repository.
+   * `artifacts\obj\win-<Arch>.<BuildType>\corehost\ide\corehost.slnx` - this solution contains the native (C++) projects for the [host components](../design/features/host-components.md)
+     * This project can be automatically generated and opened in Visual Studio by running `./build.cmd -vs corehost.slnx -a <Arch> -c <BuildType>` from the root of the repository.
 
 Thus opening one of these solution files (double clicking on them in Explorer) is typically all you need
 to do most editing.
 
 Notice that the CoreCLR and corehost solutions are under the `artifacts` directory.  This is because they are created as part of the build.
-Thus you can only launch these solutions after you have built at least once with the `-msbuild` flag or run the `./build.cmd -vs CoreCLR.sln` or `./build.cmd -vs corehost.sln` command line with the specified architecture and configuration.
+Thus you can only launch these solutions after you have built at least once with the `-msbuild` flag or run the `./build.cmd -vs CoreCLR.slnx` or `./build.cmd -vs corehost.slnx` command line with the specified architecture and configuration.
 
 * See [Debugging CoreCLR](debugging/coreclr/debugging-runtime.md)
 

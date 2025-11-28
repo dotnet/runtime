@@ -230,7 +230,7 @@ void *MemoryPool::AllocateElementNoThrow()
     }
 
     // if we come there means that addblock succeeded and m_freelist isn't null anymore
-    PREFIX_ASSUME(m_freeList!= NULL);
+    _ASSERTE(m_freeList!= NULL);
     m_freeList = m_freeList->next;
 
     return element;

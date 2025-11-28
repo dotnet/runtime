@@ -27,11 +27,10 @@ namespace
     {
         trace::verbose(_X("--- Resolving %s version from deps json [%s]"), LIBHOSTPOLICY_NAME, deps_json.c_str());
 
-        pal::string_t retval;
         json_parser_t json;
         if (!json.parse_file(deps_json))
         {
-            return retval;
+            return {};
         }
 
         // Look up the root package instead of the "runtime" package because we can't do a full rid resolution.
@@ -43,13 +42,13 @@ namespace
             if (utils::starts_with(lib_name, prefix, false))
             {
                 // Extract the version information that occurs after '/'
-                retval = lib_name.substr(utils::strlen(prefix));
-                break;
+                pal::string_t version = lib_name.substr(utils::strlen(prefix));
+                trace::verbose(_X("Resolved version %s from dependency manifest file [%s]"), version.c_str(), deps_json.c_str());
+                return version;
             }
         }
 
-        trace::verbose(_X("Resolved version %s from dependency manifest file [%s]"), retval.c_str(), deps_json.c_str());
-        return retval;
+        return {};
     }
 
     /**
@@ -179,6 +178,10 @@ int hostpolicy_resolver::load(
         {
             return StatusCode::CoreHostLibMissingFailure;
         }
+
+        // We should always be loading hostpolicy from an absolute path
+        if (!pal::is_path_fully_qualified(host_path))
+            return StatusCode::CoreHostLibMissingFailure;
 
         // Load library
         // We expect to leak hostpolicy - just as we do not unload coreclr, we do not unload hostpolicy

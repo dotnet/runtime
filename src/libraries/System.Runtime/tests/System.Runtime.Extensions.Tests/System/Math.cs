@@ -2287,6 +2287,7 @@ namespace System.Tests
         [InlineData( 0.561760,                -1)]
         [InlineData( 0.774152,                -1)]
         [InlineData( -0.678764,               -1)]
+        [InlineData( 1e-308,               -1024)]
         public static void ILogB(double value, int expectedResult)
         {
             Assert.Equal(expectedResult, Math.ILogB(value));

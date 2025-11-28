@@ -53,7 +53,7 @@ internal class Packet256Tracer
                     Store(output + 8, intAoS.Gs);
                     Store(output + 16, intAoS.Bs);
                 }
-                
+
             }
         }
 
@@ -226,7 +226,7 @@ internal class Packet256Tracer
     {
         ObjectPacket256[] things = {
             new SpherePacket256(new VectorPacket256(-0.5f, 1f, 1.5f), Vector256.Create(0.5f), Surfaces.MatteShiny),
-            new SpherePacket256(new VectorPacket256(0f, 1f, -0.25f), Vector256.Create(1f), Surfaces.Shiny),
+            new SpherePacket256(new VectorPacket256(0f, 1f, -0.25f), Vector256<float>.One, Surfaces.Shiny),
             new PlanePacket256((new VectorPacket256(0, 1, 0)), Vector256.Create(0f), Surfaces.CheckerBoard)
         };
 

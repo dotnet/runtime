@@ -210,7 +210,7 @@ namespace System
                 }
 
                 Debug.Assert(float.IsSubnormal(x));
-                return float.MinExponent - (BitOperations.TrailingZeroCount(x.TrailingSignificand) - float.BiasedExponentLength);
+                return float.MinExponent - (BitOperations.LeadingZeroCount(x.TrailingSignificand) - float.BiasedExponentLength);
             }
 
             return x.Exponent;
@@ -334,7 +334,7 @@ namespace System
         [Intrinsic]
         public static float ReciprocalSqrtEstimate(float x)
         {
-#if MONO || TARGET_RISCV64 || TARGET_LOONGARCH64
+#if MONO || TARGET_LOONGARCH64
             return 1.0f / Sqrt(x);
 #else
             return ReciprocalSqrtEstimate(x);

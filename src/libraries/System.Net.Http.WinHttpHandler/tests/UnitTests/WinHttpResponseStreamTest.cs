@@ -278,14 +278,14 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Fact]
-        public void ReadAsync_PriorReadInProgress_ThrowsInvalidOperationException()
+        public async Task ReadAsync_PriorReadInProgress_ThrowsInvalidOperationException()
         {
             Stream stream = MakeResponseStream();
 
             TestControl.WinHttpReadData.Pause();
             Task t1 = stream.ReadAsync(new byte[1], 0, 1);
 
-            Assert.Throws<InvalidOperationException>(() => { Task t2 = stream.ReadAsync(new byte[1], 0, 1); });
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await stream.ReadAsync(new byte[1], 0, 1));
 
             TestControl.WinHttpReadData.Resume();
             t1.Wait();

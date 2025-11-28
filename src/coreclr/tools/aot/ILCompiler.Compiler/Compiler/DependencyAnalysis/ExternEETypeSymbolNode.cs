@@ -9,7 +9,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a symbol that is defined externally but modelled as a type in the
     /// DependencyAnalysis infrastructure during compilation.
     /// </summary>
-    public sealed class ExternEETypeSymbolNode : ExternSymbolNode, IEETypeNode
+    public sealed class ExternEETypeSymbolNode : ExternDataSymbolNode, IEETypeNode
     {
         private TypeDesc _type;
 

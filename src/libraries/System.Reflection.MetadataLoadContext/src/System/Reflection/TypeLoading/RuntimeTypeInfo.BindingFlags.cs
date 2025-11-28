@@ -169,10 +169,7 @@ namespace System.Reflection.TypeLoading
 
         private QueryResult<M> Query<M>(string name, BindingFlags bindingAttr) where M : MemberInfo
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             return Query<M>(name, bindingAttr, null);
         }
@@ -207,9 +204,7 @@ namespace System.Reflection.TypeLoading
             return true;
         }
 
-        private TypeComponentsCache Cache => _lazyCache ??= new TypeComponentsCache(this);
-
-        private volatile TypeComponentsCache? _lazyCache;
+        private TypeComponentsCache Cache => field ??= new TypeComponentsCache(this);
 
         private const int GenericParameterCountAny = -1;
     }

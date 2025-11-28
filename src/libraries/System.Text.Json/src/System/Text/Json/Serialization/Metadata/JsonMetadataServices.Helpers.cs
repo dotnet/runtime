@@ -75,10 +75,7 @@ namespace System.Text.Json.Serialization.Metadata
             object? createObjectWithArgs = null,
             object? addFunc = null)
         {
-            if (collectionInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(collectionInfo));
-            }
+            ArgumentNullException.ThrowIfNull(collectionInfo);
 
             converter = collectionInfo.SerializeHandler != null
                 ? new JsonMetadataServicesConverter<T>(converter)

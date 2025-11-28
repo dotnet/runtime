@@ -810,7 +810,7 @@ namespace System.ComponentModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("sender")]
-        public void ItemPropertyChanged_InvalidSender_InvokesReset(object invokeSender)
+        public void ItemPropertyChanged_InvalidSender_InvokesReset(object? invokeSender)
         {
             var item = new Item();
             var bindingList = new BindingList<Item> { item };

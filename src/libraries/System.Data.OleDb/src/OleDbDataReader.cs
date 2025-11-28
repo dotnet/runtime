@@ -14,6 +14,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Data.OleDb
 {
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
     public sealed class OleDbDataReader : DbDataReader
     {
         private readonly CommandBehavior _commandBehavior;
@@ -722,10 +723,8 @@ namespace System.Data.OleDb
             // being called from the connection, we will have a command. that command
             // may be Disposed, but it doesn't matter since another command can't execute
             // until all DataReader are closed
-            if (null != _command)
-            { // UNDONE: understand why this could be null, it shouldn't be but was
-                _command.canceling = canceling;
-            }
+            // UNDONE: understand why this could be null, it shouldn't be but was
+            _command?.canceling = canceling;
 
             // called from the connection which will remove this from its ReferenceCollection
             // we want the NextResult behavior, but no errors

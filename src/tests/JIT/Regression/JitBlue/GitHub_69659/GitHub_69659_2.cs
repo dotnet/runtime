@@ -4,6 +4,9 @@
 // In this issue, we were not removing all the unreachable blocks and that led us to expect that
 // there should be an IG label for one of the unreachable block, but we were not creating it leading
 // to an assert failure.
+
+namespace GitHub_69659_2;
+
 using Xunit;
 public class _65659_2
 {

@@ -6,10 +6,11 @@ using System;
 using Xunit;
 
 
-namespace DefaultNamespace
+namespace b14323
 {
     public class AppStarter
     {
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

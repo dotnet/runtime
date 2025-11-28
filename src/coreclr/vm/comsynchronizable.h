@@ -39,8 +39,10 @@ public:
         ThreadAbortRequested = 128,
     };
 
-    static FCDECL0(INT32,   GetOptimalMaxSpinWaitsPerSpinIteration);
-    static FCDECL1(void,    Finalize,                       ThreadBaseObject* pThis);
+    static FCDECL0(INT32,       GetOptimalMaxSpinWaitsPerSpinIteration);
+    static FCDECL1(void,        Finalize, ThreadBaseObject* pThis);
+    static FCDECL0(FC_BOOL_RET, CatchAtSafePoint);
+    static FCDECL0(FC_BOOL_RET, CurrentThreadIsFinalizerThread);
 };
 
 extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName);
@@ -50,6 +52,7 @@ extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle threa
 extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value);
 extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len);
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread();
+extern "C" void QCALLTYPE ThreadNative_PollGC();
 extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId();
 extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t);
 extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle thread);
@@ -69,5 +72,11 @@ extern "C" void QCALLTYPE ThreadNative_Sleep(INT32 iTime);
 extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::ThreadHandle thread);
 #endif // FEATURE_COMINTEROP
 
+extern "C" void QCALLTYPE Monitor_GetOrCreateLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj);
+
+FCDECL1(OBJECTHANDLE, Monitor_GetLockHandleIfExists, Object* obj);
+
+FCDECL1(ObjHeader::HeaderLockResult, ObjHeader_AcquireThinLock, Object* obj);
+FCDECL1(ObjHeader::HeaderLockResult, ObjHeader_ReleaseThinLock, Object* obj);
 #endif // _COMSYNCHRONIZABLE_H
 

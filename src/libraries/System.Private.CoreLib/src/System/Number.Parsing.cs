@@ -50,6 +50,9 @@ namespace System
     internal interface IBinaryFloatParseAndFormatInfo<TSelf> : IBinaryFloatingPointIeee754<TSelf>, IMinMaxValue<TSelf>
         where TSelf : unmanaged, IBinaryFloatParseAndFormatInfo<TSelf>
     {
+        /// <summary>
+        /// Ceiling(Log10(5^(Abs(MinBinaryExponent) - 1))) + NormalMantissaBits + 1 + 1
+        /// </summary>
         static abstract int NumberBufferLength { get; }
 
         static abstract ulong ZeroBits { get; }
@@ -61,7 +64,14 @@ namespace System
         static abstract int MinBinaryExponent { get; }
         static abstract int MaxBinaryExponent { get; }
 
+        /// <summary>
+        /// Floor(Log10(Epsilon))
+        /// </summary>
         static abstract int MinDecimalExponent { get; }
+
+        /// <summary>
+        /// Ceiling(Log10(MaxValue))
+        /// </summary>
         static abstract int MaxDecimalExponent { get; }
 
         static abstract int ExponentBias { get; }
@@ -73,12 +83,29 @@ namespace System
         static abstract ushort NormalMantissaBits { get; }
         static abstract ushort DenormalMantissaBits { get; }
 
+        /// <summary>
+        /// Ceiling(Log10(2^(MinBinaryExponent - 1 - DenormalMantissaBits - 64)))
+        /// </summary>
         static abstract int MinFastFloatDecimalExponent { get; }
+
+        /// <summary>
+        /// MaxDecimalExponent - 1
+        /// </summary>
         static abstract int MaxFastFloatDecimalExponent { get; }
 
+        /// <summary>
+        /// -Floor(Log5(2^(64 - NormalMantissaBits)))
+        /// </summary>
         static abstract int MinExponentRoundToEven { get; }
+
+        /// <summary>
+        /// Floor(Log5(2^(NormalMantissaBits + 1)))
+        /// </summary>
         static abstract int MaxExponentRoundToEven { get; }
 
+        /// <summary>
+        /// Max(n) when 10^n can be precisely represented
+        /// </summary>
         static abstract int MaxExponentFastPath { get; }
         static abstract ulong MaxMantissaFastPath { get; }
 
@@ -86,16 +113,23 @@ namespace System
 
         static abstract ulong FloatToBits(TSelf value);
 
-        // Maximum number of digits required to guarantee that any given floating point
-        // number can roundtrip. Some numbers may require less, but none will require more.
+        /// <summary>
+        /// Maximum number of digits required to guarantee that any given floating point
+        /// number can roundtrip. Some numbers may require less, but none will require more.
+        /// </summary>
+        /// <remarks>
+        /// Ceiling(Log10(2^NormalMantissaBits)) + 1
+        /// </remarks>
         static abstract int MaxRoundTripDigits { get; }
 
-        // SinglePrecisionCustomFormat and DoublePrecisionCustomFormat are used to ensure that
-        // custom format strings return the same string as in previous releases when the format
-        // would return x digits or less (where x is the value of the corresponding constant).
-        // In order to support more digits, we would need to update ParseFormatSpecifier to pre-parse
-        // the format and determine exactly how many digits are being requested and whether they
-        // represent "significant digits" or "digits after the decimal point".
+        /// <summary>
+        /// MaxPrecisionCustomFormat is used to ensure that
+        /// custom format strings return the same string as in previous releases when the format
+        /// would return x digits or less (where x is the value of the corresponding constant).
+        /// In order to support more digits, we would need to update ParseFormatSpecifier to pre-parse
+        /// the format and determine exactly how many digits are being requested and whether they
+        /// represent "significant digits" or "digits after the decimal point".
+        /// </summary>
         static abstract int MaxPrecisionCustomFormat { get; }
     }
 

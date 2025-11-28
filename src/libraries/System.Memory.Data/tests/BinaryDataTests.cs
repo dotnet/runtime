@@ -352,7 +352,7 @@ namespace System.Tests
         public async Task CanCreateBinaryDataFromFileStream()
         {
             byte[] buffer = "some data"u8.ToArray();
-            using FileStream stream = new FileStream(Path.GetTempFileName(), FileMode.Open);
+            using FileStream stream = new FileStream(Path.GetTempFileName(), FileMode.Open, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.DeleteOnClose);
             stream.Write(buffer, 0, buffer.Length);
             stream.Position = 0;
             BinaryData data = BinaryData.FromStream(stream);
@@ -497,51 +497,31 @@ namespace System.Tests
         [Fact]
         public async Task CreateThrowsOnNullStream()
         {
-            var ex = Assert.Throws<ArgumentNullException>(() => BinaryData.FromStream(null));
-            Assert.Contains("stream", ex.Message);
-
-            ex = Assert.Throws<ArgumentNullException>(() => BinaryData.FromStream(null, null));
-            Assert.Contains("stream", ex.Message);
-
-            ex = await Assert.ThrowsAsync<ArgumentNullException>(() => BinaryData.FromStreamAsync(null));
-            Assert.Contains("stream", ex.Message);
-
-            ex = await Assert.ThrowsAsync<ArgumentNullException>(() => BinaryData.FromStreamAsync(null, null));
-            Assert.Contains("stream", ex.Message);
+            Stream stream = null;
+            AssertExtensions.Throws<ArgumentNullException>("stream", () => BinaryData.FromStream(stream));
+            AssertExtensions.Throws<ArgumentNullException>("stream", () => BinaryData.FromStream(stream, null));
+            await AssertExtensions.ThrowsAsync<ArgumentNullException>("stream", () => BinaryData.FromStreamAsync(stream));
+            await AssertExtensions.ThrowsAsync<ArgumentNullException>("stream", () => BinaryData.FromStreamAsync(stream, null));
         }
 
         [Fact]
         public void CreateThrowsOnNullString()
         {
             string payload = null;
-            var ex = Assert.Throws<ArgumentNullException>(() => new BinaryData(payload));
-            Assert.Contains("data", ex.Message);
-
-            ex = Assert.Throws<ArgumentNullException>(() => new BinaryData(payload, null));
-            Assert.Contains("data", ex.Message);
-
-            ex = Assert.Throws<ArgumentNullException>(() => BinaryData.FromString(payload));
-            Assert.Contains("data", ex.Message);
-
-            ex = Assert.Throws<ArgumentNullException>(() => BinaryData.FromString(payload, null));
-            Assert.Contains("data", ex.Message);
+            AssertExtensions.Throws<ArgumentNullException>("data", () => new BinaryData(payload));
+            AssertExtensions.Throws<ArgumentNullException>("data", () => new BinaryData(payload, null));
+            AssertExtensions.Throws<ArgumentNullException>("data", () => BinaryData.FromString(payload));
+            AssertExtensions.Throws<ArgumentNullException>("data", () => BinaryData.FromString(payload, null));
         }
 
         [Fact]
         public void CreateThrowsOnNullArray()
         {
             byte[] payload = null;
-            var ex = Assert.Throws<ArgumentNullException>(() => new BinaryData(payload));
-            Assert.Contains("data", ex.Message);
-
-            ex = Assert.Throws<ArgumentNullException>(() => new BinaryData(payload, null));
-            Assert.Contains("data", ex.Message);
-
-            ex = Assert.Throws<ArgumentNullException>(() => BinaryData.FromBytes(null));
-            Assert.Contains("data", ex.Message);
-
-            ex = Assert.Throws<ArgumentNullException>(() => BinaryData.FromBytes(null, null));
-            Assert.Contains("data", ex.Message);
+            AssertExtensions.Throws<ArgumentNullException>("data", () => new BinaryData(payload));
+            AssertExtensions.Throws<ArgumentNullException>("data", () => new BinaryData(payload, null));
+            AssertExtensions.Throws<ArgumentNullException>("data", () => BinaryData.FromBytes(payload));
+            AssertExtensions.Throws<ArgumentNullException>("data", () => BinaryData.FromBytes(payload, null));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
@@ -730,7 +710,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public void CloseStreamValidation()
+        public async Task CloseStreamValidation()
         {
             byte[] buffer = "some data"u8.ToArray();
             Stream stream = new BinaryData(buffer).ToStream();
@@ -739,7 +719,7 @@ namespace System.Tests
             Assert.Throws<ObjectDisposedException>(() => stream.Position);
             Assert.Throws<ObjectDisposedException>(() => stream.Seek(0, SeekOrigin.Begin));
             Assert.Throws<ObjectDisposedException>(() => stream.Read(buffer, 0, buffer.Length));
-            Assert.ThrowsAsync<ObjectDisposedException>(() => stream.ReadAsync(buffer, 0, buffer.Length));
+            await Assert.ThrowsAsync<ObjectDisposedException>(async () => await stream.ReadAsync(buffer, 0, buffer.Length));
             Assert.Throws<ObjectDisposedException>(() => stream.ReadByte());
             Assert.Throws<ObjectDisposedException>(() => stream.Length);
             Assert.False(stream.CanRead);

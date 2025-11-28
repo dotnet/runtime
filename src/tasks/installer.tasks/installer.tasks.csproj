@@ -7,7 +7,11 @@
 
   <ItemGroup>
     <PackageDownloadAndReference Include="Microsoft.Extensions.DependencyModel" Version="$(MicrosoftExtensionsDependencyModelVersion)" Folder="lib/netstandard2.0" />
-    <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/netstandard2.0" />
+    <!-- Revert this after the next VMR re-bootstrap: https://github.com/dotnet/dotnet/issues/1985 -->
+    <!-- <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/net8.0" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <PackageDownloadAndReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" Folder="lib/net472" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" /> -->
+    <PackageReference Include="NuGet.Packaging" Version="$(NugetPackagingVersion)" />
+
     <PackageDownloadAndReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" Folder="lib/netstandard2.0" />
   </ItemGroup>
 

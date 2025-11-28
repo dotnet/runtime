@@ -50,7 +50,7 @@ namespace System.ComponentModel.Tests
         [InlineData("message", null)]
         [InlineData("message", "")]
         [InlineData("message", "helpUrl")]
-        public void Ctor_String_String(string message, string helpUrl)
+        public void Ctor_String_String(string message, string? helpUrl)
         {
             var exception = new WarningException(message, helpUrl);
             Assert.Null(exception.InnerException);
@@ -64,7 +64,7 @@ namespace System.ComponentModel.Tests
         [InlineData("message", null, null)]
         [InlineData("message", "", "")]
         [InlineData("message", "helpUrl", "helpTopic")]
-        public void Ctor_String_String_String(string message, string helpUrl, string helpTopic)
+        public void Ctor_String_String_String(string message, string? helpUrl, string? helpTopic)
         {
             var exception = new WarningException(message, helpUrl, helpTopic);
             Assert.Null(exception.InnerException);

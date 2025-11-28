@@ -8,8 +8,10 @@ using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.CodeAnalysis.Text;
 using Microsoft.Interop;
 using Xunit;
 
@@ -102,7 +104,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
-                    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
+                    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
@@ -127,7 +129,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 partial interface INativeAPI : IUnmanagedInterfaceType
                 {
                     static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
-                    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
+                    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl), typeof(CallConvMemberFunction)])]
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
@@ -159,7 +161,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
                     [SuppressGCTransition]
-                    [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })]
+                    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl), typeof(CallConvMemberFunction)])]
                     [VirtualMethodIndex(0)]
                     void Method();
                 }
@@ -317,7 +319,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.CompilerServices;
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 [GeneratedComInterface]
                 [Guid("0A617667-4961-4F90-B74F-6DC368E9817A")]
                 partial interface {|#1:IComInterface2|} : IComInterface
@@ -340,6 +342,74 @@ namespace ComInterfaceGenerator.Unit.Tests
                     Assert.Equal(4, Assert.IsAssignableFrom<ILiteralOperation>(Assert.IsAssignableFrom<IConversionOperation>(vtableSlotInitialization).Operand.ChildOperations.Last()).ConstantValue.Value);
                 },
                 VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface2", "IComInterface").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning));
+        }
+
+        [Fact]
+        public async Task ComInterfacesInheritingFromTheSameInterfaceAcrossCompilationsCalculatesCorrectVTableIndex()
+        {
+            string baseSource = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E98179")]
+                public partial interface IComInterface
+                {
+                    void Method();
+                }
+                """;
+
+            string derivedSource = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E9817A")]
+                internal partial interface {|#1:IComInterface2|} : IComInterface
+                {
+                    void DerivedMethod();
+                }
+
+                [GeneratedComInterface]
+                [Guid("0951f7b7-a700-4de4-930e-0b1fbc4684a9")]
+                internal partial interface {|#2:IComInterface3|} : IComInterface
+                {
+                    void DerivedMethod();
+                }
+                """;
+
+            await VerifyInvocationWithMultipleProjectsAsync(
+                derivedSource,
+                baseSource,
+                "IComInterface2",
+                "DerivedMethod",
+                (newComp, _) =>
+                {
+                    // Validate VTable sizes for interfaces inheriting from the same base
+                    // IUnknown has 3 methods, IComInterface adds 1 method = 4 total
+                    // Both IComInterface2 and IComInterface3 inherit from IComInterface and add 1 method each = 5 total
+                    ValidateInterface("IComInterface2", 5);
+                    ValidateInterface("IComInterface3", 5);
+
+                    void ValidateInterface(string name, int expectedVTableSize)
+                    {
+                        INamedTypeSymbol? userDefinedInterface = newComp.Assembly.GetTypeByMetadataName(name);
+                        Assert.NotNull(userDefinedInterface);
+                        ITypeSymbol vtableType = new ComInterfaceImplementationLocator().FindVTableStructType(newComp, userDefinedInterface);
+                        int actualVTableSize = vtableType.GetMembers().OfType<IFieldSymbol>().Count();
+
+                        if (expectedVTableSize != actualVTableSize)
+                        {
+                            Assert.Fail($"VTable size mismatch for {name}. Expected: {expectedVTableSize}, Actual: {actualVTableSize}. VTable structure:\n{vtableType.DeclaringSyntaxReferences[0].GetSyntax().SyntaxTree.GetText()}");
+                        }
+
+                        Assert.Equal(expectedVTableSize, actualVTableSize);
+                    }
+                },
+                VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface2", "IComInterface").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning),
+                VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface3", "IComInterface").WithLocation(2).WithSeverity(DiagnosticSeverity.Warning));
         }
 
         [Fact]
@@ -369,7 +439,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.CompilerServices;
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
-                
+
                 [GeneratedComInterface]
                 [Guid("0A617667-4961-4F90-B74F-6DC368E9817A")]
                 partial interface {|#1:IComInterface3|} : IComInterface2
@@ -444,6 +514,84 @@ namespace ComInterfaceGenerator.Unit.Tests
                     Assert.Equal(5, Assert.IsAssignableFrom<ILiteralOperation>(Assert.IsAssignableFrom<IConversionOperation>(vtableSlotInitialization).Operand.ChildOperations.Last()).ConstantValue.Value);
                 },
                 VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface2", "IComInterface").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning));
+        }
+
+        [Fact]
+        public async Task ComInterfaceDeepInheritanceChainCalculatesCorrectVTableSizes()
+        {
+            string baseSource = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E98179")]
+                public partial interface IComInterface
+                {
+                    void BaseMethod();
+                }
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E98178")]
+                public partial interface IComInterface2 : IComInterface
+                {
+                    void MiddleMethod();
+                }
+                """;
+
+            string derivedSource = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E9817A")]
+                partial interface {|#1:IComInterface3|} : IComInterface2
+                {
+                    void DerivedMethod();
+                }
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E9817B")]
+                partial interface IComInterface4 : IComInterface3
+                {
+                    void DeepDerivedMethod();
+                }
+                """;
+
+            await VerifyInvocationWithMultipleProjectsAsync(
+                derivedSource,
+                baseSource,
+                "IComInterface4",
+                "DeepDerivedMethod",
+                (newComp, _) =>
+                {
+                    // Validate VTable sizes for deep inheritance chain
+                    // IUnknown has 3 methods (QueryInterface=0, AddRef=1, Release=2)
+                    // IComInterface: IUnknown (3) + BaseMethod (1) = 4 total
+                    // IComInterface2: IComInterface (4) + MiddleMethod (1) = 5 total
+                    // IComInterface3: IComInterface2 (5) + DerivedMethod (1) = 6 total
+                    // IComInterface4: IComInterface3 (6) + DeepDerivedMethod (1) = 7 total
+
+                    ValidateInterface("IComInterface3", 6);
+                    ValidateInterface("IComInterface4", 7);
+
+                    void ValidateInterface(string name, int expectedVTableSize)
+                    {
+                        INamedTypeSymbol? userDefinedInterface = newComp.Assembly.GetTypeByMetadataName(name);
+                        Assert.NotNull(userDefinedInterface);
+                        ITypeSymbol vtableType = new ComInterfaceImplementationLocator().FindVTableStructType(newComp, userDefinedInterface);
+                        int actualVTableSize = vtableType.GetMembers().OfType<IFieldSymbol>().Count();
+
+                        if (expectedVTableSize != actualVTableSize)
+                        {
+                            Assert.Fail($"VTable size mismatch for {name}. Expected: {expectedVTableSize}, Actual: {actualVTableSize}. VTable structure:\n{vtableType.DeclaringSyntaxReferences[0].GetSyntax().SyntaxTree.GetText()}");
+                        }
+
+                        Assert.Equal(expectedVTableSize, actualVTableSize);
+                    }
+                },
+                VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface3", "IComInterface2").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning));
         }
 
         private static async Task VerifyInvocationWithMultipleProjectsAsync(
@@ -580,6 +728,14 @@ namespace ComInterfaceGenerator.Unit.Tests
                     attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass?.OriginalDefinition, iUnknownDerivedAttributeType));
 
                 return (INamedTypeSymbol)iUnknownDerivedAttribute.AttributeClass!.TypeArguments[1];
+            }
+
+            public ITypeSymbol FindVTableStructType(Compilation compilation, INamedTypeSymbol userDefinedInterface)
+            {
+                INamedTypeSymbol? implementationInterface = FindImplementationInterface(compilation, userDefinedInterface);
+                var vtableField = implementationInterface.GetMembers("Vtable").OfType<IFieldSymbol>().SingleOrDefault();
+                Assert.NotNull(vtableField);
+                return vtableField.Type;
             }
         }
     }

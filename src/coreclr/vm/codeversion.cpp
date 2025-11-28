@@ -12,9 +12,11 @@
 #ifdef FEATURE_CODE_VERSIONING
 #include "threadsuspend.h"
 #include "methoditer.h"
+#ifdef DDEBUGGING_SUPPORTED
 #include "../debug/ee/debugger.h"
 #include "../debug/ee/walker.h"
 #include "../debug/ee/controller.h"
+#endif // DDEBUGGING_SUPPORTED
 #endif // FEATURE_CODE_VERSIONING
 
 #ifndef FEATURE_CODE_VERSIONING
@@ -28,6 +30,7 @@
 NativeCodeVersion::NativeCodeVersion(PTR_MethodDesc pMethod) : m_pMethodDesc(pMethod) {}
 BOOL NativeCodeVersion::IsDefaultVersion() const { return TRUE; }
 PCODE NativeCodeVersion::GetNativeCode() const { return m_pMethodDesc->GetNativeCode(); }
+ReJITID NativeCodeVersion::GetILCodeVersionId() const { return 0; }
 
 #ifndef DACCESS_COMPILE
 BOOL NativeCodeVersion::SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected) { return m_pMethodDesc->SetNativeCodeInterlocked(pCode, pExpected); }
@@ -163,7 +166,7 @@ void NativeCodeVersionNode::SetOptimizationTier(NativeCodeVersion::OptimizationT
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-PatchpointInfo* NativeCodeVersionNode::GetOSRInfo(unsigned * ilOffset) const
+PatchpointInfo* NativeCodeVersionNode::GetOSRInfo(unsigned * ilOffset)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     *ilOffset = m_ilOffset;
@@ -318,13 +321,25 @@ MethodDescVersioningState* NativeCodeVersion::GetMethodDescVersioningState()
     CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
     return pCodeVersionManager->GetMethodDescVersioningState(pMethodDesc);
 }
-#endif
+#endif // !DACCESS_COMPILE
+
+bool NativeCodeVersion::IsFinalTier() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
 
 #ifdef FEATURE_TIERED_COMPILATION
+    OptimizationTier tier = GetOptimizationTier();
+    return tier == OptimizationTier1 || tier == OptimizationTierOptimized;
+#else // !FEATURE_TIERED_COMPILATION
+    return true;
+#endif // FEATURE_TIERED_COMPILATION
+}
 
+#ifdef FEATURE_TIERED_COMPILATION
 NativeCodeVersion::OptimizationTier NativeCodeVersion::GetOptimizationTier() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
+
     if (m_storageKind == StorageKind::Explicit)
     {
         return AsNode()->GetOptimizationTier();
@@ -333,13 +348,6 @@ NativeCodeVersion::OptimizationTier NativeCodeVersion::GetOptimizationTier() con
     {
         return TieredCompilationManager::GetInitialOptimizationTier(GetMethodDesc());
     }
-}
-
-bool NativeCodeVersion::IsFinalTier() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    OptimizationTier tier = GetOptimizationTier();
-    return tier == OptimizationTier1 || tier == OptimizationTierOptimized;
 }
 
 #ifndef DACCESS_COMPILE
@@ -549,7 +557,7 @@ ILCodeVersionNode::ILCodeVersionNode() :
     m_methodDef(0),
     m_rejitId(0),
     m_pNextILVersionNode(dac_cast<PTR_ILCodeVersionNode>(nullptr)),
-    m_rejitState(ILCodeVersion::kStateRequested),
+    m_rejitState(RejitFlags::kStateRequested),
     m_pIL(),
     m_jitFlags(0),
     m_deoptimized(FALSE)
@@ -563,7 +571,7 @@ ILCodeVersionNode::ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJ
     m_methodDef(methodDef),
     m_rejitId(id),
     m_pNextILVersionNode(dac_cast<PTR_ILCodeVersionNode>(nullptr)),
-    m_rejitState(ILCodeVersion::kStateRequested),
+    m_rejitState(RejitFlags::kStateRequested),
     m_pIL(nullptr),
     m_jitFlags(0),
     m_deoptimized(isDeoptimized)
@@ -588,17 +596,17 @@ ReJITID ILCodeVersionNode::GetVersionId() const
     return m_rejitId;
 }
 
-ILCodeVersion::RejitFlags ILCodeVersionNode::GetRejitState() const
+RejitFlags ILCodeVersionNode::GetRejitState() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return static_cast<ILCodeVersion::RejitFlags>(m_rejitState.Load() & ILCodeVersion::kStateMask);
+    return m_rejitState.Load() & RejitFlags::kStateMask;
 }
 
 BOOL ILCodeVersionNode::GetEnableReJITCallback() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return (m_rejitState.Load() & ILCodeVersion::kSuppressParams) == ILCodeVersion::kSuppressParams;
+    return (m_rejitState.Load() & RejitFlags::kSuppressParams) == RejitFlags::kSuppressParams;
 }
 
 PTR_COR_ILMETHOD ILCodeVersionNode::GetIL() const
@@ -632,15 +640,14 @@ BOOL ILCodeVersionNode::IsDeoptimized() const
 }
 
 #ifndef DACCESS_COMPILE
-void ILCodeVersionNode::SetRejitState(ILCodeVersion::RejitFlags newState)
+void ILCodeVersionNode::SetRejitState(RejitFlags newState)
 {
     LIMITED_METHOD_CONTRACT;
     // We're doing a non thread safe modification to m_rejitState
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
 
-    ILCodeVersion::RejitFlags oldNonMaskFlags =
-        static_cast<ILCodeVersion::RejitFlags>(m_rejitState.Load() & ~ILCodeVersion::kStateMask);
-    m_rejitState.Store(static_cast<ILCodeVersion::RejitFlags>(newState | oldNonMaskFlags));
+    RejitFlags oldNonMaskFlags = m_rejitState.Load() & ~RejitFlags::kStateMask;
+    m_rejitState.Store(static_cast<RejitFlags>(newState | oldNonMaskFlags));
 }
 
 void ILCodeVersionNode::SetEnableReJITCallback(BOOL state)
@@ -649,14 +656,14 @@ void ILCodeVersionNode::SetEnableReJITCallback(BOOL state)
     // We're doing a non thread safe modification to m_rejitState
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
 
-    ILCodeVersion::RejitFlags oldFlags = m_rejitState.Load();
+    RejitFlags oldFlags = m_rejitState.Load();
     if (state)
     {
-        m_rejitState.Store(static_cast<ILCodeVersion::RejitFlags>(oldFlags | ILCodeVersion::kSuppressParams));
+        m_rejitState.Store(oldFlags | RejitFlags::kSuppressParams);
     }
     else
     {
-        m_rejitState.Store(static_cast<ILCodeVersion::RejitFlags>(oldFlags & ~ILCodeVersion::kSuppressParams));
+        m_rejitState.Store(oldFlags & ~RejitFlags::kSuppressParams);
     }
 }
 
@@ -850,7 +857,7 @@ bool ILCodeVersion::HasAnyOptimizedNativeCodeVersion(NativeCodeVersion tier0Nati
 }
 #endif
 
-ILCodeVersion::RejitFlags ILCodeVersion::GetRejitState() const
+RejitFlags ILCodeVersion::GetRejitState() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
     if (m_storageKind == StorageKind::Explicit)
@@ -859,7 +866,7 @@ ILCodeVersion::RejitFlags ILCodeVersion::GetRejitState() const
     }
     else
     {
-        return ILCodeVersion::kStateActive;
+        return RejitFlags::kStateActive;
     }
 }
 
@@ -911,11 +918,41 @@ PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
     if(pIL == NULL)
     {
         PTR_Module pModule = GetModule();
-        PTR_MethodDesc pMethodDesc = dac_cast<PTR_MethodDesc>(pModule->LookupMethodDef(GetMethodDef()));
-        if (pMethodDesc != NULL)
+        // Always pickup overrides like reflection emit, EnC, etc. irrespective of RVA.
+        // Profilers can attach dynamic IL to methods with zero RVA.
+        mdMethodDef methodDef = GetMethodDef();
+        TADDR pIL = pModule->GetDynamicIL(methodDef);
+        if (pIL == (TADDR)NULL)
         {
-            pIL = dac_cast<PTR_COR_ILMETHOD>(pMethodDesc->GetILHeader());
+            DWORD rva;
+            DWORD dwImplFlags;
+            if (methodDef & 0x00FFFFFF)
+            {
+                if (FAILED(pModule->GetMDImport()->GetMethodImplProps(methodDef, &rva, &dwImplFlags)))
+                {   // Class loader already asked for MethodImpls, so this should always succeed (unless there's a
+                    // bug or a new code path)
+                    _ASSERTE(!"If this ever fires, then this method should return HRESULT");
+                    rva = 0;
+                }
+
+                // RVA points to IL header only when the code type is IL
+                if (!IsMiIL(dwImplFlags))
+                {
+                    rva = 0;
+                }
+            }
+            else
+            {
+                rva = 0;
+            }
+            pIL = pModule->GetIL(rva);
         }
+
+#ifdef DACCESS_COMPILE
+        return (pIL != (TADDR)NULL) ? dac_cast<PTR_COR_ILMETHOD>(DacGetIlMethod(pIL)) : NULL;
+#else // !DACCESS_COMPILE
+        return PTR_COR_ILMETHOD(pIL);
+#endif // !DACCESS_COMPILE
     }
 
     return pIL;
@@ -1701,7 +1738,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
             break;
         }
 
-        if (!pMethodDesc->IsPointingToPrestub())
+        if (!pMethodDesc->ShouldCallPrestub())
         {
             *doFullBackpatchRef = true;
             return (PCODE)NULL;

@@ -8,7 +8,7 @@
     <!-- Test infra issue on apple devices: https://github.com/dotnet/runtime/issues/89917 -->
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);AVX_INTRINSICS;VECTORT128_INTRINSICS</DefineConstants>
+    <DefineConstants>$(DefineConstants);AVX_INTRINSICS_NO_AVX2;VECTORT128_INTRINSICS</DefineConstants>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>

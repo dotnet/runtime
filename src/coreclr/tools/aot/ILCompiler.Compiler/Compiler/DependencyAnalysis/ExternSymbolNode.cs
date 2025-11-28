@@ -11,13 +11,15 @@ namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a symbol that is defined externally and statically linked to the output obj file.
+    /// When making a new node, do not derive from this class directly, derive from one of its subclasses
+    /// (ExternFunctionSymbolNode / ExternDataSymbolNode) instead.
     /// </summary>
-    public class ExternSymbolNode : SortableDependencyNode, ISortableSymbolNode
+    public abstract class ExternSymbolNode : SortableDependencyNode, ISortableSymbolNode
     {
         private readonly Utf8String _name;
         private readonly bool _isIndirection;
 
-        public ExternSymbolNode(Utf8String name, bool isIndirection = false)
+        protected ExternSymbolNode(Utf8String name, bool isIndirection = false)
         {
             _name = name;
             _isIndirection = isIndirection;
@@ -29,6 +31,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append(_name);
         }
+
         public int Offset => 0;
         public virtual bool RepresentsIndirectionCell => _isIndirection;
 
@@ -42,8 +45,6 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
 
 #if !SUPPORT_JIT
-        public override int ClassCode => 1092559304;
-
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return _name.CompareTo(((ExternSymbolNode)other)._name);
@@ -56,11 +57,26 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    public class AddressTakenExternSymbolNode : ExternSymbolNode
+    /// <summary>
+    /// Represents a function symbol that is defined externally and statically linked to the output obj file.
+    /// </summary>
+    public class ExternFunctionSymbolNode(Utf8String name, bool isIndirection = false) : ExternSymbolNode(name, isIndirection)
     {
-        public AddressTakenExternSymbolNode(Utf8String name)
-            : base(name) { }
+        public override int ClassCode => 1452455506;
+    }
 
+    public class AddressTakenExternFunctionSymbolNode(Utf8String name) : ExternFunctionSymbolNode(name)
+    {
         public override int ClassCode => -45645737;
+    }
+
+    /// <summary>
+    /// Represents a data symbol that is defined externally and statically linked to the output obj file.
+    /// </summary>
+    public class ExternDataSymbolNode(Utf8String name) : ExternSymbolNode(name)
+    {
+        public override int ClassCode => 1428609964;
+
+        protected override string GetName(NodeFactory factory) => $"ExternDataSymbolNode {ToString()}";
     }
 }

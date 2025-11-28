@@ -41,7 +41,7 @@ namespace System.Reflection
                 RuntimeType type = argumentTypes[i];
                 if (RuntimeTypeHandle.IsByRef(type))
                 {
-                    type = (RuntimeType)type.GetElementType();
+                    type = (RuntimeType)type.GetElementType()!;
                     invokerFlags[i] |= InvokerArgFlags.IsValueType_ByRef_Or_Pointer;
                     needsByRefStrategy = true;
                     if (type.IsNullableOfT)

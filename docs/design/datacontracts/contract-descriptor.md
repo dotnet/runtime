@@ -83,7 +83,12 @@ a JSON integer constant.
   "globals":
   {
     "FEATURE_COMINTEROP": 0,
-    "s_pThreadStore": [ 0 ] // indirect from pointer data offset 0
+    "s_pThreadStore": [ 0 ], // indirect from pointer data offset 0
+    "RuntimeID": "win-x64" // string value
+  },
+  "sub-descriptors":
+  {
+    "GCDescriptor": [ 1 ]
   },
   "contracts": {"Thread": 1, "GCHandle": 1, "ThreadStore": 1}
 }
@@ -91,7 +96,7 @@ a JSON integer constant.
 
 ## Contract symbol
 
-To aid in discovery, the contract descriptor should be exported by the module hosting the .NET
+To aid in discovery, the main contract descriptor should be exported by the module hosting the .NET
 runtime with the name `DotNetRuntimeContractDescriptor` using the C symbol naming conventions of the
 target platform.
 

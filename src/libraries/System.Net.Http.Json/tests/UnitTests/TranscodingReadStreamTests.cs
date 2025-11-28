@@ -164,19 +164,19 @@ namespace System.Net.Http.Json.Functional.Tests
             }
         }
 
-        public static TheoryData ReadAsyncInputLatin(string encoding)
+        public static TheoryData<string> ReadAsyncInputLatin(string encoding)
         {
             int maxCharBufferSize = Encoding.GetEncoding(encoding).GetMaxCharCount(TranscodingReadStream.MaxByteBufferSize);
             return GetLatinTextInput(maxCharBufferSize, TranscodingReadStream.MaxByteBufferSize);
         }
 
-        public static TheoryData ReadAsyncInputUnicode(string encoding)
+        public static TheoryData<string> ReadAsyncInputUnicode(string encoding)
         {
             int maxCharBufferSize = Encoding.GetEncoding(encoding).GetMaxCharCount(TranscodingReadStream.MaxByteBufferSize);
             return GetUnicodeText(maxCharBufferSize);
         }
 
-        internal static TheoryData GetLatinTextInput(int maxCharBufferSize, int maxByteBufferSize)
+        internal static TheoryData<string> GetLatinTextInput(int maxCharBufferSize, int maxByteBufferSize)
         {
             return new TheoryData<string>
             {
@@ -189,7 +189,7 @@ namespace System.Net.Http.Json.Functional.Tests
             };
         }
 
-        internal static TheoryData GetUnicodeText(int maxCharBufferSize)
+        internal static TheoryData<string> GetUnicodeText(int maxCharBufferSize)
         {
             return new TheoryData<string>
             {

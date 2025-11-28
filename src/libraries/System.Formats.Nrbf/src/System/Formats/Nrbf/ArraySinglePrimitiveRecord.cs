@@ -47,6 +47,11 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
 
     internal static IReadOnlyList<T> DecodePrimitiveTypes(BinaryReader reader, int count)
     {
+        if (count == 0)
+        {
+            return Array.Empty<T>(); // Empty arrays are allowed.
+        }
+
         // For decimals, the input is provided as strings, so we can't compute the required size up-front.
         if (typeof(T) == typeof(decimal))
         {
@@ -71,18 +76,15 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
         // allocations to be proportional to the amount of data present in the input stream,
         // which is a sufficient defense against DoS.
 
-        long requiredBytes = count;
-        if (typeof(T) == typeof(DateTime) || typeof(T) == typeof(TimeSpan))
-        {
-            // We can't assume DateTime as represented by the runtime is 8 bytes.
-            // The only assumption we can make is that it's 8 bytes on the wire.
-            requiredBytes *= 8;
-        }
-        else if (typeof(T) != typeof(char))
-        {
-            requiredBytes *= Unsafe.SizeOf<T>();
-        }
+        // We can't assume DateTime as represented by the runtime is 8 bytes.
+        // The only assumption we can make is that it's 8 bytes on the wire.
+        int sizeOfT = typeof(T) == typeof(DateTime) || typeof(T) == typeof(TimeSpan)
+            ? 8
+            : typeof(T) != typeof(char)
+                ? Unsafe.SizeOf<T>()
+                : 1;
 
+        long requiredBytes = (long)count * sizeOfT;
         bool? isDataAvailable = reader.IsDataAvailable(requiredBytes);
         if (!isDataAvailable.HasValue)
         {
@@ -110,33 +112,56 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
 
         // It's safe to pre-allocate, as we have ensured there is enough bytes in the stream.
         T[] result = new T[count];
-        Span<byte> resultAsBytes = MemoryMarshal.AsBytes<T>(result);
-#if NET
-        reader.BaseStream.ReadExactly(resultAsBytes);
+
+        // MemoryMarshal.AsBytes can fail for inputs that need more than int.MaxValue bytes.
+        // To avoid OverflowException, we read the data in chunks.
+        int MaxChunkLength =
+#if !DEBUG
+            int.MaxValue / sizeOfT;
 #else
-        byte[] bytes = ArrayPool<byte>.Shared.Rent((int)Math.Min(requiredBytes, 256_000));
+            // Let's use a different value for non-release builds to ensure this code path
+            // is covered with tests without the need of decoding enormous payloads.
+            8_000;
+#endif
 
-        while (!resultAsBytes.IsEmpty)
+#if !NET
+        byte[] rented = ArrayPool<byte>.Shared.Rent((int)Math.Min(requiredBytes, 256_000));
+#endif
+
+        Span<T> valuesToRead = result.AsSpan();
+        while (!valuesToRead.IsEmpty)
         {
-            int bytesRead = reader.Read(bytes, 0, Math.Min(resultAsBytes.Length, bytes.Length));
-            if (bytesRead <= 0)
-            {
-                ArrayPool<byte>.Shared.Return(bytes);
-                ThrowHelper.ThrowEndOfStreamException();
-            }
+            int sliceSize = Math.Min(valuesToRead.Length, MaxChunkLength);
 
-            bytes.AsSpan(0, bytesRead).CopyTo(resultAsBytes);
-            resultAsBytes = resultAsBytes.Slice(bytesRead);
+            Span<byte> resultAsBytes = MemoryMarshal.AsBytes<T>(valuesToRead.Slice(0, sliceSize));
+#if NET
+            reader.BaseStream.ReadExactly(resultAsBytes);
+#else
+            while (!resultAsBytes.IsEmpty)
+            {
+                int bytesRead = reader.Read(rented, 0, Math.Min(resultAsBytes.Length, rented.Length));
+                if (bytesRead <= 0)
+                {
+                    ArrayPool<byte>.Shared.Return(rented);
+                    ThrowHelper.ThrowEndOfStreamException();
+                }
+
+                rented.AsSpan(0, bytesRead).CopyTo(resultAsBytes);
+                resultAsBytes = resultAsBytes.Slice(bytesRead);
+            }
+#endif
+            valuesToRead = valuesToRead.Slice(sliceSize);
         }
 
-        ArrayPool<byte>.Shared.Return(bytes);
+#if !NET
+        ArrayPool<byte>.Shared.Return(rented);
 #endif
 
         if (!BitConverter.IsLittleEndian)
         {
             if (typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
             {
-                Span<short> span = MemoryMarshal.Cast<T, short>(result);
+                Span<short> span = MemoryMarshal.Cast<T, short>(result.AsSpan());
 #if NET
                 BinaryPrimitives.ReverseEndianness(span, span);
 #else
@@ -148,7 +173,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             }
             else if (typeof(T) == typeof(int) || typeof(T) == typeof(uint) || typeof(T) == typeof(float))
             {
-                Span<int> span = MemoryMarshal.Cast<T, int>(result);
+                Span<int> span = MemoryMarshal.Cast<T, int>(result.AsSpan());
 #if NET
                 BinaryPrimitives.ReverseEndianness(span, span);
 #else
@@ -160,7 +185,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             }
             else if (typeof(T) == typeof(long) || typeof(T) == typeof(ulong) || typeof(T) == typeof(double))
             {
-                Span<long> span = MemoryMarshal.Cast<T, long>(result);
+                Span<long> span = MemoryMarshal.Cast<T, long>(result.AsSpan());
 #if NET
                 BinaryPrimitives.ReverseEndianness(span, span);
 #else
@@ -176,7 +201,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
         {
             // See DontCastBytesToBooleans test to see what could go wrong.
             bool[] booleans = (bool[])(object)result;
-            resultAsBytes = MemoryMarshal.AsBytes<T>(result);
+            Span<byte> resultAsBytes = MemoryMarshal.AsBytes<T>(result.AsSpan());
             for (int i = 0; i < booleans.Length; i++)
             {
                 // We don't use the bool array to get the value, as an optimizing compiler or JIT could elide this.

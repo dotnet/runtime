@@ -18,29 +18,28 @@
 #include "../../vm/common.h"
 #include "../../vm/gcenv.h"
 #include "../../vm/ecall.h"
+#include "../../vm/cdacplatformmetadata.hpp"
 
 #ifdef DEBUGGING_SUPPORTED
 
-extern PTR_ECHash gFCallMethods[FCALL_HASH_SIZE];
-extern TADDR gLowestFCall;
-extern TADDR gHighestFCall;
 extern PCODE g_FCDynamicallyAssignedImplementations[ECall::NUM_DYNAMICALLY_ASSIGNED_FCALL_IMPLEMENTATIONS];
-extern DWORD gThreadTLSIndex;
-extern DWORD gAppDomainTLSIndex;
 extern "C" void STDCALL ThePreStubPatchLabel(void);
 
 #ifdef FEATURE_COMWRAPPERS
 // Keep these forward declarations in sync with the method definitions in interop/comwrappers.cpp
-namespace ABI
+namespace InteropLib
 {
-    struct ComInterfaceDispatch;
+    namespace ABI
+    {
+        struct ComInterfaceDispatch;
+    }
 }
 HRESULT STDMETHODCALLTYPE ManagedObjectWrapper_QueryInterface(
-    _In_ ABI::ComInterfaceDispatch* disp,
+    _In_ InteropLib::ABI::ComInterfaceDispatch* disp,
     /* [in] */ REFIID riid,
     /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject);
 HRESULT STDMETHODCALLTYPE TrackerTarget_QueryInterface(
-    _In_ ABI::ComInterfaceDispatch* disp,
+    _In_ InteropLib::ABI::ComInterfaceDispatch* disp,
     /* [in] */ REFIID riid,
     /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject);
 

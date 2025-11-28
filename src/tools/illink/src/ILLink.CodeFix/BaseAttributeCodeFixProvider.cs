@@ -16,132 +16,137 @@ using Microsoft.CodeAnalysis.Simplification;
 
 namespace ILLink.CodeFix
 {
-	public abstract class BaseAttributeCodeFixProvider : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider
-	{
-		private protected abstract LocalizableString CodeFixTitle { get; }
+    public abstract class BaseAttributeCodeFixProvider : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider
+    {
+        private protected abstract LocalizableString CodeFixTitle { get; }
 
-		private protected abstract string FullyQualifiedAttributeName { get; }
+        private protected abstract string FullyQualifiedAttributeName { get; }
 
-		private protected abstract AttributeableParentTargets AttributableParentTargets { get; }
+        private protected abstract AttributeableParentTargets AttributableParentTargets { get; }
 
-		public sealed override FixAllProvider GetFixAllProvider ()
-		{
-			// See https://github.com/dotnet/roslyn/blob/master/docs/analyzers/FixAllProvider.md for more information on Fix All Providers
-			return WellKnownFixAllProviders.BatchFixer;
-		}
+        public sealed override FixAllProvider GetFixAllProvider()
+        {
+            // See https://github.com/dotnet/roslyn/blob/master/docs/analyzers/FixAllProvider.md for more information on Fix All Providers
+            return WellKnownFixAllProviders.BatchFixer;
+        }
 
-		protected async Task BaseRegisterCodeFixesAsync (CodeFixContext context)
-		{
-			var document = context.Document;
-			var diagnostic = context.Diagnostics.First ();
-			var codeFixTitle = CodeFixTitle.ToString ();
+        protected async Task BaseRegisterCodeFixesAsync(CodeFixContext context)
+        {
+            var document = context.Document;
+            var diagnostic = context.Diagnostics.First();
+            var codeFixTitle = CodeFixTitle.ToString();
 
-			if (await document.GetSyntaxRootAsync (context.CancellationToken).ConfigureAwait (false) is not { } root)
-				return;
+            if (await document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false) is not { } root)
+                return;
 
-			SyntaxNode targetNode = root.FindNode (diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
-			if (FindAttributableParent (targetNode, AttributableParentTargets) is not SyntaxNode attributableNode)
-				return;
+            SyntaxNode targetNode = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
+            if (FindAttributableParent(targetNode, AttributableParentTargets) is not SyntaxNode attributableNode)
+                return;
 
-			context.RegisterCodeFix (CodeAction.Create (
-				title: codeFixTitle,
-				createChangedDocument: ct => AddAttributeAsync (
-					document, diagnostic, targetNode, attributableNode, ct),
-				equivalenceKey: codeFixTitle), diagnostic);
-		}
+            context.RegisterCodeFix(CodeAction.Create(
+                title: codeFixTitle,
+                createChangedDocument: ct => AddAttributeAsync(
+                    document, diagnostic, targetNode, attributableNode, ct),
+                equivalenceKey: codeFixTitle), diagnostic);
+        }
 
-		private async Task<Document> AddAttributeAsync (
-			Document document,
-			Diagnostic diagnostic,
-			SyntaxNode targetNode,
-			SyntaxNode attributableNode,
-			CancellationToken cancellationToken)
-		{
-			if (await document.GetSemanticModelAsync (cancellationToken).ConfigureAwait (false) is not { } model)
-				return document;
-			if (model.GetSymbolInfo (targetNode, cancellationToken).Symbol is not { } targetSymbol)
-				return document;
-			if (model.Compilation.GetBestTypeByMetadataName (FullyQualifiedAttributeName) is not { } attributeSymbol)
-				return document;
+        private async Task<Document> AddAttributeAsync(
+            Document document,
+            Diagnostic diagnostic,
+            SyntaxNode targetNode,
+            SyntaxNode attributableNode,
+            CancellationToken cancellationToken)
+        {
+            if (await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false) is not { } model)
+                return document;
+            if (model.GetSymbolInfo(targetNode, cancellationToken).Symbol is not { } targetSymbol)
+                return document;
+            if (model.Compilation.GetBestTypeByMetadataName(FullyQualifiedAttributeName) is not { } attributeSymbol)
+                return document;
 
-			// N.B. May be null for FieldDeclaration, since field declarations can declare multiple variables
-			var attributableSymbol = model.GetDeclaredSymbol (attributableNode, cancellationToken);
+            // N.B. May be null for FieldDeclaration, since field declarations can declare multiple variables
+            var attributableSymbol = model.GetDeclaredSymbol(attributableNode, cancellationToken);
 
-			var attributeArguments = GetAttributeArguments (attributableSymbol, targetSymbol, SyntaxGenerator.GetGenerator (document), diagnostic);
+            var attributeArguments = GetAttributeArguments(attributableSymbol, targetSymbol, SyntaxGenerator.GetGenerator(document), diagnostic);
 
-			var editor = await DocumentEditor.CreateAsync (document, cancellationToken).ConfigureAwait (false);
-			var generator = editor.Generator;
-			var attribute = generator.Attribute (
-				generator.TypeExpression (attributeSymbol), attributeArguments)
-				.WithAdditionalAnnotations (Simplifier.Annotation, Simplifier.AddImportsAnnotation);
+            var editor = await DocumentEditor.CreateAsync(document, cancellationToken).ConfigureAwait(false);
+            var generator = editor.Generator;
+            var attribute = generator.Attribute(
+                generator.TypeExpression(attributeSymbol), attributeArguments)
+                .WithAdditionalAnnotations(Simplifier.Annotation, Simplifier.AddImportsAnnotation);
 
-			editor.AddAttribute (attributableNode, attribute);
-			return editor.GetChangedDocument ();
-		}
+            editor.AddAttribute(attributableNode, attribute);
+            return editor.GetChangedDocument();
+        }
 
-		[Flags]
-		protected enum AttributeableParentTargets
-		{
-			MethodOrConstructor = 0x0001,
-			Property = 0x0002,
-			Field = 0x0004,
-			Event = 0x0008,
-			Class = 0x0010,
-			All = MethodOrConstructor | Property | Field | Event | Class
-		}
+        [Flags]
+        protected enum AttributeableParentTargets
+        {
+            MethodOrConstructor = 0x0001,
+            Property = 0x0002,
+            Field = 0x0004,
+            Event = 0x0008,
+            Class = 0x0010,
+            All = MethodOrConstructor | Property | Field | Event | Class
+        }
 
-		private static CSharpSyntaxNode? FindAttributableParent (SyntaxNode node, AttributeableParentTargets targets)
-		{
-			SyntaxNode? parentNode = node.Parent;
-			while (parentNode is not null) {
-				switch (parentNode) {
-				case LambdaExpressionSyntax:
-					return null;
+        private static CSharpSyntaxNode? FindAttributableParent(SyntaxNode node, AttributeableParentTargets targets)
+        {
+            SyntaxNode? parentNode = node.Parent;
+            while (parentNode is not null)
+            {
+                switch (parentNode)
+                {
+                    case LambdaExpressionSyntax:
+                        return null;
 
-				case PropertyDeclarationSyntax when targets.HasFlag (AttributeableParentTargets.Property):
-				case EventDeclarationSyntax when targets.HasFlag (AttributeableParentTargets.Event):
-					return (CSharpSyntaxNode) parentNode;
-				case PropertyDeclarationSyntax:
-				case EventDeclarationSyntax:
-					// If the attribute can be placed on a method but not directly on a property/event, we don't want to keep walking up
-					// the syntax tree to annotate the class. Instead the correct thing to do is to add accessor methods and annotate those.
-					// The code fixer doesn't support doing this automatically, so return null to indicate that the attribute can't be added.
-					if (targets.HasFlag (AttributeableParentTargets.MethodOrConstructor))
-						return null;
+                    case PropertyDeclarationSyntax when targets.HasFlag(AttributeableParentTargets.Property):
+                    case EventDeclarationSyntax when targets.HasFlag(AttributeableParentTargets.Event):
+                        return (CSharpSyntaxNode)parentNode;
+                    case PropertyDeclarationSyntax:
+                    case EventDeclarationSyntax:
+                        // If the attribute can be placed on a method but not directly on a property/event, we don't want to keep walking up
+                        // the syntax tree to annotate the class. Instead the correct thing to do is to add accessor methods and annotate those.
+                        // The code fixer doesn't support doing this automatically, so return null to indicate that the attribute can't be added.
+                        if (targets.HasFlag(AttributeableParentTargets.MethodOrConstructor))
+                            return null;
 
-					parentNode = parentNode.Parent;
-					break;
-				case LocalFunctionStatementSyntax or BaseMethodDeclarationSyntax or AccessorDeclarationSyntax when targets.HasFlag (AttributeableParentTargets.MethodOrConstructor):
-				case FieldDeclarationSyntax when targets.HasFlag (AttributeableParentTargets.Field):
-				case ClassDeclarationSyntax when targets.HasFlag (AttributeableParentTargets.Class):
-					return (CSharpSyntaxNode) parentNode;
+                        parentNode = parentNode.Parent;
+                        break;
+                    case LocalFunctionStatementSyntax or BaseMethodDeclarationSyntax or AccessorDeclarationSyntax when targets.HasFlag(AttributeableParentTargets.MethodOrConstructor):
+                    case FieldDeclarationSyntax when targets.HasFlag(AttributeableParentTargets.Field):
+                    case ClassDeclarationSyntax when targets.HasFlag(AttributeableParentTargets.Class):
+                        return (CSharpSyntaxNode)parentNode;
 
-				default:
-					parentNode = parentNode.Parent;
-					break;
-				}
-			}
+                    default:
+                        parentNode = parentNode.Parent;
+                        break;
+                }
+            }
 
-			return null;
-		}
+            return null;
+        }
 
-		protected abstract SyntaxNode[] GetAttributeArguments (
-			ISymbol? attributableSymbol,
-			ISymbol targetSymbol,
-			SyntaxGenerator syntaxGenerator,
-			Diagnostic diagnostic);
+        protected abstract SyntaxNode[] GetAttributeArguments(
+            ISymbol? attributableSymbol,
+            ISymbol targetSymbol,
+            SyntaxGenerator syntaxGenerator,
+            Diagnostic diagnostic);
 
-		protected static bool HasPublicAccessibility (ISymbol? m)
-		{
-			if (m is not { DeclaredAccessibility: Accessibility.Public or Accessibility.Protected }) {
-				return false;
-			}
-			for (var t = m.ContainingType; t is not null; t = t.ContainingType) {
-				if (t.DeclaredAccessibility != Accessibility.Public) {
-					return false;
-				}
-			}
-			return true;
-		}
-	}
+        protected static bool HasPublicAccessibility(ISymbol? m)
+        {
+            if (m is not { DeclaredAccessibility: Accessibility.Public or Accessibility.Protected })
+            {
+                return false;
+            }
+            for (var t = m.ContainingType; t is not null; t = t.ContainingType)
+            {
+                if (t.DeclaredAccessibility != Accessibility.Public)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
 }

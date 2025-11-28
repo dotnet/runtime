@@ -13,12 +13,12 @@ namespace ILLink.Shared.TrimAnalysis
     internal partial struct RequireDynamicallyAccessedMembersAction
     {
         private readonly ReflectionMarker _reflectionMarker;
-        private readonly string _reason;
+        private readonly TypeSystemEntity _reason;
 
         public RequireDynamicallyAccessedMembersAction(
             ReflectionMarker reflectionMarker,
             in DiagnosticContext diagnosticContext,
-            string reason)
+            TypeSystemEntity reason)
         {
             _reflectionMarker = reflectionMarker;
             _diagnosticContext = diagnosticContext;
@@ -29,7 +29,7 @@ namespace ILLink.Shared.TrimAnalysis
         {
             if (_reflectionMarker.TryResolveTypeNameAndMark(typeName, _diagnosticContext, needsAssemblyName, _reason, out TypeDesc? foundType))
             {
-                if (foundType.HasInstantiation && _reflectionMarker.Annotations.HasGenericParameterAnnotation(foundType))
+                if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(_reflectionMarker.Annotations, foundType))
                 {
                     GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(_diagnosticContext, _reflectionMarker, foundType);
                 }

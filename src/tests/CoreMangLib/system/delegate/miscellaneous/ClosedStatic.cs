@@ -8,7 +8,7 @@ public class Program
 {
     public int scale;
 
-    public Program(int scale)
+    private Program(int scale)
     {
         this.scale = scale;
     }

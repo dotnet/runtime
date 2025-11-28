@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -57,7 +58,7 @@ namespace System.Net
             try
             {
                 hostName = !justAddresses && hostEntry.CanonicalName != null
-                    ? Marshal.PtrToStringUTF8((IntPtr)hostEntry.CanonicalName)
+                    ? Utf8StringMarshaller.ConvertToManaged(hostEntry.CanonicalName)
                     : null;
 
                 IPAddress[] localAddresses;
@@ -85,7 +86,7 @@ namespace System.Net
                     for (int i = 0; i < hostEntry.IPAddressCount; i++)
                     {
                         Interop.Sys.IPAddress nativeAddr = addressHandle[i];
-                        if (Array.IndexOf(nativeAddresses, nativeAddr, 0, nativeAddressCount) == -1 &&
+                        if (Array.IndexOf(nativeAddresses, nativeAddr, 0, nativeAddressCount) < 0 &&
                             (!nativeAddr.IsIPv6 || SocketProtocolSupportPal.OSSupportsIPv6)) // Do not include IPv6 addresses if IPV6 support is force-disabled
                         {
                             nativeAddresses[nativeAddressCount++] = nativeAddr;
@@ -113,7 +114,7 @@ namespace System.Net
                         localAliases = new string[numAliases];
                         for (int i = 0; i < localAliases.Length; i++)
                         {
-                            localAliases[i] = Marshal.PtrToStringUTF8((IntPtr)hostEntry.Aliases[i])!;
+                            localAliases[i] = Utf8StringMarshaller.ConvertToManaged(hostEntry.Aliases[i])!;
                         }
                     }
                 }
@@ -186,7 +187,7 @@ namespace System.Net
 
             socketError = GetSocketErrorForNativeError(error);
             nativeErrorCode = error;
-            return socketError == SocketError.Success ? Marshal.PtrToStringUTF8((IntPtr)buffer) : null;
+            return socketError == SocketError.Success ? Utf8StringMarshaller.ConvertToManaged(buffer) : null;
         }
 
         public static string GetHostName() => Interop.Sys.GetHostName();

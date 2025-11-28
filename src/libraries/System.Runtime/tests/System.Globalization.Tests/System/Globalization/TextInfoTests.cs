@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -274,15 +275,7 @@ namespace System.Globalization.Tests
                 // we also don't preform.
                 // Greek Capital Letter Sigma (does not case to U+03C2 with "final sigma" rule).
                 yield return new object[] { cultureName, "\u03A3", "\u03C3" };
-                if (PlatformDetection.IsHybridGlobalizationOnBrowser)
-                {
-                    // JS is using "final sigma" rule correctly - it's costly to unify it with ICU's behavior
-                    yield return new object[] { cultureName, "O\u03A3", "o\u03C2" };
-                }
-                else
-                {
-                    yield return new object[] { cultureName, "O\u03A3", "o\u03C3" };
-                }
+                yield return new object[] { cultureName, "O\u03A3", "o\u03C3" };
             }
 
             foreach (string cultureName in GetTestLocales())
@@ -350,6 +343,25 @@ namespace System.Globalization.Tests
         public void ToLower_Null_ThrowsArgumentNullException(string cultureName)
         {
             AssertExtensions.Throws<ArgumentNullException>("str", () => new CultureInfo(cultureName).TextInfo.ToLower(null));
+        }
+
+        public static IEnumerable<object[]> ToLower_Rune_TestData()
+        {
+            foreach (string cultureName in s_cultureNames)
+            {
+                yield return new object[] { cultureName, new Rune('a'), new Rune('a') };
+                yield return new object[] { cultureName, new Rune('A'), new Rune('a') };
+                yield return new object[] { cultureName, new Rune(0x01F600), new Rune(0x01F600) }; // 😀 → 😀
+                yield return new object[] { cultureName, new Rune(0x010428), new Rune(0x010428) }; // 𐐨 → 𐐨
+                yield return new object[] { cultureName, new Rune(0x010400), new Rune(0x010428) }; // 𐐀 → 𐐨
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ToLower_Rune_TestData))]
+        public void ToLower_Rune(string name, Rune value, Rune expected)
+        {
+            Assert.Equal(expected, new CultureInfo(name).TextInfo.ToLower(value));
         }
 
         // ToUpper_TestData_netcore has the data which is specific to netcore framework
@@ -481,6 +493,25 @@ namespace System.Globalization.Tests
         public void ToUpper_Null_ThrowsArgumentNullException(string cultureName)
         {
             AssertExtensions.Throws<ArgumentNullException>("str", () => new CultureInfo(cultureName).TextInfo.ToUpper(null));
+        }
+
+        public static IEnumerable<object[]> ToUpper_Rune_TestData()
+        {
+            foreach (string cultureName in s_cultureNames)
+            {
+                yield return new object[] { cultureName, new Rune('a'), new Rune('A') };
+                yield return new object[] { cultureName, new Rune('A'), new Rune('A') };
+                yield return new object[] { cultureName, new Rune(0x01F600), new Rune(0x01F600) }; // 😀 → 😀
+                yield return new object[] { cultureName, new Rune(0x010428), new Rune(0x010400) }; // 𐐨 → 𐐀
+                yield return new object[] { cultureName, new Rune(0x010400), new Rune(0x010400) }; // 𐐀 → 𐐀
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ToUpper_Rune_TestData))]
+        public void ToUpper_Rune(string name, Rune value, Rune expected)
+        {
+            Assert.Equal(expected, new CultureInfo(name).TextInfo.ToUpper(value));
         }
 
         [Theory]

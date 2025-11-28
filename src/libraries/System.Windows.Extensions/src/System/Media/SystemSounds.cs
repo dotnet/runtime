@@ -5,35 +5,10 @@ namespace System.Media
 {
     public static class SystemSounds
     {
-        private static SystemSound? s_asterisk;
-        private static SystemSound? s_beep;
-        private static SystemSound? s_exclamation;
-        private static SystemSound? s_hand;
-        private static SystemSound? s_question;
-
-        public static SystemSound Asterisk
-        {
-            get => s_asterisk ??= new SystemSound(Interop.User32.MB_ICONASTERISK);
-        }
-
-        public static SystemSound Beep
-        {
-            get => s_beep ??= new SystemSound(Interop.User32.MB_OK);
-        }
-
-        public static SystemSound Exclamation
-        {
-            get => s_exclamation ??= new SystemSound(Interop.User32.MB_ICONEXCLAMATION);
-        }
-
-        public static SystemSound Hand
-        {
-            get => s_hand ??= new SystemSound(Interop.User32.MB_ICONHAND);
-        }
-
-        public static SystemSound Question
-        {
-            get => s_question ??= new SystemSound(Interop.User32.MB_ICONQUESTION);
-        }
+        public static SystemSound Asterisk => field ??= new SystemSound(Interop.User32.MB_ICONASTERISK);
+        public static SystemSound Beep => field ??= new SystemSound(Interop.User32.MB_OK);
+        public static SystemSound Exclamation => field ??= new SystemSound(Interop.User32.MB_ICONEXCLAMATION);
+        public static SystemSound Hand => field ??= new SystemSound(Interop.User32.MB_ICONHAND);
+        public static SystemSound Question => field ??= new SystemSound(Interop.User32.MB_ICONQUESTION);
     }
 }

@@ -40,7 +40,7 @@ int32_t AppleCryptoNative_X509ImportCertificate(uint8_t* pbData,
     {
         *pCertOut = SecCertificateCreateWithData(NULL, cfData);
         CFRelease(cfData);
-        return *pCertOut == NULL ? errSecUnknownFormat : noErr;
+        return *pCertOut == NULL ? errSecUnknownFormat : (OSStatus)noErr;
     }
     else // PAL_Pkcs12
     {

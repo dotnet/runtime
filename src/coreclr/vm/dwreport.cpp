@@ -23,6 +23,9 @@
 #include "utilcode.h"
 #include "../dlls/mscorrc/resource.h"   // for resource ids
 
+#ifdef FEATURE_EH_FUNCLETS
+#include "exinfo.h"
+#endif
 
 EFaultRepRetVal DoReportFault(EXCEPTION_POINTERS * pExceptionInfo);
 
@@ -198,7 +201,7 @@ int DwGetAppDescription(                // Number of characters written.
     {
         bufSize = 0;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (!bufSize)
     {
@@ -283,7 +286,7 @@ int DwGetAppDescription(                // Number of characters written.
     {
         size = 0;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
 
     return size;
@@ -330,7 +333,7 @@ int DwGetAssemblyVersion(               // Number of characters written.
     {
         bufSize = 0;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (!bufSize)
     {

@@ -6,30 +6,33 @@ using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 [assembly: ExpectedNoWarnings]
-[assembly: ExpectedWarning ("IL2072", CompilerGeneratedCode = true)]
+[assembly: ExpectedWarning("IL2072", CompilerGeneratedCode = true)]
 
-RequirePublicFields (GetNone ());
+RequirePublicFields(GetNone());
 TopLevelClass.Test();
 
 [Kept]
-static Type GetNone () => null;
+static Type GetNone() => null;
 
 [Kept]
-static void RequirePublicFields (
-	[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-	[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type t) {}
+static void RequirePublicFields(
+    [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type t)
+{ }
 
-class TopLevelClass {
+class TopLevelClass
+{
 
-	[Kept]
-	[ExpectedWarning ("IL2072")]
-	public static void Test() => RequirePublicFields (GetNone ());
+    [Kept]
+    [ExpectedWarning("IL2072")]
+    public static void Test() => RequirePublicFields(GetNone());
 
-	[Kept]
-	static Type GetNone () => null;
+    [Kept]
+    static Type GetNone() => null;
 
-	[Kept]
-	static void RequirePublicFields (
-		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type t) {}
+    [Kept]
+    static void RequirePublicFields(
+        [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type t)
+    { }
 }

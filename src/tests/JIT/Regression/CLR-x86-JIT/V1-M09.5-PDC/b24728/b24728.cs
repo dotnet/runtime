@@ -16,12 +16,16 @@
 
 // <Code> 
 
+
+namespace b24728;
+
 using System;
 using Xunit;
 
 public class MyClass
 {
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

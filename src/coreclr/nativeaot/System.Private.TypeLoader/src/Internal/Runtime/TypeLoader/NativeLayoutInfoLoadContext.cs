@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Reflection.Runtime.General;
 
 using Internal.NativeFormat;
 using Internal.Runtime;
@@ -175,7 +176,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        internal MethodDesc GetMethod(ref NativeParser parser, out RuntimeSignature methodNameSig, out RuntimeSignature methodSig)
+        internal MethodDesc GetMethod(ref NativeParser parser)
         {
             MethodFlags flags = (MethodFlags)parser.GetUnsigned();
 
@@ -184,20 +185,22 @@ namespace Internal.Runtime.TypeLoader
                 functionPointer = GetExternalReferencePointer(parser.GetUnsigned());
 
             DefType containingType = (DefType)GetType(ref parser);
-            MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.GetMethodNameAndSignature(ref parser, _module.Handle, out methodNameSig, out methodSig);
+            int token = (int)parser.GetUnsigned();
+            MethodNameAndSignature nameAndSignature = new MethodNameAndSignature(_module.MetadataReader, token.AsHandle().ToMethodHandle(_module.MetadataReader));
 
             bool unboxingStub = (flags & MethodFlags.IsUnboxingStub) != 0;
+            bool asyncVariant = (flags & MethodFlags.IsAsyncVariant) != 0;
 
             MethodDesc retVal;
             if ((flags & MethodFlags.HasInstantiation) != 0)
             {
                 TypeDesc[] typeArguments = GetTypeSequence(ref parser);
                 Debug.Assert(typeArguments.Length > 0);
-                retVal = this._typeSystemContext.ResolveGenericMethodInstantiation(unboxingStub, containingType, nameAndSignature, new Instantiation(typeArguments));
+                retVal = this._typeSystemContext.ResolveGenericMethodInstantiation(unboxingStub, asyncVariant, containingType, nameAndSignature, new Instantiation(typeArguments));
             }
             else
             {
-                retVal = this._typeSystemContext.ResolveRuntimeMethod(unboxingStub, containingType, nameAndSignature);
+                retVal = this._typeSystemContext.ResolveRuntimeMethod(unboxingStub, asyncVariant, containingType, nameAndSignature);
             }
 
             if ((flags & MethodFlags.HasFunctionPointer) != 0)
@@ -206,11 +209,6 @@ namespace Internal.Runtime.TypeLoader
             }
 
             return retVal;
-        }
-
-        internal MethodDesc GetMethod(ref NativeParser parser)
-        {
-            return GetMethod(ref parser, out _, out _);
         }
 
         internal TypeDesc[] GetTypeSequence(ref NativeParser parser)

@@ -25,58 +25,67 @@ namespace System.IO
             }
 
             // If we're already running, don't do anything.
-            if (!IsHandleInvalid(_directoryHandle))
+            if (!IsHandleClosed(_directoryHandle))
                 return;
 
             // Create handle to directory being monitored
-            _directoryHandle = Interop.Kernel32.CreateFile(
+            SafeFileHandle directoryHandle = Interop.Kernel32.CreateFile(
                 lpFileName: _directory,
                 dwDesiredAccess: Interop.Kernel32.FileOperations.FILE_LIST_DIRECTORY,
                 dwShareMode: FileShare.Read | FileShare.Delete | FileShare.Write,
                 dwCreationDisposition: FileMode.Open,
                 dwFlagsAndAttributes: Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS | Interop.Kernel32.FileOperations.FILE_FLAG_OVERLAPPED);
 
-            if (IsHandleInvalid(_directoryHandle))
+            if (directoryHandle.IsInvalid)
             {
-                _directoryHandle = null;
                 throw new FileNotFoundException(SR.Format(SR.FSW_IOError, _directory));
             }
 
             // Create the state associated with the operation of monitoring the direction
-            AsyncReadState state;
+            AsyncReadState state = new(
+                Interlocked.Increment(ref _currentSession), // ignore all events that were initiated before this
+                this,
+                directoryHandle);
             try
             {
-                // Start ignoring all events that were initiated before this, and
-                // allocate the buffer to be pinned and used for the duration of the operation
-                int session = Interlocked.Increment(ref _currentSession);
-                byte[] buffer = AllocateBuffer();
+                unsafe
+                {
+                    uint bufferSize = _internalBufferSize;
+                    state.Buffer = NativeMemory.Alloc(bufferSize);
+                    state.BufferByteLength = bufferSize;
+                }
+
+                state.ThreadPoolBinding = ThreadPoolBoundHandle.BindHandle(directoryHandle);
 
                 // Store all state, including a preallocated overlapped, into the state object that'll be
                 // passed from iteration to iteration during the lifetime of the operation.  The buffer will be pinned
                 // from now until the end of the operation.
-                state = new AsyncReadState(session, buffer, _directoryHandle, ThreadPoolBoundHandle.BindHandle(_directoryHandle), this);
                 unsafe
                 {
                     state.PreAllocatedOverlapped = new PreAllocatedOverlapped((errorCode, numBytes, overlappedPointer) =>
                     {
                         AsyncReadState state = (AsyncReadState)ThreadPoolBoundHandle.GetNativeOverlappedState(overlappedPointer)!;
-                        state.ThreadPoolBinding.FreeNativeOverlapped(overlappedPointer);
+                        state.ThreadPoolBinding!.FreeNativeOverlapped(overlappedPointer);
+
                         if (state.WeakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
                         {
                             watcher.ReadDirectoryChangesCallback(errorCode, numBytes, state);
                         }
-                    }, state, buffer);
+                        else
+                        {
+                            state.Dispose();
+                        }
+                    }, state, null);
                 }
             }
             catch
             {
-                // Make sure we don't leave a valid directory handle set if we're not running
-                _directoryHandle.Dispose();
-                _directoryHandle = null;
+                state.Dispose();
                 throw;
             }
 
             // Start monitoring
+            _directoryHandle = directoryHandle;
             _enabled = true;
             Monitor(state);
         }
@@ -90,7 +99,7 @@ namespace System.IO
                 return;
 
             // If we're not running, do nothing.
-            if (IsHandleInvalid(_directoryHandle))
+            if (IsHandleClosed(_directoryHandle))
                 return;
 
             // Start ignoring all events occurring after this.
@@ -118,7 +127,7 @@ namespace System.IO
             // We must explicitly dispose the handle to ensure it gets closed before this object is finalized.
             // Otherwise, it is possible that the GC will decide to finalize the handle after this,
             // leaving a window of time where our callback could be invoked on a non-existent object.
-            if (!IsHandleInvalid(_directoryHandle))
+            if (!IsHandleClosed(_directoryHandle))
                 _directoryHandle.Dispose();
         }
 
@@ -128,10 +137,22 @@ namespace System.IO
         // Unmanaged handle to monitored directory
         private SafeFileHandle? _directoryHandle;
 
-        private static bool IsHandleInvalid([NotNullWhen(false)] SafeFileHandle? handle)
+        /// <summary>Allocates a buffer of the requested internal buffer size.</summary>
+        /// <returns>The allocated buffer.</returns>
+        private unsafe byte* AllocateBuffer()
         {
-            return handle == null || handle.IsInvalid || handle.IsClosed;
+            try
+            {
+                return (byte*)NativeMemory.Alloc(_internalBufferSize);
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new OutOfMemoryException(SR.Format(SR.BufferSizeTooLarge, _internalBufferSize));
+            }
         }
+
+        private static bool IsHandleClosed([NotNullWhen(false)] SafeFileHandle? handle) =>
+            handle is null || handle.IsClosed;
 
         /// <summary>
         /// Initiates the next asynchronous read operation if monitoring is still desired.
@@ -141,6 +162,7 @@ namespace System.IO
         private unsafe void Monitor(AsyncReadState state)
         {
             Debug.Assert(state.PreAllocatedOverlapped != null);
+            Debug.Assert(state.ThreadPoolBinding is not null && state.Buffer is not null, "Members should have been set at construction");
 
             // This method should only ever access the directory handle via the state object passed in, and not access it
             // via _directoryHandle.  While this function is executing asynchronously, another thread could set
@@ -150,34 +172,34 @@ namespace System.IO
 
             NativeOverlapped* overlappedPointer = null;
             bool continueExecuting = false;
+            int win32Error = 0;
             try
             {
                 // If shutdown has been requested, exit.  The finally block will handle
                 // cleaning up the entire operation, as continueExecuting will remain false.
-                if (!_enabled || IsHandleInvalid(state.DirectoryHandle))
+                if (!_enabled || IsHandleClosed(state.DirectoryHandle))
                     return;
 
                 // Get the overlapped pointer to use for this iteration.
                 overlappedPointer = state.ThreadPoolBinding.AllocateNativeOverlapped(state.PreAllocatedOverlapped);
                 continueExecuting = Interop.Kernel32.ReadDirectoryChangesW(
                     state.DirectoryHandle,
-                    state.Buffer, // the buffer is kept pinned for the duration of the sync and async operation by the PreAllocatedOverlapped
-                    (uint)state.Buffer.Length,
+                    state.Buffer,
+                    (uint)state.BufferByteLength,
                     _includeSubdirectories,
                     (uint)_notifyFilters,
                     null,
                     overlappedPointer,
                     null);
+                if (!continueExecuting)
+                {
+                    win32Error = Marshal.GetLastWin32Error();
+                }
             }
             catch (ObjectDisposedException)
             {
                 // Ignore.  Disposing of the handle is the mechanism by which the FSW communicates
                 // to the asynchronous operation to stop processing.
-            }
-            catch (ArgumentNullException)
-            {
-                //Ignore.  The disposed handle could also manifest as an ArgumentNullException.
-                Debug.Assert(IsHandleInvalid(state.DirectoryHandle), "ArgumentNullException from something other than SafeHandle?");
             }
             finally
             {
@@ -192,15 +214,18 @@ namespace System.IO
                         state.ThreadPoolBinding.FreeNativeOverlapped(overlappedPointer);
                     }
 
-                    // Clean up the thread pool binding created for the entire operation
-                    state.PreAllocatedOverlapped.Dispose();
-                    state.ThreadPoolBinding.Dispose();
+                    // Check whether the directory handle is still valid _before_ we dispose of the state,
+                    // which will invalidate the handle.
+                    bool handleClosed = IsHandleClosed(state.DirectoryHandle);
+
+                    // Clean up the state created for the whole operation.
+                    state.Dispose();
 
                     // Finally, if the handle was for some reason changed or closed during this call,
                     // then don't throw an exception.  Otherwise, it's a valid error.
-                    if (!IsHandleInvalid(state.DirectoryHandle))
+                    if (!handleClosed)
                     {
-                        OnError(new ErrorEventArgs(new Win32Exception()));
+                        OnError(new ErrorEventArgs(new Win32Exception(win32Error)));
                     }
                 }
             }
@@ -211,7 +236,7 @@ namespace System.IO
         {
             try
             {
-                if (IsHandleInvalid(state.DirectoryHandle))
+                if (IsHandleClosed(state.DirectoryHandle))
                     return;
 
                 if (errorCode != 0)
@@ -236,13 +261,17 @@ namespace System.IO
                 if (state.Session != Volatile.Read(ref _currentSession))
                     return;
 
-                if (numBytes == 0)
+                if (numBytes == 0 || numBytes > state.BufferByteLength)
                 {
+                    Debug.Assert(numBytes == 0, "ReadDirectoryChangesW returned more bytes than the buffer can hold!");
                     NotifyInternalBufferOverflowEvent();
                 }
                 else
                 {
-                    ParseEventBufferAndNotifyForEach(new ReadOnlySpan<byte>(state.Buffer, 0, (int)numBytes));
+                    unsafe
+                    {
+                        ParseEventBufferAndNotifyForEach(new ReadOnlySpan<byte>(state.Buffer, (int)numBytes));
+                    }
                 }
             }
             finally
@@ -374,26 +403,36 @@ namespace System.IO
         /// </summary>
         private sealed class AsyncReadState
         {
-            internal AsyncReadState(int session, byte[] buffer, SafeFileHandle handle, ThreadPoolBoundHandle binding, FileSystemWatcher parent)
+            internal AsyncReadState(int session, FileSystemWatcher parent, SafeFileHandle directoryHandle)
             {
-                Debug.Assert(buffer != null);
-                Debug.Assert(buffer.Length > 0);
-                Debug.Assert(handle != null);
-                Debug.Assert(binding != null);
-
                 Session = session;
-                Buffer = buffer;
-                DirectoryHandle = handle;
-                ThreadPoolBinding = binding;
                 WeakWatcher = new WeakReference<FileSystemWatcher>(parent);
+                DirectoryHandle = directoryHandle;
             }
 
             internal int Session { get; }
-            internal byte[] Buffer { get; }
-            internal SafeFileHandle DirectoryHandle { get; }
-            internal ThreadPoolBoundHandle ThreadPoolBinding { get; }
-            internal PreAllocatedOverlapped? PreAllocatedOverlapped { get; set; }
             internal WeakReference<FileSystemWatcher> WeakWatcher { get; }
+            internal SafeFileHandle DirectoryHandle { get; set; }
+
+            internal unsafe void* Buffer { get; set; }
+            internal uint BufferByteLength { get; set; }
+
+            internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
+
+            internal PreAllocatedOverlapped? PreAllocatedOverlapped { get; set; }
+
+            public void Dispose()
+            {
+                unsafe
+                {
+                    NativeMemory.Free(Buffer);
+                    Buffer = null;
+                }
+
+                PreAllocatedOverlapped?.Dispose();
+                ThreadPoolBinding?.Dispose();
+                DirectoryHandle?.Dispose();
+            }
         }
     }
 }

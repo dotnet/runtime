@@ -62,7 +62,7 @@ internal sealed class TransactionShim
         transactionNative = returnTransaction;
     }
 
-    public unsafe byte[] GetPropagationToken()
+    public byte[] GetPropagationToken()
     {
         ITransactionTransmitter transmitter = _shimFactory.GetCachedTransmitter(Transaction);
 

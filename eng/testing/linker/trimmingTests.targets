@@ -1,7 +1,6 @@
 <Project>
   <PropertyGroup>
-    <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
-    <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+    <IlcToolsPath>$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,8 +21,8 @@
   <Target Name="GetTestConsoleApps">
     <ItemGroup>
       <TestConsoleAppSourceFiles>
-        <ProjectDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestProjectsDir)', '$(MSBuildProjectName)', '%(Filename)', '$(PackageRID)'))</ProjectDir>
-        <TestRuntimeIdentifier>$(PackageRID)</TestRuntimeIdentifier>
+        <ProjectDir>$([MSBuild]::NormalizeDirectory('$(TrimmingTestProjectsDir)', '$(MSBuildProjectName)', '%(Filename)', '$(TargetRid)'))</ProjectDir>
+        <TestRuntimeIdentifier>$(TargetRid)</TestRuntimeIdentifier>
         <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
         <TargetFramework Condition="'%(TestConsoleAppSourceFiles.TargetOS)' != ''">$(NetCoreAppCurrent)-%(TestConsoleAppSourceFiles.TargetOS)</TargetFramework>
       </TestConsoleAppSourceFiles>
@@ -37,10 +36,11 @@
       </TestConsoleAppSourceFiles>
     </ItemGroup>
 
-    <ItemGroup Condition="!$(SkipOnTestRuntimes.Contains('$(PackageRID)'))">
-      <_SkippedAppSourceFiles Include="@(TestConsoleAppSourceFiles)" Condition="$([System.String]::Copy('%(TestConsoleAppSourceFiles.SkipOnTestRuntimes)').Contains('$(PackageRID)'))" />
+    <ItemGroup Condition="!$(SkipOnTestRuntimes.Contains('$(TargetRid)'))">
+      <_SkippedAppSourceFiles Include="@(TestConsoleAppSourceFiles)" Condition="$([System.String]::Copy('%(TestConsoleAppSourceFiles.SkipOnTestRuntimes)').Contains('$(TargetRid)'))" />
 
       <_SkippedAppSourceFiles Include="@(TestConsoleAppSourceFiles)" Condition="'$(RunNativeAotTestApps)' == 'true' and '%(TestConsoleAppSourceFiles.NativeAotIncompatible)' == 'true'" />
+      <_SkippedAppSourceFiles Include="@(TestConsoleAppSourceFiles)" Condition="'$(RunNativeAotTestApps)' != 'true' and '%(TestConsoleAppSourceFiles.NativeAotOnly)' == 'true'" />
 
       <_AppSourceFiles Include="@(TestConsoleAppSourceFiles)" Exclude="@(_SkippedAppSourceFiles)" />
 
@@ -101,11 +101,6 @@
                                                  .Replace('{ExtraTrimmerArgs}', '%(TestConsoleApps.ExtraTrimmerArgs)')
                                                  .Replace('{AdditionalProperties}', '$(_additionalPropertiesString)')
                                                  .Replace('{ToolsILLinkDir}', '$(ToolsILLinkDir)')
-                                                 .Replace('{IlcToolsPath}', '$(IlcToolsPath)')
-                                                 .Replace('{IlcBuildTasksPath}', '$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll')
-                                                 .Replace('{IlcSdkPath}', '$(CoreCLRAotSdkDir)')
-                                                 .Replace('{IlcFrameworkPath}', '$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)')
-                                                 .Replace('{IlcFrameworkNativePath}', '$(MicrosoftNetCoreAppRuntimePackNativeDir)')
                                                  .Replace('{CoreCLRBuildIntegrationDir}', '$(CoreCLRBuildIntegrationDir)')
                                                  .Replace('{RuntimeHostConfigurationOptions}', '$(_runtimeHostConfigurationOptionsString)')
                                                  .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)')
@@ -126,9 +121,14 @@
                                                  .Replace('{MicrosoftNetCoreAppFrameworkName}', '$(MicrosoftNetCoreAppFrameworkName)')
                                                  .Replace('{MicrosoftNetCoreAppRefPackDir}', '$(MicrosoftNetCoreAppRefPackDir)')
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackDir}', '$(MicrosoftNetCoreAppRuntimePackDir)')
+                                                 .Replace('{MicrosoftNetCoreAppRuntimePackRidLibTfmDir}', '$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)')
+                                                 .Replace('{MicrosoftNetCoreAppRuntimePackNativeDir}', '$(MicrosoftNetCoreAppRuntimePackNativeDir)')
+                                                 .Replace('{CoreCLRILCompilerDir}', '$(CoreCLRILCompilerDir)')
+                                                 .Replace('{CoreCLRCrossILCompilerDir}', '$(CoreCLRCrossILCompilerDir)')
+                                                 .Replace('{CoreCLRAotSdkDir}', '$(CoreCLRAotSdkDir)')
                                                  .Replace('{NativeSanitizersTargets}', '$(RepositoryEngineeringDir)nativeSanitizers.targets')
-                                                 .Replace('{AppHostSourcePath}', '$(AppHostSourcePath)')
-                                                 .Replace('{SingleFileHostSourcePath}', '$(SingleFileHostSourcePath)')
+                                                 .Replace('{LocalAppHostPath}', '$(LocalAppHostPath)')
+                                                 .Replace('{LocalSingleFileHostPath}', '$(LocalSingleFileHostPath)')
                                                  .Replace('{SanitizerRuntimeFolder}', '$(DotNetHostBinDir)'))"
                       Overwrite="true" />
     <Copy SourceFiles="$(_projectSourceFile);
@@ -166,6 +166,14 @@
     </Exec>
 
     <Error Condition="'$(ExecutionExitCode)' != '100'" Text="Error: [Failed Test]: %(TestConsoleApps.ProjectCompileItems). The Command %(TestConsoleApps.TestCommand) return a non-success exit code $(ExecutionExitCode)." ContinueOnError="ErrorAndContinue" />
+
+    <!-- Remove test projects dir to save disk space if the test was successful. Ignore failures as this is best effort.
+         Don't use Removedir as ContinueOnError on it doesn't work when using warnaserror/TreatWarningsAsErrors. -->
+    <PropertyGroup>
+      <TestProjectCleanCommand Condition="'$(OS)' == 'Windows_NT'">rmdir "%(TestConsoleApps.ProjectDir.TrimEnd('\'))" /s /q</TestProjectCleanCommand>
+      <TestProjectCleanCommand Condition="'$(OS)' != 'Windows_NT'">rm -rf "%(TestConsoleApps.ProjectDir)"</TestProjectCleanCommand>
+    </PropertyGroup>
+    <Exec Condition="'$(ExecutionExitCode)' == '100'" Command="$(TestProjectCleanCommand)" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" />
   </Target>
 
   <Target Name="Build" DependsOnTargets="ExecuteApplications" />

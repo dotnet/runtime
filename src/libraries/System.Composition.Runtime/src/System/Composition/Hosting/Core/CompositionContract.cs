@@ -140,10 +140,7 @@ namespace System.Composition.Hosting.Core
         /// <returns>True if the constraint is present and of the correct type, otherwise false.</returns>
         public bool TryUnwrapMetadataConstraint<T>(string constraintName, out T constraintValue, out CompositionContract remainingContract)
         {
-            if (constraintName is null)
-            {
-                throw new ArgumentNullException(nameof(constraintName));
-            }
+            ArgumentNullException.ThrowIfNull(constraintName);
 
             constraintValue = default(T);
             remainingContract = null;

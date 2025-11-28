@@ -34,10 +34,7 @@ namespace System.Text.Json.Serialization
             }
             set
             {
-                if (value is null)
-                {
-                    ThrowHelper.ThrowArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 OnCollectionModifying();
                 ValidateAddedValue(value);
@@ -50,10 +47,7 @@ namespace System.Text.Json.Serialization
 
         public void Add(TItem item)
         {
-            if (item is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             OnCollectionModifying();
             ValidateAddedValue(item);
@@ -90,10 +84,7 @@ namespace System.Text.Json.Serialization
 
         public void Insert(int index, TItem item)
         {
-            if (item is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             OnCollectionModifying();
             ValidateAddedValue(item);

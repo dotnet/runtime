@@ -1,0 +1,99 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Checked" />
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/analyzer/">
+    <Project Path="src/analyzer/analyzer.csproj">
+      <BuildType Solution="Checked|*" Project="Release" />
+    </Project>
+    <Project Path="src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj">
+      <BuildType Solution="Checked|*" Project="Release" />
+    </Project>
+    <Project Path="src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj">
+      <BuildType Solution="Checked|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/ilc/">
+    <Project Path="../../coreclr/tools/aot/ILCompiler.Compiler/ILCompiler.Compiler.csproj">
+      <Platform Solution="*|Any CPU" Project="x64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
+    <Project Path="../../coreclr/tools/aot/ILCompiler.DependencyAnalysisFramework/ILCompiler.DependencyAnalysisFramework.csproj">
+      <Platform Solution="*|Any CPU" Project="x64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
+    <Project Path="../../coreclr/tools/aot/ILCompiler.MetadataTransform/ILCompiler.MetadataTransform.csproj">
+      <Platform Solution="*|Any CPU" Project="x64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
+    <Project Path="../../coreclr/tools/aot/ILCompiler.RyuJit/ILCompiler.RyuJit.csproj">
+      <Platform Solution="*|Any CPU" Project="x64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
+    <Project Path="../../coreclr/tools/aot/ILCompiler.TypeSystem/ILCompiler.TypeSystem.csproj">
+      <Platform Solution="*|Any CPU" Project="x64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
+    <Project Path="../../coreclr/tools/aot/ILCompiler/ILCompiler.csproj">
+      <Platform Solution="*|Any CPU" Project="x64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
+  </Folder>
+  <Folder Name="/ILLink/">
+    <Project Path="src/ILLink.Tasks/ILLink.Tasks.csproj">
+      <BuildType Solution="Checked|*" Project="Release" />
+    </Project>
+    <Project Path="src/linker/Mono.Linker.csproj">
+      <BuildType Solution="Checked|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/ref/">
+    <Project Path="src/linker/ref/Mono.Linker.csproj">
+      <BuildType Solution="Checked|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="../../coreclr/tools/ILVerification/ILVerification.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+    </Project>
+    <Project Path="test/ILLink.RoslynAnalyzer.Tests.Generator/ILLink.RoslynAnalyzer.Tests.Generator.csproj">
+      <BuildType Solution="Checked|*" Project="Release" />
+    </Project>
+    <Project Path="test/ILLink.RoslynAnalyzer.Tests/ILLink.RoslynAnalyzer.Tests.csproj">
+      <BuildType Solution="Checked|*" Project="Release" />
+    </Project>
+    <Project Path="test/ILLink.Tasks.Tests/ILLink.Tasks.Tests.csproj">
+      <BuildType Solution="Checked|*" Project="Release" />
+    </Project>
+    <Project Path="test/Mono.Linker.Tests.Cases.Expectations/Mono.Linker.Tests.Cases.Expectations.csproj">
+      <BuildType Solution="Checked|*" Project="Release" />
+    </Project>
+    <Project Path="test/Mono.Linker.Tests.Cases/Mono.Linker.Tests.Cases.csproj">
+      <BuildType Solution="Checked|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Folder Name="/test/ilc/">
+    <Project Path="../../coreclr/tools/aot/ILCompiler.Trimming.Tests/ILCompiler.Trimming.Tests.csproj">
+      <Platform Solution="*|Any CPU" Project="x64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+    </Project>
+  </Folder>
+  <Folder Name="/test/ILLink/">
+    <Project Path="test/Mono.Linker.Tests/Mono.Linker.Tests.csproj">
+      <BuildType Solution="Checked|*" Project="Release" />
+    </Project>
+  </Folder>
+  <Project Path="src/ILLink.Shared/ILLink.Shared.shproj" />
+</Solution>

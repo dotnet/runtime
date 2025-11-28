@@ -73,9 +73,6 @@
     <Compile Include="divrem\rem\r8rem.cs" />
     <Compile Include="divrem\rem\u4rem.cs" />
     <Compile Include="divrem\rem\u8rem.cs" />
-    <Compile Include="doublearray\dblarray1.cs" />
-    <Compile Include="doublearray\dblarray2.cs" />
-    <Compile Include="doublearray\dblarray3.cs" />
     <Compile Include="eh\basics\multihandler.cs" />
     <Compile Include="eh\basics\throwincatch.cs" />
     <Compile Include="eh\basics\throwinclassconstructor.cs" />

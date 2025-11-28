@@ -18,11 +18,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _owningMethod = owningMethod;
         }
 
+        protected internal override int Phase => (int)ObjectNodePhase.Late;
+
         public int Offset => 0;
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            return factory.Target.IsWindows ? ObjectNodeSection.ManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeUnixContentSection;            
+            // Put executable code into .text for PE files as AV software really
+            // doesn't like executable code in non-standard sections.
+            //
+            // For other formats, use the managed code section for managed code.
+            return factory.Format switch
+            {
+                ReadyToRunContainerFormat.PE => ObjectNodeSection.TextSection,
+                _ => ObjectNodeSection.ManagedCodeUnixContentSection
+            };            
         }
 
         public override bool IsShareable => false;

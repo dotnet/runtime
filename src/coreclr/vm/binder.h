@@ -28,7 +28,7 @@ struct HardCodedMetaSig
 #define DEFINE_METASIG_T(body)          extern body
 #define METASIG_BODY(varname, types)    HardCodedMetaSig gsig_ ## varname;
 #include "metasig.h"
-
+#include "cdacdata.h"
 //
 // Use the Binder objects to avoid doing unnecessary name lookup
 // (esp. in the prejit case)
@@ -294,6 +294,7 @@ private:
     USHORT m_cFields;
 
     static CrstStatic s_SigConvertCrst;
+    friend struct ::cdac_data<CoreLibBinder>;
 
 #ifdef _DEBUG
 
@@ -311,6 +312,12 @@ private:
     static const OffsetAndSizeCheck OffsetsAndSizes[];
 
 #endif
+};
+
+template<>
+struct cdac_data<CoreLibBinder>
+{
+    static constexpr size_t Classes = offsetof(CoreLibBinder, m_pClasses);
 };
 
 //

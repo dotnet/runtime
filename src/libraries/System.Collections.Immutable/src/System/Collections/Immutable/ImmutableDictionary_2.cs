@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -15,6 +16,7 @@ namespace System.Collections.Immutable
     /// <typeparam name="TValue">The type of the value.</typeparam>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableDictionaryDebuggerProxy<,>))]
+    [CollectionBuilder(typeof(ImmutableDictionary), nameof(ImmutableDictionary.CreateRangeWithOverwrite))]
     public sealed partial class ImmutableDictionary<TKey, TValue> : IImmutableDictionary<TKey, TValue>, IImmutableDictionaryInternal<TKey, TValue>, IDictionary<TKey, TValue>, IDictionary where TKey : notnull
     {
         /// <summary>
@@ -311,6 +313,11 @@ namespace System.Collections.Immutable
             Requires.NotNull(pairs, nameof(pairs));
 
             return this.AddRange(pairs, false);
+        }
+
+        internal ImmutableDictionary<TKey, TValue> AddRange(ReadOnlySpan<KeyValuePair<TKey, TValue>> pairs, KeyCollisionBehavior collisionBehavior = KeyCollisionBehavior.ThrowIfValueDifferent)
+        {
+            return AddRange(pairs, this.Origin, collisionBehavior).Finalize(this);
         }
 
         /// <summary>
@@ -951,6 +958,30 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(items, nameof(items));
 
+            int countAdjustment = 0;
+            SortedInt32KeyNode<ImmutableDictionary<TKey, TValue>.HashBucket> newRoot = origin.Root;
+            foreach (KeyValuePair<TKey, TValue> pair in items)
+            {
+                Requires.NotNullAllowStructs(pair.Key, nameof(pair.Key));
+                int hashCode = origin.KeyComparer.GetHashCode(pair.Key);
+                HashBucket bucket = newRoot.GetValueOrDefault(hashCode);
+                OperationResult result;
+                ImmutableDictionary<TKey, TValue>.HashBucket newBucket = bucket.Add(pair.Key, pair.Value, origin.KeyOnlyComparer, origin.ValueComparer, collisionBehavior, out result);
+                newRoot = UpdateRoot(newRoot, hashCode, newBucket, origin.HashBucketComparer);
+                if (result == OperationResult.SizeChanged)
+                {
+                    countAdjustment++;
+                }
+            }
+
+            return new MutationResult(newRoot, countAdjustment);
+        }
+
+        /// <summary>
+        /// Performs the operation on a given data structure.
+        /// </summary>
+        private static MutationResult AddRange(ReadOnlySpan<KeyValuePair<TKey, TValue>> items, MutationInput origin, KeyCollisionBehavior collisionBehavior = KeyCollisionBehavior.ThrowIfValueDifferent)
+        {
             int countAdjustment = 0;
             SortedInt32KeyNode<ImmutableDictionary<TKey, TValue>.HashBucket> newRoot = origin.Root;
             foreach (KeyValuePair<TKey, TValue> pair in items)

@@ -13,7 +13,6 @@ namespace Microsoft.Extensions.Http
 {
     internal sealed class DefaultHttpMessageHandlerBuilder : HttpMessageHandlerBuilder
     {
-        private HttpMessageHandler? _primaryHandler;
         private string? _name;
 
         public DefaultHttpMessageHandlerBuilder(IServiceProvider services)
@@ -27,15 +26,15 @@ namespace Microsoft.Extensions.Http
             get => _name;
             set
             {
-                ThrowHelper.ThrowIfNull(value);
+                ArgumentNullException.ThrowIfNull(value);
                 _name = value;
             }
         }
 
         public override HttpMessageHandler PrimaryHandler
         {
-            get => _primaryHandler ??= CreatePrimaryHandler();
-            set => _primaryHandler = value;
+            get => field ??= CreatePrimaryHandler();
+            set => field = value;
         }
 
         public override IList<DelegatingHandler> AdditionalHandlers { get; } = new List<DelegatingHandler>();

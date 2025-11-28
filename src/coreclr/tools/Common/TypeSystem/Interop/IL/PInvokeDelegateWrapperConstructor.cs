@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Internal.IL;
 using Internal.IL.Stubs;
 
@@ -21,11 +22,11 @@ namespace Internal.TypeSystem.Interop
             get;
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return ".ctor";
+                return ".ctor"u8;
             }
         }
 
@@ -67,7 +68,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLdArg(0);
             codeStream.EmitLdArg(1);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                InteropTypes.GetNativeFunctionPointerWrapper(Context).GetMethod(".ctor", Signature)));
+                InteropTypes.GetNativeFunctionPointerWrapper(Context).GetMethod(".ctor"u8, Signature)));
             codeStream.Emit(ILOpcode.ret);
             return emitter.Link(this);
         }

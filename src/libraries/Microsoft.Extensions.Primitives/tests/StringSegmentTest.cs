@@ -571,7 +571,7 @@ namespace Microsoft.Extensions.Primitives
             Assert.False(StringSegment.IsNullOrEmpty(new StringSegment("ABCDefg", 3, 2)));
         }
 
-        public static TheoryData GetHashCode_ReturnsSameValueForEqualSubstringsData => new TheoryData<StringSegment, StringSegment>
+        public static TheoryData<StringSegment, StringSegment> GetHashCode_ReturnsSameValueForEqualSubstringsData => new TheoryData<StringSegment, StringSegment>
         {
             { default(StringSegment), default(StringSegment) },
             { default(StringSegment), new StringSegment() },
@@ -593,7 +593,7 @@ namespace Microsoft.Extensions.Primitives
             Assert.Equal(hashCode1, hashCode2);
         }
 
-        public static TheoryData GetHashCode_ReturnsDifferentValuesForInequalSubstringsData
+        public static TheoryData<StringSegment, StringSegment> GetHashCode_ReturnsDifferentValuesForInequalSubstringsData
         {
             get
             {

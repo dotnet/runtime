@@ -244,7 +244,7 @@ uint32_t NetSecurityNative_ImportPrincipalName(uint32_t* minorStatus,
     // Principal name will usually be in the form SERVICE/HOST. But SPNEGO protocol prefers
     // GSS_C_NT_HOSTBASED_SERVICE format. That format uses '@' separator instead of '/' between
     // service name and host name. So convert input string into that format.
-    char* ptrSlash = memchr(inputName, '/', inputNameLen);
+    char* ptrSlash = (char*)memchr(inputName, '/', inputNameLen);
     char* inputNameCopy = NULL;
     if (ptrSlash != NULL)
     {

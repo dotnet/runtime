@@ -72,6 +72,7 @@ ep_event_alloc (
 	instance->level = level;
 	instance->need_stack = need_stack;
 	instance->enabled_mask = 0;
+	instance->metadata_written_mask = 0;
 
 	if (metadata != NULL) {
 		instance->metadata = ep_rt_byte_array_alloc (metadata_len);
@@ -100,6 +101,30 @@ ep_event_free (EventPipeEvent *ep_event)
 
 	ep_rt_byte_array_free (ep_event->metadata);
 	ep_rt_object_free (ep_event);
+}
+
+bool
+ep_event_update_metadata_written_mask (
+	EventPipeEvent *ep_event,
+	uint64_t session_mask,
+	bool enable)
+{
+	EP_ASSERT (ep_event != NULL);
+	EP_ASSERT (session_mask != 0);
+
+	int64_t expected_value;
+	int64_t previous_value;
+
+	do {
+		expected_value = ep_rt_volatile_load_int64_t (&ep_event->metadata_written_mask);
+		if (((expected_value & session_mask) != 0) == enable)
+			return false; // Already set to the desired state.
+
+		int64_t new_value = enable ? (expected_value | session_mask) : (expected_value & ~session_mask);
+		previous_value = ep_rt_atomic_compare_exchange_int64_t (&ep_event->metadata_written_mask, expected_value, new_value);
+	} while (previous_value != expected_value);
+
+	return true;
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */

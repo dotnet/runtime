@@ -8,7 +8,7 @@ Console.WriteLine("Hello, Browser!");
 if (args.Length == 1 && args[0] == "start")
     StopwatchSample.Start();
 
-while(true)
+while (true)
 {
     StopwatchSample.Render();
     await Task.Delay(1000);

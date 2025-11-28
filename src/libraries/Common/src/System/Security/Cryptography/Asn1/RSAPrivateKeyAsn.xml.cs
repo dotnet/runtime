@@ -12,14 +12,14 @@ namespace System.Security.Cryptography.Asn1
     internal partial struct RSAPrivateKeyAsn
     {
         internal int Version;
-        internal System.Numerics.BigInteger Modulus;
-        internal System.Numerics.BigInteger PublicExponent;
-        internal System.Numerics.BigInteger PrivateExponent;
-        internal System.Numerics.BigInteger Prime1;
-        internal System.Numerics.BigInteger Prime2;
-        internal System.Numerics.BigInteger Exponent1;
-        internal System.Numerics.BigInteger Exponent2;
-        internal System.Numerics.BigInteger Coefficient;
+        internal ReadOnlyMemory<byte> Modulus;
+        internal ReadOnlyMemory<byte> PublicExponent;
+        internal ReadOnlyMemory<byte> PrivateExponent;
+        internal ReadOnlyMemory<byte> Prime1;
+        internal ReadOnlyMemory<byte> Prime2;
+        internal ReadOnlyMemory<byte> Exponent1;
+        internal ReadOnlyMemory<byte> Exponent2;
+        internal ReadOnlyMemory<byte> Coefficient;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -31,14 +31,14 @@ namespace System.Security.Cryptography.Asn1
             writer.PushSequence(tag);
 
             writer.WriteInteger(Version);
-            writer.WriteInteger(Modulus);
-            writer.WriteInteger(PublicExponent);
-            writer.WriteInteger(PrivateExponent);
-            writer.WriteInteger(Prime1);
-            writer.WriteInteger(Prime2);
-            writer.WriteInteger(Exponent1);
-            writer.WriteInteger(Exponent2);
-            writer.WriteInteger(Coefficient);
+            writer.WriteInteger(Modulus.Span);
+            writer.WriteInteger(PublicExponent.Span);
+            writer.WriteInteger(PrivateExponent.Span);
+            writer.WriteInteger(Prime1.Span);
+            writer.WriteInteger(Prime2.Span);
+            writer.WriteInteger(Exponent1.Span);
+            writer.WriteInteger(Exponent2.Span);
+            writer.WriteInteger(Coefficient.Span);
             writer.PopSequence(tag);
         }
 
@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
 
-                DecodeCore(ref reader, expectedTag, out RSAPrivateKeyAsn decoded);
+                DecodeCore(ref reader, expectedTag, encoded, out RSAPrivateKeyAsn decoded);
                 reader.ThrowIfNotEmpty();
                 return decoded;
             }
@@ -63,16 +63,16 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, out RSAPrivateKeyAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out RSAPrivateKeyAsn decoded)
         {
-            Decode(ref reader, Asn1Tag.Sequence, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, out RSAPrivateKeyAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out RSAPrivateKeyAsn decoded)
         {
             try
             {
-                DecodeCore(ref reader, expectedTag, out decoded);
+                DecodeCore(ref reader, expectedTag, rebind, out decoded);
             }
             catch (AsnContentException e)
             {
@@ -80,10 +80,13 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, out RSAPrivateKeyAsn decoded)
+        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out RSAPrivateKeyAsn decoded)
         {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+            ReadOnlySpan<byte> rebindSpan = rebind.Span;
+            int offset;
+            ReadOnlySpan<byte> tmpSpan;
 
 
             if (!sequenceReader.TryReadInt32(out decoded.Version))
@@ -91,14 +94,22 @@ namespace System.Security.Cryptography.Asn1
                 sequenceReader.ThrowIfNotEmpty();
             }
 
-            decoded.Modulus = sequenceReader.ReadInteger();
-            decoded.PublicExponent = sequenceReader.ReadInteger();
-            decoded.PrivateExponent = sequenceReader.ReadInteger();
-            decoded.Prime1 = sequenceReader.ReadInteger();
-            decoded.Prime2 = sequenceReader.ReadInteger();
-            decoded.Exponent1 = sequenceReader.ReadInteger();
-            decoded.Exponent2 = sequenceReader.ReadInteger();
-            decoded.Coefficient = sequenceReader.ReadInteger();
+            tmpSpan = sequenceReader.ReadIntegerBytes();
+            decoded.Modulus = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
+            tmpSpan = sequenceReader.ReadIntegerBytes();
+            decoded.PublicExponent = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
+            tmpSpan = sequenceReader.ReadIntegerBytes();
+            decoded.PrivateExponent = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
+            tmpSpan = sequenceReader.ReadIntegerBytes();
+            decoded.Prime1 = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
+            tmpSpan = sequenceReader.ReadIntegerBytes();
+            decoded.Prime2 = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
+            tmpSpan = sequenceReader.ReadIntegerBytes();
+            decoded.Exponent1 = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
+            tmpSpan = sequenceReader.ReadIntegerBytes();
+            decoded.Exponent2 = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
+            tmpSpan = sequenceReader.ReadIntegerBytes();
+            decoded.Coefficient = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
 
             sequenceReader.ThrowIfNotEmpty();
         }

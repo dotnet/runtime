@@ -227,17 +227,6 @@ PALEXPORT PAL_TlsIo
 AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint32_t bufLen, uint32_t* written);
 
 /*
-Check to see if the server identity certificate for this connection matches the requested hostname.
-
-notBefore: Specify the EE/leaf certificate's notBefore value to prevent a false negative due to
-the certificate being expired (or not yet valid).
-
-Returns 1 on match, 0 on mismatch, any other value indicates an invalid state.
-*/
-PALEXPORT int32_t
-AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore, int32_t* pOSStatus);
-
-/*
 Generate a TLS Close alert to terminate the session.
 
 Returns the output of SSLClose

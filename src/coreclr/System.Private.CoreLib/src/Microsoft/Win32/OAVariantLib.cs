@@ -28,9 +28,6 @@ namespace Microsoft.Win32
     {
         #region Constants
 
-        // Constants for VariantChangeType from OleAuto.h
-        public const int LocalBool = 0x10;
-
         private static readonly Dictionary<Type, VarEnum> ClassTypes = new Dictionary<Type, VarEnum>
         {
             { typeof(bool), VarEnum.VT_BOOL },
@@ -62,11 +59,8 @@ namespace Microsoft.Win32
          * Variant and the types that CLR supports explicitly in the
          * CLR Variant class.
          */
-        internal static object? ChangeType(object source, Type targetClass, short options, CultureInfo culture)
+        internal static object? ChangeType(object source, Type targetClass, CultureInfo culture)
         {
-            ArgumentNullException.ThrowIfNull(targetClass);
-            ArgumentNullException.ThrowIfNull(culture);
-
             object? result = null;
 
             if (Variant.IsSystemDrawingColor(targetClass))
@@ -88,7 +82,12 @@ namespace Microsoft.Win32
             ComVariant vOp = ToOAVariant(source);
             ComVariant ret = default;
 
-            int hr = Interop.OleAut32.VariantChangeTypeEx(&ret, &vOp, culture.LCID, options, (ushort)vt);
+            // Constants for VariantChangeTypeEx from OleAuto.h
+            const int VARIANT_LOCALBOOL = 0x10;
+
+            // Specify the VARIANT_LOCALBOOL flag to have BOOL values converted to local language rather
+            // than 0 or -1.
+            int hr = Interop.OleAut32.VariantChangeTypeEx(&ret, &vOp, culture.LCID, VARIANT_LOCALBOOL, (ushort)vt);
 
             using (vOp)
             using (ret)
