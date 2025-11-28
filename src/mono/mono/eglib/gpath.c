@@ -33,6 +33,7 @@
 
 #ifdef G_OS_WIN32
 #include <direct.h>
+#include <windows.h>
 #endif
 
 #ifdef HAVE_UNISTD_H
@@ -49,7 +50,8 @@
  * Returns TRUE if:
  * - The path is long enough to potentially hit MAX_PATH limit
  * - The path doesn't already have the \\?\ prefix
- * - The path is an absolute Windows path (e.g., C:\path) or UNC path (e.g., \\server\share)
+ * - The path is an absolute Windows path (e.g., C:\path), UNC path (e.g., \\server\share),
+ *   or drive-relative path (e.g., \Windows\System32)
  */
 static gboolean
 g_path_needs_long_prefix (const gchar *path)
@@ -70,7 +72,84 @@ g_path_needs_long_prefix (const gchar *path)
 	if (path[0] == '\\' && path[1] == '\\' && path[2] != '?')
 		return TRUE;
 	
+	if (path[0] == '\\' && path[1] != '\\')
+		return TRUE;
+	
 	return FALSE;
+}
+
+/* Helper function to check if a path needs special expansion to absolute path.
+ * Returns TRUE if the path contains:
+ * - Environment variables (%) that need expansion
+ * - Drive-relative paths (\Windows\System32) that need drive letter prepended
+ * Returns FALSE for normal relative paths and already-absolute paths.
+ */
+static gboolean
+g_path_needs_expansion (const gchar *path)
+{
+	if (!path)
+		return FALSE;
+
+	if (strchr(path, '%') != NULL)
+		return TRUE;
+
+	if (path[0] == '\\' && path[1] != '\\')
+		return TRUE;
+	
+	return FALSE;
+}
+
+static gchar *
+g_path_to_absolute (const gchar *path)
+{
+	if (!path)
+		return NULL;
+	
+	gchar *result = NULL;
+	
+	/* Expand environment variables */
+	gchar *expanded_path = NULL;
+	if (strchr(path, '%') != NULL) {
+		DWORD expanded_len = ExpandEnvironmentStringsA(path, NULL, 0);
+		if (expanded_len > 0) {
+			expanded_path = g_malloc(expanded_len);
+			if (ExpandEnvironmentStringsA(path, expanded_path, expanded_len) == 0) {
+				g_free(expanded_path);
+				expanded_path = NULL;
+			}
+		}
+	}
+	
+	const gchar *work_path = expanded_path ? expanded_path : path;
+	
+	/* Handle drive-relative paths */
+	if (work_path[0] == '\\' && work_path[1] != '\\') {
+		char current_dir[MAX_PATH];
+		if (GetCurrentDirectoryA(MAX_PATH, current_dir) > 0 && current_dir[1] == ':') {
+			result = g_malloc(strlen(work_path) + 3);
+			result[0] = current_dir[0];
+			result[1] = ':';
+			strcpy(result + 2, work_path);
+		}
+	}
+	/* Convert relative to absolute */
+	else if (work_path[0] != '\\' && (strlen(work_path) < 2 || work_path[1] != ':')) {
+		DWORD full_path_len = GetFullPathNameA(work_path, 0, NULL, NULL);
+		if (full_path_len > 0) {
+			result = g_malloc(full_path_len);
+			if (GetFullPathNameA(work_path, full_path_len, result, NULL) == 0) {
+				g_free(result);
+				result = NULL;
+			}
+		}
+	}
+	/* Path is already absolute */
+	else {
+		result = g_strdup(work_path);
+	}
+	
+	g_free(expanded_path);
+	return result;
 }
 
 /* Makes a path compatible with long path support by adding \\?\ prefix if needed. Caller must free the result. */
@@ -79,23 +158,39 @@ g_path_make_long_compatible (const gchar *path)
 {
 	if (!path)
 		return NULL;
+
+	gchar *work_path;
 	
-	if (!g_path_needs_long_prefix(path))
-		return g_strdup(path);
-	
-	/* Handle UNC paths: \\server\share becomes \\?\UNC\server\share */
-	if (path[0] == '\\' && path[1] == '\\') {
-		gchar *prefixed = g_malloc(strlen(path) + 7);
-		strcpy(prefixed, "\\\\?\\UNC\\");
-		strcat(prefixed, path + 2);
-		return prefixed;
+	if (g_path_needs_expansion(path)) {
+		work_path = g_path_to_absolute(path);
+		if (!work_path)
+			return NULL; /* Conversion failed */
+	} else {
+		work_path = g_strdup(path);
 	}
 	
-	/* Handle regular absolute paths: C:\path becomes \\?\C:\path */
-	gchar *prefixed = g_malloc(strlen(path) + 5);
-	strcpy(prefixed, "\\\\?\\");
-	strcat(prefixed, path);
-	return prefixed;
+	gchar *result;
+	
+	if (!g_path_needs_long_prefix(work_path)) {
+		g_free(work_path);
+		return g_strdup(path);
+	}
+	
+	/* Handle UNC paths: \\server\share becomes \\?\UNC\server\share */
+	if (work_path[0] == '\\' && work_path[1] == '\\') {
+		result = g_malloc(strlen(work_path) + 7);
+		strcpy(result, "\\\\?\\UNC\\");
+		strcat(result, work_path + 2);
+		g_free(work_path);
+		return result;
+	}
+	
+	/* Handle absolute paths: C:\path becomes \\?\C:\path */
+	result = g_malloc(strlen(work_path) + 5);
+	strcpy(result, "\\\\?\\");
+	strcat(result, work_path);
+	g_free(work_path);
+	return result;
 }
 #endif
 
