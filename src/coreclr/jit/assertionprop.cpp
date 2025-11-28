@@ -4474,7 +4474,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             if (RangeCheck::TryGetRangeFromAssertions(this, peeledOp1VN, assertions, &peeledOp1Rng))
             {
                 Range peeledOffsetRng = Range(Limit(Limit::keConstant, peeledOffset));
-                rng2                  = RangeOps::Add(rng2, peeledOffsetRng); // Add handles overflow internally.
+                rng2 = RangeOps::Subtract(rng2, peeledOffsetRng); // Subtract handles overflow internally.
 
                 RangeOps::RelationKind kind =
                     RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), peeledOp1Rng, rng2);
