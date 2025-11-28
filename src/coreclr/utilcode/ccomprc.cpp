@@ -251,6 +251,10 @@ HRESULT CCompRC::GetLibrary(HRESOURCEDLL* phInst)
 }
 #endif // HOST_WINDOWS
 
+#ifdef HOST_WINDOWS
+extern "C" IMAGE_DOS_HEADER __ImageBase;
+#endif
+
 //*****************************************************************************
 // Load the string
 // We load the localized libraries and cache the handle for future use.
@@ -272,18 +276,12 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, UINT iResourceID, _Out_w
     CONTRACTL_END;
 
 #ifdef HOST_WINDOWS
-    HRESULT         hr;
-    HRESOURCEDLL    hInst = 0; //instance of cultured resource dll
+    HRESULT         hr = S_OK;
     int length;
-
-    hr = GetLibrary(&hInst);
 
     if (SUCCEEDED(hr))
     {
-        // Now that we have the proper dll handle, load the string
-        _ASSERTE(hInst != NULL);
-
-        length = ::LoadString(hInst, iResourceID, szBuffer, iMax);
+        length = ::LoadString((HINSTANCE)&__ImageBase, iResourceID, szBuffer, iMax);
         if(length > 0)
         {
             if(pcwchUsed)
