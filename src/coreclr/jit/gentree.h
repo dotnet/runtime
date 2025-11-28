@@ -970,7 +970,7 @@ public:
 
     void SetRegNum(regNumber reg)
     {
-        assert(reg >= REG_FIRST && reg <= REG_COUNT);
+        genIsValidReg(reg);
         _gtRegNum = (regNumberSmall)reg;
         INDEBUG(gtRegTag = GT_REGTAG_REG;)
         assert(_gtRegNum == reg);

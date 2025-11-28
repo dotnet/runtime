@@ -25,6 +25,7 @@ namespace System.Security.Cryptography.Cose
         }
 
         internal abstract void AppendToBeSigned(ReadOnlySpan<byte> data);
+        internal abstract void AppendToBeSigned(byte[] data, int offset, int length);
 
         // arg is passthrough - we don't do anything with it but all usages need to pass in extra Span and it's not allowed to do through closure.
         internal abstract void WithDataAndResetAfterOperation(Span<byte> arg, ToBeSignedOperation operation);

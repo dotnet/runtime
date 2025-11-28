@@ -1006,6 +1006,7 @@ bool GenTree::NeedsConsecutiveRegisters() const
 }
 #endif
 
+#if HAS_FIXED_REGISTER_SET
 //---------------------------------------------------------------
 // gtGetContainedRegMask: Get the reg mask of the node including
 //    contained nodes (recursive).
@@ -1076,6 +1077,7 @@ regMaskTP GenTree::gtGetRegMask() const
 
     return resultMask;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 void GenTreeFieldList::AddField(Compiler* compiler, GenTree* node, unsigned offset, var_types type)
 {
@@ -4759,6 +4761,8 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 addrModeCostSz += 4;
             }
         }
+#elif defined(TARGET_WASM)
+        NYI_WASM("gtMarkAddrMode");
 #else
 #error "Unknown TARGET"
 #endif
@@ -5163,6 +5167,19 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costEx = 1;
                 costSz = 4;
                 goto COMMON_CNS;
+#elif defined(TARGET_WASM)
+            case GT_CNS_STR:
+                costEx = IND_COST_EX + 2;
+                costSz = 7;
+                goto COMMON_CNS;
+
+            case GT_CNS_LNG:
+            case GT_CNS_INT:
+                // TODO-WASM: needs tuning based on the [S]LEB128 encoding size.
+                NYI_WASM("GT_CNS_LNG/GT_CNS_INT costing");
+                costEx = 0;
+                costSz = 0;
+                goto COMMON_CNS;
 #else
             case GT_CNS_STR:
             case GT_CNS_LNG:
@@ -5240,6 +5257,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // TODO-RISCV64-CQ: tune the costs.
                 costEx = 2;
                 costSz = 8;
+#elif defined(TARGET_WASM)
+                costEx = 2;
+                costSz = tree->TypeIs(TYP_FLOAT) ? 5 : 9;
 #else
 #error "Unknown TARGET"
 #endif
@@ -5422,6 +5442,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     // TODO-RISCV64-CQ: tune the costs.
                     costEx = 1;
                     costSz = 4;
+#elif defined(TARGET_WASM)
+                    // TODO-WASM: 1 byte opcodes except for the int->fp saturating casts which are 2 bytes.
+                    NYI_WASM("Cast costing");
+                    costEx = 0;
+                    costSz = 0;
 #else
 #error "Unknown TARGET"
 #endif
@@ -11719,14 +11744,15 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             }
         }
 
+#if HAS_FIXED_REGISTER_SET
         // for tracking down problems in reguse prediction or liveness tracking
-
         if (verbose && 0)
         {
             printf(" RR=");
             dspRegMask(JitTls::GetCompiler()->codeGen->internalRegisters.GetAll(tree));
             printf("\n");
         }
+#endif // HAS_FIXED_REGISTER_SET
     }
 }
 
@@ -11898,6 +11924,10 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
                 ilName = "LocAllocSP";
             }
 #endif // JIT32_GCENCODER
+            else if (lclNum == lvaAsyncContinuationArg)
+            {
+                ilName = "AsyncCont";
+            }
             else
             {
                 ilKind = "tmp";
@@ -11917,10 +11947,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
         if (ilNum == 0 && !info.compIsStatic)
         {
             ilName = "this";
-        }
-        else if (lclNum == lvaAsyncContinuationArg)
-        {
-            ilName = "AsyncCont";
         }
         else
         {
@@ -13384,6 +13410,7 @@ void Compiler::gtPrintABILocation(const ABIPassingInformation& abiInfo, char** b
     {
         if (segment.IsPassedInRegister())
         {
+#if HAS_FIXED_REGISTER_SET
             regMaskTP regs = segment.GetRegisterMask();
             while (regs != RBM_NONE)
             {
@@ -13404,6 +13431,10 @@ void Compiler::gtPrintABILocation(const ABIPassingInformation& abiInfo, char** b
                     lastReg  = reg;
                 }
             }
+#else  // !HAS_FIXED_REGISTER_SET
+       // TODO-WASM: refactor this code to not rely on register masks.
+            NYI_WASM("gtPrintABILocation");
+#endif // !HAS_FIXED_REGISTER_SET
         }
         else
         {
@@ -14235,18 +14266,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return tree;
     }
 
-    // Check if an object of this type can even exist
-    if (info.compCompHnd->getExactClasses(clsHnd, 0, nullptr) == 0)
-    {
-        JITDUMP("Runtime reported %p (%s) is never allocated\n", dspPtr(clsHnd), eeGetClassName(clsHnd));
-
-        const bool operatorIsEQ  = (oper == GT_EQ);
-        const int  compareResult = operatorIsEQ ? 0 : 1;
-        JITDUMP("Runtime reports comparison is known at jit time: %u\n", compareResult);
-        GenTree* result = gtNewIconNode(compareResult);
-        return result;
-    }
-
     // We're good to go.
     JITDUMP("Optimizing compare of obj.GetType()"
             " and type-from-handle to compare method table pointer\n");
@@ -14265,6 +14284,20 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     else
     {
         objOp = opOther->AsCall()->gtArgs.GetThisArg()->GetNode();
+    }
+
+    // Check if an object of this type can even exist
+    if (info.compCompHnd->getExactClasses(clsHnd, 0, nullptr) == 0)
+    {
+        JITDUMP("Runtime reported %p (%s) is never allocated\n", dspPtr(clsHnd), eeGetClassName(clsHnd));
+
+        const bool operatorIsEQ  = (oper == GT_EQ);
+        const int  compareResult = operatorIsEQ ? 0 : 1;
+        JITDUMP("Runtime reports comparison is known at jit time: %u\n", compareResult);
+
+        GenTree* result      = gtNewIconNode(compareResult);
+        GenTree* sideEffects = fgAddrCouldBeNull(objOp) ? gtNewNullCheck(objOp) : objOp;
+        return gtWrapWithSideEffects(result, sideEffects, GTF_ALL_EFFECT);
     }
 
     bool                 isExact   = false;
@@ -18281,7 +18314,7 @@ bool GenTreeIntConCommon::FitsInAddrBase(Compiler* comp)
     {
         // During AOT JIT is always asked to generate relocatable code.
         // Hence JIT will try to encode only icon handles as pc-relative offsets.
-        return IsIconHandle() && (IMAGE_REL_BASED_REL32 == comp->eeGetRelocTypeHint((void*)IconValue()));
+        return IsIconHandle() && (comp->eeGetRelocTypeHint((void*)IconValue()) == CorInfoReloc::RELATIVE32);
     }
     else
     {
@@ -18302,7 +18335,7 @@ bool GenTreeIntConCommon::FitsInAddrBase(Compiler* comp)
         // offsets.  Note that JIT will always attempt to relocate code addresses (.e.g call addr).
         // After an overflow, VM will assume any relocation recorded is for a code address and will
         // emit jump thunk if it cannot be encoded as pc-relative offset.
-        return (IMAGE_REL_BASED_REL32 == comp->eeGetRelocTypeHint((void*)IconValue())) || FitsInI32();
+        return (comp->eeGetRelocTypeHint((void*)IconValue()) == CorInfoReloc::RELATIVE32) || FitsInI32();
     }
 }
 
@@ -18313,11 +18346,11 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
     {
         // During AOT JIT is always asked to generate relocatable code.
         // Hence JIT will try to encode only icon handles as pc-relative offsets.
-        return IsIconHandle() && (IMAGE_REL_BASED_REL32 == comp->eeGetRelocTypeHint((void*)IconValue()));
+        return IsIconHandle() && (comp->eeGetRelocTypeHint((void*)IconValue()) == CorInfoReloc::RELATIVE32);
     }
     else
     {
-        return IMAGE_REL_BASED_REL32 == comp->eeGetRelocTypeHint((void*)IconValue());
+        return comp->eeGetRelocTypeHint((void*)IconValue()) == CorInfoReloc::RELATIVE32;
     }
 }
 
@@ -31304,13 +31337,15 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
             resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // FA0 or FA1
         }
     }
+#endif
 
-#endif // TARGET_XXX
-
+#if HAS_FIXED_REGISTER_SET
     assert(resultReg != REG_NA);
+#endif
     return resultReg;
 }
 
+#if HAS_FIXED_REGISTER_SET
 //--------------------------------------------------------------------------------
 // GetABIReturnRegs: get the mask of return registers as per target arch ABI.
 //
@@ -31337,6 +31372,7 @@ regMaskTP ReturnTypeDesc::GetABIReturnRegs(CorInfoCallConvExtension callConv) co
 
     return resultMask;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 //------------------------------------------------------------------------
 //  GetNum: Get the SSA number for a given field.
