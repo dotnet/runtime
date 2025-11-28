@@ -463,7 +463,8 @@ namespace System.IO.Compression
 
         private static FileStream GetFileStreamForOpen(ZipArchiveMode mode, string archiveFileName, bool useAsync)
         {
-            // Check if the path is a directory before attempting to open.
+            // Check if the path is a directory before attempting to open,
+            // to match the UnauthorizedAccessException thrown by FileStream's ctor.
             if (Directory.Exists(archiveFileName))
             {
                 throw new UnauthorizedAccessException(SR.Format(SR.IO_DirectoryNotAllowed, archiveFileName));
