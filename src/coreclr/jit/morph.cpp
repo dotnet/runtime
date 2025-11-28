@@ -5666,11 +5666,11 @@ GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
                                             CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                             CORINFO_CALL_INFO*      pCallInfo)
 {
-    GenTree* exactTypeDesc   = getTokenHandleTree(pResolvedToken, true);
     GenTree* exactMethodDesc = getTokenHandleTree(pResolvedToken, false);
+    GenTree* exactTypeDesc   = getTokenHandleTree(pResolvedToken, true);
 
-    return gtNewVirtualFunctionLookupHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr, exactTypeDesc,
-                                                    exactMethodDesc);
+    return gtNewVirtualFunctionLookupHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr, exactMethodDesc,
+                                                    exactTypeDesc);
 }
 
 //------------------------------------------------------------------------
