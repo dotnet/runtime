@@ -397,7 +397,9 @@ namespace System.IO.Compression
                     return access switch
                     {
                         FileAccess.Read => OpenInReadMode(checkOpenable: true),
-                        FileAccess.Write => OpenInWriteMode(),
+                        // In Update mode, OpenInWriteMode() cannot be used because it requires archive stream ownership
+                        // which is only acquired in Create mode. OpenInUpdateMode() provides a writable stream.
+                        FileAccess.Write => OpenInUpdateMode(),
                         FileAccess.ReadWrite => OpenInUpdateMode(),
                         _ => throw new UnreachableException()
                     };
