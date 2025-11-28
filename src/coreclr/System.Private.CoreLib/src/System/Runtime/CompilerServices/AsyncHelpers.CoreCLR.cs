@@ -171,6 +171,16 @@ namespace System.Runtime.CompilerServices
             public INotifyCompletion? Notifier;
             public IValueTaskSourceNotifier? ValueTaskSourceNotifier;
             public Task? TaskNotifier;
+
+            public ExecutionContext? ExecutionContext;
+            public SynchronizationContext? SynchronizationContext;
+
+            public void CaptureContexts()
+            {
+                Thread curThread = Thread.CurrentThreadAssumedInitialized;
+                ExecutionContext = curThread._executionContext;
+                SynchronizationContext = curThread._synchronizationContext;
+            }
         }
 
         [ThreadStatic]
@@ -240,6 +250,7 @@ namespace System.Runtime.CompilerServices
                 state.ValueTaskSourceNotifier = (IValueTaskSourceNotifier)o;
             }
 
+            state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }
 
@@ -541,6 +552,8 @@ namespace System.Runtime.CompilerServices
             {
                 ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
 
+                RestoreContextsOnSuspension(false, state.ExecutionContext, state.SynchronizationContext);
+
                 ICriticalNotifyCompletion? critNotifier = state.CriticalNotifier;
                 INotifyCompletion? notifier = state.Notifier;
                 IValueTaskSourceNotifier? vtsNotifier = state.ValueTaskSourceNotifier;
@@ -550,6 +563,8 @@ namespace System.Runtime.CompilerServices
                 state.Notifier = null;
                 state.ValueTaskSourceNotifier = null;
                 state.TaskNotifier = null;
+                state.ExecutionContext = null;
+                state.SynchronizationContext = null;
 
                 Continuation sentinelContinuation = state.SentinelContinuation!;
                 Continuation headContinuation = sentinelContinuation.Next!;
@@ -790,6 +805,28 @@ namespace System.Runtime.CompilerServices
                 if (previousExecCtx != currentExecCtx)
                 {
                     ExecutionContext.RestoreChangedContextToThread(thread, previousExecCtx, currentExecCtx);
+                }
+            }
+        }
+
+        // Restore contexts onto current Thread as we unwind during suspension. We control the code that runs
+        // during suspension and we do not need to raise ExecutionContext notifications -- we know that it is
+        // not going to be accessed and that DispatchContinuations will return it back to the leaf's context
+        // before calling user code, and restore the original contexts with appropriate notifications before
+        // returning.
+        private static void RestoreContextsOnSuspension(bool resumed, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
+        {
+            if (!resumed)
+            {
+                Thread thread = Thread.CurrentThreadAssumedInitialized;
+                if (previousSyncCtx != thread._synchronizationContext)
+                {
+                    thread._synchronizationContext = previousSyncCtx;
+                }
+
+                if (previousExecCtx != thread._executionContext)
+                {
+                    thread._executionContext = previousExecCtx;
                 }
             }
         }

@@ -257,7 +257,7 @@
       <_MonoLLVMPath Condition="'$(_MonoLLVMPath)' == '' and '$(MonoEnableLLVM)' == 'true'">$([System.IO.Path]::GetDirectoryName("$(_CompilerBinaryPath)"))</_MonoLLVMPath>
     </PropertyGroup>
 
-    <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
+    <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true' and '$(UseMonoRuntime)' != 'false'"
         AotModulesTablePath="$(_AotModuleTablePath)"
         AotModulesTableLanguage="ObjC"
         Assemblies="@(_AotInputAssemblies)"
