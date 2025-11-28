@@ -2295,17 +2295,16 @@ namespace System.IO.Compression.Tests
         [MemberData(nameof(Get_Booleans_Data))]
         public static async Task OpenWithFileAccess_UpdateMode_WriteAccess_Succeeds(bool async)
         {
-            using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+            using var ms = new MemoryStream();
             ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update);
 
-            ZipArchiveEntry entry = archive.GetEntry("first.txt");
-            Assert.NotNull(entry);
+            ZipArchiveEntry entry = archive.CreateEntry("test.txt");
 
-            // In Update mode, FileAccess.Write uses OpenInUpdateMode which returns a read/write stream
+            // In Update mode, FileAccess.Write uses OpenInWriteMode which returns a write-only stream
             using Stream stream = entry.Open(FileAccess.Write);
             Assert.True(stream.CanWrite);
-            Assert.True(stream.CanRead); // Update mode streams are always read/write
-            Assert.True(stream.CanSeek);
+            Assert.False(stream.CanRead);
+            Assert.False(stream.CanSeek);
 
             await DisposeZipArchive(async, archive);
         }
