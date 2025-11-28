@@ -1925,7 +1925,12 @@ public:
 
     bool OperSupportsOrderingSideEffect() const;
 
-    GenTreeFlags OperEffects(Compiler* comp);
+    GenTreeFlags OperEffects(Compiler* comp, ExceptionSetFlags* preciseExceptions);
+    GenTreeFlags OperEffects(Compiler* comp)
+    {
+        ExceptionSetFlags preciseExceptions;
+        return OperEffects(comp, &preciseExceptions);
+    }
 
     unsigned GetScaleIndexMul();
     unsigned GetScaleIndexShf();

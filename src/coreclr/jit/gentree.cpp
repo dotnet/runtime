@@ -7496,12 +7496,13 @@ bool GenTree::OperSupportsOrderingSideEffect() const
 // excluding its children.
 //
 // Arguments:
-//    comp -  Compiler instance
+//    comp              - Compiler instance
+//    preciseExceptions - [out] Precise exceptions this node may throw
 //
 // Return Value:
 //    The effect flags.
 //
-GenTreeFlags GenTree::OperEffects(Compiler* comp)
+GenTreeFlags GenTree::OperEffects(Compiler* comp, ExceptionSetFlags* preciseExceptions)
 {
     GenTreeFlags flags = gtFlags & GTF_ALL_EFFECT;
 
@@ -7515,9 +7516,17 @@ GenTreeFlags GenTree::OperEffects(Compiler* comp)
         flags &= ~GTF_CALL;
     }
 
-    if (((flags & GTF_EXCEPT) != 0) && !OperMayThrow(comp))
+    if ((flags & GTF_EXCEPT) != 0)
     {
-        flags &= ~GTF_EXCEPT;
+        *preciseExceptions = OperExceptions(comp);
+        if (*preciseExceptions == ExceptionSetFlags::None)
+        {
+            flags &= ~GTF_EXCEPT;
+        }
+    }
+    else
+    {
+        *preciseExceptions = ExceptionSetFlags::None;
     }
 
     if (((flags & GTF_GLOB_REF) != 0) && !OperRequiresGlobRefFlag(comp))

@@ -489,16 +489,11 @@ SideEffectSet::SideEffectSet(Compiler* compiler, GenTree* node)
 //
 void SideEffectSet::AddNode(Compiler* compiler, GenTree* node)
 {
-    GenTreeFlags operEffects = node->OperEffects(compiler);
+    ExceptionSetFlags preciseExceptions;
+    GenTreeFlags      operEffects = node->OperEffects(compiler, &preciseExceptions);
     m_sideEffectFlags |= operEffects;
+    m_preciseExceptions |= preciseExceptions;
     m_aliasSet.AddNode(compiler, node);
-
-    if (((operEffects & GTF_EXCEPT) != 0) &&
-        ((m_preciseExceptions & ExceptionSetFlags::UnknownException) == ExceptionSetFlags::None) &&
-        genCountBits((uint32_t)m_preciseExceptions) <= 1)
-    {
-        m_preciseExceptions |= node->OperExceptions(compiler);
-    }
 }
 
 //------------------------------------------------------------------------
@@ -608,11 +603,9 @@ bool SideEffectSet::InterferesWith(const SideEffectSet& other, bool strict) cons
 //
 bool SideEffectSet::InterferesWith(Compiler* compiler, GenTree* node, bool strict) const
 {
-    GenTreeFlags      operEffects = node->OperEffects(compiler);
-    ExceptionSetFlags exceptions =
-        ((operEffects & GTF_EXCEPT) != 0) ? node->OperExceptions(compiler) : ExceptionSetFlags::None;
-    assert(((operEffects & GTF_EXCEPT) != 0) == (exceptions != ExceptionSetFlags::None));
-    return InterferesWith(operEffects, exceptions, AliasSet::NodeInfo(compiler, node), strict);
+    ExceptionSetFlags preciseExceptions;
+    GenTreeFlags      operEffects = node->OperEffects(compiler, &preciseExceptions);
+    return InterferesWith(operEffects, preciseExceptions, AliasSet::NodeInfo(compiler, node), strict);
 }
 
 //------------------------------------------------------------------------
