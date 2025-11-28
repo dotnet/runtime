@@ -7,8 +7,9 @@
 #endif
 
 // clang-format off
-  // TODO-AMD64-CQ: Fine tune the following xxBlk threshold values:
+  #define CORINFO_ARCH_TARGET      CORINFO_ARCH_X64
 
+  // TODO-AMD64-CQ: Fine tune the following xxBlk threshold values:
   #define CPU_LOAD_STORE_ARCH      0
   #define CPU_HAS_BYTE_REGS        0
 
@@ -546,12 +547,6 @@
 
   #define REG_ASYNC_CONTINUATION_RET REG_RCX
   #define RBM_ASYNC_CONTINUATION_RET RBM_RCX
-
-  // What sort of reloc do we use for [disp32] address mode
-  #define IMAGE_REL_BASED_DISP32   IMAGE_REL_BASED_REL32
-
-  // What sort of reloc to we use for 'moffset' address mode (for 'mov eax, moffset' or 'mov moffset, eax')
-  #define IMAGE_REL_BASED_MOFFSET  IMAGE_REL_BASED_DIR64
 
   // Pointer-sized string move instructions
   #define INS_movsp                INS_movsq

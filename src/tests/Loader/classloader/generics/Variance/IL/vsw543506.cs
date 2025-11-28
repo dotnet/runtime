@@ -154,7 +154,7 @@ public class Test_vsw543506
 
 
 
-		// IPos<unit> --> IPos<int>
+		// IPos<uint> --> IPos<int>
 	    	IsInstShouldFail<IPos<int>>(cui);
 
 		// IPos<IComparable> --> IPos<uint>

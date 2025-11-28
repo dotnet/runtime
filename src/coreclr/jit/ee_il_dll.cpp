@@ -1276,7 +1276,7 @@ void Compiler::eeSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* clause)
     }
 }
 
-WORD Compiler::eeGetRelocTypeHint(void* target)
+CorInfoReloc Compiler::eeGetRelocTypeHint(void* target)
 {
     if (info.compMatchedVM)
     {
@@ -1285,7 +1285,7 @@ WORD Compiler::eeGetRelocTypeHint(void* target)
     else
     {
         // No hints
-        return (WORD)-1;
+        return CorInfoReloc::NONE;
     }
 }
 
