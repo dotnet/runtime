@@ -453,23 +453,34 @@ void* GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
 }
 
 #ifdef DEBUGGING_SUPPORTED
-static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack)
+static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame)
 {
-    ULONG_PTR info[3] = {
-        (const ULONG_PTR)ip,        // Bytecode address
-        (const ULONG_PTR)pFrame,    // Interpreter frame pointer
-        (const ULONG_PTR)stack      // Stack pointer
-    };
+     Thread *pThread = GetThread();
+    if (pThread != NULL && g_pDebugInterface != NULL)
+    {
+        EXCEPTION_RECORD exceptionRecord;
+        memset(&exceptionRecord, 0, sizeof(EXCEPTION_RECORD));
+        exceptionRecord.ExceptionCode = STATUS_BREAKPOINT;
+        exceptionRecord.ExceptionAddress = (PVOID)ip;
 
-    PAL_TRY(ULONG_PTR*, pInfo, info)
-    {
-        RaiseException(STATUS_BREAKPOINT, 0, 3, pInfo);
+        // Construct a CONTEXT for the debugger
+        CONTEXT ctx;
+        memset(&ctx, 0, sizeof(CONTEXT));
+
+        ctx.ContextFlags = CONTEXT_FULL;
+        SetSP(&ctx, (DWORD64)pFrame);
+        SetFP(&ctx, (DWORD64)stack);
+        SetIP(&ctx, (DWORD64)ip); 
+        SetFirstArgReg(&ctx, dac_cast<TADDR>(pInterpreterFrame)); // Enable debugger to iterate over interpreter frames
+
+        // Notify the debugger of the exception
+        bool handled = g_pDebugInterface->FirstChanceNativeException(
+            &exceptionRecord,
+            &ctx,
+            STATUS_BREAKPOINT,
+            pThread);
+
     }
-    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
-    {
-        // Do nothing - filter should have already notified the debugger
-    }
-    PAL_ENDTRY
 }
 #endif // DEBUGGING_SUPPORTED
 
@@ -835,10 +846,8 @@ MAIN_LOOP:
 #ifdef DEBUGGING_SUPPORTED
                 case INTOP_BREAKPOINT:
                 {
-                    // Adjust ip to point to the breakpoint instruction
-                    // TODO: Why we need to do that? Shouldn't ip already point to the breakpoint instruction?
-                    pFrame->ip = ip - 3;
-                    InterpBreakpoint(ip, pFrame, stack);
+                    // TODO: Fix that debugger is not showing the stop on System.Diagnostics.Debugger.Break();
+                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
                     break;
                 }
 #endif // DEBUGGING_SUPPORTED
