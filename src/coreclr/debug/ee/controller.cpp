@@ -4585,14 +4585,6 @@ bool DebuggerController::DispatchNativeException(EXCEPTION_RECORD *pException,
         switch (dwCode)
         {
         case EXCEPTION_BREAKPOINT:
-            // Check if this is an interpreter breakpoint by examining if we have the special exception information
-            // Interpreter breakpoints provide: [0] = bytecode, [1] = pFrame, [2] = stack
-            if (pException->NumberParameters >= 3 && pException->ExceptionInformation[1] != 0)
-            {
-                // Store the bytecode pointer for patch lookup
-                ip = (CORDB_ADDRESS_TYPE*)pException->ExceptionInformation[0];
-            }
-
             // EIP should be properly set up at this point.
             result = DebuggerController::DispatchPatchOrSingleStep(pCurThread,
                                                        pContext,

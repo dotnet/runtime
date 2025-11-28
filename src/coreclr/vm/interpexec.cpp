@@ -33,29 +33,9 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBl
 // Filter to ignore SEH exceptions representing C++ exceptions.
 LONG IgnoreCppExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
 {
-    DWORD exceptionCode = pExceptionInfo->ExceptionRecord->ExceptionCode;
-
-    if (exceptionCode == EXCEPTION_MSVC)
-    {
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-
-    if (exceptionCode == STATUS_BREAKPOINT)
-    {
-        Thread *pThread = GetThread();
-        if (pThread != NULL && g_pDebugInterface != NULL)
-        {
-            g_pDebugInterface->FirstChanceNativeException(
-                pExceptionInfo->ExceptionRecord,
-                pExceptionInfo->ContextRecord,
-                exceptionCode,
-                pThread);
-            return EXCEPTION_EXECUTE_HANDLER;
-        }
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-
-    return EXCEPTION_EXECUTE_HANDLER;
+    return (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_MSVC)
+        ? EXCEPTION_CONTINUE_SEARCH
+        : EXCEPTION_EXECUTE_HANDLER;
 }
 
 template<typename Function>
