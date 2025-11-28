@@ -396,17 +396,8 @@ public:
         Optional
     };
 
-    HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
-
-    // Get the default resource location (mscorrc.dll)
-    static CCompRC* GetDefaultResourceDll();
-
-private:
-    // We do not have global constructors any more
-    static CCompRC  m_DefaultResourceDll;
+    static HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
 };
-
-HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax);
 
 // The HRESULT_FROM_WIN32 macro evaluates its arguments three times.
 // <TODO>TODO: All HRESULT_FROM_WIN32(GetLastError()) should be replaced by calls to

@@ -34,38 +34,7 @@ STDAPI UtilLoadStringRC(
 )
 {
     WRAPPER_NO_CONTRACT;
-    return UtilLoadResourceString(bQuiet? CCompRC::Optional : CCompRC::Required,iResourceID, szBuffer, iMax);
-}
-
-HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax)
-{
-    CONTRACTL
-    {
-        DISABLED(NOTHROW);
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    HRESULT retVal = E_OUTOFMEMORY;
-
-    SString::Startup();
-    EX_TRY
-    {
-        CCompRC *pResourceDLL = CCompRC::GetDefaultResourceDll();
-
-        if (pResourceDLL != NULL)
-        {
-            retVal = pResourceDLL->LoadString(eCategory, iResourceID, szBuffer, iMax);
-        }
-    }
-    EX_CATCH
-    {
-        // Catch any errors and return E_OUTOFMEMORY;
-        retVal = E_OUTOFMEMORY;
-    }
-    EX_END_CATCH
-
-    return retVal;
+    return CCompRC::LoadString(bQuiet? CCompRC::Optional : CCompRC::Required, iResourceID, szBuffer, iMax);
 }
 
 //*****************************************************************************

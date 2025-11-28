@@ -11,31 +11,11 @@
 #define NATIVE_STRING_RESOURCE_NAME mscorrc
 __attribute__((visibility("default"))) DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME);
 #endif
-#include "sstring.h"
-#include "stringarraylist.h"
-#include "corpriv.h"
 
 #include <stdlib.h>
 
 // External prototypes.
 extern void* GetClrModuleBase();
-
-CCompRC CCompRC::m_DefaultResourceDll;
-
-CCompRC* CCompRC::GetDefaultResourceDll()
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        NOTHROW;
-#ifdef      MODE_PREEMPTIVE
-        MODE_PREEMPTIVE;
-#endif
-    }
-    CONTRACTL_END;
-
-    return &m_DefaultResourceDll;
-}
 
 //*****************************************************************************
 // Load the string
@@ -61,22 +41,19 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, UINT iResourceID, _Out_w
     HRESULT         hr = S_OK;
     int length;
 
-    if (SUCCEEDED(hr))
+    length = ::LoadString((HINSTANCE)GetClrModuleBase(), iResourceID, szBuffer, iMax);
+    if(length > 0)
     {
-        length = ::LoadString((HINSTANCE)GetClrModuleBase(), iResourceID, szBuffer, iMax);
-        if(length > 0)
+        if(pcwchUsed)
         {
-            if(pcwchUsed)
-            {
-                *pcwchUsed = length;
-            }
-            return (S_OK);
+            *pcwchUsed = length;
         }
-        if(GetLastError()==ERROR_SUCCESS)
-            hr=HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
-        else
-            hr=HRESULT_FROM_GetLastError();
+        return (S_OK);
     }
+    if (SUCCEEDED(GetLastError()))
+        hr = HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+    else
+        hr = HRESULT_FROM_GetLastError();
 
     // Return an empty string to save the people with a bad error handling
     if (szBuffer && iMax)
