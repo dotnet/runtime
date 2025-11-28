@@ -7,7 +7,7 @@
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
-    <MainLibraryFileName>iOS.Simulator.CoreCLR.R2R.Test.dll</MainLibraryFileName>
+    <MainLibraryFileName>iOS.CoreCLR.R2R.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
     <PublishReadyToRun>true</PublishReadyToRun>
