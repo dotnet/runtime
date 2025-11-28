@@ -35,7 +35,7 @@ namespace System.IO.Compression
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException" accessor="set">The value is less than 10 or greater than 24.</exception>
         /// <remarks>
-        /// The window size is the sliding window size in bits used by the LZ77 algorithm. Larger window sizes can improve compression ratio but use more memory. Range is from 10 to 24. The default value is 22.
+        /// The value is expressed as the base-2 logarithm of the size in bytes of the sliding window used by the LZ77 algorithm. Larger window sizes can improve compression ratio but use more memory. Range is from 10 to 24. The default value is 22.
         /// </remarks>
         public int WindowLog
         {
