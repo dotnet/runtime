@@ -3,12 +3,6 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.InteropServices.JavaScript.JSFunctionBinding.BindManagedFunction(System.String,System.Int32,System.ReadOnlySpan{System.Runtime.InteropServices.JavaScript.JSMarshalerType})</Target>
-    <Left>net9.0/System.Runtime.InteropServices.JavaScript.dll</Left>
-    <Right>net10.0/System.Runtime.InteropServices.JavaScript.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Runtime.Intrinsics.Arm.Sve.LoadVectorByteNonFaultingZeroExtendToInt16(System.Byte*)</Target>
     <Left>net9.0/System.Runtime.Intrinsics.dll</Left>
     <Right>net10.0/System.Runtime.Intrinsics.dll</Right>

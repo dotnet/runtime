@@ -493,7 +493,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     Environment.FailFast($"ReleaseCSOwnedObject expected to find registration for JSHandle: {jsHandle}, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                 }
-                ;
                 if (!skipJS)
                 {
 #if FEATURE_WASM_MANAGED_THREADS

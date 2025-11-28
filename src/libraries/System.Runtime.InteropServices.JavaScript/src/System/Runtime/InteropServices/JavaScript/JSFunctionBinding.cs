@@ -182,6 +182,26 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Binds a specific managed function wrapper so that it can later be invoked by JavaScript callers.
         /// This API supports JSImport infrastructure and is not intended to be used directly from your code.
         /// </summary>
+        /// <param name="fullyQualifiedName">The fully qualified name of the exported method.</param>
+        /// <param name="signatureHash">The hash of the signature metadata.</param>
+        /// <param name="signatures">The metadata about the signature of the marshaled parameters.</param>
+        /// <returns>The method metadata.</returns>
+        /// <exception cref="PlatformNotSupportedException">The method is executed on architecture other than WebAssembly.</exception>
+        public static JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
+        {
+            if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
+                throw new PlatformNotSupportedException();
+
+            // this could be called by assembly module initializer from Net7 code-gen
+            // on wrong thread, in which case we will bind it to UI thread
+
+            return JSHostImplementation.BindManagedFunction(fullyQualifiedName, signatureHash, signatures);
+        }
+
+        /// <summary>
+        /// Binds a specific managed function wrapper so that it can later be invoked by JavaScript callers.
+        /// This API supports JSImport infrastructure and is not intended to be used directly from your code.
+        /// </summary>
         /// <param name="wrapper">Delegate of wrapper of exported method.</param>
         /// <param name="methodName">The name of the exported method.</param>
         /// <param name="signatureHash">The hash of the signature metadata.</param>
