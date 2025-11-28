@@ -820,5 +820,64 @@ namespace System.IO.Compression.Tests
                 base.Dispose(disposing);
             }
         }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task CompressionMethod_Deflate_ReturnsDeflate(bool async)
+        {
+            using var ms = new MemoryStream();
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var entry = archive.CreateEntry("test.txt", CompressionLevel.Optimal);
+                using (var stream = entry.Open())
+                {
+                    stream.Write("test data"u8);
+                }
+            }
+
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            ZipArchiveEntry readEntry = readArchive.Entries[0];
+            Assert.Equal(ZipCompressionMethod.Deflate, readEntry.CompressionMethod);
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task CompressionMethod_Stored_ReturnsStored(bool async)
+        {
+            using var ms = new MemoryStream();
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var entry = archive.CreateEntry("test.txt", CompressionLevel.NoCompression);
+                using (var stream = entry.Open())
+                {
+                    stream.Write("test data"u8);
+                }
+            }
+
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            ZipArchiveEntry readEntry = readArchive.Entries[0];
+            Assert.Equal(ZipCompressionMethod.Stored, readEntry.CompressionMethod);
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task CompressionMethod_EmptyFile_ReturnsStored(bool async)
+        {
+            using var ms = new MemoryStream();
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var entry = archive.CreateEntry("empty.txt");
+            }
+
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            ZipArchiveEntry readEntry = readArchive.Entries[0];
+            Assert.Equal(ZipCompressionMethod.Stored, readEntry.CompressionMethod);
+            await DisposeZipArchive(async, readArchive);
+        }
     }
 }
