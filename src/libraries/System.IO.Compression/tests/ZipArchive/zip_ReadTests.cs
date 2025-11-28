@@ -595,10 +595,9 @@ namespace System.IO.Compression.Tests
                 // Check the entry's compression method to determine seekability
                 // SubReadStream should be seekable when the underlying stream is seekable and the entry is stored (uncompressed)
                 // If the entry is compressed (Deflate, Deflate64, etc.), it will be wrapped in a compression stream which is not seekable
-                ushort compressionMethod = (ushort)compressionMethodField.GetValue(e);
-                const ushort StoredCompressionMethod = 0x0; // CompressionMethodValues.Stored
+                ZipCompressionMethod compressionMethod = (ZipCompressionMethod)compressionMethodField.GetValue(e);
                 
-                if (compressionMethod == StoredCompressionMethod)
+                if (compressionMethod == ZipCompressionMethod.Stored)
                 {
                     // Entry is stored (uncompressed), should be seekable
                     Assert.True(s.CanSeek, $"SubReadStream should be seekable for stored (uncompressed) entry '{e.FullName}' with compression method {compressionMethod} when underlying stream is seekable");
