@@ -5,6 +5,7 @@ include(FetchContent)
 FetchContent_Declare(
     zstd
     SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/zstd/build/cmake
+    EXCLUDE_FROM_ALL
 )
 
 set(ZSTD_BUILD_PROGRAMS OFF)
