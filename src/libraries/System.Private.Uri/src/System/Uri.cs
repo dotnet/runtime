@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -3158,7 +3158,8 @@ namespace System
             if ((cF & Flags.UserDrivenParsing) != 0)
                 goto Done;
 
-            // _info.Offset values may be parsed twice but we lock only on _flags update.
+            // _info.Offset values may be set concurrently, but that's okay since this parsing logic is idempotent.
+            // We use a local copy of changed flags (cF) and merge any updates into _flags atomically at the end.
 
             if ((cF & Flags.HasUnicode) != 0)
             {
@@ -3424,6 +3425,7 @@ namespace System
             InterlockedSetFlags(cF);
         }
 
+        /// <summary>Recreates the <see cref="_string"/> by normalizing the Path, Query and Fragment for non-ASCII inputs.</summary>
         private void ParseRemaining_RecreateNormalizedString()
         {
             DebugAssertInCtor();
@@ -3431,8 +3433,7 @@ namespace System
             Debug.Assert(InFact(Flags.MinimalUriInfoSet));
             Debug.Assert(!InFact(Flags.UserDrivenParsing));
 
-            ValueStringBuilder vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
-            vsb.Append(_string);
+            var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
 
             Flags flags = _flags;
             UriSyntaxFlags syntaxFlags = _syntax.Flags;
@@ -3441,8 +3442,6 @@ namespace System
             // Dos/Unix paths have no host.  Other schemes cleared/set _string with host information in PrivateParseMinimal.
             if ((flags & (Flags.DosPath | Flags.UnixPath)) != 0)
             {
-                vsb.Length = 0;
-
                 if ((flags & Flags.ImplicitFile) == 0)
                 {
                     vsb.Append(_syntax.SchemeName);
@@ -3464,11 +3463,12 @@ namespace System
             else
             {
                 Debug.Assert(!ReferenceEquals(_string, OriginalString));
+
+                vsb.Append(_string);
             }
 
             _info.Offset.Path = vsb.Length;
 
-            // If the user explicitly disabled canonicalization, only figure out the offsets
             if ((flags & Flags.DisablePathAndQueryCanonicalization) != 0)
             {
                 _string = string.Concat(vsb.AsSpan(), original);
