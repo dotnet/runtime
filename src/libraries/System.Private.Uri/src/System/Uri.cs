@@ -700,41 +700,32 @@ namespace System
             }
         }
 
-        private static UriFormatException? GetException(ParsingError err)
+        private static UriFormatException GetException(ParsingError err)
         {
-            switch (err)
+            Debug.Assert(err != ParsingError.None);
+
+            string message = err switch
             {
-                case ParsingError.None:
-                    return null;
                 // Could be OK for Relative Uri
-                case ParsingError.BadFormat:
-                    return new UriFormatException(SR.net_uri_BadFormat);
-                case ParsingError.BadScheme:
-                    return new UriFormatException(SR.net_uri_BadScheme);
-                case ParsingError.BadAuthority:
-                    return new UriFormatException(SR.net_uri_BadAuthority);
-                case ParsingError.EmptyUriString:
-                    return new UriFormatException(SR.net_uri_EmptyUri);
+                ParsingError.BadFormat => SR.net_uri_BadFormat,
+                ParsingError.BadScheme => SR.net_uri_BadScheme,
+                ParsingError.BadAuthority => SR.net_uri_BadAuthority,
+                ParsingError.EmptyUriString => SR.net_uri_EmptyUri,
+
                 // Fatal
-                case ParsingError.SchemeLimit:
-                    return new UriFormatException(SR.net_uri_SchemeLimit);
-                case ParsingError.MustRootedPath:
-                    return new UriFormatException(SR.net_uri_MustRootedPath);
+                ParsingError.SchemeLimit => SR.net_uri_SchemeLimit,
+                ParsingError.MustRootedPath => SR.net_uri_MustRootedPath,
+
                 // Derived class controllable
-                case ParsingError.BadHostName:
-                    return new UriFormatException(SR.net_uri_BadHostName);
-                case ParsingError.NonEmptyHost: //unix-only
-                    return new UriFormatException(SR.net_uri_BadFormat);
-                case ParsingError.BadPort:
-                    return new UriFormatException(SR.net_uri_BadPort);
-                case ParsingError.BadAuthorityTerminator:
-                    return new UriFormatException(SR.net_uri_BadAuthorityTerminator);
-                case ParsingError.CannotCreateRelative:
-                    return new UriFormatException(SR.net_uri_CannotCreateRelative);
-                default:
-                    break;
-            }
-            return new UriFormatException(SR.net_uri_BadFormat);
+                ParsingError.BadHostName => SR.net_uri_BadHostName,
+                ParsingError.BadPort => SR.net_uri_BadPort,
+                ParsingError.BadAuthorityTerminator => SR.net_uri_BadAuthorityTerminator,
+                ParsingError.CannotCreateRelative => SR.net_uri_CannotCreateRelative,
+
+                _ => throw new UnreachableException()
+            };
+
+            return new UriFormatException(message);
         }
 
         public string AbsolutePath
