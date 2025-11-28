@@ -9,7 +9,7 @@ namespace System.IO.Compression
     public sealed class BrotliCompressionOptions
     {
         private int _quality = BrotliUtils.Quality_Default;
-        private int _windowSize = BrotliUtils.WindowBits_Default;
+        private int _windowLog = BrotliUtils.WindowBits_Default;
 
         /// <summary>
         /// Gets or sets the compression quality for a Brotli compression stream.
@@ -37,15 +37,15 @@ namespace System.IO.Compression
         /// <remarks>
         /// The window size is the sliding window size in bits used by the LZ77 algorithm. Larger window sizes can improve compression ratio but use more memory. Range is from 10 to 24. The default value is 22.
         /// </remarks>
-        public int WindowSize
+        public int WindowLog
         {
-            get => _windowSize;
+            get => _windowLog;
             set
             {
                 ArgumentOutOfRangeException.ThrowIfLessThan(value, BrotliUtils.WindowBits_Min, nameof(value));
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(value, BrotliUtils.WindowBits_Max, nameof(value));
 
-                _windowSize = value;
+                _windowLog = value;
             }
         }
     }

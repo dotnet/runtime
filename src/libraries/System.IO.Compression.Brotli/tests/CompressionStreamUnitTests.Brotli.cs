@@ -108,14 +108,14 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public void InvalidBrotliCompressionWindowSize()
+        public void InvalidBrotliCompressionWindowLog()
         {
             BrotliCompressionOptions options = new();
 
-            Assert.Equal(22, options.WindowSize); // default value
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowSize = -1);
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowSize = 9);
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowSize = 25);
+            Assert.Equal(22, options.WindowLog); // default value
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowLog = -1);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowLog = 9);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowLog = 25);
         }
 
         [Theory]
@@ -123,7 +123,7 @@ namespace System.IO.Compression
         [InlineData(15)]
         [InlineData(22)]
         [InlineData(24)]
-        public void BrotliCompressionWindowSize_RoundTrip(int windowSize)
+        public void BrotliCompressionWindowLog_RoundTrip(int windowLog)
         {
             byte[] testData = new byte[10000];
             Random.Shared.NextBytes(testData);
@@ -132,7 +132,7 @@ namespace System.IO.Compression
             byte[] compressed;
             using (var ms = new MemoryStream())
             {
-                using (var compressor = new BrotliStream(ms, new BrotliCompressionOptions() { WindowSize = windowSize }, leaveOpen: true))
+                using (var compressor = new BrotliStream(ms, new BrotliCompressionOptions() { WindowLog = windowLog }, leaveOpen: true))
                 {
                     compressor.Write(testData);
                 }
