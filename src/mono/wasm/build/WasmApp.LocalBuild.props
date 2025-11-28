@@ -42,10 +42,6 @@
     <MonoArtifactsPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mono', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfig)'))</MonoArtifactsPath>
     <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoArtifactsPath), 'cross', '$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())', 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
     <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
-    
-    <_WebAssemblyPropsFile Condition="'$(_WebAssemblyPropsFile)' == ''">$(RuntimeSrcDir)\mono\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.props</_WebAssemblyPropsFile>
-    <_WebAssemblyTargetsFile Condition="'$(_WebAssemblyTargetsFile)' == ''">$(RuntimeSrcDir)\mono\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.targets</_WebAssemblyTargetsFile>
-    <_WebAssemblySdkToolsDirectory Condition="'$(_WebAssemblySdkToolsDirectory)' == ''">$(ArtifactsBinDir)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(RuntimeConfig)\</_WebAssemblySdkToolsDirectory>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeSrcDir)' == '' and '$(WasmBuildSupportDir)' != ''">
@@ -61,12 +57,6 @@
 
     <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(BuildBaseDir), 'cross', 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
     <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
-    
-    <_WasmSdkTargets>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'WasmSdkTargets'))</_WasmSdkTargets>
-    <_WasmSdkTools>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'WasmSdkTools'))</_WasmSdkTools>
-    <_WebAssemblyPropsFile>$(_WasmSdkTargets)\Microsoft.NET.Sdk.WebAssembly.Browser.props</_WebAssemblyPropsFile>
-    <_WebAssemblyTargetsFile>$(_WasmSdkTargets)\Microsoft.NET.Sdk.WebAssembly.Browser.targets</_WebAssemblyTargetsFile>
-    <_WebAssemblySdkToolsDirectory>$(_WasmSdkTools)</_WebAssemblySdkToolsDirectory>
   </PropertyGroup>
 
   <ItemGroup>
