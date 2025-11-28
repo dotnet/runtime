@@ -144,10 +144,7 @@ namespace System.Runtime.InteropServices
                     current = current._next;
                 }
 
-                if (current != null)
-                {
-                    current._next = method._next;
-                }
+                current?._next = method._next;
 
                 return methods;
             }

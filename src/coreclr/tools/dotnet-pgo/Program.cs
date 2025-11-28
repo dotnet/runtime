@@ -1949,7 +1949,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                     methodPrepareInstruction.Append(CsvEscape(instantiationBuilder.ToString(), outerCsvEscapeChar));
                     methodPrepareInstruction.Append(outerCsvEscapeChar);
-                    methodPrepareInstruction.Append(CsvEscape(method.Name, outerCsvEscapeChar));
+                    methodPrepareInstruction.Append(CsvEscape(method.GetName(), outerCsvEscapeChar));
                 }
                 catch (Exception ex)
                 {

@@ -412,7 +412,7 @@ namespace System.Collections.Concurrent
                 try
                 {
                     waitForSemaphoreWasSuccessful = _freeNodes.Wait(0, default);
-                    if (waitForSemaphoreWasSuccessful == false && millisecondsTimeout != 0)
+                    if (!waitForSemaphoreWasSuccessful && millisecondsTimeout != 0)
                     {
                         linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
                             cancellationToken, _producersCancellationTokenSource.Token);
@@ -661,7 +661,7 @@ namespace System.Collections.Concurrent
             try
             {
                 waitForSemaphoreWasSuccessful = _occupiedNodes.Wait(0);
-                if (waitForSemaphoreWasSuccessful == false && millisecondsTimeout != 0)
+                if (!waitForSemaphoreWasSuccessful && millisecondsTimeout != 0)
                 {
                     // create the linked token if it is not created yet
                     linkedTokenSource ??= CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _consumersCancellationTokenSource.Token);

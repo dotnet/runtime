@@ -2270,9 +2270,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
                 // Check to see if it is possible to emulate the integer division
-                if (!(simdBaseType == TYP_INT &&
-                      ((simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
-                       (simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512)))))
+                if (varTypeIsLong(simdBaseType))
                 {
                     break;
                 }
