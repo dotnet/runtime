@@ -10,7 +10,6 @@
     <NoWarn>$(NoWarn);IL2121</NoWarn>
 
     <UsingBrowserRuntimeWorkload>true</UsingBrowserRuntimeWorkload>
-    <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
   </PropertyGroup>
 
   <Import Project="..\Directory.Build.props"/>

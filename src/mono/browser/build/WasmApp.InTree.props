@@ -17,6 +17,9 @@
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsOutputTypeLibrary)' == 'true'">
     <OutputType>library</OutputType>
   </PropertyGroup>
+  <PropertyGroup>
+    <UsingBlazorAOTWorkloadManifest Condition="'$(UsingBrowserRuntimeWorkload)' == 'true'">true</UsingBlazorAOTWorkloadManifest>
+  </PropertyGroup>
 
   <!-- Don't set defaults for test, because the test projects themselves can set the target* properties -->
   <PropertyGroup Condition="'$(_WasmInTreeDefaults)' != 'false'">
