@@ -40,7 +40,6 @@ bool InterpreterExecutionControl::ApplyPatch(DebuggerControllerPatch* patch)
     LOG((LF_CORDB, LL_INFO10000, "InterpreterEC::ApplyPatch %p at bytecode addr %p\n",
         patch, patch->address));
 
-    patch->SetKind(PATCH_KIND_NATIVE_INTERPRETER);
     patch->opcode = *(int32_t*)patch->address;
     *(uint32_t*)patch->address = INTOP_BREAKPOINT;
 

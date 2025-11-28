@@ -28,11 +28,6 @@ inline DebuggerPatchKind DebuggerControllerPatch::GetKind()
     return kind;
 }
 
-inline void DebuggerControllerPatch::SetKind(DebuggerPatchKind newKind)
-{
-    kind = newKind;
-}
-
 inline BOOL DebuggerControllerPatch::IsILPrimaryPatch()
 {
     LIMITED_METHOD_CONTRACT;
@@ -52,7 +47,7 @@ inline BOOL DebuggerControllerPatch::IsManagedPatch()
 
 inline BOOL DebuggerControllerPatch::IsNativePatch()
 {
-    return (kind == PATCH_KIND_NATIVE_MANAGED || kind == PATCH_KIND_NATIVE_UNMANAGED || kind == PATCH_KIND_NATIVE_INTERPRETER ||(IsILReplicaPatch() && !offsetIsIL));
+    return (kind == PATCH_KIND_NATIVE_MANAGED || kind == PATCH_KIND_NATIVE_UNMANAGED ||(IsILReplicaPatch() && !offsetIsIL));
 }
 
 inline BOOL DebuggerControllerPatch::IsEnCRemapPatch()

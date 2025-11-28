@@ -364,7 +364,7 @@ typedef DebuggerFunctionKey1 UNALIGNED DebuggerFunctionKey;
 //
 // NativeUnmanaged: A patch applied to any kind of native code.
 
-enum DebuggerPatchKind { PATCH_KIND_IL_PRIMARY, PATCH_KIND_IL_REPLICA, PATCH_KIND_NATIVE_MANAGED, PATCH_KIND_NATIVE_UNMANAGED, PATCH_KIND_NATIVE_INTERPRETER };
+enum DebuggerPatchKind { PATCH_KIND_IL_PRIMARY, PATCH_KIND_IL_REPLICA, PATCH_KIND_NATIVE_MANAGED, PATCH_KIND_NATIVE_UNMANAGED };
 
 // struct DebuggerControllerPatch:  An entry in the patch (hash) table,
 // this should contain all the info that's needed over the course of a
@@ -463,7 +463,6 @@ public:
     BOOL IsILPrimaryPatch();
     BOOL IsILReplicaPatch();
     DebuggerPatchKind  GetKind();
-    void SetKind(DebuggerPatchKind newKind);
 
     // A patch has DJI if it was created with it or if it has been mapped to a
     // function that has been jitted while JIT tracking was on.  It does not
