@@ -398,7 +398,8 @@ namespace System.IO.Compression
                     {
                         FileAccess.Read => OpenInReadMode(checkOpenable: true),
                         FileAccess.Write => OpenInWriteMode(),
-                        _ => OpenInUpdateMode()
+                        FileAccess.ReadWrite => OpenInUpdateMode(),
+                        _ => throw new UnreachableException()
                     };
             }
         }
