@@ -89,7 +89,6 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(_UsingBlazorOrWasmSdk)' == 'true' and '$(UsingBrowserRuntimeWorkload)' == 'true'">
-    <WasmGenerateAppBundle>false</WasmGenerateAppBundle>
     <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
   </PropertyGroup>
 
