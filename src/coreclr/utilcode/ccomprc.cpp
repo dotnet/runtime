@@ -19,7 +19,7 @@ extern void* GetClrModuleBase();
 
 HRESULT CCompRC::LoadString(UINT iResourceID, _Out_writes_(iMax) LPWSTR szBuffer, int iMax,  int *pcwchUsed)
 {
-#ifdef DBI_COMPONENT_MONO
+#ifdef DACCESS_COMPILE
     return E_NOTIMPL;
 #else
     CONTRACTL
