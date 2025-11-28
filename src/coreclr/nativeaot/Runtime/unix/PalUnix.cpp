@@ -1032,7 +1032,7 @@ static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
         errno = savedErrNo;
     }
 
-    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailable();
+    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailableAsyncSafe();
     if (pThread)
     {
         pThread->SetActivationPending(false);

@@ -14,6 +14,7 @@ inline Thread * ThreadStore::RawGetCurrentThread()
     return (Thread *) &tls_CurrentThread;
 }
 
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
 // static
 inline Thread * ThreadStore::GetCurrentThread()
 {
@@ -24,6 +25,7 @@ inline Thread * ThreadStore::GetCurrentThread()
     ASSERT(pCurThread->IsInitialized());
     return pCurThread;
 }
+#endif // TARGET_UNIX && !DACCESS_COMPILE
 
 // static
 inline Thread * ThreadStore::GetCurrentThreadIfAvailable()

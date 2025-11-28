@@ -47,6 +47,7 @@ public:
     static Thread *         RawGetCurrentThread();
     static Thread *         GetCurrentThread();
     static Thread *         GetCurrentThreadIfAvailable();
+    static Thread *         GetCurrentThreadIfAvailableAsyncSafe();
     static PTR_Thread       GetSuspendingThread();
     static void             AttachCurrentThread();
     static void             AttachCurrentThread(bool fAcquireThreadStoreLock);

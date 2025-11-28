@@ -9,6 +9,7 @@ set(SOURCES
     random.c
     debugger.c
     strings.c
+    thread.c
     time.c
     unicodedata.c
     utf8.c

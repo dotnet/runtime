@@ -5513,7 +5513,7 @@ private:
 };
 
 #ifdef TARGET_UNIX
-Thread* GetThreadAsyncSafe();
+EXTERN_C Thread* GetThreadAsyncSafe();
 #endif
 
 #ifndef DACCESS_COMPILE

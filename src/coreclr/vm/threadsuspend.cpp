@@ -5739,7 +5739,8 @@ BOOL CheckActivationSafePoint(SIZE_T ip)
     BOOL isActivationSafePoint = pThread != NULL &&
         (pThread->m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0 &&
         pThread->PreemptiveGCDisabled() &&
-        ExecutionManager::IsManagedCode(ip);
+        (ExecutionManager::GetScanFlags(pThread) != ExecutionManager::ScanReaderLock) &&
+        ExecutionManager::IsManagedCodeNoLock(ip);
 
     if (!isActivationSafePoint && pThread != NULL)
     {

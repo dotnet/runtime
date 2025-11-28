@@ -37,6 +37,42 @@ extern "C" {
 #endif
 
 /**
+ * Get the current thread ID without caching in a TLS variable.
+ *
+ * @return The current thread ID as a size_t value.
+ */
+static inline size_t minipal_get_current_thread_id_no_cache(void)
+{
+    size_t tid;
+#if defined(__wasm) && !defined(_REENTRANT)
+    tid = 1; // In non-reentrant WASM builds, we define a single thread with ID 1.
+#else // !__wasm || _REENTRANT
+
+#if defined(__linux__)
+    tid = (size_t)syscall(SYS_gettid);
+#elif defined(__APPLE__)
+    uint64_t thread_id;
+    pthread_threadid_np(pthread_self(), &thread_id);
+    tid = (size_t)thread_id;  // Cast the uint64_t thread ID to size_t
+#elif defined(__FreeBSD__)
+    tid = (size_t)pthread_getthreadid_np();
+#elif defined(__NetBSD__)
+    tid = (size_t)_lwp_self();
+#elif defined(__HAIKU__)
+    tid = (size_t)find_thread(NULL);
+#elif defined(__sun)
+    tid = (size_t)pthread_self();
+#elif defined(__wasm)
+    tid = (size_t)(void*)pthread_self();
+#else
+#error "Unsupported platform"
+#endif
+
+#endif // __wasm && !_REENTRANT
+    return tid;
+}
+
+/**
  * Get the current thread ID.
  *
  * @return The current thread ID as a size_t value.
@@ -57,25 +93,7 @@ static inline size_t minipal_get_current_thread_id(void)
 
     if (!tid)
     {
-#if defined(__linux__)
-        tid = (size_t)syscall(SYS_gettid);
-#elif defined(__APPLE__)
-        uint64_t thread_id;
-        pthread_threadid_np(pthread_self(), &thread_id);
-        tid = (size_t)thread_id;  // Cast the uint64_t thread ID to size_t
-#elif defined(__FreeBSD__)
-        tid = (size_t)pthread_getthreadid_np();
-#elif defined(__NetBSD__)
-        tid = (size_t)_lwp_self();
-#elif defined(__HAIKU__)
-        tid = (size_t)find_thread(NULL);
-#elif defined(__sun)
-        tid = (size_t)pthread_self();
-#elif defined(__wasm)
-        tid = (size_t)(void*)pthread_self();
-#else
-#error "Unsupported platform"
-#endif
+        tid = minipal_get_current_thread_id_no_cache();
     }
 
     return tid;
@@ -117,6 +135,32 @@ static inline int minipal_set_thread_name(pthread_t thread, const char* name)
 #endif
 #endif
 }
+
+/**
+ * Insert a thread into the async-safe map.
+ *
+ * @param osThread The OS thread ID to insert.
+ * @param pThread A pointer to the thread object to associate with the OS thread ID.
+ * @return true if the insertion was successful, false otherwise (OOM).
+ */
+bool minipal_insert_thread_into_async_safe_map(size_t osThread, void* pThread);
+
+/**
+ * Remove a thread from the async-safe map.
+ *
+ * @param osThread The OS thread ID to remove.
+ * @param pThread A pointer to the thread object associated with the OS thread ID.
+ */
+void minipal_remove_thread_from_async_safe_map(size_t osThread, void* pThread);
+
+/**
+ * Find a thread in the async-safe map.
+ *
+ * @param osThread The OS thread ID to search for.
+ * @return A pointer to the thread object associated with the OS thread ID, or NULL if not found.
+ */
+void* minipal_find_thread_in_async_safe_map(size_t osThread);
+
 
 #ifdef __cplusplus
 }
