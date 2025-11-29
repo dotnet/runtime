@@ -362,7 +362,7 @@ private static IPStatus GetStatusFromCode(int statusCode)
     // Fast path: Success case (most common scenario in ping operations)
     if (statusCode == 0)
         return IPStatus.Success;
-    
+
     // Caveat: Windows ICMP APIs (IcmpSendEcho2) don't clearly distinguish between
     // IP-specific status codes and general Win32 error codes. This implementation
     // follows the established convention:
