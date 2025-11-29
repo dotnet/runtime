@@ -47,7 +47,8 @@ namespace System.Net.NetworkInformation
             TaskCompletionSource<PingReply>? tcs = null;
             if (isAsync)
             {
-                _taskCompletionSource = tcs = new TaskCompletionSource<PingReply>();
+                _taskCompletionSource = tcs = new TaskCompletionSource<PingReply>(TaskCreationOptions.RunContinuationsAsynchronously);
+                
             }
 
             _ipv6 = (address.AddressFamily == AddressFamily.InterNetworkV6);
@@ -186,7 +187,6 @@ namespace System.Net.NetworkInformation
             IPEndPointExtensions.SetIPAddress(remoteAddr, address);
 
             Span<byte> sourceAddr = stackalloc byte[SocketAddressPal.IPv6AddressSize];
-            sourceAddr.Clear();
 
             return (int)Interop.IpHlpApi.Icmp6SendEcho2(
                 _handlePingV6!,
