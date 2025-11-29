@@ -8814,7 +8814,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     CORINFO_METHOD_HANDLE instantiatingStub = NO_METHOD_HANDLE;
 
-    if (dvInfo.isInstantiatingStub)
+    if (dvInfo.isInstantiatingStub && !isGenericVirtual)
     {
         // We should only end up with generic methods that needs a method context (eg. array interface).
         //
@@ -8941,25 +8941,30 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     JITDUMP("    %s; can devirtualize\n", note);
 
-    if (!isGenericVirtual && dvInfo.isInstantiatingStub)
+    if (dvInfo.isInstantiatingStub)
     {
-        // Pass the instantiating stub method desc as the inst param arg.
-        //
-        // Note different embedding would be needed for NAOT/R2R,
-        // but we have ruled those out above.
-        //
-        GenTree* const instParam = gtNewIconEmbMethHndNode(instantiatingStub);
-        call->gtArgs.InsertInstParam(this, instParam);
-    }
-    else if (isGenericVirtual && dvInfo.needsMethodContext)
-    {
-        assert(call->gtCallAddr->IsCall());
-        // Pass the method context as the inst param arg.
-        CallArg* const methHndArg =
-            call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
-        assert(methHndArg != nullptr);
-        GenTree* const methHnd = methHndArg->GetEarlyNode();
-        call->gtArgs.InsertInstParam(this, methHnd);
+        if (isGenericVirtual)
+        {
+            // This generic method call requires a generic method context.
+            // Pass the method handle as the inst param arg.
+            //
+            assert(call->gtCallAddr->IsCall());
+            CallArg* const methHndArg =
+                call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
+            assert(methHndArg != nullptr);
+            GenTree* const methHnd = methHndArg->GetEarlyNode();
+            call->gtArgs.InsertInstParam(this, methHnd);
+        }
+        else
+        {
+            // Pass the instantiating stub method desc as the inst param arg.
+            //
+            // Note different embedding would be needed for NAOT/R2R,
+            // but we have ruled those out above.
+            //
+            GenTree* const instParam = gtNewIconEmbMethHndNode(instantiatingStub);
+            call->gtArgs.InsertInstParam(this, instParam);
+        }
     }
 
     // Make the updates.

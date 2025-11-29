@@ -8817,9 +8817,9 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // Note if array devirtualization produced an instantiation stub
         // so jit can try and inline it.
         //
-        info->isInstantiatingStub = !isGenericVirtual && pDevirtMD->IsInstantiatingStub();
+        info->isInstantiatingStub = pDevirtMD->IsInstantiatingStub();
         info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-        info->needsMethodContext = isArray || (isGenericVirtual && pDevirtMD->RequiresInstArg());
+        info->needsMethodContext = true;
     }
     else
     {
