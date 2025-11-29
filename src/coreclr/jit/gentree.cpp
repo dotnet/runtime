@@ -2374,8 +2374,7 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 //
 bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler) const
 {
-    // TODO: Support devirtualization for AOT generic virtual calls.
-    return IsVirtual() || (!compiler->IsAot() && IsGenericVirtual(compiler));
+    return IsVirtual() || IsGenericVirtual(compiler);
 }
 
 //-------------------------------------------------------------------------
