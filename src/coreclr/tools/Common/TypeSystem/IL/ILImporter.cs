@@ -276,10 +276,23 @@ namespace Internal.IL
             {
                 var r = _exceptionRegions[i];
 
-                CreateBasicBlock(r.ILRegion.TryOffset).TryStart = true;
+                if ((uint)r.ILRegion.TryOffset < (uint)_basicBlocks.Length)
+                    CreateBasicBlock(r.ILRegion.TryOffset).TryStart = true;
+                else
+                    ReportInvalidBranchTarget(r.ILRegion.TryOffset);
+
                 if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
-                    CreateBasicBlock(r.ILRegion.FilterOffset).FilterStart = true;
-                CreateBasicBlock(r.ILRegion.HandlerOffset).HandlerStart = true;
+                {
+                    if ((uint)r.ILRegion.FilterOffset < (uint)_basicBlocks.Length)
+                        CreateBasicBlock(r.ILRegion.FilterOffset).FilterStart = true;
+                    else
+                        ReportInvalidBranchTarget(r.ILRegion.FilterOffset);
+                }
+
+                if ((uint)r.ILRegion.HandlerOffset < (uint)_basicBlocks.Length)
+                    CreateBasicBlock(r.ILRegion.HandlerOffset).HandlerStart = true;
+                else
+                    ReportInvalidBranchTarget(r.ILRegion.HandlerOffset);
             }
         }
 
