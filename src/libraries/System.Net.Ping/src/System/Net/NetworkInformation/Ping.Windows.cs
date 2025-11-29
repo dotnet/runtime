@@ -325,38 +325,7 @@ namespace System.Net.NetworkInformation
         }
 
 
-/// <summary>
-/// Converts a Windows ICMP status code to the corresponding <see cref="IPStatus"/> value.
-/// </summary>
-/// <param name="statusCode">The status code returned by Windows ICMP APIs.</param>
-/// <returns>
-/// The corresponding <see cref="IPStatus"/> value for IP status codes,
-/// or throws <see cref="Win32Exception"/> for general Win32 error codes.
-/// </returns>
-/// <exception cref="Win32Exception">
-/// Thrown when the status code represents a general Win32 error (less than IP_STATUS_BASE and non-zero).
-/// </exception>
-/// <remarks>
-/// <para>
-/// This method handles the ambiguity in Windows ICMP APIs where error codes can represent either
-/// IP-specific status conditions or general Win32 errors. The conversion follows these rules:
-/// </para>
-/// <list type="bullet">
-/// <item>
-/// <description>Status code 0: Returns <see cref="IPStatus.Success"/> (fast path optimization)</description>
-/// </item>
-/// <item>
-/// <description>Status codes ≥ IP_STATUS_BASE: Treated as IP status codes and cast to <see cref="IPStatus"/></description>
-/// </item>
-/// <item>
-/// <description>Status codes &lt; IP_STATUS_BASE: Treated as Win32 errors and throw <see cref="Win32Exception"/></description>
-/// </item>
-/// </list>
-/// <para>
-/// Note: This logic is specific to Windows ICMP implementation and maintains compatibility
-/// with existing exception handling patterns in the codebase.
-/// </para>
-/// </remarks>
+
 private static IPStatus GetStatusFromCode(int statusCode)
 {
     // Fast path: Success case (most common scenario in ping operations)
