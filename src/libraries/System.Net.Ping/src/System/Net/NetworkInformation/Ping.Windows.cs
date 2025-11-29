@@ -304,17 +304,18 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        // Copies _requestBuffer into unmanaged memory for async icmpsendecho APIs.
+        // Copies _requestBuffer into unmanaged memory for async icmpsendecho APIs
         private unsafe void SetUnmanagedStructures(byte[] buffer)
         {
+            _requestBuffer?.Dispose();
             _requestBuffer = SafeLocalAllocHandle.LocalAlloc(buffer.Length);
-            byte* dst = (byte*)_requestBuffer.DangerousGetHandle();
-            for (int i = 0; i < buffer.Length; ++i)
+            fixed (byte* sourcePtr = buffer)
             {
-                dst[i] = buffer[i];
+                Span<byte> source = new Span<byte>(sourcePtr, buffer.Length);
+                Span<byte> destination = new Span<byte>(_requestBuffer.DangerousGetHandle().ToPointer(), buffer.Length);
+                source.CopyTo(destination);
             }
         }
-
         // Releases the unmanaged memory after ping completion.
         private void FreeUnmanagedStructures()
         {
