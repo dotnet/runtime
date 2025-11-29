@@ -4324,7 +4324,7 @@ namespace System
                 if (typeof(TComparer).IsValueType)
                 {
                     #pragma warning disable CS8631
-                    ArraySortHelperForTComparer<T, TComparer>.Sort(span, comparer);
+                    ArraySortHelperForTComparer.Sort<T, TComparer>(span, comparer);
                     #pragma warning restore CS8631
                 }
                 else
@@ -4400,7 +4400,7 @@ namespace System
                 if (typeof(TComparer).IsValueType)
                 {
                     #pragma warning disable CS8631
-                    ArraySortHelperForTComparer<TKey, TValue, TComparer>.Sort(keys, items, comparer);
+                    ArraySortHelperForTComparer.Sort<TKey, TValue, TComparer>(keys, items, comparer);
                     #pragma warning restore CS8631
                 }
                 else

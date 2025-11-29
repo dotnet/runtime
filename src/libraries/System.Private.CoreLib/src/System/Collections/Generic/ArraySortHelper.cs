@@ -1141,19 +1141,24 @@ namespace System.Collections.Generic
 
     #region ArraySortHelper for TComparer
 
-    #region ArraySortHelper for single arrays
-
-    internal sealed class ArraySortHelperForTComparer<T, TComparer>
-        where TComparer : IComparer<T>
+    internal sealed class ArraySortHelperForTComparer
     {
-        internal static void Sort(Span<T> keys, TComparer comparer)
+        internal static void Sort<T, TComparer>(Span<T> keys, TComparer comparer)
+            where TComparer : IComparer<T>
         {
             Debug.Assert(comparer != null);
 
             // Add a try block here to detect bogus comparisons
             try
             {
-                IntrospectiveSort(keys, comparer);
+                if (Unsafe.SizeOf<TComparer>() > Unsafe.SizeOf<nint>())
+                {
+                    ArraySortHelperForTComparer<T, RefComparer<T, TComparer>>.IntrospectiveSort(keys, new RefComparer<T, TComparer>(ref comparer));
+                }
+                else
+                {
+                    ArraySortHelperForTComparer<T, TComparer>.IntrospectiveSort(keys, comparer);
+                }
             }
             catch (IndexOutOfRangeException)
             {
@@ -1165,6 +1170,50 @@ namespace System.Collections.Generic
             }
         }
 
+        public static void Sort<TKey, TValue, TComparer>(Span<TKey> keys, Span<TValue> values, TComparer comparer)
+            where TComparer : IComparer<TKey>
+        {
+            Debug.Assert(comparer != null);
+
+            // Add a try block here to detect IComparers (or their
+            // underlying IComparables, etc) that are bogus.
+            try
+            {
+                if (Unsafe.SizeOf<TComparer>() > Unsafe.SizeOf<nint>())
+                {
+                    ArraySortHelperForTComparer<TKey, TValue, RefComparer<TKey, TComparer>>
+                        .IntrospectiveSort(keys, values, new RefComparer<TKey, TComparer>(ref comparer));
+                }
+                else
+                {
+                    ArraySortHelperForTComparer<TKey, TValue, TComparer>.IntrospectiveSort(keys, values, comparer);
+                }
+            }
+            catch (IndexOutOfRangeException)
+            {
+                ThrowHelper.ThrowArgumentException_BadComparer(comparer);
+            }
+            catch (Exception e)
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
+            }
+        }
+    }
+
+    internal ref struct RefComparer<T, TComparer>(ref TComparer comparer) : IComparer<T>
+        where TComparer : IComparer<T>
+    {
+        public ref TComparer Comparer = ref comparer;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int Compare(T? x, T? y) => Comparer.Compare(x, y);
+    }
+
+    #region ArraySortHelper for single arrays
+
+    internal sealed class ArraySortHelperForTComparer<T, TComparer>
+        where TComparer : IComparer<T>, allows ref struct
+    {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Swap(Span<T> a, int i, int j)
         {
@@ -1346,27 +1395,8 @@ namespace System.Collections.Generic
     #region ArraySortHelper for paired key and value arrays
 
     internal sealed class ArraySortHelperForTComparer<TKey, TValue, TComparer>
-        where TComparer : IComparer<TKey>
+        where TComparer : IComparer<TKey>, allows ref struct
     {
-        public static void Sort(Span<TKey> keys, Span<TValue> values, TComparer comparer)
-        {
-            Debug.Assert(comparer != null);
-
-            // Add a try block here to detect IComparers (or their
-            // underlying IComparables, etc) that are bogus.
-            try
-            {
-                IntrospectiveSort(keys, values, comparer);
-            }
-            catch (IndexOutOfRangeException)
-            {
-                ThrowHelper.ThrowArgumentException_BadComparer(comparer);
-            }
-            catch (Exception e)
-            {
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
-            }
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Swap(Span<TKey> keys, Span<TValue> values, int i, int j)
