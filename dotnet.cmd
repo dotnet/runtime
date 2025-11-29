@@ -13,9 +13,6 @@ set /p dotnetPath=<%~dp0artifacts\toolset\sdk.txt
 :: misleading value (such as 'MCD' in HP PCs) may lead to build breakage (issue: #69).
 set Platform=
 
-:: Don't resolve runtime, shared framework, or SDK from other locations to ensure build determinism
-set DOTNET_MULTILEVEL_LOOKUP=0
-
 :: Suppress the .NET startup banner
 set DOTNET_NOLOGO=1
 

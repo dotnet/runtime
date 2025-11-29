@@ -150,7 +150,6 @@ def setup_and_run_crank_agent(workdir: Path):
     dotnet_root_dir = dotnethome_dir
     os.environ['DOTNET_ROOT'] = str(dotnet_root_dir)
     os.environ['DOTNET_CLI_TELEMETRY_OPTOUT'] = '1'
-    os.environ['DOTNET_MULTILEVEL_LOOKUP'] = '0'
     os.environ['UseSharedCompilation'] = 'false'
 
     print("Installing tools ...")
