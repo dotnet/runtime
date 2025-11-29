@@ -95,7 +95,7 @@ namespace System.IO.Tests
         {
             // Get the root of the OS drive (e.g., "/")
             // can not use string rootDrive = Path.GetPathRoot(Environment.SystemDirectory); as Environment.SystemDirectory is empty for Linux
-            string rootDrive = "/"
+            string rootDrive = "/";
 
             // Create a DirectoryInfo for the root drive
             DirectoryInfo rootDirectory = new DirectoryInfo(rootDrive);
