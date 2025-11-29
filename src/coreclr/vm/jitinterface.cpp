@@ -8819,7 +8819,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         //
         info->isInstantiatingStub = !isGenericVirtual && pDevirtMD->IsInstantiatingStub();
         info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-        info->needsMethodContext = true;
+        info->needsMethodContext = isArray || (isGenericVirtual && pDevirtMD->RequiresInstArg());
     }
     else
     {

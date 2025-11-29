@@ -8795,7 +8795,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         {
             // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
             //
-            assert(dvInfo.needsMethodContext);
+            assert(isGenericVirtual || dvInfo.needsMethodContext);
             assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
             derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
         }
@@ -8951,9 +8951,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         GenTree* const instParam = gtNewIconEmbMethHndNode(instantiatingStub);
         call->gtArgs.InsertInstParam(this, instParam);
     }
-    else if (isGenericVirtual)
+    else if (isGenericVirtual && dvInfo.needsMethodContext)
     {
-        assert(dvInfo.needsMethodContext);
         assert(call->gtCallAddr->IsCall());
         // Pass the method context as the inst param arg.
         CallArg* const methHndArg =
