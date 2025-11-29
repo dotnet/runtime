@@ -8816,19 +8816,17 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     if (dvInfo.isInstantiatingStub)
     {
-        // We should only end up with generic methods that needs a method context (eg. array interface, generic
-        // virtuals).
+        // We should only end up with generic methods that needs a method context (eg. array interface).
         //
         assert(dvInfo.needsMethodContext);
 
         // We don't expect NAOT to end up here, since it has Array<T>
         // and normal devirtualization.
-        // As for generic virtual methods, NAOT uses fat pointers that we can't devirtualize yet.
         //
         assert(!IsTargetAbi(CORINFO_NATIVEAOT_ABI));
 
         // We don't expect R2R to end up here, since it does not (yet) support
-        // array interface devirtualization or generic virtual method devirtualization.
+        // array interface devirtualization.
         //
         assert(!IsAot());
 
@@ -8841,13 +8839,12 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        // If we don't know the exact type we may have the wrong interface type here.
+        // If we don't know the array type exactly we may have the wrong interface type here.
         // Bail out.
         //
         if (!isExact)
         {
-            JITDUMP("%s devirt: type is inexact, sorry.\n",
-                    isGenericVirtual ? "Generic virtual method" : "Array interface");
+            JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
             return;
         }
 
@@ -8959,7 +8956,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         assert(dvInfo.needsMethodContext);
         assert(call->gtCallAddr->IsCall());
         // Pass the method context as the inst param arg.
-        // We may happen to already have an inst param arg in instantiatingStub, but always use the methodHnd here.
         CallArg* const methHndArg = call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
         assert(methHndArg != nullptr);
         GenTree* const methHnd = methHndArg->GetEarlyNode();
