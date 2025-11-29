@@ -324,18 +324,64 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static IPStatus GetStatusFromCode(int statusCode)
-        {
-            // Caveat lector: IcmpSendEcho2 doesn't allow us to know for sure if an error code
-            // is an IP Status code or a general win32 error code. This assumes everything under
-            // the base is a win32 error, and everything beyond is an IPStatus.
-            if (statusCode != 0 && statusCode < Interop.IpHlpApi.IP_STATUS_BASE)
-            {
-                throw new Win32Exception(statusCode);
-            }
 
-            return (IPStatus)statusCode;
-        }
+/// <summary>
+/// Converts a Windows ICMP status code to the corresponding <see cref="IPStatus"/> value.
+/// </summary>
+/// <param name="statusCode">The status code returned by Windows ICMP APIs.</param>
+/// <returns>
+/// The corresponding <see cref="IPStatus"/> value for IP status codes,
+/// or throws <see cref="Win32Exception"/> for general Win32 error codes.
+/// </returns>
+/// <exception cref="Win32Exception">
+/// Thrown when the status code represents a general Win32 error (less than IP_STATUS_BASE and non-zero).
+/// </exception>
+/// <remarks>
+/// <para>
+/// This method handles the ambiguity in Windows ICMP APIs where error codes can represent either
+/// IP-specific status conditions or general Win32 errors. The conversion follows these rules:
+/// </para>
+/// <list type="bullet">
+/// <item>
+/// <description>Status code 0: Returns <see cref="IPStatus.Success"/> (fast path optimization)</description>
+/// </item>
+/// <item>
+/// <description>Status codes ≥ IP_STATUS_BASE: Treated as IP status codes and cast to <see cref="IPStatus"/></description>
+/// </item>
+/// <item>
+/// <description>Status codes &lt; IP_STATUS_BASE: Treated as Win32 errors and throw <see cref="Win32Exception"/></description>
+/// </item>
+/// </list>
+/// <para>
+/// Note: This logic is specific to Windows ICMP implementation and maintains compatibility
+/// with existing exception handling patterns in the codebase.
+/// </para>
+/// </remarks>
+private static IPStatus GetStatusFromCode(int statusCode)
+{
+    // Fast path: Success case (most common scenario in ping operations)
+    if (statusCode == 0)
+        return IPStatus.Success;
+    
+    // Caveat: Windows ICMP APIs (IcmpSendEcho2) don't clearly distinguish between
+    // IP-specific status codes and general Win32 error codes. This implementation
+    // follows the established convention:
+    // - Codes below IP_STATUS_BASE are treated as Win32 system errors
+    // - Codes at or above IP_STATUS_BASE are treated as IP status conditions
+    //
+    // This ensures proper exception handling for system errors while correctly
+    // mapping IP-related conditions to the IPStatus enumeration.
+    if (statusCode < Interop.IpHlpApi.IP_STATUS_BASE)
+    {
+        // Throw Win32Exception to maintain compatibility with existing error handling
+        // and ensure proper exception propagation for system-level errors.
+        throw new Win32Exception(statusCode);
+    }
+
+    // Safe cast: IP_STATUS_BASE and above are defined to correspond with IPStatus enum values
+    // This mapping relies on the IPStatus enumeration being aligned with Windows IP status codes.
+    return (IPStatus)statusCode;
+}
 
         private static PingReply CreatePingReplyFromIcmpEchoReply(in Interop.IpHlpApi.ICMP_ECHO_REPLY reply)
         {
