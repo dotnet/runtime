@@ -187,7 +187,8 @@ namespace System.Net.NetworkInformation
             IPEndPointExtensions.SetIPAddress(remoteAddr, address);
 
             Span<byte> sourceAddr = stackalloc byte[SocketAddressPal.IPv6AddressSize];
-
+            sourceAddr.Clear();
+            
             return (int)Interop.IpHlpApi.Icmp6SendEcho2(
                 _handlePingV6!,
                 GetWaitHandle(isAsync),
