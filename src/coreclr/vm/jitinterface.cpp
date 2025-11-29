@@ -8804,15 +8804,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     // This is generic virtual method devirtualization.
     if (!isArray && pBaseMD->HasMethodInstantiation())
     {
-        // If we're in a shared context we'll devirt to a shared
-        // generic method and won't be able to inline, so just bail.
-        //
-        if (pExactMT->IsSharedByGenericInstantiations())
-        {
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-            return false;
-        }
-
         pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(
             pDevirtMD, pExactMT, pExactMT->IsValueType() && !pDevirtMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
 
@@ -8826,7 +8817,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // Note if array devirtualization produced an instantiation stub
         // so jit can try and inline it.
         //
-        info->isInstantiatingStub = pDevirtMD->IsInstantiatingStub();
+        info->isInstantiatingStub = !isGenericVirtual && pDevirtMD->IsInstantiatingStub();
         info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
         info->needsMethodContext = true;
     }

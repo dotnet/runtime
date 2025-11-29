@@ -551,7 +551,7 @@ private:
         {
             return call->gtCallMethHnd;
         }
-        else
+        else if (call->IsGenericVirtual(m_compiler))
         {
             GenTree* runtimeMethHndNode =
                 call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetNode();
@@ -563,11 +563,12 @@ private:
                 case GT_CNS_INT:
                     return CORINFO_METHOD_HANDLE(runtimeMethHndNode->AsIntCon()->IconValue());
                 default:
-                    assert(!"Unexpected type in RuntimeMethodHandle arg.");
+                    // Unable to get method handle for devirtualization.
+                    // This can happen if the method handle is not an RUNTIMELOOKUP or CNS_INT for generic virtuals,
                     return nullptr;
             }
-            return nullptr;
         }
+        return nullptr;
     }
 
     //------------------------------------------------------------------------
@@ -640,6 +641,16 @@ private:
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
+
+                if (method == nullptr)
+                {
+                    assert(!call->IsVirtual());
+                    // Unable to get method handle for devirtualization.
+                    // This can happen if the method handle is not an RUNTIMELOOKUP or CNS_INT for generic virtuals,
+                    // e.g. a local variable holding the method handle.
+                    // Just bail out.
+                    return;
+                }
 
                 CORINFO_CONTEXT_HANDLE contextInput = context;
                 context                             = nullptr;

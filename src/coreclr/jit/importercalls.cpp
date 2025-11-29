@@ -8652,6 +8652,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 #endif // DEBUG
     }
 
+    // Is the call a generic virtual method call?
+    const bool isGenericVirtual = call->IsGenericVirtual(this);
+
     // In R2R mode, we might see virtual stub calls to
     // non-virtuals. For instance cases where the non-virtual method
     // is in a different assembly but is called via CALLVIRT. For
@@ -8661,7 +8664,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // In non-R2R modes CALLVIRT <nonvirtual> will be turned into a
     // regular call+nullcheck by normal call importation.
     //
-    if (!call->IsGenericVirtual(this) && (baseMethodAttribs & CORINFO_FLG_VIRTUAL) == 0)
+    if (!isGenericVirtual && (baseMethodAttribs & CORINFO_FLG_VIRTUAL) == 0)
     {
         assert(call->IsVirtualStub());
         assert(IsAot());
@@ -8755,7 +8758,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // It may or may not know enough to devirtualize...
     if (isInterface)
     {
-        assert(call->IsVirtualStub() || call->IsGenericVirtual(this));
+        assert(call->IsVirtualStub() || isGenericVirtual);
         JITDUMP("--- base class is interface\n");
     }
 
@@ -8844,7 +8847,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         if (!isExact)
         {
             JITDUMP("%s devirt: type is inexact, sorry.\n",
-                    call->IsGenericVirtual(this) ? "Generic virtual method" : "Array interface");
+                    isGenericVirtual ? "Generic virtual method" : "Array interface");
             return;
         }
 
@@ -8941,32 +8944,26 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     JITDUMP("    %s; can devirtualize\n", note);
 
-    if (dvInfo.isInstantiatingStub)
+    if (!isGenericVirtual && dvInfo.isInstantiatingStub)
     {
         // Pass the instantiating stub method desc as the inst param arg.
         //
         // Note different embedding would be needed for NAOT/R2R,
         // but we have ruled those out above.
         //
-        GenTree* instParam = nullptr;
-        // See if this is a generic virtual method call.
-        if (call->IsGenericVirtual(this))
-        {
-            // If we have a RUNTIMELOOKUP helper call for the method handle,
-            // we need to pass that as the inst param instead.
-            CallArg* const methHndArg  = call->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
-            GenTree* const methHndNode = methHndArg != nullptr ? methHndArg->GetEarlyNode() : nullptr;
-            if (methHndNode && methHndNode->OperIs(GT_RUNTIMELOOKUP))
-            {
-                instParam = methHndNode;
-            }
-        }
-        // For cases where we don't have a RUNTIMELOOKUP helper call, we pass the instantiating stub.
-        if (instParam == nullptr)
-        {
-            instParam = gtNewIconEmbMethHndNode(instantiatingStub);
-        }
+        GenTree* const instParam = gtNewIconEmbMethHndNode(instantiatingStub);
         call->gtArgs.InsertInstParam(this, instParam);
+    }
+    else if (isGenericVirtual)
+    {
+        assert(dvInfo.needsMethodContext);
+        assert(call->gtCallAddr->IsCall());
+        // Pass the method context as the inst param arg.
+        // We may happen to already have an inst param arg in instantiatingStub, but always use the methodHnd here.
+        CallArg* const methHndArg = call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
+        assert(methHndArg != nullptr);
+        GenTree* const methHnd = methHndArg->GetEarlyNode();
+        call->gtArgs.InsertInstParam(this, methHnd);
     }
 
     // Make the updates.
