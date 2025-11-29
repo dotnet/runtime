@@ -777,22 +777,18 @@ namespace Internal.IL
                     {
                         ISymbolNode instParam = null;
 
-                        if (targetMethod.RequiresInstMethodDescArg())
+                        if (!_canonMethod.IsSharedByGenericInstantiations)
+                        {
+                            // Some handemitted IL helpers will call __Canon methods directly from unshared context.
+                            // This is fine, we just don't report any dependencies for the exact instantiation.
+                        }
+                        else if (targetMethod.RequiresInstMethodDescArg())
                         {
                             instParam = GetGenericLookupHelper(ReadyToRunHelperId.MethodDictionary, runtimeDeterminedMethod);
                         }
                         else if (targetMethod.RequiresInstMethodTableArg())
                         {
-                            bool hasHiddenParameter = true;
-
-                            if (targetMethod.IsIntrinsic)
-                            {
-                                if (_factory.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(targetMethod))
-                                    hasHiddenParameter = false;
-                            }
-
-                            if (hasHiddenParameter)
-                                instParam = GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType);
+                            instParam = GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType);
                         }
 
                         if (instParam != null)
