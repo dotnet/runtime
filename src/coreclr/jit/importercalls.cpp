@@ -8956,7 +8956,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         assert(dvInfo.needsMethodContext);
         assert(call->gtCallAddr->IsCall());
         // Pass the method context as the inst param arg.
-        CallArg* const methHndArg = call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
+        CallArg* const methHndArg =
+            call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
         assert(methHndArg != nullptr);
         GenTree* const methHnd = methHndArg->GetEarlyNode();
         call->gtArgs.InsertInstParam(this, methHnd);
