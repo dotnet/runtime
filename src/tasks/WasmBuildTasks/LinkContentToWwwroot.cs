@@ -33,16 +33,16 @@ public class LinkContentToWwwroot : Task
         foreach (var item in Content)
         {
             string copyToOutput = item.GetMetadata("CopyToOutputDirectory") ?? string.Empty;
+            string targetPath = item.GetMetadata("TargetPath") ?? string.Empty;
+            string identity = item.ItemSpec ?? string.Empty;
+            string link = item.GetMetadata("Link") ?? string.Empty;
+
             bool copyPreserveOrAlways = string.Equals(copyToOutput, "PreserveNewest", StringComparison.OrdinalIgnoreCase) || string.Equals(copyToOutput, "Always", StringComparison.OrdinalIgnoreCase);
             if (!copyPreserveOrAlways)
             {
                 Log.LogMessage(MessageImportance.Low, $"Skipping item with Identity '{identity}' (TargetPath '{targetPath}', Link '{link}') because CopyToOutputDirectory is not 'PreserveNewest' or 'Always' ('{copyPreserveOrAlways}').");
                 continue;
             }
-
-            string targetPath = item.GetMetadata("TargetPath") ?? string.Empty;
-            string identity = item.ItemSpec ?? string.Empty;
-            string link = item.GetMetadata("Link") ?? string.Empty;
 
             if (!string.IsNullOrEmpty(link) && item.GetMetadata("BuildReference") == "true" && item.GetMetadata("OriginalItemName") == "WasmAssembliesFinal" && !string.Equals(Path.GetExtension(link), Path.GetExtension(identity), StringComparison.OrdinalIgnoreCase))
             {
