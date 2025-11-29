@@ -28,7 +28,7 @@
 
     <HelixPreCommand Include="$(EnvVarCommand) &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
     <HelixPreCommand Include="$(EnvVarCommand) &quot;SDK_DIR_NAME=$(SdkForWorkloadTestingDirName)&quot;" />
-    <HelixPreCommand Include="$(EnvVarCommand) &quot;DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1&quot;" />
+    <HelixPreCommand Include="$(EnvVarCommand) &quot;DOTNET_NOLOGO=1&quot;" />
     <HelixPreCommand Include="$(EnvVarCommand) &quot;DOTNET_SKIP_WORKLOAD_INTEGRITY_CHECK=1&quot;" />
   </ItemGroup>
 

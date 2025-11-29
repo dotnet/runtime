@@ -1041,18 +1041,19 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
-            postBuildSteps:
-              - template: /eng/pipelines/libraries/helix.yml
-                parameters:
-                  creator: dotnet-bot
-                  testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-                  extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
-                  condition: >-
-                    or(
-                    eq(variables['librariesContainsChange'], true),
-                    eq(variables['monoContainsChange'], true),
-                    eq(variables['illinkContainsChange'], true),
-                    eq(variables['isRollingBuild'], true))
+            # Disable tests on ios/tvos - mono - https://github.com/dotnet/runtime/issues/121967
+            # postBuildSteps:
+            #   - template: /eng/pipelines/libraries/helix.yml
+            #     parameters:
+            #       creator: dotnet-bot
+            #       testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+            #       extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+            #       condition: >-
+            #         or(
+            #         eq(variables['librariesContainsChange'], true),
+            #         eq(variables['monoContainsChange'], true),
+            #         eq(variables['illinkContainsChange'], true),
+            #         eq(variables['isRollingBuild'], true))
 
       #
       # Build the whole product using CoreCLR and run functional tests
