@@ -33,6 +33,13 @@ public class LinkContentToWwwroot : Task
         foreach (var item in Content)
         {
             string copyToOutput = item.GetMetadata("CopyToOutputDirectory") ?? string.Empty;
+            bool copyPreserveOrAlways = string.Equals(copyToOutput, "PreserveNewest", StringComparison.OrdinalIgnoreCase) || string.Equals(copyToOutput, "Always", StringComparison.OrdinalIgnoreCase);
+            if (!copyPreserveOrAlways)
+            {
+                Log.LogMessage(MessageImportance.Low, $"Skipping item with Identity '{identity}' (TargetPath '{targetPath}', Link '{link}') because CopyToOutputDirectory is not 'PreserveNewest' or 'Always' ('{copyPreserveOrAlways}').");
+                continue;
+            }
+
             string targetPath = item.GetMetadata("TargetPath") ?? string.Empty;
             string identity = item.ItemSpec ?? string.Empty;
             string link = item.GetMetadata("Link") ?? string.Empty;
@@ -42,8 +49,6 @@ public class LinkContentToWwwroot : Task
                 Log.LogMessage(MessageImportance.Low, $"Ignoring Link '{link}' for Identity '{identity}', because it has a different extension and is coming from nested publish (WasmAssembliesFinal).");
                 link = string.Empty;
             }
-
-            bool copyPreserveOrAlways = string.Equals(copyToOutput, "PreserveNewest", StringComparison.OrdinalIgnoreCase) || string.Equals(copyToOutput, "Always", StringComparison.OrdinalIgnoreCase);
 
             // Case 1: use TargetPath when present
             if (copyPreserveOrAlways && !string.IsNullOrEmpty(targetPath))
@@ -106,8 +111,6 @@ public class LinkContentToWwwroot : Task
                 Log.LogMessage(MessageImportance.Low, $"Adding Link '{link}' and ContentRoot '{contentRoot}' for Identity '{identity}'.");
                 continue;
             }
-
-            Log.LogMessage(MessageImportance.Low, $"Skipping item with Identity '{identity}' (TargetPath '{targetPath}', Link '{link}') because CopyToOutputDirectory is not 'PreserveNewest' or 'Always' ('{copyPreserveOrAlways}').");
         }
 
         WasmFilesToIncludeInFileSystem = wasmFiles.ToArray();
