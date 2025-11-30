@@ -47,7 +47,7 @@ namespace System.Net.NetworkInformation
             TaskCompletionSource<PingReply>? tcs = null;
             if (isAsync)
             {
-                _taskCompletionSource = tcs = new TaskCompletionSource<PingReply>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _taskCompletionSource = tcs = new TaskCompletionSource<PingReply>();
 
             }
 
