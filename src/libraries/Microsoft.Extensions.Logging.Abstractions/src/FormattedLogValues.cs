@@ -70,15 +70,11 @@ namespace Microsoft.Extensions.Logging
                     {
                         return new KeyValuePair<string, object?>("{OriginalFormat}", _originalMessage);
                     }
-                    else
-                    {
-                        throw new IndexOutOfRangeException();
-                    }
+
+                    throw new IndexOutOfRangeException();
                 }
-                else
-                {
-                    return _formatter.GetValue(_values, index);
-                }
+
+                return _formatter.GetValue(_values, index);
             }
         }
 
