@@ -8943,29 +8943,13 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     if (dvInfo.isInstantiatingStub)
     {
-        if (isGenericVirtual)
-        {
-            // This generic method call requires a generic method context.
-            // Pass the method handle as the inst param arg.
-            //
-            assert(dvInfo.mayNeedMethodContext);
-            assert(call->gtCallAddr->IsCall());
-            CallArg* const methHndArg =
-                call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
-            assert(methHndArg != nullptr);
-            GenTree* const methHnd = methHndArg->GetEarlyNode();
-            call->gtArgs.InsertInstParam(this, methHnd);
-        }
-        else
-        {
-            // Pass the instantiating stub method desc as the inst param arg.
-            //
-            // Note different embedding would be needed for NAOT/R2R,
-            // but we have ruled those out above.
-            //
-            GenTree* const instParam = gtNewIconEmbMethHndNode(instantiatingStub);
-            call->gtArgs.InsertInstParam(this, instParam);
-        }
+        // Pass the instantiating stub method desc as the inst param arg.
+        //
+        // Note different embedding would be needed for NAOT/R2R,
+        // but we have ruled those out above.
+        //
+        GenTree* const instParam = gtNewIconEmbMethHndNode(instantiatingStub);
+        call->gtArgs.InsertInstParam(this, instParam);
     }
 
     // Make the updates.
