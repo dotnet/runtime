@@ -359,21 +359,6 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static byte[] CopyDataFromUnmanagedMemory(IntPtr source, int size)
-        {
-            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(size);
-            try
-            {
-                Marshal.Copy(source, rentedBuffer, 0, size);
-                byte[] result = new byte[size];
-                Buffer.BlockCopy(rentedBuffer, 0, result, 0, size);
-                return result;
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(rentedBuffer);
-            }
-        }
         private static PingReply CreatePingReplyFromIcmp6EchoReply(in Interop.IpHlpApi.ICMPV6_ECHO_REPLY reply, IntPtr dataPtr, int sendSize)
         {
             IPAddress address = new IPAddress(reply.Address.Address, reply.Address.ScopeID);
