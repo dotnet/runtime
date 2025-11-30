@@ -276,9 +276,9 @@ namespace Internal.IL
             {
                 var r = _exceptionRegions[i];
 
-                // Check try region bounds
+                // Check try region bounds (avoiding integer overflow)
                 if ((uint)r.ILRegion.TryOffset >= (uint)_basicBlocks.Length ||
-                    (uint)(r.ILRegion.TryOffset + r.ILRegion.TryLength) > (uint)_basicBlocks.Length)
+                    (uint)r.ILRegion.TryLength > (uint)_basicBlocks.Length - (uint)r.ILRegion.TryOffset)
                 {
                     ReportInvalidExceptionRegion();
                 }
@@ -300,9 +300,9 @@ namespace Internal.IL
                     }
                 }
 
-                // Check handler region bounds
+                // Check handler region bounds (avoiding integer overflow)
                 if ((uint)r.ILRegion.HandlerOffset >= (uint)_basicBlocks.Length ||
-                    (uint)(r.ILRegion.HandlerOffset + r.ILRegion.HandlerLength) > (uint)_basicBlocks.Length)
+                    (uint)r.ILRegion.HandlerLength > (uint)_basicBlocks.Length - (uint)r.ILRegion.HandlerOffset)
                 {
                     ReportInvalidExceptionRegion();
                 }
