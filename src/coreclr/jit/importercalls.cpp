@@ -8814,9 +8814,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     CORINFO_METHOD_HANDLE instantiatingStub = NO_METHOD_HANDLE;
 
-    if (dvInfo.isInstantiatingStub && !isGenericVirtual)
+    if (dvInfo.isInstantiatingStub)
     {
-        // We should only end up with generic methods that needs a method context (eg. array interface).
+        // We should only end up with generic methods that needs a method context (eg. array interface, GVM).
         //
         assert(dvInfo.mayNeedMethodContext);
 
