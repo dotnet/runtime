@@ -339,26 +339,24 @@ namespace System.Net.NetworkInformation
         {
             const int DontFragmentFlag = 2;
 
-            IPAddress address = new IPAddress(reply.address);
-            IPStatus ipStatus = GetStatusFromCode((int)reply.status);
+            var address = new IPAddress(reply.address);
+            var ipStatus = GetStatusFromCode((int)reply.status);
 
-            // Handle failure case with early return
-            if (ipStatus != IPStatus.Success)
+            var (rtt, options, buffer) = ipStatus == IPStatus.Success
+                ? (reply.roundTripTime, 
+                   new PingOptions(reply.options.ttl, (reply.options.flags & DontFragmentFlag) > 0),
+                   CreateBuffer(reply.data, reply.dataSize))
+                : (0L, null, Array.Empty<byte>());
+
+            return new PingReply(address, options, ipStatus, rtt, buffer);
+
+            static byte[] CreateBuffer(IntPtr data, int dataSize)
             {
-                return new PingReply(address, null, ipStatus, 0, Array.Empty<byte>());
+                Span<byte> bufferSpan = stackalloc byte[dataSize];
+                Marshal.Copy(data, bufferSpan, 0, dataSize);
+    
+                return bufferSpan.ToArray();
             }
-            // Success case - extract data efficiently
-            byte[] buffer = reply.dataSize > 0 
-                ? CopyDataFromUnmanagedMemory(reply.data, reply.dataSize)
-                : Array.Empty<byte>();
-
-            return new PingReply(
-                address,
-                new PingOptions(reply.options.ttl, (reply.options.flags & DontFragmentFlag) > 0),
-                ipStatus,
-                reply.roundTripTime,
-                buffer
-            );
         }
 
         private static byte[] CopyDataFromUnmanagedMemory(IntPtr source, int size)
