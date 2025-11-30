@@ -223,15 +223,9 @@ namespace System
         //
         public static bool TryCreate([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri, "uriKind")] string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
         {
-            if (uriString is null)
-            {
-                result = null;
-                return false;
-            }
-            UriFormatException? e = null;
-            result = CreateHelper(uriString, false, uriKind, ref e);
+            result = CreateHelper(uriString, false, uriKind);
             result?.DebugSetLeftCtor();
-            return e is null && result != null;
+            return result is not null;
         }
 
         /// <summary>
@@ -243,15 +237,9 @@ namespace System
         /// <returns><see langword="true"/> if the <see cref="Uri"/> was successfully created; otherwise, <see langword="false"/>.</returns>
         public static bool TryCreate([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri)] string? uriString, in UriCreationOptions creationOptions, [NotNullWhen(true)] out Uri? result)
         {
-            if (uriString is null)
-            {
-                result = null;
-                return false;
-            }
-            UriFormatException? e = null;
-            result = CreateHelper(uriString, false, UriKind.Absolute, ref e, in creationOptions);
+            result = CreateHelper(uriString, false, UriKind.Absolute, in creationOptions);
             result?.DebugSetLeftCtor();
-            return e is null && result != null;
+            return result is not null;
         }
 
         public static bool TryCreate(Uri? baseUri, string? relativeUri, [NotNullWhen(true)] out Uri? result)
@@ -264,6 +252,7 @@ namespace System
                 result = relativeLink;
                 return true;
             }
+
             result = null;
             return false;
         }
@@ -278,7 +267,6 @@ namespace System
             if (baseUri.IsNotAbsoluteUri)
                 return false;
 
-            UriFormatException? e = null;
             string? newUriString = null;
 
             bool dontEscape;
@@ -290,16 +278,17 @@ namespace System
             else
             {
                 dontEscape = false;
-                newUriString = baseUri.Syntax.InternalResolve(baseUri, relativeUri, out e);
+                newUriString = baseUri.Syntax.InternalResolve(baseUri, relativeUri, out UriFormatException? e);
 
                 if (e != null)
                     return false;
             }
 
-            result ??= CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e);
+            result ??= CreateHelper(newUriString!, dontEscape, UriKind.Absolute);
+            Debug.Assert(result is null || result.IsAbsoluteUri);
 
             result?.DebugSetLeftCtor();
-            return e is null && result != null && result.IsAbsoluteUri;
+            return result is not null;
         }
 
         public string GetComponents(UriComponents components, UriFormat format)
@@ -669,9 +658,14 @@ namespace System
         //
         // a Uri.TryCreate() method goes through here.
         //
-        internal static Uri? CreateHelper(string uriString, bool dontEscape, UriKind uriKind, ref UriFormatException? e, in UriCreationOptions creationOptions = default)
+        internal static Uri? CreateHelper(string? uriString, bool dontEscape, UriKind uriKind, in UriCreationOptions creationOptions = default)
         {
-            if ((int)uriKind < (int)UriKind.RelativeOrAbsolute || (int)uriKind > (int)UriKind.Relative)
+            if (uriString is null)
+            {
+                return null;
+            }
+
+            if (uriKind is < UriKind.RelativeOrAbsolute or > UriKind.Relative)
             {
                 throw new ArgumentException(SR.Format(SR.net_uri_InvalidUriKind, uriKind));
             }
@@ -703,7 +697,7 @@ namespace System
             // Validate instance using ether built in or a user Parser
             try
             {
-                e = result.InitializeUri(err, uriKind);
+                UriFormatException? e = result.InitializeUri(err, uriKind);
 
                 if (e == null)
                 {
@@ -713,10 +707,9 @@ namespace System
 
                 return null;
             }
-            catch (UriFormatException ee)
+            catch (UriFormatException)
             {
-                Debug.Assert(!syntax!.IsSimple, "A UriPraser threw on InitializeAndValidate.");
-                e = ee;
+                Debug.Assert(!syntax.IsSimple, "A UriPraser threw on InitializeAndValidate.");
                 // A precaution since custom Parser should never throw in this case.
                 return null;
             }
@@ -934,12 +927,12 @@ namespace System
 
                 if (uriLink is null)
                 {
-                    UriFormatException? e = null;
+                    uriLink = CreateHelper(newUriString!, dontEscape, UriKind.Absolute)!;
 
-                    uriLink = CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e)!;
-
-                    if (e != null)
+                    if (uriLink is null)
+                    {
                         return false;
+                    }
                 }
             }
 
