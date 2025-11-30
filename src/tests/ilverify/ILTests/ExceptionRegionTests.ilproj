@@ -1,13 +1,3 @@
-<Project Sdk="Microsoft.NET.Sdk.IL">
-  <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <CLRTestKind>SharedLibrary</CLRTestKind>
-    <AssemblyName>$(MSBuildProjectName)</AssemblyName>
-    <OutputPath>$(BaseOutputPathWithConfig)ilverify\Tests</OutputPath>
-    <IlasmFlags>$(IlasmFlags) -ERR</IlasmFlags>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Include="$(MSBuildProjectName).il" />
-  </ItemGroup>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="ILTests.targets" />
 </Project>
