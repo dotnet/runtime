@@ -7790,7 +7790,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 //    methodAttr - attributes of the method
 //    classAttr - attributes of the class
 //    likelihood - odds that this class is the class seen at runtime
-//    mayNeedMethodContext - devirtualized method may need generic method context (e.g. array interfaces, shared generic virtuals)
+//    mayNeedMethodContext - devirtualized method may need generic method context (e.g. array interfaces)
 //    instantiatingStub - devirtualized method in an instantiating stub
 //    originalMethodHandle - method handle of base method (before devirt)
 //    originalContextHandle - context for the original call
