@@ -342,28 +342,40 @@ namespace System.Net.NetworkInformation
             IPAddress address = new IPAddress(reply.address);
             IPStatus ipStatus = GetStatusFromCode((int)reply.status);
 
-            long rtt;
-            PingOptions? options;
-            byte[] buffer;
-
-            if (ipStatus == IPStatus.Success)
+            // Handle failure case with early return
+            if (ipStatus != IPStatus.Success)
             {
-                // Only copy the data if we succeed w/ the ping operation.
-                rtt = reply.roundTripTime;
-                options = new PingOptions(reply.options.ttl, (reply.options.flags & DontFragmentFlag) > 0);
-                buffer = new byte[reply.dataSize];
-                Marshal.Copy(reply.data, buffer, 0, reply.dataSize);
+                return new PingReply(address, null, ipStatus, 0, Array.Empty<byte>());
             }
-            else
-            {
-                rtt = 0;
-                options = null;
-                buffer = Array.Empty<byte>();
-            }
+            // Success case - extract data efficiently
+            byte[] buffer = reply.dataSize > 0 
+                ? CopyDataFromUnmanagedMemory(reply.data, reply.dataSize)
+                : Array.Empty<byte>();
 
-            return new PingReply(address, options, ipStatus, rtt, buffer);
+            return new PingReply(
+                address,
+                new PingOptions(reply.options.ttl, (reply.options.flags & DontFragmentFlag) > 0),
+                ipStatus,
+                reply.roundTripTime,
+                buffer
+            );
         }
 
+        private static byte[] CopyDataFromUnmanagedMemory(IntPtr source, int size)
+        {
+            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(size);
+            try
+            {
+                Marshal.Copy(source, rentedBuffer, 0, size);
+                byte[] result = new byte[size];
+                Buffer.BlockCopy(rentedBuffer, 0, result, 0, size);
+                return result;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rentedBuffer);
+            }
+        }
         private static PingReply CreatePingReplyFromIcmp6EchoReply(in Interop.IpHlpApi.ICMPV6_ECHO_REPLY reply, IntPtr dataPtr, int sendSize)
         {
             IPAddress address = new IPAddress(reply.Address.Address, reply.Address.ScopeID);
