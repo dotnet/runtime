@@ -339,8 +339,8 @@ namespace System.Net.NetworkInformation
         {
             const int DontFragmentFlag = 2;
 
-            var address = new IPAddress(reply.address);
-            var ipStatus = GetStatusFromCode((int)reply.status);
+             IPAddress address = new IPAddress(reply.address); 
+             IPStatus ipStatus = GetStatusFromCode((int)reply.status);
 
             var (rtt, options, buffer) = ipStatus == IPStatus.Success
                 ? (reply.roundTripTime, 
