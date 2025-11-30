@@ -1600,6 +1600,21 @@ namespace Internal.IL
             ThrowHelper.ThrowInvalidProgramException();
         }
 
+        private static void ReportInvalidTryRegion()
+        {
+            ThrowHelper.ThrowInvalidProgramException();
+        }
+
+        private static void ReportInvalidFilterRegion()
+        {
+            ThrowHelper.ThrowInvalidProgramException();
+        }
+
+        private static void ReportInvalidHandlerRegion()
+        {
+            ThrowHelper.ThrowInvalidProgramException();
+        }
+
         private static bool IsTypeGetTypeFromHandle(MethodDesc method)
         {
             if (method.IsIntrinsic && method.Name.SequenceEqual("GetTypeFromHandle"u8))

@@ -2823,6 +2823,21 @@ namespace Internal.IL
             VerificationError(VerifierError.UnknownOpcode);
         }
 
+        void ReportInvalidTryRegion()
+        {
+            VerificationError(VerifierError.TryRegionOutOfRange);
+        }
+
+        void ReportInvalidFilterRegion()
+        {
+            VerificationError(VerifierError.FilterRegionOutOfRange);
+        }
+
+        void ReportInvalidHandlerRegion()
+        {
+            VerificationError(VerifierError.HandlerRegionOutOfRange);
+        }
+
         //
         // Deprecated
         //

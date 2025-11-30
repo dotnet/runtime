@@ -279,20 +279,20 @@ namespace Internal.IL
                 if ((uint)r.ILRegion.TryOffset < (uint)_basicBlocks.Length)
                     CreateBasicBlock(r.ILRegion.TryOffset).TryStart = true;
                 else
-                    ReportInvalidBranchTarget(r.ILRegion.TryOffset);
+                    ReportInvalidTryRegion();
 
                 if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
                 {
                     if ((uint)r.ILRegion.FilterOffset < (uint)_basicBlocks.Length)
                         CreateBasicBlock(r.ILRegion.FilterOffset).FilterStart = true;
                     else
-                        ReportInvalidBranchTarget(r.ILRegion.FilterOffset);
+                        ReportInvalidFilterRegion();
                 }
 
                 if ((uint)r.ILRegion.HandlerOffset < (uint)_basicBlocks.Length)
                     CreateBasicBlock(r.ILRegion.HandlerOffset).HandlerStart = true;
                 else
-                    ReportInvalidBranchTarget(r.ILRegion.HandlerOffset);
+                    ReportInvalidHandlerRegion();
             }
         }
 
