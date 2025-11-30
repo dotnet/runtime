@@ -3276,7 +3276,7 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     result.isInstantiatingStub        = info->isInstantiatingStub;
     result.exactContext               = CastHandle(info->exactContext);
     result.detail                     = (DWORD) info->detail;
-    result.needsMethodContext         = info->needsMethodContext;
+    result.mayNeedMethodContext       = info->mayNeedMethodContext;
 
     if (returnValue)
     {
@@ -3301,11 +3301,11 @@ void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodK
         key.context,
         key.pResolvedTokenVirtualMethodNonNull,
         key.pResolvedTokenVirtualMethodNonNull ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.pResolvedTokenVirtualMethod).c_str() : "???");
-    printf(", value returnValue-%s, devirtMethod-%016" PRIX64 ", instantiatingStub-%s, needsMethodContext-%s, exactContext-%016" PRIX64 ", detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}",
+    printf(", value returnValue-%s, devirtMethod-%016" PRIX64 ", instantiatingStub-%s, mayNeedMethodContext-%s, exactContext-%016" PRIX64 ", detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}",
         result.returnValue ? "true" : "false",
         result.devirtualizedMethod,
         result.isInstantiatingStub ? "true" : "false",
-        result.needsMethodContext ? "true" : "false",
+        result.mayNeedMethodContext ? "true" : "false",
         result.exactContext,
         result.detail,
         result.returnValue ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedMethod).c_str() : "???",
@@ -3330,7 +3330,7 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
 
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) result.devirtualizedMethod;
     info->isInstantiatingStub = result.isInstantiatingStub;
-    info->needsMethodContext = result.needsMethodContext;
+    info->mayNeedMethodContext = result.mayNeedMethodContext;
     info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
     info->detail = (CORINFO_DEVIRTUALIZATION_DETAIL) result.detail;
     if (result.returnValue)
