@@ -309,12 +309,8 @@ namespace System.Net.NetworkInformation
         {
             _requestBuffer?.Dispose();
             _requestBuffer = SafeLocalAllocHandle.LocalAlloc(buffer.Length);
-            fixed (byte* sourcePtr = buffer)
-            {
-                Span<byte> source = new Span<byte>(sourcePtr, buffer.Length);
-                Span<byte> destination = new Span<byte>(_requestBuffer.DangerousGetHandle().ToPointer(), buffer.Length);
-                source.CopyTo(destination);
-            }
+            Span<byte> destination = new Span<byte>(_requestBuffer.DangerousGetHandle().ToPointer(), buffer.Length);
+            buffer.CopyTo(destination);
         }
         // Releases the unmanaged memory after ping completion.
         private void FreeUnmanagedStructures()
