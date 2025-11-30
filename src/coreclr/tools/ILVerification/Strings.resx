@@ -297,14 +297,8 @@
   <data name="MethodFallthrough" xml:space="preserve">
     <value>Fall through end of the method without returning.</value>
   </data>
-  <data name="TryRegionOutOfRange" xml:space="preserve">
-    <value>try block exceeds code size.</value>
-  </data>
-  <data name="HandlerRegionOutOfRange" xml:space="preserve">
-    <value>handler block exceeds code size.</value>
-  </data>
-  <data name="FilterRegionOutOfRange" xml:space="preserve">
-    <value>filter block exceeds code size.</value>
+  <data name="EHClauseOutOfRange" xml:space="preserve">
+    <value>Exception handling clause bounds outside code size.</value>
   </data>
   <data name="NewobjAbstractClass" xml:space="preserve">
     <value>Cannot construct an instance of abstract class.</value>

@@ -276,23 +276,40 @@ namespace Internal.IL
             {
                 var r = _exceptionRegions[i];
 
-                if ((uint)r.ILRegion.TryOffset < (uint)_basicBlocks.Length)
-                    CreateBasicBlock(r.ILRegion.TryOffset).TryStart = true;
-                else
-                    ReportInvalidTryRegion();
-
-                if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                // Check try region bounds
+                if ((uint)r.ILRegion.TryOffset >= (uint)_basicBlocks.Length ||
+                    (uint)(r.ILRegion.TryOffset + r.ILRegion.TryLength) > (uint)_basicBlocks.Length)
                 {
-                    if ((uint)r.ILRegion.FilterOffset < (uint)_basicBlocks.Length)
-                        CreateBasicBlock(r.ILRegion.FilterOffset).FilterStart = true;
-                    else
-                        ReportInvalidFilterRegion();
+                    ReportInvalidExceptionRegion();
+                }
+                else
+                {
+                    CreateBasicBlock(r.ILRegion.TryOffset).TryStart = true;
                 }
 
-                if ((uint)r.ILRegion.HandlerOffset < (uint)_basicBlocks.Length)
-                    CreateBasicBlock(r.ILRegion.HandlerOffset).HandlerStart = true;
+                // Check filter region bounds (for filter exception handlers)
+                if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                {
+                    if ((uint)r.ILRegion.FilterOffset >= (uint)_basicBlocks.Length)
+                    {
+                        ReportInvalidExceptionRegion();
+                    }
+                    else
+                    {
+                        CreateBasicBlock(r.ILRegion.FilterOffset).FilterStart = true;
+                    }
+                }
+
+                // Check handler region bounds
+                if ((uint)r.ILRegion.HandlerOffset >= (uint)_basicBlocks.Length ||
+                    (uint)(r.ILRegion.HandlerOffset + r.ILRegion.HandlerLength) > (uint)_basicBlocks.Length)
+                {
+                    ReportInvalidExceptionRegion();
+                }
                 else
-                    ReportInvalidHandlerRegion();
+                {
+                    CreateBasicBlock(r.ILRegion.HandlerOffset).HandlerStart = true;
+                }
             }
         }
 

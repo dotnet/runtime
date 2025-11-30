@@ -1600,17 +1600,7 @@ namespace Internal.IL
             ThrowHelper.ThrowInvalidProgramException();
         }
 
-        private static void ReportInvalidTryRegion()
-        {
-            ThrowHelper.ThrowInvalidProgramException();
-        }
-
-        private static void ReportInvalidFilterRegion()
-        {
-            ThrowHelper.ThrowInvalidProgramException();
-        }
-
-        private static void ReportInvalidHandlerRegion()
+        private static void ReportInvalidExceptionRegion()
         {
             ThrowHelper.ThrowInvalidProgramException();
         }

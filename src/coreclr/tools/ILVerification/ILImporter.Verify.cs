@@ -209,6 +209,9 @@ namespace Internal.IL
 
         public void Verify()
         {
+            // Check code size before any other processing
+            FatalCheck(_ilBytes.Length > 0, VerifierError.CodeSizeZero);
+
             _instructionBoundaries = new bool[_ilBytes.Length];
 
             FindBasicBlocks();
@@ -286,8 +289,6 @@ namespace Internal.IL
         /// </summary>
         private void InitialPass()
         {
-            FatalCheck(_ilBytes.Length > 0, VerifierError.CodeSizeZero);
-
             _modifiesThisPtr = false;
             _validTargetOffsets = new bool[_ilBytes.Length];
 
@@ -2823,19 +2824,9 @@ namespace Internal.IL
             VerificationError(VerifierError.UnknownOpcode);
         }
 
-        void ReportInvalidTryRegion()
+        void ReportInvalidExceptionRegion()
         {
-            VerificationError(VerifierError.TryRegionOutOfRange);
-        }
-
-        void ReportInvalidFilterRegion()
-        {
-            VerificationError(VerifierError.FilterRegionOutOfRange);
-        }
-
-        void ReportInvalidHandlerRegion()
-        {
-            VerificationError(VerifierError.HandlerRegionOutOfRange);
+            VerificationError(VerifierError.EHClauseOutOfRange);
         }
 
         //
