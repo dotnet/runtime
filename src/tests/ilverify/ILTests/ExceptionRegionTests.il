@@ -764,49 +764,4 @@
         throw
         ret
     }
-
-    .method public hidebysig instance void TryOffset.ExceedsCodeSize_Invalid_EHClauseOutOfRange() cil managed
-    {
-        .maxstack 1
-
-        IL_0000: ret
-        .try IL_1000 to IL_1001 catch [System.Runtime]System.Exception handler IL_0000 to IL_0001
-    }
-
-    .method public hidebysig instance void HandlerOffset.ExceedsCodeSize_Invalid_EHClauseOutOfRange() cil managed
-    {
-        .maxstack 1
-
-        IL_0000: ret
-        .try IL_0000 to IL_0001 catch [System.Runtime]System.Exception handler IL_1000 to IL_1001
-    }
-
-    .method public hidebysig instance void FilterOffset.ExceedsCodeSize_Invalid_EHClauseOutOfRange() cil managed
-    {
-        .maxstack 1
-
-        IL_0000: ldc.i4.0
-        IL_0001: endfilter
-        IL_0002: leave.s IL_0004
-        IL_0004: ret
-        .try IL_0000 to IL_0002 filter IL_1000 handler IL_0002 to IL_0004
-    }
-
-    .method public hidebysig instance void TryEndOffset.ExceedsCodeSize_Invalid_EHClauseOutOfRange() cil managed
-    {
-        .maxstack 1
-
-        IL_0000: nop
-        IL_0001: ret
-        .try IL_0000 to IL_1000 catch [System.Runtime]System.Exception handler IL_0001 to IL_0002
-    }
-
-    .method public hidebysig instance void HandlerEndOffset.ExceedsCodeSize_Invalid_EHClauseOutOfRange() cil managed
-    {
-        .maxstack 1
-
-        IL_0000: nop
-        IL_0001: ret
-        .try IL_0000 to IL_0001 catch [System.Runtime]System.Exception handler IL_0001 to IL_1000
-    }
 }
