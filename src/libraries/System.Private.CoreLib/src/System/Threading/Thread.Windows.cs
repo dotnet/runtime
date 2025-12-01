@@ -96,6 +96,13 @@ namespace System.Threading
 
             try
             {
+                if (waitHandle.IsInvalid)
+                {
+                    // If the thread has died, the handle can be marked as invalid.
+                    // Waiting on an invalid handle will never complete, so complete now.
+                    return true;
+                }
+
                 if (millisecondsTimeout == 0)
                 {
                     int result = (int)Interop.Kernel32.WaitForSingleObject(waitHandle.DangerousGetHandle(), 0);
