@@ -385,6 +385,11 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(\d{2,3}?)+?", "1234", RegexOptions.None, 0, 4, true, "12");
             yield return (@"(\d{2,3}?)*?", "123456", RegexOptions.None, 0, 4, true, "");
 
+            yield return (@"^.*$", "abcd\nefg", RegexOptions.Singleline, 0, 8, true, "abcd\nefg");
+            yield return (@"^(?:.|\n)*$", "abcd\nefg", RegexOptions.None, 0, 8, true, "abcd\nefg");
+            yield return (@"^(?:.|\r|\n)*$", "abcd\nefg", RegexOptions.None, 0, 8, true, "abcd\nefg");
+            yield return (@"^(?:\r|.|\n)*$", "abcd\nefg", RegexOptions.None, 0, 8, true, "abcd\nefg");
+
             foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline })
             {
                 yield return (@".*", "abc", lineOption, 1, 2, true, "bc");
@@ -649,6 +654,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?<cat>cat)\w+(?<dog-0>dog)", "cat_Hello_World_dog", RegexOptions.None, 0, 19, false, string.Empty);
                 yield return (@"(.)(?'2-1'(?'-1'))", "cat", RegexOptions.None, 0, 3, false, string.Empty);
                 yield return (@"(?'2-1'(.))", "cat", RegexOptions.None, 0, 3, true, "c");
+
+                // Balancing groups in negative lookarounds should not be removed
+                // The pattern captures group 1, uncaptures it, then checks the negative lookahead
+                // The negative lookahead contains a balancing group that should not be removed
+                yield return (@"()(?'-1')(?!(?'-1'))", "a", RegexOptions.None, 0, 1, true, string.Empty);
             }
 
             // Atomic Zero-Width Assertions \A \Z \z \b \B

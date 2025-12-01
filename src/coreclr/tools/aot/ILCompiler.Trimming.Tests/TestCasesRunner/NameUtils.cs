@@ -19,6 +19,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             MethodDesc method => TrimAssemblyNamePrefix(method.GetDisplayName()),
             FieldDesc field => TrimAssemblyNamePrefix(field.ToString()),
             ModuleDesc module => module.Assembly.GetName().Name,
+            PropertyPseudoDesc property => TrimAssemblyNamePrefix(property.GetDisplayName()),
             _ => null
         };
 
