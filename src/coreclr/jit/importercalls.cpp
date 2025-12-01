@@ -4413,7 +4413,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                 break;
             }
-#endif // FEATURE_HW_INTRINSICS
 
             case NI_System_Half_FusedMultiplyAdd:
             {
@@ -4567,28 +4566,56 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
                 {
                     GenTree* op1 = impPopStack().val;
-                    assert(op1->TypeGet() == TYP_FLOAT || op1->TypeGet() == TYP_HALF);
 
-                    var_types convertFromType = op1->TypeGet();
-                    GenTree*  op2 =
-                        gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), convertFromType, 16);
-
-                    if (convertFromType == TYP_FLOAT)
+                    CORINFO_ARG_LIST_HANDLE args = sig->args;
+                    CORINFO_CLASS_HANDLE    op1ClsHnd;
+                    CorInfoType             baseJitType = strip(info.compCompHnd->getArgType(sig, args, &op1ClsHnd));
+                    var_types               fromType    = JitType2PreciseVarType(baseJitType);
+                    if (fromType == TYP_STRUCT)
                     {
+                        fromType = impNormStructType(op1ClsHnd);
+                    }
 
-                        op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, convertFromType, 16);
-                        retNode =
-                            gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_AVX10v1_ConvertScalarToVector128Half,
-                                                     convertFromType, 16);
+                    var_types toType = JitType2PreciseVarType(sig->retType);
+                    if (toType == TYP_STRUCT)
+                    {
+                        toType = impNormStructType(sig->retTypeClass);
+                    }
+
+                    NamedIntrinsic opId = lookupHalfConversionIntrinsic(fromType, toType);
+                    if (opId == NI_Illegal)
+                    {
+                        break;
+                    }
+
+                    if (toType == TYP_HALF)
+                    {
+                        GenTree* zeroVec =
+                            gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), TYP_HALF, 16);
+                        if (varTypeIsFloating(fromType))
+                        {
+                            op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, fromType, 16);
+                        }
+                        retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, zeroVec, op1, opId, fromType, 16);
                         retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
                     }
-                    else if (op1->TypeGet() == TYP_HALF)
+                    else
                     {
-                        op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, convertFromType, 16);
-                        retNode =
-                            gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_AVX10v1_ConvertScalarToVector128Single,
-                                                     convertFromType, 16);
-                        retNode = gtNewSimdToScalarNode(TYP_FLOAT, retNode, TYP_FLOAT, 16);
+                        if (varTypeIsFloating(toType))
+                        {
+                            GenTree* zeroVec =
+                                gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), fromType, 16);
+                            op1     = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, fromType, 16);
+                            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, zeroVec, op1, opId, fromType, 16);
+                            retNode = gtNewSimdToScalarNode(toType, retNode, toType, 16);
+                        }
+                        else
+                        {
+                            op1     = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, fromType, 16);
+                            retNode = gtNewSimdHWIntrinsicNode(JITtype2varType(sig->retType), op1, opId, fromType, 16);
+                            // retNode = gtNewSimdToScalarNode(JITtype2varType(sig->retType), retNode,
+                            // JITtype2varType(sig->retType), 16);
+                        }
                     }
 
                     break;
@@ -4625,6 +4652,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #endif
                 break;
             }
+#endif // FEATURE_HW_INTRINSICS
 
             case NI_System_Math_Abs:
             case NI_System_Math_Acos:
@@ -12285,6 +12313,85 @@ NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
         default:
             break;
     }
+#endif
+    return NI_Illegal;
+}
+
+NamedIntrinsic Compiler::lookupHalfConversionIntrinsic(var_types fromType, var_types toType)
+{
+#if defined(TARGET_XARCH)
+    assert(compOpportunisticallyDependsOn(InstructionSet_AVX10v1));
+
+    switch (toType)
+    {
+        case TYP_HALF:
+        {
+            switch (fromType)
+            {
+                case TYP_FLOAT:
+                case TYP_DOUBLE:
+                case TYP_LONG:
+                case TYP_ULONG:
+                case TYP_INT:
+                case TYP_UINT:
+                    return NI_AVX10v1_ConvertScalarToVector128Half;
+                default:
+                    return NI_Illegal;
+            }
+            break;
+        }
+        case TYP_FLOAT:
+        {
+            if (fromType == TYP_HALF)
+            {
+                return NI_AVX10v1_ConvertScalarToVector128Single;
+            }
+        }
+        case TYP_DOUBLE:
+        {
+            if (fromType == TYP_HALF)
+            {
+                return NI_AVX10v1_ConvertScalarToVector128Double;
+            }
+        }
+        break;
+
+        case TYP_INT:
+        {
+            if (fromType == TYP_HALF)
+            {
+                return NI_AVX10v1_ConvertToInt32;
+            }
+        }
+
+        case TYP_LONG:
+        {
+            if (fromType == TYP_HALF)
+            {
+                return NI_AVX10v1_ConvertToInt64;
+            }
+        }
+
+        case TYP_UINT:
+        {
+            if (fromType == TYP_HALF)
+            {
+                return NI_AVX10v1_ConvertToUInt32;
+            }
+        }
+
+        case TYP_ULONG:
+        {
+            if (fromType == TYP_HALF)
+            {
+                return NI_AVX10v1_ConvertToUInt64;
+            }
+        }
+
+        default:
+            break;
+    }
+
 #endif
     return NI_Illegal;
 }

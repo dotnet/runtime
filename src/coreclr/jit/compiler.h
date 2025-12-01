@@ -4705,6 +4705,7 @@ protected:
     NamedIntrinsic lookupPrimitiveIntNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
 
     NamedIntrinsic lookupHalfIntrinsic(NamedIntrinsic ni);
+    NamedIntrinsic lookupHalfConversionIntrinsic(var_types fromType, var_types toType);
 
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
                                           CORINFO_METHOD_HANDLE method,
