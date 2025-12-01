@@ -12,6 +12,7 @@ namespace System.IO.Compression
     internal sealed class WinZipAesStream : Stream
     {
         private const int BLOCK_SIZE = 16; // AES block size in bytes
+        private const int KEYSTREAM_BUFFER_SIZE = 4096; // Pre-generate 4KB of keystream (256 blocks)
         private readonly Stream _baseStream;
         private readonly bool _encrypting;
         private readonly int _keySizeBits;
@@ -36,6 +37,10 @@ namespace System.IO.Compression
         private long _encryptedDataRemaining;
         private readonly byte[] _partialBlock = new byte[BLOCK_SIZE];
         private int _partialBlockBytes;
+
+        // Pre-generated keystream buffer for efficiency
+        private readonly byte[] _keystreamBuffer = new byte[KEYSTREAM_BUFFER_SIZE];
+        private int _keystreamOffset = KEYSTREAM_BUFFER_SIZE; // Start depleted to force initial generation
 
         public WinZipAesStream(Stream baseStream, ReadOnlyMemory<char> password, bool encrypting, int keySizeBits = 256, long totalStreamSize = -1, bool leaveOpen = false)
         {
@@ -259,49 +264,77 @@ namespace System.IO.Compression
             Debug.Assert(_aesEncryptor is not null, "Cipher should have been initialized before processing blocks");
 
             int processed = 0;
-            byte[] keystream = new byte[16];
 
             while (processed < count)
             {
-                _aesEncryptor.TransformBlock(_counterBlock, 0, 16, keystream, 0);
-
-                // Log keystream for first block
-                if (processed == 0)
+                // Ensure we have enough keystream bytes available
+                int keystreamAvailable = KEYSTREAM_BUFFER_SIZE - _keystreamOffset;
+                if (keystreamAvailable == 0)
                 {
-                    Debug.WriteLine($"First keystream block: {BitConverter.ToString(keystream)}");
+                    GenerateKeystreamBuffer();
+                    keystreamAvailable = KEYSTREAM_BUFFER_SIZE;
                 }
 
-                IncrementCounter();
-
-                int blockSize = Math.Min(16, count - processed);
+                // Process as many bytes as possible with the available keystream
+                int bytesToProcess = Math.Min(count - processed, keystreamAvailable);
 
                 // For encryption: XOR first, then HMAC the ciphertext
                 if (_encrypting)
                 {
                     // XOR the data with the keystream to create ciphertext
-                    for (int i = 0; i < blockSize; i++)
-                    {
-                        buffer[offset + processed + i] ^= keystream[i];
-                    }
+                    XorBytes(buffer, offset + processed, _keystreamBuffer, _keystreamOffset, bytesToProcess);
                     // HMAC is computed on the ciphertext (after XOR)
-                    _hmac.TransformBlock(buffer, offset + processed, blockSize, null, 0);
+                    _hmac.TransformBlock(buffer, offset + processed, bytesToProcess, null, 0);
                 }
                 // For decryption: HMAC first (on ciphertext), then XOR
                 else
                 {
                     // HMAC is computed on the ciphertext (before XOR)
-                    _hmac.TransformBlock(buffer, offset + processed, blockSize, null, 0);
+                    _hmac.TransformBlock(buffer, offset + processed, bytesToProcess, null, 0);
                     // XOR the ciphertext with the keystream to recover plaintext
-                    for (int i = 0; i < blockSize; i++)
-                    {
-                        buffer[offset + processed + i] ^= keystream[i];
-                    }
+                    XorBytes(buffer, offset + processed, _keystreamBuffer, _keystreamOffset, bytesToProcess);
                 }
 
-                processed += blockSize;
+                _keystreamOffset += bytesToProcess;
+                processed += bytesToProcess;
+            }
+        }
+
+        private void GenerateKeystreamBuffer()
+        {
+            Debug.Assert(_aesEncryptor is not null, "Cipher should have been initialized");
+
+            // Generate KEYSTREAM_BUFFER_SIZE bytes of keystream (256 blocks of 16 bytes each)
+            for (int i = 0; i < KEYSTREAM_BUFFER_SIZE; i += BLOCK_SIZE)
+            {
+                _aesEncryptor.TransformBlock(_counterBlock, 0, BLOCK_SIZE, _keystreamBuffer, i);
+                IncrementCounter();
             }
 
-            Debug.WriteLine($"Final counter after processing: {BitConverter.ToString(_counterBlock)}");
+            _keystreamOffset = 0;
+        }
+
+        private static void XorBytes(byte[] dest, int destOffset, byte[] src, int srcOffset, int count)
+        {
+            Span<byte> destSpan = dest.AsSpan(destOffset, count);
+            ReadOnlySpan<byte> srcSpan = src.AsSpan(srcOffset, count);
+
+            // Process 8 bytes at a time when possible for better performance
+            int i = 0;
+            while (i + 8 <= count)
+            {
+                long destVal = System.Buffers.Binary.BinaryPrimitives.ReadInt64LittleEndian(destSpan.Slice(i));
+                long srcVal = System.Buffers.Binary.BinaryPrimitives.ReadInt64LittleEndian(srcSpan.Slice(i));
+                System.Buffers.Binary.BinaryPrimitives.WriteInt64LittleEndian(destSpan.Slice(i), destVal ^ srcVal);
+                i += 8;
+            }
+
+            // Handle remaining bytes
+            while (i < count)
+            {
+                destSpan[i] ^= srcSpan[i];
+                i++;
+            }
         }
 
         private void IncrementCounter()

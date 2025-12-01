@@ -197,6 +197,50 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(Get_Is_Async))]
+        public async Task Encryption_LargeFile_RoundTrip(bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string entryName = "large.bin";
+            int size = 1024 * 1024; // 1MB
+            byte[] content = new byte[size];
+            new Random(42).NextBytes(content);
+            string password = "password123";
+            var encryptionMethod = ZipArchiveEntry.EncryptionMethod.Aes256;
+
+            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create))
+            {
+                ZipArchiveEntry entry = archive.CreateEntry(entryName);
+                Stream s = entry.Open(password, encryptionMethod);
+                using (s)
+                {
+                    if (async)
+                        await s.WriteAsync(content, 0, content.Length);
+                    else
+                        s.Write(content, 0, content.Length);
+                }
+            }
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                ZipArchiveEntry entry = archive.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                Stream s = entry.Open(password);
+                using (s)
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    if (async)
+                        await s.CopyToAsync(ms);
+                    else
+                        s.CopyTo(ms);
+
+                    Assert.Equal(content, ms.ToArray());
+                }
+            }
+        }
+
         [Fact]
         public void Negative_WrongPassword_Throws_InvalidDataException()
         {
