@@ -5373,12 +5373,16 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     for (BasicBlock* const block : Blocks())
     {
         iterateTailMerge(block);
+        if (block->isEmpty())
+        {
+            continue;
+        }
 
         if (block->KindIs(BBJ_THROW))
         {
             retOrThrowBlocks.Push(block);
         }
-        else if (block->KindIs(BBJ_RETURN) && !block->isEmpty() && (block != genReturnBB))
+        else if (block->KindIs(BBJ_RETURN) && (block != genReturnBB))
         {
             // Avoid splitting a return away from a possible tail call
             //
