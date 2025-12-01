@@ -4,6 +4,7 @@
     <CLRTestKind>SharedLibrary</CLRTestKind>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
     <OutputPath>$(BaseOutputPathWithConfig)ilverify\Tests</OutputPath>
+    <IlasmFlags>$(IlasmFlags) -ERR</IlasmFlags>
   </PropertyGroup>
 
   <ItemGroup>
