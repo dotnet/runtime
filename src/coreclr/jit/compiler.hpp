@@ -1139,13 +1139,12 @@ inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask)
  *  Return the size in bytes of the given type.
  */
 
-extern const BYTE genTypeSizes[TYP_COUNT];
+extern const BYTE (&genTypeSizes)[TYP_COUNT];
 
 template <class T>
 inline unsigned genTypeSize(T value)
 {
     assert((unsigned)TypeGet(value) < ArrLen(genTypeSizes));
-
     return genTypeSizes[TypeGet(value)];
 }
 
@@ -1160,6 +1159,11 @@ extern const BYTE genTypeStSzs[TYP_COUNT];
 template <class T>
 inline unsigned genTypeStSz(T value)
 {
+#ifdef TARGET_ARM64
+    // The size of these types cannot be evaluated in static contexts.
+    noway_assert(TypeGet(value) != TYP_SIMDSV);
+    noway_assert(TypeGet(value) != TYP_MASK);
+#endif
     assert((unsigned)TypeGet(value) < ArrLen(genTypeStSzs));
 
     return genTypeStSzs[TypeGet(value)];

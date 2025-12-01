@@ -6969,7 +6969,11 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV:
+#endif
             {
+                // TODO-SVE: Implement scalable vector constant
                 simd16_t result = {};
                 BroadcastConstantToSimd<simd16_t, TBase>(&result, scalar);
                 gtSimd16Val = result;
@@ -7025,6 +7029,9 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV:
+#endif
             {
                 simd16_t result = {};
                 EvaluateWithElementFloating<simd16_t>(simdBaseType, &result, gtSimd16Val, index, value);
@@ -7078,6 +7085,9 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV:
+#endif
             {
                 simd16_t result = {};
                 EvaluateWithElementIntegral<simd16_t>(simdBaseType, &result, gtSimd16Val, index, value);
@@ -7125,6 +7135,9 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV:
+#endif
             {
                 return gtSimd16Val.IsAllBitsSet();
             }
@@ -7173,6 +7186,9 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV: // TODO-SVE: Implement scalable vector constant
+#endif
             {
                 return left->gtSimd16Val == right->gtSimd16Val;
             }
@@ -7216,6 +7232,9 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV:
+#endif
             {
                 return gtSimd16Val.IsZero();
             }
@@ -7255,6 +7274,9 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV:
+#endif
             {
                 return EvaluateGetElementFloating<simd16_t>(simdBaseType, gtSimd16Val, index);
             }
@@ -7293,6 +7315,9 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV:
+#endif
             {
                 return EvaluateGetElementIntegral<simd16_t>(simdBaseType, gtSimd16Val, index);
             }

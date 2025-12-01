@@ -1711,6 +1711,9 @@ ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_type
                 }
 
                 case TYP_SIMD16:
+#ifdef TARGET_ARM64
+                case TYP_SIMDSV:
+#endif
                 {
                     m_defs = new (alloc) Alloc<TYP_SIMD16>::Type[ChunkSize];
                     break;
@@ -1996,6 +1999,9 @@ ValueNum ValueNumStore::VNForGenericCon(var_types typ, uint8_t* cnsVal)
             return VNForSimd12Con(val);
         }
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV:
+#endif
         {
             READ_VALUE(simd16_t);
             return VNForSimd16Con(val);
@@ -2118,6 +2124,9 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
         }
 
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV: // TODO-SVE: Implement scalable vector constant
+#endif
         {
             return VNForSimd16Con(simd16_t::Zero());
         }
@@ -2215,6 +2224,9 @@ ValueNum ValueNumStore::VNAllBitsForType(var_types typ, unsigned elementCount)
         }
 
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV:
+#endif
         {
             return VNForSimd16Con(simd16_t::AllBitsSet());
         }
@@ -2331,6 +2343,9 @@ ValueNum ValueNumStore::VNBroadcastForSimdType(var_types simdType, var_types sim
         }
 
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV:
+#endif
         {
             simd16_t result = BroadcastConstantToSimd<simd16_t>(this, simdBaseType, valVN);
             return VNForSimd16Con(result);
@@ -2396,7 +2411,11 @@ bool ValueNumStore::VNIsVectorNaN(var_types simdType, var_types simdBaseType, Va
         }
 
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV:
+#endif
         {
+            simdType     = TYP_SIMD16;
             simd16_t tmp = GetConstantSimd16(valVN);
             memcpy(&vector, &tmp, genTypeSize(simdType));
             break;
@@ -2462,7 +2481,11 @@ bool ValueNumStore::VNIsVectorNegativeZero(var_types simdType, var_types simdBas
         }
 
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV:
+#endif
         {
+            simdType     = TYP_SIMD16;
             simd16_t tmp = GetConstantSimd16(valVN);
             memcpy(&vector, &tmp, genTypeSize(simdType));
             break;
@@ -4519,6 +4542,18 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                     unreached();
             }
         }
+#ifdef TARGET_ARM64
+        case TYP_SIMD16:
+        case TYP_SIMDSV:
+        {
+            // TODO-SVE: VN for constant SIMDSV is borrowing from SIMD16,
+            // does this need to change?
+            assert(castToType == TYP_SIMD16 || castToType == TYP_SIMDSV);
+            simd16_t arg0Val = GetConstantSimd16(arg0VN);
+            return VNForSimd16Con(arg0Val);
+        }
+#endif
+
         default:
             unreached();
     }
@@ -7557,6 +7592,9 @@ ValueNum EvaluateUnarySimd(
         }
 
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV:
+#endif
         {
             simd16_t arg0 = GetConstantSimd16(vns, baseType, arg0VN);
 
@@ -7623,6 +7661,9 @@ ValueNum EvaluateBinarySimd(ValueNumStore* vns,
         }
 
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV:
+#endif
         {
             simd16_t arg0 = GetConstantSimd16(vns, baseType, arg0VN);
             simd16_t arg1 = GetConstantSimd16(vns, baseType, arg1VN);
@@ -7753,6 +7794,9 @@ ValueNum EvaluateSimdGetElement(
         }
 
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV:
+#endif
         {
             return EvaluateSimdGetElement<simd16_t>(vns, baseType, vns->GetConstantSimd16(arg0VN), arg1);
         }
@@ -7797,6 +7841,9 @@ ValueNum EvaluateSimdCvtMaskToVector(ValueNumStore* vns, var_types simdType, var
         }
 
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV:
+#endif
         {
             simd16_t result = {};
             EvaluateSimdCvtMaskToVector<simd16_t>(baseType, &result, arg0);
@@ -7847,6 +7894,9 @@ ValueNum EvaluateSimdCvtVectorToMask(ValueNumStore* vns, var_types simdType, var
         }
 
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV:
+#endif
         {
             simd16_t arg0 = GetConstantSimd16(vns, baseType, arg0VN);
             EvaluateSimdCvtVectorToMask<simd16_t>(baseType, &result, arg0);
@@ -8886,7 +8936,10 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
             case NI_AdvSimd_MultiplyByScalar:
             case NI_AdvSimd_Arm64_MultiplyByScalar:
             {
-                assert((TypeOfVN(arg0VN) == type) && (TypeOfVN(arg1VN) == TYP_SIMD8));
+                // TODO-SVE: We shouldn't see this intrinsic operating on Vector<T> after porting to SVE
+                assert(TypeOfVN(arg0VN) == type || (type == TYP_SIMDSV && TypeOfVN(arg0VN) == TYP_SIMD16 &&
+                                                    genTypeSize(TYP_SIMDSV) == genTypeSize(TYP_SIMD16)));
+                assert(TypeOfVN(arg1VN) == TYP_SIMD8);
 
                 if (!varTypeIsFloating(baseType))
                 {
@@ -9160,6 +9213,9 @@ ValueNum EvaluateSimdWithElementFloating(
         }
 
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV:
+#endif
         {
             simd16_t result = {};
             EvaluateWithElementFloating<simd16_t>(baseType, &result, vns->GetConstantSimd16(arg0VN), arg1, arg2);
@@ -9214,6 +9270,9 @@ ValueNum EvaluateSimdWithElementIntegral(
         }
 
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV:
+#endif
         {
             simd16_t result = {};
             EvaluateWithElementIntegral<simd16_t>(baseType, &result, vns->GetConstantSimd16(arg0VN), arg1, arg2);
@@ -10314,6 +10373,9 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
             }
 
             case TYP_SIMD16:
+#ifdef TARGET_ARM64
+            case TYP_SIMDSV:
+#endif
             {
                 simd16_t cnsVal = GetConstantSimd16(vn);
                 printf("Simd16Cns[0x%08x, 0x%08x, 0x%08x, 0x%08x]", cnsVal.u32[0], cnsVal.u32[1], cnsVal.u32[2],
@@ -11921,6 +11983,9 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         }
 
         case TYP_SIMD16:
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV: // TODO-SVE: Implement scalable vector constant
+#endif
         {
             simd16_t simd16Val;
             memcpy(&simd16Val, &tree->AsVecCon()->gtSimdVal, sizeof(simd16_t));
@@ -13470,7 +13535,16 @@ void Compiler::fgValueNumberCastTree(GenTree* tree)
     bool         srcIsUnsigned    = ((tree->gtFlags & GTF_UNSIGNED) != 0);
     bool         hasOverflowCheck = tree->gtOverflowEx();
 
-    assert(genActualType(castToType) == genActualType(tree->TypeGet())); // Ensure that the resultType is correct
+    // Ensure that the resultType is correct
+#ifdef TARGET_ARM64
+    // We can truncate scalable vectors to any SIMD type, and can zero
+    // extend SIMD types to a scalable vector.
+    assert(genActualType(castToType) == genActualType(tree->TypeGet()) ||
+           (tree->TypeGet() == TYP_SIMDSV && varTypeIsSIMD(castToType)) ||
+           (varTypeIsSIMD(tree->TypeGet()) && castToType == TYP_SIMDSV));
+#else
+    assert(genActualType(castToType) == genActualType(tree->TypeGet()));
+#endif
 
     tree->gtVNPair = vnStore->VNPairForCast(srcVNPair, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
 }

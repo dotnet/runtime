@@ -2317,8 +2317,19 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
         genLongToIntCast(tree);
     }
 #endif // !TARGET_64BIT
+#ifdef TARGET_ARM64
+    else if (targetType == TYP_SIMDSV || tree->gtOp1->TypeGet() == TYP_SIMDSV)
+    {
+        // TODO-SVE: Can we avoid generating these casts altogether?
+        assert(genTypeSize(tree->CastToType()) == genTypeSize(tree->CastFromType()));
+        genConsumeOperands(tree);
+        inst_Mov(tree->CastToType(), tree->GetRegNum(), tree->gtOp1->GetRegNum(), true);
+        genProduceReg(tree);
+    }
+#endif
     else
     {
+        assert(varTypeIsIntegral(targetType) && varTypeIsIntegral(tree->gtOp1));
         // Casts int <--> int
         genIntToIntCast(tree->AsCast());
     }
