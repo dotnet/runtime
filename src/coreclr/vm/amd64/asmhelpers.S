@@ -1770,15 +1770,16 @@ NESTED_END CallJittedMethodRetBuffRDI, _TEXT
 NESTED_ENTRY CallJittedMethodRetBuffRSI, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
-        alloc_stack 0x10
-        save_reg_postrsp r10, 0
+        push_register r8
+        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         mov rsi, rdx // return buffer
         call qword ptr [r11]
-        mov r10, [rsp]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
         mov rsp, rbp
         pop rbp
         ret
