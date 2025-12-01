@@ -78,78 +78,26 @@ g_path_needs_long_prefix (const gchar *path)
 	return FALSE;
 }
 
-/* Helper function to check if a path needs special expansion to absolute path.
- * Returns TRUE if the path contains:
- * - Environment variables (%) that need expansion
- * - Drive-relative paths (\Windows\System32) that need drive letter prepended
- * Returns FALSE for normal relative paths and already-absolute paths.
+/* Helper function to convert a drive-relative path to an absolute path.
+ * For example, \Windows\System32 becomes C:\Windows\System32.
+ * Caller must free the result with g_free().
  */
-static gboolean
-g_path_needs_expansion (const gchar *path)
-{
-	if (!path)
-		return FALSE;
-
-	if (strchr(path, '%') != NULL)
-		return TRUE;
-
-	if (path[0] == '\\' && path[1] != '\\')
-		return TRUE;
-	
-	return FALSE;
-}
-
 static gchar *
-g_path_to_absolute (const gchar *path)
+g_path_drive_relative_to_absolute (const gchar *path)
 {
 	if (!path)
-		return NULL;
-	
-	gchar *result = NULL;
-	
-	/* Expand environment variables */
-	gchar *expanded_path = NULL;
-	if (strchr(path, '%') != NULL) {
-		DWORD expanded_len = ExpandEnvironmentStringsA(path, NULL, 0);
-		if (expanded_len > 0) {
-			expanded_path = g_malloc(expanded_len);
-			if (ExpandEnvironmentStringsA(path, expanded_path, expanded_len) == 0) {
-				g_free(expanded_path);
-				expanded_path = NULL;
-			}
-		}
+		return g_strdup(path);
+
+	char current_dir[MAX_PATH];
+	if (GetCurrentDirectoryA(MAX_PATH, current_dir) > 0 && current_dir[1] == ':') {
+		gchar *result = g_malloc(strlen(path) + 3);
+		result[0] = current_dir[0];
+		result[1] = ':';
+		strcpy(result + 2, path);
+		return result;
 	}
-	
-	const gchar *work_path = expanded_path ? expanded_path : path;
-	
-	/* Handle drive-relative paths */
-	if (work_path[0] == '\\' && work_path[1] != '\\') {
-		char current_dir[MAX_PATH];
-		if (GetCurrentDirectoryA(MAX_PATH, current_dir) > 0 && current_dir[1] == ':') {
-			result = g_malloc(strlen(work_path) + 3);
-			result[0] = current_dir[0];
-			result[1] = ':';
-			strcpy(result + 2, work_path);
-		}
-	}
-	/* Convert relative to absolute */
-	else if (work_path[0] != '\\' && (strlen(work_path) < 2 || work_path[1] != ':')) {
-		DWORD full_path_len = GetFullPathNameA(work_path, 0, NULL, NULL);
-		if (full_path_len > 0) {
-			result = g_malloc(full_path_len);
-			if (GetFullPathNameA(work_path, full_path_len, result, NULL) == 0) {
-				g_free(result);
-				result = NULL;
-			}
-		}
-	}
-	/* Path is already absolute */
-	else {
-		result = g_strdup(work_path);
-	}
-	
-	g_free(expanded_path);
-	return result;
+
+	return g_strdup(path);
 }
 
 /* Makes a path compatible with long path support by adding \\?\ prefix if needed. Caller must free the result. */
@@ -161,10 +109,9 @@ g_path_make_long_compatible (const gchar *path)
 
 	gchar *work_path;
 	
-	if (g_path_needs_expansion(path)) {
-		work_path = g_path_to_absolute(path);
-		if (!work_path)
-			return NULL; /* Conversion failed */
+	/* Drive-relative paths (e.g., \Windows\System32) need to be converted to absolute paths first */
+	if (path[0] == '\\' && path[1] != '\\') {
+		work_path = g_path_drive_relative_to_absolute(path);
 	} else {
 		work_path = g_strdup(path);
 	}
