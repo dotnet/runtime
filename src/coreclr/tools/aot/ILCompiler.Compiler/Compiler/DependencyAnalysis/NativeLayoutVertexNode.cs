@@ -153,7 +153,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(methodEntryPointNode, "NativeLayoutMethodEntryVertexNode entrypoint"));
             }
 
-            context.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, context, _method.GetTypicalMethodDefinition());
+            context.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, context, GetMethodForMetadata(_method, out _));
 
             return dependencies;
         }
@@ -191,6 +191,10 @@ namespace ILCompiler.DependencyAnalysis
             if (IsUnboxingStub)
                 flags |= MethodFlags.IsUnboxingStub;
 
+            MethodDesc methodForToken = GetMethodForMetadata(_method, out bool isAsyncVariant);
+            if (isAsyncVariant)
+                flags |= MethodFlags.IsAsyncVariant;
+
             uint fptrReferenceId = 0;
             if ((_flags & MethodEntryFlags.SaveEntryPoint) != 0)
             {
@@ -200,8 +204,20 @@ namespace ILCompiler.DependencyAnalysis
                 fptrReferenceId = factory.MetadataManager.NativeLayoutInfo.ExternalReferences.GetIndex(methodEntryPointNode);
             }
 
-            int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, _method.GetTypicalMethodDefinition());
+            int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, methodForToken);
             return GetNativeWriter(factory).GetMethodSignature((uint)flags, fptrReferenceId, containingType, token, args);
+        }
+
+        private static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant)
+        {
+            MethodDesc result = method.GetTypicalMethodDefinition();
+            if (result is AsyncMethodVariant asyncVariant)
+            {
+                isAsyncVariant = true;
+                return asyncVariant.Target;
+            }
+            isAsyncVariant = false;
+            return result;
         }
 
         private Vertex GetContainingTypeVertex(NodeFactory factory)
@@ -1054,30 +1070,6 @@ namespace ILCompiler.DependencyAnalysis
             factory.MetadataManager.NativeLayoutInfo.TemplatesSection.Place(layoutInfo);
 
             return SetSavedVertex(layoutInfo);
-        }
-
-        private static IEnumerable<MethodDesc> EnumVirtualSlotsDeclaredOnType(TypeDesc declType)
-        {
-            // VirtualMethodUse of Foo<SomeType>.Method will bring in VirtualMethodUse
-            // of Foo<__Canon>.Method. This in turn should bring in Foo<OtherType>.Method.
-            DefType defType = declType.GetClosestDefType();
-
-            Debug.Assert(!declType.IsInterface);
-
-            IEnumerable<MethodDesc> allSlots = defType.EnumAllVirtualSlots();
-
-            foreach (var method in allSlots)
-            {
-                // Generic virtual methods are tracked by an orthogonal mechanism.
-                if (method.HasInstantiation)
-                    continue;
-
-                // Current type doesn't define this slot. Another VTableSlice will take care of this.
-                if (method.OwningType != defType)
-                    continue;
-
-                yield return method;
-            }
         }
     }
 
