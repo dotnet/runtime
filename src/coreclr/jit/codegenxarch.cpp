@@ -6626,11 +6626,11 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 // Arguments:
 //    treeNode - the compare tree
 //
-void CodeGen::genCompareFloat(GenTree* treeNode)
+void CodeGen::genCompareFloat(GenTreeOp* treeNode)
 {
     assert(treeNode->OperIsCompare() || treeNode->OperIs(GT_CMP));
 
-    GenTreeOp* tree    = treeNode->AsOp();
+    GenTreeOp* tree    = treeNode;
     GenTree*   op1     = tree->gtOp1;
     GenTree*   op2     = tree->gtOp2;
     var_types  op1Type = op1->TypeGet();
@@ -6691,11 +6691,11 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
 //
 // Return Value:
 //    None.
-void CodeGen::genCompareInt(GenTree* treeNode)
+void CodeGen::genCompareInt(GenTreeOp* treeNode)
 {
     assert(treeNode->OperIsCompare() || treeNode->OperIs(GT_CMP, GT_TEST, GT_BT));
 
-    GenTreeOp* tree          = treeNode->AsOp();
+    GenTreeOp* tree          = treeNode;
     GenTree*   op1           = tree->gtOp1;
     GenTree*   op2           = tree->gtOp2;
     var_types  op1Type       = op1->TypeGet();

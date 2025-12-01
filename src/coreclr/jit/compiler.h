@@ -6261,18 +6261,14 @@ public:
     PhaseStatus fgFindOperOrder();
 
 #ifdef TARGET_WASM
-
     FlowGraphDfsTree* fgWasmDfs();
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();
-
 #ifdef DEBUG
-
     void fgDumpWasmControlFlow();
     void fgDumpWasmControlFlowDot();
-
-#endif
-#endif
+#endif // DEBUG
+#endif // TARGET_WASM
 
     // method that returns if you should split here
     typedef bool(fgSplitPredicate)(GenTree* tree, GenTree* parent, fgWalkData* data);

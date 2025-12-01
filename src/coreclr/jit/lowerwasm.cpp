@@ -115,18 +115,7 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //
 GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
-    assert(jtrue->gtNext == nullptr);
-
-    JITDUMP("Lowering JTRUE:\n");
-    DISPTREERANGE(BlockRange(), jtrue);
-    JITDUMP("\n");
-
-    // Todo: recognize eqz cases
-
-    JITDUMP("Lowering JTRUE Result:\n");
-    DISPTREERANGE(BlockRange(), jtrue);
-    JITDUMP("\n");
-
+    // TODO-WASM: recognize eqz cases
     return nullptr;
 }
 

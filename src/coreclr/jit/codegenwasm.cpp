@@ -56,7 +56,7 @@ void CodeGen::genFnProlog()
         psiBegProlog();
     }
 
-    // Todo: prolog zeroing, shadow stack maintenance
+    // TODO-WASM: prolog zeroing, shadow stack maintenance
 
     GetEmitter()->emitMarkPrologEnd();
 }
@@ -70,7 +70,27 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 #endif // DEBUG
 
-    NYI_WASM("genFnEpilog");
+    ScopedSetVariable<bool> _setGeneratingEpilog(&compiler->compGeneratingEpilog, true);
+
+#ifdef DEBUG
+    if (compiler->opts.dspCode)
+        printf("\n__epilog:\n");
+#endif // DEBUG
+
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
+
+    if (jmpEpilog)
+    {
+        NYI_WASM("genFnEpilog: jmpEpilog");
+    }
+
+    // TODO-WASM: shadow stack maintenance
+
+    // compiler->unwindBegEpilog();
+
+    instGen(INS_return);
+
+    // compiler->unwindEndEpilog();
 }
 
 void CodeGen::genCaptureFuncletPrologEpilogInfo()
@@ -101,6 +121,253 @@ void CodeGen::genFuncletEpilog()
     NYI_WASM("genFuncletEpilog");
 }
 
+//------------------------------------------------------------------------
+// findTargetDepth: find the depth of a target block in the wasm control flow stack
+//
+// Arguments:
+//   targetBlock - block to branch to
+//   (implicit) compCurBB -- block to branch from
+//
+// Returns:
+//   depth of target block in control stack
+//
+unsigned CodeGen::findTargetDepth(BasicBlock* targetBlock)
+{
+    BasicBlock* const sourceBlock = compiler->compCurBB;
+    int const         h           = wasmControlFlowStack->Height();
+
+    const unsigned targetIndex = getBlockIndex(targetBlock);
+    const unsigned sourceIndex = getBlockIndex(sourceBlock);
+    const bool     isBackedge  = targetIndex <= sourceIndex;
+
+    for (int i = 0; i < h; i++)
+    {
+        WasmInterval* const ii    = wasmControlFlowStack->Top(i);
+        unsigned            match = 0;
+
+        if (isBackedge)
+        {
+            // loops bind to start
+            match = ii->Start();
+        }
+        else
+        {
+            // blocks bind to end
+            match = ii->End();
+        }
+
+        if ((match == targetIndex) && (isBackedge == ii->IsLoop()))
+        {
+            return i;
+        }
+    }
+
+    JITDUMP("Could not find " FMT_BB "[%u]%s in active control stack\n", targetBlock->bbNum, targetIndex,
+            isBackedge ? " (backedge)" : "");
+    assert(!"Can't find target in control stack");
+
+    return ~0;
+}
+
+//------------------------------------------------------------------------
+// genEmitStartBlock: prepare for codegen in a block
+//
+// Arguments:
+//   block - block to prepare for
+//
+// Notes:
+//   Updates the wasm control flow stack
+//
+void CodeGen::genEmitStartBlock(BasicBlock* block)
+{
+    const unsigned cursor = getBlockIndex(block);
+
+    // Pop control flow intervals that end here (at most two, block and/or loop)
+    // and emit wasm END instructions for them.
+    //
+    while (!wasmControlFlowStack->Empty() && (wasmControlFlowStack->Top()->End() == cursor))
+    {
+        instGen(INS_end);
+        wasmControlFlowStack->Pop();
+    }
+
+    // Push control flow for intervals that start here or earlier, and emit
+    // Wasm BLOCK or LOOP instruction
+    //
+    if (wasmCursor < compiler->fgWasmIntervals->size())
+    {
+        WasmInterval* interval = compiler->fgWasmIntervals->at(wasmCursor);
+        WasmInterval* chain    = interval->Chain();
+
+        while (chain->Start() <= cursor)
+        {
+            if (interval->IsLoop())
+            {
+                instGen(INS_loop);
+            }
+            else
+            {
+                instGen(INS_block);
+            }
+
+            wasmCursor++;
+            wasmControlFlowStack->Push(interval);
+
+            if (wasmCursor >= compiler->fgWasmIntervals->size())
+            {
+                break;
+            }
+
+            interval = compiler->fgWasmIntervals->at(wasmCursor);
+            chain    = interval->Chain();
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// genEmitEndBlock: finish up codegen in a block
+//
+// Arguments:
+//   block - block to finish up
+//
+// Returns:
+//   Updated block to process (if not block->Next()) or nullptr.
+//
+BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
+{
+    // Generate Wasm control flow instructions for block ends
+    //
+    switch (block->GetKind())
+    {
+        case BBJ_RETURN:
+            genExitCode(block);
+            break;
+
+        case BBJ_THROW:
+            instGen(INS_unreachable);
+            break;
+
+        case BBJ_CALLFINALLY:
+            // Wasm-TODO: EH model
+            genCallFinally(block);
+            if (!block->isBBCallFinallyPair())
+            {
+                instGen(INS_unreachable);
+            }
+            break;
+
+        case BBJ_EHCATCHRET:
+            // Wasm-TODO: EH model
+            assert(compiler->UsesFunclets());
+            genEHCatchRet(block);
+            FALLTHROUGH;
+
+        case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
+        case BBJ_EHFILTERRET:
+            // Wasm-TODO: EH model
+            if (compiler->UsesFunclets())
+            {
+                genReserveFuncletEpilog(block);
+            }
+            instGen(INS_return);
+            break;
+
+        case BBJ_SWITCH:
+        {
+            BBswtDesc* const desc      = block->GetSwitchTargets();
+            unsigned const   caseCount = desc->GetCaseCount();
+
+            assert(!desc->HasDefaultCase());
+
+            if (caseCount == 0)
+            {
+                break;
+            }
+
+            inst_SWITCH(caseCount);
+
+            for (unsigned caseNum = 0; caseNum < caseCount; caseNum++)
+            {
+                BasicBlock* const caseTarget = desc->GetCase(caseNum)->getDestinationBlock();
+                unsigned          depth      = findTargetDepth(caseTarget);
+                inst_LABEL(depth);
+            }
+
+            JITDUMP("\n");
+            break;
+        }
+
+        case BBJ_CALLFINALLYRET:
+        case BBJ_ALWAYS:
+        {
+#ifdef DEBUG
+            GenTree* call = block->lastNode();
+            if ((call != nullptr) && call->OperIs(GT_CALL))
+            {
+                // At this point, BBJ_ALWAYS should never end with a call that doesn't return.
+                assert(!call->AsCall()->IsNoReturn());
+            }
+#endif // DEBUG
+
+            BasicBlock* const target = block->GetTarget();
+
+            // If this block jumps to the next one, we might be able to skip emitting the jump
+            //
+            if (block->CanRemoveJumpToNext(compiler))
+            {
+                assert(getBlockIndex(target) == (getBlockIndex(block) + 1));
+                break;
+            }
+
+            inst_JMP(EJ_jmp, target);
+            break;
+        }
+
+        case BBJ_COND:
+        {
+            BasicBlock* const trueTarget  = block->GetTrueTarget();
+            BasicBlock* const falseTarget = block->GetFalseTarget();
+
+            // We don't expect degenerate BBJ_COND
+            //
+            assert(trueTarget != falseTarget);
+
+            // We don't expect the true target to be the next block.
+            //
+            assert(trueTarget != block->Next());
+
+            // br_if for true target
+            //
+            inst_JMP(EJ_jmpif, trueTarget);
+
+            // br for false target, if not fallthrough
+            //
+            if (falseTarget == block->Next())
+            {
+                break;
+            }
+            inst_JMP(EJ_jmp, falseTarget);
+
+            break;
+        }
+
+        default:
+            noway_assert(!"Unexpected bbKind");
+            break;
+    }
+
+    // Indicate codgen should just proceed to the next block.
+    //
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// genCodeForTreeNode: codegen for a particular tree node
+//
+// Arguments:
+//   treeNode - node to generate code for
+//
 void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 {
 #ifdef DEBUG
@@ -122,13 +389,17 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     switch (treeNode->OperGet())
     {
         case GT_ADD:
+            genCodeForBinary(treeNode->AsOp());
+            break;
+
         case GT_EQ:
         case GT_NE:
         case GT_LT:
         case GT_LE:
         case GT_GE:
         case GT_GT:
-            genCodeForBinary(treeNode->AsOp());
+            genConsumeOperands(treeNode->AsOp());
+            genCodeForCompare(treeNode->AsOp());
             break;
 
         case GT_LCL_VAR:
@@ -136,7 +407,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_JTRUE:
-            // Do nothing; handled by end of block processing
+            // Codegen handled by genEmitEndBlock
+            genConsumeOperands(treeNode->AsOp());
             break;
 
         case GT_RETURN:
@@ -216,85 +488,6 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         case PackOperAndType(GT_ADD, TYP_DOUBLE):
             ins = INS_f64_add;
             break;
-
-        case PackOperAndType(GT_EQ, TYP_INT):
-            ins = INS_i32_eq;
-            break;
-        case PackOperAndType(GT_EQ, TYP_LONG):
-            ins = INS_i64_eq;
-            break;
-        case PackOperAndType(GT_EQ, TYP_FLOAT):
-            ins = INS_f32_eq;
-            break;
-        case PackOperAndType(GT_EQ, TYP_DOUBLE):
-            ins = INS_f64_eq;
-            break;
-
-        case PackOperAndType(GT_NE, TYP_INT):
-            ins = INS_i32_ne;
-            break;
-        case PackOperAndType(GT_NE, TYP_LONG):
-            ins = INS_i64_ne;
-            break;
-        case PackOperAndType(GT_NE, TYP_FLOAT):
-            ins = INS_f32_ne;
-            break;
-        case PackOperAndType(GT_NE, TYP_DOUBLE):
-            ins = INS_f64_ne;
-            break;
-
-        case PackOperAndType(GT_LT, TYP_INT):
-            ins = treeNode->IsUnsigned() ? INS_i32_lt_u : INS_i32_lt_s;
-            break;
-        case PackOperAndType(GT_LT, TYP_LONG):
-            ins = treeNode->IsUnsigned() ? INS_i64_lt_u : INS_i64_lt_s;
-            break;
-        case PackOperAndType(GT_LT, TYP_FLOAT):
-            ins = INS_f32_lt;
-            break;
-        case PackOperAndType(GT_LT, TYP_DOUBLE):
-            ins = INS_f64_lt;
-            break;
-
-        case PackOperAndType(GT_LE, TYP_INT):
-            ins = treeNode->IsUnsigned() ? INS_i32_le_u : INS_i32_le_s;
-            break;
-        case PackOperAndType(GT_LE, TYP_LONG):
-            ins = treeNode->IsUnsigned() ? INS_i64_le_u : INS_i64_le_s;
-            break;
-        case PackOperAndType(GT_LE, TYP_FLOAT):
-            ins = INS_f32_le;
-            break;
-        case PackOperAndType(GT_LE, TYP_DOUBLE):
-            ins = INS_f64_le;
-            break;
-
-        case PackOperAndType(GT_GE, TYP_INT):
-            ins = treeNode->IsUnsigned() ? INS_i32_ge_u : INS_i32_ge_s;
-            break;
-        case PackOperAndType(GT_GE, TYP_LONG):
-            ins = treeNode->IsUnsigned() ? INS_i64_ge_u : INS_i64_ge_s;
-            break;
-        case PackOperAndType(GT_GE, TYP_FLOAT):
-            ins = INS_f32_ge;
-            break;
-        case PackOperAndType(GT_GE, TYP_DOUBLE):
-            ins = INS_f64_ge;
-            break;
-
-        case PackOperAndType(GT_GT, TYP_INT):
-            ins = treeNode->IsUnsigned() ? INS_i32_gt_u : INS_i32_gt_s;
-            break;
-        case PackOperAndType(GT_GT, TYP_LONG):
-            ins = treeNode->IsUnsigned() ? INS_i64_gt_u : INS_i64_gt_s;
-            break;
-        case PackOperAndType(GT_GT, TYP_FLOAT):
-            ins = INS_f32_gt;
-            break;
-        case PackOperAndType(GT_GT, TYP_DOUBLE):
-            ins = INS_f64_gt;
-            break;
-
         default:
             ins = INS_none;
             NYI_WASM("genCodeForBinary");
@@ -335,6 +528,162 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     }
 }
 
+//------------------------------------------------------------------------
+// genCodeForCompare: Produce code for a GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForCompare(GenTreeOp* tree)
+{
+    assert(tree->OperIsCmpCompare());
+
+    GenTree* const  op1     = tree->gtOp1;
+    var_types const op1Type = op1->TypeGet();
+
+    if (varTypeIsFloating(op1Type))
+    {
+        genCompareFloat(tree);
+    }
+    else
+    {
+        genCompareInt(tree);
+    }
+}
+
+//------------------------------------------------------------------------
+// genCompareInt: Generate code for comparing ints or longs
+//
+// Arguments:
+//    treeNode - the compare tree
+//
+void CodeGen::genCompareInt(GenTreeOp* treeNode)
+{
+    assert(treeNode->OperIsCmpCompare());
+    genConsumeOperands(treeNode);
+
+    instruction ins;
+    switch (PackOperAndType(treeNode->OperGet(), treeNode->gtOp1->TypeGet()))
+    {
+        case PackOperAndType(GT_EQ, TYP_INT):
+            ins = INS_i32_eq;
+            break;
+        case PackOperAndType(GT_EQ, TYP_LONG):
+            ins = INS_i64_eq;
+            break;
+
+        case PackOperAndType(GT_NE, TYP_INT):
+            ins = INS_i32_ne;
+            break;
+        case PackOperAndType(GT_NE, TYP_LONG):
+            ins = INS_i64_ne;
+            break;
+
+        case PackOperAndType(GT_LT, TYP_INT):
+            ins = treeNode->IsUnsigned() ? INS_i32_lt_u : INS_i32_lt_s;
+            break;
+        case PackOperAndType(GT_LT, TYP_LONG):
+            ins = treeNode->IsUnsigned() ? INS_i64_lt_u : INS_i64_lt_s;
+            break;
+
+        case PackOperAndType(GT_LE, TYP_INT):
+            ins = treeNode->IsUnsigned() ? INS_i32_le_u : INS_i32_le_s;
+            break;
+        case PackOperAndType(GT_LE, TYP_LONG):
+            ins = treeNode->IsUnsigned() ? INS_i64_le_u : INS_i64_le_s;
+            break;
+
+        case PackOperAndType(GT_GE, TYP_INT):
+            ins = treeNode->IsUnsigned() ? INS_i32_ge_u : INS_i32_ge_s;
+            break;
+        case PackOperAndType(GT_GE, TYP_LONG):
+            ins = treeNode->IsUnsigned() ? INS_i64_ge_u : INS_i64_ge_s;
+            break;
+
+        case PackOperAndType(GT_GT, TYP_INT):
+            ins = treeNode->IsUnsigned() ? INS_i32_gt_u : INS_i32_gt_s;
+            break;
+        case PackOperAndType(GT_GT, TYP_LONG):
+            ins = treeNode->IsUnsigned() ? INS_i64_gt_u : INS_i64_gt_s;
+            break;
+
+        default:
+            ins = INS_none;
+            NYI_WASM("genCodeForBinary");
+            break;
+    }
+
+    GetEmitter()->emitIns(ins);
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genCompareFloat: Generate code for comparing floats
+//
+// Arguments:
+//    treeNode - the compare tree
+//
+void CodeGen::genCompareFloat(GenTreeOp* treeNode)
+{
+    assert(treeNode->OperIsCmpCompare());
+
+    if ((treeNode->gtFlags & GTF_RELOP_NAN_UN) != 0)
+    {
+        NYI_WASM("genCompareFloat: unordered compares");
+    }
+
+    genConsumeOperands(treeNode);
+
+    instruction ins;
+    switch (PackOperAndType(treeNode->OperGet(), treeNode->gtOp1->TypeGet()))
+    {
+        case PackOperAndType(GT_EQ, TYP_FLOAT):
+            ins = INS_f32_eq;
+            break;
+        case PackOperAndType(GT_EQ, TYP_DOUBLE):
+            ins = INS_f64_eq;
+            break;
+        case PackOperAndType(GT_NE, TYP_FLOAT):
+            ins = INS_f32_ne;
+            break;
+        case PackOperAndType(GT_NE, TYP_DOUBLE):
+            ins = INS_f64_ne;
+            break;
+        case PackOperAndType(GT_LT, TYP_FLOAT):
+            ins = INS_f32_lt;
+            break;
+        case PackOperAndType(GT_LT, TYP_DOUBLE):
+            ins = INS_f64_lt;
+            break;
+        case PackOperAndType(GT_LE, TYP_FLOAT):
+            ins = INS_f32_le;
+            break;
+        case PackOperAndType(GT_LE, TYP_DOUBLE):
+            ins = INS_f64_le;
+            break;
+        case PackOperAndType(GT_GE, TYP_FLOAT):
+            ins = INS_f32_ge;
+            break;
+        case PackOperAndType(GT_GE, TYP_DOUBLE):
+            ins = INS_f64_ge;
+            break;
+        case PackOperAndType(GT_GT, TYP_FLOAT):
+            ins = INS_f32_gt;
+            break;
+        case PackOperAndType(GT_GT, TYP_DOUBLE):
+            ins = INS_f64_gt;
+            break;
+
+        default:
+            ins = INS_none;
+            NYI_WASM("genCodeForBinary");
+            break;
+    }
+
+    GetEmitter()->emitIns(ins);
+    genProduceReg(treeNode);
+}
+
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
@@ -370,20 +719,39 @@ void CodeGen::genSpillVar(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// inst_JMP: Generate a jump instruction.
+// inst_JMP: Emit a jump instruction.
 //
-void CodeGen::inst_JMP(emitJumpKind jmp, unsigned depth)
+// Arguments:
+//   jmp      - kind of jump to emit
+//   tgtBlock - target of the jump
+//
+void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 {
-    instruction instr = emitter::emitJumpKindToIns(jmp);
+    instruction    instr = emitter::emitJumpKindToIns(jmp);
+    unsigned const depth = findTargetDepth(tgtBlock);
     GetEmitter()->emitIns_I(instr, EA_4BYTE, depth);
 }
 
 //------------------------------------------------------------------------
-// inst_LABEL: Emit a label index
+// inst_SWITCH: Emit a switch
+//
+// Arguments:
+//   caseCount -- number of cases in the switch
+//
+void CodeGen::inst_SWITCH(unsigned caseCount)
+{
+    GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount);
+}
+
+//------------------------------------------------------------------------
+// inst_LABEL: Emit a switch table case label index
+//
+// Notes:
+//   Each index describes one switch case
 //
 void CodeGen::inst_LABEL(unsigned depth)
 {
-    NYI_WASM("inst_LABEL");
+    GetEmitter()->emitIns_I(INS_label, EA_4BYTE, depth);
 }
 
 void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* code))

@@ -151,7 +151,7 @@ unsigned emitter::instrDesc::idCodeSize() const
     {
         case IF_OPCODE:
             break;
-        case IF_TYPE:
+        case IF_BLOCK:
             size += 1;
             break;
         case IF_LABEL:
@@ -176,43 +176,29 @@ void emitter::emitSetShortJump(instrDescJmp* id)
     NYI_WASM("emitSetShortJump");
 }
 
-inline emitter::code_t insOpcode(instruction ins)
-{
-    // clang-format off
-    const static emitter::code_t insCodes[] =
-    {
-        #define INST(id, nm, v, fmt, op) op,
-        #include "instrs.h"
-    };
-    // clang-format on
-
-    assert((unsigned)ins < ArrLen(insCodes));
-    assert((insCodes[ins] != BAD_CODE));
-
-    return insCodes[ins];
-}
-
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE*       dst    = *dp;
     size_t      sz     = emitGetInstrDescSize(id);
     instruction ins    = id->idIns();
     insFormat   insFmt = id->idInsFmt();
-    code_t      code   = insOpcode(ins);
+    unsigned    opcode = GetInsOpcode(ins);
 
     switch (insFmt)
     {
         case IF_OPCODE:
-            dst += emitOutputByte(dst, code);
+            dst += emitOutputByte(dst, opcode);
             break;
-        case IF_TYPE:
-            dst += emitOutputByte(dst, code);
+        case IF_BLOCK:
+            dst += emitOutputByte(dst, opcode);
             dst += emitOutputByte(dst, 0x40);
             break;
         case IF_ULEB128:
-            dst += emitOutputByte(dst, code);
-            // todo... uleb128
+            dst += emitOutputByte(dst, opcode);
+            // TODO-WASM: emit uleb128
             break;
+        case IF_LABEL:
+            // TODO-WASM: emit uleb128
         default:
             NYI_WASM("emitOutputInstr");
     }
@@ -313,7 +299,7 @@ void emitter::emitDispIns(
     switch (fmt)
     {
         case IF_OPCODE:
-        case IF_TYPE:
+        case IF_BLOCK:
             break;
 
         case IF_LABEL:
@@ -380,7 +366,7 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 #if defined(DEBUG) || defined(LATE_DISASM)
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
-    // TODO: for real...
+    // WASM-TODO: for real...
     insExecutionCharacteristics result;
     result.insThroughput = PERFSCORE_THROUGHPUT_1C;
     result.insLatency    = PERFSCORE_LATENCY_1C;

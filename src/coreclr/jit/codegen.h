@@ -212,6 +212,19 @@ protected:
 
     void genCodeForBBlist();
 
+#if defined(TARGET_WASM)
+    ArrayStack<WasmInterval*>* wasmControlFlowStack;
+    unsigned                   wasmCursor;
+    unsigned                   getBlockIndex(BasicBlock* block)
+    {
+        return block->bbPreorderNum;
+    }
+    unsigned findTargetDepth(BasicBlock* target);
+#endif
+
+    void        genEmitStartBlock(BasicBlock* block);
+    BasicBlock* genEmitEndBlock(BasicBlock* block);
+
 public:
     void genSpillVar(GenTree* tree);
 
@@ -890,8 +903,8 @@ protected:
 
     unsigned getFirstArgWithStackSlot();
 
-    void genCompareFloat(GenTree* treeNode);
-    void genCompareInt(GenTree* treeNode);
+    void genCompareFloat(GenTreeOp* treeNode);
+    void genCompareInt(GenTreeOp* treeNode);
 #ifdef TARGET_XARCH
     bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
     GenTree* genTryFindFlagsConsumer(GenTree* flagsProducer, GenCondition** condition);
@@ -1344,7 +1357,8 @@ public:
 #if defined(TARGET_XARCH)
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isRemovableJmpCandidate = false);
 #elif defined(TARGET_WASM)
-    void inst_JMP(emitJumpKind jmp, unsigned depth);
+    void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
+    void inst_SWITCH(unsigned caseCount);
     void inst_LABEL(unsigned depth);
 #else
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
