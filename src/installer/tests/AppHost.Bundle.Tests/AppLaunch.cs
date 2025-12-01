@@ -78,7 +78,7 @@ namespace AppHost.Bundle.Tests
                 string expectedVersion = HostTestContext.MicrosoftNETCoreAppVersion.Contains('-')
                     ? HostTestContext.MicrosoftNETCoreAppVersion[..HostTestContext.MicrosoftNETCoreAppVersion.IndexOf('-')]
                     : HostTestContext.MicrosoftNETCoreAppVersion;
-                Assert.Equal(expectedVersion, System.Diagnostics.FileVersionInfo.GetVersionInfo(singleFile).FileVersion);
+                Assert.Equal($"{expectedVersion}.0", System.Diagnostics.FileVersionInfo.GetVersionInfo(singleFile).FileVersion);
             }
         }
 
