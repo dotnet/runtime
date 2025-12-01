@@ -575,6 +575,7 @@ namespace System
         /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        [Intrinsic]
         public static explicit operator Half(double value)
         {
             const int DoubleMaxExponent = 0x7FF;
@@ -609,11 +610,13 @@ namespace System
         /// <summary>Explicitly converts a <see cref="int" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        [Intrinsic]
         public static explicit operator Half(int value) => (Half)(float)value;
 
         /// <summary>Explicitly converts a <see cref="long" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
+        [Intrinsic]
         public static explicit operator Half(long value) => (Half)(float)value;
 
         /// <summary>Explicitly converts a <see cref="nint" /> value to its nearest representable half-precision floating-point value.</summary>
@@ -798,12 +801,14 @@ namespace System
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         public static explicit operator Half(uint value) => (Half)(float)value;
 
         /// <summary>Explicitly converts a <see cref="ulong" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         public static explicit operator Half(ulong value) => (Half)(float)value;
 
         /// <summary>Explicitly converts a <see cref="nuint" /> value to its nearest representable half-precision floating-point value.</summary>
@@ -857,6 +862,7 @@ namespace System
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="int" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="int" /> value.</returns>
+        [Intrinsic]
         public static explicit operator int(Half value) => (int)(float)value;
 
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="int" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
@@ -868,6 +874,7 @@ namespace System
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="long" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="long" /> value.</returns>
+        [Intrinsic]
         public static explicit operator long(Half value) => (long)(float)value;
 
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="long" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
@@ -928,6 +935,7 @@ namespace System
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="uint" /> value.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         public static explicit operator uint(Half value) => (uint)(float)value;
 
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="uint" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
@@ -941,6 +949,7 @@ namespace System
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="ulong" /> value.</returns>
         [CLSCompliant(false)]
+        [Intrinsic]
         public static explicit operator ulong(Half value) => (ulong)(float)value;
 
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="ulong" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
@@ -998,6 +1007,7 @@ namespace System
         /// <summary>Explicitly converts a half-precision floating-point value to its nearest representable <see cref="double" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="double" /> value.</returns>
+        [Intrinsic]
         public static explicit operator double(Half value)
         {
             bool sign = IsNegative(value);

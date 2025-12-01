@@ -21411,7 +21411,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             if (ins == INS_vcvtss2sh || ins == INS_vcvtsh2ss || ins == INS_vaddsh || ins == INS_vsubsh ||
                 ins == INS_vmulsh || ins == INS_vdivsh || ins == INS_vcomish || ins == INS_vsqrtsh ||
                 ins == INS_vmaxsh || ins == INS_vminsh || ins == INS_vrcpsh || ins == INS_vrsqrtsh ||
-                ins == INS_vrndscalesh || ins == INS_vfmadd213sh)
+                ins == INS_vrndscalesh || ins == INS_vfmadd213sh || INS_vcvtsd2sh || INS_vcvtsh2sd ||
+                ins == INS_vcvtsi2sh32 || ins == INS_vcvtsi2sh64 || ins == INS_vcvtsh2si32 || ins == INS_vcvtsh2si64 ||
+                ins == INS_vcvtusi2sh32 || ins == INS_vcvtusi2sh64 || ins == INS_vcvtsh2usi32 ||
+                ins == INS_vcvtsh2usi64)
             {
                 result.insLatency    = PERFSCORE_LATENCY_1C;
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
