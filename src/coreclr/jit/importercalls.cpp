@@ -3785,17 +3785,18 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         subOp1->gtGetOp1()->OperIs(GT_FIELD_ADDR) &&
                         GenTree::Compare(subOp1->gtGetOp1()->gtGetOp1(), spanArg))
                     {
-                        CORINFO_FIELD_HANDLE dataHnd      = info.compCompHnd->getFieldInClass(clsHnd, 0);
+                        CORINFO_FIELD_HANDLE refHnd       = info.compCompHnd->getFieldInClass(clsHnd, 0);
                         CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
                         unsigned             refOffset    = OFFSETOF__CORINFO_Span__reference;
                         unsigned             lengthOffset = OFFSETOF__CORINFO_Span__length;
 
-                        // It's probably impossible for the field to be something else, but just to be sure...
+                        // It's unlikely to be anything other than the _length field, but just to be sure.
                         if (subOp1->gtGetOp1()->AsFieldAddr()->gtFldHnd != lengthHnd)
                         {
                             return nullptr;
                         }
 
+                        // Clone spanArg for multiple uses:
                         GenTree* spanArgClone = nullptr;
                         if (impIsAddressInLocal(spanArg))
                         {
@@ -3807,7 +3808,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                                    nullptr DEBUGARG("Span.Slice spanArg"));
                         }
 
-                        GenTreeFieldAddr* refFieldAddr    = gtNewFieldAddrNode(dataHnd, spanArg, refOffset);
+                        GenTreeFieldAddr* refFieldAddr    = gtNewFieldAddrNode(refHnd, spanArg, refOffset);
                         GenTreeFieldAddr* lengthFieldAddr = gtNewFieldAddrNode(lengthHnd, spanArgClone, lengthOffset);
 
                         GenTree* oldRef    = gtNewIndir(TYP_BYREF, refFieldAddr);
@@ -3818,19 +3819,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         unsigned             spanTempNum = lvaGrabTemp(true DEBUGARG("(ReadOnly)Span<T> for Slice"));
                         lvaSetStruct(spanTempNum, spanHnd, false);
 
-                        // Create clones of start and oldLength for multiple uses:
-                        //
-                        GenTree* startArgClone  = nullptr;
-                        GenTree* oldLengthClone = nullptr;
-
-                        startArg  = impCloneExpr(startArg, &startArgClone, CHECK_SPILL_ALL,
-                                                 nullptr DEBUGARG("Span.Slice spanArg"));
-                        oldLength = impCloneExpr(oldLength, &oldLengthClone, CHECK_SPILL_ALL,
-                                                 nullptr DEBUGARG("Span.Slice length"));
-
                         // Emit the bounds check:
                         //
-                        // if ((uint)start <= (uint)oldLength)
+                        // if ((uint)start > (uint)oldLength)
                         //     ThrowHelper.ThrowArgumentOutOfRangeException();
                         //
                         GenTree* oobCheck = gtNewOperNode(GT_LE, TYP_INT, startArg, oldLength);
@@ -3852,20 +3843,20 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                         // _reference:
                         GenTree* bytesOffset =
-                            gtFoldExpr(gtNewOperNode(GT_MUL, TYP_INT, startArgClone, gtNewIconNode(elemSize, TYP_INT)));
-                        GenTree* bytesOffsetI = gtFoldExpr(impImplicitIorI4Cast(bytesOffset, TYP_I_IMPL));
-                        GenTree* newRef       = gtNewOperNode(GT_ADD, TYP_BYREF, oldRef, bytesOffsetI);
+                            gtFoldExpr(gtNewOperNode(GT_MUL, TYP_INT, startArg, gtNewIconNode(elemSize, TYP_INT)));
+                        GenTree* bytesOffsetI  = gtFoldExpr(impImplicitIorI4Cast(bytesOffset, TYP_I_IMPL));
+                        GenTree* newRef        = gtNewOperNode(GT_ADD, TYP_BYREF, oldRef, bytesOffsetI);
+                        GenTree* refFieldStore = gtNewStoreLclFldNode(spanTempNum, TYP_BYREF, refOffset, newRef);
 
                         // _length:
-                        GenTree* dataFieldStore = gtNewStoreLclFldNode(spanTempNum, TYP_BYREF, refOffset, newRef);
                         GenTree* lenSubStart =
-                            gtNewOperNode(GT_SUB, TYP_INT, oldLengthClone, gtCloneExpr(startArgClone));
+                            gtNewOperNode(GT_SUB, TYP_INT, gtCloneExpr(oldLength), gtCloneExpr(startArg));
                         GenTree* lengthFieldStore =
                             gtNewStoreLclFldNode(spanTempNum, TYP_INT, lengthOffset, gtFoldExpr(lenSubStart));
 
                         impPopStack(3);
+                        impAppendTree(refFieldStore, CHECK_SPILL_ALL, impCurStmtDI);
                         impAppendTree(lengthFieldStore, CHECK_SPILL_ALL, impCurStmtDI);
-                        impAppendTree(dataFieldStore, CHECK_SPILL_ALL, impCurStmtDI);
                         return impCreateLocalNode(spanTempNum DEBUGARG(0));
                     }
                 }
