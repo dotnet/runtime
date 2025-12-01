@@ -5374,7 +5374,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     {
         iterateTailMerge(block);
 
-        if (block->KindIs(BBJ_RETURN) && !block->isEmpty() && (block != genReturnBB))
+        if (block->KindIs(BBJ_RETURN, BBJ_THROW) && !block->isEmpty() && (block != genReturnBB))
         {
             // Avoid spitting a return away from a possible tail call
             //
