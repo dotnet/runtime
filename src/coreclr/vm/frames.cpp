@@ -1472,7 +1472,7 @@ void ProtectValueClassFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
         }
         else
         {
-            // pMT is an object reference type, simple report the address directly.
+            // pMT is an object reference type, simply report the address directly.
             (*fn)(dac_cast<PTR_PTR_Object>(pVCInfo->pData), sc, 0);
         }
         pVCInfo = pVCInfo->pNext;

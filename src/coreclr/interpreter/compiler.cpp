@@ -6336,8 +6336,8 @@ bool InterpCompiler::FindAndApplyPeep(OpcodePeep* Peeps[])
                 skipToNextPeep = true;
                 break;
             }
-            InterpBasicBlock *pNewBB = compiler->m_ppOffsetToBB[insOffset];
-            if (pNewBB != NULL && compiler->m_pCBB != pNewBB)
+            InterpBasicBlock *pNewBB = m_ppOffsetToBB[insOffset];
+            if (pNewBB != NULL && m_pCBB != pNewBB)
             {
                 // Ran into a different basic block
                 skipToNextPeep = true;
