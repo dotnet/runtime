@@ -1,0 +1,328 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Xunit;
+
+namespace System.IO.Compression.Tests
+{
+    public class ZipFile_EncryptionTests : ZipFileTestBase
+    {
+        public static IEnumerable<object[]> Get_SingleEntry_Data()
+        {
+            foreach (var method in new[]
+            {
+                ZipArchiveEntry.EncryptionMethod.ZipCrypto,
+                ZipArchiveEntry.EncryptionMethod.Aes128,
+                ZipArchiveEntry.EncryptionMethod.Aes192,
+                ZipArchiveEntry.EncryptionMethod.Aes256
+            })
+            {
+                yield return new object[] { method, false };
+                yield return new object[] { method, true };
+            }
+        }
+
+        public static IEnumerable<object[]> Get_MultipleEntries_SamePassword_Data()
+        {
+            foreach (var method in new[]
+            {
+                ZipArchiveEntry.EncryptionMethod.ZipCrypto,
+                ZipArchiveEntry.EncryptionMethod.Aes256
+            })
+            {
+                yield return new object[] { method, false };
+                yield return new object[] { method, true };
+            }
+        }
+
+        public static IEnumerable<object[]> Get_MultipleEntries_DifferentPasswords_Data()
+        {
+            foreach (var method in new[]
+            {
+                ZipArchiveEntry.EncryptionMethod.ZipCrypto,
+                ZipArchiveEntry.EncryptionMethod.Aes256
+            })
+            {
+                yield return new object[] { method, false };
+                yield return new object[] { method, true };
+            }
+        }
+
+        public static IEnumerable<object[]> Get_MixedPlainEncrypted_Data()
+        {
+            foreach (var method in new[]
+            {
+                ZipArchiveEntry.EncryptionMethod.ZipCrypto,
+                ZipArchiveEntry.EncryptionMethod.Aes128,
+                ZipArchiveEntry.EncryptionMethod.Aes256
+            })
+            {
+                yield return new object[] { method, false };
+                yield return new object[] { method, true };
+            }
+        }
+
+        public static IEnumerable<object[]> Get_Is_Async()
+        {
+            yield return new object[] { false };
+            yield return new object[] { true };
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_SingleEntry_Data))]
+        public async Task Encryption_SingleEntry_RoundTrip(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string entryName = "test.txt";
+            string content = "Secret Content";
+            string password = "password123";
+
+            var entries = new[] { (entryName, content, (string?)password, (ZipArchiveEntry.EncryptionMethod?)encryptionMethod) };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                ZipArchiveEntry entry = archive.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                await AssertEntryTextEquals(entry, content, password, async);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_MultipleEntries_SamePassword_Data))]
+        public async Task Encryption_MultipleEntries_SamePassword_RoundTrip(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "SharedPassword";
+            var entries = new[]
+            {
+                ("file1.txt", "Content 1", (string?)password, (ZipArchiveEntry.EncryptionMethod?)encryptionMethod),
+                ("folder/file2.txt", "Content 2", (string?)password, (ZipArchiveEntry.EncryptionMethod?)encryptionMethod)
+            };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                foreach (var (name, content, pwd, _) in entries)
+                {
+                    var entry = archive.GetEntry(name);
+                    Assert.NotNull(entry);
+                    await AssertEntryTextEquals(entry, content, pwd, async);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_MultipleEntries_DifferentPasswords_Data))]
+        public async Task Encryption_MultipleEntries_DifferentPasswords_RoundTrip(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            var entries = new[]
+            {
+                ("file1.txt", "Content 1", (string?)"pass1", (ZipArchiveEntry.EncryptionMethod?)encryptionMethod),
+                ("file2.txt", "Content 2", (string?)"pass2", (ZipArchiveEntry.EncryptionMethod?)encryptionMethod)
+            };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                foreach (var (name, content, pwd, _) in entries)
+                {
+                    var entry = archive.GetEntry(name);
+                    Assert.NotNull(entry);
+                    await AssertEntryTextEquals(entry, content, pwd, async);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_MixedPlainEncrypted_Data))]
+        public async Task Encryption_MixedPlainAndEncrypted_RoundTrip(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            var entries = new[]
+            {
+                ("plain.txt", "Plain Content", (string?)null, (ZipArchiveEntry.EncryptionMethod?)null),
+                ("encrypted.txt", "Encrypted Content", (string?)"pass", (ZipArchiveEntry.EncryptionMethod?)encryptionMethod)
+            };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                // Check plain
+                var plainEntry = archive.GetEntry("plain.txt");
+                Assert.NotNull(plainEntry);
+                await AssertEntryTextEquals(plainEntry, "Plain Content", null, async);
+
+                // Check encrypted
+                var encEntry = archive.GetEntry("encrypted.txt");
+                Assert.NotNull(encEntry);
+                await AssertEntryTextEquals(encEntry, "Encrypted Content", "pass", async);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Is_Async))]
+        public async Task Encryption_Combinations_RoundTrip(bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            var entries = new[]
+            {
+                ("zipcrypto.txt", "ZipCrypto Content", (string?)"pass1", (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.ZipCrypto),
+                ("aes128.txt", "AES128 Content", (string?)"pass2", (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes128),
+                ("aes256.txt", "AES256 Content", (string?)"pass3", (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256)
+            };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                foreach (var (name, content, pwd, _) in entries)
+                {
+                    var entry = archive.GetEntry(name);
+                    Assert.NotNull(entry);
+                    await AssertEntryTextEquals(entry, content, pwd, async);
+                }
+            }
+        }
+
+        [Fact]
+        public void Negative_WrongPassword_Throws_InvalidDataException()
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "correct";
+            var entries = new[] { ("test.txt", "content", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256) };
+            CreateArchiveWithEntries(archivePath, entries, async: false).GetAwaiter().GetResult();
+
+            using (ZipArchive archive = ZipFile.OpenRead(archivePath))
+            {
+                var entry = archive.GetEntry("test.txt");
+                Assert.Throws<InvalidDataException>(() => entry.Open("wrong"));
+            }
+        }
+
+        [Fact]
+        public void Negative_MissingPassword_Throws_InvalidDataException()
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "correct";
+            var entries = new[] { ("test.txt", "content", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256) };
+            CreateArchiveWithEntries(archivePath, entries, async: false).GetAwaiter().GetResult();
+
+            using (ZipArchive archive = ZipFile.OpenRead(archivePath))
+            {
+                var entry = archive.GetEntry("test.txt");
+                Assert.Throws<InvalidDataException>(() => entry.Open());
+            }
+        }
+
+        [Fact]
+        public void Negative_OpeningPlainEntryWithPassword_Throws()
+        {
+            string archivePath = GetTempArchivePath();
+            var entries = new[] { ("plain.txt", "content", (string?)null, (ZipArchiveEntry.EncryptionMethod?)null) };
+            CreateArchiveWithEntries(archivePath, entries, async: false).GetAwaiter().GetResult();
+
+            using (ZipArchive archive = ZipFile.OpenRead(archivePath))
+            {
+                var entry = archive.GetEntry("plain.txt");
+                Assert.ThrowsAny<Exception>(() => entry.Open("password"));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Is_Async))]
+        // todo: some async methods in ziparchiveentry missing implementation for winzipaesstream
+        public async Task ExtractToFile_Encrypted_Success(bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "pass";
+            var entries = new[] { ("test.txt", "content", (string?)password, (ZipArchiveEntry.EncryptionMethod?)ZipArchiveEntry.EncryptionMethod.Aes256) };
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                var entry = archive.GetEntry("test.txt");
+                string destFile = GetTestFilePath();
+                
+                if (async)
+                {
+                    await entry.ExtractToFileAsync(destFile, overwrite: true, password: password);
+                    Assert.Equal("content", await File.ReadAllTextAsync(destFile));
+                }
+                else
+                {
+                    entry.ExtractToFile(destFile, overwrite: true, password: password);
+                    Assert.Equal("content", File.ReadAllText(destFile));
+                }
+            }
+        }
+
+        private string GetTempArchivePath() => GetTestFilePath();
+
+        private async Task CreateArchiveWithEntries(string archivePath, (string Name, string Content, string? Password, ZipArchiveEntry.EncryptionMethod? Encryption)[] entries, bool async)
+        {
+            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Create))
+            {
+                foreach (var (name, content, password, encryption) in entries)
+                {
+                    ZipArchiveEntry entry = archive.CreateEntry(name);
+                    Stream s;
+                    if (password != null && encryption.HasValue)
+                    {
+                        s = entry.Open(password, encryption.Value);
+                    }
+                    else
+                    {
+                        s = await OpenEntryStream(async, entry);
+                    }
+
+                    using (s)
+                    using (StreamWriter w = new StreamWriter(s, Encoding.UTF8))
+                    {
+                        if (async)
+                            await w.WriteAsync(content);
+                        else
+                            w.Write(content);
+                    }
+                }
+            }
+        }
+
+        private async Task AssertEntryTextEquals(ZipArchiveEntry entry, string expected, string? password, bool async)
+        {
+            Stream s;
+            if (password != null)
+            {
+                s = entry.Open(password);
+            }
+            else
+            {
+                s = await OpenEntryStream(async, entry);
+            }
+
+            using (s)
+            using (StreamReader r = new StreamReader(s, Encoding.UTF8))
+            {
+                string actual;
+                if (async)
+                    actual = await r.ReadToEndAsync();
+                else
+                    actual = r.ReadToEnd();
+                
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+}
