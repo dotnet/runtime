@@ -524,7 +524,7 @@ struct OpcodePeepElement
 };
 
 typedef bool (InterpCompiler::*CheckIfTokensAllowPeepToBeUsedFunc_t)(const uint8_t* ip, OpcodePeepElement*, void** outComputedInfo);
-typedef void (InterpCompiler::*ApplyPeepFunc_t)(const uint8_t* ip, OpcodePeepElement*, void* computedInfo);
+typedef int (InterpCompiler::*ApplyPeepFunc_t)(const uint8_t* ip, OpcodePeepElement*, void* computedInfo);
 struct OpcodePeep
 {
     OpcodePeepElement* const pattern;
@@ -603,6 +603,11 @@ private:
     // If the method has a hidden argument, GenerateCode allocates a var to store it and
     //  populates the var at method entry
     int32_t m_hiddenArgumentVar;
+
+    // If RuntimeHelpers.SetNextCallGenericContext or SetNextCallAsyncContinuation were used
+    // then these contain the value that should be passed as those arguments.
+    int32_t m_nextCallGenericContextVar;
+    int32_t m_nextCallAsyncContinuationVar;
 
     // Table of mappings of leave instructions to the first finally call island the leave
     // needs to execute.
@@ -821,16 +826,31 @@ private:
     bool    FindAndApplyPeep(OpcodePeep* Peeps[]);
 
     bool    IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
-    void    ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     bool    IsTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
-    void    ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     bool    IsBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
-    void    ApplyBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxIsInstPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxIsInstPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxIsInstBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxIsInstBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxIsInstLdNullCgtUnPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxIsInstLdNullCgtUnPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxIsInstUnboxAnyPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxIsInstUnboxAnyPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     bool    IsTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
-    void    ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     enum class ContinuationContextHandling : uint8_t
     {
@@ -861,6 +881,7 @@ private:
     bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder, bool enableImplicitArgConversionRules);
+    void    EmitNintIndexCheck(StackInfo *spArray, StackInfo *spIndex);
     void    EmitLdelem(int32_t opcode, InterpType type);
     void    EmitStelem(InterpType type);
     void    EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken);

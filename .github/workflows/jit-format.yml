@@ -33,7 +33,7 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Checkout runtime
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: runtime
       - name: Install Python
@@ -46,7 +46,7 @@ jobs:
           ROOTFS_DIR: ${{ matrix.os.rootfs }}
       
       - name: Publish format.patch
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           path: runtime/format.patch
           name: format.${{matrix.os.name}}.patch
