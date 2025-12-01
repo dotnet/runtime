@@ -3770,10 +3770,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 //
                 // lenArg:
                 //   * SUB       int
-                //   +-- * IND       int
-                //   |  \-- * FIELD_ADDR byref  System.Span`1[int]:_length
-                //   |      \-- * LCL_VAR   byref  V01 loc0
-                //   \-- * CNS_INT   int    8
+                //   |-- * IND       int
+                //   |   |-- * FIELD_ADDR byref  System.Span`1[int]:_length
+                //   |       |-- * LCL_VAR   byref  V01 loc0
+                //   |-- * CNS_INT   int    8
                 //
                 if (lenArg->OperIs(GT_SUB) && ((startArg->gtFlags & GTF_ALL_EFFECT) == 0) &&
                     ((spanArg->gtFlags & GTF_ALL_EFFECT) == 0))
@@ -3842,8 +3842,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         assert(elemSize > 0);
 
                         // _reference:
-                        GenTree* bytesOffset =
-                            gtFoldExpr(gtNewOperNode(GT_MUL, TYP_INT, startArg, gtNewIconNode(elemSize, TYP_INT)));
+                        GenTree* bytesOffset = gtFoldExpr(
+                            gtNewOperNode(GT_MUL, TYP_INT, gtCloneExpr(startArg), gtNewIconNode(elemSize, TYP_INT)));
                         GenTree* bytesOffsetI  = gtFoldExpr(impImplicitIorI4Cast(bytesOffset, TYP_I_IMPL));
                         GenTree* newRef        = gtNewOperNode(GT_ADD, TYP_BYREF, oldRef, bytesOffsetI);
                         GenTree* refFieldStore = gtNewStoreLclFldNode(spanTempNum, TYP_BYREF, refOffset, newRef);
