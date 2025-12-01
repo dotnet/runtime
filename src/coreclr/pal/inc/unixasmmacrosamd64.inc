@@ -298,6 +298,7 @@ C_FUNC(\Name\()_End):
 
         __PWTB_StackAlloc = __PWTB_FloatArgumentRegisters + 8 * 16 + 8 // 8 floating point registers
         __PWTB_TransitionBlock = __PWTB_StackAlloc
+        __PWTB_ArgumentRegisters = __PWTB_TransitionBlock
 
         .if \stackAllocOnEntry >= 4*8
         .error "Max supported stackAllocOnEntry is 3*8"

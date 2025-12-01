@@ -3888,7 +3888,7 @@ do                                                                      \
 
                 case INTOP_GET_CONTINUATION:
                 {
-                    LOCAL_VAR(ip[1], CONTINUATIONREF) = pInterpreterFrame->GetContinuation();
+                    LOCAL_VAR(ip[1], OBJECTREF) = pInterpreterFrame->GetContinuation();
                     pInterpreterFrame->SetContinuation(NULL);
                     ip += 2;
                     break;
