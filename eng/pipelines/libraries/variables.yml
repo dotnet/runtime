@@ -1,6 +1,5 @@
 variables:
   - template: /eng/pipelines/common/variables.yml
-  - template: /eng/pipelines/helix-platforms.yml
   - template: /eng/common/templates/variables/pool-providers.yml
   - name: buildScriptFileName
     value: libraries
