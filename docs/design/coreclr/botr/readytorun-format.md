@@ -871,9 +871,6 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_MemSet                    = 0x40,
     READYTORUN_HELPER_MemCpy                    = 0x41,
 
-    // Get string handle lazily
-    READYTORUN_HELPER_GetString                 = 0x50,
-
     // Used by /Tuning for Profile optimizations
     READYTORUN_HELPER_LogMethodEnter            = 0x51, // Unused since READYTORUN_MAJOR_VERSION 10.0
 

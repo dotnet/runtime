@@ -359,9 +359,6 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_ReversePInvokeEnter       = 0x45,
     READYTORUN_HELPER_ReversePInvokeExit        = 0x46,
 
-    // Get string handle lazily
-    READYTORUN_HELPER_GetString                 = 0x50,
-
     // Used by /Tuning for Profile optimizations
     READYTORUN_HELPER_LogMethodEnter            = 0x51, // No longer supported as of READYTORUN_MAJOR_VERSION 10.0
 

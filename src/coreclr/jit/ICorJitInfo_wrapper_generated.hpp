@@ -1310,15 +1310,6 @@ void WrapICorJitInfo::getFunctionFixedEntryPoint(
     API_LEAVE(getFunctionFixedEntryPoint);
 }
 
-CorInfoHelpFunc WrapICorJitInfo::getLazyStringLiteralHelper(
-          CORINFO_MODULE_HANDLE handle)
-{
-    API_ENTER(getLazyStringLiteralHelper);
-    CorInfoHelpFunc temp = wrapHnd->getLazyStringLiteralHelper(handle);
-    API_LEAVE(getLazyStringLiteralHelper);
-    return temp;
-}
-
 CORINFO_MODULE_HANDLE WrapICorJitInfo::embedModuleHandle(
           CORINFO_MODULE_HANDLE handle,
           void** ppIndirection)
