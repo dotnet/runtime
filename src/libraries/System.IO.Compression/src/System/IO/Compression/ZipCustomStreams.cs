@@ -862,8 +862,7 @@ namespace System.IO.Compression
                 // Validate CRC when stream is closed (if all data was read)
                 if (_totalBytesRead == _expectedLength && _runningCrc != _expectedCrc)
                 {
-                    throw new InvalidDataException(
-                        $"CRC mismatch. Expected: 0x{_expectedCrc:X8}, Got: 0x{_runningCrc:X8}");
+                    throw new InvalidDataException("CRC mismatch");
                 }
 
                 _baseStream.Dispose();

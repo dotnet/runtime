@@ -11,6 +11,7 @@ namespace System.IO.Compression
 {
     internal sealed class WinZipAesStream : Stream
     {
+        private const int BLOCK_SIZE = 16; // AES block size in bytes
         private readonly Stream _baseStream;
         private readonly bool _encrypting;
         private readonly int _keySizeBits;
@@ -19,7 +20,7 @@ namespace System.IO.Compression
 #pragma warning disable CA1416 // HMACSHA1 is available on all platforms
         private readonly HMACSHA1 _hmac;
 #pragma warning restore CA1416
-        private readonly byte[] _counterBlock = new byte[16];
+        private readonly byte[] _counterBlock = new byte[BLOCK_SIZE];
         private byte[]? _key;
         private byte[]? _hmacKey;
         private byte[]? _salt;
@@ -27,25 +28,23 @@ namespace System.IO.Compression
         private bool _headerWritten;
         private bool _headerRead;
         private long _position;
-        private readonly ReadOnlyMemory<char> _password;
         private bool _disposed;
         private bool _authCodeValidated;
         private readonly long _totalStreamSize;
-        private long _bytesReadFromBase;
         private readonly bool _leaveOpen;
-        private readonly MemoryStream? _encryptionBuffer;
+        private readonly long _encryptedDataSize;
+        private long _encryptedDataRemaining;
+        private readonly byte[] _partialBlock = new byte[BLOCK_SIZE];
+        private int _partialBlockBytes;
 
         public WinZipAesStream(Stream baseStream, ReadOnlyMemory<char> password, bool encrypting, int keySizeBits = 256, long totalStreamSize = -1, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(baseStream);
 
-
             _baseStream = baseStream;
-            _password = password;
             _encrypting = encrypting;
             _keySizeBits = keySizeBits;
             _totalStreamSize = totalStreamSize; // Store the total size
-            _bytesReadFromBase = 0;
             _leaveOpen = leaveOpen;
 #pragma warning disable CA1416 // HMACSHA1 is available on all platforms
             _aes = Aes.Create();
@@ -62,19 +61,43 @@ namespace System.IO.Compression
             Array.Clear(_counterBlock, 0, 16);
             _counterBlock[0] = 1;
 
+            if (_totalStreamSize > 0)
+            {
+                int saltSize = _keySizeBits / 16;
+                int headerSize = saltSize + 2; // Salt + Password Verifier
+                const int hmacSize = 10; // 10-byte HMAC
+
+                _encryptedDataSize = _totalStreamSize - headerSize - hmacSize;
+                _encryptedDataRemaining = _encryptedDataSize;
+            }
+            else
+            {
+                _encryptedDataSize = -1;
+                _encryptedDataRemaining = -1;
+            }
+
             if (_encrypting)
             {
-                _encryptionBuffer = new MemoryStream();
-                GenerateKeys();
+                // 8 for AES-128, 12 for AES-192, 16 for AES-256
+                int saltSize = _keySizeBits / 16;
+                _salt = new byte[saltSize];
+                RandomNumberGenerator.Fill(_salt);
+
+                DeriveKeysFromPassword(password, _salt);
+
+                Debug.Assert(_hmacKey is not null, "HMAC key should be derived");
+                _hmac.Key = _hmacKey!;
                 InitCipher();
+            }
+            else
+            {
+                ReadHeader(password);
             }
         }
 
-        private void DeriveKeysFromPassword()
+        private void DeriveKeysFromPassword(ReadOnlyMemory<char> password, byte[] salt)
         {
-            Debug.Assert(_salt is not null, "Salt must be initialized before deriving keys");
-
-            byte[] passwordBytes = Encoding.UTF8.GetBytes(_password.ToArray());
+            byte[] passwordBytes = Encoding.UTF8.GetBytes(password.ToArray());
 
             try
             {
@@ -85,7 +108,7 @@ namespace System.IO.Compression
                 // WinZip AES uses SHA1 for PBKDF2 with 1000 iterations per spec
                 byte[] derivedKey = Rfc2898DeriveBytes.Pbkdf2(
                 passwordBytes,
-                _salt!,
+                salt,
                 1000,
                 HashAlgorithmName.SHA1,
                 totalKeySize);
@@ -95,20 +118,12 @@ namespace System.IO.Compression
                 _hmacKey = new byte[keySizeInBytes];
                 _passwordVerifier = new byte[2];
 
-                // Copy the key material in the correct order
-                int offset = 0;
-
                 // First: AES encryption key
-                Buffer.BlockCopy(derivedKey, offset, _key, 0, _key.Length);
-                offset += _key.Length;
-
+                derivedKey.AsSpan(0, _key.Length).CopyTo(_key);
                 // Second: HMAC authentication key (same size as encryption key)
-                Buffer.BlockCopy(derivedKey, offset, _hmacKey, 0, _hmacKey.Length);
-                offset += _hmacKey.Length;
-
+                derivedKey.AsSpan(_key.Length, _hmacKey.Length).CopyTo(_hmacKey);
                 // Third: Password verification value (2 bytes)
-                Buffer.BlockCopy(derivedKey, offset, _passwordVerifier, 0, _passwordVerifier.Length);
-
+                derivedKey.AsSpan(_key.Length + _hmacKey.Length).CopyTo(_passwordVerifier);
                 // Clear the derived key from memory
                 Array.Clear(derivedKey, 0, derivedKey.Length);
             }
@@ -119,101 +134,7 @@ namespace System.IO.Compression
             }
         }
 
-        private void ValidateAuthCode()
-        {
-            if (_encrypting || _authCodeValidated)
-                return;
-
-            // Finalize HMAC computation
-            _hmac.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-            byte[]? expectedAuth = _hmac.Hash;
-
-            if (expectedAuth is not null)
-            {
-                // Read the 10-byte stored authentication code from the stream
-                byte[] storedAuth = new byte[10];
-                _baseStream.ReadExactly(storedAuth);
-
-                // Compare the first 10 bytes of the expected hash
-                if (!storedAuth.AsSpan().SequenceEqual(expectedAuth.AsSpan(0, 10)))
-                    throw new InvalidDataException("Authentication code mismatch.");
-            }
-
-            _authCodeValidated = true;
-        }
-
-        private async Task ValidateAuthCodeAsync(CancellationToken cancellationToken)
-        {
-            if (_encrypting || _authCodeValidated)
-                return;
-
-            // Finalize HMAC computation
-            _hmac.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-            byte[]? expectedAuth = _hmac.Hash;
-
-            if (expectedAuth is not null)
-            {
-                // Read the 10-byte stored authentication code from the stream
-                byte[] storedAuth = new byte[10];
-                await _baseStream.ReadExactlyAsync(storedAuth, cancellationToken).ConfigureAwait(false);
-
-                // Compare the first 10 bytes of the expected hash
-                if (!storedAuth.AsSpan().SequenceEqual(expectedAuth.AsSpan(0, 10)))
-                    throw new InvalidDataException("Authentication code mismatch.");
-            }
-
-            _authCodeValidated = true;
-        }
-
-        private void GenerateKeys()
-        {
-            // 8 for AES-128, 12 for AES-192, 16 for AES-256
-            int saltSize = _keySizeBits / 16;
-            _salt = new byte[saltSize];
-            RandomNumberGenerator.Fill(_salt);
-
-            DeriveKeysFromPassword();
-
-            Debug.Assert(_hmacKey is not null, "HMAC key should be derived");
-            _hmac.Key = _hmacKey!;
-        }
-
-        private void InitCipher()
-        {
-            Debug.Assert(_key is not null, "_key is not null");
-
-            _aes.Key = _key!;
-            _aesEncryptor = _aes.CreateEncryptor();
-        }
-
-        private void WriteHeader()
-        {
-            if (_headerWritten) return;
-
-            Debug.Assert(_salt is not null && _passwordVerifier is not null, "Keys should have been generated before writing header");
-
-            _baseStream.Write(_salt);
-            _baseStream.Write(_passwordVerifier);
-            // output to debug log
-            Debug.WriteLine($"Wrote salt: {BitConverter.ToString(_salt)}");
-            Debug.WriteLine($"Wrote password verifier: {BitConverter.ToString(_passwordVerifier)}");
-
-            _headerWritten = true;
-        }
-
-        private async Task WriteHeaderAsync(CancellationToken cancellationToken)
-        {
-            if (_headerWritten) return;
-            Debug.Assert(_salt is not null && _passwordVerifier is not null, "Keys should have been generated before writing header");
-            await _baseStream.WriteAsync(_salt, cancellationToken).ConfigureAwait(false);
-            await _baseStream.WriteAsync(_passwordVerifier, cancellationToken).ConfigureAwait(false);
-            // output to debug log
-            Debug.WriteLine($"Wrote salt: {BitConverter.ToString(_salt)}");
-            Debug.WriteLine($"Wrote password verifier: {BitConverter.ToString(_passwordVerifier)}");
-            _headerWritten = true;
-        }
-
-        private void ReadHeader()
+        private void ReadHeader(ReadOnlyMemory<char> password)
         {
             if (_headerRead) return;
 
@@ -229,17 +150,11 @@ namespace System.IO.Compression
             byte[] verifier = new byte[2];
             _baseStream.ReadExactly(verifier);
 
-            // Debug: Log the verifier
-            Debug.WriteLine($"Password verifier: {BitConverter.ToString(verifier)}");
-
             // Derive keys from password and salt
-            DeriveKeysFromPassword();
+            DeriveKeysFromPassword(password, _salt);
 
             // Verify the password
             Debug.Assert(_passwordVerifier is not null, "Password verifier should be derived");
-
-            // Debug: Log derived verifier
-            Debug.WriteLine($"Derived verifier: {BitConverter.ToString(_passwordVerifier!)}");
 
             if (!verifier.AsSpan().SequenceEqual(_passwordVerifier!))
             {
@@ -256,17 +171,95 @@ namespace System.IO.Compression
             _headerRead = true;
         }
 
+        private async Task ValidateAuthCodeCoreAsync(bool isAsync, CancellationToken cancellationToken)
+        {
+            if (_encrypting || _authCodeValidated)
+                return;
+
+            // Finalize HMAC computation
+            _hmac.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+            byte[]? expectedAuth = _hmac.Hash;
+
+            if (expectedAuth is not null)
+            {
+                // Read the 10-byte stored authentication code from the stream
+                byte[] storedAuth = new byte[10];
+
+                if (isAsync)
+                {
+                    await _baseStream.ReadExactlyAsync(storedAuth, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    _baseStream.ReadExactly(storedAuth);
+                }
+
+                // Compare the first 10 bytes of the expected hash
+                if (!storedAuth.AsSpan().SequenceEqual(expectedAuth.AsSpan(0, 10)))
+                    throw new InvalidDataException("Authentication code mismatch.");
+            }
+
+            _authCodeValidated = true;
+        }
+
+        private void ValidateAuthCode()
+        {
+            ValidateAuthCodeCoreAsync(isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        private Task ValidateAuthCodeAsync(CancellationToken cancellationToken)
+        {
+            return ValidateAuthCodeCoreAsync(isAsync: true, cancellationToken);
+        }
+
+        private void InitCipher()
+        {
+            Debug.Assert(_key is not null, "_key is not null");
+
+            _aes.Key = _key!;
+            _aesEncryptor = _aes.CreateEncryptor();
+        }
+
+        private async Task WriteHeaderCoreAsync(bool isAsync, CancellationToken cancellationToken)
+        {
+            if (_headerWritten) return;
+
+            Debug.Assert(_salt is not null && _passwordVerifier is not null, "Keys should have been generated before writing header");
+
+            if (isAsync)
+            {
+                await _baseStream.WriteAsync(_salt, cancellationToken).ConfigureAwait(false);
+                await _baseStream.WriteAsync(_passwordVerifier, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                _baseStream.Write(_salt);
+                _baseStream.Write(_passwordVerifier);
+            }
+
+            // output to debug log
+            Debug.WriteLine($"Wrote salt: {BitConverter.ToString(_salt)}");
+            Debug.WriteLine($"Wrote password verifier: {BitConverter.ToString(_passwordVerifier)}");
+
+            _headerWritten = true;
+        }
+
+        private void WriteHeader()
+        {
+            WriteHeaderCoreAsync(isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        private Task WriteHeaderAsync(CancellationToken cancellationToken)
+        {
+            return WriteHeaderCoreAsync(isAsync: true, cancellationToken);
+        }
+
         private void ProcessBlock(byte[] buffer, int offset, int count)
         {
             Debug.Assert(_aesEncryptor is not null, "Cipher should have been initialized before processing blocks");
 
             int processed = 0;
             byte[] keystream = new byte[16];
-
-            // Log initial counter state
-            Debug.WriteLine($"=== ProcessBlock Debug ===");
-            Debug.WriteLine($"Processing {count} bytes at offset {offset}");
-            Debug.WriteLine($"Initial counter: {BitConverter.ToString(_counterBlock)}");
 
             while (processed < count)
             {
@@ -321,85 +314,43 @@ namespace System.IO.Compression
             }
         }
 
+        private async Task WriteAuthCodeCoreAsync(bool isAsync, CancellationToken cancellationToken)
+        {
+            if (!_encrypting || _authCodeValidated)
+                return;
+
+            _hmac.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+            byte[]? authCode = _hmac.Hash;
+
+            if (authCode is not null)
+            {
+                // WinZip AES spec requires only the first 10 bytes of the HMAC
+                if (isAsync)
+                {
+                    await _baseStream.WriteAsync(authCode.AsMemory(0, 10), cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    _baseStream.Write(authCode, 0, 10);
+                }
+
+                Debug.WriteLine($"Wrote authentication code: {BitConverter.ToString(authCode, 0, 10)}");
+            }
+
+            _authCodeValidated = true;
+        }
+
         private void WriteAuthCode()
         {
-            if (!_encrypting || _authCodeValidated)
-                return;
-
-            _hmac.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-            byte[]? authCode = _hmac.Hash;
-
-            if (authCode is not null)
-            {
-                // WinZip AES spec requires only the first 10 bytes of the HMAC
-                _baseStream.Write(authCode, 0, 10);
-                Debug.WriteLine($"Wrote authentication code: {BitConverter.ToString(authCode, 0, 10)}");
-            }
-
-            _authCodeValidated = true;
+            WriteAuthCodeCoreAsync(isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
         }
 
-        private async Task WriteAuthCodeAsync(CancellationToken cancellationToken)
+        private Task WriteAuthCodeAsync(CancellationToken cancellationToken)
         {
-            if (!_encrypting || _authCodeValidated)
-                return;
-
-            _hmac.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-            byte[]? authCode = _hmac.Hash;
-
-            if (authCode is not null)
-            {
-                // WinZip AES spec requires only the first 10 bytes of the HMAC
-                await _baseStream.WriteAsync(authCode.AsMemory(0, 10), cancellationToken).ConfigureAwait(false);
-                Debug.WriteLine($"Wrote authentication code: {BitConverter.ToString(authCode, 0, 10)}");
-            }
-
-            _authCodeValidated = true;
+            return WriteAuthCodeCoreAsync(isAsync: true, cancellationToken);
         }
 
-        private void WriteCore(ReadOnlySpan<byte> buffer)
-        {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-
-            if (!_encrypting)
-                throw new NotSupportedException("Stream is in decryption mode.");
-
-            WriteHeader();
-
-            // Buffer the data - don't process it yet
-            _encryptionBuffer?.Write(buffer);
-
-            Debug.WriteLine($"Buffered {buffer.Length} bytes for encryption");
-        }
-
-
-        // Flush all buffered data, encrypt it, and write to base stream
-        private void FlushEncryptionBuffer()
-        {
-            if (_encryptionBuffer != null && _encryptionBuffer.Length > 0)
-            {
-                byte[] data = _encryptionBuffer.ToArray();
-                ProcessBlock(data, 0, data.Length);
-                _baseStream.Write(data);
-                _position += data.Length;
-                _encryptionBuffer.SetLength(0); // Clear the buffer
-            }
-        }
-
-        // Replace the FlushEncryptionBufferAsync method with this version:
-        private async Task FlushEncryptionBufferAsync(CancellationToken cancellationToken)
-        {
-            if (_encryptionBuffer != null && _encryptionBuffer.Length > 0)
-            {
-                byte[] data = _encryptionBuffer.ToArray();
-                ProcessBlock(data, 0, data.Length);
-                await _baseStream.WriteAsync(data, cancellationToken).ConfigureAwait(false);
-                _position += data.Length;
-                _encryptionBuffer.SetLength(0); // Clear the buffer
-            }
-        }
-
-        private int ReadCore(Span<byte> buffer)
+        private async Task<int> ReadCoreShared(Memory<byte> buffer, bool isAsync, CancellationToken cancellationToken)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -407,109 +358,89 @@ namespace System.IO.Compression
                 throw new NotSupportedException("Stream is in encryption mode.");
 
             if (!_headerRead)
-                ReadHeader();
+                throw new InvalidOperationException("Header must be read before reading data.");
 
             int bytesToRead = buffer.Length;
 
             // If we know the total size, ensure we don't read into the HMAC
-            if (_totalStreamSize > 0)
+            if (_encryptedDataSize > 0)
             {
-                // Calculate the size of the AES overhead
-                int saltSize = _keySizeBits / 16;
-                int headerSize = saltSize + 2; // Salt + Password Verifier
-                const int hmacSize = 10; // 10-byte HMAC
-
-                // The actual encrypted data size is the total minus header and HMAC
-                long encryptedDataSize = _totalStreamSize - headerSize - hmacSize;
-                long remainingData = encryptedDataSize - _bytesReadFromBase;
-
-                if (remainingData <= 0)
+                if (_encryptedDataRemaining <= 0)
                 {
                     if (!_authCodeValidated)
                     {
-                        ValidateAuthCode();
+                        if (isAsync)
+                            await ValidateAuthCodeAsync(cancellationToken).ConfigureAwait(false);
+                        else
+                            ValidateAuthCode();
                     }
                     return 0;
                 }
 
-                bytesToRead = (int)Math.Min(bytesToRead, remainingData);
+                bytesToRead = (int)Math.Min(bytesToRead, _encryptedDataRemaining);
             }
 
             if (bytesToRead == 0)
             {
-                if (!_authCodeValidated && _totalStreamSize > 0)
+                if (!_authCodeValidated && _encryptedDataSize > 0)
                 {
-                    ValidateAuthCode();
+                    if (isAsync)
+                        await ValidateAuthCodeAsync(cancellationToken).ConfigureAwait(false);
+                    else
+                        ValidateAuthCode();
                 }
                 return 0;
             }
 
-            int n = _baseStream.Read(buffer.Slice(0, bytesToRead));
-
-            Debug.WriteLine($"Read {n} bytes from base stream");
-
-            if (n > 0)
+            int bytesRead;
+            if (isAsync)
             {
-                _bytesReadFromBase += n;
+                bytesRead = await _baseStream.ReadAsync(buffer.Slice(0, bytesToRead), cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                bytesRead = _baseStream.Read(buffer.Span.Slice(0, bytesToRead));
+            }
 
-                // Log the ciphertext before decryption
-                Debug.WriteLine($"Ciphertext (hex): {BitConverter.ToString(buffer.Slice(0, n).ToArray())}");
+            Debug.WriteLine($"Read {bytesRead} bytes from base stream");
 
-                // The buffer now contains the ciphertext.
-                byte[] temp = buffer.Slice(0, n).ToArray();
+            if (bytesRead > 0)
+            {
+                _encryptedDataRemaining -= bytesRead;
 
-                // 1. Update the HMAC with the ciphertext from `temp`.
-                // 2. Decrypt `temp` in-place.
-                ProcessBlock(temp, 0, n);
+                // Process the data - we need to copy because ProcessBlock modifies in-place
+                byte[] temp = buffer.Slice(0, bytesRead).ToArray();
+                ProcessBlock(temp, 0, bytesRead);
+                temp.CopyTo(buffer.Span);
 
-                // Copy the decrypted data from `temp` back to the original buffer.
-                temp.CopyTo(buffer);
-
-                _position += n;
+                _position += bytesRead;
             }
             else // n == 0, meaning end of stream
             {
                 if (!_authCodeValidated)
                 {
-                    ValidateAuthCode();
+                    if (isAsync)
+                        await ValidateAuthCodeAsync(cancellationToken).ConfigureAwait(false);
+                    else
+                        ValidateAuthCode();
                 }
             }
 
-            return n;
+            return bytesRead;
         }
 
-        public override void Write(byte[] buffer, int offset, int count)
+        private int ReadCore(Span<byte> buffer)
         {
-            ValidateBufferArguments(buffer, offset, count);
-            Write(new ReadOnlySpan<byte>(buffer, offset, count));
-        }
+            // Convert span to memory and call shared method synchronously
+            byte[] tempArray = new byte[buffer.Length];
+            Memory<byte> memoryBuffer = tempArray.AsMemory();
 
-        public override void Write(ReadOnlySpan<byte> buffer)
-        {
-            WriteCore(buffer);
-        }
+            int bytesRead = ReadCoreShared(memoryBuffer, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
 
-        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            ValidateBufferArguments(buffer, offset, count);
-            await WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
-        }
+            // Copy the processed data back to the original span
+            memoryBuffer.Span.Slice(0, bytesRead).CopyTo(buffer);
 
-        // Replace the WriteAsync method with this:
-        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-
-            if (!_encrypting)
-                throw new NotSupportedException("Stream is in decryption mode.");
-
-            await WriteHeaderAsync(cancellationToken).ConfigureAwait(false);
-
-            // Just buffer the data
-            // The async version should match the sync version logic
-            await _encryptionBuffer!.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
-
-            Debug.WriteLine($"Buffered {buffer.Length} bytes for encryption");
+            return bytesRead;
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -526,78 +457,149 @@ namespace System.IO.Compression
         public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
-            return await ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
+            return await ReadCoreShared(new Memory<byte>(buffer, offset, count), isAsync: true, cancellationToken).ConfigureAwait(false);
         }
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            return await ReadCoreShared(buffer, isAsync: true, cancellationToken).ConfigureAwait(false);
+        }
+
+        private async Task WriteCoreShared(ReadOnlyMemory<byte> buffer, bool isAsync, CancellationToken cancellationToken)
+        {
             ObjectDisposedException.ThrowIf(_disposed, this);
+            if (!_encrypting) throw new NotSupportedException("Stream is in decryption mode.");
 
-            if (_encrypting)
-                throw new NotSupportedException("Stream is in encryption mode.");
-
-            if (!_headerRead)
-                ReadHeader();
-
-            // Apply the same boundary logic as ReadCore
-            int bytesToRead = buffer.Length;
-
-            if (_totalStreamSize > 0)
+            // Write header if needed
+            if (!_headerWritten)
             {
-                // Calculate the size of the AES overhead
-                int saltSize = _keySizeBits / 16;
-                int headerSize = saltSize + 2; // Salt + Password Verifier
-                const int hmacSize = 10;
+                if (isAsync)
+                    await WriteHeaderAsync(cancellationToken).ConfigureAwait(false);
+                else
+                    WriteHeader();
+            }
 
-                // The actual encrypted data size is the total minus header and HMAC
-                long encryptedDataSize = _totalStreamSize - headerSize - hmacSize;
-                long remainingData = encryptedDataSize - _bytesReadFromBase;
+            int inputOffset = 0;
+            int inputCount = buffer.Length;
 
-                if (remainingData <= 0)
+            // Fill the partial block buffer if it has data
+            if (_partialBlockBytes > 0)
+            {
+                int copyCount = Math.Min(BLOCK_SIZE - _partialBlockBytes, inputCount);
+                buffer.Slice(inputOffset, copyCount).CopyTo(_partialBlock.AsMemory(_partialBlockBytes));
+
+                _partialBlockBytes += copyCount;
+                inputOffset += copyCount;
+                inputCount -= copyCount;
+
+                // If full, encrypt and write immediately
+                if (_partialBlockBytes == BLOCK_SIZE)
                 {
-                    if (!_authCodeValidated)
-                    {
-                        await ValidateAuthCodeAsync(cancellationToken).ConfigureAwait(false);
-                    }
-                    return 0;
+                    ProcessBlock(_partialBlock, 0, BLOCK_SIZE);
+
+                    if (isAsync)
+                        await _baseStream.WriteAsync(_partialBlock.AsMemory(0, BLOCK_SIZE), cancellationToken).ConfigureAwait(false);
+                    else
+                        _baseStream.Write(_partialBlock, 0, BLOCK_SIZE);
+
+                    _position += BLOCK_SIZE;
+                    _partialBlockBytes = 0;
+                }
+            }
+
+            // Process full blocks directly from the input
+            if (inputCount >= BLOCK_SIZE)
+            {
+                const int ChunkSize = 4096;
+                byte[] chunkBuffer = new byte[ChunkSize];
+
+                while (inputCount >= BLOCK_SIZE)
+                {
+                    // Round down to nearest multiple of 16 for the chunk
+                    int bytesToProcess = Math.Min(inputCount, ChunkSize);
+                    bytesToProcess = (bytesToProcess / BLOCK_SIZE) * BLOCK_SIZE;
+
+                    // Copy input to local buffer
+                    buffer.Slice(inputOffset, bytesToProcess).CopyTo(chunkBuffer);
+
+                    // Encrypt in-place
+                    ProcessBlock(chunkBuffer, 0, bytesToProcess);
+
+                    // Write to stream
+                    if (isAsync)
+                        await _baseStream.WriteAsync(chunkBuffer.AsMemory(0, bytesToProcess), cancellationToken).ConfigureAwait(false);
+                    else
+                        _baseStream.Write(chunkBuffer, 0, bytesToProcess);
+
+                    _position += bytesToProcess;
+                    inputOffset += bytesToProcess;
+                    inputCount -= bytesToProcess;
+                }
+            }
+
+            // Buffer any remaining bytes
+            if (inputCount > 0)
+            {
+                buffer.Slice(inputOffset, inputCount).CopyTo(_partialBlock.AsMemory(_partialBlockBytes));
+                _partialBlockBytes += inputCount;
+            }
+        }
+
+        private void WriteCore(ReadOnlySpan<byte> buffer)
+        {
+            // Convert span to memory and call shared method synchronously
+            byte[] tempArray = buffer.ToArray();
+            WriteCoreShared(tempArray, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            Write(new ReadOnlySpan<byte>(buffer, offset, count));
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            WriteCore(buffer);
+        }
+
+        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            await WriteCoreShared(new ReadOnlyMemory<byte>(buffer, offset, count), isAsync: true, cancellationToken).ConfigureAwait(false);
+        }
+
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            await WriteCoreShared(buffer, isAsync: true, cancellationToken).ConfigureAwait(false);
+        }
+
+
+        private async Task FinalizeEncryptionAsync(bool isAsync, CancellationToken cancellationToken)
+        {
+            // Process any bytes remaining in the partial buffer
+            if (_partialBlockBytes > 0)
+            {
+                // Encrypt the partial block (ProcessBlock handles partials by XORing only available bytes)
+                ProcessBlock(_partialBlock, 0, _partialBlockBytes);
+
+                if (isAsync)
+                {
+                    await _baseStream.WriteAsync(_partialBlock.AsMemory(0, _partialBlockBytes), cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    _baseStream.Write(_partialBlock, 0, _partialBlockBytes);
                 }
 
-                bytesToRead = (int)Math.Min(bytesToRead, remainingData);
+                _position += _partialBlockBytes;
+                _partialBlockBytes = 0;
             }
-
-            if (bytesToRead == 0)
-            {
-                if (!_authCodeValidated && _totalStreamSize > 0)
-                {
-                    await ValidateAuthCodeAsync(cancellationToken).ConfigureAwait(false);
-                }
-                return 0;
-            }
-
-            int n = await _baseStream.ReadAsync(buffer.Slice(0, bytesToRead), cancellationToken).ConfigureAwait(false);
-
-            if (n > 0)
-            {
-                _bytesReadFromBase += n;
-
-                // Process the data
-                byte[] temp = buffer.Slice(0, n).ToArray();
-                ProcessBlock(temp, 0, n);
-                temp.CopyTo(buffer.Span);
-                _position += n;
-            }
-            else if (!_authCodeValidated)
-            {
-                await ValidateAuthCodeAsync(cancellationToken).ConfigureAwait(false);
-            }
-
-            return n;
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (_disposed)
-                return;
+            if (_disposed) return;
 
             if (disposing)
             {
@@ -605,28 +607,17 @@ namespace System.IO.Compression
                 {
                     if (_encrypting && !_authCodeValidated && _headerWritten)
                     {
-                        // Encrypt all buffered data first
-                        FlushEncryptionBuffer();
+                        // 1. Encrypt remaining partial data
+                        FinalizeEncryptionAsync(false, CancellationToken.None).GetAwaiter().GetResult();
 
-                        // Flush any pending data
-                        if (_baseStream.CanWrite)
-                        {
-                            _baseStream.Flush();
-                        }
-
-                        // Write the authentication code
+                        // 2. Write Auth Code
                         WriteAuthCode();
 
-                        // Flush again to ensure auth code is written
-                        if (_baseStream.CanWrite)
-                        {
-                            _baseStream.Flush();
-                        }
+                        if (_baseStream.CanWrite) _baseStream.Flush();
                     }
                     else if (!_encrypting && !_authCodeValidated && _headerRead)
                     {
-                        // For decryption, validate auth code and CRC if not already done
-                        ValidateAuthCode();
+                        ValidateAuthCodeCoreAsync(false, CancellationToken.None).GetAwaiter().GetResult();
                     }
                 }
                 finally
@@ -634,55 +625,36 @@ namespace System.IO.Compression
                     _aesEncryptor?.Dispose();
                     _aes.Dispose();
                     _hmac.Dispose();
-                    _encryptionBuffer?.Dispose();
+                    // Removed _encryptionBuffer.Dispose()
 
-                    // Only dispose the base stream if we don't leave it open
-                    if (!_leaveOpen)
-                    {
-                        _baseStream.Dispose();
-                    }
+                    if (!_leaveOpen) _baseStream.Dispose();
                 }
             }
 
             _disposed = true;
             base.Dispose(disposing);
         }
-
-        // Replace DisposeAsync with this version:
         public override async ValueTask DisposeAsync()
         {
-            if (_disposed)
-                return;
+            if (_disposed) return;
 
             try
             {
                 if (_encrypting && !_authCodeValidated && _headerWritten)
                 {
-                    // make sure header is flushed
-                    await _baseStream.FlushAsync(CancellationToken.None).ConfigureAwait(false);
+                    await _baseStream.FlushAsync().ConfigureAwait(false);
 
-                    // Encrypt all buffered data first
-                    await FlushEncryptionBufferAsync(CancellationToken.None).ConfigureAwait(false);
+                    // 1. Encrypt remaining partial data
+                    await FinalizeEncryptionAsync(true, CancellationToken.None).ConfigureAwait(false);
 
-                    // Flush any pending data
-                    if (_baseStream.CanWrite)
-                    {
-                        await _baseStream.FlushAsync(CancellationToken.None).ConfigureAwait(false);
-                    }
-
-                    // Write the authentication code (this is still sync, which is fine)
+                    // 2. Write Auth Code
                     await WriteAuthCodeAsync(CancellationToken.None).ConfigureAwait(false);
 
-                    // Flush again to ensure auth code is written
-                    if (_baseStream.CanWrite)
-                    {
-                        await _baseStream.FlushAsync(CancellationToken.None).ConfigureAwait(false);
-                    }
+                    if (_baseStream.CanWrite) await _baseStream.FlushAsync().ConfigureAwait(false);
                 }
                 else if (!_encrypting && !_authCodeValidated && _headerRead)
                 {
-                    // For decryption, validate auth code and CRC if not already done
-                    await ValidateAuthCodeAsync(CancellationToken.None).ConfigureAwait(false);
+                    await ValidateAuthCodeCoreAsync(true, CancellationToken.None).ConfigureAwait(false);
                 }
             }
             finally
@@ -690,18 +662,14 @@ namespace System.IO.Compression
                 _aesEncryptor?.Dispose();
                 _aes.Dispose();
                 _hmac.Dispose();
-                _encryptionBuffer?.Dispose();
 
-                // Only dispose the base stream if we don't leave it open
-                if (!_leaveOpen)
-                {
-                    await _baseStream.DisposeAsync().ConfigureAwait(false);
-                }
+                if (!_leaveOpen) await _baseStream.DisposeAsync().ConfigureAwait(false);
             }
 
             _disposed = true;
             GC.SuppressFinalize(this);
         }
+
         public override bool CanRead => !_encrypting && !_disposed;
         public override bool CanSeek => false;
         public override bool CanWrite => _encrypting && !_disposed;
@@ -743,6 +711,7 @@ namespace System.IO.Compression
                 _baseStream.Flush();
             }
         }
+
         public override async Task FlushAsync(CancellationToken cancellationToken)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -754,7 +723,6 @@ namespace System.IO.Compression
                 {
                     await _baseStream.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
-
             }
 
             // Finally flush base stream to ensure encrypted data is written

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,18 +36,7 @@ namespace System.IO.Compression
             return table;
         }
 
-        // Private constructor for async factory method
-        private ZipCryptoStream(Stream baseStream, bool encrypting, bool leaveOpen = false, ushort verifierLow2Bytes = 0, uint? crc32ForHeader = null)
-        {
-            _base = baseStream ?? throw new ArgumentNullException(nameof(baseStream));
-            _encrypting = encrypting;
-            _leaveOpen = leaveOpen;
-            _verifierLow2Bytes = verifierLow2Bytes;
-            _crc32ForHeader = crc32ForHeader;
-            _position = 0;
-        }
-
-        // Synchronous decryption constructor (existing)
+        // Decryption constructor
         public ZipCryptoStream(Stream baseStream, ReadOnlyMemory<char> password, byte expectedCheckByte)
         {
             _base = baseStream ?? throw new ArgumentNullException(nameof(baseStream));
@@ -56,7 +46,7 @@ namespace System.IO.Compression
             _position = 0;
         }
 
-        // Synchronous encryption constructor (existing)
+        // Encryption constructor
         public ZipCryptoStream(Stream baseStream,
                                ReadOnlyMemory<char> password,
                                ushort passwordVerifierLow2Bytes,
@@ -72,81 +62,8 @@ namespace System.IO.Compression
             InitKeysFromBytes(password.Span);
         }
 
-        // Async factory method for decryption
-        public static async Task<ZipCryptoStream> CreateForDecryptionAsync(
-            Stream baseStream,
-            ReadOnlyMemory<char> password,
-            byte expectedCheckByte,
-            CancellationToken cancellationToken = default)
+        private byte[] CalculateHeader()
         {
-            ArgumentNullException.ThrowIfNull(baseStream);
-
-            var stream = new ZipCryptoStream(baseStream, encrypting: false);
-            stream.InitKeysFromBytes(password.Span);
-            await stream.ValidateHeaderAsync(expectedCheckByte, cancellationToken).ConfigureAwait(false);
-            return stream;
-        }
-
-        // Async factory method for encryption
-        public static Task<ZipCryptoStream> CreateForEncryptionAsync(
-            Stream baseStream,
-            ReadOnlyMemory<char> password,
-            ushort passwordVerifierLow2Bytes,
-            uint? crc32 = null,
-            bool leaveOpen = false,
-            CancellationToken cancellationToken = default)
-        {
-            ArgumentNullException.ThrowIfNull(baseStream);
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var stream = new ZipCryptoStream(baseStream, encrypting: true, leaveOpen, passwordVerifierLow2Bytes, crc32);
-            stream.InitKeysFromBytes(password.Span);
-
-            // No async work needed for encryption constructor
-            return Task.FromResult(stream);
-        }
-
-        private void EnsureHeader()
-        {
-            if (!_encrypting || _headerWritten) return;
-
-            Span<byte> hdrPlain = stackalloc byte[12];
-
-            // bytes 0..9 are random
-            RandomNumberGenerator.Fill(hdrPlain.Slice(0, 10));
-
-            // bytes 10..11: check bytes (CRC-based if crc32 provided; else DOS time low word)
-            if (_crc32ForHeader.HasValue)
-            {
-                uint crc = _crc32ForHeader.Value;
-                hdrPlain[10] = (byte)((crc >> 16) & 0xFF);
-                hdrPlain[11] = (byte)((crc >> 24) & 0xFF);
-            }
-            else
-            {
-                hdrPlain[10] = (byte)(_verifierLow2Bytes & 0xFF);
-                hdrPlain[11] = (byte)((_verifierLow2Bytes >> 8) & 0xFF);
-            }
-
-            // Encrypt & write; update keys with PLAINTEXT per spec
-            byte[] hdrCiph = new byte[12];
-            for (int i = 0; i < 12; i++)
-            {
-                byte ks = DecipherByte();
-                byte p = hdrPlain[i];
-                hdrCiph[i] = (byte)(p ^ ks);
-                UpdateKeys(p);
-            }
-
-            _base.Write(hdrCiph, 0, 12);
-            _headerWritten = true;
-            _position += 12;
-        }
-
-        private async ValueTask EnsureHeaderAsync(CancellationToken cancellationToken)
-        {
-            if (!_encrypting || _headerWritten) return;
-
             byte[] hdrPlain = new byte[12];
 
             // bytes 0..9 are random
@@ -156,28 +73,53 @@ namespace System.IO.Compression
             if (_crc32ForHeader.HasValue)
             {
                 uint crc = _crc32ForHeader.Value;
-                hdrPlain[10] = (byte)((crc >> 16) & 0xFF);
-                hdrPlain[11] = (byte)((crc >> 24) & 0xFF);
+                BinaryPrimitives.WriteUInt16LittleEndian(hdrPlain.AsSpan(10), (ushort)(crc >> 16));
             }
             else
             {
-                hdrPlain[10] = (byte)(_verifierLow2Bytes & 0xFF);
-                hdrPlain[11] = (byte)((_verifierLow2Bytes >> 8) & 0xFF);
+                BinaryPrimitives.WriteUInt16LittleEndian(hdrPlain.AsSpan(10), _verifierLow2Bytes);
             }
 
-            // Encrypt & write; update keys with PLAINTEXT per spec
+            // Update keys with PLAINTEXT per spec
             byte[] hdrCiph = new byte[12];
             for (int i = 0; i < 12; i++)
             {
-                byte ks = DecipherByte();
+                byte ks = Decrypt();
                 byte p = hdrPlain[i];
                 hdrCiph[i] = (byte)(p ^ ks);
                 UpdateKeys(p);
             }
 
-            await _base.WriteAsync(hdrCiph.AsMemory(0, 12), cancellationToken).ConfigureAwait(false);
+            return hdrCiph;
+        }
+
+        private async ValueTask WriteHeaderCore(bool isAsync, CancellationToken cancellationToken = default)
+        {
+            if (!_encrypting || _headerWritten) return;
+
+            byte[] hdrCiph = CalculateHeader();
+
+            if (isAsync)
+            {
+                await _base.WriteAsync(hdrCiph.AsMemory(0, 12), cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                _base.Write(hdrCiph, 0, 12);
+            }
+
             _headerWritten = true;
             _position += 12;
+        }
+
+        private void EnsureHeader()
+        {
+            WriteHeaderCore(isAsync: false).AsTask().GetAwaiter().GetResult();
+        }
+
+        private ValueTask EnsureHeaderAsync(CancellationToken cancellationToken)
+        {
+            return WriteHeaderCore(isAsync: true, cancellationToken);
         }
 
         private void InitKeysFromBytes(ReadOnlySpan<char> password)
@@ -195,30 +137,13 @@ namespace System.IO.Compression
         private void ValidateHeader(byte expectedCheckByte)
         {
             byte[] hdr = new byte[12];
-            int read = 0;
-            while (read < hdr.Length)
+            try
             {
-                int n = _base.Read(hdr, read, hdr.Length - read);
-                if (n <= 0) throw new InvalidDataException("Truncated ZipCrypto header.");
-                read += n;
+                _base.ReadExactly(hdr);
             }
-
-            for (int i = 0; i < hdr.Length; i++)
-                hdr[i] = DecryptByte(hdr[i]);
-
-            if (hdr[11] != expectedCheckByte)
-                throw new InvalidDataException("Invalid password for encrypted ZIP entry.");
-        }
-
-        private async ValueTask ValidateHeaderAsync(byte expectedCheckByte, CancellationToken cancellationToken)
-        {
-            byte[] hdr = new byte[12];
-            int read = 0;
-            while (read < hdr.Length)
+            catch (EndOfStreamException)
             {
-                int n = await _base.ReadAsync(hdr.AsMemory(read, hdr.Length - read), cancellationToken).ConfigureAwait(false);
-                if (n <= 0) throw new InvalidDataException("Truncated ZipCrypto header.");
-                read += n;
+                throw new InvalidDataException("Truncated ZipCrypto header.");
             }
 
             for (int i = 0; i < hdr.Length; i++)
@@ -236,7 +161,7 @@ namespace System.IO.Compression
             _key2 = Crc32Update(_key2, (byte)(_key1 >> 24));
         }
 
-        private byte DecipherByte()
+        private byte Decrypt()
         {
             uint temp = _key2 | 2; // use uint to avoid narrowing issues
             return (byte)((temp * (temp ^ 1)) >> 8);
@@ -244,7 +169,7 @@ namespace System.IO.Compression
 
         private byte DecryptByte(byte ciph)
         {
-            byte m = DecipherByte();
+            byte m = Decrypt();
             byte plain = (byte)(ciph ^ m);
             UpdateKeys(plain);
             return plain;
@@ -297,7 +222,7 @@ namespace System.IO.Compression
             byte[] tmp = new byte[buffer.Length];
             for (int i = 0; i < buffer.Length; i++)
             {
-                byte ks = DecipherByte();
+                byte ks = Decrypt();
                 byte p = buffer[i];
                 tmp[i] = (byte)(p ^ ks);
                 UpdateKeys(p);
@@ -370,7 +295,7 @@ namespace System.IO.Compression
             ReadOnlySpan<byte> span = buffer.Span;
             for (int i = 0; i < buffer.Length; i++)
             {
-                byte ks = DecipherByte();
+                byte ks = Decrypt();
                 byte p = span[i];
                 tmp[i] = (byte)(p ^ ks);
                 UpdateKeys(p);

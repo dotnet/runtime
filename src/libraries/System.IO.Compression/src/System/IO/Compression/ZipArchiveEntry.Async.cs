@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using static System.IO.Compression.ZipLocalFileHeader;
 
 namespace System.IO.Compression;
 
@@ -154,17 +155,17 @@ public partial class ZipArchiveEntry
 
             // Write WinZip AES extra field AFTER Zip64 (matching sync version order)
             // Must match the exact check used in the sync version WriteCentralDirectoryFileHeader
-            if (_encryptionMethod == EncryptionMethod.Aes128 || _encryptionMethod == EncryptionMethod.Aes192 || _encryptionMethod    == EncryptionMethod.Aes256)
+            if (ForAesEncryption())
             {
                 var aesExtraField = new WinZipAesExtraField
                 {
                     VendorVersion = 2, // AE-2
-                    AesStrength = _encryptionMethod switch
+                    AesStrength = Encryption switch
                     {
                         EncryptionMethod.Aes128 => (byte)1,
                         EncryptionMethod.Aes192 => (byte)2,
                         EncryptionMethod.Aes256 => (byte)3,
-                        _ => (byte)3
+                        _  /* EncryptionMethod.Aes256 */ => (byte)3
                     },
                     CompressionMethod = _compressionLevel == CompressionLevel.NoCompression ?
                             (ushort)CompressionMethodValues.Stored :
@@ -309,6 +310,7 @@ public partial class ZipArchiveEntry
             await _archive.ArchiveStream.WriteAsync(lfStaticHeader, cancellationToken).ConfigureAwait(false);
             await _archive.ArchiveStream.WriteAsync(_storedEntryNameBytes, cancellationToken).ConfigureAwait(false);
 
+            // Only when handling zip64
             if (zip64ExtraField != null)
             {
                 await zip64ExtraField.WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
@@ -316,17 +318,17 @@ public partial class ZipArchiveEntry
 
             // Write WinZip AES extra field if using AES encryption
             // Must match the exact check used in the sync version WriteLocalFileHeader
-            if (_encryptionMethod == EncryptionMethod.Aes128 || _encryptionMethod == EncryptionMethod.Aes192 || _encryptionMethod == EncryptionMethod.Aes256)
+            if (ForAesEncryption())
             {
                 var aesExtraField = new WinZipAesExtraField
                 {
                     VendorVersion = 2, // AE-2
-                    AesStrength = _encryptionMethod switch
+                    AesStrength = Encryption switch
                     {
                         EncryptionMethod.Aes128 => (byte)1,
                         EncryptionMethod.Aes192 => (byte)2,
                         EncryptionMethod.Aes256 => (byte)3,
-                        _ => (byte)3
+                        _  /* EncryptionMethod.Aes256 */ => (byte)3
                     },
                     CompressionMethod = _compressionLevel == CompressionLevel.NoCompression ?
                             (ushort)CompressionMethodValues.Stored :
