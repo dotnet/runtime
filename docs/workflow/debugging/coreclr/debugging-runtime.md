@@ -43,12 +43,12 @@ If for some reason `System.Private.CoreLib.dll` is missing, you can rebuild it w
 Visual Studio's capabilities as a full IDE provide a lot of help making the runtime debugging more amiable.
 
 0. Run `.\build.cmd clr.nativeprereqs -a <architecture> -c <configuration>`. This will build some of the tools requiremented for the native build. This step only needs to be run once as long you don't clean the `artifacts` directory.
-1. Open the CoreCLR solution _(coreclr.sln)_ in Visual Studio.
+1. Open the CoreCLR solution _(coreclr.slnx)_ in Visual Studio.
    * _Method 1_: Use the build scripts to open the solution:
-      1. Run `.\build.cmd -vs coreclr.sln -a <architecture> -c <configuration>`. This will create and launch the CoreCLR solution in VS for the specified architecture and configuration. By default, this will be `x64 Debug`.
+      1. Run `.\build.cmd -vs coreclr.slnx -a <architecture> -c <configuration>`. This will create and launch the CoreCLR solution in VS for the specified architecture and configuration. By default, this will be `x64 Debug`.
    * _Method 2_: Manually build and open the solution:
       1. Perform a build of the repo with the `-msbuild` flag.
-      2. Open solution `path\to\runtime\artifacts\obj\coreclr\windows.<architecture>.<configuration>\ide\CoreCLR.sln` in Visual Studio. As in the previous method, the architecture and configuration by default are `x64` and `Debug`, unless explicitly stated otherwise.
+      2. Open solution `path\to\runtime\artifacts\obj\coreclr\windows.<architecture>.<configuration>\ide\CoreCLR.slnx` in Visual Studio. As in the previous method, the architecture and configuration by default are `x64` and `Debug`, unless explicitly stated otherwise.
 2. Right-click the **INSTALL** project and choose `Set as StartUp Project`.
 3. Bring up the properties page for the **INSTALL** project.
 4. Select _Configuration Properties -> Debugging_ from the left side tree control.
@@ -114,7 +114,7 @@ Visual Studio can also be used to debug builds built externally from CLI scripts
 5. To set breakpoints, runtime source files can to be added by right clicking the solution in the Solution Explorer and selecting Add -> Existing Item.
 6. Set breakpoints and run the application with `F5` to start debugging.
 
-Note, the `.sln` file can be saved and stores paths to `corerun.exe`, included files, and debug settings. It can be reused as long as the paths do not change.
+Note, the `.slnx` file can be saved and stores paths to `corerun.exe`, included files, and debug settings. It can be reused as long as the paths do not change.
 
 ### Using Visual Studio Code
 

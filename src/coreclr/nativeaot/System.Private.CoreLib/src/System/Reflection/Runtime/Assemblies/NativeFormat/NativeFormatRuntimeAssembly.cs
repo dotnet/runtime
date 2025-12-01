@@ -113,6 +113,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
 
         public sealed override ManifestResourceInfo GetManifestResourceInfo(string resourceName)
         {
+            ArgumentNullException.ThrowIfNull(resourceName);
             return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceInfo(this, resourceName);
         }
 
@@ -123,6 +124,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
 
         public sealed override Stream GetManifestResourceStream(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
             return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceStream(this, name);
         }
 

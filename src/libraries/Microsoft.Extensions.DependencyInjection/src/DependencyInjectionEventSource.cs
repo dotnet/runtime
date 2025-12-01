@@ -12,8 +12,10 @@ using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+#pragma warning disable ESGEN001 // EventSource class is not partial. It's blocked by https://github.com/dotnet/runtime/issues/121205
     [EventSource(Name = "Microsoft-Extensions-DependencyInjection")]
     internal sealed class DependencyInjectionEventSource : EventSource
+#pragma warning restore ESGEN001
     {
         public static readonly DependencyInjectionEventSource Log = new DependencyInjectionEventSource();
 
@@ -27,9 +29,15 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private readonly List<WeakReference<ServiceProvider>> _providers = new();
 
+        // This event source uses EtwSelfDescribingEventFormat for backward compatibility.
         private DependencyInjectionEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
+
+        // There is a risk that each ServiceProviderBuilt call only finds one entry to remove, and the next call will clean the list again and spend O(n) time on that.
+        // So instead of tying the cleaning to the resizing, it might be better to have a separate counter.
+        // For example: the current capacity is 1024, but the last time the list was cleaned, 1000 valid entries were left, so now we'll let the list grow to 2000 entries before cleaning it again.
+        private int? _survivingProvidersCount;
 
         // NOTE
         // - The 'Start' and 'Stop' suffixes on the following event names have special meaning in EventSource. They
@@ -144,6 +152,14 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             lock (_providers)
             {
+                int providersCount = _providers.Count;
+                if (providersCount > 0 &&
+                    (_survivingProvidersCount is int spc ? (uint)providersCount >= 2 * (uint)spc : providersCount == _providers.Capacity))
+                {
+                    _providers.RemoveAll(static p => !p.TryGetTarget(out _));
+                    _survivingProvidersCount = _providers.Count;
+                }
+
                 _providers.Add(new WeakReference<ServiceProvider>(provider));
             }
 
@@ -162,6 +178,11 @@ namespace Microsoft.Extensions.DependencyInjection
                     if (!reference.TryGetTarget(out ServiceProvider? target) || target == provider)
                     {
                         _providers.RemoveAt(i);
+
+                        if (target is not null)
+                        {
+                            break;
+                        }
                     }
                 }
             }

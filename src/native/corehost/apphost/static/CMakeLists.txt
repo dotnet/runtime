@@ -17,6 +17,8 @@ add_subdirectory(../../hostmisc hostmisc)
 configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)
 target_include_directories(hostmisc_interface INTERFACE ${GENERATED_INCLUDE_DIR}/corehost)
 
+add_compile_definitions(RAPIDJSON_HAS_CXX17)
+
 if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
     include_directories(${CLR_SRC_NATIVE_DIR}/external/)
 endif()
@@ -166,10 +168,11 @@ else()
     )
 
     if(NOT CLR_CMAKE_TARGET_ANDROID)
-        list(APPEND NATIVE_LIBS
-            System.Net.Security.Native-Static
-            System.Security.Cryptography.Native.OpenSsl-Static
-        )
+        list(APPEND NATIVE_LIBS System.Net.Security.Native-Static)
+
+        if(NOT CLR_CMAKE_TARGET_APPLE)
+            list(APPEND NATIVE_LIBS System.Security.Cryptography.Native.OpenSsl-Static)
+        endif()
     else()
         list(APPEND NATIVE_LIBS
             System.Security.Cryptography.Native.Android-Static
@@ -204,7 +207,7 @@ else()
     include(${CLR_SRC_NATIVE_DIR}/libs/System.Native/extra_libs.cmake)
     append_extra_system_libs(NATIVE_LIBS)
 
-    if(NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
+    if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER)
         # Additional requirements for System.Security.Cryptography.Native.OpenSsl
         include(${CLR_SRC_NATIVE_DIR}/libs/System.Security.Cryptography.Native/extra_libs.cmake)
         append_extra_cryptography_libs(NATIVE_LIBS)
@@ -303,3 +306,7 @@ target_link_libraries(
 target_link_libraries(singlefilehost PRIVATE hostmisc)
 
 add_sanitizer_runtime_support(singlefilehost)
+
+if (CLR_CMAKE_HOST_APPLE)
+    adhoc_sign_with_entitlements(singlefilehost "${CLR_ENG_NATIVE_DIR}/entitlements.plist")
+endif()

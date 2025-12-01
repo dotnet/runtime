@@ -80,19 +80,18 @@ namespace Microsoft.Extensions.FileProviders
             foreach (IFileProvider fileProvider in _fileProviders)
             {
                 IChangeToken changeToken = fileProvider.Watch(pattern);
-                if (changeToken != null)
+                if (changeToken is not (null or NullChangeToken))
                 {
                     changeTokens.Add(changeToken);
                 }
             }
 
-            // There is no change token with active change callbacks
-            if (changeTokens.Count == 0)
+            return changeTokens.Count switch
             {
-                return NullChangeToken.Singleton;
-            }
-
-            return new CompositeChangeToken(changeTokens);
+                0 => NullChangeToken.Singleton,
+                1 => changeTokens[0],
+                _ => new CompositeChangeToken(changeTokens)
+            };
         }
 
         /// <summary>

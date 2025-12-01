@@ -10,7 +10,7 @@ using System.Threading;
 namespace System.Net
 {
     [EventSource(Name = "System.Net.NameResolution")]
-    internal sealed class NameResolutionTelemetry : EventSource
+    internal sealed partial class NameResolutionTelemetry : EventSource
     {
         public static readonly NameResolutionTelemetry Log = new NameResolutionTelemetry();
 

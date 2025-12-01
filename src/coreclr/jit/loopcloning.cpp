@@ -104,7 +104,7 @@ GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
         // If asked for arrlen invoke arr length operator.
         if (oper == ArrLen)
         {
-            GenTree* arrLen = comp->gtNewArrLen(TYP_INT, arr, OFFSETOF__CORINFO_Array__length, bb);
+            GenTree* arrLen = comp->gtNewArrLen(TYP_INT, arr, OFFSETOF__CORINFO_Array__length);
 
             // We already guaranteed (by a sequence of preceding checks) that the array length operator will not
             // throw an exception because we null checked the base array.
@@ -177,12 +177,13 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
         case IndirOfLocal:
         {
             GenTree* addr = comp->gtNewLclvNode(lclNum, TYP_REF);
-            if (indirOffs != 0)
+            if (indirOffs == 0)
             {
-                addr = comp->gtNewOperNode(GT_ADD, TYP_BYREF, addr,
-                                           comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
+                return comp->gtNewMethodTableLookup(addr);
             }
 
+            addr                 = comp->gtNewOperNode(GT_ADD, TYP_BYREF, addr,
+                                                       comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
             GenTree* const indir = comp->gtNewIndir(TYP_I_IMPL, addr, GTF_IND_INVARIANT);
             return indir;
         }
@@ -1207,7 +1208,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     // is beyond the limit.
     int stride = abs(iterInfo->IterConst());
 
-    static_assert_no_msg(INT32_MAX >= CORINFO_Array_MaxLength);
+    static_assert(INT32_MAX >= CORINFO_Array_MaxLength);
     if (stride >= (INT32_MAX - (CORINFO_Array_MaxLength - 1) + 1))
     {
         // Array.MaxLength can have maximum of 0x7fffffc7 elements, so make sure
@@ -1815,60 +1816,6 @@ void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop*     loop,
     }
 }
 
-//------------------------------------------------------------------------
-// optShouldCloneLoop: Decide if a loop that can be cloned should be cloned.
-//
-// Arguments:
-//     loop        - the current loop for which the optimizations are performed.
-//     context     - data structure where all loop cloning info is kept.
-//
-// Returns:
-//     true if expected performance gain from cloning is worth the potential
-//     size increase.
-//
-// Remarks:
-//     This is a simple-minded heuristic meant to avoid "runaway" cloning
-//     where large loops are cloned.
-//
-//     We estimate the size cost of cloning by summing up the number of
-//     tree nodes in all statements in all blocks in the loop.
-//
-//     This value is compared to a hard-coded threshold, and if bigger,
-//     then the method returns false.
-//
-bool Compiler::optShouldCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
-{
-    // See if loop size exceeds the limit.
-    //
-    const int      sizeConfig = JitConfig.JitCloneLoopsSizeLimit();
-    unsigned const sizeLimit  = (sizeConfig >= 0) ? (unsigned)sizeConfig : UINT_MAX;
-    unsigned       size       = 0;
-
-    BasicBlockVisit result = loop->VisitLoopBlocks([&](BasicBlock* block) {
-        assert(sizeLimit >= size);
-        unsigned const slack     = sizeLimit - size;
-        unsigned       blockSize = 0;
-        if (block->ComplexityExceeds(this, slack, &blockSize))
-        {
-            return BasicBlockVisit::Abort;
-        }
-
-        size += blockSize;
-        return BasicBlockVisit::Continue;
-    });
-
-    if (result == BasicBlockVisit::Abort)
-    {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ": exceeds size limit %u\n", loop->GetIndex(), sizeLimit);
-        return false;
-    }
-
-    JITDUMP("Loop cloning: loop " FMT_LP ": size %u does not exceed size limit %u\n", loop->GetIndex(), size,
-            sizeLimit);
-
-    return true;
-}
-
 //----------------------------------------------------------------------------
 // optIsLoopClonable: Determine whether this loop can be cloned.
 //
@@ -1885,6 +1832,12 @@ bool Compiler::optShouldCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* 
 //
 bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
 {
+    if (loop->GetHeader()->isRunRarely())
+    {
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Loop is cold.\n", loop->GetIndex());
+        return false;
+    }
+
     const bool           requireIterable = !doesMethodHaveGuardedDevirtualization();
     NaturalLoopIterInfo* iterInfo        = context->GetLoopIterInfo(loop->GetIndex());
 
@@ -1970,7 +1923,7 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
 #ifdef DEBUG
         const unsigned ivLclNum = iterInfo->IterVar;
         GenTree* const op1      = iterInfo->Iterator();
-        assert((op1->gtOper == GT_LCL_VAR) && (op1->AsLclVarCommon()->GetLclNum() == ivLclNum));
+        assert(op1->OperIs(GT_LCL_VAR) && (op1->AsLclVarCommon()->GetLclNum() == ivLclNum));
 #endif
     }
 
@@ -2311,7 +2264,7 @@ bool Compiler::optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lcl
 //
 bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal)
 {
-    if (tree->gtOper != GT_COMMA)
+    if (!tree->OperIs(GT_COMMA))
     {
         return false;
     }
@@ -2420,7 +2373,7 @@ bool Compiler::optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsig
         return true;
     }
     // We have a comma (check if array base expr is computed in "before"), descend further.
-    else if (tree->OperGet() == GT_COMMA)
+    else if (tree->OperIs(GT_COMMA))
     {
         GenTree* before = tree->gtGetOp1();
 
@@ -2603,7 +2556,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
     //
     if (info->cloneForArrayBounds && optReconstructArrIndex(tree, &arrIndex))
     {
-        assert(tree->gtOper == GT_COMMA);
+        assert(tree->OperIs(GT_COMMA));
 
 #ifdef DEBUG
         if (verbose)
@@ -3125,8 +3078,13 @@ PhaseStatus Compiler::optCloneLoops()
         }
         else
         {
-            bool allTrue  = false;
-            bool anyFalse = false;
+            bool      allTrue   = false;
+            bool      anyFalse  = false;
+            const int sizeLimit = JitConfig.JitCloneLoopsSizeLimit();
+            auto      countNode = [](GenTree* tree) -> unsigned {
+                return 1;
+            };
+
             context.EvaluateConditions(loop->GetIndex(), &allTrue, &anyFalse DEBUGARG(verbose));
             if (anyFalse)
             {
@@ -3143,8 +3101,15 @@ PhaseStatus Compiler::optCloneLoops()
                 // No need to clone.
                 context.CancelLoopOptInfo(loop->GetIndex());
             }
-            else if (!optShouldCloneLoop(loop, &context))
+            // This is a simple-minded heuristic meant to avoid "runaway" cloning
+            // where large loops are cloned.
+            // We estimate the size cost of cloning by summing up the number of
+            // tree nodes in all statements in all blocks in the loop.
+            // This value is compared to a hard-coded threshold, and if bigger,
+            // then the method returns false.
+            else if ((sizeLimit >= 0) && optLoopComplexityExceeds(loop, (unsigned)sizeLimit, countNode))
             {
+                JITDUMP(FMT_LP " exceeds cloning size limit %d\n", loop->GetIndex(), sizeLimit);
                 context.CancelLoopOptInfo(loop->GetIndex());
             }
         }

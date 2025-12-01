@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Parsing;
+using System.Linq;
 
 using Internal.TypeSystem;
 
@@ -31,6 +32,8 @@ namespace ILCompiler
             new("--method-layout") { CustomParser = MakeMethodLayoutAlgorithm, DefaultValueFactory = MakeMethodLayoutAlgorithm, Description = "Layout algorithm used by profile-driven optimization for arranging methods in a file.", HelpName = "arg" };
         public Option<FileLayoutAlgorithm> FileLayout { get; } =
             new("--file-layout") { CustomParser = MakeFileLayoutAlgorithm, DefaultValueFactory = MakeFileLayoutAlgorithm, Description = "Layout algorithm used by profile-driven optimization for arranging non-method contents in a file.", HelpName = "arg" };
+        public Option<string> OrderFile { get; } =
+            new("--order") { Description = "File that specifies order of symbols within the generated object file" };
         public Option<string[]> SatelliteFilePaths { get; } =
             new("--satellite") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Satellite assemblies associated with inputs/references" };
         public Option<bool> EnableDebugInfo { get; } =
@@ -99,8 +102,8 @@ namespace ILCompiler
             new("--noinlinetls") { Description = "Do not generate inline thread local statics" };
         public Option<bool> EmitStackTraceData { get; } =
             new("--stacktracedata") { Description = "Emit data to support generating stack trace strings at runtime" };
-        public Option<bool> MethodBodyFolding { get; } =
-            new("--methodbodyfolding") { Description = "Fold identical method bodies" };
+        public Option<string> MethodBodyFolding { get; } =
+            new("--methodbodyfolding") { Description = "Fold identical method bodies (one of: none, generic, all" };
         public Option<string[]> InitAssemblies { get; } =
             new("--initassembly") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Assembly(ies) with a library initializer" };
         public Option<string[]> FeatureSwitches { get; } =
@@ -177,6 +180,8 @@ namespace ILCompiler
             new("--make-repro-path") { Description = "Path where to place a repro package" };
         public Option<string[]> UnmanagedEntryPointsAssemblies { get; } =
             new("--generateunmanagedentrypoints") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Generate unmanaged entrypoints for a given assembly" };
+        public Option<bool> DisableGeneratedCodeHeuristics { get; } =
+            new("--disable-generated-code-heuristics") { Description = "Disable heuristics for detecting compiler-generated code" };
 
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
@@ -193,6 +198,7 @@ namespace ILCompiler
             Options.Add(MibcFilePaths);
             Options.Add(MethodLayout);
             Options.Add(FileLayout);
+            Options.Add(OrderFile);
             Options.Add(SatelliteFilePaths);
             Options.Add(EnableDebugInfo);
             Options.Add(UseDwarf5);
@@ -266,6 +272,7 @@ namespace ILCompiler
             Options.Add(SingleMethodGenericArgs);
             Options.Add(MakeReproPath);
             Options.Add(UnmanagedEntryPointsAssemblies);
+            Options.Add(DisableGeneratedCodeHeuristics);
 
             this.SetAction(result =>
             {
@@ -300,7 +307,7 @@ namespace ILCompiler
 
 #pragma warning disable CA1861 // Avoid constant arrays as arguments. Only executed once during the execution of the program.
                         Helpers.MakeReproPackage(makeReproPath, result.GetValue(OutputFilePath), args, result,
-                            inputOptions : new[] { "-r", "--reference", "-m", "--mibc", "--rdxml", "--directpinvokelist", "--descriptor", "--satellite" },
+                            inputOptions : new[] { "-r", "--reference", "-m", "--mibc", "--rdxml", "--directpinvokelist", "--descriptor", "--satellite", "--order" },
                             outputOptions : new[] { "-o", "--out", "--exportsfile", "--dgmllog", "--scandgmllog", "--mstat", "--sourcelink" });
 #pragma warning restore CA1861 // Avoid constant arrays as arguments
                     }
@@ -329,64 +336,60 @@ namespace ILCompiler
             });
         }
 
-        public static IEnumerable<Func<HelpContext, bool>> GetExtendedHelp(HelpContext _)
+        public static void PrintExtendedHelp(ParseResult _)
         {
-            foreach (Func<HelpContext, bool> sectionDelegate in HelpBuilder.Default.GetLayout())
-                yield return sectionDelegate;
+            Console.WriteLine("Options may be passed on the command line, or via response file. On the command line switch values may be specified by passing " +
+                "the option followed by a space followed by the value of the option, or by specifying a : between option and switch value. A response file " +
+                "is specified by passing the @ symbol before the response file name. In a response file all options must be specified on their own lines, and " +
+                "only the : syntax for switches is supported.\n");
 
-            yield return _ =>
+            Console.WriteLine("Use the '--' option to disambiguate between input files that have begin with -- and options. After a '--' option, all arguments are " +
+                "considered to be input files. If no input files begin with '--' then this option is not necessary.\n");
+
+            string[] ValidArchitectures = new string[] { "arm", "arm64", "x86", "x64", "riscv64", "loongarch64" };
+            string[] ValidOS = new string[] { "windows", "linux", "freebsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator" };
+
+            Console.WriteLine("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetos", string.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant());
+
+            Console.WriteLine(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetarch", string.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
+
+            Console.WriteLine("The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid " +
+                "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. By default other instruction sets not " +
+                "specified may light-up optimistically via dynamic checks. Individual instruction sets can be disallowed from such light-up by prefixing them with '-'. " +
+                "All such light-up can be disallowed by specifying '-optimistic'. The instruction sets supported by the machine invoking the tool can be targeted by " +
+                "specifying 'native'. For example 'native', 'avx,aes', 'avx,aes,-avx2', or 'avx,aes,-optimistic'");
+
+            foreach (string arch in ValidArchitectures)
             {
-                Console.WriteLine("Options may be passed on the command line, or via response file. On the command line switch values may be specified by passing " +
-                    "the option followed by a space followed by the value of the option, or by specifying a : between option and switch value. A response file " +
-                    "is specified by passing the @ symbol before the response file name. In a response file all options must be specified on their own lines, and " +
-                    "only the : syntax for switches is supported.\n");
-
-                Console.WriteLine("Use the '--' option to disambiguate between input files that have begin with -- and options. After a '--' option, all arguments are " +
-                    "considered to be input files. If no input files begin with '--' then this option is not necessary.\n");
-
-                string[] ValidArchitectures = new string[] { "arm", "arm64", "x86", "x64", "riscv64", "loongarch64" };
-                string[] ValidOS = new string[] { "windows", "linux", "freebsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator" };
-
-                Console.WriteLine("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetos", string.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant());
-
-                Console.WriteLine(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetarch", string.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
-
-                Console.WriteLine("The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid " +
-                    "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. For example 'avx2,bmi,lzcnt'");
-
-                foreach (string arch in ValidArchitectures)
+                TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
+                bool first = true;
+                foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch).DistinctBy((instructionSet) => instructionSet.Name, StringComparer.OrdinalIgnoreCase))
                 {
-                    TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
-                    bool first = true;
-                    foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
+                    // Only instruction sets with are specifiable should be printed to the help text
+                    if (instructionSet.Specifiable)
                     {
-                        // Only instruction sets with are specifiable should be printed to the help text
-                        if (instructionSet.Specifiable)
+                        if (first)
                         {
-                            if (first)
-                            {
-                                Console.Write(arch);
-                                Console.Write(": ");
-                                first = false;
-                            }
-                            else
-                            {
-                                Console.Write(", ");
-                            }
-                            Console.Write(instructionSet.Name);
+                            Console.Write(arch);
+                            Console.Write(": ");
+                            first = false;
                         }
+                        else
+                        {
+                            Console.Write(", ");
+                        }
+                        Console.Write(instructionSet.Name);
                     }
-
-                    if (first) continue; // no instruction-set found for this architecture
-
-                    Console.WriteLine();
                 }
 
+                if (first) continue; // no instruction-set found for this architecture
+
                 Console.WriteLine();
-                Console.WriteLine("The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:");
-                Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
-                return true;
-            };
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:");
+            Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
         }
 
         private static TargetArchitecture MakeTargetArchitecture(ArgumentResult result)
@@ -427,9 +430,11 @@ namespace ILCompiler
                 "defaultsort" => MethodLayoutAlgorithm.DefaultSort,
                 "exclusiveweight" => MethodLayoutAlgorithm.ExclusiveWeight,
                 "hotcold" => MethodLayoutAlgorithm.HotCold,
+                "instrumentedhotcold" => MethodLayoutAlgorithm.InstrumentedHotCold,
                 "hotwarmcold" => MethodLayoutAlgorithm.HotWarmCold,
                 "pettishansen" => MethodLayoutAlgorithm.PettisHansen,
                 "random" => MethodLayoutAlgorithm.Random,
+                "explicit" => MethodLayoutAlgorithm.Explicit,
                 _ => throw new CommandLineException(result.Tokens[0].Value)
             };
         }
@@ -457,7 +462,7 @@ namespace ILCompiler
                 var formatter = new CustomAttributeTypeNameFormatter((IAssemblyDesc)failingMethod.Context.SystemModule);
 
                 Console.Write($"--singlemethodtypename \"{formatter.FormatName(failingMethod.OwningType, true)}\"");
-                Console.Write($" --singlemethodname {failingMethod.Name}");
+                Console.Write($" --singlemethodname {failingMethod.GetName()}");
 
                 for (int i = 0; i < failingMethod.Instantiation.Length; i++)
                     Console.Write($" --singlemethodgenericarg \"{formatter.FormatName(failingMethod.Instantiation[i], true)}\"");

@@ -29,6 +29,10 @@ PCODE GetAdjustedCallAddress(PCODE returnAddress)
     return returnAddress;
 }
 
-BOOL AdjustContextForVirtualStub(EXCEPTION_RECORD *pExceptionRecord, T_CONTEXT *pContext);
+inline BOOL AdjustContextForVirtualStub(EXCEPTION_RECORD *pExceptionRecord, T_CONTEXT *pContext)
+{
+    LIMITED_METHOD_CONTRACT;
+    return FALSE;
+}
 
 #endif // __excepcpu_h__

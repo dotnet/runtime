@@ -16,13 +16,14 @@ public class CseArrayIndexByref
         Assert.Equal(199_990_000, arr[0]);
     }
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     private static async Task AsyncTestEntryPoint(int[] arr, int index)
     {
         await HoistedByref(arr, index);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async2 Task<int> HoistedByref(int[] arr, int index)
+    private static async Task<int> HoistedByref(int[] arr, int index)
     {
         for (int i = 0; i < 20000; i++)
         {

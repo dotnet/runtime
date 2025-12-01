@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-using System.Reflection.Metadata.Ecma335;
 using System.Runtime.Intrinsics;
 
 namespace System.Numerics.Tensors
@@ -29,21 +27,22 @@ namespace System.Numerics.Tensors
             where T : INumber<T>
         {
             public static unsafe bool Vectorizable =>
-                // TODO: Extend vectorization to handle primitives whose size is not the same as int
-                typeof(T) == typeof(uint) || typeof(T) == typeof(int) || typeof(T) == typeof(float);
+                // TODO: Extend vectorization to handle primitives whose size is not the same as int and thus
+                // that have a different number of elements in the input vector from the output vector.
+                sizeof(T) == sizeof(int);
 
             public static int Invoke(T x) => T.Sign(x);
 
             public static Vector128<int> Invoke(Vector128<T> x)
             {
-                if (typeof(T) == typeof(uint))
+                if (IsUInt32Like<T>())
                 {
                     return Vector128.ConditionalSelect(Vector128.Equals(x, Vector128<T>.Zero).AsInt32(),
                         Vector128<int>.Zero,
                         Vector128<int>.One);
                 }
 
-                if (typeof(T) == typeof(int))
+                if (IsInt32Like<T>())
                 {
                     Vector128<int> value = x.AsInt32();
                     return (value >> 31) | ((-value).AsUInt32() >> 31).AsInt32();
@@ -63,14 +62,14 @@ namespace System.Numerics.Tensors
 
             public static Vector256<int> Invoke(Vector256<T> x)
             {
-                if (typeof(T) == typeof(uint))
+                if (IsUInt32Like<T>())
                 {
                     return Vector256.ConditionalSelect(Vector256.Equals(x, Vector256<T>.Zero).AsInt32(),
                         Vector256<int>.Zero,
                         Vector256<int>.One);
                 }
 
-                if (typeof(T) == typeof(int))
+                if (IsInt32Like<T>())
                 {
                     Vector256<int> value = x.AsInt32();
                     return (value >> 31) | ((-value).AsUInt32() >> 31).AsInt32();
@@ -90,30 +89,29 @@ namespace System.Numerics.Tensors
 
             public static Vector512<int> Invoke(Vector512<T> x)
             {
-                if (typeof(T) == typeof(uint))
+                if (IsUInt32Like<T>())
                 {
                     return Vector512.ConditionalSelect(Vector512.Equals(x, Vector512<T>.Zero).AsInt32(),
                         Vector512<int>.Zero,
                         Vector512<int>.One);
                 }
-                else if (typeof(T) == typeof(int))
+
+                if (IsInt32Like<T>())
                 {
                     Vector512<int> value = x.AsInt32();
                     return (value >> 31) | ((-value).AsUInt32() >> 31).AsInt32();
                 }
-                else
-                {
-                    if (Vector512.EqualsAny(IsNaN(x).AsInt32(), Vector512<int>.AllBitsSet))
-                    {
-                        ThrowHelper.ThrowArithmetic_NaN();
-                    }
 
-                    return Vector512.ConditionalSelect(Vector512.LessThan(x, Vector512<T>.Zero).AsInt32(),
-                        Vector512.Create(-1),
-                        Vector512.ConditionalSelect(Vector512.GreaterThan(x, Vector512<T>.Zero).AsInt32(),
-                            Vector512<int>.One,
-                            Vector512<int>.Zero));
+                if (Vector512.EqualsAny(IsNaN(x).AsInt32(), Vector512<int>.AllBitsSet))
+                {
+                    ThrowHelper.ThrowArithmetic_NaN();
                 }
+
+                return Vector512.ConditionalSelect(Vector512.LessThan(x, Vector512<T>.Zero).AsInt32(),
+                    Vector512.Create(-1),
+                    Vector512.ConditionalSelect(Vector512.GreaterThan(x, Vector512<T>.Zero).AsInt32(),
+                        Vector512<int>.One,
+                        Vector512<int>.Zero));
             }
         }
     }

@@ -212,9 +212,9 @@ chunkset_c.obj: $(TOP)/arch/generic/chunkset_c.c $(TOP)/zbuild.h $(TOP)/chunkset
 chunkset_avx2.obj: $(TOP)/arch/x86/chunkset_avx2.c $(TOP)/zbuild.h $(TOP)/chunkset_tpl.h $(TOP)/inffast_tpl.h $(TOP)/arch/generic/chunk_permute_table.h
 chunkset_sse2.obj: $(TOP)/arch/x86/chunkset_sse2.c $(TOP)/zbuild.h $(TOP)/chunkset_tpl.h $(TOP)/inffast_tpl.h
 chunkset_ssse3.obj: $(TOP)/arch/x86/chunkset_ssse3.c $(TOP)/zbuild.h $(TOP)/chunkset_tpl.h $(TOP)/inffast_tpl.h $(TOP)/arch/generic/chunk_permute_table.h
-compare256_c.obj: $(TOP)/arch/generic/compare256_c.c $(TOP)/zbuild.h $(TOP)/zutil_p.h $(TOP)/deflate.h $(TOP)/fallback_builtins.h $(TOP)/match_tpl.h
-compare256_avx2.obj: $(TOP)/arch/x86/compare256_avx2.c $(TOP)/zbuild.h $(TOP)/zutil_p.h $(TOP)/deflate.h $(TOP)/fallback_builtins.h $(TOP)/match_tpl.h
-compare256_sse2.obj: $(TOP)/arch/x86/compare256_sse2.c $(TOP)/zbuild.h $(TOP)/zutil_p.h $(TOP)/deflate.h $(TOP)/fallback_builtins.h $(TOP)/match_tpl.h
+compare256_c.obj: $(TOP)/arch/generic/compare256_c.c $(TOP)/zbuild.h $(TOP)/zmemory.h $(TOP)/deflate.h $(TOP)/fallback_builtins.h $(TOP)/match_tpl.h
+compare256_avx2.obj: $(TOP)/arch/x86/compare256_avx2.c $(TOP)/zbuild.h $(TOP)/zmemory.h $(TOP)/deflate.h $(TOP)/fallback_builtins.h $(TOP)/match_tpl.h
+compare256_sse2.obj: $(TOP)/arch/x86/compare256_sse2.c $(TOP)/zbuild.h $(TOP)/zmemory.h $(TOP)/deflate.h $(TOP)/fallback_builtins.h $(TOP)/match_tpl.h
 compress.obj: $(TOP)/compress.c $(TOP)/zbuild.h $(TOP)/zutil.h
 cpu_features.obj: $(TOP)/cpu_features.c $(TOP)/cpu_features.h $(TOP)/zbuild.h
 crc32.obj: $(TOP)/crc32.c $(TOP)/zbuild.h $(TOP)/functable.h $(TOP)/crc32_braid_tbl.h
@@ -226,7 +226,7 @@ deflate.obj: $(TOP)/deflate.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.
 deflate_fast.obj: $(TOP)/deflate_fast.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.h $(TOP)/functable.h
 deflate_huff.obj: $(TOP)/deflate_huff.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.h $(TOP)/functable.h
 deflate_medium.obj: $(TOP)/deflate_medium.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.h $(TOP)/functable.h
-deflate_quick.obj: $(TOP)/deflate_quick.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.h $(TOP)/functable.h $(TOP)/trees_emit.h $(TOP)/zutil_p.h
+deflate_quick.obj: $(TOP)/deflate_quick.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.h $(TOP)/functable.h $(TOP)/trees_emit.h $(TOP)/zmemory.h
 deflate_rle.obj: $(TOP)/deflate_rle.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.h $(TOP)/functable.h $(TOP)/compare256_rle.h
 deflate_slow.obj: $(TOP)/deflate_slow.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.h $(TOP)/functable.h
 deflate_stored.obj: $(TOP)/deflate_stored.c $(TOP)/zbuild.h $(TOP)/deflate.h $(TOP)/deflate_p.h $(TOP)/functable.h

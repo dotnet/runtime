@@ -716,10 +716,8 @@ namespace System.Xml.Schema
                 _context.CheckRequiredAttribute = false;
                 CheckRequiredAttributes(currentElementDecl);
             }
-            if (schemaInfo != null)
-            { //set validity depending on whether all required attributes were validated successfully
-                schemaInfo.Validity = _context.Validity;
-            }
+            //set validity depending on whether all required attributes were validated successfully
+            schemaInfo?.Validity = _context.Validity;
         }
 
         public void ValidateText(string elementValue)
@@ -2084,10 +2082,7 @@ namespace System.Xml.Schema
 
         private void ClearPSVI()
         {
-            if (_textValue != null)
-            {
-                _textValue.Length = 0;
-            }
+            _textValue?.Length = 0;
 
             _attPresence.Clear(); //Clear attributes hashtable for every element
             _wildID = null; //clear it for every element

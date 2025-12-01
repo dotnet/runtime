@@ -56,7 +56,7 @@ static UINT16 ShuffleOfs(INT ofs, UINT stackSizeDelta = 0)
 
     return static_cast<UINT16>(ofs);
 }
-#endif
+#endif // defined(TARGET_X86)
 
 #ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
 
@@ -475,6 +475,18 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 #endif // !defined(TARGET_ARM64) || !defined(CALLDESCR_RETBUFFARGREG)
     }
 
+    // Handle async continuation argument.
+    _ASSERTE(!!sArgPlacerDst.HasAsyncContinuation() == !!sArgPlacerSrc.HasAsyncContinuation());
+    if (sArgPlacerDst.HasAsyncContinuation())
+    {
+        // The async continuation is implicit in both signatures.
+        sArgPlacerSrc.GetAsyncContinuationLoc(&sArgSrc);
+        sArgPlacerDst.GetAsyncContinuationLoc(&sArgDst);
+
+        if (!AddNextShuffleEntryToArray(sArgSrc, sArgDst, pShuffleEntryArray, shuffleType))
+            return FALSE;
+    }
+
     // Iterate all the regular arguments. mapping source registers and stack locations to the corresponding
     // destination locations.
     while ((ofsSrc = sArgPlacerSrc.GetNextOffset()) != TransitionBlock::InvalidOffset)
@@ -623,6 +635,7 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS
 
+#if defined(FEATURE_PORTABLE_SHUFFLE_THUNKS) || defined(TARGET_X86)
 BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<ShuffleEntry> * pShuffleEntryArray)
 {
     STANDARD_VM_CONTRACT;
@@ -761,8 +774,8 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     }
     return TRUE;
 }
-
 static ShuffleThunkCache* s_pShuffleThunkCache = NULL;
+#endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
 // One time init.
 void COMDelegate::Init()
@@ -774,8 +787,9 @@ void COMDelegate::Init()
         MODE_ANY;
     }
     CONTRACTL_END;
-
+#if defined(FEATURE_PORTABLE_SHUFFLE_THUNKS) || defined(TARGET_X86)
     s_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
+#endif
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -815,7 +829,6 @@ LoaderHeap *DelegateEEClass::GetStubHeap()
     return GetInvokeMethod()->GetLoaderAllocator()->GetStubHeap();
 }
 
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTargetWithThis)
 {
     SigTypeContext typeContext(pDelegateMD);
@@ -875,7 +888,6 @@ static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTarg
 
     return Stub::NewStub(JitILStub(pStubMD), NEWSTUB_FL_SHUFFLE_THUNK);
 }
-#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
 static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
 {
@@ -901,6 +913,7 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
 
     MethodDesc *pMD = pClass->GetInvokeMethod();
 
+#if defined(FEATURE_PORTABLE_SHUFFLE_THUNKS) || defined(TARGET_X86)
     // We haven't already setup a shuffle thunk, go do it now (which will cache the result automatically).
     StackSArray<ShuffleEntry> rShuffleEntryArray;
     if (GenerateShuffleArray(pMD, pTargetMeth, &rShuffleEntryArray))
@@ -916,13 +929,9 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
         pShuffleThunk = pShuffleThunkCache->Canonicalize((const BYTE *)&rShuffleEntryArray[0], "DelegateShuffleThunk");
     }
     else
+#endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
     {
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         pShuffleThunk = CreateILDelegateShuffleThunk(pMD, isInstRetBuff);
-#else
-        _ASSERTE(FALSE);
-        return (PCODE)NULL;
-#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
     }
 
     if (!pShuffleThunk)
@@ -1268,17 +1277,22 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
         // We can get virtual delegates closed over null through this code path, so be careful to handle that case (no need to
         // virtualize since we're just going to throw NullRefException at invocation time).
         // </TODO>
-        if (pTargetMethod->IsVirtual() &&
-            *pRefFirstArg != NULL &&
-            pTargetMethod->GetMethodTable() != (*pRefFirstArg)->GetMethodTable())
+        if (pTargetMethod->IsVirtual()
+            && *pRefFirstArg != NULL
+            && pTargetMethod->GetMethodTable() != (*pRefFirstArg)->GetMethodTable())
+        {
             pTargetCode = pTargetMethod->GetMultiCallableAddrOfVirtualizedCode(pRefFirstArg, pTargetMethod->GetMethodTable());
-        else
+        }
 #ifdef HAS_THISPTR_RETBUF_PRECODE
-        if (pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+        else if (pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+        {
             pTargetCode = pTargetMethod->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pTargetMethod, PRECODE_THISPTR_RETBUF);
-        else
+        }
 #endif // HAS_THISPTR_RETBUF_PRECODE
+        else
+        {
             pTargetCode = pTargetMethod->GetMultiCallableAddrOfCode();
+        }
         _ASSERTE(pTargetCode);
 
         refRealDelegate->SetTarget(*pRefFirstArg);
@@ -1328,12 +1342,16 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
     }
     else
     {
-        UMEntryThunk*   pUMEntryThunk   = NULL;
-        SyncBlock*      pSyncBlock      = pDelegate->GetSyncBlock();
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        COMPlusThrow(kPlatformNotSupportedException, W("PlatformNotSupported_DynamicEntrypoint"));
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+        UMEntryThunkData*   pUMEntryThunk   = NULL;
+        SyncBlock*          pSyncBlock      = pDelegate->GetSyncBlock();
 
         InteropSyncBlockInfo* pInteropInfo = pSyncBlock->GetInteropInfo();
 
-        pUMEntryThunk = (UMEntryThunk*)pInteropInfo->GetUMEntryThunk();
+        pUMEntryThunk = pInteropInfo->GetUMEntryThunk();
 
         if (!pUMEntryThunk)
         {
@@ -1360,8 +1378,8 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             _ASSERTE(pUMThunkMarshInfo != NULL);
             _ASSERTE(pUMThunkMarshInfo == pClass->m_pUMThunkMarshInfo);
 
-            pUMEntryThunk = UMEntryThunk::CreateUMEntryThunk();
-            Holder<UMEntryThunk *, DoNothing, UMEntryThunk::FreeUMEntryThunk> umHolder;
+            pUMEntryThunk = UMEntryThunkData::CreateUMEntryThunk();
+            Holder<UMEntryThunkData *, DoNothing, UMEntryThunkData::FreeUMEntryThunk> umHolder;
             umHolder.Assign(pUMEntryThunk);
 
             // multicast. go thru Invoke
@@ -1379,7 +1397,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
 
             if (!pInteropInfo->SetUMEntryThunk(pUMEntryThunk))
             {
-                pUMEntryThunk = (UMEntryThunk*)pInteropInfo->GetUMEntryThunk();
+                pUMEntryThunk = pInteropInfo->GetUMEntryThunk();
             }
             else
             {
@@ -1387,10 +1405,11 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             }
 
             _ASSERTE(pUMEntryThunk != NULL);
-            _ASSERTE(pUMEntryThunk == (UMEntryThunk*)pInteropInfo->GetUMEntryThunk());
+            _ASSERTE(pUMEntryThunk == pInteropInfo->GetUMEntryThunk());
 
         }
         pCode = (PCODE)pUMEntryThunk->GetCode();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     GCPROTECT_END();
@@ -1415,6 +1434,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     // Check if this callback was originally a managed method passed out to unmanaged code.
     //
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     UMEntryThunk* pUMEntryThunk = NULL;
 
     auto stubKind = RangeSectionStubManager::GetStubKind((PCODE)pCallback);
@@ -1427,19 +1447,19 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         }
     }
 
-
     // Lookup the callsite in the hash, if found, we can map this call back to its managed function.
     // Otherwise, we'll treat this as an unmanaged callsite.
     // Make sure that the pointer doesn't have the value of 1 which is our hash table deleted item marker.
-    OBJECTHANDLE DelegateHnd = (pUMEntryThunk != NULL)
-        ? pUMEntryThunk->GetObjectHandle()
+    OBJECTHANDLE delegateHnd = (pUMEntryThunk != NULL)
+        ? pUMEntryThunk->GetData()->GetObjectHandle()
         : (OBJECTHANDLE)NULL;
 
-    if (DelegateHnd != (OBJECTHANDLE)NULL)
+    if (delegateHnd != (OBJECTHANDLE)NULL)
     {
         // Found a managed callsite
-        return ObjectFromHandle(DelegateHnd);
+        return ObjectFromHandle(delegateHnd);
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     // Validate the MethodTable is a delegate type
     // See Marshal.GetDelegateForFunctionPointer() for exception details.
@@ -1523,7 +1543,7 @@ void COMDelegate::ValidateDelegatePInvoke(MethodDesc* pMD)
     if (pMD->IsSynchronized())
         COMPlusThrow(kTypeLoadException, IDS_EE_NOSYNCHRONIZED);
 
-    if (pMD->MethodDesc::IsVarArg())
+    if (pMD->IsVarArg())
         COMPlusThrow(kNotSupportedException, IDS_EE_VARARG_NOT_SUPPORTED);
 }
 
@@ -1541,9 +1561,9 @@ PCODE COMDelegate::GetStubForILStub(EEImplMethodDesc* pDelegateMD, MethodDesc** 
 
     ValidateDelegatePInvoke(pDelegateMD);
 
-    dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
+    dwStubFlags |= PINVOKESTUB_FL_DELEGATE;
 
-    RETURN NDirect::GetStubForILStub(pDelegateMD, ppStubMD, dwStubFlags);
+    RETURN PInvoke::GetStubForILStub(pDelegateMD, ppStubMD, dwStubFlags);
 }
 
 
@@ -1555,10 +1575,10 @@ MethodDesc* COMDelegate::GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWOR
 
     MethodTable *pMT = pDelegateMD->GetMethodTable();
 
-    dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
+    dwStubFlags |= PINVOKESTUB_FL_DELEGATE;
 
     PInvokeStaticSigInfo sigInfo(pDelegateMD);
-    return NDirect::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
+    return PInvoke::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pDelegateMD);
 }
 
 extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method)
@@ -1569,7 +1589,7 @@ extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandle
 
     GCX_COOP();
 
-    MethodDesc *pMeth = MethodTable::GetMethodDescForSlotAddress((PCODE)method);
+    MethodDesc *pMeth = NonVirtualEntry2MethodDesc((PCODE)method);
     _ASSERTE(pMeth);
     _ASSERTE(!pMeth->IsStatic() && pMeth->IsVirtual());
     PCODE target = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
@@ -1862,20 +1882,13 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         // Next, check for an open delegate
         PCODE code = thisDel->GetMethodPtrAux();
 
-        if (code != (PCODE)NULL)
+        if (code == (PCODE)NULL)
         {
-            // Note that MethodTable::GetMethodDescForSlotAddress is significantly faster than Entry2MethodDesc
-            pMethodHandle = MethodTable::GetMethodDescForSlotAddress(code);
-        }
-        else
-        {
-            MethodTable * pMT = NULL;
-
             // Must be a normal delegate
             code = thisDel->GetMethodPtr();
-
-            pMethodHandle = NonVirtualEntry2MethodDesc(code);
         }
+
+        pMethodHandle = NonVirtualEntry2MethodDesc(code);
     }
 
     _ASSERTE(pMethodHandle);
@@ -2034,7 +2047,7 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 
     // Arguments - Scenarios involving UnmanagedCallersOnly are handled during the jit.
     bool unmanagedCallersOnlyRequiresMarshalling = false;
-    if (NDirect::MarshalingRequired(pMD, NULL, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))
+    if (PInvoke::MarshalingRequired(pMD, NULL, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))
         EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
 }
 
@@ -2394,16 +2407,16 @@ static bool IsLocationAssignable(TypeHandle fromHandle, TypeHandle toHandle, boo
                 // We need to check whether constraints of fromHandle have been loaded, because the
                 // CanCastTo operation might have made its decision without enumerating constraints
                 // (e.g. when toHandle is System.Object).
-                if (!fromHandleVar->ConstraintsLoaded())
-                    fromHandleVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED);
+                if (!fromHandleVar->ConstraintsLoaded(WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly))
+                    fromHandleVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
 
                 if (toHandle.IsGenericVariable())
                 {
                     TypeVarTypeDesc *toHandleVar = toHandle.AsGenericVariable();
 
                     // Constraints of toHandleVar were not touched by CanCastTo.
-                    if (!toHandleVar->ConstraintsLoaded())
-                        toHandleVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED);
+                    if (!toHandleVar->ConstraintsLoaded(WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly))
+                        toHandleVar->LoadConstraints(CLASS_DEPENDENCIES_LOADED, WhichConstraintsToLoad::TypeOrMethodVarsAndNonInterfacesOnly);
 
                     // Both handles are type variables. The following table lists all possible combinations.
                     //

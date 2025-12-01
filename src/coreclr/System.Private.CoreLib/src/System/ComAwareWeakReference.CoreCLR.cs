@@ -28,7 +28,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe bool PossiblyComObject(object target)
+        internal static bool PossiblyComObject(object target)
         {
 #if FEATURE_COMINTEROP
             return target is __ComObject || PossiblyComWrappersObject(target);

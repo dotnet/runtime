@@ -1,9 +1,9 @@
 namespace Mono.Linker.Tests.Cases.LinkXml.Dependencies.EmbeddedLinkXmlFromCopyAssemblyIsProcessed
 {
-	public class OtherLibrary
-	{
-		public void Method ()
-		{
-		}
-	}
+    public class OtherLibrary
+    {
+        public void Method()
+        {
+        }
+    }
 }

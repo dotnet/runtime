@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <CrossGen2TestExtraArguments>$(CrossGen2TestExtraArguments) --instruction-set:avx512f,avx512f_vl,avx512bw,avx512bw_vl,avx512cd,avx512cd_vl,avx512dq,avx512dq_vl</CrossGen2TestExtraArguments>
+    <CrossGen2TestExtraArguments>$(CrossGen2TestExtraArguments) --instruction-set:avx512</CrossGen2TestExtraArguments>
   </PropertyGroup>
 
   <ItemGroup>

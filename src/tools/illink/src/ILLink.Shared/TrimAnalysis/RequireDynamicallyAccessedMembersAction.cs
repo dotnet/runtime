@@ -13,64 +13,86 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	[StructLayout (LayoutKind.Auto)]
-	internal partial struct RequireDynamicallyAccessedMembersAction
-	{
-		private readonly DiagnosticContext _diagnosticContext;
+    [StructLayout(LayoutKind.Auto)]
+    internal partial struct RequireDynamicallyAccessedMembersAction
+    {
+        private readonly DiagnosticContext _diagnosticContext;
 
-		public void Invoke (in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue)
-		{
-			if (targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None)
-				return;
+        public void Invoke(in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue)
+        {
+            if (targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None)
+                return;
 
-			foreach (var uniqueValue in value.AsEnumerable ()) {
-				if (targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
-					&& uniqueValue is GenericParameterValue genericParam
-					&& genericParam.GenericParameter.HasDefaultConstructorConstraint ()) {
-					// We allow a new() constraint on a generic parameter to satisfy DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
-				} else if (targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.PublicFields
-					&& uniqueValue is GenericParameterValue maybeEnumConstrainedGenericParam
-					&& maybeEnumConstrainedGenericParam.GenericParameter.HasEnumConstraint ()) {
-					// We allow a System.Enum constraint on a generic parameter to satisfy DynamicallyAccessedMemberTypes.PublicFields
-				} else if (uniqueValue is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers) {
-					if (uniqueValue is NullableValueWithDynamicallyAccessedMembers nullableValue) {
-						MarkTypeForDynamicallyAccessedMembers (nullableValue.NullableType, nullableValue.DynamicallyAccessedMemberTypes);
-					}
-					var availableMemberTypes = valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes;
-					if (!Annotations.SourceHasRequiredAnnotations (availableMemberTypes, targetValue.DynamicallyAccessedMemberTypes, out var missingMemberTypes)) {
-						(var diagnosticId, var diagnosticArguments) = Annotations.GetDiagnosticForAnnotationMismatch (valueWithDynamicallyAccessedMembers, targetValue, missingMemberTypes);
-						_diagnosticContext.AddDiagnostic (diagnosticId, valueWithDynamicallyAccessedMembers, targetValue, diagnosticArguments);
-					}
-				} else if (uniqueValue is SystemTypeValue systemTypeValue) {
-					MarkTypeForDynamicallyAccessedMembers (systemTypeValue.RepresentedType, targetValue.DynamicallyAccessedMemberTypes);
-				} else if (uniqueValue is KnownStringValue knownStringValue) {
-					if (!TryResolveTypeNameAndMark (knownStringValue.Contents, needsAssemblyName: true, out TypeProxy foundType)) {
-						// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
-					} else {
-						MarkTypeForDynamicallyAccessedMembers (foundType, targetValue.DynamicallyAccessedMemberTypes);
-					}
-				} else if (uniqueValue is NullableSystemTypeValue nullableSystemTypeValue) {
-					MarkTypeForDynamicallyAccessedMembers (nullableSystemTypeValue.NullableType, targetValue.DynamicallyAccessedMemberTypes);
-					MarkTypeForDynamicallyAccessedMembers (nullableSystemTypeValue.UnderlyingTypeValue.RepresentedType, targetValue.DynamicallyAccessedMemberTypes);
-				} else if (uniqueValue == NullValue.Instance) {
-					// Ignore - probably unreachable path as it would fail at runtime anyway.
-				} else {
-					DiagnosticId diagnosticId = targetValue switch {
-						MethodParameterValue maybeThis when maybeThis.IsThisParameter () => DiagnosticId.ImplicitThisCannotBeStaticallyDetermined,
-						MethodParameterValue => DiagnosticId.MethodParameterCannotBeStaticallyDetermined,
-						MethodReturnValue => DiagnosticId.MethodReturnValueCannotBeStaticallyDetermined,
-						FieldValue => DiagnosticId.FieldValueCannotBeStaticallyDetermined,
-						GenericParameterValue => DiagnosticId.TypePassedToGenericParameterCannotBeStaticallyDetermined,
-						_ => throw new NotImplementedException ($"unsupported target value {targetValue}")
-					};
+            foreach (var uniqueValue in value.AsEnumerable())
+            {
+                if (targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
+                    && uniqueValue is GenericParameterValue genericParam
+                    && genericParam.GenericParameter.HasDefaultConstructorConstraint())
+                {
+                    // We allow a new() constraint on a generic parameter to satisfy DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
+                }
+                else if (targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.PublicFields
+                    && uniqueValue is GenericParameterValue maybeEnumConstrainedGenericParam
+                    && maybeEnumConstrainedGenericParam.GenericParameter.HasEnumConstraint())
+                {
+                    // We allow a System.Enum constraint on a generic parameter to satisfy DynamicallyAccessedMemberTypes.PublicFields
+                }
+                else if (uniqueValue is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers)
+                {
+                    if (uniqueValue is NullableValueWithDynamicallyAccessedMembers nullableValue)
+                    {
+                        MarkTypeForDynamicallyAccessedMembers(nullableValue.NullableType, nullableValue.DynamicallyAccessedMemberTypes);
+                    }
+                    var availableMemberTypes = valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes;
+                    if (!Annotations.SourceHasRequiredAnnotations(availableMemberTypes, targetValue.DynamicallyAccessedMemberTypes, out var missingMemberTypes))
+                    {
+                        (var diagnosticId, var diagnosticArguments) = Annotations.GetDiagnosticForAnnotationMismatch(valueWithDynamicallyAccessedMembers, targetValue, missingMemberTypes);
+                        _diagnosticContext.AddDiagnostic(diagnosticId, valueWithDynamicallyAccessedMembers, targetValue, diagnosticArguments);
+                    }
+                }
+                else if (uniqueValue is SystemTypeValue systemTypeValue)
+                {
+                    MarkTypeForDynamicallyAccessedMembers(systemTypeValue.RepresentedType, targetValue.DynamicallyAccessedMemberTypes);
+                }
+                else if (uniqueValue is KnownStringValue knownStringValue)
+                {
+                    if (!TryResolveTypeNameAndMark(knownStringValue.Contents, needsAssemblyName: true, out TypeProxy foundType))
+                    {
+                        // Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
+                    }
+                    else
+                    {
+                        MarkTypeForDynamicallyAccessedMembers(foundType, targetValue.DynamicallyAccessedMemberTypes);
+                    }
+                }
+                else if (uniqueValue is NullableSystemTypeValue nullableSystemTypeValue)
+                {
+                    MarkTypeForDynamicallyAccessedMembers(nullableSystemTypeValue.NullableType, targetValue.DynamicallyAccessedMemberTypes);
+                    MarkTypeForDynamicallyAccessedMembers(nullableSystemTypeValue.UnderlyingTypeValue.RepresentedType, targetValue.DynamicallyAccessedMemberTypes);
+                }
+                else if (uniqueValue == NullValue.Instance)
+                {
+                    // Ignore - probably unreachable path as it would fail at runtime anyway.
+                }
+                else
+                {
+                    DiagnosticId diagnosticId = targetValue switch
+                    {
+                        MethodParameterValue maybeThis when maybeThis.IsThisParameter() => DiagnosticId.ImplicitThisCannotBeStaticallyDetermined,
+                        MethodParameterValue => DiagnosticId.MethodParameterCannotBeStaticallyDetermined,
+                        MethodReturnValue => DiagnosticId.MethodReturnValueCannotBeStaticallyDetermined,
+                        FieldValue => DiagnosticId.FieldValueCannotBeStaticallyDetermined,
+                        GenericParameterValue => DiagnosticId.TypePassedToGenericParameterCannotBeStaticallyDetermined,
+                        _ => throw new NotImplementedException($"unsupported target value {targetValue}")
+                    };
 
-					_diagnosticContext.AddDiagnostic (diagnosticId, targetValue.GetDiagnosticArgumentsForAnnotationMismatch ().ToArray ());
-				}
-			}
-		}
+                    _diagnosticContext.AddDiagnostic(diagnosticId, targetValue.GetDiagnosticArgumentsForAnnotationMismatch().ToArray());
+                }
+            }
+        }
 
-		public partial bool TryResolveTypeNameAndMark (string typeName, bool needsAssemblyName, out TypeProxy type);
+        public partial bool TryResolveTypeNameAndMark(string typeName, bool needsAssemblyName, out TypeProxy type);
 
-		private partial void MarkTypeForDynamicallyAccessedMembers (in TypeProxy type, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
-	}
+        private partial void MarkTypeForDynamicallyAccessedMembers(in TypeProxy type, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
+    }
 }

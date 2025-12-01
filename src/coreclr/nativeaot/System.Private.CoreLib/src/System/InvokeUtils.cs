@@ -144,13 +144,13 @@ namespace System
                 }
 
                 dstObject = RuntimeImports.RhNewObject(dstEEType);
-                PrimitiveWiden(dstElementType, srcElementType, ref dstObject.GetRawData(), ref srcObject.GetRawData());
+                PrimitiveWiden(ref srcObject.GetRawData(), ref dstObject.GetRawData(), srcElementType, dstElementType);
             }
             return null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // Two callers, one of them is potentially perf sensitive
-        internal static void PrimitiveWiden(EETypeElementType dstType, EETypeElementType srcType, ref byte dstValue, ref byte srcValue)
+        internal static void PrimitiveWiden(ref byte srcValue, ref byte dstValue, EETypeElementType srcType, EETypeElementType dstType)
         {
             // Caller must check that the conversion is valid and the source/destination types are different
             Debug.Assert(CanPrimitiveWiden(dstType, srcType) && dstType != srcType);

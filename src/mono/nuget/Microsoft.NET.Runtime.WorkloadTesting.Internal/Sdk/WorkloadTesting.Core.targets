@@ -136,7 +136,7 @@
     <PropertyGroup>
       <!-- Used for workload testing -->
       <PackageVersionForWorkloadManifests>$(PackageVersion)</PackageVersionForWorkloadManifests>
-      <PackageVersionForWorkloadManifests Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</PackageVersionForWorkloadManifests>
+      <PackageVersionForWorkloadManifests Condition="'$(DotNetFinalVersionKind)' != ''">$(ProductVersion)</PackageVersionForWorkloadManifests>
     </PropertyGroup>
 
     <Error Condition="'$(PackageVersionForWorkloadManifests)' == ''"

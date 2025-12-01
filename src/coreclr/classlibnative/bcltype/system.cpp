@@ -32,24 +32,6 @@
 
 #include <minipal/cpuid.h>
 
-
-FCIMPL0(UINT32, SystemNative::GetTickCount)
-{
-    FCALL_CONTRACT;
-
-    return ::GetTickCount();
-}
-FCIMPLEND;
-
-FCIMPL0(UINT64, SystemNative::GetTickCount64)
-{
-    FCALL_CONTRACT;
-
-    return ::GetTickCount64();
-}
-FCIMPLEND;
-
-
 extern "C" VOID QCALLTYPE Environment_Exit(INT32 exitcode)
 {
     QCALL_CONTRACT;
@@ -135,6 +117,8 @@ static StackWalkAction FindFailFastCallerCallback(CrawlFrame* frame, VOID* data)
     return SWA_ABORT;
 }
 
+static thread_local int8_t alreadyFailing = 0;
+
 extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, PCWSTR message, QCall::ObjectHandleOnStack exception, PCWSTR errorSource)
 {
     QCALL_CONTRACT;
@@ -161,7 +145,14 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
 
     LPCWSTR argExceptionString = NULL;
     StackSString msg;
-    if (exception.Get() != NULL)
+    // Because Environment_FailFast should kill the process, any subsequent calls are likely nested call from managed while formatting the exception message or the stack trace.
+    // Only collect exception string if this is the first attempt to fail fast on this thread.
+    alreadyFailing++;
+    if (alreadyFailing != 1)
+    {
+        argExceptionString = W("Environment.FailFast called recursively.");
+    }
+    else if (exception.Get() != NULL)
     {
         GetExceptionMessage(exception.Get(), msg);
         argExceptionString = msg.GetUnicode();

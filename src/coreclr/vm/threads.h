@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// THREADS.H -
-//
-
 
 //
 //
@@ -114,7 +111,6 @@
 #include <exception>
 #include "vars.hpp"
 #include "util.hpp"
-#include "eventstore.hpp"
 #include "argslot.h"
 #include "regdisp.h"
 #include "mscoree.h"
@@ -129,13 +125,12 @@ class     ThreadStore;
 class     MethodDesc;
 struct    PendingSync;
 class     AppDomain;
-class     NDirect;
+class     PInvoke;
 class     Frame;
 class     ThreadBaseObject;
 class     AppDomainStack;
 class     DomainAssembly;
 class     DeadlockAwareLock;
-struct    HelperMethodFrameCallerList;
 class     EECodeInfo;
 class     DebuggerPatchSkip;
 class     FaultingExceptionFrame;
@@ -151,7 +146,6 @@ typedef void(*ADCallBackFcnType)(LPVOID);
 #include "excep.h"
 #include "synch.h"
 #include "exstate.h"
-#include "threaddebugblockinginfo.h"
 #include "interoputil.h"
 #include "eventtrace.h"
 
@@ -166,7 +160,7 @@ class Module;
 // TailCallArgBuffer states
 #define TAILCALLARGBUFFER_ACTIVE       0
 #define TAILCALLARGBUFFER_INSTARG_ONLY 1
-#define TAILCALLARGBUFFER_ABANDONED    2
+#define TAILCALLARGBUFFER_INACTIVE     2
 
 struct TailCallArgBuffer
 {
@@ -213,20 +207,6 @@ struct TailCallArgBuffer
 // A thread doesn't receive its id until fully constructed.
 #define UNINITIALIZED_THREADID 0xbaadf00d
 #endif //_DEBUG
-
-// Capture all the synchronization requests, for debugging purposes
-#if defined(_DEBUG) && defined(TRACK_SYNC)
-
-// Each thread has a stack that tracks all enter and leave requests
-struct Dbg_TrackSync
-{
-    virtual ~Dbg_TrackSync() = default;
-
-    virtual void EnterSync    (UINT_PTR caller, void *pAwareLock) = 0;
-    virtual void LeaveSync    (UINT_PTR caller, void *pAwareLock) = 0;
-};
-
-#endif  // TRACK_SYNC
 
 //***************************************************************************
 #ifdef FEATURE_HIJACK
@@ -335,13 +315,13 @@ void    DestroyThread(Thread *th);
 
 DWORD GetRuntimeId();
 
-#define CREATETHREAD_IF_NULL_FAILFAST(__thread, __msg)                  \
+#define CREATETHREAD_IF_NULL_FAILFAST(thread__, msg__)                  \
 {                                                                       \
-    HRESULT __ctinffhr;                                                 \
-    __thread = SetupThreadNoThrow(&__ctinffhr);                         \
-    if (__thread == NULL)                                               \
+    HRESULT ctinffhr__;                                                 \
+    thread__ = SetupThreadNoThrow(&ctinffhr__);                         \
+    if (thread__ == NULL)                                               \
     {                                                                   \
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(__ctinffhr, __msg);    \
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(ctinffhr__, msg__);    \
         UNREACHABLE();                                                  \
     }                                                                   \
 }
@@ -392,15 +372,6 @@ BOOL MatchThreadHandleToOsId ( HANDLE h, DWORD osId );
 // unstarted System.Thread), then this instance can be found in the TLS
 // of that physical thread.
 
-// FEATURE_MULTIREG_RETURN is set for platforms where a struct return value
-//                         can be returned in multiple registers
-//                         ex: Windows/Unix ARM/ARM64, Unix-AMD64.
-//
-//
-// UNIX_AMD64_ABI is a specific kind of FEATURE_MULTIREG_RETURN
-//                         specified by SystemV ABI for AMD64
-//
-
 #ifdef FEATURE_HIJACK                                                    // Hijack function returning
 EXTERN_C void STDCALL OnHijackWorker(HijackArgs * pArgs);
 #endif // FEATURE_HIJACK
@@ -427,7 +398,7 @@ class TailCallTls
 
 public:
     TailCallTls();
-    TailCallArgBuffer* AllocArgBuffer(int size, void* gcDesc);
+    TailCallArgBuffer* AllocArgBuffer(int size);
     void FreeArgBuffer() { delete[] (BYTE*)m_argBuffer; m_argBuffer = NULL; }
     TailCallArgBuffer* GetArgBuffer()
     {
@@ -450,7 +421,7 @@ __declspec(selectany)
 #else
 extern
 #endif
-thread_local RuntimeThreadLocals t_runtime_thread_locals;
+PLATFORM_THREAD_LOCAL RuntimeThreadLocals t_runtime_thread_locals;
 
 typedef DPTR(struct RuntimeThreadLocals) PTR_RuntimeThreadLocals;
 typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
@@ -482,7 +453,6 @@ class Thread
     friend void STDCALL OnHijackWorker(HijackArgs * pArgs);
 #ifdef FEATURE_THREAD_ACTIVATION
     friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext);
-    friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool suspendForDebugger);
     friend BOOL CheckActivationSafePoint(SIZE_T ip);
 #endif // FEATURE_THREAD_ACTIVATION
 
@@ -550,7 +520,7 @@ public:
         TS_Hijacked               = 0x00000080,    // Return address has been hijacked
 #endif // FEATURE_HIJACK
 
-        TS_SSToExitApcCall        = 0x00000100,    // Enable SS and resume the thread to exit an APC Call and keep the thread in suspend state
+        // unused                 = 0x00000100,
         TS_Background             = 0x00000200,    // Thread is a background thread
         TS_Unstarted              = 0x00000400,    // Thread has never been started
         TS_Dead                   = 0x00000800,    // Thread is dead
@@ -567,7 +537,7 @@ public:
         TS_ReportDead             = 0x00010000,    // in WaitForOtherThreads()
         TS_FullyInitialized       = 0x00020000,    // Thread is fully initialized and we are ready to broadcast its existence to external clients
 
-        TS_SSToExitApcCallDone    = 0x00040000,    // The thread exited an APC Call and it is already resumed and paused on SS
+        // unused                 = 0x00040000,
 
         TS_SyncSuspended          = 0x00080000,    // Suspended via WaitSuspendEvent
         TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync
@@ -606,9 +576,6 @@ public:
     enum ThreadTasks
     {
         TT_CleanupSyncBlock       = 0x00000001, // The synch block needs to be cleaned up.
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        TT_CallCoInitialize       = 0x00000002, // CoInitialize needs to be called.
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
     };
 
     // Thread flags that have no concurrency issues (i.e., they are only manipulated by the owning thread). Use these
@@ -656,7 +623,7 @@ public:
                                                       // effort.
                                                       //
                                                       // Once we are completely independent of the OS UEF, we could remove this.
-        TSNC_UnhandledException2ndPass  = 0x02000000, // The unhandled exception propagation is in the 2nd pass
+        TSNC_SkipManagedPersonalityRoutine = 0x02000000, // Ignore the ProcessCLRException calls when propagating exception to external native code
         TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
                                                       // This almost mirrors the TS_Interruptible state however that flag can change
                                                       // during GC-preemptive mode whereas this one cannot.
@@ -773,7 +740,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         InterlockedOr((LONG*)&m_State, TS_CoInitialized);
-        InterlockedAnd((LONG*)&m_ThreadTasks, ~TT_CallCoInitialize);
     }
 
     void ResetCoInitialized()
@@ -795,24 +761,6 @@ public:
         ResetThreadStateNC(TSNC_WinRTInitialized);
     }
 #endif // FEATURE_COMINTEROP
-
-    DWORD RequiresCoInitialize()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_ThreadTasks & TT_CallCoInitialize);
-    }
-
-    void SetRequiresCoInitialize()
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedOr((LONG*)&m_ThreadTasks, TT_CallCoInitialize);
-    }
-
-    void ResetRequiresCoInitialize()
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedAnd((LONG*)&m_ThreadTasks,~TT_CallCoInitialize);
-    }
 
     void CleanupCOMState();
 
@@ -850,12 +798,6 @@ public:
         m_fHasDeadThreadBeenConsideredForGCTrigger = true;
     }
 #endif // !DACCESS_COMPILE
-
-    // returns if there is some extra work for the finalizer thread.
-    BOOL HaveExtraWorkForFinalizer();
-
-    // do the extra finalizer work.
-    void DoExtraWorkForFinalizer();
 
 #ifndef DACCESS_COMPILE
     DWORD CatchAtSafePoint()
@@ -1208,22 +1150,7 @@ public:
     //--------------------------------------------------------------
     // Returns innermost active GCFrame.
     //--------------------------------------------------------------
-    PTR_GCFrame GetGCFrame()
-    {
-        SUPPORTS_DAC;
-
-#ifdef _DEBUG_IMPL
-        WRAPPER_NO_CONTRACT;
-        if (this == GetThreadNULLOk())
-        {
-            void* curSP;
-            curSP = (void *)GetCurrentSP();
-            _ASSERTE((m_pGCFrame == (GCFrame*)-1) || (curSP <= m_pGCFrame && m_pGCFrame < m_CacheStackBase));
-        }
-#endif
-
-        return m_pGCFrame;
-    }
+    PTR_GCFrame GetGCFrame();
 
     //--------------------------------------------------------------
     // Replaces innermost active Frames.
@@ -1409,9 +1336,8 @@ public:
         WRAPPER_NO_CONTRACT;
 #ifdef PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled()
-                 || CORProfilerPresent() ||    // This added to allow profiler to use GetILToNativeMapping
+                 || CORProfilerPresent());  // This added to allow profiler to use GetILToNativeMapping
                                             // while in preemptive GC mode
-                 (g_fEEShutDown & (ShutDown_Finalize2 | ShutDown_Profiler)) == ShutDown_Finalize2);
 #else // PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled());
 #endif // PROFILING_SUPPORTED
@@ -1422,10 +1348,9 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 #ifdef PROFILING_SUPPORTED
-        _ASSERTE(PreemptiveGCDisabled() ||
-                 CORProfilerPresent() ||    // This added to allow profiler to use GetILToNativeMapping
+        _ASSERTE(PreemptiveGCDisabled()
+                 || CORProfilerPresent());  // This added to allow profiler to use GetILToNativeMapping
                                             // while in preemptive GC mode
-                 (g_fEEShutDown & (ShutDown_Finalize2 | ShutDown_Profiler)) == ShutDown_Finalize2);
 #else // PROFILING_SUPPORTED
         _ASSERTE(PreemptiveGCDisabled());
 #endif // PROFILING_SUPPORTED
@@ -1584,10 +1509,6 @@ public:
 
         return PTR_ThreadExceptionState(PTR_HOST_MEMBER_TADDR(Thread, this, m_ExceptionState));
     }
-
-private:
-    // ClearContext are to be called only during shutdown
-    void ClearContext();
 
 public:
 
@@ -2189,16 +2110,11 @@ public:
 
     // Either perform WaitForSingleObject or MsgWaitForSingleObject as appropriate.
     DWORD          DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
-                                     DWORD millis, WaitMode mode,
-                                     PendingSync *syncInfo = 0);
+                                     DWORD millis, WaitMode mode);
 
-    DWORD          DoSignalAndWait(HANDLE *handles, DWORD millis, BOOL alertable,
-                                     PendingSync *syncState = 0);
+    DWORD          DoSignalAndWait(HANDLE *handles, DWORD millis, BOOL alertable);
 private:
-    void           DoAppropriateWaitWorkerAlertableHelper(WaitMode mode);
-    DWORD          DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL waitAll,
-                                           DWORD millis, WaitMode mode, void *associatedObjectForMonitorWait);
-    DWORD          DoSignalAndWaitWorker(HANDLE* pHandles, DWORD millis,BOOL alertable);
+    void           DoAppropriateWaitAlertableHelper(WaitMode mode);
     DWORD          DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll, DWORD timeout, WaitMode mode);
     DWORD          DoSyncContextWait(OBJECTREF *pSyncCtxObj, int countHandles, HANDLE *handles, BOOL waitAll, DWORD millis);
 public:
@@ -2499,29 +2415,8 @@ public:
 public:
     static BOOL UniqueStack(void* startLoc = 0);
 
-    BOOL IsAddressInStack (PTR_VOID addr) const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(m_CacheStackBase != NULL);
-        _ASSERTE(m_CacheStackLimit != NULL);
-        _ASSERTE(m_CacheStackLimit < m_CacheStackBase);
-        return m_CacheStackLimit < addr && addr <= m_CacheStackBase;
-    }
-
-    static BOOL IsAddressInCurrentStack (PTR_VOID addr)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        Thread* currentThread = GetThreadNULLOk();
-        if (currentThread == NULL)
-        {
-            return FALSE;
-        }
-
-        PTR_VOID sp = dac_cast<PTR_VOID>(GetCurrentSP());
-        _ASSERTE(currentThread->m_CacheStackBase != NULL);
-        _ASSERTE(sp < currentThread->m_CacheStackBase);
-        return sp < addr && addr <= currentThread->m_CacheStackBase;
-    }
+    BOOL IsAddressInStack (PTR_VOID addr) const;
+    static BOOL IsAddressInCurrentStack (PTR_VOID addr);
 
     // DetermineIfGuardPagePresent returns TRUE if the thread's stack contains a proper guard page. This function
     // makes a physical check of the stack, rather than relying on whether or not the CLR is currently processing a
@@ -2571,9 +2466,7 @@ private:
     //-------------------------------------------------------------
     // Waiting & Synchronization
     //-------------------------------------------------------------
-friend class DebuggerController;
-protected:
-    void MarkForSuspensionAndWait(ULONG bit);
+
     // For suspends.  The thread waits on this event.  A client sets the event to cause
     // the thread to resume.
     void    WaitSuspendEvents();
@@ -2689,9 +2582,8 @@ private:
 #endif // FEATURE_HIJACK
 
     // Support for Wait/Notify
-    BOOL        Block(INT32 timeOut, PendingSync *syncInfo);
-    DWORD       Wait(HANDLE *objs, int cntObjs, INT32 timeOut, PendingSync *syncInfo);
-    DWORD       Wait(CLREvent* pEvent, INT32 timeOut, PendingSync *syncInfo);
+    DWORD       Wait(HANDLE *objs, int cntObjs, INT32 timeOut);
+    DWORD       Wait(CLREvent* pEvent, INT32 timeOut);
 
     // support for Thread.Interrupt() which breaks out of Waits, Sleeps, Joins
     LONG        m_UserInterrupt;
@@ -2710,14 +2602,6 @@ private:
 
 public:
     static void WINAPI UserInterruptAPC(ULONG_PTR ignore);
-
-#if defined(_DEBUG) && defined(TRACK_SYNC)
-
-// Each thread has a stack that tracks all enter and leave requests
-public:
-    Dbg_TrackSync   *m_pTrackSync;
-
-#endif // TRACK_SYNC
 
     // Access to thread handle and ThreadId.
     HANDLE      GetThreadHandle()
@@ -2740,25 +2624,6 @@ public:
 private:
     // For suspends:
     CLREvent        m_DebugSuspendEvent;
-
-    // For Object::Wait, Notify and NotifyAll, we use an Event inside the
-    // thread and we queue the threads onto the SyncBlock of the object they
-    // are waiting for.
-    CLREvent        m_EventWait;
-    WaitEventLink   m_WaitEventLink;
-    WaitEventLink* WaitEventLinkForSyncBlock (SyncBlock *psb)
-    {
-        LIMITED_METHOD_CONTRACT;
-        WaitEventLink *walk = &m_WaitEventLink;
-        while (walk->m_Next) {
-            _ASSERTE (walk->m_Next->m_Thread == this);
-            if ((SyncBlock*)(((DWORD_PTR)walk->m_Next->m_WaitSB) & ~1)== psb) {
-                break;
-            }
-            walk = walk->m_Next;
-        }
-        return walk;
-    }
 
     void        SetThreadHandle(HANDLE h)
     {
@@ -2944,9 +2809,6 @@ private:
 #endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
 private:
-    UINT32 m_monitorLockContentionCount;
-    static UINT64 s_monitorLockContentionCountOverflow;
-
 #ifndef DACCESS_COMPILE
 private:
     static UINT32 *GetThreadLocalCountRef(Thread *pThread, SIZE_T threadLocalCountOffset)
@@ -2995,25 +2857,6 @@ private:
     }
 
     static UINT64 GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCount);
-
-public:
-    static void IncrementMonitorLockContentionCount(Thread *pThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        IncrementCount(pThread, offsetof(Thread, m_monitorLockContentionCount), &s_monitorLockContentionCountOverflow);
-    }
-
-    static UINT64 GetMonitorLockContentionCountOverflow()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetOverflowCount(&s_monitorLockContentionCountOverflow);
-    }
-
-    static UINT64 GetTotalMonitorLockContentionCount()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetTotalCount(offsetof(Thread, m_monitorLockContentionCount), &s_monitorLockContentionCountOverflow);
-    }
 #endif // !DACCESS_COMPILE
 
 public:
@@ -3488,38 +3331,30 @@ public:
 
 #ifdef _DEBUG
 private:
-    DWORD m_dwUnbreakableLockCount;
+    DWORD m_dwLockCount;
 public:
-    void IncUnbreakableLockCount()
+    void IncLockCount()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE (m_dwUnbreakableLockCount != (DWORD)-1);
-        m_dwUnbreakableLockCount ++;
+        _ASSERTE (m_dwLockCount != (DWORD)-1);
+        m_dwLockCount ++;
     }
-    void DecUnbreakableLockCount()
+    void DecLockCount()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE (m_dwUnbreakableLockCount > 0);
-        m_dwUnbreakableLockCount --;
+        _ASSERTE (m_dwLockCount > 0);
+        m_dwLockCount --;
     }
-    BOOL HasUnbreakableLock() const
+    BOOL HasLock() const
     {
         LIMITED_METHOD_CONTRACT;
-        return m_dwUnbreakableLockCount != 0;
+        return m_dwLockCount != 0;
     }
-    DWORD GetUnbreakableLockCount() const
+    DWORD GetLockCount() const
     {
         LIMITED_METHOD_CONTRACT;
-        return m_dwUnbreakableLockCount;
+        return m_dwLockCount;
     }
-#endif // _DEBUG
-
-#ifdef _DEBUG
-private:
-    friend class FCallTransitionState;
-    friend class PermitHelperMethodFrameState;
-    friend class CompletedFCallTransitionState;
-    HelperMethodFrameCallerList *m_pHelperMethodFrameCallerList;
 #endif // _DEBUG
 
 private:
@@ -3618,6 +3453,12 @@ public:
         _ASSERTE(!m_debuggerActivePatchSkipper.Load());
     }
 
+    bool HasActivePatchSkip() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_debuggerActivePatchSkipper.Load() != NULL;
+    }
+
 private:
 
     static BOOL EnterWorkingOnThreadContext(Thread *pThread)
@@ -3705,11 +3546,6 @@ private:
     DWORD       m_dwIndexClauseForCatch;
     StackFrame  m_sfEstablisherOfActualHandlerFrame;
 #endif // FEATURE_EH_FUNCLETS
-
-public:
-    // Holds per-thread information the debugger uses to expose locking information
-    // See ThreadDebugBlockingInfo.h for more details
-    ThreadDebugBlockingInfo DebugBlockingInfo;
 
 private:
 
@@ -3985,10 +3821,8 @@ private:
     friend struct ::cdac_data<Thread>;
 
 #ifdef FEATURE_INTERPRETER
-private:
-    InterpThreadContext *m_pInterpThreadContext;
-
 public:
+    InterpThreadContext *m_pInterpThreadContext;
     InterpThreadContext* GetInterpThreadContext();
 #endif // FEATURE_INTERPRETER
 };
@@ -4005,6 +3839,7 @@ struct cdac_data<Thread>
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
     static constexpr size_t Link = offsetof(Thread, m_Link);
+    static constexpr size_t ThreadLocalDataPtr = offsetof(Thread, m_ThreadLocalDataPtr);
 
     static_assert(std::is_same<decltype(std::declval<Thread>().m_ExceptionState), ThreadExceptionState>::value,
         "Thread::m_ExceptionState is of type ThreadExceptionState");
@@ -4013,9 +3848,10 @@ struct cdac_data<Thread>
     #else
     static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_currentExInfo);
     #endif
-
     #ifndef TARGET_UNIX
     static constexpr size_t TEB = offsetof(Thread, m_pTEB);
+    static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
+    + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
     #endif
 };
 
@@ -4067,8 +3903,6 @@ public:
 
     // RemoveThread finds the thread in the ThreadStore and discards it.
     static BOOL RemoveThread(Thread *target);
-
-    static BOOL CanAcquireLock();
 
     // Transfer a thread from the unstarted to the started list.
     static void TransferStartedThread(Thread *target);
@@ -4451,7 +4285,17 @@ public:
         _ASSERTE(result == NULL || (dac_cast<size_t>(result) & 0x3) == 0 || ((Thread*)result)->GetThreadId() == id);
         return result;
     }
+
+    friend struct ::cdac_data<IdDispenser>;
 };
+
+template<>
+struct cdac_data<IdDispenser>
+{
+    static constexpr size_t IdToThread = offsetof(IdDispenser, m_idToThread);
+    static constexpr size_t HighestId = offsetof(IdDispenser, m_highestId);
+};
+
 typedef DPTR(IdDispenser) PTR_IdDispenser;
 
 
@@ -4492,30 +4336,6 @@ inline void Thread::DecrementTraceCallCount()
     ThreadStore::DecrementTrapReturningThreads();
     InterlockedDecrement(&m_TraceCallCount);
 }
-
-// When we enter an Object.Wait() we are logically inside the synchronized
-// region of that object.  Of course, we've actually completely left the region,
-// or else nobody could Notify us.  But if we throw ThreadInterruptedException to
-// break out of the Wait, all the catchers are going to expect the synchronized
-// state to be correct.  So we carry it around in case we need to restore it.
-struct PendingSync
-{
-    void*           m_Object;
-    LONG            m_EnterCount;
-    WaitEventLink  *m_WaitEventLink;
-#ifdef _DEBUG
-    Thread         *m_OwnerThread;
-#endif
-
-    PendingSync(WaitEventLink *s) : m_WaitEventLink(s)
-    {
-        WRAPPER_NO_CONTRACT;
-#ifdef _DEBUG
-        m_OwnerThread = GetThread();
-#endif
-    }
-    void Restore(BOOL bRemoveFromSB);
-};
 
 // --------------------------------------------------------------------------------
 // GCHolder is used to implement the normal GCX_ macros.
@@ -4591,7 +4411,6 @@ protected:
     FORCEINLINE_NONDEBUG
     void PopInternal()
     {
-        SCAN_SCOPE_END;
         WRAPPER_NO_CONTRACT;
 
 #ifdef ENABLE_CONTRACTS_IMPL
@@ -4774,7 +4593,6 @@ public:
     void Enter(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
         WRAPPER_NO_CONTRACT;
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4787,7 +4605,6 @@ public:
     void Leave()
     {
         WRAPPER_NO_CONTRACT;
-        SCAN_SCOPE_BEGIN;
         this->PopInternal<TRUE>();  // Thread must be non-NULL
     }
 };
@@ -4798,7 +4615,6 @@ public:
     DEBUG_NOINLINE
     void Enter(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -4810,7 +4626,6 @@ public:
     DEBUG_NOINLINE
     void Enter(Thread * pThreadNullOk, bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -4823,7 +4638,6 @@ public:
     DEBUG_NOINLINE
     void Leave()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<FALSE>(); // Thread may be NULL
     }
 };
@@ -4834,7 +4648,6 @@ public:
     DEBUG_NOINLINE
     GCCoop(GCHOLDER_DECLARE_CONTRACT_ARGS_BARE)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         // The thread must be non-null to enter MODE_COOP
@@ -4844,7 +4657,6 @@ public:
     DEBUG_NOINLINE
     GCCoop(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4857,7 +4669,6 @@ public:
     DEBUG_NOINLINE
     ~GCCoop()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<TRUE>();  // Thread must be non-NULL
     }
 };
@@ -4871,7 +4682,6 @@ public:
     DEBUG_NOINLINE
     GCCoopHackNoThread(GCHOLDER_DECLARE_CONTRACT_ARGS_BARE)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         this->EnterInternalCoop_HackNoThread(true GCHOLDER_CONTRACT_ARGS_HasDtor);
@@ -4880,7 +4690,6 @@ public:
     DEBUG_NOINLINE
     GCCoopHackNoThread(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4892,7 +4701,6 @@ public:
     DEBUG_NOINLINE
     ~GCCoopHackNoThread()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<FALSE>();  // Thread might be NULL
     }
 };
@@ -4903,7 +4711,6 @@ public:
     DEBUG_NOINLINE
     GCCoopThreadExists(Thread * pThread GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         this->EnterInternalCoop(pThread, true GCHOLDER_CONTRACT_ARGS_HasDtor);
@@ -4912,7 +4719,6 @@ public:
     DEBUG_NOINLINE
     GCCoopThreadExists(Thread * pThread, bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4924,7 +4730,6 @@ public:
     DEBUG_NOINLINE
     ~GCCoopThreadExists()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<TRUE>();  // Thread must be non-NULL
     }
 };
@@ -4935,7 +4740,6 @@ public:
     DEBUG_NOINLINE
     GCPreemp(GCHOLDER_DECLARE_CONTRACT_ARGS_BARE)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
 
         this->EnterInternalPreemp(true GCHOLDER_CONTRACT_ARGS_HasDtor);
@@ -4944,7 +4748,6 @@ public:
     DEBUG_NOINLINE
     GCPreemp(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -4956,7 +4759,6 @@ public:
     DEBUG_NOINLINE
     ~GCPreemp()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<FALSE>(); // Thread may be NULL
     }
 };
@@ -4967,7 +4769,6 @@ public:
     DEBUG_NOINLINE
     GCPreempThreadExists(Thread * pThread GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
 
         this->EnterInternalPreemp<TRUE>(    // Thread must be non-NULL
@@ -4977,7 +4778,6 @@ public:
     DEBUG_NOINLINE
     GCPreempThreadExists(Thread * pThread, bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -4990,7 +4790,6 @@ public:
     DEBUG_NOINLINE
     ~GCPreempThreadExists()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<TRUE>();  // Thread must be non-NULL
     }
 };
@@ -5015,7 +4814,6 @@ class GCAssert
     DEBUG_NOINLINE void BeginGCAssert();
     DEBUG_NOINLINE void EndGCAssert()
     {
-        SCAN_SCOPE_END;
     }
 };
 
@@ -5028,7 +4826,6 @@ public:
 
     DEBUG_NOINLINE ~AutoCleanupGCAssert()
     {
-        SCAN_SCOPE_END;
         WRAPPER_NO_CONTRACT;
         // This is currently disabled; we currently have a lot of code which doesn't
         // back out the GC mode properly (instead relying on the EX_TRY macros.)
@@ -5071,7 +4868,6 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
  public:
     DEBUG_NOINLINE GCForbid(BOOL fConditional, const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         if (fConditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -5099,7 +4895,6 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
 
     DEBUG_NOINLINE GCForbid(const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
         STATIC_CONTRACT_GC_NOTRIGGER;
 
@@ -5122,8 +4917,6 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
 
     DEBUG_NOINLINE ~GCForbid()
     {
-        SCAN_SCOPE_END;
-
         if (m_fConditional)
         {
             GetThread()->EndForbidGC();
@@ -5153,7 +4946,6 @@ class GCNoTrigger
  public:
     DEBUG_NOINLINE GCNoTrigger(BOOL fConditional, const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         if (fConditional)
         {
             STATIC_CONTRACT_GC_NOTRIGGER;
@@ -5185,7 +4977,6 @@ class GCNoTrigger
 
     DEBUG_NOINLINE GCNoTrigger(const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_GC_NOTRIGGER;
 
         m_fConditional = TRUE;
@@ -5211,8 +5002,6 @@ class GCNoTrigger
 
     DEBUG_NOINLINE ~GCNoTrigger()
     {
-        SCAN_SCOPE_END;
-
         if (m_fConditional)
         {
             Thread * pThread = GetThreadNULLOk();
@@ -5237,17 +5026,24 @@ class CoopTransitionHolder
 {
     Frame * m_pFrame;
 
+#ifdef DEBUG
+    int m_uncaughtExceptions;
+#endif
+
 public:
     CoopTransitionHolder(Thread * pThread)
         : m_pFrame(pThread->m_pFrame)
     {
         LIMITED_METHOD_CONTRACT;
+#ifdef DEBUG
+        m_uncaughtExceptions = std::uncaught_exceptions();
+#endif
     }
 
     ~CoopTransitionHolder()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE_MSG(m_pFrame == nullptr || std::uncaught_exception(), "Early return from JIT/EE interface method");
+        _ASSERTE_MSG(m_pFrame == nullptr || m_uncaughtExceptions < std::uncaught_exceptions(), "Early return from JIT/EE interface method");
         if (m_pFrame != nullptr)
             COMPlusCooperativeTransitionHandler(m_pFrame);
     }
@@ -5256,7 +5052,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // FRAME_TOP and NULL must be distinct values.
-        // static_assert_no_msg(FRAME_TOP_VALUE != NULL);
+        // static_assert(FRAME_TOP_VALUE != NULL);
         m_pFrame = nullptr;
     }
 };
@@ -5295,7 +5091,6 @@ class FCallGCCanTrigger
 public:
     static DEBUG_NOINLINE void Enter()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_GC_TRIGGERS;
         Thread * pThread = GetThreadNULLOk();
         if (pThread != NULL)
@@ -5306,14 +5101,12 @@ public:
 
     static DEBUG_NOINLINE void Enter(Thread* pThread)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_GC_TRIGGERS;
         pThread->EndForbidGC();
     }
 
     static DEBUG_NOINLINE void Leave(const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_END;
         Thread * pThread = GetThreadNULLOk();
         if (pThread != NULL)
         {
@@ -5323,13 +5116,11 @@ public:
 
     static DEBUG_NOINLINE void Leave(Thread* pThread, const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_END;
         pThread->BeginForbidGC(szFile, lineNum);
     }
 };
 
-#define TRIGGERSGC_NOSTOMP()  do {                                           \
-                            ANNOTATION_GC_TRIGGERS;                         \
+#define TRIGGERSGC_NOSTOMP()  do {                                          \
                             Thread* curThread = GetThread();                \
                             if(curThread->GCNoTrigger())                    \
                             {                                               \
@@ -5347,8 +5138,8 @@ public:
 
 #define BEGINFORBIDGC()
 #define ENDFORBIDGC()
-#define TRIGGERSGC_NOSTOMP() ANNOTATION_GC_TRIGGERS
-#define TRIGGERSGC() ANNOTATION_GC_TRIGGERS
+#define TRIGGERSGC_NOSTOMP()
+#define TRIGGERSGC()
 
 #endif // ENABLE_CONTRACTS_IMPL
 

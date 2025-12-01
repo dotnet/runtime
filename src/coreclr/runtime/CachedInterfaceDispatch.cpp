@@ -7,6 +7,8 @@
 //
 // ============================================================================
 #include "common.h"
+#include <minipal/mutex.h>
+
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 #include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"
@@ -115,8 +117,8 @@ static bool UpdateCacheEntryAtomically(InterfaceDispatchCacheEntry *pEntry,
                                        MethodTable * pInstanceType,
                                        void * pTargetCode)
 {
-    C_ASSERT(sizeof(InterfaceDispatchCacheEntry) == (sizeof(void*) * 2));
-    C_ASSERT(offsetof(InterfaceDispatchCacheEntry, m_pInstanceType) < offsetof(InterfaceDispatchCacheEntry, m_pTargetCode));
+    static_assert(sizeof(InterfaceDispatchCacheEntry) == (sizeof(void*) * 2));
+    static_assert(offsetof(InterfaceDispatchCacheEntry, m_pInstanceType) < offsetof(InterfaceDispatchCacheEntry, m_pTargetCode));
 
     return UpdatePointerPairAtomically(pEntry, pInstanceType, pTargetCode, true) == NULL;
 }
@@ -130,8 +132,8 @@ static InterfaceDispatchCache * UpdateCellStubAndCache(InterfaceDispatchCell * p
                                                        void * pStub,
                                                        uintptr_t newCacheValue)
 {
-    C_ASSERT(offsetof(InterfaceDispatchCell, m_pStub) == 0);
-    C_ASSERT(offsetof(InterfaceDispatchCell, m_pCache) == sizeof(void*));
+    static_assert(offsetof(InterfaceDispatchCell, m_pStub) == 0);
+    static_assert(offsetof(InterfaceDispatchCell, m_pCache) == sizeof(void*));
 
     uintptr_t oldCacheValue = (uintptr_t)UpdatePointerPairAtomically(pCell, pStub, (void*)newCacheValue, false);
 

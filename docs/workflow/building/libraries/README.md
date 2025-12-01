@@ -12,7 +12,7 @@ git pull upstream main & git push origin main
 build.cmd clr+libs -rc Release
 :: Performing the above is usually only needed once in a day, or when you pull down significant new changes.
 
-:: If you use Visual Studio, you might open System.Collections.Concurrent.sln here.
+:: If you use Visual Studio, you might open System.Collections.Concurrent.slnx here.
 build.cmd -vs System.Collections.Concurrent
 
 :: Switch to working on a given library (System.Collections.Concurrent in this case)
@@ -147,7 +147,7 @@ Similar to building the entire repo with `build.cmd` or `build.sh` in the root y
 - Build all projects for a given library (e.g.: System.Collections) including running the tests
 
 ```bash
- ./build.sh -projects src/libraries/*/System.Collections.sln
+ ./build.sh -projects src/libraries/*/System.Collections.slnx
 ```
 
 - Build just the tests for a library project
@@ -157,7 +157,7 @@ Similar to building the entire repo with `build.cmd` or `build.sh` in the root y
 
 - All the options listed above like framework and configuration are also supported (note they must be after the directory)
 ```bash
- ./build.sh -projects src/libraries/*/System.Collections.sln -f net472 -c Release
+ ./build.sh -projects src/libraries/*/System.Collections.slnx -f net472 -c Release
 ```
 
 As `dotnet build` works on both Unix and Windows and calls the restore target implicitly, we will use it throughout this guide.
@@ -262,5 +262,7 @@ dotnet.cmd pack src\libraries\System.Text.Json\src\ -c Release
 If changes to the library include any API incompatibilities, calling `dotnet build` or `dotnet pack` may result in API compatibility errors.
 
 In rare cases where these are expected (e.g. updating APIs previously shipped only in preview or as experimental), the errors may be suppressed. This can be done by following the directions in the error to invoke `dotnet build` (if the project isn't packable) or `dotnet pack` (if the project is packable) with an additional `/p:ApiCompatGenerateSuppressionFile=true` argument.
+
+**Note:** If you are simply adding new APIs, you should not suppress API compatibility errors. Instead, make sure you have updated [the reference source](../../../coding-guidelines/updating-ref-source.md) for the library.
 
 See https://learn.microsoft.com/dotnet/fundamentals/apicompat/overview for more details.

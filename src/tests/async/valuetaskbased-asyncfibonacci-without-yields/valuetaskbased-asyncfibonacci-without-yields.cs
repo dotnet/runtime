@@ -23,6 +23,7 @@ public class TaskBasedAsyncFibonacciWithoutYields
         return 100;
     }
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     public static async ValueTask AsyncEntry()
     {
         for (int i = 0; i < iterations; i++)
@@ -35,6 +36,7 @@ public class TaskBasedAsyncFibonacciWithoutYields
         }
     }
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     static async ValueTask<int> Fib(int i)
     {
         if (i <= 1)

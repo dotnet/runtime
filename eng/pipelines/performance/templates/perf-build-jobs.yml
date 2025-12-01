@@ -8,7 +8,6 @@ jobs:
       linux_x64: true
       windows_x64: true
       windows_x86: true
-      linux_musl_x64: true
       android_arm64: true
 
   # build mono for AOT

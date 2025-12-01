@@ -23,32 +23,6 @@
 // Local prototypes.
 HRESULT FillErrorInfo(LPCWSTR szMsg, DWORD dwHelpContext);
 
-void GetResourceCultureCallbacks(
-        FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
-        FPGETTHREADUICULTUREID* fpGetThreadUICultureId)
-{
-    WRAPPER_NO_CONTRACT;
-    CCompRC::GetDefaultCallbacks(
-        fpGetThreadUICultureNames,
-        fpGetThreadUICultureId
-    );
-}
-//*****************************************************************************
-// Set callbacks to get culture info
-//*****************************************************************************
-void SetResourceCultureCallbacks(
-    FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,
-    FPGETTHREADUICULTUREID fpGetThreadUICultureId       // TODO: Don't rely on the LCID, only the name
-)
-{
-    WRAPPER_NO_CONTRACT;
-    CCompRC::SetDefaultCallbacks(
-        fpGetThreadUICultureNames,
-        fpGetThreadUICultureId
-    );
-
-}
-
 //*****************************************************************************
 // Public function to load a resource string
 //*****************************************************************************
@@ -89,7 +63,7 @@ HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResour
         // Catch any errors and return E_OUTOFMEMORY;
         retVal = E_OUTOFMEMORY;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return retVal;
 }
@@ -191,7 +165,7 @@ HRESULT FillErrorInfo(                  // Return status.
     {
         hr = GET_EXCEPTION()->GetHR();
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (FAILED(hr))
         return (hr);

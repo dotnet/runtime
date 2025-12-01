@@ -130,6 +130,10 @@ NESTED_ENTRY RhpThrowEx, _TEXT
 
         alloc_stack     SIZEOF_XmmSaves + 8h    ;; reserve stack for the xmm saves (+8h to realign stack)
         rdsspq  r8                              ;; nop if SSP is not implemented, 0 if not enabled
+        test    r8, r8
+        je      @f
+        add     r8, 8                           ;; Move SSP to match RSP of the throw site
+    @@:
         push_vol_reg    r8                      ;; SSP
         xor     r8, r8
         push_nonvol_reg r15
@@ -226,6 +230,10 @@ NESTED_ENTRY RhpRethrow, _TEXT
 
         alloc_stack     SIZEOF_XmmSaves + 8h    ;; reserve stack for the xmm saves (+8h to realign stack)
         rdsspq  r8                              ;; nop if SSP is not implemented, 0 if not enabled
+        test    r8, r8
+        je      @f
+        add     r8, 8                           ;; Move SSP to match RSP of the throw site
+    @@:
         push_vol_reg    r8                      ;; SSP
         xor     r8, r8
         push_nonvol_reg r15
@@ -308,9 +316,6 @@ FUNCLET_CALL_PROLOGUE macro localsCount, alignStack
 
     alloc_stack     stack_alloc_size
 
-    ;; Mirror clearing of AVX state done by regular method prologs
-    vzeroupper
-
     save_xmm128_postrsp xmm6,  (arguments_scratch_area_size + 0 * 10h)
     save_xmm128_postrsp xmm7,  (arguments_scratch_area_size + 1 * 10h)
     save_xmm128_postrsp xmm8,  (arguments_scratch_area_size + 2 * 10h)
@@ -329,9 +334,6 @@ endm
 ;; Epilogue of all funclet calling helpers (RhpCallXXXXFunclet)
 ;;
 FUNCLET_CALL_EPILOGUE macro
-    ;; Mirror clearing of AVX state done by regular method epilogs
-    vzeroupper
-
     movdqa  xmm6,  [rsp + arguments_scratch_area_size + 0 * 10h]
     movdqa  xmm7,  [rsp + arguments_scratch_area_size + 1 * 10h]
     movdqa  xmm8,  [rsp + arguments_scratch_area_size + 2 * 10h]
@@ -369,12 +371,11 @@ endm
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 NESTED_ENTRY RhpCallCatchFunclet, _TEXT
 
-        FUNCLET_CALL_PROLOGUE 3, 0
+        FUNCLET_CALL_PROLOGUE 2, 1
 
         ;; locals
         rsp_offsetof_thread = rsp_offsetof_locals
         rsp_offsetof_resume_ip = rsp_offsetof_locals + 8;
-        rsp_offsetof_is_handling_thread_abort = rsp_offsetof_locals + 16;
 
         mov     [rsp + rsp_offsetof_arguments + 0h], rcx            ;; save arguments for later
         mov     [rsp + rsp_offsetof_arguments + 8h], rdx
@@ -383,9 +384,6 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT
 
         INLINE_GETTHREAD    rax, rbx                                ;; rax <- Thread*, rbx is trashed
         mov     [rsp + rsp_offsetof_thread], rax                    ;; save Thread* for later
-
-        cmp     rcx, [rax + OFFSETOF__Thread__m_threadAbortException]
-        setz    byte ptr [rsp + rsp_offsetof_is_handling_thread_abort]
 
         ;; Clear the DoNotTriggerGc state before calling out to our managed catch funclet.
         lock and            dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], NOT TSF_DoNotTriggerGc
@@ -506,20 +504,8 @@ endif
         xor     r9, r9                                              ;; r9 <- 0
    endif
 
-        test    [RhpTrapThreads], TrapThreadsFlags_AbortInProgress
-        jz      @f
-
-        ;; test if the exception handled by the catch was the ThreadAbortException
-        cmp     byte ptr [rsp + rsp_offsetof_is_handling_thread_abort], 0
-        je      @f
-
-        ;; It was the ThreadAbortException, so rethrow it
-        mov     rcx, STATUS_REDHAWK_THREAD_ABORT
-        mov     rdx, rax                                            ;; rdx <- continuation address as exception RIP
-        lea     rax, [RhpThrowHwEx]                                 ;; Throw the ThreadAbortException as a special kind of hardware exception
-
         ;; reset RSP and jump to RAX
-   @@:  mov     rsp, r8                                             ;; reset the SP to resume SP value
+        mov     rsp, r8                                             ;; reset the SP to resume SP value
 
         ;; if have shadow stack, then we need to reconcile it with the rsp change we have just made. (r11 must contain target SSP)
         rdsspq  r9                                                  ;; NB, r9 == 0 prior to this

@@ -33,6 +33,7 @@ SET_DEFAULT_DEBUG_CHANNEL(SYNC); // some headers have code with asserts, so do t
 #include <errno.h>
 #include <time.h>
 #include <unistd.h>
+#include "minipal/time.h"
 
 using namespace CorUnix;
 
@@ -972,7 +973,7 @@ NamedMutexSharedData::NamedMutexSharedData(SharedMemorySystemCallErrors *errors)
     m_isAbandoned(false)
 {
 #if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-    static_assert_no_msg(sizeof(m_timedWaiterCount) == sizeof(LONG)); // for interlocked operations
+    static_assert(sizeof(m_timedWaiterCount) == sizeof(LONG)); // for interlocked operations
 #endif // NAMED_MUTEX_USE_PTHREAD_MUTEX
 
     _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
@@ -1497,7 +1498,7 @@ MutexTryAcquireLockResult NamedMutexProcessData::TryAcquireLock(SharedMemorySyst
     DWORD startTime = 0;
     if (timeoutMilliseconds != static_cast<DWORD>(-1) && timeoutMilliseconds != 0)
     {
-        startTime = GetTickCount();
+        startTime = (DWORD)minipal_lowres_ticks();
     }
 
     // Acquire the process lock. A file lock can only be acquired once per file descriptor, so to synchronize the threads of
@@ -1626,7 +1627,7 @@ MutexTryAcquireLockResult NamedMutexProcessData::TryAcquireLock(SharedMemorySyst
             // Poll for the file lock
             do
             {
-                DWORD elapsedMilliseconds = GetTickCount() - startTime;
+                DWORD elapsedMilliseconds = (DWORD)minipal_lowres_ticks() - startTime;
                 if (elapsedMilliseconds >= timeoutMilliseconds)
                 {
                     return MutexTryAcquireLockResult::TimedOut;

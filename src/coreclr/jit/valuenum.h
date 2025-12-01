@@ -301,12 +301,12 @@ private:
     static const unsigned VNFOA_KnownNonNullShift     = 5;
     static const unsigned VNFOA_SharedStaticShift     = 6;
 
-    static_assert_no_msg(unsigned(VNFOA_IllegalGenTreeOp) == (1 << VNFOA_IllegalGenTreeOpShift));
-    static_assert_no_msg(unsigned(VNFOA_Commutative) == (1 << VNFOA_CommutativeShift));
-    static_assert_no_msg(unsigned(VNFOA_Arity1) == (1 << VNFOA_ArityShift));
-    static_assert_no_msg(VNFOA_ArityMask == (VNFOA_MaxArity << VNFOA_ArityShift));
-    static_assert_no_msg(unsigned(VNFOA_KnownNonNull) == (1 << VNFOA_KnownNonNullShift));
-    static_assert_no_msg(unsigned(VNFOA_SharedStatic) == (1 << VNFOA_SharedStaticShift));
+    static_assert(unsigned(VNFOA_IllegalGenTreeOp) == (1 << VNFOA_IllegalGenTreeOpShift));
+    static_assert(unsigned(VNFOA_Commutative) == (1 << VNFOA_CommutativeShift));
+    static_assert(unsigned(VNFOA_Arity1) == (1 << VNFOA_ArityShift));
+    static_assert(VNFOA_ArityMask == (VNFOA_MaxArity << VNFOA_ArityShift));
+    static_assert(unsigned(VNFOA_KnownNonNull) == (1 << VNFOA_KnownNonNullShift));
+    static_assert(unsigned(VNFOA_SharedStatic) == (1 << VNFOA_SharedStaticShift));
 
     // These enum constants are used to encode the cast operation in the lowest bits by VNForCastOper
     enum VNFCastAttrib
@@ -1056,6 +1056,9 @@ public:
     // Returns true if the VN represents a node that is never negative.
     bool IsVNNeverNegative(ValueNum vn);
 
+    // Returns true if the VN represents BitOperations.Log2 pattern
+    bool IsVNLog2(ValueNum vn, int* upperBound = nullptr);
+
     typedef SmallHashTable<ValueNum, bool, 8U> CheckedBoundVNSet;
 
     // Returns true if the VN is known or likely to appear as the conservative value number
@@ -1290,7 +1293,7 @@ private:
             case TYP_DOUBLE:
                 if (c->m_attribs == CEA_Handle)
                 {
-                    C_ASSERT(offsetof(VNHandle, m_cnsVal) == 0);
+                    static_assert(offsetof(VNHandle, m_cnsVal) == 0);
                     return (T) reinterpret_cast<VNHandle*>(c->m_defs)[offset].m_cnsVal;
                 }
 #ifdef DEBUG
@@ -1409,6 +1412,44 @@ public:
     // the function application it represents; otherwise, return "false."
     bool GetVNFunc(ValueNum vn, VNFuncApp* funcApp);
 
+    // Returns "true" iff "vn" is a function application of the form "func(op1, op2)".
+    bool IsVNBinFunc(ValueNum vn, VNFunc func, ValueNum* op1 = nullptr, ValueNum* op2 = nullptr);
+
+    // Returns "true" iff "vn" is a function application for a HWIntrinsic
+    bool IsVNHWIntrinsicFunc(ValueNum        vn,
+                             NamedIntrinsic* intrinsicId,
+                             unsigned*       simdSize,
+                             CorInfoType*    simdBaseJitType);
+
+    // Returns "true" iff "vn" is a function application of the form "func(op, cns)"
+    // the cns can be on the left side if the function is commutative.
+    template <typename T>
+    bool IsVNBinFuncWithConst(ValueNum vn, VNFunc func, ValueNum* op, T* cns)
+    {
+        T        opCns;
+        ValueNum op1, op2;
+        if (IsVNBinFunc(vn, func, &op1, &op2))
+        {
+            if (IsVNIntegralConstant(op2, &opCns))
+            {
+                if (op != nullptr)
+                    *op = op1;
+                if (cns != nullptr)
+                    *cns = opCns;
+                return true;
+            }
+            else if (VNFuncIsCommutative(func) && IsVNIntegralConstant(op1, &opCns))
+            {
+                if (op != nullptr)
+                    *op = op2;
+                if (cns != nullptr)
+                    *cns = opCns;
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Returns "true" iff "vn" is a valid value number -- one that has been previously returned.
     bool VNIsValid(ValueNum vn);
 
@@ -1442,6 +1483,9 @@ public:
     // Requires "valWithExc" to be a value with an exception set VNFuncApp.
     // Prints a representation of the exception set on standard out.
     void vnDumpValWithExc(Compiler* comp, VNFuncApp* valWithExc);
+
+    // Requires vn to be VNF_ExcSetCons or VNForEmptyExcSet().
+    void vnDumpExc(Compiler* comp, ValueNum vn);
 
     // Requires "excSeq" to be a ExcSetCons sequence.
     // Prints a representation of the set of exceptions on standard out.
@@ -1504,7 +1548,7 @@ private:
             : m_func(func)
             , m_args{vns...}
         {
-            static_assert_no_msg(NumArgs == sizeof...(VNs));
+            static_assert(NumArgs == sizeof...(VNs));
         }
 
         bool operator==(const VNDefFuncApp& y) const
@@ -1592,7 +1636,7 @@ private:
         {
             assert((m_attribs >= CEA_Func0) && (m_attribs <= CEA_Func4));
             assert(numArgs == (unsigned)(m_attribs - CEA_Func0));
-            static_assert_no_msg(sizeof(VNDefFuncAppFlexible) == sizeof(VNFunc));
+            static_assert(sizeof(VNDefFuncAppFlexible) == sizeof(VNFunc));
             return reinterpret_cast<VNDefFuncAppFlexible*>(
                 (char*)m_defs + offsetWithinChunk * (sizeof(VNDefFuncAppFlexible) + sizeof(ValueNum) * numArgs));
         }

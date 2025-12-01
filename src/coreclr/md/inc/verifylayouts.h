@@ -83,10 +83,10 @@
 //      ... many more lines like this cover all fields in all marked up types ...
 //
 //
-//      static_assert_no_msg(expected_offset_of_first_field_in_CMiniMdRW == actual_offset_of_first_field_in_CMiniMdRW);
-//      static_assert_no_msg(offset_of_field_after_CMiniMdRW_m_Schema ==
+//      static_assert(expected_offset_of_first_field_in_CMiniMdRW == actual_offset_of_first_field_in_CMiniMdRW);
+//      static_assert(offset_of_field_after_CMiniMdRW_m_Schema ==
 //          ALIGN_UP(offsetof(CMiniMdRW, m_Schema) + 104, alignment_of_field_after_CMiniMdRW_m_Schema));
-//      static_assert_no_msg(offset_of_field_after_CMiniMdRW_m_Tables ==
+//      static_assert(offset_of_field_after_CMiniMdRW_m_Tables ==
 //          ALIGN_UP(offsetof(CMiniMdRW, m_Tables) + 4, alignment_of_field_after_CMiniMdRW_m_Tables));
 //      ... many more lines like this cover all fields in all marked up types ...
 //
@@ -99,7 +99,6 @@
 #ifdef FEATURE_METADATA_VERIFY_LAYOUTS
 
 #include <stddef.h> // offsetof
-#include "static_assert.h"
 #include "metamodel.h"
 #include "mdinternalrw.h"
 
@@ -108,7 +107,7 @@
 class VerifyLayoutsMD
 {
     // we have a bunch of arrays with this fixed size, make sure it doesn't change
-    static_assert_no_msg(TBL_COUNT == 45);
+    static_assert(TBL_COUNT == 45);
 
 #define USING_ALIAS(typeName, ...)  using typeName = __VA_ARGS__;
 
@@ -161,15 +160,15 @@ class VerifyLayoutsMD
 
 
 #define BEGIN_TYPE(typeName, initialFieldOffset) \
-    static_assert_no_msg(expected_offset_of_first_field_in_##typeName == actual_offset_of_first_field_in_##typeName);
+    static_assert(expected_offset_of_first_field_in_##typeName == actual_offset_of_first_field_in_##typeName);
 
 
 #define ALIGN_UP(value, alignment) (((value) + (alignment) - 1)&~((alignment) - 1))
 #define ALIGN_FIELD(typeName, fieldName, fieldSize, fieldAlign) \
-    static_assert_no_msg(offset_of_field_after_##typeName##_##fieldName == \
+    static_assert(offset_of_field_after_##typeName##_##fieldName == \
     ALIGN_UP(offsetof(typeName, fieldName) + fieldSize, alignment_of_field_after_##typeName##_##fieldName));
 #define BITFIELD(typeName, fieldName, fieldOffset, fieldSize) \
-    static_assert_no_msg(offset_of_field_after_##typeName##_##fieldName == \
+    static_assert(offset_of_field_after_##typeName##_##fieldName == \
     ALIGN_UP(fieldOffset + fieldSize, alignment_of_field_after_##typeName##_##fieldName));
 
 #define END_TYPE(typeName, typeAlignmentSize)

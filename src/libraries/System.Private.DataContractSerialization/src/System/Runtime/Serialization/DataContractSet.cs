@@ -18,7 +18,6 @@ namespace System.Runtime.Serialization.DataContracts
         private Dictionary<DataContract, object>? _processedContracts;
         private readonly ISerializationSurrogateProvider? _surrogateProvider;
         private readonly ISerializationSurrogateProvider2? _extendedSurrogateProvider;
-        private Hashtable? _surrogateData;
         private DataContractDictionary? _knownTypesForObject;
         private readonly List<Type>? _referencedTypes;
         private readonly List<Type>? _referencedCollectionTypes;
@@ -61,7 +60,7 @@ namespace System.Runtime.Serialization.DataContracts
         public Dictionary<DataContract, object> ProcessedContracts =>
             _processedContracts ??= new Dictionary<DataContract, object>();
 
-        public Hashtable SurrogateData => _surrogateData ??= new Hashtable();
+        public Hashtable SurrogateData => field ??= new Hashtable();
 
         public DataContractDictionary? KnownTypesForObject
         {

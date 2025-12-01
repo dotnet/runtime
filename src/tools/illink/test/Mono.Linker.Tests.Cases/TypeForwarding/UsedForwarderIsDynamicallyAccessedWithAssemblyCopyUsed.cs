@@ -9,28 +9,28 @@ using Mono.Linker.Tests.Cases.TypeForwarding.Dependencies;
 namespace Mono.Linker.Tests.Cases.TypeForwarding
 {
 
-	[SetupLinkerAction ("copyused", "Forwarder")]
+    [SetupLinkerAction("copyused", "Forwarder")]
 
-	[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/ReferenceImplementationLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
+    [SetupCompileBefore("Forwarder.dll", new[] { "Dependencies/ReferenceImplementationLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
 
-	// After compiling the test case we then replace the reference impl with implementation + type forwarder
-	[SetupCompileAfter ("Implementation.dll", new[] { "Dependencies/ImplementationLibrary.cs" })]
-	[SetupCompileAfter ("Forwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "Implementation.dll" })]
+    // After compiling the test case we then replace the reference impl with implementation + type forwarder
+    [SetupCompileAfter("Implementation.dll", new[] { "Dependencies/ImplementationLibrary.cs" })]
+    [SetupCompileAfter("Forwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "Implementation.dll" })]
 
-	[KeptTypeInAssembly ("Forwarder.dll", typeof (ImplementationLibrary))]
-	[KeptTypeInAssembly ("Implementation.dll", typeof (ImplementationLibrary))]
-	class UsedForwarderIsDynamicallyAccessedWithAssemblyCopyUsed
-	{
-		static void Main ()
-		{
-			PointToTypeInFacade ("Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.ImplementationLibrary, Forwarder");
-		}
+    [KeptTypeInAssembly("Forwarder.dll", typeof(ImplementationLibrary))]
+    [KeptTypeInAssembly("Implementation.dll", typeof(ImplementationLibrary))]
+    class UsedForwarderIsDynamicallyAccessedWithAssemblyCopyUsed
+    {
+        static void Main()
+        {
+            PointToTypeInFacade("Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.ImplementationLibrary, Forwarder");
+        }
 
-		[Kept]
-		static void PointToTypeInFacade (
-			[KeptAttributeAttribute (typeof(DynamicallyAccessedMembersAttribute))]
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] string typeName)
-		{
-		}
-	}
+        [Kept]
+        static void PointToTypeInFacade(
+            [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] string typeName)
+        {
+        }
+    }
 }

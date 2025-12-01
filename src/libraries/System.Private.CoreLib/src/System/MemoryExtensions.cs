@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -364,7 +365,7 @@ namespace System
         /// <summary>
         /// Searches for the specified value and returns true if found. If not found, returns false.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">The type of the elements in the span.</typeparam>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to search for.</param>
         /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or <see langword="null"/> to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
@@ -447,6 +448,7 @@ namespace System
         /// <summary>
         /// Searches for any occurrence of the specified <paramref name="value0"/> or <paramref name="value1"/>, and returns true if found. If not found, returns false.
         /// </summary>
+        /// <typeparam name="T">The type of the elements in the span.</typeparam>
         /// <param name="span">The span to search.</param>
         /// <param name="value0">One of the values to search for.</param>
         /// <param name="value1">One of the values to search for.</param>
@@ -457,6 +459,7 @@ namespace System
         /// <summary>
         /// Searches for any occurrence of the specified <paramref name="value0"/> or <paramref name="value1"/>, and returns true if found. If not found, returns false.
         /// </summary>
+        /// <typeparam name="T">The type of the elements in the span.</typeparam>
         /// <param name="span">The span to search.</param>
         /// <param name="value0">One of the values to search for.</param>
         /// <param name="value1">One of the values to search for.</param>
@@ -491,6 +494,7 @@ namespace System
         /// <summary>
         /// Searches for any occurrence of any of the specified <paramref name="values"/> and returns true if found. If not found, returns false.
         /// </summary>
+        /// <typeparam name="T">The type of the elements in the span.</typeparam>
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -500,6 +504,7 @@ namespace System
         /// <summary>
         /// Searches for any occurrence of any of the specified <paramref name="values"/> and returns true if found. If not found, returns false.
         /// </summary>
+        /// <typeparam name="T">The type of the elements in the span.</typeparam>
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         /// <param name="comparer">The comparer to use. If <see langword="null"/>, <see cref="EqualityComparer{T}.Default"/> is used.</param>
@@ -1260,7 +1265,7 @@ namespace System
         /// The index in the span of the first occurrence of any value other than those in <paramref name="values"/>.
         /// If all of the values are in <paramref name="values"/>, returns -1.
         /// </returns>
-        public static unsafe int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values, IEqualityComparer<T>? comparer = null)
+        public static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values, IEqualityComparer<T>? comparer = null)
         {
             switch (values.Length)
             {
@@ -1840,7 +1845,7 @@ namespace System
         /// The index in the span of the first occurrence of any value other than those in <paramref name="values"/>.
         /// If all of the values are in <paramref name="values"/>, returns -1.
         /// </returns>
-        public static unsafe int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values, IEqualityComparer<T>? comparer = null)
+        public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values, IEqualityComparer<T>? comparer = null)
         {
             switch (values.Length)
             {
@@ -3363,7 +3368,7 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or <see langword="null"/> to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
-        public static unsafe int LastIndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values, IEqualityComparer<T>? comparer = null)
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values, IEqualityComparer<T>? comparer = null)
         {
             switch (values.Length)
             {
@@ -3526,7 +3531,7 @@ namespace System
         /// <summary>
         /// Determines the relative order of the sequences being compared by comparing the elements using IComparable{T}.CompareTo(T).
         /// </summary>
-        public static unsafe int SequenceCompareTo<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other, IComparer<T>? comparer = null)
+        public static int SequenceCompareTo<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other, IComparer<T>? comparer = null)
         {
             int minLength = Math.Min(span.Length, other.Length);
             comparer ??= Comparer<T>.Default;
@@ -3573,13 +3578,15 @@ namespace System
         }
 
         /// <summary>
-        /// Determines whether a specified sequence appears at the start of a read-only span.
+        /// Determines whether the beginning of this span matches the specified sequence.
         /// </summary>
-        /// <param name="span">The source span.</param>
+        /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to compare to the start of <paramref name="span"/>.</param>
-        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or <see langword="null"/> to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
+        /// <param name="comparer">An optional comparer to use for element equality checks.</param>
+        /// <typeparam name="T">The type of elements in the span and value.</typeparam>
+        /// <returns><see langword="true"/> if <paramref name="span"/> starts with <paramref name="value"/>; otherwise, <see langword="false"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool StartsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value, IEqualityComparer<T>? comparer = null) =>
+        public static bool StartsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value, IEqualityComparer<T>? comparer = null) =>
             value.Length <= span.Length &&
             SequenceEqual(span.Slice(0, value.Length), value, comparer);
 
@@ -3618,13 +3625,15 @@ namespace System
         }
 
         /// <summary>
-        /// Determines whether the specified sequence appears at the end of the read-only span.
+        /// Determines whether the end of this span matches the specified sequence.
         /// </summary>
-        /// <param name="span">The source span.</param>
+        /// <param name="span">The span to search.</param>
         /// <param name="value">The sequence to compare to the end of <paramref name="span"/>.</param>
-        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or <see langword="null"/> to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
+        /// <param name="comparer">An optional comparer to use for element equality checks.</param>
+        /// <typeparam name="T">The type of elements in the span and value.</typeparam>
+        /// <returns><see langword="true"/> if <paramref name="span"/> ends with <paramref name="value"/>; otherwise, <see langword="false"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool EndsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value, IEqualityComparer<T>? comparer = null) =>
+        public static bool EndsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value, IEqualityComparer<T>? comparer = null) =>
             value.Length <= span.Length &&
             SequenceEqual(span.Slice(span.Length - value.Length), value, comparer);
 
@@ -4312,7 +4321,16 @@ namespace System
         {
             if (span.Length > 1)
             {
-                ArraySortHelper<T>.Default.Sort(span, comparer); // value-type comparer will be boxed
+                if (typeof(TComparer).IsValueType)
+                {
+                    #pragma warning disable CS8631
+                    ArraySortHelperForTComparer<T, TComparer>.Sort(span, comparer);
+                    #pragma warning restore CS8631
+                }
+                else
+                {
+                    ArraySortHelper<T>.Default.Sort(span, comparer);
+                }
             }
         }
 
@@ -4379,7 +4397,16 @@ namespace System
 
             if (keys.Length > 1)
             {
-                ArraySortHelper<TKey, TValue>.Default.Sort(keys, items, comparer); // value-type comparer will be boxed
+                if (typeof(TComparer).IsValueType)
+                {
+                    #pragma warning disable CS8631
+                    ArraySortHelperForTComparer<TKey, TValue, TComparer>.Sort(keys, items, comparer);
+                    #pragma warning restore CS8631
+                }
+                else
+                {
+                    ArraySortHelper<TKey, TValue>.Default.Sort(keys, items, comparer);
+                }
             }
         }
 
@@ -4419,7 +4446,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Replace<T>(this Span<T> span, T oldValue, T newValue) where T : IEquatable<T>?
         {
-            nuint length = (uint)span.Length;
+            uint length = (uint)span.Length;
 
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
@@ -4578,7 +4605,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Replace<T>(this ReadOnlySpan<T> source, Span<T> destination, T oldValue, T newValue) where T : IEquatable<T>?
         {
-            nuint length = (uint)source.Length;
+            uint length = (uint)source.Length;
             if (length == 0)
             {
                 return;
@@ -4662,7 +4689,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Replace<T>(this ReadOnlySpan<T> source, Span<T> destination, T oldValue, T newValue, IEqualityComparer<T>? comparer = null)
         {
-            nuint length = (uint)source.Length;
+            uint length = (uint)source.Length;
             if (length == 0)
             {
                 return;
@@ -4734,6 +4761,8 @@ namespace System
                 ReplaceDefaultComparer(source, destination, oldValue, newValue);
                 static void ReplaceDefaultComparer(ReadOnlySpan<T> source, Span<T> destination, T oldValue, T newValue)
                 {
+                    destination = destination.Slice(0, source.Length);
+
                     for (int i = 0; i < source.Length; i++)
                     {
                         destination[i] = EqualityComparer<T>.Default.Equals(source[i], oldValue) ? newValue : source[i];
@@ -4745,7 +4774,9 @@ namespace System
                 ReplaceComparer(source, destination, oldValue, newValue, comparer);
                 static void ReplaceComparer(ReadOnlySpan<T> source, Span<T> destination, T oldValue, T newValue, IEqualityComparer<T>? comparer)
                 {
+                    destination = destination.Slice(0, source.Length);
                     comparer ??= EqualityComparer<T>.Default;
+
                     for (int i = 0; i < source.Length; i++)
                     {
                         destination[i] = comparer.Equals(source[i], oldValue) ? newValue : source[i];
@@ -5819,7 +5850,7 @@ namespace System
         /// Enables enumerating each split within a <see cref="ReadOnlySpan{T}"/> that has been divided using one or more separators.
         /// </summary>
         /// <typeparam name="T">The type of items in the <see cref="SpanSplitEnumerator{T}"/>.</typeparam>
-        public ref struct SpanSplitEnumerator<T> where T : IEquatable<T>
+        public ref struct SpanSplitEnumerator<T> : IEnumerator<Range> where T : IEquatable<T>
         {
             /// <summary>The input span being split.</summary>
             private readonly ReadOnlySpan<T> _source;
@@ -5852,7 +5883,7 @@ namespace System
             public readonly ReadOnlySpan<T> Source => _source;
 
             /// <summary>Gets the current element of the enumeration.</summary>
-            /// <returns>Returns a <see cref="Range"/> instance that indicates the bounds of the current element withing the source span.</returns>
+            /// <returns>Returns a <see cref="Range"/> instance that indicates the bounds of the current element within the source span.</returns>
             public Range Current => new Range(_startCurrent, _endCurrent);
 
             /// <summary>Initializes the enumerator for <see cref="SpanSplitEnumeratorMode.SearchValues"/>.</summary>
@@ -5961,6 +5992,15 @@ namespace System
 
                 return true;
             }
+
+            /// <inheritdoc />
+            object IEnumerator.Current => Current;
+
+            /// <inheritdoc />
+            void IEnumerator.Reset() => throw new NotSupportedException();
+
+            /// <inheritdoc />
+            void IDisposable.Dispose() { }
         }
 
         /// <summary>Indicates in which mode <see cref="SpanSplitEnumerator{T}"/> is operating, with regards to how it should interpret its state.</summary>
@@ -6082,6 +6122,11 @@ namespace System
                     return AppendCustomFormatter(value, format: null);
                 }
 
+                if (value is null)
+                {
+                    return true;
+                }
+
                 // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
                 // derives from the former.  For value types, it won't matter as the type checks devolve into
                 // JIT-time constants.  For reference types, they're more likely to implement IFormattable
@@ -6120,7 +6165,7 @@ namespace System
                 }
                 else
                 {
-                    s = value?.ToString();
+                    s = value.ToString();
                 }
 
                 return s is null || AppendLiteral(s);
@@ -6136,6 +6181,11 @@ namespace System
                 if (_hasCustomFormatter)
                 {
                     return AppendCustomFormatter(value, format);
+                }
+
+                if (value is null)
+                {
+                    return true;
                 }
 
                 // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
@@ -6176,7 +6226,7 @@ namespace System
                 }
                 else
                 {
-                    s = value?.ToString();
+                    s = value.ToString();
                 }
 
                 return s is null || AppendLiteral(s);

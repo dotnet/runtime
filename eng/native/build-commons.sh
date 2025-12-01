@@ -70,7 +70,7 @@ build_native()
     # Let users provide additional compiler/linker flags via EXTRA_CFLAGS/EXTRA_CXXFLAGS/EXTRA_LDFLAGS.
     # If users directly override CFLAG/CXXFLAGS/LDFLAGS, that may lead to some configure tests working incorrectly.
     # See https://github.com/dotnet/runtime/issues/35727 for more information.
-    # 
+    #
     # These flags MUST be exported before gen-buildsys.sh runs or cmake will ignore them
     #
     export CFLAGS="${CFLAGS} ${EXTRA_CFLAGS}"
@@ -89,7 +89,11 @@ build_native()
     fi
 
     if [[ "$targetOS" == maccatalyst ]]; then
-        cmakeArgs="-DCMAKE_SYSTEM_VARIANT=maccatalyst $cmakeArgs"
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default macCatalyst deployment target
+        # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=Darwin -DCMAKE_OSX_SYSROOT=macosx -DCMAKE_SYSTEM_VARIANT=maccatalyst -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 $cmakeArgs"
     fi
 
     if [[ "$targetOS" == android || "$targetOS" == linux-bionic ]]; then
@@ -269,7 +273,7 @@ usage()
     echo "-gccx.y: optional argument to build using gcc version x.y."
     echo "-ninja: target ninja instead of GNU make"
     echo "-numproc: set the number of build processes."
-    echo "-outputrid: optional argument that overrides the target rid name."
+    echo "-targetrid: optional argument that overrides the target rid name."
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
     echo "-keepnativesymbols: keep native/unmanaged debug symbols."
@@ -289,7 +293,7 @@ source "$__RepoRootDir/eng/common/native/init-os-and-arch.sh"
 
 __TargetArch=$arch
 __TargetOS=$os
-__OutputRid=''
+__TargetRid=''
 
 # Get the number of processors available to the scheduler
 platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
@@ -461,12 +465,12 @@ while :; do
             __TargetArch=wasm
             ;;
 
-        outputrid|-outputrid)
+        targetrid|-targetrid|outputrid|-outputrid)
             if [[ -n "$2" ]]; then
-                __OutputRid="$2"
+                __TargetRid="$2"
                 shift
             else
-                echo "ERROR: 'outputrid' requires a non-empty option argument"
+                echo "ERROR: 'targetrid' requires a non-empty option argument"
                 exit 1
             fi
             ;;
@@ -547,6 +551,9 @@ elif [[ "$__TargetOS" == ios || "$__TargetOS" == iossimulator ]]; then
 elif [[ "$__TargetOS" == tvos || "$__TargetOS" == tvossimulator ]]; then
     # nothing to do here
     true
+elif [[ "$__TargetOS" == osx || "$__TargetOS" == maccatalyst ]]; then
+    # nothing to do here
+    true
 elif [[ "$__TargetOS" == android ]]; then
     # nothing to do here
     true
@@ -567,15 +574,15 @@ fi
 
 # init the target distro name (__DistroRid) and target portable os (__PortableTargetOS).
 initTargetDistroRid
-if [ -z "$__OutputRid" ]; then
+if [ -z "$__TargetRid" ]; then
     if [[ "$__PortableBuild" == 0 ]]; then
-        __OutputRid="$__DistroRid"
+        __TargetRid="$__DistroRid"
     else
-        __OutputRid="$__PortableTargetOS-$__TargetArch"
+        __TargetRid="$__PortableTargetOS-$__TargetArch"
     fi
 fi
-export __OutputRid
-echo "__OutputRid: ${__OutputRid}"
+export __TargetRid
+echo "__TargetRid: ${__TargetRid}"
 
 # When the host runs on an unknown rid, it falls back to the output rid
-__HostFallbackOS="${__OutputRid%-*}" # Strip architecture
+__HostFallbackOS="${__TargetRid%-*}" # Strip architecture

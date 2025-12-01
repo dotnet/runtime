@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -16,6 +18,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public string Runtime { get; set; }
 
         private TestApp _sourceApp;
+        private bool _includeLocalPathsInDepsJson = true;
 
         public Action<RuntimeConfig> RuntimeConfigCustomizer { get; set; }
 
@@ -33,7 +36,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public string Path { get; set; }
 
             public string SourcePath { get; set; }
-            public string FileOnDiskPath { get; set; }
+
+            // If set, path relative to the app location where the file will be created.
+            public string LocalPath { get; set; }
 
             public FileBuilder(string path)
             {
@@ -42,14 +47,14 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             internal void Build(BuildContext context)
             {
-                string path = ToDiskPath(FileOnDiskPath ?? Path);
+                string path = ToDiskPath(LocalPath ?? Path);
                 string absolutePath = System.IO.Path.Combine(context.App.Location, path);
                 if (SourcePath != null)
                 {
                     FileUtils.EnsureFileDirectoryExists(absolutePath);
                     File.Copy(SourcePath, absolutePath);
                 }
-                else if ((FileOnDiskPath == null || FileOnDiskPath.Length > 0)
+                else if ((LocalPath == null || LocalPath.Length > 0)
                     && !File.Exists(absolutePath))
                 {
                     FileUtils.CreateEmptyFile(absolutePath);
@@ -76,15 +81,15 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 return this as T;
             }
 
-            public T WithFileOnDiskPath(string relativePath)
+            public T WithLocalPath(string localPath)
             {
-                FileOnDiskPath = relativePath;
+                LocalPath = localPath;
                 return this as T;
             }
 
             public T NotOnDisk()
             {
-                FileOnDiskPath = string.Empty;
+                LocalPath = string.Empty;
                 return this as T;
             }
         }
@@ -109,6 +114,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             internal new RuntimeFile Build(BuildContext context)
             {
                 base.Build(context);
+
+                // TODO: Pass in LocalPath once we can upgrade to a Microsoft.Extensions.DependencyModel version that supports it.
                 return new RuntimeFile(Path, AssemblyVersion, FileVersion);
             }
         }
@@ -136,6 +143,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             internal new ResourceAssembly Build(BuildContext context)
             {
                 base.Build(context);
+
+                // TODO: Pass in LocalPath once we can upgrade to a Microsoft.Extensions.DependencyModel version that supports it.
                 return new ResourceAssembly(Path, Locale);
             }
         }
@@ -367,6 +376,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 .WithRuntimeFallbacks("osx-x64", "osx", "any");
         }
 
+        public NetCoreAppBuilder WithLocalPathsInDepsJson(bool includeLocalPaths)
+        {
+            _includeLocalPathsInDepsJson = includeLocalPaths;
+            return this;
+        }
+
         public NetCoreAppBuilder WithCustomizer(Action<NetCoreAppBuilder> customizer)
         {
             customizer?.Invoke(this);
@@ -418,7 +433,60 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 writer.Write(dependencyContext, stream);
             }
 
+            // Add localPath properties
+            // TODO: Remove once we can upgrade to a Microsoft.Extensions.DependencyModel version that supports localPath.
+            if (_includeLocalPathsInDepsJson)
+            {
+                AddLocalPathsToJson(testApp.DepsJson, buildContext);
+            }
+
             return testApp;
+        }
+
+        private void AddLocalPathsToJson(string depsJsonPath, BuildContext buildContext)
+        {
+            // Read the generated JSON
+            string jsonContent = File.ReadAllText(depsJsonPath);
+
+            // Parse and modify the JSON to add localPath properties
+            JsonNode rootNode = JsonNode.Parse(jsonContent);
+            JsonNode targets = rootNode["targets"][$"{Framework}{(Runtime is null ? "" : $"/{Runtime}")}"];
+            foreach (var l in RuntimeLibraries)
+            {
+                JsonNode library = targets[$"{l.Name}/{l.Version}"];
+                AddLocalPathsForFiles(library, l.AssemblyGroups, "runtime");
+                AddLocalPathsForFiles(library, l.NativeLibraryGroups, "native");
+
+                // Add localPath for resources
+                JsonNode assets = library["resources"];
+                foreach (var resource in l.ResourceAssemblies)
+                {
+                    if (string.IsNullOrEmpty(resource.LocalPath))
+                        continue;
+
+                    assets[resource.Path]["localPath"] = resource.LocalPath;
+                }
+            }
+
+            // Write the modified JSON back to the file
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            string modifiedJson = rootNode.ToJsonString(options);
+            File.WriteAllText(depsJsonPath, modifiedJson);
+        }
+
+        private void AddLocalPathsForFiles(JsonNode library, List<RuntimeAssetGroupBuilder> groups, string assetType)
+        {
+            foreach (var group in groups)
+            {
+                JsonNode assets = library[!string.IsNullOrEmpty(group.Runtime) ? "runtimeTargets" : assetType];
+                foreach (var asset in group.Assets)
+                {
+                    if (string.IsNullOrEmpty(asset.LocalPath))
+                        continue;
+
+                    assets[asset.Path]["localPath"] = asset.LocalPath.Replace('\\', '/'); // .deps.json explicitly uses forward slashes;
+                }
+            }
         }
     }
 }

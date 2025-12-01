@@ -83,192 +83,762 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<ulong> AlignRight64(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected] byte mask) => AlignRight64(left, right, mask);
 
             /// <summary>
-            ///   <para>__m128i _mm_cmpge_epi32 (__m128i a, __m128i b)</para>
+            ///   <para>__m128d _mm_mask_blendv_pd (__m128d a, __m128d b, __mmask8 mask)</para>
+            ///   <para>  VBLENDMPD xmm1 {k1}, xmm2, xmm3/m128/m64bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector128<double> BlendVariable(Vector128<double> left, Vector128<double> right, Vector128<double> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_blendv_epi32 (__m128i a, __m128i b, __mmask8 mask)</para>
+            ///   <para>  VPBLENDMD xmm1 {k1}, xmm2, xmm3/m128/m32bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector128<int> BlendVariable(Vector128<int> left, Vector128<int> right, Vector128<int> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_blendv_epi64 (__m128i a, __m128i b, __mmask8 mask)</para>
+            ///   <para>  VPBLENDMQ xmm1 {k1}, xmm2, xmm3/m128/m64bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector128<long> BlendVariable(Vector128<long> left, Vector128<long> right, Vector128<long> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m128 _mm_mask_blendv_ps (__m128 a, __m128 b, __mmask8 mask)</para>
+            ///   <para>  VBLENDMPS xmm1 {k1}, xmm2, xmm3/m128/m32bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector128<float> BlendVariable(Vector128<float> left, Vector128<float> right, Vector128<float> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_blendv_epu32 (__m128i a, __m128i b, __mmask8 mask)</para>
+            ///   <para>  VPBLENDMD xmm1 {k1}, xmm2, xmm3/m128/m32bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector128<uint> BlendVariable(Vector128<uint> left, Vector128<uint> right, Vector128<uint> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_blendv_epu64 (__m128i a, __m128i b, __mmask8 mask)</para>
+            ///   <para>  VPBLENDMQ xmm1 {k1}, xmm2, xmm3/m128/m64bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector128<ulong> BlendVariable(Vector128<ulong> left, Vector128<ulong> right, Vector128<ulong> mask) => BlendVariable(left, right, mask);
+
+            /// <summary>
+            ///   <para>__m256d _mm256_mask_blendv_pd (__m256d a, __m256d b, __mmask8 mask)</para>
+            ///   <para>  VBLENDMPD ymm1 {k1}, ymm2, ymm3/m256/m64bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector256<double> BlendVariable(Vector256<double> left, Vector256<double> right, Vector256<double> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_blendv_epi32 (__m256i a, __m256i b, __mmask8 mask)</para>
+            ///   <para>  VPBLENDMD ymm1 {k1}, ymm2, ymm3/m256/m32bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector256<int> BlendVariable(Vector256<int> left, Vector256<int> right, Vector256<int> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_blendv_epi64 (__m256i a, __m256i b, __mmask8 mask)</para>
+            ///   <para>  VPBLENDMQ ymm1 {k1}, ymm2, ymm3/m256/m64bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector256<long> BlendVariable(Vector256<long> left, Vector256<long> right, Vector256<long> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m256 _mm256_mask_blendv_ps (__m256 a, __m256 b, __mmask8 mask)</para>
+            ///   <para>  VBLENDMPS ymm1 {k1}, ymm2, ymm3/m256/m32bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector256<float> BlendVariable(Vector256<float> left, Vector256<float> right, Vector256<float> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_blendv_epu32 (__m256i a, __m256i b, __mmask8 mask)</para>
+            ///   <para>  VPBLENDMD ymm1 {k1}, ymm2, ymm3/m256/m32bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector256<uint> BlendVariable(Vector256<uint> left, Vector256<uint> right, Vector256<uint> mask) => BlendVariable(left, right, mask);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_blendv_epu64 (__m256i a, __m256i b, __mmask8 mask)</para>
+            ///   <para>  VPBLENDMQ ymm1 {k1}, ymm2, ymm3/m256/m64bcst</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static Vector256<ulong> BlendVariable(Vector256<ulong> left, Vector256<ulong> right, Vector256<ulong> mask) => BlendVariable(left, right, mask);
+
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmp_pd_mask (__m128d a, __m128d b, const int imm8)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8</para>
+            /// </summary>
+            public static Vector128<double> Compare(Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) => Compare(left, right, mode);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpeq_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(0)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareEqual(Vector128<double> left, Vector128<double> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpgt_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(14)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareGreaterThan(Vector128<double> left, Vector128<double> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpge_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(13)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) => CompareGreaterThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmplt_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(1)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareLessThan(Vector128<double> left, Vector128<double> right) => CompareLessThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmple_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(2)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareLessThanOrEqual(Vector128<double> left, Vector128<double> right) => CompareLessThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpneq_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(4)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareNotEqual(Vector128<double> left, Vector128<double> right) => CompareNotEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpngt_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(10)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareNotGreaterThan(Vector128<double> left, Vector128<double> right) => CompareNotGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpnge_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(9)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareNotGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) => CompareNotGreaterThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpnlt_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(5)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareNotLessThan(Vector128<double> left, Vector128<double> right) => CompareNotLessThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpnle_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(6)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareNotLessThanOrEqual(Vector128<double> left, Vector128<double> right) => CompareNotLessThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpord_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(7)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareOrdered(Vector128<double> left, Vector128<double> right) => CompareOrdered(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpunord_pd_mask (__m128d a,  __m128d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, xmm2, xmm3/m128/m64bcst{sae}, imm8(3)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<double> CompareUnordered(Vector128<double> left, Vector128<double> right) => CompareUnordered(left, right);
+
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmp_pd_mask (__m256d a, __m256d b, const int imm8)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8</para>
+            /// </summary>
+            public static Vector256<double> Compare(Vector256<double> left, Vector256<double> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) => Compare(left, right, mode);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpeq_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(0)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareEqual(Vector256<double> left, Vector256<double> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpgt_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(14)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareGreaterThan(Vector256<double> left, Vector256<double> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpge_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(13)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareGreaterThanOrEqual(Vector256<double> left, Vector256<double> right) => CompareGreaterThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmplt_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(1)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareLessThan(Vector256<double> left, Vector256<double> right) => CompareLessThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmple_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(2)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareLessThanOrEqual(Vector256<double> left, Vector256<double> right) => CompareLessThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpneq_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(4)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareNotEqual(Vector256<double> left, Vector256<double> right) => CompareNotEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpngt_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(10)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareNotGreaterThan(Vector256<double> left, Vector256<double> right) => CompareNotGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpnge_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(9)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareNotGreaterThanOrEqual(Vector256<double> left, Vector256<double> right) => CompareNotGreaterThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpnlt_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(5)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareNotLessThan(Vector256<double> left, Vector256<double> right) => CompareNotLessThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpnle_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(6)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareNotLessThanOrEqual(Vector256<double> left, Vector256<double> right) => CompareNotLessThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpord_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(7)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareOrdered(Vector256<double> left, Vector256<double> right) => CompareOrdered(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpunord_pd_mask (__m256d a,  __m256d b)</para>
+            ///   <para>  VCMPPD k1 {k2}, ymm2, ymm3/m256/m64bcst{sae}, imm8(3)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<double> CompareUnordered(Vector256<double> left, Vector256<double> right) => CompareUnordered(left, right);
+
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpeq_epi32_mask (__m128i a, __m128i b)</para>
+            ///   <para>  VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(0)</para>
+            /// </summary>
+            public static Vector128<int> CompareEqual(Vector128<int> left, Vector128<int> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpgt_epi32_mask (__m128i a, __m128i b)</para>
+            ///   <para>  VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(6)</para>
+            /// </summary>
+            public static Vector128<int> CompareGreaterThan(Vector128<int> left, Vector128<int> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpge_epi32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(5)</para>
             /// </summary>
             public static Vector128<int> CompareGreaterThanOrEqual(Vector128<int> left, Vector128<int> right) => CompareGreaterThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmplt_epi32 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmplt_epi32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(1)</para>
             /// </summary>
             public static Vector128<int> CompareLessThan(Vector128<int> left, Vector128<int> right) => CompareLessThan(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmple_epi32 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmple_epi32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(2)</para>
             /// </summary>
             public static Vector128<int> CompareLessThanOrEqual(Vector128<int> left, Vector128<int> right) => CompareLessThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmpne_epi32 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmpne_epi32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(4)</para>
             /// </summary>
             public static Vector128<int> CompareNotEqual(Vector128<int> left, Vector128<int> right) => CompareNotEqual(left, right);
 
             /// <summary>
-            ///   <para>__m256i _mm256_cmpge_epi32 (__m256i a, __m256i b)</para>
+            ///   <para>__mmask8 _mm_cmpeq_epi32_mask (__m128i a, __m128i b)</para>
+            ///   <para>  VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(0)</para>
+            /// </summary>
+            public static Vector256<int> CompareEqual(Vector256<int> left, Vector256<int> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpgt_epi32_mask (__m128i a, __m128i b)</para>
+            ///   <para>  VPCMPD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(6)</para>
+            /// </summary>
+            public static Vector256<int> CompareGreaterThan(Vector256<int> left, Vector256<int> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpge_epi32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(5)</para>
             /// </summary>
             public static Vector256<int> CompareGreaterThanOrEqual(Vector256<int> left, Vector256<int> right) => CompareGreaterThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmplt_epi32 (__m256i a, __m256i b)</para>
+            ///   <para>__mmask8 _mm256_cmplt_epi32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(1)</para>
             /// </summary>
             public static Vector256<int> CompareLessThan(Vector256<int> left, Vector256<int> right) => CompareLessThan(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmple_epi32 (__m256i a, __m256i b)</para>
+            ///   <para>__mmask8 _mm256_cmple_epi32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(2)</para>
             /// </summary>
             public static Vector256<int> CompareLessThanOrEqual(Vector256<int> left, Vector256<int> right) => CompareLessThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmpne_epi32 (__m256i a, __m256i b)</para>
+            ///   <para>__mmask8 _mm256_cmpne_epi32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(4)</para>
             /// </summary>
             public static Vector256<int> CompareNotEqual(Vector256<int> left, Vector256<int> right) => CompareNotEqual(left, right);
 
             /// <summary>
-            ///   <para>__m128i _mm_cmpge_epi64 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmpeq_epi64_mask (__m128i a, __m128i b)</para>
+            ///   <para>  VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(0)</para>
+            /// </summary>
+            public static Vector128<long> CompareEqual(Vector128<long> left, Vector128<long> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpgt_epi64_mask (__m128i a, __m128i b)</para>
+            ///   <para>  VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(6)</para>
+            /// </summary>
+            public static Vector128<long> CompareGreaterThan(Vector128<long> left, Vector128<long> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpge_epi64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(5)</para>
             /// </summary>
             public static Vector128<long> CompareGreaterThanOrEqual(Vector128<long> left, Vector128<long> right) => CompareGreaterThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmplt_epi64 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmplt_epi64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(1)</para>
             /// </summary>
             public static Vector128<long> CompareLessThan(Vector128<long> left, Vector128<long> right) => CompareLessThan(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmple_epi64 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmple_epi64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(2)</para>
             /// </summary>
             public static Vector128<long> CompareLessThanOrEqual(Vector128<long> left, Vector128<long> right) => CompareLessThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmpne_epi64 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmpne_epi64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(4)</para>
             /// </summary>
             public static Vector128<long> CompareNotEqual(Vector128<long> left, Vector128<long> right) => CompareNotEqual(left, right);
 
             /// <summary>
-            ///   <para>__m256i _mm256_cmpge_epi64 (__m256i a, __m256i b)</para>
+            ///   <para>__mmask8 _mm256_cmpeq_epi64_mask (__m256i a, __m256i b)</para>
+            ///   <para>  VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(0)</para>
+            /// </summary>
+            public static Vector256<long> CompareEqual(Vector256<long> left, Vector256<long> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpgt_epi64_mask (__m256i a, __m256i b)</para>
+            ///   <para>  VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(6)</para>
+            /// </summary>
+            public static Vector256<long> CompareGreaterThan(Vector256<long> left, Vector256<long> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpge_epi64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(5)</para>
             /// </summary>
             public static Vector256<long> CompareGreaterThanOrEqual(Vector256<long> left, Vector256<long> right) => CompareGreaterThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmplt_epi64 (__m256i a, __m256i b)</para>
+            ///   <para>__mmask8 _mm256_cmplt_epi64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(1)</para>
             /// </summary>
             public static Vector256<long> CompareLessThan(Vector256<long> left, Vector256<long> right) => CompareLessThan(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmple_epi64 (__m256i a, __m256i b)</para>
+            ///   <para>__mmask8 _mm256_cmple_epi64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(2)</para>
             /// </summary>
             public static Vector256<long> CompareLessThanOrEqual(Vector256<long> left, Vector256<long> right) => CompareLessThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmpne_epi64 (__m256i a, __m256i b)</para>
+            ///   <para>__mmask8 _mm256_cmpne_epi64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(4)</para>
             /// </summary>
             public static Vector256<long> CompareNotEqual(Vector256<long> left, Vector256<long> right) => CompareNotEqual(left, right);
 
             /// <summary>
-            ///   <para>__m128i _mm_cmpgt_epu32 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmp_ps_mask (__m128 a, __m128 b, const int imm8)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8</para>
+            /// </summary>
+            public static Vector128<float> Compare(Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) => Compare(left, right, mode);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpeq_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(0)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareEqual(Vector128<float> left, Vector128<float> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpgt_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(14)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareGreaterThan(Vector128<float> left, Vector128<float> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpge_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(13)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareGreaterThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmplt_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(1)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareLessThan(Vector128<float> left, Vector128<float> right) => CompareLessThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmple_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(2)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareLessThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareLessThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpneq_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(4)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareNotEqual(Vector128<float> left, Vector128<float> right) => CompareNotEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpngt_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(10)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareNotGreaterThan(Vector128<float> left, Vector128<float> right) => CompareNotGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpnge_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(9)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareNotGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareNotGreaterThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpnlt_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(5)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareNotLessThan(Vector128<float> left, Vector128<float> right) => CompareNotLessThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpnle_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(6)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareNotLessThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareNotLessThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpord_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(7)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareOrdered(Vector128<float> left, Vector128<float> right) => CompareOrdered(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpunord_ps_mask (__m128 a,  __m128 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, xmm2, xmm3/m128/m32bcst{sae}, imm8(3)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector128<float> CompareUnordered(Vector128<float> left, Vector128<float> right) => CompareUnordered(left, right);
+
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmp_ps_mask (__m256 a, __m256 b, const int imm8)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8</para>
+            /// </summary>
+            public static Vector256<float> Compare(Vector256<float> left, Vector256<float> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) => Compare(left, right, mode);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpeq_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(0)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareEqual(Vector256<float> left, Vector256<float> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpgt_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(14)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareGreaterThan(Vector256<float> left, Vector256<float> right) => CompareGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpge_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(13)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareGreaterThanOrEqual(Vector256<float> left, Vector256<float> right) => CompareGreaterThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmplt_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(1)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareLessThan(Vector256<float> left, Vector256<float> right) => CompareLessThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmple_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(2)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareLessThanOrEqual(Vector256<float> left, Vector256<float> right) => CompareLessThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpneq_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(4)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareNotEqual(Vector256<float> left, Vector256<float> right) => CompareNotEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpngt_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(10)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareNotGreaterThan(Vector256<float> left, Vector256<float> right) => CompareNotGreaterThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpnge_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(9)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareNotGreaterThanOrEqual(Vector256<float> left, Vector256<float> right) => CompareNotGreaterThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpnlt_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(5)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareNotLessThan(Vector256<float> left, Vector256<float> right) => CompareNotLessThan(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpnle_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(6)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareNotLessThanOrEqual(Vector256<float> left, Vector256<float> right) => CompareNotLessThanOrEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpord_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(7)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareOrdered(Vector256<float> left, Vector256<float> right) => CompareOrdered(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm256_cmpunord_ps_mask (__m256 a,  __m256 b)</para>
+            ///   <para>  VCMPPS k1 {k2}, ymm2, ymm3/m256/m32bcst{sae}, imm8(3)</para>
+            ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
+            /// </summary>
+            public static Vector256<float> CompareUnordered(Vector256<float> left, Vector256<float> right) => CompareUnordered(left, right);
+
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpeq_epu32_mask (__m128i a, __m128i b)</para>
+            ///   <para>  VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(0)</para>
+            /// </summary>
+            public static Vector128<uint> CompareEqual(Vector128<uint> left, Vector128<uint> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mmask8 _mm_cmpgt_epu32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(6)</para>
             /// </summary>
             public static Vector128<uint> CompareGreaterThan(Vector128<uint> left, Vector128<uint> right) => CompareGreaterThan(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmpge_epu32 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmpge_epu32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(5)</para>
             /// </summary>
             public static Vector128<uint> CompareGreaterThanOrEqual(Vector128<uint> left, Vector128<uint> right) => CompareGreaterThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmplt_epu32 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmplt_epu32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(1)</para>
             /// </summary>
             public static Vector128<uint> CompareLessThan(Vector128<uint> left, Vector128<uint> right) => CompareLessThan(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmple_epu32 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmple_epu32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(2)</para>
             /// </summary>
             public static Vector128<uint> CompareLessThanOrEqual(Vector128<uint> left, Vector128<uint> right) => CompareLessThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmpne_epu32 (__m128i a, __m128i b)</para>
+            ///   <para>__mmask8 _mm_cmpne_epu32_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, xmm2, xmm3/m128/m32bcst, imm8(4)</para>
             /// </summary>
             public static Vector128<uint> CompareNotEqual(Vector128<uint> left, Vector128<uint> right) => CompareNotEqual(left, right);
 
             /// <summary>
-            ///   <para>__m256i _mm256_cmpgt_epu32 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmpeq_epu32_mask (__m256i a, __m256i b)</para>
+            ///   <para>  VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(0)</para>
+            /// </summary>
+            public static Vector256<uint> CompareEqual(Vector256<uint> left, Vector256<uint> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mask8 _mm256_cmpgt_epu32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(6)</para>
             /// </summary>
             public static Vector256<uint> CompareGreaterThan(Vector256<uint> left, Vector256<uint> right) => CompareGreaterThan(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmpge_epu32 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmpge_epu32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(5)</para>
             /// </summary>
             public static Vector256<uint> CompareGreaterThanOrEqual(Vector256<uint> left, Vector256<uint> right) => CompareGreaterThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmplt_epu32 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmplt_epu32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(1)</para>
             /// </summary>
             public static Vector256<uint> CompareLessThan(Vector256<uint> left, Vector256<uint> right) => CompareLessThan(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmple_epu32 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmple_epu32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(2)</para>
             /// </summary>
             public static Vector256<uint> CompareLessThanOrEqual(Vector256<uint> left, Vector256<uint> right) => CompareLessThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmpne_epu32 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmpne_epu32_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUD k1 {k2}, ymm2, ymm3/m256/m32bcst, imm8(4)</para>
             /// </summary>
             public static Vector256<uint> CompareNotEqual(Vector256<uint> left, Vector256<uint> right) => CompareNotEqual(left, right);
 
             /// <summary>
-            ///   <para>__m128i _mm_cmpgt_epu64 (__m128i a, __m128i b)</para>
+            ///   <para>__mask8 _mm_cmpeq_epu64_mask (__m128i a, __m128i b)</para>
+            ///   <para>  VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(0)</para>
+            /// </summary>
+            public static Vector128<ulong> CompareEqual(Vector128<ulong> left, Vector128<ulong> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mask8 _mm_cmpgt_epu64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(6)</para>
             /// </summary>
             public static Vector128<ulong> CompareGreaterThan(Vector128<ulong> left, Vector128<ulong> right) => CompareGreaterThan(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmpge_epu64 (__m128i a, __m128i b)</para>
+            ///   <para>__mask8 _mm_cmpge_epu64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(5)</para>
             /// </summary>
             public static Vector128<ulong> CompareGreaterThanOrEqual(Vector128<ulong> left, Vector128<ulong> right) => CompareGreaterThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmplt_epu64 (__m128i a, __m128i b)</para>
+            ///   <para>__mask8 _mm_cmplt_epu64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(1)</para>
             /// </summary>
             public static Vector128<ulong> CompareLessThan(Vector128<ulong> left, Vector128<ulong> right) => CompareLessThan(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmple_epu64 (__m128i a, __m128i b)</para>
+            ///   <para>__mask8 _mm_cmple_epu64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(2)</para>
             /// </summary>
             public static Vector128<ulong> CompareLessThanOrEqual(Vector128<ulong> left, Vector128<ulong> right) => CompareLessThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m128i _mm_cmpne_epu64 (__m128i a, __m128i b)</para>
+            ///   <para>__mask8 _mm_cmpne_epu64_mask (__m128i a, __m128i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, xmm2, xmm3/m128/m64bcst, imm8(4)</para>
             /// </summary>
             public static Vector128<ulong> CompareNotEqual(Vector128<ulong> left, Vector128<ulong> right) => CompareNotEqual(left, right);
 
             /// <summary>
-            ///   <para>__m256i _mm256_cmpgt_epu64 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmpeq_epu64_mask (__m256i a, __m256i b)</para>
+            ///   <para>  VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(0)</para>
+            /// </summary>
+            public static Vector256<ulong> CompareEqual(Vector256<ulong> left, Vector256<ulong> right) => CompareEqual(left, right);
+            /// <summary>
+            ///   <para>__mask8 _mm256_cmpgt_epu64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(6)</para>
             /// </summary>
             public static Vector256<ulong> CompareGreaterThan(Vector256<ulong> left, Vector256<ulong> right) => CompareGreaterThan(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmpge_epu64 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmpge_epu64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(5)</para>
             /// </summary>
             public static Vector256<ulong> CompareGreaterThanOrEqual(Vector256<ulong> left, Vector256<ulong> right) => CompareGreaterThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmplt_epu64 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmplt_epu64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(1)</para>
             /// </summary>
             public static Vector256<ulong> CompareLessThan(Vector256<ulong> left, Vector256<ulong> right) => CompareLessThan(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmple_epu64 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmple_epu64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(2)</para>
             /// </summary>
             public static Vector256<ulong> CompareLessThanOrEqual(Vector256<ulong> left, Vector256<ulong> right) => CompareLessThanOrEqual(left, right);
             /// <summary>
-            ///   <para>__m256i _mm256_cmpne_epu64 (__m256i a, __m256i b)</para>
+            ///   <para>__mask8 _mm256_cmpne_epu64_mask (__m256i a, __m256i b)</para>
             ///   <para>  VPCMPUQ k1 {k2}, ymm2, ymm3/m256/m64bcst, imm8(4)</para>
             /// </summary>
             public static Vector256<ulong> CompareNotEqual(Vector256<ulong> left, Vector256<ulong> right) => CompareNotEqual(left, right);
+
+            /// <summary>
+            ///   <para>__m128d _mm_mask_compress_pd (__m128d s, __mmask8 k, __m128d a)</para>
+            ///   <para>  VCOMPRESSPD xmm1 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<double> Compress(Vector128<double> merge, Vector128<double> mask, Vector128<double> value) => Compress(merge, mask, value);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_compress_epi32 (__m128i s, __mask8 k, __m128i a)</para>
+            ///   <para>  VPCOMPRESSD xmm1 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<int> Compress(Vector128<int> merge, Vector128<int> mask, Vector128<int> value) => Compress(merge, mask, value);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_compress_epi64 (__m128i s, __mask8 k, __m128i a)</para>
+            ///   <para>  VPCOMPRESSQ xmm1 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<long> Compress(Vector128<long> merge, Vector128<long> mask, Vector128<long> value) => Compress(merge, mask, value);
+            /// <summary>
+            ///   <para>__m128 _mm_mask_compress_ps (__m128 s, __mmask8 k, __m128 a)</para>
+            ///   <para>  VCOMPRESSPS xmm1 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<float> Compress(Vector128<float> merge, Vector128<float> mask, Vector128<float> value) => Compress(merge, mask, value);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_compress_epi32 (__m128i s, __mask8 k, __m128i a)</para>
+            ///   <para>  VPCOMPRESSD xmm1 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<uint> Compress(Vector128<uint> merge, Vector128<uint> mask, Vector128<uint> value) => Compress(merge, mask, value);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_compress_epi64 (__m128i s, __mask8 k, __m128i a)</para>
+            ///   <para>  VPCOMPRESSQ xmm1 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<ulong> Compress(Vector128<ulong> merge, Vector128<ulong> mask, Vector128<ulong> value) => Compress(merge, mask, value);
+
+            /// <summary>
+            ///   <para>__m256d _mm256_mask_compress_pd (__m256d s, __mmask8 k, __m256d a)</para>
+            ///   <para>  VCOMPRESSPD ymm1 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<double> Compress(Vector256<double> merge, Vector256<double> mask, Vector256<double> value) => Compress(merge, mask, value);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_compress_epi32 (__m256i s, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPCOMPRESSD ymm1 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<int> Compress(Vector256<int> merge, Vector256<int> mask, Vector256<int> value) => Compress(merge, mask, value);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_compress_epi64 (__m256i s, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPCOMPRESSQ ymm1 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<long> Compress(Vector256<long> merge, Vector256<long> mask, Vector256<long> value) => Compress(merge, mask, value);
+            /// <summary>
+            ///   <para>__m256 _mm256_mask_compress_ps (__m256 s, __mmask8 k, __m256 a)</para>
+            ///   <para>  VCOMPRESSPS ymm1 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<float> Compress(Vector256<float> merge, Vector256<float> mask, Vector256<float> value) => Compress(merge, mask, value);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_compress_epi32 (__m256i s, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPCOMPRESSD ymm1 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<uint> Compress(Vector256<uint> merge, Vector256<uint> mask, Vector256<uint> value) => Compress(merge, mask, value);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_compress_epi64 (__m256i s, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPCOMPRESSQ ymm1 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<ulong> Compress(Vector256<ulong> merge, Vector256<ulong> mask, Vector256<ulong> value) => Compress(merge, mask, value);
+
+            /// <summary>
+            ///   <para>__m128d _mm_mask_compressstoreu_pd (void * a, __mmask8 k, __m128d a)</para>
+            ///   <para>  VCOMPRESSPD m128 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static unsafe void CompressStore(double* address, Vector128<double> mask, Vector128<double> source) => CompressStore(address, mask, source);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_compressstoreu_epi32 (void * a, __mask8 k, __m128i a)</para>
+            ///   <para>  VPCOMPRESSD m128 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static unsafe void CompressStore(int* address, Vector128<int> mask, Vector128<int> source) => CompressStore(address, mask, source);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_compressstoreu_epi64 (void * a, __mask8 k, __m128i a)</para>
+            ///   <para>  VPCOMPRESSQ m128 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static unsafe void CompressStore(long* address, Vector128<long> mask, Vector128<long> source) => CompressStore(address, mask, source);
+            /// <summary>
+            ///   <para>__m128 _mm_mask_compressstoreu_ps (void * a, __mmask8 k, __m128 a)</para>
+            ///   <para>  VCOMPRESSPS m128 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static unsafe void CompressStore(float* address, Vector128<float> mask, Vector128<float> source) => CompressStore(address, mask, source);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_compressstoreu_epi32 (void * a, __mask8 k, __m128i a)</para>
+            ///   <para>  VPCOMPRESSD m128 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static unsafe void CompressStore(uint* address, Vector128<uint> mask, Vector128<uint> source) => CompressStore(address, mask, source);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_compressstoreu_epi64 (void * a, __mask8 k, __m128i a)</para>
+            ///   <para>  VPCOMPRESSQ m128 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static unsafe void CompressStore(ulong* address, Vector128<ulong> mask, Vector128<ulong> source) => CompressStore(address, mask, source);
+
+            /// <summary>
+            ///   <para>__m256d _mm256_mask_compressstoreu_pd (void * a, __mmask8 k, __m256d a)</para>
+            ///   <para>  VCOMPRESSPD m256 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static unsafe void CompressStore(double* address, Vector256<double> mask, Vector256<double> source) => CompressStore(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm256_mask_compressstoreu_epi32 (void * a, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPCOMPRESSD m256 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static unsafe void CompressStore(int* address, Vector256<int> mask, Vector256<int> source) => CompressStore(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm256_mask_compressstoreu_epi64 (void * a, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPCOMPRESSQ m256 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static unsafe void CompressStore(long* address, Vector256<long> mask, Vector256<long> source) => CompressStore(address, mask, source);
+            /// <summary>
+            ///   <para>__m256 _mm256_mask_compressstoreu_ps (void * a, __mmask8 k, __m256 a)</para>
+            ///   <para>  VCOMPRESSPS m256 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static unsafe void CompressStore(float* address, Vector256<float> mask, Vector256<float> source) => CompressStore(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm256_mask_compressstoreu_epi32 (void * a, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPCOMPRESSD m256 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static unsafe void CompressStore(uint* address, Vector256<uint> mask, Vector256<uint> source) => CompressStore(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm256_mask_compressstoreu_epi64 (void * a, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPCOMPRESSQ m256 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static unsafe void CompressStore(ulong* address, Vector256<ulong> mask, Vector256<ulong> source) => CompressStore(address, mask, source);
 
             /// <summary>
             ///   <para>__m128i _mm_cvtepi32_epi8 (__m128i a)</para>
@@ -640,6 +1210,142 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<uint> ConvertToVector256UInt32WithTruncation(Vector256<float> value) => ConvertToVector256UInt32WithTruncation(value);
 
             /// <summary>
+            ///   <para>__m128d _mm_mask_expand_pd (__m128d s, __mmask8 k, __m128d a)</para>
+            ///   <para>  VEXPANDPD xmm1 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<double> Expand(Vector128<double> merge, Vector128<double> mask, Vector128<double> value) => Expand(merge, mask, value);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_expand_epi32 (__m128i s, __mmask8 k, __m128i a)</para>
+            ///   <para>  VPEXPANDD xmm1 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<int> Expand(Vector128<int> merge, Vector128<int> mask, Vector128<int> value) => Expand(merge, mask, value);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_expand_epi64 (__m128i s, __mmask8 k, __m128i a)</para>
+            ///   <para>  VPEXPANDQ xmm1 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<long> Expand(Vector128<long> merge, Vector128<long> mask, Vector128<long> value) => Expand(merge, mask, value);
+            /// <summary>
+            ///   <para>__m128 _mm_mask_expand_ps (__m128 s, __mmask8 k, __m128 a)</para>
+            ///   <para>  VEXPANDPS xmm1 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<float> Expand(Vector128<float> merge, Vector128<float> mask, Vector128<float> value) => Expand(merge, mask, value);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_expand_epi32 (__m128i s, __mmask8 k, __m128i a)</para>
+            ///   <para>  VPEXPANDD xmm1 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<uint> Expand(Vector128<uint> merge, Vector128<uint> mask, Vector128<uint> value) => Expand(merge, mask, value);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_expand_epi64 (__m128i s, __mmask8 k, __m128i a)</para>
+            ///   <para>  VPEXPANDQ xmm1 {k1}{z}, xmm2</para>
+            /// </summary>
+            public static Vector128<ulong> Expand(Vector128<ulong> merge, Vector128<ulong> mask, Vector128<ulong> value) => Expand(merge, mask, value);
+
+            /// <summary>
+            ///   <para>__m256d _mm256_value_expand_pd (__m256d s, __mmask8 k, __m256d a)</para>
+            ///   <para>  VEXPANDPD ymm1 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<double> Expand(Vector256<double> merge, Vector256<double> mask, Vector256<double> value) => Expand(merge, mask, value);
+            /// <summary>
+            ///   <para>__m256i _mm256_value_expand_epi32 (__m256i s, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPEXPANDD ymm1 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<int> Expand(Vector256<int> merge, Vector256<int> mask, Vector256<int> value) => Expand(merge, mask, value);
+            /// <summary>
+            ///   <para>__m256i _mm256_value_expand_epi64 (__m256i s, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPEXPANDQ ymm1 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<long> Expand(Vector256<long> merge, Vector256<long> mask, Vector256<long> value) => Expand(merge, mask, value);
+            /// <summary>
+            ///   <para>__m256 _mm256_value_expand_ps (__m256 s, __mmask8 k, __m256 a)</para>
+            ///   <para>  VEXPANDPS ymm1 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<float> Expand(Vector256<float> merge, Vector256<float> mask, Vector256<float> value) => Expand(merge, mask, value);
+            /// <summary>
+            ///   <para>__m256i _mm256_value_expand_epi32 (__m256i s, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPEXPANDD ymm1 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<uint> Expand(Vector256<uint> merge, Vector256<uint> mask, Vector256<uint> value) => Expand(merge, mask, value);
+            /// <summary>
+            ///   <para>__m256i _mm256_value_expand_epi64 (__m256i s, __mmask8 k, __m256i a)</para>
+            ///   <para>  VPEXPANDQ ymm1 {k1}{z}, ymm2</para>
+            /// </summary>
+            public static Vector256<ulong> Expand(Vector256<ulong> merge, Vector256<ulong> mask, Vector256<ulong> value) => Expand(merge, mask, value);
+
+            /// <summary>
+            ///   <para>__m128d _mm_mask_expandloadu_pd (__m128d s, __mmask8 k, void const * a)</para>
+            ///   <para>  VEXPANDPD xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<double> ExpandLoad(double* address, Vector128<double> mask, Vector128<double> merge) => ExpandLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_expandloadu_epi32 (__m128i s, __mmask8 k, void const * a)</para>
+            ///   <para>  VPEXPANDD xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<int> ExpandLoad(int* address, Vector128<int> mask, Vector128<int> merge) => ExpandLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_expandloadu_epi64 (__m128i s, __mmask8 k, void const * a)</para>
+            ///   <para>  VPEXPANDQ xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<long> ExpandLoad(long* address, Vector128<long> mask, Vector128<long> merge) => ExpandLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m128 _mm_mask_expandloadu_ps (__m128 s, __mmask8 k, void const * a)</para>
+            ///   <para>  VEXPANDPS xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<float> ExpandLoad(float* address, Vector128<float> mask, Vector128<float> merge) => ExpandLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_expandloadu_epi32 (__m128i s, __mmask8 k, void const * a)</para>
+            ///   <para>  VPEXPANDD xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<uint> ExpandLoad(uint* address, Vector128<uint> mask, Vector128<uint> merge) => ExpandLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_expandloadu_epi64 (__m128i s, __mmask8 k, void const * a)</para>
+            ///   <para>  VPEXPANDQ xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<ulong> ExpandLoad(ulong* address, Vector128<ulong> mask, Vector128<ulong> merge) => ExpandLoad(address, mask, merge);
+
+            /// <summary>
+            ///   <para>__m256d _mm256_address_expandloadu_pd (__m256d s, __mmask8 k, void const * a)</para>
+            ///   <para>  VEXPANDPD ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<double> ExpandLoad(double* address, Vector256<double> mask, Vector256<double> merge) => ExpandLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m256i _mm256_address_expandloadu_epi32 (__m256i s, __mmask8 k, void const * a)</para>
+            ///   <para>  VPEXPANDD ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<int> ExpandLoad(int* address, Vector256<int> mask, Vector256<int> merge) => ExpandLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m256i _mm256_address_expandloadu_epi64 (__m256i s, __mmask8 k, void const * a)</para>
+            ///   <para>  VPEXPANDQ ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<long> ExpandLoad(long* address, Vector256<long> mask, Vector256<long> merge) => ExpandLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m256 _mm256_address_expandloadu_ps (__m256 s, __mmask8 k, void const * a)</para>
+            ///   <para>  VEXPANDPS ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<float> ExpandLoad(float* address, Vector256<float> mask, Vector256<float> merge) => ExpandLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m256i _mm256_address_expandloadu_epi32 (__m256i s, __mmask8 k, void const * a)</para>
+            ///   <para>  VPEXPANDD ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<uint> ExpandLoad(uint* address, Vector256<uint> mask, Vector256<uint> merge) => ExpandLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m256i _mm256_address_expandloadu_epi64 (__m256i s, __mmask8 k, void const * a)</para>
+            ///   <para>  VPEXPANDQ ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<ulong> ExpandLoad(ulong* address, Vector256<ulong> mask, Vector256<ulong> merge) => ExpandLoad(address, mask, merge);
+
+            /// <summary>
             ///   <para>__m128 _mm_fixupimm_ps(__m128 a, __m128 b, __m128i tbl, int imm);</para>
             ///   <para>  VFIXUPIMMPS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8</para>
             /// </summary>
@@ -701,6 +1407,277 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>  VGETMANTPD ymm1 {k1}{z}, ymm2/m256/m64bcst</para>
             /// </summary>
             public static Vector256<double> GetMantissa(Vector256<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+
+            /// <summary>
+            ///   <para>__m128d _mm_mask_loadu_pd (__m128d s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVUPD xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<double> MaskLoad(double* address, Vector128<double> mask, Vector128<double> merge) => MaskLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_loadu_epi32 (__m128i s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVDQU32 xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<int> MaskLoad(int* address, Vector128<int> mask, Vector128<int> merge) => MaskLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_loadu_epi64 (__m128i s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVDQU64 xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<long> MaskLoad(long* address, Vector128<long> mask, Vector128<long> merge) => MaskLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m128 _mm_mask_loadu_ps (__m128 s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVUPS xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<float> MaskLoad(float* address, Vector128<float> mask, Vector128<float> merge) => MaskLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_loadu_epi32 (__m128i s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVDQU32 xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<uint> MaskLoad(uint* address, Vector128<uint> mask, Vector128<uint> merge) => MaskLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_loadu_epi64 (__m128i s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVDQU64 xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<ulong> MaskLoad(ulong* address, Vector128<ulong> mask, Vector128<ulong> merge) => MaskLoad(address, mask, merge);
+
+            /// <summary>
+            ///   <para>__m256d _mm256_mask_loadu_pd (__m256d s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVUPD ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<double> MaskLoad(double* address, Vector256<double> mask, Vector256<double> merge) => MaskLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_loadu_epi32 (__m256i s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVDQU32 ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            public static unsafe Vector256<int> MaskLoad(int* address, Vector256<int> mask, Vector256<int> merge) => MaskLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_loadu_epi64 (__m256i s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVDQU64 ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<long> MaskLoad(long* address, Vector256<long> mask, Vector256<long> merge) => MaskLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m256 _mm256_mask_loadu_ps (__m256 s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVUPS ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<float> MaskLoad(float* address, Vector256<float> mask, Vector256<float> merge) => MaskLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_loadu_epi32 (__m256i s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVDQU32 ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<uint> MaskLoad(uint* address, Vector256<uint> mask, Vector256<uint> merge) => MaskLoad(address, mask, merge);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_loadu_epi64 (__m256i s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVDQU64 ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<ulong> MaskLoad(ulong* address, Vector256<ulong> mask, Vector256<ulong> merge) => MaskLoad(address, mask, merge);
+
+            /// <summary>
+            ///   <para>__m128d _mm_mask_load_pd (__m128d s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVAPD xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<double> MaskLoadAligned(double* address, Vector128<double> mask, Vector128<double> merge) => MaskLoadAligned(address, mask, merge);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_load_epi32 (__m128i s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVDQA32 xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<int> MaskLoadAligned(int* address, Vector128<int> mask, Vector128<int> merge) => MaskLoadAligned(address, mask, merge);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_load_epi64 (__m128i s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVDQA64 xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<long> MaskLoadAligned(long* address, Vector128<long> mask, Vector128<long> merge) => MaskLoadAligned(address, mask, merge);
+            /// <summary>
+            ///   <para>__m128 _mm_mask_load_ps (__m128 s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVAPS xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<float> MaskLoadAligned(float* address, Vector128<float> mask, Vector128<float> merge) => MaskLoadAligned(address, mask, merge);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_load_epi32 (__m128i s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVDQA32 xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<uint> MaskLoadAligned(uint* address, Vector128<uint> mask, Vector128<uint> merge) => MaskLoadAligned(address, mask, merge);
+            /// <summary>
+            ///   <para>__m128i _mm_mask_load_epi64 (__m128i s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVDQA64 xmm1 {k1}{z}, m128</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector128<ulong> MaskLoadAligned(ulong* address, Vector128<ulong> mask, Vector128<ulong> merge) => MaskLoadAligned(address, mask, merge);
+
+            /// <summary>
+            ///   <para>__m256d _mm256_mask_load_pd (__m256d s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVAPD ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<double> MaskLoadAligned(double* address, Vector256<double> mask, Vector256<double> merge) => MaskLoadAligned(address, mask, merge);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_load_epi32 (__m256i s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVDQA32 ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<int> MaskLoadAligned(int* address, Vector256<int> mask, Vector256<int> merge) => MaskLoadAligned(address, mask, merge);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_load_epi64 (__m256i s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVDQA64 ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<long> MaskLoadAligned(long* address, Vector256<long> mask, Vector256<long> merge) => MaskLoadAligned(address, mask, merge);
+            /// <summary>
+            ///   <para>__m256 _mm256_mask_load_ps (__m256 s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVAPS ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<float> MaskLoadAligned(float* address, Vector256<float> mask, Vector256<float> merge) => MaskLoadAligned(address, mask, merge);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_load_epi32 (__m256i s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVDQA32 ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<uint> MaskLoadAligned(uint* address, Vector256<uint> mask, Vector256<uint> merge) => MaskLoadAligned(address, mask, merge);
+            /// <summary>
+            ///   <para>__m256i _mm256_mask_load_epi64 (__m256i s, __mmask8 k, void const * mem_addr)</para>
+            ///   <para>  VMOVDQA64 ymm1 {k1}{z}, m256</para>
+            /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+            public static unsafe Vector256<ulong> MaskLoadAligned(ulong* address, Vector256<ulong> mask, Vector256<ulong> merge) => MaskLoadAligned(address, mask, merge);
+
+            /// <summary>
+            ///   <para>void _mm_mask_storeu_pd (void * mem_addr, __mmask8 k, __m128d a)</para>
+            ///   <para>  VMOVUPD m128 {k1}{z}, xmm1</para>
+            /// </summary>
+            public static unsafe void MaskStore(double* address, Vector128<double> mask, Vector128<double> source) => MaskStore(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm_mask_storeu_epi32 (void * mem_addr, __mmask8 k, __m128i a)</para>
+            ///   <para>  VMOVDQU32 m128 {k1}{z}, xmm1</para>
+            /// </summary>
+            public static unsafe void MaskStore(int* address, Vector128<int> mask, Vector128<int> source) => MaskStore(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm_mask_storeu_epi64 (void * mem_addr, __mmask8 k, __m128i a)</para>
+            ///   <para>  VMOVDQU64 m128 {k1}{z}, xmm1</para>
+            /// </summary>
+            public static unsafe void MaskStore(long* address, Vector128<long> mask, Vector128<long> source) => MaskStore(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm_mask_storeu_ps (void * mem_addr, __mmask8 k, __m128 a)</para>
+            ///   <para>  VMOVUPS m128 {k1}{z}, xmm1</para>
+            /// </summary>
+            public static unsafe void MaskStore(float* address, Vector128<float> mask, Vector128<float> source) => MaskStore(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm_mask_storeu_epi32 (void * mem_addr, __mmask8 k, __m128i a)</para>
+            ///   <para>  VMOVDQU32 m128 {k1}{z}, xmm1</para>
+            /// </summary>
+            public static unsafe void MaskStore(uint* address, Vector128<uint> mask, Vector128<uint> source) => MaskStore(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm_mask_storeu_epi64 (void * mem_addr, __mmask8 k, __m128i a)</para>
+            ///   <para>  VMOVDQU64 m128 {k1}{z}, xmm1</para>
+            /// </summary>
+            public static unsafe void MaskStore(ulong* address, Vector128<ulong> mask, Vector128<ulong> source) => MaskStore(address, mask, source);
+
+            /// <summary>
+            ///   <para>void _mm256_mask_storeu_pd (void * mem_addr, __mmask8 k, __m256d a)</para>
+            ///   <para>  VMOVUPD m256 {k1}{z}, ymm1</para>
+            /// </summary>
+            public static unsafe void MaskStore(double* address, Vector256<double> mask, Vector256<double> source) => MaskStore(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm256_mask_storeu_epi32 (void * mem_addr, __mmask8 k, __m256i a)</para>
+            ///   <para>  VMOVDQU32 m256 {k1}{z}, ymm1</para>
+            /// </summary>
+            public static unsafe void MaskStore(int* address, Vector256<int> mask, Vector256<int> source) => MaskStore(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm256_mask_storeu_epi64 (void * mem_addr, __mmask8 k, __m256i a)</para>
+            ///   <para>  VMOVDQU64 m256 {k1}{z}, ymm1</para>
+            /// </summary>
+            public static unsafe void MaskStore(long* address, Vector256<long> mask, Vector256<long> source) => MaskStore(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm256_mask_storeu_ps (void * mem_addr, __mmask8 k, __m256 a)</para>
+            ///   <para>  VMOVUPS m256 {k1}{z}, ymm1</para>
+            /// </summary>
+            public static unsafe void MaskStore(float* address, Vector256<float> mask, Vector256<float> source) => MaskStore(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm256_mask_storeu_epi32 (void * mem_addr, __mmask8 k, __m256i a)</para>
+            ///   <para>  VMOVDQU32 m256 {k1}{z}, ymm1</para>
+            /// </summary>
+            public static unsafe void MaskStore(uint* address, Vector256<uint> mask, Vector256<uint> source) => MaskStore(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm256_mask_storeu_epi64 (void * mem_addr, __mmask8 k, __m256i a)</para>
+            ///   <para>  VMOVDQU64 m256 {k1}{z}, ymm1</para>
+            /// </summary>
+            public static unsafe void MaskStore(ulong* address, Vector256<ulong> mask, Vector256<ulong> source) => MaskStore(address, mask, source);
+
+            /// <summary>
+            ///   <para>void _mm_mask_store_pd (void * mem_addr, __mmask8 k, __m128d a)</para>
+            ///   <para>  VMOVAPD m128 {k1}{z}, xmm1</para>
+            /// </summary>
+            public static unsafe void MaskStoreAligned(double* address, Vector128<double> mask, Vector128<double> source) => MaskStoreAligned(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm_mask_store_epi32 (void * mem_addr, __mmask8 k, __m128i a)</para>
+            ///   <para>  VMOVDQA32 m128 {k1}{z}, xmm1</para>
+            /// </summary>
+            public static unsafe void MaskStoreAligned(int* address, Vector128<int> mask, Vector128<int> source) => MaskStoreAligned(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm_mask_store_epi64 (void * mem_addr, __mmask8 k, __m128i a)</para>
+            ///   <para>  VMOVDQA32 m128 {k1}{z}, xmm1</para>
+            /// </summary>
+            public static unsafe void MaskStoreAligned(long* address, Vector128<long> mask, Vector128<long> source) => MaskStoreAligned(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm_mask_store_ps (void * mem_addr, __mmask8 k, __m128 a)</para>
+            ///   <para>  VMOVAPS m128 {k1}{z}, xmm1</para>
+            /// </summary>
+            public static unsafe void MaskStoreAligned(float* address, Vector128<float> mask, Vector128<float> source) => MaskStoreAligned(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm_mask_store_epi32 (void * mem_addr, __mmask8 k, __m128i a)</para>
+            ///   <para>  VMOVDQA32 m128 {k1}{z}, xmm1</para>
+            /// </summary>
+            public static unsafe void MaskStoreAligned(uint* address, Vector128<uint> mask, Vector128<uint> source) => MaskStoreAligned(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm_mask_store_epi64 (void * mem_addr, __mmask8 k, __m128i a)</para>
+            ///   <para>  VMOVDQA32 m128 {k1}{z}, xmm1</para>
+            /// </summary>
+            public static unsafe void MaskStoreAligned(ulong* address, Vector128<ulong> mask, Vector128<ulong> source) => MaskStoreAligned(address, mask, source);
+
+            /// <summary>
+            ///   <para>void _mm256_mask_store_pd (void * mem_addr, __mmask8 k, __m256d a)</para>
+            ///   <para>  VMOVAPD m256 {k1}{z}, ymm1</para>
+            /// </summary>
+            public static unsafe void MaskStoreAligned(double* address, Vector256<double> mask, Vector256<double> source) => MaskStoreAligned(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm256_mask_store_epi32 (void * mem_addr, __mmask8 k, __m256i a)</para>
+            ///   <para>  VMOVDQA32 m256 {k1}{z}, ymm1</para>
+            /// </summary>
+            public static unsafe void MaskStoreAligned(int* address, Vector256<int> mask, Vector256<int> source) => MaskStoreAligned(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm256_mask_store_epi64 (void * mem_addr, __mmask8 k, __m256i a)</para>
+            ///   <para>  VMOVDQA32 m256 {k1}{z}, ymm1</para>
+            /// </summary>
+            public static unsafe void MaskStoreAligned(long* address, Vector256<long> mask, Vector256<long> source) => MaskStoreAligned(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm256_mask_store_ps (void * mem_addr, __mmask8 k, __m256 a)</para>
+            ///   <para>  VMOVAPS m256 {k1}{z}, ymm1</para>
+            /// </summary>
+            public static unsafe void MaskStoreAligned(float* address, Vector256<float> mask, Vector256<float> source) => MaskStoreAligned(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm256_mask_store_epi32 (void * mem_addr, __mmask8 k, __m256i a)</para>
+            ///   <para>  VMOVDQA32 m256 {k1}{z}, ymm1</para>
+            /// </summary>
+            public static unsafe void MaskStoreAligned(uint* address, Vector256<uint> mask, Vector256<uint> source) => MaskStoreAligned(address, mask, source);
+            /// <summary>
+            ///   <para>void _mm256_mask_store_epi64 (void * mem_addr, __mmask8 k, __m256i a)</para>
+            ///   <para>  VMOVDQA32 m256 {k1}{z}, ymm1</para>
+            /// </summary>
+            public static unsafe void MaskStoreAligned(ulong* address, Vector256<ulong> mask, Vector256<ulong> source) => MaskStoreAligned(address, mask, source);
 
             /// <summary>
             ///   <para>__m128i _mm_max_epi64 (__m128i a, __m128i b)</para>
@@ -783,19 +1760,22 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector128<float> PermuteVar4x32x2(Vector128<float> lower, Vector128<int> indices, Vector128<float> upper) => PermuteVar4x32x2(lower, indices, upper);
 
             /// <summary>
-            ///   <para>__m256i _mm256_permute4x64_epi64 (__m256i a, __m256i b)</para>
+            ///   <para>__m256i _mm256_permutexvar_epi64 (__m256i idx, __m256i a)</para>
             ///   <para>  VPERMQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector256<long> PermuteVar4x64(Vector256<long> value, Vector256<long> control) => PermuteVar4x64(value, control);
             /// <summary>
-            ///   <para>__m256i _mm256_permute4x64_pd (__m256d a, __m256i b)</para>
+            ///   <para>__m256i _mm256_permutexvar_epi64 (__m256i idx, __m256i a)</para>
             ///   <para>  VPERMQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector256<ulong> PermuteVar4x64(Vector256<ulong> value, Vector256<ulong> control) => PermuteVar4x64(value, control);
             /// <summary>
-            ///   <para>__m256d _mm256_permute4x64_pd (__m256d a, __m256i b)</para>
+            ///   <para>__m256d _mm256_permutexvar_pd (__m256i idx, __m256d a)</para>
             ///   <para>  VPERMPD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst</para>
             /// </summary>
+            /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
             public static Vector256<double> PermuteVar4x64(Vector256<double> value, Vector256<long> control) => PermuteVar4x64(value, control);
 
             /// <summary>
@@ -1527,32 +2507,32 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<ulong> AndNot(Vector512<ulong> left, Vector512<ulong> right) => AndNot(left, right);
 
         /// <summary>
-        ///   <para>__m512d _mm512_blendv_pd (__m512d a, __m512d b, __m512d mask)</para>
+        ///   <para>__m512d _mm512_mask_blendv_pd (__m512d a, __m512d b, __mmask8 mask)</para>
         ///   <para>  VBLENDMPD zmm1 {k1}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>
         public static Vector512<double> BlendVariable(Vector512<double> left, Vector512<double> right, Vector512<double> mask) => BlendVariable(left, right, mask);
         /// <summary>
-        ///   <para>__m512i _mm512_blendv_epi32 (__m512i a, __m512i b, __m512i mask)</para>
+        ///   <para>__m512i _mm512_mask_blendv_epi32 (__m512i a, __m512i b, __mmask16 mask)</para>
         ///   <para>  VPBLENDMD zmm1 {k1}, zmm2, zmm3/m512/m32bcst</para>
         /// </summary>
         public static Vector512<int> BlendVariable(Vector512<int> left, Vector512<int> right, Vector512<int> mask) => BlendVariable(left, right, mask);
         /// <summary>
-        ///   <para>__m512i _mm512_blendv_epi64 (__m512i a, __m512i b, __m512i mask)</para>
+        ///   <para>__m512i _mm512_mask_blendv_epi64 (__m512i a, __m512i b, __mmask8 mask)</para>
         ///   <para>  VPBLENDMQ zmm1 {k1}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>
         public static Vector512<long> BlendVariable(Vector512<long> left, Vector512<long> right, Vector512<long> mask) => BlendVariable(left, right, mask);
         /// <summary>
-        ///   <para>__m512 _mm512_blendv_ps (__m512 a, __m512 b, __m512 mask)</para>
+        ///   <para>__m512 _mm512_mask_blendv_ps (__m512 a, __m512 b, __mmask16 mask)</para>
         ///   <para>  VBLENDMPS zmm1 {k1}, zmm2, zmm3/m512/m32bcst</para>
         /// </summary>
         public static Vector512<float> BlendVariable(Vector512<float> left, Vector512<float> right, Vector512<float> mask) => BlendVariable(left, right, mask);
         /// <summary>
-        ///   <para>__m512i _mm512_blendv_epu32 (__m512i a, __m512i b, __m512i mask)</para>
+        ///   <para>__m512i _mm512_mask_blendv_epu32 (__m512i a, __m512i b, __mmask16 mask)</para>
         ///   <para>  VPBLENDMD zmm1 {k1}, zmm2, zmm3/m512/m32bcst</para>
         /// </summary>
         public static Vector512<uint> BlendVariable(Vector512<uint> left, Vector512<uint> right, Vector512<uint> mask) => BlendVariable(left, right, mask);
         /// <summary>
-        ///   <para>__m512i _mm512_blendv_epu64 (__m512i a, __m512i b, __m512i mask)</para>
+        ///   <para>__m512i _mm512_mask_blendv_epu64 (__m512i a, __m512i b, __mmask8 mask)</para>
         ///   <para>  VPBLENDMQ zmm1 {k1}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>
         public static Vector512<ulong> BlendVariable(Vector512<ulong> left, Vector512<ulong> right, Vector512<ulong> mask) => BlendVariable(left, right, mask);
@@ -1621,156 +2601,156 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector512<double> BroadcastVector256ToVector512(double* address) => BroadcastVector256ToVector512(address);
 
         /// <summary>
-        ///   <para>__m512d _mm512_cmp_pd (__m512d a, __m512d b, const int imm8)</para>
+        ///   <para>__mmask8 _mm512_cmp_pd_mask (__m512d a, __m512d b, const int imm8)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8</para>
         /// </summary>
         public static Vector512<double> Compare(Vector512<double> left, Vector512<double> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) => Compare(left, right, mode);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpeq_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpeq_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(0)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareEqual(Vector512<double> left, Vector512<double> right) => CompareEqual(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpgt_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpgt_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(14)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareGreaterThan(Vector512<double> left, Vector512<double> right) => CompareGreaterThan(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpge_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpge_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(13)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareGreaterThanOrEqual(Vector512<double> left, Vector512<double> right) => CompareGreaterThanOrEqual(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmplt_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmplt_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(1)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareLessThan(Vector512<double> left, Vector512<double> right) => CompareLessThan(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmple_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmple_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(2)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareLessThanOrEqual(Vector512<double> left, Vector512<double> right) => CompareLessThanOrEqual(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpneq_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpneq_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(4)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareNotEqual(Vector512<double> left, Vector512<double> right) => CompareNotEqual(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpngt_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpngt_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(10)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareNotGreaterThan(Vector512<double> left, Vector512<double> right) => CompareNotGreaterThan(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpnge_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpnge_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(9)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareNotGreaterThanOrEqual(Vector512<double> left, Vector512<double> right) => CompareNotGreaterThanOrEqual(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpnlt_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpnlt_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(5)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareNotLessThan(Vector512<double> left, Vector512<double> right) => CompareNotLessThan(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpnle_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpnle_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(6)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareNotLessThanOrEqual(Vector512<double> left, Vector512<double> right) => CompareNotLessThanOrEqual(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpord_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpord_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(7)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareOrdered(Vector512<double> left, Vector512<double> right) => CompareOrdered(left, right);
         /// <summary>
-        ///   <para>__m512d _mm512_cmpunord_pd (__m512d a,  __m512d b)</para>
+        ///   <para>__mmask8 _mm512_cmpunord_pd_mask (__m512d a,  __m512d b)</para>
         ///   <para>  VCMPPD k1 {k2}, zmm2, zmm3/m512/m64bcst{sae}, imm8(3)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<double> CompareUnordered(Vector512<double> left, Vector512<double> right) => CompareUnordered(left, right);
 
         /// <summary>
-        ///   <para>__m512 _mm512_cmp_ps (__m512 a, __m512 b, const int imm8)</para>
+        ///   <para>__mmask16 _mm512_cmp_ps_mask (__m512 a, __m512 b, const int imm8)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8</para>
         /// </summary>
         public static Vector512<float> Compare(Vector512<float> left, Vector512<float> right, [ConstantExpected(Max = FloatComparisonMode.UnorderedTrueSignaling)] FloatComparisonMode mode) => Compare(left, right, mode);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpeq_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpeq_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(0)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareEqual(Vector512<float> left, Vector512<float> right) => CompareEqual(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpgt_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpgt_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(14)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareGreaterThan(Vector512<float> left, Vector512<float> right) => CompareGreaterThan(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpge_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpge_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(13)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareGreaterThanOrEqual(Vector512<float> left, Vector512<float> right) => CompareGreaterThanOrEqual(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmplt_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmplt_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(1)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareLessThan(Vector512<float> left, Vector512<float> right) => CompareLessThan(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmple_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmple_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(2)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareLessThanOrEqual(Vector512<float> left, Vector512<float> right) => CompareLessThanOrEqual(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpneq_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpneq_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(4)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareNotEqual(Vector512<float> left, Vector512<float> right) => CompareNotEqual(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpngt_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpngt_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(10)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareNotGreaterThan(Vector512<float> left, Vector512<float> right) => CompareNotGreaterThan(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpnge_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpnge_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(9)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareNotGreaterThanOrEqual(Vector512<float> left, Vector512<float> right) => CompareNotGreaterThanOrEqual(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpnlt_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpnlt_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(5)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareNotLessThan(Vector512<float> left, Vector512<float> right) => CompareNotLessThan(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpnle_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpnle_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(6)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareNotLessThanOrEqual(Vector512<float> left, Vector512<float> right) => CompareNotLessThanOrEqual(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpord_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpord_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(7)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
         public static Vector512<float> CompareOrdered(Vector512<float> left, Vector512<float> right) => CompareOrdered(left, right);
         /// <summary>
-        ///   <para>__m512 _mm512_cmpunord_ps (__m512 a,  __m512 b)</para>
+        ///   <para>__mmask16 _mm512_cmpunord_ps_mask (__m512 a,  __m512 b)</para>
         ///   <para>  VCMPPS k1 {k2}, zmm2, zmm3/m512/m32bcst{sae}, imm8(3)</para>
         ///   <para>The above native signature does not exist. We provide this additional overload for completeness.</para>
         /// </summary>
@@ -1899,6 +2879,68 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VPCMPUQ k1 {k2}, zmm2, zmm3/m512/m64bcst, imm8(4)</para>
         /// </summary>
         public static Vector512<ulong> CompareNotEqual(Vector512<ulong> left, Vector512<ulong> right) => CompareNotEqual(left, right);
+
+        /// <summary>
+        ///   <para>__m512d _mm512_mask_compress_pd (__m512d s, __mmask8 k, __m512d a)</para>
+        ///   <para>  VCOMPRESSPD zmm1 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<double> Compress(Vector512<double> merge, Vector512<double> mask, Vector512<double> value) => Compress(merge, mask, value);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_compress_epi32 (__m512i s, __mmask16 k, __m512i a)</para>
+        ///   <para>  VPCOMPRESSD zmm1 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<int> Compress(Vector512<int> merge, Vector512<int> mask, Vector512<int> value) => Compress(merge, mask, value);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_compress_epi64 (__m512i s, __mmask8 k, __m512i a)</para>
+        ///   <para>  VPCOMPRESSQ zmm1 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<long> Compress(Vector512<long> merge, Vector512<long> mask, Vector512<long> value) => Compress(merge, mask, value);
+        /// <summary>
+        ///   <para>__m512 _mm512_mask_compress_ps (__m512 s, __mmask16 k, __m512 a)</para>
+        ///   <para>  VCOMPRESSPS zmm1 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<float> Compress(Vector512<float> merge, Vector512<float> mask, Vector512<float> value) => Compress(merge, mask, value);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_compress_epi32 (__m512i s, __mmask16 k, __m512i a)</para>
+        ///   <para>  VPCOMPRESSD zmm1 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<uint> Compress(Vector512<uint> merge, Vector512<uint> mask, Vector512<uint> value) => Compress(merge, mask, value);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_compress_epi64 (__m512i s, __mmask8 k, __m512i a)</para>
+        ///   <para>  VPCOMPRESSQ zmm1 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<ulong> Compress(Vector512<ulong> merge, Vector512<ulong> mask, Vector512<ulong> value) => Compress(merge, mask, value);
+
+        /// <summary>
+        ///   <para>__m512d _mm512_mask_compressstoreu_pd (void * s, __mmask8 k, __m512d a)</para>
+        ///   <para>  VCOMPRESSPD m512 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static unsafe void CompressStore(double* address, Vector512<double> mask, Vector512<double> source) => CompressStore(address, mask, source);
+        /// <summary>
+        ///   <para>void _mm512_mask_compressstoreu_epi32 (void * s, __mmask16 k, __m512i a)</para>
+        ///   <para>  VPCOMPRESSD m512 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static unsafe void CompressStore(int* address, Vector512<int> mask, Vector512<int> source) => CompressStore(address, mask, source);
+        /// <summary>
+        ///   <para>void _mm512_mask_compressstoreu_epi64 (void * s, __mmask8 k, __m512i a)</para>
+        ///   <para>  VPCOMPRESSQ m512 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static unsafe void CompressStore(long* address, Vector512<long> mask, Vector512<long> source) => CompressStore(address, mask, source);
+        /// <summary>
+        ///   <para>__m512 _mm512_mask_compressstoreu_ps (void * s, __mmask16 k, __m512 a)</para>
+        ///   <para>  VCOMPRESSPS m512 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static unsafe void CompressStore(float* address, Vector512<float> mask, Vector512<float> source) => CompressStore(address, mask, source);
+        /// <summary>
+        ///   <para>void _mm512_mask_compressstoreu_epi32 (void * s, __mmask16 k, __m512i a)</para>
+        ///   <para>  VPCOMPRESSD m512 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static unsafe void CompressStore(uint* address, Vector512<uint> mask, Vector512<uint> source) => CompressStore(address, mask, source);
+        /// <summary>
+        ///   <para>void _mm512_mask_compressstoreu_epi64 (void * s, __mmask8 k, __m512i a)</para>
+        ///   <para>  VPCOMPRESSQ m512 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static unsafe void CompressStore(ulong* address, Vector512<ulong> mask, Vector512<ulong> source) => CompressStore(address, mask, source);
 
         /// <summary>
         ///   <para>__m128 _mm_cvtsi32_ss (__m128 a, int b)</para>
@@ -2380,6 +3422,74 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<float> DuplicateOddIndexed(Vector512<float> value) => DuplicateOddIndexed(value);
 
         /// <summary>
+        ///   <para>__m512d _mm512_mask_expand_pd (__m512d s, __mmask8 k, __m512d a)</para>
+        ///   <para>  VEXPANDPD zmm1 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<double> Expand(Vector512<double> merge, Vector512<double> mask, Vector512<double> value) => Expand(merge, mask, value);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_expand_epi32 (__m512i s, __mmask16 k, __m512i a)</para>
+        ///   <para>  VPEXPANDD zmm1 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<int> Expand(Vector512<int> merge, Vector512<int> mask, Vector512<int> value) => Expand(merge, mask, value);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_expand_epi64 (__m512i s, __mmask8 k, __m512i a)</para>
+        ///   <para>  VPEXPANDQ zmm1 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<long> Expand(Vector512<long> merge, Vector512<long> mask, Vector512<long> value) => Expand(merge, mask, value);
+        /// <summary>
+        ///   <para>__m512 _mm512_mask_expand_ps (__m512 s, __mmask16 k, __m512 a)</para>
+        ///   <para>  VEXPANDPS zmm1 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<float> Expand(Vector512<float> merge, Vector512<float> mask, Vector512<float> value) => Expand(merge, mask, value);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_expand_epi32 (__m512i s, __mmask16 k, __m512i a)</para>
+        ///   <para>  VPEXPANDD zmm1 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<uint> Expand(Vector512<uint> merge, Vector512<uint> mask, Vector512<uint> value) => Expand(merge, mask, value);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_expand_epi64 (__m512i s, __mmask8 k, __m512i a)</para>
+        ///   <para>  VPEXPANDQ zmm1 {k1}{z}, zmm2</para>
+        /// </summary>
+        public static Vector512<ulong> Expand(Vector512<ulong> merge, Vector512<ulong> mask, Vector512<ulong> value) => Expand(merge, mask, value);
+
+        /// <summary>
+        ///   <para>__m512d _mm512_mask_expandloadu_pd (__m512d s, __mmask8 k, void * const a)</para>
+        ///   <para>  VEXPANDPD zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<double> ExpandLoad(double* address, Vector512<double> mask, Vector512<double> merge) => ExpandLoad(address, mask, merge);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_expandloadu_epi32 (__m512i s, __mmask16 k, void * const a)</para>
+        ///   <para>  VPEXPANDD zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<int> ExpandLoad(int* address, Vector512<int> mask, Vector512<int> merge) => ExpandLoad(address, mask, merge);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_expandloadu_epi64 (__m512i s, __mmask8 k, void * const a)</para>
+        ///   <para>  VPEXPANDQ zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<long> ExpandLoad(long* address, Vector512<long> mask, Vector512<long> merge) => ExpandLoad(address, mask, merge);
+        /// <summary>
+        ///   <para>__m512 _mm512_mask_expandloadu_ps (__m512 s, __mmask16 k, void * const a)</para>
+        ///   <para>  VEXPANDPS zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<float> ExpandLoad(float* address, Vector512<float> mask, Vector512<float> merge) => ExpandLoad(address, mask, merge);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_expandloadu_epi32 (__m512i s, __mmask16 k, void * const a)</para>
+        ///   <para>  VPEXPANDD zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<uint> ExpandLoad(uint* address, Vector512<uint> mask, Vector512<uint> merge) => ExpandLoad(address, mask, merge);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_expandloadu_epi64 (__m512i s, __mmask8 k, void * const a)</para>
+        ///   <para>  VPEXPANDQ zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<ulong> ExpandLoad(ulong* address, Vector512<ulong> mask, Vector512<ulong> merge) => ExpandLoad(address, mask, merge);
+
+        /// <summary>
         ///   <para>__m128i _mm512_extracti128_si512 (__m512i a, const int imm8)</para>
         ///   <para>  VEXTRACTI32x4 xmm1/m128 {k1}{z}, zmm2, imm8</para>
         /// </summary>
@@ -2841,52 +3951,52 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         ///   <para>__m512i _mm512_load_si512 (__m512i const * mem_addr)</para>
-        ///   <para>  VMOVDQA32 zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVDQA32 zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<byte> LoadAlignedVector512(byte* address) => LoadAlignedVector512(address);
         /// <summary>
         ///   <para>__m512i _mm512_load_si512 (__m512i const * mem_addr)</para>
-        ///   <para>  VMOVDQA32 zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVDQA32 zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<sbyte> LoadAlignedVector512(sbyte* address) => LoadAlignedVector512(address);
         /// <summary>
         ///   <para>__m512i _mm512_load_si512 (__m512i const * mem_addr)</para>
-        ///   <para>  VMOVDQA32 zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVDQA32 zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<short> LoadAlignedVector512(short* address) => LoadAlignedVector512(address);
         /// <summary>
         ///   <para>__m512i _mm512_load_si512 (__m512i const * mem_addr)</para>
-        ///   <para>  VMOVDQA32 zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVDQA32 zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<ushort> LoadAlignedVector512(ushort* address) => LoadAlignedVector512(address);
         /// <summary>
         ///   <para>__m512i _mm512_load_epi32 (__m512i const * mem_addr)</para>
-        ///   <para>  VMOVDQA32 zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVDQA32 zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<int> LoadAlignedVector512(int* address) => LoadAlignedVector512(address);
         /// <summary>
         ///   <para>__m512i _mm512_load_epi32 (__m512i const * mem_addr)</para>
-        ///   <para>  VMOVDQA32 zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVDQA32 zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<uint> LoadAlignedVector512(uint* address) => LoadAlignedVector512(address);
         /// <summary>
         ///   <para>__m512i _mm512_load_epi64 (__m512i const * mem_addr)</para>
-        ///   <para>  VMOVDQA64 zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVDQA64 zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<long> LoadAlignedVector512(long* address) => LoadAlignedVector512(address);
         /// <summary>
         ///   <para>__m512i _mm512_load_epi64 (__m512i const * mem_addr)</para>
-        ///   <para>  VMOVDQA64 zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVDQA64 zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<ulong> LoadAlignedVector512(ulong* address) => LoadAlignedVector512(address);
         /// <summary>
         ///   <para>__m512 _mm512_load_ps (float const * mem_addr)</para>
-        ///   <para>  VMOVAPS zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVAPS zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<float> LoadAlignedVector512(float* address) => LoadAlignedVector512(address);
         /// <summary>
         ///   <para>__m512d _mm512_load_pd (double const * mem_addr)</para>
-        ///   <para>  VMOVAPD zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVAPD zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<double> LoadAlignedVector512(double* address) => LoadAlignedVector512(address);
 
@@ -2933,54 +4043,190 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         ///   <para>__m512i _mm512_loadu_si512 (__m512i const * mem_addr)</para>
-        ///   <para>  VMOVDQU32 zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVDQU32 zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<sbyte> LoadVector512(sbyte* address) => LoadVector512(address);
         /// <summary>
         ///   <para>__m512i _mm512_loadu_si512 (__m512i const * mem_addr)</para>
-        ///   <para>  VMOVDQU32 zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVDQU32 zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<byte> LoadVector512(byte* address) => LoadVector512(address);
         /// <summary>
         ///   <para>__m512i _mm512_loadu_si512 (__m512i const * mem_addr)</para>
-        ///   <para>  VMOVDQU32 zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVDQU32 zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<short> LoadVector512(short* address) => LoadVector512(address);
         /// <summary>
         ///   <para>__m512i _mm512_loadu_si512 (__m512i const * mem_addr)</para>
-        ///   <para>  VMOVDQU32 zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVDQU32 zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<ushort> LoadVector512(ushort* address) => LoadVector512(address);
         /// <summary>
         ///   <para>__m512i _mm512_loadu_epi32 (__m512i const * mem_addr)</para>
-        ///   <para>  VMOVDQU32 zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVDQU32 zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<int> LoadVector512(int* address) => LoadVector512(address);
         /// <summary>
         ///   <para>__m512i _mm512_loadu_epi32 (__m512i const * mem_addr)</para>
-        ///   <para>  VMOVDQU32 zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVDQU32 zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<uint> LoadVector512(uint* address) => LoadVector512(address);
         /// <summary>
         ///   <para>__m512i _mm512_loadu_epi64 (__m512i const * mem_addr)</para>
-        ///   <para>  VMOVDQU64 zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVDQU64 zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<long> LoadVector512(long* address) => LoadVector512(address);
         /// <summary>
         ///   <para>__m512i _mm512_loadu_epi64 (__m512i const * mem_addr)</para>
-        ///   <para>  VMOVDQU64 zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVDQU64 zmm1 , m512</para>
         /// </summary>
         public static unsafe Vector512<ulong> LoadVector512(ulong* address) => LoadVector512(address);
         /// <summary>
         ///   <para>__m512 _mm512_loadu_ps (float const * mem_addr)</para>
-        ///   <para>  VMOVUPS zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVUPS zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<float> LoadVector512(float* address) => LoadVector512(address);
         /// <summary>
         ///   <para>__m512d _mm512_loadu_pd (double const * mem_addr)</para>
-        ///   <para>  VMOVUPD zmm1 {k1}{z}, m512</para>
+        ///   <para>  VMOVUPD zmm1, m512</para>
         /// </summary>
         public static unsafe Vector512<double> LoadVector512(double* address) => LoadVector512(address);
+
+        /// <summary>
+        ///   <para>__m512d _mm512_mask_loadu_pd (__m512d s, __mmask8 k, void const * mem_addr)</para>
+        ///   <para>  VMOVUPD zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<double> MaskLoad(double* address, Vector512<double> mask, Vector512<double> merge) => MaskLoad(address, mask, merge);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_loadu_epi32 (__m512i s, __mmask16 k, void const * mem_addr)</para>
+        ///   <para>  VMOVDQU32 zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<int> MaskLoad(int* address, Vector512<int> mask, Vector512<int> merge) => MaskLoad(address, mask, merge);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_loadu_epi64 (__m512i s, __mmask8 k, void const * mem_addr)</para>
+        ///   <para>  VMOVDQU64 zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<long> MaskLoad(long* address, Vector512<long> mask, Vector512<long> merge) => MaskLoad(address, mask, merge);
+        /// <summary>
+        ///   <para>__m512 _mm512_mask_loadu_ps (__m512 s, __mmask16 k, void const * mem_addr)</para>
+        ///   <para>  VMOVUPS zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<float> MaskLoad(float* address, Vector512<float> mask, Vector512<float> merge) => MaskLoad(address, mask, merge);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_loadu_epi32 (__m512i s, __mmask16 k, void const * mem_addr)</para>
+        ///   <para>  VMOVDQU32 zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<uint> MaskLoad(uint* address, Vector512<uint> mask, Vector512<uint> merge) => MaskLoad(address, mask, merge);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_loadu_epi64 (__m512i s, __mmask8 k, void const * mem_addr)</para>
+        ///   <para>  VMOVDQU64 zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<ulong> MaskLoad(ulong* address, Vector512<ulong> mask, Vector512<ulong> merge) => MaskLoad(address, mask, merge);
+
+        /// <summary>
+        ///   <para>__m512d _mm512_mask_load_pd (__m512d s, __mmask8 k, void const * mem_addr)</para>
+        ///   <para>  VMOVAPD zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<double> MaskLoadAligned(double* address, Vector512<double> mask, Vector512<double> merge) => MaskLoadAligned(address, mask, merge);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_load_epi32 (__m512i s, __mmask16 k, void const * mem_addr)</para>
+        ///   <para>  VMOVDQA32 zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<int> MaskLoadAligned(int* address, Vector512<int> mask, Vector512<int> merge) => MaskLoadAligned(address, mask, merge);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_load_epi64 (__m512i s, __mmask8 k, void const * mem_addr)</para>
+        ///   <para>  VMOVDQA64 zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<long> MaskLoadAligned(long* address, Vector512<long> mask, Vector512<long> merge) => MaskLoadAligned(address, mask, merge);
+        /// <summary>
+        ///   <para>__m512 _mm512_mask_load_ps (__m512 s, __mmask16 k, void const * mem_addr)</para>
+        ///   <para>  VMOVAPS zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<float> MaskLoadAligned(float* address, Vector512<float> mask, Vector512<float> merge) => MaskLoadAligned(address, mask, merge);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_load_epi32 (__m512i s, __mmask16 k, void const * mem_addr)</para>
+        ///   <para>  VMOVDQA32 zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<uint> MaskLoadAligned(uint* address, Vector512<uint> mask, Vector512<uint> merge) => MaskLoadAligned(address, mask, merge);
+        /// <summary>
+        ///   <para>__m512i _mm512_mask_load_epi64 (__m512i s, __mmask8 k, void const * mem_addr)</para>
+        ///   <para>  VMOVDQA64 zmm1 {k1}{z}, m512</para>
+        /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
+        public static unsafe Vector512<ulong> MaskLoadAligned(ulong* address, Vector512<ulong> mask, Vector512<ulong> merge) => MaskLoadAligned(address, mask, merge);
+
+        /// <summary>
+        ///   <para>void _mm512_mask_storeu_pd (void * mem_addr, __mmask8 k, __m512d a)</para>
+        ///   <para>  VMOVUPD m512 {k1}{z}, zmm1</para>
+        /// </summary>
+        public static unsafe void MaskStore(double* address, Vector512<double> mask, Vector512<double> source) => MaskStore(address, mask, source);
+        /// <summary>
+        ///   <para>void _mm512_mask_storeu_epi32 (void * mem_addr, __mmask16 k, __m512i a)</para>
+        ///   <para>  VMOVDQU32 m512 {k1}{z}, zmm1</para>
+        /// </summary>
+        public static unsafe void MaskStore(int* address, Vector512<int> mask, Vector512<int> source) => MaskStore(address, mask, source);
+        /// <summary>
+        ///   <para>void _mm512_mask_storeu_epi64 (void * mem_addr, __mmask8 k, __m512i a)</para>
+        ///   <para>  VMOVDQU64 m512 {k1}{z}, zmm1</para>
+        /// </summary>
+        public static unsafe void MaskStore(long* address, Vector512<long> mask, Vector512<long> source) => MaskStore(address, mask, source);
+        /// <summary>
+        ///   <para>void _mm512_mask_storeu_ps (void * mem_addr, __mmask16 k, __m512 a)</para>
+        ///   <para>  VMOVUPS m512 {k1}{z}, zmm1</para>
+        /// </summary>
+        public static unsafe void MaskStore(float* address, Vector512<float> mask, Vector512<float> source) => MaskStore(address, mask, source);
+        /// <summary>
+        ///   <para>void _mm512_mask_storeu_epi32 (void * mem_addr, __mmask16 k, __m512i a)</para>
+        ///   <para>  VMOVDQU32 m512 {k1}{z}, zmm1</para>
+        /// </summary>
+        public static unsafe void MaskStore(uint* address, Vector512<uint> mask, Vector512<uint> source) => MaskStore(address, mask, source);
+        /// <summary>
+        ///   <para>void _mm512_mask_storeu_epi64 (void * mem_addr, __mmask8 k, __m512i a)</para>
+        ///   <para>  VMOVDQU64 m512 {k1}{z}, zmm1</para>
+        /// </summary>
+        public static unsafe void MaskStore(ulong* address, Vector512<ulong> mask, Vector512<ulong> source) => MaskStore(address, mask, source);
+
+        /// <summary>
+        ///   <para>void _mm512_mask_store_pd (void * mem_addr, __mmask8 k, __m512d a)</para>
+        ///   <para>  VMOVAPD m512 {k1}{z}, zmm1</para>
+        /// </summary>
+        public static unsafe void MaskStoreAligned(double* address, Vector512<double> mask, Vector512<double> source) => MaskStoreAligned(address, mask, source);
+        /// <summary>
+        ///   <para>void _mm512_mask_store_epi32 (void * mem_addr, __mmask16 k, __m512i a)</para>
+        ///   <para>  VMOVDQA32 m512 {k1}{z}, zmm1</para>
+        /// </summary>
+        public static unsafe void MaskStoreAligned(int* address, Vector512<int> mask, Vector512<int> source) => MaskStoreAligned(address, mask, source);
+        /// <summary>
+        ///   <para>void _mm512_mask_store_epi64 (void * mem_addr, __mmask8 k, __m512i a)</para>
+        ///   <para>  VMOVDQA32 m512 {k1}{z}, zmm1</para>
+        /// </summary>
+        public static unsafe void MaskStoreAligned(long* address, Vector512<long> mask, Vector512<long> source) => MaskStoreAligned(address, mask, source);
+        /// <summary>
+        ///   <para>void _mm512_mask_store_ps (void * mem_addr, __mmask16 k, __m512 a)</para>
+        ///   <para>  VMOVAPS m512 {k1}{z}, zmm1</para>
+        /// </summary>
+        public static unsafe void MaskStoreAligned(float* address, Vector512<float> mask, Vector512<float> source) => MaskStoreAligned(address, mask, source);
+        /// <summary>
+        ///   <para>void _mm512_mask_store_epi32 (void * mem_addr, __mmask16 k, __m512i a)</para>
+        ///   <para>  VMOVDQA32 m512 {k1}{z}, zmm1</para>
+        /// </summary>
+        public static unsafe void MaskStoreAligned(uint* address, Vector512<uint> mask, Vector512<uint> source) => MaskStoreAligned(address, mask, source);
+        /// <summary>
+        ///   <para>void _mm512_mask_store_epi64 (void * mem_addr, __mmask8 k, __m512i a)</para>
+        ///   <para>  VMOVDQA32 m512 {k1}{z}, zmm1</para>
+        /// </summary>
+        public static unsafe void MaskStoreAligned(ulong* address, Vector512<ulong> mask, Vector512<ulong> source) => MaskStoreAligned(address, mask, source);
 
         /// <summary>
         ///   <para>__m512i _mm512_max_epi32 (__m512i a, __m512i b)</para>
@@ -3043,6 +4289,44 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VMINPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{sae}</para>
         /// </summary>
         public static Vector512<double> Min(Vector512<double> left, Vector512<double> right) => Min(left, right);
+
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector128<byte> value) => MoveMask(value);
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static new int MoveMask(Vector128<sbyte> value) => MoveMask(value);
+
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector256<short> value) => MoveMask(value);
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector256<ushort> value) => MoveMask(value);
+
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector512<int> value) => MoveMask(value);
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector512<float> value) => MoveMask(value);
+        /// <summary>
+        ///   <para>unsigned int _cvtmask16_u32 (__mmask16 a)</para>
+        ///   <para>  KMOVW r32, k1</para>
+        /// </summary>
+        public static int MoveMask(Vector512<uint> value) => MoveMask(value);
 
         /// <summary>
         ///   <para>__m512i _mm512_mul_epi32 (__m512i a, __m512i b)</para>
@@ -3177,19 +4461,22 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<float> PermuteVar4x32(Vector512<float> left, Vector512<int> control) => PermuteVar4x32(left, control);
 
         /// <summary>
-        ///   <para>__m512i _mm512_permutevar8x64_epi64 (__m512i a, __m512i b)</para>
+        ///   <para>__m512i _mm512_permutexvar_epi64 (__m512i idx, __m512i a)</para>
         ///   <para>  VPERMQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<long> PermuteVar8x64(Vector512<long> value, Vector512<long> control) => PermuteVar8x64(value, control);
         /// <summary>
-        ///   <para>__m512i _mm512_permutevar8x64_epi64 (__m512i a, __m512i b)</para>
+        ///   <para>__m512i _mm512_permutexvar_epi64 (__m512i idx, __m512i a)</para>
         ///   <para>  VPERMQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<ulong> PermuteVar8x64(Vector512<ulong> value, Vector512<ulong> control) => PermuteVar8x64(value, control);
         /// <summary>
-        ///   <para>__m512d _mm512_permutevar8x64_pd (__m512d a, __m512i b)</para>
+        ///   <para>__m512d _mm512_permutexvar_pd (__m512i idx, __m512d a)</para>
         ///   <para>  VPERMPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<double> PermuteVar8x64(Vector512<double> value, Vector512<long> control) => PermuteVar8x64(value, control);
 
         /// <summary>
@@ -3212,19 +4499,22 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<double> PermuteVar8x64x2(Vector512<double> lower, Vector512<long> indices, Vector512<double> upper) => PermuteVar8x64x2(lower, indices, upper);
 
         /// <summary>
-        ///   <para>__m512i _mm512_permutevar16x32_epi32 (__m512i a, __m512i b)</para>
+        ///   <para>__m512i _mm512_permutexvar_epi32 (__m512i idx, __m512i a)</para>
         ///   <para>  VPERMD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<int> PermuteVar16x32(Vector512<int> left, Vector512<int> control) => PermuteVar16x32(left, control);
         /// <summary>
-        ///   <para>__m512i _mm512_permutevar16x32_epi32 (__m512i a, __m512i b)</para>
+        ///   <para>__m512i _mm512_permutexvar_epi32 (__m512i idx, __m512i a)</para>
         ///   <para>  VPERMD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<uint> PermuteVar16x32(Vector512<uint> left, Vector512<uint> control) => PermuteVar16x32(left, control);
         /// <summary>
-        ///   <para>__m512 _mm512_permutevar16x32_ps (__m512 a, __m512i b)</para>
+        ///   <para>__m512 _mm512_permutexvar_ps (__m512i idx, __m512 a)</para>
         ///   <para>  VPERMPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst</para>
         /// </summary>
+        /// <remarks>The native and managed intrinsics have different order of parameters.</remarks>
         public static Vector512<float> PermuteVar16x32(Vector512<float> left, Vector512<int> control) => PermuteVar16x32(left, control);
 
         /// <summary>
@@ -3717,144 +5007,144 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<double> SqrtScalar(Vector128<double> upper, Vector128<double> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => SqrtScalar(upper, value, mode);
 
         /// <summary>
-        ///   <para>void _mm512_storeu_si512 (__m512i * mem_addr, __m512i a)</para>
-        ///   <para>  VMOVDQU32 m512 {k1}{z}, zmm1</para>
+        ///   <para>void _mm512_storeu_si512 (void * mem_addr, __m512i a)</para>
+        ///   <para>  VMOVDQU32 m512, zmm1</para>
         /// </summary>
         public static unsafe void Store(sbyte* address, Vector512<sbyte> source) => Store(address, source);
         /// <summary>
-        ///   <para>void _mm512_storeu_si512 (__m512i * mem_addr, __m512i a)</para>
-        ///   <para>  VMOVDQU32 m512 {k1}{z}, zmm1</para>
+        ///   <para>void _mm512_storeu_si512 (void * mem_addr, __m512i a)</para>
+        ///   <para>  VMOVDQU32 m512, zmm1</para>
         /// </summary>
         public static unsafe void Store(byte* address, Vector512<byte> source) => Store(address, source);
         /// <summary>
-        ///   <para>void _mm512_storeu_si512 (__m512i * mem_addr, __m512i a)</para>
-        ///   <para>  VMOVDQU32 m512 {k1}{z}, zmm1</para>
+        ///   <para>void _mm512_storeu_si512 (void * mem_addr, __m512i a)</para>
+        ///   <para>  VMOVDQU32 m512, zmm1</para>
         /// </summary>
         public static unsafe void Store(short* address, Vector512<short> source) => Store(address, source);
         /// <summary>
-        ///   <para>void _mm512_storeu_si512 (__m512i * mem_addr, __m512i a)</para>
-        ///   <para>  VMOVDQU32 m512 {k1}{z}, zmm1</para>
+        ///   <para>void _mm512_storeu_si512 (void * mem_addr, __m512i a)</para>
+        ///   <para>  VMOVDQU32 m512, zmm1</para>
         /// </summary>
         public static unsafe void Store(ushort* address, Vector512<ushort> source) => Store(address, source);
         /// <summary>
-        ///   <para>void _mm512_storeu_epi32 (__m512i * mem_addr, __m512i a)</para>
-        ///   <para>  VMOVDQU32 m512 {k1}{z}, zmm1</para>
+        ///   <para>void _mm512_storeu_epi32 (void * mem_addr, __m512i a)</para>
+        ///   <para>  VMOVDQU32 m512, zmm1</para>
         /// </summary>
         public static unsafe void Store(int* address, Vector512<int> source) => Store(address, source);
         /// <summary>
-        ///   <para>void _mm512_storeu_epi32 (__m512i * mem_addr, __m512i a)</para>
-        ///   <para>  VMOVDQU32 m512 {k1}{z}, zmm1</para>
+        ///   <para>void _mm512_storeu_epi32 (void * mem_addr, __m512i a)</para>
+        ///   <para>  VMOVDQU32 m512, zmm1</para>
         /// </summary>
         public static unsafe void Store(uint* address, Vector512<uint> source) => Store(address, source);
         /// <summary>
-        ///   <para>void _mm512_storeu_epi64 (__m512i * mem_addr, __m512i a)</para>
-        ///   <para>  VMOVDQU64 m512 {k1}{z}, zmm1</para>
+        ///   <para>void _mm512_storeu_epi64 (void * mem_addr, __m512i a)</para>
+        ///   <para>  VMOVDQU64 m512, zmm1</para>
         /// </summary>
         public static unsafe void Store(long* address, Vector512<long> source) => Store(address, source);
         /// <summary>
-        ///   <para>void _mm512_storeu_epi64 (__m512i * mem_addr, __m512i a)</para>
-        ///   <para>  VMOVDQU64 m512 {k1}{z}, zmm1</para>
+        ///   <para>void _mm512_storeu_epi64 (void * mem_addr, __m512i a)</para>
+        ///   <para>  VMOVDQU64 m512, zmm1</para>
         /// </summary>
         public static unsafe void Store(ulong* address, Vector512<ulong> source) => Store(address, source);
         /// <summary>
         ///   <para>void _mm512_storeu_ps (float * mem_addr, __m512 a)</para>
-        ///   <para>  VMOVUPS m512 {k1}{z}, zmm1</para>
+        ///   <para>  VMOVUPS m512, zmm1</para>
         /// </summary>
         public static unsafe void Store(float* address, Vector512<float> source) => Store(address, source);
         /// <summary>
         ///   <para>void _mm512_storeu_pd (double * mem_addr, __m512d a)</para>
-        ///   <para>  VMOVUPD m512 {k1}{z}, zmm1</para>
+        ///   <para>  VMOVUPD m512, zmm1</para>
         /// </summary>
         public static unsafe void Store(double* address, Vector512<double> source) => Store(address, source);
 
         /// <summary>
-        ///   <para>void _mm512_store_si512 (__m512i * mem_addr, __m512i a)</para>
-        ///   <para>  VMOVDQA32 m512 {k1}{z}, zmm1</para>
+        ///   <para>void _mm512_store_si512 (void * mem_addr, __m512i a)</para>
+        ///   <para>  VMOVDQA32 m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAligned(byte* address, Vector512<byte> source) => StoreAligned(address, source);
         /// <summary>
-        ///   <para>void _mm512_store_si512 (__m512i * mem_addr, __m512i a)</para>
-        ///   <para>  VMOVDQA32 m512 {k1}{z}, zmm1</para>
+        ///   <para>void _mm512_store_si512 (void * mem_addr, __m512i a)</para>
+        ///   <para>  VMOVDQA32 m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAligned(sbyte* address, Vector512<sbyte> source) => StoreAligned(address, source);
         /// <summary>
-        ///   <para>void _mm512_store_si512 (__m512i * mem_addr, __m512i a)</para>
-        ///   <para>  VMOVDQA32 m512 {k1}{z}, zmm1</para>
+        ///   <para>void _mm512_store_si512 (void * mem_addr, __m512i a)</para>
+        ///   <para>  VMOVDQA32 m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAligned(short* address, Vector512<short> source) => StoreAligned(address, source);
         /// <summary>
-        ///   <para>void _mm512_store_si512 (__m512i * mem_addr, __m512i a)</para>
-        ///   <para>  VMOVDQA32 m512 {k1}{z}, zmm1</para>
+        ///   <para>void _mm512_store_si512 (void * mem_addr, __m512i a)</para>
+        ///   <para>  VMOVDQA32 m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAligned(ushort* address, Vector512<ushort> source) => StoreAligned(address, source);
         /// <summary>
-        ///   <para>void _mm512_store_epi32 (__m512i * mem_addr, __m512i a)</para>
-        ///   <para>  VMOVDQA32 m512 {k1}{z}, zmm1</para>
+        ///   <para>void _mm512_store_epi32 (void * mem_addr, __m512i a)</para>
+        ///   <para>  VMOVDQA32 m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAligned(int* address, Vector512<int> source) => StoreAligned(address, source);
         /// <summary>
-        ///   <para>void _mm512_store_epi32 (__m512i * mem_addr, __m512i a)</para>
-        ///   <para>  VMOVDQA32 m512 {k1}{z}, zmm1</para>
+        ///   <para>void _mm512_store_epi32 (void * mem_addr, __m512i a)</para>
+        ///   <para>  VMOVDQA32 m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAligned(uint* address, Vector512<uint> source) => StoreAligned(address, source);
         /// <summary>
-        ///   <para>void _mm512_store_epi64 (__m512i * mem_addr, __m512i a)</para>
-        ///   <para>  VMOVDQA32 m512 {k1}{z}, zmm1</para>
+        ///   <para>void _mm512_store_epi64 (void * mem_addr, __m512i a)</para>
+        ///   <para>  VMOVDQA32 m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAligned(long* address, Vector512<long> source) => StoreAligned(address, source);
         /// <summary>
-        ///   <para>void _mm512_store_epi64 (__m512i * mem_addr, __m512i a)</para>
-        ///   <para>  VMOVDQA32 m512 {k1}{z}, zmm1</para>
+        ///   <para>void _mm512_store_epi64 (void * mem_addr, __m512i a)</para>
+        ///   <para>  VMOVDQA32 m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAligned(ulong* address, Vector512<ulong> source) => StoreAligned(address, source);
         /// <summary>
         ///   <para>void _mm512_store_ps (float * mem_addr, __m512 a)</para>
-        ///   <para>  VMOVAPS m512 {k1}{z}, zmm1</para>
+        ///   <para>  VMOVAPS m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAligned(float* address, Vector512<float> source) => StoreAligned(address, source);
         /// <summary>
         ///   <para>void _mm512_store_pd (double * mem_addr, __m512d a)</para>
-        ///   <para>  VMOVAPD m512 {k1}{z}, zmm1</para>
+        ///   <para>  VMOVAPD m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAligned(double* address, Vector512<double> source) => StoreAligned(address, source);
 
         /// <summary>
-        ///   <para>void _mm512_stream_si512 (__m512i * mem_addr, __m512i a)</para>
+        ///   <para>void _mm512_stream_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVNTDQ m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAlignedNonTemporal(sbyte* address, Vector512<sbyte> source) => StoreAlignedNonTemporal(address, source);
         /// <summary>
-        ///   <para>void _mm512_stream_si512 (__m512i * mem_addr, __m512i a)</para>
+        ///   <para>void _mm512_stream_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVNTDQ m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAlignedNonTemporal(byte* address, Vector512<byte> source) => StoreAlignedNonTemporal(address, source);
         /// <summary>
-        ///   <para>void _mm512_stream_si512 (__m512i * mem_addr, __m512i a)</para>
+        ///   <para>void _mm512_stream_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVNTDQ m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAlignedNonTemporal(short* address, Vector512<short> source) => StoreAlignedNonTemporal(address, source);
         /// <summary>
-        ///   <para>void _mm512_stream_si512 (__m512i * mem_addr, __m512i a)</para>
+        ///   <para>void _mm512_stream_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVNTDQ m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAlignedNonTemporal(ushort* address, Vector512<ushort> source) => StoreAlignedNonTemporal(address, source);
         /// <summary>
-        ///   <para>void _mm512_stream_si512 (__m512i * mem_addr, __m512i a)</para>
+        ///   <para>void _mm512_stream_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVNTDQ m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAlignedNonTemporal(int* address, Vector512<int> source) => StoreAlignedNonTemporal(address, source);
         /// <summary>
-        ///   <para>void _mm512_stream_si512 (__m512i * mem_addr, __m512i a)</para>
+        ///   <para>void _mm512_stream_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVNTDQ m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAlignedNonTemporal(uint* address, Vector512<uint> source) => StoreAlignedNonTemporal(address, source);
         /// <summary>
-        ///   <para>void _mm512_stream_si512 (__m512i * mem_addr, __m512i a)</para>
+        ///   <para>void _mm512_stream_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVNTDQ m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAlignedNonTemporal(long* address, Vector512<long> source) => StoreAlignedNonTemporal(address, source);
         /// <summary>
-        ///   <para>void _mm512_stream_si512 (__m512i * mem_addr, __m512i a)</para>
+        ///   <para>void _mm512_stream_si512 (void * mem_addr, __m512i a)</para>
         ///   <para>  VMOVNTDQ m512, zmm1</para>
         /// </summary>
         public static unsafe void StoreAlignedNonTemporal(ulong* address, Vector512<ulong> source) => StoreAlignedNonTemporal(address, source);

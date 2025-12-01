@@ -10,7 +10,7 @@ import { IDiagnosticConnection } from "./common";
 import { createDiagConnectionWs } from "./diagnostics-ws";
 import { diagnosticHelpers, setRuntimeGlobalsImpl } from "./globals";
 import { collectCpuSamples } from "./dotnet-cpu-profiler";
-import { collectPerfCounters } from "./dotnet-counters";
+import { collectMetrics } from "./dotnet-counters";
 import { collectGcDump } from "./dotnet-gcdump";
 import { advertise } from "./client-commands";
 
@@ -40,7 +40,7 @@ export function setRuntimeGlobals (globalObjects: GlobalObjects): void {
         if (!wrapper) {
             return -1;
         }
-        const message = (new Uint8Array(Module.HEAPU8.buffer, buffer as any, bytes_to_write)).slice();
+        const message = (new Uint8Array(Module.HEAPU8.buffer, buffer as any >>> 0, bytes_to_write)).slice();
         return wrapper.send(message);
     };
 
@@ -70,7 +70,7 @@ export function setRuntimeGlobals (globalObjects: GlobalObjects): void {
     };
 
     globalObjects.api.collectCpuSamples = collectCpuSamples;
-    globalObjects.api.collectPerfCounters = collectPerfCounters;
+    globalObjects.api.collectMetrics = collectMetrics;
     globalObjects.api.collectGcDump = collectGcDump;
     globalObjects.api.connectDSRouter = connectDSRouter;
 

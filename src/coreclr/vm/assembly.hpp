@@ -126,7 +126,9 @@ private:
     void Begin();
     void BeforeTypeLoad();
     void EagerFixups();
+#ifdef FEATURE_IJW
     void VtableFixups();
+#endif // FEATURE_IJW
     void DeliverSyncEvents();
     void DeliverAsyncEvents();
     void FinishLoad();
@@ -352,7 +354,10 @@ public:
 
     //****************************************************************************************
 
+private:
     Assembly();
+
+public:
     ~Assembly();
 
     BOOL GetResource(LPCSTR szName, DWORD *cbResource,
@@ -427,9 +432,7 @@ public:
 
     //****************************************************************************************
     // Is the given assembly a friend of this assembly?
-    bool GrantsFriendAccessTo(Assembly *pAccessingAssembly, FieldDesc *pFD);
-    bool GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodDesc *pMD);
-    bool GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodTable *pMT);
+    bool GrantsFriendAccessTo(Assembly *pAccessingAssembly);
     bool IgnoresAccessChecksTo(Assembly *pAccessedAssembly);
 
 #ifdef FEATURE_COMINTEROP
@@ -546,6 +549,7 @@ struct cdac_data<Assembly>
 #ifdef FEATURE_COLLECTIBLE_TYPES
     static constexpr size_t IsCollectible = offsetof(Assembly, m_isCollectible);
 #endif
+    static constexpr size_t IsDynamic = offsetof(Assembly, m_isDynamic);
     static constexpr size_t Module = offsetof(Assembly, m_pModule);
     static constexpr size_t Error = offsetof(Assembly, m_pError);
     static constexpr size_t NotifyFlags = offsetof(Assembly, m_notifyFlags);
@@ -574,24 +578,18 @@ public:
     //
     // Arguments:
     //    pAccessingAssembly - the assembly requesting friend access
-    //    pMember            - the member that is attempting to be accessed
     //
     // Return Value:
     //    true if friend access is allowed, false otherwise
     //
-    // Notes:
-    //    Template type T should be either FieldDesc, MethodDesc, or MethodTable.
-    //
 
-    template <class T>
-    bool GrantsFriendAccessTo(Assembly *pAccessingAssembly, T *pMember)
+    bool GrantsFriendAccessTo(Assembly *pAccessingAssembly)
     {
         CONTRACTL
         {
             THROWS;
             GC_TRIGGERS;
             PRECONDITION(CheckPointer(pAccessingAssembly));
-            PRECONDITION(CheckPointer(pMember));
         }
         CONTRACTL_END;
 

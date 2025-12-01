@@ -20,39 +20,12 @@ namespace System.Security.Cryptography
             in AlgorithmIdentifierAsn algId,
             out RSAParameters ret)
         {
-            RSAPrivateKeyAsn key = RSAPrivateKeyAsn.Decode(keyData, AsnEncodingRules.BER);
-
             if (!algId.HasNullEquivalentParameters())
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            const int MaxSupportedVersion = 0;
-
-            if (key.Version > MaxSupportedVersion)
-            {
-                throw new CryptographicException(
-                    SR.Format(
-                        SR.Cryptography_RSAPrivateKey_VersionTooNew,
-                        key.Version,
-                        MaxSupportedVersion));
-            }
-
-            // The modulus size determines the encoded output size of the CRT parameters.
-            byte[] n = key.Modulus.ToByteArray(isUnsigned: true, isBigEndian: true);
-            int halfModulusLength = (n.Length + 1) / 2;
-
-            ret = new RSAParameters
-            {
-                Modulus = n,
-                Exponent = key.PublicExponent.ToByteArray(isUnsigned: true, isBigEndian: true),
-                D = key.PrivateExponent.ExportKeyParameter(n.Length),
-                P = key.Prime1.ExportKeyParameter(halfModulusLength),
-                Q = key.Prime2.ExportKeyParameter(halfModulusLength),
-                DP = key.Exponent1.ExportKeyParameter(halfModulusLength),
-                DQ = key.Exponent2.ExportKeyParameter(halfModulusLength),
-                InverseQ = key.Coefficient.ExportKeyParameter(halfModulusLength),
-            };
+            ret = FromPkcs1PrivateKey(keyData, rsaParameters => rsaParameters, pinAndClearParameters: false);
         }
 
         internal static void ReadRsaPublicKey(
@@ -60,13 +33,7 @@ namespace System.Security.Cryptography
             in AlgorithmIdentifierAsn algId,
             out RSAParameters ret)
         {
-            RSAPublicKeyAsn key = RSAPublicKeyAsn.Decode(keyData, AsnEncodingRules.BER);
-
-            ret = new RSAParameters
-            {
-                Modulus = key.Modulus.ToByteArray(isUnsigned: true, isBigEndian: true),
-                Exponent = key.PublicExponent.ToByteArray(isUnsigned: true, isBigEndian: true),
-            };
+            ret = FromPkcs1PublicKey(keyData, rsaParameters => rsaParameters);
         }
 
         internal static void ReadRsaPublicKey(
@@ -129,19 +96,6 @@ namespace System.Security.Cryptography
             }
 
             return bytesRead;
-        }
-
-        public static void ReadPkcs8(
-            ReadOnlySpan<byte> source,
-            out int bytesRead,
-            out RSAParameters key)
-        {
-            KeyFormatHelper.ReadPkcs8<RSAParameters>(
-                s_validOids,
-                source,
-                FromPkcs1PrivateKey,
-                out bytesRead,
-                out key);
         }
 
         internal static ReadOnlyMemory<byte> ReadPkcs8(
@@ -253,58 +207,6 @@ namespace System.Security.Cryptography
             writer.WriteNull();
 
             writer.PopSequence();
-        }
-
-        internal static AsnWriter WritePkcs1PublicKey(in RSAParameters rsaParameters)
-        {
-            if (rsaParameters.Modulus == null || rsaParameters.Exponent == null)
-            {
-                throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
-            }
-
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            writer.PushSequence();
-            writer.WriteKeyParameterInteger(rsaParameters.Modulus);
-            writer.WriteKeyParameterInteger(rsaParameters.Exponent);
-            writer.PopSequence();
-
-            return writer;
-        }
-
-        internal static AsnWriter WritePkcs1PrivateKey(in RSAParameters rsaParameters)
-        {
-            if (rsaParameters.Modulus == null || rsaParameters.Exponent == null)
-            {
-                throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
-            }
-
-            if (rsaParameters.D == null ||
-                rsaParameters.P == null ||
-                rsaParameters.Q == null ||
-                rsaParameters.DP == null ||
-                rsaParameters.DQ == null ||
-                rsaParameters.InverseQ == null)
-            {
-                throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
-            }
-
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-
-            writer.PushSequence();
-
-            // Format version 0
-            writer.WriteInteger(0);
-            writer.WriteKeyParameterInteger(rsaParameters.Modulus);
-            writer.WriteKeyParameterInteger(rsaParameters.Exponent);
-            writer.WriteKeyParameterInteger(rsaParameters.D);
-            writer.WriteKeyParameterInteger(rsaParameters.P);
-            writer.WriteKeyParameterInteger(rsaParameters.Q);
-            writer.WriteKeyParameterInteger(rsaParameters.DP);
-            writer.WriteKeyParameterInteger(rsaParameters.DQ);
-            writer.WriteKeyParameterInteger(rsaParameters.InverseQ);
-
-            writer.PopSequence();
-            return writer;
         }
     }
 }

@@ -417,6 +417,18 @@ namespace System.Globalization.Tests
             Assert.Equal(expectedSortName, culture.CompareInfo.Name);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        public void UndeterminedCultureTest()
+        {
+            CultureInfo invariant1 = CultureInfo.GetCultureInfo("");
+
+            CultureInfo undetermined1 = CultureInfo.GetCultureInfo("und");
+            Assert.Equal("", undetermined1.Name);
+
+            CultureInfo invariant2 = CultureInfo.GetCultureInfo("");
+            Assert.True(object.ReferenceEquals(invariant1, invariant2), "CultureInfo.GetCultureInfo(\"\") is not returning the previously cached instance");
+        }
+
         [Theory]
         [MemberData(nameof(Ctor_String_TestData))]
         public void Ctor_String(string name, string[] expectedNames)

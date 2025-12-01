@@ -11,66 +11,69 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace Mono.Linker.Dataflow
 {
-	public readonly struct AttributeDataFlow
-	{
-		readonly LinkContext _context;
-		readonly MarkStep _markStep;
-		readonly MessageOrigin _origin;
+    public readonly struct AttributeDataFlow
+    {
+        readonly LinkContext _context;
+        readonly MarkStep _markStep;
+        readonly MessageOrigin _origin;
 
-		public AttributeDataFlow (LinkContext context, MarkStep markStep, in MessageOrigin origin)
-		{
-			_context = context;
-			_markStep = markStep;
-			_origin = origin;
-		}
+        public AttributeDataFlow(LinkContext context, MarkStep markStep, in MessageOrigin origin)
+        {
+            _context = context;
+            _markStep = markStep;
+            _origin = origin;
+        }
 
-		public void ProcessAttributeDataflow (MethodDefinition method, IList<CustomAttributeArgument> arguments)
-		{
-			foreach (var parameter in method.GetMetadataParameters ()) {
-				var parameterValue = _context.Annotations.FlowAnnotations.GetMethodParameterValue (parameter);
-				if (parameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None) {
-					MultiValue value = GetValueForCustomAttributeArgument (arguments[parameter.MetadataIndex]);
-					var diagnosticContext = new DiagnosticContext (_origin, diagnosticsEnabled: true, _context);
-					RequireDynamicallyAccessedMembers (diagnosticContext, value, parameterValue);
-				}
-			}
-		}
+        public void ProcessAttributeDataflow(MethodDefinition method, IList<CustomAttributeArgument> arguments)
+        {
+            foreach (var parameter in method.GetMetadataParameters())
+            {
+                var parameterValue = _context.Annotations.FlowAnnotations.GetMethodParameterValue(parameter);
+                if (parameterValue.DynamicallyAccessedMemberTypes != DynamicallyAccessedMemberTypes.None)
+                {
+                    MultiValue value = GetValueForCustomAttributeArgument(arguments[parameter.MetadataIndex]);
+                    var diagnosticContext = new DiagnosticContext(_origin, diagnosticsEnabled: true, _context);
+                    RequireDynamicallyAccessedMembers(diagnosticContext, value, parameterValue);
+                }
+            }
+        }
 
-		public void ProcessAttributeDataflow (FieldDefinition field, CustomAttributeArgument value)
-		{
-			MultiValue valueNode = GetValueForCustomAttributeArgument (value);
-			var fieldValueCandidate = _context.Annotations.FlowAnnotations.GetFieldValue (field);
-			if (fieldValueCandidate is not ValueWithDynamicallyAccessedMembers fieldValue)
-				return;
+        public void ProcessAttributeDataflow(FieldDefinition field, CustomAttributeArgument value)
+        {
+            MultiValue valueNode = GetValueForCustomAttributeArgument(value);
+            var fieldValueCandidate = _context.Annotations.FlowAnnotations.GetFieldValue(field);
+            if (fieldValueCandidate is not ValueWithDynamicallyAccessedMembers fieldValue)
+                return;
 
-			var diagnosticContext = new DiagnosticContext (_origin, diagnosticsEnabled: true, _context);
-			RequireDynamicallyAccessedMembers (diagnosticContext, valueNode, fieldValue);
-		}
+            var diagnosticContext = new DiagnosticContext(_origin, diagnosticsEnabled: true, _context);
+            RequireDynamicallyAccessedMembers(diagnosticContext, valueNode, fieldValue);
+        }
 
-		MultiValue GetValueForCustomAttributeArgument (CustomAttributeArgument argument)
-		{
-			if (argument.Type.Name == "Type") {
-				if (argument.Value is null)
-					return NullValue.Instance;
+        MultiValue GetValueForCustomAttributeArgument(CustomAttributeArgument argument)
+        {
+            if (argument.Type.Name == "Type")
+            {
+                if (argument.Value is null)
+                    return NullValue.Instance;
 
-				TypeDefinition? referencedType = ((TypeReference) argument.Value).ResolveToTypeDefinition (_context);
-				return referencedType == null
-					? UnknownValue.Instance
-					: new SystemTypeValue (new (referencedType, _context));
-			}
+                TypeDefinition? referencedType = ((TypeReference)argument.Value).ResolveToTypeDefinition(_context);
+                return referencedType == null
+                    ? UnknownValue.Instance
+                    : new SystemTypeValue(new(referencedType, _context));
+            }
 
-			if (argument.Type.MetadataType == MetadataType.String)
-				return argument.Value is null ? NullValue.Instance : new KnownStringValue ((string) argument.Value);
+            if (argument.Type.MetadataType == MetadataType.String)
+                return argument.Value is null ? NullValue.Instance : new KnownStringValue((string)argument.Value);
 
-			// We shouldn't have gotten a non-null annotation for this from GetParameterAnnotation
-			throw new InvalidOperationException ();
-		}
+            // We shouldn't have gotten a non-null annotation for this from GetParameterAnnotation
+            throw new InvalidOperationException();
+        }
 
-		void RequireDynamicallyAccessedMembers (in DiagnosticContext diagnosticContext, in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue)
-		{
-			var reflectionMarker = new ReflectionMarker (_context, _markStep, enabled: true);
-			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (_context, reflectionMarker, diagnosticContext);
-			requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
-		}
-	}
+        void RequireDynamicallyAccessedMembers(in DiagnosticContext diagnosticContext, in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue)
+        {
+            var reflectionMarker = new ReflectionMarker(_context, _markStep, enabled: true);
+            var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(_context, reflectionMarker, diagnosticContext);
+            requireDynamicallyAccessedMembersAction.Invoke(value, targetValue);
+        }
+    }
 }

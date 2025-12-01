@@ -651,6 +651,29 @@ namespace System.Security.Cryptography.X509Certificates
         internal override MLKem Key => _key;
     }
 
+    internal sealed class MLDsaPkcs12PrivateKey : Pkcs12Key
+    {
+        private readonly MLDsa _key;
+
+        internal MLDsaPkcs12PrivateKey(ReadOnlySpan<byte> pkcs8)
+        {
+            try
+            {
+                _key = MLDsa.ImportPkcs8PrivateKey(pkcs8);
+            }
+            catch (PlatformNotSupportedException nse)
+            {
+                // PKCS12 loader turns PNSE in to a CryptographicException
+                throw new CryptographicException(SR.Cryptography_NotValidPrivateKey, nse);
+            }
+        }
+
+        internal override bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten) =>
+            _key.TryExportSubjectPublicKeyInfo(destination, out bytesWritten);
+
+        internal override MLDsa Key => _key;
+    }
+
     internal sealed class SlhDsaPkcs12PrivateKey : Pkcs12Key
     {
         private readonly SlhDsa _key;

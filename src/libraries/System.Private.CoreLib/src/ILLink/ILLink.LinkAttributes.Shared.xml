@@ -1,4 +1,16 @@
 <linker>
+  <!-- Type Map attributes will be preserved by NativeAOT or the trimmer when necessary. -->
+  <assembly fullname="*">
+    <type fullname="System.Runtime.InteropServices.TypeMapAttribute`1">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.InteropServices.TypeMapAssociationAttribute`1">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.InteropServices.TypeMapAssemblyTargetAttribute`1">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+  </assembly>
   <!-- The following attributes are only necessary when debugging is supported -->
   <assembly fullname="System.Private.CoreLib" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="false">
     <type fullname="System.Diagnostics.DebuggableAttribute">

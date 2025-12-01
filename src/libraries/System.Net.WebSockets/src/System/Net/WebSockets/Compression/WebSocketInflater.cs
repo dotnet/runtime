@@ -161,7 +161,7 @@ namespace System.Net.WebSockets.Compression
         /// Finishes the decoding by flushing any outstanding data to the output.
         /// </summary>
         /// <returns>true if the flush completed, false to indicate that there is more outstanding data.</returns>
-        private unsafe bool Finish(Span<byte> output, ref int written)
+        private bool Finish(Span<byte> output, ref int written)
         {
             Debug.Assert(_stream is not null && _stream.AvailIn == 0);
             Debug.Assert(_available == 0);
@@ -255,30 +255,14 @@ namespace System.Net.WebSockets.Compression
 
         private ZLibStreamHandle CreateInflater()
         {
-            ZLibStreamHandle? stream = null;
-            ErrorCode errorCode;
-
             try
             {
-                errorCode = CreateZLibStreamForInflate(out stream, _windowBits);
+                return ZLibStreamHandle.CreateForInflate(_windowBits);
             }
-            catch (Exception exception)
+            catch (Exception ex)
             {
-                stream?.Dispose();
-                throw new WebSocketException(SR.ZLibErrorDLLLoadError, exception);
+                throw new WebSocketException(ex.Message, ex.InnerException);
             }
-
-            if (errorCode == ErrorCode.Ok)
-            {
-                return stream;
-            }
-
-            stream.Dispose();
-
-            string message = errorCode == ErrorCode.MemError
-                ? SR.ZLibErrorNotEnoughMemory
-                : SR.Format(SR.ZLibErrorUnexpected, (int)errorCode);
-            throw new WebSocketException(message);
         }
     }
 }

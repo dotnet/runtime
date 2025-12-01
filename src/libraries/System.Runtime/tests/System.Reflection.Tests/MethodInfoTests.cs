@@ -162,7 +162,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(typeof(MI_BaseClass), nameof(MI_BaseClass.VirtualMethod), null, typeof(ArgumentNullException))]
         [InlineData(typeof(MI_BaseClass), nameof(MI_BaseClass.VirtualMethod), typeof(Delegate_Void_Int), typeof(ArgumentException))]
-        public void CreateDelegate_Invalid(Type type, string name, Type delegateType, Type exceptionType)
+        public void CreateDelegate_Invalid(Type type, string name, Type? delegateType, Type exceptionType)
         {
             MethodInfo methodInfo = GetMethod(type, name);
             Assert.Throws(exceptionType, () => methodInfo.CreateDelegate(delegateType));
@@ -344,6 +344,27 @@ namespace System.Reflection.Tests
         {
             MethodInfo methodInfo = GetMethod(typeof(MI_SubClass), "VoidMethodReturningInt");
             Assert.NotEqual(0, methodInfo.GetHashCode());
+        }
+
+        [Fact]
+        public void GetHashCode_MultipleSubClasses_ShouldBeUnique()
+        {
+            var numberOfCollisions = 0;
+            var hashset = new HashSet<int>();
+
+            foreach (var type in new Type[] { typeof(MI_BaseClass), typeof(MI_SubClassA), typeof(MI_SubClassB), typeof(MI_SubClassC) })
+            {
+                foreach (var methodInfo in type.GetMethods())
+                {
+                    if (!hashset.Add(methodInfo.GetHashCode()))
+                    {
+                        numberOfCollisions++;
+                    }
+                }
+            }
+
+            // If intermittent failures are observed, it's acceptable to relax the assertion to allow some collisions.
+            Assert.Equal(0, numberOfCollisions);
         }
 
         public static IEnumerable<object[]> Invoke_TestData()
@@ -807,6 +828,10 @@ namespace System.Reflection.Tests
         TypeAttr(typeof(object), name = "TypeAttrSimple")]
         public void MethodWithAttributes() { }
     }
+
+    public class MI_SubClassA : MI_BaseClass { }
+    public class MI_SubClassB : MI_BaseClass { }
+    public class MI_SubClassC : MI_BaseClass { }
 
     public class MethodInfoDummySubClass : MI_BaseClass
     {

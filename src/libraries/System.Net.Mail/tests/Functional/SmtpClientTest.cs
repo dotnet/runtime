@@ -9,6 +9,7 @@
 // (C) 2006 John Luke
 //
 
+using System.ComponentModel;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -20,6 +21,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using System.Net.Test.Common;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Mail.Tests
 {
@@ -51,6 +53,13 @@ namespace System.Net.Mail.Tests
                 _smtp.Dispose();
             }
             base.Dispose(disposing);
+        }
+
+        ITestOutputHelper _output;
+
+        public SmtpClientTest(ITestOutputHelper output)
+        {
+            _output = output;
         }
 
         [Theory]
@@ -154,7 +163,7 @@ namespace System.Net.Mail.Tests
         [InlineData("shouldnotexist")]
         [InlineData("\0")]
         [InlineData("C:\\some\\path\\like\\string")]
-        public void PickupDirectoryLocationTest(string folder)
+        public void PickupDirectoryLocationTest(string? folder)
         {
             Smtp.PickupDirectoryLocation = folder;
             Assert.Equal(folder, Smtp.PickupDirectoryLocation);
@@ -237,7 +246,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void TestMailDelivery()
         {
-            using var server = new LoopbackSmtpServer();
+            using var server = new LoopbackSmtpServer(_output);
             using SmtpClient client = server.CreateClient();
             client.Credentials = new NetworkCredential("foo", "bar");
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
@@ -282,7 +291,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void SendMailAsync_CanBeCanceled_CancellationToken_SetAlready()
         {
-            using var server = new LoopbackSmtpServer();
+            using var server = new LoopbackSmtpServer(_output);
             using SmtpClient client = server.CreateClient();
 
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -299,29 +308,66 @@ namespace System.Net.Mail.Tests
         [Fact]
         public async Task SendMailAsync_CanBeCanceled_CancellationToken()
         {
-            using var server = new LoopbackSmtpServer();
+            using var server = new LoopbackSmtpServer(_output);
             using SmtpClient client = server.CreateClient();
 
             server.ReceiveMultipleConnections = true;
 
             // The server will introduce some fake latency so that the operation can be canceled before the request completes
-            ManualResetEvent serverMre = new ManualResetEvent(false);
-            server.OnConnected += _ => serverMre.WaitOne();
-
             CancellationTokenSource cts = new CancellationTokenSource();
+            
+            server.OnConnected += _ => cts.Cancel();
 
             var message = new MailMessage("foo@internet.com", "bar@internet.com", "Foo", "Bar");
 
             Task sendTask = Task.Run(() => client.SendMailAsync(message, cts.Token));
 
-            cts.Cancel();
-            await Task.Delay(500);
-            serverMre.Set();
-
-            await Assert.ThrowsAsync<TaskCanceledException>(async () => await sendTask).WaitAsync(TestHelper.PassingTestTimeout);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await sendTask).WaitAsync(TestHelper.PassingTestTimeout);
 
             // We should still be able to send mail on the SmtpClient instance
             await Task.Run(() => client.SendMailAsync(message)).WaitAsync(TestHelper.PassingTestTimeout);
+
+            Assert.Equal("<foo@internet.com>", server.MailFrom);
+            Assert.Equal("<bar@internet.com>", Assert.Single(server.MailTo));
+            Assert.Equal("Foo", server.Message.Subject);
+            Assert.Equal("Bar", server.Message.Body);
+            Assert.Equal(GetClientDomain(), server.ClientDomain);
+        }
+
+        [Fact]
+        public async Task SendAsync_CanBeCanceled_SendAsyncCancel()
+        {
+            using var server = new LoopbackSmtpServer(_output);
+            using SmtpClient client = server.CreateClient();
+
+            server.ReceiveMultipleConnections = true;
+
+            bool first = true;
+
+            server.OnConnected += _ =>
+            {
+                if (first)
+                {
+                    first = false;
+                    client.SendAsyncCancel();
+                }
+            };
+
+            var message = new MailMessage("foo@internet.com", "bar@internet.com", "Foo", "Bar");
+
+            TaskCompletionSource<AsyncCompletedEventArgs> tcs = new TaskCompletionSource<AsyncCompletedEventArgs>();
+            client.SendCompleted += (s, e) =>
+            {
+                tcs.SetResult(e);
+            };
+
+            client.SendAsync(message, null);
+            AsyncCompletedEventArgs e = await tcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+            Assert.True(e.Cancelled, "SendAsync should have been canceled");
+            Assert.Null(e.Error);
+
+            // We should still be able to send mail on the SmtpClient instance
+            await client.SendMailAsync(message).WaitAsync(TestHelper.PassingTestTimeout);
 
             Assert.Equal("<foo@internet.com>", server.MailFrom);
             Assert.Equal("<bar@internet.com>", Assert.Single(server.MailTo));

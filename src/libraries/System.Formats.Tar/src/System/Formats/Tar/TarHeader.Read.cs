@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -15,8 +16,6 @@ namespace System.Formats.Tar
     // Reads the header attributes from a tar archive entry.
     internal sealed partial class TarHeader
     {
-        private readonly byte[] ArrayOf12NullBytes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-
         // Attempts to retrieve the next header from the specified tar archive stream.
         // Throws if end of stream is reached or if any data type conversion fails.
         // Returns a valid TarHeader object if the attributes were read successfully, null otherwise.
@@ -106,7 +105,7 @@ namespace System.Formats.Tar
                 return;
             }
 
-            InitializeExtendedAttributesWithExisting(dictionaryFromExtendedAttributesHeader);
+            AddExtendedAttributes(dictionaryFromExtendedAttributesHeader);
 
             // Find all the extended attributes with known names and save them in the expected standard attribute.
 
@@ -371,11 +370,31 @@ namespace System.Formats.Tar
             {
                 return null;
             }
-            int checksum = (int)TarHelpers.ParseOctal<uint>(spanChecksum);
+
+            int checksum;
+            try
+            {
+                checksum = (int)TarHelpers.ParseOctal<uint>(spanChecksum);
+            }
+            catch (InvalidDataException)
+            {
+                // Check if this might be a compressed file by looking at the buffer for compression magic numbers
+                ThrowIfCompressedArchive(buffer);
+                // If not a compressed file, re-throw the original parsing exception
+                throw;
+            }
+
             // Zero checksum means the whole header is empty
             if (checksum == 0)
             {
                 return null;
+            }
+
+            // Verify checksum by calculating it from the buffer
+            int calculatedChecksum = CalculateHeaderChecksum(buffer);
+            if (calculatedChecksum != checksum)
+            {
+                throw new InvalidDataException(SR.TarInvalidChecksum);
             }
 
             long size = TarHelpers.ParseNumeric<long>(buffer.Slice(FieldLocations.Size, FieldLengths.Size));
@@ -386,16 +405,16 @@ namespace System.Formats.Tar
 
             // Continue with the rest of the fields that require no special checks
             TarHeader header = new(initialFormat,
-                name: TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.Name, FieldLengths.Name)),
+                name: TarHelpers.ParseUtf8String(buffer.Slice(FieldLocations.Name, FieldLengths.Name)),
                 mode: TarHelpers.ParseNumeric<int>(buffer.Slice(FieldLocations.Mode, FieldLengths.Mode)),
-                mTime: TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(TarHelpers.ParseNumeric<long>(buffer.Slice(FieldLocations.MTime, FieldLengths.MTime))),
+                mTime: ParseAsTimestamp(buffer.Slice(FieldLocations.MTime, FieldLengths.MTime)),
                 typeFlag: (TarEntryType)buffer[FieldLocations.TypeFlag])
             {
                 _checksum = checksum,
                 _size = size,
                 _uid = TarHelpers.ParseNumeric<int>(buffer.Slice(FieldLocations.Uid, FieldLengths.Uid)),
                 _gid = TarHelpers.ParseNumeric<int>(buffer.Slice(FieldLocations.Gid, FieldLengths.Gid)),
-                _linkName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName))
+                _linkName = TarHelpers.ParseUtf8String(buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName))
             };
 
             if (header._format == TarEntryFormat.Unknown)
@@ -424,6 +443,24 @@ namespace System.Formats.Tar
             }
 
             return header;
+        }
+
+        // Calculates the checksum for a TAR header by summing all bytes,
+        // but treating the checksum field as if it contained spaces (ASCII 32)
+        private static int CalculateHeaderChecksum(ReadOnlySpan<byte> buffer)
+        {
+            int calculatedChecksum = 0;
+
+            // Process bytes before the checksum field
+            calculatedChecksum += Checksum(buffer.Slice(0, FieldLocations.Checksum));
+
+            // For the checksum field, treat all bytes as spaces (ASCII 32)
+            calculatedChecksum += (byte)' ' * FieldLengths.Checksum;
+
+            // Process bytes after the checksum field
+            calculatedChecksum += Checksum(buffer.Slice(FieldLocations.Checksum + FieldLengths.Checksum, TarHelpers.RecordSize - (FieldLocations.Checksum + FieldLengths.Checksum)));
+
+            return calculatedChecksum;
         }
 
         // Reads fields only found in ustar format or above and converts them to their expected data type.
@@ -519,8 +556,8 @@ namespace System.Formats.Tar
         private void ReadPosixAndGnuSharedAttributes(ReadOnlySpan<byte> buffer)
         {
             // Convert the byte arrays
-            _uName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.UName, FieldLengths.UName));
-            _gName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.GName, FieldLengths.GName));
+            _uName = TarHelpers.ParseUtf8String(buffer.Slice(FieldLocations.UName, FieldLengths.UName));
+            _gName = TarHelpers.ParseUtf8String(buffer.Slice(FieldLocations.GName, FieldLengths.GName));
 
             // DevMajor and DevMinor only have values with character devices and block devices.
             // For all other typeflags, the values in these fields are irrelevant.
@@ -538,28 +575,31 @@ namespace System.Formats.Tar
         // Throws if any conversion fails.
         private void ReadGnuAttributes(ReadOnlySpan<byte> buffer)
         {
-            // Convert byte arrays
-            ReadOnlySpan<byte> aTimeBuffer = buffer.Slice(FieldLocations.ATime, FieldLengths.ATime);
-            if (!aTimeBuffer.SequenceEqual(ArrayOf12NullBytes)) // null values are ignored
-            {
-                long aTime = TarHelpers.ParseNumeric<long>(aTimeBuffer);
-                _aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(aTime);
-            }
-            ReadOnlySpan<byte> cTimeBuffer = buffer.Slice(FieldLocations.CTime, FieldLengths.CTime);
-            if (!cTimeBuffer.SequenceEqual(ArrayOf12NullBytes)) // An all nulls buffer is interpreted as MinValue
-            {
-                long cTime = TarHelpers.ParseNumeric<long>(cTimeBuffer);
-                _cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(cTime);
-            }
+            _aTime = ParseAsTimestamp(buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
+
+            _cTime = ParseAsTimestamp(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
 
             // TODO: Read the bytes of the currently unsupported GNU fields, in case user wants to write this entry into another GNU archive, they need to be preserved. https://github.com/dotnet/runtime/issues/68230
+        }
+
+        private static DateTimeOffset ParseAsTimestamp(ReadOnlySpan<byte> buffer)
+        {
+            // When all bytes are zero, the timestamp is not initialized, and we map it to default.
+            bool allZeros = !buffer.ContainsAnyExcept((byte)0);
+            if (allZeros)
+            {
+                return default(DateTimeOffset);
+            }
+
+            long time = TarHelpers.ParseNumeric<long>(buffer);
+            return TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(time);
         }
 
         // Reads the ustar prefix attribute.
         // Throws if a conversion to an expected data type fails.
         private void ReadUstarAttributes(ReadOnlySpan<byte> buffer)
         {
-            _prefix = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
+            _prefix = TarHelpers.ParseUtf8String(buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
 
             // In ustar, Prefix is used to store the *leading* path segments of
             // Name, if the full path did not fit in the Name byte array.
@@ -630,14 +670,17 @@ namespace System.Formats.Tar
         // Returns a dictionary containing the extended attributes collected from the provided byte buffer.
         private void ReadExtendedAttributesFromBuffer(ReadOnlySpan<byte> buffer, string name)
         {
-            buffer = TarHelpers.TrimEndingNullsAndSpaces(buffer);
-
             while (TryGetNextExtendedAttribute(ref buffer, out string? key, out string? value))
             {
                 if (!ExtendedAttributes.TryAdd(key, value))
                 {
                     throw new InvalidDataException(SR.Format(SR.TarDuplicateExtendedAttribute, name));
                 }
+            }
+
+            if (buffer.Length > 0)
+            {
+                throw new InvalidDataException(SR.Format(SR.ExtHeaderInvalidRecords));
             }
         }
 
@@ -690,7 +733,7 @@ namespace System.Formats.Tar
         // Collects the GNU long path info from the buffer and sets it in the right field depending on the type flag.
         private void ReadGnuLongPathDataFromBuffer(ReadOnlySpan<byte> buffer)
         {
-            string longPath = TarHelpers.GetTrimmedUtf8String(buffer);
+            string longPath = TarHelpers.ParseUtf8String(buffer);
 
             if (_typeFlag == TarEntryType.LongLink)
             {
@@ -724,15 +767,21 @@ namespace System.Formats.Tar
             }
             ReadOnlySpan<byte> line = buffer.Slice(0, newlinePos);
 
-            // Update buffer to point to the next line for the next call
-            buffer = buffer.Slice(newlinePos + 1);
-
-            // Find the end of the length and remove everything up through it.
+            // Find the end of the length
             int spacePos = line.IndexOf((byte)' ');
             if (spacePos < 0)
             {
                 return false;
             }
+
+            // Check the length matches the line length
+            ReadOnlySpan<byte> length = buffer.Slice(0, spacePos);
+            if (!int.TryParse(length, NumberStyles.None, CultureInfo.InvariantCulture, out int lengthValue) || lengthValue != (line.Length + 1))
+            {
+                return false;
+            }
+
+            // Remove the length
             line = line.Slice(spacePos + 1);
 
             // Find the equal separator.
@@ -748,7 +797,98 @@ namespace System.Formats.Tar
             // Return the parsed key and value.
             key = Encoding.UTF8.GetString(keySlice);
             value = Encoding.UTF8.GetString(valueSlice);
+
+            // Update buffer to point to the next line for the next call
+            buffer = buffer.Slice(newlinePos + 1);
             return true;
+        }
+
+        /// <summary>
+        /// Analyzes the buffer for known compression format magic numbers and throws an InvalidDataException
+        /// with a specific error message if a compression format is detected.
+        /// If no compression format is detected, the method returns without throwing.
+        /// </summary>
+        /// <exception cref="InvalidDataException">
+        /// Thrown if a compression format is detected.
+        /// </exception>
+        private static void ThrowIfCompressedArchive(ReadOnlySpan<byte> buffer)
+        {
+            if (buffer.Length < 2)
+            {
+                return;
+            }
+
+            byte firstByte = buffer[0];
+            switch (firstByte)
+            {
+                case 0x37: // 7-Zip
+                    if (buffer.Length >= 6 &&
+                        buffer[1] == 0x7A && buffer[2] == 0xBC &&
+                        buffer[3] == 0xAF && buffer[4] == 0x27 && buffer[5] == 0x1C)
+                    {
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "7-Zip"));
+                    }
+                    break;
+
+                case 0x50: // ZIP files start with "PK"
+                    if (buffer.Length >= 2 && buffer[1] == 0x4B)
+                    {
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "ZIP"));
+                    }
+                    break;
+
+                case 0x1F: // GZIP
+                    if (buffer.Length >= 2 && buffer[1] == 0x8B)
+                    {
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "GZIP"));
+                    }
+                    break;
+
+                case 0x42: // BZIP2 - "BZh"
+                    if (buffer.Length >= 3 && buffer[1] == 0x5A && buffer[2] == 0x68)
+                    {
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "BZIP2"));
+                    }
+                    break;
+
+                case 0xFD: // XZ
+                    if (buffer.Length >= 6 &&
+                        buffer[1] == 0x37 && buffer[2] == 0x7A &&
+                        buffer[3] == 0x58 && buffer[4] == 0x5A && buffer[5] == 0x00)
+                    {
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "XZ"));
+                    }
+                    break;
+
+                case 0x28: // Could be Zstandard or ZLIB
+                    if (buffer.Length >= 4 &&
+                        buffer[1] == 0xB5 && buffer[2] == 0x2F && buffer[3] == 0xFD)
+                    {
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "Zstandard"));
+                    }
+                    // If not Zstandard, check if it's ZLIB
+                    goto CheckZlib;
+
+                // ZLIB (deflate compression) - various compression methods and window sizes
+                case 0x08:
+                case 0x18:
+                case 0x38:
+                case 0x48:
+                case 0x58:
+                case 0x68:
+                case 0x78:
+                CheckZlib:
+                    if (buffer.Length >= 2)
+                    {
+                        byte secondByte = buffer[1];
+                        // Check if this is a valid ZLIB header (must be divisible by 31)
+                        if (((firstByte * 256) + secondByte) % 31 == 0)
+                        {
+                            throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "ZLIB"));
+                        }
+                    }
+                    break;
+            }
         }
     }
 }

@@ -11,12 +11,12 @@ public class Async2FibonacceWithoutYields
     //This async method lacks 'await'
 #pragma warning disable 1998
 
-    internal static async2 Task<int> B(int n)
+    internal static async Task<int> B(int n)
     {
         return 100;
     }
 
-    internal static async2 Task<int> A(int n)
+    internal static async Task<int> A(int n)
     {
         int num = n;
         for (int num2 = 0; num2 < n; num2++)
@@ -27,6 +27,7 @@ public class Async2FibonacceWithoutYields
         return num;
     }
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     private static async Task<int> AsyncEntry()
     {
         int result = 0;

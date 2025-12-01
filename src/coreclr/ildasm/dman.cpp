@@ -16,8 +16,6 @@
 #include "dynamicarray.h"
 #include "resource.h"
 
-#include "clrinternal.h"
-
 #ifndef MAX_LOCALE_NAME
 #define MAX_LOCALE_NAME (32)
 #endif
@@ -718,8 +716,7 @@ static void DumpResourceFile(void *GUICookie, BYTE *pRes, DWORD dwOffset, LPCWST
         if (g_pFile != NULL) // embedded resource -- dump as .resources file
         {
             FILE *pF = NULL;
-            _wfopen_s(&pF, pParam->wzFileName, W("wb"));
-            if (pF)
+            if (fopen_lp(&pF, pParam->wzFileName, W("wb")) == 0)
             {
                 struct Param
                 {
@@ -987,14 +984,14 @@ IMetaDataAssemblyImport* GetAssemblyImport(void* GUICookie)
             if(pdwSize && *pdwSize)
             {
                 pbManifest += sizeof(DWORD);
-                if (SUCCEEDED(hr = GetMetaDataInternalInterface(
+                if (SUCCEEDED(hr = GetMDInternalInterface(
                     pbManifest,
                     VAL32(*pdwSize),
                     ofRead,
                     IID_IMDInternalImport,
                     (LPVOID *)&pParam->pImport)))
                 {
-                    if (FAILED(hr = GetMetaDataPublicInterfaceFromInternal(
+                    if (FAILED(hr = GetMDPublicInterfaceFromInternal(
                         pParam->pImport,
                         IID_IMetaDataAssemblyImport,
                         (LPVOID *)&pParam->pAssemblyImport)))

@@ -10,4 +10,8 @@
   <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <UsingWasiRuntimeWorkload Condition="'$(UsingWasiRuntimeWorkload)' == ''">$(WasiNativeWorkloadAvailable)</UsingWasiRuntimeWorkload>
   </PropertyGroup>
+
+  <Target Name="FailBuild" BeforeTargets="ProcessFrameworkReferences;Restore;Build;Publish" Condition="'$(RuntimeIdentifier)' == 'wasi-wasm'">
+    <Error Text="The 'wasi-experimental' workload is not supported in .NET 10." />
+  </Target>
 </Project>

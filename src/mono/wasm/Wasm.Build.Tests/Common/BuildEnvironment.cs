@@ -32,7 +32,7 @@ namespace Wasm.Build.Tests
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
         public static readonly string           TestAssetsPath = Path.Combine(AppContext.BaseDirectory, "testassets");
         public static readonly string           TestDataPath = Path.Combine(AppContext.BaseDirectory, "data");
-        public static readonly string           TmpPath = Path.Combine(AppContext.BaseDirectory, "wbt artifacts");
+        public static readonly string           TmpPath = Path.Combine(AppContext.BaseDirectory, EnvironmentVariables.UseJavascriptBundler ? "wbtartifacts" : "wbt artifacts");
 
         public static readonly string           DefaultRuntimeIdentifier =
 #if TARGET_WASI
@@ -124,7 +124,7 @@ namespace Wasm.Build.Tests
             EnvVars["DOTNET_ROOT"] = sdkForWorkloadPath;
             EnvVars["DOTNET_INSTALL_DIR"] = sdkForWorkloadPath;
             EnvVars["DOTNET_MULTILEVEL_LOOKUP"] = "0";
-            EnvVars["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
+            EnvVars["DOTNET_NOLOGO"] = "1";
             EnvVars["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
             EnvVars["EM_WORKAROUND_PYTHON_BUG_34780"] = "1";
 
