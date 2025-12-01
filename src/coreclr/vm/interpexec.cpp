@@ -800,8 +800,7 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
     frames.interpMethodContextFrame.startIp = pSuspendData->methodStartIP;
     frames.interpMethodContextFrame.pStack = sp;
 
-    // The return value may need gc protection, so use a ProtectValueClassFrame for that
-    // Also, figure out the exact sizes to work with, since we may be copying into a Task<T>
+    // Figure out the exact sizes to work with, since we may be copying into a Task<T>
     // and not only into another interpreter continuation
     int32_t returnValueSize = pSuspendData->asyncMethodReturnTypePrimitiveSize;
     if (pSuspendData->asyncMethodReturnType != NULL)

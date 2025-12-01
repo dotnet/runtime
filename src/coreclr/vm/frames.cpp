@@ -1466,15 +1466,8 @@ void ProtectValueClassFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
     ValueClassInfo *pVCInfo = m_pVCInfo;
     while (pVCInfo != NULL)
     {
-        if (pVCInfo->pMT->IsValueType())
-        {
-            ReportPointersFromValueType(fn, sc, pVCInfo->pMT, pVCInfo->pData);
-        }
-        else
-        {
-            // pMT is an object reference type, simply report the address directly.
-            (*fn)(dac_cast<PTR_PTR_Object>(pVCInfo->pData), sc, 0);
-        }
+        _ASSERTE(pVCInfo->pMT->IsValueType());
+        ReportPointersFromValueType(fn, sc, pVCInfo->pMT, pVCInfo->pData);
         pVCInfo = pVCInfo->pNext;
     }
 }
