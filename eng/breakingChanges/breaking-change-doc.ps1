@@ -791,7 +791,7 @@ foreach ($pr in $prs) {
 
     # Get comprehensive PR details including comments, reviews, and commits
     try {
-        $prDetails = gh pr view $pr.number --repo $Config.SourceRepo --json number,title,url,baseRefName,closedAt,mergeCommit,labels,files,state,body,comments,reviews,closingIssuesReferences,commits
+        $prDetails = gh pr view $pr.number --repo $Config.SourceRepo --json number,title,author,url,baseRefName,closedAt,mergedAt,mergeCommit,labels,files,state,body,comments,reviews,closingIssuesReferences,commits
         $prDetailData = $prDetails | ConvertFrom-Json
     } catch {
         Write-Warning "Could not fetch detailed PR data for #$($pr.number)"
