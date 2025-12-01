@@ -322,6 +322,15 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ClearWaitSleepJoinState")]
         private static partial void ClearWaitSleepJoinState(ThreadHandle t);
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ReportDead")]
+        private static partial void ReportDead(ThreadHandle t);
+
+        internal void NotifyThreadDeath()
+        {
+            ReportDead(GetNativeHandle());
+            GC.KeepAlive(this);
+        }
+
         /// <summary>
         /// An unstarted thread can be marked to indicate that it will host a
         /// single-threaded or multi-threaded apartment.
@@ -575,6 +584,11 @@ namespace System.Threading
 #pragma warning restore CA1822 // Member 'OnThreadExiting' does not access instance data and can be marked as static
         {
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+            // Update the native side to report that the thread is dead.
+            // We do this before OnThreadExiting and SetJoinHandle so that any threads
+            // waiting on this thread to end will correctly see that it is stopped
+            // when we set the join handle.
+            NotifyThreadDeath();
             // Inform the wait subsystem that the thread is exiting. For instance, this would abandon any mutexes locked by
             // the thread.
             _waitInfo?.OnThreadExiting();

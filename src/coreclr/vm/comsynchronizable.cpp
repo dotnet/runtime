@@ -443,6 +443,17 @@ extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState(QCall::ThreadHand
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE ThreadNative_ReportDead(QCall::ThreadHandle thread)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    thread->SetThreadState(Thread::TS_ReportDead);
+
+    END_QCALL;
+}
+
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 // Return whether the thread hosts an STA, is a member of the MTA or is not
