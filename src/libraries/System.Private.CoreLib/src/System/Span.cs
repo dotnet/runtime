@@ -408,6 +408,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in range (&lt;0 or &gt;Length).
         /// </exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> Slice(int start, int length)
         {
