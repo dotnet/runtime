@@ -5366,7 +5366,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         }
     };
 
-    ArrayStack<BasicBlock*> retBlocks(getAllocator(CMK_ArrayStack));
+    ArrayStack<BasicBlock*> retOrThrowBlocks(getAllocator(CMK_ArrayStack));
 
     // Visit each block
     //
@@ -5374,9 +5374,13 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     {
         iterateTailMerge(block);
 
-        if (block->KindIs(BBJ_RETURN, BBJ_THROW) && !block->isEmpty() && (block != genReturnBB))
+        if (block->KindIs(BBJ_THROW))
         {
-            // Avoid spitting a return away from a possible tail call
+            retOrThrowBlocks.Push(block);
+        }
+        else if (block->KindIs(BBJ_RETURN) && !block->isEmpty() && (block != genReturnBB))
+        {
+            // Avoid splitting a return away from a possible tail call
             //
             if (!block->hasSingleStmt())
             {
@@ -5389,14 +5393,14 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 }
             }
 
-            retBlocks.Push(block);
+            retOrThrowBlocks.Push(block);
         }
     }
 
     predInfo.Reset();
-    for (int i = 0; i < retBlocks.Height(); i++)
+    for (int i = 0; i < retOrThrowBlocks.Height(); i++)
     {
-        predInfo.Push(PredInfo(retBlocks.Bottom(i), retBlocks.Bottom(i)->lastStmt()));
+        predInfo.Push(PredInfo(retOrThrowBlocks.Bottom(i), retOrThrowBlocks.Bottom(i)->lastStmt()));
     }
 
     tailMergePreds(nullptr);
