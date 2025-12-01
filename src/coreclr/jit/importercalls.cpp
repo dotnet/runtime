@@ -3407,10 +3407,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_String_get_Length:
             case NI_System_Span_get_Item:
             case NI_System_Span_get_Length:
-            case NI_System_Span_Slice:
             case NI_System_ReadOnlySpan_get_Item:
             case NI_System_ReadOnlySpan_get_Length:
-            case NI_System_ReadOnlySpan_Slice:
             case NI_System_BitConverter_DoubleToInt64Bits:
             case NI_System_BitConverter_Int32BitsToSingle:
             case NI_System_BitConverter_Int64BitsToDouble:
@@ -3752,6 +3750,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 assert(sig->sigInst.classInstCount == 1);
                 assert(sig->numArgs == 2);
 
+                if (compCurBB->isRunRarely())
+                {
+                    return nullptr;
+                }
+
                 GenTree* lenArg   = impStackTop(0).val;
                 GenTree* startArg = impStackTop(1).val;
                 GenTree* spanArg  = impStackTop(2).val;
@@ -3827,14 +3830,14 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                         // Emit the bounds check:
                         //
-                        // if ((uint)start > (uint)oldLength)
+                        // if ((uint)start <= (uint)oldLength)
                         //     ThrowHelper.ThrowArgumentOutOfRangeException();
                         //
-                        GenTree* oobCheck = gtNewOperNode(GT_GT, TYP_INT, startArg, oldLength);
+                        GenTree* oobCheck = gtNewOperNode(GT_LE, TYP_INT, startArg, oldLength);
                         oobCheck->SetUnsigned();
                         GenTreeCall* throwAOORE =
                             gtNewHelperCallNode(CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, TYP_VOID);
-                        GenTreeColon* oobCheckColon = gtNewColonNode(TYP_VOID, throwAOORE, gtNewNothingNode());
+                        GenTreeColon* oobCheckColon = gtNewColonNode(TYP_VOID, gtNewNothingNode(), throwAOORE);
                         GenTreeQmark* oobCheckQmark = gtNewQmarkNode(TYP_VOID, oobCheck, oobCheckColon);
                         impAppendTree(oobCheckQmark, CHECK_SPILL_ALL, impCurStmtDI);
 
@@ -3858,7 +3861,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         GenTree* lenSubStart =
                             gtNewOperNode(GT_SUB, TYP_INT, oldLengthClone, gtCloneExpr(startArgClone));
                         GenTree* lengthFieldStore =
-                            gtNewStoreLclFldNode(spanTempNum, TYP_INT, lengthOffset, lenSubStart);
+                            gtNewStoreLclFldNode(spanTempNum, TYP_INT, lengthOffset, gtFoldExpr(lenSubStart));
 
                         impPopStack(3);
                         impAppendTree(lengthFieldStore, CHECK_SPILL_ALL, impCurStmtDI);
