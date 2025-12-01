@@ -9,13 +9,10 @@
     <Compile Include="ILMethodTester.cs" />
     <Compile Include="ILTypeVerificationTester.cs" />
     <Compile Include="TestDataLoader.cs" />
+    <Compile Include="JsonContext.cs" />
   </ItemGroup>
 
   <Import Project="..\ILVerification\ILVerification.projitems" />
-
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="ILTests\*.ilproj">

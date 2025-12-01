@@ -11,7 +11,7 @@ using System.Reflection.PortableExecutable;
 using System.Text;
 using ILVerify;
 using Internal.TypeSystem.Ecma;
-using Newtonsoft.Json;
+using System.Text.Json;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -355,7 +355,7 @@ namespace ILVerification.Tests
         public override void Serialize(IXunitSerializationInfo info)
         {
             base.Serialize(info);
-            var serializedExpectedErrors = JsonConvert.SerializeObject(ExpectedVerifierErrors);
+            var serializedExpectedErrors = JsonSerializer.Serialize(ExpectedVerifierErrors, JsonContext.Default.ListVerifierError);
             info.AddValue(nameof(ExpectedVerifierErrors), serializedExpectedErrors);
         }
 
@@ -363,7 +363,7 @@ namespace ILVerification.Tests
         {
             base.Deserialize(info);
             var serializedExpectedErrors = info.GetValue<string>(nameof(ExpectedVerifierErrors));
-            ExpectedVerifierErrors = JsonConvert.DeserializeObject<List<VerifierError>>(serializedExpectedErrors);
+            ExpectedVerifierErrors = JsonSerializer.Deserialize(serializedExpectedErrors, JsonContext.Default.ListVerifierError);
         }
 
         public override string ToString()
@@ -397,7 +397,7 @@ namespace ILVerification.Tests
         public override void Serialize(IXunitSerializationInfo info)
         {
             base.Serialize(info);
-            var serializedExpectedErrors = JsonConvert.SerializeObject(ExpectedVerifierErrors);
+            var serializedExpectedErrors = JsonSerializer.Serialize(ExpectedVerifierErrors, JsonContext.Default.ListVerifierError);
             info.AddValue(nameof(ExpectedVerifierErrors), serializedExpectedErrors);
         }
 
@@ -405,7 +405,7 @@ namespace ILVerification.Tests
         {
             base.Deserialize(info);
             var serializedExpectedErrors = info.GetValue<string>(nameof(ExpectedVerifierErrors));
-            ExpectedVerifierErrors = JsonConvert.DeserializeObject<List<VerifierError>>(serializedExpectedErrors);
+            ExpectedVerifierErrors = JsonSerializer.Deserialize(serializedExpectedErrors, JsonContext.Default.ListVerifierError);
         }
 
         public override string ToString()
