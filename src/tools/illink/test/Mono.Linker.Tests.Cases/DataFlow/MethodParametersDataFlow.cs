@@ -514,7 +514,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             return null;
         }
 
-        // https://github.com/dotnet/runtime/issues/111651
+        // https://github.com/dotnet/runtime/issues/121629
         class NamedArgumentsWithAnnotations
         {
             record BaseRecord(
