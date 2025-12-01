@@ -321,9 +321,11 @@ namespace Internal.JitInterface
         private CorJitResult CompileWasmStub(out IntPtr exception, ref CORINFO_METHOD_INFO methodInfo, out uint codeSize)
         {
             byte[] stub = new byte[] {
+                0x00,
                 0x41, // i32.const
                 0x0,  // uleb128 0
                 0x0f, // return
+                0x0b,  // end
             };
             AllocMemArgs args = new AllocMemArgs
             {

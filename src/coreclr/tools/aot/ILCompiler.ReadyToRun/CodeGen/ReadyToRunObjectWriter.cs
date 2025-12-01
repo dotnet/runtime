@@ -300,7 +300,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private WasmObjectWriter CreateWasmObjectWriter()
         {
-            return new WasmObjectWriter(_nodeFactory, ObjectWritingOptions.None, _outputInfoBuilder);
+            // empty for now as a placeholder, this will be needed when we have Wasm specific ABI handling
+            var abiContext = new WasmAbiContext();
+            return new WasmObjectWriter(_nodeFactory, ObjectWritingOptions.None, abiContext,  _outputInfoBuilder);
         }
 
         public static void EmitObject(
