@@ -276,13 +276,13 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svadclb[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
         ///   ADCLB Ztied1.S, Zop2.S, Zop3.S
         /// </summary>
-        public static unsafe Vector<uint> AddCarryWideningEven(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<uint> AddCarryWideningEven(Vector<uint> left, Vector<uint> right, Vector<uint> carry) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svadclb[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
         ///   ADCLB Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<ulong> AddCarryWideningEven(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<ulong> AddCarryWideningEven(Vector<ulong> left, Vector<ulong> right, Vector<ulong> carry) { throw new PlatformNotSupportedException(); }
 
         // Add with carry long (top)
 
@@ -290,13 +290,13 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svadclt[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
         ///   ADCLT Ztied1.S, Zop2.S, Zop3.S
         /// </summary>
-        public static unsafe Vector<uint> AddCarryWideningOdd(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<uint> AddCarryWideningOdd(Vector<uint> left, Vector<uint> right, Vector<uint> carry) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svadclt[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
         ///   ADCLT Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<ulong> AddCarryWideningOdd(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector<ulong> AddCarryWideningOdd(Vector<ulong> left, Vector<ulong> right, Vector<ulong> carry) { throw new PlatformNotSupportedException(); }
 
         // Add narrow high part (bottom)
 
@@ -905,19 +905,19 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svaddlbt[_s16](svint8_t op1, svint8_t op2)
         ///   SADDLBT Zresult.H, Zop1.B, Zop2.B
         /// </summary>
-        public static Vector<short> AddWideningEvenOdd(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> AddWideningEvenOdd(Vector<sbyte> leftEven, Vector<sbyte> rightOdd) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svaddlbt[_s32](svint16_t op1, svint16_t op2)
         ///   SADDLBT Zresult.S, Zop1.H, Zop2.H
         /// </summary>
-        public static Vector<int> AddWideningEvenOdd(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> AddWideningEvenOdd(Vector<short> leftEven, Vector<short> rightOdd) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t svaddlbt[_s64](svint32_t op1, svint32_t op2)
         ///   SADDLBT Zresult.D, Zop1.S, Zop2.S
         /// </summary>
-        public static Vector<long> AddWideningEvenOdd(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> AddWideningEvenOdd(Vector<int> leftEven, Vector<int> rightOdd) { throw new PlatformNotSupportedException(); }
 
         // Add wide (top)
 
@@ -1485,97 +1485,97 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint8_t sveorbt[_s8](svint8_t odd, svint8_t op1, svint8_t op2)
         ///   EORBT Zd.B, Zn.B, Zm.B
         /// </summary>
-        public static Vector<byte> InterleavingXorEvenOdd(Vector<byte> odd, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> InterleavingXorEvenOdd(Vector<byte> odd, Vector<byte> leftEven, Vector<byte> rightOdd) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint16_t sveorbt[_s16](svint16_t odd, svint16_t op1, svint16_t op2)
         ///   EORBT Zd.H, Zn.H, Zm.H
         /// </summary>
-        public static Vector<short> InterleavingXorEvenOdd(Vector<short> odd, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> InterleavingXorEvenOdd(Vector<short> odd, Vector<short> leftEven, Vector<short> rightOdd) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t sveorbt[_s32](svint32_t odd, svint32_t op1, svint32_t op2)
         ///   EORBT Zd.S, Zn.S, Zm.S
         /// </summary>
-        public static Vector<int> InterleavingXorEvenOdd(Vector<int> odd, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> InterleavingXorEvenOdd(Vector<int> odd, Vector<int> leftEven, Vector<int> rightOdd) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t sveorbt[_s64](svint64_t odd, svint64_t op1, svint64_t op2)
         ///   EORBT Zd.D, Zn.D, Zm.D
         /// </summary>
-        public static Vector<long> InterleavingXorEvenOdd(Vector<long> odd, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> InterleavingXorEvenOdd(Vector<long> odd, Vector<long> leftEven, Vector<long> rightOdd) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint8_t sveorbt[_s8](svint8_t odd, svint8_t op1, svint8_t op2)
         ///   EORBT Zd.B, Zn.B, Zm.B
         /// </summary>
-        public static Vector<sbyte> InterleavingXorEvenOdd(Vector<sbyte> odd, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> InterleavingXorEvenOdd(Vector<sbyte> odd, Vector<sbyte> leftEven, Vector<sbyte> rightOdd) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint16_t sveorbt[_s16](svint16_t odd, svint16_t op1, svint16_t op2)
         ///   EORBT Zd.H, Zn.H, Zm.H
         /// </summary>
-        public static Vector<ushort> InterleavingXorEvenOdd(Vector<ushort> odd, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> InterleavingXorEvenOdd(Vector<ushort> odd, Vector<ushort> leftEven, Vector<ushort> rightOdd) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t sveorbt[_s32](svint32_t odd, svint32_t op1, svint32_t op2)
         ///   EORBT Zd.S, Zn.S, Zm.S
         /// </summary>
-        public static Vector<uint> InterleavingXorEvenOdd(Vector<uint> odd, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> InterleavingXorEvenOdd(Vector<uint> odd, Vector<uint> leftEven, Vector<uint> rightOdd) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t sveorbt[_s64](svint64_t odd, svint64_t op1, svint64_t op2)
         ///   EORBT Zd.D, Zn.D, Zm.D
         /// </summary>
-        public static Vector<ulong> InterleavingXorEvenOdd(Vector<ulong> odd, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> InterleavingXorEvenOdd(Vector<ulong> odd, Vector<ulong> leftEven, Vector<ulong> rightOdd) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint8_t sveortb[_s8](svint8_t even, svint8_t op1, svint8_t op2)
         ///   EORTB Zd.B, Zn.B, Zm.B
         /// </summary>
-        public static Vector<byte> InterleavingXorOddEven(Vector<byte> even, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> InterleavingXorOddEven(Vector<byte> even, Vector<byte> leftOdd, Vector<byte> rightEven) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint16_t sveortb[_s16](svint16_t even, svint16_t op1, svint16_t op2)
         ///   EORTB Zd.H, Zn.H, Zm.H
         /// </summary>
-        public static Vector<short> InterleavingXorOddEven(Vector<short> even, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> InterleavingXorOddEven(Vector<short> even, Vector<short> leftOdd, Vector<short> rightEven) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t sveortb[_s32](svint32_t even, svint32_t op1, svint32_t op2)
         ///   EORTB Zd.S, Zn.S, Zm.S
         /// </summary>
-        public static Vector<int> InterleavingXorOddEven(Vector<int> even, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> InterleavingXorOddEven(Vector<int> even, Vector<int> leftOdd, Vector<int> rightEven) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t sveortb[_s64](svint64_t even, svint64_t op1, svint64_t op2)
         ///   EORTB Zd.D, Zn.D, Zm.D
         /// </summary>
-        public static Vector<long> InterleavingXorOddEven(Vector<long> even, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> InterleavingXorOddEven(Vector<long> even, Vector<long> leftOdd, Vector<long> rightEven) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint8_t sveortb[_s8](svint8_t even, svint8_t op1, svint8_t op2)
         ///   EORTB Zd.B, Zn.B, Zm.B
         /// </summary>
-        public static Vector<sbyte> InterleavingXorOddEven(Vector<sbyte> even, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> InterleavingXorOddEven(Vector<sbyte> even, Vector<sbyte> leftOdd, Vector<sbyte> rightEven) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint16_t sveortb[_s16](svint16_t even, svint16_t op1, svint16_t op2)
         ///   EORTB Zd.H, Zn.H, Zm.H
         /// </summary>
-        public static Vector<ushort> InterleavingXorOddEven(Vector<ushort> even, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> InterleavingXorOddEven(Vector<ushort> even, Vector<ushort> leftOdd, Vector<ushort> rightEven) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t sveortb[_s32](svint32_t even, svint32_t op1, svint32_t op2)
         ///   EORTB Zd.S, Zn.S, Zm.S
         /// </summary>
-        public static Vector<uint> InterleavingXorOddEven(Vector<uint> even, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> InterleavingXorOddEven(Vector<uint> even, Vector<uint> leftOdd, Vector<uint> rightEven) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t sveortb[_s64](svint64_t even, svint64_t op1, svint64_t op2)
         ///   EORTB Zd.D, Zn.D, Zm.D
         /// </summary>
-        public static Vector<ulong> InterleavingXorOddEven(Vector<ulong> even, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> InterleavingXorOddEven(Vector<ulong> even, Vector<ulong> leftOdd, Vector<ulong> rightEven) { throw new PlatformNotSupportedException(); }
 
         // Base 2 logarithm as integer
 
@@ -3129,37 +3129,37 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svshllb[_n_s16](svint8_t op1, uint64_t imm2)
         ///   SSHLLB Zresult.H, Zop1.B, #imm2
         /// </summary>
-        public static Vector<short> ShiftLeftLogicalWideningEven(Vector<sbyte> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> ShiftLeftLogicalWideningEven(Vector<sbyte> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svshllb[_n_s32](svint16_t op1, uint64_t imm2)
         ///   SSHLLB Zresult.S, Zop1.H, #imm2
         /// </summary>
-        public static Vector<int> ShiftLeftLogicalWideningEven(Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> ShiftLeftLogicalWideningEven(Vector<short> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t svshllb[_n_s64](svint32_t op1, uint64_t imm2)
         ///   SSHLLB Zresult.D, Zop1.S, #imm2
         /// </summary>
-        public static Vector<long> ShiftLeftLogicalWideningEven(Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> ShiftLeftLogicalWideningEven(Vector<int> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint16_t svshllb[_n_u16](svuint8_t op1, uint64_t imm2)
         ///   USHLLB Zresult.H, Zop1.B, #imm2
         /// </summary>
-        public static Vector<ushort> ShiftLeftLogicalWideningEven(Vector<byte> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> ShiftLeftLogicalWideningEven(Vector<byte> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32_t svshllb[_n_u32](svuint16_t op1, uint64_t imm2)
         ///   USHLLB Zresult.S, Zop1.H, #imm2
         /// </summary>
-        public static Vector<uint> ShiftLeftLogicalWideningEven(Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> ShiftLeftLogicalWideningEven(Vector<ushort> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svshllb[_n_u64](svuint32_t op1, uint64_t imm2)
         ///   USHLLB Zresult.D, Zop1.S, #imm2
         /// </summary>
-        public static Vector<ulong> ShiftLeftLogicalWideningEven(Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> ShiftLeftLogicalWideningEven(Vector<uint> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
 
 
         // Shift left long (top)
@@ -3168,37 +3168,37 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svshllt[_n_s16](svint8_t op1, uint64_t imm2)
         ///   SSHLLT Zresult.H, Zop1.B, #imm2
         /// </summary>
-        public static Vector<short> ShiftLeftLogicalWideningOdd(Vector<sbyte> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> ShiftLeftLogicalWideningOdd(Vector<sbyte> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svshllt[_n_s32](svint16_t op1, uint64_t imm2)
         ///   SSHLLT Zresult.S, Zop1.H, #imm2
         /// </summary>
-        public static Vector<int> ShiftLeftLogicalWideningOdd(Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> ShiftLeftLogicalWideningOdd(Vector<short> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t svshllt[_n_s64](svint32_t op1, uint64_t imm2)
         ///   SSHLLT Zresult.D, Zop1.S, #imm2
         /// </summary>
-        public static Vector<long> ShiftLeftLogicalWideningOdd(Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> ShiftLeftLogicalWideningOdd(Vector<int> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint16_t svshllt[_n_u16](svuint8_t op1, uint64_t imm2)
         ///   USHLLT Zresult.H, Zop1.B, #imm2
         /// </summary>
-        public static Vector<ushort> ShiftLeftLogicalWideningOdd(Vector<byte> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> ShiftLeftLogicalWideningOdd(Vector<byte> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32_t svshllt[_n_u32](svuint16_t op1, uint64_t imm2)
         ///   USHLLT Zresult.S, Zop1.H, #imm2
         /// </summary>
-        public static Vector<uint> ShiftLeftLogicalWideningOdd(Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> ShiftLeftLogicalWideningOdd(Vector<ushort> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svshllt[_n_u64](svuint32_t op1, uint64_t imm2)
         ///   USHLLT Zresult.D, Zop1.S, #imm2
         /// </summary>
-        public static Vector<ulong> ShiftLeftLogicalWideningOdd(Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> ShiftLeftLogicalWideningOdd(Vector<uint> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
 
 
         // Rounding shift left
@@ -3840,13 +3840,13 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svsbclb[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
         ///   SBCLB Ztied1.S, Zop2.S, Zop3.S
         /// </summary>
-        public static Vector<uint> SubtractBorrowWideningEven(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> SubtractBorrowWideningEven(Vector<uint> left, Vector<uint> right, Vector<uint> borrow) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svsbclb[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
         ///   SBCLB Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static Vector<ulong> SubtractBorrowWideningEven(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> SubtractBorrowWideningEven(Vector<ulong> left, Vector<ulong> right, Vector<ulong> borrow) { throw new PlatformNotSupportedException(); }
 
 
         // Subtract with borrow long (top)
@@ -3855,13 +3855,13 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svsbclt[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
         ///   SBCLT Ztied1.S, Zop2.S, Zop3.S
         /// </summary>
-        public static Vector<uint> SubtractBorrowWideningOdd(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> SubtractBorrowWideningOdd(Vector<uint> left, Vector<uint> right, Vector<uint> borrow) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svsbclt[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
         ///   SBCLT Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static Vector<ulong> SubtractBorrowWideningOdd(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> SubtractBorrowWideningOdd(Vector<ulong> left, Vector<ulong> right, Vector<ulong> borrow) { throw new PlatformNotSupportedException(); }
 
 
         // Subtract narrow high part (bottom)
@@ -4195,19 +4195,19 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svsublbt[_s16](svint8_t op1, svint8_t op2)
         ///   SSUBLBT Zresult.H, Zop1.B, Zop2.B
         /// </summary>
-        public static Vector<short> SubtractWideningEvenOdd(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> SubtractWideningEvenOdd(Vector<sbyte> leftEven, Vector<sbyte> rightOdd) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svsublbt[_s32](svint16_t op1, svint16_t op2)
         ///   SSUBLBT Zresult.S, Zop1.H, Zop2.H
         /// </summary>
-        public static Vector<int> SubtractWideningEvenOdd(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> SubtractWideningEvenOdd(Vector<short> leftEven, Vector<short> rightOdd) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t svsublbt[_s64](svint32_t op1, svint32_t op2)
         ///   SSUBLBT Zresult.D, Zop1.S, Zop2.S
         /// </summary>
-        public static Vector<long> SubtractWideningEvenOdd(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> SubtractWideningEvenOdd(Vector<int> leftEven, Vector<int> rightOdd) { throw new PlatformNotSupportedException(); }
 
 
         // Subtract wide (top)
@@ -4294,19 +4294,19 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svsubltb[_s16](svint8_t op1, svint8_t op2)
         ///   SSUBLTB Zresult.H, Zop1.B, Zop2.B
         /// </summary>
-        public static Vector<short> SubtractWideningOddEven(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> SubtractWideningOddEven(Vector<sbyte> leftOdd, Vector<sbyte> rightEven) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svsubltb[_s32](svint16_t op1, svint16_t op2)
         ///   SSUBLTB Zresult.S, Zop1.H, Zop2.H
         /// </summary>
-        public static Vector<int> SubtractWideningOddEven(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> SubtractWideningOddEven(Vector<short> leftOdd, Vector<short> rightEven) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t svsubltb[_s64](svint32_t op1, svint32_t op2)
         ///   SSUBLTB Zresult.D, Zop1.S, Zop2.S
         /// </summary>
-        public static Vector<long> SubtractWideningOddEven(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> SubtractWideningOddEven(Vector<int> leftOdd, Vector<int> rightEven) { throw new PlatformNotSupportedException(); }
 
 
         // Bit vector table lookups
