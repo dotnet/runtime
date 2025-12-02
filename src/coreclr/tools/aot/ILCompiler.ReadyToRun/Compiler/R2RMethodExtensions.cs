@@ -19,19 +19,12 @@ namespace ILCompiler
         /// <returns>The EcmaMethod definition, or null if the method is not backed by ECMA metadata.</returns>
         public static EcmaMethod GetEcmaDefinition(this MethodDesc method)
         {
-            MethodDesc definition = method.GetTypicalMethodDefinition();
-
-            if (definition is EcmaMethod ecmaMethod)
+            return method.GetTypicalMethodDefinition() switch
             {
-                return ecmaMethod;
-            }
-
-            if (definition is AsyncMethodVariant asyncVariant)
-            {
-                return asyncVariant.Target;
-            }
-
-            return null;
+                EcmaMethod ecmaMethod => ecmaMethod,
+                AsyncMethodVariant asyncVariant => asyncVariant.Target,
+                _ => null
+            };
         }
     }
 }
