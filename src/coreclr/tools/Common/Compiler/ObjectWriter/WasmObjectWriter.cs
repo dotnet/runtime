@@ -100,7 +100,7 @@ namespace ILCompiler.ObjectWriter
         }
 
         public override void EmitObject(Stream outputFileStream, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
-        {            
+        {
             ArrayBuilder<WasmFuncType> methodSignatures = new();
             ArrayBuilder<IMethodBodyNode> methodBodies = new();
             foreach (DependencyNode node in nodes)
