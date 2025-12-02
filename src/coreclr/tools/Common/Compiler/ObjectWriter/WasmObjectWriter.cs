@@ -212,7 +212,6 @@ namespace ILCompiler.ObjectWriter
         private WasmSection WriteFunctionSection(WasmFuncType[] allFunctionSignatures, IDictionary<WasmFuncType, int> signatureMap, Logger logger)
         {
             WasmSection functionSection = new WasmSection(WasmSectionType.Function, new SectionData(), "function");
-        
             SectionWriter writer = functionSection.Writer;
             // Write the number of functions
             writer.WriteULEB128((ulong)allFunctionSignatures.Length);
