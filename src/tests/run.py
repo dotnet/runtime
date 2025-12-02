@@ -83,6 +83,269 @@ logs_dir_help = """\
 Specify the directory where log files are written. Default: `artifacts/log`.
 """
 
+def preprocess_args(args):
+    """ Preprocess arguments to convert shell-style arguments to Python-style arguments.
+    
+    This function handles argument format conversions from the shell scripts (run.sh/run.cmd)
+    to the format expected by the Python argument parser.
+    
+    Args:
+        args: List of command-line arguments (typically sys.argv[1:])
+    
+    Returns:
+        Preprocessed list of arguments
+    """
+    processed_args = []
+    i = 0
+    while i < len(args):
+        arg = args[i]
+        arg_lower = arg.lower()
+        
+        # Handle help arguments
+        if arg in ['-?', '/?', '-h', '/h', '-help', '/help', '--help']:
+            processed_args.append('--help')
+            i += 1
+            continue
+        
+        # Handle architecture arguments
+        if arg_lower in ['x64', 'x86', 'arm', 'arm64', 'loongarch64', 'riscv64', 'wasm']:
+            processed_args.extend(['-arch', arg_lower])
+            i += 1
+            continue
+        
+        # Handle build configuration arguments
+        if arg_lower in ['debug', 'checked', 'release']:
+            processed_args.extend(['-build_type', arg_lower.capitalize()])
+            i += 1
+            continue
+        
+        # Handle OS arguments
+        if arg_lower in ['android', 'wasi']:
+            processed_args.extend(['-os', arg_lower])
+            i += 1
+            continue
+        
+        # Handle verbose argument
+        if arg_lower in ['-v', '--verbose']:
+            processed_args.append('--verbose')
+            i += 1
+            continue
+        
+        # Handle sequential argument
+        if arg_lower == 'sequential':
+            processed_args.append('--sequential')
+            i += 1
+            continue
+        
+        # Handle parallel argument with value
+        if arg_lower == 'parallel' and i + 1 < len(args):
+            processed_args.extend(['-parallel', args[i + 1]])
+            i += 2
+            continue
+        
+        # Handle printlastresultsonly / --printLastResultsOnly
+        if arg_lower in ['printlastresultsonly', '--printlastresultsonly']:
+            processed_args.append('--analyze_results_only')
+            i += 1
+            continue
+        
+        # Handle logsdir with value
+        if arg_lower == 'logsdir' and i + 1 < len(args):
+            processed_args.extend(['-logs_dir', args[i + 1]])
+            i += 2
+            continue
+        
+        # Handle test environment
+        if arg_lower == 'testenv' and i + 1 < len(args):
+            processed_args.extend(['-test_env', args[i + 1]])
+            i += 2
+            continue
+        
+        # Handle jitstress with value
+        if arg_lower == 'jitstress' and i + 1 < len(args):
+            processed_args.extend(['--jitstress', args[i + 1]])
+            i += 2
+            continue
+        
+        # Handle jitstressregs with value
+        if arg_lower == 'jitstressregs' and i + 1 < len(args):
+            processed_args.extend(['--jitstressregs', args[i + 1]])
+            i += 2
+            continue
+        
+        # Handle jitminopts
+        if arg_lower == 'jitminopts':
+            processed_args.append('--jitminopts')
+            i += 1
+            continue
+        
+        # Handle jitforcerelocs
+        if arg_lower == 'jitforcerelocs':
+            processed_args.append('--jitforcerelocs')
+            i += 1
+            continue
+        
+        # Handle gcstresslevel with value
+        if arg_lower == 'gcstresslevel' and i + 1 < len(args):
+            processed_args.extend(['--gcstresslevel', args[i + 1]])
+            i += 2
+            continue
+        
+        # Handle gcname with value
+        if arg_lower == 'gcname' and i + 1 < len(args):
+            processed_args.extend(['--gcname', args[i + 1]])
+            i += 2
+            continue
+        
+        # Handle link with value
+        if arg_lower == 'link' and i + 1 < len(args):
+            processed_args.extend(['--link', args[i + 1]])
+            processed_args.append('--il_link')
+            i += 2
+            continue
+        
+        # Handle gcsimulator
+        if arg_lower == 'gcsimulator':
+            processed_args.append('--gcsimulator')
+            i += 1
+            continue
+        
+        # Handle longgc
+        if arg_lower in ['longgc', 'long-gc']:
+            processed_args.append('--long_gc')
+            i += 1
+            continue
+        
+        # Handle ilasmroundtrip
+        if arg_lower == 'ilasmroundtrip':
+            processed_args.append('--ilasmroundtrip')
+            i += 1
+            continue
+        
+        # Handle runcrossgen2tests
+        if arg_lower in ['runcrossgen2tests', '--runcrossgen2tests']:
+            processed_args.append('--run_crossgen2_tests')
+            i += 1
+            continue
+        
+        # Handle runlargeversionbubblecrossgen2tests
+        if arg_lower == 'runlargeversionbubblecrossgen2tests':
+            processed_args.append('--run_crossgen2_tests')
+            processed_args.append('--large_version_bubble')
+            i += 1
+            continue
+        
+        # Handle synthesizepgo
+        if arg_lower in ['synthesizepgo', '--synthesizepgo']:
+            processed_args.append('--synthesize_pgo')
+            i += 1
+            continue
+        
+        # Handle useServerGC
+        if arg_lower in ['useservergc', '--useservergc']:
+            processed_args.append('--useServerGC')
+            i += 1
+            continue
+        
+        # Handle enableEventLogging
+        if arg_lower in ['enableeventlogging', '--enableeventlogging']:
+            processed_args.append('--enableEventLogging')
+            i += 1
+            continue
+        
+        # Handle runincontext
+        if arg_lower == 'runincontext':
+            processed_args.append('--run_in_context')
+            i += 1
+            continue
+        
+        # Handle tieringtest
+        if arg_lower == 'tieringtest':
+            processed_args.append('--tiering_test')
+            i += 1
+            continue
+        
+        # Handle runnativeaottests
+        if arg_lower == 'runnativeaottests':
+            processed_args.append('--run_nativeaot_tests')
+            i += 1
+            continue
+        
+        # Handle interpreter
+        if arg_lower == 'interpreter':
+            processed_args.append('--interpreter')
+            i += 1
+            continue
+        
+        # Handle limitedDumpGeneration
+        if arg_lower in ['limiteddumpgeneration', '--limiteddumpgeneration']:
+            processed_args.append('--limited_core_dumps')
+            i += 1
+            continue
+        
+        # Handle --testRootDir=<value> style arguments
+        if arg.startswith('--testRootDir='):
+            processed_args.extend(['-test_location', arg.split('=', 1)[1]])
+            i += 1
+            continue
+        
+        # Handle --coreRootDir=<value> style arguments
+        if arg.startswith('--coreRootDir='):
+            processed_args.extend(['-core_root', arg.split('=', 1)[1]])
+            i += 1
+            continue
+        
+        # Handle --logsDir=<value> style arguments
+        if arg.startswith('--logsDir='):
+            processed_args.extend(['-logs_dir', arg.split('=', 1)[1]])
+            i += 1
+            continue
+        
+        # Handle --test-env=<value> style arguments
+        if arg.startswith('--test-env='):
+            processed_args.extend(['-test_env', arg.split('=', 1)[1]])
+            i += 1
+            continue
+        
+        # Handle arguments with = that haven't been processed yet (e.g., --jitstress=1)
+        if '=' in arg and arg.startswith('--'):
+            key, value = arg.split('=', 1)
+            key_lower = key.lower()
+            if key_lower == '--jitstress':
+                processed_args.extend(['--jitstress', value])
+            elif key_lower == '--jitstressregs':
+                processed_args.extend(['--jitstressregs', value])
+            elif key_lower == '--gcstresslevel':
+                processed_args.extend(['--gcstresslevel', value])
+            elif key_lower == '--gcname':
+                processed_args.extend(['--gcname', value])
+            elif key_lower == '--link':
+                processed_args.extend(['--link', value])
+                processed_args.append('--il_link')
+            else:
+                # Pass through unrecognized --key=value style arguments
+                processed_args.append(arg)
+            i += 1
+            continue
+        
+        # Handle timeout argument (from run.cmd)
+        if arg_lower == 'timeout' and i + 1 < len(args):
+            # Timeout is currently not used by run.py, but we'll skip it for compatibility
+            i += 2
+            continue
+        
+        # Handle msbuildargs (from run.cmd) - skip the rest of arguments
+        if arg_lower == 'msbuildargs':
+            # All remaining args are msbuild args, which we don't use in run.py
+            # Just skip them for now
+            break
+        
+        # If no match, pass the argument through as-is
+        processed_args.append(arg)
+        i += 1
+    
+    return processed_args
+
 parser = argparse.ArgumentParser(description=description)
 
 parser.add_argument("-os", dest="host_os", nargs='?', default=None)
@@ -113,6 +376,18 @@ parser.add_argument("--limited_core_dumps", dest="limited_core_dumps", action="s
 parser.add_argument("--run_in_context", dest="run_in_context", action="store_true", default=False)
 parser.add_argument("--tiering_test", dest="tiering_test", action="store_true", default=False)
 parser.add_argument("--run_nativeaot_tests", dest="run_nativeaot_tests", action="store_true", default=False)
+
+# Additional arguments for shell-script compatibility (passthrough from run.sh/run.cmd)
+# These are environment variable settings that the shell scripts would set
+parser.add_argument("--jitstress", dest="jitstress", default=None)
+parser.add_argument("--jitstressregs", dest="jitstressregs", default=None)
+parser.add_argument("--jitminopts", dest="jitminopts", action="store_true", default=False)
+parser.add_argument("--jitforcerelocs", dest="jitforcerelocs", action="store_true", default=False)
+parser.add_argument("--gcstresslevel", dest="gcstresslevel", default=None)
+parser.add_argument("--gcname", dest="gcname", default=None)
+parser.add_argument("--link", dest="link", default=None)
+parser.add_argument("--useServerGC", dest="useServerGC", action="store_true", default=False)
+parser.add_argument("--enableEventLogging", dest="enableEventLogging", action="store_true", default=False)
 
 ################################################################################
 # Globals
@@ -1471,5 +1746,37 @@ def main(args):
 ################################################################################
 
 if __name__ == "__main__":
-    args = parser.parse_args()
+    # Preprocess arguments to convert shell-style to Python-style
+    preprocessed_args = preprocess_args(sys.argv[1:])
+    args = parser.parse_args(preprocessed_args)
+    
+    # Set environment variables based on arguments (previously done by shell scripts)
+    if args.jitstress is not None:
+        os.environ["DOTNET_JitStress"] = args.jitstress
+    if args.jitstressregs is not None:
+        os.environ["DOTNET_JitStressRegs"] = args.jitstressregs
+    if args.jitminopts:
+        os.environ["DOTNET_JITMinOpts"] = "1"
+    if args.jitforcerelocs:
+        os.environ["DOTNET_ForceRelocs"] = "1"
+    if args.gcstresslevel is not None:
+        os.environ["DOTNET_GCStress"] = args.gcstresslevel
+    if args.gcname is not None:
+        os.environ["DOTNET_GCName"] = args.gcname
+    if args.link is not None:
+        os.environ["ILLINK"] = args.link
+        os.environ["DoLink"] = "true"
+    if args.useServerGC:
+        os.environ["DOTNET_gcServer"] = "1"
+    if args.enableEventLogging:
+        os.environ["DOTNET_EnableEventLog"] = "1"
+    if args.run_crossgen2_tests:
+        os.environ["RunCrossGen2"] = "1"
+    if args.large_version_bubble:
+        os.environ["LargeVersionBubble"] = "1"
+    if args.synthesize_pgo:
+        os.environ["CrossGen2SynthesizePgo"] = "1"
+    if args.interpreter:
+        os.environ["RunInterpreter"] = "1"
+    
     sys.exit(main(args))
