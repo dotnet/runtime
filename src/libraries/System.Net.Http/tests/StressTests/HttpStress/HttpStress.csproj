@@ -4,6 +4,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnablePreviewFeatures>True</EnablePreviewFeatures>
     <!-- the custom feed is required for System.CommandLine -->
     <RestoreSources>https://api.nuget.org/v3/index.json;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-libraries/nuget/v3/index.json</RestoreSources>
   </PropertyGroup>
