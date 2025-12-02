@@ -37,7 +37,7 @@ namespace ILCompiler
             if (type.IsValueType)
                 mangledJustTypeName = MangledBoxedTypeName(type);
             else
-                mangledJustTypeName = NameMangler.GetMangledTypeName(type);
+                mangledJustTypeName = NameMangler.GetMangledTypeName(type).ToString();
 
             // "??_7TypeName@@6B@" is the C++ mangling for "const TypeName::`vftable'"
             // This, along with LF_VTSHAPE debug records added by the object writer

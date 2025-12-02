@@ -23,7 +23,7 @@ namespace ILCompiler
             if (type.IsValueType)
                 mangledJustTypeName = MangledBoxedTypeName(type);
             else
-                mangledJustTypeName = NameMangler.GetMangledTypeName(type);
+                mangledJustTypeName = NameMangler.GetMangledTypeName(type).ToString();
 
             return "_ZTV" + mangledJustTypeName.Length.ToString(CultureInfo.InvariantCulture) + mangledJustTypeName;
         }
