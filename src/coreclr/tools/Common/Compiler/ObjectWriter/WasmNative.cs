@@ -9,7 +9,6 @@ using System.Runtime.CompilerServices;
 
 namespace ILCompiler.ObjectWriter
 {
-    // TODO: fill in with Wasm specific section information
     public enum WasmSectionType
     {
         Custom = 0,
@@ -26,14 +25,6 @@ namespace ILCompiler.ObjectWriter
         Data = 11,
         DataCount = 12,
         Tag = 13,
-    }
-    public static class WasmHelpers
-    {
-        public static void WriteLittleEndian<T>(T value, Span<byte> buffer)
-            where T : IBinaryInteger<T>
-        {
-            value.WriteLittleEndian(buffer);
-        }
     }
 
     public static class DummyValues
@@ -87,7 +78,19 @@ namespace ILCompiler.ObjectWriter
             return obj is WasmResultType other && Equals(other);
         }
 
-        public override int GetHashCode() => _types.Aggregate(0, (acc, val) => HashCode.Combine(acc, val.GetHashCode()));
+        public override int GetHashCode()
+        {
+            if (_types == null || _types.Length == 0)
+                return 0;
+
+            int code = _types[0].GetHashCode();
+            for (int i = 1; i < _types.Length; i++)
+            {
+                code = HashCode.Combine(code, _types[i].GetHashCode());
+            }
+
+            return code;
+        }
 
         public int EncodeSize()
         {
@@ -104,6 +107,19 @@ namespace ILCompiler.ObjectWriter
                 buffer[(int)sizeLength + i] = (byte)_types[i];
             }
             return (int)(sizeLength + (uint)_types.Length);
+        }
+    }
+
+    public static class WasmResultTypeExtensions
+    {
+        public static string ToTypeListString(this WasmResultType result)
+        {
+            var types = result.Types.ToArray();
+
+            if (types == null || types.Length == 0)
+                return string.Empty;
+
+            return string.Join(" ", types.Select(t => WasmValueTypeExtensions.ToString(t)));
         }
     }
 
@@ -158,18 +174,4 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
-    // Add this extension to WasmResultType for ToString support
-    public static class WasmResultTypeExtensions
-    {
-        public static string ToTypeListString(this WasmResultType result)
-        {
-            // Use reflection to access _types since it's private and readonly
-            var types = result.Types.ToArray();
-
-            if (types == null || types.Length == 0)
-                return string.Empty;
-
-            return string.Join(" ", types.Select(t => t.ToString()));
-        }
-    }
 }

@@ -29,12 +29,9 @@ namespace ILCompiler.ObjectWriter
         public WasmSectionType Type { get; }
         public string Name { get; }
         public SectionData Data => _data;
-        public SectionData PrependData => _prepend;
         private SectionWriter? _writer;
-        private SectionWriter? _prependWriter;
 
         private SectionData _data;
-        private SectionData _prepend;
 
         public Span<byte> Header
         {
@@ -42,13 +39,15 @@ namespace ILCompiler.ObjectWriter
             {
                 // Section header consists of:
                 // 1 byte: section type
-                // ULEB128: size of section (including prepend and data) (max = ceil(64/7) = 10 bytes)
-                Span<byte> header = new byte[1+10];
-                ulong sectionSize = (ulong)(_prepend.Length) + (ulong)_data.Length;
+                // ULEB128: size of section
+                ulong sectionSize = (ulong)_data.Length;
+                var encodeLength = DwarfHelper.SizeOfULEB128(sectionSize);
 
+                Span<byte> header = new byte[1+encodeLength];
                 header[0] = (byte)Type;
-                DwarfHelper.WriteULEB128(header.Slice(1), (ulong)sectionSize);
-                return header.Slice(0, (int)(1 + DwarfHelper.SizeOfULEB128(sectionSize)));
+                DwarfHelper.WriteULEB128(header.Slice(1), sectionSize);
+
+                return header;
             }
         }
 
@@ -64,24 +63,11 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public SectionWriter PrependWriter
-        {
-            get
-            {
-                if (_prependWriter == null)
-                {
-                    _prependWriter = new SectionWriter(null, 0, _prepend);
-                }
-                return _prependWriter.Value;
-            }
-        }
-
         public WasmSection(WasmSectionType type, SectionData data, string name)
         {
             Type = type;
             Name = name;
             _data = data;
-            _prepend = new SectionData();
         }
     }
 
@@ -129,8 +115,8 @@ namespace ILCompiler.ObjectWriter
                 {
                     methodSignatures.Add(_wasmAbiContext.GetSignature(methodNode.Method));
                     methodBodies.Add(methodNode);
-                    // TODO: record relocations
-                }                
+                    // TODO: record relocations and attached data
+                }
             }
 
             Dictionary<WasmFuncType, int> signatureMap = new();
@@ -174,7 +160,10 @@ namespace ILCompiler.ObjectWriter
                 writer.WriteUtf8StringNoNull(exportName);
                 writer.WriteByte(0x00); // export kind: function
                 writer.WriteULEB128((ulong)i);
-                logger.LogMessage($"Emitting export: {exportName} for function index {signatureMap[methodSignature]}");
+                if (logger.IsVerbose)
+                {
+                    logger.LogMessage($"Emitting export: {exportName} for function index {signatureMap[methodSignature]}");
+                }
             }
 
             return exportSection;
@@ -184,11 +173,9 @@ namespace ILCompiler.ObjectWriter
         {
             WasmSection codeSection = new WasmSection(WasmSectionType.Code, new SectionData(), "code");
 
-            SectionWriter prependWriter = codeSection.PrependWriter;
             SectionWriter writer = codeSection.Writer;
-
             // Write the number of functions
-            prependWriter.WriteULEB128((ulong)methodBodies.Count);
+            writer.WriteULEB128((ulong)methodBodies.Count);
             foreach (IMethodBodyNode methodBody in methodBodies)
             {
                 ObjectNode objectNode = methodBody as ObjectNode;
@@ -210,7 +197,10 @@ namespace ILCompiler.ObjectWriter
             writer.WriteULEB128((ulong)functionSignatures.Length);
             foreach (WasmFuncType signature in functionSignatures)
             {
-                logger.LogMessage($"Emitting function signature: {signature}");
+                if (logger.IsVerbose)
+                {
+                    logger.LogMessage($"Emitting function signature: {signature}");
+                }
                 writer.EmitData(signature.Encode());
             }
             return typeSection;
@@ -236,29 +226,23 @@ namespace ILCompiler.ObjectWriter
             var section = writeFunc();
 
             outputFileStream.Write(section.Header);
-            section.PrependData.GetReadStream().CopyTo(outputFileStream);
-
-            logger.LogMessage($"Wrote section header of size {section.Header.Length} bytes.");
+            if (logger.IsVerbose)
+            {
+                logger.LogMessage($"Wrote section header of size {section.Header.Length} bytes.");
+            }
 
             section.Data.GetReadStream().CopyTo(outputFileStream);
-            logger.LogMessage($"Emitted section: {section.Name} of type `{section.Type}` with prepend size {section.PrependData.Length} bytes and size {section.Data.Length} bytes.");
+            if (logger.IsVerbose)
+            {
+                logger.LogMessage($"Emitted section: {section.Name} of type `{section.Type}` with size {section.Data.Length} bytes.");
+            }
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment) => throw new NotImplementedException();
-
         private WasmSection CreateSection(WasmSectionType sectionType, string symbolName, int sectionIndex) => throw new NotImplementedException();
-
-        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream)
-        {
-            throw new NotImplementedException();
-        }
-
-        private protected override void EmitObjectFile(Stream outputFileStream)
-        {
-        }
+        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream) => throw new NotImplementedException();
+        private protected override void EmitObjectFile(Stream outputFileStream) => throw new NotImplementedException();
         private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList) => throw new NotImplementedException();
         private protected override void EmitSymbolTable(IDictionary<string, SymbolDefinition> definedSymbols, SortedSet<string> undefinedSymbols) => throw new NotImplementedException();
-       
     }
-
 }
