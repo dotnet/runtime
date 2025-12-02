@@ -121,7 +121,7 @@ Creates a conditional dependency where two nodes must both be present for the de
 | `dependentIndex1` | int | First dependent node |
 | `dependentIndex2` | int | Second dependent node |
 | `dependencyIndex` | int | The dependency node |
-| `reason` | string | Edge label (auto-appends "(conditional)") |
+| `reason` | string | Edge label describing why the dependency exists |
 
 In the dependency graph viewer, this corresponds to a synthetic "AND" node representing `(dependent1, dependent2)` with three edges:
 - `dependent1 → combined` (labeled "Primary")
