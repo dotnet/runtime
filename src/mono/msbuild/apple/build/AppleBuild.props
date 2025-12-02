@@ -32,6 +32,14 @@
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true'">macho</PublishReadyToRunContainerFormat>
 
     <AppleBuildAfterThisTarget Condition="'$(AppleBuildAfterThisTarget)' == ''">Publish</AppleBuildAfterThisTarget>
+  </PropertyGroup>
+
+  <!-- Tracking issue: https://github.com/dotnet/runtime/issues/119006
+       Use the repo's CrossGen props/targets.
+       This can be removed once we upstream Mach-O support in the targets to the SDK -->
+  <Import Project="$(Crossgen2SdkOverridePropsPath)" Condition="'$(PublishReadyToRun)' == 'true' and '$(Crossgen2SdkOverridePropsPath)' != ''" />
+
+  <PropertyGroup>
     <AppleBuildDependsOn>
         $(_ReadRuntimeComponentsManifestTargetName);
         _InitializeCommonProperties;
@@ -44,6 +52,11 @@
         _AppleGenerateAppBundle;
         _AfterAppleBuild
     </AppleBuildDependsOn>
+
+    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/119006
+    Import after SDK targets in order to override R2R-related targets in the SDK -->
+    <AfterMicrosoftNETSdkTargets Condition="'$(PublishReadyToRun)' == 'true' and '$(Crossgen2SdkOverrideTargetsPath)' != ''">$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
+    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets</AfterMicrosoftNETSdkTargets>
 
     <!-- When building on Helix $(_CommonTargetsDir) will be properly set, otherwise we have to set it to a in-tree location -->
     <_CommonTargetsDir Condition="'$(_CommonTargetsDir)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', 'common'))</_CommonTargetsDir>
