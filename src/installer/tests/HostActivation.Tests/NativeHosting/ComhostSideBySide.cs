@@ -129,7 +129,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 ManagedHost_SelfContained = TestApp.CreateFromBuiltAssets("RegFreeCom");
                 ManagedHost_SelfContained.PopulateSelfContained(TestApp.MockedComponent.None);
-                ManagedHost_FrameworkDependent.CreateAppHost();
+                ManagedHost_SelfContained.CreateAppHost();
                 File.Copy(regFreeManifestPath, Path.Combine(ManagedHost_SelfContained.Location, regFreeManifestName));
 
                 // Copy the ComLibrary output and comhost to the ComSxS and ManagedHost directories
