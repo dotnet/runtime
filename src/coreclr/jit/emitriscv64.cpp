@@ -1211,19 +1211,6 @@ void emitter::emitIns_R_C(
     id->idInsOpt(INS_OPTS_RC);
     id->idCodeSize(2 * sizeof(code_t)); // auipc + load/addi
 
-    if (EA_IS_GCREF(attr))
-    {
-        /* A special value indicates a GCref pointer value */
-        id->idGCref(GCT_GCREF);
-        id->idOpSize(EA_PTRSIZE);
-    }
-    else if (EA_IS_BYREF(attr))
-    {
-        /* A special value indicates a Byref pointer value */
-        id->idGCref(GCT_BYREF);
-        id->idOpSize(EA_PTRSIZE);
-    }
-
     // TODO-RISCV64: this maybe deleted.
     id->idSetIsBound(); // We won't patch address since we will know the exact distance
                         // once JIT code and data are allocated together.
@@ -1243,41 +1230,26 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 // This computes address from the immediate which is relocatable.
 void emitter::emitIns_R_AI(instruction  ins,
                            emitAttr     attr,
-                           regNumber    reg,
+                           regNumber    dataReg,
+                           regNumber    addrReg,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
-    assert(EA_IS_RELOC(attr)); // EA_PTR_DSP_RELOC
-    assert(ins == INS_jal);    // for special.
-    assert(isGeneralRegister(reg));
-    // INS_OPTS_RELOC: placeholders.  2-ins:
-    //  case:EA_HANDLE_CNS_RELOC
-    //   auipc  reg, off-hi-20bits
-    //   addi   reg, reg, off-lo-12bits
-    //  case:EA_PTR_DSP_RELOC
-    //   auipc  reg, off-hi-20bits
-    //   ld     reg, reg, off-lo-12bits
+    assert(EA_IS_RELOC(attr));
+    assert(emitComp->opts.compReloc || (CorInfoReloc::RELATIVE32 == emitComp->eeGetRelocTypeHint((void*)addr)));
+    assert(ins == INS_addi || emitInsIsLoadOrStore(ins));
+    assert(emitInsIsStore(ins) || isFloatReg(dataReg) || (dataReg == REG_ZERO) || (dataReg == addrReg));
+    assert(isGeneralRegister(addrReg));
+    // 2-ins:
+    //   auipc  addrReg, off-hi-20bits
+    //   ins    dataReg, addrReg, off-lo-12bits
 
     instrDesc* id = emitNewInstr(attr);
 
     id->idIns(ins);
-    assert(reg != REG_R0); // for special. reg Must not be R0.
-    id->idReg1(reg);       // destination register that will get the constant value.
+    id->idReg1(dataReg);
+    id->idReg2(addrReg);
 
     id->idInsOpt(INS_OPTS_RELOC);
-
-    if (EA_IS_GCREF(attr))
-    {
-        /* A special value indicates a GCref pointer value */
-        id->idGCref(GCT_GCREF);
-        id->idOpSize(EA_PTRSIZE);
-    }
-    else if (EA_IS_BYREF(attr))
-    {
-        /* A special value indicates a Byref pointer value */
-        id->idGCref(GCT_BYREF);
-        id->idOpSize(EA_PTRSIZE);
-    }
-
     id->idAddr()->iiaAddr = (BYTE*)addr;
     id->idCodeSize(8);
 
@@ -1353,19 +1325,6 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     id->idCodeSize(2 * sizeof(code_t));
     id->idReg1(reg);
 
-    if (EA_IS_GCREF(attr))
-    {
-        /* A special value indicates a GCref pointer value */
-        id->idGCref(GCT_GCREF);
-        id->idOpSize(EA_PTRSIZE);
-    }
-    else if (EA_IS_BYREF(attr))
-    {
-        /* A special value indicates a Byref pointer value */
-        id->idGCref(GCT_BYREF);
-        id->idOpSize(EA_PTRSIZE);
-    }
-
 #ifdef DEBUG
     // Mark the catch return
     if (emitComp->compCurBB->KindIs(BBJ_EHCATCHRET))
@@ -1375,6 +1334,43 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 #endif // DEBUG
 
     appendToCurIG(id);
+}
+
+//------------------------------------------------------------------------
+// emitIns_R_R_Addr: emit instruction sequence for a long (address pointer) immediate
+//
+// If the address is approximately in range, emits a PC-relative combo with a relocation:
+//     auipc regAddr, offset_hi20
+//     ins   regData, regAddr, offset_lo12
+// Otherwise, synthesizes an absolute address combo:
+//     li regAddr, (addr - lo12)
+//     ins regData, regAddr, lo12
+//
+// Arguments:
+//    ins     - an instruction that is a 64-bit adder with 12-bit immediate (addi/load/store)
+//    attr    - attribute
+//    regData - destination register for addi/load, source for stores
+//    regAddr - temporary register to synthesize the address into (pass same as regData if possible)
+//    addr    - the address
+//
+void emitter::emitIns_R_R_Addr(instruction ins, emitAttr attr, regNumber regData, regNumber regAddr, void* addr)
+{
+    assert(ins == INS_addi || emitInsIsLoadOrStore(ins));
+    assert(!EA_IS_RELOC(attr) && EA_SIZE(attr) == EA_PTRSIZE);
+
+    if (IsAddressInRange(addr))
+    {
+        attr = EA_SET_FLG(attr, EA_PTR_DSP_RELOC);
+        emitIns_R_AI(ins, attr, regData, regAddr, (ssize_t)addr);
+    }
+    else
+    {
+        ssize_t imm  = (ssize_t)addr;
+        ssize_t lo12 = (imm << (64 - 12)) >> (64 - 12);
+        imm -= lo12;
+        emitLoadImmediate(attr, regAddr, imm);
+        emitIns_R_R_I(ins, attr, regData, regAddr, lo12);
+    }
 }
 
 void emitter::emitIns_J(instruction ins, BasicBlock* dst)
@@ -1749,7 +1745,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
         appendToCurIG(id);
     }
-    else if (size == EA_PTRSIZE)
+    else if (EA_SIZE(size) == EA_PTRSIZE)
     {
         assert(!emitComp->compGeneratingProlog && !emitComp->compGeneratingEpilog);
         auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
@@ -1783,11 +1779,8 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     /* Sanity check the arguments depending on callType */
 
     assert(params.callType < EC_COUNT);
-    assert((params.callType != EC_FUNC_TOKEN) ||
-           (params.ireg == REG_NA && params.xreg == REG_NA && params.xmul == 0 && params.disp == 0));
-    assert(params.callType < EC_INDIR_R || params.addr == nullptr || isValidSimm12((ssize_t)params.addr));
-    assert(params.callType != EC_INDIR_R ||
-           (params.ireg < REG_COUNT && params.xreg == REG_NA && params.xmul == 0 && params.disp == 0));
+    assert(isGeneralRegister(params.ireg));
+    assert(params.callType < EC_INDIR_R || params.addr == nullptr);
 
     // RISCV64 never uses these
     assert(params.xreg == REG_NA && params.xmul == 0 && params.disp == 0);
@@ -1815,6 +1808,19 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         printf("\n");
     }
 #endif
+
+    ssize_t jalrOffset = 0;
+    if (params.callType == EC_FUNC_TOKEN && !IsAddressInRange(params.addr))
+    {
+        // Load upper bits of the absolute call address into a register:
+        // li   ireg, addr_upper
+        // jalr zero/ra, ireg, addr_lo12 (emitted below)
+        assert(params.addr != nullptr);
+        ssize_t imm = (ssize_t)params.addr;
+        jalrOffset  = (imm << (64 - 12)) >> (64 - 12); // low 12-bits, sign-extended
+        imm -= jalrOffset;
+        emitLoadImmediate(EA_PTRSIZE, params.ireg, imm); // upper bits
+    }
 
     /* Managed RetVal: emit sequence point for the call */
     if (emitComp->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
@@ -1885,40 +1891,32 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     id->idIns(INS_jalr);
 
     id->idInsOpt(INS_OPTS_C);
-    // INS_OPTS_C: placeholders.  1/2-ins:
-    //   if (callType == EC_INDIR_R)
-    //      jalr zero/ra, ireg, offset
-    //   else if (callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR)
-    //      auipc t2/ra, offset-hi20
-    //      jalr zero/ra, t2/ra, offset-lo12
 
     /* Record the address: method, indirection, or funcptr */
-    if (params.callType == EC_INDIR_R)
+    if ((params.callType == EC_INDIR_R) || (params.callType == EC_FUNC_TOKEN && !IsAddressInRange(params.addr)))
     {
         /* This is an indirect call (either a virtual call or func ptr call) */
-        // assert(callType == EC_INDIR_R);
+
+        //      jalr zero/ra, ireg, offset
 
         id->idSetIsCallRegPtr();
 
         regNumber reg_jalr = params.isJump ? REG_R0 : REG_RA;
         id->idReg4(reg_jalr);
         id->idReg3(params.ireg); // NOTE: for EC_INDIR_R, using idReg3.
-        id->idSmallCns(0);       // SmallCns will contain JALR's offset.
-        if (params.addr != nullptr)
-        {
-            // If addr is not NULL, it must contain JALR's offset, which is set to the lower 12 bits of address.
-            id->idSmallCns((size_t)params.addr);
-        }
-        assert(params.xreg == REG_NA);
-
+        id->idSmallCns(jalrOffset);
         id->idCodeSize(4);
     }
     else
     {
         /* This is a simple direct call: "call helper/method/addr" */
 
+        //      auipc t2/ra, offset-hi20
+        //      jalr zero/ra, t2/ra, offset-lo12
+
         assert(params.callType == EC_FUNC_TOKEN);
-        assert(params.addr != NULL);
+        assert(params.addr != nullptr);
+        assert(IsAddressInRange(params.addr));
 
         void* addr =
             (void*)(((size_t)params.addr) + (params.isJump ? 0 : 1)); // NOTE: low-bit0 is used for jalr ra/r0,rd,0
@@ -2022,7 +2020,7 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id)
         dst += emitOutput_ITypeInstr(dst, INS_jalr, linkReg, tempReg, 0);
 
         assert(id->idIsDspReloc());
-        emitRecordRelocation(origDst, (BYTE*)addr, CorInfoReloc::RISCV64_PC);
+        emitRecordRelocation(origDst, (BYTE*)addr, CorInfoReloc::RISCV64_CALL_PLT);
     }
 
     // If the method returns a GC ref, mark INTRET (A0) appropriately.
@@ -2867,25 +2865,20 @@ static ssize_t UpperWordOfDoubleWordDoubleSignExtend(ssize_t doubleWord)
 
 BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins)
 {
-    BYTE* const     dstBase = dst;
-    const regNumber reg1    = id->idReg1();
+    BYTE* const dstBase = dst;
 
-    dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, 0);
+    regNumber dataReg = id->idReg1();
+    regNumber addrReg = id->idReg2();
 
-    if (id->idIsCnsReloc())
-    {
-        *ins = INS_addi;
-    }
-    else
-    {
-        assert(id->idIsDspReloc());
-        *ins = INS_ld;
-    }
+    *ins = id->idIns();
+    assert(*ins == INS_addi || emitInsIsLoadOrStore(*ins));
+    dst += emitOutput_UTypeInstr(dst, INS_auipc, addrReg, 0);
+    emitGCregDeadUpd(addrReg, dst);
+    dst += emitInsIsStore(*ins) ? emitOutput_STypeInstr(dst, *ins, addrReg, dataReg, 0)
+                                : emitOutput_ITypeInstr(dst, *ins, dataReg, addrReg, 0);
 
-    dst += emitOutput_ITypeInstr(dst, *ins, reg1, reg1, 0);
-
-    emitRecordRelocation(dstBase, id->idAddr()->iiaAddr, CorInfoReloc::RISCV64_PC);
-
+    CorInfoReloc type = emitInsIsStore(*ins) ? CorInfoReloc::RISCV64_PCREL_S : CorInfoReloc::RISCV64_PCREL_I;
+    emitRecordRelocation(dstBase, id->idAddr()->iiaAddr, type);
     return dst;
 }
 
@@ -4659,11 +4652,21 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 assert(memBase == indir->Addr());
                 ssize_t cns = addr->AsIntCon()->IconValue();
 
-                ssize_t off = (cns << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
-                cns -= off;
+                bool      needTemp = emitInsIsStore(ins) || isFloatReg(dataReg) || (dataReg == REG_ZERO);
+                regNumber addrReg  = needTemp ? codeGen->rsGetRsvdReg() : dataReg;
+                if (addr->AsIntCon()->FitsInAddrBase(emitComp) && addr->AsIntCon()->AddrNeedsReloc(emitComp))
+                {
+                    attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
+                    emitIns_R_AI(ins, attr, dataReg, addrReg, (size_t)cns, cns, addr->GetIconHandleFlag());
+                }
+                else
+                {
+                    ssize_t off = (cns << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
+                    cns -= off;
 
-                emitLoadImmediate(EA_PTRSIZE, codeGen->rsGetRsvdReg(), cns);
-                emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), off);
+                    emitLoadImmediate(EA_PTRSIZE, addrReg, cns);
+                    emitIns_R_R_I(ins, attr, dataReg, addrReg, off);
+                }
             }
             else if (isValidSimm12(offset))
             {
@@ -5129,6 +5132,21 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 unsigned emitter::get_curTotalCodeSize()
 {
     return emitTotalCodeSize;
+}
+
+//----------------------------------------------------------------------------------------
+// IsAddressInRange: Returns whether an address should be attempted to be reached with an auipc + load/store/jalr/addi
+// instruction combo.
+//
+// Arguments:
+//    addr - The address to check
+//
+// Return Value:
+//    A struct containing the current instruction execution characteristics
+bool emitter::IsAddressInRange(void* addr)
+{
+    return emitComp->opts.compReloc || (INDEBUG(emitComp->opts.compEnablePCRelAddr&&)(
+                                           CorInfoReloc::RELATIVE32 == emitComp->eeGetRelocTypeHint(addr)));
 }
 
 #if defined(DEBUG) || defined(LATE_DISASM)
