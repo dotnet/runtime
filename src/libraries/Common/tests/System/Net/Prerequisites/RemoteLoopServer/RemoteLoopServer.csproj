@@ -3,10 +3,10 @@
   <PropertyGroup>
     <TargetFramework>$(_TargetFrameworkForXHarness)</TargetFramework>
     <!-- this DLL is loaded into xharness via reflection. 
-         It could be running on machine with $(NetCoreAppPrevious) installed and it would be $(NetCoreAppPrevious) process.
-         Because xharness is built for $(NetPrevious).
+         It could be running on machine with $(NetCoreAppMinimum) installed and it would be $(NetCoreAppMinimum) process.
+         Because xharness is built for $(NetCoreAppMinimum).
          That prevents dependencies from $(AspNetCoreAppCurrent) to be loaded -->
-    <TargetFramework Condition="'$(TargetFramework)' == ''">$(NetCoreAppPrevious)</TargetFramework>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">$(NetCoreAppMinimum)</TargetFramework>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
     <OutputType>Exe</OutputType>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
