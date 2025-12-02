@@ -9,7 +9,7 @@ namespace System.IO.Compression
     /// <remarks>
     /// The values correspond to the compression method values described in the ZIP File Format Specification (APPNOTE.TXT section 4.4.5).
     /// </remarks>
-    public enum ZipCompressionMethod : short
+    public enum ZipCompressionMethod
     {
         /// <summary>
         /// The entry is stored (no compression).

@@ -136,7 +136,7 @@ namespace System.IO.Compression
         Create = 1,
         Update = 2,
     }
-    public enum ZipCompressionMethod : short
+    public enum ZipCompressionMethod
     {
         Stored = 0,
         Deflate = 8,
