@@ -941,7 +941,7 @@ EEClass::CheckVarianceInSig(
                 uint32_t cArgs;
                 IfFailThrow(psig.GetData(&cArgs));
 
-                // Conservatively, assume non-variance of function pointer types
+                // Conservatively, assume non-variance of function pointer types, if we ever change this, update the TypeValidationChecker in crossgen2 also
                 if (!CheckVarianceInSig(numGenericArgs, pVarianceInfo, pModule, psig, gpNonVariant))
                     return FALSE;
 
@@ -1359,7 +1359,7 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
         return;
 
     // Step 1: Validate compatibility of return types on overriding methods
-    if (pMT->GetClass()->HasCovariantOverride() && (!pMT->GetModule()->IsReadyToRun() || !pMT->GetModule()->GetReadyToRunInfo()->SkipTypeValidation()))
+    if (pMT->GetClass()->HasCovariantOverride() && !pMT->GetModule()->SkipTypeValidation())
     {
         for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
         {
