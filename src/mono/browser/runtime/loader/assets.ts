@@ -672,10 +672,15 @@ function fetchResource (asset: AssetEntryInternal): Promise<Response> {
     }
 
     const fetchOptions: RequestInit = {};
-    if (!loaderHelpers.config.disableNoCacheFetch) {
-        // FIXME: "no-cache" is how blazor works in Net7, but this prevents caching on HTTP level
-        // if we would like to get rid of our own cache and only use HTTP cache, we need to remove this
-        // https://github.com/dotnet/runtime/issues/74815
+
+    // If the user explicitly set `disableNoCacheFetch`, we respect it.
+    // Otherwise, we configure caching depending on if the asset is fingerprinted or not.
+    // Fingerprinted assets do not need to be validated for staleness.
+    // Therefore, we do not want to use the "no-cache" header with them.
+    // https://github.com/dotnet/runtime/issues/74815
+    const assetIsFingerprinted = asset.virtualPath != undefined && asset.virtualPath !== asset.name;
+
+    if (!loaderHelpers.config.disableNoCacheFetch && !assetIsFingerprinted) {
         fetchOptions.cache = "no-cache";
     }
     if (asset.useCredentials) {
