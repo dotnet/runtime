@@ -56,7 +56,8 @@
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/119006
     Import after SDK targets in order to override R2R-related targets in the SDK -->
     <AfterMicrosoftNETSdkTargets Condition="'$(PublishReadyToRun)' == 'true' and '$(Crossgen2SdkOverrideTargetsPath)' != ''">$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
-    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets</AfterMicrosoftNETSdkTargets>
+    <!-- Only append AppleBuild.InTree.targets if it's not already in AfterMicrosoftNETSdkTargets to avoid duplicate imports -->
+    <AfterMicrosoftNETSdkTargets Condition="!$(AfterMicrosoftNETSdkTargets.Contains('AppleBuild.InTree.targets'))">$(AfterMicrosoftNETSdkTargets);$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets</AfterMicrosoftNETSdkTargets>
 
     <!-- When building on Helix $(_CommonTargetsDir) will be properly set, otherwise we have to set it to a in-tree location -->
     <_CommonTargetsDir Condition="'$(_CommonTargetsDir)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', 'common'))</_CommonTargetsDir>
