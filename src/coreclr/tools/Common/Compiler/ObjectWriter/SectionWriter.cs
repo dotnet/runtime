@@ -45,7 +45,7 @@ namespace ILCompiler.ObjectWriter
             long relativeOffset,
             Span<byte> data,
             RelocType relocType,
-            string symbolName,
+            Utf8String symbolName,
             long addend)
         {
             _objectWriter.EmitRelocation(
@@ -58,7 +58,7 @@ namespace ILCompiler.ObjectWriter
         }
 
         public readonly void EmitSymbolDefinition(
-            string symbolName,
+            Utf8String symbolName,
             long relativeOffset = 0,
             int size = 0,
             bool global = false)
@@ -73,7 +73,7 @@ namespace ILCompiler.ObjectWriter
 
         public readonly void EmitSymbolReference(
             RelocType relocType,
-            string symbolName,
+            Utf8String symbolName,
             long addend = 0)
         {
             IBufferWriter<byte> bufferWriter = _sectionData.BufferWriter;

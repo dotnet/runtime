@@ -13,6 +13,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Diagnostics;
 using Internal.JitInterface;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -47,9 +48,9 @@ namespace ILCompiler.ObjectWriter
         /// <summary>
         /// Item name
         /// </summary>
-        public readonly string Name;
+        public readonly Utf8String Name;
 
-        public OutputItem(int sectionIndex, ulong offset, string name)
+        public OutputItem(int sectionIndex, ulong offset, Utf8String name)
         {
             SectionIndex = sectionIndex;
             Offset = offset;
@@ -93,7 +94,7 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     public sealed class OutputSymbol : OutputItem
     {
-        public OutputSymbol(int sectionIndex, ulong offset, string name)
+        public OutputSymbol(int sectionIndex, ulong offset, Utf8String name)
             : base(sectionIndex, offset, name)
         {
         }
@@ -171,7 +172,7 @@ namespace ILCompiler.ObjectWriter
 
         public bool FindSymbol(OutputItem item, out int index)
         {
-            index = _symbols.BinarySearch(new OutputSymbol(item.SectionIndex, item.Offset, name: null), OutputItem.Comparer.Instance);
+            index = _symbols.BinarySearch(new OutputSymbol(item.SectionIndex, item.Offset, name: default), OutputItem.Comparer.Instance);
             bool result = (index >= 0 && index < _symbols.Count && OutputItem.Comparer.Instance.Compare(_symbols[index], item) == 0);
             if (!result)
             {

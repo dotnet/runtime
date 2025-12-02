@@ -273,15 +273,15 @@ namespace ILCompiler.DependencyAnalysis
                 return new FieldRvaDataNode(key);
             });
 
-            _externFunctionSymbols = new NodeCache<string, ExternFunctionSymbolNode>((string name) =>
+            _externFunctionSymbols = new NodeCache<Utf8String, ExternFunctionSymbolNode>((Utf8String name) =>
             {
                 return new ExternFunctionSymbolNode(name);
             });
-            _externIndirectFunctionSymbols = new NodeCache<string, ExternFunctionSymbolNode>((string name) =>
+            _externIndirectFunctionSymbols = new NodeCache<Utf8String, ExternFunctionSymbolNode>((Utf8String name) =>
             {
                 return new ExternFunctionSymbolNode(name, isIndirection: true);
             });
-            _externDataSymbols = new NodeCache<string, ExternDataSymbolNode>((string name) =>
+            _externDataSymbols = new NodeCache<Utf8String, ExternDataSymbolNode>((Utf8String name) =>
             {
                 return new ExternDataSymbolNode(name);
             });
@@ -972,30 +972,30 @@ namespace ILCompiler.DependencyAnalysis
             return _genericVariances.GetOrAdd(details);
         }
 
-        private NodeCache<string, ExternFunctionSymbolNode> _externFunctionSymbols;
+        private NodeCache<Utf8String, ExternFunctionSymbolNode> _externFunctionSymbols;
 
-        public ISortableSymbolNode ExternFunctionSymbol(string name)
+        public ISortableSymbolNode ExternFunctionSymbol(Utf8String name)
         {
             return _externFunctionSymbols.GetOrAdd(name);
         }
 
-        private NodeCache<string, ExternFunctionSymbolNode> _externIndirectFunctionSymbols;
+        private NodeCache<Utf8String, ExternFunctionSymbolNode> _externIndirectFunctionSymbols;
 
-        public ISortableSymbolNode ExternIndirectFunctionSymbol(string name)
+        public ISortableSymbolNode ExternIndirectFunctionSymbol(Utf8String name)
         {
             return _externIndirectFunctionSymbols.GetOrAdd(name);
         }
 
-        private NodeCache<string, ExternDataSymbolNode> _externDataSymbols;
+        private NodeCache<Utf8String, ExternDataSymbolNode> _externDataSymbols;
 
-        public ISortableSymbolNode ExternDataSymbol(string name)
+        public ISortableSymbolNode ExternDataSymbol(Utf8String name)
         {
             return _externDataSymbols.GetOrAdd(name);
         }
 
-        public ISortableSymbolNode ExternVariable(string name)
+        public ISortableSymbolNode ExternVariable(Utf8String name)
         {
-            string mangledName = NameMangler.NodeMangler.ExternVariable(name);
+            Utf8String mangledName = NameMangler.NodeMangler.ExternVariable(name);
             return _externDataSymbols.GetOrAdd(mangledName);
         }
 
@@ -1563,12 +1563,12 @@ namespace ILCompiler.DependencyAnalysis
         /// Returns alternative symbol name that object writer should produce for given symbols
         /// in addition to the regular one.
         /// </summary>
-        public string GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
+        public Utf8String GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
         {
             if (!NodeAliases.TryGetValue(node, out var value))
             {
                 isHidden = false;
-                return null;
+                return default;
             }
 
             isHidden = value.Hidden;
@@ -1595,7 +1595,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
-        public Dictionary<ISymbolNode, (string Name, bool Hidden)> NodeAliases = new Dictionary<ISymbolNode, (string, bool)>();
+        public Dictionary<ISymbolNode, (Utf8String Name, bool Hidden)> NodeAliases = new Dictionary<ISymbolNode, (Utf8String, bool)>();
 
         protected internal TypeManagerIndirectionNode TypeManagerIndirection = new TypeManagerIndirectionNode();
 

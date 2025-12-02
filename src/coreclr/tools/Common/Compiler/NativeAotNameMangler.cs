@@ -22,13 +22,13 @@ namespace ILCompiler
         }
 #endif
 
-        private string _compilationUnitPrefix;
+        private Utf8String _compilationUnitPrefix;
 
-        public override string CompilationUnitPrefix
+        public override Utf8String CompilationUnitPrefix
         {
             get
             {
-                Debug.Assert(_compilationUnitPrefix != null);
+                Debug.Assert(!_compilationUnitPrefix.IsNull);
                 return _compilationUnitPrefix;
             }
             set { _compilationUnitPrefix = SanitizeNameWithHash(value); }
@@ -162,6 +162,31 @@ namespace ILCompiler
                     // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
                     // failure.
                     hash = SHA256.HashData(GetBytesFromString(literal));
+                }
+
+                mangledName += "_" + Convert.ToHexString(hash);
+            }
+
+            return mangledName;
+        }
+
+        private Utf8String SanitizeNameWithHash(Utf8String literal)
+        {
+            Utf8String mangledName = SanitizeName(literal);
+
+            if (mangledName.Length > 30)
+                mangledName = new Utf8String(mangledName.AsSpan().Slice(0, 30).ToArray());
+
+            if (!mangledName.AsSpan().SequenceEqual(literal.AsSpan()))
+            {
+                byte[] hash;
+                lock (this)
+                {
+                    // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
+                    // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
+                    // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
+                    // failure.
+                    hash = SHA256.HashData(literal.AsSpan());
                 }
 
                 mangledName += "_" + Convert.ToHexString(hash);

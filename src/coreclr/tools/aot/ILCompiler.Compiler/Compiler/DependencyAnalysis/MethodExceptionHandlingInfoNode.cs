@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__ehinfo_" + nameMangler.GetMangledMethodName(_owningMethod));
+            sb.Append("__ehinfo_"u8).Append(nameMangler.GetMangledMethodName(_owningMethod));
         }
         public int Offset => 0;
         public override bool IsShareable => true;

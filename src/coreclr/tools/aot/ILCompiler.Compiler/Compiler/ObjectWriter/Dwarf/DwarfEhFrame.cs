@@ -171,9 +171,9 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private void WriteAddress(byte encoding, string symbolName, long symbolOffset = 0)
+        private void WriteAddress(byte encoding, Utf8String symbolName, long symbolOffset = 0)
         {
-            if (symbolName != null)
+            if (!symbolName.IsNull)
             {
                 RelocType relocationType = encoding switch
                 {

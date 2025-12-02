@@ -19,6 +19,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.Diagnostics;
 using ILCompiler.ObjectWriter;
+using Internal.Text;
 
 namespace ILCompiler.PEWriter
 {
@@ -37,19 +38,19 @@ namespace ILCompiler.PEWriter
         /// </summary>
         private class NodeTypeStatistics
         {
-            public readonly string Name;
+            public readonly Utf8String Name;
 
             public int Count;
             public int Length;
 
-            public NodeTypeStatistics(string name)
+            public NodeTypeStatistics(Utf8String name)
             {
                 Name = name;
             }
 
             public void AddNode(OutputNode node)
             {
-                Debug.Assert(Name == node.Name);
+                Debug.Assert(Name.AsSpan().SequenceEqual(node.Name.AsSpan()));
                 Count++;
                 Length += node.Length;
             }
@@ -116,7 +117,7 @@ namespace ILCompiler.PEWriter
         private IEnumerable<NodeTypeStatistics> GetNodeTypeStatistics()
         {
             List<NodeTypeStatistics> nodeTypeStats = new List<NodeTypeStatistics>();
-            Dictionary<string, int> statsNameIndex = new Dictionary<string, int>();
+            Dictionary<Utf8String, int> statsNameIndex = new Dictionary<Utf8String, int>();
             foreach (OutputNode node in _outputInfoBuilder.Nodes)
             {
                 if (!statsNameIndex.TryGetValue(node.Name, out int statsIndex))
