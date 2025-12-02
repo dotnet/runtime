@@ -210,7 +210,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 ManagedHost_SelfContained = TestApp.CreateFromBuiltAssets("ManagedHost");
                 ManagedHost_SelfContained.PopulateSelfContained(TestApp.MockedComponent.None);
-                ManagedHost_FrameworkDependent.CreateAppHost();
+                ManagedHost_SelfContained.CreateAppHost();
             }
 
             protected override void Dispose(bool disposing)
