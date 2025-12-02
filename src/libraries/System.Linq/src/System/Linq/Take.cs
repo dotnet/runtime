@@ -108,47 +108,80 @@ namespace System.Linq
 
             if (isStartIndexFromEnd)
             {
-                // TakeLast compat: enumerator should be disposed before yielding the first element.
+                TSource[]? buffer = null;
+                int capacity = startIndex;
+                int tailCount = 0;
+                int writeIndex = 0;
+
+                count = 0;
+
                 using (IEnumerator<TSource> e = source.GetEnumerator())
                 {
-                    if (!e.MoveNext())
-                    {
-                        yield break;
-                    }
-
-                    queue = new Queue<TSource>();
-                    queue.Enqueue(e.Current);
-                    count = 1;
-
                     while (e.MoveNext())
                     {
-                        if (count < startIndex)
-                        {
-                            queue.Enqueue(e.Current);
-                            ++count;
-                        }
-                        else
-                        {
-                            do
-                            {
-                                queue.Dequeue();
-                                queue.Enqueue(e.Current);
-                                checked { ++count; }
-                            } while (e.MoveNext());
-                            break;
-                        }
-                    }
+                        buffer ??= System.Buffers.ArrayPool<TSource>.Shared.Rent(capacity);
 
-                    Debug.Assert(queue.Count == Math.Min(count, startIndex));
+                        buffer[writeIndex] = e.Current;
+
+                        writeIndex++;
+                        if (writeIndex == capacity)
+                        {
+                            writeIndex = 0;
+                        }
+
+                        if (tailCount < capacity)
+                        {
+                            tailCount++;
+                        }
+
+                        checked { ++count; }
+                    }
+                }
+
+                if (buffer is null)
+                {
+                    yield break;
                 }
 
                 startIndex = CalculateStartIndex(isStartIndexFromEnd: true, startIndex, count);
                 endIndex = CalculateEndIndex(isEndIndexFromEnd, endIndex, count);
-                Debug.Assert(endIndex - startIndex <= queue.Count);
 
-                for (int rangeIndex = startIndex; rangeIndex < endIndex; rangeIndex++)
+                if (startIndex >= endIndex)
                 {
-                    yield return queue.Dequeue();
+                    System.Buffers.ArrayPool<TSource>.Shared.Return(
+                        buffer,
+                        System.Runtime.CompilerServices.RuntimeHelpers.IsReferenceOrContainsReferences<TSource>());
+
+                    yield break;
+                }
+
+                int length = endIndex - startIndex;
+
+                Debug.Assert(length <= tailCount);
+
+                // Map the [startIndex, endIndex) range onto the ring buffer.
+                int indexFirstInTail = (writeIndex - tailCount + capacity) % capacity;
+                int offset = startIndex - (count - tailCount);
+
+                try
+                {
+                    for (int i = 0; i < length; i++)
+                    {
+                        int pos = indexFirstInTail + offset + i;
+
+                        if (pos >= capacity)
+                        {
+                            pos -= capacity;
+                        }
+
+                        yield return buffer[pos];
+                    }
+                }
+                finally
+                {
+                    System.Buffers.ArrayPool<TSource>.Shared.Return(
+                        buffer,
+                        System.Runtime.CompilerServices.RuntimeHelpers.IsReferenceOrContainsReferences<TSource>());
                 }
             }
             else
