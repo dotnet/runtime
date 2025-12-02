@@ -37,6 +37,7 @@ extends:
     stages:
       - stage: Managed_ILAsm
         displayName: Managed IL Assembler Tests
+        dependsOn: []
         jobs:
           - template: /eng/pipelines/common/platform-matrix.yml
             parameters:
