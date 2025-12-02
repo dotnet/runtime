@@ -2869,11 +2869,11 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
             m_r1 = argLocDesc.m_idxGenReg;
             m_r2 = m_r1 + argLocDesc.m_cGenReg - 1;
         }
+        else if (argLocDesc.m_idxGenReg == m_r2 + 1
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
-        else if (argLocDesc.m_idxGenReg == m_r2 + 1 && (!pArgIt || !pArgIt->IsArgPassedByRef()))
-#else
-        else if (argLocDesc.m_idxGenReg == m_r2 + 1)
+                 && (!pArgIt || !pArgIt->IsArgPassedByRef())
 #endif // ENREGISTERED_PARAMTYPE_MAXSIZE
+                )
         {
             // Extend an existing range, but only if the argument is not passed by reference.
             // Arguments passed by reference are handled separately, because the interpreter stores the value types on its stack by value.
@@ -2959,11 +2959,11 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
         }
+        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= TARGET_POINTER_SIZE)
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
-        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= TARGET_POINTER_SIZE) && (!pArgIt || !pArgIt->IsArgPassedByRef()))
-#else
-        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= TARGET_POINTER_SIZE))
+                 && (!pArgIt || !pArgIt->IsArgPassedByRef())
 #endif // ENREGISTERED_PARAMTYPE_MAXSIZE
+                )
         {
             // Extend an existing range, but only if the argument is at least pointer size large.
             // The only case when this is not true is on Apple ARM64 OSes where primitive type smaller

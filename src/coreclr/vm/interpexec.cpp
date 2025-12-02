@@ -79,6 +79,9 @@ struct UnmanagedMethodWithTransitionParam
 };
 
 // Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
+// Arguments are bundled in a struct to force register passing on ARM32.
+// This ensures the SP value precisely matches the context used during stack unwinding,
+// preventing a crash from SP mismatch.
 NOINLINE
 void InvokeUnmanagedMethodWithTransition(UnmanagedMethodWithTransitionParam *pParam)
 {
