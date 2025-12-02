@@ -70,7 +70,7 @@ ILCompiler publishes its dependency graph through the `Microsoft-ILCompiler-Depe
    ```
 
    The `0x1:4` keyword/level pair enables the dependency graph events at Informational verbosity.
-3. Ensure the `IlcGenerateDgmlFile` property is **not** enabled; DGML generation suppresses these EventSource events.
+3. Ensure the `IlcGenerateDgmlFile` MSBuild property is **not** enabled (e.g., do not pass `/p:IlcGenerateDgmlFile=true` to the build); DGML generation suppresses these EventSource events.
 4. In another terminal, point ILCompiler at the same diagnostics port and run your build:
    ```bash
    export DOTNET_DiagnosticPorts=/tmp/ilc-depgraph.socket
@@ -91,7 +91,7 @@ Declares a new graph instance.
 | `id` | int | Unique graph identifier (allows multiple graphs in one trace) |
 | `name` | string | Human-readable graph name |
 
-Graph identifiers are stable within a trace: graph `1` corresponds to the dependency scanner graph and graph `2` corresponds to the code generation graph.
+Graph identifiers are stable within a trace: typically graph `1` corresponds to the dependency scanner graph and graph `2` corresponds to the code generation graph.
 
 #### Node Event
 Defines a node in the graph.
