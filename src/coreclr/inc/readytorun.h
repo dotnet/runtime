@@ -466,34 +466,6 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_StackProbe                = 0x111,
 
     READYTORUN_HELPER_GetCurrentManagedThreadId = 0x112,
-
-    // AsyncHelpers methods
-    READYTORUN_HELPER_AsyncHelpers_AsyncCallContinuation,
-    READYTORUN_HELPER_AsyncHelpers_TaskFromException,
-    READYTORUN_HELPER_AsyncHelpers_ValueTaskFromException,
-    READYTORUN_HELPER_AsyncHelpers_FinalizeTaskReturningThunk,
-    READYTORUN_HELPER_AsyncHelpers_FinalizeValueTaskReturningThunk,
-    READYTORUN_HELPER_AsyncHelpers_TransparentAwait,
-    READYTORUN_HELPER_AsyncHelpers_CompletedTask,
-    READYTORUN_HELPER_AsyncHelpers_CompletedTaskResult,
-
-    // ExecutionAndSyncBlockStore methods
-    READYTORUN_HELPER_ExecutionAndSyncBlockStore_Push,
-    READYTORUN_HELPER_ExecutionAndSyncBlockStore_Pop,
-
-    // Task methods
-    READYTORUN_HELPER_Task_FromResultT,
-    READYTORUN_HELPER_Task_get_CompletedTask,
-    READYTORUN_HELPER_Task_get_IsCompleted,
-    READYTORUN_HELPER_Task_get_Result,
-
-    // ValueTask methods
-    READYTORUN_HELPER_ValueTask_FromResultT,
-    READYTORUN_HELPER_ValueTask_get_CompletedTask,
-    READYTORUN_HELPER_ValueTask_get_IsCompleted,
-    READYTORUN_HELPER_ValueTask_ThrowIfCompletedUnsuccessfully,
-    READYTORUN_HELPER_ValueTask_AsTaskOrNotifier,
-    READYTORUN_HELPER_ValueTask_get_Result,
 };
 
 #include "readytoruninstructionset.h"
