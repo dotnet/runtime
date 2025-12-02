@@ -3421,7 +3421,7 @@ namespace ILAssembler
 #pragma warning restore CS0618 // Type or member is obsolete
             }
 
-            throw new NotImplementedException();
+            return new(blob);
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitObjSeq(CILParser.ObjSeqContext context) => VisitObjSeq(context);
@@ -3554,8 +3554,8 @@ namespace ILAssembler
             EntityRegistry.EntityBase memberReference = VisitMethodRef(context.methodRef()).Value;
             MethodSemanticsAttributes methodSemanticsAttributes = accessor switch
             {
-                ".set" => MethodSemanticsAttributes.Getter,
-                ".get" => MethodSemanticsAttributes.Setter,
+                ".set" => MethodSemanticsAttributes.Setter,
+                ".get" => MethodSemanticsAttributes.Getter,
                 ".other" => MethodSemanticsAttributes.Other,
                 _ => throw new UnreachableException(),
             };

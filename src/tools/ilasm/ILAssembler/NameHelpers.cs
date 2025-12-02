@@ -19,7 +19,7 @@ namespace ILAssembler
                     ? dottedName.Substring(0, lastDotIndex)
                     : string.Empty,
                 lastDotIndex != -1
-                    ? dottedName.Substring(lastDotIndex)
+                    ? dottedName.Substring(lastDotIndex + 1)
                     : dottedName);
         }
     }

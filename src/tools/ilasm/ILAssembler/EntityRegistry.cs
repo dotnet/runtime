@@ -31,12 +31,12 @@ namespace ILAssembler
         {
             public bool Equals(BlobBuilder? x, BlobBuilder? y)
             {
-                if (x is null == y is null)
+                if (x is null && y is null)
                 {
                     return true;
                 }
 
-                if (x is null)
+                if (x is null || y is null)
                 {
                     return false;
                 }
@@ -102,8 +102,8 @@ namespace ILAssembler
                         // COMPAT: Only record param entries for parameters that have names
                         // or other rows that would refer to it.
                         if (param.Name is not null
-                            && param.MarshallingDescriptor.Count != 0
-                            && param.HasCustomAttributes)
+                            || param.MarshallingDescriptor.Count != 0
+                            || param.HasCustomAttributes)
                         {
                             RecordEntityInTable(TableIndex.Param, param);
                         }
