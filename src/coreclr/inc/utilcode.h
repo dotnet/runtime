@@ -3236,14 +3236,14 @@ void PutLoongArch64PC12(UINT32 * pCode, INT64 imm);
 void PutLoongArch64JIR(UINT32 * pCode, INT64 imm);
 
 //*****************************************************************************
-//  Extract the PC-Relative offset from auipc + I-type adder (addi/ld/jalr)
+//  Extract the PC-Relative offset from auipc + I-type or S-type adder (addi/load/store/jalr)
 //*****************************************************************************
-INT64 GetRiscV64AuipcItype(UINT32 * pCode);
+INT64 GetRiscV64AuipcCombo(UINT32 * pCode, bool isStype);
 
 //*****************************************************************************
-//  Deposit the PC-Relative offset into auipc + I-type adder (addi/ld/jalr)
+//  Deposit the PC-Relative offset into auipc + I-type or S-type adder (addi/load/store/jalr)
 //*****************************************************************************
-void PutRiscV64AuipcItype(UINT32 * pCode, INT64 offset);
+void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, bool isStype);
 
 //*****************************************************************************
 // Returns whether the offset fits into bl instruction
@@ -3283,6 +3283,19 @@ inline bool FitsInRel12(INT32 val32)
 inline bool FitsInRel28(INT64 val64)
 {
     return (val64 >= -0x08000000LL) && (val64 < 0x08000000LL);
+}
+
+//*****************************************************************************
+// Returns whether the offset fits into a RISC-V auipc + I-type or S-type instruction combo
+//*****************************************************************************
+inline bool FitsInRiscV64AuipcCombo(INT64 val64)
+{
+    // A PC relative load/store/jalr/addi is 2 instructions, e.g.:
+    //     auipc reg,      offset_hi20  # range: [0x80000000, 0x7FFFF000]
+    //     ld    reg, reg, offset_lo12  # range: [0xFFFFF800, 0x000007FF]
+    // Both hi20 and lo12 immediates are sign-extended and combined with a 64-bit adder,
+    // which shifts the total 32-bit range into the negative by half of the 12-bit immediate range.
+    return (val64 >= -(1ll << 31) - (1ll << 11)) && (val64 < (1ll << 31) - (1ll << 11));
 }
 
 //
