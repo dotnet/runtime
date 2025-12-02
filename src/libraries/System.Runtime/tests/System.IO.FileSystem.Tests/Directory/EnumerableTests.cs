@@ -104,9 +104,7 @@ namespace System.IO.Tests
             {
                 rootDirectory.CreateSubdirectory(testFolderName);
             });
-}
-
-
+        }
 
         [Fact]
         public void EnumerateDirectories_NonBreakingSpace()
