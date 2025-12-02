@@ -365,12 +365,12 @@ EXTERN_C RuntimeThreadLocals* RhpGetThread()
     return &tls_CurrentThread;
 }
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
 Thread * ThreadStore::GetCurrentThreadIfAvailableAsyncSafe()
 {
     return (Thread*)FindThreadInAsyncSafeMap(minipal_get_current_thread_id_no_cache());
 }
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && !TARGET_WASM
 
 #endif // !DACCESS_COMPILE
 

@@ -5732,7 +5732,6 @@ retry_for_debugger:
 BOOL CheckActivationSafePoint(SIZE_T ip)
 {
     Thread *pThread = GetThreadAsyncSafe();
-    _ASSERTE(pThread != NULL);
 
     // The criteria for safe activation is to be running managed code.
     // Also we are not interested in handling interruption if we are already in preemptive mode nor if we are single stepping

@@ -381,7 +381,7 @@ set(VM_SOURCES_WKS
 )
 
 if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
-    list(APPEND COMMON_RUNTIME_SOURCES
+    list(APPEND VM_SOURCES_WKS
         ${RUNTIME_DIR}/asyncsafethreadmap.cpp
     )
 endif()
@@ -481,6 +481,12 @@ set(VM_HEADERS_WKS
     weakreferencenative.h
     ${VM_HEADERS_GDBJIT}
 )
+
+if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND VM_HEADERS_WKS
+        ${RUNTIME_DIR}/asyncsafethreadmap.h
+    )
+endif()
 
 set(GC_SOURCES_WKS
     ${GC_SOURCES_DAC_AND_WKS_COMMON}

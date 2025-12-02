@@ -53,7 +53,7 @@ bool InsertThreadIntoAsyncSafeMap(size_t osThread, void* pThread)
             {
                 // Another thread added the segment first
                 delete pNewSegment;
-                pNewSegment = *pExpected;
+                pNewSegment = pExpected;
             }
 
             pSegment = pNewSegment;
