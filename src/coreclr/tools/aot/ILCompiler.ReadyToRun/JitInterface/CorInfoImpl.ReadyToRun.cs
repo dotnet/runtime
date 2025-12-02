@@ -782,9 +782,9 @@ namespace Internal.JitInterface
                 {
                     // The synthetic async thunks require references to methods/types that may not have existing methodRef entries in the version bubble.
                     // These references need to be added to the mutable module if they don't exist.
-                    var requiredMutableModuleReferences = MethodBeingCompiled.IsAsync ?
-                        AsyncThunkILEmitter.GetRequiredReferencesForTaskReturningThunk(MethodBeingCompiled, ((CompilerTypeSystemContext)MethodBeingCompiled.Context).GetAsyncVariantMethod(MethodBeingCompiled))
-                        : AsyncThunkILEmitter.GetRequiredReferencesForAsyncThunk(MethodBeingCompiled, ((CompilerTypeSystemContext)MethodBeingCompiled.Context).GetAsyncVariantMethod(MethodBeingCompiled));
+                    var requiredMutableModuleReferences = MethodBeingCompiled.IsAsyncVariant() ?
+                        AsyncThunkILEmitter.GetRequiredReferencesForAsyncThunk(((AsyncMethodVariant)MethodBeingCompiled).Target)
+                        : AsyncThunkILEmitter.GetRequiredReferencesForTaskReturningThunk(MethodBeingCompiled);
                     foreach (var entity in requiredMutableModuleReferences)
                     {
                         // If we have a reference to the method/type already, we're okay.
