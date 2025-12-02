@@ -11,28 +11,28 @@ using FieldReference = Mono.Cecil.FieldReference;
 namespace ILLink.Shared.TrimAnalysis
 {
 
-	/// <summary>
-	/// A representation of a field. Typically a result of ldfld.
-	/// </summary>
-	internal sealed partial record FieldValue
-	{
-		public FieldValue (FieldReference fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, ITryResolveMetadata resolver)
-		{
-			StaticType = new (fieldToLoad.FieldType.InflateFrom (fieldToLoad.DeclaringType as IGenericInstance), resolver);
-			Field = fieldToLoad;
-			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
-		}
+    /// <summary>
+    /// A representation of a field. Typically a result of ldfld.
+    /// </summary>
+    internal sealed partial record FieldValue
+    {
+        public FieldValue(FieldReference fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, ITryResolveMetadata resolver)
+        {
+            StaticType = new(fieldToLoad.FieldType.InflateFrom(fieldToLoad.DeclaringType as IGenericInstance), resolver);
+            Field = fieldToLoad;
+            DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+        }
 
-		public readonly FieldReference Field;
+        public readonly FieldReference Field;
 
-		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
+        public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 
-		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
-			=> new string[] { Field.GetDisplayName () };
+        public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch()
+            => new string[] { Field.GetDisplayName() };
 
-		public override SingleValue DeepCopy () => this; // This value is immutable
+        public override SingleValue DeepCopy() => this; // This value is immutable
 
-		public override string ToString () => this.ValueToString (Field, DynamicallyAccessedMemberTypes);
-	}
+        public override string ToString() => this.ValueToString(Field, DynamicallyAccessedMemberTypes);
+    }
 
 }

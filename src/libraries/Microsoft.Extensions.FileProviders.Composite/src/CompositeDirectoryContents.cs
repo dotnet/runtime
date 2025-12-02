@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.FileProviders.Composite
         /// <param name="subpath">The path.</param>
         public CompositeDirectoryContents(IList<IFileProvider> fileProviders, string subpath)
         {
-            ThrowHelper.ThrowIfNull(fileProviders);
+            ArgumentNullException.ThrowIfNull(fileProviders);
 
             _fileProviders = fileProviders;
             _subPath = subpath;

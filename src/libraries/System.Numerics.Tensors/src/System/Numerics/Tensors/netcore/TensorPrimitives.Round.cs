@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 
@@ -22,8 +20,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Round<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IFloatingPoint<T> =>
+            where T : IFloatingPoint<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, RoundToEvenOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, RoundToEvenOperator<T>>(x, destination);
+        }
 
         /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -46,8 +51,13 @@ namespace System.Numerics.Tensors
                     return;
 
                 case MidpointRounding.AwayFromZero:
+                    if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, RoundAwayFromZeroOperator<float>>(x, destination))
+                    {
+                        return;
+                    }
+
                     InvokeSpanIntoSpan<T, RoundAwayFromZeroOperator<T>>(x, destination);
-                    break;
+                    return;
 
                 case MidpointRounding.ToZero:
                     Truncate(x, destination);

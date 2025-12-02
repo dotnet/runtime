@@ -599,26 +599,44 @@ AdjustContextForVirtualStub(
 
     PCODE f_IP = GetIP(pContext);
 
-    StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
+    bool isVirtualStubNullCheck = false;
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    if (VirtualCallStubManager::isCachedInterfaceDispatchStubAVLocation(f_IP))
+    {
+        isVirtualStubNullCheck = true; 
+    }
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+    if (!isVirtualStubNullCheck)
+    {
+        StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
 
-    if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
-    {
-        if ((*PTR_DWORD(f_IP) & 0xffffff) != X64_INSTR_CMP_IND_THIS_REG_RAX) // cmp [THIS_REG], rax
+        if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
         {
-            _ASSERTE(!"AV in DispatchStub at unknown instruction");
-            return FALSE;
+            if ((*PTR_DWORD(f_IP) & 0xffffff) != X64_INSTR_CMP_IND_THIS_REG_RAX) // cmp [THIS_REG], rax
+            {
+                _ASSERTE(!"AV in DispatchStub at unknown instruction");
+            }
+            else
+            {
+                isVirtualStubNullCheck = true;
+            }
+        }
+        else
+        if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
+        {
+            if ((*PTR_DWORD(f_IP) & 0xffffff) != X64_INSTR_MOV_RAX_IND_THIS_REG) // mov rax, [THIS_REG]
+            {
+                _ASSERTE(!"AV in ResolveStub at unknown instruction");
+            }
+            else
+            {
+                isVirtualStubNullCheck = true;
+            }
         }
     }
-    else
-    if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
-    {
-        if ((*PTR_DWORD(f_IP) & 0xffffff) != X64_INSTR_MOV_RAX_IND_THIS_REG) // mov rax, [THIS_REG]
-        {
-            _ASSERTE(!"AV in ResolveStub at unknown instruction");
-            return FALSE;
-        }
-    }
-    else
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+    if (!isVirtualStubNullCheck)
     {
         return FALSE;
     }

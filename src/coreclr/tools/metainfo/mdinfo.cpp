@@ -514,7 +514,10 @@ void MDInfo::DisplayScopeInfo()
     VWriteLine("ScopeName : %s",ConvertToUtf8(scopeName, scopeNameUtf8, ARRAY_SIZE(scopeNameUtf8)));
 
     if (!(m_DumpFilter & MDInfo::dumpNoLogo))
-        VWriteLine("MVID      : %s",GUIDAsString(mvid, guidString, STRING_BUFFER_LEN));
+    {
+        minipal_guid_as_string(mvid, guidString, STRING_BUFFER_LEN);
+        VWriteLine("MVID      : %s", guidString);
+    }
 
     hr = m_pImport->GetModuleFromScope(&mdm);
     if (FAILED(hr)) Error("GetModuleFromScope failed.", hr);
@@ -2189,15 +2192,6 @@ void MDInfo::DisplayPermissionInfo(mdPermission inPermission, const char *preFix
     DisplayCustomAttributes(inPermission, newPreFix);
 } // void MDInfo::DisplayPermissionInfo()
 
-
-// simply prints out the given GUID in standard form
-
-LPCSTR MDInfo::GUIDAsString(GUID inGuid, _Out_writes_(bufLen) LPSTR guidString, ULONG bufLen)
-{
-    GuidToLPSTR(inGuid, guidString, bufLen);
-    return guidString;
-} // LPCSTR MDInfo::GUIDAsString()
-
 #ifdef FEATURE_COMINTEROP
 LPCSTR MDInfo::VariantAsString(VARIANT *pVariant, _Out_writes_(bufLen) LPSTR buffer, ULONG bufLen)
 {
@@ -2918,7 +2912,7 @@ ErrExit:
     return hr;
 } // HRESULT MDInfo::GetOneElementType()
 
-// Display the fields of the N/Direct custom value structure.
+// Display the fields of the PInvoke custom value structure.
 
 void MDInfo::DisplayCorNativeLink(COR_NATIVE_LINK *pCorNLnk, const char *preFix)
 {
@@ -3954,10 +3948,10 @@ void MDInfo::DumpRaw(int iDump, bool bunused)
             const MD *pMd;
             pMd = (const MD *)pbMd;
 
-            VWriteLine("Metadata header: %d.%d, heaps: 0x%02x, rid: 0x%02x, valid: 0x%016I64x, sorted: 0x%016I64x",
+            VWriteLine("Metadata header: %d.%d, heaps: 0x%02x, rid: 0x%02x, valid: 0x%016" PRIx64 ", sorted: 0x%016" PRIx64,
                        pMd->m_major, pMd->m_minor, pMd->m_heaps, pMd->m_rid,
-                       (ULONGLONG)GET_UNALIGNED_VAL64(&(pMd->m_maskvalid)),
-                       (ULONGLONG)GET_UNALIGNED_VAL64(&(pMd->m_sorted)));
+                       (uint64_t)GET_UNALIGNED_VAL64(&(pMd->m_maskvalid)),
+                       (uint64_t)GET_UNALIGNED_VAL64(&(pMd->m_sorted)));
 
             if (m_DumpFilter & dumpMoreHex)
             {

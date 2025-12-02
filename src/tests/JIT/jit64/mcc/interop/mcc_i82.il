@@ -4,12 +4,11 @@
 
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern mscorlib { auto }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 
-.assembly 'mcc_i82' {}
-
-
-.namespace MCCTest
+.namespace mcc_i82
 {
   .class public MyClass
   {
@@ -81,7 +80,7 @@
       ldloc.s    v11
       ldloc.s    v12
       tail.
-      call   vararg valuetype MCCTest.VType8 MCCTest.MyClass::Sum(float64, int32, int64, float32, int16, float64, ...,
+      call   vararg valuetype MCCTest.VType8 mcc_i82.MyClass::Sum(float64, int32, int64, float32, int16, float64, ...,
                                                                 valuetype MCCTest.VType8,
                                                                 valuetype MCCTest.VType8,
                                                                 valuetype MCCTest.VType8,
@@ -107,22 +106,32 @@
 
     .method public static int32 Main()
     {
-      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-          01 00 00 00
-      )
-      .entrypoint
+            .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [mscorlib]System.Type, string[]) = {
+            type([TestLibrary]TestLibrary.PlatformDetection)
+            string[1] ('IsVarArgSupported')
+        }
+      .maxstack  1
+
+
+    DoTest:
+      call       int32 mcc_i82.MyClass::Test()
+      ret
+    }
+
+    .method public static int32 Test()
+    {
       .maxstack  64
       .locals init	(
-        [0] class MCCTest.MyClass me,
+        [0] class mcc_i82.MyClass me,
         [1] valuetype MCCTest.VType8 res,
         [2] int32 rc
       )
 
-      newobj     instance void MCCTest.MyClass::.ctor()
+      newobj     instance void mcc_i82.MyClass::.ctor()
       stloc.s    me
 
       ldloc.s    me
-      call   instance valuetype MCCTest.VType8 MCCTest.MyClass::GetSum()
+      call   instance valuetype MCCTest.VType8 mcc_i82.MyClass::GetSum()
       stloc.s    res
 
       // Check Result
@@ -133,8 +142,8 @@
 
       ldloc.s    rc
       ret
-    } // end of method MyClass::Main
+    } // end of method MyClass::Test
 
   } // end of class MyClass
 
-} // end of namespace MCCTest
+} // end of namespace mcc_i82

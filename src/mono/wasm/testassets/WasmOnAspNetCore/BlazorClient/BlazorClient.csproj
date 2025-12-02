@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <WasmEnableThreads>true</WasmEnableThreads>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
     <!-- nullablility warning, async warning -->
     <NoWarn>$(NoWarn);CS8604;CS4014</NoWarn>
     <StaticWebAssetBasePath>blazorclient</StaticWebAssetBasePath>
@@ -12,8 +13,8 @@
 
   <!-- versions are pinned but when run from WBT level, it's taking in-tree runtime -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0-alpha.2.24572.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.0-alpha.2.24572.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0-alpha.2.25073.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.0-alpha.2.25073.4" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

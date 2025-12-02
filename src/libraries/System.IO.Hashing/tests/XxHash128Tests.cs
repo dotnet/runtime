@@ -131,6 +131,31 @@ namespace System.IO.Hashing.Tests
             }
         }
 
+        [Fact]
+        public void Clone_ProducesSameSequence()
+        {
+            XxHash128 hash = new(42);
+
+            for (int outer = 0; outer < 4; outer++)
+            {
+                XxHash128 clone = hash.Clone();
+                Assert.Equal(hash.HashLengthInBytes, clone.HashLengthInBytes);
+                Assert.Equal(hash.GetCurrentHash(), clone.GetCurrentHash());
+
+                Random r = new Random(42);
+                byte[] bytes = new byte[r.Next(1, 10)];
+
+                for (int inner = 0; inner < 4; inner++)
+                {
+                    r.NextBytes(bytes);
+                    hash.Append(bytes);
+                    clone.Append(bytes);
+
+                    Assert.Equal(hash.GetCurrentHash(), clone.GetCurrentHash());
+                }
+            }
+        }
+
         private static Hash128 ReadHashBigEndian(ReadOnlySpan<byte> span)
         {
             var high = BinaryPrimitives.ReadUInt64BigEndian(span);

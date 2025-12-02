@@ -3525,7 +3525,7 @@ static void GCProtectArgsAndDoNormalFuncEval(DebuggerEval *pDE,
     INT64 *pBufferForArgsArray = (INT64*)_alloca(cbAllocSize);
     memset(pBufferForArgsArray, 0, cbAllocSize);
 
-    FrameWithCookie<ProtectValueClassFrame> protectValueClassFrame;
+    ProtectValueClassFrame protectValueClassFrame;
 
     //
     // Initialize our tracking array
@@ -3580,7 +3580,7 @@ static void GCProtectArgsAndDoNormalFuncEval(DebuggerEval *pDE,
     }
     // Note: we need to catch all exceptions here because they all get reported as the result of
     // the funceval.  If a ThreadAbort occurred other than for a funcEval abort, we'll re-throw it manually.
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     protectValueClassFrame.Pop();
 
@@ -3775,7 +3775,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
     }
     // Note: we need to catch all exceptioins here because they all get reported as the result of
     // the funceval.
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     GCPROTECT_END();
 }
@@ -3858,7 +3858,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
     // Push our FuncEvalFrame. The return address is equal to the IP in the saved context in the DebuggerEval. The
     // m_Datum becomes the ptr to the DebuggerEval. The frame address also serves as the address of the catch-handler-found.
     //
-    FrameWithCookie<FuncEvalFrame> FEFrame(pDE, GetIP(&pDE->m_context), true);
+    FuncEvalFrame FEFrame(pDE, GetIP(&pDE->m_context), true);
     FEFrame.Push();
 
     // On ARM/ARM64 the single step flag is per-thread and not per context.  We need to make sure that the SS flag is cleared
@@ -3990,7 +3990,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
 }
 
 
-#if defined(FEATURE_EH_FUNCLETS) && !defined(TARGET_UNIX)
+#if defined(FEATURE_EH_FUNCLETS) && !defined(TARGET_UNIX) && !defined(TARGET_X86)
 
 EXTERN_C EXCEPTION_DISPOSITION
 FuncEvalHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord,
@@ -4028,7 +4028,6 @@ FuncEvalHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord,
     return ExceptionCollidedUnwind;
 }
 
-
-#endif // FEATURE_EH_FUNCLETS && !TARGET_UNIX
+#endif // FEATURE_EH_FUNCLETS && !TARGET_UNIX && !TARGET_X86
 
 #endif // ifndef DACCESS_COMPILE

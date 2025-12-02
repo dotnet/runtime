@@ -85,19 +85,19 @@ namespace System.Security.Cryptography
         public override bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten) =>
             _wrapped.TryExportSubjectPublicKeyInfo(destination, out bytesWritten);
 
-        public override unsafe void ImportEncryptedPkcs8PrivateKey(
+        public override void ImportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
             ReadOnlySpan<byte> source,
             out int bytesRead) =>
             _wrapped.ImportEncryptedPkcs8PrivateKey(passwordBytes, source, out bytesRead);
 
-        public override unsafe void ImportEncryptedPkcs8PrivateKey(
+        public override void ImportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<char> password,
             ReadOnlySpan<byte> source,
             out int bytesRead) =>
             _wrapped.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
 
-        public override unsafe void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead) =>
+        public override void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead) =>
             _wrapped.ImportPkcs8PrivateKey(source, out bytesRead);
 
         public override void ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source, out int bytesRead) =>
@@ -149,10 +149,6 @@ namespace System.Security.Cryptography
         public override byte[] ExportPkcs8PrivateKey() => _wrapped.ExportPkcs8PrivateKey();
 
         public override byte[] ExportSubjectPublicKeyInfo() => _wrapped.ExportSubjectPublicKeyInfo();
-
-        public override bool Equals(object? obj) => _wrapped.Equals(obj);
-
-        public override int GetHashCode() => _wrapped.GetHashCode();
 
         public override string ToString() => _wrapped.ToString()!;
 

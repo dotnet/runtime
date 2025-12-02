@@ -18,30 +18,6 @@ namespace System.Net.Http
             HistogramBucketBoundaries = [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10]
         };
 
-        internal static string GetRedactedUriString(Uri uri)
-        {
-            Debug.Assert(uri.IsAbsoluteUri);
-
-            if (GlobalHttpSettings.DiagnosticsHandler.DisableUriRedaction)
-            {
-                return uri.AbsoluteUri;
-            }
-
-            string pathAndQuery = uri.PathAndQuery;
-            int queryIndex = pathAndQuery.IndexOf('?');
-
-            bool redactQuery = queryIndex >= 0 && // Query is present.
-                queryIndex < pathAndQuery.Length - 1; // Query is not empty.
-
-            return (redactQuery, uri.IsDefaultPort) switch
-            {
-                (true, true) => $"{uri.Scheme}://{uri.Host}{pathAndQuery.AsSpan(0, queryIndex + 1)}*",
-                (true, false) => $"{uri.Scheme}://{uri.Host}:{uri.Port}{pathAndQuery.AsSpan(0, queryIndex + 1)}*",
-                (false, true) => $"{uri.Scheme}://{uri.Host}{pathAndQuery}",
-                (false, false) => $"{uri.Scheme}://{uri.Host}:{uri.Port}{pathAndQuery}"
-            };
-        }
-
         internal static KeyValuePair<string, object?> GetMethodTag(HttpMethod method, out bool isUnknownMethod)
         {
             // Return canonical names for known methods and "_OTHER" for unknown ones.
@@ -58,6 +34,21 @@ namespace System.Net.Http
             (3, 0) => "3",
             _ => httpVersion.ToString()
         };
+
+        // Picks the value of the 'server.address' tag following rules specified in
+        // https://github.com/open-telemetry/semantic-conventions/blob/728e5d1/docs/http/http-spans.md#http-client-span
+        // When there is no proxy, we need to prioritize the contents of the Host header.
+        // Note that this is a best-effort guess, e.g. we are not checking if proxy.GetProxy(uri) returns null.
+        public static string GetServerAddress(HttpRequestMessage request, IWebProxy? proxy)
+        {
+            Debug.Assert(request.RequestUri is not null);
+            if ((proxy is null || proxy.IsBypassed(request.RequestUri)) && request.HasHeaders && request.Headers.Host is string hostHeader)
+            {
+                return HttpUtilities.ParseHostNameFromHeader(hostHeader);
+            }
+
+            return request.RequestUri.IdnHost;
+        }
 
         public static bool TryGetErrorType(HttpResponseMessage? response, Exception? exception, out string? errorType)
         {

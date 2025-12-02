@@ -650,6 +650,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("[]", false)]
         [InlineData("true", false)]
         [InlineData("null", false)]
+        [InlineData("05-1\\u0000", true)] // String length 10 before unescaping, less than 10 after escaping
         public static void DateOnly_Read_Failure(string json, bool addQuotes = true)
         {
             if (addQuotes)

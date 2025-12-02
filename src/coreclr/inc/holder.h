@@ -144,25 +144,12 @@ class HolderBase
 
 };  // class HolderBase<>
 
-#ifndef _PREFAST_ // Work around an ICE error in EspX.dll
-
 template <typename TYPE>
 BOOL CompareDefault(TYPE value, TYPE defaultValue)
 {
     STATIC_CONTRACT_SUPPORTS_DAC;
     return value == defaultValue;
 }
-
-#else
-
-template <typename TYPE>
-BOOL CompareDefault(TYPE value, TYPE defaultValue)
-{
-    return FALSE;
-}
-
-#endif
-
 
 template <typename TYPE>
 BOOL NoNull(TYPE value, TYPE defaultValue)
@@ -1179,7 +1166,7 @@ public:
     ErrorModeHolder()
         : m_revert{ FALSE }
     {
-        DWORD newMode = SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS;
+        DWORD newMode = SEM_FAILCRITICALERRORS;
         m_revert = ::SetThreadErrorMode(newMode, &m_oldMode);
     }
     ~ErrorModeHolder() noexcept

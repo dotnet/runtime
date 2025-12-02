@@ -53,13 +53,22 @@ internal class Program
         TestSharedCode.Run();
         TestSpan.Run();
         TestReadOnlySpan.Run();
+        TestRvaDataReads.Run();
         TestStaticInterfaceMethod.Run();
         TestConstrainedCall.Run();
         TestTypeHandles.Run();
+        TestPreinitDefinition.Run();
         TestIsValueType.Run();
         TestIndirectLoads.Run();
         TestInitBlock.Run();
         TestDataflow.Run();
+        TestConversions.Run();
+        TestVTables.Run();
+        TestVTableManipulation.Run();
+        TestVTableNegativeScenarios.Run();
+        TestByRefFieldAddressEquality.Run();
+        TestComInterfaceEntry.Run();
+        TestPreinitializedBclTypes.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -80,9 +89,14 @@ class TestHardwareIntrinsics
         public static bool IsAvxVnniSupported = AvxVnni.IsSupported;
     }
 
-    class Complex
+    class Simple3
     {
         public static bool IsPopcntSupported = Popcnt.IsSupported;
+    }
+
+    class Complex
+    {
+        public static bool IsX86SerializeSupported = X86Serialize.IsSupported;
     }
 
     public static void Run()
@@ -93,11 +107,14 @@ class TestHardwareIntrinsics
         Assert.IsPreinitialized(typeof(Simple2));
         Assert.AreEqual(AvxVnni.IsSupported, Simple2.IsAvxVnniSupported);
 
+        Assert.IsPreinitialized(typeof(Simple3));
+        Assert.AreEqual(Popcnt.IsSupported, Simple3.IsPopcntSupported);
+
         if (RuntimeInformation.ProcessArchitecture is Architecture.X86 or Architecture.X64)
             Assert.IsLazyInitialized(typeof(Complex));
         else
             Assert.IsPreinitialized(typeof(Complex));
-        Assert.AreEqual(Popcnt.IsSupported, Complex.IsPopcntSupported);
+        Assert.AreEqual(X86Serialize.IsSupported, Complex.IsX86SerializeSupported);
     }
 }
 
@@ -1229,6 +1246,51 @@ class TestReadOnlySpan
     }
 }
 
+class TestRvaDataReads
+{
+    static class GuidProvider
+    {
+        public static ref readonly Guid TheGuid1
+        {
+            get
+            {
+                ReadOnlySpan<byte> data = [0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89, 0x9A, 0xAB, 0xBC, 0xCD, 0xDE, 0xEF, 0xF0, 0x00];
+                return ref Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(data));
+            }
+        }
+
+        public static ref readonly Guid TheGuid2
+        {
+            get
+            {
+                ReadOnlySpan<byte> data = [0xDE, 0xEF, 0xF0, 0x00, 0x9A, 0xAB, 0xBC, 0xCD, 0x56, 0x67, 0x78, 0x89, 0x12, 0x23, 0x34, 0x45];
+                return ref Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(data));
+            }
+        }
+    }
+
+    struct TwoGuids
+    {
+        public Guid Guid1, Guid2;
+    }
+
+    static class GuidReader
+    {
+        public static TwoGuids Value = new TwoGuids()
+        {
+            Guid1 = GuidProvider.TheGuid1,
+            Guid2 = GuidProvider.TheGuid2,
+        };
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(GuidReader));
+        Assert.AreEqual(new Guid("45342312-6756-8978-9aab-bccddeeff000"), GuidReader.Value.Guid1);
+        Assert.AreEqual(new Guid("00f0efde-ab9a-cdbc-5667-788912233445"), GuidReader.Value.Guid2);
+    }
+}
+
 class TestStaticInterfaceMethod
 {
     interface IFoo
@@ -1334,6 +1396,22 @@ class TestTypeHandles
     }
 }
 
+class TestPreinitDefinition
+{
+    class Gen<T>;
+
+    class PreinitHolder
+    {
+        public readonly static Type TheType = typeof(Gen<>);
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(PreinitHolder));
+        Assert.AreEqual("Gen`1", PreinitHolder.TheType.Name);
+    }
+}
+
 class TestIsValueType
 {
     class IsValueTypeTests
@@ -1429,6 +1507,625 @@ class TestDataflow
     }
 }
 
+class TestConversions
+{
+    private static int GetInt() => -42;
+    private static long GetLong() => -42;
+    private static float GetFloat() => -42;
+    private static double GetDouble() => -42;
+    private static nint GetNativeInt() => -42;
+
+    class IntConversions
+    {
+        internal static byte s_byte;
+        internal static sbyte s_sbyte;
+        internal static short s_short;
+        internal static ushort s_ushort;
+        internal static uint s_uint;
+        internal static long s_long;
+        internal static ulong s_ulong;
+        internal static float s_float;
+        internal static double s_double;
+        internal static nint s_nint;
+        internal static nuint s_nuint;
+
+        static IntConversions()
+        {
+            s_byte = unchecked((byte)GetInt());
+            s_sbyte = unchecked((sbyte)GetInt());
+            s_short = unchecked((short)GetInt());
+            s_ushort = unchecked((ushort)GetInt());
+            s_uint = unchecked((uint)GetInt());
+            s_long = unchecked((long)GetInt());
+            s_ulong = unchecked((ulong)GetInt());
+            s_float = unchecked((float)GetInt());
+            s_double = unchecked(GetInt());
+            s_nint = unchecked((nint)GetInt());
+            s_nuint = unchecked((nuint)GetInt());
+        }
+    }
+
+    class LongConversions
+    {
+        internal static byte s_byte;
+        internal static sbyte s_sbyte;
+        internal static short s_short;
+        internal static ushort s_ushort;
+        internal static int s_int;
+        internal static uint s_uint;
+        internal static ulong s_ulong;
+        internal static float s_float;
+        internal static double s_double;
+        internal static nint s_nint;
+        internal static nuint s_nuint;
+
+        static LongConversions()
+        {
+            s_byte = unchecked((byte)GetLong());
+            s_sbyte = unchecked((sbyte)GetLong());
+            s_short = unchecked((short)GetLong());
+            s_ushort = unchecked((ushort)GetLong());
+            s_int = unchecked((int)GetLong());
+            s_uint = unchecked((uint)GetLong());
+            s_ulong = unchecked((ulong)GetLong());
+            s_float = unchecked((float)GetLong());
+            s_double = unchecked((double)GetLong());
+            s_nint = unchecked((nint)GetLong());
+            s_nuint = unchecked((nuint)GetLong());
+        }
+    }
+
+    class FloatConversions
+    {
+        internal static byte s_byte;
+        internal static sbyte s_sbyte;
+        internal static short s_short;
+        internal static ushort s_ushort;
+        internal static int s_int;
+        internal static uint s_uint;
+        internal static long s_long;
+        internal static ulong s_ulong;
+        internal static double s_double;
+        internal static nint s_nint;
+        internal static nuint s_nuint;
+
+        static FloatConversions()
+        {
+            s_byte = unchecked((byte)GetFloat());
+            s_sbyte = unchecked((sbyte)GetFloat());
+            s_short = unchecked((short)GetFloat());
+            s_ushort = unchecked((ushort)GetFloat());
+            s_int = unchecked((int)GetFloat());
+            s_uint = unchecked((uint)GetFloat());
+            s_long = unchecked((long)GetFloat());
+            s_ulong = unchecked((ulong)GetFloat());
+            s_double = unchecked((double)GetFloat());
+            s_nint = unchecked((nint)GetFloat());
+            s_nuint = unchecked((nuint)GetFloat());
+        }
+    }
+
+    class DoubleConversions
+    {
+        internal static byte s_byte;
+        internal static sbyte s_sbyte;
+        internal static short s_short;
+        internal static ushort s_ushort;
+        internal static int s_int;
+        internal static uint s_uint;
+        internal static long s_long;
+        internal static ulong s_ulong;
+        internal static float s_float;
+        internal static nint s_nint;
+        internal static nuint s_nuint;
+
+        static DoubleConversions()
+        {
+            s_byte = unchecked((byte)GetDouble());
+            s_sbyte = unchecked((sbyte)GetDouble());
+            s_short = unchecked((short)GetDouble());
+            s_ushort = unchecked((ushort)GetDouble());
+            s_int = unchecked((int)GetDouble());
+            s_uint = unchecked((uint)GetDouble());
+            s_long = unchecked((long)GetDouble());
+            s_ulong = unchecked((ulong)GetDouble());
+            s_float = unchecked((float)GetDouble());
+            s_nint = unchecked((nint)GetDouble());
+            s_nuint = unchecked((nuint)GetDouble());
+        }
+    }
+
+    class NativeIntConversions
+    {
+        internal static byte s_byte;
+        internal static sbyte s_sbyte;
+        internal static short s_short;
+        internal static ushort s_ushort;
+        internal static int s_int;
+        internal static uint s_uint;
+        internal static long s_long;
+        internal static ulong s_ulong;
+        internal static float s_float;
+        internal static double s_double;
+        internal static nuint s_nuint;
+
+        static NativeIntConversions()
+        {
+            s_byte = unchecked((byte)GetNativeInt());
+            s_sbyte = unchecked((sbyte)GetNativeInt());
+            s_short = unchecked((short)GetNativeInt());
+            s_ushort = unchecked((ushort)GetNativeInt());
+            s_int = unchecked((int)GetNativeInt());
+            s_uint = unchecked((uint)GetNativeInt());
+            s_long = unchecked((long)GetNativeInt());
+            s_ulong = unchecked((ulong)GetNativeInt());
+            s_float = unchecked((float)GetNativeInt());
+            s_double = unchecked((double)GetNativeInt());
+            s_nuint = unchecked((nuint)GetNativeInt());
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(IntConversions));
+        Assert.AreEqual(unchecked((byte)GetInt()), IntConversions.s_byte);
+        Assert.AreEqual(unchecked((sbyte)GetInt()), IntConversions.s_sbyte);
+        Assert.AreEqual(unchecked((short)GetInt()), IntConversions.s_short);
+        Assert.AreEqual(unchecked((ushort)GetInt()), IntConversions.s_ushort);
+        Assert.AreEqual(unchecked((uint)GetInt()), IntConversions.s_uint);
+        Assert.AreEqual(unchecked((long)GetInt()), IntConversions.s_long);
+        Assert.AreEqual(unchecked((ulong)GetInt()), IntConversions.s_ulong);
+        Assert.AreEqual(unchecked((float)GetInt()), IntConversions.s_float);
+        Assert.AreEqual(unchecked((double)GetInt()), IntConversions.s_double);
+        Assert.AreEqual(unchecked((nint)GetInt()), IntConversions.s_nint);
+        Assert.AreEqual(unchecked((nuint)GetInt()), IntConversions.s_nuint);
+
+        Assert.IsPreinitialized(typeof(LongConversions));
+        Assert.AreEqual(unchecked((byte)GetLong()), LongConversions.s_byte);
+        Assert.AreEqual(unchecked((sbyte)GetLong()), LongConversions.s_sbyte);
+        Assert.AreEqual(unchecked((short)GetLong()), LongConversions.s_short);
+        Assert.AreEqual(unchecked((ushort)GetLong()), LongConversions.s_ushort);
+        Assert.AreEqual(unchecked((int)GetLong()), LongConversions.s_int);
+        Assert.AreEqual(unchecked((uint)GetLong()), LongConversions.s_uint);
+        Assert.AreEqual(unchecked((ulong)GetLong()), LongConversions.s_ulong);
+        Assert.AreEqual(unchecked((float)GetLong()), LongConversions.s_float);
+        Assert.AreEqual(unchecked((double)GetLong()), LongConversions.s_double);
+        Assert.AreEqual(unchecked((nint)GetLong()), LongConversions.s_nint);
+        Assert.AreEqual(unchecked((nuint)GetLong()), LongConversions.s_nuint);
+
+        Assert.IsPreinitialized(typeof(FloatConversions));
+        Assert.AreEqual(unchecked((byte)GetFloat()), FloatConversions.s_byte);
+        Assert.AreEqual(unchecked((sbyte)GetFloat()), FloatConversions.s_sbyte);
+        Assert.AreEqual(unchecked((short)GetFloat()), FloatConversions.s_short);
+        Assert.AreEqual(unchecked((ushort)GetFloat()), FloatConversions.s_ushort);
+        Assert.AreEqual(unchecked((int)GetFloat()), FloatConversions.s_int);
+        Assert.AreEqual(unchecked((uint)GetFloat()), FloatConversions.s_uint);
+        Assert.AreEqual(unchecked((long)GetFloat()), FloatConversions.s_long);
+        Assert.AreEqual(unchecked((ulong)GetFloat()), FloatConversions.s_ulong);
+        Assert.AreEqual(unchecked((double)GetFloat()), FloatConversions.s_double);
+        Assert.AreEqual(unchecked((nint)GetFloat()), FloatConversions.s_nint);
+        Assert.AreEqual(unchecked((nuint)GetFloat()), FloatConversions.s_nuint);
+
+        Assert.IsPreinitialized(typeof(DoubleConversions));
+        Assert.AreEqual(unchecked((byte)GetDouble()), DoubleConversions.s_byte);
+        Assert.AreEqual(unchecked((sbyte)GetDouble()), DoubleConversions.s_sbyte);
+        Assert.AreEqual(unchecked((short)GetDouble()), DoubleConversions.s_short);
+        Assert.AreEqual(unchecked((ushort)GetDouble()), DoubleConversions.s_ushort);
+        Assert.AreEqual(unchecked((int)GetDouble()), DoubleConversions.s_int);
+        Assert.AreEqual(unchecked((uint)GetDouble()), DoubleConversions.s_uint);
+        Assert.AreEqual(unchecked((long)GetDouble()), DoubleConversions.s_long);
+        Assert.AreEqual(unchecked((ulong)GetDouble()), DoubleConversions.s_ulong);
+        Assert.AreEqual(unchecked((float)GetDouble()), DoubleConversions.s_float);
+        Assert.AreEqual(unchecked((nint)GetDouble()), DoubleConversions.s_nint);
+        Assert.AreEqual(unchecked((nuint)GetDouble()), DoubleConversions.s_nuint);
+
+        Assert.IsPreinitialized(typeof(NativeIntConversions));
+        Assert.AreEqual(unchecked((byte)GetNativeInt()), NativeIntConversions.s_byte);
+        Assert.AreEqual(unchecked((sbyte)GetNativeInt()), NativeIntConversions.s_sbyte);
+        Assert.AreEqual(unchecked((short)GetNativeInt()), NativeIntConversions.s_short);
+        Assert.AreEqual(unchecked((ushort)GetNativeInt()), NativeIntConversions.s_ushort);
+        Assert.AreEqual(unchecked((int)GetNativeInt()), NativeIntConversions.s_int);
+        Assert.AreEqual(unchecked((uint)GetNativeInt()), NativeIntConversions.s_uint);
+        Assert.AreEqual(unchecked((long)GetNativeInt()), NativeIntConversions.s_long);
+        Assert.AreEqual(unchecked((ulong)GetNativeInt()), NativeIntConversions.s_ulong);
+        Assert.AreEqual(unchecked((float)GetNativeInt()), NativeIntConversions.s_float);
+        Assert.AreEqual(unchecked((double)GetNativeInt()), NativeIntConversions.s_double);
+        Assert.AreEqual(unchecked((nuint)GetNativeInt()), NativeIntConversions.s_nuint);
+    }
+}
+
+class TestVTables
+{
+    public static unsafe class IUnknownImpl
+    {
+        [FixedAddressValueType]
+        public static readonly IUnknownVftbl Vtbl;
+
+        public static nint AbiToProjectionVftablePtr
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in Vtbl));
+        }
+
+        static IUnknownImpl()
+        {
+            ComWrappers.GetIUnknownImpl(
+                fpQueryInterface: out *(nint*)&((IUnknownVftbl*)Unsafe.AsPointer(ref Vtbl))->QueryInterface,
+                fpAddRef: out *(nint*)&((IUnknownVftbl*)Unsafe.AsPointer(ref Vtbl))->AddRef,
+                fpRelease: out *(nint*)&((IUnknownVftbl*)Unsafe.AsPointer(ref Vtbl))->Release);
+        }
+    }
+
+    public static unsafe class IInspectableImpl
+    {
+        [FixedAddressValueType]
+        public static readonly IInspectableVftbl Vtbl;
+
+        public static nint AbiToProjectionVftablePtr
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in Vtbl));
+        }
+
+        static IInspectableImpl()
+        {
+            *(IUnknownVftbl*)Unsafe.AsPointer(ref Vtbl) = *(IUnknownVftbl*)IUnknownImpl.AbiToProjectionVftablePtr;
+
+            Vtbl.GetIids = &GetIids;
+            Vtbl.GetRuntimeClassName = &GetRuntimeClassName;
+            Vtbl.GetTrustLevel = &GetTrustLevel;
+        }
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+        public static int GetIids(void* thisPtr, uint* iidCount, Guid** iids) => 0;
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+        private static int GetRuntimeClassName(void* thisPtr, nint* className) => 0;
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+        public static int GetTrustLevel(void* thisPtr, int* trustLevel) => 0;
+    }
+
+    internal static unsafe class IStringableImpl
+    {
+        public static readonly IStringableVftbl Vtbl;
+
+        static IStringableImpl()
+        {
+            *(IInspectableVftbl*)Unsafe.AsPointer(ref Vtbl) = *(IInspectableVftbl*)IInspectableImpl.AbiToProjectionVftablePtr;
+
+            Vtbl.ToString = &ToString;
+        }
+
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+        public static int ToString(void* thisPtr, nint* value) => 0;
+    }
+
+    public unsafe struct IUnknownVftbl
+    {
+        public delegate* unmanaged[MemberFunction]<void*, Guid*, void**, int> QueryInterface;
+        public delegate* unmanaged[MemberFunction]<void*, uint> AddRef;
+        public delegate* unmanaged[MemberFunction]<void*, uint> Release;
+    }
+
+    public unsafe struct IInspectableVftbl
+    {
+        public delegate* unmanaged[MemberFunction]<void*, Guid*, void**, int> QueryInterface;
+        public delegate* unmanaged[MemberFunction]<void*, uint> AddRef;
+        public delegate* unmanaged[MemberFunction]<void*, uint> Release;
+        public delegate* unmanaged[MemberFunction]<void*, uint*, Guid**, int> GetIids;
+        public delegate* unmanaged[MemberFunction]<void*, nint*, int> GetRuntimeClassName;
+        public delegate* unmanaged[MemberFunction]<void*, int*, int> GetTrustLevel;
+    }
+
+    internal unsafe struct IStringableVftbl
+    {
+        public delegate* unmanaged[MemberFunction]<void*, Guid*, void**, int> QueryInterface;
+        public delegate* unmanaged[MemberFunction]<void*, uint> AddRef;
+        public delegate* unmanaged[MemberFunction]<void*, uint> Release;
+        public delegate* unmanaged[MemberFunction]<void*, uint*, Guid**, int> GetIids;
+        public delegate* unmanaged[MemberFunction]<void*, nint*, int> GetRuntimeClassName;
+        public delegate* unmanaged[MemberFunction]<void*, int*, int> GetTrustLevel;
+        public new delegate* unmanaged[MemberFunction]<void*, nint*, int> ToString;
+    }
+
+    public static unsafe void Run()
+    {
+        Assert.IsPreinitialized(typeof(IUnknownImpl));
+        ComWrappers.GetIUnknownImpl(
+                fpQueryInterface: out nint qi,
+                fpAddRef: out nint addref,
+                fpRelease: out nint release);
+        Assert.AreEqual((nuint)qi, (nuint)IUnknownImpl.Vtbl.QueryInterface);
+        Assert.AreEqual((nuint)addref, (nuint)IUnknownImpl.Vtbl.AddRef);
+        Assert.AreEqual((nuint)release, (nuint)IUnknownImpl.Vtbl.Release);
+
+        Assert.IsPreinitialized(typeof(IInspectableImpl));
+        Assert.AreEqual((nuint)qi, (nuint)IInspectableImpl.Vtbl.QueryInterface);
+        Assert.AreEqual((nuint)addref, (nuint)IInspectableImpl.Vtbl.AddRef);
+        Assert.AreEqual((nuint)release, (nuint)IInspectableImpl.Vtbl.Release);
+        Assert.AreEqual((nuint)(delegate* unmanaged[MemberFunction]<void*, uint*, Guid**, int>)&IInspectableImpl.GetIids, (nuint)IInspectableImpl.Vtbl.GetIids);
+        Assert.AreEqual((nuint)(delegate* unmanaged[MemberFunction]<void*, int*, int>)&IInspectableImpl.GetTrustLevel, (nuint)IInspectableImpl.Vtbl.GetTrustLevel);
+
+        Assert.IsPreinitialized(typeof(IStringableImpl));
+        Assert.AreEqual((nuint)qi, (nuint)IStringableImpl.Vtbl.QueryInterface);
+        Assert.AreEqual((nuint)addref, (nuint)IStringableImpl.Vtbl.AddRef);
+        Assert.AreEqual((nuint)release, (nuint)IStringableImpl.Vtbl.Release);
+        Assert.AreEqual((nuint)(delegate* unmanaged[MemberFunction]<void*, uint*, Guid**, int>)&IInspectableImpl.GetIids, (nuint)IStringableImpl.Vtbl.GetIids);
+        Assert.AreEqual((nuint)(delegate* unmanaged[MemberFunction]<void*, int*, int>)&IInspectableImpl.GetTrustLevel, (nuint)IStringableImpl.Vtbl.GetTrustLevel);
+        Assert.AreEqual((nuint)(delegate* unmanaged[MemberFunction]<void*, nint*, int>)&IStringableImpl.ToString, (nuint)IStringableImpl.Vtbl.ToString);
+    }
+}
+
+class TestVTableManipulation
+{
+    public unsafe class TinyVtableAImpl
+    {
+        [FixedAddressValueType]
+        public static readonly ITinyVtableA Vtbl = Initialize();
+
+        private static ITinyVtableA Initialize()
+        {
+            ITinyVtableA result = default;
+            result.First = &First;
+            result.Second = &Second;
+            return result;
+        }
+    }
+
+    public unsafe class TinyVtableBImpl
+    {
+        [FixedAddressValueType]
+        public static readonly ITinyVtableB Vtbl;
+
+        public static nint AbiToProjectionVftablePtr => (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in Vtbl));
+
+        static TinyVtableBImpl()
+        {
+            *(ITinyVtableA*)Unsafe.AsPointer(ref Vtbl) = TinyVtableAImpl.Vtbl;
+            Vtbl.Third = &Third;
+        }
+    }
+
+    public unsafe class TinyVtableCImpl
+    {
+        [FixedAddressValueType]
+        public static readonly ITinyVtableC Vtbl;
+
+        static TinyVtableCImpl()
+        {
+            *(ITinyVtableB*)Unsafe.AsPointer(ref Vtbl) = *(ITinyVtableB*)TinyVtableBImpl.AbiToProjectionVftablePtr;
+            Vtbl.Fourth = &Fourth;
+        }
+    }
+
+    public unsafe struct ITinyVtableA
+    {
+        public delegate*<void> First;
+        public delegate*<void> Second;
+    }
+
+    public unsafe struct ITinyVtableB
+    {
+        public delegate*<void> First;
+        public delegate*<void> Second;
+        public delegate*<void> Third;
+    }
+
+    public unsafe struct ITinyVtableC
+    {
+        public delegate*<void> First;
+        public delegate*<void> Second;
+        public delegate*<void> Third;
+        public delegate*<void> Fourth;
+    }
+
+    static void First() { }
+    static void Second() { }
+    static void Third() { }
+    static void Fourth() { }
+
+    public static unsafe void Run()
+    {
+        Assert.IsPreinitialized(typeof(TinyVtableAImpl));
+        Assert.AreEqual((nuint)(delegate*<void>)&First, (nuint)TinyVtableAImpl.Vtbl.First);
+        Assert.AreEqual((nuint)(delegate*<void>)&Second, (nuint)TinyVtableAImpl.Vtbl.Second);
+
+        Assert.IsPreinitialized(typeof(TinyVtableBImpl));
+        Assert.AreEqual((nuint)(delegate*<void>)&First, (nuint)TinyVtableBImpl.Vtbl.First);
+        Assert.AreEqual((nuint)(delegate*<void>)&Second, (nuint)TinyVtableBImpl.Vtbl.Second);
+        Assert.AreEqual((nuint)(delegate*<void>)&Third, (nuint)TinyVtableBImpl.Vtbl.Third);
+
+        Assert.IsPreinitialized(typeof(TinyVtableCImpl));
+        Assert.AreEqual((nuint)(delegate*<void>)&First, (nuint)TinyVtableCImpl.Vtbl.First);
+        Assert.AreEqual((nuint)(delegate*<void>)&Second, (nuint)TinyVtableCImpl.Vtbl.Second);
+        Assert.AreEqual((nuint)(delegate*<void>)&Third, (nuint)TinyVtableCImpl.Vtbl.Third);
+        Assert.AreEqual((nuint)(delegate*<void>)&Fourth, (nuint)TinyVtableCImpl.Vtbl.Fourth);
+    }
+}
+
+class TestVTableNegativeScenarios
+{
+    class StoreIntoNint
+    {
+        public static readonly nint Field;
+
+        unsafe static StoreIntoNint()
+        {
+            ITinyVtable result = default;
+            Field = (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in result));
+        }
+    }
+
+    class WriteNonMethodPointer
+    {
+        public static readonly ITinyVtable Vtbl;
+
+        static unsafe WriteNonMethodPointer()
+        {
+            Vtbl.First = (delegate*<void>)123;
+            Vtbl.Second = (delegate*<void>)456;
+        }
+    }
+
+    unsafe class WriteNonMethodIndirect
+    {
+        public static readonly ITinyVtable Vtbl;
+
+        static void Write(ref delegate*<void> f, int val) => f = (delegate*<void>)val;
+
+        static unsafe WriteNonMethodIndirect()
+        {
+            Write(ref Vtbl.First, 123);
+            Write(ref Vtbl.Second, 456);
+        }
+    }
+
+    static void First() { }
+    static void Second() { }
+
+    public unsafe struct ITinyVtable
+    {
+        public delegate*<void> First;
+        public delegate*<void> Second;
+    }
+
+    public static unsafe void Run()
+    {
+        Assert.IsLazyInitialized(typeof(StoreIntoNint));
+        if (StoreIntoNint.Field == 0)
+            throw new Exception();
+
+        Assert.IsLazyInitialized(typeof(WriteNonMethodPointer));
+        Assert.AreEqual(WriteNonMethodPointer.Vtbl.First, (void*)123);
+        Assert.AreEqual(WriteNonMethodPointer.Vtbl.Second, (void*)456);
+
+        Assert.IsLazyInitialized(typeof(WriteNonMethodIndirect));
+        Assert.AreEqual(WriteNonMethodIndirect.Vtbl.First, (void*)123);
+        Assert.AreEqual(WriteNonMethodIndirect.Vtbl.Second, (void*)456);
+    }
+}
+
+unsafe class TestByRefFieldAddressEquality
+{
+    class ClassWithInitializedByRefs
+    {
+        [FixedAddressValueType]
+        public static readonly int MyByRef = 1234;
+
+        public static nint HiddenGetAddress() => (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in MyByRef));
+    }
+
+    class ClassWithUninitializedByRefs
+    {
+        [FixedAddressValueType]
+        public static readonly int MyByRef;
+
+        public static nint HiddenGetAddress() => (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in MyByRef));
+    }
+
+    class ClassTakingAddressOfInitialized
+    {
+        public static bool AreEqual = ClassWithInitializedByRefs.HiddenGetAddress() == ClassWithInitializedByRefs.HiddenGetAddress();
+    }
+
+    class ClassTakingAddressOfUninitialized
+    {
+        public static bool AreEqual = ClassWithUninitializedByRefs.HiddenGetAddress() == ClassWithUninitializedByRefs.HiddenGetAddress();
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(ClassTakingAddressOfInitialized));
+        Assert.AreEqual(true, ClassTakingAddressOfInitialized.AreEqual);
+
+        Assert.AreEqual(true, ClassTakingAddressOfUninitialized.AreEqual);
+    }
+}
+
+unsafe class TestComInterfaceEntry
+{
+    struct MyVTableEntries
+    {
+        public ComWrappers.ComInterfaceEntry TinyImpl;
+        public ComWrappers.ComInterfaceEntry SmallImpl;
+    }
+
+    class VtableEntries
+    {
+        [FixedAddressValueType]
+        public static MyVTableEntries Entries;
+
+        static VtableEntries()
+        {
+            Entries.TinyImpl.IID = new Guid(0x1234, 0x4567, 0x789A, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89);
+            Entries.TinyImpl.Vtable = ITinyVtableImpl.VftablePtr;
+            Entries.SmallImpl.IID = new Guid(0x4321, 0x7654, 0xA987, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x87, 0x98);
+            Entries.SmallImpl.Vtable = ISmallVtableImpl.VftablePtr;
+        }
+    }
+
+    class ITinyVtableImpl
+    {
+        [FixedAddressValueType]
+        private static readonly ITinyVtable Vtbl;
+
+        public static nint VftablePtr => (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in Vtbl));
+
+        static ITinyVtableImpl()
+        {
+            Vtbl.Method = &Method;
+        }
+    }
+
+    class ISmallVtableImpl
+    {
+        [FixedAddressValueType]
+        private static readonly ISmallVtable Vtbl;
+
+        public static nint VftablePtr => (nint)Unsafe.AsPointer(ref Unsafe.AsRef(in Vtbl));
+
+        static ISmallVtableImpl()
+        {
+            Vtbl.Method1 = &Method;
+            Vtbl.Method2 = &OtherMethod;
+        }
+    }
+
+    public unsafe struct ITinyVtable
+    {
+        public delegate*<void> Method;
+    }
+
+    public unsafe struct ISmallVtable
+    {
+        public delegate*<void> Method1;
+        public delegate*<void> Method2;
+    }
+
+    static void Method() { }
+    static void OtherMethod() { }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(VtableEntries));
+        Assert.AreEqual(ITinyVtableImpl.VftablePtr, VtableEntries.Entries.TinyImpl.Vtable);
+        Assert.AreEqual(new Guid(0x1234, 0x4567, 0x789A, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89), VtableEntries.Entries.TinyImpl.IID);
+        Assert.AreEqual(ISmallVtableImpl.VftablePtr, VtableEntries.Entries.SmallImpl.Vtable);
+        Assert.AreEqual(new Guid(0x4321, 0x7654, 0xA987, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x87, 0x98), VtableEntries.Entries.SmallImpl.IID);
+    }
+}
+
+unsafe class TestPreinitializedBclTypes
+{
+    // Verify that (given that all of the other tests have passed), that a select number of BCL types
+    // that depend on this optimization for high-performance scenarios are preinitialized.
+    public static void Run()
+    {
+        Assert.IsPreinitialized(Type.GetType("System.Runtime.InteropServices.ComWrappers+VtableImplementations, System.Private.CoreLib"));
+    }
+}
+
 static class Assert
 {
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
@@ -1438,69 +2135,93 @@ static class Assert
         return type.GetConstructor(BindingFlags.NonPublic | BindingFlags.Static, null, Type.EmptyTypes, null) != null;
     }
 
-    public static void IsPreinitialized(Type type)
+    public static void IsPreinitialized(Type type, [CallerLineNumber] int line = 0)
     {
         if (HasCctor(type))
-            throw new Exception();
+            throw new Exception($"{type} is not preinitialized. At line {line}.");
     }
 
-    public static void IsLazyInitialized(Type type)
+    public static void IsLazyInitialized(Type type, [CallerLineNumber] int line = 0)
     {
         if (!HasCctor(type))
-            throw new Exception();
+            throw new Exception($"{type} is not lazy initialized. At line {line}.");
     }
 
-    public static unsafe void AreEqual(void* v1, void* v2)
+    public static void AreEqual(Guid v1, Guid v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(bool v1, bool v2)
+    public static unsafe void AreEqual(void* v1, void* v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {(nint)v1}, but get {(nint)v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(int v1, int v2)
+    public static unsafe void AreEqual(bool v1, bool v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static void AreEqual(string v1, string v2)
+    public static unsafe void AreEqual(int v1, int v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(long v1, long v2)
+    public static void AreEqual(string v1, string v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(float v1, float v2)
+    public static unsafe void AreEqual(long v1, long v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static unsafe void AreEqual(double v1, double v2)
+    public static unsafe void AreEqual(ulong v1, ulong v2, [CallerLineNumber] int line = 0)
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
     }
 
-    public static void True(bool v)
+    public static unsafe void AreEqual(float v1, float v2, [CallerLineNumber] int line = 0)
+    {
+        if (v1 != v2)
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
+    }
+
+    public static unsafe void AreEqual(double v1, double v2, [CallerLineNumber] int line = 0)
+    {
+        if (v1 != v2)
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
+    }
+
+    public static unsafe void AreEqual(nint v1, nint v2, [CallerLineNumber] int line = 0)
+    {
+        if (v1 != v2)
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
+    }
+
+    public static unsafe void AreEqual(nuint v1, nuint v2, [CallerLineNumber] int line = 0)
+    {
+        if (v1 != v2)
+            throw new Exception($"Expect {v1}, but get {v2}. At line {line}.");
+    }
+
+    public static void True(bool v, [CallerLineNumber] int line = 0)
     {
         if (!v)
-            throw new Exception();
+            throw new Exception($"Expect True, but get {v}. At line {line}.");
     }
 
-    public static void AreSame<T>(T v1, T v2) where T : class
+    public static void AreSame<T>(T v1, T v2, [CallerLineNumber] int line = 0) where T : class
     {
         if (v1 != v2)
-            throw new Exception();
+            throw new Exception($"{v1} and {v2} is not the same. At line {line}.");
     }
 }

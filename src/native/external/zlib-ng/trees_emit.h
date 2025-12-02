@@ -38,6 +38,10 @@ extern Z_INTERNAL const int base_dist[D_CODES];
 /* If not enough room in bi_buf, use (valid) bits from bi_buf and
  * (64 - bi_valid) bits from value, leaving (width - (64-bi_valid))
  * unused bits in value.
+ *
+ * NOTE: Static analyzers can't evaluate value of total_bits, so we
+ *       also need to make sure bi_valid is within acceptable range,
+ *       otherwise the shifts will overflow.
  */
 #define send_bits(s, t_val, t_len, bi_buf, bi_valid) {\
     uint64_t val = (uint64_t)t_val;\
@@ -45,10 +49,10 @@ extern Z_INTERNAL const int base_dist[D_CODES];
     uint32_t total_bits = bi_valid + len;\
     send_bits_trace(s, val, len);\
     sent_bits_add(s, len);\
-    if (total_bits < BIT_BUF_SIZE) {\
+    if (total_bits < BIT_BUF_SIZE && bi_valid < BIT_BUF_SIZE) {\
         bi_buf |= val << bi_valid;\
         bi_valid = total_bits;\
-    } else if (bi_valid == BIT_BUF_SIZE) {\
+    } else if (bi_valid >= BIT_BUF_SIZE) {\
         put_uint64(s, bi_buf);\
         bi_buf = val;\
         bi_valid = len;\

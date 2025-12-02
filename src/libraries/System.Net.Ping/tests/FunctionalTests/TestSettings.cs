@@ -11,6 +11,9 @@ namespace System.Net.NetworkInformation.Tests
     {
         public static readonly string LocalHost = "localhost";
         public static readonly string UnreachableAddress = "192.0.2.0"; // TEST-NET-1
+        public static readonly string UnreachableAddress2 = "100.64.0.1"; // CGNAT block
+        public static readonly string UnreachableAddress3 = "10.255.255.1"; // High address in the private 10.0.0.0/8 range. Likely unused and unrouted.
+
         public const int PingTimeout = 10 * 1000;
 
         public const string PayloadAsString = "'Post hoc ergo propter hoc'. 'After it, therefore because of it'. It means one thing follows the other, therefore it was caused by the other. But it's not always true. In fact it's hardly ever true.";

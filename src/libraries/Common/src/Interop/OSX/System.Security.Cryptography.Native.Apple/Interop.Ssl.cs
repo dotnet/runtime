@@ -16,8 +16,6 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        private static readonly IdnMapping s_idnMapping = new IdnMapping();
-
         // Read data from connection (or an instance delegate captured context) and write it to data
         // dataLength comes in as the capacity of data, goes out as bytes written.
         // Note: the true type of dataLength is `size_t*`, but on macOS that's most equal to `void**`
@@ -151,13 +149,6 @@ internal static partial class Interop
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslRead")]
         internal static unsafe partial PAL_TlsIo SslRead(SafeSslHandle sslHandle, byte* writeFrom, int count, out int bytesWritten);
-
-        [LibraryImport(Interop.Libraries.AppleCryptoNative)]
-        private static partial int AppleCryptoNative_SslIsHostnameMatch(
-            SafeSslHandle handle,
-            SafeCreateHandle cfHostname,
-            SafeCFDateHandle cfValidTime,
-            out int pOSStatus);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslShutdown")]
         internal static partial int SslShutdown(SafeSslHandle sslHandle);
@@ -460,40 +451,6 @@ internal static partial class Interop
             finally
             {
                 protocol.Dispose();
-            }
-        }
-
-        public static bool SslCheckHostnameMatch(SafeSslHandle handle, string hostName, DateTime notBefore, out int osStatus)
-        {
-            int result;
-            // The IdnMapping converts Unicode input into the IDNA punycode sequence.
-            // It also does host case normalization.  The bypass logic would be something
-            // like "all characters being within [a-z0-9.-]+"
-            //
-            // The SSL Policy (SecPolicyCreateSSL) has been verified as not inherently supporting
-            // IDNA as of macOS 10.12.1 (Sierra).  If it supports low-level IDNA at a later date,
-            // this code could be removed.
-            //
-            // It was verified as supporting case invariant match as of 10.12.1 (Sierra).
-            string matchName = string.IsNullOrEmpty(hostName) ? string.Empty : s_idnMapping.GetAscii(hostName);
-
-            using (SafeCFDateHandle cfNotBefore = CoreFoundation.CFDateCreate(notBefore))
-            using (SafeCreateHandle cfHostname = CoreFoundation.CFStringCreateWithCString(matchName))
-            {
-                result = AppleCryptoNative_SslIsHostnameMatch(handle, cfHostname, cfNotBefore, out osStatus);
-            }
-
-            switch (result)
-            {
-                case 0:
-                    return false;
-                case 1:
-                    return true;
-                default:
-                    if (NetEventSource.Log.IsEnabled())
-                        NetEventSource.Error(null, $"AppleCryptoNative_SslIsHostnameMatch returned '{result}' for '{hostName}'");
-                    Debug.Fail($"AppleCryptoNative_SslIsHostnameMatch returned {result}");
-                    throw new SslException();
             }
         }
     }

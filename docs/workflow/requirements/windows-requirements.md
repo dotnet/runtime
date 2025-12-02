@@ -46,9 +46,9 @@ It is highly recommended to use the *Workloads* approach, as that installs the f
 - .NET desktop development
 - Desktop development with C++
 
-To build the tests and do ARM32/ARM64 development, you'll need some additional components. You can find them by clicking on the *Individual components* tab in the *Visual Studio Installer*:
+To build the tests and do ARM64 development, you'll need some additional components. You can find them by clicking on the *Individual components* tab in the *Visual Studio Installer*:
 
-- For ARM stuff: *MSVC v143 - VS 2022 C++ ARM64/ARM64EC build tools (Latest)* for Arm64, and *MSVC v143 - VS 2022 C++ ARM build tools (Latest)* for Arm32.
+- For Arm64: *MSVC v143 - VS 2022 C++ ARM64/ARM64EC build tools (Latest)*
 - For building tests: *C++/CLI support for v143 build tools (Latest)*
 
 Alternatively, there is also a `.vsconfig` file included at the root of the runtime repo. It includes all the necessary components required, outlined in a JSON format that Visual Studio can read and parse. You can boot up Visual Studio directly and [import this `.vsconfig` file](https://learn.microsoft.com/visualstudio/install/import-export-installation-configurations?view=vs-2022#import-a-configuration) instead of installing the workloads yourself. It is worth mentioning however, that while we are very careful in maintaining this file up-to-date, sometimes it might get a tad obsolete and miss important components. So, it is always a good idea to double check that the full workloads are installed.
@@ -84,7 +84,7 @@ Alternatively, if you would rather avoid modifying your machine state, you can u
 .\build.cmd -vs System.Text.RegularExpressions
 ```
 
-This will set the `DOTNET_ROOT` and `PATH` environment variables to point to the locally acquired SDK under the `.dotnet` directory found at the root of the repo for the duration of this terminal session. Then, it will launch the Visual Studio instance that is registered for the `.sln` extension, and open the solution you passed as argument to the command-line.
+This will set the `DOTNET_ROOT` and `PATH` environment variables to point to the locally acquired SDK under the `.dotnet` directory found at the root of the repo for the duration of this terminal session. Then, it will launch the Visual Studio instance that is registered for the `.slnx` extension, and open the solution you passed as argument to the command-line.
 
 ## Installing dependencies with winget
 

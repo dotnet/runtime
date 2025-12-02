@@ -29,6 +29,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define DLLEXPORT
 #endif // !DLLEXPORT
 
+#include "minipal/log.h"
+
 /*****************************************************************************/
 
 ICorJitHost* g_jitHost        = nullptr;
@@ -146,10 +148,19 @@ FILE* jitstdout()
 // Like printf/logf, but only outputs to jitstdout -- skips call back into EE.
 int jitprintf(const char* fmt, ...)
 {
+    int     status;
     va_list vl;
     va_start(vl, fmt);
-    int status = vfprintf(jitstdout(), fmt, vl);
+    if (jitstdout() == procstdout())
+    {
+        status = minipal_log_vprint_verbose(fmt, vl);
+    }
+    else
+    {
+        status = vfprintf(jitstdout(), fmt, vl);
+    }
     va_end(vl);
+
     return status;
 }
 
@@ -262,7 +273,7 @@ void JitTls::SetCompiler(Compiler* compiler)
 #endif // !defined(DEBUG)
 
 //****************************************************************************
-// The main JIT function for the 32 bit JIT.  See code:ICorJitCompiler#EEToJitInterface for more on the EE-JIT
+// The main JIT function for the JIT.  See code:ICorJitCompiler#EEToJitInterface for more on the EE-JIT
 // interface. Things really don't get going inside the JIT until the code:Compiler::compCompile#Phases
 // method.  Usually that is where you want to go.
 
@@ -312,7 +323,7 @@ void CILJit::ProcessShutdownWork(ICorStaticInfo* statInfo)
 void CILJit::getVersionIdentifier(GUID* versionIdentifier)
 {
     assert(versionIdentifier != nullptr);
-    memcpy(versionIdentifier, &JITEEVersionIdentifier, sizeof(GUID));
+    *versionIdentifier = JITEEVersionIdentifier;
 }
 
 #ifdef TARGET_OS_RUNTIMEDETERMINED
@@ -992,7 +1003,7 @@ void Compiler::eeSetLIinfo(unsigned which, UNATIVE_OFFSET nativeOffset, IPmappin
     {
         case IPmappingDscKind::Normal:
             eeBoundaries[which].ilOffset = loc.GetOffset();
-            eeBoundaries[which].source   = loc.EncodeSourceTypes();
+            eeBoundaries[which].source   = loc.GetSourceTypes();
             break;
         case IPmappingDscKind::Prolog:
             eeBoundaries[which].ilOffset = ICorDebugInfo::PROLOG;
@@ -1085,12 +1096,17 @@ void Compiler::eeDispLineInfo(const ICorDebugInfo::OffsetMapping* line)
         {
             printf("CALL_SITE ");
         }
+        if ((line->source & ICorDebugInfo::ASYNC) != 0)
+        {
+            printf("ASYNC ");
+        }
         printf(")");
     }
     printf("\n");
 
     // We don't expect to see any other bits.
-    assert((line->source & ~(ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::CALL_INSTRUCTION)) == 0);
+    assert((line->source & ~(ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::CALL_INSTRUCTION | ICorDebugInfo::ASYNC)) ==
+           0);
 }
 
 void Compiler::eeDispLineInfos()
@@ -1260,7 +1276,7 @@ void Compiler::eeSetEHinfo(unsigned EHnumber, const CORINFO_EH_CLAUSE* clause)
     }
 }
 
-WORD Compiler::eeGetRelocTypeHint(void* target)
+CorInfoReloc Compiler::eeGetRelocTypeHint(void* target)
 {
     if (info.compMatchedVM)
     {
@@ -1269,7 +1285,7 @@ WORD Compiler::eeGetRelocTypeHint(void* target)
     else
     {
         // No hints
-        return (WORD)-1;
+        return CorInfoReloc::NONE;
     }
 }
 

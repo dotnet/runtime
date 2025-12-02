@@ -48,8 +48,7 @@ namespace System.Text
         // parent method is safe
         public override unsafe int GetByteCount(char[] chars, int index, int count)
         {
-            if (chars is null)
-                throw new ArgumentNullException(nameof(chars));
+            ArgumentNullException.ThrowIfNull(chars);
 
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -71,8 +70,7 @@ namespace System.Text
         // parent method is safe
         public override unsafe int GetByteCount(string s)
         {
-            if (s is null)
-                throw new ArgumentNullException(nameof(s));
+            ArgumentNullException.ThrowIfNull(s);
 
             fixed (char* pChars = s)
                 return GetByteCount(pChars, s.Length, null);
@@ -99,11 +97,8 @@ namespace System.Text
         public override unsafe int GetBytes(string s, int charIndex, int charCount,
                                             byte[] bytes, int byteIndex)
         {
-            if (s is null)
-                throw new ArgumentNullException(nameof(s));
-
-            if (bytes is null)
-                throw new ArgumentNullException(nameof(bytes));
+            ArgumentNullException.ThrowIfNull(s);
+            ArgumentNullException.ThrowIfNull(bytes);
 
             if (charIndex < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -139,11 +134,8 @@ namespace System.Text
         public override unsafe int GetBytes(char[] chars, int charIndex, int charCount,
                                             byte[] bytes, int byteIndex)
         {
-            if (chars is null)
-                throw new ArgumentNullException(nameof(chars));
-
-            if (bytes is null)
-                throw new ArgumentNullException(nameof(bytes));
+            ArgumentNullException.ThrowIfNull(chars);
+            ArgumentNullException.ThrowIfNull(bytes);
 
             if (charIndex < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -194,8 +186,7 @@ namespace System.Text
         // parent method is safe
         public override unsafe int GetCharCount(byte[] bytes, int index, int count)
         {
-            if (bytes is null)
-                throw new ArgumentNullException(nameof(bytes));
+            ArgumentNullException.ThrowIfNull(bytes);
 
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -231,11 +222,8 @@ namespace System.Text
         public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                             char[] chars, int charIndex)
         {
-            if (bytes is null)
-                throw new ArgumentNullException(nameof(bytes));
-
-            if (chars is null)
-                throw new ArgumentNullException(nameof(chars));
+            ArgumentNullException.ThrowIfNull(bytes);
+            ArgumentNullException.ThrowIfNull(chars);
 
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -286,8 +274,7 @@ namespace System.Text
         // parent method is safe
         public override unsafe string GetString(byte[] bytes, int index, int count)
         {
-            if (bytes is null)
-                throw new ArgumentNullException(nameof(bytes));
+            ArgumentNullException.ThrowIfNull(bytes);
 
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -576,5 +563,50 @@ namespace System.Text
                 50225 => "iso-2022-kr",
                 _ => WebName,
             };
+
+        public override int WindowsCodePage
+        {
+            get
+            {
+                (ushort FamilyCodePage, byte _) item = EncodingTable.GetCodePageItem(CodePage);
+                return item.FamilyCodePage;
+            }
+        }
+
+        public override bool IsBrowserDisplay
+        {
+            get
+            {
+                (ushort _, byte CodePageFlags) item = EncodingTable.GetCodePageItem(CodePage);
+                return (item.CodePageFlags & EncodingTable.MIMECONTF_BROWSER) != 0;
+            }
+        }
+
+        public override bool IsBrowserSave
+        {
+            get
+            {
+                (ushort _, byte CodePageFlags) item = EncodingTable.GetCodePageItem(CodePage);
+                return (item.CodePageFlags & EncodingTable.MIMECONTF_SAVABLE_BROWSER) != 0;
+            }
+        }
+
+        public override bool IsMailNewsDisplay
+        {
+            get
+            {
+                (ushort _, byte CodePageFlags) item = EncodingTable.GetCodePageItem(CodePage);
+                return (item.CodePageFlags & EncodingTable.MIMECONTF_MAILNEWS) != 0;
+            }
+        }
+
+        public override bool IsMailNewsSave
+        {
+            get
+            {
+                (ushort _, byte codePageFlags) = EncodingTable.GetCodePageItem(CodePage);
+                return (codePageFlags & EncodingTable.MIMECONTF_SAVABLE_MAILNEWS) != 0;
+            }
+        }
     }
 }

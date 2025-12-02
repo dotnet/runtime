@@ -72,5 +72,6 @@ DN_UMAP_T (ptr, void *, int16, int16_t)
 DN_UMAP_T (ptr, void *, uint16, uint16_t)
 DN_UMAP_T (ptr, void *, int32, int32_t)
 DN_UMAP_T (ptr, void *, uint32, uint32_t)
+DN_UMAP_T (uint32, uint32_t, ptr, void *)
 
 #endif /* __DN_UMAP_T_H__ */

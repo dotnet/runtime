@@ -11,7 +11,7 @@ namespace System.Reflection.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("title")]
-        public void Ctor_String(string title)
+        public void Ctor_String(string? title)
         {
             var attribute = new AssemblyTitleAttribute(title);
             Assert.Equal(title, attribute.Title);

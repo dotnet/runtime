@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,6 +32,26 @@ namespace System.IO.Tests
             }
             catch (Exception e) when (!(e is IOException))
             {
+            }
+        }
+
+        [Fact]
+        public void FileEnumeratorIsThreadSafe_ParallelForEach()
+        {
+            List<string> expected = [];
+            string directory = Directory.CreateDirectory(GetTestFilePath()).FullName;
+            for (int i = 0; i < 100; i++)
+            {
+                string file = Path.Join(directory, GetTestFileName());
+                File.Create(file).Dispose();
+                expected.Add(file);
+            }
+
+            for (int i = 0; i < 100; i++) // test multiple times to ensure thread safety.
+            {
+                ConcurrentBag<string> result = [];
+                ParallelLoopResult parallelResult = Parallel.ForEach(Directory.EnumerateFiles(directory), f => result.Add(f));
+                AssertExtensions.CollectionEqual(expected, result, StringComparer.Ordinal);
             }
         }
 

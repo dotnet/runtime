@@ -16,6 +16,10 @@
 #ifndef _GC_INFO_DECODER_
 #define _GC_INFO_DECODER_
 
+#ifdef SOS_INCLUDE
+#define DECODE_OLD_FORMATS
+#endif
+
 #define _max(a, b) (((a) > (b)) ? (a) : (b))
 #define _min(a, b) (((a) < (b)) ? (a) : (b))
 
@@ -214,7 +218,7 @@ enum GcInfoDecoderFlags
     DECODE_INTERRUPTIBILITY      = 0x08,
     DECODE_GC_LIFETIMES          = 0x10,
     DECODE_NO_VALIDATION         = 0x20,
-    DECODE_PSP_SYM               = 0x40,
+    DECODE_PSP_SYM               = 0x40,    // Unused starting with v4 format
     DECODE_GENERICS_INST_CONTEXT = 0x80,    // stack location of instantiation context for generics
                                             // (this may be either the 'this' ptr or the instantiation secret param)
     DECODE_GS_COOKIE             = 0x100,   // stack location of the GS cookie
@@ -222,6 +226,7 @@ enum GcInfoDecoderFlags
     DECODE_PROLOG_LENGTH         = 0x400,   // length of the prolog (used to avoid reporting generics context)
     DECODE_EDIT_AND_CONTINUE     = 0x800,
     DECODE_REVERSE_PINVOKE_VAR   = 0x1000,
+    DECODE_RETURN_KIND           = 0x2000,  // Unused starting with v4 format
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     DECODE_HAS_TAILCALLS         = 0x4000,
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
@@ -232,7 +237,7 @@ enum GcInfoHeaderFlags
     GC_INFO_IS_VARARG                   = 0x1,
     // unused                           = 0x2, // was GC_INFO_HAS_SECURITY_OBJECT
     GC_INFO_HAS_GS_COOKIE               = 0x4,
-    GC_INFO_HAS_PSP_SYM                 = 0x8,
+    GC_INFO_HAS_PSP_SYM                 = 0x8, // Unused starting with v4 format
     GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK   = 0x30,
     GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE   = 0x00,
     GC_INFO_HAS_GENERICS_INST_CONTEXT_MT     = 0x10,
@@ -243,11 +248,12 @@ enum GcInfoHeaderFlags
     GC_INFO_WANTS_REPORT_ONLY_LEAF      = 0x80,
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     GC_INFO_HAS_TAILCALLS               = 0x80,
+#else
+    // unused                           = 0x80,
 #endif // TARGET_AMD64
     GC_INFO_HAS_EDIT_AND_CONTINUE_INFO = 0x100,
     GC_INFO_REVERSE_PINVOKE_FRAME = 0x200,
 
-    GC_INFO_FLAGS_BIT_SIZE_VERSION_1    = 9,
     GC_INFO_FLAGS_BIT_SIZE              = 10,
 };
 
@@ -296,7 +302,7 @@ public:
     }
 
     // NOTE: This routine is perf-critical
-    __forceinline size_t Read( int numBits )
+    FORCEINLINE size_t Read( int numBits )
     {
         SUPPORTS_DAC;
 
@@ -321,7 +327,7 @@ public:
 
     // This version reads one bit
     // NOTE: This routine is perf-critical
-    __forceinline size_t ReadOneFast()
+    FORCEINLINE size_t ReadOneFast()
     {
         SUPPORTS_DAC;
 
@@ -342,13 +348,13 @@ public:
     }
 
 
-    __forceinline size_t GetCurrentPos()
+    FORCEINLINE size_t GetCurrentPos()
     {
         SUPPORTS_DAC;
         return (size_t) ((m_pCurrent - m_pBuffer) * BITS_PER_SIZE_T + m_RelPos - m_InitialRelPos);
     }
 
-    __forceinline void SetCurrentPos( size_t pos )
+    FORCEINLINE void SetCurrentPos( size_t pos )
     {
         size_t adjPos = pos + m_InitialRelPos;
         m_pCurrent = m_pBuffer + adjPos / BITS_PER_SIZE_T;
@@ -360,7 +366,7 @@ public:
         _ASSERTE(GetCurrentPos() == pos);
     }
 
-    __forceinline void Skip( SSIZE_T numBitsToSkip )
+    FORCEINLINE void Skip( SSIZE_T numBitsToSkip )
     {
         SUPPORTS_DAC;
 
@@ -412,7 +418,7 @@ public:
         }
     }
 
-    __forceinline size_t DecodeVarLengthUnsigned(int base)
+    FORCEINLINE size_t DecodeVarLengthUnsigned(int base)
     {
         _ASSERTE((base > 0) && (base < (int)BITS_PER_SIZE_T));
 
@@ -465,6 +471,8 @@ struct GcSlotDesc
     GcSlotFlags Flags;
 };
 
+
+template <typename GcInfoEncoding>
 class GcSlotDecoder
 {
 public:
@@ -507,12 +515,13 @@ private:
 };
 
 #ifdef USE_GC_INFO_DECODER
-class GcInfoDecoder
+template <typename GcInfoEncoding>
+class TGcInfoDecoder
 {
 public:
 
     // If you are not interested in interruptibility or gc lifetime information, pass 0 as instructionOffset
-    GcInfoDecoder(
+    TGcInfoDecoder(
             GCInfoToken gcInfoToken,
             GcInfoDecoderFlags flags = DECODE_EVERYTHING,
             UINT32 instructionOffset = 0
@@ -532,7 +541,7 @@ public:
     // This is used for gcinfodumper
     bool IsSafePoint(UINT32 codeOffset);
 
-    typedef void EnumerateSafePointsCallback (GcInfoDecoder* decoder, UINT32 offset, void * hCallback);
+    typedef void EnumerateSafePointsCallback (TGcInfoDecoder<GcInfoEncoding> * decoder, UINT32 offset, void * hCallback);
     void EnumerateSafePoints(EnumerateSafePointsCallback * pCallback, void * hCallback);
 
 #endif
@@ -576,11 +585,13 @@ public:
     INT32   GetReversePInvokeFrameStackSlot();
     bool    HasMethodDescGenericsInstContext();
     bool    HasMethodTableGenericsInstContext();
+    bool    HasStackBaseRegister();
     bool    GetIsVarArg();
     bool    WantsReportOnlyLeaf();
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool    HasTailCalls();
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || defined(TARGET_RISCV64)
+    ReturnKind GetReturnKind();
     UINT32  GetCodeLength();
     UINT32  GetStackBaseRegister();
     UINT32  GetSizeOfEditAndContinuePreservedArea();
@@ -589,10 +600,12 @@ public:
 #endif
     size_t  GetNumBytesRead();
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    UINT32  GetSizeOfStackParameterArea();
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
+    UINT32 GetSizeOfStackParameterArea();
 
+    inline UINT32 Version()
+    {
+        return m_Version;
+    }
 
 private:
     BitStreamReader m_Reader;
@@ -613,6 +626,8 @@ private:
 #ifdef TARGET_ARM64
     UINT32  m_SizeOfEditAndContinueFixedStackFrame;
 #endif
+    // Unused starting with v4 format
+    ReturnKind m_ReturnKind;
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     UINT32  m_NumSafePoints;
     UINT32  m_SafePointIndex;
@@ -621,15 +636,42 @@ private:
 #endif
     UINT32  m_NumInterruptibleRanges;
 
-#ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
-    UINT32 m_SizeOfStackOutgoingAndScratchArea;
-#endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
+    template <bool isConst, typename T>
+    struct TypeMaybeConst
+    {
+        typedef T type;
+    };
+    template <typename T>
+    struct TypeMaybeConst<true, T>
+    {
+        typedef const T type;
+    };
+
+    typename TypeMaybeConst<!GcInfoEncoding::HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA, UINT32>::type m_SizeOfStackOutgoingAndScratchArea = 0;
 
 #ifdef _DEBUG
     GcInfoDecoderFlags m_Flags;
     PTR_CBYTE m_GcInfoAddress;
 #endif
     UINT32 m_Version;
+
+    inline UINT32 NormalizeCodeOffset(UINT32 offset)
+    {
+#ifdef DECODE_OLD_FORMATS
+        if (Version() < 4)
+            return offset;
+#endif
+        return GcInfoEncoding::NORMALIZE_CODE_OFFSET(offset);
+    }
+
+    inline UINT32 DenormalizeCodeOffset(UINT32 offset)
+    {
+#ifdef DECODE_OLD_FORMATS
+        if (Version() < 4)
+            return offset;
+#endif
+        return GcInfoEncoding::DENORMALIZE_CODE_OFFSET(offset);
+    }
 
     bool PredecodeFatHeader(int remainingFlags);
 
@@ -661,7 +703,7 @@ private:
     bool IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, PREGDISPLAY pRD);
 
     void ReportUntrackedSlots(
-                GcSlotDecoder&      slotDecoder,
+                GcSlotDecoder<GcInfoEncoding>&      slotDecoder,
                 PREGDISPLAY         pRD,
                 unsigned            flags,
                 GCEnumCallback      pCallBack,
@@ -689,7 +731,7 @@ private:
 
 
     inline void ReportSlotToGC(
-                    GcSlotDecoder&      slotDecoder,
+                    GcSlotDecoder<GcInfoEncoding>&      slotDecoder,
                     UINT32              slotIndex,
                     PREGDISPLAY         pRD,
                     bool                reportScratchSlots,
@@ -746,6 +788,12 @@ private:
         }
     }
 };
+
+typedef TGcInfoDecoder<TargetGcInfoEncoding> GcInfoDecoder;
+#ifdef FEATURE_INTERPRETER
+typedef TGcInfoDecoder<InterpreterGcInfoEncoding> InterpreterGcInfoDecoder;
+#endif // FEATURE_INTERPRETER
+
 #endif // USE_GC_INFO_DECODER
 
 

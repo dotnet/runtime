@@ -28,8 +28,8 @@ struct MaskConversionsWeight
 #endif
 
     // The simd types of the Lcl Store after conversion to vector.
-    CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
-    unsigned    simdSize        = 0;
+    var_types simdBaseType = TYP_UNDEF;
+    unsigned  simdSize     = 0;
 
     void UpdateWeight(bool isStore, bool hasConvert, weight_t blockWeight);
 
@@ -90,22 +90,22 @@ void MaskConversionsWeight::UpdateWeight(bool isStore, bool hasConvert, weight_t
 //
 void MaskConversionsWeight::CacheSimdTypes(GenTreeHWIntrinsic* op, unsigned lclnum)
 {
-    CorInfoType newSimdBaseJitType = op->GetSimdBaseJitType();
-    unsigned    newSimdSize        = op->GetSimdSize();
+    var_types newSimdBaseType = op->GetSimdBaseType();
+    unsigned  newSimdSize     = op->GetSimdSize();
 
-    assert((newSimdBaseJitType != CORINFO_TYPE_UNDEF));
+    assert((newSimdBaseType != TYP_UNDEF));
 
-    if (simdBaseJitType == CORINFO_TYPE_UNDEF)
+    if (simdBaseType == TYP_UNDEF)
     {
         // Types have not already been cached. Set them.
-        simdBaseJitType = newSimdBaseJitType;
-        simdSize        = newSimdSize;
+        simdBaseType = newSimdBaseType;
+        simdSize     = newSimdSize;
     }
-    else if ((simdBaseJitType != newSimdBaseJitType) || (simdSize != newSimdSize))
+    else if ((simdBaseType != newSimdBaseType) || (simdSize != newSimdSize))
     {
         // Type mismatch with existing cached type.
-        JITDUMP("Local V%02d has different types: (%d, %d) vs (%d, %d). ", lclnum, simdBaseJitType, simdSize,
-                newSimdBaseJitType, newSimdSize);
+        JITDUMP("Local V%02d has different types: (%d, %d) vs (%d, %d). ", lclnum, simdBaseType, simdSize,
+                newSimdBaseType, newSimdSize);
         InvalidateWeight();
     }
 }
@@ -175,37 +175,11 @@ public:
 
                 // Look for:
                 //      user: ConvertVectorToMask(use:LCL_VAR(x)))
-                // -or-
-                //      user: ConditionalSelect(use:LCL_VAR(x), y, z)
 
-                if ((user != nullptr) && user->OperIsHWIntrinsic())
+                if ((user != nullptr) && user->OperIsConvertVectorToMask())
                 {
-                    GenTreeHWIntrinsic* hwintrin = user->AsHWIntrinsic();
-                    NamedIntrinsic      ni       = hwintrin->GetHWIntrinsicId();
-
-                    if (hwintrin->OperIsConvertVectorToMask())
-                    {
-                        convertOp     = user->AsHWIntrinsic();
-                        hasConversion = true;
-                    }
-                    else if (hwintrin->OperIsVectorConditionalSelect())
-                    {
-                        // We don't actually have a convert here, but we do have a case where
-                        // the mask is being used in a ConditionalSelect and therefore can be
-                        // consumed directly as a mask. While the IR shows TYP_SIMD, it gets
-                        // handled in lowering as part of the general embedded-mask support.
-
-                        // We notably don't check that op2->isEmbeddedMaskingCompatibleHWIntrinsic()
-                        // because we can still consume the mask directly in such cases. We'll just
-                        // emit `vblendmps zmm1 {k1}, zmm2, zmm3` instead  of containing the CndSel
-                        // as part of something like `vaddps zmm1 {k1}, zmm2, zmm3`
-
-                        if (hwintrin->Op(1) == lclOp)
-                        {
-                            convertOp     = user->AsHWIntrinsic();
-                            hasConversion = true;
-                        }
-                    }
+                    convertOp     = user->AsHWIntrinsic();
+                    hasConversion = true;
                 }
                 break;
             }
@@ -383,7 +357,7 @@ public:
         weight->DumpTotalWeight();
 
         // Fix up the type of the lcl and the lclvar.
-        assert(lclOp->gtType != TYP_MASK);
+        assert(!lclOp->TypeIs(TYP_MASK));
         var_types lclOrigType = lclOp->gtType;
         lclOp->gtType         = TYP_MASK;
 
@@ -402,7 +376,6 @@ public:
 
             lclOp->Data() = lclOp->Data()->AsHWIntrinsic()->Op(1);
         }
-
         else if (isLocalStore && addConversion)
         {
             // Convert
@@ -412,11 +385,10 @@ public:
 
             // There is not enough information in the lcl to get simd types. Instead reuse the cached
             // simd types from the removed convert nodes.
-            assert(weight->simdBaseJitType != CORINFO_TYPE_UNDEF);
-            lclOp->Data() = m_compiler->gtNewSimdCvtVectorToMaskNode(TYP_MASK, lclOp->Data(), weight->simdBaseJitType,
+            assert(weight->simdBaseType != TYP_UNDEF);
+            lclOp->Data() = m_compiler->gtNewSimdCvtVectorToMaskNode(TYP_MASK, lclOp->Data(), weight->simdBaseType,
                                                                      weight->simdSize);
         }
-
         else if (isLocalUse && removeConversion)
         {
             // Convert
@@ -426,7 +398,6 @@ public:
 
             *use = lclOp;
         }
-
         else if (isLocalUse && addConversion)
         {
             // Convert
@@ -436,9 +407,8 @@ public:
 
             // There is not enough information in the lcl to get simd types. Instead reuse the cached simd
             // types from the removed convert nodes.
-            assert(weight->simdBaseJitType != CORINFO_TYPE_UNDEF);
-            *use =
-                m_compiler->gtNewSimdCvtMaskToVectorNode(lclOrigType, lclOp, weight->simdBaseJitType, weight->simdSize);
+            assert(weight->simdBaseType != TYP_UNDEF);
+            *use = m_compiler->gtNewSimdCvtMaskToVectorNode(lclOrigType, lclOp, weight->simdBaseType, weight->simdSize);
         }
 
         JITDUMP("Updated %s V%02d at [%06u] to mask (%s conversion)\n", isLocalStore ? "store" : "use",
@@ -510,7 +480,6 @@ private:
 PhaseStatus Compiler::fgOptimizeMaskConversions()
 {
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-
     if (opts.OptimizationDisabled())
     {
         JITDUMP("Skipping. Optimizations Disabled\n");

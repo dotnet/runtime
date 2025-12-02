@@ -2,7 +2,7 @@
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*.??proj" />
 
-    <!-- Regression_1 and Regression_6 -->
+    <!-- Regression_1, Regression_6, Regression_7 -->
     <MergedWrapperProjectReference Remove="CLR-x86-*/**/*.??proj" />
 
     <!-- Regression_2 and Regression_3 -->

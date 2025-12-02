@@ -24,12 +24,22 @@ namespace VectorMathTests
             return (float)(mantissa * exponent);
         }
 
+        static double[] GenerateDoubleArray(int size, Random random)
+        {
+            double[] arr = new double[size];
+            for (int i = 0; i < size; ++i)
+            {
+                arr[i] = NextFloat(random);
+            }
+            return arr;
+        }
+
         [Fact]
         public static int TestDouble()
         {
             Random random = new Random(Seed);
-            double[] arr1 = new double[] { NextFloat(random), NextFloat(random), NextFloat(random), NextFloat(random) };
-            double[] arr2 = new double[] { NextFloat(random), NextFloat(random), NextFloat(random), NextFloat(random) };
+            double[] arr1 = GenerateDoubleArray(System.Numerics.Vector<double>.Count, random);
+            double[] arr2 = GenerateDoubleArray(System.Numerics.Vector<double>.Count, random);
             var a = new System.Numerics.Vector<double>(arr1);
             var b = new System.Numerics.Vector<double>(arr2);
             var xorR = a ^ b;
@@ -81,8 +91,8 @@ namespace VectorMathTests
         public static int TestBool()
         {
             Random random = new Random(Seed);
-            byte[] arr1 = GenerateByteArray(64, random);
-            byte[] arr2 = GenerateByteArray(64, random);
+            byte[] arr1 = GenerateByteArray(System.Numerics.Vector<byte>.Count, random);
+            byte[] arr2 = GenerateByteArray(System.Numerics.Vector<byte>.Count, random);
             var a = new System.Numerics.Vector<byte>(arr1);
             var b = new System.Numerics.Vector<byte>(arr2);
 

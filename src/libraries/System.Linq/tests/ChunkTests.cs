@@ -42,10 +42,8 @@ namespace System.Linq.Tests
         [InlineData(new[] {9999, 0, 888, -1, 66, -777, 1, 2, -12345})]
         public void ChunkSourceRepeatCalls(int[] array)
         {
-            Assert.All(IdentityTransforms<int>(), t =>
+            Assert.All(CreateSources(array), source =>
             {
-                IEnumerable<int> source = t(array);
-
                 Assert.Equal(source.Chunk(3), source.Chunk(3));
             });
         }
@@ -54,10 +52,8 @@ namespace System.Linq.Tests
         [InlineData(new[] {9999, 0, 888, -1, 66, -777, 1, 2, -12345})]
         public void ChunkSourceEvenly(int[] array)
         {
-            Assert.All(IdentityTransforms<int>(), t =>
+            Assert.All(CreateSources(array), source =>
             {
-                IEnumerable<int> source = t(array);
-
                 using IEnumerator<int[]> chunks = source.Chunk(3).GetEnumerator();
                 chunks.MoveNext();
                 Assert.Equal(new[] { 9999, 0, 888 }, chunks.Current);
@@ -73,10 +69,8 @@ namespace System.Linq.Tests
         [InlineData(new[] {9999, 0, 888, -1, 66, -777, 1, 2})]
         public void ChunkSourceUnevenly(int[] array)
         {
-            Assert.All(IdentityTransforms<int>(), t =>
+            Assert.All(CreateSources(array), source =>
             {
-                IEnumerable<int> source = t(array);
-
                 using IEnumerator<int[]> chunks = source.Chunk(3).GetEnumerator();
                 chunks.MoveNext();
                 Assert.Equal(new[] { 9999, 0, 888 }, chunks.Current);
@@ -92,10 +86,8 @@ namespace System.Linq.Tests
         [InlineData(new[] {9999, 0})]
         public void ChunkSourceSmallerThanMaxSize(int[] array)
         {
-            Assert.All(IdentityTransforms<int>(), t =>
+            Assert.All(CreateSources(array), source =>
             {
-                IEnumerable<int> source = t(array);
-
                 using IEnumerator<int[]> chunks = source.Chunk(3).GetEnumerator();
                 chunks.MoveNext();
                 Assert.Equal(new[] { 9999, 0 }, chunks.Current);
@@ -107,10 +99,8 @@ namespace System.Linq.Tests
         [InlineData(new int[0])]
         public void EmptySourceYieldsNoChunks(int[] array)
         {
-            Assert.All(IdentityTransforms<int>(), t =>
+            Assert.All(CreateSources(array), source =>
             {
-                IEnumerable<int> source = t(array);
-
                 using IEnumerator<int[]> chunks = source.Chunk(3).GetEnumerator();
                 Assert.False(chunks.MoveNext());
             });

@@ -6,6 +6,12 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#if SYSTEM_PRIVATE_CORELIB
+using static System.Numerics.BitOperations;
+#else
+using System.Security.Cryptography;
+#endif
+
 namespace System
 {
     internal static partial class Marvin
@@ -19,6 +25,7 @@ namespace System
         /// <summary>
         /// Compute a Marvin hash and collapse it into a 32-bit hash.
         /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static int ComputeHash32(ref byte data, uint count, uint p0, uint p1)
         {
             // Control flow of this method generally flows top-to-bottom, trying to
@@ -204,7 +211,7 @@ namespace System
                 else
                 {
                     partialResult |= (uint)Unsafe.ReadUnaligned<ushort>(ref data);
-                    partialResult = BitOperations.RotateLeft(partialResult, 16);
+                    partialResult = RotateLeft(partialResult, 16);
                 }
             }
 
@@ -221,16 +228,16 @@ namespace System
             uint p1 = rp1;
 
             p1 ^= p0;
-            p0 = BitOperations.RotateLeft(p0, 20);
+            p0 = RotateLeft(p0, 20);
 
             p0 += p1;
-            p1 = BitOperations.RotateLeft(p1, 9);
+            p1 = RotateLeft(p1, 9);
 
             p1 ^= p0;
-            p0 = BitOperations.RotateLeft(p0, 27);
+            p0 = RotateLeft(p0, 27);
 
             p0 += p1;
-            p1 = BitOperations.RotateLeft(p1, 19);
+            p1 = RotateLeft(p1, 19);
 
             rp0 = p0;
             rp1 = p1;
@@ -241,8 +248,29 @@ namespace System
         private static unsafe ulong GenerateSeed()
         {
             ulong seed;
+#if SYSTEM_PRIVATE_CORELIB
             Interop.GetRandomBytes((byte*)&seed, sizeof(ulong));
+#else
+            byte[] seedBytes = new byte[sizeof(ulong)];
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(seedBytes);
+                fixed (byte* b = seedBytes)
+                {
+                    seed = *(ulong*)b;
+                }
+            }
+#endif
             return seed;
         }
+
+#if !SYSTEM_PRIVATE_CORELIB
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint RotateLeft(uint value, int shift)
+        {
+            // This is expected to be optimized into a single rol (or ror with negated shift value) instruction
+            return (value << shift) | (value >> (32 - shift));
+        }
+#endif
     }
 }

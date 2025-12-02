@@ -54,6 +54,16 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        public void Clear_Clears()
+        {
+            DefaultInterpolatedStringHandler handler = new DefaultInterpolatedStringHandler(0, 0);
+            handler.AppendLiteral("hi");
+            Assert.Equal("hi", handler.Text.ToString());
+            handler.Clear();
+            Assert.Equal(string.Empty, handler.Text.ToString());
+        }
+
+        [Fact]
         public void AppendLiteral()
         {
             var expected = new StringBuilder();
@@ -65,6 +75,7 @@ namespace System.Runtime.CompilerServices.Tests
                 actual.AppendLiteral(s);
             }
 
+            Assert.Equal(expected.ToString(), actual.Text.ToString());
             Assert.Equal(expected.ToString(), actual.ToStringAndClear());
         }
 
@@ -96,6 +107,7 @@ namespace System.Runtime.CompilerServices.Tests
                 }
             }
 
+            Assert.Equal(expected.ToString(), actual.Text.ToString());
             Assert.Equal(expected.ToString(), actual.ToStringAndClear());
         }
 
@@ -127,6 +139,7 @@ namespace System.Runtime.CompilerServices.Tests
                 }
             }
 
+            Assert.Equal(expected.ToString(), actual.Text.ToString());
             Assert.Equal(expected.ToString(), actual.ToStringAndClear());
         }
 
@@ -157,6 +170,7 @@ namespace System.Runtime.CompilerServices.Tests
                 actual.AppendFormatted(s, -3, "X2");
             }
 
+            Assert.Equal(expected.ToString(), actual.Text.ToString());
             Assert.Equal(expected.ToString(), actual.ToStringAndClear());
         }
 
@@ -217,6 +231,7 @@ namespace System.Runtime.CompilerServices.Tests
                 }
             }
 
+            Assert.Equal(expected.ToString(), actual.Text.ToString());
             Assert.Equal(expected.ToString(), actual.ToStringAndClear());
         }
 
@@ -289,6 +304,7 @@ namespace System.Runtime.CompilerServices.Tests
                 }
             }
 
+            Assert.Equal(expected.ToString(), actual.Text.ToString());
             Assert.Equal(expected.ToString(), actual.ToStringAndClear());
         }
 
@@ -327,6 +343,7 @@ namespace System.Runtime.CompilerServices.Tests
                     AssertModeMatchesType(((IHasToStringState)t));
                 }
 
+                Assert.Equal(expected.ToString(), actual.Text.ToString());
                 Assert.Equal(expected.ToString(), actual.ToStringAndClear());
             }
 
@@ -406,6 +423,7 @@ namespace System.Runtime.CompilerServices.Tests
                 actual.AppendFormatted(t, -3, "X2");
                 AssertTss(t, "X2");
 
+                Assert.Equal(expected.ToString(), actual.Text.ToString());
                 Assert.Equal(expected.ToString(), actual.ToStringAndClear());
             }
 
@@ -434,6 +452,7 @@ namespace System.Runtime.CompilerServices.Tests
                 expected.AppendFormat("{0,3}", i);
             }
 
+            Assert.Equal(expected.ToString(), handler.Text.ToString());
             Assert.Equal(expected.ToString(), handler.ToStringAndClear());
         }
 

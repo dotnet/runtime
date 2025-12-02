@@ -25,8 +25,6 @@
     <NETCoreAppMaximumVersion>{NetCoreAppMaximumVersion}</NETCoreAppMaximumVersion>
     <UseMonoRuntime>{UseMonoRuntime}</UseMonoRuntime>
     <RuntimeIdentifier>{RuntimeIdentifier}</RuntimeIdentifier>
-    <AppHostSourcePath>{AppHostSourcePath}</AppHostSourcePath>
-    <SingleFileHostSourcePath>{SingleFileHostSourcePath}</SingleFileHostSourcePath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- Implicitly force 'UseNativeAotForComponents' for AOT tests -->
@@ -48,20 +46,22 @@
     <ProductVersion>{ProductVersion}</ProductVersion>
     <NetCoreAppCurrent>{NetCoreAppCurrent}</NetCoreAppCurrent>
     <NetCoreAppCurrentVersion>{NetCoreAppCurrentVersion}</NetCoreAppCurrentVersion>
+    <LocalAppHostPath>{LocalAppHostPath}</LocalAppHostPath>
+    <LocalSingleFileHostPath>{LocalSingleFileHostPath}</LocalSingleFileHostPath>
     <MicrosoftNetCoreAppFrameworkName>{MicrosoftNetCoreAppFrameworkName}</MicrosoftNetCoreAppFrameworkName>
     <MicrosoftNetCoreAppRefPackDir>{MicrosoftNetCoreAppRefPackDir}</MicrosoftNetCoreAppRefPackDir>
     <MicrosoftNetCoreAppRuntimePackDir>{MicrosoftNetCoreAppRuntimePackDir}</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>{MicrosoftNetCoreAppRuntimePackRidLibTfmDir}</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
+    <MicrosoftNetCoreAppRuntimePackNativeDir>{MicrosoftNetCoreAppRuntimePackNativeDir}</MicrosoftNetCoreAppRuntimePackNativeDir>
+    <CoreCLRILCompilerDir>{CoreCLRILCompilerDir}</CoreCLRILCompilerDir>
+    <CoreCLRCrossILCompilerDir>{CoreCLRCrossILCompilerDir}</CoreCLRCrossILCompilerDir>
+    <CoreCLRAotSdkDir>{CoreCLRAotSdkDir}</CoreCLRAotSdkDir>
 
     <RepositoryEngineeringDir>{RepositoryEngineeringDir}</RepositoryEngineeringDir>
-    <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs) --dump-dependencies</_ExtraTrimmerArgs>
     {AdditionalProperties}
 
     <!-- Needed for PublishAot -->
-    <IlcToolsPath>{IlcToolsPath}</IlcToolsPath>
-    <IlcBuildTasksPath>{IlcBuildTasksPath}</IlcBuildTasksPath>
-    <IlcSdkPath>{IlcSdkPath}</IlcSdkPath>
-    <IlcFrameworkPath>{IlcFrameworkPath}</IlcFrameworkPath>
-    <IlcFrameworkNativePath>{IlcFrameworkNativePath}</IlcFrameworkNativePath>
     <CoreCLRBuildIntegrationDir>{CoreCLRBuildIntegrationDir}</CoreCLRBuildIntegrationDir>
   </PropertyGroup>
 
@@ -76,6 +76,7 @@
   <Target Name="RemoveInvariantGlobalization" BeforeTargets="_SetWasmBuildNativeDefaults" Condition="'$(TargetArchitecture)' == 'wasm'">
     <ItemGroup>
       <_PropertiesThatTriggerRelinking Remove="InvariantGlobalization" />
+      <_PropertiesThatTriggerRelinking Remove="InvariantTimezone" />
     </ItemGroup>
   </Target>
 

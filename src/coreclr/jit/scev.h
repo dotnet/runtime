@@ -82,11 +82,7 @@ struct Scev
 
 struct ScevConstant : Scev
 {
-    ScevConstant(var_types type, int64_t value)
-        : Scev(ScevOper::Constant, type)
-        , Value(value)
-    {
-    }
+    ScevConstant(var_types type, int64_t value);
 
     int64_t Value;
 };

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Collections;
@@ -53,13 +54,15 @@ namespace System.Diagnostics
     /// but the exception is suppressed, and the operation does something reasonable (typically
     /// doing nothing).
     /// </summary>
+    [DebuggerDisplay("{DebuggerDisplayString,nq}")]
+    [DebuggerTypeProxy(typeof(ActivityDebuggerProxy))]
     public partial class Activity : IDisposable
     {
 #pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
         private static readonly IEnumerable<KeyValuePair<string, string?>> s_emptyBaggageTags = new KeyValuePair<string, string?>[0];
         private static readonly IEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = new KeyValuePair<string, object?>[0];
-        private static readonly IEnumerable<ActivityLink> s_emptyLinks = new ActivityLink[0];
-        private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new ActivityEvent[0];
+        private static readonly IEnumerable<ActivityLink> s_emptyLinks = new DiagLinkedList<ActivityLink>();
+        private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new DiagLinkedList<ActivityEvent>();
 #pragma warning restore CA1825
         private static readonly ActivitySource s_defaultSource = new ActivitySource(string.Empty);
         private static readonly AsyncLocal<Activity?> s_current = new AsyncLocal<Activity?>();
@@ -551,10 +554,7 @@ namespace System.Diagnostics
         /// </remarks>
         public Activity AddException(Exception exception, in TagList tags = default, DateTimeOffset timestamp = default)
         {
-            if (exception == null)
-            {
-                throw new ArgumentNullException(nameof(exception));
-            }
+            ArgumentNullException.ThrowIfNull(exception);
 
             TagList exceptionTags = tags;
 
@@ -1841,6 +1841,15 @@ namespace System.Diagnostics
             }
         }
 
+        private string DebuggerDisplayString
+        {
+            get
+            {
+                string? id = Id;
+                return $"OperationName = {OperationName}, Id = {(id is not null ? id : "(null)")}";
+            }
+        }
+
         [Flags]
         private enum State : byte
         {
@@ -2041,26 +2050,12 @@ namespace System.Diagnostics
             return (byte)((hi << 4) | lo);
         }
 
+        private static readonly SearchValues<char> s_hexLowerChars = SearchValues.Create("0123456789abcdef");
+
         internal static bool IsLowerCaseHexAndNotAllZeros(ReadOnlySpan<char> idData)
         {
             // Verify lower-case hex and not all zeros https://w3c.github.io/trace-context/#field-value
-            bool isNonZero = false;
-            int i = 0;
-            for (; i < idData.Length; i++)
-            {
-                char c = idData[i];
-                if (!HexConverter.IsHexLowerChar(c))
-                {
-                    return false;
-                }
-
-                if (c != '0')
-                {
-                    isNonZero = true;
-                }
-            }
-
-            return isNonZero;
+            return !idData.ContainsAnyExcept(s_hexLowerChars) && idData.ContainsAnyExcept('0');
         }
     }
 
@@ -2183,5 +2178,31 @@ namespace System.Diagnostics
         {
             ActivityTraceId.SetSpanFromHexChars(ToHexString().AsSpan(), destination);
         }
+    }
+
+    internal sealed class ActivityDebuggerProxy(Activity activity)
+    {
+        public ActivityTraceFlags ActivityTraceFlags => activity.ActivityTraceFlags;
+        public List<KeyValuePair<string, string?>> Baggage => new List<KeyValuePair<string, string?>>(activity.Baggage);
+        public ActivityContext Context => activity.Context;
+        public string DisplayName => activity.DisplayName;
+        public TimeSpan Duration => activity.Duration;
+        public List<ActivityEvent> Events => new List<ActivityEvent>(activity.Events);
+        public bool HasRemoteParent => activity.HasRemoteParent;
+        public string? Id => activity.Id;
+        public ActivityKind Kind => activity.Kind;
+        public List<ActivityLink> Links => new List<ActivityLink>(activity.Links);
+        public string OperationName => activity.OperationName;
+        public Activity? Parent => activity.Parent;
+        public string? ParentId => activity.ParentId;
+        public ActivitySpanId ParentSpanId => activity.ParentSpanId;
+        public ActivitySource Source => activity.Source;
+        public ActivitySpanId SpanId => activity.SpanId;
+        public DateTime StartTimeUtc => activity.StartTimeUtc;
+        public ActivityStatusCode Status => activity.Status;
+        public string? StatusDescription => activity.StatusDescription;
+        public List<KeyValuePair<string, object?>> TagObjects => new List<KeyValuePair<string, object?>>(activity.TagObjects);
+        public ActivityTraceId TraceId => activity.TraceId;
+        public string? TraceStateString => activity.TraceStateString;
     }
 }

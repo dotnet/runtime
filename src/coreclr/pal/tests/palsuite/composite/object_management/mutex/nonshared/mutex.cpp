@@ -135,7 +135,7 @@ PALTEST(composite_object_management_mutex_nonshared_paltest_mutex_nonshared, "co
     }
 
      /* Register the start time */
-    dwStartTime = GetTickCount();
+    dwStartTime = (DWORD)minipal_lowres_ticks();
     processStats.relationId = RELATION_ID;
     processStats.processId  = USE_PROCESS_COUNT;
 
@@ -289,7 +289,7 @@ void  PALAPI Run_Thread_mutex_nonshared (LPVOID lpParam)
         testStatus = FAIL;
     }
 
-    dwStartTime = GetTickCount();
+    dwStartTime = (DWORD)minipal_lowres_ticks();
 
     for( i = 0; i < REPEAT_COUNT; i++ )
     {

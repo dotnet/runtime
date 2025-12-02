@@ -295,6 +295,9 @@ namespace System
         public static int Count<T>(this System.Span<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static int Count<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static int Count<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value, System.Collections.Generic.IEqualityComparer<T>? comparer = null) { throw null; }
+        public static int CountAny<T>(this System.ReadOnlySpan<T> span, System.Buffers.SearchValues<T> values) where T : IEquatable<T>? { throw null; }
+        public static int CountAny<T>(this System.ReadOnlySpan<T> span, params System.ReadOnlySpan<T> values) where T : IEquatable<T>? { throw null; }
+        public static int CountAny<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> values, System.Collections.Generic.IEqualityComparer<T>? comparer = null) { throw null; }
         public static bool EndsWith(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public static bool EndsWith<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static bool EndsWith<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value, System.Collections.Generic.IEqualityComparer<T>? comparer = null) { throw null; }
@@ -421,6 +424,10 @@ namespace System
         public static void Replace<T>(this System.Span<T> span, T oldValue, T newValue, System.Collections.Generic.IEqualityComparer<T>? comparer = null) { }
         public static void Replace<T>(this System.ReadOnlySpan<T> source, System.Span<T> destination, T oldValue, T newValue) where T : System.IEquatable<T>? { }
         public static void Replace<T>(this System.ReadOnlySpan<T> source, System.Span<T> destination, T oldValue, T newValue, System.Collections.Generic.IEqualityComparer<T>? comparer = null) { }
+        public static void ReplaceAny<T>(this System.ReadOnlySpan<T> source, System.Span<T> destination, System.Buffers.SearchValues<T> values, T newValue) where T : IEquatable<T>? { }
+        public static void ReplaceAny<T>(this System.Span<T> span, System.Buffers.SearchValues<T> values, T newValue) where T : IEquatable<T>? { throw null; }
+        public static void ReplaceAnyExcept<T>(this System.ReadOnlySpan<T> source, System.Span<T> destination, System.Buffers.SearchValues<T> values, T newValue) where T : IEquatable<T>? { }
+        public static void ReplaceAnyExcept<T>(this System.Span<T> span, System.Buffers.SearchValues<T> values, T newValue) where T : IEquatable<T>? { throw null; }
         public static void Reverse<T>(this System.Span<T> span) { }
         public static int SequenceCompareTo<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other) where T : System.IComparable<T>? { throw null; }
         public static int SequenceCompareTo<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other, System.Collections.Generic.IComparer<T>? comparer = null) { throw null; }
@@ -506,13 +513,17 @@ namespace System
         public static bool TryWrite<TArg0, TArg1, TArg2>(this System.Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
         public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, params object?[] args) { throw null; }
         public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, params System.ReadOnlySpan<object?> args) { throw null; }
-        public ref struct SpanSplitEnumerator<T> where T : System.IEquatable<T>
+        public ref struct SpanSplitEnumerator<T> : System.Collections.Generic.IEnumerator<System.Range>, System.Collections.IEnumerator, System.IDisposable where T : System.IEquatable<T>
         {
             private object _dummy;
             private int _dummyPrimitive;
             public readonly System.Range Current { get { throw null; } }
+            public readonly System.ReadOnlySpan<T> Source { get { throw null; } }
             public System.MemoryExtensions.SpanSplitEnumerator<T> GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
+            object System.Collections.IEnumerator.Current { get { throw null; } }
+            void System.Collections.IEnumerator.Reset() { throw null; }
+            void System.IDisposable.Dispose() { throw null; }
         }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
@@ -563,6 +574,8 @@ namespace System.Buffers.Binary
 {
     public static partial class BinaryPrimitives
     {
+        public static System.Numerics.BFloat16 ReadBFloat16BigEndian(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Numerics.BFloat16 ReadBFloat16LittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static double ReadDoubleBigEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static double ReadDoubleLittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Half ReadHalfBigEndian(System.ReadOnlySpan<byte> source) { throw null; }
@@ -632,6 +645,8 @@ namespace System.Buffers.Binary
         public static void ReverseEndianness(System.ReadOnlySpan<ulong> source, System.Span<ulong> destination) { }
         [System.CLSCompliant(false)]
         public static void ReverseEndianness(System.ReadOnlySpan<ushort> source, System.Span<ushort> destination) { }
+        public static bool TryReadBFloat16BigEndian(System.ReadOnlySpan<byte> source, out System.Numerics.BFloat16 value) { throw null; }
+        public static bool TryReadBFloat16LittleEndian(System.ReadOnlySpan<byte> source, out System.Numerics.BFloat16 value) { throw null; }
         public static bool TryReadDoubleBigEndian(System.ReadOnlySpan<byte> source, out double value) { throw null; }
         public static bool TryReadDoubleLittleEndian(System.ReadOnlySpan<byte> source, out double value) { throw null; }
         public static bool TryReadHalfBigEndian(System.ReadOnlySpan<byte> source, out System.Half value) { throw null; }
@@ -668,6 +683,8 @@ namespace System.Buffers.Binary
         public static bool TryReadUIntPtrBigEndian(System.ReadOnlySpan<byte> source, out nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryReadUIntPtrLittleEndian(System.ReadOnlySpan<byte> source, out nuint value) { throw null; }
+        public static bool TryWriteBFloat16BigEndian(System.Span<byte> destination, System.Numerics.BFloat16 value) { throw null; }
+        public static bool TryWriteBFloat16LittleEndian(System.Span<byte> destination, System.Numerics.BFloat16 value) { throw null; }
         public static bool TryWriteDoubleBigEndian(System.Span<byte> destination, double value) { throw null; }
         public static bool TryWriteDoubleLittleEndian(System.Span<byte> destination, double value) { throw null; }
         public static bool TryWriteHalfBigEndian(System.Span<byte> destination, System.Half value) { throw null; }
@@ -704,6 +721,8 @@ namespace System.Buffers.Binary
         public static bool TryWriteUIntPtrBigEndian(System.Span<byte> destination, nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryWriteUIntPtrLittleEndian(System.Span<byte> destination, nuint value) { throw null; }
+        public static void WriteBFloat16BigEndian(System.Span<byte> destination, System.Numerics.BFloat16 value) { }
+        public static void WriteBFloat16LittleEndian(System.Span<byte> destination, System.Numerics.BFloat16 value) { }
         public static void WriteDoubleBigEndian(System.Span<byte> destination, double value) { }
         public static void WriteDoubleLittleEndian(System.Span<byte> destination, double value) { }
         public static void WriteHalfBigEndian(System.Span<byte> destination, System.Half value) { }
@@ -793,20 +812,26 @@ namespace System.Buffers.Text
 }
 namespace System.Text
 {
-    public ref partial struct SpanLineEnumerator
+    public ref partial struct SpanLineEnumerator : System.Collections.Generic.IEnumerator<System.ReadOnlySpan<char>>, System.Collections.IEnumerator, System.IDisposable
     {
         private object _dummy;
         private int _dummyPrimitive;
         public System.ReadOnlySpan<char> Current { get { throw null; } }
         public System.Text.SpanLineEnumerator GetEnumerator() { throw null; }
         public bool MoveNext() { throw null; }
+        object System.Collections.IEnumerator.Current { get { throw null; } }
+        void System.Collections.IEnumerator.Reset() { throw null; }
+        void IDisposable.Dispose() { throw null; }
     }
-    public ref partial struct SpanRuneEnumerator
+    public ref partial struct SpanRuneEnumerator : System.Collections.Generic.IEnumerator<System.Text.Rune>, System.Collections.IEnumerator, System.IDisposable
     {
         private object _dummy;
         private int _dummyPrimitive;
         public System.Text.Rune Current { get { throw null; } }
         public System.Text.SpanRuneEnumerator GetEnumerator() { throw null; }
         public bool MoveNext() { throw null; }
+        object System.Collections.IEnumerator.Current { get { throw null; } }
+        void System.Collections.IEnumerator.Reset() { throw null; }
+        void IDisposable.Dispose() { throw null; }
     }
 }

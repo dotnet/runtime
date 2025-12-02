@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
@@ -21,8 +22,11 @@ namespace System.Reflection
         private bool _extensibleParser;
         private bool _requireAssemblyQualifiedName;
         private bool _suppressContextualReflectionContext;
+        private IntPtr _unsafeAccessorMethod;
         private Assembly? _requestingAssembly;
         private Assembly? _topLevelAssembly;
+
+        private bool SupportsUnboundGenerics { get => _unsafeAccessorMethod != IntPtr.Zero; }
 
         [RequiresUnreferencedCode("The type might be removed")]
         internal static Type? GetType(
@@ -80,13 +84,13 @@ namespace System.Reflection
             bool ignoreCase,
             Assembly topLevelAssembly)
         {
-            TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError);
+            TypeName? parsed = TypeNameParser.Parse(typeName, throwOnError, new() { IsAssemblyGetType = true });
 
             if (parsed is null)
             {
                 return null;
             }
-            else if (topLevelAssembly is not null && parsed.AssemblyName is not null)
+            else if (parsed.AssemblyName is not null)
             {
                 return throwOnError ? throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly) : null;
             }
@@ -128,10 +132,15 @@ namespace System.Reflection
 
         // Used by VM
         internal static unsafe RuntimeType? GetTypeHelper(char* pTypeName, RuntimeAssembly? requestingAssembly,
-            bool throwOnError, bool requireAssemblyQualifiedName)
+            bool throwOnError, bool requireAssemblyQualifiedName, IntPtr unsafeAccessorMethod)
         {
             ReadOnlySpan<char> typeName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pTypeName);
+            return GetTypeHelper(typeName, requestingAssembly, throwOnError, requireAssemblyQualifiedName, unsafeAccessorMethod);
+        }
 
+        internal static RuntimeType? GetTypeHelper(ReadOnlySpan<char> typeName, RuntimeAssembly? requestingAssembly,
+            bool throwOnError, bool requireAssemblyQualifiedName, IntPtr unsafeAccessorMethod = 0)
+        {
             // Compat: Empty name throws TypeLoadException instead of
             // the natural ArgumentException
             if (typeName.Length == 0)
@@ -153,6 +162,7 @@ namespace System.Reflection
                 _throwOnError = throwOnError,
                 _suppressContextualReflectionContext = true,
                 _requireAssemblyQualifiedName = requireAssemblyQualifiedName,
+                _unsafeAccessorMethod = unsafeAccessorMethod,
             }.Resolve(parsed);
 
             if (type != null)
@@ -180,6 +190,9 @@ namespace System.Reflection
             }
             return assembly;
         }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "UnsafeAccessors_ResolveGenericParamToTypeHandle")]
+        private static partial IntPtr ResolveGenericParamToTypeHandle(IntPtr unsafeAccessorMethod, [MarshalAs(UnmanagedType.Bool)] bool isMethodParam, uint paramIndex);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "TypeNameResolver.GetType is marked as RequiresUnreferencedCode.")]
@@ -223,6 +236,42 @@ namespace System.Reflection
             {
                 if (assembly is null)
                 {
+                    if (SupportsUnboundGenerics
+                        && !string.IsNullOrEmpty(escapedTypeName)
+                        && escapedTypeName[0] == '!')
+                    {
+                        Debug.Assert(_throwOnError); // Unbound generic support currently always throws.
+
+                        // Parse the type as an unbound generic parameter. Following the common VAR/MVAR IL syntax:
+                        //  !<Number> - Represents a zero-based index into the type's generic parameters.
+                        //  !!<Number> - Represents a zero-based index into the method's generic parameters.
+
+                        // Confirm we have at least one more character
+                        if (escapedTypeName.Length == 1)
+                        {
+                            throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveType, escapedTypeName), typeName: escapedTypeName);
+                        }
+
+                        // At this point we expect either another '!' and then a number or a number.
+                        bool isMethodParam = escapedTypeName[1] == '!';
+                        ReadOnlySpan<char> toParse = isMethodParam
+                            ? escapedTypeName.AsSpan(2)  // Skip over "!!"
+                            : escapedTypeName.AsSpan(1); // Skip over "!"
+                        if (!uint.TryParse(toParse, NumberStyles.None, null, out uint paramIndex))
+                        {
+                            throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveType, escapedTypeName), typeName: escapedTypeName);
+                        }
+
+                        Debug.Assert(_unsafeAccessorMethod != IntPtr.Zero);
+                        IntPtr typeHandle = ResolveGenericParamToTypeHandle(_unsafeAccessorMethod, isMethodParam, paramIndex);
+                        if (typeHandle == IntPtr.Zero)
+                        {
+                            throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveType, escapedTypeName), typeName: escapedTypeName);
+                        }
+
+                        return RuntimeTypeHandle.GetRuntimeTypeFromHandle(typeHandle);
+                    }
+
                     if (_requireAssemblyQualifiedName)
                     {
                         if (_throwOnError)
@@ -231,7 +280,7 @@ namespace System.Reflection
                         }
                         return null;
                     }
-                    return GetTypeFromDefaultAssemblies(TypeNameHelpers.Unescape(escapedTypeName), nestedTypeNames, parsedName);
+                    return GetTypeFromDefaultAssemblies(TypeName.Unescape(escapedTypeName), nestedTypeNames, parsedName);
                 }
 
                 if (assembly is RuntimeAssembly runtimeAssembly)
@@ -239,7 +288,7 @@ namespace System.Reflection
                     // Compat: Non-extensible parser allows ambiguous matches with ignore case lookup
                     bool useReflectionForNestedTypes = _extensibleParser && _ignoreCase;
 
-                    type = runtimeAssembly.GetTypeCore(TypeNameHelpers.Unescape(escapedTypeName), useReflectionForNestedTypes ? default : nestedTypeNames,
+                    type = runtimeAssembly.GetTypeCore(TypeName.Unescape(escapedTypeName), useReflectionForNestedTypes ? default : nestedTypeNames,
                         throwOnFileNotFound: _throwOnError, ignoreCase: _ignoreCase);
 
                     if (type is null)
@@ -282,7 +331,7 @@ namespace System.Reflection
                     if (_throwOnError)
                     {
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType,
-                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : TypeNameHelpers.Unescape(escapedTypeName)),
+                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : TypeName.Unescape(escapedTypeName)),
                             typeName: parsedName.FullName);
                     }
                     return null;

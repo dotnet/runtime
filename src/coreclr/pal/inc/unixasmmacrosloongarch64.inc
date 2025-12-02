@@ -17,6 +17,12 @@
 C_FUNC(\Name):
 .endm
 
+.macro ALTERNATE_ENTRY Name
+        .global C_FUNC(\Name)
+        .hidden C_FUNC(\Name)
+C_FUNC(\Name):
+.endm
+
 .macro LEAF_ENTRY Name, Section
         .global C_FUNC(\Name)
         .type \Name, %function
@@ -39,6 +45,16 @@ C_FUNC(\Name\()_End):
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
     la.local  \HelperReg, \Name
+.endm
+
+.macro PREPARE_EXTERNAL_VAR_INDIRECT Name, HelperReg
+        la.local  \HelperReg, \Name
+        ld.d  \HelperReg, \HelperReg, 0
+.endm
+
+.macro PREPARE_EXTERNAL_VAR_INDIRECT_W Name, HelperReg
+        la.local  \HelperReg, \Name
+        ld.w  \HelperReg, \HelperReg, 0
 .endm
 
 .macro PROLOG_STACK_ALLOC Size
@@ -66,14 +82,8 @@ C_FUNC(\Name\()_End):
 
 ////NOTE: reg1 and reg2 must be the number and GPR type !!!
 .macro PROLOG_SAVE_REG_PAIR reg1, reg2, ofs, __def_cfa_save=0
-//#ifdef FEATURE_LOONGSONISA
-//        //NOTE:The offset of gssq/gslq must be 16-bytes aligned.
-//        //     here ofs must be 16-bytes aligned.
-//        gssq \reg2, \reg1, \ofs(sp)
-//#else
         st.d $r\reg1, $sp, \ofs
         st.d $r\reg2, $sp, \ofs+8
-//#endif
 
         .cfi_rel_offset \reg1, \ofs
         .cfi_rel_offset \reg2, \ofs + 8
@@ -107,23 +117,15 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EPILOG_RESTORE_REG_PAIR reg1, reg2, ofs
-//#ifdef FEATURE_LOONGSONISA
-//        gslq \reg2, \reg1, \ofs(sp)
-//#else
         ld.d  $r\reg2, $sp, \ofs+8
         ld.d  $r\reg1, $sp, \ofs
-//#endif
         .cfi_restore \reg2
         .cfi_restore \reg1
 .endm
 
 .macro EPILOG_RESTORE_REG_PAIR_INDEXED reg1, reg2, ssize
-//#ifdef FEATURE_LOONGSONISA
-//        gslq \reg2, \reg1, 0(sp)
-//#else
         ld.d  $r\reg2, $sp, 8
         ld.d  $r\reg1, $sp, 0
-//#endif
         .cfi_restore \reg2
         .cfi_restore \reg1
 
@@ -160,21 +162,13 @@ C_FUNC(\Name\()_End):
         PROLOG_SAVE_REG_PAIR 25, 26, \ofs + 32
         PROLOG_SAVE_REG_PAIR 27, 28, \ofs + 48
         PROLOG_SAVE_REG_PAIR 29, 30, \ofs + 64
-        PROLOG_SAVE_REG_PAIR 31, 2,  \ofs + 80
+        PROLOG_SAVE_REG      31,     \ofs + 80
 
 .endm
 
 // Reserve 64 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
 .macro SAVE_ARGUMENT_REGISTERS reg, ofs
 
-//#ifdef FEATURE_LOONGSONISA
-//        //NOTE:The offset of gssq/gslq must be 16-bytes aligned.
-//        //     here ofs must be 16-bytes aligned.
-//        gssq  a1, a0, \ofs(\reg)
-//        gssq  a3, a2, \ofs+16(\reg)
-//        gssq  a5, a4, \ofs+32(\reg)
-//        gssq  a7, a6, \ofs+48(\reg)
-//#else
         st.d  $a0, \reg, \ofs
         st.d  $a1, \reg, \ofs+8
         st.d  $a2, \reg, \ofs+16
@@ -183,21 +177,12 @@ C_FUNC(\Name\()_End):
         st.d  $a5, \reg, \ofs+40
         st.d  $a6, \reg, \ofs+48
         st.d  $a7, \reg, \ofs+56
-//#endif
 
 .endm
 
 // Reserve 64 bytes of memory before calling  SAVE_FLOAT_ARGUMENT_REGISTERS
 .macro SAVE_FLOAT_ARGUMENT_REGISTERS reg, ofs
 
-//#ifdef FEATURE_LOONGSONISA
-//        //NOTE:The offset of gssqc1/gslqc1 must be 16-bytes aligned.
-//        //     here ofs must be 16-bytes aligned.
-//        gssqc1  $f13, $f12, \ofs(\reg)
-//        gssqc1  $f15, $f14, \ofs+16(\reg)
-//        gssqc1  $f17, $f16, \ofs+32(\reg)
-//        gssqc1  $f19, $f18, \ofs+48(\reg)
-//#else
         fst.d $f0, \reg, \ofs
         fst.d $f1, \reg, \ofs+8
         fst.d $f2, \reg, \ofs+16
@@ -206,21 +191,12 @@ C_FUNC(\Name\()_End):
         fst.d $f5, \reg, \ofs+40
         fst.d $f6, \reg, \ofs+48
         fst.d $f7, \reg, \ofs+56
-//#endif
 
 .endm
 
 // Reserve 64 bytes of memory before calling  SAVE_FLOAT_CALLEESAVED_REGISTERS
 .macro SAVE_FLOAT_CALLEESAVED_REGISTERS reg, ofs
 
-//#ifdef FEATURE_LOONGSONISA
-//        //NOTE:The offset of gssqc1/gslqc1 must be 16-bytes aligned.
-//        //     here ofs must be 16-bytes aligned.
-//        gssqc1  $f25, $f24, \ofs(\reg)
-//        gssqc1  $f27, $f26, \ofs+16(\reg)
-//        gssqc1  $f29, $f28, \ofs+32(\reg)
-//        gssqc1  $f31, $f30, \ofs+48(\reg)
-//#else
         fst.d  $f24, \reg, \ofs
         fst.d  $f25, \reg, \ofs+8
         fst.d  $f26, \reg, \ofs+16
@@ -229,14 +205,12 @@ C_FUNC(\Name\()_End):
         fst.d  $f29, \reg, \ofs+40
         fst.d  $f30, \reg, \ofs+48
         fst.d  $f31, \reg, \ofs+56
-//#endif
 
 .endm
 
 .macro RESTORE_CALLEESAVED_REGISTERS reg, ofs
 
-        EPILOG_RESTORE_REG_PAIR 31, 2   \ofs + 80
-
+        EPILOG_RESTORE_REG      31,     \ofs + 80
         EPILOG_RESTORE_REG_PAIR 29, 30, \ofs + 64
         EPILOG_RESTORE_REG_PAIR 27, 28, \ofs + 48
         EPILOG_RESTORE_REG_PAIR 25, 26, \ofs + 32
@@ -245,14 +219,6 @@ C_FUNC(\Name\()_End):
 
 .macro RESTORE_ARGUMENT_REGISTERS reg, ofs
 
-//#ifdef FEATURE_LOONGSONISA
-//        //NOTE:The offset of gssq/gslq must be 16-bytes aligned.
-//        //     here ofs must be 16-bytes aligned.
-//        gslq  a7, a6, \ofs+48(\reg)
-//        gslq  a5, a4, \ofs+32(\reg)
-//        gslq  a3, a2, \ofs+16(\reg)
-//        gslq  a1, a0, \ofs(\reg)
-//#else
         ld.d $a7, \reg, \ofs+56
         ld.d $a6, \reg, \ofs+48
         ld.d $a5, \reg, \ofs+40
@@ -261,18 +227,11 @@ C_FUNC(\Name\()_End):
         ld.d $a2, \reg, \ofs+16
         ld.d $a1, \reg, \ofs+8
         ld.d $a0, \reg, \ofs
-//#endif
 
 .endm
 
 .macro RESTORE_FLOAT_ARGUMENT_REGISTERS reg, ofs
 
-//#ifdef FEATURE_LOONGSONISA
-//        gslqc1  $f19, $f18, \ofs+48(\reg)
-//        gslqc1  $f17, $f16, \ofs+32(\reg)
-//        gslqc1  $f15, $f14, \ofs+16(\reg)
-//        gslqc1  $f13, $f12, \ofs(\reg)
-//#else
         fld.d  $f7, \reg, \ofs+56
         fld.d  $f6, \reg, \ofs+48
         fld.d  $f5, \reg, \ofs+40
@@ -281,20 +240,11 @@ C_FUNC(\Name\()_End):
         fld.d  $f2, \reg, \ofs+16
         fld.d  $f1, \reg, \ofs+8
         fld.d  $f0, \reg, \ofs
-//#endif
 
 .endm
 
 .macro RESTORE_FLOAT_CALLEESAVED_REGISTERS reg, ofs
 
-//#ifdef FEATURE_LOONGSONISA
-//        //NOTE:The offset of gssqc1/gslqc1 must be 16-bytes aligned.
-//        //     here ofs must be 16-bytes aligned.
-//        gslqc1  $f25, $f24, \ofs(\reg)
-//        gslqc1  $f27, $f26, \ofs+16(\reg)
-//        gslqc1  $f29, $f28, \ofs+32(\reg)
-//        gslqc1  $f31, $f30, \ofs+48(\reg)
-//#else
         fld.d  $f24, $r\reg, \ofs
         fld.d  $f25, $r\reg, \ofs+8
         fld.d  $f26, $r\reg, \ofs+16
@@ -303,7 +253,6 @@ C_FUNC(\Name\()_End):
         fld.d  $f29, $r\reg, \ofs+40
         fld.d  $f30, $r\reg, \ofs+48
         fld.d  $f31, $r\reg, \ofs+56
-//#endif
 
 .endm
 
@@ -322,7 +271,6 @@ C_FUNC(\Name\()_End):
 //            GPR_a0
 //
 // General Registers:
-//            GPR_tp
 //            GPR_s8
 //            GPR_s7
 //            GPR_s6
@@ -366,7 +314,7 @@ C_FUNC(\Name\()_End):
         __PWTB_CalleeSavedRegisters = __PWTB_TransitionBlock
         __PWTB_ArgumentRegisters = __PWTB_TransitionBlock + 96
 
-        // Including fp, ra, s0-s8, tp, and (a0-a7)arguments. (1+1+9+1)*8 + 8*8.
+        // Including fp, ra, s0-s8, padding, and (a0-a7)arguments. (1+1+9+1)*8 + 8*8.
         __PWTB_StackAlloc = __PWTB_TransitionBlock + 96 + 64
         PROLOG_STACK_ALLOC __PWTB_StackAlloc
         //                   $fp,$ra
@@ -416,6 +364,44 @@ C_FUNC(\Name\()_End):
 
         EPILOG_STACK_FREE                 __PWTB_StackAlloc
 
+.endm
+
+// Inlined version of GetThreadEEAllocContext. Target cannot be a0.
+.macro INLINE_GET_ALLOC_CONTEXT_BASE target
+        .ifc  \target, $a0
+                .error "target cannot be a0"
+        .endif
+
+        // Save $a0, $ra
+        PROLOG_SAVE_REG_PAIR_INDEXED   4, 1, 16, 0
+
+        // This instruction is recognized and potentially patched
+        // by the linker (GD->IE/LE relaxation).
+        la.tls.desc  $a0, t_runtime_thread_locals
+
+        addi.d  \target, $tp, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+        add.d  \target, \target, $a0
+
+        // Restore $a0, $ra
+        EPILOG_RESTORE_REG_PAIR_INDEXED 4, 1, 16
+.endm
+
+// Pushes a TransitionBlock on the stack without saving the argument registers.
+// See the PROLOG_WITH_TRANSITION_BLOCK macro for the stack layout.
+.macro PUSH_COOP_PINVOKE_FRAME target
+        // Including fp, ra, s0-s8, padding, and (a0-a7)arguments. (1+1+9+1)*8 + 8*8 == 96.
+        PROLOG_STACK_ALLOC  160
+        //                   $fp,$ra
+        PROLOG_SAVE_REG_PAIR  22, 1, 0, 1
+        // Spill callee saved registers.  $sp=$r3.
+        SAVE_CALLEESAVED_REGISTERS  3, 0
+        move  \target, $sp
+.endm
+
+.macro POP_COOP_PINVOKE_FRAME
+        RESTORE_CALLEESAVED_REGISTERS  3, 0
+        EPILOG_RESTORE_REG_PAIR  22, 1, 0
+        EPILOG_STACK_FREE  160
 .endm
 
 // ------------------------------------------------------------------

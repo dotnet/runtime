@@ -31,6 +31,8 @@ Starting with .NET Core 3, tracing can be redirected and its verbosity controlle
   * `COREHOST_TRACE_VERBOSITY=3` shows errors, warnings, and info
   * `COREHOST_TRACE_VERBOSITY=4` shows errors, warnings, info, and verbose. (currently the default and maximum level of detail)
 
+In .NET 10 and above, if `COREHOST_TRACEFILE` is set to a directory that exists, the host will trace to a file named `<exe_name>.<pid>.log` in that directory. If the specified path does not exist or is not a directory, tracing behaves the same as before .NET 10.
+
 ## Error routing
 
 The host components implement two routes for outputting errors:

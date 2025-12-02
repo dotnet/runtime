@@ -276,6 +276,8 @@ namespace System.Reflection.Tests
         {
             Assert.Equal(typeof(int), Type.GetType("System.Int32", throwOnError: true));
             Assert.Equal(typeof(int), Type.GetType("system.int32", throwOnError: true, ignoreCase: true));
+            Assert.Null(typeof(int).Assembly.GetType("a,b", throwOnError: false, ignoreCase: false));
+            Assert.Null(typeof(int).Assembly.GetType("a,b,c", throwOnError: false, ignoreCase: false));
         }
 
         [Fact]
@@ -294,7 +296,15 @@ namespace System.Reflection.Tests
             Assert.Null(Type.GetType("MissingAssemblyName, "));
             Assert.Null(Type.GetType("ExtraComma, ,"));
             Assert.Null(Type.GetType("ExtraComma, , System.Runtime"));
-            Assert.Throws<FileLoadException>(() => Type.GetType("System.Object, System.Runtime, Version=x.y"));
+
+            // Backward compat: no matter what throwOnError is set to, CLR throws FileLoadException for invalid assembly names.
+            Assert.Throws<FileLoadException>(() => Type.GetType("System.Object, System.Runtime, Version=x.y", throwOnError: false));
+            Assert.Throws<FileLoadException>(() => Type.GetType("System.Object, System.Runtime, Version=x.y", throwOnError: true));
+
+            // Backward compat: when using Assembly.GetType, throwOnError is not ignored and ArgumentException can be thrown.
+            Assembly coreLib = typeof(int).Assembly;
+            Assert.Null(coreLib.GetType("System.Object, System.Runtime, Version=x.y", throwOnError: false));
+            Assert.Throws<ArgumentException>(() => coreLib.GetType("System.Object, System.Runtime, Version=x.y", throwOnError: true));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]

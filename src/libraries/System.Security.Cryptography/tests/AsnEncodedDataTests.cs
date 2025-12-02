@@ -112,11 +112,13 @@ namespace System.Security.Cryptography.Tests
 
             string s = asnData.Format(false);
             bool isOpenSsl3 = PlatformDetection.IsOpenSsl3;
+            bool isOpenSsl3_4 = PlatformDetection.IsOpenSsl3_4;
 
             string expected = string.Join(
                 ", ",
                 // Choice[0]: OtherName
-                isOpenSsl3 ? "othername: UPN::subjectupn1@example.org" : "othername:<unsupported>",
+                isOpenSsl3_4 ? "othername: UPN:subjectupn1@example.org" :
+                    isOpenSsl3 ? "othername: UPN::subjectupn1@example.org" : "othername:<unsupported>",
                 // Choice[1]: Rfc822Name (EmailAddress)
                 "email:sanemail1@example.org",
                 // Choice[2]: DnsName

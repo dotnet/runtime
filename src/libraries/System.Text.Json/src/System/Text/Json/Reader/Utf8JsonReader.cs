@@ -2582,7 +2582,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
             if (ValueIsEscaped)
             {
-                span = JsonReaderHelper.GetUnescapedSpan(span);
+                span = JsonReaderHelper.GetUnescaped(span);
             }
 
             return span;

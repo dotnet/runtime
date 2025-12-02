@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
 using System.Text;
+using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 using SafeJObjectHandle = Interop.JObjectLifetime.SafeJObjectHandle;
@@ -234,7 +235,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public byte[] KeyAlgorithmParameters
+        public byte[]? KeyAlgorithmParameters
         {
             get
             {
@@ -446,6 +447,24 @@ namespace System.Security.Cryptography.X509Certificates
             return new ECDiffieHellmanImplementation.ECDiffieHellmanAndroid(ecKey);
         }
 
+        public MLDsa? GetMLDsaPrivateKey()
+        {
+            // MLDsa is not supported on Android
+            return null;
+        }
+
+        public MLKem? GetMLKemPrivateKey()
+        {
+            // MLKem is not supported on Android
+            return null;
+        }
+
+        public SlhDsa? GetSlhDsaPrivateKey()
+        {
+            // SlhDsa is not supported on Android
+            return null;
+        }
+
         public ICertificatePal CopyWithPrivateKey(DSA privateKey)
         {
             DSAImplementation.DSAAndroid? typedKey = privateKey as DSAImplementation.DSAAndroid;
@@ -495,6 +514,22 @@ namespace System.Security.Cryptography.X509Certificates
                 typedKey.ImportParameters(ecParameters);
                 return CopyWithPrivateKeyHandle(typedKey.DuplicateKeyHandle());
             }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(MLDsa privateKey)
+        {
+            throw new PlatformNotSupportedException(
+                SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLDsa)));
+        }
+
+        public ICertificatePal CopyWithPrivateKey(MLKem privateKey)
+        {
+            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(MLKem)));
+        }
+
+        public ICertificatePal CopyWithPrivateKey(SlhDsa privateKey)
+        {
+            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
         }
 
         public ICertificatePal CopyWithPrivateKey(RSA privateKey)
@@ -560,6 +595,22 @@ namespace System.Security.Cryptography.X509Certificates
                 byte[]? exported = storePal.Export(contentType, password);
                 Debug.Assert(exported != null);
                 return exported;
+            }
+        }
+
+        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password)
+        {
+            using (IExportPal storePal = StorePal.FromCertificate(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, password);
+            }
+        }
+
+        public byte[] ExportPkcs12(PbeParameters exportParameters, SafePasswordHandle password)
+        {
+            using (IExportPal storePal = StorePal.FromCertificate(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, password);
             }
         }
 

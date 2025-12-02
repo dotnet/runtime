@@ -204,7 +204,10 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         private Attribute? GetFSharpCompilationMappingAttribute(Type type)
-            => type.GetCustomAttribute(_compilationMappingAttributeType, inherit: true);
+        {
+            object[] attributes = type.GetCustomAttributes(_compilationMappingAttributeType, inherit: true);
+            return attributes.Length == 0 ? null : (Attribute)attributes[0];
+        }
 
         private SourceConstructFlags GetSourceConstructFlags(Attribute compilationMappingAttribute)
             => _sourceConstructFlagsGetter is null ? SourceConstructFlags.None : (SourceConstructFlags)_sourceConstructFlagsGetter.Invoke(compilationMappingAttribute, null)!;

@@ -156,18 +156,22 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             _inputFilesToCompare = Get(command.InputFilesToCompare);
         }
 
-        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
-        private T Get<T>(CliArgument<T> argument) => _command.Result.GetValue(argument);
-        private bool IsSet<T>(CliOption<T> option) => _command.Result.GetResult(option) != null;
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument);
+        private bool IsSet<T>(Option<T> option) => _command.Result.GetResult(option) != null;
 
         private static int Main(string[] args) =>
-            new CliConfiguration(new PgoRootCommand(args)
+            new PgoRootCommand(args)
                 .UseVersion()
-                .UseExtendedHelp(PgoRootCommand.GetExtendedHelp))
-            {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
-                EnableDefaultExceptionHandler = false,
-            }.Invoke(args);
+                .UseExtendedHelp(PgoRootCommand.PrintExtendedHelp)
+                .Parse(args, new()
+                {
+                    ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                })
+                .Invoke(new()
+                {
+                    EnableDefaultExceptionHandler = false
+                });
 
         public static void PrintWarning(string warning)
         {
@@ -1050,7 +1054,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 bool hasPid = IsSet(_command.Pid);
                 string processName = Get(_command.ProcessName);
-                if (hasPid && processName == null && traceLog.Processes.Count != 1)
+                if (!hasPid && processName == null && traceLog.Processes.Count != 1)
                 {
                     PrintError("Trace file contains multiple processes to distinguish between");
                     PrintOutput("Either a pid or process name from the following list must be specified");
@@ -1945,7 +1949,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                     methodPrepareInstruction.Append(CsvEscape(instantiationBuilder.ToString(), outerCsvEscapeChar));
                     methodPrepareInstruction.Append(outerCsvEscapeChar);
-                    methodPrepareInstruction.Append(CsvEscape(method.Name, outerCsvEscapeChar));
+                    methodPrepareInstruction.Append(CsvEscape(method.GetName(), outerCsvEscapeChar));
                 }
                 catch (Exception ex)
                 {

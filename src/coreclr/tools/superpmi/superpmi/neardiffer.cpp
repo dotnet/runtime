@@ -149,6 +149,14 @@ bool NearDiffer::InitAsmDiff()
             {
                 coreDisTargetArchitecture = Target_Arm64;
             }
+            else if (0 == _stricmp(TargetArchitecture, "loongarch64"))
+            {
+                coreDisTargetArchitecture = Target_LoongArch64;
+            }
+            else if (0 == _stricmp(TargetArchitecture, "riscv64"))
+            {
+                coreDisTargetArchitecture = Target_RiscV64;
+            }
             else
             {
                 LogError("Illegal target architecture '%s'", TargetArchitecture);
@@ -408,7 +416,7 @@ bool NearDiffer::mungeOffsets(
     // We might want to do something similar for mov/movk/movk/movk sequences on Arm64. The following code was
     // previously used, but currently is not active.
     //
-    // One difference is we might see a different number of movk on arm64 depending on the the data. Our "hack"
+    // One difference is we might see a different number of movk on arm64 depending on the data. Our "hack"
     // of zeroing out the constant so they compare equal doesn't work well. In this case, we really do want
     // a callback to the disassembler to skip the instructions.
     //

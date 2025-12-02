@@ -133,16 +133,10 @@ VOID PALAPI APCFunc_WFSOExSemaphoreTest(ULONG_PTR dwParam)
 DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter)
 {
     HANDLE hSemaphore;
-    UINT64 OldTimeStamp;
-    UINT64 NewTimeStamp;
+    int64_t OldTimeStamp;
+    int64_t NewTimeStamp;
     BOOL Alertable;
     DWORD ret;
-
-    LARGE_INTEGER performanceFrequency;
-    if (!QueryPerformanceFrequency(&performanceFrequency))
-    {
-        Fail("Failed to query performance frequency!");
-    }
 
     /* Create a semaphore that is not in the signalled state */
     hSemaphore = CreateSemaphoreExW(NULL, 0, 1, NULL, 0, 0);
@@ -155,14 +149,14 @@ DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter)
 
     Alertable = (BOOL)(SIZE_T) lpParameter;
 
-    OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    OldTimeStamp = minipal_hires_ticks();
     s_preWaitTimestampRecorded = true;
 
     ret = WaitForSingleObjectEx(	hSemaphore,
 								ChildThreadWaitTime,
         							Alertable);
 
-    NewTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    NewTimeStamp = minipal_hires_ticks();
 
 
     if (Alertable && ret != WAIT_IO_COMPLETION)
@@ -177,7 +171,7 @@ DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter)
     }
 
 
-    ThreadWaitDelta_WFSOExSemaphoreTest = NewTimeStamp - OldTimeStamp;
+    ThreadWaitDelta_WFSOExSemaphoreTest = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);
 
     ret = CloseHandle(hSemaphore);
     if (!ret)

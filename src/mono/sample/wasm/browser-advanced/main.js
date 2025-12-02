@@ -15,6 +15,8 @@ let testAbort = true;
 let testError = true;
 
 try {
+    console.log(`crossOriginIsolated: ${globalThis.crossOriginIsolated}`);
+
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (url, fetchArgs) => {
         console.log("fetching " + url);
@@ -35,22 +37,24 @@ try {
         // here we show how emscripten could be further configured
         // It is preferred to use specific 'with***' methods instead in all other cases.
         .withConfig({
-            startupMemoryCache: true,
             maxParallelDownloads: 1,
             resources: {
-                modulesAfterConfigLoaded: {
-                    "advanced-sample.lib.module.js": ""
-                }
+                modulesAfterConfigLoaded: [{
+                    "name": "advanced-sample.lib.module.js"
+                }]
             }
         })
         .withModuleConfig({
-            configSrc: "./blazor.boot.json",
+            configSrc: "./dotnet.boot.js",
             onConfigLoaded: (config) => {
                 // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
                 console.log('user code Module.onConfigLoaded');
                 // config is loaded and could be tweaked before the rest of the runtime startup sequence
                 config.environmentVariables["MONO_LOG_LEVEL"] = "debug";
-                config.browserProfilerOptions = {};
+                config.browserProfilerOptions = {
+                    sampleIntervalMs: 5.15,
+                    callSpec: "N:Sample" // needs to match AOT profile
+                };
             },
             preInit: () => { console.log('user code Module.preInit'); },
             preRun: () => { console.log('user code Module.preRun'); },
@@ -102,6 +106,8 @@ try {
 
     const deepMeaning = new Promise(resolve => setTimeout(() => resolve(meaning), 100));
     exports.Sample.Test.PrintMeaning(deepMeaning);
+
+    exports.Sample.Test.SillyLoop();
 
     let exit_code = await runMain(config.mainAssemblyName, []);
     exit(exit_code);

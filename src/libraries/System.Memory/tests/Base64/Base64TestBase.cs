@@ -124,7 +124,7 @@ namespace System.Buffers.Text.Tests
 
         private static char[] GetChars(Random r, int i)
         {
-#if NETCOREAPP
+#if NET
             return r.GetItems<char>(" \n\t\r", i);
 #else
             byte[] bytes = new byte[i];

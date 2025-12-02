@@ -647,8 +647,6 @@ public:
 
     static const BYTE s_EmptyBuffer[2];
 
-    static UINT s_ACP;
-
     SPTR_DECL(SString,s_Empty);
 
     COUNT_T GetRawCount() const;

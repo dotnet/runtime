@@ -17,6 +17,7 @@
 #include "mono/utils/mono-error-internals.h"
 #include "mono/utils/mono-memory-model.h"
 #include "mono/utils/mono-compiler.h"
+#include "mono/utils/options.h"
 
 #define MONO_CLASS_IS_ARRAY(c) (m_class_get_rank (c))
 
@@ -287,12 +288,6 @@ union _MonoClassSizes {
 		int generic_param_token; /* for generic param types, both var and mvar */
 };
 
-/* enabled only with small config for now: we might want to do it unconditionally */
-#ifdef MONO_SMALL_CONFIG
-#define COMPRESSED_INTERFACE_BITMAP 1
-#endif
-
-
 #ifdef ENABLE_CHECKED_BUILD_PRIVATE_TYPES
 #define MONO_CLASS_DEF_PRIVATE 1
 #endif
@@ -321,14 +316,12 @@ union _MonoClassSizes {
 #undef MONO_CLASS_GETTER
 #undef MONO_CLASS_OFFSET
 
-#ifdef COMPRESSED_INTERFACE_BITMAP
 int mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size);
-int mono_class_interface_match (const uint8_t *bitmap, int id);
-#else
-#define mono_class_interface_match(bmap,uiid) ((bmap) [(uiid) >> 3] & (1 << ((uiid)&7)))
-#endif
+int mono_class_interface_match_compressed (const uint8_t *bitmap, int id);
 
-#define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= m_class_get_max_interface_id (k)) && mono_class_interface_match (m_class_get_interface_bitmap (k), (uiid)))
+#define mono_class_interface_match(bmap,uiid) ((bmap) [(uiid) >> 3] & (1 << ((uiid)&7)))
+
+#define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= m_class_get_max_interface_id (k)) && (mono_opt_compressed_interface_bitmap ? mono_class_interface_match_compressed (m_class_get_interface_bitmap (k), (uiid)) : mono_class_interface_match (m_class_get_interface_bitmap (k), (uiid))))
 
 #define MONO_VTABLE_AVAILABLE_GC_BITS 4
 
@@ -378,7 +371,7 @@ struct MonoVTable {
 
 #define MONO_SIZEOF_VTABLE (sizeof (MonoVTable) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
-#define MONO_VTABLE_IMPLEMENTS_INTERFACE(vt,uiid) (((uiid) <= (vt)->max_interface_id) && mono_class_interface_match ((vt)->interface_bitmap, (uiid)))
+#define MONO_VTABLE_IMPLEMENTS_INTERFACE(vt,uiid) (((uiid) <= (vt)->max_interface_id) && (mono_opt_compressed_interface_bitmap ? mono_class_interface_match_compressed ((vt)->interface_bitmap, (uiid)) : mono_class_interface_match ((vt)->interface_bitmap, (uiid))))
 
 /*
  * Generic instantiation data type encoding.
@@ -545,13 +538,13 @@ mono_generic_param_name (MonoGenericParam *p)
 static inline MonoGenericContainer *
 mono_type_get_generic_param_owner (MonoType *t)
 {
-	return mono_generic_param_owner (t->data.generic_param);
+	return mono_generic_param_owner (m_type_data_get_generic_param (t));
 }
 
 static inline guint16
 mono_type_get_generic_param_num (MonoType *t)
 {
-	return mono_generic_param_num (t->data.generic_param);
+	return mono_generic_param_num (m_type_data_get_generic_param (t));
 }
 
 /*
@@ -889,6 +882,7 @@ typedef struct {
 	MonoClass *threadabortexception_class;
 	MonoClass *thread_class;
 	MonoClass *internal_thread_class;
+	MonoClass *gc_class;
 	MonoClass *autoreleasepool_class;
 	MonoClass *mono_method_message_class;
 	MonoClass *field_info_class;
@@ -952,25 +946,20 @@ mono_class_get_##shortname##_class (void)	\
 
 // GENERATE_TRY_GET_CLASS_WITH_CACHE attempts mono_class_load_from_name approximately
 // only once. i.e. if it fails, it will return null and not retry.
-// In a race it might try a few times, but not indefinitely.
-//
-// FIXME This maybe has excessive volatile/barriers.
-//
 #define GENERATE_TRY_GET_CLASS_WITH_CACHE(shortname,name_space,name) \
 MonoClass*	\
 mono_class_try_get_##shortname##_class (void)	\
 {	\
-	static volatile MonoClass *tmp_class;	\
-	static volatile gboolean inited;	\
-	MonoClass *klass = (MonoClass *)tmp_class;	\
-	mono_memory_barrier ();	\
-	if (!inited) {	\
-		klass = mono_class_try_load_from_name (mono_class_generate_get_corlib_impl (), name_space, name);	\
-		tmp_class = klass;	\
-		mono_memory_barrier ();	\
-		inited = TRUE;	\
+	static MonoClass *cached_class;	\
+	static gboolean cached_class_inited;	\
+	gboolean tmp_inited;	\
+	mono_atomic_load_acquire(tmp_inited, gboolean, &cached_class_inited);	\
+	if (G_LIKELY(tmp_inited)) {	\
+		return (MonoClass*)cached_class;	\
 	}	\
-	return klass;	\
+	cached_class = mono_class_try_load_from_name (mono_class_generate_get_corlib_impl (), name_space, name);	\
+	mono_atomic_store_release(&cached_class_inited, TRUE); \
+	return (MonoClass*)cached_class;	\
 }
 
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (safehandle)
@@ -1362,6 +1351,12 @@ mono_class_get_inlinearray_value (MonoClass *klass);
 void
 mono_class_set_inlinearray_value (MonoClass *klass, gint32 value);
 
+MONO_COMPONENT_API gint32
+mono_class_get_extendedlayout_value (MonoClass *klass);
+
+void
+mono_class_set_extendedlayout_value (MonoClass *klass, gint32 value);
+
 void
 mono_class_set_weak_bitmap (MonoClass *klass, int nbits, gsize *bits);
 
@@ -1421,6 +1416,9 @@ mono_class_find_enum_basetype (MonoClass *klass, MonoError *error);
 
 gboolean
 mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error);
+
+void
+mono_class_set_skip_generic_constraints (MonoClass *klass);
 
 void
 mono_class_set_deferred_failure (MonoClass *klass);

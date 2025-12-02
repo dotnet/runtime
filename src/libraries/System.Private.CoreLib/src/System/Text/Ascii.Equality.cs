@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Text
@@ -82,7 +83,7 @@ namespace System.Text
                     currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, Vector512<TLeft>.Count);
                     currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, Vector512<TLeft>.Count);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if (length % (uint)Vector512<TLeft>.Count != 0)
@@ -112,7 +113,7 @@ namespace System.Text
                     currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, Vector256<TLeft>.Count);
                     currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, Vector256<TLeft>.Count);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if (length % (uint)Vector256<TLeft>.Count != 0)
@@ -146,7 +147,7 @@ namespace System.Text
                     currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector128<TRight>.Count);
                     currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count128);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if (length % (uint)Vector128<TRight>.Count != 0)
@@ -273,7 +274,7 @@ namespace System.Text
                     currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector512<TRight>.Count);
                     currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count512);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if (length % (uint)Vector512<TRight>.Count != 0)
@@ -345,7 +346,7 @@ namespace System.Text
                     currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector256<TRight>.Count);
                     currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count256);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if (length % (uint)Vector256<TRight>.Count != 0)
@@ -418,7 +419,7 @@ namespace System.Text
                     currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector128<TRight>.Count);
                     currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count128);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if (length % (uint)Vector128<TRight>.Count != 0)
@@ -521,6 +522,11 @@ namespace System.Text
                 {
                     Vector128<byte> vec = Vector128.CreateScalarUnsafe(Unsafe.ReadUnaligned<long>(ref ptr)).AsByte();
                     return Sse2.UnpackLow(vec, Vector128<byte>.Zero).AsUInt16();
+                }
+                else if (PackedSimd.IsSupported)
+                {
+                    Vector128<byte> vec = Vector128.CreateScalarUnsafe(Unsafe.ReadUnaligned<long>(ref ptr)).AsByte();
+                    return PackedSimd.ZeroExtendWideningLower(vec);
                 }
                 else
                 {

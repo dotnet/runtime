@@ -35,6 +35,10 @@ const regMaskSmall regMasks[] = {
 };
 #endif
 
+// TODO-WASM-Factoring: remove this whole file from !HAS_FIXED_REGISTER_SET compilation.
+// It is being kept for now to avoid ifdefing too much code related to spill temps (which
+// also should not be used with !HAS_FIXED_REGISTER_SET).
+#if HAS_FIXED_REGISTER_SET
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -240,8 +244,7 @@ void RegSet::SetMaskVars(regMaskTP newMaskVars)
 
     _rsMaskVars = newMaskVars;
 }
-
-/*****************************************************************************/
+#endif // HAS_FIXED_REGISTER_SET
 
 RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo)
     : m_rsCompiler(compiler)
@@ -307,6 +310,7 @@ RegSet::SpillDsc* RegSet::rsGetSpillInfo(GenTree* tree, regNumber reg, SpillDsc*
     return dsc;
 }
 
+#if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------
 // rsSpillTree: Spill the tree held in 'reg'.
 //
@@ -563,6 +567,7 @@ void RegSet::rsMarkSpill(GenTree* tree, regNumber reg)
 {
     tree->gtFlags |= GTF_SPILLED;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 /*****************************************************************************/
 
@@ -599,7 +604,7 @@ var_types RegSet::tmpNormalizeType(var_types type)
     // We always spill SIMD12 to a 16-byte SIMD16 temp.
     // This is because we don't have a single instruction to store 12 bytes, so we want
     // to ensure that we always have the full 16 bytes for loading & storing the value.
-    // We also allocate non-argument locals as 16 bytes; see lvSize().
+    // We also allocate non-argument locals as 16 bytes; see lvaLclStackHomeSize().
     if (type == TYP_SIMD12)
     {
         type = TYP_SIMD16;
@@ -889,81 +894,6 @@ bool RegSet::tmpAllFree() const
 }
 
 #endif // DEBUG
-
-/*
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX  Register-related utility functions                                       XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
-/*****************************************************************************
- *
- *  Given a register that is an argument register
- *   returns the next argument register
- *
- *  Note: that this method will return a non arg register
- *   when given REG_ARG_LAST
- *
- */
-
-regNumber genRegArgNext(regNumber argReg)
-{
-    assert(isValidIntArgReg(argReg, CorInfoCallConvExtension::Managed) || isValidFloatArgReg(argReg));
-
-    switch (argReg)
-    {
-
-#ifdef TARGET_AMD64
-#ifdef UNIX_AMD64_ABI
-
-        // Linux x64 ABI: REG_RDI, REG_RSI, REG_RDX, REG_RCX, REG_R8, REG_R9
-        case REG_ARG_0:       // REG_RDI
-            return REG_ARG_1; // REG_RSI
-        case REG_ARG_1:       // REG_RSI
-            return REG_ARG_2; // REG_RDX
-        case REG_ARG_2:       // REG_RDX
-            return REG_ARG_3; // REG_RCX
-        case REG_ARG_3:       // REG_RCX
-            return REG_ARG_4; // REG_R8
-
-#else // !UNIX_AMD64_ABI
-
-        // Windows x64 ABI: REG_RCX, REG_RDX, REG_R8, REG_R9
-        case REG_ARG_1:       // REG_RDX
-            return REG_ARG_2; // REG_R8
-
-#endif // !UNIX_AMD64_ABI
-#endif // TARGET_AMD64
-
-        default:
-            return REG_NEXT(argReg);
-    }
-}
-
-/*****************************************************************************
- *
- *  The following table determines the order in which callee registers
- *  are encoded in GC information at call sites.
- */
-
-const regMaskTP raRbmCalleeSaveOrder[] = {RBM_CALL_GC_REGS_ORDER};
-
-regMaskTP genRegMaskFromCalleeSavedMask(unsigned short calleeSaveMask)
-{
-    regMaskTP res = 0;
-    for (int i = 0; i < CNT_CALL_GC_REGS; i++)
-    {
-        if ((calleeSaveMask & (1 << i)) != 0)
-        {
-            res |= raRbmCalleeSaveOrder[i];
-        }
-    }
-    return res;
-}
 
 /*****************************************************************************
  *

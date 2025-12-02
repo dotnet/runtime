@@ -97,5 +97,11 @@ namespace System.Buffers
         /// if it's determined that the pool already has enough buffers stored.
         /// </remarks>
         public abstract void Return(T[] array, bool clearArray = false);
+
+        internal void Return(T[] array, int lengthToClear)
+        {
+            array.AsSpan(0, lengthToClear).Clear();
+            Return(array);
+        }
     }
 }

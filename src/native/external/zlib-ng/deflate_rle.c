@@ -5,21 +5,19 @@
  */
 
 #include "zbuild.h"
-#include "compare256_rle.h"
 #include "deflate.h"
 #include "deflate_p.h"
 #include "functable.h"
+#include "compare256_rle.h"
 
-#ifdef UNALIGNED_OK
-#  if defined(UNALIGNED64_OK) && defined(HAVE_BUILTIN_CTZLL)
-#    define compare256_rle compare256_rle_unaligned_64
-#  elif defined(HAVE_BUILTIN_CTZ)
-#    define compare256_rle compare256_rle_unaligned_32
-#  else
-#    define compare256_rle compare256_rle_unaligned_16
-#  endif
+#if OPTIMAL_CMP == 8
+#  define compare256_rle compare256_rle_8
+#elif defined(HAVE_BUILTIN_CTZLL)
+#  define compare256_rle compare256_rle_64
+#elif defined(HAVE_BUILTIN_CTZ)
+#  define compare256_rle compare256_rle_32
 #else
-#  define compare256_rle compare256_rle_c
+#  define compare256_rle compare256_rle_16
 #endif
 
 /* ===========================================================================
@@ -59,7 +57,6 @@ Z_INTERNAL block_state deflate_rle(deflate_state *s, int flush) {
         /* Emit match if have run of STD_MIN_MATCH or longer, else emit literal */
         if (match_len >= STD_MIN_MATCH) {
             Assert(s->strstart <= UINT16_MAX, "strstart should fit in uint16_t");
-            Assert(s->match_start <= UINT16_MAX, "match_start should fit in uint16_t");
             check_match(s, (Pos)s->strstart, (Pos)(s->strstart - 1), match_len);
 
             bflush = zng_tr_tally_dist(s, 1, match_len - STD_MIN_MATCH);

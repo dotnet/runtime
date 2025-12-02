@@ -1,46 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace System.Security.Cryptography
 {
     internal static class NetStandardShims
     {
-        internal static unsafe int GetByteCount(this Encoding encoding, ReadOnlySpan<char> str)
-        {
-            if (str.IsEmpty)
-            {
-                return 0;
-            }
-
-            fixed (char* pStr = str)
-            {
-                return encoding.GetByteCount(pStr, str.Length);
-            }
-        }
-
-        internal static unsafe int GetBytes(this Encoding encoding, ReadOnlySpan<char> str, Span<byte> destination)
-        {
-            if (str.IsEmpty)
-            {
-                return 0;
-            }
-
-            fixed (char* pStr = str)
-            fixed (byte* pDestination = destination)
-            {
-                return encoding.GetBytes(pStr, str.Length, pDestination, destination.Length);
-            }
-        }
-
-        internal static void ReadExactly(this System.IO.Stream stream, Span<byte> buffer) =>
+        internal static void ReadExactly(this Stream stream, Span<byte> buffer) =>
             ReadAtLeast(stream, buffer, buffer.Length, throwOnEndOfStream: true);
 
         internal static int ReadAtLeast(
-            this System.IO.Stream stream,
+            this Stream stream,
             Span<byte> buffer,
             int minimumBytes,
             bool throwOnEndOfStream = true)
@@ -100,24 +72,13 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            int hashSize = hash.AlgorithmName.Name switch
-            {
-                nameof(HashAlgorithmName.MD5) => 128 >> 3,
-                nameof(HashAlgorithmName.SHA1) => 160 >> 3,
-                nameof(HashAlgorithmName.SHA256) => 256 >> 3,
-                nameof(HashAlgorithmName.SHA384) => 384 >> 3,
-                nameof(HashAlgorithmName.SHA512) => 512 >> 3,
-                _ => throw new CryptographicException(),
-            };
+            byte[] actual = hash.GetHashAndReset();
 
-            if (destination.Length < hashSize)
+            if (destination.Length < actual.Length)
             {
                 bytesWritten = 0;
                 return false;
             }
-
-            byte[] actual = hash.GetHashAndReset();
-            Debug.Assert(actual.Length == hashSize);
 
             actual.AsSpan().CopyTo(destination);
             bytesWritten = actual.Length;
@@ -125,6 +86,7 @@ namespace System.Security.Cryptography
         }
     }
 
+#if !NETSTANDARD2_1_OR_GREATER
     internal static class CryptographicOperations
     {
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
@@ -157,18 +119,5 @@ namespace System.Security.Cryptography
             return accum == 0;
         }
     }
-}
-
-namespace System.Runtime.CompilerServices
-{
-    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
-    internal sealed class CallerArgumentExpressionAttribute : Attribute
-    {
-        public CallerArgumentExpressionAttribute(string parameterName)
-        {
-            ParameterName = parameterName;
-        }
-
-        public string ParameterName { get; }
-    }
+#endif
 }

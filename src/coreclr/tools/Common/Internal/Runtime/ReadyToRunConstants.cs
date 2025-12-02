@@ -17,8 +17,9 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_NonSharedPInvokeStubs = 0x00000008,     // PInvoke stubs compiled into image are non-shareable (no secret parameter)
         READYTORUN_FLAG_EmbeddedMSIL = 0x00000010,              // MSIL is embedded in the composite R2R executable
         READYTORUN_FLAG_Component = 0x00000020,                 // This is the header describing a component assembly of composite R2R
-        READYTORUN_FLAG_MultiModuleVersionBubble = 0x00000040,   // This R2R module has multiple modules within its version bubble
+        READYTORUN_FLAG_MultiModuleVersionBubble = 0x00000040,  // This R2R module has multiple modules within its version bubble
         READYTORUN_FLAG_UnrelatedR2RCode = 0x00000080,          // This R2R module has generic code in it that would not be naturally encoded into this module
+        READYTORUN_FLAG_PlatformNativeImage = 0x00000100,       // The owning composite executable is in the platform native format
     }
 
     public enum ReadyToRunImportSectionType : byte
@@ -140,7 +141,7 @@ namespace Internal.ReadyToRunConstants
         VirtualEntry = 0x16,                // For invoking a virtual method
         VirtualEntry_DefToken = 0x17,       // Smaller version of VirtualEntry - method is def token
         VirtualEntry_RefToken = 0x18,       // Smaller version of VirtualEntry - method is ref token
-        VirtualEntry_Slot = 0x19,           // Smaller version of VirtualEntry - type & slot
+        VirtualEntry_Slot = 0x19,           // Smaller version of VirtualEntry - type & slot - OBSOLETE, not currently used, and hasn't ever been used in R2R codegen since crossgen2 was introduced, and may not have ever been used.
 
         Helper = 0x1A,                      // Helper
         StringHandle = 0x1B,                // String handle
@@ -304,14 +305,16 @@ namespace Internal.ReadyToRunConstants
         UMod                        = 0xCF,
 
         // Floating point conversions
-        Dbl2Int                     = 0xD0,
+        Dbl2Int                     = 0xD0, // Unused since READYTORUN_MAJOR_VERSION 15.0
         Dbl2IntOvf                  = 0xD1,
         Dbl2Lng                     = 0xD2,
         Dbl2LngOvf                  = 0xD3,
-        Dbl2UInt                    = 0xD4,
+        Dbl2UInt                    = 0xD4, // Unused since READYTORUN_MAJOR_VERSION 15.0
         Dbl2UIntOvf                 = 0xD5,
         Dbl2ULng                    = 0xD6,
         Dbl2ULngOvf                 = 0xD7,
+        Lng2Flt                     = 0xD8,
+        ULng2Flt                    = 0xD9,
 
         // Floating point ops
         DblRem                      = 0xE0,

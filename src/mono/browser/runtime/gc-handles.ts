@@ -81,7 +81,10 @@ export function mono_wasm_get_js_handle (js_obj: any): JSHandle {
     _cs_owned_objects_by_js_handle[<any>js_handle] = js_obj;
 
     if (Object.isExtensible(js_obj)) {
-        js_obj[cs_owned_js_handle_symbol] = js_handle;
+        const is_prototype = typeof js_obj === "function" && Object.prototype.hasOwnProperty.call(js_obj, "prototype");
+        if (!is_prototype) {
+            js_obj[cs_owned_js_handle_symbol] = js_handle;
+        }
     }
     // else
     //   The consequence of not adding the cs_owned_js_handle_symbol is, that we could have multiple JSHandles and multiple proxy instances.
@@ -102,7 +105,7 @@ export function register_with_jsv_handle (js_obj: any, jsv_handle: JSHandle) {
 }
 
 // note: in MT, this is called from locked JSProxyContext. Don't call anything that would need locking.
-export function mono_wasm_release_cs_owned_object (js_handle: JSHandle): void {
+export function SystemInteropJS_ReleaseCSOwnedObject (js_handle: JSHandle): void {
     let obj: any;
     if (is_js_handle(js_handle)) {
         obj = _cs_owned_objects_by_js_handle[<any>js_handle];

@@ -32,6 +32,8 @@ namespace System.Net.Test.Common
         public Activity LastFinishedActivity { get; private set; }
         public IEnumerable<Activity> FinishedActivities => _finishedActivities;
 
+        public Action<Activity> OnStarted { get; set; }
+
         public ActivityRecorder(string activitySourceName, string activityName)
         {
             _activitySourceName = activitySourceName;
@@ -50,8 +52,8 @@ namespace System.Net.Test.Common
                         }
 
                         Interlocked.Increment(ref _started);
-
                         LastStartedActivity = activity;
+                        OnStarted?.Invoke(activity);
                     }
                 },
                 ActivityStopped = (activity) =>

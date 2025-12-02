@@ -11,6 +11,11 @@ class HostInformation
 public:
     static void SetContract(_In_ host_runtime_contract* hostContract);
     static bool GetProperty(_In_z_ const char* name, SString& value);
+
+    static bool HasExternalProbe();
+    static bool ExternalAssemblyProbe(_In_ const SString& path, _Out_ void** data, _Out_ int64_t* size);
+
+    static bool GetNativeCodeData(_In_ const SString& assemblyPath, _In_z_ const char* ownerCompositeName, _Out_ void** header, _Out_ size_t* image_size, _Out_ void** image_base);
 };
 
 #endif // _HOSTINFORMATION_H_

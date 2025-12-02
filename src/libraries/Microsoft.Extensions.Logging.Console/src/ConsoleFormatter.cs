@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// <param name="name"></param>
         protected ConsoleFormatter(string name)
         {
-            ThrowHelper.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(name);
 
             Name = name;
         }

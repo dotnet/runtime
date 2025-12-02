@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
@@ -44,14 +46,28 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         }
 
         [Fact]
-        public void IncludedFrameworkMustSpecifyName()
+        public void MissingName()
+        {
+            var framework = new RuntimeConfig.Framework(null, TestContext.MicrosoftNETCoreAppVersion);
+            RunSelfContainedTest(
+                new TestSettings()
+                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                        .WithIncludedFramework(framework)))
+                .Should().Fail()
+                .And.HaveStdErrContaining($"No framework name specified: {framework.ToJson().ToJsonString(new JsonSerializerOptions { WriteIndented = false })}")
+                .And.HaveStdErrContaining($"Invalid runtimeconfig.json [{SharedState.SelfContainedApp.RuntimeConfigJson}]");
+        }
+
+        [Fact]
+        public void MissingVersion()
         {
             RunSelfContainedTest(
                 new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
-                        .WithIncludedFramework(null, "5.1.2")))
+                        .WithIncludedFramework(Constants.MicrosoftNETCoreApp, null)))
                 .Should().Fail()
-                .And.HaveStdErrContaining("No framework name specified.");
+                .And.HaveStdErrContaining($"Framework '{Constants.MicrosoftNETCoreApp}' is missing a version")
+                .And.HaveStdErrContaining($"Invalid runtimeconfig.json [{SharedState.SelfContainedApp.RuntimeConfigJson}]");
         }
 
         [Fact]
@@ -68,11 +84,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 .And.HaveStdOutContaining("mock is_framework_dependent: 0");
         }
 
-        private CommandResult RunFrameworkDependentTest(TestSettings testSettings) =>
-            RunTest(SharedState.DotNetWithFrameworks, SharedState.FrameworkReferenceApp, testSettings);
+        private CommandResult RunFrameworkDependentTest(TestSettings testSettings, [CallerMemberName] string caller = "") =>
+            RunTest(SharedState.DotNetWithFrameworks, SharedState.FrameworkReferenceApp, testSettings, caller: caller);
 
-        private CommandResult RunSelfContainedTest(TestSettings testSettings) =>
-            RunSelfContainedTest(SharedState.SelfContainedApp, testSettings);
+        private CommandResult RunSelfContainedTest(TestSettings testSettings, [CallerMemberName] string caller = "") =>
+            RunSelfContainedTest(SharedState.SelfContainedApp, testSettings, caller: caller);
 
         public class SharedTestState : SharedTestStateBase
         {

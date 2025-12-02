@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -56,24 +57,33 @@ namespace System.IO.MemoryMappedFiles.Tests
             }
         }
 
+        public static IEnumerable<object[]> AccessLevelCombinationsData()
+        {
+            yield return new object[] { MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileAccess.Read };
+            yield return new object[] { MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileAccess.Write };
+            yield return new object[] { MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileAccess.ReadWrite };
+            yield return new object[] { MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileAccess.CopyOnWrite };  
+            yield return new object[] { MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileAccess.ReadExecute };
+            yield return new object[] { MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileAccess.ReadWriteExecute };
+            yield return new object[] { MemoryMappedFileAccess.ReadExecute, MemoryMappedFileAccess.Read };
+            yield return new object[] { MemoryMappedFileAccess.ReadExecute, MemoryMappedFileAccess.CopyOnWrite };
+            // https://github.com/dotnet/runtime/issues/114403
+            if (PlatformDetection.IsNotMacCatalyst)
+            {
+                yield return new object[] { MemoryMappedFileAccess.ReadExecute, MemoryMappedFileAccess.ReadExecute };
+            }
+            yield return new object[] { MemoryMappedFileAccess.CopyOnWrite, MemoryMappedFileAccess.Read };
+            yield return new object[] { MemoryMappedFileAccess.CopyOnWrite, MemoryMappedFileAccess.CopyOnWrite };
+            yield return new object[] { MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.Read };
+            yield return new object[] { MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.Write };
+            yield return new object[] { MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.ReadWrite };
+            yield return new object[] { MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.CopyOnWrite };
+            yield return new object[] { MemoryMappedFileAccess.Read, MemoryMappedFileAccess.Read };
+            yield return new object[] { MemoryMappedFileAccess.Read, MemoryMappedFileAccess.CopyOnWrite };
+        }
+
         [ConditionalTheory]
-        [InlineData(MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileAccess.Read)]
-        [InlineData(MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileAccess.Write)]
-        [InlineData(MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileAccess.ReadWrite)]
-        [InlineData(MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileAccess.CopyOnWrite)]
-        [InlineData(MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileAccess.ReadExecute)]
-        [InlineData(MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileAccess.ReadWriteExecute)]
-        [InlineData(MemoryMappedFileAccess.ReadExecute, MemoryMappedFileAccess.Read)]
-        [InlineData(MemoryMappedFileAccess.ReadExecute, MemoryMappedFileAccess.CopyOnWrite)]
-        [InlineData(MemoryMappedFileAccess.ReadExecute, MemoryMappedFileAccess.ReadExecute)]
-        [InlineData(MemoryMappedFileAccess.CopyOnWrite, MemoryMappedFileAccess.Read)]
-        [InlineData(MemoryMappedFileAccess.CopyOnWrite, MemoryMappedFileAccess.CopyOnWrite)]
-        [InlineData(MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.Read)]
-        [InlineData(MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.Write)]
-        [InlineData(MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.ReadWrite)]
-        [InlineData(MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.CopyOnWrite)]
-        [InlineData(MemoryMappedFileAccess.Read, MemoryMappedFileAccess.Read)]
-        [InlineData(MemoryMappedFileAccess.Read, MemoryMappedFileAccess.CopyOnWrite)]
+        [MemberData(nameof(AccessLevelCombinationsData))]
         public void ValidAccessLevelCombinations(MemoryMappedFileAccess mapAccess, MemoryMappedFileAccess viewAccess)
         {
             const int Capacity = 4096;

@@ -654,18 +654,8 @@ MONO_RESTORE_WARNING
 			return NULL;
 		}
 
-		// We also always throw for Nullable<T> inputs, so fallback to the
-		// managed implementation here as well.
-
 		MonoClass *tfrom_klass = mono_class_from_mono_type_internal (tfrom);
-		if (mono_class_is_nullable (tfrom_klass)) {
-			return NULL;
-		}
-
 		MonoClass *tto_klass = mono_class_from_mono_type_internal (tto);
-		if (mono_class_is_nullable (tto_klass)) {
-			return NULL;
-		}
 
 		// The same applies for when the type sizes do not match, as this will always throw
 		// and so its not an expected case and we can fallback to the managed implementation
@@ -710,6 +700,17 @@ MONO_RESTORE_WARNING
 				opcode = (tto_type == MONO_TYPE_I2) ? OP_ICONV_TO_I2 : OP_ICONV_TO_U2;
 				tto_stack = STACK_I4;
 			} else if (size == 4) {
+#if TARGET_SIZEOF_VOID_P == 4
+				if (tto_type == MONO_TYPE_I)
+					tto_type = MONO_TYPE_I4;
+				else if (tto_type == MONO_TYPE_U)
+					tto_type = MONO_TYPE_U4;
+
+				if (tfrom_type == MONO_TYPE_I)
+					tfrom_type = MONO_TYPE_I4;
+				else if (tfrom_type == MONO_TYPE_U)
+					tfrom_type = MONO_TYPE_U4;
+#endif
 				if ((tfrom_type == MONO_TYPE_R4) && ((tto_type == MONO_TYPE_I4) || (tto_type == MONO_TYPE_U4))) {
 					opcode = OP_MOVE_F_TO_I4;
 					tto_stack = STACK_I4;
@@ -722,26 +723,42 @@ MONO_RESTORE_WARNING
 				}
 			} else if (size == 8) {
 #if TARGET_SIZEOF_VOID_P == 8
-					if ((tfrom_type == MONO_TYPE_R8) && ((tto_type == MONO_TYPE_I8) || (tto_type == MONO_TYPE_U8))) {
-						opcode = OP_MOVE_F_TO_I8;
-						tto_stack = STACK_I8;
-					} else if ((tto_type == MONO_TYPE_R8) && ((tfrom_type == MONO_TYPE_I8) || (tfrom_type == MONO_TYPE_U8))) {
-						opcode = OP_MOVE_I8_TO_F;
-						tto_stack = STACK_R8;
-					} else {
-						opcode = OP_MOVE;
-						tto_stack = STACK_I8;
-					}
+				if (tto_type == MONO_TYPE_I)
+					tto_type = MONO_TYPE_I8;
+				else if (tto_type == MONO_TYPE_U)
+					tto_type = MONO_TYPE_U8;
+
+				if (tfrom_type == MONO_TYPE_I)
+					tfrom_type = MONO_TYPE_I8;
+				else if (tfrom_type == MONO_TYPE_U)
+					tfrom_type = MONO_TYPE_U8;
+#endif
+#if TARGET_SIZEOF_VOID_P == 8 || defined(TARGET_WASM)
+				if ((tfrom_type == MONO_TYPE_R8) && ((tto_type == MONO_TYPE_I8) || (tto_type == MONO_TYPE_U8))) {
+					opcode = OP_MOVE_F_TO_I8;
+					tto_stack = STACK_I8;
+				} else if ((tto_type == MONO_TYPE_R8) && ((tfrom_type == MONO_TYPE_I8) || (tfrom_type == MONO_TYPE_U8))) {
+					opcode = OP_MOVE_I8_TO_F;
+					tto_stack = STACK_R8;
+				} else {
+					opcode = OP_MOVE;
+					tto_stack = STACK_I8;
+				}
 #else
-					return NULL;
+				return NULL;
 #endif
 			}
 		} else if (mini_class_is_simd (cfg, tfrom_klass) && mini_class_is_simd (cfg, tto_klass)) {
-#if TARGET_SIZEOF_VOID_P == 8
-				opcode = OP_XCAST;
-				tto_stack = STACK_VTYPE;
-#else
+#if TARGET_SIZEOF_VOID_P == 8 || defined(TARGET_WASM)
+#if defined(TARGET_WIN32) && defined(TARGET_AMD64)
+			if (!COMPILE_LLVM (cfg))
+				// FIXME: Fix the register allocation for SIMD on Windows x64
 				return NULL;
+#endif
+			opcode = OP_XCAST;
+			tto_stack = STACK_VTYPE;
+#else
+			return NULL;
 #endif
 		}
 
@@ -951,7 +968,7 @@ get_rttype_ins_relation (MonoCompile *cfg, MonoInst *ins1, MonoInst *ins2, gbool
 
 		/* Common case in gshared BCL code: t1 is a gshared type like T_INT, and t2 is a concrete type */
 		if (mono_class_is_gparam (k1)) {
-			MonoGenericParam *gparam = t1->data.generic_param;
+			MonoGenericParam *gparam = m_type_data_get_generic_param (t1);
 			constraint1 = gparam->gshared_constraint;
 		}
 		if (constraint1) {
@@ -1742,7 +1759,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				i2u_cmp->sreg1 = args[2]->dreg;
 				MONO_ADD_INS (cfg->cbb, i2u_cmp);
 			}
-			
+
 			if (is_ref && !mini_debug_options.weak_memory_model)
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 
@@ -2206,7 +2223,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			/* Common case in gshared BCL code: t1 is a gshared type like T_INT */
 			if (mono_class_is_gparam (k1)) {
-				MonoGenericParam *gparam = t1->data.generic_param;
+				MonoGenericParam *gparam = m_type_data_get_generic_param (t1);
 				constraint1 = gparam->gshared_constraint;
 				if (constraint1) {
 					if (constraint1->type == MONO_TYPE_OBJECT) {
@@ -2224,11 +2241,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			}
 		}
 		return NULL;
-	} else if (((!strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.iOS") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.TVOS") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.MacCatalyst") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.Mac") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.iOS") ||
+	} else if (((!strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.iOS") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.tvOS") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.MacCatalyst") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Microsoft.macOS")) &&
@@ -2326,6 +2339,64 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				return ins;
 			}
 		}
+	} else if ((cmethod->klass == mono_defaults.double_class) || (cmethod->klass == mono_defaults.single_class)) {
+		MonoGenericContext *method_context = mono_method_get_context (cmethod);
+		bool isDouble = cmethod->klass == mono_defaults.double_class;
+		if (!strcmp (cmethod->name, "ConvertToIntegerNative") &&
+				method_context != NULL &&
+				method_context->method_inst->type_argc == 1) {
+			int opcode = 0;
+			MonoTypeEnum tto_type = method_context->method_inst->type_argv [0]->type;
+			MonoStackType tto_stack = STACK_I4;
+			switch (tto_type) {
+				case MONO_TYPE_I1:
+					opcode = isDouble ? OP_FCONV_TO_I1 : OP_RCONV_TO_I1;
+					break;
+				case MONO_TYPE_I2:
+					opcode = isDouble ? OP_FCONV_TO_I2 : OP_RCONV_TO_I2;
+					break;
+#if TARGET_SIZEOF_VOID_P == 4
+				case MONO_TYPE_I:
+#endif
+				case MONO_TYPE_I4:
+					opcode = isDouble ? OP_FCONV_TO_I4 : OP_RCONV_TO_I4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 8
+				case MONO_TYPE_I:
+#endif
+				case MONO_TYPE_I8:
+					opcode = isDouble ? OP_FCONV_TO_I8 : OP_RCONV_TO_I8;
+					tto_stack = STACK_I8;
+					break;
+				case MONO_TYPE_U1:
+					opcode = isDouble ? OP_FCONV_TO_U1 : OP_RCONV_TO_U1;
+					break;
+				case MONO_TYPE_U2:
+					opcode = isDouble ? OP_FCONV_TO_U2 : OP_RCONV_TO_U2;
+					break;
+#if TARGET_SIZEOF_VOID_P == 4
+				case MONO_TYPE_U:
+#endif
+				case MONO_TYPE_U4:
+					opcode = isDouble ? OP_FCONV_TO_U4 : OP_RCONV_TO_U4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 8
+				case MONO_TYPE_U:
+#endif
+				case MONO_TYPE_U8:
+					opcode = isDouble ? OP_FCONV_TO_U8 : OP_RCONV_TO_U8;
+					tto_stack = STACK_I8;
+					break;
+				default: return NULL;
+			}
+			
+			if (opcode != 0) {
+				int ireg = mono_alloc_ireg (cfg);
+				EMIT_NEW_UNALU (cfg, ins, opcode, ireg, args [0]->dreg);
+				ins->type = tto_stack;
+				return mono_decompose_opcode(cfg, ins);
+			}
+		}
 	}
 
 	ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
@@ -2342,22 +2413,24 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		!strncmp ("System.Runtime.Intrinsics", cmethod_klass_name_space, 25))) {
 		const char* cmethod_name = cmethod->name;
 
-		if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0) {
-			// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
-			// but, they all prefix the qualified name of the interface first, so we'll check for that and
-			// skip the prefix before trying to resolve the method.
+		if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.", 45) == 0) {
+			if (strncmp(cmethod_name + 45, "Runtime.Intrinsics.Vector", 25) == 0) {
+				// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+				// but, they all prefix the qualified name of the interface first, so we'll check for that and
+				// skip the prefix before trying to resolve the method.
 
-			if (strncmp(cmethod_name + 70, "<T>,T>.", 7) == 0) {
-				cmethod_name += 77;
-			} else if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
-				cmethod_name += 79;
-			} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
-				(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
-				(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
-				cmethod_name += 80;
+				if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
+					cmethod_name += 79;
+				} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
+					(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
+					(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
+					cmethod_name += 80;
+				}
+			} else if (strncmp(cmethod_name + 45, "Numerics.Vector<T>,T>.", 22) == 0) {
+				cmethod_name += 67;
 			}
 		}
-		
+
 		if (!strcmp (cmethod_name, "get_IsHardwareAccelerated")) {
 			EMIT_NEW_ICONST (cfg, ins, 0);
 			ins->type = STACK_I4;

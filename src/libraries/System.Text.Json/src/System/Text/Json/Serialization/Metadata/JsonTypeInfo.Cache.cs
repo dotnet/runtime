@@ -73,7 +73,6 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Defines the core property lookup logic for a given unescaped UTF-8 encoded property name.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal JsonPropertyInfo? GetProperty(ReadOnlySpan<byte> propertyName, ref ReadStackFrame frame, out byte[] utf8PropertyName)
         {
             Debug.Assert(IsConfigured);

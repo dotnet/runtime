@@ -112,10 +112,7 @@ namespace System.Runtime.Caching
                                   CacheEntryRemovedCallback removedCallback,
                                   MemoryCache cache) : base(key)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             _utcCreated = DateTime.UtcNow;
             _value = value;

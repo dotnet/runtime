@@ -175,21 +175,21 @@ namespace ILCompiler
             if (intrinsicOwningType.Module != TypeSystemContext.SystemModule)
                 return intrinsicMethod;
 
-            if (intrinsicOwningType.Name == "Type" && intrinsicOwningType.Namespace == "System")
+            if (intrinsicOwningType.Name.SequenceEqual("Type"u8) && intrinsicOwningType.Namespace.SequenceEqual("System"u8))
             {
-                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetType")
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name.SequenceEqual("GetType"u8))
                 {
                     ModuleDesc callsiteModule = (callsiteMethod.OwningType as MetadataType)?.Module;
                     if (callsiteModule != null)
                     {
                         Debug.Assert(callsiteModule is IAssemblyDesc, "Multi-module assemblies");
-                        return _typeGetTypeMethodThunks.GetHelper(intrinsicMethod, ((IAssemblyDesc)callsiteModule).GetName().FullName);
+                        return _typeGetTypeMethodThunks.GetHelper(intrinsicMethod, ((IAssemblyDesc)callsiteModule).GetName().Name);
                     }
                 }
             }
-            else if (intrinsicOwningType.Name == "Assembly" && intrinsicOwningType.Namespace == "System.Reflection")
+            else if (intrinsicOwningType.Name.SequenceEqual("Assembly"u8) && intrinsicOwningType.Namespace.SequenceEqual("System.Reflection"u8))
             {
-                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetExecutingAssembly")
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name.SequenceEqual("GetExecutingAssembly"u8))
                 {
                     ModuleDesc callsiteModule = (callsiteMethod.OwningType as MetadataType)?.Module;
                     if (callsiteModule != null)
@@ -199,9 +199,9 @@ namespace ILCompiler
                     }
                 }
             }
-            else if (intrinsicOwningType.Name == "MethodBase" && intrinsicOwningType.Namespace == "System.Reflection")
+            else if (intrinsicOwningType.Name.SequenceEqual("MethodBase"u8) && intrinsicOwningType.Namespace.SequenceEqual("System.Reflection"u8))
             {
-                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetCurrentMethod")
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name.SequenceEqual("GetCurrentMethod"u8))
                 {
                     return _methodBaseGetCurrentMethodThunks.GetHelper(callsiteMethod).InstantiateAsOpen();
                 }
@@ -241,6 +241,7 @@ namespace ILCompiler
             {
                 case ReadyToRunHelperId.TypeHandle:
                 case ReadyToRunHelperId.NecessaryTypeHandle:
+                case ReadyToRunHelperId.MetadataTypeHandle:
                 case ReadyToRunHelperId.DefaultConstructor:
                 case ReadyToRunHelperId.TypeHandleForCasting:
                 case ReadyToRunHelperId.ObjectAllocator:
@@ -266,9 +267,24 @@ namespace ILCompiler
 
         public ReadyToRunHelperId GetLdTokenHelperForType(TypeDesc type)
         {
-            return (ConstructedEETypeNode.CreationAllowed(type) && NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type.NormalizeInstantiation()))
-                ? ReadyToRunHelperId.TypeHandle
-                : ReadyToRunHelperId.NecessaryTypeHandle;
+            // This will not correctly answer questions for canonical forms because the answer would
+            // be about whether a type loader template for the type exists.
+            // We need to make a small exception for canonical definitions because of RuntimeAugments.GetCanonType
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any) || type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
+
+            if (type.IsGenericDefinition && NodeFactory.DevirtualizationManager.IsGenericDefinitionMethodTableReflectionVisible(type))
+                return ReadyToRunHelperId.MetadataTypeHandle;
+
+            if (ConstructedEETypeNode.CreationAllowed(type))
+            {
+                if (NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type.NormalizeInstantiation()))
+                    return ReadyToRunHelperId.TypeHandle;
+
+                if (NodeFactory.DevirtualizationManager.CanReferenceMetadataMethodTable(type.NormalizeInstantiation()))
+                    return ReadyToRunHelperId.MetadataTypeHandle;
+            }
+
+            return ReadyToRunHelperId.NecessaryTypeHandle;
         }
 
         public static MethodDesc GetConstructorForCreateInstanceIntrinsic(TypeDesc type)
@@ -276,14 +292,14 @@ namespace ILCompiler
             MethodDesc ctor = type.GetDefaultConstructor();
             if (ctor == null)
             {
-                MetadataType activatorType = type.Context.SystemModule.GetKnownType("System", "Activator");
+                MetadataType activatorType = type.Context.SystemModule.GetKnownType("System"u8, "Activator"u8);
                 if (type.IsValueType && type.GetParameterlessConstructor() == null)
                 {
-                    ctor = activatorType.GetKnownNestedType("StructWithNoConstructor").GetKnownMethod(".ctor", null);
+                    ctor = activatorType.GetKnownNestedType("StructWithNoConstructor").GetKnownMethod(".ctor"u8, null);
                 }
                 else
                 {
-                    ctor = activatorType.GetKnownMethod("MissingConstructorMethod", null);
+                    ctor = activatorType.GetKnownMethod("MissingConstructorMethod"u8, null);
                 }
             }
 
@@ -296,17 +312,28 @@ namespace ILCompiler
             {
                 case ReadyToRunHelperId.TypeHandle:
                     return NodeFactory.ConstructedTypeSymbol((TypeDesc)targetOfLookup);
+                case ReadyToRunHelperId.MetadataTypeHandle:
+                    return NodeFactory.MetadataTypeSymbol((TypeDesc)targetOfLookup);
                 case ReadyToRunHelperId.NecessaryTypeHandle:
                     return NecessaryTypeSymbolIfPossible((TypeDesc)targetOfLookup);
                 case ReadyToRunHelperId.TypeHandleForCasting:
                     {
                         var type = (TypeDesc)targetOfLookup;
 
-                        // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
-                        // If this cast happens with an object that implements IDynamicIntefaceCastable, user code will
-                        // see a RuntimeTypeHandle representing this interface.
                         if (type.IsInterface)
-                            return NodeFactory.MaximallyConstructableType(type);
+                        {
+                            // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
+                            // If this cast happens with an object that implements IDynamicInterfaceCastable, user code will
+                            // see a RuntimeTypeHandle representing this interface.
+                            if (NodeFactory.DevirtualizationManager.CanHaveDynamicInterfaceImplementations(type))
+                            {
+                                return NodeFactory.MaximallyConstructableType(type);
+                            }
+                            else
+                            {
+                                return NecessaryTypeSymbolIfPossible(type);
+                            }
+                        }
 
                         if (type.IsNullable)
                             type = type.Instantiation[0];
@@ -329,7 +356,7 @@ namespace ILCompiler
                 case ReadyToRunHelperId.ObjectAllocator:
                     {
                         var type = (TypeDesc)targetOfLookup;
-                        return NodeFactory.ExternSymbol(JitHelper.GetNewObjectHelperForType(type));
+                        return NodeFactory.ExternFunctionSymbol(JitHelper.GetNewObjectHelperForType(type));
                     }
 
                 default:
@@ -368,9 +395,7 @@ namespace ILCompiler
             if (lookupKind == ReadyToRunHelperId.TypeHandleForCasting)
             {
                 var type = (TypeDesc)targetOfLookup;
-                if (!type.IsRuntimeDeterminedType ||
-                    (!((RuntimeDeterminedType)type).CanonicalType.IsCanonicalDefinitionType(CanonicalFormKind.Universal) &&
-                    !((RuntimeDeterminedType)type).CanonicalType.IsNullable))
+                if (!type.IsRuntimeDeterminedType || !((RuntimeDeterminedType)type).CanonicalType.IsNullable)
                 {
                     if (type.IsNullable)
                     {
@@ -378,12 +403,6 @@ namespace ILCompiler
                     }
                     lookupKind = ReadyToRunHelperId.NecessaryTypeHandle;
                 }
-            }
-
-            // We don't have separate entries for necessary type handles to avoid possible duplication
-            if (lookupKind == ReadyToRunHelperId.NecessaryTypeHandle)
-            {
-                lookupKind = ReadyToRunHelperId.TypeHandle;
             }
 
             DictionaryLayoutNode dictionaryLayout;
@@ -432,11 +451,11 @@ namespace ILCompiler
             if (containingMethod.OwningType is MetadataType owningType)
             {
                 // RawCalliHelper is a way for the class library to opt out of fat calls
-                if (owningType.Name == "RawCalliHelper")
+                if (owningType.Name.SequenceEqual("RawCalliHelper"u8))
                     return false;
 
                 // Delegate invocation never needs fat calls
-                if (owningType.IsDelegate && containingMethod.Name == "Invoke")
+                if (owningType.IsDelegate && containingMethod.Name.SequenceEqual("Invoke"u8))
                     return false;
             }
 
@@ -637,7 +656,7 @@ namespace ILCompiler
             {
                 foreach (var node in MarkedNodes)
                 {
-                    if (node is ConstructedEETypeNode || node is CanonicalEETypeNode)
+                    if (node is ConstructedEETypeNode)
                         yield return ((IEETypeNode)node).Type;
                 }
             }

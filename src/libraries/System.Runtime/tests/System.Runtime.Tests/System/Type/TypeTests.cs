@@ -503,7 +503,6 @@ namespace System.Tests
         [InlineData("Outside[][]", typeof(Outside[][]))]
         [InlineData("Outside`1[System.Nullable`1[System.Boolean]]", typeof(Outside<bool?>))]
         [InlineData(".Outside`1", typeof(Outside<>))]
-        [InlineData(".Outside`1+.Inside`1", typeof(Outside<>.Inside<>))]
         public void GetTypeByName_ValidType_ReturnsExpected(string typeName, Type expectedType)
         {
             Assert.Equal(expectedType, Type.GetType(typeName, throwOnError: false, ignoreCase: false));
@@ -525,6 +524,9 @@ namespace System.Tests
             // https://github.com/dotnet/runtime/issues/45033
             if (!PlatformDetection.IsMonoRuntime)
             {
+                yield return new object[] { "..Outside`1", expectedException, false };
+                yield return new object[] { ".Outside`1+.Inside`1", expectedException, false };
+
                 yield return new object[] { "System.Void[]", expectedException, true };
                 yield return new object[] { "System.TypedReference[]", expectedException, true };
             }
@@ -538,7 +540,6 @@ namespace System.Tests
         [InlineData("Outside`2", typeof(TypeLoadException), false)]
         [InlineData("Outside`1[System.Boolean, System.Int32]", typeof(ArgumentException), true)]
         [InlineData(".System.Int32", typeof(TypeLoadException), false)]
-        [InlineData("..Outside`1", typeof(TypeLoadException), false)]
         [MemberData(nameof(GetTypeByName_InvalidElementType))]
         public void GetTypeByName_Invalid(string typeName, Type expectedException, bool alwaysThrowsException)
         {
@@ -598,7 +599,7 @@ namespace System.Tests
         [InlineData(typeof(ushort), TypeCode.UInt16)]
         [InlineData(typeof(uint), TypeCode.UInt32)]
         [InlineData(typeof(ulong), TypeCode.UInt64)]
-        public void GetTypeCode_ValidType_ReturnsExpected(Type t, TypeCode typeCode)
+        public void GetTypeCode_ValidType_ReturnsExpected(Type? t, TypeCode typeCode)
         {
             Assert.Equal(typeCode, Type.GetTypeCode(t));
         }

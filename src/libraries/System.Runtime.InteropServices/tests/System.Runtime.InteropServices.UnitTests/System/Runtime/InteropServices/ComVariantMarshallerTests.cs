@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(null, VarEnum.VT_EMPTY)] // Null strings are _not_ BSTRs, compare to BStrWrapper.
         [InlineData("", VarEnum.VT_BSTR)]
         [InlineData("Hello", VarEnum.VT_BSTR)]
-        public void String_Marshals_To_BStr(string value, VarEnum expected)
+        public void String_Marshals_To_BStr(string? value, VarEnum expected)
         {
             ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(expected, variant.VarType);
@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("Hello")]
-        public void BStrWrapper_Marshals_To_BStr(string value)
+        public void BStrWrapper_Marshals_To_BStr(string? value)
         {
             ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(new BStrWrapper(value));
             Assert.Equal(VarEnum.VT_BSTR, variant.VarType);

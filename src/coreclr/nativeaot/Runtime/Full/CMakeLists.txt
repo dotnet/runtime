@@ -43,10 +43,10 @@ if(CLR_CMAKE_TARGET_WIN32)
   add_dependencies(standalonegc-enabled aot_etw_headers)
 endif()
 
-if (CLR_CMAKE_TARGET_ARCH_AMD64)
+if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   add_library(Runtime.VxsortEnabled STATIC ${VXSORT_SOURCES})
   add_library(Runtime.VxsortDisabled STATIC ${DUMMY_VXSORT_SOURCES})
-endif (CLR_CMAKE_TARGET_ARCH_AMD64)
+endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
 target_compile_definitions(Runtime.ServerGC PRIVATE -DFEATURE_SVR_GC)
 
@@ -59,16 +59,16 @@ endif (CLR_CMAKE_TARGET_WIN32)
 # Get the current list of definitions
 get_compile_definitions(DEFINITIONS)
 
-set(ASM_OFFSETS_CSPP ${RUNTIME_DIR}/../Runtime.Base/src/AsmOffsets.cspp)
+set(ASM_OFFSETS_CSPP ${NATIVEAOT_RUNTIME_DIR}/../Runtime.Base/src/AsmOffsets.cspp)
 
 if(WIN32)
     set(COMPILER_LANGUAGE "")
     set(PREPROCESSOR_FLAGS -EP -nologo)
-    set(ASM_OFFSETS_CPP ${RUNTIME_DIR}/windows/AsmOffsets.cpp)
+    set(ASM_OFFSETS_CPP ${NATIVEAOT_RUNTIME_DIR}/windows/AsmOffsets.cpp)
 else()
     set(COMPILER_LANGUAGE -x c++)
     set(PREPROCESSOR_FLAGS -E -P)
-    set(ASM_OFFSETS_CPP ${RUNTIME_DIR}/unix/AsmOffsets.cpp)
+    set(ASM_OFFSETS_CPP ${NATIVEAOT_RUNTIME_DIR}/unix/AsmOffsets.cpp)
 endif()
 
 add_custom_command(
@@ -80,9 +80,9 @@ add_custom_command(
 )
 
 add_custom_command(
-    COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${RUNTIME_DIR}" -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
+    COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${NATIVEAOT_RUNTIME_DIR}" -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
-    DEPENDS "${ASM_OFFSETS_CPP}" "${RUNTIME_DIR}/AsmOffsets.h"
+    DEPENDS "${ASM_OFFSETS_CPP}" "${NATIVEAOT_RUNTIME_DIR}/AsmOffsets.h"
     COMMENT "Generating AsmOffsets.inc"
 )
 
@@ -103,7 +103,7 @@ install_static_library(Runtime.ServerGC aotsdk nativeaot)
 install_static_library(standalonegc-disabled aotsdk nativeaot)
 install_static_library(standalonegc-enabled aotsdk nativeaot)
 install_static_library(aotminipal aotsdk nativeaot)
-if (CLR_CMAKE_TARGET_ARCH_AMD64)
+if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   install_static_library(Runtime.VxsortEnabled aotsdk nativeaot)
   install_static_library(Runtime.VxsortDisabled aotsdk nativeaot)
-endif (CLR_CMAKE_TARGET_ARCH_AMD64)
+endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)

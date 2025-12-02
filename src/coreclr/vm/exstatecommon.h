@@ -8,15 +8,16 @@
 #define __ExStateCommon_h__
 
 #include "stackframe.h"
+#include "cdacdata.h"
 
 class ExceptionFlags;
-
+struct ExInfo;
 #ifdef DEBUGGING_SUPPORTED
 //---------------------------------------------------------------------------------------
 //
 // This class stores information necessary to intercept an exception.  It's basically a communication channel
 // between the debugger and the EH subsystem.  Each internal exception tracking structure
-// (ExInfo on x86 and ExceptionTracker on WIN64) contains one DebuggerExState.
+// (ExInfo) contains one DebuggerExState.
 //
 // Notes:
 //    This class actually stores more information on x86 than on WIN64 because the x86 EH subsystem
@@ -253,12 +254,6 @@ public:
         m_fManagedCodeEntered = fEntered;
     }
 
-    void SetCallerStackFrame(CallerStackFrame csfEHClause)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_csfEHClause = csfEHClause;
-    }
-
     COR_PRF_CLAUSE_TYPE GetClauseType()     { LIMITED_METHOD_CONTRACT; return m_ClauseType;           }
 
     UINT_PTR GetIPForEHClause()             { LIMITED_METHOD_CONTRACT; return m_IPForEHClause;        }
@@ -268,17 +263,6 @@ public:
 
     StackFrame GetStackFrameForEHClause()            { LIMITED_METHOD_CONTRACT; return m_sfForEHClause; }
     CallerStackFrame GetCallerStackFrameForEHClause(){ LIMITED_METHOD_CONTRACT; return m_csfEHClause;   }
-
-    // On some platforms, we make the call to the funclets via an assembly helper. The reference to the field
-    // containing the stack pointer is passed to the assembly helper so that it can update
-    // it with correct SP value once its prolog has executed.
-    //
-    // This method is used to get the field reference
-    CallerStackFrame* GetCallerStackFrameForEHClauseReference()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_csfEHClause;
-    }
 
 private:
     UINT_PTR         m_IPForEHClause;   // the entry point of the current notified exception clause
@@ -448,6 +432,9 @@ private:
 typedef DPTR(class EHWatsonBucketTracker) PTR_EHWatsonBucketTracker;
 class EHWatsonBucketTracker
 {
+    friend struct ::cdac_data<ExInfo>;
+    friend struct ::cdac_data<Thread>;
+
 private:
     struct
     {

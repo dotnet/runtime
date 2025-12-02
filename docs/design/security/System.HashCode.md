@@ -128,7 +128,7 @@ Concretely, in the face of adversarial input:
 
 ## Implementation
 
-The `HashCode` type uses the [**xxHash32**](https://github.com/Cyan4973/xxHash) algorithm, which is a non-cryptographic hash algorithm with a 32-bit seed and a 32-bit digest. All instances of the `HashCode` type use the same seed value, generated randomly at app start. This value is chosen independently of other random seed values in the runtime, such as the the global 64-bit seed used in `string.GetHashCode`'s Marvin32 routine.
+The `HashCode` type uses the [**xxHash32**](https://github.com/Cyan4973/xxHash) algorithm, which is a non-cryptographic hash algorithm with a 32-bit seed and a 32-bit digest. All instances of the `HashCode` type use the same seed value, generated randomly at app start. This value is chosen independently of other random seed values in the runtime, such as the global 64-bit seed used in `string.GetHashCode`'s Marvin32 routine.
 
 The xxHash32 repo's README file touts good performance and avalanching. This can be validated through a simple C# program.
 

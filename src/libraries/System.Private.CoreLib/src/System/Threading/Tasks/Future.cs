@@ -61,8 +61,6 @@ namespace System.Threading.Tasks
         /// <summary>A cached task for default(TResult).</summary>
         internal static readonly Task<TResult> s_defaultResultTask = TaskCache.CreateCacheableTask<TResult>(default);
 
-        private static TaskFactory<TResult>? s_Factory;
-
         // The value itself, if set.
         internal TResult? m_result;
 
@@ -474,9 +472,7 @@ namespace System.Threading.Tasks
         /// the default constructor on the factory type.
         /// </remarks>
         public static new TaskFactory<TResult> Factory =>
-            Volatile.Read(ref s_Factory) ??
-            Interlocked.CompareExchange(ref s_Factory, new TaskFactory<TResult>(), null) ??
-            s_Factory;
+            field ?? Interlocked.CompareExchange(ref field, new(), null) ?? field;
 
         /// <summary>
         /// Evaluates the value selector of the Task which is passed in as an object and stores the result.
@@ -513,6 +509,7 @@ namespace System.Threading.Tasks
         /// true to attempt to marshal the continuation back to the original context captured; otherwise, false.
         /// </param>
         /// <returns>An object used to await this task.</returns>
+        [Intrinsic]
         public new ConfiguredTaskAwaitable<TResult> ConfigureAwait(bool continueOnCapturedContext)
         {
             return new ConfiguredTaskAwaitable<TResult>(this, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
@@ -522,6 +519,7 @@ namespace System.Threading.Tasks
         /// <param name="options">Options used to configure how awaits on this task are performed.</param>
         /// <returns>An object used to await this task.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The <paramref name="options"/> argument specifies an invalid value.</exception>
+        [Intrinsic]
         public new ConfiguredTaskAwaitable<TResult> ConfigureAwait(ConfigureAwaitOptions options)
         {
             if ((options & ~(ConfigureAwaitOptions.ContinueOnCapturedContext |

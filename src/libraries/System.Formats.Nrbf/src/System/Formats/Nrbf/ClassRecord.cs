@@ -43,7 +43,7 @@ public abstract class ClassRecord : SerializationRecord
     /// Checks if the member with the given name was present in the payload.
     /// </summary>
     /// <param name="memberName">The name of the member.</param>
-    /// <returns><see langword="true" /> if it was present, otherwise <see langword="false" />.</returns>
+    /// <returns><see langword="true" /> if the member was present, otherwise <see langword="false" />.</returns>
     /// <remarks>
     ///   It's recommended to use this method when dealing with payload that might contain
     ///   different versions of the same type.

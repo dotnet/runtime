@@ -216,10 +216,7 @@ namespace System.Text.Json
         /// </exception>
         public Utf8JsonWriter(IBufferWriter<byte> bufferWriter, JsonWriterOptions options = default)
         {
-            if (bufferWriter is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(bufferWriter));
-            }
+            ArgumentNullException.ThrowIfNull(bufferWriter);
 
             _output = bufferWriter;
             SetOptions(options);
@@ -237,10 +234,7 @@ namespace System.Text.Json
         /// </exception>
         public Utf8JsonWriter(Stream utf8Json, JsonWriterOptions options = default)
         {
-            if (utf8Json is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
-            }
+            ArgumentNullException.ThrowIfNull(utf8Json);
 
             if (!utf8Json.CanWrite)
                 throw new ArgumentException(SR.StreamNotWritable);
@@ -857,10 +851,7 @@ namespace System.Text.Json
         /// </exception>
         public void WriteStartArray(string propertyName)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
             WriteStartArray(propertyName.AsSpan());
         }
 
@@ -883,10 +874,7 @@ namespace System.Text.Json
         /// </exception>
         public void WriteStartObject(string propertyName)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
             WriteStartObject(propertyName.AsSpan());
         }
 

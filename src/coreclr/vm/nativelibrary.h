@@ -9,14 +9,11 @@
 class NativeLibrary
 {
 public:
-    static NATIVE_LIBRARY_HANDLE LoadLibraryFromPath(LPCWSTR libraryPath, BOOL throwOnError);
     static NATIVE_LIBRARY_HANDLE LoadLibraryByName(LPCWSTR name, Assembly *callingAssembly,
                                                    BOOL hasDllImportSearchPathFlags, DWORD dllImportSearchPathFlags,
                                                    BOOL throwOnError);
-    static void FreeNativeLibrary(NATIVE_LIBRARY_HANDLE handle);
-    static INT_PTR GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCWSTR symbolName, BOOL throwOnError);
 
-    static NATIVE_LIBRARY_HANDLE LoadLibraryFromMethodDesc(NDirectMethodDesc *pMD);
+    static NATIVE_LIBRARY_HANDLE LoadLibraryFromMethodDesc(PInvokeMethodDesc *pMD);
 };
 
 #endif // _NATIVELIBRARY_H_

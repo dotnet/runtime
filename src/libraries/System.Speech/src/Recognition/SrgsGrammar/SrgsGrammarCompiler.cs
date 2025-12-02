@@ -22,7 +22,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         public static void Compile(string inputPath, Stream outputStream)
         {
             Helpers.ThrowIfEmptyOrNull(inputPath, nameof(inputPath));
-            Helpers.ThrowIfNull(outputStream, nameof(outputStream));
+            ArgumentNullException.ThrowIfNull(outputStream);
 
             using (XmlTextReader reader = new(new Uri(inputPath, UriKind.RelativeOrAbsolute).ToString()))
             {
@@ -35,8 +35,8 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// </summary>
         public static void Compile(SrgsDocument srgsGrammar, Stream outputStream)
         {
-            Helpers.ThrowIfNull(srgsGrammar, nameof(srgsGrammar));
-            Helpers.ThrowIfNull(outputStream, nameof(outputStream));
+            ArgumentNullException.ThrowIfNull(srgsGrammar);
+            ArgumentNullException.ThrowIfNull(outputStream);
 
             SrgsCompiler.CompileStream(srgsGrammar, null, outputStream, true, null, null);
         }
@@ -46,8 +46,8 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// </summary>
         public static void Compile(XmlReader reader, Stream outputStream)
         {
-            Helpers.ThrowIfNull(reader, nameof(reader));
-            Helpers.ThrowIfNull(outputStream, nameof(outputStream));
+            ArgumentNullException.ThrowIfNull(reader);
+            ArgumentNullException.ThrowIfNull(outputStream);
 
             SrgsCompiler.CompileStream(new XmlReader[] { reader }, null, outputStream, true, null, null, null);
         }
@@ -57,7 +57,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// </summary>
         public static void CompileClassLibrary(string[] inputPaths, string outputPath, string[] referencedAssemblies, string keyFile)
         {
-            Helpers.ThrowIfNull(inputPaths, nameof(inputPaths));
+            ArgumentNullException.ThrowIfNull(inputPaths);
             Helpers.ThrowIfEmptyOrNull(outputPath, nameof(outputPath));
 
             XmlTextReader[] readers = new XmlTextReader[inputPaths.Length];
@@ -91,7 +91,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// </summary>
         public static void CompileClassLibrary(SrgsDocument srgsGrammar, string outputPath, string[] referencedAssemblies, string keyFile)
         {
-            Helpers.ThrowIfNull(srgsGrammar, nameof(srgsGrammar));
+            ArgumentNullException.ThrowIfNull(srgsGrammar);
             Helpers.ThrowIfEmptyOrNull(outputPath, nameof(outputPath));
 
             SrgsCompiler.CompileStream(srgsGrammar, outputPath, null, false, referencedAssemblies, keyFile);
@@ -102,7 +102,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// </summary>
         public static void CompileClassLibrary(XmlReader reader, string outputPath, string[] referencedAssemblies, string keyFile)
         {
-            Helpers.ThrowIfNull(reader, nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
             Helpers.ThrowIfEmptyOrNull(outputPath, nameof(outputPath));
 
             SrgsCompiler.CompileStream(new XmlReader[] { reader }, outputPath, null, false, null, referencedAssemblies, keyFile);

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -124,7 +124,7 @@
     <value>The format of the HTTP method is invalid.</value>
   </data>
   <data name="net_http_reasonphrase_format_error" xml:space="preserve">
-    <value>The reason phrase must not contain new-line characters.</value>
+    <value>The reason phrase must not contain new-line or NUL characters.</value>
   </data>
   <data name="net_http_copyto_array_too_small" xml:space="preserve">
     <value>The number of elements is greater than the available space from arrayIndex to the end of the destination array.</value>
@@ -150,8 +150,8 @@
   <data name="net_http_headers_invalid_range" xml:space="preserve">
     <value>Invalid range. At least one of the two parameters must not be null.</value>
   </data>
-  <data name="net_http_headers_no_newlines" xml:space="preserve">
-    <value>New-line characters are not allowed in header values.</value>
+  <data name="net_http_headers_no_newlines_no_nul" xml:space="preserve">
+    <value>New-line or NUL characters are not allowed in header values.</value>
   </data>
   <data name="net_http_content_buffersize_exceeded" xml:space="preserve">
     <value>Cannot write more bytes to the buffer than the configured maximum buffer size: {0}.</value>
@@ -479,6 +479,9 @@
   </data>
   <data name="net_http_http3_connection_close" xml:space="preserve">
     <value>The HTTP/3 server closed the connection. HTTP/3 error code '{0}' (0x{1}).</value>
+  </data>
+  <data name="net_http_http3_connection_quic_error" xml:space="preserve">
+    <value>The QUIC connection with the HTTP/3 server failed on the transport level.</value>
   </data>
   <data name="net_http_retry_on_older_version" xml:space="preserve">
     <value>The server is unable to process the request using the current HTTP version and indicates the request should be retried on an older HTTP version.</value>

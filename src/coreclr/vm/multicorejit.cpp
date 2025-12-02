@@ -18,8 +18,8 @@
 #include "stubgen.h"
 #include "eventtrace.h"
 #include "array.h"
-#include "fstream.h"
 #include "hash.h"
+#include "minipal/time.h"
 
 #include "appdomain.hpp"
 #include "qcall.h"
@@ -27,6 +27,7 @@
 #include "eventtracebase.h"
 #include "multicorejit.h"
 #include "multicorejitimpl.h"
+#include <dn-stdio.h>
 
 void MulticoreJitFireEtw(const WCHAR * pAction, const WCHAR * pTarget, int p1, int p2, int p3)
 {
@@ -57,7 +58,7 @@ void MulticoreJitFireEtwA(const WCHAR * pAction, const char * pTarget, int p1, i
     }
     EX_CATCH
     { }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif // FEATURE_EVENT_TRACE
 }
 
@@ -85,7 +86,7 @@ void MulticoreJitFireEtwMethodCodeReturned(MethodDesc * pMethod)
     }
     EX_CATCH
     { }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 }
 
 #ifdef MULTICOREJIT_LOGGING
@@ -99,7 +100,7 @@ void _MulticoreJitTrace(const char * format, ...)
 
     if (s_startTick == 0)
     {
-        s_startTick = GetTickCount();
+        s_startTick = (unsigned)minipal_lowres_ticks();
     }
 
     va_list args;
@@ -108,7 +109,7 @@ void _MulticoreJitTrace(const char * format, ...)
 #ifdef LOGGING
     LogSpew2      (LF2_MULTICOREJIT, LL_INFO100, "Mcj ");
     LogSpew2Valist(LF2_MULTICOREJIT, LL_INFO100, format, args);
-    LogSpew2      (LF2_MULTICOREJIT, LL_INFO100, ", (time=%d ms)\n", GetTickCount() - s_startTick);
+    LogSpew2      (LF2_MULTICOREJIT, LL_INFO100, ", (time=%d ms)\n", (unsigned)minipal_lowres_ticks() - s_startTick);
 #else
 
     // Following LogSpewValist(DWORD facility, DWORD level, const char *fmt, va_list args)
@@ -118,7 +119,7 @@ void _MulticoreJitTrace(const char * format, ...)
 
     len  =  sprintf_s(buffer,       ARRAY_SIZE(buffer),       "Mcj TID %04x: ", GetCurrentThreadId());
     len += _vsnprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, format, args);
-    len +=  sprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, ", (time=%d ms)\r\n", GetTickCount() - s_startTick);
+    len +=  sprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, ", (time=%d ms)\r\n", (unsigned)minipal_lowres_ticks() - s_startTick);
 
     OutputDebugStringA(buffer);
 #endif
@@ -153,22 +154,23 @@ HRESULT MulticoreJitRecorder::WriteOutput()
 
     EX_TRY
     {
-        CFileStream fileStream;
+        FILE* fp;
 
-        if (SUCCEEDED(hr = fileStream.OpenForWrite(m_fullFileName.GetUnicode())))
+        if (fopen_lp(&fp, m_fullFileName.GetUnicode(), W("wb")) == 0)
         {
-            hr = WriteOutput(& fileStream);
+            hr = WriteOutput(fp);
+            fclose(fp);
         }
     }
     EX_CATCH
     { }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return hr;
 }
 
 
-HRESULT WriteData(IStream * pStream, const void * pData, unsigned len)
+HRESULT WriteData(FILE * fp, const void * pData, unsigned len)
 {
     CONTRACTL
     {
@@ -178,11 +180,11 @@ HRESULT WriteData(IStream * pStream, const void * pData, unsigned len)
     }
     CONTRACTL_END
 
-    ULONG cbWritten;
+    size_t cbWritten = fwrite(pData, 1, len, fp);
 
-    HRESULT hr = pStream->Write(pData, len, & cbWritten);
+    HRESULT hr = S_OK;
 
-    if (SUCCEEDED(hr) && (cbWritten != len))
+    if (cbWritten != len)
     {
         hr = E_FAIL;
     }
@@ -191,7 +193,7 @@ HRESULT WriteData(IStream * pStream, const void * pData, unsigned len)
 }
 
 // Write string, round to DWORD alignment
-HRESULT WriteString(const void * pString, unsigned len, IStream * pStream)
+HRESULT WriteString(const void * pString, unsigned len, FILE * fp)
 {
     CONTRACTL
     {
@@ -201,25 +203,23 @@ HRESULT WriteString(const void * pString, unsigned len, IStream * pStream)
     }
     CONTRACTL_END;
 
-    ULONG cbWritten = 0;
+    size_t cbWritten = fwrite(pString, 1, len, fp);
 
-    HRESULT hr;
-
-    hr = pStream->Write(pString, len, & cbWritten);
-
-    if (SUCCEEDED(hr))
+    if (cbWritten == (size_t)len)
     {
         len = RoundUp(len) - len;
 
         if (len != 0)
         {
-            cbWritten = 0;
+            uint32_t temp = 0;
+            cbWritten = fwrite(&temp, 1, len, fp);
 
-            hr = pStream->Write(& cbWritten, len, & cbWritten);
+            if (cbWritten == (size_t)len)
+                return S_OK;
         }
     }
 
-    return hr;
+    return E_FAIL;
 }
 
 
@@ -280,7 +280,7 @@ bool ModuleVersion::GetModuleVersion(Module * pModule)
     {
         hr = E_FAIL;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return SUCCEEDED(hr);
 }
@@ -328,7 +328,7 @@ bool RecorderModuleInfo::SetModule(Module * pMod)
 //
 /////////////////////////////////////////////////////
 
-HRESULT MulticoreJitRecorder::WriteModuleRecord(IStream * pStream, const RecorderModuleInfo & module)
+HRESULT MulticoreJitRecorder::WriteModuleRecord(FILE * fp, const RecorderModuleInfo & module)
 {
     CONTRACTL
     {
@@ -354,15 +354,15 @@ HRESULT MulticoreJitRecorder::WriteModuleRecord(IStream * pStream, const Recorde
     mod.wLoadLevel     = (unsigned short) module.loadLevel;
     mod.flags          = module.flags;
 
-    hr = WriteData(pStream, & mod, sizeof(mod));
+    hr = WriteData(fp, & mod, sizeof(mod));
 
     if (SUCCEEDED(hr))
     {
-        hr = WriteString(pModuleName, lenModuleName, pStream);
+        hr = WriteString(pModuleName, lenModuleName, fp);
 
         if (SUCCEEDED(hr))
         {
-            hr = WriteString(pAssemblyName, lenAssemblyName, pStream);
+            hr = WriteString(pAssemblyName, lenAssemblyName, fp);
         }
     }
 
@@ -370,7 +370,7 @@ HRESULT MulticoreJitRecorder::WriteModuleRecord(IStream * pStream, const Recorde
 }
 
 
-HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
+HRESULT MulticoreJitRecorder::WriteOutput(FILE * fp)
 {
     CONTRACTL
     {
@@ -398,6 +398,12 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
         }
 
         MethodDesc * pMethod = m_JitInfoArray[i].GetMethodDescAndClean();
+        if (pMethod->IsAsyncVariantMethod())
+        {
+            // TODO: (async) Multicore JIT https://github.com/dotnet/runtime/issues/115097
+            skipped++;
+            continue;
+        }
 
         if (m_JitInfoArray[i].IsGenericMethodInfo())
         {
@@ -411,7 +417,7 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
 
             if (!fSuccess)
             {
@@ -479,14 +485,14 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
 
         _ASSERTE((sizeof(header) % sizeof(unsigned)) == 0);
 
-        hr = WriteData(pStream, & header, sizeof(header));
+        hr = WriteData(fp, & header, sizeof(header));
     }
 
     DWORD dwData = 0;
 
     for (unsigned i = 0; SUCCEEDED(hr) && (i < m_ModuleCount); i ++)
     {
-        hr = WriteModuleRecord(pStream, m_ModuleList[i]);
+        hr = WriteModuleRecord(fp, m_ModuleList[i]);
     }
 
     for (LONG i = 0 ; i < m_JitInfoCount && SUCCEEDED(hr); i++)
@@ -497,7 +503,7 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
             _ASSERTE(m_JitInfoArray[i].IsFullyInitialized());
 
             DWORD data1 = m_JitInfoArray[i].GetRawModuleData();
-            hr = WriteData(pStream, &data1, sizeof(data1));
+            hr = WriteData(fp, &data1, sizeof(data1));
         }
         else if (m_JitInfoArray[i].IsGenericMethodInfo())
         {
@@ -515,19 +521,19 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
             DWORD sigSize = m_JitInfoArray[i].GetMethodSignatureSize();
             DWORD paddingSize = m_JitInfoArray[i].GetMethodRecordPaddingSize();
 
-            hr = WriteData(pStream, &data1, sizeof(data1));
+            hr = WriteData(fp, &data1, sizeof(data1));
             if (SUCCEEDED(hr))
             {
-                hr = WriteData(pStream, &data2, sizeof(data2));
+                hr = WriteData(fp, &data2, sizeof(data2));
             }
             if (SUCCEEDED(hr))
             {
-                hr = WriteData(pStream, pSignature, sigSize);
+                hr = WriteData(fp, pSignature, sigSize);
             }
             if (SUCCEEDED(hr) && paddingSize > 0)
             {
                 DWORD tmp = 0;
-                hr = WriteData(pStream, &tmp, paddingSize);
+                hr = WriteData(fp, &tmp, paddingSize);
             }
         }
         else
@@ -538,10 +544,10 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
             DWORD data1 = m_JitInfoArray[i].GetRawMethodData1();
             unsigned data2 = m_JitInfoArray[i].GetRawMethodData2NonGeneric();
 
-            hr = WriteData(pStream, &data1, sizeof(data1));
+            hr = WriteData(fp, &data1, sizeof(data1));
             if (SUCCEEDED(hr))
             {
-                hr = WriteData(pStream, &data2, sizeof(data2));
+                hr = WriteData(fp, &data2, sizeof(data2));
             }
         }
     }
@@ -1298,7 +1304,7 @@ void MulticoreJitManager::StopProfile(bool appDomainShutdown)
         {
             MulticoreJitTrace(("StopProfile(%d) throws exception", appDomainShutdown));
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 
         delete pRecorder;
     }

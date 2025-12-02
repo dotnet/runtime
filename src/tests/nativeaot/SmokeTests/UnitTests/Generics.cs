@@ -60,6 +60,8 @@ class Generics
         Test104913Regression.Run();
         Test105397Regression.Run();
         Test105880Regression.Run();
+        TestInterfaceGenericCornerCase.Run();
+        Test115442Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
         TestNullableCasting.Run();
@@ -3284,6 +3286,7 @@ class Generics
 
         class GenClass<T> { }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static object RecurseOverStruct<T>(int count) where T : new()
         {
             if (count > 0)
@@ -3292,6 +3295,7 @@ class Generics
             return new T();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static object RecurseOverClass<T>(int count) where T : new()
         {
             if (count > 0)
@@ -3299,6 +3303,9 @@ class Generics
 
             return new T();
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int RecurseOverArray<T>(int iter) => iter > 0 ? RecurseOverArray<T[]>(iter - 1) : 0;
 
         public static void Run()
         {
@@ -3324,6 +3331,8 @@ class Generics
 
             if (!caughtException)
                 throw new Exception();
+
+            RecurseOverArray<object>(2);
         }
     }
 
@@ -3675,6 +3684,98 @@ class Generics
         public static void Run()
         {
             Console.WriteLine(new Baz());
+        }
+    }
+
+    class TestInterfaceGenericCornerCase
+    {
+        interface IFoo<in T>
+        {
+            string Print(T x);
+
+            string PrintGeneric<U>(T x);
+        }
+
+        class Conversion<T, U> where T : IFoo<U>, new() where U : class
+        {
+            public string Print()
+            {
+                string result = new T().Print(default);
+
+                Func<U, string> f = new T().Print;
+                if (f(default) != result)
+                    throw new Exception();
+
+                return result;
+            }
+
+            public string PrintGeneric<V>()
+            {
+                string result = new T().PrintGeneric<V>(default);
+
+                Func<U, string> f = new T().PrintGeneric<V>;
+                if (f(default) != result)
+                    throw new Exception();
+
+                return result;
+            }
+        }
+
+        struct MyStruct : IFoo<object>, IFoo<Derived>
+        {
+            public string Print(Derived x) => "Derived";
+            public string Print(object x) => "Object";
+
+            public string PrintGeneric<U>(Derived x) => $"<{(typeof(U) == typeof(object) ? "O" : "X")}>Derived";
+            public string PrintGeneric<U>(object x) => $"<{(typeof(U) == typeof(object) ? "O" : "X")}>Object";
+        }
+
+        class Base;
+        class Derived : Base;
+
+        public static void Run()
+        {
+            var conversion = new Conversion<MyStruct, Base>();
+            if (conversion.Print() != "Object")
+                throw new Exception();
+            if (conversion.PrintGeneric<object>() != "<O>Object")
+                throw new Exception();
+
+            if (PrintDynamic(typeof(Derived)) != "Derived")
+                throw new Exception();
+            if (PrintGenericDynamic(typeof(Derived)) != "<O>Derived")
+                throw new Exception();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static string PrintDynamic(Type p)
+        {
+            var t = typeof(Conversion<,>).MakeGenericType(typeof(MyStruct), p);
+            var g = Activator.CreateInstance(t);
+            var mi = (MethodInfo)t.GetMemberWithSameMetadataDefinitionAs(typeof(Conversion<,>).GetMethod(nameof(Conversion<MyStruct, Base>.Print)));
+            return (string)mi.Invoke(g, []);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static string PrintGenericDynamic(Type p)
+        {
+            var t = typeof(Conversion<,>).MakeGenericType(typeof(MyStruct), p);
+            var g = Activator.CreateInstance(t);
+            var mi = ((MethodInfo)t.GetMemberWithSameMetadataDefinitionAs(typeof(Conversion<,>).GetMethod(nameof(Conversion<MyStruct, Base>.PrintGeneric)))).MakeGenericMethod(typeof(object));
+            return (string)mi.Invoke(g, []);
+        }
+    }
+
+    class Test115442Regression
+    {
+        public readonly struct TypeBuilder<T1, T2>
+        {
+            public TypeBuilder<(T1, T2), T3> Add<T3>() => default;
+        }
+
+        public static void Run()
+        {
+            typeof(TypeBuilder<int, int>).GetMethod("Add").MakeGenericMethod(typeof(int)).Invoke(default(TypeBuilder<int, int>), []);
         }
     }
 
