@@ -3,10 +3,10 @@
 
 using System;
 using Internal.TypeSystem;
-using Internal.ReadyToRunConstants;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Internal.TypeSystem.Ecma;
+using ILCompiler;
 
 #nullable enable
 
@@ -66,7 +66,6 @@ namespace Internal.IL.Stubs
         public static void AssertIsKnownAsyncHelper(TypeSystemEntity entity, string message)
         {
             TypeSystemContext context = entity.Context;
-            // get the definition in case they have been instantiated. We can't know all instantiations ahead of time
             entity = entity switch
             {
                 MethodDesc m => m.GetTypicalMethodDefinition(),
@@ -148,12 +147,6 @@ namespace Internal.IL.Stubs
             });
         }
 
-        private static MethodDesc GetHelperMethod(TypeSystemContext context, ReadyToRunHelper helper)
-        {
-            ILCompiler.JitHelper.GetEntryPoint(context, helper, out _, out MethodDesc methodDesc);
-            return methodDesc;
-        }
-
         public struct TaskReturningThunkReferences
         {
             public required MethodDesc ExecutionAndSyncBlockStore_Push { get; init; }
@@ -179,7 +172,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        private static void GetTaskReturningThunkMethods(MethodDesc taskReturningMethod, MethodDesc _, out TaskReturningThunkReferences thunkMethods)
+        private static TaskReturningThunkReferences  GetTaskReturningThunkMethods(MethodDesc taskReturningMethod)
         {
             TypeSystemContext context = taskReturningMethod.Context;
 
@@ -229,7 +222,7 @@ namespace Internal.IL.Stubs
                 }
             }
 
-            thunkMethods = new()
+            return new()
             {
                 ExecutionAndSyncBlockStore_Pop = GetHelperMethod(context, AsyncHelper.ExecutionAndSyncBlockStore_Pop),
                 ExecutionAndSyncBlockStore_Push = GetHelperMethod(context, AsyncHelper.ExecutionAndSyncBlockStore_Push),
@@ -262,7 +255,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        private static void GetAsyncThunkMethods(MethodDesc taskReturningMethod, MethodDesc _, out AsyncThunkReferences thunkMethods)
+        private static AsyncThunkReferences GetAsyncThunkMethods(MethodDesc taskReturningMethod)
         {
             TypeSystemContext context = taskReturningMethod.Context;
             MethodDesc isCompleted;
@@ -309,7 +302,7 @@ namespace Internal.IL.Stubs
                 }
             }
 
-            thunkMethods = new()
+            return new()
             {
                 IsCompletedMethod = isCompleted,
                 AsTaskOrNotifierMethod = asTaskOrNotifierMethod,
@@ -321,9 +314,10 @@ namespace Internal.IL.Stubs
         /// <summary>
         /// Get the list of methods required by the task returning thunk of an async method. These methods may not have MethodRefs in the original module, so they may need to be added to the MutableModule.
         /// </summary>
-        public static IEnumerable<TypeSystemEntity> GetRequiredReferencesForTaskReturningThunk(MethodDesc taskReturningMethod, MethodDesc asyncMethod)
+        public static IEnumerable<TypeSystemEntity> GetRequiredReferencesForTaskReturningThunk(MethodDesc taskReturningMethod)
         {
-            GetTaskReturningThunkMethods(taskReturningMethod, asyncMethod, out TaskReturningThunkReferences thunkMethods);
+            Debug.Assert(!taskReturningMethod.IsAsyncVariant());
+            var thunkMethods = GetTaskReturningThunkMethods(taskReturningMethod);
             return thunkMethods.GetAllReferences();
         }
 
@@ -331,9 +325,10 @@ namespace Internal.IL.Stubs
         /// Get the list of methods required by the task returning thunk of an async method. These methods may not have MethodRefs in the original module, so they may need to be added to the MutableModule.
         /// </summary>
         // This method should match the methods used in EmitAsyncMethodThunk
-        public static IEnumerable<TypeSystemEntity> GetRequiredReferencesForAsyncThunk(MethodDesc taskReturningMethod, MethodDesc asyncMethod)
+        public static IEnumerable<TypeSystemEntity> GetRequiredReferencesForAsyncThunk(MethodDesc taskReturningMethod)
         {
-            GetAsyncThunkMethods(taskReturningMethod, asyncMethod, out AsyncThunkReferences thunkMethods);
+            Debug.Assert(!taskReturningMethod.IsAsyncVariant());
+            var thunkMethods = GetAsyncThunkMethods(taskReturningMethod);
             return thunkMethods.GetAllReferences();
         }
 
@@ -351,7 +346,7 @@ namespace Internal.IL.Stubs
             var emitter = new ILEmitter();
             var codestream = emitter.NewCodeStream();
 
-            GetTaskReturningThunkMethods(taskReturningMethod, asyncMethod, out TaskReturningThunkReferences thunkHelpers);
+            var thunkHelpers = GetTaskReturningThunkMethods(taskReturningMethod);
 
             MethodSignature sig = taskReturningMethod.Signature;
             TypeDesc returnType = sig.ReturnType;
@@ -460,7 +455,7 @@ namespace Internal.IL.Stubs
             var codestream = emitter.NewCodeStream();
 
             taskReturningMethod = InstantiateAsOpen(taskReturningMethod);
-            GetAsyncThunkMethods(taskReturningMethod, asyncMethod, out AsyncThunkReferences thunkHelpers);
+            var thunkHelpers = GetAsyncThunkMethods(taskReturningMethod);
 
             MethodSignature sig = asyncMethod.Signature;
 
