@@ -35,6 +35,7 @@
     <NestedBuildProperty Include="WasmEmitSymbolMap" />
     <NestedBuildProperty Include="WasmEnableThreads" />
     <NestedBuildProperty Include="EnableDiagnostics" />
+    <NestedBuildProperty Include="DiagnosticPorts" />
     <NestedBuildProperty Include="WasmPerformanceInstrumentation" />
   </ItemGroup>
 

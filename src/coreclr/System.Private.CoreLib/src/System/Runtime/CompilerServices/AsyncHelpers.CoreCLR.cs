@@ -576,6 +576,7 @@ namespace System.Runtime.CompilerServices
                     ContinuationFlags.ContinueOnCapturedSynchronizationContext |
                     ContinuationFlags.ContinueOnThreadPool |
                     ContinuationFlags.ContinueOnCapturedTaskScheduler;
+
                 Debug.Assert((headContinuation.Flags & continueFlags) == 0);
 
                 TOps.SetContinuationState(task, headContinuation);
@@ -598,7 +599,7 @@ namespace System.Runtime.CompilerServices
                     }
                     else if (vtsNotifier != null)
                     {
-                        // The awaiter must inform the ValueTaskSource source on whether the continuation
+                        // The awaiter must inform the ValueTaskSource on whether the continuation
                         // wants to run on a context, although the source may decide to ignore the suggestion.
                         // Since the behavior of the source takes precedence, we clear the context flags of
                         // the awaiting continuation (so it will run transparently on what the source decides)
@@ -607,8 +608,18 @@ namespace System.Runtime.CompilerServices
                         // the continuation chain builds from the innermost frame out and at the time when the
                         // notifier is created we do not know yet if the caller wants to continue on a context.
                         ValueTaskSourceOnCompletedFlags configFlags = ValueTaskSourceOnCompletedFlags.None;
-                        ContinuationFlags continuationFlags = headContinuation.Next!.Flags;
 
+                        // Skip to a nontransparent/user continuation. Such continuaton must exist.
+                        // Since we see a VTS notifier, something was directly or indirectly
+                        // awaiting an async thunk for a ValueTask-returning method.
+                        // That can only happen in nontransparent/user code.
+                        Continuation nextUserContinuation = headContinuation.Next!;
+                        while ((nextUserContinuation.Flags & continueFlags) == 0 && nextUserContinuation.Next != null)
+                        {
+                            nextUserContinuation = nextUserContinuation.Next;
+                        }
+
+                        ContinuationFlags continuationFlags = nextUserContinuation.Flags;
                         const ContinuationFlags continueOnContextFlags =
                             ContinuationFlags.ContinueOnCapturedSynchronizationContext |
                             ContinuationFlags.ContinueOnCapturedTaskScheduler;
@@ -620,7 +631,7 @@ namespace System.Runtime.CompilerServices
                         }
 
                         // Clear continuation flags, so that continuation runs transparently
-                        headContinuation.Next!.Flags &= ~continueFlags;
+                        nextUserContinuation.Flags &= ~continueFlags;
                         TOps.ValueTaskSourceOnCompleted(task, vtsNotifier, configFlags);
                     }
                     else
