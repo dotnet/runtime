@@ -621,6 +621,11 @@ namespace System.IO
                 t.Item1.Write(t.Item2);
             }, new TupleSlim<TextWriter, string?>(this, value), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
+        public Task WriteAsync(string? value, CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+            value == null ? Task.CompletedTask :
+            WriteAsync(value.AsMemory(), cancellationToken);
+
         /// <summary>
         /// Equivalent to WriteAsync(stringBuilder.ToString()) however it uses the
         /// StringBuilder.GetChunks() method to avoid creating the intermediate string
@@ -706,6 +711,11 @@ namespace System.IO
                 t.Item1.WriteLine(t.Item2);
             }, new TupleSlim<TextWriter, string?>(this, value), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
+        public Task WriteLineAsync(string? value, CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+            value == null ? WriteLineAsync(cancellationToken) :
+            WriteLineAsync(value.AsMemory(), cancellationToken);
+
         /// <summary>
         /// Equivalent to WriteLineAsync(stringBuilder.ToString()) however it uses the
         /// StringBuilder.GetChunks() method to avoid creating the intermediate string
@@ -760,6 +770,9 @@ namespace System.IO
         {
             return WriteAsync(CoreNewLine);
         }
+
+        public Task WriteLineAsync(CancellationToken cancellationToken) =>
+            WriteAsync(CoreNewLine, cancellationToken);
 
         public virtual Task FlushAsync()
         {
