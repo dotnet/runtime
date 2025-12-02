@@ -7,11 +7,19 @@
 #
 # Notes:
 #
-# Universal script to setup and run the xunit console runner. The script relies
-# on build.proj and the bash and batch wrappers. All test excludes will also
-# come from issues.targets. If there is a jit stress or gc stress exclude,
+# Universal script to setup and run the xunit console runner. This script can be
+# called directly or through the run.sh/run.cmd wrapper scripts. All test excludes
+# will come from issues.targets. If there is a jit stress or gc stress exclude,
 # please add GCStressIncompatible or JitOptimizationSensitive to the test's
 # ilproj or csproj.
+#
+# The script accepts arguments in two formats:
+# 1. Python-style: run.py -arch x64 -build_type Debug --verbose
+# 2. Shell-style: run.py x64 debug --verbose (via run.sh/run.cmd wrappers)
+#
+# The shell-style arguments are automatically converted to Python-style by the
+# preprocess_args() function. This allows the run.sh and run.cmd wrapper scripts
+# to be thin wrappers that just pass all arguments through to this Python script.
 #
 # The xunit runner currently relies on tests being built on the same host as the
 # target platform. This requires all tests run on linux x64 to be built by the
@@ -86,14 +94,23 @@ Specify the directory where log files are written. Default: `artifacts/log`.
 def preprocess_args(args):
     """ Preprocess arguments to convert shell-style arguments to Python-style arguments.
     
-    This function handles argument format conversions from the shell scripts (run.sh/run.cmd)
-    to the format expected by the Python argument parser.
+    This function centralizes argument parsing logic that was previously duplicated
+    in run.sh and run.cmd. It converts shell-style arguments (e.g., "x64", "debug")
+    to Python argparse-style arguments (e.g., "-arch x64", "-build_type Debug").
+    
+    This allows the wrapper scripts to be thin wrappers that just pass all arguments
+    through to this Python script, eliminating code duplication.
+    
+    Examples:
+        ["x64", "release"] -> ["-arch", "x64", "-build_type", "Release"]
+        ["--jitstress=1"] -> ["--jitstress", "1"]
+        ["sequential"] -> ["--sequential"]
     
     Args:
         args: List of command-line arguments (typically sys.argv[1:])
     
     Returns:
-        Preprocessed list of arguments
+        Preprocessed list of arguments in Python argparse format
     """
     processed_args = []
     i = 0
