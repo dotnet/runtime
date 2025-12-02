@@ -157,10 +157,7 @@
     <!-- workloads -->
     <!-- sdk version, for testing workloads -->
     <SdkVersionForWorkloadTesting>$(MicrosoftDotNetApiCompatTaskPackageVersion)</SdkVersionForWorkloadTesting>
-    <!-- emscripten / Node
-         Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
-               like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-10_0_100_Transport
-    -->
+    <!-- emscripten / Node -->
     <MicrosoftNETRuntimeEmscriptenVersion>$(SdkVersionForWorkloadTesting)</MicrosoftNETRuntimeEmscriptenVersion>
     <EmsdkPackageVersion>10.0.0</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
