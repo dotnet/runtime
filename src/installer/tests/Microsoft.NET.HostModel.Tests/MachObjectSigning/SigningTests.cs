@@ -80,7 +80,6 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         }
 
         [Theory(Skip = "Temporarily disabled due to macOS 26 codesign behavior change - only hashing __TEXT segment")]
-        [MemberData(nameof(GetTestFilePaths), nameof(MatchesCodesignOutput))]
         [PlatformSpecific(TestPlatforms.OSX)]
         [MemberData(nameof(GetTestFilePaths), nameof(MatchesCodesignOutput))]
         public void MatchesCodesignOutput(string filePath, TestArtifact _)
