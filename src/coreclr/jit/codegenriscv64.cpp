@@ -655,18 +655,18 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             switch (addrInfo.accessType)
             {
                 case IAT_VALUE:
-                // TODO-RISCV64-CQ: using B/BL for optimization.
+                    params.ireg     = REG_INDIRECT_CALL_TARGET_REG;
+                    params.callType = EC_FUNC_TOKEN;
+                    params.addr     = addrInfo.addr;
+                    break;
+
                 case IAT_PVALUE:
                     // Load the address into a register, load indirect and call  through a register
                     // We have to use REG_INDIRECT_CALL_TARGET_REG since we assume the argument registers are in use
                     params.callType = EC_INDIR_R;
                     params.ireg     = REG_INDIRECT_CALL_TARGET_REG;
-                    instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, params.ireg, (ssize_t)addrInfo.addr);
-                    if (addrInfo.accessType == IAT_PVALUE)
-                    {
-                        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, params.ireg, params.ireg, 0);
-                        regSet.verifyRegUsed(params.ireg);
-                    }
+                    GetEmitter()->emitIns_R_R_Addr(INS_ld, EA_PTRSIZE, params.ireg, params.ireg, addrInfo.addr);
+                    regSet.verifyRegUsed(params.ireg);
                     break;
 
                 case IAT_RELPVALUE:
@@ -899,15 +899,10 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
 {
     emitter* emit = GetEmitter();
 
-    if (!compiler->opts.compReloc)
-    {
-        size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs.
-    }
-
+    assert(genIsValidIntReg(reg));
     if (EA_IS_RELOC(size))
     {
-        assert(genIsValidIntReg(reg));
-        GetEmitter()->emitIns_R_AI(INS_jal, size, reg, imm);
+        emit->emitIns_R_AI(INS_addi, size, reg, reg, imm);
     }
     else
     {
@@ -2738,23 +2733,14 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
         // If the helper is a value, we need to use the address of the helper.
         params.addr     = helperFunction.addr;
         params.callType = EC_FUNC_TOKEN;
+        params.ireg     = params.isJump ? rsGetRsvdReg() : REG_RA;
     }
     else
     {
         params.addr     = nullptr;
         params.callType = EC_INDIR_R;
         params.ireg     = REG_DEFAULT_HELPER_CALL_TARGET;
-
-        if (compiler->opts.compReloc)
-        {
-            GetEmitter()->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, params.ireg, (ssize_t)helperFunction.addr);
-        }
-        else
-        {
-            // TODO-RISCV64: maybe optimize further.
-            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, params.ireg, (ssize_t)helperFunction.addr);
-            GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, params.ireg, params.ireg, 0);
-        }
+        GetEmitter()->emitIns_R_R_Addr(INS_ld, EA_PTRSIZE, params.ireg, params.ireg, helperFunction.addr);
         regSet.verifyRegUsed(params.ireg);
     }
 
@@ -3376,23 +3362,6 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
     return callerSPtoSPdelta;
 }
 
-// Produce generic and unoptimized code for loading constant to register and dereferencing it
-// at the end
-static void emitLoadConstAtAddr(emitter* emit, regNumber dstRegister, ssize_t imm)
-{
-    ssize_t high = imm >> 32;
-    emit->emitIns_R_I(INS_lui, EA_PTRSIZE, dstRegister, (high + 0x800) >> 12);
-    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstRegister, dstRegister, (high & 0xfff));
-
-    ssize_t low = imm & 0xffffffff;
-    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstRegister, dstRegister, 11);
-    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstRegister, dstRegister, ((low >> 21) & 0x7ff));
-
-    emit->emitIns_R_R_I(INS_slli, EA_PTRSIZE, dstRegister, dstRegister, 11);
-    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, dstRegister, dstRegister, ((low >> 10) & 0x7ff));
-    emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, dstRegister, dstRegister, (low & 0x3ff));
-}
-
 /*****************************************************************************
  *  Emit a call to a helper function.
  */
@@ -3404,11 +3373,18 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
     regMaskTP            killSet        = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
-    params.callType = EC_FUNC_TOKEN;
+    if (callTargetReg == REG_NA)
+    {
+        // If a callTargetReg has not been explicitly provided, we will use REG_DEFAULT_HELPER_CALL_TARGET, but
+        // this is only a valid assumption if the helper call is known to kill REG_DEFAULT_HELPER_CALL_TARGET.
+        callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
+    }
+    params.ireg = callTargetReg;
 
     if (helperFunction.accessType == IAT_VALUE)
     {
-        params.addr = (void*)helperFunction.addr;
+        params.callType = EC_FUNC_TOKEN;
+        params.addr     = helperFunction.addr;
     }
     else
     {
@@ -3417,35 +3393,19 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         void* pAddr = helperFunction.addr;
 
         // This is call to a runtime helper.
-        // lui reg, pAddr     #NOTE: this maybe multi-instructions.
+        // li reg, pAddr     #NOTE: this maybe multi-instructions.
         // ld reg, reg
         // jalr reg
-
-        if (callTargetReg == REG_NA)
-        {
-            // If a callTargetReg has not been explicitly provided, we will use REG_DEFAULT_HELPER_CALL_TARGET, but
-            // this is only a valid assumption if the helper call is known to kill REG_DEFAULT_HELPER_CALL_TARGET.
-            callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
-        }
 
         regMaskTP callTargetMask = genRegMask(callTargetReg);
 
         // assert that all registers in callTargetMask are in the callKillSet
         noway_assert((callTargetMask & killSet) == callTargetMask);
 
-        if (compiler->opts.compReloc)
-        {
-            // TODO-RISCV64: here the jal is special flag rather than a real instruction.
-            GetEmitter()->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, callTargetReg, (ssize_t)pAddr);
-        }
-        else
-        {
-            emitLoadConstAtAddr(GetEmitter(), callTargetReg, (ssize_t)pAddr);
-        }
+        GetEmitter()->emitIns_R_R_Addr(INS_ld, EA_PTRSIZE, callTargetReg, callTargetReg, pAddr);
         regSet.verifyRegUsed(callTargetReg);
 
         params.callType = EC_INDIR_R;
-        params.ireg     = callTargetReg;
     }
 
     params.methHnd = compiler->eeFindHelper(helper);
@@ -4253,15 +4213,8 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
     }
     else
     {
-        if (compiler->opts.compReloc)
-        {
-            emit->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, initReg, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
-        }
-        else
-        {
-            emit->emitLoadImmediate(EA_PTRSIZE, initReg, ((size_t)compiler->gsGlobalSecurityCookieAddr));
-            emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, initReg, initReg, 0);
-        }
+        emit->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, initReg, initReg, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
+
         regSet.verifyRegUsed(initReg);
         emit->emitIns_S_R(INS_sd, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
     }
@@ -4299,33 +4252,8 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
     else
     {
         // AOT case - GS cookie constant needs to be accessed through an indirection.
-        // instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
-        // GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, regGSConst, regGSConst, 0);
-        if (compiler->opts.compReloc)
-        {
-            GetEmitter()->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, regGSConst,
-                                       (ssize_t)compiler->gsGlobalSecurityCookieAddr);
-        }
-        else
-        {
-            // TODO-RISCV64: maybe optimize furtherk!
-            UINT32 high = ((ssize_t)compiler->gsGlobalSecurityCookieAddr) >> 32;
-            if (((high + 0x800) >> 12) != 0)
-            {
-                GetEmitter()->emitIns_R_I(INS_lui, EA_PTRSIZE, regGSConst, ((int32_t)(high + 0x800)) >> 12);
-            }
-            if ((high & 0xFFF) != 0)
-            {
-                GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst, REG_R0, (high & 0xfff));
-            }
-            UINT32 low = ((ssize_t)compiler->gsGlobalSecurityCookieAddr) & 0xffffffff;
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst, regGSConst, 11);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst, regGSConst, (low >> 21) & 0x7FF);
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst, regGSConst, 11);
-            GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, regGSConst, regGSConst, (low >> 10) & 0x7FF);
-            GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, regGSConst, regGSConst, 10);
-            GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, regGSConst, regGSConst, low & 0x3FF);
-        }
+        GetEmitter()->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, regGSConst, regGSConst,
+                                   (ssize_t)compiler->gsGlobalSecurityCookieAddr);
         regSet.verifyRegUsed(regGSConst);
     }
     // Load this method's GS value from the stack frame
@@ -5591,32 +5519,22 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             genConsumeReg(target);
         }
 
-        regNumber targetReg;
-        ssize_t   jalrOffset = 0;
-
         if (target->isContainedIntOrIImmed())
         {
-            // Load upper (64-12) bits to a temporary register. Lower 12 bits will be put inside JALR's instruction as
-            // offset.
-            targetReg   = internalRegisters.GetSingle(call);
-            ssize_t imm = target->AsIntCon()->IconValue();
-            jalrOffset  = (imm << (64 - 12)) >> (64 - 12);
-            imm -= jalrOffset;
-            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, targetReg, imm);
+            params.callType = EC_FUNC_TOKEN;
+            params.ireg     = internalRegisters.GetSingle(call);
+            params.addr     = (void*)target->AsIntCon()->IconValue();
         }
         else
         {
-            targetReg = target->GetRegNum();
+            params.callType = EC_INDIR_R;
+            params.ireg     = target->GetRegNum();
         }
 
         // We have already generated code for gtControlExpr evaluating it into a register.
         // We just need to emit "call reg" in this case.
         //
-        assert(genIsValidIntReg(targetReg));
-
-        params.callType = EC_INDIR_R;
-        params.ireg     = targetReg;
-        params.addr     = (jalrOffset == 0) ? nullptr : (void*)jalrOffset; // We use addr to pass offset value
+        assert(genIsValidIntReg(params.ireg));
 
         genEmitCallWithCurrentGC(params);
     }
@@ -5673,6 +5591,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             }
             else
 #endif // FEATURE_READYTORUN
+            {
                 if (call->IsHelperCall())
                 {
                     CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(params.methHnd);
@@ -5687,10 +5606,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     // Direct call to a non-virtual user function.
                     params.addr = call->gtDirectCallAddress;
                 }
-
-            assert(params.addr != nullptr);
+            }
 
             params.callType = EC_FUNC_TOKEN;
+            params.ireg     = params.isJump ? rsGetRsvdReg() : REG_RA;
+
             genEmitCallWithCurrentGC(params);
         }
     }
@@ -6324,6 +6244,9 @@ void CodeGen::genJumpToThrowHlpBlk_la(
             ins = ins == INS_beq ? INS_bne : INS_beq;
         }
 
+        BasicBlock* skipLabel = genCreateTempLabel();
+        emit->emitIns_J_cond_la(ins, skipLabel, reg1, reg2);
+
         CORINFO_CONST_LOOKUP helperFunction =
             compiler->compGetHelperFtn((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
         if (helperFunction.accessType == IAT_VALUE)
@@ -6332,39 +6255,17 @@ void CodeGen::genJumpToThrowHlpBlk_la(
             // If the helper is a value, we need to use the address of the helper.
             params.addr     = helperFunction.addr;
             params.callType = EC_FUNC_TOKEN;
-
-            // TODO-RISCV64-RVC: Remove hardcoded branch offset here
-            ssize_t imm = 3 * sizeof(emitter::code_t);
-            emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
+            params.ireg     = params.isJump ? rsGetRsvdReg() : REG_RA;
         }
         else
         {
             params.addr = nullptr;
             assert(helperFunction.accessType == IAT_PVALUE);
-            void* pAddr = helperFunction.addr;
-
             params.callType = EC_INDIR_R;
             params.ireg     = REG_DEFAULT_HELPER_CALL_TARGET;
-            if (compiler->opts.compReloc)
-            {
-                // TODO-RISCV64-RVC: Remove hardcoded branch offset here
-                ssize_t imm = (3 + 1) << 2;
-                emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
-                emit->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, params.ireg, (ssize_t)pAddr);
-            }
-            else
-            {
-                // TODO-RISCV64-RVC: Remove hardcoded branch offset here
-                ssize_t imm = 9 << 2;
-                emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
-                // TODO-RISCV64-CQ: In the future we may consider using emitter::emitLoadImmediate instead,
-                // which is less straightforward but offers slightly better codegen.
-                emitLoadConstAtAddr(GetEmitter(), params.ireg, (ssize_t)pAddr);
-            }
+            emit->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, params.ireg, params.ireg, (ssize_t)helperFunction.addr);
             regSet.verifyRegUsed(params.ireg);
         }
-
-        BasicBlock* skipLabel = genCreateTempLabel();
 
         params.methHnd = compiler->eeFindHelper(compiler->acdHelper(codeKind));
 
@@ -6717,17 +6618,9 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         return;
     }
 
-    ssize_t methHnd = (ssize_t)compiler->compProfilerMethHnd;
-    if (compiler->compProfilerMethHndIndirected)
-    {
-        instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, REG_PROFILER_ENTER_ARG_FUNC_ID, methHnd);
-        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_PROFILER_ENTER_ARG_FUNC_ID, REG_PROFILER_ENTER_ARG_FUNC_ID,
-                                    0);
-    }
-    else
-    {
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_PROFILER_ENTER_ARG_FUNC_ID, methHnd);
-    }
+    instruction ins = compiler->compProfilerMethHndIndirected ? INS_ld : INS_addi;
+    GetEmitter()->emitIns_R_R_Addr(ins, EA_PTRSIZE, REG_PROFILER_ENTER_ARG_FUNC_ID, REG_PROFILER_ENTER_ARG_FUNC_ID,
+                                   compiler->compProfilerMethHnd);
 
     ssize_t callerSPOffset = -compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
     genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_PROFILER_ENTER_ARG_CALLER_SP, genFramePointerReg(), callerSPOffset,
@@ -6763,17 +6656,9 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
 
     compiler->info.compProfilerCallback = true;
 
-    ssize_t methHnd = (ssize_t)compiler->compProfilerMethHnd;
-    if (compiler->compProfilerMethHndIndirected)
-    {
-        instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, REG_PROFILER_LEAVE_ARG_FUNC_ID, methHnd);
-        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_PROFILER_LEAVE_ARG_FUNC_ID, REG_PROFILER_LEAVE_ARG_FUNC_ID,
-                                    0);
-    }
-    else
-    {
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_PROFILER_LEAVE_ARG_FUNC_ID, methHnd);
-    }
+    instruction ins = compiler->compProfilerMethHndIndirected ? INS_ld : INS_addi;
+    GetEmitter()->emitIns_R_R_Addr(ins, EA_PTRSIZE, REG_PROFILER_LEAVE_ARG_FUNC_ID, REG_PROFILER_LEAVE_ARG_FUNC_ID,
+                                   compiler->compProfilerMethHnd);
 
     gcInfo.gcMarkRegSetNpt(RBM_PROFILER_LEAVE_ARG_FUNC_ID);
 
