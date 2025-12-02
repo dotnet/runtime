@@ -57,7 +57,7 @@ This tool located in folder `src/coreclr/tools/aot/WhyDgml`
 
 See <https://github.com/dotnet/corert/pull/7962> for example of usage and output.
 
-## Dependency graph EventSource
+## Dependency Graph EventSource
 
 ILCompiler publishes its dependency graph through the `Microsoft-ILCompiler-DependencyGraph` EventSource. You can capture those events with `dotnet-trace`. The resulting `*.nettrace` file can be processed with the TraceEvent library. This can be useful for investigating ILCompiler issues on Linux, but note that it requires additional tooling to process the trace into a DGML file that can be used with the dependency graph viewer.
 
