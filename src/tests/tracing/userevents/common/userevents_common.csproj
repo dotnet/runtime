@@ -29,5 +29,13 @@
 
     <!-- For Helix builds, artifacts copied over have their permissions reset. Add the executable to a list for helix to reapply execute permissions -->
     <WriteLinesToFile File="$(_DestDir)helix-extra-executables.list" Lines="$(_RecordTraceRelative)" Overwrite="true" />
+
+    <!-- Although this isn't a test project, userevents tests depend on record-trace, which in turn relies on helix-extra-executables.list to received execute permissions
+         So to get the files included into Helix's _MergedPayloadFiles, we need to manually add an OutOfProcessTest marker. -->
+    <WriteLinesToFile
+      File="$(_DestDir)$(MSBuildProjectName).OutOfProcessTest"
+      Lines="OutOfProcessTest"
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true" />
   </Target>
 </Project>
