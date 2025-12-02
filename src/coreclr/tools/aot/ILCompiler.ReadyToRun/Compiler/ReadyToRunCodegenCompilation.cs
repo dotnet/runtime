@@ -296,7 +296,7 @@ namespace ILCompiler
         private readonly ProfileDataManager _profileData;
         private readonly FileLayoutOptimizer _fileLayoutOptimizer;
         private readonly HashSet<EcmaMethod> _methodsWhichNeedMutableILBodies = new HashSet<EcmaMethod>();
-        private readonly HashSet<MethodDesc> _methodsNeededAsReferencesInMutableModule = new HashSet<MethodDesc>();
+        private readonly HashSet<TypeSystemEntity> _methodsNeededAsReferencesInMutableModule = new HashSet<TypeSystemEntity>();
         private readonly HashSet<MethodWithGCInfo> _methodsToRecompile = new HashSet<MethodWithGCInfo>();
 
         public ProfileDataManager ProfileData => _profileData;
@@ -647,7 +647,7 @@ namespace ILCompiler
         // The _finishedFirstCompilationRunInPhase2 variable works in concert some checking to ensure that we don't violate any of this model
         private bool _finishedFirstCompilationRunInPhase2 = false;
 
-        public void PrepareForCompilationRetry(MethodWithGCInfo methodToBeRecompiled, IEnumerable<EcmaMethod> methodsThatNeedILBodies, IEnumerable<MethodDesc> requiredMutableModuleReferences)
+        public void PrepareForCompilationRetry(MethodWithGCInfo methodToBeRecompiled, IEnumerable<EcmaMethod> methodsThatNeedILBodies, IEnumerable<TypeSystemEntity> requiredMutableModuleReferences)
         {
             lock (_methodsToRecompile)
             {
@@ -805,16 +805,16 @@ namespace ILCompiler
 
             void ProcessNecessaryMutableModuleReferences()
             {
-                MethodDesc[] methods = new MethodDesc[_methodsNeededAsReferencesInMutableModule.Count];
-                _methodsNeededAsReferencesInMutableModule.CopyTo(methods);
+                TypeSystemEntity[] entities = new TypeSystemEntity[_methodsNeededAsReferencesInMutableModule.Count];
+                _methodsNeededAsReferencesInMutableModule.CopyTo(entities);
                 _methodsNeededAsReferencesInMutableModule.Clear();
                 _nodeFactory.ManifestMetadataTable._mutableModule.AddingReferencesToR2RKnownTypesAndMethods = true;
                 try
                 {
-                    foreach(var method in methods)
+                    foreach(var entity in entities)
                     {
-                        Debug.Assert(_nodeFactory.Resolver.IsKnownMutableModuleMethod((EcmaMethod)method.GetTypicalMethodDefinition()));
-                        var unused = _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(method);
+                        AsyncThunkILEmitter.AssertIsKnownAsyncHelper(entity, "Tried to add unknown type system entity to mutable module: " + entity.GetDisplayName());
+                        _ = _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(entity);
                     }
                 }
                 finally

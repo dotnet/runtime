@@ -780,15 +780,15 @@ namespace Internal.JitInterface
 
                 if (MethodBeingCompiled.IsAsyncThunk())
                 {
-                    // The synthetic async thunks require references to methods that may not have existing methodRef entries in the version bubble.
+                    // The synthetic async thunks require references to methods/types that may not have existing methodRef entries in the version bubble.
                     // These references need to be added to the mutable module if they don't exist.
                     var requiredMutableModuleReferences = MethodBeingCompiled.IsAsync ?
                         AsyncThunkILEmitter.GetRequiredReferencesForTaskReturningThunk(MethodBeingCompiled, ((CompilerTypeSystemContext)MethodBeingCompiled.Context).GetAsyncVariantMethod(MethodBeingCompiled))
                         : AsyncThunkILEmitter.GetRequiredReferencesForAsyncThunk(MethodBeingCompiled, ((CompilerTypeSystemContext)MethodBeingCompiled.Context).GetAsyncVariantMethod(MethodBeingCompiled));
-                    foreach (var method in requiredMutableModuleReferences)
+                    foreach (var entity in requiredMutableModuleReferences)
                     {
-                        // If we have a reference to the method already, we're okay.
-                        if (_compilation.NodeFactory.ManifestMetadataTable._mutableModule.TryGetExistingEntityHandle(method) is null)
+                        // If we have a reference to the method/type already, we're okay.
+                        if (_compilation.NodeFactory.ManifestMetadataTable._mutableModule.TryGetExistingEntityHandle(entity) is null)
                         {
                             if (logger.IsVerbose)
                                 logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` triggered recompilation.");
@@ -1437,7 +1437,7 @@ namespace Internal.JitInterface
                     Debug.Assert(resultMethod is EcmaMethod);
                     if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultMethod).OwningType))
                     {
-                        Debug.Assert(_compilation.NodeFactory.Resolver.IsKnownMutableModuleMethod((EcmaMethod)resultMethod));
+                        AsyncThunkILEmitter.AssertIsKnownAsyncHelper(resultMethod, "Method expected in MutableModule is not known: " + resultMethod.GetDisplayName());
                         ModuleToken result = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(resultMethod, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
                         return result;
                     }
@@ -1462,7 +1462,7 @@ namespace Internal.JitInterface
                     {
                         if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(ecmaType))
                         {
-                            Debug.Assert(_compilation.NodeFactory.Resolver.IsKnownMutableModuleType(ecmaType));
+                            AsyncThunkILEmitter.AssertIsKnownAsyncHelper(ecmaType, "Type expected in MutableModule is not known: " + ecmaType.GetDisplayName());
                             ModuleToken result = _compilation.NodeFactory.Resolver.GetModuleTokenForType(ecmaType, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
                             return result;
                         }
