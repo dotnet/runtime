@@ -1,13 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#define _GNU_SOURCE
+#include "common.h"
 
-#include <stdbool.h>
-#include "utils.h"
-#include "thread.h"
-
-#ifdef TARGET_UNIX
+#include "asyncsafethreadmap.h"
 
 // Async safe lock free thread map for use in signal handlers
 
@@ -21,32 +17,32 @@ struct ThreadEntry
 
 struct ThreadSegment
 {
-    struct ThreadEntry entries[MAX_THREADS_IN_SEGMENT];
-    struct ThreadSegment* pNext;
+    ThreadEntry entries[MAX_THREADS_IN_SEGMENT];
+    ThreadSegment* pNext;
 };
 
-static struct ThreadSegment *s_pAsyncSafeThreadMapHead = NULL;
+static ThreadSegment *s_pAsyncSafeThreadMapHead = NULL;
 
-bool minipal_insert_thread_into_async_safe_map(size_t osThread, void* pThread)
+bool InsertThreadIntoAsyncSafeMap(size_t osThread, void* pThread)
 {
     size_t startIndex = osThread % MAX_THREADS_IN_SEGMENT;
 
-    struct ThreadSegment* pSegment = s_pAsyncSafeThreadMapHead;
-    struct ThreadSegment** ppSegment = &s_pAsyncSafeThreadMapHead;
+    ThreadSegment* pSegment = s_pAsyncSafeThreadMapHead;
+    ThreadSegment** ppSegment = &s_pAsyncSafeThreadMapHead;
     while (true)
     {
         if (pSegment == NULL)
         {
             // Need to add a new segment
-            struct ThreadSegment* pNewSegment = (struct ThreadSegment*)malloc(sizeof(struct ThreadSegment));
+            ThreadSegment* pNewSegment = new (nothrow) ThreadSegment();
             if (pNewSegment == NULL)
             {
                 // Memory allocation failed
                 return false;
             }
 
-            memset(pNewSegment, 0, sizeof(struct ThreadSegment));
-            struct ThreadSegment* pExpected = NULL;           
+            memset(pNewSegment, 0, sizeof(ThreadSegment));
+            ThreadSegment* pExpected = NULL;           
             if (!__atomic_compare_exchange_n(
                 ppSegment,
                 &pExpected,
@@ -56,7 +52,7 @@ bool minipal_insert_thread_into_async_safe_map(size_t osThread, void* pThread)
                 __ATOMIC_RELAXED /* failure_memorder */))
             {
                 // Another thread added the segment first
-                free(pNewSegment);
+                delete pNewSegment;
                 pNewSegment = *ppSegment;
             }
 
@@ -75,21 +71,22 @@ bool minipal_insert_thread_into_async_safe_map(size_t osThread, void* pThread)
                     __ATOMIC_RELAXED /* failure_memorder */))
             {
                 // Successfully inserted
-                pSegment->entries[index].pThread = pThread;
+                // Use atomic store with release to ensure proper ordering
+                __atomic_store_n(&pSegment->entries[index].pThread, pThread, __ATOMIC_RELEASE);
                 return true;
             }
         }
 
         ppSegment = &pSegment->pNext;
-        pSegment = pSegment->pNext;
+        pSegment = __atomic_load_n(&pSegment->pNext, __ATOMIC_ACQUIRE);
     }
 }
 
-void minipal_remove_thread_from_async_safe_map(size_t osThread, void* pThread)
+void RemoveThreadFromAsyncSafeMap(size_t osThread, void* pThread)
 {
     size_t startIndex = osThread % MAX_THREADS_IN_SEGMENT;
 
-    struct ThreadSegment* pSegment = s_pAsyncSafeThreadMapHead;
+    ThreadSegment* pSegment = s_pAsyncSafeThreadMapHead;
     while (pSegment)
     {
         for (size_t i = 0; i < MAX_THREADS_IN_SEGMENT; i++)
@@ -103,14 +100,14 @@ void minipal_remove_thread_from_async_safe_map(size_t osThread, void* pThread)
                 return;
             }
         }
-        pSegment = pSegment->pNext;
+        pSegment = __atomic_load_n(&pSegment->pNext, __ATOMIC_ACQUIRE);
     }
 }
 
-void *minipal_find_thread_in_async_safe_map(size_t osThread)
+void *FindThreadInAsyncSafeMap(size_t osThread)
 {
     size_t startIndex = osThread % MAX_THREADS_IN_SEGMENT;
-    struct ThreadSegment* pSegment = s_pAsyncSafeThreadMapHead;
+    ThreadSegment* pSegment = s_pAsyncSafeThreadMapHead;
     while (pSegment)
     {
         for (size_t i = 0; i < MAX_THREADS_IN_SEGMENT; i++)
@@ -122,9 +119,7 @@ void *minipal_find_thread_in_async_safe_map(size_t osThread)
                 return pSegment->entries[index].pThread;
             }
         }
-        pSegment = pSegment->pNext;
+        pSegment = __atomic_load_n(&pSegment->pNext, __ATOMIC_ACQUIRE);
     }
     return NULL;
 }
-
-#endif // TARGET_UNIX

@@ -34,6 +34,7 @@
 #include "exceptmacros.h"
 #include "minipal/time.h"
 #include "minipal/thread.h"
+#include "asyncsafethreadmap.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -63,12 +64,12 @@
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
 Thread* GetThreadAsyncSafe()
 {
-    return (Thread*)minipal_find_thread_in_async_safe_map(minipal_get_current_thread_id_no_cache());
+    return (Thread*)FindThreadInAsyncSafeMap(minipal_get_current_thread_id_no_cache());
 }
-#endif // TARGET_UNIX
+#endif // TARGET_UNIX && !TARGET_WASM
 
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
@@ -380,10 +381,10 @@ void SetThread(Thread* t)
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
     t_CurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
     if (t != NULL)
     {
-        if (!minipal_insert_thread_into_async_safe_map(t->GetOSThreadId64(), t))
+        if (!InsertThreadIntoAsyncSafeMap(t->GetOSThreadId64(), t))
         {
             // TODO: can we handle this OOM more gracefully?
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to insert thread into async-safe map due to OOM."));
@@ -391,9 +392,9 @@ void SetThread(Thread* t)
     }
     else if (origThread != NULL)
     {
-        minipal_remove_thread_from_async_safe_map(origThread->GetOSThreadId64(), origThread);
+        RemoveThreadFromAsyncSafeMap(origThread->GetOSThreadId64(), origThread);
     }
-#endif
+#endif // TARGET_UNIX && !TARGET_WASM
 }
 
 BOOL Thread::Alert ()

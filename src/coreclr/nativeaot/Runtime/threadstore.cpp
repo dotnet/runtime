@@ -23,6 +23,7 @@
 #include "yieldprocessornormalized.h"
 #include <minipal/time.h>
 #include <minipal/thread.h>
+#include "asyncsafethreadmap.h"
 
 #include "slist.inl"
 
@@ -146,7 +147,7 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     pTS->m_ThreadList.PushHead(pAttachingThread);
 
 #ifdef TARGET_UNIX
-    if (!minipal_insert_thread_into_async_safe_map(pAttachingThread->m_threadId, pAttachingThread))
+    if (!InsertThreadIntoAsyncSafeMap(pAttachingThread->m_threadId, pAttachingThread))
     {
         ASSERT_UNCONDITIONALLY("Failed to insert thread into async-safe map due to OOM.");
         RhFailFast();
@@ -198,7 +199,7 @@ void ThreadStore::DetachCurrentThread()
         // tidy up GC related stuff (release allocation context, etc..)
         pDetachingThread->Detach();
 #ifdef TARGET_UNIX
-        minipal_remove_thread_from_async_safe_map(pDetachingThread->m_threadId, pDetachingThread);
+        RemoveThreadFromAsyncSafeMap(pDetachingThread->m_threadId, pDetachingThread);
 #endif
     }
 
@@ -367,7 +368,7 @@ EXTERN_C RuntimeThreadLocals* RhpGetThread()
 #ifdef TARGET_UNIX
 Thread * ThreadStore::GetCurrentThreadIfAvailableAsyncSafe()
 {
-    return (Thread*)minipal_find_thread_in_async_safe_map(minipal_get_current_thread_id_no_cache());
+    return (Thread*)FindThreadInAsyncSafeMap(minipal_get_current_thread_id_no_cache());
 }
 #endif // TARGET_UNIX
 

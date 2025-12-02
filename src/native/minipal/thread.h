@@ -136,31 +136,6 @@ static inline int minipal_set_thread_name(pthread_t thread, const char* name)
 #endif
 }
 
-/**
- * Insert a thread into the async-safe map.
- *
- * @param osThread The OS thread ID to insert.
- * @param pThread A pointer to the thread object to associate with the OS thread ID.
- * @return true if the insertion was successful, false otherwise (OOM).
- */
-bool minipal_insert_thread_into_async_safe_map(size_t osThread, void* pThread);
-
-/**
- * Remove a thread from the async-safe map.
- *
- * @param osThread The OS thread ID to remove.
- * @param pThread A pointer to the thread object associated with the OS thread ID.
- */
-void minipal_remove_thread_from_async_safe_map(size_t osThread, void* pThread);
-
-/**
- * Find a thread in the async-safe map.
- *
- * @param osThread The OS thread ID to search for.
- * @return A pointer to the thread object associated with the OS thread ID, or NULL if not found.
- */
-void* minipal_find_thread_in_async_safe_map(size_t osThread);
-
 
 #ifdef __cplusplus
 }

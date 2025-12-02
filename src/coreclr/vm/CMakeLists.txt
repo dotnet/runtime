@@ -290,6 +290,7 @@ set(VM_SOURCES_WKS
     assemblyspec.cpp
     baseassemblyspec.cpp
     bundle.cpp
+    ${RUNTIME_DIR}/asyncsafethreadmap.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatch_Coreclr.cpp
     cachelinealloc.cpp
