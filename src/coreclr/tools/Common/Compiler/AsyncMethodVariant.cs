@@ -79,12 +79,6 @@ namespace ILCompiler
             return method.GetTypicalMethodDefinition() is AsyncMethodVariant;
         }
 
-        public static EcmaMethod GetAsyncVariantDefinition(this MethodDesc method)
-        {
-            Debug.Assert(method.IsAsyncVariant());
-            return ((AsyncMethodVariant)method.GetTypicalMethodDefinition()).Target;
-        }
-
         public static bool IsAsyncThunk(this MethodDesc method)
         {
             return method.IsAsyncVariant() ^ method.IsAsync;

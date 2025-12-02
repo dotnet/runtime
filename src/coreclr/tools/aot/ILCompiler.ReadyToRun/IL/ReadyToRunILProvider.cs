@@ -14,7 +14,6 @@ using Internal.IL.Stubs;
 using System.Buffers.Binary;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 namespace Internal.IL
 {
@@ -35,7 +34,7 @@ namespace Internal.IL
             _compilationModuleGroup = compilationModuleGroup;
         }
 
-        public void InitManifestMutableModule(MutableModule module, ModuleTokenResolver resolver)
+        public void InitManifestMutableModule(MutableModule module)
         {
             _manifestMutableModule = module;
         }
@@ -170,6 +169,7 @@ namespace Internal.IL
                 {
                     // We should not be creating any AsyncMethodVariants yet.
                     // This hasn't been implemented.
+                    Debug.Assert(!method.IsAsyncVariant());
                     return null;
                 }
 

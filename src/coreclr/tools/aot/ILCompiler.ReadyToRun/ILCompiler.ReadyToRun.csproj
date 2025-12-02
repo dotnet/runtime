@@ -165,7 +165,6 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\StringTableBuilder.cs" Link="Compiler\ObjectWriter\StringTableBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\TypeString.cs" Link="Compiler\ObjectWriter\TypeString.cs" />
     <Compile Include="..\ILCompiler.Reflection.ReadyToRun\PEReaderExtensions.cs" Link="Reflection\PEReaderExtensions.cs" />
-    <Compile Include="..\ILCompiler.Compiler\Compiler\JitHelper.cs" Link="Compiler\JitHelper.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\ClosedAttribute.cs" Link="ILLink.Shared\ClosedAttribute.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" Link="ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\ParameterIndex.cs" Link="ILLink.Shared\ParameterIndex.cs" />

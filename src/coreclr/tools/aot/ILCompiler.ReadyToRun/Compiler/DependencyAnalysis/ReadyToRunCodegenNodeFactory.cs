@@ -479,7 +479,7 @@ namespace ILCompiler.DependencyAnalysis
 #if DEBUG
                 if (!methodCodeNode.IsEmpty || CompilationModuleGroup.VersionsWithMethodBody(method))
                 {
-                    EcmaModule module = method.GetMetadataMethodDefinition().Module;
+                    EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
                     ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
 
                     IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null), false, false, false);
@@ -713,7 +713,7 @@ namespace ILCompiler.DependencyAnalysis
             ManifestMetadataTable = new ManifestMetadataTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestMetadata, ManifestMetadataTable, ManifestMetadataTable);
             Resolver.SetModuleIndexLookup(ManifestMetadataTable.ModuleToIndex);
-            ((ReadyToRunILProvider)ilProvider).InitManifestMutableModule(ManifestMetadataTable._mutableModule, Resolver);
+            ((ReadyToRunILProvider)ilProvider).InitManifestMutableModule(ManifestMetadataTable._mutableModule);
             Resolver.InitManifestMutableModule(ManifestMetadataTable._mutableModule);
 
             ManifestAssemblyMvidHeaderNode mvidTableNode = new ManifestAssemblyMvidHeaderNode(ManifestMetadataTable);
