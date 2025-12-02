@@ -371,7 +371,8 @@ namespace Internal.JitInterface
             uint codeSize;
 
             TargetArchitecture architecture = _compilation.TypeSystemContext.Target.Architecture;
-            var result = architecture switch {
+            var result = architecture switch
+            {
                 // We currently do not have WASM codegen support, but for testing, we will return a stub
                 TargetArchitecture.Wasm32 => CompileWasmStub(out exception, ref methodInfo, out codeSize),
                 _ => JitCompileMethod(out exception,

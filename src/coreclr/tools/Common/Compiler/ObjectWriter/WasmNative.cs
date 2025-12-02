@@ -47,7 +47,7 @@ namespace ILCompiler.ObjectWriter
 
     public static class WasmValueTypeExtensions
     {
-        public static string ToString(this WasmValueType valueType)
+        public static string ToTypeString(this WasmValueType valueType)
         {
             return valueType switch
             {
@@ -117,7 +117,7 @@ namespace ILCompiler.ObjectWriter
             if (types == null || types.Length == 0)
                 return string.Empty;
 
-            return string.Join(" ", types.Select(t => WasmValueTypeExtensions.ToString(t)));
+            return string.Join(" ", types.Select(t => WasmValueTypeExtensions.ToTypeString(t)));
         }
     }
 

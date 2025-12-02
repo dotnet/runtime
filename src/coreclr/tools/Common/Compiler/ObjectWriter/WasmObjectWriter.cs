@@ -16,7 +16,6 @@ namespace ILCompiler.ObjectWriter
     // for any method we want to emit into the Wasm module.
     public class WasmAbiContext
     {
-        private Dictionary<MethodDesc, WasmFuncType> _methodSignatureMap = new();
         public WasmFuncType GetSignature(MethodDesc method)
         {
             return DummyValues.CreateWasmFunc_i32_i32();
@@ -138,7 +137,7 @@ namespace ILCompiler.ObjectWriter
             EmitSection(() => WriteTypeSection(uniqueSignatures, logger), outputFileStream, logger);
             EmitSection(() => WriteFunctionSection(methodSignatures.ToArray(), signatureMap, logger), outputFileStream, logger);
             EmitSection(() => WriteExportSection(methodBodies.ToArray(), methodSignatures.ToArray(), signatureMap, logger), outputFileStream, logger);
-            EmitSection(() => WriteCodeSection(methodBodies.ToArray(), logger),  outputFileStream, logger);
+            EmitSection(() => WriteCodeSection(methodBodies.ToArray(), logger), outputFileStream, logger);
         }
 
         private WasmSection WriteExportSection(IReadOnlyCollection<IMethodBodyNode> methodNodes, IReadOnlyCollection<WasmFuncType> methodSignatures,
@@ -177,11 +176,17 @@ namespace ILCompiler.ObjectWriter
             writer.WriteULEB128((ulong)methodBodies.Count);
             foreach (IMethodBodyNode methodBody in methodBodies)
             {
-                ObjectNode objectNode = methodBody as ObjectNode;
-                ObjectNode.ObjectData body = objectNode.GetData(_nodeFactory);
+                if (methodBody is ObjectNode objectNode)
+                {
+                    ObjectNode.ObjectData body = objectNode.GetData(_nodeFactory);
 
-                writer.WriteULEB128((ulong)body.Data.Length);
-                writer.EmitData(body.Data);
+                    writer.WriteULEB128((ulong)body.Data.Length);
+                    writer.EmitData(body.Data);
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Expected method body node to be an ObjectNode, but got {methodBody.GetType()}");
+                }
             }
 
             return codeSection;
@@ -205,15 +210,15 @@ namespace ILCompiler.ObjectWriter
             return typeSection;
         }
 
-        private WasmSection WriteFunctionSection(WasmFuncType[] allFunctionSignatures, IDictionary<WasmFuncType, int> signatureMap, Logger logger)
+        private WasmSection WriteFunctionSection(IReadOnlyCollection<WasmFuncType> allFunctionSignatures, IDictionary<WasmFuncType, int> signatureMap, Logger logger)
         {
             WasmSection functionSection = new WasmSection(WasmSectionType.Function, new SectionData(), "function");
             SectionWriter writer = functionSection.Writer;
             // Write the number of functions
-            writer.WriteULEB128((ulong)allFunctionSignatures.Length);
-            for (int i = 0; i < allFunctionSignatures.Length; i++)
+            writer.WriteULEB128((ulong)allFunctionSignatures.Count);
+            for (int i = 0; i < allFunctionSignatures.Count; i++)
             {
-                var signature = allFunctionSignatures[i];
+                var signature = allFunctionSignatures.ElementAt(i);
                 writer.WriteULEB128((ulong)signatureMap[signature]);
             }
             return functionSection;
