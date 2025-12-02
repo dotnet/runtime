@@ -4427,7 +4427,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         numArgs++;
     }
 
-    if (callInfo.sig.isAsyncCall() && !isCalli) // Calli signatures for now are only used for async calls in IL stubs where the continuation argument is already passed explicitly
+    if (callInfo.sig.isAsyncCall())
     {
         continuationArgLocation = callInfo.sig.hasTypeArg() ? extraParamArgLocation + 1 : (callInfo.sig.hasThis() ? 1 : 0);
         numArgs++;
@@ -4873,7 +4873,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             break;
 
         case CORINFO_VIRTUALCALL_LDVIRTFTN:
-            if ((callInfo.sig.sigInst.methInstCount != 0) || (m_compHnd->getMethodAttribs(callInfo.hMethod) & CORINFO_FLG_SHAREDINST))
+            if ((callInfo.sig.sigInst.methInstCount != 0) || (m_compHnd->getClassAttribs(m_compHnd->getMethodClass(callInfo.hMethod)) & CORINFO_FLG_SHAREDINST))
             {
                 assert(extraParamArgLocation == INT_MAX);
                 // We should not have a type argument for the ldvirtftn path since we don't know

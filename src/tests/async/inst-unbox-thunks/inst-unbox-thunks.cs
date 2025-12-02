@@ -8,6 +8,30 @@ using Xunit;
 
 public class InstUnBoxThunks
 {
+    class Utility
+    {
+        public static void ValidateArgs(object a0, object a1, object a2, object a3, object a4, object a5, object a6, object a7, object a8)
+        {
+            if ((string)a0 != "a0")
+                throw new Exception("a0 not 'a0'");
+            if ((string)a1 != "a1")
+                throw new Exception("a1 not 'a1'");
+            if ((string)a2 != "a2")
+                throw new Exception("a2 not 'a2'");
+            if ((string)a3 != "a3")
+                throw new Exception("a3 not 'a3'");
+            if ((string)a4 != "a4")
+                throw new Exception("a4 not 'a4'");
+            if ((string)a5 != "a5")
+                throw new Exception("a5 not 'a5'");
+            if ((string)a6 != "a6")
+                throw new Exception("a6 not 'a6'");
+            if ((string)a7 != "a7")
+                throw new Exception("a7 not 'a7'");
+            if ((string)a8 != "a8")
+                throw new Exception("a8 not 'a8'");
+        }
+    }
     interface I0
     {
         Task<string> M0();
@@ -24,6 +48,7 @@ public class InstUnBoxThunks
 
         public async Task<string> M1(object a0, object a1, object a2, object a3, object a4, object a5, object a6, object a7, object a8)
         {
+            Utility.ValidateArgs(a0, a1, a2, a3, a4, a5, a6, a7, a8);
             await Task.Yield();
             return "hello";
         }
@@ -40,7 +65,7 @@ public class InstUnBoxThunks
     static async Task<string> CallStruct0M1()
     {
         o01 = new Struct0();
-        return await o01.M1(default, default, default, default, default, default, default, default, default);
+        return await o01.M1("a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8");
     }
 
     struct Struct1<T> : I0
@@ -53,6 +78,7 @@ public class InstUnBoxThunks
 
         public async Task<string> M1(object a0, object a1, object a2, object a3, object a4, object a5, object a6, object a7, object a8)
         {
+            Utility.ValidateArgs(a0, a1, a2, a3, a4, a5, a6, a7, a8);
             await Task.Yield();
             return typeof(T).ToString();
         }
@@ -69,7 +95,7 @@ public class InstUnBoxThunks
     static async Task<string> CallStruct1M1()
     {
         o11 = new Struct1<string>();
-        return await o11.M1(default, default, default, default, default, default, default, default, default);
+        return await o11.M1("a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8");
     }
 
     class Box<U> where U : I0
@@ -84,7 +110,7 @@ public class InstUnBoxThunks
 
     static async Task<string> CallStruct1M1Field<T>(Box<T> arg) where T : I0
     {
-        return await arg.f.M1(default, default, default, default, default, default, default, default, default);
+        return await arg.f.M1("a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8");
     }
 
     static Box<Struct1<string>> b1 = new();
@@ -158,6 +184,7 @@ public class InstUnBoxThunks
 
         public async Task<string> M1<T>(object a0, object a1, object a2, object a3, object a4, object a5, object a6, object a7, object a8)
         {
+            Utility.ValidateArgs(a0, a1, a2, a3, a4, a5, a6, a7, a8);
             await Task.Yield();
             return typeof(T).ToString();
         }
@@ -173,7 +200,7 @@ public class InstUnBoxThunks
     static async Task<string> CallClass2M1()
     {
         o2 = new Class2();
-        return await o2.M1<string>(default, default, default, default, default, default, default, default, default);
+        return await o2.M1<string>("a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8");
     }
 
     [Fact]
@@ -198,6 +225,7 @@ public class InstUnBoxThunks
 
         async Task<string> M1(object a0, object a1, object a2, object a3, object a4, object a5, object a6, object a7, object a8)
         {
+            Utility.ValidateArgs(a0, a1, a2, a3, a4, a5, a6, a7, a8);
             await Task.Yield();
             return typeof(T).ToString();
         }
@@ -215,7 +243,7 @@ public class InstUnBoxThunks
     static async Task<string> CallClass3M1()
     {
         o3 = new Class3();
-        return await o3.M1(default, default, default, default, default, default, default, default, default);
+        return await o3.M1("a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8");
     }
 
     [Fact]

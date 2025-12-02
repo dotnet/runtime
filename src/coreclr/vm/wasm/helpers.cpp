@@ -674,14 +674,9 @@ namespace
     }
 }
 
-void* GetCookieForCalliSig(MetaSig metaSig, bool hasContinuationRet)
+void* GetCookieForCalliSig(MetaSig metaSig)
 {
     STANDARD_VM_CONTRACT;
-
-    if (hasContinuationRet)
-    {
-        PORTABILITY_ASSERT("GetCookieForCalliSig: signatures with continuation return are not supported on wasm");
-    }
 
     void* thunk = ComputeCalliSigThunk(metaSig);
     if (thunk == NULL)

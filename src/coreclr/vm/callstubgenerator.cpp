@@ -2352,7 +2352,7 @@ void InitCallStubGenerator()
     s_callStubCache = new CallStubCacheHash;
 }
 
-CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig, bool hasContinuationRet)
+CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2373,14 +2373,14 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig, bool has
     }
     hashState.Add(m_totalStackSize);
     hashState.AddPointer((void*)m_pInvokeFunction);
-    hashState.Add(hasContinuationRet ? 1 : 0);
+    hashState.Add(sig.IsAsyncCall() ? 1 : 0);
 
     CachedCallStubKey cachedHeaderKey(
         hashState.ToHashCode(),
         m_routineIndex,
         pRoutines,
         ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE),
-        hasContinuationRet,
+        sig.IsAsyncCall(),
         m_pInvokeFunction);
 
     CrstHolder lockHolder(&s_callStubCrst);
@@ -2400,7 +2400,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig, bool has
         // We only need to allocate the actual pRoutines array, and then we can just use the cachedHeader we already constructed
         size_t finalCachedCallStubSize = sizeof(CachedCallStub) + m_routineIndex * sizeof(PCODE);
         void* pHeaderStorage = amTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(finalCachedCallStubSize)));
-        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall() || hasContinuationRet, m_pInvokeFunction);
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_pInvokeFunction);
         s_callStubCache->Add(pHeader);
         amTracker.SuppressRelease();
 
