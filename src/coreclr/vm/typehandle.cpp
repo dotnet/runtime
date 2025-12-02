@@ -971,8 +971,7 @@ TypeHandle TypeHandle::MergeArrayTypeHandlesToCommonParent(TypeHandle ta, TypeHa
         return TypeHandle(g_pArrayClass);
     }
 
-    TypeHandle result = ClassLoader::LoadArrayTypeThrowing(tMergeElem, mergeKind, rank);
-    return result;
+    return ClassLoader::LoadArrayTypeThrowing(tMergeElem, mergeKind, rank);
 }
 
 #endif // #ifndef DACCESS_COMPILE
