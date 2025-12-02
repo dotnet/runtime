@@ -153,7 +153,7 @@ namespace ILAssembler
                 "amd64" => new(GetFlagForArch(ProcessorArchitecture.Amd64), (AssemblyFlags)0xF0),
                 "arm" => new(GetFlagForArch(ProcessorArchitecture.Arm), (AssemblyFlags)0xF0),
                 "arm64" => new(GetFlagForArch((ProcessorArchitecture)6), (AssemblyFlags)0xF0),
-                _ => throw new InvalidOperationException("unreachable")
+                _ => throw new UnreachableException()
             };
         }
 
@@ -177,10 +177,7 @@ namespace ILAssembler
             if (context.customAttrDecl() is { } attr)
             {
                 var customAttr = VisitCustomAttrDecl(attr).Value;
-                if (customAttr is not null)
-                {
-                    customAttr.Owner = _currentAssemblyOrRef;
-                }
+                customAttr?.Owner = _currentAssemblyOrRef;
                 return GrammarResult.SentinelValue.Result;
             }
 
@@ -245,7 +242,7 @@ namespace ILAssembler
             }
             return GrammarResult.SentinelValue.Result;
         }
-        public GrammarResult VisitAssemblyDecls(CILParser.AssemblyDeclsContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitAssemblyDecls(CILParser.AssemblyDeclsContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
         public GrammarResult VisitAssemblyRefDecl(CILParser.AssemblyRefDeclContext context)
         {
             if (context.asmOrRefDecl() is { } asmOrRef)
@@ -267,7 +264,7 @@ namespace ILAssembler
             }
             return GrammarResult.SentinelValue.Result;
         }
-        public GrammarResult VisitAssemblyRefDecls(CILParser.AssemblyRefDeclsContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitAssemblyRefDecls(CILParser.AssemblyRefDeclsContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
         GrammarResult ICILVisitor<GrammarResult>.VisitAssemblyRefHead(CILParser.AssemblyRefHeadContext context) => VisitAssemblyRefHead(context);
         public GrammarResult.Literal<EntityRegistry.AssemblyReferenceEntity> VisitAssemblyRefHead(CILParser.AssemblyRefHeadContext context)
         {
@@ -320,7 +317,7 @@ namespace ILAssembler
                 (1, false) => new((0, firstValue)),
                 (1, true) => new((firstValue, null)),
                 (2, false) => new((firstValue, VisitInt32(indicies[1]).Value - firstValue + 1)),
-                _ => throw new InvalidOperationException("unreachable")
+                _ => throw new UnreachableException()
             };
         }
 
@@ -376,7 +373,7 @@ namespace ILAssembler
                 CILParser.THISCALL => SignatureCallingConvention.ThisCall,
                 CILParser.FASTCALL => SignatureCallingConvention.FastCall,
                 CILParser.UNMANAGED => SignatureCallingConvention.Unmanaged,
-                _ => throw new InvalidOperationException("unreachable")
+                _ => throw new UnreachableException()
             });
         }
 
@@ -527,10 +524,7 @@ namespace ILAssembler
             else if (context.secDecl() is {} secDecl)
             {
                 var declarativeSecurity = VisitSecDecl(secDecl).Value;
-                if (declarativeSecurity is not null)
-                {
-                    declarativeSecurity.Parent = _currentTypeDefinition.PeekOrDefault();
-                }
+                declarativeSecurity?.Parent = _currentTypeDefinition.PeekOrDefault();
             }
             else if (context.fieldDecl() is {} fieldDecl)
             {
@@ -813,7 +807,7 @@ namespace ILAssembler
                 return new(type);
             }
 
-            throw new InvalidOperationException("unreachable");
+            throw new UnreachableException();
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitClassSeq(CILParser.ClassSeqContext context) => VisitClassSeq(context);
@@ -896,7 +890,7 @@ namespace ILAssembler
                 return VisitCustomDescr(descr);
 #nullable restore
             }
-            throw new InvalidOperationException("unreachable");
+            throw new UnreachableException();
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitCustomBlobArgs(CILParser.CustomBlobArgsContext context) => VisitCustomBlobArgs(context);
@@ -970,7 +964,7 @@ namespace ILAssembler
             }
             else
             {
-                throw new InvalidOperationException("unreachable");
+                throw new UnreachableException();
             }
 
             return new(_entityRegistry.CreateCustomAttribute(ctor, value));
@@ -999,7 +993,7 @@ namespace ILAssembler
             }
             else
             {
-                throw new InvalidOperationException("unreachable");
+                throw new UnreachableException();
             }
 
             var attr = _entityRegistry.CreateCustomAttribute(ctor, value);
@@ -1467,12 +1461,12 @@ namespace ILAssembler
             }
             else
             {
-                throw new InvalidOperationException("unreachable");
+                throw new UnreachableException();
             }
             return new(blob);
         }
 
-        public GrammarResult VisitErrorNode(IErrorNode node) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitErrorNode(IErrorNode node) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
         public GrammarResult VisitEsHead(CILParser.EsHeadContext context) => throw new NotImplementedException("TODO: Symbols");
 
         GrammarResult ICILVisitor<GrammarResult>.VisitEventAttr(CILParser.EventAttrContext context) => VisitEventAttr(context);
@@ -1482,7 +1476,7 @@ namespace ILAssembler
             {
                 "specialname" => new(EventAttributes.SpecialName),
                 "rtspecialname" => new(0), // COMPAT: Ignore
-                _ => throw new InvalidOperationException("unreachable"),
+                _ => throw new UnreachableException(),
             };
         }
 
@@ -1501,7 +1495,7 @@ namespace ILAssembler
                 ".removeon" => MethodSemanticsAttributes.Remover,
                 ".fire" => MethodSemanticsAttributes.Raiser,
                 ".other" => MethodSemanticsAttributes.Other,
-                _ => throw new InvalidOperationException("unreachable"),
+                _ => throw new UnreachableException(),
             };
             return new((methodSemanticsAttributes, memberReference));
         }
@@ -1540,12 +1534,12 @@ namespace ILAssembler
                 "nestedassembly" => new(TypeAttributes.NestedAssembly, TypeAttributes.VisibilityMask),
                 "nestedfamandassem" => new(TypeAttributes.NestedFamANDAssem, TypeAttributes.VisibilityMask),
                 "nestedfamorassem" => new(TypeAttributes.NestedFamORAssem, TypeAttributes.VisibilityMask),
-                _ => throw new InvalidOperationException("unreachable"),
+                _ => throw new UnreachableException(),
             };
         }
 
         // TODO: Implement multimodule type exports and fowarders
-        public GrammarResult VisitExptypeDecl(CILParser.ExptypeDeclContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitExptypeDecl(CILParser.ExptypeDeclContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitExptypeDecls(CILParser.ExptypeDeclsContext context) => VisitExptypeDecls(context);
         public GrammarResult.Literal<(EntityRegistry.EntityBase? implementation, int typedefId, ImmutableArray<EntityRegistry.CustomAttributeEntity> attrs)> VisitExptypeDecls(CILParser.ExptypeDeclsContext context)
@@ -1631,7 +1625,7 @@ namespace ILAssembler
                     (EntityRegistry.AssemblyEntity, _) => implementationEntity,
                     (_, EntityRegistry.TypeEntity) => newImplementation,
                     (EntityRegistry.TypeEntity, _) => implementationEntity,
-                    _ => throw new InvalidOperationException("unreachable"),
+                    _ => throw new UnreachableException(),
                 };
             }
 
@@ -1703,7 +1697,7 @@ namespace ILAssembler
                 {
                     CILParser.Int32Context int32 => VisitInt32(int32).Value,
                     CILParser.Float64Context float64 => VisitFloat64(float64).Value,
-                    _ => throw new InvalidOperationException("unreachable")
+                    _ => throw new UnreachableException()
                 }));
             }
             return new(builder.MoveToImmutable().SerializeSequence());
@@ -1719,13 +1713,13 @@ namespace ILAssembler
                 {
                     CILParser.Int64Context int64 => VisitInt64(int64).Value,
                     CILParser.Float64Context float64 => VisitFloat64(float64).Value,
-                    _ => throw new InvalidOperationException("unreachable")
+                    _ => throw new UnreachableException()
                 }));
             }
             return new(builder.MoveToImmutable().SerializeSequence());
         }
 
-        public GrammarResult VisitFaultClause(CILParser.FaultClauseContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitFaultClause(CILParser.FaultClauseContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitFieldAttr(CILParser.FieldAttrContext context) => VisitFieldAttr(context);
         public GrammarResult.Flag<FieldAttributes> VisitFieldAttr(CILParser.FieldAttrContext context)
@@ -1749,8 +1743,10 @@ namespace ILAssembler
                 "famorassem" => new(FieldAttributes.FamORAssem, FieldAttributes.FieldAccessMask),
                 "privatescope" => new(FieldAttributes.PrivateScope, FieldAttributes.FieldAccessMask),
                 "literal" => new(FieldAttributes.Literal),
+#pragma warning disable SYSLIB0050 // FieldAttributes.NotSeralized is obsolete
                 "notserialized" => new(FieldAttributes.NotSerialized),
-                _ => throw new InvalidOperationException("unreachable")
+#pragma warning restore SYSLIB0050 // FieldAttributes.NotSeralized is obsolete
+                _ => throw new UnreachableException()
             };
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitFieldDecl(CILParser.FieldDeclContext context) => VisitFieldDecl(context);
@@ -1781,7 +1777,7 @@ namespace ILAssembler
 
         public GrammarResult VisitFieldInit(CILParser.FieldInitContext context) => throw new NotImplementedException("TODO-SRM: Need support for an arbitrary byte blob as a constant value");
 
-        public GrammarResult VisitFieldOrProp(CILParser.FieldOrPropContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitFieldOrProp(CILParser.FieldOrPropContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitFieldRef(CILParser.FieldRefContext context) => VisitFieldRef(context);
         public GrammarResult.Literal<EntityRegistry.EntityBase> VisitFieldRef(CILParser.FieldRefContext context)
@@ -1928,10 +1924,10 @@ namespace ILAssembler
                 _currentMethod.Definition.MethodBody.MarkLabel(start, VisitInt32(offset).Value);
                 return new(start);
             }
-            throw new InvalidOperationException("unreachable");
+            throw new UnreachableException();
         }
 
-        public GrammarResult VisitFinallyClause(CILParser.FinallyClauseContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitFinallyClause(CILParser.FinallyClauseContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitFloat64(CILParser.Float64Context context) => VisitFloat64(context);
         public GrammarResult.Literal<double> VisitFloat64(CILParser.Float64Context context)
@@ -1939,7 +1935,7 @@ namespace ILAssembler
             if (context.FLOAT64() is ITerminalNode float64)
             {
                 string text = float64.Symbol.Text;
-                bool neg = text.StartsWith("-", StringComparison.InvariantCulture);
+                bool neg = text.StartsWith('-');
                 if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out double result))
                 {
                     result = neg ? double.MaxValue : double.MinValue;
@@ -1956,7 +1952,7 @@ namespace ILAssembler
                 long value = VisitInt64(int64).Value;
                 return new(BitConverter.Int64BitsToDouble(value));
             }
-            throw new InvalidOperationException("unreachable");
+            throw new UnreachableException();
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitGenArity(CILParser.GenArityContext context) => VisitGenArity(context);
         public GrammarResult.Literal<int> VisitGenArity(CILParser.GenArityContext context)
@@ -1992,7 +1988,7 @@ namespace ILAssembler
                 _currentMethod.Definition.MethodBody.MarkLabel(end, VisitInt32(offsets[1]).Value);
                 return new((start, end));
             }
-            throw new InvalidOperationException("unreachable");
+            throw new UnreachableException();
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitHexbytes(CILParser.HexbytesContext context)
@@ -2093,7 +2089,7 @@ namespace ILAssembler
                 "aggressiveinlining" => new(MethodImplAttributes.AggressiveInlining),
                 "nooptimization" => new(MethodImplAttributes.NoOptimization),
                 "aggressiveoptimization" => new((MethodImplAttributes)0x0200),
-                _ => throw new InvalidOperationException("unreachable"),
+                _ => throw new UnreachableException(),
             };
         }
 
@@ -2240,7 +2236,7 @@ namespace ILAssembler
                         }
                         else
                         {
-                            throw new InvalidOperationException("unreachable");
+                            throw new UnreachableException();
                         }
                         if (opcode == ILOpCode.Ldc_r4)
                         {
@@ -2550,10 +2546,10 @@ namespace ILAssembler
 
         GrammarResult ICILVisitor<GrammarResult>.VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => VisitIntOrWildcard(context);
         public GrammarResult.Literal<int?> VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => context.int32() is {} int32 ? new(VisitInt32(int32).Value) : new(null);
-        public GrammarResult VisitLabels(CILParser.LabelsContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitLabels(CILParser.LabelsContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
         public GrammarResult VisitLanguageDecl(CILParser.LanguageDeclContext context) => throw new NotImplementedException("TODO: Symbols");
 
-        public GrammarResult VisitManifestResDecl(CILParser.ManifestResDeclContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitManifestResDecl(CILParser.ManifestResDeclContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
         GrammarResult ICILVisitor<GrammarResult>.VisitManifestResDecls(CILParser.ManifestResDeclsContext context) => VisitManifestResDecls(context);
         public GrammarResult.Literal<(EntityRegistry.EntityBase? implementation, uint offset, ImmutableArray<EntityRegistry.CustomAttributeEntity> attributes)> VisitManifestResDecls(CILParser.ManifestResDeclsContext context)
         {
@@ -2623,7 +2619,7 @@ namespace ILAssembler
             {
                 "public" => new(ManifestResourceAttributes.Public),
                 "private" => new(ManifestResourceAttributes.Private),
-                _ => throw new InvalidOperationException("unreachable")
+                _ => throw new UnreachableException()
             };
         }
 
@@ -2667,7 +2663,7 @@ namespace ILAssembler
                 return VisitFieldRef(fieldRef);
             }
 
-            throw new InvalidOperationException("unreachable");
+            throw new UnreachableException();
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitMethAttr(CILParser.MethAttrContext context) => VisitMethAttr(context);
@@ -2698,7 +2694,7 @@ namespace ILAssembler
                 "rtspecialname" => new(0), // COMPAT: Rtspecialname is ignored
                 "unmanagedexp" => new(MethodAttributes.UnmanagedExport),
                 "reqsecobj" => new(MethodAttributes.RequireSecObject),
-                _ => throw new InvalidOperationException("unreachable"),
+                _ => throw new UnreachableException(),
             };
         }
 
@@ -2838,10 +2834,7 @@ namespace ILAssembler
                     foreach (var attr in customAttrDeclarations ?? Array.Empty<CILParser.CustomAttrDeclContext>())
                     {
                         var customAttrDecl = VisitCustomAttrDecl(attr).Value;
-                        if (customAttrDecl is not null)
-                        {
-                            customAttrDecl.Owner = param;
-                        }
+                        customAttrDecl?.Owner = param;
                     }
                 }
                 else if (context.CONSTRAINT() is not null)
@@ -2895,10 +2888,7 @@ namespace ILAssembler
                     foreach (var attr in customAttrDeclarations ?? Array.Empty<CILParser.CustomAttrDeclContext>())
                     {
                         var customAttrDecl = VisitCustomAttrDecl(attr).Value;
-                        if (customAttrDecl is not null)
-                        {
-                            customAttrDecl.Owner = constraint;
-                        }
+                        customAttrDecl?.Owner = constraint;
                     }
                 }
                 else
@@ -2927,20 +2917,14 @@ namespace ILAssembler
             else if (context.secDecl() is {} secDecl)
             {
                 var declarativeSecurity = VisitSecDecl(secDecl).Value;
-                if (declarativeSecurity is not null)
-                {
-                    declarativeSecurity.Parent = currentMethod.Definition;
-                }
+                declarativeSecurity?.Parent = currentMethod.Definition;
             }
             else if (context.customAttrDecl() is {} customAttr)
             {
                 foreach (var attr in customAttr)
                 {
                     var customAttrDecl = VisitCustomAttrDecl(attr).Value;
-                    if (customAttrDecl is not null)
-                    {
-                        customAttrDecl.Owner = currentMethod.Definition;
-                    }
+                    customAttrDecl?.Owner = currentMethod.Definition;
                 }
             }
             else
@@ -3278,9 +3262,11 @@ namespace ILAssembler
                     const int NATIVE_TYPE_VARIANT = 0xe;
                     blob.WriteByte(NATIVE_TYPE_VARIANT);
                     break;
+#pragma warning disable CS0618 // Type or member is obsolete
                 case CILParser.CURRENCY:
                     blob.WriteByte((byte)UnmanagedType.Currency);
                     break;
+#pragma warning restore CS0618 // Type or member is obsolete
                 case CILParser.SYSCHAR:
                     // TODO: warn on deprecated native type
                     const int NATIVE_TYPE_SYSCHAR = 0xd;
@@ -3408,6 +3394,7 @@ namespace ILAssembler
                     const int NATIVE_TYPE_NESTEDSTRUCT = 0x21;
                     blob.WriteByte(NATIVE_TYPE_NESTEDSTRUCT);
                     break;
+#pragma warning disable CS0618 // Type or member is obsolete
                 case CILParser.BYVALSTR:
                     blob.WriteByte((byte)UnmanagedType.VBByRefStr);
                     break;
@@ -3417,6 +3404,7 @@ namespace ILAssembler
                 case CILParser.TBSTR:
                     blob.WriteByte((byte)UnmanagedType.TBStr);
                     break;
+#pragma warning restore CS0618 // Type or member is obsolete
                 case CILParser.VARIANTBOOL:
                     blob.WriteByte((byte)UnmanagedType.VariantBool);
                     break;
@@ -3426,9 +3414,11 @@ namespace ILAssembler
                 case CILParser.LPSTRUCT:
                     blob.WriteByte((byte)UnmanagedType.LPStruct);
                     break;
+#pragma warning disable CS0618 // Type or member is obsolete
                 case CILParser.ANY:
                     blob.WriteByte((byte)UnmanagedType.AsAny);
                     break;
+#pragma warning restore CS0618 // Type or member is obsolete
             }
 
             throw new NotImplementedException();
@@ -3457,7 +3447,7 @@ namespace ILAssembler
             {
                 return new(VisitTypeSpec(typeSpec).Value);
             }
-            throw new InvalidOperationException("unreachable");
+            throw new UnreachableException();
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitParamAttr(CILParser.ParamAttrContext context) => VisitParamAttr(context);
         public GrammarResult.Literal<ParameterAttributes> VisitParamAttr(CILParser.ParamAttrContext context)
@@ -3482,9 +3472,10 @@ namespace ILAssembler
                 { @in: not null } => new(ParameterAttributes.In),
                 { @out: not null } => new(ParameterAttributes.Out),
                 { opt: not null } => new(ParameterAttributes.Optional),
-                _ => throw new InvalidOperationException("unreachable")
+                _ => throw new UnreachableException()
             };
         }
+
         GrammarResult ICILVisitor<GrammarResult>.VisitPinvAttr(CILParser.PinvAttrContext context) => VisitPinvAttr(context);
         public GrammarResult.Flag<MethodImportAttributes> VisitPinvAttr(CILParser.PinvAttrContext context)
         {
@@ -3492,7 +3483,7 @@ namespace ILAssembler
             {
                 return new((MethodImportAttributes)VisitInt32(int32).Value, ShouldAppend: false);
             }
-            switch(context.GetText())
+            switch (context.GetText())
             {
                 case "nomangle":
                     return new(MethodImportAttributes.ExactSpelling);
@@ -3523,7 +3514,7 @@ namespace ILAssembler
                 case "charmaperror:off":
                     return new(MethodImportAttributes.ThrowOnUnmappableCharDisable);
                 default:
-                    throw new InvalidOperationException("unreachable");
+                    throw new UnreachableException();
             }
         }
 
@@ -3548,7 +3539,7 @@ namespace ILAssembler
             {
                 "specialname" => new(PropertyAttributes.SpecialName),
                 "rtspecialname" => new(0), // COMPAT: Ignore
-                _ => throw new InvalidOperationException("unreachable"),
+                _ => throw new UnreachableException(),
             };
         }
 
@@ -3566,7 +3557,7 @@ namespace ILAssembler
                 ".set" => MethodSemanticsAttributes.Getter,
                 ".get" => MethodSemanticsAttributes.Setter,
                 ".other" => MethodSemanticsAttributes.Other,
-                _ => throw new InvalidOperationException("unreachable"),
+                _ => throw new UnreachableException(),
             };
             return new((methodSemanticsAttributes, memberReference));
         }
@@ -3642,7 +3633,7 @@ namespace ILAssembler
                 "noncasdemand" => new(DeclarativeSecurityActionEx.NonCasDemand),
                 "noncaslinkdemand" => new(DeclarativeSecurityActionEx.NonCasLinkDemand),
                 "noncasinheritance" => new(DeclarativeSecurityActionEx.NonCasInheritanceDemand),
-                _ => throw new InvalidOperationException("unreachable")
+                _ => throw new UnreachableException()
             };
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitSecAttrBlob(CILParser.SecAttrBlobContext context) => VisitSecAttrBlob(context);
@@ -3709,7 +3700,7 @@ namespace ILAssembler
             }
             else
             {
-                throw new InvalidOperationException("unreachable");
+                throw new UnreachableException();
             }
             return new(_entityRegistry.CreateDeclarativeSecurityAttribute(action, value));
         }
@@ -3745,7 +3736,7 @@ namespace ILAssembler
                         _currentMethod!.Definition.MethodBody.ControlFlowBuilder!.AddFilterRegion(tryStart, tryEnd, filterClause.Start, filterClause.End, filterClause.FilterStart);
                         break;
                     default:
-                        throw new InvalidOperationException("unreachable");
+                        throw new UnreachableException();
                 }
             }
             return GrammarResult.SentinelValue.Result;
@@ -3772,7 +3763,7 @@ namespace ILAssembler
                 return new(new ExceptionClause.Filter(VisitFilterClause(filterClause).Value, start, end));
             }
 
-            throw new InvalidOperationException("unreachable");
+            throw new UnreachableException();
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitSehClauses(CILParser.SehClausesContext context) => VisitSehClauses(context);
@@ -3782,7 +3773,7 @@ namespace ILAssembler
         public GrammarResult.FormattedBlob VisitSerializType(CILParser.SerializTypeContext context)
         {
             var blob = new BlobBuilder();
-            if(context.ARRAY_TYPE_NO_BOUNDS() is not null)
+            if (context.ARRAY_TYPE_NO_BOUNDS() is not null)
             {
                 blob.WriteByte((byte)SerializationTypeCode.SZArray);
             }
@@ -3831,7 +3822,7 @@ namespace ILAssembler
                 }
                 return new(blob);
             }
-            throw new InvalidOperationException("unreachable");
+            throw new UnreachableException();
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitSerInit(CILParser.SerInitContext context) => VisitSerInit(context);
@@ -3898,7 +3889,7 @@ namespace ILAssembler
                 CILParser.STRING => SerializationTypeCode.String,
                 CILParser.TYPE => SerializationTypeCode.Type,
                 CILParser.OBJECT => SerializationTypeCode.TaggedObject,
-                _ => throw new InvalidOperationException("unreachable")
+                _ => throw new UnreachableException()
             };
         }
 
@@ -3934,7 +3925,7 @@ namespace ILAssembler
                 CILParser.UINT16 => SignatureTypeCode.UInt16,
                 CILParser.UINT32 => SignatureTypeCode.UInt32,
                 CILParser.UINT64 => SignatureTypeCode.UInt64,
-                _ => throw new InvalidOperationException("unreachable")
+                _ => throw new UnreachableException()
             });
         }
 
@@ -3979,7 +3970,7 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitSubsystem(CILParser.SubsystemContext context) => VisitSubsystem(context);
         public GrammarResult.Literal<int> VisitSubsystem(CILParser.SubsystemContext context) => VisitInt32(context.int32());
 
-        public GrammarResult VisitTerminal(ITerminalNode node) => throw new InvalidOperationException("unreachable");
+        public GrammarResult VisitTerminal(ITerminalNode node) => throw new UnreachableException();
         public GrammarResult VisitTls(CILParser.TlsContext context)
         {
             // TODO-SRM: System.Reflection.Metadata doesn't provide APIs to point a data declaration at a TLS slot or into the IL stream.
@@ -4021,7 +4012,7 @@ namespace ILAssembler
                 _currentMethod.Definition.MethodBody.MarkLabel(end, VisitInt32(offsets[1]).Value);
                 return new((start, end));
             }
-            throw new InvalidOperationException("unreachable");
+            throw new UnreachableException();
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitTyBound(CILParser.TyBoundContext context) => VisitTyBound(context);
@@ -4057,7 +4048,7 @@ namespace ILAssembler
                 { byrefLike: not null } => new((GenericParameterAttributes)0x0020),
                 { ctor: not null } => new(GenericParameterAttributes.DefaultConstructorConstraint),
                 { flags: CILParser.Int32Context int32 } => new((GenericParameterAttributes)VisitInt32(int32).Value),
-                _ => throw new InvalidOperationException("unreachable")
+                _ => throw new UnreachableException()
             };
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitTyparAttribs(CILParser.TyparAttribsContext context) => VisitTyparAttribs(context);
@@ -4320,7 +4311,7 @@ namespace ILAssembler
                 CILParser.BLOB_OBJECT => VarEnum.VT_BLOB_OBJECT,
                 CILParser.CF => VarEnum.VT_CF,
                 CILParser.CLSID => VarEnum.VT_CLSID,
-                _ => throw new InvalidOperationException("unreachable")
+                _ => throw new UnreachableException()
             });
         }
 
@@ -4341,20 +4332,20 @@ namespace ILAssembler
             throw new NotImplementedException("raw vtable fixups blob not supported");
         }
 
-        GrammarResult ICILVisitor<GrammarResult>.VisitOptionalModifier(CILParser.OptionalModifierContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
-        GrammarResult ICILVisitor<GrammarResult>.VisitSZArrayModifier(CILParser.SZArrayModifierContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
-        GrammarResult ICILVisitor<GrammarResult>.VisitRequiredModifier(CILParser.RequiredModifierContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
-        GrammarResult ICILVisitor<GrammarResult>.VisitPtrModifier(CILParser.PtrModifierContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
-        GrammarResult ICILVisitor<GrammarResult>.VisitPinnedModifier(CILParser.PinnedModifierContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
-        GrammarResult ICILVisitor<GrammarResult>.VisitGenericArgumentsModifier(CILParser.GenericArgumentsModifierContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
-        GrammarResult ICILVisitor<GrammarResult>.VisitByRefModifier(CILParser.ByRefModifierContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
-        GrammarResult ICILVisitor<GrammarResult>.VisitArrayModifier(CILParser.ArrayModifierContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
-        GrammarResult ICILVisitor<GrammarResult>.VisitTypeModifiers(CILParser.TypeModifiersContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
-        public GrammarResult VisitNativeTypeArrayPointerInfo(CILParser.NativeTypeArrayPointerInfoContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
-        public GrammarResult VisitPointerArrayTypeSize(CILParser.PointerArrayTypeSizeContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
-        public GrammarResult VisitPointerArrayTypeParamIndex(CILParser.PointerArrayTypeParamIndexContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
-        public GrammarResult VisitPointerNativeType(CILParser.PointerNativeTypeContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
-        public GrammarResult VisitPointerArrayTypeSizeParamIndex(CILParser.PointerArrayTypeSizeParamIndexContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
-        public GrammarResult VisitPointerArrayTypeNoSizeData(CILParser.PointerArrayTypeNoSizeDataContext context) => throw new InvalidOperationException(NodeShouldNeverBeDirectlyVisited);
+        GrammarResult ICILVisitor<GrammarResult>.VisitOptionalModifier(CILParser.OptionalModifierContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
+        GrammarResult ICILVisitor<GrammarResult>.VisitSZArrayModifier(CILParser.SZArrayModifierContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
+        GrammarResult ICILVisitor<GrammarResult>.VisitRequiredModifier(CILParser.RequiredModifierContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
+        GrammarResult ICILVisitor<GrammarResult>.VisitPtrModifier(CILParser.PtrModifierContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
+        GrammarResult ICILVisitor<GrammarResult>.VisitPinnedModifier(CILParser.PinnedModifierContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
+        GrammarResult ICILVisitor<GrammarResult>.VisitGenericArgumentsModifier(CILParser.GenericArgumentsModifierContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
+        GrammarResult ICILVisitor<GrammarResult>.VisitByRefModifier(CILParser.ByRefModifierContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
+        GrammarResult ICILVisitor<GrammarResult>.VisitArrayModifier(CILParser.ArrayModifierContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
+        GrammarResult ICILVisitor<GrammarResult>.VisitTypeModifiers(CILParser.TypeModifiersContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitNativeTypeArrayPointerInfo(CILParser.NativeTypeArrayPointerInfoContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitPointerArrayTypeSize(CILParser.PointerArrayTypeSizeContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitPointerArrayTypeParamIndex(CILParser.PointerArrayTypeParamIndexContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitPointerNativeType(CILParser.PointerNativeTypeContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitPointerArrayTypeSizeParamIndex(CILParser.PointerArrayTypeSizeParamIndexContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
+        public GrammarResult VisitPointerArrayTypeNoSizeData(CILParser.PointerArrayTypeNoSizeDataContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
     }
 }

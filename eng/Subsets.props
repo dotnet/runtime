@@ -550,7 +550,7 @@
 
   <ItemGroup Condition="$(_subset.Contains('+tools.ilasm+'))">
     <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\ILAssembler\ILAssembler.csproj" Category="tools" />
-    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\ILAssembler.Tests\ILAssembler.Tests.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\ILAssembler.Tests\ILAssembler.Tests.csproj" Category="tools" Test="true" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">

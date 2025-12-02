@@ -147,7 +147,7 @@ namespace ILAssembler
             {
                 // If token is an ID, we need to check for defined macro values and substitute.
                 IWritableToken writableToken = (IWritableToken)nextToken;
-                writableToken.Type = newValue.Contains(".") ? CILLexer.DOTTEDNAME : CILLexer.ID;
+                writableToken.Type = newValue.Contains('.') ? CILLexer.DOTTEDNAME : CILLexer.ID;
                 writableToken.Text = newValue;
             }
             return nextToken;

@@ -29,7 +29,20 @@ namespace ILAssembler
 
         private sealed class BlobBuilderContentEqualityComparer : IEqualityComparer<BlobBuilder>
         {
-            public bool Equals(BlobBuilder x, BlobBuilder y) => x.ContentEquals(y);
+            public bool Equals(BlobBuilder? x, BlobBuilder? y)
+            {
+                if (x is null == y is null)
+                {
+                    return true;
+                }
+
+                if (x is null)
+                {
+                    return false;
+                }
+
+                return x.ContentEquals(y!);
+            }
 
             // For simplicity, we'll just use the signature size as the hash code.
             // TODO: Make this better.
@@ -433,7 +446,7 @@ namespace ILAssembler
 
         public void RecordEntityInTable(TableIndex table, EntityBase entity)
         {
-            if (!_seenEntities.TryGetValue(table, out List<EntityBase> entities))
+            if (!_seenEntities.TryGetValue(table, out List<EntityBase>? entities))
             {
                 _seenEntities[table] = entities = new List<EntityBase>();
             }
@@ -442,9 +455,10 @@ namespace ILAssembler
         }
 
         private TEntity GetOrCreateEntity<TKey, TEntity>(TKey key, TableIndex table, Dictionary<TKey, TEntity> cache, Func<TKey, TEntity> constructor, Action<TEntity> onCreate)
+            where TKey : notnull
             where TEntity : EntityBase
         {
-            if (cache.TryGetValue(key, out TEntity entity))
+            if (cache.TryGetValue(key, out TEntity? entity))
             {
                 return entity;
             }
@@ -920,7 +934,9 @@ namespace ILAssembler
                 Version = version,
                 CultureName = culture,
                 Flags = (AssemblyNameFlags)flags,
+#pragma warning disable SYSLIB0037 // ProcessorArchitecture is obsolete
                 ProcessorArchitecture = architecture
+#pragma warning restore SYSLIB0037 // ProcessorArchitecture is obsolete
             };
             return GetOrCreateEntity(key, TableIndex.AssemblyRef, _seenAssemblyRefs, (value) => new AssemblyReferenceEntity(name), entity =>
             {
