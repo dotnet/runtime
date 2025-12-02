@@ -90,20 +90,20 @@ namespace System.IO.Tests
 
 
         [Fact]
-		[PlatformSpecific(TestPlatforms.Linux)]
-		public void CreateSubdirectory_RootDriveSubfolder_ThrowsUnauthorizedAccessException_Linux()
-		{
-    		string rootDrive = "/";
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void CreateSubdirectory_RootDriveSubfolder_ThrowsUnauthorizedAccessException_Linux()
+        {
+            string rootDrive = "/";
 
-    		DirectoryInfo rootDirectory = new DirectoryInfo(rootDrive);
-    		string testFolderName = $"TestFolder_{Guid.NewGuid():N}";
+            DirectoryInfo rootDirectory = new DirectoryInfo(rootDrive);
+            string testFolderName = $"TestFolder_{Guid.NewGuid():N}";
 
-    		// Expect permission failure when trying to create directly under "/", in test envs access to / is denied,
-			//but at least we know directory craeting attempt was done
-    		Assert.Throws<UnauthorizedAccessException>(() =>
-    		{
-        		rootDirectory.CreateSubdirectory(testFolderName);
-    		});
+            // Expect permission failure when trying to create directly under "/", in test envs access to / is denied,
+            //but at least we know directory craeting attempt was done
+            Assert.Throws<UnauthorizedAccessException>(() =>
+            {
+                rootDirectory.CreateSubdirectory(testFolderName);
+            });
 }
 
 
