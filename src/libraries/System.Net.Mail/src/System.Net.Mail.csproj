@@ -30,6 +30,7 @@
     <Compile Include="System\Net\Mime\DispositionTypeNames.cs" />
     <Compile Include="System\Net\Mime\HeaderCollection.cs" />
     <Compile Include="System\Net\Mime\MediaTypeNames.cs" />
+    <Compile Include="System\Net\Mime\MediaTypeMap.cs" />
     <Compile Include="System\Net\Mime\MimeBasePart.cs" />
     <Compile Include="System\Net\Mime\SmtpDateTime.cs" />
     <Compile Include="System\Net\Mime\ByteEncoder.cs" />

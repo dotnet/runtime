@@ -10,6 +10,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Templates\*.*" />
     <EmbeddedResource Include="$(CoreClrProjectRoot)hosts\inc\coreclrhost.h" Link="Templates\coreclrhost.h" />
+    <EmbeddedResource Include="$(SharedNativeRoot)corehost\host_runtime_contract.h" Link="Templates\host_runtime_contract.h" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppleAppBuilder.cs" />

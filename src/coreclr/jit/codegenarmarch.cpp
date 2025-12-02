@@ -3183,7 +3183,7 @@ void CodeGen::genCall(GenTreeCall* call)
 #ifdef TARGET_ARM
                 if (compiler->opts.compUseSoftFP && returnType == TYP_DOUBLE)
                 {
-                    inst_RV_RV_RV(INS_vmov_i2d, call->GetRegNum(), returnReg, genRegArgNext(returnReg), EA_8BYTE);
+                    inst_RV_RV_RV(INS_vmov_i2d, call->GetRegNum(), returnReg, REG_NEXT(returnReg), EA_8BYTE);
                 }
                 else if (compiler->opts.compUseSoftFP && returnType == TYP_FLOAT)
                 {
