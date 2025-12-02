@@ -165,7 +165,7 @@ namespace ILCompiler.ObjectWriter
                 writer.WriteULEB128((ulong)i);
                 if (logger.IsVerbose)
                 {
-                    logger.LogMessage($"Emitting export: {exportName} for function index {signatureMap[methodSignature]}");
+                    logger.LogMessage($"Emitting export: {exportName} for function index {i}");
                 }
             }
 
