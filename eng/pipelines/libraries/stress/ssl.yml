@@ -13,6 +13,7 @@ schedules:
     include:
     - main
     - release/*.0
+    - release/*-staging
 
 variables:
   - template: ../variables.yml

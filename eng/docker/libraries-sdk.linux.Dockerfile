@@ -1,5 +1,5 @@
 # Builds and copies library artifacts into target dotnet sdk image
-ARG BUILD_BASE_IMAGE=mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9
+ARG BUILD_BASE_IMAGE=mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64
 ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:latest
 
 FROM $BUILD_BASE_IMAGE as corefxbuild
