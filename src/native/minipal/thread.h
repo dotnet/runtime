@@ -80,7 +80,7 @@ static inline size_t minipal_get_current_thread_id_no_cache(void)
 static inline size_t minipal_get_current_thread_id(void)
 {
 #if defined(__wasm) && !defined(_REENTRANT)
-    return 1; // In non-reentrant WASM builds, we define a single thread with ID 1.
+    return minipal_get_current_thread_id_no_cache();
 
 #else // !__wasm || _REENTRANT
 #if defined(__GNUC__) && !defined(__clang__) && defined(__cplusplus)

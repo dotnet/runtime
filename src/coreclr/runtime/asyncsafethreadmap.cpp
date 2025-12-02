@@ -53,7 +53,7 @@ bool InsertThreadIntoAsyncSafeMap(size_t osThread, void* pThread)
             {
                 // Another thread added the segment first
                 delete pNewSegment;
-                pNewSegment = *ppSegment;
+                pNewSegment = *pExpected;
             }
 
             pSegment = pNewSegment;
@@ -65,7 +65,8 @@ bool InsertThreadIntoAsyncSafeMap(size_t osThread, void* pThread)
             size_t expected = 0;
             if (__atomic_compare_exchange_n(
                     &pSegment->entries[index].osThread,
-                    &expected, osThread,
+                    &expected,
+                    osThread,
                     false /* weak */,
                     __ATOMIC_RELEASE  /* success_memorder */,
                     __ATOMIC_RELAXED /* failure_memorder */))
