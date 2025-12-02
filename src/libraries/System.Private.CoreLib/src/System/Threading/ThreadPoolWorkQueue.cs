@@ -1229,10 +1229,11 @@ namespace System.Threading
             // Checking for items must happen after resetting the processing state.
             Interlocked.MemoryBarrier();
 
+            ThreadPoolWorkQueueThreadLocals tl = ThreadPoolWorkQueueThreadLocals.threadLocals!;
             if (!_workItems.TryDequeue(out var workItem))
             {
                 // Discount a work item here to avoid counting this queue processing work item
-                ThreadPoolWorkQueueThreadLocals.threadLocals!.threadLocalCompletionCountNode!.Decrement();
+                ThreadInt64PersistentCounter.Decrement(tl.threadLocalCompletionCountObject!);
                 return;
             }
 
@@ -1246,7 +1247,6 @@ namespace System.Threading
                 EnsureWorkerScheduled();
             }
 
-            ThreadPoolWorkQueueThreadLocals tl = ThreadPoolWorkQueueThreadLocals.threadLocals!;
             Debug.Assert(tl != null);
             Thread currentThread = tl.currentThread;
             Debug.Assert(currentThread == Thread.CurrentThread);
