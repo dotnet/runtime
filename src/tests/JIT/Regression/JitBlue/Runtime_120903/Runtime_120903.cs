@@ -26,5 +26,5 @@ public class Runtime_120903
     {
         D2[] d2 = new D2[10];
         Console.WriteLine(Merge(d2));
-    }   
+    }
 }
