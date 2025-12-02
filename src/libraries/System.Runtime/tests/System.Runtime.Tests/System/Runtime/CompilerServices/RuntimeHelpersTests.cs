@@ -457,8 +457,8 @@ namespace System.Runtime.CompilerServices.Tests
         {
             Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(null, 10, 1); });
             Assert.Throws<ArgumentOutOfRangeException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), -1, 1); });
-            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), -1, 0); });
-            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), -1, 3); });
+            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 10, 0); });
+            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 10, 3); });
         }
 
 
@@ -469,6 +469,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.NotEqual(memory, IntPtr.Zero);
             // Validate that the memory is zeroed out
             Assert.True(new Span<byte>((void*)memory, 32).SequenceEqual(new byte[32]));
+            Assert.True((memory % 16) == 0);
         }
 
 #pragma warning disable CS0649

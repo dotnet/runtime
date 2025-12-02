@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
@@ -166,9 +167,9 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="ArgumentException"><paramref name="type" /> must be a type provided by the runtime.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="size" /> is negative.</exception>
         /// <exception cref="ArgumentException"><paramref name="alignment" /> is not a power of <c>2</c>.</exception>
-        public static IntPtr AllocateTypeAssociatedMemory(Type type, int size, int alignment)
+        public static unsafe IntPtr AllocateTypeAssociatedMemory(Type type, int size, int alignment)
         {
-            if (type is not RuntimeType rt)
+            if (type is not RuntimeType)
             {
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
             }

@@ -1229,7 +1229,7 @@ extern "C" void* QCALLTYPE RuntimeTypeHandle_AlignedAllocateTypeAssociatedMemory
     // that the memory will be freed when the type is unloaded.
     PTR_LoaderAllocator loaderAllocator = typeHandle.GetMethodTable()->GetLoaderAllocator();
     LoaderHeap* loaderHeap = loaderAllocator->GetHighFrequencyHeap();
-    allocatedMemory = loaderHeap->AllocAlignedMem(S_SIZE_T(size), S_SIZE_T(alignment));
+    allocatedMemory = loaderHeap->AllocAlignedMem(size, alignment);
 
     END_QCALL;
 
