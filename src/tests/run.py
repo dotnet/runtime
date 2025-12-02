@@ -211,7 +211,7 @@ def preprocess_args(args):
             continue
         
         # Handle longgc
-        if arg_lower in ['longgc', 'long-gc']:
+        if arg_lower in ['longgc', 'long-gc', '--long-gc']:
             processed_args.append('--long_gc')
             i += 1
             continue
@@ -1749,6 +1749,10 @@ if __name__ == "__main__":
     # Preprocess arguments to convert shell-style to Python-style
     preprocessed_args = preprocess_args(sys.argv[1:])
     args = parser.parse_args(preprocessed_args)
+    
+    # Special handling: if arch is wasm and OS is not specified, set it to browser
+    if args.arch == "wasm" and args.host_os is None:
+        args.host_os = "browser"
     
     # Set environment variables based on arguments (previously done by shell scripts)
     if args.jitstress is not None:
