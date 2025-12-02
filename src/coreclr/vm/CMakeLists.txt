@@ -290,7 +290,6 @@ set(VM_SOURCES_WKS
     assemblyspec.cpp
     baseassemblyspec.cpp
     bundle.cpp
-    ${RUNTIME_DIR}/asyncsafethreadmap.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatch_Coreclr.cpp
     cachelinealloc.cpp
@@ -380,6 +379,12 @@ set(VM_SOURCES_WKS
     yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
 )
+
+if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND COMMON_RUNTIME_SOURCES
+        ${RUNTIME_DIR}/asyncsafethreadmap.cpp
+    )
+endif()
 
 # coreclr needs to compile codeman.cpp differently depending on flavor (i.e. dll vs. static lib))
 list(REMOVE_ITEM VM_SOURCES_WKS codeman.cpp)

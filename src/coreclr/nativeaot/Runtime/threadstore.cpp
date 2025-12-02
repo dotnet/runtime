@@ -146,13 +146,13 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
 
     pTS->m_ThreadList.PushHead(pAttachingThread);
 
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
     if (!InsertThreadIntoAsyncSafeMap(pAttachingThread->m_threadId, pAttachingThread))
     {
         ASSERT_UNCONDITIONALLY("Failed to insert thread into async-safe map due to OOM.");
         RhFailFast();
     }
-#endif
+#endif // TARGET_UNIX && !TARGET_WASM
 }
 
 // static
@@ -198,7 +198,7 @@ void ThreadStore::DetachCurrentThread()
         pTS->m_ThreadList.RemoveFirst(pDetachingThread);
         // tidy up GC related stuff (release allocation context, etc..)
         pDetachingThread->Detach();
-#ifdef TARGET_UNIX
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
         RemoveThreadFromAsyncSafeMap(pDetachingThread->m_threadId, pDetachingThread);
 #endif
     }
