@@ -52,9 +52,6 @@
                         ENV[HOST_PROPERTY_APP_PATHS] = config.environmentVariables[HOST_PROPERTY_APP_PATHS] = config.virtualWorkingDirectory;
                         ENV[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.environmentVariables[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.mainAssemblyName;
 
-                        // WASM-TODO: remove once globalization is loaded via ICU
-                        //ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
-
                         if (ENVIRONMENT_IS_NODE) {
                             Module.preInit = [() => {
                                 FS.mkdir("/managed");

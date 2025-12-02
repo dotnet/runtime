@@ -64,7 +64,7 @@ extern const ReverseThunkMapEntry g_ReverseThunks[] =
 {
     { 100678287, { &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler } },
     { 100678363, { &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler } },
-    { 2638826848u, { &MD_CalendarData_EnumCalendarInfoCallback, (void*)&Call_CalendarData_EnumCalendarInfoCallback } },
+    { 2638826848, { &MD_CalendarData_EnumCalendarInfoCallback, (void*)&Call_CalendarData_EnumCalendarInfoCallback } },
 };
 
 const size_t g_ReverseThunksCount = sizeof(g_ReverseThunks) / sizeof(g_ReverseThunks[0]);
