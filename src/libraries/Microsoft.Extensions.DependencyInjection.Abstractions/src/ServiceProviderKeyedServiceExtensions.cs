@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="provider">The <see cref="IServiceProvider"/> to retrieve the service object from.</param>
         /// <param name="serviceKey">An object that specifies the key of service object to get.</param>
         /// <returns>A service object of type <typeparamref name="T"/> or the default value of <typeparamref name="T"/> if there is no such service.</returns>
-        public static T GetKeyedOrDefault<T>(this IServiceProvider provider, object? serviceKey) where T : class
+        public static T GetKeyedOrDefaultService<T>(this IServiceProvider provider, object? serviceKey) where T : class
         {
             ArgumentNullException.ThrowIfNull(provider);
 

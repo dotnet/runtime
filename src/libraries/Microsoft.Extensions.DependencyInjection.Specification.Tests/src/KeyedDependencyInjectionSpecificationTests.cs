@@ -1235,10 +1235,10 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             var provider = CreateServiceProvider(serviceCollection);
 
             // Key exists, should return keyed service
-            Assert.Same(service1, provider.GetKeyedOrDefault<IService>("service1"));
+            Assert.Same(service1, provider.GetKeyedOrDefaultService<IService>("service1"));
 
             // Key does not exist, should return default (non-keyed) service
-            Assert.Same(defaultService, provider.GetKeyedOrDefault<IService>("notFoundKey"));
+            Assert.Same(defaultService, provider.GetKeyedOrDefaultService<IService>("notFoundKey"));
         }
 
         [Fact]
@@ -1248,7 +1248,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             var provider = CreateServiceProvider(serviceCollection);
 
             // Both keyed and default services are missing, should throw
-            Assert.Throws<InvalidOperationException>(() => provider.GetKeyedOrDefault<IService>("service1"));
+            Assert.Throws<InvalidOperationException>(() => provider.GetKeyedOrDefaultService<IService>("service1"));
         }
     }
 }
