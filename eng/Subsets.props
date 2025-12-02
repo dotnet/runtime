@@ -254,6 +254,7 @@
     <SubsetName Include="Tools.Cdac" Description="Diagnostic data contract reader and related projects." />
     <SubsetName Include="Tools.ILLinkTests" OnDemand="true" Description="Unit tests for the tools.illink subset." />
     <SubsetName Include="Tools.CdacTests" OnDemand="true" Description="Unit tests for the diagnostic data contract reader." />
+    <SubsetName Include="Tools.ILAsm" OnDemand="true" Description="Build only the managed ilasm tool." />
 
     <!-- Host -->
     <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests. Equivalent to: $(DefaultHostSubsets)" />
@@ -510,7 +511,7 @@
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdac+'))">
     <ProjectToBuild Include="$(SharedNativeRoot)managed\compile-native.proj" Category="tools" />
-    
+
     <!-- Direct references to cDAC projects for packing -->
     <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj;
                              $(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj;
@@ -545,6 +546,11 @@
       Test="true" Category="tools"/>
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\ILLink.RoslynAnalyzer.Tests.Generator\ILLink.RoslynAnalyzer.Tests.Generator.csproj"
       Test="true" Category="tools"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+tools.ilasm+'))">
+    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\ILAssembler\ILAssembler.csproj" Category="tools" />
+    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\ILAssembler.Tests\ILAssembler.Tests.csproj" Category="tools" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
