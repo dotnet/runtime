@@ -1222,5 +1222,33 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             }
         }
 #endif
+
+        [Fact]
+        public void ResolveKeyedOrDefault()
+        {
+            var defaultService = new Service();
+            var service1 = new Service();
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IService>(defaultService);
+            serviceCollection.AddKeyedSingleton<IService>("service1", service1);
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            // Key exists, should return keyed service
+            Assert.Same(service1, provider.GetKeyedOrDefault<IService>("service1"));
+
+            // Key does not exist, should return default (non-keyed) service
+            Assert.Same(defaultService, provider.GetKeyedOrDefault<IService>("notFoundKey"));
+        }
+
+        [Fact]
+        public void ResolveKeyedOrDefault_Throws_WhenBothMissing()
+        {
+            var serviceCollection = new ServiceCollection();
+            var provider = CreateServiceProvider(serviceCollection);
+
+            // Both keyed and default services are missing, should throw
+            Assert.Throws<InvalidOperationException>(() => provider.GetKeyedOrDefault<IService>("service1"));
+        }
     }
 }
