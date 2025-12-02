@@ -488,7 +488,10 @@ namespace System.IO.Compression
             byte[] input = ZstandardTestUtils.CreateTestData(1024 * 1024); // 1 MB
             byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
 
-            using ZstandardEncoder encoder = new(quality: 3, windowLog: 31); // 2 GB window
+            // by default, decoder will not allow windows larger than 27 to protect against memory DOS attacks
+            int largeWindowLog = 28; // 256 MB window
+
+            using ZstandardEncoder encoder = new(quality: 3, windowLog: largeWindowLog);
 
             // perform in two steps so that the encoder does not know the size upfront
             OperationStatus result = encoder.Compress(input, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
@@ -506,7 +509,7 @@ namespace System.IO.Compression
             var decompressResult = decoder.Decompress(output.AsSpan(0, compressedSize), decompressed, out _, out _);
             Assert.Equal(OperationStatus.InvalidData, decompressResult);
 
-            using ZstandardDecoder adjustedDecoder = new(maxWindowLog: 31);
+            using ZstandardDecoder adjustedDecoder = new(maxWindowLog: largeWindowLog);
             decompressResult = adjustedDecoder.Decompress(output.AsSpan(0, compressedSize), decompressed, out bytesConsumed, out bytesWritten);
             Assert.Equal(OperationStatus.Done, decompressResult);
             Assert.Equal(input.Length, bytesWritten);
