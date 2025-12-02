@@ -249,7 +249,7 @@ namespace Microsoft.Interop
 
         private MarshallingInfo? GetMarshallingInfoForAttribute(AttributeData attribute, ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)
         {
-            return GetMarshallingInfoForAttributes(new AttributeData[] { attribute }.AsSpan(), type, indirectionDepth, useSiteAttributes, marshallingInfoCallback);
+            return GetMarshallingInfoForAttributes([attribute], type, indirectionDepth, useSiteAttributes, marshallingInfoCallback);
         }
 
         private MarshallingInfo? GetMarshallingInfoForAttributes(ReadOnlySpan<AttributeData> attrs, ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)
