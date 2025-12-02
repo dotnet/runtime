@@ -404,7 +404,7 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentNullException>("stream", () => CreateStream(null, CompressionMode.Compress, true));
             Assert.Throws<ArgumentNullException>("compressionOptions", () => CreateStream(new MemoryStream(), null, true));
 
-            Assert.Throws<ArgumentException>("compressionLevel", () => CreateStream(new MemoryStream(), (CompressionLevel)(-1)));
+            Assert.Throws<ArgumentOutOfRangeException>("compressionLevel", () => CreateStream(new MemoryStream(), (CompressionLevel)(-1)));
 
             AssertExtensions.Throws<ArgumentException>("mode", () => CreateStream(new MemoryStream(), (CompressionMode)42));
             AssertExtensions.Throws<ArgumentException>("mode", () => CreateStream(new MemoryStream(), (CompressionMode)43, true));
