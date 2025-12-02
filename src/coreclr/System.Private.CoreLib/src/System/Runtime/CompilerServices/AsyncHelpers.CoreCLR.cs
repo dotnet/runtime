@@ -84,7 +84,7 @@ namespace System.Runtime.CompilerServices
         ContinueOnCapturedTaskScheduler = 64,
     }
 
-    // Keep in sync with dataAsyncResumeInfo in the JIT
+    // Keep in sync with CORINFO_AsyncResumeInfo in corinfo.h
     internal unsafe struct ResumeInfo
     {
         public delegate*<Continuation, ref byte, Continuation?> Resume;

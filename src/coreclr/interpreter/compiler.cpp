@@ -804,7 +804,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
     if (opcode == INTOP_HANDLE_CONTINUATION_SUSPEND)
     {
         // Capture meaningful start IP for async suspend diagnostics
-        ((InterpAsyncSuspendData*)GetDataItemAtIndex(ins->data[0]))->DiagnosticIP = startIp;
+        ((InterpAsyncSuspendData*)GetDataItemAtIndex(ins->data[0]))->resumeInfo.DiagnosticIP = (size_t)startIp;
     }
 
     if (opcode == INTOP_SWITCH)
@@ -5229,8 +5229,8 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     suspendData->captureSyncContextMethod = asyncInfo.captureContinuationContextMethHnd;
     suspendData->restoreExecutionContextMethod = asyncInfo.restoreExecutionContextMethHnd;
     suspendData->restoreContextsMethod = asyncInfo.restoreContextsMethHnd;
-    suspendData->resumeFuncPtr = m_asyncResumeFuncPtr;
-    suspendData->DiagnosticIP = NULL;
+    suspendData->resumeInfo.Resume = (size_t)m_asyncResumeFuncPtr;
+    suspendData->resumeInfo.DiagnosticIP = NULL;
     // TODO! Register methodStartIP to be filled in as needed.
     suspendData->methodStartIP = 0;
     suspendData->continuationArgOffset = m_pVars[m_continuationArgIndex].offset;

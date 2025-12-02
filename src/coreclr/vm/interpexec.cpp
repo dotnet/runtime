@@ -788,9 +788,9 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
     NULL_CHECK(contRef);
 
     // We are working with an interpreter async continuation, move things around to get the InterpAsyncSuspendData
-    size_t resumeDataOffset = offsetof(InterpAsyncSuspendData, resumeFuncPtr);
+    size_t resumeDataOffset = offsetof(InterpAsyncSuspendData, resumeInfo);
     InterpAsyncSuspendData* pSuspendData = (InterpAsyncSuspendData*)(void*)(((uint8_t*)contRef->GetResumeInfo()) - resumeDataOffset);
-    _ASSERTE(&pSuspendData->resumeFuncPtr == contRef->GetResumeInfo());
+    _ASSERTE(&pSuspendData->resumeInfo.Resume == contRef->GetResumeInfo());
 
     // All the incoming args and locals should be zeroed out, except for the continuation argument
     InterpMethod *pMethod = pSuspendData->methodStartIP->Method;
@@ -3962,7 +3962,7 @@ do                                                                      \
 
                     continuation->SetState((int32_t)((uint8_t*)ip - (uint8_t*)pFrame->startIp));
                     _ASSERTE(pAsyncSuspendData->methodStartIP != 0);
-                    continuation->SetResumeInfo(&pAsyncSuspendData->resumeFuncPtr);
+                    continuation->SetResumeInfo(&pAsyncSuspendData->resumeInfo);
                     pInterpreterFrame->SetContinuation(continuation);
                     goto EXIT_FRAME;
                 }

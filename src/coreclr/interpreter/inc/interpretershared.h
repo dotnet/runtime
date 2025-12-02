@@ -196,9 +196,7 @@ struct InterpIntervalMapEntry
 
 struct InterpAsyncSuspendData
 {
-// ResumeInfo . Keep in sync with dataAsyncResumeInfo in the JIT and System.Runtime.CompilerServices.ResumeInfo
-    void* resumeFuncPtr; // Pointer to the resume function
-    void* DiagnosticIP; // IP to report in diagnostic scenarios
+    CORINFO_AsyncResumeInfo resumeInfo;
 
     COMPILER_SHARED_TYPE(CORINFO_CLASS_HANDLE, DPTR(MethodTable), continuationTypeHnd);
 
