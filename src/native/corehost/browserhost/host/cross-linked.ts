@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { } from "../../../libs/Common/JavaScript/cross-linked";
-import { VoidPtr } from "./types";
+import type { VoidPtr } from "./types";
 
 declare global {
     export const BROWSER_HOST: any;
