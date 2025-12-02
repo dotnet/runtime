@@ -58,6 +58,7 @@ if ("${CMAKE_GENERATOR}" MATCHES "^Visual Studio.*$")
   # Warnings in release builds
   add_compile_options(-wd4068) # ignore unknown pragma warnings (gcc pragmas)
   add_compile_options(-wd4334) # 32-bit shift implicitly converted to 64 bits
+  add_compile_options(-wd4319) # zero extending 'unsigned long' to 'size_t' of greater size
 
   # Disable warning due to incorrect format specifier in debugging printf via the Debug macro
   add_compile_options(-wd4311) # pointer truncation from 'unw_word_t *' to 'long'
