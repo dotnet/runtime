@@ -4810,7 +4810,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
 #endif // defined(TARGET_XARCH)
 
         bool noCSE = (mul > 1);
-#if defined(TARGET_RISCV64) // namu
+#if defined(TARGET_RISCV64)
         noCSE = this->compOpportunisticallyDependsOn(InstructionSet_Zba);
 #endif
 
@@ -4818,7 +4818,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         {
             op2->gtFlags |= GTF_ADDRMODE_NO_CSE;
 
-#if defined(TARGET_RISCV64) // namu
+#if defined(TARGET_RISCV64)
             // RISC-V addressing mode is based on: (base + index*scale) + offset.
             // To emit shXadd.uw, GT_ADD + GT_LSH(or MUL) + GT_CAST nodes are required.
             // GT_CAST nodes benefit from shXadd.uw variants(Zba) by disabling CSEs.
