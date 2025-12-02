@@ -215,11 +215,7 @@ protected:
 #if defined(TARGET_WASM)
     ArrayStack<WasmInterval*>* wasmControlFlowStack;
     unsigned                   wasmCursor;
-    unsigned                   getBlockIndex(BasicBlock* block)
-    {
-        return block->bbPreorderNum;
-    }
-    unsigned findTargetDepth(BasicBlock* target);
+    unsigned                   findTargetDepth(BasicBlock* target);
 #endif
 
     void        genEmitStartBlock(BasicBlock* block);
@@ -1356,10 +1352,6 @@ public:
     void instGen(instruction ins);
 #if defined(TARGET_XARCH)
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isRemovableJmpCandidate = false);
-#elif defined(TARGET_WASM)
-    void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
-    void inst_SWITCH(unsigned caseCount);
-    void inst_LABEL(unsigned depth);
 #else
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
 #endif

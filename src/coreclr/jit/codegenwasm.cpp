@@ -85,12 +85,9 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 
     // TODO-WASM: shadow stack maintenance
-
-    // compiler->unwindBegEpilog();
+    // TODO-WASM-CQ: do not emit "return" in case this is the last block
 
     instGen(INS_return);
-
-    // compiler->unwindEndEpilog();
 }
 
 void CodeGen::genCaptureFuncletPrologEpilogInfo()
@@ -119,6 +116,21 @@ void CodeGen::genFuncletEpilog()
 #endif
 
     NYI_WASM("genFuncletEpilog");
+}
+
+//------------------------------------------------------------------------
+// getBlockIndex: return the index of this block in the linear block
+//   order
+//
+// Arguments:
+//   block - block in question
+//
+// Returns:
+//   index of block
+//
+static unsigned getBlockIndex(BasicBlock* block)
+{
+    return block->bbPreorderNum;
 }
 
 //------------------------------------------------------------------------
@@ -244,11 +256,12 @@ BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
             break;
 
         case BBJ_THROW:
+            // TODO-WASM-CQ: only emit this when needed.
             instGen(INS_unreachable);
             break;
 
         case BBJ_CALLFINALLY:
-            // Wasm-TODO: EH model
+            // TODO-WASM: EH model
             genCallFinally(block);
             if (!block->isBBCallFinallyPair())
             {
@@ -257,20 +270,15 @@ BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
             break;
 
         case BBJ_EHCATCHRET:
-            // Wasm-TODO: EH model
-            assert(compiler->UsesFunclets());
+            // TODO-WASM: EH model
             genEHCatchRet(block);
             FALLTHROUGH;
 
         case BBJ_EHFINALLYRET:
         case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
-            // Wasm-TODO: EH model
-            if (compiler->UsesFunclets())
-            {
-                genReserveFuncletEpilog(block);
-            }
-            instGen(INS_return);
+            // TODO-WASM: EH model
+            genReserveFuncletEpilog(block);
             break;
 
         case BBJ_SWITCH:
@@ -285,13 +293,14 @@ BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
                 break;
             }
 
-            inst_SWITCH(caseCount);
+            GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount);
 
             for (unsigned caseNum = 0; caseNum < caseCount; caseNum++)
             {
                 BasicBlock* const caseTarget = desc->GetCase(caseNum)->getDestinationBlock();
                 unsigned          depth      = findTargetDepth(caseTarget);
-                inst_LABEL(depth);
+
+                GetEmitter()->emitIns_I(INS_label, EA_4BYTE, depth);
             }
 
             JITDUMP("\n");
@@ -301,15 +310,6 @@ BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
         case BBJ_CALLFINALLYRET:
         case BBJ_ALWAYS:
         {
-#ifdef DEBUG
-            GenTree* call = block->lastNode();
-            if ((call != nullptr) && call->OperIs(GT_CALL))
-            {
-                // At this point, BBJ_ALWAYS should never end with a call that doesn't return.
-                assert(!call->AsCall()->IsNoReturn());
-            }
-#endif // DEBUG
-
             BasicBlock* const target = block->GetTarget();
 
             // If this block jumps to the next one, we might be able to skip emitting the jump
@@ -398,7 +398,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_LE:
         case GT_GE:
         case GT_GT:
-            genConsumeOperands(treeNode->AsOp());
             genCodeForCompare(treeNode->AsOp());
             break;
 
@@ -538,7 +537,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 {
     assert(tree->OperIsCmpCompare());
 
-    GenTree* const  op1     = tree->gtOp1;
+    GenTree* const  op1     = tree->gtGetOp1();
     var_types const op1Type = op1->TypeGet();
 
     if (varTypeIsFloating(op1Type))
@@ -563,7 +562,7 @@ void CodeGen::genCompareInt(GenTreeOp* treeNode)
     genConsumeOperands(treeNode);
 
     instruction ins;
-    switch (PackOperAndType(treeNode->OperGet(), treeNode->gtOp1->TypeGet()))
+    switch (PackOperAndType(treeNode->OperGet(), genActualType(treeNode->gtGetOp1()->TypeGet())))
     {
         case PackOperAndType(GT_EQ, TYP_INT):
             ins = INS_i32_eq;
@@ -571,46 +570,38 @@ void CodeGen::genCompareInt(GenTreeOp* treeNode)
         case PackOperAndType(GT_EQ, TYP_LONG):
             ins = INS_i64_eq;
             break;
-
         case PackOperAndType(GT_NE, TYP_INT):
             ins = INS_i32_ne;
             break;
         case PackOperAndType(GT_NE, TYP_LONG):
             ins = INS_i64_ne;
             break;
-
         case PackOperAndType(GT_LT, TYP_INT):
             ins = treeNode->IsUnsigned() ? INS_i32_lt_u : INS_i32_lt_s;
             break;
         case PackOperAndType(GT_LT, TYP_LONG):
             ins = treeNode->IsUnsigned() ? INS_i64_lt_u : INS_i64_lt_s;
             break;
-
         case PackOperAndType(GT_LE, TYP_INT):
             ins = treeNode->IsUnsigned() ? INS_i32_le_u : INS_i32_le_s;
             break;
         case PackOperAndType(GT_LE, TYP_LONG):
             ins = treeNode->IsUnsigned() ? INS_i64_le_u : INS_i64_le_s;
             break;
-
         case PackOperAndType(GT_GE, TYP_INT):
             ins = treeNode->IsUnsigned() ? INS_i32_ge_u : INS_i32_ge_s;
             break;
         case PackOperAndType(GT_GE, TYP_LONG):
             ins = treeNode->IsUnsigned() ? INS_i64_ge_u : INS_i64_ge_s;
             break;
-
         case PackOperAndType(GT_GT, TYP_INT):
             ins = treeNode->IsUnsigned() ? INS_i32_gt_u : INS_i32_gt_s;
             break;
         case PackOperAndType(GT_GT, TYP_LONG):
             ins = treeNode->IsUnsigned() ? INS_i64_gt_u : INS_i64_gt_s;
             break;
-
         default:
-            ins = INS_none;
-            NYI_WASM("genCodeForBinary");
-            break;
+            unreached();
     }
 
     GetEmitter()->emitIns(ins);
@@ -673,11 +664,8 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
         case PackOperAndType(GT_GT, TYP_DOUBLE):
             ins = INS_f64_gt;
             break;
-
         default:
-            ins = INS_none;
-            NYI_WASM("genCodeForBinary");
-            break;
+            unreached();
     }
 
     GetEmitter()->emitIns(ins);
@@ -730,28 +718,6 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
     instruction    instr = emitter::emitJumpKindToIns(jmp);
     unsigned const depth = findTargetDepth(tgtBlock);
     GetEmitter()->emitIns_I(instr, EA_4BYTE, depth);
-}
-
-//------------------------------------------------------------------------
-// inst_SWITCH: Emit a switch
-//
-// Arguments:
-//   caseCount -- number of cases in the switch
-//
-void CodeGen::inst_SWITCH(unsigned caseCount)
-{
-    GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount);
-}
-
-//------------------------------------------------------------------------
-// inst_LABEL: Emit a switch table case label index
-//
-// Notes:
-//   Each index describes one switch case
-//
-void CodeGen::inst_LABEL(unsigned depth)
-{
-    GetEmitter()->emitIns_I(INS_label, EA_4BYTE, depth);
 }
 
 void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* code))

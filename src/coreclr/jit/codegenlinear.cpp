@@ -122,7 +122,7 @@ void CodeGen::genInitialize()
     //
     wasmControlFlowStack =
         new (compiler, CMK_WasmCfgLowering) ArrayStack<WasmInterval*>(compiler->getAllocator(CMK_WasmCfgLowering));
-    unsigned wasmCursor = 0;
+    wasmCursor = 0;
 #endif
 }
 

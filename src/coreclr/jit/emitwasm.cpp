@@ -179,7 +179,7 @@ void emitter::emitSetShortJump(instrDescJmp* id)
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE*       dst    = *dp;
-    size_t      sz     = emitGetInstrDescSize(id);
+    size_t      sz     = emitSizeOfInsDsc(id);
     instruction ins    = id->idIns();
     insFormat   insFmt = id->idInsFmt();
     unsigned    opcode = GetInsOpcode(ins);
@@ -213,7 +213,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     if (emitComp->opts.disAsm)
     {
         size_t expected = emitSizeOfInsDsc(id);
-        assert(sz == expected);
         emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp), ig);
     }
 #endif
@@ -222,14 +221,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     return sz;
 }
 
-const instruction emitJumpKindInstructions[] = {
-    INS_nop,
-#define JMP_SMALL(en, rev, ins) INS_##ins,
-#include "emitjmps.h"
-};
-
 /*static*/ instruction emitter::emitJumpKindToIns(emitJumpKind jumpKind)
 {
+    const instruction emitJumpKindInstructions[] = {
+        INS_nop,
+#define JMP_SMALL(en, rev, ins) INS_##ins,
+#include "emitjmps.h"
+    };
+
     assert((unsigned)jumpKind < ArrLen(emitJumpKindInstructions));
     return emitJumpKindInstructions[jumpKind];
 }
@@ -366,7 +365,7 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 #if defined(DEBUG) || defined(LATE_DISASM)
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
-    // WASM-TODO: for real...
+    // TODO-WASM: for real...
     insExecutionCharacteristics result;
     result.insThroughput = PERFSCORE_THROUGHPUT_1C;
     result.insLatency    = PERFSCORE_LATENCY_1C;
