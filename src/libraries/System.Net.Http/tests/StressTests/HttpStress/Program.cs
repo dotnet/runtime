@@ -178,7 +178,7 @@ namespace HttpStress
             string msQuicLibraryVersion = (string)msQuicApiType.GetProperty("MsQuicLibraryVersion", BindingFlags.NonPublic | BindingFlags.Static)!.GetGetMethod(true)!.Invoke(null, Array.Empty<object?>())!;
             bool trackUnobservedExceptions = config.TrackUnobservedExceptions.HasValue
                 ? config.TrackUnobservedExceptions.Value
-                : config.RunMode.HasFlag(RunMode.client);
+                : false;
 
             Console.WriteLine("       .NET Core: " + GetAssemblyInfo(typeof(object).Assembly));
             Console.WriteLine("    ASP.NET Core: " + GetAssemblyInfo(typeof(WebHost).Assembly));
