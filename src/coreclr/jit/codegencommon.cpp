@@ -4782,7 +4782,6 @@ void CodeGen::genFinalizeFrame()
 #endif
 }
 
-#ifndef TARGET_WASM
 /*****************************************************************************
  *
  *  Generates code for a function prolog.
@@ -4823,7 +4822,10 @@ void CodeGen::genFnProlog()
     /* Ready to start on the prolog proper */
 
     GetEmitter()->emitBegProlog();
+
+#if !defined(TARGET_WASM)
     compiler->unwindBegProlog();
+#endif // !defined(TARGET_WASM)
 
     // Do this so we can put the prolog instruction group ahead of
     // other instruction groups
@@ -4841,6 +4843,8 @@ void CodeGen::genFnProlog()
         // Create new scopes for the method-parameters for the prolog-block.
         psiBegProlog();
     }
+
+#if !defined(TARGET_WASM)
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // For arm64 OSR, emit a "phantom prolog" to account for the actions taken
@@ -5640,8 +5644,15 @@ void CodeGen::genFnProlog()
     }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
+#else  // defined(TARGET_WASM)
+    // TODO-WASM: prolog zeroing, shadow stack maintenance
+    GetEmitter()->emitMarkPrologEnd();
+#endif // !defined(TARGET_WASM)
+
     GetEmitter()->emitEndProlog();
 }
+
+#if !defined(TARGET_WASM)
 
 //----------------------------------------------------------------------------------
 // genEmitJumpTable: emit jump table and return its base offset
@@ -5844,7 +5855,7 @@ void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
     genDefineInlineTempLabel(genPendingCallLabel);
     genPendingCallLabel = nullptr;
 }
-#endif // !TARGET_WASM
+#endif // !defined(TARGET_WASM)
 
 /*****************************************************************************
  *

@@ -15,52 +15,6 @@ void CodeGen::genMarkLabelsForCodegen()
     // (or use them directly and leave this empty).
 }
 
-void CodeGen::genFnProlog()
-{
-    ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
-
-    compiler->funSetCurrentFunc(0);
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In genFnProlog()\n");
-    }
-#endif
-
-#ifdef DEBUG
-    genInterruptibleUsed = true;
-#endif
-
-    assert(compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT);
-
-    /* Ready to start on the prolog proper */
-
-    GetEmitter()->emitBegProlog();
-    // compiler->unwindBegProlog();
-
-    // Do this so we can put the prolog instruction group ahead of
-    // other instruction groups
-    genIPmappingAddToFront(IPmappingDscKind::Prolog, DebugInfo(), true);
-
-#ifdef DEBUG
-    if (compiler->opts.dspCode)
-    {
-        printf("\n__prolog:\n");
-    }
-#endif
-
-    if (compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0))
-    {
-        // Create new scopes for the method-parameters for the prolog-block.
-        psiBegProlog();
-    }
-
-    // TODO-WASM: prolog zeroing, shadow stack maintenance
-
-    GetEmitter()->emitMarkPrologEnd();
-}
-
 void CodeGen::genFnEpilog(BasicBlock* block)
 {
 #ifdef DEBUG
