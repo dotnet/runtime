@@ -104,12 +104,9 @@ jobs:
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.isExtraPlatformsBuild, true)) }}:
-        - OSX.26.Arm64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.isExtraPlatformsBuild, true), ne(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
-        - OSX.13.Arm64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
-        # superpmi is not about testing platform differences, so go with highest capacity queue
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
+        - $(helix_macos_arm64)
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
         - OSX.14.Arm64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - OSX.14.Arm64
@@ -117,7 +114,7 @@ jobs:
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - OSX.13.Amd64.Open
+        - $(helix_macos_x64)
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - OSX.13.Amd64
 

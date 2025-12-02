@@ -19,6 +19,30 @@ public class ZipFile_Open : ZipFileTestBase
     }
 
     [Fact]
+    public void Open_PassDirectory_ThrowsUnauthorizedAccessException()
+    {
+        string directoryPath = GetTestFilePath();
+        Directory.CreateDirectory(directoryPath);
+
+        Assert.Throws<UnauthorizedAccessException>(() => ZipFile.Open(directoryPath, ZipArchiveMode.Read));
+        Assert.Throws<UnauthorizedAccessException>(() => ZipFile.OpenRead(directoryPath));
+        Assert.Throws<UnauthorizedAccessException>(() => ZipFile.Open(directoryPath, ZipArchiveMode.Create));
+        Assert.Throws<UnauthorizedAccessException>(() => ZipFile.Open(directoryPath, ZipArchiveMode.Update));
+    }
+
+    [Fact]
+    public async Task OpenAsync_PassDirectory_ThrowsUnauthorizedAccessException()
+    {
+        string directoryPath = GetTestFilePath();
+        Directory.CreateDirectory(directoryPath);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ZipFile.OpenAsync(directoryPath, ZipArchiveMode.Read, default));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ZipFile.OpenReadAsync(directoryPath, default));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ZipFile.OpenAsync(directoryPath, ZipArchiveMode.Create, default));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ZipFile.OpenAsync(directoryPath, ZipArchiveMode.Update, default));
+    }
+
+    [Fact]
     public void InvalidFiles()
     {
         Assert.Throws<InvalidDataException>(() => ZipFile.OpenRead(bad("EOCDmissing.zip")));
@@ -110,20 +134,13 @@ public class ZipFile_Open : ZipFileTestBase
             await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenAsync(testArchive.Path, ZipArchiveMode.Update, default));
         }
 
-        await using (ZipArchive archive = await ZipFile.OpenReadAsync(bad("CDoffsetInBoundsWrong.zip"), default))
-        {
-            Assert.Throws<InvalidDataException>(() => { var x = archive.Entries; });
-        }
-
+        await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenReadAsync(bad("CDoffsetInBoundsWrong.zip"), default));
         using (TempFile testArchive = CreateTempCopyFile(bad("CDoffsetInBoundsWrong.zip"), GetTestFilePath()))
         {
             await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenAsync(testArchive.Path, ZipArchiveMode.Update, default));
         }
 
-        await using (ZipArchive archive = await ZipFile.OpenReadAsync(bad("numberOfEntriesDifferent.zip"), default))
-        {
-            Assert.Throws<InvalidDataException>(() => { var x = archive.Entries; });
-        }
+        await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenReadAsync(bad("numberOfEntriesDifferent.zip"), default));
         using (TempFile testArchive = CreateTempCopyFile(bad("numberOfEntriesDifferent.zip"), GetTestFilePath()))
         {
             await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenAsync(testArchive.Path, ZipArchiveMode.Update, default));
