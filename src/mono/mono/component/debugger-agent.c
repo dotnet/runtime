@@ -7185,8 +7185,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_VM_SET_PROTOCOL_VERSION: {
-		if (protocol_version_set)
-		{
+		if (protocol_version_set) {
 			PRINT_DEBUG_MSG (1, "[dbg] Trying to reset the protocol version, ignoring it\n");
 			break;
 		}
