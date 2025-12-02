@@ -58,8 +58,11 @@ namespace System.IO.Compression
         internal static int GetQualityFromCompressionLevel(CompressionLevel compressionLevel) =>
             compressionLevel switch
             {
-                CompressionLevel.NoCompression => Quality_Min, // does not expose such option, choose lowest available
-                CompressionLevel.Fastest => Quality_Min,
+                // zstd supports negative quality levels, all negative levels map to the
+                // same behavior (essentially no compression). Quality 0 means "default" = 3.
+                // 1 is therefore the fastest compression level with some compression.
+                CompressionLevel.NoCompression => Quality_Min,
+                CompressionLevel.Fastest => 1,
                 CompressionLevel.Optimal => Quality_Default,
                 CompressionLevel.SmallestSize => Quality_Max,
                 _ => throw new ArgumentOutOfRangeException(nameof(compressionLevel), compressionLevel, SR.ArgumentOutOfRange_Enum)
