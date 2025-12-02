@@ -4071,7 +4071,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             //  intrinsics for the recursive call. Otherwise we will just recurse infinitely and overflow stack.
             //  This expansion can produce value that is inconsistent with the value seen by JIT/R2R code that can
             //  cause user code to misbehave. This is by design. One-off method Interpretation is for internal use only.
-            bool isMustExpand = (callInfo.hMethod == m_methodHnd) || (ni == NI_System_StubHelpers_GetStubContext);
+            bool isMustExpand = (callInfo.hMethod == m_methodHnd) || (
+                    ni == NI_System_StubHelpers_GetStubContext ||
+                    ni == NI_System_StubHelpers_NextCallReturnAddress ||
+                    ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext ||
+                    ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation);
             if ((InterpConfig.InterpMode() == 3) || isMustExpand)
             {
                 if (EmitNamedIntrinsicCall(ni, callInfo.kind == CORINFO_CALL, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
@@ -4525,6 +4529,18 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     m_pLastNewIns->data[2] =
                         ((lookup.accessType == IAT_PVALUE) ? (int32_t)PInvokeCallFlags::Indirect : 0) |
                         (suppressGCTransition ? (int32_t)PInvokeCallFlags::SuppressGCTransition : 0);
+                }
+                else if (opcode == INTOP_CALLDELEGATE)
+                {
+                    int32_t firstTargetArgOffset = INTERP_STACK_SLOT_SIZE;
+                    if (numArgs > 1)
+                    {
+                        // The first argument is the delegate obj, the second is the first target arg
+                        // The offset of the first target arg relative to the start of delegate call args is equal to the alignment of the
+                        // first target arg.
+                        GetInterpTypeStackSize(m_pVars[callArgs[1]].clsHnd, m_pVars[callArgs[1]].interpType, &firstTargetArgOffset);
+                    }
+                    m_pLastNewIns->data[1] = firstTargetArgOffset;
                 }
             }
             break;
@@ -7791,7 +7807,7 @@ retry_emit:
                 CORINFO_FIELD_INFO fieldInfo;
                 uint32_t token = getU4LittleEndian(m_ip + 1);
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
-                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_SET, &fieldInfo);
 
                 // Inject call to callsite callout helper
                 EmitCallsiteCallout(fieldInfo.accessAllowed, &fieldInfo.accessCalloutHelper);
@@ -7870,7 +7886,7 @@ retry_emit:
                 CORINFO_FIELD_INFO fieldInfo;
                 uint32_t token = getU4LittleEndian(m_ip + 1);
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
-                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_SET, &fieldInfo);
 
                 // Inject call to callsite callout helper
                 EmitCallsiteCallout(fieldInfo.accessAllowed, &fieldInfo.accessCalloutHelper);

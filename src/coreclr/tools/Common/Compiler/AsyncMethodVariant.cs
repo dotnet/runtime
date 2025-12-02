@@ -58,7 +58,7 @@ namespace ILCompiler
 
         public override MethodDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
-            throw new NotImplementedException();
+            return this;
         }
 
         public override string ToString() => $"Async variant: " + _wrappedMethod.ToString();
