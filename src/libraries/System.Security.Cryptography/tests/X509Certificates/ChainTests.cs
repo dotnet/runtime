@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 using (var chainHolder = new ChainHolder())
                 {
                     X509Chain chain = chainHolder.Chain;
-                    chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
+                    chain.ChainPolicy.VerificationTime = new DateTime(2025, 12, 25, 12, 01, 01, DateTimeKind.Local);
                     chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                     return chain.Build(microsoftDotCom);
@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 // Halfway between microsoftDotCom's NotBefore and NotAfter
                 // This isn't a boundary condition test.
-                chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
+                chain.ChainPolicy.VerificationTime = new DateTime(2025, 12, 25, 12, 01, 01, DateTimeKind.Local);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComRoot);
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
-                chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
+                chain.ChainPolicy.VerificationTime = new DateTime(2025, 12, 25, 12, 01, 01, DateTimeKind.Local);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     // Re-set the ChainPolicy properties
                     chain2.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
-                    chain2.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
+                    chain2.ChainPolicy.VerificationTime = new DateTime(2025, 12, 25, 12, 01, 01, DateTimeKind.Local);
                     chain2.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                     valid = chain2.Build(microsoftDotCom);
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
 
-                chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
+                chain.ChainPolicy.VerificationTime = new DateTime(2025, 12, 25, 12, 01, 01, DateTimeKind.Local);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
@@ -159,7 +159,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 chain = chainHolder.Chain;
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
-                chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
+                chain.ChainPolicy.VerificationTime = new DateTime(2025, 12, 25, 12, 01, 01, DateTimeKind.Local);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.Build(microsoftDotCom);
 
@@ -288,11 +288,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     // Check some known conditions.
 
-                    if (OperatingSystem.IsLinux() || PlatformDetection.IsApplePlatform26OrLater)
-                    {
-                        Assert.Equal(2, chain.ChainElements.Count);
-                    }
-                    else if (PlatformDetection.IsApplePlatform)
+                    if (OperatingSystem.IsLinux() || PlatformDetection.IsApplePlatform)
                     {
                         Assert.Equal(3, chain.ChainElements.Count);
                     }
@@ -314,10 +310,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 // Android doesn't support an empty custom root
                 X509ChainStatusFlags flags = X509ChainStatusFlags.UntrustedRoot;
-                if (!SignatureSupport.SupportsX509Sha1Signatures)
-                {
-                    flags |= X509ChainStatusFlags.NotSignatureValid;
-                }
                 yield return new object[] { false, flags, BuildChainCustomTrustStoreTestArguments.TrustedIntermediateUntrustedRoot };
             }
 
@@ -427,30 +419,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static IEnumerable<object[]> VerifyExpirationData()
         {
             // The test will be using the chain for TestData.MicrosoftDotComSslCertBytes
-            // The leaf cert (microsoft.com) is valid from 2020-08-28 22:17:02Z to 2021-08-28 22:17:02Z
-            DateTime[] validTimes =
-            {
-                // The NotBefore value
-                new DateTime(2020, 08, 28, 22, 17, 02, DateTimeKind.Utc),
-
-                // One second before the NotAfter value
-                new DateTime(2021, 08, 28, 22, 17, 01, DateTimeKind.Utc),
-            };
+            DateTime notBefore = new DateTime(2025, 10, 01, 05, 17, 14, DateTimeKind.Utc);
+            DateTime notAfter = new DateTime(2026, 03, 30, 05, 17, 14, DateTimeKind.Utc);
 
             // The NotAfter value as a boundary condition differs on Windows and OpenSSL.
             // Windows considers it valid (<= NotAfter).
             // OpenSSL considers it invalid (< NotAfter), with a comment along the lines of
             //   "it'll be invalid in a millisecond, why bother with the <="
             // So that boundary condition is not being tested.
+            DateTime[] validTimes = [notBefore, notAfter.AddSeconds(-1)];
 
             DateTime[] invalidTimes =
-            {
+            [
                 // One second before the NotBefore time
-                new DateTime(2020, 08, 28, 22, 17, 01, DateTimeKind.Utc),
+                notBefore.AddSeconds(-1),
 
                 // One second after the NotAfter time
-                new DateTime(2021, 08, 28, 22, 17, 03, DateTimeKind.Utc),
-            };
+                notAfter.AddSeconds(1)
+            ];
 
             List<object[]> testCases = new List<object[]>((validTimes.Length + invalidTimes.Length) * 3);
 
@@ -502,7 +488,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 bool builtSuccessfully = chain.Build(microsoftDotCom);
 
-                Assert.Equal(shouldBeValid, builtSuccessfully);
+                if (shouldBeValid != builtSuccessfully)
+                {
+                    Assert.Fail($"Expected chain validity to be '{shouldBeValid}' but was '{builtSuccessfully}'. Chain flags: '{chain.AllStatusFlags()}'.");
+                }
 
                 // If we failed to build the chain, validate the chain status
                 if (!shouldBeValid)
@@ -656,11 +645,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         X509ChainStatusFlags.NoError,
                         (a, status) => a | status.Status));
 
-                Assert.Equal(
-                    X509ChainStatusFlags.NotValidForUsage,
-                    holder.Chain.ChainElements[2].ChainElementStatus.Aggregate(
-                        X509ChainStatusFlags.NoError,
-                        (a, status) => a | status.Status));
+                if (!PlatformDetection.IsWindows)
+                {
+                    Assert.Equal(
+                        X509ChainStatusFlags.NotValidForUsage,
+                        holder.Chain.ChainElements[2].ChainElementStatus.Aggregate(
+                            X509ChainStatusFlags.NoError,
+                            (a, status) => a | status.Status));
+                }
             }
         }
 
@@ -748,7 +740,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         }
 
                         X509Chain chainValidator = chainHolder.Chain;
-                        chainValidator.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
+                        chainValidator.ChainPolicy.VerificationTime = new DateTime(2025, 12, 25, 12, 01, 01, DateTimeKind.Local);
                         chainValidator.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                         bool chainBuildResult = chainValidator.Build(microsoftDotCom);

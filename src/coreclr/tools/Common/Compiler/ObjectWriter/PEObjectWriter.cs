@@ -874,6 +874,7 @@ namespace ILCompiler.ObjectWriter
                             break;
                         }
                         case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                        case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
                             if (addend != 0)
                             {
                                 throw new NotSupportedException();
@@ -891,7 +892,9 @@ namespace ILCompiler.ObjectWriter
                             break;
                         }
                         case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
-                        case RelocType.IMAGE_REL_BASED_RISCV64_PC:
+                        case RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT:
+                        case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I:
+                        case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S:
                         {
                             if (addend != 0)
                             {

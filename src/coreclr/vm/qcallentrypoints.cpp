@@ -75,6 +75,10 @@
 
 #include "versionresilienthashcode.h"
 
+#ifdef TARGET_BROWSER
+#include "entrypoints.h"
+#endif // TARGET_BROWSER
+
 static const Entry s_QCall[] =
 {
     DllImportEntry(ArgIterator_Init)
@@ -394,10 +398,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MngdSafeArrayMarshaler_ClearNative)
     DllImportEntry(Variant_ConvertValueTypeToRecord)
 #endif // FEATURE_COMINTEROP
-    DllImportEntry(NativeLibrary_LoadFromPath)
     DllImportEntry(NativeLibrary_LoadByName)
-    DllImportEntry(NativeLibrary_FreeLib)
-    DllImportEntry(NativeLibrary_GetSymbol)
     DllImportEntry(GetTypeLoadExceptionMessage)
     DllImportEntry(GetFileLoadExceptionMessage)
     DllImportEntry(FileLoadException_GetMessageForHR)
@@ -501,7 +502,6 @@ static const Entry s_QCall[] =
     DllImportEntry(X86BaseCpuId)
 #endif
     DllImportEntry(StubHelpers_CreateCustomMarshaler)
-    DllImportEntry(StubHelpers_SetStringTrailByte)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
     DllImportEntry(StubHelpers_MarshalToManagedVaList)
     DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)
@@ -540,6 +540,12 @@ static const Entry s_QCall[] =
     DllImportEntry(IsInstanceOf_NoCacheLookup)
     DllImportEntry(VersionResilientHashCode_TypeHashCode)
     DllImportEntry(TailCallHelp_AllocTailCallArgBufferInternal)
+#ifdef TARGET_BROWSER
+    DllImportEntry(SystemJS_ResolveMainPromise)
+    DllImportEntry(SystemJS_RejectMainPromise)
+    DllImportEntry(SystemJS_ScheduleTimer)
+    DllImportEntry(SystemJS_ScheduleBackgroundJob)
+#endif // TARGET_BROWSER
 };
 
 const void* QCallResolveDllImport(const char* name)

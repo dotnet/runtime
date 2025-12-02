@@ -361,6 +361,11 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 cur->SetFlags(BBF_REMOVED);
                 removedBlks++;
 
+                if (cur->KindIs(BBJ_RETURN))
+                {
+                    fgReturnCount--;
+                }
+
                 // Drop the block from the list.
                 //
                 // We rely on the fact that this does not clear out
@@ -5361,17 +5366,25 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         }
     };
 
-    ArrayStack<BasicBlock*> retBlocks(getAllocator(CMK_ArrayStack));
+    ArrayStack<BasicBlock*> retOrThrowBlocks(getAllocator(CMK_ArrayStack));
 
     // Visit each block
     //
     for (BasicBlock* const block : Blocks())
     {
         iterateTailMerge(block);
-
-        if (block->KindIs(BBJ_RETURN) && !block->isEmpty() && (block != genReturnBB))
+        if (block->isEmpty())
         {
-            // Avoid spitting a return away from a possible tail call
+            continue;
+        }
+
+        if (block->KindIs(BBJ_THROW))
+        {
+            retOrThrowBlocks.Push(block);
+        }
+        else if (block->KindIs(BBJ_RETURN) && (block != genReturnBB))
+        {
+            // Avoid splitting a return away from a possible tail call
             //
             if (!block->hasSingleStmt())
             {
@@ -5384,14 +5397,14 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 }
             }
 
-            retBlocks.Push(block);
+            retOrThrowBlocks.Push(block);
         }
     }
 
     predInfo.Reset();
-    for (int i = 0; i < retBlocks.Height(); i++)
+    for (int i = 0; i < retOrThrowBlocks.Height(); i++)
     {
-        predInfo.Push(PredInfo(retBlocks.Bottom(i), retBlocks.Bottom(i)->lastStmt()));
+        predInfo.Push(PredInfo(retOrThrowBlocks.Bottom(i), retOrThrowBlocks.Bottom(i)->lastStmt()));
     }
 
     tailMergePreds(nullptr);

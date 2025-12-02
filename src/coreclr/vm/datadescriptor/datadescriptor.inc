@@ -670,11 +670,6 @@ CDAC_TYPE_FIELD(RealCodeHeader, /* T_RUNTIME_FUNCTION */, UnwindInfos, offsetof(
 #endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(RealCodeHeader)
 
-CDAC_TYPE_BEGIN(PatchpointInfo)
-CDAC_TYPE_SIZE(sizeof(PatchpointInfo))
-CDAC_TYPE_FIELD(PatchpointInfo, /*uint32*/, LocalCount, cdac_data<PatchpointInfo>::LocalCount)
-CDAC_TYPE_END(PatchpointInfo)
-
 CDAC_TYPE_BEGIN(CodeHeapListNode)
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, Next, offsetof(HeapList, hpNext))
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, StartAddress, offsetof(HeapList, startAddress))
@@ -1151,7 +1146,7 @@ CDAC_GLOBAL_CONTRACT(CodeVersions, 1)
 CDAC_GLOBAL_CONTRACT(ComWrappers, 1)
 #endif // FEATURE_COMWRAPPERS
 CDAC_GLOBAL_CONTRACT(DacStreams, 1)
-CDAC_GLOBAL_CONTRACT(DebugInfo, 1)
+CDAC_GLOBAL_CONTRACT(DebugInfo, 2)
 CDAC_GLOBAL_CONTRACT(EcmaMetadata, 1)
 CDAC_GLOBAL_CONTRACT(Exception, 1)
 CDAC_GLOBAL_CONTRACT(ExecutionManager, 2)

@@ -72,6 +72,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public TargetDetails Target { get; }
 
+        public ReadyToRunContainerFormat Format { get; }
+
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
 
         public ProfileDataManager ProfileDataManager { get; }
@@ -199,10 +201,10 @@ namespace ILCompiler.DependencyAnalysis
             ResourceData win32Resources,
             ReadyToRunFlags flags,
             NodeFactoryOptimizationFlags nodeFactoryOptimizationFlags,
+            ReadyToRunContainerFormat format,
             ulong imageBase,
             EcmaModule associatedModule,
-            int genericCycleDepthCutoff,
-            int genericCycleBreadthCutoff)
+            int genericCycleDepthCutoff, int genericCycleBreadthCutoff)
         {
             OptimizationFlags = nodeFactoryOptimizationFlags;
             TypeSystemContext = context;
@@ -214,6 +216,7 @@ namespace ILCompiler.DependencyAnalysis
             CopiedCorHeaderNode = corHeaderNode;
             DebugDirectoryNode = debugDirectoryNode;
             Resolver = compilationModuleGroup.Resolver;
+            Format = format;
 
             Header = new GlobalHeaderNode(flags, associatedModule);
             ImageBase = imageBase;
@@ -376,7 +379,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public RuntimeFunctionsGCInfoNode RuntimeFunctionsGCInfo;
 
-        public DelayLoadMethodCallThunkNodeRange DelayLoadMethodCallThunks;
+        public SymbolNodeRange DelayLoadMethodCallThunks;
 
         public InstanceEntryPointTableNode InstanceEntryPointTable;
 
@@ -699,7 +702,7 @@ namespace ILCompiler.DependencyAnalysis
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
-            DelayLoadMethodCallThunks = new DelayLoadMethodCallThunkNodeRange();
+            DelayLoadMethodCallThunks = new SymbolNodeRange("DelayLoadMethodCallThunkNodeRange");
             graph.AddRoot(DelayLoadMethodCallThunks, "DelayLoadMethodCallThunks header entry is always generated");
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
 
@@ -778,7 +781,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null, 
+            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null,
                 CompilationModuleGroup.IsCompositeBuildMode ? InliningInfoNode.InfoType.CrossModuleInliningForCrossModuleDataOnly : InliningInfoNode.InfoType.CrossModuleAllMethods);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.CrossModuleInlineInfo, crossModuleInliningInfoTable, crossModuleInliningInfoTable);
             this.CrossModuleInlningInfo = crossModuleInliningInfoTable;

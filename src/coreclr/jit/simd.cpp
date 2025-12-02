@@ -52,9 +52,8 @@ int Compiler::getSIMDVectorLength(unsigned simdSize, var_types baseType)
 //
 int Compiler::getSIMDVectorLength(CORINFO_CLASS_HANDLE typeHnd)
 {
-    unsigned    sizeBytes   = 0;
-    CorInfoType baseJitType = getBaseJitTypeAndSizeOfSIMDType(typeHnd, &sizeBytes);
-    var_types   baseType    = JitType2PreciseVarType(baseJitType);
+    unsigned  sizeBytes = 0;
+    var_types baseType  = getBaseTypeAndSizeOfSIMDType(typeHnd, &sizeBytes);
     return getSIMDVectorLength(sizeBytes, baseType);
 }
 
@@ -153,6 +152,16 @@ unsigned Compiler::getFFRegisterVarNum()
 }
 #endif
 
+var_types Compiler::getBaseTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls)
+{
+    CorInfoType jitType = info.compCompHnd->getTypeForPrimitiveNumericClass(cls);
+    if (jitType == CORINFO_TYPE_UNDEF)
+    {
+        return TYP_UNDEF;
+    }
+    return JitType2PreciseVarType(jitType);
+}
+
 //----------------------------------------------------------------------------------
 // Return the base type and size of SIMD vector type given its type handle.
 //
@@ -177,6 +186,299 @@ unsigned Compiler::getFFRegisterVarNum()
 //         this when we implement  SIMD intrinsic identification for the final
 //         product.
 //
+var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes /*= nullptr */)
+{
+    if (m_simdHandleCache == nullptr)
+    {
+        if (impInlineInfo == nullptr)
+        {
+            m_simdHandleCache = new (this, CMK_Generic) SIMDHandlesCache();
+        }
+        else
+        {
+            // Steal the inliner compiler's cache (create it if not available).
+
+            if (impInlineInfo->InlineRoot->m_simdHandleCache == nullptr)
+            {
+                impInlineInfo->InlineRoot->m_simdHandleCache = new (this, CMK_Generic) SIMDHandlesCache();
+            }
+
+            m_simdHandleCache = impInlineInfo->InlineRoot->m_simdHandleCache;
+        }
+    }
+
+    if (sizeBytes != nullptr)
+    {
+        *sizeBytes = 0;
+    }
+
+    if ((typeHnd == nullptr) || !isIntrinsicType(typeHnd))
+    {
+        return TYP_UNDEF;
+    }
+
+    const char* namespaceName;
+    const char* className = getClassNameFromMetadata(typeHnd, &namespaceName);
+
+    // fast path search using cached type handles of important types
+    var_types simdBaseType = TYP_UNDEF;
+    unsigned  size         = 0;
+
+    if (isNumericsNamespace(namespaceName))
+    {
+        switch (className[0])
+        {
+            case 'P':
+            {
+                if (strcmp(className, "Plane") != 0)
+                {
+                    return TYP_UNDEF;
+                }
+
+                JITDUMP("  Known type Plane\n");
+                m_simdHandleCache->PlaneHandle = typeHnd;
+
+                simdBaseType = TYP_FLOAT;
+                size         = 4 * genTypeSize(TYP_FLOAT);
+                break;
+            }
+
+            case 'Q':
+            {
+                if (strcmp(className, "Quaternion") != 0)
+                {
+                    return TYP_UNDEF;
+                }
+
+                JITDUMP("  Known type Quaternion\n");
+                m_simdHandleCache->QuaternionHandle = typeHnd;
+
+                simdBaseType = TYP_FLOAT;
+                size         = 4 * genTypeSize(TYP_FLOAT);
+                break;
+            }
+
+            case 'V':
+            {
+                if (strncmp(className, "Vector", 6) != 0)
+                {
+                    return TYP_UNDEF;
+                }
+
+                switch (className[6])
+                {
+                    case '\0':
+                    {
+                        JITDUMP(" Found type Vector\n");
+                        m_simdHandleCache->VectorHandle = typeHnd;
+                        break;
+                    }
+
+                    case '2':
+                    {
+                        if (className[7] != '\0')
+                        {
+                            return TYP_UNDEF;
+                        }
+
+                        JITDUMP(" Found Vector2\n");
+                        m_simdHandleCache->Vector2Handle = typeHnd;
+
+                        simdBaseType = TYP_FLOAT;
+                        size         = 2 * genTypeSize(TYP_FLOAT);
+                        break;
+                    }
+
+                    case '3':
+                    {
+                        if (className[7] != '\0')
+                        {
+                            return TYP_UNDEF;
+                        }
+
+                        JITDUMP(" Found Vector3\n");
+                        m_simdHandleCache->Vector3Handle = typeHnd;
+
+                        simdBaseType = TYP_FLOAT;
+                        size         = 3 * genTypeSize(TYP_FLOAT);
+                        break;
+                    }
+
+                    case '4':
+                    {
+                        if (className[7] != '\0')
+                        {
+                            return TYP_UNDEF;
+                        }
+
+                        JITDUMP(" Found Vector4\n");
+                        m_simdHandleCache->Vector4Handle = typeHnd;
+
+                        simdBaseType = TYP_FLOAT;
+                        size         = 4 * genTypeSize(TYP_FLOAT);
+                        break;
+                    }
+
+                    case '`':
+                    {
+                        if ((className[7] != '1') || (className[8] != '\0'))
+                        {
+                            return TYP_UNDEF;
+                        }
+
+                        CORINFO_CLASS_HANDLE typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
+                        simdBaseType                    = getBaseTypeForPrimitiveNumericClass(typeArgHnd);
+
+                        if ((simdBaseType < TYP_BYTE) || (simdBaseType > TYP_DOUBLE))
+                        {
+                            return TYP_UNDEF;
+                        }
+
+                        JITDUMP(" Found Vector<%s>\n", varTypeName(simdBaseType));
+                        size = getVectorTByteLength();
+
+                        if (size == 0)
+                        {
+                            return TYP_UNDEF;
+                        }
+                        break;
+                    }
+
+                    default:
+                    {
+                        return TYP_UNDEF;
+                    }
+                }
+                break;
+            }
+
+            default:
+            {
+                return TYP_UNDEF;
+            }
+        }
+    }
+#ifdef FEATURE_HW_INTRINSICS
+    else
+    {
+        size = info.compCompHnd->getClassSize(typeHnd);
+
+        switch (size)
+        {
+#if defined(TARGET_ARM64)
+            case 8:
+            {
+                if (strcmp(className, "Vector64`1") != 0)
+                {
+                    return TYP_UNDEF;
+                }
+
+                CORINFO_CLASS_HANDLE typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
+                simdBaseType                    = getBaseTypeForPrimitiveNumericClass(typeArgHnd);
+
+                if ((simdBaseType < TYP_BYTE) || (simdBaseType > TYP_DOUBLE))
+                {
+                    return TYP_UNDEF;
+                }
+
+                JITDUMP(" Found Vector64<%s>\n", varTypeName(simdBaseType));
+                break;
+            }
+#endif // TARGET_ARM64
+
+            case 16:
+            {
+                if (strcmp(className, "Vector128`1") != 0)
+                {
+                    return TYP_UNDEF;
+                }
+
+                CORINFO_CLASS_HANDLE typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
+                simdBaseType                    = getBaseTypeForPrimitiveNumericClass(typeArgHnd);
+
+                if ((simdBaseType < TYP_BYTE) || (simdBaseType > TYP_DOUBLE))
+                {
+                    return TYP_UNDEF;
+                }
+
+                JITDUMP(" Found Vector128<%s>\n", varTypeName(simdBaseType));
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            case 32:
+            {
+                if (strcmp(className, "Vector256`1") != 0)
+                {
+                    return TYP_UNDEF;
+                }
+
+                CORINFO_CLASS_HANDLE typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
+                simdBaseType                    = getBaseTypeForPrimitiveNumericClass(typeArgHnd);
+
+                if ((simdBaseType < TYP_BYTE) || (simdBaseType > TYP_DOUBLE))
+                {
+                    return TYP_UNDEF;
+                }
+
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX))
+                {
+                    // We must treat as a regular struct if AVX isn't supported
+                    return TYP_UNDEF;
+                }
+
+                JITDUMP(" Found Vector256<%s>\n", varTypeName(simdBaseType));
+                break;
+            }
+
+            case 64:
+            {
+                if (strcmp(className, "Vector512`1") != 0)
+                {
+                    return TYP_UNDEF;
+                }
+
+                CORINFO_CLASS_HANDLE typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
+                simdBaseType                    = getBaseTypeForPrimitiveNumericClass(typeArgHnd);
+
+                if ((simdBaseType < TYP_BYTE) || (simdBaseType > TYP_DOUBLE))
+                {
+                    return TYP_UNDEF;
+                }
+
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                {
+                    // We must treat as a regular struct if AVX512 isn't supported
+                    return TYP_UNDEF;
+                }
+
+                JITDUMP(" Found Vector512<%s>\n", varTypeName(simdBaseType));
+                break;
+            }
+#endif // TARGET_XARCH
+
+            default:
+            {
+                return TYP_UNDEF;
+            }
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    if (sizeBytes != nullptr)
+    {
+        *sizeBytes = size;
+    }
+
+    if (simdBaseType != TYP_UNDEF)
+    {
+        assert(size == info.compCompHnd->getClassSize(typeHnd));
+        setUsesSIMDTypes(true);
+    }
+
+    return simdBaseType;
+}
+
 CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes /*= nullptr */)
 {
     if (m_simdHandleCache == nullptr)
