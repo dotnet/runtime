@@ -176,10 +176,6 @@ namespace System.IO.Compression
         /// <summary>
         /// Gets the compression method used to compress the entry.
         /// </summary>
-        /// <remarks>
-        /// Returns the compression method as stored in the zip archive header. The value corresponds to the
-        /// compression method values described in the ZIP File Format Specification (APPNOTE.TXT section 4.4.5).
-        /// </remarks>
         public ZipCompressionMethod CompressionMethod => _storedCompressionMethod;
 
         /// <summary>
