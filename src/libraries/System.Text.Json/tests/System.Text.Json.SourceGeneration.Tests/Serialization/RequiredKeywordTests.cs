@@ -32,6 +32,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithRequiredExtensionDataProperty))]
         [JsonSerializable(typeof(ClassWithRequiredKeywordAndJsonRequiredCustomAttribute))]
         [JsonSerializable(typeof(ClassWithCustomRequiredPropertyName))]
+        [JsonSerializable(typeof(DerivedClassWithRequiredInitOnlyProperty))]
+        [JsonSerializable(typeof(ClassWithNullValidatingConstructor))]
         internal sealed partial class RequiredKeywordTestsContext : JsonSerializerContext
         {
         }

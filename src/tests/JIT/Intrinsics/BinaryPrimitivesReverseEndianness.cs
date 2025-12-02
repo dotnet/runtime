@@ -7,10 +7,11 @@ using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal;
+using Xunit;
 
 namespace BinaryPrimitivesReverseEndianness
 {
-    class Program
+    public class Program
     {
         public const int Pass = 100;
         public const int Fail = 0;
@@ -33,7 +34,8 @@ namespace BinaryPrimitivesReverseEndianness
         private static readonly byte[] s_bufferLESigned64 = new byte[] { 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0x1e };
         private static readonly byte[] s_bufferBESigned64 = new byte[] { 0x1e, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10 };
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             /*
              * CONST VALUE TESTS

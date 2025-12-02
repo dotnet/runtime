@@ -83,7 +83,7 @@ namespace System.ComponentModel
             // Used to validate a type and retrieve license details
             // when activating a managed COM server from an IClassFactory2 instance.
             public static bool ValidateAndRetrieveLicenseDetails(
-                LicenseContext context,
+                LicenseContext? context,
                 Type type,
                 out License? license,
                 out string? licenseKey)

@@ -45,7 +45,7 @@ namespace System.Security.Cryptography
             if (requiredOutputLength > outputBuffer.Length - outputOffset)
                 ThrowHelper.ThrowArgumentOutOfRange(ThrowHelper.ExceptionArgument.outputBuffer);
 
-            Span<byte> input = inputBuffer.AsSpan(inputOffset, inputCount);
+            ReadOnlySpan<byte> input = new ReadOnlySpan<byte>(inputBuffer, inputOffset, inputCount);
             Span<byte> output = outputBuffer.AsSpan(outputOffset, requiredOutputLength);
 
             OperationStatus status = Base64.EncodeToUtf8(input, output, out int consumed, out int written, isFinalBlock: false);
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
             if (inputCount == 0)
                 return Array.Empty<byte>();
 
-            Span<byte> input = inputBuffer.AsSpan(inputOffset, inputCount);
+            ReadOnlySpan<byte> input = new ReadOnlySpan<byte>(inputBuffer, inputOffset, inputCount);
 
             int inputBlocks = Math.DivRem(inputCount, InputBlockSize, out int inputRemainder);
             int outputBlocks = inputBlocks + (inputRemainder != 0 ? 1 : 0);

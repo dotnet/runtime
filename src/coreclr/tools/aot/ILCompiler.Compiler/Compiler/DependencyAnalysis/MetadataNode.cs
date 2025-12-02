@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__embedded_metadata");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__embedded_metadata"u8);
         }
         public int Offset => 0;
         public override bool IsShareable => false;

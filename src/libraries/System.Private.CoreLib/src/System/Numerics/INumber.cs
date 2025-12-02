@@ -37,7 +37,28 @@ namespace System.Numerics
             return result;
         }
 
-        /// <summary>Copies the sign of a value to the sign of another value..</summary>
+        /// <summary>Clamps a value to an inclusive minimum and maximum value using platform-specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="value">The value to clamp.</param>
+        /// <param name="min">The inclusive minimum to which <paramref name="value" /> should clamp.</param>
+        /// <param name="max">The inclusive maximum to which <paramref name="value" /> should clamp.</param>
+        /// <returns>The result of clamping <paramref name="value" /> to the inclusive range of <paramref name="min" /> and <paramref name="max" />.</returns>
+        /// <exception cref="ArgumentException"><paramref name="min" /> is greater than <paramref name="max" />.</exception>
+        static virtual TSelf ClampNative(TSelf value, TSelf min, TSelf max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+
+            TSelf result = value;
+
+            result = TSelf.MaxNative(result, min);
+            result = TSelf.MinNative(result, max);
+
+            return result;
+        }
+
+        /// <summary>Copies the sign of a value to the sign of another value.</summary>
         /// <param name="value">The value whose magnitude is used in the result.</param>
         /// <param name="sign">The value whose sign is used in the result.</param>
         /// <returns>A value with the magnitude of <paramref name="value" /> and the sign of <paramref name="sign" />.</returns>
@@ -79,6 +100,15 @@ namespace System.Numerics
             return TSelf.IsNegative(y) ? x : y;
         }
 
+        /// <summary>Compares two values to compute which is greater using platform-specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is greater than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        static virtual TSelf MaxNative(TSelf x, TSelf y)
+        {
+            return (x > y) ? x : y;
+        }
+
         /// <summary>Compares two values to compute which is greater and returning the other value if an input is <c>NaN</c>.</summary>
         /// <param name="x">The value to compare with <paramref name="y" />.</param>
         /// <param name="y">The value to compare with <paramref name="x" />.</param>
@@ -118,12 +148,26 @@ namespace System.Numerics
             // otherwise returns the larger of the inputs. It
             // treats +0 as larger than -0 as per the specification.
 
-            if ((x != y) && !TSelf.IsNaN(x))
+            if (x != y)
             {
-                return x < y ? x : y;
+                if (!TSelf.IsNaN(x))
+                {
+                    return x < y ? x : y;
+                }
+
+                return x;
             }
 
             return TSelf.IsNegative(x) ? x : y;
+        }
+
+        /// <summary>Compares two values to compute which is lesser using platform-specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="x">The value to compare with <paramref name="y" />.</param>
+        /// <param name="y">The value to compare with <paramref name="x" />.</param>
+        /// <returns><paramref name="x" /> if it is lesser than <paramref name="y" />; otherwise, <paramref name="y" />.</returns>
+        static virtual TSelf MinNative(TSelf x, TSelf y)
+        {
+            return (x < y) ? x : y;
         }
 
         /// <summary>Compares two values to compute which is lesser and returning the other value if an input is <c>NaN</c>.</summary>
@@ -154,12 +198,16 @@ namespace System.Numerics
 
         /// <summary>Computes the sign of a value.</summary>
         /// <param name="value">The value whose sign is to be computed.</param>
-        /// <returns>A positive value if <paramref name="value" /> is positive, <see cref="INumberBase{TSelf}.Zero" /> if <paramref name="value" /> is zero, and a negative value if <paramref name="value" /> is negative.</returns>
+        /// <returns>A positive value if <paramref name="value" /> is positive, <c>0</c> if <paramref name="value" /> is zero, and a negative value if <paramref name="value" /> is negative.</returns>
         /// <remarks>It is recommended that a function return <c>1</c>, <c>0</c>, and <c>-1</c>, respectively.</remarks>
         static virtual int Sign(TSelf value)
         {
             if (value != TSelf.Zero)
             {
+                if (TSelf.IsNaN(value))
+                {
+                    ThrowHelper.ThrowArithmeticException(SR.Arithmetic_NaN);
+                }
                 return TSelf.IsNegative(value) ? -1 : +1;
             }
             return 0;

@@ -12,26 +12,26 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class FrozenRuntimeTypeNode : FrozenObjectNode
     {
         private readonly TypeDesc _type;
-        private readonly bool _constructed;
+        private readonly bool _withMetadata;
 
-        public FrozenRuntimeTypeNode(TypeDesc type, bool constructed)
+        public FrozenRuntimeTypeNode(TypeDesc type, bool withMetadata)
         {
-            Debug.Assert(EETypeNode.SupportsFrozenRuntimeTypeInstances(type.Context.Target));
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
             _type = type;
-            _constructed = constructed;
+            _withMetadata = withMetadata;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__RuntimeType_").Append(nameMangler.GetMangledTypeName(_type));
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__RuntimeType_"u8).Append(nameMangler.GetMangledTypeName(_type));
         }
 
         protected override int ContentSize => ObjectType.InstanceByteCount.AsInt;
 
         public override void EncodeContents(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
-            IEETypeNode typeSymbol = _constructed
-                ? factory.ConstructedTypeSymbol(_type)
+            IEETypeNode typeSymbol = _withMetadata
+                ? factory.MetadataTypeSymbol(_type)
                 : factory.NecessaryTypeSymbol(_type);
 
             dataBuilder.EmitPointerReloc(factory.ConstructedTypeSymbol(ObjectType));
@@ -52,6 +52,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool IsKnownImmutable => false;
 
-        public override DefType ObjectType => _type.Context.SystemModule.GetKnownType("System", "RuntimeType");
+        public override DefType ObjectType => _type.Context.SystemModule.GetKnownType("System"u8, "RuntimeType"u8);
     }
 }

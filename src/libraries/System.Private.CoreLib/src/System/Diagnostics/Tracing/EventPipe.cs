@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-#if FEATURE_PERFTRACING
-
 namespace System.Diagnostics.Tracing
 {
     [StructLayout(LayoutKind.Sequential)]
@@ -31,7 +29,7 @@ namespace System.Diagnostics.Tracing
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct EventPipeProviderConfiguration
+    internal readonly struct EventPipeProviderConfiguration
     {
         [MarshalAs(UnmanagedType.LPWStr)]
         private readonly string m_providerName;
@@ -85,6 +83,7 @@ namespace System.Diagnostics.Tracing
 
     internal static partial class EventPipeInternal
     {
+#if FEATURE_PERFTRACING
         private unsafe struct EventPipeProviderConfigurationNative
         {
             private char* m_pProviderName;
@@ -148,7 +147,21 @@ namespace System.Diagnostics.Tracing
                 }
             }
         }
+#else
+#pragma warning disable IDE0060
+        private unsafe struct EventPipeProviderConfigurationNative
+        {
+        }
+
+        internal static unsafe ulong Enable(
+            string? outputFile,
+            EventPipeSerializationFormat format,
+            uint circularBufferSizeInMB,
+            EventPipeProviderConfiguration[] providers)
+        {
+            return 0;
+        }
+#pragma warning restore IDE0060
+#endif //FEATURE_PERFTRACING
     }
 }
-
-#endif // FEATURE_PERFTRACING

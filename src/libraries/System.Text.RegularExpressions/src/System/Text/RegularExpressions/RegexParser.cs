@@ -150,7 +150,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Escapes all metacharacters (including |,(,),[,{,|,^,$,*,+,?,\, spaces and #)</summary>
         public static string Escape(string input)
         {
-            int indexOfMetachar = IndexOfMetachar(input.AsSpan());
+            int indexOfMetachar = input.AsSpan().IndexOfAny(s_metachars);
             return indexOfMetachar < 0
                 ? input
                 : EscapeImpl(input.AsSpan(), indexOfMetachar);
@@ -199,7 +199,7 @@ namespace System.Text.RegularExpressions
                 vsb.Append(ch);
                 input = input.Slice(1);
 
-                indexOfMetachar = IndexOfMetachar(input);
+                indexOfMetachar = input.IndexOfAny(s_metachars);
                 if (indexOfMetachar < 0)
                 {
                     indexOfMetachar = input.Length;
@@ -913,14 +913,9 @@ namespace System.Text.RegularExpressions
                                     {
                                         string uncapname = ScanCapname();
 
-                                        if (_capnames?[uncapname] is int tmpCapnum)
-                                        {
-                                            uncapnum = tmpCapnum;
-                                        }
-                                        else
-                                        {
+                                        uncapnum = _capnames?[uncapname] is int tmpCapnum ?
+                                            tmpCapnum :
                                             throw MakeException(RegexParseError.UndefinedNamedReference, SR.Format(SR.UndefinedNamedReference, uncapname));
-                                        }
 
                                         // check if we have bogus character after the name
                                         if (_pos < _pattern.Length && _pattern[_pos] != close)
@@ -954,7 +949,7 @@ namespace System.Text.RegularExpressions
                             ch = _pattern[_pos];
 
                             // check if the alternation condition is a backref
-                            if (ch >= '0' && ch <= '9')
+                            if (ch is >= '0' and <= '9')
                             {
                                 int capnum = ScanDecimal();
                                 if (_pos < _pattern.Length && _pattern[_pos++] == ')')
@@ -1314,7 +1309,7 @@ namespace System.Text.RegularExpressions
 
             // Try to parse backreference: \1 or \{1} or \{cap}
 
-            if (ch >= '0' && ch <= '9')
+            if (ch is >= '0' and <= '9')
             {
                 if (!angled && (_options & RegexOptions.ECMAScript) != 0)
                 {
@@ -1580,7 +1575,7 @@ namespace System.Text.RegularExpressions
         {
             char ch = _pattern[_pos++];
 
-            if (ch >= '0' && ch <= '7')
+            if (ch is >= '0' and <= '7')
             {
                 --_pos;
                 return ScanOctal();
@@ -1597,7 +1592,7 @@ namespace System.Text.RegularExpressions
                 case 'b':
                     return '\b';
                 case 'e':
-                    return '\u001B';
+                    return '\e';
                 case 'f':
                     return '\f';
                 case 'n':
@@ -1934,7 +1929,7 @@ namespace System.Text.RegularExpressions
         private static ReadOnlySpan<byte> Category =>
         [
             // 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-               0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, 0, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+               0, 0, 0, 0, 0, 0, 0, 0, 0, W, W, W, W, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             //    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /  0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ?
                W, 0, 0, Z, S, 0, 0, 0, S, S, Q, Q, 0, 0, S, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Q,
             // @  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O  P  Q  R  S  T  U  V  W  X  Y  Z  [  \  ]  ^  _
@@ -1943,26 +1938,8 @@ namespace System.Text.RegularExpressions
                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Q, S, 0, 0, 0
         ];
 
-#if NET8_0_OR_GREATER
         private static readonly SearchValues<char> s_metachars =
-            SearchValues.Create("\t\n\f\r #$()*+.?[\\^{|");
-
-        private static int IndexOfMetachar(ReadOnlySpan<char> input) =>
-            input.IndexOfAny(s_metachars);
-#else
-        private static int IndexOfMetachar(ReadOnlySpan<char> input)
-        {
-            for (int i = 0; i < input.Length; i++)
-            {
-                if (input[i] <= '|' && Category[input[i]] > 0)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-#endif
+            SearchValues.Create("\t\n\v\f\r #$()*+.?[\\^{|");
 
         /// <summary>Returns true for those characters that terminate a string of ordinary chars.</summary>
         private static bool IsSpecial(char ch) => ch <= '|' && Category[ch] >= S;

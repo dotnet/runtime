@@ -16,7 +16,7 @@ namespace Internal.Runtime
     {
         public static readonly FrozenObjectHeapManager Instance = new FrozenObjectHeapManager();
 
-        private readonly LowLevelLock m_Crst = new LowLevelLock();
+        private readonly Lock m_Crst = new Lock(useTrivialWaits: true);
         private FrozenObjectSegment m_CurrentSegment;
 
         // Default size to reserve for a frozen segment
@@ -27,16 +27,14 @@ namespace Internal.Runtime
         public T? TryAllocateObject<T>() where T : class
         {
             MethodTable* pMT = MethodTable.Of<T>();
-            return Unsafe.As<T?>(TryAllocateObject(pMT, pMT->BaseSize));
+            return Unsafe.As<T>(TryAllocateObject(pMT, pMT->BaseSize));
         }
 
         private object? TryAllocateObject(MethodTable* type, nuint objectSize)
         {
             HalfBakedObject* obj = null;
 
-            m_Crst.Acquire();
-
-            try
+            using (m_Crst.EnterScope())
             {
                 Debug.Assert(type != null);
                 // _ASSERT(FOH_COMMIT_SIZE >= MIN_OBJECT_SIZE);
@@ -48,7 +46,7 @@ namespace Internal.Runtime
                 if (type->RequiresAlign8)
                 {
                     // Align8 objects are not supported yet
-                    return nullptr;
+                    return null;
                 }
 #endif
 
@@ -84,10 +82,6 @@ namespace Internal.Runtime
                     Debug.Assert(obj != null);
                 }
             } // end of m_Crst lock
-            finally
-            {
-                m_Crst.Release();
-            }
 
             IntPtr result = (IntPtr)obj;
 

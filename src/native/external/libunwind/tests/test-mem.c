@@ -35,8 +35,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 #include <sys/resource.h>
 
-#define panic(args...)				\
-	{ fprintf (stderr, args); exit (-1); }
+#define panic(...)				\
+	{ fprintf (stderr, __VA_ARGS__); exit (-1); }
 
 int verbose;
 
@@ -80,23 +80,25 @@ consume_some_stack_space (void)
 
   memset (&cursor, 0, sizeof (cursor));
   memset (&uc, 0, sizeof (uc));
-  return sprintf (string, "hello %p %p\n", &cursor, &uc);
+  return sprintf (string, "hello %p %p\n", (void *)&cursor, (void *)&uc);
 }
 
 int
 main (int argc, char **argv UNUSED)
 {
-  struct rlimit rlim;
+  struct rlimit rlim UNUSED;
 
   verbose = argc > 1;
 
   if (consume_some_stack_space () > 9999)
     exit (-1);	/* can't happen, but don't let the compiler know... */
 
+#if !defined(__QNX__)
   rlim.rlim_cur = 0;
   rlim.rlim_max = RLIM_INFINITY;
   setrlimit (RLIMIT_DATA, &rlim);
   setrlimit (RLIMIT_AS, &rlim);
+#endif /* !defined(__QNX__) */
 
   do_backtrace ();
   return 0;

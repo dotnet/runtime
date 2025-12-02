@@ -28,7 +28,7 @@ namespace System.Collections.Frozen
             }
 
             int arraySize = spread * MaxPerLength;
-#if NET6_0_OR_GREATER
+#if NET
             if (arraySize > Array.MaxLength)
 #else
             if (arraySize > 0X7FFFFFC7)
@@ -87,7 +87,7 @@ namespace System.Collections.Frozen
                 return null;
             }
 
-#if NET6_0_OR_GREATER
+#if NET
             // We don't need an array with every value initialized to zero if we are just about to overwrite every value anyway.
             int[] copy = GC.AllocateUninitializedArray<int>(arraySize);
             Array.Copy(buckets, copy, arraySize);

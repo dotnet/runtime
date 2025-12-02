@@ -77,10 +77,10 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            return new X509Extension(
-                Oids.SubjectAltName,
-                writer.Encode(),
-                critical);
+            return writer.Encode(critical, static (critical, encoded) =>
+            {
+                return new X509Extension(Oids.SubjectAltName, encoded, critical);
+            });
         }
 
         private void AddGeneralName(GeneralNameAsn generalName)

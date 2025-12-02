@@ -9,6 +9,7 @@ namespace System.Net.Security
     public partial class SslStreamCertificateContext
     {
         private const bool TrimRootCertificate = true;
+        private const bool ChainBuildNeedsTrustedRoot = true;
 
         private SslStreamCertificateContext(X509Certificate2 target, ReadOnlyCollection<X509Certificate2> intermediates, SslCertificateTrust? trust)
         {

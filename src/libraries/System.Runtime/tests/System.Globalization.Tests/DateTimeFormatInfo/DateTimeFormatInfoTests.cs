@@ -67,7 +67,7 @@ namespace System.Globalization.Tests
             {
                 dtfi.Calendar = calendar;
 
-                if (PlatformDetection.IsNotUsingLimitedCultures)
+                if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
                 {
                     // Mobile / Browser ICU doesn't contain NativeCalendarName,
                     Assert.Equal(nativeCalendarName, dtfi.NativeCalendarName);
@@ -138,7 +138,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Months_GetHebrew_ReturnsExpected()
         {
             CultureInfo ci = new CultureInfo("he-IL");

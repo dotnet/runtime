@@ -5180,7 +5180,7 @@ interface ICorDebugNativeFrame : ICorDebugFrame
      * coherent state.  (Note that even if the frame is in a valid
      * state as far as the runtime is concerned, there still may be
      * problems - e.g. uninitialized local variables, etc.  The caller
-     * (or perhaps the user) is responsible for insuring coherency of
+     * (or perhaps the user) is responsible for ensuring coherency of
      * the running program.)
      *
      * Calling SetIP immediately invalidates all frames and chains for the
@@ -7779,6 +7779,17 @@ interface ICorDebugExceptionObjectCallStackEnum : ICorDebugEnum
 interface ICorDebugExceptionObjectValue : IUnknown
 {
     HRESULT EnumerateExceptionCallStack([out] ICorDebugExceptionObjectCallStackEnum** ppCallStackEnum);
+};
+
+[
+    object,
+    local,
+    uuid(e3b2f332-cc46-4f1e-ab4e-5400e332195e),
+    pointer_default(unique)
+]
+interface ICorDebugExceptionObjectValue2 : IUnknown
+{
+    HRESULT ForceCatchHandlerFoundEvents([in] BOOL enableEvents);
 };
 
 /* ------------------------------------------------------------------------- *

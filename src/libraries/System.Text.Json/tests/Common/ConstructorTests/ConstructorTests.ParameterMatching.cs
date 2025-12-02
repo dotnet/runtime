@@ -12,6 +12,8 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class ConstructorTests : SerializerTests
     {
+        private static readonly JsonSerializerOptions s_respectRequiredParamsOptions = new() { RespectRequiredConstructorParameters = true };
+
         public ConstructorTests(JsonSerializerWrapper stringSerializer)
             : base(stringSerializer)
         {
@@ -1609,7 +1611,7 @@ namespace System.Text.Json.Serialization.Tests
             Class_With_Parameters_Default_Values result = await Serializer.DeserializeWrapper<Class_With_Parameters_Default_Values>(json);
             result.Verify();
         }
-        
+
         [Fact]
         public async Task TestClassWithCustomConverterOnCtorParameter_ShouldPassCorrectTypeToConvertParameter()
         {
@@ -1635,6 +1637,209 @@ namespace System.Text.Json.Serialization.Tests
 
             public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
                 => writer.WriteStringValue(value);
+        }
+
+        [Fact]
+        public async Task RespectRequiredConstructorParameters_RequiredParameterMissing_ThrowsJsonException()
+        {
+            string json = """{"X":1,"Z":3}""";
+            JsonException ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Point_3D>(json, s_respectRequiredParamsOptions));
+            Assert.DoesNotContain("'X'", ex.Message);
+            Assert.Contains("'Y'", ex.Message);
+            Assert.DoesNotContain("'Z'", ex.Message);
+        }
+
+        [Fact]
+        public async Task RespectRequiredConstructorParameters_OptionalParameterMissing_Succeeds()
+        {
+            string json = """{"X":1,"Y":2}""";
+            Point_3D result = await Serializer.DeserializeWrapper<Point_3D>(json, s_respectRequiredParamsOptions);
+            Assert.Equal(1, result.X);
+            Assert.Equal(2, result.Y);
+            Assert.Equal(50, result.Z);
+        }
+
+        [Fact]
+        public async Task RespectRequiredConstructorParameters_NoParameterMissing_Succeeds()
+        {
+            string json = """{"X":1,"Y":2,"Z":3}""";
+            Point_3D result = await Serializer.DeserializeWrapper<Point_3D>(json, s_respectRequiredParamsOptions);
+            Assert.Equal(1, result.X);
+            Assert.Equal(2, result.Y);
+            Assert.Equal(3, result.Z);
+        }
+
+        [Fact]
+        public async Task ClassWithConflictingCaseInsensitiveProperties_Succeeds_When_CaseSensitive()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/109768
+
+            string json = """{"a": "lower", "A": "upper"}""";
+            ClassWithConflictingCaseInsensitiveProperties result = await Serializer.DeserializeWrapper<ClassWithConflictingCaseInsensitiveProperties>(json);
+            Assert.Equal("lower", result.From);
+            Assert.Equal("upper", result.To);
+        }
+
+        public class ClassWithConflictingCaseInsensitiveProperties
+        {
+            [JsonPropertyName("a")]
+            public string From { get; set; }
+
+            [JsonPropertyName("A")]
+            public string To { get; set; }
+
+            [JsonConstructor]
+            public ClassWithConflictingCaseInsensitiveProperties(string from, string to)
+            {
+                From = from;
+                To = to;
+            }
+        }
+
+        [Fact]
+        public async Task RespectAllowDuplicateProp_DuplicateCtorParam()
+        {
+            string json = """{"X":1,"Y":2,"X":3}""";
+
+            Exception ex = await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<Point_3D>(json, JsonTestSerializerOptions.DisallowDuplicateProperties));
+            Assert.Contains("Duplicate", ex.Message);
+
+            Assert.Equal(3, (await Serializer.DeserializeWrapper<Point_3D>(json)).X);
+        }
+
+        [Theory]
+        [InlineData("""{"X":1,"X":2}""", typeof(Point_2D))]
+        [InlineData("""{"Y":1,"Y":2}""", typeof(Point_2D))]
+        [InlineData("""{"X":1,"Y":2,"X":3}""", typeof(Point_2D))]
+        [InlineData("""{"X":1,"Y":2,"Y":3}""", typeof(Point_2D))]
+        [InlineData("""{"Y":1,"X":2,"X":3}""", typeof(Point_2D))]
+        [InlineData("""{"Y":1,"X":2,"Y":3}""", typeof(Point_2D))]
+        [InlineData("""{"X":1,"Y":2,"X":3}""", typeof(Point_3D))]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"X":4}""", typeof(Class_ExtraProperty_ExtData))]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"Y":4}""", typeof(Class_ExtraProperty_ExtData))]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"Z":4}""", typeof(Class_ExtraProperty_ExtData))]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"X":4}""", typeof(Class_ExtraProperty_JsonElementDictionaryExtData))]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"Y":4}""", typeof(Class_ExtraProperty_JsonElementDictionaryExtData))]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"Z":4}""", typeof(Class_ExtraProperty_JsonElementDictionaryExtData))]
+        public async Task RespectAllowDuplicateProp_Small(string json, Type type)
+        {
+            Exception ex = await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper(json, type, JsonTestSerializerOptions.DisallowDuplicateProperties));
+            Assert.Contains("Duplicate", ex.Message);
+
+            await Serializer.DeserializeWrapper(json, type); // Assert no throw
+
+            ex = await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper(json, type, JsonTestSerializerOptions.DisallowDuplicateProperties));
+            Assert.Contains("Duplicate", ex.Message);
+
+            await Serializer.DeserializeWrapper(json, type); // Assert no throw
+        }
+
+        [Theory]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"x":4}""", true)]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"y":4}""", true)]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"z":4}""", false)] // Dictionary extension properties are case-sensitive
+        public async Task RespectAllowDuplicatePropCaseInsensitive_Small(string json, bool throws)
+        {
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicatePropertiesIgnoringCase;
+
+            if (throws)
+            {
+                Exception ex = await Assert.ThrowsAsync<JsonException>(
+                    () => Serializer.DeserializeWrapper<Class_ExtraProperty_ExtData>(json, options));
+                Assert.Contains("Duplicate", ex.Message);
+            }
+            else
+            {
+                await Serializer.DeserializeWrapper<Class_ExtraProperty_ExtData>(json, options); // Assert no throw
+            }
+        }
+
+        public class Class_ExtraProperty_ExtData
+        {
+            public int X { get; set; }
+
+            public int Y { get; set; }
+
+            [JsonExtensionData]
+            public Dictionary<string, object> ExtensionData { get; set; }
+
+            public Class_ExtraProperty_ExtData(int x)
+            {
+                X = x;
+            }
+        }
+
+        public class Class_ExtraProperty_JsonElementDictionaryExtData
+        {
+            public int X { get; set; }
+
+            public int Y { get; set; }
+
+            [JsonExtensionData]
+            public Dictionary<string, JsonElement> ExtensionData { get; set; }
+
+            public Class_ExtraProperty_JsonElementDictionaryExtData(int x)
+            {
+                X = x;
+            }
+        }
+
+        [Theory]
+        [InlineData("P0")]
+        [InlineData("Prop")]
+        [InlineData("ExtensionDataProp")]
+        public async Task RespectAllowDuplicateProp_Large(string duplicatedProperty)
+        {
+            string json = $$"""
+                {
+                    "P0": 0,
+                    "P1": 1,
+                    "P2": 2,
+                    "P3": 3,
+                    "P4": 4,
+                    "P5": 5,
+                    "Prop": 6,
+                    "ExtensionDataProp": 7,
+                    "{{duplicatedProperty}}": 42
+                }
+                """;
+
+            Exception ex = await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<Class_ManyParameters_ExtraProperty_ExtData>(json, JsonTestSerializerOptions.DisallowDuplicateProperties));
+            Assert.Contains("Duplicate", ex.Message);
+
+            await Serializer.DeserializeWrapper<Class_ManyParameters_ExtraProperty_ExtData>(json); // Assert no throw
+        }
+
+        public record class Class_ManyParameters_ExtraProperty_ExtData(int P0, int P1, int P2, int P3, int P4, int P5)
+        {
+            public int Prop { get; set; }
+
+            [JsonExtensionData]
+            public Dictionary<string, object> ExtensionData { get; set; }
+        }
+
+        [Fact]
+        public async Task RequiredMemberWithUnmappedMember()
+        {
+            // https://github.com/dotnet/runtime/issues/116801
+            string json = """
+                {
+                    "Bar": "asdf",
+                    "Baz": "hello"
+                }
+                """;
+
+            ClassWithRequiredProperty obj = await Serializer.DeserializeWrapper<ClassWithRequiredProperty>(json);
+            Assert.Equal("asdf", obj.Bar);
+        }
+
+        public class ClassWithRequiredProperty
+        {
+            public required string? Bar { get; set; }
         }
     }
 }

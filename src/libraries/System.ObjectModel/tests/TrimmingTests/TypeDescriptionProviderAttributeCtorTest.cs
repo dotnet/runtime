@@ -14,7 +14,7 @@ class Program
     /// </summary>
     static int Main(string[] args)
     {
-        TypeDescriptionProviderAttribute attr = new TypeDescriptionProviderAttribute("Program+MyTypeDescriptionProvider");
+        TypeDescriptionProviderAttribute attr = new TypeDescriptionProviderAttribute("Program+MyTypeDescriptionProvider, project");
         if (!RunTest(attr))
         {
             return -1;

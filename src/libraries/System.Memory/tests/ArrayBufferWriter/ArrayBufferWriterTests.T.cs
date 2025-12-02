@@ -398,8 +398,8 @@ namespace System.Buffers.Tests
         {
             var output = new ArrayBufferWriter<T>();
             WriteData(output, 2);
-            Assert.Throws<ArgumentException>(() => output.GetSpan(-1));
-            Assert.Throws<ArgumentException>(() => output.GetMemory(-1));
+            AssertExtensions.Throws<ArgumentException>("sizeHint", () => output.GetSpan(-1));
+            AssertExtensions.Throws<ArgumentException>("sizeHint", () => output.GetMemory(-1));
         }
 
         [Fact]
@@ -424,14 +424,7 @@ namespace System.Buffers.Tests
                 Assert.True(span.Length >= 256);
                 Span<T> newSpan = output.GetSpan();
                 Assert.Equal(span.Length, newSpan.Length);
-
-                unsafe
-                {
-                    void* pSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
-                    void* pNewSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(newSpan));
-                    Assert.Equal((IntPtr)pSpan, (IntPtr)pNewSpan);
-                }
-
+                Assert.Equal(0, Unsafe.ByteOffset(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(newSpan)));
                 Assert.Equal(span.Length, output.GetSpan().Length);
             }
             finally

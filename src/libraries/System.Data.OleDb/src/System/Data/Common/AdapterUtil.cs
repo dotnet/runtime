@@ -266,7 +266,7 @@ namespace System.Data.Common
                 case CommandType.Text:
                 case CommandType.StoredProcedure:
                 case CommandType.TableDirect:
-                    Debug.Assert(false, $"valid CommandType {value}");
+                    Debug.Fail($"valid CommandType {value}");
                     break;
             }
 #endif
@@ -283,7 +283,7 @@ namespace System.Data.Common
                 case DataRowVersion.Current:
                 case DataRowVersion.Original:
                 case DataRowVersion.Proposed:
-                    Debug.Assert(false, $"valid DataRowVersion {value}");
+                    Debug.Fail($"valid DataRowVersion {value}");
                     break;
             }
 #endif
@@ -303,7 +303,7 @@ namespace System.Data.Common
                 case IsolationLevel.RepeatableRead:
                 case IsolationLevel.Serializable:
                 case IsolationLevel.Snapshot:
-                    Debug.Assert(false, $"valid IsolationLevel {value}");
+                    Debug.Fail($"valid IsolationLevel {value}");
                     break;
             }
 #endif
@@ -320,7 +320,7 @@ namespace System.Data.Common
                 case ParameterDirection.Output:
                 case ParameterDirection.InputOutput:
                 case ParameterDirection.ReturnValue:
-                    Debug.Assert(false, $"valid ParameterDirection {value}");
+                    Debug.Fail($"valid ParameterDirection {value}");
                     break;
             }
 #endif
@@ -337,7 +337,7 @@ namespace System.Data.Common
                 case UpdateRowSource.OutputParameters:
                 case UpdateRowSource.FirstReturnedRecord:
                 case UpdateRowSource.Both:
-                    Debug.Assert(false, $"valid UpdateRowSource {value}");
+                    Debug.Fail($"valid UpdateRowSource {value}");
                     break;
             }
 #endif
@@ -986,13 +986,13 @@ namespace System.Data.Common
         internal static string BuildQuotedString(string quotePrefix, string quoteSuffix, string unQuotedString)
         {
             StringBuilder resultString = new StringBuilder();
-            if (ADP.IsEmpty(quotePrefix) == false)
+            if (!ADP.IsEmpty(quotePrefix))
             {
                 resultString.Append(quotePrefix);
             }
 
             // Assuming that the suffix is escaped by doubling it. i.e. foo"bar becomes "foo""bar".
-            if (ADP.IsEmpty(quoteSuffix) == false)
+            if (!ADP.IsEmpty(quoteSuffix))
             {
                 resultString.Append(unQuotedString.Replace(quoteSuffix, quoteSuffix + quoteSuffix));
                 resultString.Append(quoteSuffix);
@@ -1228,7 +1228,7 @@ namespace System.Data.Common
             // is the prefix present?
             if (prefixLength > 0)
             {
-                if (quotedString.StartsWith(quotePrefix!, StringComparison.Ordinal) == false)
+                if (!quotedString.StartsWith(quotePrefix!, StringComparison.Ordinal))
                 {
                     unquotedString = quotedString;
                     return false;
@@ -1238,7 +1238,7 @@ namespace System.Data.Common
             // is the suffix present?
             if (suffixLength > 0)
             {
-                if (quotedString.EndsWith(quoteSuffix!, StringComparison.Ordinal) == false)
+                if (!quotedString.EndsWith(quoteSuffix!, StringComparison.Ordinal))
                 {
                     unquotedString = quotedString;
                     return false;

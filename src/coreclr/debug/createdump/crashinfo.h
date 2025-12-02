@@ -71,7 +71,7 @@ private:
     std::vector<elf_aux_entry> m_auxvEntries;       // full auxv entries
 #endif
     std::vector<ThreadInfo*> m_threads;             // threads found and suspended
-    std::set<MemoryRegion> m_moduleMappings;        // module memory mappings
+    std::set<ModuleRegion> m_moduleMappings;        // module memory mappings
     std::set<MemoryRegion> m_otherMappings;         // other memory mappings
     std::set<MemoryRegion> m_memoryRegions;         // memory regions from DAC, etc.
     std::set<MemoryRegion> m_moduleAddresses;       // memory region to module base address
@@ -97,14 +97,15 @@ public:
     bool GatherCrashInfo(DumpType dumpType);
     void CombineMemoryRegions();
     bool EnumerateMemoryRegionsWithDAC(DumpType dumpType);
-    bool ReadMemory(void* address, void* buffer, size_t size);                          // read memory and add to dump
-    bool ReadProcessMemory(void* address, void* buffer, size_t size, size_t* read);     // read raw memory
+    bool ReadMemory(uint64_t address, void* buffer, size_t size);                       // read memory and add to dump
+    bool ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read);  // read raw memory
     uint64_t GetBaseAddressFromAddress(uint64_t address);
     uint64_t GetBaseAddressFromName(const char* moduleName);
     ModuleInfo* GetModuleInfoFromBaseAddress(uint64_t baseAddress);
     void AddModuleAddressRange(uint64_t startAddress, uint64_t endAddress, uint64_t baseAddress);
     void AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* pClrDataModule, const std::string& moduleName);
     int InsertMemoryRegion(uint64_t address, size_t size);
+    const ModuleRegion* SearchModuleRegions(const ModuleRegion& search);
     static const MemoryRegion* SearchMemoryRegions(const std::set<MemoryRegion>& regions, const MemoryRegion& search);
 
     inline pid_t Pid() const { return m_pid; }
@@ -122,7 +123,7 @@ public:
     inline const uint64_t RuntimeBaseAddress() const { return m_runtimeBaseAddress; }
 
     inline const std::vector<ThreadInfo*>& Threads() const { return m_threads; }
-    inline const std::set<MemoryRegion>& ModuleMappings() const { return m_moduleMappings; }
+    inline const std::set<ModuleRegion>& ModuleMappings() const { return m_moduleMappings; }
     inline const std::set<MemoryRegion>& OtherMappings() const { return m_otherMappings; }
     inline const std::set<MemoryRegion>& MemoryRegions() const { return m_memoryRegions; }
     inline const siginfo_t* SigInfo() const { return &m_siginfo; }
@@ -130,6 +131,7 @@ public:
     inline const std::vector<elf_aux_entry>& AuxvEntries() const { return m_auxvEntries; }
     inline size_t GetAuxvSize() const { return m_auxvEntries.size() * sizeof(elf_aux_entry); }
 #endif
+    bool ReadMemory(void* address, void* buffer, size_t size) { return ReadMemory((uint64_t)address, buffer, size); }
 
     // IUnknown
     STDMETHOD(QueryInterface)(___in REFIID InterfaceId, ___out PVOID* Interface);
@@ -159,7 +161,7 @@ private:
     bool InitializeDAC(DumpType dumpType);
     bool EnumerateManagedModules();
     bool UnwindAllThreads();
-    void AddOrReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& pszName);
+    void AddOrReplaceModuleMapping(uint64_t baseAddress, uint64_t size, const std::string& pszName);
     int InsertMemoryRegion(const MemoryRegion& region);
     uint32_t GetMemoryRegionFlags(uint64_t start);
     bool PageCanBeRead(uint64_t start);

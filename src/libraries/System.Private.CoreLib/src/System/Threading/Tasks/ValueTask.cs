@@ -179,6 +179,30 @@ namespace System.Threading.Tasks
                 GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource>(obj));
         }
 
+        internal object AsTaskOrNotifier()
+        {
+            object? obj = _obj;
+            Debug.Assert(obj is Task || obj is IValueTaskSource);
+            return
+                obj as Task ??
+                (object)new ValueTaskSourceNotifier(Unsafe.As<IValueTaskSource>(obj), _token);
+        }
+
+        private sealed class ValueTaskSourceNotifier : IValueTaskSourceNotifier
+        {
+            private IValueTaskSource _valueTaskSource;
+            private short _token;
+
+            public ValueTaskSourceNotifier(IValueTaskSource valueTaskSource, short token)
+            {
+                _valueTaskSource = valueTaskSource;
+                _token = token;
+            }
+
+            public void OnCompleted(Action<object?> continuation, object? state, ValueTaskSourceOnCompletedFlags flags) =>
+                _valueTaskSource.OnCompleted(continuation, state, _token, flags);
+        }
+
         /// <summary>Gets a <see cref="ValueTask"/> that may be used at any point in the future.</summary>
         public ValueTask Preserve() => _obj == null ? this : new ValueTask(AsTask());
 
@@ -233,8 +257,8 @@ namespace System.Threading.Tasks
         {
             private static readonly Action<object?> s_completionAction = static state =>
             {
-                if (!(state is ValueTaskSourceAsTask vtst) ||
-                    !(vtst._source is IValueTaskSource source))
+                if (state is not ValueTaskSourceAsTask vtst ||
+                    vtst._source is not IValueTaskSource source)
                 {
                     // This could only happen if the IValueTaskSource passed the wrong state
                     // or if this callback were invoked multiple times such that the state
@@ -425,6 +449,7 @@ namespace System.Threading.Tasks
         /// <param name="continueOnCapturedContext">
         /// true to attempt to marshal the continuation back to the captured context; otherwise, false.
         /// </param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ConfiguredValueTaskAwaitable ConfigureAwait(bool continueOnCapturedContext) =>
             new ConfiguredValueTaskAwaitable(new ValueTask(_obj, _token, continueOnCapturedContext));
@@ -587,6 +612,30 @@ namespace System.Threading.Tasks
             return GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource<TResult>>(obj));
         }
 
+        internal object AsTaskOrNotifier()
+        {
+            object? obj = _obj;
+            Debug.Assert(obj is Task<TResult> || obj is IValueTaskSource<TResult>);
+            return
+                obj as Task ??
+                (object)new ValueTaskSourceNotifier(Unsafe.As<IValueTaskSource<TResult>>(obj), _token);
+        }
+
+        private sealed class ValueTaskSourceNotifier : IValueTaskSourceNotifier
+        {
+            private IValueTaskSource<TResult> _valueTaskSource;
+            private short _token;
+
+            public ValueTaskSourceNotifier(IValueTaskSource<TResult> valueTaskSource, short token)
+            {
+                _valueTaskSource = valueTaskSource;
+                _token = token;
+            }
+
+            public void OnCompleted(Action<object?> continuation, object? state, ValueTaskSourceOnCompletedFlags flags) =>
+                _valueTaskSource.OnCompleted(continuation, state, _token, flags);
+        }
+
         /// <summary>Gets a <see cref="ValueTask{TResult}"/> that may be used at any point in the future.</summary>
         public ValueTask<TResult> Preserve() => _obj == null ? this : new ValueTask<TResult>(AsTask());
 
@@ -640,8 +689,8 @@ namespace System.Threading.Tasks
         {
             private static readonly Action<object?> s_completionAction = static state =>
             {
-                if (!(state is ValueTaskSourceAsTask vtst) ||
-                    !(vtst._source is IValueTaskSource<TResult> source))
+                if (state is not ValueTaskSourceAsTask vtst ||
+                    vtst._source is not IValueTaskSource<TResult> source)
                 {
                     // This could only happen if the IValueTaskSource<TResult> passed the wrong state
                     // or if this callback were invoked multiple times such that the state
@@ -825,6 +874,7 @@ namespace System.Threading.Tasks
         /// <param name="continueOnCapturedContext">
         /// true to attempt to marshal the continuation back to the captured context; otherwise, false.
         /// </param>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ConfiguredValueTaskAwaitable<TResult> ConfigureAwait(bool continueOnCapturedContext) =>
             new ConfiguredValueTaskAwaitable<TResult>(new ValueTask<TResult>(_obj, _result, _token, continueOnCapturedContext));
@@ -845,5 +895,10 @@ namespace System.Threading.Tasks
 
             return string.Empty;
         }
+    }
+
+    internal interface IValueTaskSourceNotifier
+    {
+        void OnCompleted(Action<object?> continuation, object? state, ValueTaskSourceOnCompletedFlags flags);
     }
 }

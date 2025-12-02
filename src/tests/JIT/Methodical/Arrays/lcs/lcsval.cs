@@ -89,6 +89,7 @@ namespace JitTest_lcsval_lcs_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             Console.WriteLine("Test searches for longest common subsequence of 4 strings\n\n");

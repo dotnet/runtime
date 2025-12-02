@@ -10,8 +10,9 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class RyuJitNodeFactory : NodeFactory
     {
         public RyuJitNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager,
-            InteropStubManager interopStubManager, NameMangler nameMangler, VTableSliceProvider vtableSliceProvider, DictionaryLayoutProvider dictionaryLayoutProvider, InlinedThreadStatics inlinedThreadStatics, PreinitializationManager preinitializationManager)
-            : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), vtableSliceProvider, dictionaryLayoutProvider, inlinedThreadStatics, new ExternSymbolsImportedNodeProvider(), preinitializationManager)
+            InteropStubManager interopStubManager, NameMangler nameMangler, VTableSliceProvider vtableSliceProvider, DictionaryLayoutProvider dictionaryLayoutProvider, InlinedThreadStatics inlinedThreadStatics, PreinitializationManager preinitializationManager,
+            DevirtualizationManager devirtualizationManager, ObjectDataInterner dataInterner, TypeMapManager typeMapManager)
+            : base(context, compilationModuleGroup, metadataManager, interopStubManager, nameMangler, new LazyGenericsDisabledPolicy(), vtableSliceProvider, dictionaryLayoutProvider, inlinedThreadStatics, new ExternSymbolsImportedNodeProvider(), preinitializationManager, devirtualizationManager, dataInterner, typeMapManager)
         {
         }
 
@@ -19,21 +20,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (method.IsInternalCall)
             {
-                if (TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
-                {
-                    return MethodEntrypoint(TypeSystemContext.GetRealSpecialUnboxingThunkTargetMethod(method));
-                }
-                else if (TypeSystemContext.IsDefaultInterfaceMethodImplementationThunkTargetMethod(method))
-                {
-                    return MethodEntrypoint(TypeSystemContext.GetRealDefaultInterfaceMethodImplementationThunkTargetMethod(method));
-                }
-                else if (method.IsArrayAddressMethod())
+                if (method.IsArrayAddressMethod())
                 {
                     return MethodEntrypoint(((ArrayType)method.OwningType).GetArrayMethod(ArrayMethodKind.AddressWithHiddenArg));
                 }
                 else if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
                 {
-                    return new RuntimeImportMethodNode(method);
+                    return new RuntimeImportMethodNode(method, NameMangler);
                 }
             }
 

@@ -11,7 +11,7 @@ namespace System.Reflection
         #region Private Data Members
         private readonly BindingFlags m_bindingFlags;
         protected readonly RuntimeTypeCache m_reflectedTypeCache;
-        protected readonly RuntimeType m_declaringType;
+        protected internal readonly RuntimeType m_declaringType;
         #endregion
 
         #region Constructor
@@ -45,7 +45,7 @@ namespace System.Reflection
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeFieldInfo>(other);
 
         public override Module Module => GetRuntimeModule();
-        public override bool IsCollectible => m_declaringType.IsCollectible;
+        public override bool IsCollectible => ReflectedTypeInternal.IsCollectible;
 
         #endregion
 

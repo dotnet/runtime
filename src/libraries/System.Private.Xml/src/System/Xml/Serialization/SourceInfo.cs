@@ -16,11 +16,11 @@ namespace System.Xml.Serialization
         //a[ia]
         //((global::System.Xml.Serialization.XmlSerializerNamespaces)p[0])
         [GeneratedRegex("([(][(](?<t>[^)]+)[)])?(?<a>[^[]+)[[](?<ia>.+)[]][)]?")]
-        private static partial Regex Regex1();
+        private static partial Regex Regex1 { get; }
 
         //((global::Microsoft.CFx.Test.Common.TypeLibrary.IXSType_9)o), @"IXSType_9", @"", true, true);
         [GeneratedRegex("[(][(](?<cast>[^)]+)[)](?<arg>[^)]+)[)]")]
-        private static partial Regex Regex2();
+        private static partial Regex Regex2 { get; }
 
         private static readonly Lazy<MethodInfo> s_iListGetItemMethod = new Lazy<MethodInfo>(
             () =>
@@ -35,12 +35,10 @@ namespace System.Xml.Serialization
         public readonly string Arg;
         public readonly MemberInfo? MemberInfo;
 
-        [DynamicallyAccessedMembers(TrimmerConstants.AllMethods)]
         public readonly Type? Type;
         public readonly CodeGenerator ILG;
 
-        public SourceInfo(string source, string? arg, MemberInfo? memberInfo,
-            [DynamicallyAccessedMembers(TrimmerConstants.AllMethods)] Type? type, CodeGenerator ilg)
+        public SourceInfo(string source, string? arg, MemberInfo? memberInfo, Type? type, CodeGenerator ilg)
         {
             this.Source = source;
             this.Arg = arg ?? source;
@@ -69,7 +67,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls LoadMemberAddress")]
         private void InternalLoad(Type? elementType, bool asAddress = false)
         {
-            Match match = Regex1().Match(Arg);
+            Match match = Regex1.Match(Arg);
             if (match.Success)
             {
                 object varA = ILG.GetVariable(match.Groups["a"].Value);
@@ -190,7 +188,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    match = Regex2().Match(Source);
+                    match = Regex2.Match(Source);
                     if (match.Success)
                     {
                         Debug.Assert(match.Groups["arg"].Value == Arg);

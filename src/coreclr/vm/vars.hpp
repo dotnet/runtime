@@ -16,46 +16,6 @@ typedef DPTR(SLOT) PTR_SLOT;
 
 typedef LPVOID  DictionaryEntry;
 
-/* Define the implementation dependent size types */
-
-#ifndef _INTPTR_T_DEFINED
-#ifdef  HOST_64BIT
-typedef __int64             intptr_t;
-#else
-typedef int                 intptr_t;
-#endif
-#define _INTPTR_T_DEFINED
-#endif
-
-#ifndef _UINTPTR_T_DEFINED
-#ifdef  HOST_64BIT
-typedef unsigned __int64    uintptr_t;
-#else
-typedef unsigned int        uintptr_t;
-#endif
-#define _UINTPTR_T_DEFINED
-#endif
-
-#ifndef _PTRDIFF_T_DEFINED
-#ifdef  HOST_64BIT
-typedef __int64             ptrdiff_t;
-#else
-typedef int                 ptrdiff_t;
-#endif
-#define _PTRDIFF_T_DEFINED
-#endif
-
-
-#ifndef _SIZE_T_DEFINED
-#ifdef  HOST_64BIT
-typedef unsigned __int64 size_t;
-#else
-typedef unsigned int     size_t;
-#endif
-#define _SIZE_T_DEFINED
-#endif
-
-
 #include "util.hpp"
 #include <corpriv.h>
 #include <cordbpriv.h>
@@ -90,7 +50,8 @@ class RCWCleanupList;
 #endif // FEATURE_COMINTEROP
 
 typedef TADDR LOADERHANDLE;
-typedef TADDR RUNTIMETYPEHANDLE;
+typedef Object* RUNTIMETYPEHANDLE;
+typedef DPTR(LOADERHANDLE) PTR_LOADERHANDLE;
 
 #ifdef DACCESS_COMPILE
 void OBJECTHANDLE_EnumMemoryRegions(OBJECTHANDLE handle);
@@ -204,6 +165,26 @@ class OBJECTREF {
         OBJECTREF& operator=(const OBJECTREF &objref);
         OBJECTREF& operator=(TADDR nul);
 
+        // We use this delayed check to avoid ambiguous overload issues with TADDR
+        // on platforms where NULL is defined as anything other than a uintptr_t constant
+        // or nullptr_t exactly.
+        // Without this, any valid "null pointer constant" that is not directly either type
+        // will be implicitly convertible to both TADDR and std::nullptr_t, causing ambiguity.
+        // With this, this constructor (and all similarly declared operators) drop out of
+        // consideration when used with NULL (and not nullptr_t).
+        // With this workaround, we get identical behavior between the Checked OBJECTREF builds
+        // and the release builds.
+        template<typename T, typename = typename std::enable_if<std::is_same<T, std::nullptr_t>::value>::type>
+        OBJECTREF(T)
+            : OBJECTREF(TADDR(0))
+        {
+        }
+        template<typename T, typename = typename std::enable_if<std::is_same<T, std::nullptr_t>::value>::type>
+        OBJECTREF& operator=(T)
+        {
+            return *this = TADDR(0);
+        }
+
             // allow explicit casts
         explicit OBJECTREF(Object *pObject);
 
@@ -223,17 +204,8 @@ template <class T>
 class REF : public OBJECTREF
 {
     public:
-
-        //-------------------------------------------------------------
-        // Default constructor, for non-initializing declarations:
-        //
-        //      OBJECTREF or;
-        //-------------------------------------------------------------
-      REF() :OBJECTREF ()
-        {
-            LIMITED_METHOD_CONTRACT;
-            // no op
-        }
+        REF() = default;
+        using OBJECTREF::OBJECTREF;
 
         //-------------------------------------------------------------
         // Copy constructor, for passing OBJECTREF's as function arguments.
@@ -242,16 +214,6 @@ class REF : public OBJECTREF
         {
             LIMITED_METHOD_CONTRACT;
             //no op
-        }
-
-
-        //-------------------------------------------------------------
-        // To allow NULL to be used as an OBJECTREF.
-        //-------------------------------------------------------------
-      REF(TADDR nul) : OBJECTREF (nul)
-        {
-            LIMITED_METHOD_CONTRACT;
-            // no op
         }
 
       explicit REF(T* pObject) : OBJECTREF(pObject)
@@ -334,7 +296,18 @@ class Module;
 // For [<I1, etc. up to and including [Object
 GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
-extern "C" Volatile<int32_t>   g_TrapReturningThreads;
+// g_TrapReturningThreads == 0 disables thread polling/traping.
+// This allows to short-circuit further examining of thread states in the most
+// common scenario - when we are not interested in trapping anything.
+//
+// The bit #1 is reserved for controlling thread suspension.
+// Setting bit #1 allows to atomically indicate/check that EE suspension is in progress.
+// There could be only one EE suspension in progress at a time. (it requires holding ThreadStore lock)
+// .
+// Other bits are used as a counter to enable thread trapping for other reasons, such as ThreadAbort.
+// There could be several active reasons for thread trapping at a time, like aborting multiple threads,
+// thus g_TrapReturningThreads value could be > 3.
+extern "C" volatile int32_t g_TrapReturningThreads;
 
 #ifdef _DEBUG
 // next two variables are used to enforce an ASSERT in Thread::DbgFindThread
@@ -372,26 +345,30 @@ GPTR_DECL(MethodTable,      g_TypedReferenceMT);
 GPTR_DECL(MethodTable,      g_pWeakReferenceClass);
 GPTR_DECL(MethodTable,      g_pWeakReferenceOfTClass);
 
+#ifdef DACCESS_COMPILE
+GPTR_DECL(MethodTable,      g_pContinuationClassIfSubTypeCreated);
+#else
+GVAL_DECL(Volatile<MethodTable*>, g_pContinuationClassIfSubTypeCreated);
+#endif
+
 #ifdef FEATURE_COMINTEROP
 GPTR_DECL(MethodTable,      g_pBaseCOMObject);
 #endif
 
 GPTR_DECL(MethodTable,      g_pIDynamicInterfaceCastableInterface);
-
-#ifdef FEATURE_ICASTABLE
-GPTR_DECL(MethodTable,      g_pICastableInterface);
-#endif // FEATURE_ICASTABLE
-
 GPTR_DECL(MethodDesc,       g_pObjectFinalizerMD);
 
 #ifdef FEATURE_INTEROP_DEBUGGING
 GVAL_DECL(DWORD,            g_debuggerWordTLSIndex);
 #endif
 GVAL_DECL(DWORD,            g_TlsIndex);
+GVAL_DECL(DWORD,            g_offsetOfCurrentThreadInfo);
+GVAL_DECL(DWORD,            g_gcNotificationFlags);
 
 #ifdef FEATURE_EH_FUNCLETS
 GPTR_DECL(MethodTable,      g_pEHClass);
-GVAL_DECL(bool,             g_isNewExceptionHandlingEnabled);
+GPTR_DECL(MethodTable,      g_pExceptionServicesInternalCallsClass);
+GPTR_DECL(MethodTable,      g_pStackFrameIteratorClass);
 #endif
 
 // Full path to the managed entry assembly - stored for ease of identifying the entry asssembly for diagnostics
@@ -435,17 +412,19 @@ GPTR_DECL(StressLog, g_pStressLog);
 
 
 //
-// Support for the COM+ Debugger.
+// Support for the CLR Debugger.
 //
 GPTR_DECL(DebugInterface,     g_pDebugInterface);
 GVAL_DECL(DWORD,              g_CORDebuggerControlFlags);
 #ifdef DEBUGGING_SUPPORTED
 GPTR_DECL(EEDbgInterfaceImpl, g_pEEDbgInterfaceImpl);
-#endif // DEBUGGING_SUPPORTED
 
-#ifdef PROFILING_SUPPORTED
-EXTERN HINSTANCE            g_pDebuggerDll;
-#endif
+#ifndef DACCESS_COMPILE
+GVAL_DECL(DWORD, g_multicastDelegateTraceActiveCount);
+GVAL_DECL(DWORD, g_externalMethodFixupTraceActiveCount);
+#endif // DACCESS_COMPILE
+
+#endif // DEBUGGING_SUPPORTED
 
 // Global default for Concurrent GC. The default is on (value 1)
 EXTERN int g_IGCconcurrent;
@@ -475,42 +454,44 @@ EXTERN BOOL g_fComStarted;
 //
 // Global state variables indicating which stage of shutdown we are in
 //
+#ifdef DACCESS_COMPILE
 GVAL_DECL(DWORD, g_fEEShutDown);
+#else
+GVAL_DECL(Volatile<DWORD>, g_fEEShutDown);
+#endif
 EXTERN DWORD g_fFastExitProcess;
 EXTERN BOOL g_fFatalErrorOccurredOnGCThread;
-EXTERN Volatile<LONG> g_fForbidEnterEE;
 GVAL_DECL(bool, g_fProcessDetach);
 #ifdef FEATURE_METADATA_UPDATER
 GVAL_DECL(bool, g_metadataUpdatesApplied);
 #endif
 EXTERN bool g_fManagedAttach;
-EXTERN bool g_fNoExceptions;
+
+#ifdef HOST_WINDOWS
+typedef BOOLEAN (WINAPI* PRTLDLLSHUTDOWNINPROGRESS)();
+EXTERN PRTLDLLSHUTDOWNINPROGRESS g_pfnRtlDllShutdownInProgress;
+#endif
 
 // Indicates whether we're executing shut down as a result of DllMain
 // (DLL_PROCESS_DETACH). See comments at code:EEShutDown for details.
-inline BOOL    IsAtProcessExit()
+inline bool IsAtProcessExit()
 {
     SUPPORTS_DAC;
+#if defined(DACCESS_COMPILE) || !defined(HOST_WINDOWS)
     return g_fProcessDetach;
+#else
+    // RtlDllShutdownInProgress provides more accurate information about whether the process is shutting down.
+    // Use it if it is available to avoid shutdown deadlocks.
+    // https://learn.microsoft.com/windows/win32/devnotes/rtldllshutdowninprogress
+    return g_pfnRtlDllShutdownInProgress();
+#endif
 }
-
-enum FWStatus
-{
-    FWS_WaitInterrupt = 0x00000001,
-};
-
-EXTERN DWORD g_FinalizerWaiterStatus;
 
 #if defined(TARGET_UNIX) && defined(FEATURE_EVENT_TRACE)
 extern Volatile<BOOL> g_TriggerHeapDump;
 #endif // TARGET_UNIX
 
 #ifndef DACCESS_COMPILE
-//
-// Allow use of native images?
-//
-extern bool g_fAllowNativeImages;
-
 //
 // Default install library
 //
@@ -527,14 +508,8 @@ EXTERN const char g_psBaseLibrarySatelliteAssemblyName[];
 //
 EXTERN bool g_fWeControlLifetime;
 
-#ifdef _DEBUG
-// The following should only be used for assertions.  (Famous last words).
-EXTERN bool dbg_fDrasticShutdown;
-#endif
-EXTERN bool g_fInControlC;
-
 // There is a global table of prime numbers that's available for e.g. hashing
-extern const DWORD g_rgPrimes[71];
+extern const DWORD g_rgPrimes[102];
 
 //
 // Macros to check debugger and profiler settings.
@@ -559,6 +534,9 @@ inline bool CORDebuggerAttached()
     return (g_CORDebuggerControlFlags & DBCF_ATTACHED) && !IsAtProcessExit();
 }
 
+// This only check debugger bits. However JIT optimizations can be disabled by other ways on a module
+// In most cases Module::AreJITOptimizationsDisabled() should be the prefered for checking if JIT optimizations
+// are disabled for a module (it does check both debugger bits and profiler jit deoptimization flag)
 #define CORDebuggerAllowJITOpts(dwDebuggerBits)           \
     (((dwDebuggerBits) & DACF_ALLOW_JIT_OPTS)             \
      ||                                                   \
@@ -571,45 +549,6 @@ inline bool CORDebuggerAttached()
 #define CORDebuggerTraceCall() \
     (CORDebuggerAttached() && GetThread()->IsTraceCall())
 
-
-
-//
-// Define stuff for precedence between profiling and debugging
-// flags that can both be set.
-//
-
-#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
-
-#ifdef DEBUGGING_SUPPORTED
-
-#define CORDisableJITOptimizations(dwDebuggerBits)        \
-         (CORProfilerDisableOptimizations() ||            \
-          !CORDebuggerAllowJITOpts(dwDebuggerBits))
-
-#else // !DEBUGGING_SUPPORTED
-
-#define CORDisableJITOptimizations(dwDebuggerBits)        \
-         CORProfilerDisableOptimizations()
-
-#endif// DEBUGGING_SUPPORTED
-
-#else // !defined(PROFILING_SUPPORTED) && !defined(PROFILING_SUPPORTED_DATA)
-
-#ifdef DEBUGGING_SUPPORTED
-
-#define CORDisableJITOptimizations(dwDebuggerBits)        \
-          !CORDebuggerAllowJITOpts(dwDebuggerBits)
-
-#else // DEBUGGING_SUPPORTED
-
-#define CORDisableJITOptimizations(dwDebuggerBits) FALSE
-
-#endif// DEBUGGING_SUPPORTED
-
-#endif// defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
-
-
-
 #ifndef TARGET_UNIX
 GVAL_DECL(SIZE_T, g_runtimeLoadedBaseAddress);
 GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
@@ -621,36 +560,8 @@ GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
 #endif
 
 #ifndef MAXULONGLONG
-#define MAXULONGLONG                     UI64(0xffffffffffffffff)
+#define MAXULONGLONG                     0xffffffffffffffffULL
 #endif
-
-// Every Module is assigned a ModuleIndex, regardless of whether the Module is domain
-// neutral or domain specific. When a domain specific Module is unloaded, its ModuleIndex
-// can be reused.
-
-// ModuleIndexes are not the same as ModuleIDs. The main purpose of a ModuleIndex is
-// to have a compact way to refer to any Module (domain neutral or domain specific).
-// The main purpose of a ModuleID is to facilitate looking up the DomainLocalModule
-// that corresponds to a given Module in a given AppDomain.
-
-struct ModuleIndex
-{
-    SIZE_T m_dwIndex;
-    ModuleIndex ()
-    : m_dwIndex(0)
-    {}
-    explicit ModuleIndex (SIZE_T id)
-    : m_dwIndex(id)
-    { LIMITED_METHOD_DAC_CONTRACT; }
-    BOOL operator==(const ModuleIndex& ad) const
-    {
-        return m_dwIndex == ad.m_dwIndex;
-    }
-    BOOL operator!=(const ModuleIndex& ad) const
-    {
-        return m_dwIndex != ad.m_dwIndex;
-    }
-};
 
 //-----------------------------------------------------------------------------
 // GSCookies (guard-stack cookies) for detecting buffer overruns
@@ -691,18 +602,20 @@ PTR_GSCookie GetProcessGSCookiePtr() { return  PTR_GSCookie(&s_gsCookie); }
 inline
 GSCookie GetProcessGSCookie() { return *(RAW_KEYWORD(volatile) GSCookie *)(&s_gsCookie); }
 
-// Passed to JitManager APIs to determine whether to avoid calling into the host.
-// The profiling API stackwalking uses this to ensure to avoid re-entering the host
-// (particularly SQL) from a hijacked thread.
-enum HostCallPreference
-{
-    AllowHostCalls,
-    NoHostCalls,
-};
-
 #ifdef TARGET_WINDOWS
 typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
 extern PINITIALIZECONTEXT2 g_pfnInitializeContext2;
+
+#ifdef TARGET_ARM64
+typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
+extern PGETENABLEDXSTATEFEATURES g_pfnGetEnabledXStateFeatures;
+
+typedef BOOL(WINAPI* PGETXSTATEFEATURESMASK)(PCONTEXT Context, PDWORD64 FeatureMask);
+extern PGETXSTATEFEATURESMASK g_pfnGetXStateFeaturesMask;
+
+typedef BOOL(WINAPI* PSETXSTATEFEATURESMASK)(PCONTEXT Context, DWORD64 FeatureMask);
+extern PSETXSTATEFEATURESMASK g_pfnSetXStateFeaturesMask;
+#endif // TARGET_ARM64
 
 #ifdef TARGET_X86
 typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);

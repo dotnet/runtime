@@ -461,7 +461,7 @@ namespace MS.Internal.Xml.XPath
                 throw XPathException.Create(SR.Xp_QueryTooComplex);
             }
 
-            Debug.Assert(root != null, "root != null");
+            Debug.Assert(root != null);
             Query? result = null;
             props = Props.None;
             switch (root.Type)

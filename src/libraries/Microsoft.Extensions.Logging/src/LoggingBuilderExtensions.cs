@@ -52,8 +52,8 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Configure the <paramref name="builder"/> with the <see cref="LoggerFactoryOptions"/>.
         /// </summary>
-        /// <param name="builder">The <see cref="ILoggingBuilder"/> to be configured with <see cref="LoggerFactoryOptions"/></param>
-        /// <param name="action">The action used to configure the logger factory</param>
+        /// <param name="builder">The <see cref="ILoggingBuilder"/> to be configured with <see cref="LoggerFactoryOptions"/>.</param>
+        /// <param name="action">The action used to configure the logger factory.</param>
         /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
         public static ILoggingBuilder Configure(this ILoggingBuilder builder, Action<LoggerFactoryOptions> action)
         {

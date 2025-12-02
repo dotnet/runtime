@@ -41,7 +41,7 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 		if (TARGET_SIZEOF_VOID_P == 4)
 			;
 		else
-			ins->opcode = OP_SEXT_I4;
+			ins->opcode = OP_MOVE;
 		break;
 	case OP_LCONV_TO_I8:
 	case OP_LCONV_TO_U8:
@@ -216,9 +216,8 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 #endif
 		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, 0x7fffffff);
 		MONO_EMIT_NEW_COND_EXC (cfg, GT, "OverflowException");
-		/* The int cast is needed for the VS compiler.  See Compiler Warning (level 2) C4146. */
 #if SIZEOF_REGISTER == 8
-		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, (-(int)2147483648));
+		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, INT_MIN);
 #else
 		g_assert (COMPILE_LLVM (cfg));
 		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, -2147483648LL);
@@ -1566,18 +1565,17 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 				case OP_BOUNDS_CHECK: {
 					gboolean need_sext = ins->backend.need_sext;
 					MONO_EMIT_NULL_CHECK (cfg, ins->sreg1, FALSE);
+					int index2_reg;
+					if (need_sext) {
+						index2_reg = alloc_preg (cfg);
+						MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, ins->sreg2);
+					} else {
+						index2_reg = ins->sreg2;
+					}
 					if (COMPILE_LLVM (cfg)) {
-						int index2_reg;
-						if (need_sext) {
-							index2_reg = alloc_preg (cfg);
-							MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, ins->sreg2);
-						} else {
-							index2_reg = ins->sreg2;
-						}
 						MONO_EMIT_DEFAULT_BOUNDS_CHECK (cfg, ins->sreg1, GINT32_TO_UINT32(ins->inst_imm), index2_reg, ins->flags & MONO_INST_FAULT, ins->inst_p0);
 					} else {
-						g_assert (!need_sext);
-						MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->inst_p0);
+						MONO_ARCH_EMIT_BOUNDS_CHECK (cfg, ins->sreg1, ins->inst_imm, index2_reg, ins->inst_p0);
 					}
 					break;
 				}

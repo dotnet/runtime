@@ -14,7 +14,19 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected sealed override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
-            ((Dictionary<TKey, TValue>)state.Current.ReturnValue!)[key] = value;
+            Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)state.Current.ReturnValue!;
+
+            if (options.AllowDuplicateProperties)
+            {
+                dictionary[key] = value;
+            }
+            else
+            {
+                if (!dictionary.TryAdd(key, value))
+                {
+                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed();
+                }
+            }
         }
 
         internal sealed override bool CanHaveMetadata => false;
@@ -25,6 +37,7 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.ReturnValue = new Dictionary<TKey, TValue>();
         }
 
+        internal sealed override bool IsConvertibleCollection => true;
         protected sealed override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
             Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>? creator =

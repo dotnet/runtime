@@ -30,7 +30,7 @@ namespace System.Xml.XmlSchemaTests
                 Assert.True(negative, args.Message);
                 numevents++;
             };            
-            XmlReader r = XmlReader.Create(xsd);
+            using XmlReader r = XmlReader.Create(xsd);
             s.Add(null, r);
             s.Compile();            
             Assert.False(negative && numevents != 1);

@@ -21,7 +21,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null, false)]
         [InlineData("", true)]
         [InlineData("displayName", false)]
-        public void Ctor_String(string displayName, bool expectedIsDefaultAttribute)
+        public void Ctor_String(string? displayName, bool expectedIsDefaultAttribute)
         {
             var attribute = new SubDisplayNameAttribute(displayName);
             Assert.Equal(displayName, attribute.DisplayName);
@@ -33,7 +33,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("displayName")]
-        public void DisplayNameValue_Set_GetReturnsExpected(string value)
+        public void DisplayNameValue_Set_GetReturnsExpected(string? value)
         {
             var attribute = new SubDisplayNameAttribute("Name")
             {
@@ -53,20 +53,10 @@ namespace System.ComponentModel.Tests
             yield return new object[] { attribute, new DisplayNameAttribute("name"), true };
             yield return new object[] { attribute, new DisplayNameAttribute("name2"), false };
             yield return new object[] { attribute, new DisplayNameAttribute(""), false };
-            // .NET Framework throws a NullReferenceException.
-            if (!PlatformDetection.IsNetFramework)
-            {
-                yield return new object[] { attribute, new DisplayNameAttribute(null), false };
-            }
-
-            // .NET Framework throws a NullReferenceException.
-            if (!PlatformDetection.IsNetFramework)
-            {
-                yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute(null), true };
-                yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute(""), false };
-                yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute("name"), false };
-            }
-
+            yield return new object[] { attribute, new DisplayNameAttribute(null), false };
+            yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute(null), true };
+            yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute(""), false };
+            yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute("name"), false };
             yield return new object[] { new DisplayNameAttribute("name"), new object(), false };
             yield return new object[] { new DisplayNameAttribute("name"), null, false };
             yield return new object[] { new DisplayNameAttribute(null), new object(), false };

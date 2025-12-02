@@ -1,108 +1,11 @@
 <Project>
   <ItemGroup>
-    <TestGrouping Include="$(TestBinDir)baseservices\threading\generics\**">
-      <TestGroup>baseservices.threading.generics</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)baseservices\threading\baseservices.threading.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <TestGrouping Include="$(TestBinDir)JIT\jit64\hfa\**">
-      <TestGroup>JIT.jit64.hfa</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)JIT\jit64\JIT.jit64.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <TestGrouping Condition="'$(TargetOS)' == 'windows'" Include="$(TestBinDir)JIT\jit64\mcc\**">
-      <TestGroup>JIT.jit64.mcc</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)JIT\jit64\JIT.jit64.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <TestGrouping Include="$(TestBinDir)JIT\jit64\opt\**">
-      <TestGroup>JIT.jit64.opt</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)JIT\jit64\JIT.jit64.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <TestGrouping Include="$(TestBinDir)JIT\jit64\valuetypes\**">
-      <TestGroup>JIT.jit64.valuetypes</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)JIT\jit64\JIT.jit64.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <TestGrouping Include="$(TestBinDir)JIT\Regression\CLR-x86-JIT\V1-M09*\**;
-                           $(TestBinDir)JIT\Regression\CLR-x86-JIT\V1-M10*\**;
-                           $(TestBinDir)JIT\Regression\CLR-x86-JIT\V1-M11*\**">
-      <TestGroup>JIT.Regression.CLR-x86-JIT.V1-M09-M11</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)JIT\Regression\JIT.Regression.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <TestGrouping Include="$(TestBinDir)JIT\Regression\CLR-x86-JIT\V1-M12*\**;
-                           $(TestBinDir)JIT\Regression\CLR-x86-JIT\V1-M13*\**">
-      <TestGroup>JIT.Regression.CLR-x86-JIT.V1-M12-M13</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)JIT\Regression\JIT.Regression.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <TestGrouping Include="$(TestBinDir)JIT\Regression\JitBlue\GitHub_*\**">
-      <TestGroup>JIT.Regression.JitBlue</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)JIT\Regression\JIT.Regression.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <TestGrouping Include="$(TestBinDir)Loader\classloader\generics\**">
-      <TestGroup>Loader.classloader.generics</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)Loader\classloader\Loader.classloader.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <TestGrouping Include="$(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest?\**;
-                           $(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest??\**;
-                           $(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1??\**;
-                           $(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest2??\**">
-      <TestGroup>Loader.classloader.TypeGeneratorTests.TypeGeneratorTest0-299</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)Loader\classloader\Loader.classloader.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <TestGrouping Include="$(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest3??\**;
-                           $(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest4??\**;
-                           $(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest5??\**">
-      <TestGroup>Loader.classloader.TypeGeneratorTests.TypeGeneratorTest300-599</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)Loader\classloader\Loader.classloader.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <TestGrouping Include="$(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest6??\**;
-                           $(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest7??\**;
-                           $(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest8??\**">
-      <TestGroup>Loader.classloader.TypeGeneratorTests.TypeGeneratorTest600-899</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)Loader\classloader\Loader.classloader.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <TestGrouping Include="$(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest9??\**;
-                           $(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest10??\**;
-                           $(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest11??\**">
-      <TestGroup>Loader.classloader.TypeGeneratorTests.TypeGeneratorTest900-1199</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)Loader\classloader\Loader.classloader.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <TestGrouping Include="$(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest12??\**;
-                           $(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest13??\**;
-                           $(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest14??\**;
-                           $(TestBinDir)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1500\**">
-      <TestGroup>Loader.classloader.TypeGeneratorTests.TypeGeneratorTest1200-1500</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)Loader\classloader\Loader.classloader.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <XUnitWrapperGrouping Include="$(TestBinDir)baseservices\compilerservices\*.XUnitWrapper.dll;
-                                   $(TestBinDir)baseservices\exceptions\*.XUnitWrapper.dll;
-                                   $(TestBinDir)baseservices\multidimmarray\*.XUnitWrapper.dll;
-                                   $(TestBinDir)baseservices\TieredCompilation\*.XUnitWrapper.dll;
-                                   $(TestBinDir)baseservices\typeequivalence\*.XUnitWrapper.dll;
-                                   $(TestBinDir)baseservices\varargs\*.XUnitWrapper.dll;
-                                   $(TestBinDir)CoreMangLib\**\*.XUnitWrapper.dll;
-                                   $(TestBinDir)Exceptions\**\*.XUnitWrapper.dll;
+    <XUnitWrapperGrouping Include="$(TestBinDir)Exceptions\**\*.XUnitWrapper.dll;
                                    $(TestBinDir)GC\**\*.XUnitWrapper.dll;
                                    $(TestBinDir)hosting\**\*.XUnitWrapper.dll;
                                    $(TestBinDir)ilasm\**\*.XUnitWrapper.dll;
                                    $(TestBinDir)Loader\**\*.XUnitWrapper.dll;
-                                   $(TestBinDir)managed\**\*.XUnitWrapper.dll;
-                                   $(TestBinDir)readytorun\**\*.XUnitWrapper.dll;
-                                   $(TestBinDir)reflection\**\*.XUnitWrapper.dll;
-                                   $(TestBinDir)Regressions\**\*.XUnitWrapper.dll;
-                                   $(TestBinDir)tracing\**\*.XUnitWrapper.dll"
-                          Exclude="$(TestBinDir)Loader\classloader\Loader.classloader.XUnitWrapper.dll">
+                                   $(TestBinDir)managed\**\*.XUnitWrapper.dll">
       <PayloadGroup>PayloadGroup0</PayloadGroup>
     </XUnitWrapperGrouping>
 
@@ -112,15 +15,10 @@
 
     <XUnitWrapperGrouping Include="$(TestBinDir)JIT\BBT\*.XUnitWrapper.dll;
                                    $(TestBinDir)JIT\CheckProjects\*.XUnitWrapper.dll;
-                                   $(TestBinDir)JIT\opt\*.XUnitWrapper.dll;
-                                   $(TestBinDir)JIT\Performance\*.XUnitWrapper.dll;
+                                   $(TestBinDir)JIT\Intrinsics\*.XUnitWrapper.dll;
                                    $(TestBinDir)JIT\RyuJIT\*.XUnitWrapper.dll;
                                    $(TestBinDir)JIT\superpmi\*.XUnitWrapper.dll">
       <PayloadGroup>JIT.1</PayloadGroup>
-    </XUnitWrapperGrouping>
-    <XUnitWrapperGrouping Include="$(TestBinDir)JIT\Intrinsics\*.XUnitWrapper.dll;
-                                   $(TestBinDir)JIT\SIMD\*.XUnitWrapper.dll">
-      <PayloadGroup>JIT.2</PayloadGroup>
     </XUnitWrapperGrouping>
   </ItemGroup>
 </Project>

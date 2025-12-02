@@ -382,26 +382,26 @@ namespace Microsoft.Extensions.Options.Generators
 
             string initializationString = emitTimeSpanSupport ?
             """
-                                if (OperandType == typeof(global::System.TimeSpan))
-                                {
-                                    if (!global::System.TimeSpan.TryParse((string)Minimum, culture, out global::System.TimeSpan timeSpanMinimum) ||
-                                        !global::System.TimeSpan.TryParse((string)Maximum, culture, out global::System.TimeSpan timeSpanMaximum))
-                                    {
-                                        throw new global::System.InvalidOperationException(c_minMaxError);
-                                    }
-                                    Minimum = timeSpanMinimum;
-                                    Maximum = timeSpanMaximum;
-                                }
-                                else
-                                {
-                                    Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
-                                    Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
-                                }
+                                        if (OperandType == typeof(global::System.TimeSpan))
+                                        {
+                                            if (!global::System.TimeSpan.TryParse((string)Minimum, culture, out global::System.TimeSpan timeSpanMinimum) ||
+                                                !global::System.TimeSpan.TryParse((string)Maximum, culture, out global::System.TimeSpan timeSpanMaximum))
+                                            {
+                                                throw new global::System.InvalidOperationException(MinMaxError);
+                                            }
+                                            Minimum = timeSpanMinimum;
+                                            Maximum = timeSpanMaximum;
+                                        }
+                                        else
+                                        {
+                                            Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(MinMaxError);
+                                            Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(MinMaxError);
+                                        }
             """
             :
             """
-                                Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
-                                Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
+                                        Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(MinMaxError);
+                                        Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(MinMaxError);
             """;
 
             string convertValue = emitTimeSpanSupport ?
@@ -431,7 +431,7 @@ namespace Microsoft.Extensions.Options.Generators
                             {
                                 convertedValue = ConvertValue(value, formatProvider);
                             }
-                            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+                            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException or global::System.OverflowException)
                             {
                                 return false;
                             }
@@ -443,7 +443,7 @@ namespace Microsoft.Extensions.Options.Generators
                         {
                             convertedValue = ConvertValue(value, formatProvider);
                         }
-                        catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+                        catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException or global::System.OverflowException)
                         {
                             return false;
                         }
@@ -470,7 +470,7 @@ namespace Microsoft.Extensions.Options.Generators
         public {{qualifiedClassName}}(global::System.Type type, string minimum, string maximum) : base()
         {
             OperandType = type;
-            NeedToConvertMinMax = true;
+            _needToConvertMinMax = true;
             Minimum = minimum;
             Maximum = maximum;
         }
@@ -483,33 +483,40 @@ namespace Microsoft.Extensions.Options.Generators
         public bool ConvertValueInInvariantCulture { get; set; }
         public override string FormatErrorMessage(string name) =>
                 string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
-        private bool NeedToConvertMinMax { get; }
-        private bool Initialized { get; set; }
-        private const string c_minMaxError = "The minimum and maximum values must be set to valid values.";
+        private readonly bool _needToConvertMinMax;
+        private volatile bool _initialized;
+        private readonly object _lock = new();
+        private const string MinMaxError = "The minimum and maximum values must be set to valid values.";
 
         public override bool IsValid(object? value)
         {
-            if (!Initialized)
+            if (!_initialized)
             {
-                if (Minimum is null || Maximum is null)
+                lock (_lock)
                 {
-                    throw new global::System.InvalidOperationException(c_minMaxError);
-                }
-                if (NeedToConvertMinMax)
-                {
-                    System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
+                    if (!_initialized)
+                    {
+                        if (Minimum is null || Maximum is null)
+                        {
+                            throw new global::System.InvalidOperationException(MinMaxError);
+                        }
+                        if (_needToConvertMinMax)
+                        {
+                            System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
 {{initializationString}}
+                        }
+                        int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
+                        if (cmp > 0)
+                        {
+                            throw new global::System.InvalidOperationException("The maximum value '{Maximum}' must be greater than or equal to the minimum value '{Minimum}'.");
+                        }
+                        else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
+                        {
+                            throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
+                        }
+                        _initialized = true;
+                    }
                 }
-                int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
-                if (cmp > 0)
-                {
-                    throw new global::System.InvalidOperationException("The maximum value '{Maximum}' must be greater than or equal to the minimum value '{Minimum}'.");
-                }
-                else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
-                {
-                    throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
-                }
-                Initialized = true;
             }
 
             if (value is null or string { Length: 0 })
@@ -646,12 +653,12 @@ namespace Microsoft.Extensions.Options.Generators
             OutCloseBrace();
         }
 
-        private void GenModelSelfValidationIfNecessary(ValidatedModel modelToValidate, string modelName)
+        private void GenModelSelfValidationIfNecessary(ValidatedModel modelToValidate)
         {
             if (modelToValidate.SelfValidates)
             {
                 OutLn($"context.MemberName = \"Validate\";");
-                OutLn($"context.DisplayName = string.IsNullOrEmpty(name) ? \"{modelName}.Validate\" : $\"{{name}}.Validate\";");
+                OutLn($"context.DisplayName = string.IsNullOrEmpty(name) ? \"Validate\" : $\"{{name}}.Validate\";");
                 OutLn($"(builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));");
                 OutLn();
             }
@@ -674,15 +681,22 @@ namespace Microsoft.Extensions.Options.Generators
             if (_symbolHolder.UnconditionalSuppressMessageAttributeSymbol is not null)
             {
                 // We disable the warning on `new ValidationContext(object)` usage as we use it in a safe way that not require executing the reflection code.
-                // This is done by initializing the DisplayName in the context which is the part trigger reflection if it is not initialized.
+                // This is done by initializing the DisplayName in the context which is the part trigger reflection if it is not initialized. For
+                // projects targeting .NET 10 and above, we can avoid the suppression since we use the new trim-safe constructor.
+                OutLn("#if !NET10_0_OR_GREATER");
                 OutLn($"[System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage(\"Trimming\", \"IL2026:RequiresUnreferencedCode\",");
                 OutLn($"     Justification = \"The created ValidationContext object is used in a way that never call reflection\")]");
+                OutLn("#endif");
             }
 
             OutLn($"public {(makeStatic ? "static " : string.Empty)}global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, {modelToValidate.Name} options)");
             OutOpenBrace();
             OutLn($"global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;");
+            OutLn("#if NET10_0_OR_GREATER");
+            OutLn($"var context = new {StaticValidationContextType}(options, \"{modelToValidate.SimpleName}\", null, null);");
+            OutLn("#else");
             OutLn($"var context = new {StaticValidationContextType}(options);");
+            OutLn("#endif");
 
             int capacity = modelToValidate.MembersToValidate.Count == 0 ? 0 : modelToValidate.MembersToValidate.Max(static vm => vm.ValidationAttributes.Count);
             if (capacity > 0)
@@ -697,33 +711,33 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 if (vm.ValidationAttributes.Count > 0)
                 {
-                    GenMemberValidation(vm, modelToValidate.SimpleName, ref staticValidationAttributesDict, cleanListsBeforeUse);
+                    GenMemberValidation(vm, ref staticValidationAttributesDict, cleanListsBeforeUse);
                     cleanListsBeforeUse = true;
                     OutLn();
                 }
 
                 if (vm.TransValidatorType is not null)
                 {
-                    GenTransitiveValidation(vm, modelToValidate.SimpleName, ref staticValidatorsDict);
+                    GenTransitiveValidation(vm, ref staticValidatorsDict);
                     OutLn();
                 }
 
                 if (vm.EnumerationValidatorType is not null)
                 {
-                    GenEnumerationValidation(vm, modelToValidate.SimpleName, ref staticValidatorsDict);
+                    GenEnumerationValidation(vm, ref staticValidatorsDict);
                     OutLn();
                 }
             }
 
-            GenModelSelfValidationIfNecessary(modelToValidate, modelToValidate.SimpleName);
+            GenModelSelfValidationIfNecessary(modelToValidate);
             OutLn($"return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();");
             OutCloseBrace();
         }
 
-        private void GenMemberValidation(ValidatedMember vm, string modelName, ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict, bool cleanListsBeforeUse)
+        private void GenMemberValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict, bool cleanListsBeforeUse)
         {
             OutLn($"context.MemberName = \"{vm.Name}\";");
-            OutLn($"context.DisplayName = string.IsNullOrEmpty(name) ? \"{modelName}.{vm.Name}\" : $\"{{name}}.{vm.Name}\";");
+            OutLn($"context.DisplayName = string.IsNullOrEmpty(name) ? \"{vm.Name}\" : $\"{{name}}.{vm.Name}\";");
 
             if (cleanListsBeforeUse)
             {
@@ -803,7 +817,7 @@ namespace Microsoft.Extensions.Options.Generators
             return staticValidationAttributeInstance;
         }
 
-        private void GenTransitiveValidation(ValidatedMember vm, string modelName, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
+        private void GenTransitiveValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
         {
             string callSequence;
             if (vm.TransValidateTypeIsSynthetic)
@@ -819,7 +833,7 @@ namespace Microsoft.Extensions.Options.Generators
 
             var valueAccess = (vm.IsNullable && vm.IsValueType) ? ".Value" : string.Empty;
 
-            var baseName = $"string.IsNullOrEmpty(name) ? \"{modelName}.{vm.Name}\" : $\"{{name}}.{vm.Name}\"";
+            var baseName = $"string.IsNullOrEmpty(name) ? \"{vm.Name}\" : $\"{{name}}.{vm.Name}\"";
 
             if (vm.IsNullable)
             {
@@ -834,7 +848,7 @@ namespace Microsoft.Extensions.Options.Generators
             }
         }
 
-        private void GenEnumerationValidation(ValidatedMember vm, string modelName, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
+        private void GenEnumerationValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
         {
             var valueAccess = (vm.IsValueType && vm.IsNullable) ? ".Value" : string.Empty;
             var enumeratedValueAccess = (vm.EnumeratedIsNullable && vm.EnumeratedIsValueType) ? ".Value" : string.Empty;
@@ -865,7 +879,7 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 OutLn($"if (o is not null)");
                 OutOpenBrace();
-                var propertyName = $"string.IsNullOrEmpty(name) ? $\"{modelName}.{vm.Name}[{{count}}]\" : $\"{{name}}.{vm.Name}[{{count}}]\"";
+                var propertyName = $"string.IsNullOrEmpty(name) ? $\"{vm.Name}[{{count}}]\" : $\"{{name}}.{vm.Name}[{{count}}]\"";
                 OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({propertyName}, o{enumeratedValueAccess}));");
                 OutCloseBrace();
 
@@ -873,7 +887,7 @@ namespace Microsoft.Extensions.Options.Generators
                 {
                     OutLn($"else");
                     OutOpenBrace();
-                    var error = $"string.IsNullOrEmpty(name) ? $\"{modelName}.{vm.Name}[{{count}}] is null\" : $\"{{name}}.{vm.Name}[{{count}}] is null\"";
+                    var error = $"string.IsNullOrEmpty(name) ? $\"{vm.Name}[{{count}}] is null\" : $\"{{name}}.{vm.Name}[{{count}}] is null\"";
                     OutLn($"(builder ??= new()).AddError({error});");
                     OutCloseBrace();
                 }
@@ -882,7 +896,7 @@ namespace Microsoft.Extensions.Options.Generators
             }
             else
             {
-                var propertyName = $"string.IsNullOrEmpty(name) ? $\"{modelName}.{vm.Name}[{{count++}}] is null\" : $\"{{name}}.{vm.Name}[{{count++}}] is null\"";
+                var propertyName = $"string.IsNullOrEmpty(name) ? $\"{vm.Name}[{{count++}}]\" : $\"{{name}}.{vm.Name}[{{count++}}]\"";
                 OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({propertyName}, o{enumeratedValueAccess}));");
             }
 

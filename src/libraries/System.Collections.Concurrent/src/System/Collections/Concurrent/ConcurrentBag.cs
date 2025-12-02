@@ -211,17 +211,11 @@ namespace System.Collections.Concurrent
                 // then start from the next queue after it, and then iterate around back from the head to this queue,
                 // not including it.
                 WorkStealingQueue? localQueue = GetCurrentThreadWorkStealingQueue(forceCreate: false);
-                bool gotItem = localQueue == null ?
+                if (localQueue is null ?
                     TryStealFromTo(_workStealingQueues, null, out result, take) :
-                    (TryStealFromTo(localQueue._nextQueue, null, out result, take) || TryStealFromTo(_workStealingQueues, localQueue, out result, take));
-                if (gotItem)
+                    (TryStealFromTo(localQueue._nextQueue, null, out result, take) || TryStealFromTo(_workStealingQueues, localQueue, out result, take)))
                 {
-#pragma warning disable CS8762
-                    // https://github.com/dotnet/runtime/issues/36132
-                    // Compiler can't automatically deduce that nullability constraints
-                    // for 'result' are satisfied at this exit point.
                     return true;
-#pragma warning restore CS8762
                 }
 
                 if (Interlocked.Read(ref _emptyToNonEmptyListTransitionCount) == initialEmptyToNonEmptyCounts)
@@ -459,7 +453,7 @@ namespace System.Collections.Concurrent
         /// <see cref="GetEnumerator"/> was called.  The enumerator is safe to use
         /// concurrently with reads from and writes to the bag.
         /// </remarks>
-        public IEnumerator<T> GetEnumerator() => new Enumerator(ToArray());
+        public IEnumerator<T> GetEnumerator() => ((IEnumerable<T>)ToArray()).GetEnumerator();
 
         /// <summary>
         /// Returns an enumerator that iterates through the <see
@@ -628,11 +622,11 @@ namespace System.Collections.Concurrent
             // Finally, wait for all unsynchronized operations on each queue to be done.
             for (WorkStealingQueue? queue = head; queue != null; queue = queue._nextQueue)
             {
-                if (queue._currentOp != (int)Operation.None)
+                if (queue._currentOp != Operation.None)
                 {
                     SpinWait spinner = default;
                     do { spinner.SpinOnce(); }
-                    while (queue._currentOp != (int)Operation.None);
+                    while (queue._currentOp != Operation.None);
                 }
             }
         }
@@ -684,7 +678,7 @@ namespace System.Collections.Concurrent
             /// <summary>Number of steals; needs to be combined with <see cref="_addTakeCount"/> to get an actual Count.</summary>
             private int _stealCount;
             /// <summary>The current queue operation. Used to quiesce before performing operations from one thread onto another.</summary>
-            internal volatile int _currentOp;
+            internal volatile Operation _currentOp;
             /// <summary>true if this queue's lock is held as part of a global freeze.</summary>
             internal bool _frozen;
             /// <summary>Next queue in the <see cref="ConcurrentBag{T}"/>'s set of thread-local queues.</summary>
@@ -726,14 +720,14 @@ namespace System.Collections.Concurrent
                 try
                 {
                     // Full fence to ensure subsequent reads don't get reordered before this
-                    Interlocked.Exchange(ref _currentOp, (int)Operation.Add);
+                    Interlocked.Exchange(ref _currentOp, Operation.Add);
                     int tail = _tailIndex;
 
                     // Rare corner case (at most once every 2 billion pushes on this thread):
                     // We're going to increment the tail; if we'll overflow, then we need to reset our counts
                     if (tail == int.MaxValue)
                     {
-                        _currentOp = (int)Operation.None; // set back to None temporarily to avoid a deadlock
+                        _currentOp = Operation.None; // set back to None temporarily to avoid a deadlock
                         lock (this)
                         {
                             Debug.Assert(_tailIndex == tail, "No other thread should be changing _tailIndex");
@@ -749,7 +743,7 @@ namespace System.Collections.Concurrent
                             _tailIndex = tail &= _mask;
                             Debug.Assert(_headIndex - _tailIndex <= 0);
 
-                            Interlocked.Exchange(ref _currentOp, (int)Operation.Add); // ensure subsequent reads aren't reordered before this
+                            Interlocked.Exchange(ref _currentOp, Operation.Add); // ensure subsequent reads aren't reordered before this
                         }
                     }
 
@@ -778,7 +772,7 @@ namespace System.Collections.Concurrent
                     else
                     {
                         // We need to contend with foreign operations (e.g. steals, enumeration, etc.), so we lock.
-                        _currentOp = (int)Operation.None; // set back to None to avoid a deadlock
+                        _currentOp = Operation.None; // set back to None to avoid a deadlock
                         Monitor.Enter(this, ref lockTaken);
 
                         head = _headIndex;
@@ -830,7 +824,7 @@ namespace System.Collections.Concurrent
                 }
                 finally
                 {
-                    _currentOp = (int)Operation.None;
+                    _currentOp = Operation.None;
                     if (lockTaken)
                     {
                         Monitor.Exit(this);
@@ -874,7 +868,7 @@ namespace System.Collections.Concurrent
                     // If the read of _headIndex moved before this write to _tailIndex, we could erroneously end up
                     // popping an element that's concurrently being stolen, leading to the same element being
                     // dequeued from the bag twice.
-                    _currentOp = (int)Operation.Take;
+                    _currentOp = Operation.Take;
                     Interlocked.Exchange(ref _tailIndex, --tail);
 
                     // If there is no interaction with a steal, we can head down the fast path.
@@ -895,7 +889,7 @@ namespace System.Collections.Concurrent
                     else
                     {
                         // Interaction with steals: 0 or 1 elements left.
-                        _currentOp = (int)Operation.None; // set back to None to avoid a deadlock
+                        _currentOp = Operation.None; // set back to None to avoid a deadlock
                         Monitor.Enter(this, ref lockTaken);
                         if (_headIndex - tail <= 0)
                         {
@@ -920,7 +914,7 @@ namespace System.Collections.Concurrent
                 }
                 finally
                 {
-                    _currentOp = (int)Operation.None;
+                    _currentOp = Operation.None;
                     if (lockTaken)
                     {
                         Monitor.Exit(this);
@@ -975,14 +969,14 @@ namespace System.Collections.Concurrent
                         // is in progress, as add operations need to accurately count transitions
                         // from empty to non-empty, and they can only do that if there are no concurrent
                         // steal operations happening at the time.
-                        if ((head - (_tailIndex - 2) >= 0) && _currentOp == (int)Operation.Add)
+                        if ((head - (_tailIndex - 2) >= 0) && _currentOp == Operation.Add)
                         {
                             SpinWait spinner = default;
                             do
                             {
                                 spinner.SpinOnce();
                             }
-                            while (_currentOp == (int)Operation.Add);
+                            while (_currentOp == Operation.Add);
                         }
 
                         // Increment head to tentatively take an element: a full fence is used to ensure the read
@@ -1074,61 +1068,5 @@ namespace System.Collections.Concurrent
             Add,
             Take
         };
-
-        /// <summary>Provides an enumerator for the bag.</summary>
-        /// <remarks>
-        /// The original implementation of ConcurrentBag used a <see cref="List{T}"/> as part of
-        /// the GetEnumerator implementation.  That list was then changed to be an array, but array's
-        /// GetEnumerator has different behavior than does list's, in particular for the case where
-        /// Current is used after MoveNext returns false.  To avoid any concerns around compatibility,
-        /// we use a custom enumerator rather than just returning array's. This enumerator provides
-        /// the essential elements of both list's and array's enumerators.
-        /// </remarks>
-        private sealed class Enumerator : IEnumerator<T>
-        {
-            private readonly T[] _array;
-            private T? _current;
-            private int _index;
-
-            public Enumerator(T[] array)
-            {
-                Debug.Assert(array != null);
-                _array = array;
-            }
-
-            public bool MoveNext()
-            {
-                if (_index < _array.Length)
-                {
-                    _current = _array[_index++];
-                    return true;
-                }
-
-                _index = _array.Length + 1;
-                return false;
-            }
-
-            public T Current => _current!;
-
-            object? IEnumerator.Current
-            {
-                get
-                {
-                    if (_index == 0 || _index == _array.Length + 1)
-                    {
-                        throw new InvalidOperationException(SR.ConcurrentBag_Enumerator_EnumerationNotStartedOrAlreadyFinished);
-                    }
-                    return Current;
-                }
-            }
-
-            public void Reset()
-            {
-                _index = 0;
-                _current = default;
-            }
-
-            public void Dispose() { }
-        }
     }
 }

@@ -1,17 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- this DLL is loaded into xharness via reflection. 
+         It could be running on machine with $(NetCoreAppPrevious) installed and it would be $(NetCoreAppPrevious) process.
+         Because xharness is built for $(NetPrevious).
+         That prevents dependencies from $(AspNetCoreAppCurrent) to be loaded -->
+    <TargetFramework>$(NetCoreAppPrevious)</TargetFramework>
     <OutputType>Exe</OutputType>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);CA1873</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.XHarness.Common" Version="$(MicrosoftDotNetXHarnessTestRunnersCommonVersion)" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
+  </ItemGroup>
 
+  <ItemGroup>
     <None Include="..\data\wasm-symbol-patterns.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

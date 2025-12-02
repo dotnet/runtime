@@ -499,7 +499,7 @@ public:
     //    method hasn't been jitted yet.
     // In all cases, we can check the hot region start address to determine whether the rest of the
     // the information is valid.
-    BOOL IsValid() { return (m_rgCodeRegions[kHot].pAddress != NULL); }
+    BOOL IsValid() { return (m_rgCodeRegions[kHot].pAddress != (CORDB_ADDRESS)NULL); }
     void Clear();
 
     // data members
@@ -697,22 +697,6 @@ struct DbiVersion
 	                                          //     easier automated enforcement during development. It is NOT recommended to use
 	                                          //     the hash as a release versioning mechanism however.
     DWORD m_dwReservedMustBeZero1;  // reserved for future use
-};
-
-// The way in which a thread is blocking on an object
-enum DacBlockingReason
-{
-    DacBlockReason_MonitorCriticalSection,
-    DacBlockReason_MonitorEvent
-};
-
-// Information about an object which is blocking a managed thread
-struct DacBlockingObject
-{
-    VMPTR_Object      vmBlockingObject;
-    VMPTR_AppDomain   vmAppDomain;
-    DWORD             dwTimeout;
-    DacBlockingReason blockingReason;
 };
 
 // Opaque user defined data used in callbacks

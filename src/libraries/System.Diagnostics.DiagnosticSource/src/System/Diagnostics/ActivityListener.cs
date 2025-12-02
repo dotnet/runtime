@@ -11,6 +11,11 @@ namespace System.Diagnostics
     public delegate ActivitySamplingResult SampleActivity<T>(ref ActivityCreationOptions<T> options);
 
     /// <summary>
+    /// Define the callback to be used in <see cref="ActivityListener"/> to receive notifications when exceptions are added to the <see cref="Activity"/>.
+    /// </summary>
+    public delegate void ExceptionRecorder(Activity activity, Exception exception, ref TagList tags);
+
+    /// <summary>
     /// ActivityListener allows listening to the start and stop Activity events and give the opportunity to decide creating the Activity for sampling scenarios.
     /// </summary>
     public sealed class ActivityListener : IDisposable
@@ -31,6 +36,11 @@ namespace System.Diagnostics
         /// Set or get the callback used to listen to the <see cref="Activity"/> stop event.
         /// </summary>
         public Action<Activity>? ActivityStopped { get; set; }
+
+        /// <summary>
+        /// Set or get the callback used to listen to <see cref="Activity"/> events when exceptions are added.
+        /// </summary>
+        public ExceptionRecorder? ExceptionRecorder { get; set; }
 
         /// <summary>
         /// Set or get the callback used to decide if want to listen to <see cref="Activity"/> objects events which created using <see cref="ActivitySource"/> object.

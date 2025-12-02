@@ -76,12 +76,12 @@ namespace Internal.Cryptography
         /// <summary>
         /// Retrieve a private key object for the certificate to use with signing.
         /// </summary>
-        public abstract T? GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent) where T : AsymmetricAlgorithm;
+        public abstract T? GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent) where T : class, IDisposable;
 
         /// <summary>
         /// Retrieve a private key object for the certificate to use with decryption.
         /// </summary>
-        public abstract T? GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent) where T : AsymmetricAlgorithm;
+        public abstract T? GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent) where T : class, IDisposable;
 
         /// <summary>
         /// Get the one instance of PkcsPal.

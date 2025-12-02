@@ -1,14 +1,16 @@
 #include "tiering.h"
 
 static mono_mutex_t tiering_mutex;
-static GHashTable *patch_sites_table;
+// FIXME: The add/remove traffic on this table may require dn_simdhash to implement cascade flag cleanup
+//  and compaction
+static dn_simdhash_ptr_ptr_t *patch_sites_table;
 static gboolean enable_tiering;
 
 void
 mono_interp_tiering_init (void)
 {
 	mono_os_mutex_init_recursive (&tiering_mutex);
-	patch_sites_table = g_hash_table_new (NULL, NULL);
+	patch_sites_table = dn_simdhash_ptr_ptr_new (0, NULL);
 	enable_tiering = TRUE;
 }
 
@@ -61,11 +63,12 @@ patch_imethod_site (gpointer data, gpointer user_data)
 static void
 patch_interp_data_items (InterpMethod *old_imethod, InterpMethod *new_imethod)
 {
-	GSList *sites = g_hash_table_lookup (patch_sites_table, old_imethod);
-	g_slist_foreach (sites, patch_imethod_site, new_imethod);
-
-	g_hash_table_remove (patch_sites_table, sites);
-	g_slist_free (sites);
+	GSList *sites = NULL;
+	if (dn_simdhash_ptr_ptr_try_get_value (patch_sites_table, old_imethod, (void **)&sites)) {
+		g_slist_foreach (sites, patch_imethod_site, new_imethod);
+		dn_simdhash_ptr_ptr_try_remove (patch_sites_table, old_imethod);
+		g_slist_free (sites);
+	}
 }
 
 static InterpMethod*
@@ -100,9 +103,13 @@ static void
 register_imethod_patch_site (InterpMethod *imethod, gpointer *ptr)
 {
 	g_assert (!imethod->optimized);
-	GSList *sites = g_hash_table_lookup (patch_sites_table, imethod);
+	GSList *sites = NULL;
+	guint8 found = dn_simdhash_ptr_ptr_try_get_value (patch_sites_table, imethod, (void **)&sites);
 	sites = g_slist_prepend (sites, ptr);
-	g_hash_table_insert_replace (patch_sites_table, imethod, sites, TRUE);
+	if (found)
+		dn_simdhash_ptr_ptr_try_replace_value (patch_sites_table, imethod, sites);
+	else
+		dn_simdhash_ptr_ptr_try_add (patch_sites_table, imethod, sites);
 }
 
 static void
@@ -119,6 +126,58 @@ register_imethod_data_item (gpointer data, gpointer user_data)
 		}
 		register_imethod_patch_site (data_items [index], (gpointer*)&data_items [index]);
 	}
+}
+
+void
+mono_interp_clear_data_items_patch_sites (gpointer *data_items, int n_data_items)
+{
+	if (!enable_tiering)
+		return;
+	// data_items is part of the memory of a dynamic method that is being freed.
+	// slots within this memory can be registered as patch sites for other imethods
+	// We conservatively assume each slot could be an imethod slot, then look it up
+	// in imethod to patch_sites hashtable. If we find it in the hashtable, we remove
+	// the slot from the patch site list.
+	mono_os_mutex_lock (&tiering_mutex);
+
+	for (int i = 0; i < n_data_items; i++) {
+		GSList *sites;
+		gpointer *slot = data_items + i;
+		gpointer imethod_candidate = *slot;
+
+		if (dn_simdhash_ptr_ptr_try_get_value (patch_sites_table, imethod_candidate, (void **)&sites)) {
+			GSList *prev = NULL;
+
+			// Remove slot from sites list
+			if (sites->data == slot) {
+				// If the slot is found in the first element we will also need to update the hash table since
+				// the list head changes
+				if (!sites->next) {
+					g_slist_free_1 (sites);
+					dn_simdhash_ptr_ptr_try_remove (patch_sites_table, imethod_candidate);
+				} else {
+					prev = sites;
+					sites = sites->next;
+					g_slist_free_1 (prev);
+					dn_simdhash_ptr_ptr_try_replace_value (patch_sites_table, imethod_candidate, sites);
+				}
+			} else {
+				prev = sites;
+				sites = sites->next;
+				while (sites != NULL) {
+					if (sites->data == slot) {
+						prev->next = sites->next;
+						g_slist_free_1 (sites);
+						// duplicates not allowed
+						break;
+					}
+					prev = sites;
+					sites = sites->next;
+				}
+			}
+		}
+	}
+	mono_os_mutex_unlock (&tiering_mutex);
 }
 
 void

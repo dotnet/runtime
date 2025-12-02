@@ -239,6 +239,8 @@ namespace System.Text.Json.Serialization.Tests
 
                     JsonSerializer.Serialize<SimpleTestClass>(testObj, options);
                     Assert.NotEqual(0, getCount(options));
+                }, new RemoteInvokeOptions() {
+                    TimeOut = RemoteExecutor.FailWaitTimeoutMilliseconds * PlatformDetection.SlowRuntimeTimeoutModifier
                 }).Dispose();
 
             static Func<JsonSerializerOptions, int> CreateCacheCountAccessor()
@@ -294,6 +296,8 @@ namespace System.Text.Json.Serialization.Tests
                         Assert.Same(originalCacheOptions, getCacheOptions(options2));
                     }
                 }
+            }, new RemoteInvokeOptions() {
+                TimeOut = RemoteExecutor.FailWaitTimeoutMilliseconds * PlatformDetection.SlowRuntimeTimeoutModifier
             }).Dispose();
 
             static Func<JsonSerializerOptions, JsonSerializerOptions?> CreateCacheOptionsAccessor()
@@ -353,6 +357,7 @@ namespace System.Text.Json.Serialization.Tests
 
             static IEnumerable<(PropertyInfo, object)> GetPropertiesWithSettersAndNonDefaultValues()
             {
+                yield return (GetProp(nameof(JsonSerializerOptions.AllowOutOfOrderMetadataProperties)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.AllowTrailingCommas)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.DefaultBufferSize)), 42);
                 yield return (GetProp(nameof(JsonSerializerOptions.Encoder)), JavaScriptEncoder.UnsafeRelaxedJsonEscaping);
@@ -366,13 +371,19 @@ namespace System.Text.Json.Serialization.Tests
                 yield return (GetProp(nameof(JsonSerializerOptions.IgnoreReadOnlyFields)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.IncludeFields)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.MaxDepth)), 11);
+                yield return (GetProp(nameof(JsonSerializerOptions.NewLine)), Environment.NewLine.Length is 1 ? "\r\n" : "\n");
                 yield return (GetProp(nameof(JsonSerializerOptions.PropertyNamingPolicy)), JsonNamingPolicy.CamelCase);
                 yield return (GetProp(nameof(JsonSerializerOptions.PropertyNameCaseInsensitive)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.ReadCommentHandling)), JsonCommentHandling.Skip);
                 yield return (GetProp(nameof(JsonSerializerOptions.UnknownTypeHandling)), JsonUnknownTypeHandling.JsonNode);
                 yield return (GetProp(nameof(JsonSerializerOptions.WriteIndented)), true);
+                yield return (GetProp(nameof(JsonSerializerOptions.RespectNullableAnnotations)), !JsonSerializerOptions.Default.RespectNullableAnnotations);
+                yield return (GetProp(nameof(JsonSerializerOptions.RespectRequiredConstructorParameters)), !JsonSerializerOptions.Default.RespectRequiredConstructorParameters);
+                yield return (GetProp(nameof(JsonSerializerOptions.IndentCharacter)), '\t');
+                yield return (GetProp(nameof(JsonSerializerOptions.IndentSize)), 1);
                 yield return (GetProp(nameof(JsonSerializerOptions.ReferenceHandler)), ReferenceHandler.Preserve);
                 yield return (GetProp(nameof(JsonSerializerOptions.TypeInfoResolver)), new DefaultJsonTypeInfoResolver());
+                yield return (GetProp(nameof(JsonSerializerOptions.AllowDuplicateProperties)), false /* true is default */);
 
                 static PropertyInfo GetProp(string name)
                 {

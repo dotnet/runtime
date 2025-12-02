@@ -8,141 +8,149 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[SkipKeptItemsValidation]
-	[ExpectedNoWarnings]
-	class MethodOutParameterDataFlow
-	{
-		public static void Main ()
-		{
-			Type t = null;
-			TestInitializedReadFromOutParameter ();
-			TestInitializedReadFromOutParameter_PassedTwice ();
-			TestUninitializedReadFromOutParameter ();
-			TestInitializedReadFromOutParameter_MismatchOnOutput ();
-			TestInitializedReadFromOutParameter_MismatchOnOutput_PassedTwice ();
-			TestInitializedReadFromOutParameter_MismatchOnInput ();
-			TestInitializedReadFromOutParameter_MismatchOnInput_PassedTwice ();
-			// Gets Fields
-			TestPassingOutParameter_Mismatch (out t);
-			t.RequiresPublicFields ();
-			// Gets Methods
-			TestPassingOutParameter (out t);
-			// Needs Methods and gets Methods
-			TestAssigningToOutParameter (t, out t);
-			t = typeof (int);
-			// Needs Fields and gets Methods
-			TestAssigningToOutParameter_Mismatch (t, out t);
-		}
+    [SkipKeptItemsValidation]
+    [ExpectedNoWarnings]
+    class MethodOutParameterDataFlow
+    {
+        public static void Main()
+        {
+            Type t = null;
+            TestInitializedReadFromOutParameter();
+            TestInitializedReadFromOutParameter_PassedTwice();
+            TestUninitializedReadFromOutParameter();
+            TestInitializedReadFromOutParameter_MismatchOnOutput();
+            TestInitializedReturnOutParameter_MismatchOnOutput();
+            TestInitializedReadFromOutParameter_MismatchOnOutput_PassedTwice();
+            TestInitializedReadFromOutParameter_MismatchOnInput();
+            TestInitializedReadFromOutParameter_MismatchOnInput_PassedTwice();
+            // Gets Fields
+            TestPassingOutParameter_Mismatch(out t);
+            t.RequiresPublicFields();
+            // Gets Methods
+            TestPassingOutParameter(out t);
+            // Needs Methods and gets Methods
+            TestAssigningToOutParameter(t, out t);
+            t = typeof(int);
+            // Needs Fields and gets Methods
+            TestAssigningToOutParameter_Mismatch(t, out t);
+        }
 
-		static void TestInitializedReadFromOutParameter ()
-		{
-			Type typeWithMethods = null;
-			TryGetAnnotatedValue (out typeWithMethods);
-			typeWithMethods.RequiresPublicMethods ();
-		}
+        static void TestInitializedReadFromOutParameter()
+        {
+            Type typeWithMethods = null;
+            TryGetAnnotatedValue(out typeWithMethods);
+            typeWithMethods.RequiresPublicMethods();
+        }
 
-		static void TestInitializedReadFromOutParameter_PassedTwice ()
-		{
-			Type typeWithMethods = null;
-			TryGetAnnotatedValueFromValue (typeWithMethods, out typeWithMethods);
-			typeWithMethods.RequiresPublicMethods ();
-		}
+        static void TestInitializedReadFromOutParameter_PassedTwice()
+        {
+            Type typeWithMethods = null;
+            TryGetAnnotatedValueFromValue(typeWithMethods, out typeWithMethods);
+            typeWithMethods.RequiresPublicMethods();
+        }
 
-		static void TestUninitializedReadFromOutParameter ()
-		{
-			Type typeWithMethods;
-			TryGetAnnotatedValue (out typeWithMethods);
-			typeWithMethods.RequiresPublicMethods ();
-		}
+        static void TestUninitializedReadFromOutParameter()
+        {
+            Type typeWithMethods;
+            TryGetAnnotatedValue(out typeWithMethods);
+            typeWithMethods.RequiresPublicMethods();
+        }
 
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
-		static void TestInitializedReadFromOutParameter_MismatchOnOutput ()
-		{
-			Type typeWithMethods = null;
-			TryGetAnnotatedValue (out typeWithMethods);
-			typeWithMethods.RequiresPublicFields ();
-		}
+        [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2632")]
+        static void TestInitializedReadFromOutParameter_MismatchOnOutput()
+        {
+            Type typeWithMethods = null;
+            TryGetAnnotatedValue(out typeWithMethods);
+            typeWithMethods.RequiresPublicFields();
+        }
 
-		// https://github.com/dotnet/linker/issues/2632
-		// This test should generate a warning since there's mismatch on annotations
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
-		static void TestInitializedReadFromOutParameter_MismatchOnOutput_PassedTwice ()
-		{
-			Type typeWithMethods = null;
-			TryGetAnnotatedValueFromValue (typeWithMethods, out typeWithMethods);
-			typeWithMethods.RequiresPublicFields ();
-		}
+        // This test should generate a warning since there's mismatch on annotations
+        [ExpectedWarning("IL2068", nameof(TryGetAnnotatedValue), nameof(DynamicallyAccessedMemberTypes.PublicFields), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2632")]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+        static Type TestInitializedReturnOutParameter_MismatchOnOutput()
+        {
+            Type typeWithMethods = null;
+            TryGetAnnotatedValue(out typeWithMethods);
+            return typeWithMethods;
+        }
 
-		// https://github.com/dotnet/linker/issues/2632
-		// This warning should not be generated, the value of typeWithMethods should have PublicMethods
-		// after the call with out parameter.
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = Tool.Analyzer)]
-		static void TestInitializedReadFromOutParameter_MismatchOnInput ()
-		{
-			Type typeWithMethods = GetTypeWithFields ();
-			// No warning on out parameter
-			TryGetAnnotatedValue (out typeWithMethods);
-			typeWithMethods.RequiresPublicMethods ();
-		}
+        // This test should generate a warning since there's mismatch on annotations
+        [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2632")]
+        static void TestInitializedReadFromOutParameter_MismatchOnOutput_PassedTwice()
+        {
+            Type typeWithMethods = null;
+            TryGetAnnotatedValueFromValue(typeWithMethods, out typeWithMethods);
+            typeWithMethods.RequiresPublicFields();
+        }
 
-		[ExpectedWarning ("IL2072", nameof (TryGetAnnotatedValueFromValue))]
-		// https://github.com/dotnet/linker/issues/2632
-		// This warning should not be generated, the value of typeWithMethods should have PublicMethods
-		// after the call with out parameter.
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = Tool.Analyzer)]
-		static void TestInitializedReadFromOutParameter_MismatchOnInput_PassedTwice ()
-		{
-			Type typeWithMethods = GetTypeWithFields ();
-			// Warn on first parameter only, not on out parameter
-			TryGetAnnotatedValueFromValue (typeWithMethods, out typeWithMethods);
-			typeWithMethods.RequiresPublicMethods ();
-		}
+        // This warning should not be generated, the value of typeWithMethods should have PublicMethods
+        // after the call with out parameter.
+        [UnexpectedWarning("IL2072", nameof(DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "https://github.com/dotnet/linker/issues/2632")]
+        static void TestInitializedReadFromOutParameter_MismatchOnInput()
+        {
+            Type typeWithMethods = GetTypeWithFields();
+            // No warning on out parameter
+            TryGetAnnotatedValue(out typeWithMethods);
+            typeWithMethods.RequiresPublicMethods();
+        }
 
-		static void TestPassingOutParameter ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] out Type typeWithMethods)
-		{
-			TryGetAnnotatedValue (out typeWithMethods);
-		}
+        [ExpectedWarning("IL2072", nameof(TryGetAnnotatedValueFromValue))]
+        // This warning should not be generated, the value of typeWithMethods should have PublicMethods
+        // after the call with out parameter.
+        [ExpectedWarning("IL2072", nameof(DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "https://github.com/dotnet/linker/issues/2632")]
+        static void TestInitializedReadFromOutParameter_MismatchOnInput_PassedTwice()
+        {
+            Type typeWithMethods = GetTypeWithFields();
+            // Warn on first parameter only, not on out parameter
+            TryGetAnnotatedValueFromValue(typeWithMethods, out typeWithMethods);
+            typeWithMethods.RequiresPublicMethods();
+        }
 
-		[ExpectedWarning ("IL2067", "typeWithFields", nameof (TryGetAnnotatedValue))]
-		static void TestPassingOutParameter_Mismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] out Type typeWithFields)
-		{
-			TryGetAnnotatedValue (out typeWithFields);
-		}
+        static void TestPassingOutParameter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] out Type typeWithMethods)
+        {
+            TryGetAnnotatedValue(out typeWithMethods);
+        }
 
-		static void TestAssigningToOutParameter (
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type inputTypeWithMethods,
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] out Type outputTypeWithMethods)
-		{
-			outputTypeWithMethods = inputTypeWithMethods;
-		}
+        [ExpectedWarning("IL2067", "typeWithFields", nameof(TryGetAnnotatedValue), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2632")]
+        static void TestPassingOutParameter_Mismatch([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] out Type typeWithFields)
+        {
+            TryGetAnnotatedValue(out typeWithFields);
+        }
 
-		[ExpectedWarning ("IL2067", "inputTypeWithFields", "outputTypeWithMethods")]
-		static void TestAssigningToOutParameter_Mismatch (
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type inputTypeWithFields,
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] out Type outputTypeWithMethods)
-		{
-			outputTypeWithMethods = inputTypeWithFields;
-		}
+        static void TestAssigningToOutParameter(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type inputTypeWithMethods,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] out Type outputTypeWithMethods)
+        {
+            outputTypeWithMethods = inputTypeWithMethods;
+        }
 
-		static bool TryGetAnnotatedValue ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] out Type typeWithMethods)
-		{
-			typeWithMethods = null;
-			return false;
-		}
+        [ExpectedWarning("IL2067", "inputTypeWithFields", "outputTypeWithMethods")]
+        static void TestAssigningToOutParameter_Mismatch(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type inputTypeWithFields,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] out Type outputTypeWithMethods)
+        {
+            outputTypeWithMethods = inputTypeWithFields;
+        }
 
-		static bool TryGetAnnotatedValueFromValue (
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type inValue,
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] out Type typeWithMethods)
-		{
-			typeWithMethods = inValue;
-			return false;
-		}
+        static bool TryGetAnnotatedValue([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] out Type typeWithMethods)
+        {
+            typeWithMethods = null;
+            return false;
+        }
 
-		[return: DynamicallyAccessedMembersAttribute (DynamicallyAccessedMemberTypes.PublicFields)]
-		static Type GetTypeWithFields () => null;
+        static bool TryGetAnnotatedValueFromValue(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type inValue,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] out Type typeWithMethods)
+        {
+            typeWithMethods = inValue;
+            return false;
+        }
 
-		class TestType
-		{
-		}
-	}
+        [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.PublicFields)]
+        static Type GetTypeWithFields() => null;
+
+        class TestType
+        {
+        }
+    }
 }

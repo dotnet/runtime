@@ -7,6 +7,8 @@ using ILCompiler.Logging;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 
+using Internal.TypeSystem;
+
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 #nullable enable
@@ -15,27 +17,34 @@ namespace ILCompiler.Dataflow
 {
     public readonly record struct TrimAnalysisAssignmentPattern
     {
-        public MultiValue Source { init; get; }
-        public MultiValue Target { init; get; }
-        public MessageOrigin Origin { init; get; }
-        internal string Reason { init; get; }
+        public MultiValue Source { get; init; }
+        public MultiValue Target { get; init; }
+        public MessageOrigin Origin { get; init; }
 
-        internal TrimAnalysisAssignmentPattern(MultiValue source, MultiValue target, MessageOrigin origin, string reason)
+        // For assignment of a method parameter, we store the parameter index to disambiguate
+        // assignments from different out parameters of a single method call.
+        public int? ParameterIndex { get; init; }
+        internal TypeSystemEntity Reason { get; init; }
+
+        internal TrimAnalysisAssignmentPattern(MultiValue source, MultiValue target, MessageOrigin origin, int? parameterIndex, TypeSystemEntity reason)
         {
             Source = source.DeepCopy();
             Target = target.DeepCopy();
             Origin = origin;
+            ParameterIndex = parameterIndex;
             Reason = reason;
         }
 
         public TrimAnalysisAssignmentPattern Merge(ValueSetLattice<SingleValue> lattice, TrimAnalysisAssignmentPattern other)
         {
             Debug.Assert(Origin == other.Origin);
+            Debug.Assert(ParameterIndex == other.ParameterIndex);
 
             return new TrimAnalysisAssignmentPattern(
                 lattice.Meet(Source, other.Source),
                 lattice.Meet(Target, other.Target),
                 Origin,
+                ParameterIndex,
                 Reason);
         }
 
@@ -48,9 +57,9 @@ namespace ILCompiler.Dataflow
                 logger.ShouldSuppressAnalysisWarningsForRequires(Origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
                 logger);
 
-            foreach (var sourceValue in Source.AsEnumerable ())
+            foreach (var sourceValue in Source.AsEnumerable())
             {
-                foreach (var targetValue in Target.AsEnumerable ())
+                foreach (var targetValue in Target.AsEnumerable())
                 {
                     if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
                         throw new NotImplementedException();

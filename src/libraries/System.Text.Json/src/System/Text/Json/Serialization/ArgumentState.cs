@@ -27,9 +27,5 @@ namespace System.Text.Json
 
         // Current constructor parameter value.
         public JsonParameterInfo? JsonParameterInfo;
-
-        // For performance, we order the parameters by the first deserialize and PropertyIndex helps find the right slot quicker.
-        public int ParameterIndex;
-        public List<ParameterRef>? ParameterRefCache;
     }
 }

@@ -3,8 +3,6 @@
 
 using System.Collections.Generic;
 using System.Globalization;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Tests;
 using System.Threading.Tasks;
 using Xunit;
@@ -83,7 +81,7 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> EnginesThatSupportBackreferences()
         {
-            foreach(RegexEngine engine in RegexHelpers.AvailableEngines)
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 if (engine == RegexEngine.NonBacktracking) // Nonbacktracking engine doesn't yet support backreferences.
                     continue;
@@ -151,7 +149,7 @@ namespace System.Text.RegularExpressions.Tests
 
         // This test takes a long time to run since it needs to compute all possible lowercase mappings across
         // 3 different cultures and then creates Regex matches for all of our engines for each mapping.
-        [OuterLoop]
+        [OuterLoop("Takes long time to run", ~TestPlatforms.Browser)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67793")]
         [Theory]
         [MemberData(nameof(Unicode_IgnoreCase_TestData))]
@@ -203,7 +201,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
                 {
-                    yield return new object[] { engine, culture, RegexOptions.None};
+                    yield return new object[] { engine, culture, RegexOptions.None };
                     if (string.IsNullOrEmpty(culture))
                     {
                         // For the Invariant culture equivalences also test to get the same behavior with RegexOptions.CultureInvariant.

@@ -438,55 +438,6 @@
   }
 }
 
-
-// ========================================================================================
-// FIFTH LAYER INVALID type: Used to verify we can't override the method using a compatible interface
-// if it has been already overridden using a class that implements the interface (i.e. the new
-// interface return type won't be compatible with the class return type on the previous override
-// ========================================================================================
-
-.class public auto ansi beforefieldinit Invalid1<Q,W> extends class GenMoreDerived<!Q,!W,!Q,!W>
-{
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
-
-  .method public hidebysig newslot virtual instance class INonGenThroughGen4 NonGenThroughGenFunc(string& res)
-  {
-    .override method instance class IB class GenBaseType<!Q,!W>::NonGenThroughGenFunc(string& res)
-    ldnull
-    ret
-  }
-}
-
-// ========================================================================================
-// FIFTH LAYER INVALID type: Used to verify we can't override the method using a less derived interface
-// than one that has already been used in a previous override
-// ========================================================================================
-
-.class public auto ansi beforefieldinit Invalid2<Q,W> extends class GenTestType<!Q,!W,!Q,!W>
-{
-  .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed { ret }
-
-  .method public hidebysig newslot virtual instance class INonGenThroughGen2<object,int32,string> NonGenThroughGenFunc(string& res)
-  {
-    .override method instance class IB class GenBaseType<!Q,!W>::NonGenThroughGenFunc(string& res)
-    ldnull
-    ret
-  }
-}
-
-.class public auto ansi beforefieldinit Invalid3<Q,W> extends class GenTestType<!Q,!W,!Q,!W>
-{
-  .method public hidebysig specialname rtspecialname instance void .ctor() cil managed { ret }
-
-  .method public hidebysig newslot virtual instance class IVariant<class Derived2> MultiLevelGenericVariantFunc(string&)
-  {
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = (01 00 00 00)
-    .override method instance class IVariant<class Base<class Derived>> class GenBaseType<!Q,!W>::MultiLevelGenericVariantFunc(string&)
-    ldnull
-    ret
-  }
-}
-
 // ========================================================================================
 
 .class public auto ansi beforefieldinit CMain extends [mscorlib]System.Object
@@ -1110,30 +1061,6 @@
     ret
   }
 
-
-  // ===================================================================================== //
-
-  .method public static void RunTest_Invalid1() noinlining
-  {
-    newobj     instance void class Invalid1<int32,object>::.ctor()
-    call       void [System.Console]System.Console::WriteLine(object)
-    ret
-  }
-
-  .method public static void RunTest_Invalid2() noinlining
-  {
-    newobj     instance void class Invalid2<int32,object>::.ctor()
-    call       void [System.Console]System.Console::WriteLine(object)
-    ret
-  }
-
-  .method public static void RunTest_Invalid3() noinlining
-  {
-    newobj     instance void class Invalid3<int32,object>::.ctor()
-    callvirt   instance class IVariant<class Derived2> class Invalid3<int32,object>::MultiLevelGenericVariantFunc()
-    pop
-    ret
-  }
   // ===================================================================================== //
 
   .method public hidebysig static int32  Main() cil managed
@@ -1262,65 +1189,9 @@
 
     MOREDERIVED6:
     call bool CMain::RunTest_MoreDerived6()
-    brtrue.s INVALID1
+    brtrue.s DONE
     ldc.i4.0
     stloc.0
-
-    // ===================================================================================== //
-
-    INVALID1:
-    .try
-    {
-        call void CMain::RunTest_Invalid1()
-        ldc.i4.0
-        stloc.0
-        ldstr      "FAIL: did not catch expected TypeLoadException when loading Invalid1."
-        call       void [System.Console]System.Console::WriteLine(string)
-        leave.s INVALID2
-    }
-    catch [mscorlib]System.TypeLoadException
-    {
-        ldstr "Caught expected TypeLoadException:"
-        call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)
-        leave.s INVALID2
-    }
-
-    INVALID2:
-    .try
-    {
-        call void CMain::RunTest_Invalid2()
-        ldc.i4.0
-        stloc.0
-        ldstr      "FAIL: did not catch expected TypeLoadException when loading Invalid2."
-        call       void [System.Console]System.Console::WriteLine(string)
-        leave.s INVALID3
-    }
-    catch [mscorlib]System.TypeLoadException
-    {
-        ldstr "Caught expected TypeLoadException:"
-        call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)
-        leave.s INVALID3
-    }
-
-    INVALID3:
-    .try
-    {
-        call void CMain::RunTest_Invalid3()
-        ldc.i4.0
-        stloc.0
-        ldstr      "FAIL: did not catch expected TypeLoadException when loading DerivedClassFail1."
-        call       void [System.Console]System.Console::WriteLine(string)
-        leave.s DONE
-    }
-    catch [mscorlib]System.TypeLoadException
-    {
-        ldstr "Caught expected TypeLoadException:"
-        call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)
-        leave.s DONE
-    }
 
     // ===================================================================================== //
 

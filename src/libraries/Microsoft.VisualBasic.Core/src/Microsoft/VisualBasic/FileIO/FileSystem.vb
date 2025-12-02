@@ -892,7 +892,7 @@ Namespace Microsoft.VisualBasic.FileIO
         Private Shared Sub CopyOrMoveDirectory(ByVal operation As CopyOrMove,
                                                ByVal sourceDirectoryName As String, ByVal destinationDirectoryName As String,
                                                ByVal overwrite As Boolean, ByVal showUI As UIOptionInternal, ByVal onUserCancel As UICancelOption)
-            Debug.Assert(System.Enum.IsDefined(GetType(CopyOrMove), operation), "Invalid Operation")
+            Debug.Assert([Enum].IsDefined(operation), "Invalid Operation")
 
             ' Verify enums.
             VerifyUICancelOption("onUserCancel", onUserCancel)
@@ -961,7 +961,7 @@ Namespace Microsoft.VisualBasic.FileIO
         Private Shared Sub FxCopyOrMoveDirectory(ByVal operation As CopyOrMove,
                                                  ByVal sourceDirectoryPath As String, ByVal targetDirectoryPath As String, ByVal overwrite As Boolean)
 
-            Debug.Assert(System.Enum.IsDefined(GetType(CopyOrMove), operation), "Invalid Operation")
+            Debug.Assert([Enum].IsDefined(operation), "Invalid Operation")
             Debug.Assert(sourceDirectoryPath <> "" And IO.Path.IsPathRooted(sourceDirectoryPath), "Invalid Source")
             Debug.Assert(targetDirectoryPath <> "" And IO.Path.IsPathRooted(targetDirectoryPath), "Invalid Target")
 
@@ -1010,7 +1010,7 @@ Namespace Microsoft.VisualBasic.FileIO
         Private Shared Sub CopyOrMoveDirectoryNode(ByVal Operation As CopyOrMove,
                                                    ByVal SourceDirectoryNode As DirectoryNode, ByVal Overwrite As Boolean, ByVal Exceptions As ListDictionary)
 
-            Debug.Assert(System.Enum.IsDefined(GetType(CopyOrMove), Operation), "Invalid Operation")
+            Debug.Assert([Enum].IsDefined(Operation), "Invalid Operation")
             Debug.Assert(Exceptions IsNot Nothing, "Null exception list")
             Debug.Assert(SourceDirectoryNode IsNot Nothing, "Null source node")
 
@@ -1092,7 +1092,7 @@ Namespace Microsoft.VisualBasic.FileIO
                                           ByVal sourceFileName As String, ByVal destinationFileName As String,
                                           ByVal overwrite As Boolean, ByVal showUI As UIOptionInternal, ByVal onUserCancel As UICancelOption
                                           )
-            Debug.Assert(System.Enum.IsDefined(GetType(CopyOrMove), operation), "Invalid Operation")
+            Debug.Assert([Enum].IsDefined(operation), "Invalid Operation")
 
             ' Verify enums.
             VerifyUICancelOption("onUserCancel", onUserCancel)
@@ -1597,8 +1597,8 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' </remarks>
         Private Shared Sub ShellCopyOrMove(ByVal Operation As CopyOrMove, ByVal TargetType As FileOrDirectory,
             ByVal FullSourcePath As String, ByVal FullTargetPath As String, ByVal ShowUI As UIOptionInternal, ByVal OnUserCancel As UICancelOption)
-            Debug.Assert(System.Enum.IsDefined(GetType(CopyOrMove), Operation))
-            Debug.Assert(System.Enum.IsDefined(GetType(FileOrDirectory), TargetType))
+            Debug.Assert([Enum].IsDefined(Operation))
+            Debug.Assert([Enum].IsDefined(TargetType))
             Debug.Assert(FullSourcePath <> "" And IO.Path.IsPathRooted(FullSourcePath), "Invalid FullSourcePath")
             Debug.Assert(FullTargetPath <> "" And IO.Path.IsPathRooted(FullTargetPath), "Invalid FullTargetPath")
             Debug.Assert(ShowUI <> UIOptionInternal.NoUI, "Why call ShellDelete if ShowUI is NoUI???")
@@ -1693,7 +1693,7 @@ Namespace Microsoft.VisualBasic.FileIO
         Private Shared Sub ShellFileOperation(ByVal OperationType As SHFileOperationType, ByVal OperationFlags As ShFileOperationFlags,
             ByVal FullSource As String, ByVal FullTarget As String, ByVal OnUserCancel As UICancelOption, ByVal FileOrDirectory As FileOrDirectory)
 
-            Debug.Assert(System.Enum.IsDefined(GetType(SHFileOperationType), OperationType))
+            Debug.Assert([Enum].IsDefined(OperationType))
             Debug.Assert(OperationType <> SHFileOperationType.FO_RENAME, "Don't call Shell to rename")
             Debug.Assert(FullSource <> "" And IO.Path.IsPathRooted(FullSource), "Invalid FullSource path")
             Debug.Assert(OperationType = SHFileOperationType.FO_DELETE OrElse (FullTarget <> "" And IO.Path.IsPathRooted(FullTarget)), "Invalid FullTarget path")
@@ -1750,7 +1750,7 @@ Namespace Microsoft.VisualBasic.FileIO
         Private Shared Function GetShellOperationInfo(
                             ByVal OperationType As SHFileOperationType, ByVal OperationFlags As ShFileOperationFlags,
                             ByVal SourcePaths() As String, Optional ByVal TargetPath As String = Nothing) As SHFILEOPSTRUCT
-            Debug.Assert(System.Enum.IsDefined(GetType(SHFileOperationType), OperationType), "Invalid OperationType")
+            Debug.Assert([Enum].IsDefined(OperationType), "Invalid OperationType")
             Debug.Assert(TargetPath = "" Or IO.Path.IsPathRooted(TargetPath), "Invalid TargetPath")
             Debug.Assert(SourcePaths IsNot Nothing AndAlso SourcePaths.Length > 0, "Invalid SourcePaths")
 

@@ -32,154 +32,203 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource()
         {
-            int[] source = { };
+            int[] source = [];
 
-            Assert.Throws<InvalidOperationException>(() => source.RunOnce().Aggregate((x, y) => x + y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Aggregate((x, y) => x + y));
+                Assert.Throws<InvalidOperationException>(() => source.RunOnce().Aggregate((x, y) => x + y));
+            });
         }
 
         [Fact]
         public void SingleElement()
         {
-            int[] source = { 5 };
+            int[] source = [5];
             int expected = 5;
 
-            Assert.Equal(expected, source.Aggregate((x, y) => x + y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate((x, y) => x + y));
+            });
         }
 
         [Fact]
         public void SingleElementRunOnce()
         {
-            int[] source = { 5 };
+            int[] source = [5];
             int expected = 5;
 
-            Assert.Equal(expected, source.RunOnce().Aggregate((x, y) => x + y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.RunOnce().Aggregate((x, y) => x + y));
+            });
         }
 
         [Fact]
         public void TwoElements()
         {
-            int[] source = { 5, 6 };
+            int[] source = [5, 6];
             int expected = 11;
 
-            Assert.Equal(expected, source.Aggregate((x, y) => x + y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate((x, y) => x + y));
+            });
         }
 
         [Fact]
         public void MultipleElements()
         {
-            int[] source = { 5, 6, 0, -4 };
+            int[] source = [5, 6, 0, -4];
             int expected = 7;
 
-            Assert.Equal(expected, source.Aggregate((x, y) => x + y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate((x, y) => x + y));
+            });
         }
 
         [Fact]
         public void MultipleElementsRunOnce()
         {
-            int[] source = { 5, 6, 0, -4 };
+            int[] source = [5, 6, 0, -4];
             int expected = 7;
 
-            Assert.Equal(expected, source.RunOnce().Aggregate((x, y) => x + y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.RunOnce().Aggregate((x, y) => x + y));
+            });
         }
 
         [Fact]
         public void EmptySourceAndSeed()
         {
-            int[] source = { };
+            int[] source = [];
             long seed = 2;
             long expected = 2;
 
-            Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y));
+            });
         }
 
         [Fact]
         public void SingleElementAndSeed()
         {
-            int[] source = { 5 };
+            int[] source = [5];
             long seed = 2;
             long expected = 10;
 
-            Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y));
+            });
         }
 
         [Fact]
         public void TwoElementsAndSeed()
         {
-            int[] source = { 5, 6 };
+            int[] source = [5, 6];
             long seed = 2;
             long expected = 60;
 
-            Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y));
+            });
         }
 
         [Fact]
         public void MultipleElementsAndSeed()
         {
-            int[] source = { 5, 6, 2, -4 };
+            int[] source = [5, 6, 2, -4];
             long seed = 2;
             long expected = -480;
 
-            Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y));
+            });
         }
 
         [Fact]
         public void MultipleElementsAndSeedRunOnce()
         {
-            int[] source = { 5, 6, 2, -4 };
+            int[] source = [5, 6, 2, -4];
             long seed = 2;
             long expected = -480;
 
-            Assert.Equal(expected, source.RunOnce().Aggregate(seed, (x, y) => x * y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.RunOnce().Aggregate(seed, (x, y) => x * y));
+            });
         }
 
         [Fact]
         public void NoElementsSeedResultSeletor()
         {
-            int[] source = { };
+            int[] source = [];
             long seed = 2;
             double expected = 7;
 
-            Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            });
         }
 
         [Fact]
         public void SingleElementSeedResultSelector()
         {
-            int[] source = { 5 };
+            int[] source = [5];
             long seed = 2;
             long expected = 15;
 
-            Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            });
         }
 
         [Fact]
         public void TwoElementsSeedResultSelector()
         {
-            int[] source = { 5, 6 };
+            int[] source = [5, 6];
             long seed = 2;
             long expected = 65;
 
-            Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            });
         }
 
         [Fact]
         public void MultipleElementsSeedResultSelector()
         {
-            int[] source = { 5, 6, 2, -4 };
+            int[] source = [5, 6, 2, -4];
             long seed = 2;
             long expected = -475;
 
-            Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            });
         }
 
         [Fact]
         public void MultipleElementsSeedResultSelectorRunOnce()
         {
-            int[] source = { 5, 6, 2, -4 };
+            int[] source = [5, 6, 2, -4];
             long seed = 2;
             long expected = -475;
 
-            Assert.Equal(expected, source.RunOnce().Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.RunOnce().Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            });
         }
 
         [Fact]

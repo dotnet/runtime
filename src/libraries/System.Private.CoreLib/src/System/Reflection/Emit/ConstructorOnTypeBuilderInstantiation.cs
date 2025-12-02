@@ -58,7 +58,7 @@ namespace System.Reflection.Emit
         public override CallingConventions CallingConvention => _ctor.CallingConvention;
         public override Type[] GetGenericArguments() { return _ctor.GetGenericArguments(); }
         public override bool IsGenericMethodDefinition => false;
-        public override bool ContainsGenericParameters => false;
+        public override bool ContainsGenericParameters => _type.ContainsGenericParameters;
 
         public override bool IsGenericMethod => false;
         #endregion

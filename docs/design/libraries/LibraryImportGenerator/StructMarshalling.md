@@ -282,7 +282,7 @@ The P/Invoke source generator (as well as the struct source generator when neste
 
 If a structure type does not meet the requirements to not require marshalling or does not have the `NativeMarshallingAttribute` applied at the type definition, the user can supply a `MarshalUsingAttribute` at the marshalling location (field, parameter, or return value) with a native type matching the same requirements as `NativeMarshallingAttribute`'s native type.
 
-All generated stubs will be marked with [`SkipLocalsInitAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.compilerservices.skiplocalsinitattribute) on supported frameworks. This does require attention when performing custom marshalling as the state of stub allocated memory will be in an undefined state.
+All generated stubs will be marked with [`SkipLocalsInitAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.skiplocalsinitattribute) on supported frameworks. This does require attention when performing custom marshalling as the state of stub allocated memory will be in an undefined state.
 
 ### Special case: Transparent Structures
 

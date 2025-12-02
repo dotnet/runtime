@@ -155,6 +155,12 @@ namespace Microsoft.Extensions.Logging
         Critical = 5,
         None = 6,
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public partial class ProviderAliasAttribute : System.Attribute
+    {
+        public ProviderAliasAttribute(string alias) { }
+        public string Alias { get { throw null; } }
+    }
 }
 namespace Microsoft.Extensions.Logging.Abstractions
 {
@@ -171,7 +177,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
         public Microsoft.Extensions.Logging.LogLevel LogLevel { get { throw null; } }
         public TState State { get { throw null; } }
     }
-    public partial class NullLogger : Microsoft.Extensions.Logging.ILogger
+    public sealed partial class NullLogger : Microsoft.Extensions.Logging.ILogger
     {
         internal NullLogger() { }
         public static Microsoft.Extensions.Logging.Abstractions.NullLogger Instance { get { throw null; } }
@@ -187,7 +193,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string name) { throw null; }
         public void Dispose() { }
     }
-    public partial class NullLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, System.IDisposable
+    public sealed partial class NullLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, System.IDisposable
     {
         internal NullLoggerProvider() { }
         public static Microsoft.Extensions.Logging.Abstractions.NullLoggerProvider Instance { get { throw null; } }
@@ -201,5 +207,22 @@ namespace Microsoft.Extensions.Logging.Abstractions
         public System.IDisposable BeginScope<TState>(TState state) where TState : notnull { throw null; }
         public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) { throw null; }
         public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
+    }
+    public abstract class BufferedLogRecord
+    {
+        public abstract System.DateTimeOffset Timestamp { get; }
+        public abstract Microsoft.Extensions.Logging.LogLevel LogLevel { get; }
+        public abstract Microsoft.Extensions.Logging.EventId EventId { get; }
+        public virtual string? Exception { get; }
+        public virtual System.Diagnostics.ActivitySpanId? ActivitySpanId { get; }
+        public virtual System.Diagnostics.ActivityTraceId? ActivityTraceId { get; }
+        public virtual int? ManagedThreadId { get; }
+        public virtual string? FormattedMessage { get; }
+        public virtual string? MessageTemplate { get; }
+        public virtual System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>> Attributes { get; }
+    }
+    public interface IBufferedLogger
+    {
+        void LogRecords(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.Abstractions.BufferedLogRecord> records);
     }
 }

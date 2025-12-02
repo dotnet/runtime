@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_config.h"
+#include "pal_errno.h"
 #include "pal_threading.h"
 
 #include <limits.h>
@@ -12,6 +13,7 @@
 #include <errno.h>
 #include <time.h>
 #include <sys/time.h>
+#include <minipal/thread.h>
 #if HAVE_SCHED_GETCPU
 #include <sched.h>
 #endif
@@ -21,9 +23,6 @@
 #undef _XOPEN_SOURCE
 #endif
 #include <pthread.h>
-#if defined(TARGET_OSX)
-#define _XOPEN_SOURCE
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // LowLevelMonitor - Represents a non-recursive mutex and condition
@@ -83,9 +82,9 @@ LowLevelMonitor* SystemNative_LowLevelMonitor_Create(void)
 
     error = pthread_cond_init(&monitor->Condition, &conditionAttributes);
 
-    int condAttrDestroyError = pthread_condattr_destroy(&conditionAttributes);
+    int condAttrDestroyError;
+    condAttrDestroyError = pthread_condattr_destroy(&conditionAttributes);
     assert(condAttrDestroyError == 0);
-    (void)condAttrDestroyError; // unused in release build
 #else
     error = pthread_cond_init(&monitor->Condition, NULL);
 #endif
@@ -119,8 +118,6 @@ void SystemNative_LowLevelMonitor_Destroy(LowLevelMonitor* monitor)
     error = pthread_mutex_destroy(&monitor->Mutex);
     assert(error == 0);
 
-    (void)error; // unused in release build
-
     free(monitor);
 }
 
@@ -128,9 +125,10 @@ void SystemNative_LowLevelMonitor_Acquire(LowLevelMonitor* monitor)
 {
     assert(monitor != NULL);
 
-    int error = pthread_mutex_lock(&monitor->Mutex);
+    int error;
+
+    error = pthread_mutex_lock(&monitor->Mutex);
     assert(error == 0);
-    (void)error; // unused in release build
 
     SetIsLocked(monitor, true);
 }
@@ -141,9 +139,10 @@ void SystemNative_LowLevelMonitor_Release(LowLevelMonitor* monitor)
 
     SetIsLocked(monitor, false);
 
-    int error = pthread_mutex_unlock(&monitor->Mutex);
+    int error;
+
+    error = pthread_mutex_unlock(&monitor->Mutex);
     assert(error == 0);
-    (void)error; // unused in release build
 }
 
 void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor* monitor)
@@ -152,9 +151,10 @@ void SystemNative_LowLevelMonitor_Wait(LowLevelMonitor* monitor)
 
     SetIsLocked(monitor, false);
 
-    int error = pthread_cond_wait(&monitor->Condition, &monitor->Mutex);
+    int error;
+
+    error = pthread_cond_wait(&monitor->Condition, &monitor->Mutex);
     assert(error == 0);
-    (void)error; // unused in release build
 
     SetIsLocked(monitor, true);
 }
@@ -214,8 +214,6 @@ void SystemNative_LowLevelMonitor_Signal_Release(LowLevelMonitor* monitor)
 
     error = pthread_mutex_unlock(&monitor->Mutex);
     assert(error == 0);
-
-    (void)error; // unused in release build
 }
 
 int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter)
@@ -232,6 +230,14 @@ int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(voi
 
     error = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
     assert(error == 0);
+
+#ifdef HOST_APPLE
+    // Match Windows stack size
+    if (stackSize == 0)
+    {
+        stackSize = 1536 * 1024;
+    }
+#endif
 
     if (stackSize > 0)
     {
@@ -281,47 +287,13 @@ void SystemNative_Abort(void)
 // Gets a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 64-bit ID
 uint64_t SystemNative_GetUInt64OSThreadId(void)
 {
-#ifdef __APPLE__
-    uint64_t threadId;
-    int result = pthread_threadid_np(pthread_self(), &threadId);
-    assert(result == 0);
-    return threadId;
-#else
-    assert(false);
-    return 0;
-#endif
+    return (uint64_t)minipal_get_current_thread_id();
 }
-
-#if defined(__linux__)
-#include <sys/syscall.h>
-#include <unistd.h>
-#elif defined(__FreeBSD__)
-#include <pthread_np.h>
-#elif defined(__NetBSD__)
-#include <lwp.h>
-#endif
 
 // Tries to get a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 32-bit ID.
 // Returns (uint32_t)-1 when the implementation does not know how to get the OS thread ID.
 uint32_t SystemNative_TryGetUInt32OSThreadId(void)
 {
-    const uint32_t InvalidId = (uint32_t)-1;
-
-#if defined(__linux__)
-    assert(sizeof(pid_t) == sizeof(uint32_t));
-    uint32_t threadId = (uint32_t)syscall(SYS_gettid);
-    assert(threadId != InvalidId);
-    return threadId;
-#elif defined(__FreeBSD__)
-    uint32_t threadId = (uint32_t)pthread_getthreadid_np();
-    assert(threadId != InvalidId);
-    return threadId;
-#elif defined(__NetBSD__)
-    assert(sizeof(lwpid_t) == sizeof(uint32_t));
-    uint32_t threadId = (uint32_t)_lwp_self();
-    assert(threadId != InvalidId);
-    return threadId;
-#else
-    return InvalidId;
-#endif
+    uint32_t result = (uint32_t)minipal_get_current_thread_id();
+    return result == 0 ? (uint32_t)-1 : result;
 }

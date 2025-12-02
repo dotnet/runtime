@@ -7,9 +7,7 @@
 
 #ifdef HOST_UNIX
 #define EX_TRY_HOLDER                                   \
-    HardwareExceptionHolder                             \
-    NativeExceptionHolderCatchAll __exceptionHolder;    \
-    __exceptionHolder.Push();                           \
+    HardwareExceptionHolder
 
 #else // HOST_UNIX
 #define EX_TRY_HOLDER
@@ -192,8 +190,10 @@ class Exception
     virtual BOOL IsDomainBound() {return m_innerException!=NULL && m_innerException->IsDomainBound();} ;
     virtual HRESULT GetHR() = 0;
     virtual void GetMessage(SString &s);
+#ifdef FEATURE_COMINTEROP
     virtual IErrorInfo *GetErrorInfo() { LIMITED_METHOD_CONTRACT; return NULL; }
     virtual HRESULT SetErrorInfo() { LIMITED_METHOD_CONTRACT; return S_OK; }
+#endif // FEATURE_COMINTEROP
     void SetInnerException(Exception * pInnerException) { LIMITED_METHOD_CONTRACT; m_innerException = pInnerException; }
 
     // Dynamic type query for catchers
@@ -432,8 +432,10 @@ class COMException : public HRException
 {
     friend bool DebugIsEECxxExceptionPointer(void* pv);
 
+#ifdef FEATURE_COMINTEROP
  private:
     IErrorInfo          *m_pErrorInfo;
+#endif // FEATURE_COMINTEROP
 
  public:
     COMException();
@@ -488,7 +490,9 @@ class SEHException : public Exception
 
     // Virtual overrides
     HRESULT GetHR();
+#ifdef FEATURE_COMINTEROP
     IErrorInfo *GetErrorInfo();
+#endif // FEATURE_COMINTEROP
     void GetMessage(SString &result);
 
  protected:
@@ -533,7 +537,9 @@ class DelegatingException : public Exception
     // Virtual overrides
     virtual BOOL IsDomainBound() {return Exception::IsDomainBound() ||(m_delegatedException!=NULL && m_delegatedException->IsDomainBound());} ;
     HRESULT GetHR();
+#ifdef FEATURE_COMINTEROP
     IErrorInfo *GetErrorInfo();
+#endif // FEATURE_COMINTEROP
     void GetMessage(SString &result);
     virtual Exception *Clone();
 
@@ -590,7 +596,6 @@ public:
     DEBUG_NOINLINE CAutoTryCleanup(STATETYPE& refState) :
         m_refState(refState)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_THROWS;
         STATIC_CONTRACT_SUPPORTS_DAC;
 
@@ -606,7 +611,6 @@ public:
 
     DEBUG_NOINLINE ~CAutoTryCleanup()
     {
-        SCAN_SCOPE_END;
         WRAPPER_NO_CONTRACT;
 
         m_refState.CleanupTry();
@@ -641,8 +645,9 @@ private:
 // {
 //      Exception *e = GET_EXCEPTION();
 //      EX_RETHROW;
+//      RethrowTerminalExceptions(), RethrowTransientExceptions
 // }
-// EX_END_CATCH(RethrowTerminalExceptions, RethrowTransientExceptions or SwallowAllExceptions)
+// EX_END_CATCH
 //
 // ---------------------------------------------------------------------------
 
@@ -687,20 +692,17 @@ private:
 #endif
 
 //-----------------------------------------------------------------------
-// EX_END_CATCH has a mandatory argument which is one of "RethrowTerminalExceptions",
-// "RethrowTransientExceptions", or "SwallowAllExceptions".
+// There are a number of "rethrow" macros provided below: "RethrowTerminalExceptions()",
+// "RethrowTransientExceptions()".
+//
+// These macros should be used in the EX_CATCH block to determine how to handle
+// exceptions that are caught that aren't handled by the catch block.
 //
 // If an exception is considered "terminal" (e->IsTerminal()), it should normally
-// be allowed to proceed. Hence, most of the time, you should use RethrowTerminalExceptions.
+// be allowed to proceed. Hence, most of the time, you should use RethrowTerminalExceptions().
 //
 // In some cases you will want transient exceptions (terminal plus things like
-// resource exhaustion) to proceed as well.  Use RethrowTransientExceptions for this cas.
-//
-// If you have a good reason to use SwallowAllExceptions, (e.g. a hard COM interop boundary)
-// use one of the higher level macros for this if available, or consider developing one.
-// Otherwise, clearly document why you're swallowing terminal exceptions. Raw uses of
-// SwallowAllExceptions will cause the cleanup police to come knocking on your door
-// at some point.
+// resource exhaustion) to proceed as well.  Use RethrowTransientExceptions() for this cas.
 //
 // A lot of existing TRY's swallow terminals right now simply because there is
 // backout code following the END_CATCH that has to be executed. The solution is
@@ -708,29 +710,26 @@ private:
 
 //-----------------------------------------------------------------------
 
-#define RethrowTransientExceptions                                      \
+#define RethrowTransientExceptions()                                    \
     if (GET_EXCEPTION()->IsTransient())                                 \
     {                                                                   \
         EX_RETHROW;                                                     \
     }                                                                   \
 
-#define SwallowAllExceptions ;
-
 // When applied to EX_END_CATCH, this policy will always rethrow Terminal exceptions if they are
 // encountered.
-#define RethrowTerminalExceptions                                       \
+#define RethrowTerminalExceptions()                                     \
     if (GET_EXCEPTION()->IsTerminal())                                  \
     {                                                                   \
-        STATIC_CONTRACT_THROWS_TERMINAL;                                \
         EX_RETHROW;                                                     \
     }                                                                   \
 
 // Special define to be used in EEStartup that will also check for VM initialization before
 // commencing on a path that may use the managed thread object.
-#define RethrowTerminalExceptionsWithInitCheck  \
+#define RethrowTerminalExceptionsWithInitCheck()                  \
     if ((g_fEEStarted == TRUE) && (GetThreadNULLOk() != NULL))    \
-    {                                                       \
-        RethrowTerminalExceptions                           \
+    {                                                             \
+        RethrowTerminalExceptions()                               \
     }
 
 #ifdef _DEBUG
@@ -803,51 +802,39 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
     {                                                                                   \
         STATETYPE               __state STATEARG;                                       \
         typedef DEFAULT_EXCEPTION_TYPE  __defaultException_t;                           \
-        SCAN_EHMARKER();                                                                \
         PAL_CPP_TRY                                                                     \
         {                                                                               \
-            SCAN_EHMARKER_TRY();                                                        \
-            SCAN_EHMARKER();                                                            \
             PAL_CPP_TRY                                                                 \
             {                                                                           \
-                SCAN_EHMARKER_TRY();                                                    \
                 CAutoTryCleanup<STATETYPE> __autoCleanupTry(__state);                   \
-                /* prevent annotations from being dropped by optimizations in debug */  \
-                INDEBUG(static bool __alwayszero;)                                      \
-                INDEBUG(VolatileLoad(&__alwayszero);)                                   \
                 {                                                                       \
-                    /* Disallow returns to make exception handling work. */             \
-                    /* Some work is done after the catch, see EX_ENDTRY. */             \
-                    DEBUG_ASSURE_NO_RETURN_BEGIN(EX_TRY)                                \
                     EX_TRY_HOLDER                                                       \
 
 
 #define EX_CATCH_IMPL_EX(DerivedExceptionClass)                                         \
-                    DEBUG_ASSURE_NO_RETURN_END(EX_TRY)                                  \
                 }                                                                       \
-                SCAN_EHMARKER_END_TRY();                                                \
+            }                                                                           \
+            PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                     \
+            {                                                                           \
+                __state.SetCaughtCxx();                                                 \
+                __state.m_pExceptionPtr = Exception::GetOOMException();                 \
+                ThrowOutOfMemory();                                                     \
             }                                                                           \
             PAL_CPP_CATCH_DERIVED (DerivedExceptionClass, __pExceptionRaw)              \
             {                                                                           \
-                SCAN_EHMARKER_CATCH();                                                  \
                 __state.SetCaughtCxx();                                                 \
                 __state.m_pExceptionPtr = __pExceptionRaw;                              \
-                SCAN_EHMARKER_END_CATCH();                                              \
-                SCAN_IGNORE_THROW_MARKER;                                               \
                 PAL_CPP_RETHROW;                                                        \
             }                                                                           \
             PAL_CPP_ENDTRY                                                              \
-            SCAN_EHMARKER_END_TRY();                                                    \
         }                                                                               \
         PAL_CPP_CATCH_ALL                                                               \
         {                                                                               \
-            SCAN_EHMARKER_CATCH();                                                      \
             __defaultException_t __defaultException;                                    \
             CHECK::ResetAssert();                                                       \
             ExceptionHolder __pException(__state.m_pExceptionPtr);                      \
             /* work around unreachable code warning */                                  \
             if (true) {                                                                 \
-                DEBUG_ASSURE_NO_RETURN_BEGIN(EX_CATCH)                                  \
                 /* don't embed file names in retail to save space and avoid IP */       \
                 /* a findstr /n will allow you to locate it in a pinch */               \
                 __state.SetupCatch(INDEBUG_COMMA(__FILE__) __LINE__);                   \
@@ -858,37 +845,33 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
     {                                                                               \
         STATETYPE               __state STATEARG;                                   \
         typedef DEFAULT_EXCEPTION_TYPE  __defaultException_t;                       \
-        SCAN_EHMARKER();                                                            \
         PAL_CPP_TRY                                                                 \
         {                                                                           \
-            SCAN_EHMARKER_TRY();                                                    \
-            CAutoTryCleanup<STATETYPE> __autoCleanupTry(__state);                   \
-            /* prevent annotations from being dropped by optimizations in debug */  \
-            INDEBUG(static bool __alwayszero;)                                      \
-            INDEBUG(VolatileLoad(&__alwayszero);)                                   \
+            PAL_CPP_TRY                                                             \
             {                                                                       \
-                /* Disallow returns to make exception handling work. */             \
-                /* Some work is done after the catch, see EX_ENDTRY. */             \
-                DEBUG_ASSURE_NO_RETURN_BEGIN(EX_TRY)                                \
+                CAutoTryCleanup<STATETYPE> __autoCleanupTry(__state);               \
+                {                                                                   \
 
 #define EX_CATCH_IMPL_CPP_ONLY                                                      \
-                DEBUG_ASSURE_NO_RETURN_END(EX_TRY)                                  \
+                }                                                                   \
             }                                                                       \
-            SCAN_EHMARKER_END_TRY();                                                \
+            PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                 \
+            {                                                                       \
+                __state.SetCaughtCxx();                                             \
+                __state.m_pExceptionPtr = Exception::GetOOMException();             \
+                ThrowOutOfMemory();                                                 \
+            }                                                                       \
+            PAL_CPP_ENDTRY                                                          \
         }                                                                           \
         PAL_CPP_CATCH_DERIVED (Exception, __pExceptionRaw)                          \
         {                                                                           \
-            SCAN_EHMARKER_CATCH();                                                  \
             __state.SetCaughtCxx();                                                 \
             __state.m_pExceptionPtr = __pExceptionRaw;                              \
-            SCAN_EHMARKER_END_CATCH();                                              \
-            SCAN_IGNORE_THROW_MARKER;                                               \
             __defaultException_t __defaultException;                                \
             CHECK::ResetAssert();                                                   \
             ExceptionHolder __pException(__state.m_pExceptionPtr);                  \
             /* work around unreachable code warning */                              \
             if (true) {                                                             \
-                DEBUG_ASSURE_NO_RETURN_BEGIN(EX_CATCH)                              \
                 /* don't embed file names in retail to save space and avoid IP */   \
                 /* a findstr /n will allow you to locate it in a pinch */           \
                 __state.SetupCatch(INDEBUG_COMMA(__FILE__) __LINE__);               \
@@ -921,24 +904,16 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 #endif
 
 #define EX_END_CATCH_UNREACHABLE                                                        \
-                DEBUG_ASSURE_NO_RETURN_END(EX_CATCH)                                    \
             }                                                                           \
-            SCAN_EHMARKER_END_CATCH();                                                  \
             UNREACHABLE();                                                              \
         }                                                                               \
         PAL_CPP_ENDTRY                                                                  \
     }                                                                                   \
 
 
-// "terminalexceptionpolicy" must be one of "RethrowTerminalExceptions",
-// "RethrowTransientExceptions", or "SwallowAllExceptions"
-
-#define EX_END_CATCH(terminalexceptionpolicy)                                           \
-                terminalexceptionpolicy;                                                \
+#define EX_END_CATCH                                                                    \
                 __state.SucceedCatch();                                                 \
-                DEBUG_ASSURE_NO_RETURN_END(EX_CATCH)                                    \
             }                                                                           \
-            SCAN_EHMARKER_END_CATCH();                                                  \
         }                                                                               \
         EX_ENDTRY                                                                       \
     }                                                                                   \
@@ -946,10 +921,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 
 #define EX_END_CATCH_FOR_HOOK                                                           \
                 __state.SucceedCatch();                                                 \
-                DEBUG_ASSURE_NO_RETURN_END(EX_CATCH)                                    \
-                ANNOTATION_HANDLER_END;                                                 \
             }                                                                           \
-            SCAN_EHMARKER_END_CATCH();                                                  \
         }                                                                               \
         EX_ENDTRY
 
@@ -994,7 +966,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
         (_hr) = GET_EXCEPTION()->GetHR();                                       \
         _ASSERTE(FAILED(_hr));                                                  \
     }                                                                           \
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
 
 //===================================================================================
@@ -1014,7 +986,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
     {                                                                           \
         *ppThrowable = GET_THROWABLE();                                         \
     }                                                                           \
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
 
 #ifdef FEATURE_COMINTEROP
@@ -1048,7 +1020,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             pErr->Release();                                                    \
         }                                                                       \
     }                                                                           \
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
 //===================================================================================
 // Macro to make conditional catching more succinct.
@@ -1077,7 +1049,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             pErr->Release();                                                    \
         }                                                                       \
     }                                                                           \
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
 #else // FEATURE_COMINTEROP
 
@@ -1103,8 +1075,9 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 #define EX_SWALLOW_NONTERMINAL                           \
     EX_CATCH                                             \
     {                                                    \
+        RethrowTerminalExceptions()                      \
     }                                                    \
-    EX_END_CATCH(RethrowTerminalExceptions)              \
+    EX_END_CATCH                                         \
 
 
 //===================================================================================
@@ -1125,8 +1098,9 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 #define EX_SWALLOW_NONTRANSIENT                          \
     EX_CATCH                                             \
     {                                                    \
+        RethrowTransientExceptions()                     \
     }                                                    \
-    EX_END_CATCH(RethrowTransientExceptions)             \
+    EX_END_CATCH                                         \
 
 
 //===================================================================================
@@ -1184,7 +1158,6 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
 
 #define EX_END_HOOK                                      \
     }                                                    \
-    ANNOTATION_HANDLER_END;                              \
     EX_RETHROW;                                          \
     EX_END_CATCH_FOR_HOOK;                               \
     }
@@ -1265,15 +1238,19 @@ inline HRMsgException::HRMsgException(HRESULT hr, SString const &s)
 }
 
 inline COMException::COMException()
-  : HRException(),
-  m_pErrorInfo(NULL)
+  : HRException()
+#ifdef FEATURE_COMINTEROP
+  , m_pErrorInfo(NULL)
+#endif // FEATURE_COMINTEROP
 {
     WRAPPER_NO_CONTRACT;
 }
 
 inline COMException::COMException(HRESULT hr)
-  : HRException(hr),
-  m_pErrorInfo(NULL)
+  : HRException(hr)
+#ifdef FEATURE_COMINTEROP
+  , m_pErrorInfo(NULL)
+#endif // FEATURE_COMINTEROP
 {
     LIMITED_METHOD_CONTRACT;
 }

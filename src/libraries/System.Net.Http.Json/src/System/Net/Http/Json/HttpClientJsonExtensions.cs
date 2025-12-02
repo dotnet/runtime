@@ -38,10 +38,7 @@ namespace System.Net.Http.Json
             TJsonOptions jsonOptions,
             CancellationToken cancellationToken)
         {
-            if (client is null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
+            ArgumentNullException.ThrowIfNull(client);
 
             TimeSpan timeout = client.Timeout;
 
@@ -68,7 +65,9 @@ namespace System.Net.Http.Json
 
             bool usingResponseHeadersRead = !ReferenceEquals(getMethod, s_deleteAsync);
 
+#pragma warning disable CA2025
             return Core(client, responseTask, usingResponseHeadersRead, linkedCTS, deserializeMethod, jsonOptions, cancellationToken);
+#pragma warning restore
 
             static async Task<TValue?> Core(
                 HttpClient client,
@@ -95,7 +94,7 @@ namespace System.Net.Http.Json
                     {
                         // Matches how HttpClient throws a timeout exception.
                         string message = SR.Format(SR.net_http_request_timedout, client.Timeout.TotalSeconds);
-#if NETCOREAPP
+#if NET
                         throw new TaskCanceledException(message, new TimeoutException(oce.Message, oce), oce.CancellationToken);
 #else
                         throw new TaskCanceledException(message, new TimeoutException(oce.Message, oce));

@@ -63,10 +63,7 @@ namespace System.Configuration
 
         public void CopyTo(ConfigurationSection[] array, int index)
         {
-            if (array is null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             int c = Count;
             if (array.Length < c + index) throw new ArgumentOutOfRangeException(nameof(index));
@@ -88,7 +85,7 @@ namespace System.Configuration
                 throw ExceptionUtil.ParameterNullOrEmpty(nameof(name));
 
             // prevent GetConfig from returning config not in this collection
-#if NETCOREAPP
+#if NET
             if (name.Contains('/'))
 #else
             if (name.IndexOf('/') >= 0)

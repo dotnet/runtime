@@ -42,14 +42,7 @@ namespace System.Runtime.Serialization
 
         public CodeTypeReference(Type type)
         {
-#if NET5_0_OR_GREATER
             ArgumentNullException.ThrowIfNull(type);
-#else
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-#endif
 
             if (type.IsArray)
             {
@@ -271,7 +264,7 @@ namespace System.Runtime.Serialization
             }
 
             // Now see if we have some arity.  baseType could be null if this is an array type.
-#if NET5_0_OR_GREATER
+#if NET
             if (_baseType != null && _baseType.Contains('`')) // string.Contains(char) is .NetCore2.1+ specific
 #else
             if (_baseType != null && _baseType.IndexOf('`') != -1) // string.Contains(char) is .NetCore2.1+ specific

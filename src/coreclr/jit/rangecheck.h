@@ -83,20 +83,28 @@ struct Limit
         keUnknown,   // The limit could not be determined.
     };
 
-    Limit() : type(keUndef)
+    Limit()
+        : type(keUndef)
     {
     }
 
-    Limit(LimitType type) : type(type)
+    Limit(LimitType type)
+        : type(type)
     {
     }
 
-    Limit(LimitType type, int cns) : cns(cns), vn(ValueNumStore::NoVN), type(type)
+    Limit(LimitType type, int cns)
+        : cns(cns)
+        , vn(ValueNumStore::NoVN)
+        , type(type)
     {
         assert(type == keConstant);
     }
 
-    Limit(LimitType type, ValueNum vn, int cns) : cns(cns), vn(vn), type(type)
+    Limit(LimitType type, ValueNum vn, int cns)
+        : cns(cns)
+        , vn(vn)
+        , type(type)
     {
         assert(type == keBinOpArray);
     }
@@ -191,7 +199,7 @@ struct Limit
         return false;
     }
 
-    bool Equals(Limit& l)
+    bool Equals(const Limit& l) const
     {
         switch (type)
         {
@@ -209,10 +217,8 @@ struct Limit
         return false;
     }
 #ifdef DEBUG
-    const char* ToString(CompAllocator alloc)
+    const char* ToString(Compiler* comp) const
     {
-        unsigned size = 64;
-        char*    buf  = alloc.allocate<char>(size);
         switch (type)
         {
             case keUndef:
@@ -225,12 +231,10 @@ struct Limit
                 return "Dependent";
 
             case keBinOpArray:
-                sprintf_s(buf, size, FMT_VN " + %d", vn, cns);
-                return buf;
+                return comp->printfAlloc(FMT_VN " + %d", vn, cns);
 
             case keConstant:
-                sprintf_s(buf, size, "%d", cns);
-                return buf;
+                return comp->printfAlloc("%d", cns);
         }
         unreached();
     }
@@ -246,17 +250,31 @@ struct Range
     Limit uLimit;
     Limit lLimit;
 
-    Range(const Limit& limit) : uLimit(limit), lLimit(limit)
+    Range(const Limit& limit)
+        : uLimit(limit)
+        , lLimit(limit)
     {
     }
 
-    Range(const Limit& lLimit, const Limit& uLimit) : uLimit(uLimit), lLimit(lLimit)
+    Range(const Limit& lLimit, const Limit& uLimit)
+        : uLimit(uLimit)
+        , lLimit(lLimit)
     {
+    }
+
+    const Limit& UpperLimit() const
+    {
+        return uLimit;
     }
 
     Limit& UpperLimit()
     {
         return uLimit;
+    }
+
+    const Limit& LowerLimit() const
+    {
+        return lLimit;
     }
 
     Limit& LowerLimit()
@@ -265,14 +283,34 @@ struct Range
     }
 
 #ifdef DEBUG
-    char* ToString(CompAllocator alloc)
+    const char* ToString(Compiler* comp) const
     {
-        size_t size = 64;
-        char*  buf  = alloc.allocate<char>(size);
-        sprintf_s(buf, size, "<%s, %s>", lLimit.ToString(alloc), uLimit.ToString(alloc));
-        return buf;
+        return comp->printfAlloc("<%s, %s>", lLimit.ToString(comp), uLimit.ToString(comp));
     }
 #endif
+
+    bool IsValid() const
+    {
+        // A valid range must have lower limit <= upper limit.
+        if (lLimit.IsConstant() && uLimit.IsConstant())
+        {
+            return lLimit.GetConstant() <= uLimit.GetConstant();
+        }
+
+        // When both limits are BinOpArray, we check if their offsets are valid
+        if (lLimit.IsBinOpArray() && uLimit.IsBinOpArray() && lLimit.vn == uLimit.vn)
+        {
+            return lLimit.GetConstant() <= uLimit.GetConstant();
+        }
+
+        // e.g. <$bnd + 10, 5> is not a valid range since $bnd is expected to be >= 0
+        if (lLimit.IsBinOpArray() && uLimit.IsConstant())
+        {
+            return lLimit.GetConstant() <= uLimit.GetConstant();
+        }
+
+        return true;
+    }
 };
 
 // Helpers for operations performed on ranges
@@ -284,6 +322,25 @@ struct RangeOps
         assert(cns.IsConstant());
         Limit l = value;
         if (l.AddConstant(cns.GetConstant()))
+        {
+            return l;
+        }
+        return Limit(Limit::keUnknown);
+    }
+
+    // Perform 'value' - 'cns'
+    static Limit SubtractConstantLimit(const Limit& value, const Limit& cns)
+    {
+        assert(cns.IsConstant());
+
+        if (cns.GetConstant() == INT_MIN)
+        {
+            // Subtracting INT_MIN would overflow
+            return Limit(Limit::keUnknown);
+        }
+
+        Limit l = value;
+        if (l.AddConstant(-cns.GetConstant()))
         {
             return l;
         }
@@ -314,9 +371,9 @@ struct RangeOps
         return Limit(Limit::keUnknown);
     }
 
-    // Given two ranges "r1" and "r2", perform an add operation on the
-    // ranges.
-    static Range Add(Range& r1, Range& r2)
+    // Given two ranges "r1" and "r2", perform a generic 'op' operation on the ranges.
+    template <typename Operation>
+    static Range ApplyRangeOp(Range& r1, Range& r2, Operation op)
     {
         Limit& r1lo = r1.LowerLimit();
         Limit& r1hi = r1.UpperLimit();
@@ -338,21 +395,43 @@ struct RangeOps
 
         if (r1lo.IsConstant())
         {
-            result.lLimit = AddConstantLimit(r2lo, r1lo);
+            result.lLimit = op(r2lo, r1lo);
         }
         if (r2lo.IsConstant())
         {
-            result.lLimit = AddConstantLimit(r1lo, r2lo);
+            result.lLimit = op(r1lo, r2lo);
         }
         if (r1hi.IsConstant())
         {
-            result.uLimit = AddConstantLimit(r2hi, r1hi);
+            result.uLimit = op(r2hi, r1hi);
         }
         if (r2hi.IsConstant())
         {
-            result.uLimit = AddConstantLimit(r1hi, r2hi);
+            result.uLimit = op(r1hi, r2hi);
         }
+
         return result;
+    }
+
+    static Range Add(Range& r1, Range& r2)
+    {
+        return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
+            return AddConstantLimit(a, b);
+        });
+    }
+
+    static Range Subtract(Range& r1, Range& r2)
+    {
+        return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
+            return SubtractConstantLimit(a, b);
+        });
+    }
+
+    static Range Multiply(Range& r1, Range& r2)
+    {
+        return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
+            return MultiplyConstantLimit(a, b);
+        });
     }
 
     static Range ShiftRight(Range& r1, Range& r2)
@@ -392,55 +471,17 @@ struct RangeOps
         return result;
     }
 
-    // Given two ranges "r1" and "r2", perform an multiply operation on the
-    // ranges.
-    static Range Multiply(Range& r1, Range& r2)
-    {
-        Limit& r1lo = r1.LowerLimit();
-        Limit& r1hi = r1.UpperLimit();
-        Limit& r2lo = r2.LowerLimit();
-        Limit& r2hi = r2.UpperLimit();
-
-        Range result = Limit(Limit::keUnknown);
-
-        // Check lo ranges if they are dependent and not unknown.
-        if ((r1lo.IsDependent() && !r1lo.IsUnknown()) || (r2lo.IsDependent() && !r2lo.IsUnknown()))
-        {
-            result.lLimit = Limit(Limit::keDependent);
-        }
-        // Check hi ranges if they are dependent and not unknown.
-        if ((r1hi.IsDependent() && !r1hi.IsUnknown()) || (r2hi.IsDependent() && !r2hi.IsUnknown()))
-        {
-            result.uLimit = Limit(Limit::keDependent);
-        }
-
-        if (r1lo.IsConstant())
-        {
-            result.lLimit = MultiplyConstantLimit(r2lo, r1lo);
-        }
-        if (r2lo.IsConstant())
-        {
-            result.lLimit = MultiplyConstantLimit(r1lo, r2lo);
-        }
-        if (r1hi.IsConstant())
-        {
-            result.uLimit = MultiplyConstantLimit(r2hi, r1hi);
-        }
-        if (r2hi.IsConstant())
-        {
-            result.uLimit = MultiplyConstantLimit(r1hi, r2hi);
-        }
-        return result;
-    }
-
     // Given two ranges "r1" and "r2", do a Phi merge. If "monIncreasing" is true,
     // then ignore the dependent variables for the lower bound but not for the upper bound.
-    static Range Merge(Range& r1, Range& r2, bool monIncreasing)
+    static Range Merge(const Range& r1, const Range& r2, bool monIncreasing)
     {
-        Limit& r1lo = r1.LowerLimit();
-        Limit& r1hi = r1.UpperLimit();
-        Limit& r2lo = r2.LowerLimit();
-        Limit& r2hi = r2.UpperLimit();
+        assert(r1.IsValid());
+        assert(r2.IsValid());
+
+        const Limit& r1lo = r1.LowerLimit();
+        const Limit& r1hi = r1.UpperLimit();
+        const Limit& r2lo = r2.LowerLimit();
+        const Limit& r2hi = r2.UpperLimit();
 
         // Take care of lo part.
         Range result = Limit(Limit::keUnknown);
@@ -495,10 +536,15 @@ struct RangeOps
         {
             result.lLimit = r1lo;
         }
-        // Widen Upper Limit => Max(k, (a.len + n)) yields (a.len + n),
-        // This is correct if k >= 0 and n >= k, since a.len always >= 0
-        // (a.len + n) could overflow, but the result (a.len + n) also
+
+        // NOTE: in some of the calculations below, we assume that $bnd is never negative
+        // and we have to be careful by not masking possible overflows.
+
+        // Widen Upper Limit => Max(k, ($bnd + n)) yields ($bnd + n),
+        // This is correct if k >= 0 and n >= k, since $bnd always >= 0
+        // ($bnd + n) could overflow, but the result ($bnd + n) also
         // preserves the overflow.
+        //
         if (r1hi.IsConstant() && r1hi.GetConstant() >= 0 && r2hi.IsBinOpArray() &&
             r2hi.GetConstant() >= r1hi.GetConstant())
         {
@@ -509,14 +555,38 @@ struct RangeOps
         {
             result.uLimit = r1hi;
         }
+
+        // Rule: <$bnd + cns1, ...> U <cns2, ...> = <min(cns1, cns2), ...> when cns1 <= 0
+        //
+        // Example: <$bnd - 3, ...> U <0, ...> = <-3, ...>
+        //
+        if (r1lo.IsBinOpArray() && r2lo.IsConstant() && (r1lo.cns <= 0))
+        {
+            result.lLimit = Limit(Limit::keConstant, min(r1lo.cns, r2lo.cns));
+        }
+        if (r2lo.IsBinOpArray() && r1lo.IsConstant() && (r2lo.cns <= 0))
+        {
+            result.lLimit = Limit(Limit::keConstant, min(r2lo.cns, r1lo.cns));
+        }
+
+        // Rule: <..., $bnd + cns1> U <..., $bnd + cns2> = <..., $bnd + max(cns1, cns2)>
+        //
+        // Example: <..., $bnd + 10> U <..., $bnd + 20> = <..., $bnd + 20>
+        //
         if (r1hi.IsBinOpArray() && r2hi.IsBinOpArray() && r1hi.vn == r2hi.vn)
         {
-            result.uLimit = r1hi;
-            // Widen the upper bound if the other constant is greater.
-            if (r2hi.GetConstant() > r1hi.GetConstant())
-            {
-                result.uLimit = r2hi;
-            }
+            result.uLimit     = r1hi; // copy $bnd and kind info
+            result.uLimit.cns = max(r1hi.cns, r2hi.cns);
+        }
+
+        // Rule: <$bnd + cns1, ...> U <$bnd + cns2, ...> = <$bnd + min(cns1, cns2), ...>
+        //
+        // Example: <$bnd + 10, ...> U <$bnd + 20, ...> = <$bnd + 10, ...>
+        //
+        if (r1lo.IsBinOpArray() && r2lo.IsBinOpArray() && r1lo.vn == r2lo.vn)
+        {
+            result.lLimit     = r1lo; // copy $bnd and kind info
+            result.lLimit.cns = min(r1lo.cns, r2lo.cns);
         }
         return result;
     }
@@ -546,6 +616,116 @@ struct RangeOps
         result.uLimit = Limit(Limit::keConstant, 1 << r1hiConstant);
         return result;
     }
+
+    static Range Negate(Range& range)
+    {
+        // Only constant ranges can be negated.
+        if (!range.LowerLimit().IsConstant() || !range.UpperLimit().IsConstant())
+        {
+            return Limit(Limit::keUnknown);
+        }
+
+        const int hi = range.UpperLimit().GetConstant();
+        const int lo = range.LowerLimit().GetConstant();
+
+        // Give up on edge cases
+        if ((hi == INT_MIN) || (lo == INT_MIN))
+        {
+            return Limit(Limit::keUnknown);
+        }
+
+        // Example: [0..7] => [-7..0]
+        Range result  = Limit(Limit::keConstant);
+        result.lLimit = Limit(Limit::keConstant, -hi);
+        result.uLimit = Limit(Limit::keConstant, -lo);
+        return result;
+    }
+
+    enum class RelationKind
+    {
+        AlwaysTrue,
+        AlwaysFalse,
+        Unknown
+    };
+
+    //------------------------------------------------------------------------
+    // EvalRelop: Evaluate the relation between two ranges for the given relop
+    //    Example: "x >= y" is AlwaysTrue when "x.LowerLimit() >= y.UpperLimit()"
+    //
+    // Arguments:
+    //    relop      - The relational operator (LE,LT,GE,GT,EQ,NE)
+    //    isUnsigned - True if the comparison is unsigned
+    //    x          - The left range
+    //    y          - The right range
+    //
+    // Returns:
+    //    AlwaysTrue when the given relop always evaluates to true for the given ranges
+    //    AlwaysFalse when the given relop always evaluates to false for the given ranges
+    //    Otherwise Unknown
+    //
+    static RelationKind EvalRelop(const genTreeOps relop, bool isUnsigned, const Range& x, const Range& y)
+    {
+        assert(x.IsValid());
+        assert(y.IsValid());
+
+        const Limit& xLower = x.LowerLimit();
+        const Limit& yLower = y.LowerLimit();
+        const Limit& xUpper = x.UpperLimit();
+        const Limit& yUpper = y.UpperLimit();
+
+        // For unsigned comparisons, we only support non-negative ranges.
+        if (isUnsigned)
+        {
+            if (!xLower.IsConstant() || !yUpper.IsConstant() || (xLower.GetConstant() < 0) ||
+                (yLower.GetConstant() < 0))
+            {
+                return RelationKind::Unknown;
+            }
+        }
+
+        switch (relop)
+        {
+            case GT_GE:
+            case GT_LT:
+                if (xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() >= yUpper.GetConstant()))
+                {
+                    return relop == GT_GE ? RelationKind::AlwaysTrue : RelationKind::AlwaysFalse;
+                }
+
+                if (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() < yLower.GetConstant()))
+                {
+                    return relop == GT_GE ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                }
+                break;
+
+            case GT_GT:
+            case GT_LE:
+                if (xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() > yUpper.GetConstant()))
+                {
+                    return relop == GT_GT ? RelationKind::AlwaysTrue : RelationKind::AlwaysFalse;
+                }
+
+                if (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() <= yLower.GetConstant()))
+                {
+                    return relop == GT_GT ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                }
+                break;
+
+            case GT_EQ:
+            case GT_NE:
+                if ((xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() > yUpper.GetConstant())) ||
+                    (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() < yLower.GetConstant())))
+                {
+                    return relop == GT_EQ ? RelationKind::AlwaysFalse : RelationKind::AlwaysTrue;
+                }
+                break;
+
+            default:
+                assert(!"unknown comparison operator");
+                break;
+        }
+        return RelationKind::Unknown;
+    }
 };
 
 class RangeCheck
@@ -554,49 +734,19 @@ public:
     // Constructor
     RangeCheck(Compiler* pCompiler);
 
+    // Entry point to optimize range checks in the method. Assumes value numbering
+    // and assertion prop phases are completed.
+    bool OptimizeRangeChecks();
+
+    bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange);
+
+    // Cheaper version of TryGetRange that is based only on incoming assertions.
+    static bool TryGetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange);
+
+private:
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BasicBlock*> SearchPath;
-
-#ifdef DEBUG
-    // TODO-Cleanup: This code has been kept around just to ensure that the SSA data is still
-    // valid when RangeCheck runs. It should be removed at some point (and perhaps replaced
-    // by a proper SSA validity checker).
-
-    // Location information is used to map where the defs occur in the method.
-    struct Location
-    {
-        BasicBlock*          block;
-        Statement*           stmt;
-        GenTreeLclVarCommon* tree;
-        Location(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree) : block(block), stmt(stmt), tree(tree)
-        {
-        }
-
-    private:
-        Location();
-    };
-
-    typedef JitHashTable<INT64, JitLargePrimitiveKeyFuncs<INT64>, Location*> VarToLocMap;
-
-    // Generate a hashcode unique for this ssa var.
-    UINT64 HashCode(unsigned lclNum, unsigned ssaNum);
-
-    // Add a location of the definition of ssa var to the location map.
-    // Requires "hash" to be computed using HashCode.
-    // Requires "location" to be the local definition.
-    void SetDef(UINT64 hash, Location* loc);
-
-    // Given a tree node that is a local, return the Location defining the local.
-    Location* GetDef(GenTreeLclVarCommon* lcl);
-    Location* GetDef(unsigned lclNum, unsigned ssaNum);
-
-    // Given a statement, check if it is a def and add its locations in a map.
-    void MapStmtDefs(const Location& loc);
-
-    // Given the CFG, check if it has defs and add their locations in a map.
-    void MapMethodDefs();
-#endif
 
     int GetArrLength(ValueNum vn);
 
@@ -606,30 +756,22 @@ public:
     // TODO-CQ: This is not general enough.
     bool BetweenBounds(Range& range, GenTree* upper, int arrSize);
 
-    // Entry point to optimize range checks in the method. Assumes value numbering
-    // and assertion prop phases are completed.
-    bool OptimizeRangeChecks();
-
     // Given a "tree" node, check if it contains array bounds check node and
     // optimize to remove it, if possible. Requires "stmt" and "block" that
     // contain the tree.
     void OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree* tree);
 
-    // Given the index expression try to find its range.
-    // The range of a variable depends on its rhs which in turn depends on its constituent variables.
-    // The "path" is the path taken in the search for the rhs' range and its constituents' range.
-    // If "monIncreasing" is true, the calculations are made more liberally assuming initial values
-    // at phi definitions for the lower bound.
-    Range GetRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
+    // Internal worker for GetRange.
+    Range GetRangeWorker(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
 
     // Compute the range from the given type
     Range GetRangeFromType(var_types type);
 
     // Given the local variable, first find the definition of the local and find the range of the rhs.
-    // Helper for GetRange.
+    // Helper for GetRangeWorker.
     Range ComputeRangeForLocalDef(BasicBlock* block, GenTreeLclVarCommon* lcl, bool monIncreasing DEBUGARG(int indent));
 
-    // Compute the range, rather than retrieve a cached value. Helper for GetRange.
+    // Compute the range, rather than retrieve a cached value. Helper for GetRangeWorker.
     Range ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));
 
     // Compute the range for the op1 and op2 for the given binary operator.
@@ -644,7 +786,12 @@ public:
     void MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange);
 
     // Inspect the assertions about the current ValueNum to refine pRange
-    void MergeEdgeAssertions(ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange);
+    static void MergeEdgeAssertions(Compiler*        comp,
+                                    ValueNum         num,
+                                    ValueNum         preferredBoundVN,
+                                    ASSERT_VALARG_TP assertions,
+                                    Range*           pRange,
+                                    bool             canUseCheckedBounds = true);
 
     // The maximum possible value of the given "limit". If such a value could not be determined
     // return "false". For example: CORINFO_Array_MaxLength for array length.
@@ -657,19 +804,19 @@ public:
     bool MultiplyOverflows(Limit& limit1, Limit& limit2);
 
     // Does the binary operation between the operands overflow? Check recursively.
-    bool DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop);
+    bool DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop, const Range& range);
 
-    // Does the phi operands involve an assignment that could overflow?
-    bool DoesPhiOverflow(BasicBlock* block, GenTree* expr);
+    // Do the phi operands involve a definition that could overflow?
+    bool DoesPhiOverflow(BasicBlock* block, GenTree* expr, const Range& range);
 
     // Find the def of the "expr" local and recurse on the arguments if any of them involve a
     // calculation that overflows.
-    bool DoesVarDefOverflow(GenTreeLclVarCommon* lcl);
+    bool DoesVarDefOverflow(BasicBlock* block, GenTreeLclVarCommon* lcl, const Range& range);
 
-    bool ComputeDoesOverflow(BasicBlock* block, GenTree* expr);
+    // Does the current "expr", which is a use, involve a definition that overflows.
+    bool DoesOverflow(BasicBlock* block, GenTree* tree, const Range& range);
 
-    // Does the current "expr" which is a use involve a definition, that overflows.
-    bool DoesOverflow(BasicBlock* block, GenTree* tree);
+    bool ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Range& range);
 
     // Widen the range by first checking if the induction variable is monotonically increasing.
     // Requires "pRange" to be partially computed.
@@ -678,9 +825,7 @@ public:
     // Is the binary operation increasing the value.
     bool IsBinOpMonotonicallyIncreasing(GenTreeOp* binop);
 
-    // Given an "expr" trace its rhs and their definitions to check if all the assignments
-    // are monotonically increasing.
-    //
+    // Given an expression trace its value to check if it is monotonically increasing.
     bool IsMonotonicallyIncreasing(GenTree* tree, bool rejectNegativeConst);
 
     // We allocate a budget to avoid walking long UD chains. When traversing each link in the UD
@@ -688,26 +833,25 @@ public:
     // will be applied for the currently compiled method.
     bool IsOverBudget();
 
-private:
     // Given a lclvar use, try to find the lclvar's defining store and its containing block.
     LclSsaVarDsc* GetSsaDefStore(GenTreeLclVarCommon* lclUse);
 
-    GenTreeBoundsChk* m_pCurBndsChk;
+    // When we have this bound and a constant, we prefer to use this bound (if set)
+    ValueNum m_preferredBound;
 
     // Get the cached overflow values.
     OverflowMap* GetOverflowMap();
+    void         ClearOverflowMap();
     OverflowMap* m_pOverflowMap;
 
     // Get the cached range values.
     RangeMap* GetRangeMap();
+    void      ClearRangeMap();
     RangeMap* m_pRangeMap;
 
+    SearchPath* GetSearchPath();
+    void        ClearSearchPath();
     SearchPath* m_pSearchPath;
-
-#ifdef DEBUG
-    bool         m_fMappedDefs;
-    VarToLocMap* m_pDefTable;
-#endif
 
     Compiler*     m_pCompiler;
     CompAllocator m_alloc;

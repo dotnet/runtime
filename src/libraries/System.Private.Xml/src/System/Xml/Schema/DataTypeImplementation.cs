@@ -114,19 +114,19 @@ namespace System.Xml.Schema
 
         private const int anySimpleTypeIndex = 11;
 
-        internal static XmlQualifiedName QnAnySimpleType = new XmlQualifiedName("anySimpleType", XmlReservedNs.NsXs);
-        internal static XmlQualifiedName QnAnyType = new XmlQualifiedName("anyType", XmlReservedNs.NsXs);
+        internal static readonly XmlQualifiedName QnAnySimpleType = new XmlQualifiedName("anySimpleType", XmlReservedNs.NsXs);
+        internal static readonly XmlQualifiedName QnAnyType = new XmlQualifiedName("anyType", XmlReservedNs.NsXs);
 
         //Create facet checkers
-        internal static FacetsChecker stringFacetsChecker = new StringFacetsChecker();
-        internal static FacetsChecker miscFacetsChecker = new MiscFacetsChecker();
-        internal static FacetsChecker numeric2FacetsChecker = new Numeric2FacetsChecker();
-        internal static FacetsChecker binaryFacetsChecker = new BinaryFacetsChecker();
-        internal static FacetsChecker dateTimeFacetsChecker = new DateTimeFacetsChecker();
-        internal static FacetsChecker durationFacetsChecker = new DurationFacetsChecker();
-        internal static FacetsChecker listFacetsChecker = new ListFacetsChecker();
-        internal static FacetsChecker qnameFacetsChecker = new QNameFacetsChecker();
-        internal static FacetsChecker unionFacetsChecker = new UnionFacetsChecker();
+        internal static readonly FacetsChecker stringFacetsChecker = new StringFacetsChecker();
+        internal static readonly FacetsChecker miscFacetsChecker = new MiscFacetsChecker();
+        internal static readonly FacetsChecker numeric2FacetsChecker = new Numeric2FacetsChecker();
+        internal static readonly FacetsChecker binaryFacetsChecker = new BinaryFacetsChecker();
+        internal static readonly FacetsChecker dateTimeFacetsChecker = new DateTimeFacetsChecker();
+        internal static readonly FacetsChecker durationFacetsChecker = new DurationFacetsChecker();
+        internal static readonly FacetsChecker listFacetsChecker = new ListFacetsChecker();
+        internal static readonly FacetsChecker qnameFacetsChecker = new QNameFacetsChecker();
+        internal static readonly FacetsChecker unionFacetsChecker = new UnionFacetsChecker();
 
         static DatatypeImplementation()
         {

@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 
 #include <windows.h>
@@ -7,17 +8,35 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
+#include "PalLimitedContext.h"
 #include "regdisplay.h"
 #include "ICodeManager.h"
 #include "CoffNativeCodeManager.h"
-#include "varint.h"
+#include "NativePrimitiveDecoder.h"
 #include "holder.h"
 
 #include "CommonMacros.inl"
 
 #define GCINFODECODER_NO_EE
 #include "gcinfodecoder.cpp"
+
+#include "eventtracebase.h"
+
+#ifdef TARGET_X86
+#define FEATURE_EH_FUNCLETS
+
+// Disable contracts
+#define LIMITED_METHOD_CONTRACT
+#define LIMITED_METHOD_DAC_CONTRACT
+#define CONTRACTL
+#define CONTRACTL_END
+#define NOTHROW
+#define GC_NOTRIGGER
+
+#include "../../inc/gcdecoder.cpp"
+#include "../../inc/gc_unwind_x86.h"
+#include "../../vm/gc_unwind_x86.inl"
+#endif
 
 #define UBF_FUNC_KIND_MASK      0x03
 #define UBF_FUNC_KIND_ROOT      0x00
@@ -38,7 +57,7 @@ typedef struct _RUNTIME_FUNCTION {
     DWORD UnwindData;
 } RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
 
-typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
+typedef struct _X86_KNONVOLATILE_CONTEXT_POINTERS {
 
     // The ordering of these fields should be aligned with that
     // of corresponding fields in CONTEXT
@@ -53,7 +72,10 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
     PDWORD Ebp;
 
-} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
+} X86_KNONVOLATILE_CONTEXT_POINTERS, *PX86_KNONVOLATILE_CONTEXT_POINTERS;
+
+#define KNONVOLATILE_CONTEXT_POINTERS X86_KNONVOLATILE_CONTEXT_POINTERS
+#define PKNONVOLATILE_CONTEXT_POINTERS PX86_KNONVOLATILE_CONTEXT_POINTERS
 
 typedef struct _UNWIND_INFO {
     ULONG FunctionLength;
@@ -130,10 +152,10 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntim
     ASSERT((pRuntimeFunction->UnwindData & 0x3) == 0);
 
     // compute the size of the unwind info
-    PTR_UInt32 xdata = dac_cast<PTR_UInt32>(pRuntimeFunction->UnwindData + moduleBase);
+    PTR_uint32_t xdata = dac_cast<PTR_uint32_t>(pRuntimeFunction->UnwindData + moduleBase);
     int size = 4;
 
-    // See https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling
+    // See https://learn.microsoft.com/cpp/build/arm64-exception-handling
     int unwindWords = xdata[0] >> 27;
     int epilogScopes = (xdata[0] >> 22) & 0x1f;
 
@@ -163,7 +185,6 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntim
     return NULL;
 #endif
 }
-
 
 CoffNativeCodeManager::CoffNativeCodeManager(TADDR moduleBase,
                                              PTR_VOID pvManagedCodeStartRange, uint32_t cbManagedCodeRange,
@@ -303,7 +324,7 @@ bool CoffNativeCodeManager::IsFilter(MethodInfo * pMethInfo)
 }
 
 PTR_VOID CoffNativeCodeManager::GetFramePointer(MethodInfo *   pMethInfo,
-                                         REGDISPLAY *   pRegisterSet)
+                                                REGDISPLAY *   pRegisterSet)
 {
     CoffNativeMethodInfo * pMethodInfo = (CoffNativeMethodInfo *)pMethInfo;
 
@@ -321,7 +342,40 @@ PTR_VOID CoffNativeCodeManager::GetFramePointer(MethodInfo *   pMethInfo,
     return NULL;
 }
 
-uint32_t CoffNativeCodeManager::GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID address, /*out*/ PTR_UInt8* gcInfo)
+#ifdef TARGET_X86
+uintptr_t CoffNativeCodeManager::GetResumeSp(MethodInfo *   pMethodInfo,
+                                             REGDISPLAY *   pRegisterSet)
+{
+    PTR_uint8_t gcInfo;
+    uint32_t codeOffset = GetCodeOffset(pMethodInfo, (PTR_VOID)pRegisterSet->IP, &gcInfo);
+
+    hdrInfo infoBuf;
+    size_t infoSize = DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &infoBuf);
+    PTR_CBYTE table = gcInfo + infoSize;
+
+    _ASSERTE(infoBuf.epilogOffs == hdrInfo::NOT_IN_EPILOG && infoBuf.prologOffs == hdrInfo::NOT_IN_PROLOG);
+
+    bool isESPFrame = !infoBuf.ebpFrame && !infoBuf.doubleAlign;
+
+    CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
+    if (pNativeMethodInfo->mainRuntimeFunction != pNativeMethodInfo->runtimeFunction)
+    {
+        // Treat funclet's frame as ESP frame
+        isESPFrame = true;
+    }
+
+    if (isESPFrame)
+    {
+        const uintptr_t curESP = pRegisterSet->SP;
+        return curESP + GetPushedArgSize(&infoBuf, table, codeOffset);
+    }
+
+    const uintptr_t curEBP = pRegisterSet->GetFP();
+    return GetOutermostBaseFP(curEBP, &infoBuf);
+}
+#endif // TARGET_X86
+
+uint32_t CoffNativeCodeManager::GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID address, /*out*/ PTR_uint8_t* gcInfo)
 {
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
@@ -330,7 +384,7 @@ uint32_t CoffNativeCodeManager::GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID 
     size_t unwindDataBlobSize;
     PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->mainRuntimeFunction, &unwindDataBlobSize);
 
-    PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
+    PTR_uint8_t p = dac_cast<PTR_uint8_t>(pUnwindDataBlob) + unwindDataBlobSize;
 
     uint8_t unwindBlockFlags = *p++;
 
@@ -354,16 +408,37 @@ bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
         return false;
     }
 
-    PTR_UInt8 gcInfo;
+    PTR_uint8_t gcInfo;
     uint32_t codeOffset = GetCodeOffset(&pMethodInfo, pvAddress, &gcInfo);
 
+#ifdef USE_GC_INFO_DECODER
     GcInfoDecoder decoder(
         GCInfoToken(gcInfo),
         GcInfoDecoderFlags(DECODE_INTERRUPTIBILITY),
         codeOffset
     );
 
-    return decoder.IsInterruptible();
+    if (decoder.IsInterruptible())
+        return true;
+
+    if (decoder.IsSafePoint())
+        return true;
+
+    return false;
+#else
+    // Extract the necessary information from the info block header
+    hdrInfo info;
+    size_t infoSize = DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &info);
+    PTR_CBYTE table = gcInfo + infoSize;
+
+    if (info.prologOffs != hdrInfo::NOT_IN_PROLOG || info.epilogOffs != hdrInfo::NOT_IN_EPILOG)
+        return false;
+
+    if (!info.interruptible)
+        return false;
+
+    return !IsInNoGCRegion(&info, table, codeOffset);
+#endif
 }
 
 void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
@@ -372,28 +447,12 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
                                        GCEnumContext * hCallback,
                                        bool            isActiveStackFrame)
 {
-    PTR_UInt8 gcInfo;
+    PTR_uint8_t gcInfo;
     uint32_t codeOffset = GetCodeOffset(pMethodInfo, safePointAddress, &gcInfo);
 
-    if (!isActiveStackFrame)
-    {
-        // If we are not in the active method, we are currently pointing
-        // to the return address. That may not be reachable after a call (if call does not return)
-        // or reachable via a jump and thus have a different live set.
-        // Therefore we simply adjust the offset to inside of call instruction.
-        // NOTE: The GcInfoDecoder depends on this; if you change it, you must
-        // revisit the GcInfoEncoder/Decoder
-        codeOffset--;
-    }
-
-    GcInfoDecoder decoder(
-        GCInfoToken(gcInfo),
-        GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
-        codeOffset
-        );
-
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
-    if (((CoffNativeMethodInfo *)pMethodInfo)->executionAborted)
+    bool executionAborted = ((CoffNativeMethodInfo *)pMethodInfo)->executionAborted;
+    if (executionAborted)
         flags = ICodeManagerFlags::ExecutionAborted;
 
     if (IsFilter(pMethodInfo))
@@ -401,6 +460,14 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
 
     if (isActiveStackFrame)
         flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::ActiveStackFrame);
+
+#ifdef USE_GC_INFO_DECODER
+
+    GcInfoDecoder decoder(
+        GCInfoToken(gcInfo),
+        GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
+        codeOffset
+    );
 
     if (!decoder.EnumerateLiveSlots(
         pRegisterSet,
@@ -412,6 +479,25 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     {
         assert(false);
     }
+#else
+    size_t unwindDataBlobSize;
+    CoffNativeMethodInfo* pNativeMethodInfo = (CoffNativeMethodInfo *) pMethodInfo;
+    PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->runtimeFunction, &unwindDataBlobSize);
+    PTR_uint8_t p = dac_cast<PTR_uint8_t>(pUnwindDataBlob) + unwindDataBlobSize;
+    uint8_t unwindBlockFlags = *p++;
+
+    ::EnumGcRefsX86(pRegisterSet,
+                    (PTR_CBYTE)(m_moduleBase + pNativeMethodInfo->mainRuntimeFunction->BeginAddress),
+                    codeOffset,
+                    GCInfoToken(gcInfo),
+                    (PTR_CBYTE)(m_moduleBase + pNativeMethodInfo->runtimeFunction->BeginAddress),
+                    (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT,
+                    (unwindBlockFlags & UBF_FUNC_KIND_MASK) == UBF_FUNC_KIND_FILTER,
+                    flags,
+                    hCallback->pCallback,
+                    hCallback);
+#endif
+
 }
 
 uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(MethodInfo * pMethodInfo, REGDISPLAY * pRegisterSet)
@@ -422,7 +508,7 @@ uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
 
     size_t unwindDataBlobSize;
     PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->runtimeFunction, &unwindDataBlobSize);
-    PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
+    PTR_uint8_t p = dac_cast<PTR_uint8_t>(pUnwindDataBlob) + unwindDataBlobSize;
     uint8_t unwindBlockFlags = *p++;
 
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
@@ -436,6 +522,7 @@ uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
         if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
             p += sizeof(int32_t);
 
+#ifdef USE_GC_INFO_DECODER
         GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
         INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
         assert(slot != NO_REVERSE_PINVOKE_FRAME);
@@ -456,6 +543,15 @@ uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
         // Reverse PInvoke case.  The embedded reverse PInvoke frame is guaranteed to reside above
         // all outgoing arguments.
         upperBound = dac_cast<TADDR>(basePointer + slot);
+#else
+        hdrInfo info;
+        DecodeGCHdrInfo(GCInfoToken(p), 0, &info);
+        assert(info.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET);
+        upperBound =
+            info.ebpFrame ?
+            dac_cast<TADDR>(pRegisterSet->GetFP()) - info.revPInvokeOffset :
+            dac_cast<TADDR>(pRegisterSet->GetSP()) + info.revPInvokeOffset;
+#endif
     }
     else
     {
@@ -514,11 +610,25 @@ uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
                         NULL);
 
         upperBound = dac_cast<TADDR>(context.Sp);
-
 #else
-        PORTABILITY_ASSERT("GetConservativeUpperBoundForOutgoingArgs");
-        upperBound = NULL;
-        RhFailFast();
+        PTR_uint8_t gcInfo;
+        uint32_t codeOffset = GetCodeOffset(pMethodInfo, (PTR_VOID)pRegisterSet->IP, &gcInfo);
+
+        hdrInfo infoBuf;
+        size_t infoSize = DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &infoBuf);
+        PTR_CBYTE table = gcInfo + infoSize;
+
+        REGDISPLAY registerSet = *pRegisterSet;
+
+        ::UnwindStackFrameX86(&registerSet,
+                              (PTR_CBYTE)(m_moduleBase + pNativeMethodInfo->mainRuntimeFunction->BeginAddress),
+                              codeOffset,
+                              &infoBuf,
+                              table,
+                              (PTR_CBYTE)(m_moduleBase + pNativeMethodInfo->runtimeFunction->BeginAddress),
+                              (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT,
+                              true);
+        upperBound = dac_cast<TADDR>(registerSet.PCTAddr);
 #endif
     }
     return upperBound;
@@ -534,7 +644,7 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     size_t unwindDataBlobSize;
     PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->runtimeFunction, &unwindDataBlobSize);
 
-    PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
+    PTR_uint8_t p = dac_cast<PTR_uint8_t>(pUnwindDataBlob) + unwindDataBlobSize;
 
     uint8_t unwindBlockFlags = *p++;
 
@@ -549,6 +659,7 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
             p += sizeof(int32_t);
 
+#ifdef USE_GC_INFO_DECODER
         GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
         INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
         assert(slot != NO_REVERSE_PINVOKE_FRAME);
@@ -565,6 +676,15 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         }
 
         *ppPreviousTransitionFrame = *(PInvokeTransitionFrame**)(basePointer + slot);
+#else
+        hdrInfo info;
+        DecodeGCHdrInfo(GCInfoToken(p), 0, &info);
+        assert(info.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET);
+        *ppPreviousTransitionFrame =
+            info.ebpFrame ?
+            *(PInvokeTransitionFrame**)(dac_cast<TADDR>(pRegisterSet->GetFP()) - info.revPInvokeOffset) :
+            *(PInvokeTransitionFrame**)(dac_cast<TADDR>(pRegisterSet->GetSP()) + info.revPInvokeOffset);
+#endif
 
         if ((flags & USFF_StopUnwindOnTransitionFrame) != 0)
         {
@@ -576,6 +696,26 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         *ppPreviousTransitionFrame = NULL;
     }
 
+#if defined(TARGET_X86)
+    PTR_uint8_t gcInfo;
+    uint32_t codeOffset = GetCodeOffset(pMethodInfo, (PTR_VOID)pRegisterSet->IP, &gcInfo);
+
+    hdrInfo infoBuf;
+    size_t infoSize = DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &infoBuf);
+    PTR_CBYTE table = gcInfo + infoSize;
+
+    if (!::UnwindStackFrameX86(pRegisterSet,
+                               (PTR_CBYTE)(m_moduleBase + pNativeMethodInfo->mainRuntimeFunction->BeginAddress),
+                               codeOffset,
+                               &infoBuf,
+                               table,
+                               (PTR_CBYTE)(m_moduleBase + pNativeMethodInfo->runtimeFunction->BeginAddress),
+                               (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT,
+                               true))
+    {
+        return false;
+    }
+#else
     CONTEXT context;
     KNONVOLATILE_CONTEXT_POINTERS contextPointers;
 
@@ -605,14 +745,11 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     if (pRegisterSet->regDisplayField != NULL) context.contextField = *pRegisterSet->regDisplayField;
 
 #define CONTEXT_TO_REGDISPLAY(contextField, regDisplayField) \
-    pRegisterSet->regDisplayField = (PTR_UIntNative) contextPointers.contextField;
+    pRegisterSet->regDisplayField = (PTR_uintptr_t) contextPointers.contextField;
 
     FOR_EACH_NONVOLATILE_REGISTER(REGDISPLAY_TO_CONTEXT);
 
-#if defined(TARGET_X86)
-    PORTABILITY_ASSERT("CoffNativeCodeManager::UnwindStackFrame");
-#elif defined(TARGET_AMD64)
-
+#if defined(TARGET_AMD64)
     if (!(flags & USFF_GcUnwind))
     {
         memcpy(&context.Xmm6, pRegisterSet->Xmm, sizeof(pRegisterSet->Xmm));
@@ -636,11 +773,13 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     pRegisterSet->SP = context.Rsp;
     pRegisterSet->IP = context.Rip;
 
-    pRegisterSet->pIP = PTR_PCODE(pRegisterSet->SP - sizeof(TADDR));
-
     if (!(flags & USFF_GcUnwind))
     {
         memcpy(pRegisterSet->Xmm, &context.Xmm6, sizeof(pRegisterSet->Xmm));
+        if (pRegisterSet->SSP)
+        {
+            pRegisterSet->SSP += 8;
+        }
     }
 #elif defined(TARGET_ARM64)
     if (!(flags & USFF_GcUnwind))
@@ -667,14 +806,12 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     pRegisterSet->SP = context.Sp;
     pRegisterSet->IP = context.Pc;
 
-    pRegisterSet->pIP = contextPointers.Lr;
-
     if (!(flags & USFF_GcUnwind))
     {
         for (int i = 8; i < 16; i++)
             pRegisterSet->D[i - 8] = context.V[i].Low;
     }
-#endif // defined(TARGET_X86)
+#endif
 
     FOR_EACH_NONVOLATILE_REGISTER(CONTEXT_TO_REGDISPLAY);
 
@@ -682,6 +819,8 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 #undef WORDPTR
 #undef REGDISPLAY_TO_CONTEXT
 #undef CONTEXT_TO_REGDISPLAY
+
+#endif // defined(TARGET_X86)
 
     return true;
 }
@@ -692,35 +831,18 @@ bool CoffNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
     return true;
 }
 
-// Convert the return kind that was encoded by RyuJIT to the
-// enum used by the runtime.
-GCRefKind GetGcRefKind(ReturnKind returnKind)
-{
-#ifdef TARGET_ARM64
-    ASSERT((returnKind >= RT_Scalar) && (returnKind <= RT_ByRef_ByRef));
-#else
-    ASSERT((returnKind >= RT_Scalar) && (returnKind <= RT_ByRef));
-#endif
-
-    return (GCRefKind)returnKind;
-}
-
 bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                                 REGDISPLAY *    pRegisterSet,       // in
-                                                PTR_PTR_VOID *  ppvRetAddrLocation, // out
-                                                GCRefKind *     pRetValueKind)      // out
+                                                PTR_PTR_VOID *  ppvRetAddrLocation) // out
 {
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
     size_t unwindDataBlobSize;
     PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->runtimeFunction, &unwindDataBlobSize);
 
-    PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
+    PTR_uint8_t p = dac_cast<PTR_uint8_t>(pUnwindDataBlob) + unwindDataBlobSize;
 
     uint8_t unwindBlockFlags = *p++;
-
-    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
-        p += sizeof(int32_t);
 
     // Check whether this is a funclet
     if ((unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
@@ -731,18 +853,7 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
         return false;
 
-    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
-        p += sizeof(int32_t);
-
-    // Decode the GC info for the current method to determine its return type
-    GcInfoDecoderFlags flags = DECODE_RETURN_KIND;
-#if defined(TARGET_ARM64)
-    flags = (GcInfoDecoderFlags)(flags | DECODE_HAS_TAILCALLS);
-#endif // TARGET_ARM64
-    GcInfoDecoder decoder(GCInfoToken(p), flags);
-
-    *pRetValueKind = GetGcRefKind(decoder.GetReturnKind());
-
+#ifdef USE_GC_INFO_DECODER
     // Unwind the current method context to the caller's context to get its stack pointer
     // and obtain the location of the return address on the stack
     SIZE_T  EstablisherFrame;
@@ -770,6 +881,15 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     return true;
 #elif defined(TARGET_ARM64)
 
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+        p += sizeof(int32_t);
+
+    // Decode the GC info for the current method to determine if there are tailcalls
+    GcInfoDecoderFlags flags = DECODE_HAS_TAILCALLS;
+    GcInfoDecoder decoder(GCInfoToken(p), flags);
     if (decoder.HasTailCalls())
     {
         // Do not hijack functions that have tail calls, since there are two problems:
@@ -817,9 +937,53 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     *ppvRetAddrLocation = (PTR_PTR_VOID)contextPointers.Lr;
     return true;
 #else
+    EstablisherFrame = 0;
+    HandlerData = NULL;
     return false;
 #endif // defined(TARGET_AMD64)
+#else // defined(USE_GC_INFO_DECODER)
+    PTR_uint8_t gcInfo;
+    uint32_t codeOffset = GetCodeOffset(pMethodInfo, (PTR_VOID)pRegisterSet->IP, &gcInfo);
+    hdrInfo infoBuf;
+    size_t infoSize = DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &infoBuf);
+
+    // TODO: Hijack with saving the return value in FP stack
+    if (infoBuf.returnKind == RT_Float)
+    {
+        return false;
+    }
+
+    REGDISPLAY registerSet = *pRegisterSet;
+
+    if (!::UnwindStackFrameX86(&registerSet,
+                               (PTR_CBYTE)(m_moduleBase + pNativeMethodInfo->mainRuntimeFunction->BeginAddress),
+                               codeOffset,
+                               &infoBuf,
+                               gcInfo + infoSize,
+                               (PTR_CBYTE)(m_moduleBase + pNativeMethodInfo->runtimeFunction->BeginAddress),
+                               (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT,
+                               false))
+    {
+        return false;
+    }
+
+    *ppvRetAddrLocation = (PTR_PTR_VOID)registerSet.PCTAddr;
+    return true;
+#endif
 }
+
+#ifdef TARGET_X86
+GCRefKind CoffNativeCodeManager::GetReturnValueKind(MethodInfo *   pMethodInfo, REGDISPLAY *   pRegisterSet)
+{
+    PTR_uint8_t gcInfo;
+    uint32_t codeOffset = GetCodeOffset(pMethodInfo, (PTR_VOID)pRegisterSet->IP, &gcInfo);
+    hdrInfo infoBuf;
+    size_t infoSize = DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &infoBuf);
+
+    ASSERT(infoBuf.returnKind != RT_Float); // See TODO above
+    return (GCRefKind)infoBuf.returnKind;
+}
+#endif
 
 PTR_VOID CoffNativeCodeManager::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC)
 {
@@ -839,8 +1003,8 @@ PTR_VOID CoffNativeCodeManager::RemapHardwareFaultToGCSafePoint(MethodInfo * pMe
 
 struct CoffEHEnumState
 {
-    PTR_UInt8 pMethodStartAddress;
-    PTR_UInt8 pEHInfo;
+    PTR_uint8_t pMethodStartAddress;
+    PTR_uint8_t pEHInfo;
     uint32_t uClause;
     uint32_t nClauses;
 };
@@ -860,7 +1024,7 @@ bool CoffNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
     size_t unwindDataBlobSize;
     PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pNativeMethodInfo->mainRuntimeFunction, &unwindDataBlobSize);
 
-    PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
+    PTR_uint8_t p = dac_cast<PTR_uint8_t>(pUnwindDataBlob) + unwindDataBlobSize;
 
     uint8_t unwindBlockFlags = *p++;
 
@@ -875,10 +1039,10 @@ bool CoffNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
 
     *pMethodStartAddress = dac_cast<PTR_VOID>(m_moduleBase + pNativeMethodInfo->mainRuntimeFunction->BeginAddress);
 
-    pEnumState->pMethodStartAddress = dac_cast<PTR_UInt8>(*pMethodStartAddress);
-    pEnumState->pEHInfo = dac_cast<PTR_UInt8>(m_moduleBase + *dac_cast<PTR_Int32>(p));
+    pEnumState->pMethodStartAddress = dac_cast<PTR_uint8_t>(*pMethodStartAddress);
+    pEnumState->pEHInfo = dac_cast<PTR_uint8_t>(m_moduleBase + *dac_cast<PTR_int32_t>(p));
     pEnumState->uClause = 0;
-    pEnumState->nClauses = VarInt::ReadUnsigned(pEnumState->pEHInfo);
+    pEnumState->nClauses = NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
 
     return true;
 }
@@ -893,9 +1057,9 @@ bool CoffNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
         return false;
     pEnumState->uClause++;
 
-    pEHClauseOut->m_tryStartOffset = VarInt::ReadUnsigned(pEnumState->pEHInfo);
+    pEHClauseOut->m_tryStartOffset = NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
 
-    uint32_t tryEndDeltaAndClauseKind = VarInt::ReadUnsigned(pEnumState->pEHInfo);
+    uint32_t tryEndDeltaAndClauseKind = NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
     pEHClauseOut->m_clauseKind = (EHClauseKind)(tryEndDeltaAndClauseKind & 0x3);
     pEHClauseOut->m_tryEndOffset = pEHClauseOut->m_tryStartOffset + (tryEndDeltaAndClauseKind >> 2);
 
@@ -911,22 +1075,22 @@ bool CoffNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
     switch (pEHClauseOut->m_clauseKind)
     {
     case EH_CLAUSE_TYPED:
-        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
 
         // Read target type
         {
             // @TODO: Compress EHInfo using type table index scheme
             // https://github.com/dotnet/corert/issues/972
-            uint32_t typeRVA = *((PTR_UInt32&)pEnumState->pEHInfo)++;
+            uint32_t typeRVA = NativePrimitiveDecoder::ReadUInt32(pEnumState->pEHInfo);
             pEHClauseOut->m_pTargetType = dac_cast<PTR_VOID>(m_moduleBase + typeRVA);
         }
         break;
     case EH_CLAUSE_FAULT:
-        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
         break;
     case EH_CLAUSE_FILTER:
-        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
-        pEHClauseOut->m_filterAddress = pEnumState->pMethodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_filterAddress = pEnumState->pMethodStartAddress + NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
         break;
     default:
         UNREACHABLE_MSG("unexpected EHClauseKind");
@@ -975,7 +1139,7 @@ PTR_VOID CoffNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     size_t unwindDataBlobSize;
     PTR_VOID pUnwindDataBlob = GetUnwindDataBlob(m_moduleBase, pRuntimeFunction, &unwindDataBlobSize);
 
-    PTR_UInt8 p = dac_cast<PTR_UInt8>(pUnwindDataBlob) + unwindDataBlobSize;
+    PTR_uint8_t p = dac_cast<PTR_uint8_t>(pUnwindDataBlob) + unwindDataBlobSize;
 
     uint8_t unwindBlockFlags = *p++;
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) == 0)
@@ -985,8 +1149,8 @@ PTR_VOID CoffNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     return dac_cast<PTR_VOID>(m_moduleBase + dataRVA);
 }
 
-extern "C" void __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
-extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
+extern "C" void RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
+extern "C" bool RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
 
 extern "C"
 bool RhRegisterOSModule(void * pModule,
@@ -1016,6 +1180,8 @@ bool RhRegisterOSModule(void * pModule,
     }
 
     pCoffNativeCodeManager.SuppressRelease();
+
+    ETW::LoaderLog::ModuleLoad(pModule);
 
     return true;
 }

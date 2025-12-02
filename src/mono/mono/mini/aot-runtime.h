@@ -11,7 +11,7 @@
 #include "mini.h"
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 185
+#define MONO_AOT_FILE_VERSION 187
 
 #define MONO_AOT_TRAMP_PAGE_SIZE 16384
 
@@ -74,7 +74,8 @@ typedef enum {
 	MONO_AOT_FILE_FLAG_SEPARATE_DATA = 64,
 	MONO_AOT_FILE_FLAG_EAGER_LOAD = 128,
 	MONO_AOT_FILE_FLAG_INTERP = 256,
-	MONO_AOT_FILE_FLAG_CODE_EXEC_ONLY = 512
+	MONO_AOT_FILE_FLAG_CODE_EXEC_ONLY = 512,
+	MONO_AOT_FILE_FLAG_COMPRESSED_INTERFACE_BITMAP = 1024
 } MonoAotFileFlags;
 
 typedef enum {
@@ -84,6 +85,7 @@ typedef enum {
 	MONO_AOT_METHOD_FLAG_HAS_PATCHES = 4,
 	MONO_AOT_METHOD_FLAG_HAS_CTX = 8,
 	MONO_AOT_METHOD_FLAG_INTERP_ENTRY_ONLY = 16,
+	MONO_AOT_METHOD_FLAG_HAS_LLVM_INTRINSICS = 32,
 } MonoAotMethodFlags;
 
 #undef DEBUG_AOT_NAME_TABLE
@@ -282,6 +284,7 @@ guint32  mono_aot_find_method_index         (MonoMethod *method);
 gboolean mono_aot_init_llvm_method          (gpointer aot_module, gpointer method_info, MonoClass *init_class, MonoError *error);
 GHashTable *mono_aot_get_weak_field_indexes (MonoImage *image);
 MonoAotMethodFlags mono_aot_get_method_flags (guint8 *code);
+MonoAotFileFlags mono_aot_get_module_flags (gpointer aot_module);
 
 #ifdef MONO_ARCH_CODE_EXEC_ONLY
 typedef guint32 (*MonoAotResolvePltInfoOffset)(gpointer amodule, guint32 plt_entry_index);

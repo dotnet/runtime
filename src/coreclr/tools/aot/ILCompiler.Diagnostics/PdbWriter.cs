@@ -143,9 +143,14 @@ namespace ILCompiler.Diagnostics
                 }
                 finally
                 {
-                    if ((_ngenWriter != null) && (_pdbMod != UIntPtr.Zero))
+                    if (_ngenWriter != null)
                     {
-                        _ngenWriter.CloseMod(_pdbMod);
+                        if (_pdbMod != UIntPtr.Zero)
+                        {
+                            _ngenWriter.CloseMod(_pdbMod);
+                        }
+                        ComObject ngenWriterComObject = (ComObject)(object)_ngenWriter;
+                        ngenWriterComObject.FinalRelease();
                     }
                 }
 
@@ -211,6 +216,7 @@ namespace ILCompiler.Diagnostics
             var comWrapper = new StrategyBasedComWrappers();
             CreateNGenPdbWriter(dllPath, _pdbFilePath, out var pdbWriterInst);
             _ngenWriter = (ISymNGenWriter2)comWrapper.GetOrCreateObjectForComInstance(pdbWriterInst, CreateObjectFlags.UniqueInstance);
+            Marshal.Release(pdbWriterInst);
 
             {
                 // PDB file is now created. Get its path and update _pdbFilePath so the PDB file

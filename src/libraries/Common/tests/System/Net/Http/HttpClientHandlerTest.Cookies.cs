@@ -148,6 +148,18 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework allows empty value of cookie header while net7+ behaves by the specs and prohibit it")]
+        public void AddCookieHeader_MissingValue_Throws(string? cookieValue)
+        {
+            var requestMessage = new HttpRequestMessage(HttpMethod.Get, "http://foo/bar") { Version = UseVersion };
+            Assert.Throws<FormatException>(
+                () => requestMessage.Headers.Add("Cookie", cookieValue)
+            );
+        }
+
         [Fact]
         public async Task GetAsync_AddMultipleCookieHeaders_CookiesSent()
         {
@@ -288,12 +300,6 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "CookieContainer is not supported on Browser")]
         public async Task GetAsyncWithRedirect_SetCookieContainer_CorrectCookiesSent()
         {
-            if (UseVersion == HttpVersion30)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/56870")]
-                return;
-            }
-
             const string path1 = "/foo";
             const string path2 = "/bar";
             const string unusedPath = "/unused";
@@ -313,7 +319,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // to avoid issues with connection pooling
-                        await client.GetAsync(url1);
+                    await client.GetAsync(url1);
                 }
             },
             async server =>
@@ -469,12 +475,6 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "CookieContainer is not supported on Browser")]
         public async Task GetAsync_Redirect_CookiesArePreserved()
         {
-            if (UseVersion == HttpVersion30)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/56870")]
-                return;
-            }
-
             HttpClientHandler handler = CreateHttpClientHandler();
 
             string loginPath = "/login/user";
@@ -605,12 +605,6 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "CookieContainer is not supported on Browser")]
         public async Task GetAsyncWithRedirect_ReceiveSetCookie_CookieSent()
         {
-            if (UseVersion == HttpVersion30)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/56870")]
-                return;
-            }
-
             const string path1 = "/foo";
             const string path2 = "/bar";
 

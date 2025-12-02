@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>cdac-build-tool</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputPath>$(RuntimeBinDir)/cdac-build-tool</OutputPath>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <IsPackable>false</IsPackable>
+    <IsShipping>false</IsShipping> <!-- This tool is an implementation detail of the build process, it does not ship -->
+    <Description>.NET runtime data contract build tool</Description>
+    <RootNamespace>Microsoft.DotNet.Diagnostics.DataContract</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+  </ItemGroup>
+</Project>

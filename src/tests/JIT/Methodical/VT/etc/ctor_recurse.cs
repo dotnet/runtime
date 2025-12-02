@@ -23,6 +23,7 @@ namespace Test
         private void DoMethod() { }
 
         [Fact]
+        [OuterLoop]
         public static void TestEntryPoint()
         {
             s_stat =

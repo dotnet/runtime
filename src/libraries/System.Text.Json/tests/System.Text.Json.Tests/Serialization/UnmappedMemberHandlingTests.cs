@@ -12,4 +12,14 @@ namespace System.Text.Json.Serialization.Tests
     {
         public UnmappedMemberHandlingTests_AsyncStream() : base(JsonSerializerWrapper.AsyncStreamSerializer) { }
     }
+
+    public sealed partial class UnmappedMemberHandlingTests_Pipe : UnmappedMemberHandlingTests
+    {
+        public UnmappedMemberHandlingTests_Pipe() : base(JsonSerializerWrapper.AsyncPipeSerializer) { }
+    }
+
+    public sealed partial class UnmappedMemberHandlingTests_PipeWithSmallBuffer : UnmappedMemberHandlingTests
+    {
+        public UnmappedMemberHandlingTests_PipeWithSmallBuffer() : base(JsonSerializerWrapper.AsyncPipeSerializerWithSmallBuffer) { }
+    }
 }

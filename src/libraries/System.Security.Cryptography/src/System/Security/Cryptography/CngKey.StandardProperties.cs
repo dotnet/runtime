@@ -15,12 +15,14 @@ namespace System.Security.Cryptography
     /// </summary>
     public sealed partial class CngKey : IDisposable
     {
-        //
-        // Key properties
-        //
-
         private const int CachedKeySizeUninitializedSentinel = -1;
-        private int _cachedKeySize = CachedKeySizeUninitializedSentinel;
+        private volatile int _cachedKeySize = CachedKeySizeUninitializedSentinel;
+
+        private volatile CngAlgorithm? _cachedAlgorithm;
+        private volatile bool _hasCachedAlgorithmGroup;
+        private volatile CngAlgorithmGroup? _cachedAlgorithmGroup;
+        private volatile bool _hasCachedProvider;
+        private volatile CngProvider? _cachedProvider;
 
         /// <summary>
         ///     Algorithm group this key can be used with
@@ -29,25 +31,38 @@ namespace System.Security.Cryptography
         {
             get
             {
-                string algorithm = _keyHandle.GetPropertyAsString(KeyPropertyName.Algorithm, CngPropertyOptions.None)!;
-                // .NET Framework compat: Don't check for null. Just let CngAlgorithm handle it.
-                return new CngAlgorithm(algorithm);
-            }
+                if (_cachedAlgorithm is null || _keyHandle.IsClosed)
+                {
+                    string algorithm = _keyHandle.GetPropertyAsString(KeyPropertyName.Algorithm, CngPropertyOptions.None)!;
 
+                    // .NET Framework compat: Don't check for null. Just let CngAlgorithm handle it.
+                    _cachedAlgorithm = new CngAlgorithm(algorithm);
+                }
+
+                return _cachedAlgorithm;
+            }
         }
 
         /// <summary>
         ///     Name of the algorithm this key can be used with
         /// </summary>
         public CngAlgorithmGroup? AlgorithmGroup
-
         {
             get
             {
-                string? algorithmGroup = _keyHandle.GetPropertyAsString(KeyPropertyName.AlgorithmGroup, CngPropertyOptions.None);
-                if (algorithmGroup == null)
-                    return null;
-                return new CngAlgorithmGroup(algorithmGroup);
+                if (!_hasCachedAlgorithmGroup || _keyHandle.IsClosed)
+                {
+                    string? algorithmGroup = _keyHandle.GetPropertyAsString(KeyPropertyName.AlgorithmGroup, CngPropertyOptions.None);
+
+                    if (algorithmGroup is not null)
+                    {
+                        _cachedAlgorithmGroup = new CngAlgorithmGroup(algorithmGroup);
+                    }
+
+                    _hasCachedAlgorithmGroup = true;
+                }
+
+                return _cachedAlgorithmGroup;
             }
         }
 
@@ -223,7 +238,7 @@ namespace System.Security.Cryptography
                             switch (curve)
                             {
                                 // nistP192 and nistP224 don't have named curve accelerators but we can handle them.
-                                // These string values match the names in https://learn.microsoft.com/en-us/windows/win32/seccng/cng-named-elliptic-curves
+                                // These string values match the names in https://learn.microsoft.com/windows/win32/seccng/cng-named-elliptic-curves
                                 case "nistP192": return 192;
                                 case "nistP224": return 224;
                                 case nameof(ECCurve.NamedCurves.nistP256): return 256;
@@ -242,7 +257,6 @@ namespace System.Security.Cryptography
         ///     Usage restrictions on the key
         /// </summary>
         public CngKeyUsages KeyUsage
-
         {
             get
             {
@@ -279,10 +293,19 @@ namespace System.Security.Cryptography
         {
             get
             {
-                string? provider = _providerHandle.GetPropertyAsString(ProviderPropertyName.Name, CngPropertyOptions.None);
-                if (provider == null)
-                    return null;
-                return new CngProvider(provider);
+                if (!_hasCachedProvider || _providerHandle.IsClosed)
+                {
+                    string? provider = _providerHandle.GetPropertyAsString(ProviderPropertyName.Name, CngPropertyOptions.None);
+
+                    if (provider is not null)
+                    {
+                        _cachedProvider = new CngProvider(provider);
+                    }
+
+                    _hasCachedProvider = true;
+                }
+
+                return _cachedProvider;
             }
         }
 

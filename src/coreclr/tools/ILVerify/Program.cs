@@ -113,13 +113,13 @@ namespace ILVerify
                 IncludeMetadataTokensInErrorMessages = Get(_command.Tokens),
                 SanityChecks = Get(_command.SanityChecks)
             });
-            _verifier.SetSystemModuleName(new AssemblyName(Get(_command.SystemModule) ?? "mscorlib"));
+            _verifier.SetSystemModuleName(new AssemblyNameInfo(Get(_command.SystemModule) ?? "mscorlib"));
 
             int numErrors = 0;
 
             foreach (var kvp in _inputFilePaths)
             {
-                numErrors += VerifyAssembly(new AssemblyName(kvp.Key), kvp.Value);
+                numErrors += VerifyAssembly(new AssemblyNameInfo(kvp.Key), kvp.Value);
             }
 
             if (numErrors > 0)
@@ -156,7 +156,7 @@ namespace ILVerify
             Write(fullClassName);
 
             Write("::");
-            var method = (EcmaMethod)module.GetMethod(result.Method);
+            var method = module.GetMethod(result.Method);
             PrintMethod(method);
             Write("]");
 
@@ -194,7 +194,7 @@ namespace ILVerify
 
         private static void PrintMethod(EcmaMethod method)
         {
-            Write(method.Name);
+            Write(method.GetName());
             Write("(");
             try
             {
@@ -224,7 +224,7 @@ namespace ILVerify
             Write(")");
         }
 
-        private int VerifyAssembly(AssemblyName name, string path)
+        private int VerifyAssembly(AssemblyNameInfo name, string path)
         {
             PEReader peReader = Resolve(name.Name);
             EcmaModule module = _verifier.GetModule(peReader);
@@ -362,7 +362,7 @@ namespace ILVerify
                 fullName.Append(GetFullClassName(metadataReader, declaringType));
                 fullName.Append('+');
             }
-            
+
             var namespaceName = metadataReader.GetString(typeDef.Namespace);
             if (!string.IsNullOrEmpty(namespaceName))
             {
@@ -372,7 +372,7 @@ namespace ILVerify
 
             var typeName = metadataReader.GetString(typeDef.Name);
             fullName.Append(typeName);
-            
+
             return fullName.ToString();
         }
 
@@ -451,10 +451,10 @@ namespace ILVerify
             return false;
         }
 
-        PEReader IResolver.ResolveAssembly(AssemblyName assemblyName)
+        PEReader IResolver.ResolveAssembly(AssemblyNameInfo assemblyName)
             => Resolve(assemblyName.Name);
 
-        PEReader IResolver.ResolveModule(AssemblyName referencingModule, string fileName)
+        PEReader IResolver.ResolveModule(AssemblyNameInfo referencingModule, string fileName)
             => Resolve(Path.GetFileNameWithoutExtension(fileName));
 
         public PEReader Resolve(string simpleName)
@@ -475,13 +475,18 @@ namespace ILVerify
             return null;
         }
 
-        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
-        private T Get<T>(CliArgument<T> argument) => _command.Result.GetValue(argument);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument);
 
         private static int Main(string[] args) =>
-            new CliConfiguration(new ILVerifyRootCommand().UseVersion())
+            new ILVerifyRootCommand().UseVersion()
+            .Parse(args, new()
             {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
-            }.Invoke(args);
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+            })
+            .Invoke(new()
+            {
+                EnableDefaultExceptionHandler = false
+            });
     }
 }

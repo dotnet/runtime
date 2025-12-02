@@ -9,7 +9,7 @@ using System.Text;
 
 namespace System.Reflection
 {
-    public static class AssemblyRuntimeNameHelpers
+    internal static class AssemblyRuntimeNameHelpers
     {
         //
         // Converts an AssemblyName to a RuntimeAssemblyName that is free from any future mutations on the AssemblyName.

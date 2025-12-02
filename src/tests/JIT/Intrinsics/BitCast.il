@@ -5,6 +5,7 @@
 // This test checks implicit floating point and small type casts in IL
 
 .assembly extern System.Runtime {}
+.assembly extern xunit.core {}
 .assembly extern System.Console {}
 .assembly Bitcast {}
 
@@ -14,6 +15,9 @@
   .field private static int32 exitCode
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       306 (0x132)
     .maxstack  3

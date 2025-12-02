@@ -18,8 +18,8 @@
         <PropertyGroup>
             <_Microsoft_Extensions_Configuration_Binder_Compatible_TargetFramework
                 Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netcoreapp2.0')) AND
-                           !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))"
-                >net6.0</_Microsoft_Extensions_Configuration_Binder_Compatible_TargetFramework>
+                           !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))"
+                >net8.0</_Microsoft_Extensions_Configuration_Binder_Compatible_TargetFramework>
             <_Microsoft_Extensions_Configuration_Binder_Compatible_TargetFramework
                 Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net461')) AND
                            !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net462'))"

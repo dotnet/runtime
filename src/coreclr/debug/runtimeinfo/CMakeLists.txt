@@ -7,7 +7,8 @@ set(RUNTIMEINFO_SOURCES
 add_library_clr(runtimeinfo STATIC ${RUNTIMEINFO_SOURCES})
 
 function(generate_module_index Target ModuleIndexFile)
-    if(CLR_CMAKE_HOST_WIN32)
+    # Win32 may be false when cross compiling
+    if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
         set(scriptExt ".cmd")
     else()
         set(scriptExt ".sh")

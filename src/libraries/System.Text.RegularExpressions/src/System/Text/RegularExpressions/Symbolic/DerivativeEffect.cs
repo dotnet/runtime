@@ -11,16 +11,10 @@ namespace System.Text.RegularExpressions.Symbolic
     /// of the current input position. Effects are generated and associated with transitions in effect-aware versions
     /// of CreateDerivative in SymbolicRegexNode.
     /// </remarks>
-    internal readonly struct DerivativeEffect
+    internal readonly struct DerivativeEffect(DerivativeEffectKind kind, int captureNumber)
     {
-        public DerivativeEffect(DerivativeEffectKind kind, int captureNumber)
-        {
-            Kind = kind;
-            CaptureNumber = captureNumber;
-        }
-
-        public DerivativeEffectKind Kind { get; }
-        public int CaptureNumber { get; }
+        public DerivativeEffectKind Kind { get; } = kind;
+        public int CaptureNumber { get; } = captureNumber;
     }
 
     internal enum DerivativeEffectKind

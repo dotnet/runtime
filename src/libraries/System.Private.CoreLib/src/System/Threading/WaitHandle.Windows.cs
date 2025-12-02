@@ -10,15 +10,15 @@ namespace System.Threading
 {
     public abstract partial class WaitHandle
     {
-        private static unsafe int WaitMultipleIgnoringSyncContextCore(Span<IntPtr> handles, bool waitAll, int millisecondsTimeout)
+        private static unsafe int WaitMultipleIgnoringSyncContextCore(ReadOnlySpan<IntPtr> handles, bool waitAll, int millisecondsTimeout)
         {
             fixed (IntPtr* pHandles = &MemoryMarshal.GetReference(handles))
             {
-                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, handles.Length, waitAll, millisecondsTimeout);
+                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, handles.Length, waitAll, millisecondsTimeout, useTrivialWaits: false);
             }
         }
 
-        private static unsafe int WaitForMultipleObjectsIgnoringSyncContext(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout)
+        private static unsafe int WaitForMultipleObjectsIgnoringSyncContext(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout, bool useTrivialWaits)
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
@@ -26,8 +26,9 @@ namespace System.Threading
             if (numHandles == 1)
                 waitAll = false;
 
-#if NATIVEAOT // TODO: reentrant wait support https://github.com/dotnet/runtime/issues/49518
-            bool reentrantWait = Thread.ReentrantWaitsEnabled;
+#if NATIVEAOT // TODO: reentrant wait support in Mono https://github.com/dotnet/runtime/issues/49518
+            // Trivial waits don't allow reentrance
+            bool reentrantWait = !useTrivialWaits && Thread.ReentrantWaitsEnabled;
 
             if (reentrantWait)
             {
@@ -48,20 +49,52 @@ namespace System.Threading
             Thread currentThread = Thread.CurrentThread;
             currentThread.SetWaitSleepJoinState();
 
-#if NATIVEAOT
+            long startTime = 0;
+            if (millisecondsTimeout != -1)
+            {
+                startTime = Environment.TickCount64;
+            }
+
             int result;
-            if (reentrantWait)
+
+            Thread.CheckForPendingInterrupt();
+
+            while (true)
             {
-                Debug.Assert(!waitAll);
-                result = RuntimeImports.RhCompatibleReentrantWaitAny(false, millisecondsTimeout, numHandles, pHandles);
-            }
-            else
-            {
-                result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.FALSE);
-            }
+#if NATIVEAOT
+                if (reentrantWait)
+                {
+                    Debug.Assert(!waitAll);
+                    result = RuntimeImports.RhCompatibleReentrantWaitAny(true, millisecondsTimeout, numHandles, pHandles);
+                }
+                else
+                {
+                    result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
+                }
 #else
-            int result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.FALSE);
+                result = (int)Interop.Kernel32.WaitForMultipleObjectsEx((uint)numHandles, (IntPtr)pHandles, waitAll ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
 #endif
+
+                if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
+                    break;
+
+                Thread.CheckForPendingInterrupt();
+
+                // Handle APC completion by adjusting timeout and retrying
+                if (millisecondsTimeout != Timeout.Infinite)
+                {
+                    long currentTime = Environment.TickCount64;
+                    long elapsed = currentTime - startTime;
+                    if (elapsed >= millisecondsTimeout)
+                    {
+                        result = Interop.Kernel32.WAIT_TIMEOUT;
+                        break;
+                    }
+                    millisecondsTimeout -= (int)elapsed;
+                    startTime = currentTime;
+                }
+            }
+
             currentThread.ClearWaitSleepJoinState();
 
             if (result == Interop.Kernel32.WAIT_FAILED)
@@ -92,17 +125,48 @@ namespace System.Threading
             return result;
         }
 
-        internal static unsafe int WaitOneCore(IntPtr handle, int millisecondsTimeout)
+        internal static unsafe int WaitOneCore(IntPtr handle, int millisecondsTimeout, bool useTrivialWaits)
         {
-            return WaitForMultipleObjectsIgnoringSyncContext(&handle, 1, false, millisecondsTimeout);
+            return WaitForMultipleObjectsIgnoringSyncContext(&handle, 1, false, millisecondsTimeout, useTrivialWaits);
         }
 
         private static int SignalAndWaitCore(IntPtr handleToSignal, IntPtr handleToWaitOn, int millisecondsTimeout)
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
-            int ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.FALSE);
+            long startTime = 0;
+            if (millisecondsTimeout != -1)
+            {
+                startTime = Environment.TickCount64;
+            }
 
+            Thread.CheckForPendingInterrupt();
+
+            // Signal the object and wait for the first time
+            int ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
+
+            // Handle APC completion by retrying with WaitForSingleObjectEx (without signaling again)
+            while (ret == Interop.Kernel32.WAIT_IO_COMPLETION)
+            {
+                Thread.CheckForPendingInterrupt();
+
+                if (millisecondsTimeout != -1)
+                {
+                    long currentTime = Environment.TickCount64;
+                    long elapsed = currentTime - startTime;
+
+                    if (elapsed >= millisecondsTimeout)
+                    {
+                        ret = Interop.Kernel32.WAIT_TIMEOUT;
+                        break;
+                    }
+                    millisecondsTimeout -= (int)elapsed;
+                    startTime = currentTime;
+                }
+
+                // For retries, only wait on the handle (don't signal again)
+                ret = (int)Interop.Kernel32.WaitForSingleObjectEx(handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
+            }
             if (ret == Interop.Kernel32.WAIT_FAILED)
             {
                 ThrowWaitFailedException(Interop.Kernel32.GetLastError());

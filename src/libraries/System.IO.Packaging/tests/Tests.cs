@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.IO.Packaging.Tests
 {
-    public class Tests : FileCleanupTestBase
+    public partial class Tests : FileCleanupTestBase
     {
         internal const string Mime_MediaTypeNames_Text_Xml = "text/xml";
         private const string Mime_MediaTypeNames_Image_Jpeg = "image/jpeg"; // System.Net.Mime.MediaTypeNames.Image.Jpeg
@@ -3772,74 +3772,6 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
-        [OuterLoop]
-        public void VeryLargePart()
-        {
-            // FileAccess.Write is important, this tells ZipPackage to open the underlying ZipArchive in
-            // ZipArchiveMode.Create mode as opposed to ZipArchiveMode.Update
-            // When ZipArchive is opened in Create it will write entries directly to the zip stream
-            // When ZipArchive is opened in Update it will write uncompressed data to memory until
-            // the archive is closed.
-            using (Stream stream = new MemoryStream())
-            {
-                Uri partUri = PackUriHelper.CreatePartUri(new Uri("test.bin", UriKind.Relative));
-
-                // should compress *very well*
-                byte[] buffer =  new byte[1024 * 1024];
-                for (int i = 0; i < buffer.Length; i++)
-                {
-                    buffer[i] = (byte)(i % 2);
-                }
-
-                const long SizeInMb = 6 * 1024; // 6GB
-                long totalLength = SizeInMb * buffer.Length;
-
-                // issue on .NET Framework we cannot use FileAccess.Write on a ZipArchive
-                using (Package package = Package.Open(stream, FileMode.Create, PlatformDetection.IsNetFramework ? FileAccess.ReadWrite : FileAccess.Write))
-                {
-                    PackagePart part = package.CreatePart(partUri,
-                                                          System.Net.Mime.MediaTypeNames.Application.Octet,
-                                                          CompressionOption.Fast);
-
-
-                    using (Stream partStream = part.GetStream())
-                    {
-                        for (long i = 0; i < SizeInMb; i++)
-                        {
-                            partStream.Write(buffer, 0, buffer.Length);
-                        }
-                    }
-                }
-
-                // reopen for read and make sure we can get the part length & data matches
-                stream.Seek(0, SeekOrigin.Begin);
-                using (Package readPackage = Package.Open(stream))
-                {
-                    PackagePart part = readPackage.GetPart(partUri);
-
-                    using (Stream partStream = part.GetStream())
-                    {
-                        Assert.Equal(totalLength, partStream.Length);
-                        byte[] readBuffer = new byte[buffer.Length];
-                        for (long i = 0; i < SizeInMb; i++)
-                        {
-                            int totalRead = 0;
-                            while (totalRead < readBuffer.Length)
-                            {
-                                int actualRead = partStream.Read(readBuffer, totalRead, readBuffer.Length - totalRead);
-                                Assert.InRange(actualRead, 1, readBuffer.Length - totalRead);
-                                totalRead += actualRead;
-                            }
-
-                            Assert.Equal(readBuffer.Length, totalRead);
-                            Assert.True(buffer.AsSpan().SequenceEqual(readBuffer));
-                        }
-                    }
-                }
-            }
-        }
-
-        [Fact]
         public void GetPartCallsGetPartCore()
         {
             // Package is an abstract class that others can derive from. Those derived classes can override GetPartsCore and potentially not
@@ -3986,6 +3918,64 @@ namespace System.IO.Packaging.Tests
                 PackUriHelper.Create(packageUri, partUri, badFragment);
             });
 
+        }
+
+        [Theory]
+#if NET
+        [InlineData(CompressionOption.NotCompressed, CompressionOption.Normal, 0)]
+        [InlineData(CompressionOption.Normal, CompressionOption.Normal, 0)]
+        [InlineData(CompressionOption.Maximum, CompressionOption.Normal, 2)]
+        [InlineData(CompressionOption.Fast, CompressionOption.Normal, 6)]
+        [InlineData(CompressionOption.SuperFast, CompressionOption.Normal, 6)]
+#else
+        [InlineData(CompressionOption.NotCompressed, CompressionOption.NotCompressed, 0)]
+        [InlineData(CompressionOption.Normal, CompressionOption.Normal, 0)]
+        [InlineData(CompressionOption.Maximum, CompressionOption.Maximum, 2)]
+        [InlineData(CompressionOption.Fast, CompressionOption.Fast, 4)]
+        [InlineData(CompressionOption.SuperFast, CompressionOption.SuperFast, 6)]
+#endif
+        public void Roundtrip_Compression_Option(CompressionOption createdCompressionOption, CompressionOption expectedCompressionOption, ushort expectedZipFileBitFlags)
+        {
+            var documentPath = "untitled.txt";
+            Uri partUriDocument = PackUriHelper.CreatePartUri(new Uri(documentPath, UriKind.Relative));
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
+                PackagePart part = package.CreatePart(partUriDocument, "application/text", createdCompressionOption);
+
+                package.Flush();
+                package.Close();
+                (package as IDisposable).Dispose();
+
+                ms.Seek(0, SeekOrigin.Begin);
+
+                var zipBytes = ms.ToArray();
+                var generalBitFlags = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(zipBytes.AsSpan(6));
+
+                package = Package.Open(ms, FileMode.Open, FileAccess.Read);
+                part = package.GetPart(partUriDocument);
+
+                Assert.Equal(expectedZipFileBitFlags, generalBitFlags);
+                Assert.Equal(expectedCompressionOption, part.CompressionOption);
+            }
+        }
+
+        [Fact]
+        public void Cannot_Modify_Package_On_Unseekable_Stream()
+        {
+            var ba = File.ReadAllBytes("plain.docx");
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(ba, 0, ba.Length);
+                ms.Seek(0, SeekOrigin.Begin);
+
+                using (WrappedStream ws = new WrappedStream(ms, true, true, false))
+                {
+                    Assert.Throws<ArgumentException>(() => Package.Open(ws, FileMode.Open, FileAccess.ReadWrite));
+                }
+            }
         }
 
         private const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";

@@ -96,7 +96,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string bestPassword,
             X509KeyStorageFlags importFlags,
             int win32Error,
-            int altWin32Error)
+            int altWin32Error,
+            int secondAltWin32Error)
         {
             X509Certificate2Collection coll = new X509Certificate2Collection();
 
@@ -105,14 +106,27 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             if (OperatingSystem.IsWindows())
             {
-                if (altWin32Error != 0 && ex.HResult != altWin32Error)
+                if (altWin32Error == 0 || ex.HResult != altWin32Error)
                 {
-                    Assert.Equal(win32Error, ex.HResult);
+                    if (secondAltWin32Error == 0 || ex.HResult != secondAltWin32Error)
+                    {
+                        Assert.Equal(win32Error, ex.HResult);
+                    }
                 }
             }
-            else
+
+            ex = Assert.ThrowsAny<CryptographicException>(
+                () => X509CertificateLoader.LoadPkcs12Collection(pfxBytes, bestPassword, importFlags));
+
+            if (OperatingSystem.IsWindows())
             {
-                Assert.NotNull(ex.InnerException);
+                if (altWin32Error == 0 || ex.HResult != altWin32Error)
+                {
+                    if (secondAltWin32Error == 0 || ex.HResult != secondAltWin32Error)
+                    {
+                        Assert.Equal(win32Error, ex.HResult);
+                    }
+                }
             }
         }
     }

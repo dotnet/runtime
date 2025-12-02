@@ -14,12 +14,12 @@
 
 typedef BYTE SM_STATE_ID;
 
-static_assert_no_msg(sizeof(SM_STATE_ID) == 1); // To conserve memory, we don't want to have more than 256 states.
+static_assert(sizeof(SM_STATE_ID) == 1); // To conserve memory, we don't want to have more than 256 states.
 
 #define SM_STATE_ID_START 1
 
-static_assert_no_msg(SM_STATE_ID_START == 1); // Make sure nobody changes it. We rely on this to map the SM_OPCODE
-                                              // to single-opcode states. For example, in GetWeightForOpcode().
+static_assert(SM_STATE_ID_START == 1); // Make sure nobody changes it. We rely on this to map the SM_OPCODE
+                                       // to single-opcode states. For example, in GetWeightForOpcode().
 
 struct JumpTableCell
 {
@@ -44,6 +44,6 @@ struct SMState
 //
 
 #define MAX_CODE_SEQUENCE_LENGTH 7
-#define CODE_SEQUENCE_END ((SM_OPCODE)(SM_COUNT + 1))
+#define CODE_SEQUENCE_END        ((SM_OPCODE)(SM_COUNT + 1))
 
 #endif /* __sm_common_h__ */

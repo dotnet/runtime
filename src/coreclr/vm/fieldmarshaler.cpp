@@ -189,6 +189,9 @@ VOID ParseNativeType(Module*                     pModule,
         case MarshalInfo::MARSHAL_TYPE_FIXED_WSTR:
             *pNFD = NativeFieldDescriptor(pFD, CoreLibBinder::GetClass(CLASS__UINT16), pargs->fs.fixedStringLength);
             break;
+        case MarshalInfo::MARSHAL_TYPE_POINTER:
+            *pNFD = NativeFieldDescriptor(pFD, NativeFieldCategory::INTEGER, sizeof(void*), sizeof(void*));
+            break;
         case MarshalInfo::MARSHAL_TYPE_UNKNOWN:
         default:
             *pNFD = NativeFieldDescriptor(pFD);
@@ -307,7 +310,7 @@ BOOL IsStructMarshalable(TypeHandle th)
         return FALSE;
 
     MethodTable *pMT= th.GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
 
     return pMT->GetNativeLayoutInfo()->IsMarshalable() ? TRUE : FALSE;
 }
@@ -399,7 +402,7 @@ UINT32 NativeFieldDescriptor::AlignmentRequirement() const
         MethodTable* pMT = GetNestedNativeMethodTable();
         if (pMT->IsBlittable())
         {
-            return pMT->GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers;
+            return pMT->GetLayoutInfo()->GetAlignmentRequirement();
         }
         return pMT->GetNativeLayoutInfo()->GetLargestAlignmentRequirement();
     }

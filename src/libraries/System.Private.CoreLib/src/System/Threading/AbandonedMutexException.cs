@@ -21,13 +21,13 @@ namespace System.Threading
         }
 
         public AbandonedMutexException(string? message)
-            : base(message)
+            : base(message ?? SR.Threading_AbandonedMutexException)
         {
             HResult = HResults.COR_E_ABANDONEDMUTEX;
         }
 
         public AbandonedMutexException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Threading_AbandonedMutexException, inner)
         {
             HResult = HResults.COR_E_ABANDONEDMUTEX;
         }
@@ -40,14 +40,14 @@ namespace System.Threading
         }
 
         public AbandonedMutexException(string? message, int location, WaitHandle? handle)
-            : base(message)
+            : base(message ?? SR.Threading_AbandonedMutexException)
         {
             HResult = HResults.COR_E_ABANDONEDMUTEX;
             SetupException(location, handle);
         }
 
         public AbandonedMutexException(string? message, Exception? inner, int location, WaitHandle? handle)
-            : base(message, inner)
+            : base(message ?? SR.Threading_AbandonedMutexException, inner)
         {
             HResult = HResults.COR_E_ABANDONEDMUTEX;
             SetupException(location, handle);

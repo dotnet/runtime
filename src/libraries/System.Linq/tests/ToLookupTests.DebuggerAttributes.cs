@@ -42,13 +42,13 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> DebuggerAttributesValid_Data()
         {
-            IEnumerable<int> source = new[] { 1 };
-            yield return new object[] { source.ToLookup(i => i) };
-            yield return new object[] { source.ToLookup(i => i.ToString(), i => i) };
-            yield return new object[] { source.ToLookup(i => TimeSpan.FromSeconds(i), i => i) };
+            IEnumerable<int> source = [1];
+            yield return [source.ToLookup(i => i)];
+            yield return [source.ToLookup(i => i.ToString(), i => i)];
+            yield return [source.ToLookup(i => TimeSpan.FromSeconds(i), i => i)];
 
-            yield return new object[] { new string[] { null }.ToLookup(x => x) };
-            yield return new object[] { new int?[] { null }.ToLookup(x => x) };
+            yield return [new string[] { null }.ToLookup(x => x)];
+            yield return [new int?[] { null }.ToLookup(x => x)];
         }
     }
 }

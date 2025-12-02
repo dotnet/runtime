@@ -91,10 +91,10 @@ __PWTB_ArgumentRegister_FirstArg SETA __PWTB_ArgumentRegisters + 8
     MEND
 
 ;-----------------------------------------------------------------------------
-; Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK and returns to caller.
+; Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK.
 ;
     MACRO
-        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+        EPILOG_WITH_TRANSITION_BLOCK
 
         EPILOG_STACK_FREE                 __PWTB_StackAlloc
 
@@ -104,6 +104,15 @@ __PWTB_ArgumentRegister_FirstArg SETA __PWTB_ArgumentRegisters + 8
         EPILOG_RESTORE_REG_PAIR   x25, x26, #64
         EPILOG_RESTORE_REG_PAIR   x27, x28, #80
         EPILOG_RESTORE_REG_PAIR   fp, lr,   #176!
+    MEND
+
+;-----------------------------------------------------------------------------
+; Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK and returns to caller.
+;
+    MACRO
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+        EPILOG_WITH_TRANSITION_BLOCK
 		EPILOG_RETURN
     MEND
 
@@ -153,6 +162,49 @@ $FuncName
     EXPORT $FuncName
 
     MEND
+
+;-----------------------------------------------------------------------------
+; Macros used for shared allocation helpers
+
+    SETALIAS t_runtime_thread_locals, ?t_runtime_thread_locals@@3URuntimeThreadLocals@@A
+
+    MACRO
+    INLINE_GET_ALLOC_CONTEXT_BASE $destReg, $trashReg
+
+        EXTERN $t_runtime_thread_locals
+
+        INLINE_GET_TLS_VAR $destReg, $trashReg, $t_runtime_thread_locals
+    MEND
+
+OFFSETOF__ee_alloc_context  EQU OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+
+    MACRO
+    PUSH_COOP_PINVOKE_FRAME $Target
+
+        PROLOG_SAVE_REG_PAIR   fp, lr, #-176!
+
+        ; Spill callee saved registers
+        PROLOG_SAVE_REG_PAIR   x19, x20, #16
+        PROLOG_SAVE_REG_PAIR   x21, x22, #32
+        PROLOG_SAVE_REG_PAIR   x23, x24, #48
+        PROLOG_SAVE_REG_PAIR   x25, x26, #64
+        PROLOG_SAVE_REG_PAIR   x27, x28, #80
+
+        mov     $Target, sp
+    MEND
+
+    MACRO
+    POP_COOP_PINVOKE_FRAME
+
+        EPILOG_RESTORE_REG_PAIR   x19, x20, #16
+        EPILOG_RESTORE_REG_PAIR   x21, x22, #32
+        EPILOG_RESTORE_REG_PAIR   x23, x24, #48
+        EPILOG_RESTORE_REG_PAIR   x25, x26, #64
+        EPILOG_RESTORE_REG_PAIR   x27, x28, #80
+        EPILOG_RESTORE_REG_PAIR   fp, lr,   #176!
+    MEND
+
+#define GC_ALLOC_FINALIZE 1
 
 ;-----------------------------------------------------------------------------
 ; Macro used to check (in debug builds only) whether the stack is 16-bytes aligned (a requirement before calling
@@ -313,18 +365,17 @@ $__RedirectionStubEndFuncName
 
         MEND
 
-;-----------------------------------------------------------------------------
-; Macro to get a pointer to the Thread* object for the currently executing thread
-;
+;; -----------------------------------------------------------------------------
+;;
+;; Macro to get a pointer to a threadlocal symbol for the currently executing thread
+;;
+
 __tls_array     equ 0x58    ;; offsetof(TEB, ThreadLocalStoragePointer)
 
-    EXTERN _tls_index
-
-    GBLS __SECTIONREL_gCurrentThreadInfo
-__SECTIONREL_gCurrentThreadInfo SETS "SECTIONREL_gCurrentThreadInfo"
-
     MACRO
-        INLINE_GETTHREAD $destReg, $trashReg
+        INLINE_GET_TLS_VAR $destReg, $trashReg, $variable
+
+        EXTERN _tls_index
 
         ;; The following macro variables are just some assembler magic to get the name of the 32-bit version
         ;; of $trashReg. It does it by string manipulation. Replaces something like x3 with w3.
@@ -332,33 +383,27 @@ __SECTIONREL_gCurrentThreadInfo SETS "SECTIONREL_gCurrentThreadInfo"
 TrashRegister32Bit SETS "$trashReg"
 TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister32Bit) - 1))
 
-        ldr         $trashReg, =_tls_index
-        ldr         $TrashRegister32Bit, [$trashReg]
+        adrp        $destReg, _tls_index
+        ldr         $TrashRegister32Bit, [$destReg, _tls_index]
         ldr         $destReg, [xpr, #__tls_array]
-        ldr         $destReg, [$destReg, $trashReg lsl #3]
-        ldr         $trashReg, =$__SECTIONREL_gCurrentThreadInfo
-        ldr         $trashReg, [$trashReg]
-        ldr         $destReg, [$destReg, $trashReg]        ; return gCurrentThreadInfo.m_pThread
+        ldr         $destReg, [$destReg, $TrashRegister32Bit uxtw #3]
+        add         $destReg, $destReg, #0, lsl #0xC
+        RELOC       0xA, $variable                          ;; IMAGE_REL_ARM64_SECREL_HIGH12A
+        add         $destReg, $destReg, #0, lsl #0
+        RELOC       0x9, $variable                          ;; IMAGE_REL_ARM64_SECREL_LOW12A
     MEND
 
-;-----------------------------------------------------------------------------
-; INLINE_GETTHREAD_CONSTANT_POOL macro has to be used after the last function in the .asm file that used
-; INLINE_GETTHREAD. Optionally, it can be also used after any function that used INLINE_GETTHREAD
-; to improve density, or to reduce distance between the constant pool and its use.
-;
-    SETALIAS gCurrentThreadInfo, ?gCurrentThreadInfo@@3UThreadLocalInfo@@A
+;; -----------------------------------------------------------------------------
+;;
+;; Macro to get a pointer to the Thread* object for the currently executing thread
+;;
+    SETALIAS t_CurrentThreadInfo, ?t_CurrentThreadInfo@@3UThreadLocalInfo@@A
 
     MACRO
-        INLINE_GETTHREAD_CONSTANT_POOL
+        INLINE_GETTHREAD $destReg, $trashReg
 
-        EXTERN $gCurrentThreadInfo
+        EXTERN $t_CurrentThreadInfo
 
-    ;; Section relocs are 32 bits. Using an extra DCD initialized to zero for 8-byte alignment.
-$__SECTIONREL_gCurrentThreadInfo
-        DCD $gCurrentThreadInfo
-        RELOC 8, $gCurrentThreadInfo    ;; SECREL
-        DCD 0
-
-__SECTIONREL_gCurrentThreadInfo SETS "$__SECTIONREL_gCurrentThreadInfo":CC:"_"
-
+        INLINE_GET_TLS_VAR $destReg, $trashReg, $t_CurrentThreadInfo
+        ldr $destReg, [$destReg]                            ;; return t_CurrentThreadInfo.m_pThread
     MEND

@@ -32,7 +32,7 @@ namespace System.Xml.Xsl.Runtime
         private readonly char _zeroDigit;
 
         // These characters have special meaning for CLR and must be escaped
-        // <spec>https://docs.microsoft.com/en-us/dotnet/standard/base-types/custom-numeric-format-strings</spec>
+        // <spec>https://learn.microsoft.com/dotnet/standard/base-types/custom-numeric-format-strings</spec>
         private const string ClrSpecialChars = "0#.,%\u2030Ee\\'\";";
 
         // This character is used to escape literal (passive) digits '0'..'9'

@@ -76,11 +76,7 @@ namespace System.Linq
         {
             get
             {
-                var tempList = new List<object?>();
-                foreach (object? item in _enumerable)
-                {
-                    tempList.Add(item);
-                }
+                List<object?> tempList = [.. _enumerable];
 
                 if (tempList.Count == 0)
                 {
@@ -98,7 +94,6 @@ namespace System.Linq
     internal sealed class SystemLinq_GroupingDebugView<TKey, TElement>
     {
         private readonly Grouping<TKey, TElement> _grouping;
-        private TElement[]? _cachedValues;
 
         public SystemLinq_GroupingDebugView(Grouping<TKey, TElement> grouping)
         {
@@ -109,20 +104,19 @@ namespace System.Linq
 
         // The name of this property must alphabetically follow `Key` so the elements appear last in the display.
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public TElement[] Values => _cachedValues ??= _grouping.ToArray();
+        public TElement[] Values => field ??= _grouping.ToArray();
     }
 
     internal sealed class SystemLinq_LookupDebugView<TKey, TElement>
     {
-        private readonly Lookup<TKey, TElement> _lookup;
-        private IGrouping<TKey, TElement>[]? _cachedGroupings;
+        private readonly ILookup<TKey, TElement> _lookup;
 
-        public SystemLinq_LookupDebugView(Lookup<TKey, TElement> lookup)
+        public SystemLinq_LookupDebugView(ILookup<TKey, TElement> lookup)
         {
             _lookup = lookup;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public IGrouping<TKey, TElement>[] Groupings => _cachedGroupings ??= _lookup.ToArray();
+        public IGrouping<TKey, TElement>[] Groupings => field ??= _lookup.ToArray();
     }
 }

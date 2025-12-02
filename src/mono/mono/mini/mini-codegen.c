@@ -141,12 +141,10 @@ static void
 mono_regstate_assign (MonoRegState *rs)
 {
 #ifdef MONO_ARCH_USE_SHARED_FP_SIMD_BANK
-	/* The regalloc may fail if fp and simd logical regbanks share the same physical reg bank and
-	 * if the values here are not the same.
-	 */
-	g_assert(regbank_callee_regs [MONO_REG_SIMD] == regbank_callee_regs [MONO_REG_DOUBLE]);
+	/* fp and simd logical banks may share the same physical reg bank with unequal overlapping registers */
+	g_assert((regbank_callee_regs [MONO_REG_SIMD] & regbank_callee_regs[MONO_REG_DOUBLE]) == regbank_callee_regs [MONO_REG_DOUBLE]);
+	g_assert(regbank_size [MONO_REG_SIMD] >= regbank_size [MONO_REG_DOUBLE]);
 	g_assert(regbank_callee_saved_regs [MONO_REG_SIMD] == regbank_callee_saved_regs [MONO_REG_DOUBLE]);
-	g_assert(regbank_size [MONO_REG_SIMD] == regbank_size [MONO_REG_DOUBLE]);
 #endif
 
 	if (rs->next_vreg > rs->vassign_size) {
@@ -221,7 +219,8 @@ mono_regstate_alloc_general (MonoRegState *rs, regmask_t allow, int bank)
 			if (mirrored_bank == -1)
 				return i;
 
-			rs->free_mask [mirrored_bank] = rs->free_mask [bank];
+			rs->free_mask [mirrored_bank] = (((MONO_ARCH_CALLEE_FREGS & MONO_ARCH_CALLEE_XREGS) & rs->free_mask [bank])
+								|((MONO_ARCH_CALLEE_FREGS ^ MONO_ARCH_CALLEE_XREGS) & rs->free_mask [mirrored_bank]));
 			return i;
 		}
 	}
@@ -240,7 +239,8 @@ mono_regstate_free_general (MonoRegState *rs, int reg, int bank)
 		mirrored_bank = get_mirrored_bank (bank);
 		if (mirrored_bank == -1)
 			return;
-		rs->free_mask [mirrored_bank] = rs->free_mask [bank];
+		rs->free_mask [mirrored_bank] = (((MONO_ARCH_CALLEE_FREGS & MONO_ARCH_CALLEE_XREGS) & rs->free_mask [bank])
+								|((MONO_ARCH_CALLEE_FREGS ^ MONO_ARCH_CALLEE_XREGS) & rs->free_mask [mirrored_bank]));
 		rs->symbolic [mirrored_bank][reg] = 0;
 	}
 }
@@ -439,9 +439,9 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	char spec_dest = (char)0, spec_src1 = (char)0, spec_src2 = (char)0, spec_src3 = (char)0;
 
 	if (i != -1)
-		g_string_append_printf (sbuf, "\t%-2d %s", i, mono_inst_name (ins->opcode));
+		g_string_append_printf (sbuf, "\t%-2d " M_PRI_INST "", i, mono_inst_name (ins->opcode));
 	else
-		g_string_append_printf (sbuf, " %s", mono_inst_name (ins->opcode));
+		g_string_append_printf (sbuf, " " M_PRI_INST "", mono_inst_name (ins->opcode));
 	if (spec == (gpointer)MONO_ARCH_CPU_SPEC) {
 		/* This is a lowered opcode */
 		if (ins->dreg != -1) {
@@ -649,7 +649,7 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 			g_string_append_printf (sbuf, " [B%d]", ins->inst_true_bb->block_num);
 		else
 			g_string_append_printf (sbuf, " [T:B%d F:B%d]", ins->inst_true_bb->block_num,
-			                        ins->inst_false_bb->block_num);
+									ins->inst_false_bb->block_num);
 		break;
 	case OP_LIVERANGE_START:
 	case OP_LIVERANGE_END:
@@ -1081,8 +1081,8 @@ assign_reg (MonoCompile *cfg, MonoRegState *rs, int reg, int hreg, int bank)
 		/* Make sure the other logical reg bank that this bank shares
 		 * a single hard reg bank knows that this hard reg is not free.
 		 */
-		rs->free_mask [mirrored_bank] = rs->free_mask [bank];
-
+		rs->free_mask [mirrored_bank] = (((MONO_ARCH_CALLEE_FREGS & MONO_ARCH_CALLEE_XREGS) & rs->free_mask [bank])
+								|((MONO_ARCH_CALLEE_FREGS ^ MONO_ARCH_CALLEE_XREGS) & rs->free_mask [mirrored_bank]));
 		/* Mark the other logical bank that the this bank shares
 		 * a single hard reg bank with as mirrored.
 		 */
@@ -1095,6 +1095,9 @@ assign_reg (MonoCompile *cfg, MonoRegState *rs, int reg, int hreg, int bank)
 #if !defined(TARGET_ARM) && !defined(TARGET_ARM64)
 		/* this seems to trigger a gcc compilation bug sometime (hreg is 0) */
 		/* On arm64, rgctx_reg is a global hreg, and it is used to pass an argument */
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+		if (!(mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL) && (hreg == AMD64_R12 || hreg == AMD64_R13)))
+#endif
 		g_assert (! is_global_ireg (hreg));
 #endif
 
@@ -1157,11 +1160,11 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			ispec = INS_INFO (i);
 
 			if ((spec [MONO_INST_DEST] && (ispec [MONO_INST_DEST] == ' ')))
-				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
+				g_error ("Instruction metadata for " M_PRI_INST " inconsistent.\n", mono_inst_name (i));
 			if ((spec [MONO_INST_SRC1] && (ispec [MONO_INST_SRC1] == ' ')))
-				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
+				g_error ("Instruction metadata for " M_PRI_INST " inconsistent.\n", mono_inst_name (i));
 			if ((spec [MONO_INST_SRC2] && (ispec [MONO_INST_SRC2] == ' ')))
-				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
+				g_error ("Instruction metadata for " M_PRI_INST " inconsistent.\n", mono_inst_name (i));
 		}
 #endif
 	}
@@ -1246,7 +1249,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		spec_dest = spec [MONO_INST_DEST];
 
 		if (G_UNLIKELY (spec == (gpointer)/*FIXME*/MONO_ARCH_CPU_SPEC)) {
-			g_error ("Opcode '%s' missing from machine description file.", mono_inst_name (ins->opcode));
+			g_error ("Opcode '" M_PRI_INST "' missing from machine description file.", mono_inst_name (ins->opcode));
 		}
 
 		DEBUG (mono_print_ins_index (i, ins));
@@ -1563,7 +1566,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			val = rs->vassign [ins->dreg];
 			if (is_soft_reg (ins->dreg, bank) && (val >= 0) && (!(regmask (val) & dreg_mask))) {
 				/* DREG is already allocated to a register needed for sreg1 */
-			    spill_vreg (cfg, bb, tmp, ins, ins->dreg, 0);
+				spill_vreg (cfg, bb, tmp, ins, ins->dreg, 0);
 			}
 		}
 
@@ -2300,7 +2303,7 @@ mono_opcode_to_cond (int opcode)
 	CompRelation rel = mono_opcode_to_cond_unchecked (opcode);
 
 	if (rel == (CompRelation)-1) {
-		printf ("%s\n", mono_inst_name (opcode));
+		printf ("" M_PRI_INST "\n", mono_inst_name (opcode));
 		g_assert_not_reached ();
 		return (CompRelation)0;
 	}
@@ -2364,7 +2367,7 @@ mono_opcode_to_type (int opcode, int cmp_opcode)
 			return CMP_TYPE_L;
 		}
 	} else {
-		g_error ("Unknown opcode '%s' in opcode_to_type", mono_inst_name (opcode));
+		g_error ("Unknown opcode '" M_PRI_INST "' in opcode_to_type", mono_inst_name (opcode));
 		return (CompType)0;
 	}
 }

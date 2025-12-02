@@ -25,20 +25,22 @@
 #include <interoplibabi.h>
 #endif // FEATURE_COMWRAPPERS
 
+#include "cdacplatformmetadata.hpp"
+
 extern HRESULT GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress);
 
 #if defined(DAC_MEASURE_PERF)
 
-unsigned __int64 g_nTotalTime;
-unsigned __int64 g_nStackTotalTime;
-unsigned __int64 g_nReadVirtualTotalTime;
-unsigned __int64 g_nFindTotalTime;
-unsigned __int64 g_nFindHashTotalTime;
-unsigned __int64 g_nFindHits;
-unsigned __int64 g_nFindCalls;
-unsigned __int64 g_nFindFails;
-unsigned __int64 g_nStackWalk;
-unsigned __int64 g_nFindStackTotalTime;
+uint64_t g_nTotalTime;
+uint64_t g_nStackTotalTime;
+uint64_t g_nReadVirtualTotalTime;
+uint64_t g_nFindTotalTime;
+uint64_t g_nFindHashTotalTime;
+uint64_t g_nFindHits;
+uint64_t g_nFindCalls;
+uint64_t g_nFindFails;
+uint64_t g_nStackWalk;
+uint64_t g_nFindStackTotalTime;
 
 #endif // #if defined(DAC_MEASURE_PERF)
 
@@ -201,8 +203,9 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     {
         // Catch the exception and keep going unless COR_E_OPERATIONCANCELED
         // was thrown. Used generating dumps, where rethrow will cancel dump.
+        RethrowCancelExceptions();
     }
-    EX_END_CATCH(RethrowCancelExceptions)
+    EX_END_CATCH
 
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem(m_dacGlobals.dac__g_pStressLog, sizeof(StressLog *)); )
 
@@ -318,8 +321,12 @@ HRESULT ClrDataAccess::EnumMemDumpJitManagerInfo(IN CLRDataEnumMemoryFlags flags
 
     if (flags == CLRDATA_ENUM_MEM_HEAP2)
     {
-        EEJitManager* managerPtr = ExecutionManager::GetEEJitManager();
+        EECodeGenManager* managerPtr = ExecutionManager::GetEEJitManager();
         managerPtr->EnumMemoryRegions(flags);
+#ifdef FEATURE_INTERPRETER
+        managerPtr = ExecutionManager::GetInterpreterJitManager();
+        managerPtr->EnumMemoryRegions(flags);
+#endif // FEATURE_INTERPRETER
     }
 
     return status;
@@ -533,7 +540,7 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
     DumpManagedExcepObject(flags, exceptRef->GetInnerException());
 
     // Dump the stack trace array object and its underlying type
-    I1ARRAYREF stackTraceArrayObj = exceptRef->GetStackTraceArrayObject();
+    OBJECTREF stackTraceArrayObj = exceptRef->GetStackTraceArrayObject();
 
     // There are cases where a managed exception does not have a stack trace.
     // These cases are:
@@ -557,7 +564,23 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
     // included in the dump.  When we touch the header and each element looking for the
     // MD this happens.
     StackTraceArray stackTrace;
-    exceptRef->GetStackTrace(stackTrace);
+    exceptRef->GetStackTrace(stackTrace, /*outKeepAliveArray*/ NULL, /* pCurrentThread */ NULL);
+
+    // The stackTraceArrayObj can be either a byte[] with the actual stack trace array or an object[] where the first element is the actual stack trace array.
+    // In case it was the latter, we need to dump the actual stack trace array object here too.
+    OBJECTREF actualStackTraceArrayObj = (OBJECTREF)stackTrace.Get();
+    if (actualStackTraceArrayObj != stackTraceArrayObj)
+    {
+        // first dump the array's element type
+        TypeHandle arrayTypeHandle = actualStackTraceArrayObj->GetTypeHandle();
+        TypeHandle elementTypeHandle = arrayTypeHandle.GetArrayElementTypeHandle();
+        elementTypeHandle.AsMethodTable()->EnumMemoryRegions(flags);
+        elementTypeHandle.AsMethodTable()->GetClass()->EnumMemoryRegions(flags, elementTypeHandle.AsMethodTable());
+
+        // now dump the actual stack trace array object
+        DumpManagedObject(flags, actualStackTraceArrayObj);
+    }
+
     for(size_t i = 0; i < stackTrace.Size(); i++)
     {
         MethodDesc* pMD = stackTrace[i].pFunc;
@@ -571,15 +594,13 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
             // Pulls in data to translate from token to MethodDesc
             FindLoadedMethodRefOrDef(pMD->GetMethodTable()->GetModule(), pMD->GetMemberDef());
 
-            // Pulls in sequence points.
-            DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, pMD);
             PCODE addr = pMD->GetNativeCode();
-            if (addr != NULL)
+            if (addr != (PCODE)NULL)
             {
                 EECodeInfo codeInfo(addr);
                 if (codeInfo.IsValid())
                 {
-                    IJitManager::MethodRegionInfo methodRegionInfo = { NULL, 0, NULL, 0 };
+                    IJitManager::MethodRegionInfo methodRegionInfo = { (TADDR)NULL, 0, (TADDR)NULL, 0 };
                     codeInfo.GetMethodRegionInfo(&methodRegionInfo);
                 }
             }
@@ -698,16 +719,18 @@ HRESULT ClrDataAccess::EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags)
             {
                 // Catch the exception and keep going unless COR_E_OPERATIONCANCELED
                 // was thrown. Used generating dumps, where rethrow will cancel dump.
+                RethrowCancelExceptions();
             }
-            EX_END_CATCH(RethrowCancelExceptions)
+            EX_END_CATCH
         }
     }
     EX_CATCH
     {
         // Catch the exception and keep going unless COR_E_OPERATIONCANCELED
         // was thrown. Used generating dumps, where rethrow will cancel dump.
+        RethrowCancelExceptions();
     }
-    EX_END_CATCH(RethrowCancelExceptions)
+    EX_END_CATCH
 
     m_dumpStats.m_cbModuleList = m_cbMemoryReported - cbMemoryReported;
 
@@ -727,7 +750,7 @@ HRESULT ClrDataAccess::EnumMemDumpAppDomainInfo(CLRDataEnumMemoryFlags flags)
 
     if (flags == CLRDATA_ENUM_MEM_HEAP2)
     {
-        SystemDomain::System()->GetLoaderAllocator()->EnumMemoryRegions(flags);
+        SystemDomain::GetGlobalLoaderAllocator()->EnumMemoryRegions(flags);
     }
 
     AppDomain* appDomain = AppDomain::GetCurrentDomain();
@@ -764,7 +787,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
 
 #if defined(DAC_MEASURE_PERF)
     g_nStackWalk = 1;
-    unsigned __int64 nStart= GetCycleCount();
+    uint64_t nStart= GetCycleCount();
 #endif
 
     HRESULT status = S_OK;
@@ -785,7 +808,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
         {
             bool frameHadContext = false;
             status = pStackWalk->GetFrame(&pFrame);
-            PCODE addr = NULL;
+            PCODE addr = (PCODE)NULL;
             if (status == S_OK && pFrame != NULL)
             {
                 // write out the code that ip pointed to
@@ -917,7 +940,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                                     // This method has a generic type token which is required to figure out the exact instantiation
                                     // of the method.
                                     // We need to use the variable index of the generic type token in order to do the look up.
-                                    CLRDATA_ADDRESS address = NULL;
+                                    CLRDATA_ADDRESS address = (CLRDATA_ADDRESS)NULL;
                                     DWORD dwExactGenericArgsTokenIndex = 0;
                                     ReleaseHolder<IXCLRDataValue> pDV(NULL);
                                     ReleaseHolder<IXCLRDataValue> pAssociatedValue(NULL);
@@ -950,12 +973,9 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                             // back to source lines for functions on stacks is very useful and we don't
                             // want to allow the function to fail for all targets.
 
-                            // Pulls in sequence points and local variable info
-                            DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, pMethodDesc);
-
 #if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
 
-                            if (addr != NULL)
+                            if (addr != (PCODE)NULL)
                             {
                                 EECodeInfo codeInfo(addr);
 
@@ -993,11 +1013,12 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
         status = E_FAIL;
         // Catch the exception and keep going unless a COR_E_OPERATIONCANCELED
         // was thrown. In which case, rethrow to cancel the dump gathering
+        RethrowCancelExceptions();
     }
-    EX_END_CATCH(RethrowCancelExceptions)
+    EX_END_CATCH
 
 #if defined(DAC_MEASURE_PERF)
-    unsigned __int64 nEnd = GetCycleCount();
+    uint64_t nEnd = GetCycleCount();
     g_nStackTotalTime += nEnd - nStart;
     g_nStackWalk = 0;
 #endif // #if defined(DAC_MEASURE_PERF)
@@ -1961,8 +1982,8 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
     g_nFindStackTotalTime = 0;
 
     LARGE_INTEGER nClockFrequency;
-    unsigned __int64 nStart = 0;
-    unsigned __int64 nEnd = 0;
+    uint64_t nStart = 0;
+    uint64_t nEnd = 0;
 
     QueryPerformanceFrequency(&nClockFrequency);
 
@@ -2053,7 +2074,7 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     // fix for issue 866100: DAC is too late in releasing ICLRDataEnumMemoryRegionsCallback2*
     if (m_updateMemCb)

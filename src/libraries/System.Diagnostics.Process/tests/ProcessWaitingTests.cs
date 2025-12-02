@@ -86,7 +86,7 @@ namespace System.Diagnostics.Tests
                     p.WaitForExit(WaitInMS);
                 }
             };
-            Task.WaitAll(Enumerable.Range(0, Tasks).Select(_ => Task.Run(work)).ToArray());
+            Task.WaitAll(Enumerable.Range(0, Tasks).Select(_ => Task.Run(work)));
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -108,7 +108,7 @@ namespace System.Diagnostics.Tests
                 }
             };
 
-            await Task.WhenAll(Enumerable.Range(0, Tasks).Select(_ => Task.Run(work)).ToArray());
+            await Task.WhenAll(Enumerable.Range(0, Tasks).Select(_ => Task.Run(work)));
         }
 
         [Theory]

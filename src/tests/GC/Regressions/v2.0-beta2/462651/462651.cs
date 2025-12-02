@@ -6,8 +6,9 @@ using System.Threading;
 using System.Text;
 using System.Runtime.InteropServices;
 
+using Xunit;
 
-class Mainy {
+public class Mainy {
 
 [DllImport("kernel32")]
 public static extern void DebugBreak();
@@ -63,10 +64,9 @@ public static void AllocStart()
     }
 }
 
-public static int Main() {
-
-
-
+[Fact]
+public static void TestEntryPoint()
+{
     int arrayLen = 1024*5;
     Byte [][] cache = new Byte[arrayLen][];
 
@@ -91,9 +91,6 @@ public static int Main() {
     }
 
     Console.WriteLine("finished");
-    return 100;
 }
 
 }
-
-

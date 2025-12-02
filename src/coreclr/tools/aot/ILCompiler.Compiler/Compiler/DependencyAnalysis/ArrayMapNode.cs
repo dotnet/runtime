@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__array_type_map");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__array_type_map"u8);
         }
         public int Offset => 0;
         public override bool IsShareable => false;
@@ -49,15 +49,14 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapHashTable);
 
-            foreach (var type in factory.MetadataManager.GetTypesWithConstructedEETypes())
+            foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
             {
                 if (!type.IsArray)
                     continue;
 
                 var arrayType = (ArrayType)type;
 
-                // Look at the constructed type symbol. If a constructed type wasn't emitted, then the array map entry isn't valid for use
-                IEETypeNode arrayTypeSymbol = factory.ConstructedTypeSymbol(arrayType);
+                IEETypeNode arrayTypeSymbol = factory.NecessaryTypeSymbol(arrayType);
 
                 Vertex vertex = writer.GetUnsignedConstant(_externalReferences.GetIndex(arrayTypeSymbol));
 

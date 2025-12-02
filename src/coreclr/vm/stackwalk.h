@@ -29,44 +29,41 @@ class ICodeManager;
 class IJitManager;
 struct EE_ILEXCEPTION;
 class AppDomain;
+#ifdef FEATURE_EH_FUNCLETS
+struct ExInfo;
+#endif
 
 // This define controls handling of faults in managed code.  If it is defined,
 //  the exception is handled (retried, actually), with a FaultingExceptionFrame
 //  on the stack.  The FEF is used for unwinding.  If not defined, the unwinding
 //  uses the exception context.
 #define USE_FEF // to mark where code needs to be changed to eliminate the FEF
-#if defined(TARGET_X86) && !defined(TARGET_UNIX)
+#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
  #undef USE_FEF // Turn off the FEF use on x86.
  #define ELIMINATE_FEF
 #else
  #if defined(ELIMINATE_FEF)
   #undef ELIMINATE_FEF
  #endif
-#endif // TARGET_X86 && !TARGET_UNIX
+#endif // TARGET_X86 && !FEATURE_EH_FUNCLETS
 
 #if defined(FEATURE_EH_FUNCLETS)
 #define RECORD_RESUMABLE_FRAME_SP
+#define PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
 #endif
 
 //************************************************************************
 // Enumerate all functions.
 //************************************************************************
 
-/* This enumerator is meant to be used for the most common cases, i.e. to
-   enumerate just all the functions of the requested thread. It is just a
-   cover for the "real" enumerator.
- */
-
-StackWalkAction StackWalkFunctions(Thread * thread, PSTACKWALKFRAMESCALLBACK pCallback, VOID * pData);
-
-/*<TODO>@ISSUE: Maybe use a define instead?</TODO>
-#define StackWalkFunctions(thread, callBack, userdata) thread->StackWalkFrames(METHODSONLY, (callBack),(userData))
-*/
-
 namespace AsmOffsetsAsserts
 {
     class AsmOffsets;
 };
+
+#ifdef FEATURE_EH_FUNCLETS
+extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
+#endif
 
 class CrawlFrame
 {
@@ -86,16 +83,11 @@ public:
     /* Returns either a MethodDesc* or NULL for "non-function" frames */
             //<TODO>@TODO: what will it return for transition frames?</TODO>
 
-#ifdef FEATURE_INTERPRETER
-    MethodDesc *GetFunction();
-#else // FEATURE_INTERPRETER
     inline MethodDesc *GetFunction()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return pFunc;
     }
-#endif
-
 
     Assembly *GetAssembly();
 
@@ -137,9 +129,6 @@ public:
     */
     TADDR GetAmbientSPFromCrawlFrame();
 
-    void GetExactGenericInstantiations(Instantiation *pClassInst,
-                                       Instantiation *pMethodInst);
-
     /* Returns extra information required to reconstruct exact generic parameters,
        if any.
        Returns NULL if
@@ -152,7 +141,6 @@ public:
      */
     PTR_VOID GetExactGenericArgsToken();
 
-    inline CodeManState * GetCodeManState() { LIMITED_METHOD_DAC_CONTRACT; return & codeManState; }
     /*
        IF YOU USE ANY OF THE SUBSEQUENT FUNCTIONS, YOU NEED TO REALLY UNDERSTAND THE
        STACK-WALKER (INCLUDING UNWINDING OF METHODS IN MANAGED NATIVE CODE)!
@@ -254,7 +242,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE((int)isNoFrameTransition != 0xcc);
 
-        return (isNoFrameTransition ? taNoFrameTransitionMarker : NULL);
+        return (isNoFrameTransition ? taNoFrameTransitionMarker : 0);
     }
 
     /* Has the IP been adjusted to a point where it is safe to do GC ?
@@ -291,7 +279,6 @@ public:
             if (!HasFaulted() && !IsIPadjusted())
             {
                 _ASSERTE(!(flags & ActiveStackFrame));
-                flags |= AbortingCall;
             }
         }
 
@@ -380,20 +367,6 @@ public:
         return codeInfo.GetCodeManager();
     }
 
-    inline StackwalkCacheEntry* GetStackwalkCacheEntry()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE (isCachedMethod != stackWalkCache.IsEmpty());
-        if (isCachedMethod && stackWalkCache.m_CacheEntry.IsSafeToUseCache())
-        {
-            return &(stackWalkCache.m_CacheEntry);
-        }
-        else
-        {
-            return NULL;
-        }
-    }
-
     void CheckGSCookies();
 
     inline Thread* GetThread()
@@ -458,10 +431,9 @@ private:
     friend class EECodeManager;
     friend class StackFrameIterator;
 #ifdef FEATURE_EH_FUNCLETS
-    friend class ExceptionTracker;
+    friend struct ExInfo;
+    friend void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo);
 #endif // FEATURE_EH_FUNCLETS
-
-    CodeManState      codeManState;
 
     bool              isFrameless;
     bool              isFirst;
@@ -492,10 +464,6 @@ private:
     EE_ILEXCEPTION_CLAUSE ehClauseForCatch;
 #endif //FEATURE_EH_FUNCLETS
     Thread*           pThread;
-
-    // fields used for stackwalk cache
-    BOOL              isCachedMethod;
-    StackwalkCache    stackWalkCache;
 
     GSCookie         *pCurGSCookie;
     GSCookie         *pFirstGSCookie;
@@ -609,6 +577,13 @@ public:
     // advance to the next frame according to the stackwalk flags
     StackWalkAction Next(void);
 
+#ifndef DACCESS_COMPILE
+#ifdef FEATURE_EH_FUNCLETS
+    // advance to the position that the other iterator is currently at
+    void SkipTo(StackFrameIterator *pOtherStackFrameIterator);
+#endif // FEATURE_EH_FUNCLETS
+#endif // DACCESS_COMPILE
+
 #ifdef FEATURE_EH_FUNCLETS
     void ResetNextExInfoForSP(TADDR SP);
 
@@ -622,18 +597,23 @@ public:
         m_AdjustedControlPC = pc;
     }
 
+    TADDR GetAdjustedControlPC()
+    {
+        return m_AdjustedControlPC;
+    }
+
     void UpdateIsRuntimeWrappedExceptions()
     {
         CONTRACTL
         {
             MODE_ANY;
-            GC_TRIGGERS;
+            GC_NOTRIGGER;
             NOTHROW;
         }
         CONTRACTL_END
 
 #if defined(FEATURE_EH_FUNCLETS) && !defined(DACCESS_COMPILE)
-        m_isRuntimeWrappedExceptions = (m_crawl.pFunc != NULL) && m_crawl.pFunc->GetModule()->IsRuntimeWrapExceptions();
+        m_isRuntimeWrappedExceptions = (m_crawl.pFunc != NULL) && m_crawl.pFunc->GetModule()->IsRuntimeWrapExceptionsDuringEH();
 #endif // FEATURE_EH_FUNCLETS && !DACCESS_COMPILE
     }
 
@@ -661,23 +641,6 @@ public:
 #endif // _DEBUG
 
 private:
-
-    // For the new exception handling that uses managed code to dispatch the
-    // exceptions, we need to force the stack walker to report GC references
-    // in the exception handling code frames, since they are alive. This is
-    // different from the old exception handling where no frames below the
-    // funclets upto the parent frame are alive.
-    enum class ForceGCReportingStage : BYTE
-    {
-        Off = 0,
-        // The stack walker has hit a funclet, we are looking for the first managed 
-        // frame that would be one of the managed exception handling code frames
-        LookForManagedFrame = 1,
-        // The stack walker has already hit a managed exception handling code frame,
-        // we are looking for a marker frame which indicates the native caller of
-        // the managed exception handling code
-        LookForMarkerFrame = 2
-    };
 
     // This is a helper for the two constructors.
     void CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 flags);
@@ -725,7 +688,6 @@ private:
 
         if (!ResetOnlyIntermediaryState)
         {
-            m_fFuncletNotSeen = false;
             m_sfFuncletParent = StackFrame();
             m_fProcessNonFilterFunclet = false;
         }
@@ -772,12 +734,21 @@ private:
     bool          m_fDidFuncletReportGCReferences;
     bool          m_isRuntimeWrappedExceptions;
 #endif // FEATURE_EH_FUNCLETS
-    // State of forcing of GC reference reporting for managed exception handling methods (RhExThrow, RhDispatchEx etc)
-    ForceGCReportingStage m_forceReportingWhileSkipping;
-    // The stack walk has moved past the first ExInfo location on the stack
-    bool          m_movedPastFirstExInfo;
-    // Indicates that no funclet was seen during the current stack walk yet
-    bool          m_fFuncletNotSeen;
+    // Indicates that the stack walk has moved past a funclet
+    bool          m_fFoundFirstFunclet;
+#ifdef FEATURE_INTERPRETER
+    // Saved registers of the context of the InterpExecMethod. These registers are reused for interpreter frames,
+    // but we need to restore the original values after we are done with all the interpreted frames belonging to
+    // that InterpExecMethod.
+    TADDR         m_interpExecMethodIP;
+    TADDR         m_interpExecMethodSP;
+    TADDR         m_interpExecMethodFP;
+    TADDR         m_interpExecMethodFirstArgReg;
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    TADDR         m_interpExecMethodSSP;
+#endif // TARGET_AMD64 && TARGET_WINDOWS
+#endif // FEATURE_INTERPRETER
+
 #if defined(RECORD_RESUMABLE_FRAME_SP)
     LPVOID m_pvResumableFrameTargetSP;
 #endif // RECORD_RESUMABLE_FRAME_SP
@@ -788,5 +759,6 @@ private:
 };
 
 void SetUpRegdisplayForStackWalk(Thread * pThread, T_CONTEXT * pContext, REGDISPLAY * pRegdisplay);
+PTR_VOID ConvertStackMarkToPointerOnOSStack(PTR_Thread pThread, PTR_VOID stackMark);
 
 #endif

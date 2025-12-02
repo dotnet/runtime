@@ -30,16 +30,23 @@ namespace System.Threading
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;
 
-#if CORECLR
-#pragma warning disable CA1823
-        private static readonly bool s_initialized = ThreadPool.EnsureConfigInitialized();
-#pragma warning restore CA1823
-#endif
-
         private static readonly short ForcedMinWorkerThreads =
-            AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MinThreads", 0, false);
+            AppContextConfigHelper.GetInt16ComPlusOrDotNetConfig("System.Threading.ThreadPool.MinThreads", "ThreadPool_ForceMinWorkerThreads", 0, false);
         private static readonly short ForcedMaxWorkerThreads =
-            AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MaxThreads", 0, false);
+            AppContextConfigHelper.GetInt16ComPlusOrDotNetConfig("System.Threading.ThreadPool.MaxThreads", "ThreadPool_ForceMaxWorkerThreads", 0, false);
+
+#if TARGET_WINDOWS
+        // Continuations of IO completions are dispatched to the ThreadPool from IO completion poller threads. This avoids
+        // continuations blocking/stalling the IO completion poller threads. Setting UnsafeInlineIOCompletionCallbacks allows
+        // continuations to run directly on the IO completion poller thread, but is inherently unsafe due to the potential for
+        // those threads to become stalled due to blocking. Sometimes, setting this config value may yield better latency. The
+        // config value is named for consistency with SocketAsyncEngine.Unix.cs.
+        private static readonly bool UnsafeInlineIOCompletionCallbacks =
+            Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS") == "1";
+
+        private static readonly short IOCompletionPortCount = DetermineIOCompletionPortCount();
+        private static readonly int IOCompletionPollerCount = DetermineIOCompletionPollerCount();
+#endif
 
         private static readonly int ThreadPoolThreadTimeoutMs = DetermineThreadPoolThreadTimeoutMs();
 
@@ -59,7 +66,7 @@ namespace System.Threading
         }
 
         [ThreadStatic]
-        private static object? t_completionCountObject;
+        private static ThreadInt64PersistentCounter.ThreadLocalNode? t_completionCountNode;
 
 #pragma warning disable IDE1006 // Naming Styles
         // The singleton must be initialized after the static variables above, as the constructor may be dependent on them.
@@ -72,6 +79,7 @@ namespace System.Threading
         private short _maxThreads;
         private short _legacy_minIOCompletionThreads;
         private short _legacy_maxIOCompletionThreads;
+        private int _numThreadsBeingKeptAlive;
 
         [StructLayout(LayoutKind.Explicit, Size = Internal.PaddingHelpers.CACHE_LINE_SIZE * 6)]
         private struct CacheLineSeparated
@@ -105,11 +113,6 @@ namespace System.Threading
 
         private long _memoryUsageBytes;
         private long _memoryLimitBytes;
-
-#if TARGET_WINDOWS
-        private readonly nint _ioPort;
-        private IOCompletionPoller[]? _ioCompletionPollers;
-#endif
 
         private readonly LowLevelLock _threadAdjustmentLock = new LowLevelLock();
 
@@ -148,7 +151,7 @@ namespace System.Threading
             _separated.counts.NumThreadsGoal = _minThreads;
 
 #if TARGET_WINDOWS
-            _ioPort = CreateIOCompletionPort();
+            InitializeIOOnWindows();
 #endif
         }
 
@@ -314,22 +317,22 @@ namespace System.Threading
         public int ThreadCount => _separated.counts.VolatileRead().NumExistingThreads;
         public long CompletedWorkItemCount => _completionCounter.Count;
 
-        public object GetOrCreateThreadLocalCompletionCountObject() =>
-            t_completionCountObject ?? CreateThreadLocalCompletionCountObject();
+        public ThreadInt64PersistentCounter.ThreadLocalNode GetOrCreateThreadLocalCompletionCountNode() =>
+            t_completionCountNode ?? CreateThreadLocalCompletionCountNode();
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private object CreateThreadLocalCompletionCountObject()
+        private ThreadInt64PersistentCounter.ThreadLocalNode CreateThreadLocalCompletionCountNode()
         {
-            Debug.Assert(t_completionCountObject == null);
+            Debug.Assert(t_completionCountNode == null);
 
-            object threadLocalCompletionCountObject = _completionCounter.CreateThreadLocalCountObject();
-            t_completionCountObject = threadLocalCompletionCountObject;
-            return threadLocalCompletionCountObject;
+            ThreadInt64PersistentCounter.ThreadLocalNode threadLocalCompletionCountNode = _completionCounter.CreateThreadLocalCountObject();
+            t_completionCountNode = threadLocalCompletionCountNode;
+            return threadLocalCompletionCountNode;
         }
 
-        private void NotifyWorkItemProgress(object threadLocalCompletionCountObject, int currentTimeMs)
+        private void NotifyWorkItemProgress(ThreadInt64PersistentCounter.ThreadLocalNode threadLocalCompletionCountNode, int currentTimeMs)
         {
-            ThreadInt64PersistentCounter.Increment(threadLocalCompletionCountObject);
+            threadLocalCompletionCountNode.Increment();
             _separated.lastDequeueTime = currentTimeMs;
 
             if (ShouldAdjustMaxWorkersActive(currentTimeMs))
@@ -339,13 +342,13 @@ namespace System.Threading
         }
 
         internal void NotifyWorkItemProgress() =>
-            NotifyWorkItemProgress(GetOrCreateThreadLocalCompletionCountObject(), Environment.TickCount);
+            NotifyWorkItemProgress(GetOrCreateThreadLocalCompletionCountNode(), Environment.TickCount);
 
-        internal bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
+        internal bool NotifyWorkItemComplete(ThreadInt64PersistentCounter.ThreadLocalNode? threadLocalCompletionCountNode, int currentTimeMs)
         {
-            Debug.Assert(threadLocalCompletionCountObject != null);
+            Debug.Assert(threadLocalCompletionCountNode != null);
 
-            NotifyWorkItemProgress(threadLocalCompletionCountObject!, currentTimeMs);
+            NotifyWorkItemProgress(threadLocalCompletionCountNode, currentTimeMs);
             return !WorkerThread.ShouldStopProcessingWorkNow(this);
         }
 

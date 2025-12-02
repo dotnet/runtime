@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if ((genericParameter.Attributes & GenericParameterAttributes.VarianceMask) != GenericParameterAttributes.None)
                         hasVariance = true;
 
-                    if ((genericParameter.Attributes & (GenericParameterAttributes.SpecialConstraintMask | (GenericParameterAttributes)GenericConstraints.AcceptByRefLike)) != default(GenericParameterAttributes) ||
+                    if ((genericParameter.Attributes & (GenericParameterAttributes.SpecialConstraintMask | (GenericParameterAttributes)GenericConstraints.AllowByRefLike)) != default(GenericParameterAttributes) ||
                         (genericParameter.GetConstraints().Count > 0))
                     {
                         hasConstraints = true;

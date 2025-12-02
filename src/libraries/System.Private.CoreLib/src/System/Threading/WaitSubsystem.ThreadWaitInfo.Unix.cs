@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.IO;
 
 namespace System.Threading
 {
@@ -75,7 +76,7 @@ namespace System.Threading
             /// - Sleep(0) intentionally does not acquire any lock, so it uses an interlocked compare-exchange for the read and
             ///   reset, see <see cref="CheckAndResetPendingInterrupt_NotLocked"/>
             /// </summary>
-            private int _isPendingInterrupt;
+            private bool _isPendingInterrupt;
 
             ////////////////////////////////////////////////////////////////
 
@@ -85,6 +86,15 @@ namespace System.Threading
             /// mutexes are abandoned in reverse order.
             /// </summary>
             private WaitableObject? _lockedMutexesHead;
+
+#if FEATURE_CROSS_PROCESS_MUTEX
+            /// <summary>
+            /// Linked list of named mutexes that are locked by the thread and need to be abandoned before the thread exits.
+            /// The linked list has only a head and no tail, which means acquired mutexes are prepended and
+            /// mutexes are abandoned in reverse order.
+            /// </summary>
+            private NamedMutexOwnershipChain? _namedMutexOwnershipChain;
+#endif
 
             public ThreadWaitInfo(Thread thread)
             {
@@ -508,7 +518,7 @@ namespace System.Threading
                 s_lock.VerifyIsLocked();
                 _waitMonitor.VerifyIsLocked();
 
-                _isPendingInterrupt = 1;
+                _isPendingInterrupt = true;
             }
 
             public bool CheckAndResetPendingInterrupt
@@ -519,11 +529,11 @@ namespace System.Threading
                     Debug.Assert(s_lock.IsLocked || _waitMonitor.IsLocked);
 #endif
 
-                    if (_isPendingInterrupt == 0)
+                    if (!_isPendingInterrupt)
                     {
                         return false;
                     }
-                    _isPendingInterrupt = 0;
+                    _isPendingInterrupt = false;
                     return true;
                 }
             }
@@ -535,7 +545,7 @@ namespace System.Threading
                     s_lock.VerifyIsNotLocked();
                     _waitMonitor.VerifyIsNotLocked();
 
-                    return Interlocked.CompareExchange(ref _isPendingInterrupt, 0, 1) != 0;
+                    return Interlocked.CompareExchange(ref _isPendingInterrupt, false, true);
                 }
             }
 
@@ -553,10 +563,31 @@ namespace System.Threading
                 }
             }
 
+#if FEATURE_CROSS_PROCESS_MUTEX
+            public NamedMutexOwnershipChain NamedMutexOwnershipChain
+            {
+                get
+                {
+                    SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
+                    return Volatile.Read(ref _namedMutexOwnershipChain) ?? AllocateOwnershipChain();
+
+                    NamedMutexOwnershipChain AllocateOwnershipChain()
+                    {
+                        Interlocked.CompareExchange(ref _namedMutexOwnershipChain, new NamedMutexOwnershipChain(this._thread), null!);
+                        return _namedMutexOwnershipChain;
+                    }
+                }
+            }
+#endif
+
             public void OnThreadExiting()
             {
                 // Abandon locked mutexes. Acquired mutexes are prepended to the linked list, so the mutexes are abandoned in
                 // last-acquired-first-abandoned order.
+
+#if FEATURE_CROSS_PROCESS_MUTEX
+                _namedMutexOwnershipChain?.Abandon();
+#endif
                 s_lock.Acquire();
                 try
                 {
@@ -576,6 +607,7 @@ namespace System.Threading
                 {
                     s_lock.Release();
                 }
+
             }
 
             public sealed class WaitedListNode

@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -35,7 +34,7 @@ namespace System.Net.Http.Headers
             get { return _dispositionType; }
             set
             {
-                CheckDispositionTypeFormat(value);
+                HeaderUtilities.CheckValidToken(value);
                 _dispositionType = value;
             }
         }
@@ -125,7 +124,7 @@ namespace System.Net.Http.Headers
 
         #region Constructors
 
-        internal ContentDispositionHeaderValue()
+        private ContentDispositionHeaderValue()
         {
             // Used by the parser to create a new instance of this type.
         }
@@ -140,7 +139,8 @@ namespace System.Net.Http.Headers
 
         public ContentDispositionHeaderValue(string dispositionType)
         {
-            CheckDispositionTypeFormat(dispositionType);
+            HeaderUtilities.CheckValidToken(dispositionType);
+
             _dispositionType = dispositionType;
         }
 
@@ -188,8 +188,7 @@ namespace System.Net.Http.Headers
         public static ContentDispositionHeaderValue Parse(string input)
         {
             int index = 0;
-            return (ContentDispositionHeaderValue)GenericHeaderParser.ContentDispositionParser.ParseValue(input,
-                null, ref index);
+            return (ContentDispositionHeaderValue)GenericHeaderParser.ContentDispositionParser.ParseValue(input, null, ref index);
         }
 
         public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out ContentDispositionHeaderValue? parsedValue)
@@ -271,19 +270,6 @@ namespace System.Net.Http.Headers
             return typeLength;
         }
 
-        private static void CheckDispositionTypeFormat(string dispositionType, [CallerArgumentExpression(nameof(dispositionType))] string? parameterName = null)
-        {
-            ArgumentException.ThrowIfNullOrWhiteSpace(dispositionType, parameterName);
-
-            // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
-            int dispositionTypeLength = GetDispositionTypeExpressionLength(dispositionType, 0, out string? tempDispositionType);
-            if ((dispositionTypeLength == 0) || (tempDispositionType!.Length != dispositionType.Length))
-            {
-                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture,
-                    SR.net_http_headers_invalid_value, dispositionType));
-            }
-        }
-
         #endregion Parsing
 
         #region Helpers
@@ -362,7 +348,7 @@ namespace System.Net.Http.Headers
                     return result;
                 }
                 // May not have been encoded.
-                return nameParameter.Value;
+                return IsQuoted(nameParameter.Value) ? nameParameter.Value!.Substring(1, nameParameter.Value.Length - 2) : nameParameter.Value;
             }
             return null;
         }

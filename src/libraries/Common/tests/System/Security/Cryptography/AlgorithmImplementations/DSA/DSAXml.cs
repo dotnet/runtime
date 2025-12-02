@@ -3,11 +3,12 @@
 
 using System.Collections.Generic;
 using System.Xml.Linq;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
     public static class DSAXml
     {
         [Fact]
@@ -414,7 +415,7 @@ S      9      R      /       j       6       9        C        v        C
                 "AMhxt+OJaF25fZNN1wEfqwdv8n7EKC+wDA1kbSnV5OU=");
         }
 
-        [ConditionalFact(typeof(DSAFactory), nameof(DSAFactory.SupportsKeyGeneration))]
+        [Fact]
         [OuterLoop("DSA key generation is very slow")]
         public static void FromToXml()
         {

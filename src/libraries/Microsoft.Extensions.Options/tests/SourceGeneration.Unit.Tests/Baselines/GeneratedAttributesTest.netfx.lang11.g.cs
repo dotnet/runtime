@@ -16,12 +16,16 @@
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::ValidationTest.OptionsUsingGeneratedAttributes options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET10_0_OR_GREATER
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "OptionsUsingGeneratedAttributes", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "P3";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P3" : $"{name}.P3";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P3" : $"{name}.P3";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P3, context, validationResults, validationAttributes))
             {
@@ -29,7 +33,7 @@
             }
 
             context.MemberName = "P4";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P4" : $"{name}.P4";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P4" : $"{name}.P4";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
@@ -39,7 +43,7 @@
             }
 
             context.MemberName = "P5";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P5" : $"{name}.P5";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P5" : $"{name}.P5";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A3);
@@ -49,7 +53,7 @@
             }
 
             context.MemberName = "P6";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P6" : $"{name}.P6";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P6" : $"{name}.P6";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A4);
@@ -59,7 +63,7 @@
             }
 
             context.MemberName = "P7";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P7" : $"{name}.P7";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P7" : $"{name}.P7";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
@@ -69,7 +73,7 @@
             }
 
             context.MemberName = "P8";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P8" : $"{name}.P8";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P8" : $"{name}.P8";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
@@ -79,7 +83,7 @@
             }
 
             context.MemberName = "P9";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P9" : $"{name}.P9";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P9" : $"{name}.P9";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A3);
@@ -89,7 +93,7 @@
             }
 
             context.MemberName = "P10";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P10" : $"{name}.P10";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P10" : $"{name}.P10";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A3);
@@ -99,7 +103,7 @@
             }
 
             context.MemberName = "P11";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P11" : $"{name}.P11";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P11" : $"{name}.P11";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
@@ -109,7 +113,7 @@
             }
 
             context.MemberName = "P12";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P12" : $"{name}.P12";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P12" : $"{name}.P12";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A3);
@@ -119,7 +123,7 @@
             }
 
             context.MemberName = "P13";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P13" : $"{name}.P13";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P13" : $"{name}.P13";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A5);
@@ -129,7 +133,7 @@
             }
 
             context.MemberName = "P14";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P14" : $"{name}.P14";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P14" : $"{name}.P14";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A6);
@@ -325,7 +329,7 @@ namespace __OptionValidationGeneratedAttributes
         public __SourceGen__RangeAttribute(global::System.Type type, string minimum, string maximum) : base()
         {
             OperandType = type;
-            NeedToConvertMinMax = true;
+            _needToConvertMinMax = true;
             Minimum = minimum;
             Maximum = maximum;
         }
@@ -338,47 +342,54 @@ namespace __OptionValidationGeneratedAttributes
         public bool ConvertValueInInvariantCulture { get; set; }
         public override string FormatErrorMessage(string name) =>
                 string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
-        private bool NeedToConvertMinMax { get; }
-        private bool Initialized { get; set; }
-        private const string c_minMaxError = "The minimum and maximum values must be set to valid values.";
+        private readonly bool _needToConvertMinMax;
+        private volatile bool _initialized;
+        private readonly object _lock = new();
+        private const string MinMaxError = "The minimum and maximum values must be set to valid values.";
 
         public override bool IsValid(object? value)
         {
-            if (!Initialized)
+            if (!_initialized)
             {
-                if (Minimum is null || Maximum is null)
+                lock (_lock)
                 {
-                    throw new global::System.InvalidOperationException(c_minMaxError);
-                }
-                if (NeedToConvertMinMax)
-                {
-                    System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
-                    if (OperandType == typeof(global::System.TimeSpan))
+                    if (!_initialized)
                     {
-                        if (!global::System.TimeSpan.TryParse((string)Minimum, culture, out global::System.TimeSpan timeSpanMinimum) ||
-                            !global::System.TimeSpan.TryParse((string)Maximum, culture, out global::System.TimeSpan timeSpanMaximum))
+                        if (Minimum is null || Maximum is null)
                         {
-                            throw new global::System.InvalidOperationException(c_minMaxError);
+                            throw new global::System.InvalidOperationException(MinMaxError);
                         }
-                        Minimum = timeSpanMinimum;
-                        Maximum = timeSpanMaximum;
+                        if (_needToConvertMinMax)
+                        {
+                            System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
+                            if (OperandType == typeof(global::System.TimeSpan))
+                            {
+                                if (!global::System.TimeSpan.TryParse((string)Minimum, culture, out global::System.TimeSpan timeSpanMinimum) ||
+                                    !global::System.TimeSpan.TryParse((string)Maximum, culture, out global::System.TimeSpan timeSpanMaximum))
+                                {
+                                    throw new global::System.InvalidOperationException(MinMaxError);
+                                }
+                                Minimum = timeSpanMinimum;
+                                Maximum = timeSpanMaximum;
+                            }
+                            else
+                            {
+                                Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(MinMaxError);
+                                Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(MinMaxError);
+                            }
+                        }
+                        int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
+                        if (cmp > 0)
+                        {
+                            throw new global::System.InvalidOperationException("The maximum value '{Maximum}' must be greater than or equal to the minimum value '{Minimum}'.");
+                        }
+                        else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
+                        {
+                            throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
+                        }
+                        _initialized = true;
                     }
-                    else
-                    {
-                        Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
-                        Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
-                    }
                 }
-                int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
-                if (cmp > 0)
-                {
-                    throw new global::System.InvalidOperationException("The maximum value '{Maximum}' must be greater than or equal to the minimum value '{Minimum}'.");
-                }
-                else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
-                {
-                    throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
-                }
-                Initialized = true;
             }
 
             if (value is null or string { Length: 0 })
@@ -414,7 +425,7 @@ namespace __OptionValidationGeneratedAttributes
                 {
                     convertedValue = ConvertValue(value, formatProvider);
                 }
-                catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+                catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException or global::System.OverflowException)
                 {
                     return false;
                 }

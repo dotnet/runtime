@@ -21,7 +21,7 @@ namespace System.Globalization
         private readonly CultureData _cultureData;
 
         // The RegionInfo for our current region
-        internal static volatile RegionInfo? s_currentRegionInfo;
+        internal static RegionInfo? s_currentRegionInfo;
 
         public RegionInfo(string name)
         {
@@ -84,7 +84,6 @@ namespace System.Globalization
 
         /// <summary>
         /// This instance provides methods based on the current user settings.
-        /// These settings are volatile and may change over the lifetime of the
         /// </summary>
         public static RegionInfo CurrentRegion
         {

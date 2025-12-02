@@ -50,6 +50,57 @@ namespace System.Reflection.Tests
             Assert.Null(nullability.ElementType);
         }
 
+        public class FI_FieldArray
+        {
+            public int[] intArray;
+            public object?[] objectArray;
+            public string?[] stringArray;
+        }
+
+        public class FI_GenericClassField<T>
+        {
+            public object?[] objectArray;
+            public T? genparamField;
+            public T?[] gparrayField;
+        }
+
+        public static IEnumerable<object[]> FieldArrayTestData()
+        {
+            yield return new object[] { "objectArray", NullabilityState.NotNull, NullabilityState.NotNull, typeof(object[]) };
+            yield return new object[] { "stringArray", NullabilityState.NotNull, NullabilityState.NotNull, typeof(string[]) };
+        }
+
+        [Theory]
+        [MemberData(nameof(FieldArrayTestData))]
+        public void FieldArrayTest(string fieldName, NullabilityState readState, NullabilityState writeState, Type type)
+        {
+            FieldInfo field = typeof(FI_FieldArray).GetField(fieldName, flags);
+            NullabilityInfo nullability = nullabilityContext.Create(field);
+            Assert.Equal(readState, nullability.ReadState);
+            Assert.Equal(writeState, nullability.WriteState);
+            Assert.Equal(type, nullability.Type);
+            Assert.Empty(nullability.GenericTypeArguments);
+        }
+
+        public static IEnumerable<object[]> GenericArrayFieldTypeTestData()
+        {
+            yield return new object[] { "objectArray", NullabilityState.NotNull, NullabilityState.NotNull, typeof(object[]) };
+            yield return new object[] { "genparamField", NullabilityState.NotNull, NullabilityState.NotNull, typeof(int) };
+            yield return new object[] { "gparrayField", NullabilityState.NotNull, NullabilityState.NotNull, typeof(int[]) };
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericArrayFieldTypeTestData))]
+        public void GenericArrayFieldTypeTest(string fieldName, NullabilityState readState, NullabilityState writeState, Type type)
+        {
+            FieldInfo field = typeof(FI_GenericClassField<int>).GetField(fieldName, flags)!;
+            NullabilityInfo nullability = nullabilityContext.Create(field);
+            Assert.Equal(readState, nullability.ReadState);
+            Assert.Equal(writeState, nullability.WriteState);
+            Assert.Equal(type, nullability.Type);
+            Assert.Empty(nullability.GenericTypeArguments);
+        }
+
         public static IEnumerable<object[]> EventTestData()
         {
             yield return new object[] { "EventNullable", NullabilityState.Nullable, NullabilityState.Nullable, typeof(EventHandler) };
@@ -282,43 +333,6 @@ namespace System.Reflection.Tests
             Assert.Equal(valueState, nullability.GenericTypeArguments[1].ReadState);
             Assert.Equal(valueElement, nullability.GenericTypeArguments[1].ElementType.ReadState);
             Assert.Null(nullability.ElementType);
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void VerifyIsSupportedThrows()
-        {
-            RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions.Add("System.Reflection.NullabilityInfoContext.IsSupported", "false");
-
-            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(() =>
-            {
-                FieldInfo field = testType.GetField("FieldNullable", flags);
-                Assert.Throws<InvalidOperationException>(() => nullabilityContext.Create(field));
-
-                EventInfo @event = testType.GetEvent("EventNullable");
-                Assert.Throws<InvalidOperationException>(() => nullabilityContext.Create(@event));
-
-                PropertyInfo property = testType.GetProperty("PropertyNullable", flags);
-                Assert.Throws<InvalidOperationException>(() => nullabilityContext.Create(property));
-
-                MethodInfo method = testType.GetMethod("MethodNullNonNullNonNon", flags);
-                Assert.Throws<InvalidOperationException>(() => nullabilityContext.Create(method.ReturnParameter));
-            }, options);
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void VerifyIsSupportedWorks()
-        {
-            RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions.Add("System.Reflection.NullabilityInfoContext.IsSupported", "true");
-
-            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(() =>
-            {
-                FieldInfo field = testType.GetField("FieldNullable", flags);
-                NullabilityInfo nullability = nullabilityContext.Create(field);
-                Assert.Equal(NullabilityState.Nullable, nullability.ReadState);
-                Assert.Equal(NullabilityState.Nullable, nullability.WriteState);
-            }, options);
         }
 
         public static IEnumerable<object[]> GenericPropertyReferenceTypeTestData()
@@ -882,12 +896,12 @@ namespace System.Reflection.Tests
         [SkipOnMono("Nullability attributes trimmed on Mono")]
         public void NullablePublicOnlyOtherTypesTest()
         {
-            Type type = typeof(Type);
-            FieldInfo privateNullableField = type.GetField("s_defaultBinder", flags)!;
+            FieldInfo privateNullableField = typeof(AppDomain).GetField("s_domain", flags)!;
             NullabilityInfo info = nullabilityContext.Create(privateNullableField);
             Assert.Equal(NullabilityState.Unknown, info.ReadState);
             Assert.Equal(NullabilityState.Unknown, info.WriteState);
 
+            Type type = typeof(Type);
             MethodInfo internalNotNullableMethod = type.GetMethod("GetRootElementType", flags)!;
             info = nullabilityContext.Create(internalNotNullableMethod.ReturnParameter);
             Assert.Equal(NullabilityState.NotNull, info.ReadState);

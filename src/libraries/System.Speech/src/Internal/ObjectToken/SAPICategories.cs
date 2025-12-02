@@ -59,6 +59,7 @@ namespace System.Speech.Internal.ObjectTokens
         #endregion
 
         private const string SpeechRegistryKey = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\";
+        private const string SpeechOneCoreRegistryKey = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech_OneCore\";
 
         internal const string CurrentUserVoices = @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Speech\Voices";
 
@@ -66,6 +67,7 @@ namespace System.Speech.Internal.ObjectTokens
 
         internal const string Recognizers = SpeechRegistryKey + "Recognizers";
         internal const string Voices = SpeechRegistryKey + "Voices";
+        internal const string Voices_OneCore = SpeechOneCoreRegistryKey + "Voices";
 
         internal const string AudioIn = SpeechRegistryKey + "AudioInput";
 

@@ -78,10 +78,7 @@ namespace System.DirectoryServices.ActiveDirectory
             CheckIfDisposed();
 
             // validate siteName
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             if (siteName.Length == 0)
             {
@@ -353,7 +350,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // this is the case of meta data
                     if (type == (int)DS_REPL_INFO_TYPE.DS_REPL_INFO_METADATA_2_FOR_OBJ)
                     {
-                        if (result == ExceptionHelper.ERROR_DS_DRA_BAD_DN || result == ExceptionHelper.ERROR_DS_NAME_UNPARSEABLE)
+                        if (result == Interop.Errors.ERROR_DS_DRA_BAD_DN || result == Interop.Errors.ERROR_DS_NAME_UNPARSEABLE)
                             throw new ArgumentException(ExceptionHelper.GetErrorMessage(result, false), "objectPath");
 
                         DirectoryEntry verifyEntry = DirectoryEntryManager.GetDirectoryEntry(this.context, partition);
@@ -363,10 +360,10 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
                         catch (COMException e)
                         {
-                            if (e.ErrorCode == unchecked((int)0x80072020) |          // dir_error on server side
+                            if (e.ErrorCode == unchecked((int)0x80072020) ||          // dir_error on server side
                                    e.ErrorCode == unchecked((int)0x80072030))           // object not exists
                                 throw new ArgumentException(SR.DSNoObject, "objectPath");
-                            else if (e.ErrorCode == unchecked((int)0x80005000) |          // bad path name
+                            else if (e.ErrorCode == unchecked((int)0x80005000) ||          // bad path name
                                    e.ErrorCode == unchecked((int)0x80072032)) // ERROR_DS_INVALID_DN_SYNTAX
                                 throw new ArgumentException(SR.DSInvalidPath, "objectPath");
                         }
@@ -692,8 +689,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal unsafe void SyncReplicaHelper(IntPtr dsHandle, bool isADAM, string partition, string? sourceServer, int option, SafeLibraryHandle libHandle)
         {
-            int structSize = Marshal.SizeOf(typeof(Guid));
-            IntPtr unmanagedGuid = (IntPtr)0;
+            int structSize = sizeof(Guid);
+            IntPtr unmanagedGuid = 0;
             Guid guid = Guid.Empty;
             AdamInstance? adamServer = null;
             DomainController? dcServer = null;
@@ -737,10 +734,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
                         string? serverDownName = null;
                         // this is the error returned when the server that we want to sync from is down
-                        if (result == ExceptionHelper.RPC_S_SERVER_UNAVAILABLE)
+                        if (result == Interop.Errors.RPC_S_SERVER_UNAVAILABLE)
                             serverDownName = sourceServer;
                         // this is the error returned when the server that we want to get synced is down
-                        else if (result == ExceptionHelper.RPC_S_CALL_FAILED)
+                        else if (result == Interop.Errors.RPC_S_CALL_FAILED)
                             serverDownName = Name;
 
                         throw ExceptionHelper.GetExceptionFromErrorCode(result, serverDownName);

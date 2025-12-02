@@ -40,22 +40,6 @@ int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowSize)
 #endif
 }
 
-int32_t SystemNative_SetWindowSize(WinSize* windowSize)
-{
-    assert(windowSize != NULL);
-
-#if HAVE_IOCTL_WITH_INT_REQUEST && HAVE_TIOCSWINSZ
-    return ioctl(STDOUT_FILENO, (int)TIOCSWINSZ, windowSize);
-#elif HAVE_IOCTL && HAVE_TIOCSWINSZ
-    return ioctl(STDOUT_FILENO, TIOCSWINSZ, windowSize);
-#else
-    // Not supported on e.g. Android. Also, prevent a compiler error because windowSize is unused
-    (void)windowSize;
-    errno = ENOTSUP;
-    return -1;
-#endif
-}
-
 int32_t SystemNative_IsATty(intptr_t fd)
 {
     return isatty(ToFileDescriptor(fd));
@@ -210,8 +194,8 @@ static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minCha
 
 void UninitializeTerminal(void)
 {
-    // This method is called on SIGQUIT/SIGINT from the signal dispatching thread
-    // and on atexit.
+    // This method is called on SIGQUIT/SIGINT from the signal dispatching thread,
+    // on atexit, and for AppDomain.UnhandledException.
 
     if (pthread_mutex_lock(&g_lock) == 0)
     {
@@ -488,4 +472,9 @@ int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
     }
 
     return initialized;
+}
+
+void SystemNative_UninitializeTerminal(void)
+{
+    UninitializeTerminal();
 }

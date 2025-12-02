@@ -38,7 +38,10 @@ struct LikelyClassMethodHistogramEntry
 //
 struct LikelyClassMethodHistogram
 {
-    LikelyClassMethodHistogram(INT_PTR* histogramEntries, unsigned entryCount);
+    LikelyClassMethodHistogram(INT_PTR* histogramEntries, unsigned entryCount, bool int32Data = false);
+
+    template <typename ElemType>
+    void LikelyClassMethodHistogramInner(ElemType* histogramEntries, unsigned entryCount);
 
     // Sum of counts from all entries in the histogram. This includes "unknown" entries which are not captured in
     // m_histogram
@@ -61,8 +64,22 @@ struct LikelyClassMethodHistogram
 // Arguments:
 //    histogramEntries - pointer to the table portion of a ClassProfile* object (see corjit.h)
 //    entryCount - number of entries in the table to examine
+//    int32Data - true if table entries are 32 bits
 //
-LikelyClassMethodHistogram::LikelyClassMethodHistogram(INT_PTR* histogramEntries, unsigned entryCount)
+LikelyClassMethodHistogram::LikelyClassMethodHistogram(INT_PTR* histogramEntries, unsigned entryCount, bool int32Data)
+{
+    if (int32Data)
+    {
+        LikelyClassMethodHistogramInner<int>((int*)histogramEntries, entryCount);
+    }
+    else
+    {
+        LikelyClassMethodHistogramInner<INT_PTR>(histogramEntries, entryCount);
+    }
+}
+
+template <typename ElemType>
+void LikelyClassMethodHistogram::LikelyClassMethodHistogramInner(ElemType* histogramEntries, unsigned entryCount)
 {
     m_unknownHandles               = 0;
     m_totalCount                   = 0;
@@ -76,8 +93,7 @@ LikelyClassMethodHistogram::LikelyClassMethodHistogram(INT_PTR* histogramEntries
         }
 
         m_totalCount++;
-
-        INT_PTR currentEntry = histogramEntries[k];
+        INT_PTR currentEntry = (INT_PTR)histogramEntries[k];
 
         bool     found = false;
         unsigned h     = 0;
@@ -255,8 +271,8 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
                     jitstd::sort(sortedEntries, sortedEntries + knownHandles,
                                  [](const LikelyClassMethodHistogramEntry& h1,
                                     const LikelyClassMethodHistogramEntry& h2) -> bool {
-                                     return h1.m_count > h2.m_count;
-                                 });
+                        return h1.m_count > h2.m_count;
+                    });
 
                     const UINT32 numberOfClasses = min(knownHandles, maxLikelyClasses);
 
@@ -346,4 +362,97 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyMethods(LikelyClassMethodRecord*    
 {
     return getLikelyClassesOrMethods(pLikelyMethods, maxLikelyMethods, schema, countSchemaItems, pInstrumentationData,
                                      ilOffset, false);
+}
+
+//------------------------------------------------------------------------
+// getLikelyValues: find a value profile data for an IL offset
+//
+// Arguments:
+//    pLikelyValues     - [OUT] array of likely values sorted by likelihood (descending). It must be
+//                           at least of 'maxLikelyValues' (next argument) length.
+//                           The array consists of pairs "value - likelihood" ordered by likelihood
+//                           (descending) where likelihood can be any value in [0..100] range.
+//    maxLikelyValues      - limit for likely classes to output
+//    schema               - profile schema
+//    countSchemaItems     - number of items in the schema
+//    pInstrumentationData - associated data
+//    ilOffset             - il offset of the node of interest
+//
+// Returns:
+//    Estimated number of different constants seen at runtime
+//
+extern "C" DLLEXPORT UINT32 WINAPI getLikelyValues(LikelyValueRecord*                     pLikelyValues,
+                                                   UINT32                                 maxLikelyValues,
+                                                   ICorJitInfo::PgoInstrumentationSchema* schema,
+                                                   UINT32                                 countSchemaItems,
+                                                   BYTE*                                  pInstrumentationData,
+                                                   int32_t                                ilOffset)
+{
+    if ((maxLikelyValues == 0) || (schema == nullptr))
+    {
+        return 0;
+    }
+
+    memset(pLikelyValues, 0, maxLikelyValues * sizeof(*pLikelyValues));
+
+    for (COUNT_T i = 0; i < countSchemaItems; i++)
+    {
+        if (schema[i].ILOffset != ilOffset)
+            continue;
+
+        // We currently re-use existing infrastructure for type handles for simplicity.
+        //
+        const bool isIntHistogramCount =
+            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount);
+        const bool isLongHistogramCount =
+            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount);
+        const bool isHistogramCount = isIntHistogramCount || isLongHistogramCount;
+
+        if (isHistogramCount && (schema[i].Count == 1) && ((i + 1) < countSchemaItems) &&
+            (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogram))
+        {
+            LikelyClassMethodHistogram h((INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count,
+                                         isIntHistogramCount);
+            LikelyClassMethodHistogramEntry sortedEntries[HISTOGRAM_MAX_SIZE_COUNT];
+
+            if (h.countHistogramElements == 0)
+            {
+                return 0;
+            }
+
+            for (unsigned hi = 0; hi < h.countHistogramElements; hi++)
+            {
+                LikelyClassMethodHistogramEntry const hist = h.HistogramEntryAt(hi);
+                sortedEntries[hi]                          = hist;
+            }
+
+            // sort by m_count (descending)
+            jitstd::sort(sortedEntries, sortedEntries + h.countHistogramElements,
+                         [](const LikelyClassMethodHistogramEntry& h1,
+                            const LikelyClassMethodHistogramEntry& h2) -> bool {
+                return h1.m_count > h2.m_count;
+            });
+
+            const UINT32 numberOfLikelyConst = min(h.countHistogramElements, maxLikelyValues);
+
+            UINT32 totalLikelihood = 0;
+            for (size_t hIdx = 0; hIdx < numberOfLikelyConst; hIdx++)
+            {
+                LikelyClassMethodHistogramEntry const hc = sortedEntries[hIdx];
+                pLikelyValues[hIdx].value                = hc.m_handle;
+                pLikelyValues[hIdx].likelihood           = hc.m_count * 100 / h.m_totalCount;
+                totalLikelihood += pLikelyValues[hIdx].likelihood;
+            }
+
+            assert(totalLikelihood <= 100);
+
+            // Distribute the rounding error and just apply it to the first entry.
+            assert(numberOfLikelyConst > 0);
+            assert(totalLikelihood > 0);
+            pLikelyValues[0].likelihood += 100 - totalLikelihood;
+            assert(pLikelyValues[0].likelihood <= 100);
+            return numberOfLikelyConst;
+        }
+    }
+    return 0;
 }

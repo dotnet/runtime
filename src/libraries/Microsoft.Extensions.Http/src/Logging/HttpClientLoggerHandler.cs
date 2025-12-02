@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Http.Logging
 
         public HttpClientLoggerHandler(IHttpClientLogger httpClientLogger)
         {
-            ThrowHelper.ThrowIfNull(httpClientLogger);
+            ArgumentNullException.ThrowIfNull(httpClientLogger);
 
             _httpClientLogger = httpClientLogger;
             _httpClientAsyncLogger = httpClientLogger as IHttpClientAsyncLogger;
@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Http.Logging
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            ThrowHelper.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(request);
 
             var stopwatch = ValueStopwatch.StartNew();
             HttpResponseMessage? response = null;
@@ -61,10 +61,10 @@ namespace Microsoft.Extensions.Http.Logging
             }
         }
 
-#if NET5_0_OR_GREATER
+#if NET
         protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            ThrowHelper.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(request);
 
             var stopwatch = ValueStopwatch.StartNew();
             HttpResponseMessage? response = null;

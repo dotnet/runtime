@@ -631,7 +631,7 @@ namespace System.Text
             return (int)(pOutputBufferRemaining - pChars);
         }
 
-        private protected sealed override unsafe int GetCharsWithFallback(ReadOnlySpan<byte> bytes, int originalBytesLength, Span<char> chars, int originalCharsLength, DecoderNLS? decoder, bool throwForDestinationOverflow = true)
+        private protected sealed override int GetCharsWithFallback(ReadOnlySpan<byte> bytes, int originalBytesLength, Span<char> chars, int originalCharsLength, DecoderNLS? decoder, bool throwForDestinationOverflow = true)
         {
             // We special-case DecoderReplacementFallback if it's telling us to write a single U+FFFD char,
             // since we believe this to be relatively common and we can handle it more efficiently than
@@ -863,7 +863,7 @@ namespace System.Text
             if (_emitUTF8Identifier)
             {
                 // Allocate new array to prevent users from modifying it.
-                return new byte[3] { 0xEF, 0xBB, 0xBF };
+                return [0xEF, 0xBB, 0xBF];
             }
             else
                 return Array.Empty<byte>();

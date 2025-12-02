@@ -50,7 +50,7 @@ namespace System.Formats.Tar
         /// </summary>
         /// <remarks>Character and block devices are Unix-specific entry types.</remarks>
         /// <exception cref="InvalidOperationException">The entry does not represent a block device or a character device.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">The value is negative, or larger than 2097151.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The value is negative, or larger than 2097151 when using <see cref="TarEntryFormat.V7"/> or <see cref="TarEntryFormat.Ustar"/>.</exception>
         public int DeviceMajor
         {
             get => _header._devMajor;
@@ -62,7 +62,10 @@ namespace System.Formats.Tar
                 }
 
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x1FFFFF); // 7777777 in octal
+                if (FormatIsOctalOnly)
+                {
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x1FFFFF); // 7777777 in octal
+                }
 
                 _header._devMajor = value;
             }
@@ -73,7 +76,7 @@ namespace System.Formats.Tar
         /// </summary>
         /// <remarks>Character and block devices are Unix-specific entry types.</remarks>
         /// <exception cref="InvalidOperationException">The entry does not represent a block device or a character device.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">The value is negative, or larger than 2097151.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The value is negative, or larger than 2097151 when using <see cref="TarEntryFormat.V7"/> or <see cref="TarEntryFormat.Ustar"/>.</exception>
         public int DeviceMinor
         {
             get => _header._devMinor;
@@ -85,7 +88,10 @@ namespace System.Formats.Tar
                 }
 
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x1FFFFF); // 7777777 in octal
+                if (FormatIsOctalOnly)
+                {
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x1FFFFF); // 7777777 in octal
+                }
 
                 _header._devMinor = value;
             }

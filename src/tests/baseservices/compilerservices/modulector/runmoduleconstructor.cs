@@ -14,12 +14,13 @@ public class RuntimeHelperTest
     [Fact]
     public static void TestEntryPoint()
     {
+        const string asmName = "moduleCctor";
         AssemblyLoadContext resolver0 = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
-        Assembly asm0 = resolver0.LoadFromAssemblyName(new AssemblyName("moduleCctor"));
+        Assembly asm0 = resolver0.LoadFromAssemblyName(new AssemblyName(asmName));
         Module mod = asm0.ManifestModule;
         
         RuntimeHelpers.RunModuleConstructor(mod.ModuleHandle);
-        var oType   = asm0.GetType("IntHolder",true);
+        var oType   = Type.GetType("IntHolder, " + asmName,true);
         MethodInfo check = oType.GetMethod("Check");
         MethodInfo assign = oType.GetMethod("Assign");
 

@@ -418,10 +418,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             return DomainController.FindOneInternal(context, Name, siteName, 0);
         }
@@ -437,10 +434,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             return DomainController.FindOneInternal(context, Name, siteName, flag);
         }
@@ -456,10 +450,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             return DomainController.FindAllInternal(context, Name, true /*isDnsDomainName */, siteName);
         }
@@ -478,10 +469,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             CheckIfDisposed();
 
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             if (siteName.Length == 0)
             {
@@ -540,7 +528,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (targetDomainName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetDomainName));
 
-            return TrustHelper.GetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, false);
+            return TrustHelper.GetTrustedDomainInfoStatus(context, Name, targetDomainName, Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, false);
         }
 
         public void SetSelectiveAuthenticationStatus(string targetDomainName, bool enable)
@@ -553,7 +541,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (targetDomainName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetDomainName));
 
-            TrustHelper.SetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, enable, false);
+            TrustHelper.SetTrustedDomainInfoStatus(context, Name, targetDomainName, Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, enable, false);
         }
 
         public bool GetSidFilteringStatus(string targetDomainName)
@@ -566,7 +554,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (targetDomainName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetDomainName));
 
-            return TrustHelper.GetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN, false);
+            return TrustHelper.GetTrustedDomainInfoStatus(context, Name, targetDomainName, Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN, false);
         }
 
         public void SetSidFilteringStatus(string targetDomainName, bool enable)
@@ -579,7 +567,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (targetDomainName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetDomainName));
 
-            TrustHelper.SetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN, enable, false);
+            TrustHelper.SetTrustedDomainInfoStatus(context, Name, targetDomainName, Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN, enable, false);
         }
 
         public void DeleteLocalSideOfTrustRelationship(string targetDomainName)
@@ -1235,7 +1223,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return childDomains;
         }
 
-        private ArrayList GetTrustsHelper(string? targetDomainName)
+        private unsafe ArrayList GetTrustsHelper(string? targetDomainName)
         {
             string? serverName;
             IntPtr domains = (IntPtr)0;
@@ -1265,7 +1253,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 try
                 {
-                    error = UnsafeNativeMethods.DsEnumerateDomainTrustsW(serverName, (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_IN_FOREST | (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND | (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND, out domains, out count);
+                    error = Interop.Netapi32.DsEnumerateDomainTrustsW(serverName, Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_IN_FOREST | Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND | Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND, out domains, out count);
                 }
                 finally
                 {
@@ -1289,19 +1277,18 @@ namespace System.DirectoryServices.ActiveDirectory
                     for (int i = 0; i < count; i++)
                     {
                         // get the unmanaged trust object
-                        addr = IntPtr.Add(domains, +i * Marshal.SizeOf(typeof(DS_DOMAIN_TRUSTS)));
-                        DS_DOMAIN_TRUSTS unmanagedTrust = new DS_DOMAIN_TRUSTS();
-                        Marshal.PtrToStructure(addr, unmanagedTrust);
+                        addr = IntPtr.Add(domains, +i * sizeof(Interop.Netapi32.DS_DOMAIN_TRUSTS));
+                        Interop.Netapi32.DS_DOMAIN_TRUSTS unmanagedTrust = *(Interop.Netapi32.DS_DOMAIN_TRUSTS*)addr;
 
                         unmanagedTrustList.Add(unmanagedTrust);
                     }
 
                     for (int i = 0; i < unmanagedTrustList.Count; i++)
                     {
-                        DS_DOMAIN_TRUSTS unmanagedTrust = (DS_DOMAIN_TRUSTS)unmanagedTrustList[i]!;
+                        Interop.Netapi32.DS_DOMAIN_TRUSTS unmanagedTrust = (Interop.Netapi32.DS_DOMAIN_TRUSTS)unmanagedTrustList[i]!;
 
                         // make sure this is the trust object that we want
-                        if ((unmanagedTrust.Flags & (int)(DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY | DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND | DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND)) == 0)
+                        if ((unmanagedTrust.Flags & (Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY | Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND | Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND)) == 0)
                         {
                             // Not interested in indirectly trusted domains.
                             continue;
@@ -1334,20 +1321,20 @@ namespace System.DirectoryServices.ActiveDirectory
                                 sameTarget = true;
 
                             // we only want to need local domain and specified target domain trusts
-                            if (!sameTarget && (obj.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) == 0)
+                            if (!sameTarget && (obj.Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) == 0)
                                 continue;
                         }
 
                         // local domain case
-                        if ((obj.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) != 0)
+                        if ((obj.Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) != 0)
                         {
                             localDomainIndex = j;
 
                             // verify whether this is already the root
-                            if ((obj.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) == 0)
+                            if ((obj.Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) == 0)
                             {
                                 // get the parent domain name
-                                DS_DOMAIN_TRUSTS parentTrust = (DS_DOMAIN_TRUSTS)unmanagedTrustList[obj.ParentIndex]!;
+                                Interop.Netapi32.DS_DOMAIN_TRUSTS parentTrust = (Interop.Netapi32.DS_DOMAIN_TRUSTS)unmanagedTrustList[obj.ParentIndex]!;
                                 if (parentTrust.DnsDomainName != (IntPtr)0)
                                     localDomainParent = Marshal.PtrToStringUni(parentTrust.DnsDomainName);
                             }
@@ -1383,7 +1370,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             continue;
                         }
 
-                        if ((tmpObject.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_IN_FOREST) != 0)
+                        if ((tmpObject.Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_IN_FOREST) != 0)
                         {
                             // child domain
                             if (tmpObject.ParentIndex == ((TrustObject)tmpTrustList[localDomainIndex]!).OriginalIndex)
@@ -1391,8 +1378,8 @@ namespace System.DirectoryServices.ActiveDirectory
                                 tmpObject.TrustType = TrustType.ParentChild;
                             }
                             // tree root
-                            else if ((tmpObject.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) != 0 &&
-                              (((TrustObject)tmpTrustList[localDomainIndex]!).Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) != 0)
+                            else if ((tmpObject.Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) != 0 &&
+                              (((TrustObject)tmpTrustList[localDomainIndex]!).Flags & Interop.Netapi32.DS_DOMAINTRUST_FLAG.DS_DOMAIN_TREE_ROOT) != 0)
                             {
                                 string? tmpForestName = null;
                                 string rootDomainNC = directoryEntryMgr.ExpandWellKnownDN(WellKnownDN.RootDomainNamingContext);
@@ -1418,7 +1405,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
 
                         // external trust or forest trust
-                        if ((tmpObject.TrustAttributes & (int)TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) != 0)
+                        if ((tmpObject.TrustAttributes & (int)Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) != 0)
                         {
                             // should not happen as we specify DS_DOMAIN_IN_FOREST when enumerating the trust, so forest trust will not be returned
                             tmpObject.TrustType = TrustType.Forest;
@@ -1435,7 +1422,7 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 if (domains != (IntPtr)0)
-                    UnsafeNativeMethods.NetApiBufferFree(domains);
+                    Interop.Netapi32.NetApiBufferFree(domains);
             }
         }
 

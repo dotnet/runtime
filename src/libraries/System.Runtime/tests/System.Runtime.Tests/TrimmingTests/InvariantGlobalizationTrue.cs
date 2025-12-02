@@ -4,15 +4,37 @@
 using System;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 /// <summary>
 /// Ensures setting InvariantGlobalization = true still works in a trimmed app.
 /// </summary>
 class Program
 {
+    private static string Str1 = "aaaaBBBB";
+    private static string Str2 = "ccccDDDD";
+    private static string Str3;
+
     static int Main(string[] args)
     {
         const BindingFlags allStatics = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+
+        Str3 = Str1.ToLowerInvariant() + Str2.ToUpperInvariant();
+
+        Type textInfo = GetCoreLibType("System.Globalization.TextInfo");
+        if (textInfo != null)
+        {
+            string[] methodsShouldBeGone = ["NlsChangeCase", "ChangeCaseCore", "ChangeCaseNative", "IcuChangeCase"];
+
+            foreach (MethodInfo method in textInfo.GetMethods(BindingFlags.Instance | allStatics))
+            {
+                if (methodsShouldBeGone.Contains(method.Name))
+                {
+                    Console.WriteLine($"Member '{method.Name}' was not trimmed from GlobalizationMode, but should have been.");
+                    return -2;
+                }
+            }
+        }
 
         try
         {
@@ -27,7 +49,19 @@ class Program
         {
             return -3;
         }
-        
+
+        // The rest of this code depends on a property of IL level trimming that keeps reflection
+        // metadata for anything that is statically reachable. It's not applicable if we're not doing that
+        // kind of trimming. Approximate what kind of trimming are we doing.
+        if (GetMethodSecretly(typeof(Program), nameof(GetCoreLibType)) == null)
+        {
+            // Sanity check: we only expect this for native AOT; IsDynamicCodeSupported approximates that.
+            if (RuntimeFeature.IsDynamicCodeSupported)
+                throw new Exception();
+
+            return 100;
+        }
+
         // Ensure the internal GlobalizationMode class is trimmed correctly.
         Type globalizationMode = GetCoreLibType("System.Globalization.GlobalizationMode");
 
@@ -65,4 +99,8 @@ class Program
     // The intention of this method is to ensure the trimmer doesn't preserve the Type.
     private static Type GetCoreLibType(string name) =>
         typeof(object).Assembly.GetType(name, throwOnError: false);
+
+    // The intention is to look for a method on a type in a way that trimming cannot detect.
+    private static MethodBase GetMethodSecretly(Type type, string name) =>
+        type.GetMethod(name, BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 }

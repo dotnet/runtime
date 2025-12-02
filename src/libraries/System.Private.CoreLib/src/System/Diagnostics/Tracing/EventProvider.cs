@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -55,7 +56,7 @@ namespace System.Diagnostics.Tracing
         [StructLayout(LayoutKind.Sequential)]
         public struct EventData
         {
-            internal unsafe ulong Ptr;
+            internal ulong Ptr;
             internal uint Size;
             internal uint Reserved;
         }
@@ -87,10 +88,7 @@ namespace System.Diagnostics.Tracing
         // Because callbacks happen on registration, and we need the callbacks for those setup
         // we can't call Register in the constructor.
         //
-        // Note that EventProvider should ONLY be used by EventSource.  In particular because
-        // it registers a callback from native code you MUST dispose it BEFORE shutdown, otherwise
-        // you may get native callbacks during shutdown when we have destroyed the delegate.
-        // EventSource has special logic to do this, no one else should be calling EventProvider.
+        // Note that EventProvider should ONLY be used by EventSource.
         internal EventProvider(EventProviderType providerType)
         {
             _eventProvider = providerType switch
@@ -106,16 +104,14 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// This method registers the controlGuid of this class with ETW. We need to be running on
-        /// Vista or above. If not a PlatformNotSupported exception will be thrown. If for some
-        /// reason the ETW Register call failed a NotSupported exception will be thrown.
+        /// This method registers the provider with the backing tracing mechanism, either ETW or EventPipe.
         /// </summary>
-        internal unsafe void Register(EventSource eventSource)
+        internal void Register(Guid id, string name)
         {
-            _providerName = eventSource.Name;
-            _providerId = eventSource.Guid;
+            _providerName = name;
+            _providerId = id;
 
-            _eventProvider.Register(eventSource);
+            _eventProvider.Register(id, name);
         }
 
         //
@@ -483,10 +479,10 @@ namespace System.Diagnostics.Tracing
                 int index;
                 int refObjIndex = 0;
 
-                Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(EightObjects)}");
-                EightObjects eightObjectStack = default;
+                Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(InlineArray8<>)}");
+                InlineArray8<object?> eightObjectStack = default;
                 Span<int> refObjPosition = stackalloc int[EtwAPIMaxRefObjCount];
-                Span<object?> dataRefObj = new Span<object?>(ref eightObjectStack._arg0, EtwAPIMaxRefObjCount);
+                Span<object?> dataRefObj = eightObjectStack;
 
                 EventData* userData = stackalloc EventData[2 * argCount];
                 for (int i = 0; i < 2 * argCount; i++)
@@ -513,7 +509,7 @@ namespace System.Diagnostics.Tracing
                         {
                             // EncodeObject advanced userDataPtr to the next empty slot
                             int idx = (int)(userDataPtr - userData - 1);
-                            if (!(supportedRefObj is string))
+                            if (supportedRefObj is not string)
                             {
                                 if (eventPayload.Length + idx + 1 - index > EtwMaxNumberArguments)
                                 {
@@ -653,21 +649,6 @@ namespace System.Diagnostics.Tracing
             return true;
         }
 
-        /// <summary>Workaround for inability to stackalloc object[EtwAPIMaxRefObjCount == 8].</summary>
-        private struct EightObjects
-        {
-            internal object? _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051, IDE0044
-            private object? _arg1;
-            private object? _arg2;
-            private object? _arg3;
-            private object? _arg4;
-            private object? _arg5;
-            private object? _arg6;
-            private object? _arg7;
-#pragma warning restore CA1823, CS0169, IDE0051, IDE0044
-        }
-
         /// <summary>
         /// WriteEvent, method to be used by generated code on a derived class
         /// </summary>
@@ -768,7 +749,7 @@ namespace System.Diagnostics.Tracing
 
         private readonly WeakReference<EventProvider> _eventProvider;
         private long _registrationHandle;
-        private GCHandle _gcHandle;
+        private GCHandle<EtwEventProvider> _gcHandle;
         private List<SessionInfo>? _liveSessions;       // current live sessions (KeyValuePair<sessionIdBit, etwSessionId>)
         private Guid _providerId;
 
@@ -837,7 +818,7 @@ namespace System.Diagnostics.Tracing
         private static unsafe void Callback(Guid* sourceId, int isEnabled, byte level,
             long matchAnyKeywords, long matchAllKeywords, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, void* callbackContext)
         {
-            EtwEventProvider _this = (EtwEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!;
+            EtwEventProvider _this = GCHandle<EtwEventProvider>.FromIntPtr((IntPtr)callbackContext).Target;
 
             if (_this._eventProvider.TryGetTarget(out EventProvider? target))
             {
@@ -847,22 +828,22 @@ namespace System.Diagnostics.Tracing
 
 
         // Register an event provider.
-        internal override unsafe void Register(EventSource eventSource)
+        internal override unsafe void Register(Guid id, string name)
         {
             Debug.Assert(!_gcHandle.IsAllocated);
-            _gcHandle = GCHandle.Alloc(this);
+            _gcHandle = new GCHandle<EtwEventProvider>(this);
 
             long registrationHandle = 0;
-            _providerId = eventSource.Guid;
+            _providerId = id;
             Guid providerId = _providerId;
             uint status = Interop.Advapi32.EventRegister(
                 &providerId,
                 &Callback,
-                (void*)GCHandle.ToIntPtr(_gcHandle),
+                (void*)GCHandle<EtwEventProvider>.ToIntPtr(_gcHandle),
                 &registrationHandle);
             if (status != 0)
             {
-                _gcHandle.Free();
+                _gcHandle.Dispose();
                 throw new ArgumentException(Interop.Kernel32.GetMessage((int)status));
             }
 
@@ -879,10 +860,7 @@ namespace System.Diagnostics.Tracing
                 _registrationHandle = 0;
             }
 
-            if (_gcHandle.IsAllocated)
-            {
-                _gcHandle.Free();
-            }
+            _gcHandle.Dispose();
         }
 
         // Write an event.
@@ -902,16 +880,12 @@ namespace System.Diagnostics.Tracing
                 userDataCount,
                 userData);
 
-            switch (error)
+            return error switch
             {
-                case Interop.Errors.ERROR_ARITHMETIC_OVERFLOW:
-                case Interop.Errors.ERROR_MORE_DATA:
-                    return EventProvider.WriteEventErrorCode.EventTooBig;
-                case Interop.Errors.ERROR_NOT_ENOUGH_MEMORY:
-                    return EventProvider.WriteEventErrorCode.NoFreeBuffers;
-            }
-
-            return EventProvider.WriteEventErrorCode.NoError;
+                Interop.Errors.ERROR_ARITHMETIC_OVERFLOW or Interop.Errors.ERROR_MORE_DATA => EventProvider.WriteEventErrorCode.EventTooBig,
+                Interop.Errors.ERROR_NOT_ENOUGH_MEMORY => EventProvider.WriteEventErrorCode.NoFreeBuffers,
+                _ => EventProvider.WriteEventErrorCode.NoError,
+            };
         }
 
         // Get or set the per-thread activity ID.
@@ -964,7 +938,7 @@ namespace System.Diagnostics.Tracing
         /// to get the data. The function returns an array of bytes representing the data, the index into that byte array
         /// where the data starts, and the command being issued associated with that data.
         /// </summary>
-        private unsafe bool TryReadRegistryFilterData(int etwSessionId, out ControllerCommand command, out byte[]? data)
+        private bool TryReadRegistryFilterData(int etwSessionId, out ControllerCommand command, out byte[]? data)
         {
             command = ControllerCommand.Update;
             data = null;
@@ -1259,7 +1233,7 @@ namespace System.Diagnostics.Tracing
             _allKeywordMask = 0;
         }
 
-        internal virtual void Register(EventSource eventSource)
+        internal virtual void Register(Guid id, string name)
         {
         }
 
@@ -1344,9 +1318,9 @@ namespace System.Diagnostics.Tracing
             return idx;
         }
 
-        protected static unsafe IDictionary<string, string?>? ParseFilterData(byte[]? data)
+        protected static IDictionary<string, string?>? ParseFilterData(byte[]? data)
         {
-            IDictionary<string, string?>? args = null;
+            Dictionary<string, string?>? args = null;
 
             // data can be null if the filterArgs had a very large size which failed our sanity check
             if (data != null)

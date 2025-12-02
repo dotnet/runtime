@@ -30,7 +30,6 @@ namespace System.Text.RegularExpressions
         protected internal string[]? capslist;                // if captures are sparse or named captures are used, this is the sorted list of names
         protected internal int capsize;                       // the size of the capture array
 
-        private WeakReference<RegexReplacement?>? _replref;   // cached parsed replacement pattern
         private volatile RegexRunner? _runner;                // cached runner
 
 #if DEBUG
@@ -227,8 +226,41 @@ namespace System.Text.RegularExpressions
             CompileToAssembly(regexinfos, assemblyname, attributes, null);
 
         [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile) =>
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile)
+        {
+#if DEBUG
+            // This code exists only to help with the development of the RegexCompiler.
+            // .NET no longer supports CompileToAssembly; the source generator should be used instead.
+#pragma warning disable IL3050
+            ArgumentNullException.ThrowIfNull(assemblyname);
+            ArgumentNullException.ThrowIfNull(regexinfos);
+
+            var c = new RegexAssemblyCompiler(assemblyname, attributes, resourceFile);
+
+            for (int i = 0; i < regexinfos.Length; i++)
+            {
+                ArgumentNullException.ThrowIfNull(regexinfos[i]);
+
+                string pattern = regexinfos[i].Pattern;
+
+                RegexOptions options = regexinfos[i].Options | RegexOptions.Compiled; // ensure compiled is set; it enables more optimization specific to compilation
+
+                string fullname = regexinfos[i].Namespace.Length == 0 ?
+                    regexinfos[i].Name :
+                    regexinfos[i].Namespace + "." + regexinfos[i].Name;
+
+                RegexTree tree = RegexParser.Parse(pattern, options, (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
+                RegexInterpreterCode code = RegexWriter.Write(tree);
+
+                c.GenerateRegexType(pattern, options, fullname, regexinfos[i].IsPublic, tree, regexinfos[i].MatchTimeout);
+            }
+
+            c.Save(assemblyname.Name ?? "RegexCompileToAssembly");
+#pragma warning restore IL3050
+#else
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
+#endif
+        }
 
         /// <summary>
         /// Escapes a minimal set of metacharacters (\, *, +, ?, |, {, [, (, ), ^, $, ., #, and
@@ -363,9 +395,9 @@ namespace System.Text.RegularExpressions
 
         /// <summary>A weak reference to a regex replacement, lazily initialized.</summary>
         internal WeakReference<RegexReplacement?> RegexReplacementWeakReference =>
-            _replref ??
-            Interlocked.CompareExchange(ref _replref, new WeakReference<RegexReplacement?>(null), null) ??
-            _replref;
+            field ??
+            Interlocked.CompareExchange(ref field, new WeakReference<RegexReplacement?>(null), null) ??
+            field;
 
         [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]

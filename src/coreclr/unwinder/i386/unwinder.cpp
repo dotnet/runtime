@@ -13,23 +13,27 @@ BOOL OOPStackUnwinderX86::Unwind(T_CONTEXT* pContextRecord, T_KNONVOLATILE_CONTE
 
     FillRegDisplay(&rd, pContextRecord);
 
-    rd.SP = pContextRecord->Esp;
-    rd.PCTAddr = (UINT_PTR)&(pContextRecord->Eip);
-
     if (pContextPointers)
     {
         rd.pCurrentContextPointers = pContextPointers;
     }
-
-    CodeManState codeManState;
-    codeManState.dwIsSet = 0;
 
     DWORD ControlPc = pContextRecord->Eip;
 
     EECodeInfo codeInfo;
     codeInfo.Init((PCODE) ControlPc);
 
-    if (!UnwindStackFrame(&rd, &codeInfo, UpdateAllRegs, &codeManState, NULL))
+    hdrInfo *hdrInfoBody;
+    PTR_CBYTE table = codeInfo.DecodeGCHdrInfo(&hdrInfoBody);
+
+    if (!UnwindStackFrameX86(&rd,
+                             PTR_CBYTE(codeInfo.GetSavedMethodCode()),
+                             codeInfo.GetRelOffset(),
+                             hdrInfoBody,
+                             table,
+                             PTR_CBYTE(codeInfo.GetJitManager()->GetFuncletStartAddress(&codeInfo)),
+                             codeInfo.IsFunclet(),
+                             true))
     {
         return FALSE;
     }
@@ -44,7 +48,7 @@ BOOL OOPStackUnwinderX86::Unwind(T_CONTEXT* pContextRecord, T_KNONVOLATILE_CONTE
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-    pContextRecord->Esp = rd.SP - codeInfo.GetCodeManager()->GetStackParameterSize(&codeInfo);
+    pContextRecord->Esp = rd.SP;
     pContextRecord->Eip = rd.ControlPC;
 
     return TRUE;
@@ -185,10 +189,7 @@ BOOL DacUnwindStackFrame(T_CONTEXT* pContextRecord, T_KNONVOLATILE_CONTEXT_POINT
 //     language specific exception handler is returned. Otherwise, NULL is
 //     returned.
 //
-EXTERN_C
-NTSYSAPI
 PEXCEPTION_ROUTINE
-NTAPI
 RtlVirtualUnwind (
     _In_ DWORD HandlerType,
     _In_ DWORD ImageBase,

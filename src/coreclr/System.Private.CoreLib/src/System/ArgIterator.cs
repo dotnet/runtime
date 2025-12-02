@@ -24,7 +24,7 @@ namespace System
         private int _remainingArgs;             // # of remaining args.
 
 #if TARGET_WINDOWS // Native Varargs are not supported on Unix
-        // ArgIterator is a ref struct. It does not require pinning.
+        // ArgIterator is a ref struct. It does not require pinning, therefore Unsafe.AsPointer is safe.
         // This method null checks the this pointer as a side-effect.
         private ArgIterator* ThisPtr => (ArgIterator*)Unsafe.AsPointer(ref _argCookie);
 
@@ -58,7 +58,6 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ArgIterator_Init2")]
         private static partial void Init(ArgIterator* thisPtr, IntPtr cookie, void* ptr);
 
-#pragma warning disable CS8500 // Takes a pointer to a managed type
         // Fetch an argument as a typed referece, advance the iterator.
         // Throws an exception if past end of argument list
         [CLSCompliant(false)]
@@ -137,7 +136,7 @@ namespace System
         }
 
         // Gets the type of the current arg, does NOT advance the iterator
-        public unsafe RuntimeTypeHandle GetNextArgType()
+        public RuntimeTypeHandle GetNextArgType()
         {
             return RuntimeTypeHandle.FromIntPtr(GetNextArgType(ThisPtr));
         }

@@ -86,7 +86,7 @@ namespace System.Net.Sockets
         internal unsafe AcceptExDelegate GetAcceptExDelegate(SafeSocketHandle socketHandle)
             => _acceptEx ?? CreateDelegate(ptr => new SocketDelegateHelper(ptr).AcceptEx, ref _acceptEx, socketHandle, "b5367df1cbac11cf95ca00805f48a192");
 
-        internal unsafe GetAcceptExSockaddrsDelegate GetGetAcceptExSockaddrsDelegate(SafeSocketHandle socketHandle)
+        internal GetAcceptExSockaddrsDelegate GetGetAcceptExSockaddrsDelegate(SafeSocketHandle socketHandle)
             => _getAcceptExSockaddrs ?? CreateDelegate<GetAcceptExSockaddrsDelegate>(ptr => new SocketDelegateHelper(ptr).GetAcceptExSockaddrs, ref _getAcceptExSockaddrs, socketHandle, "b5367df2cbac11cf95ca00805f48a192");
 
         internal unsafe ConnectExDelegate GetConnectExDelegate(SafeSocketHandle socketHandle)

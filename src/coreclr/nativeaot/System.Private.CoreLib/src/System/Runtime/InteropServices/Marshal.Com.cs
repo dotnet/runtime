@@ -295,7 +295,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static object GetObjectForIUnknown(IntPtr pUnk)
         {
-            return ComWrappers.ComObjectForInterface(pUnk);
+            return ComWrappers.ComObjectForInterface(pUnk, CreateObjectFlags.TrackerObject | CreateObjectFlags.Unwrap);
         }
 
         [SupportedOSPlatform("windows")]
@@ -373,12 +373,10 @@ namespace System.Runtime.InteropServices
             throw new NotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-#pragma warning disable IDE0060
         internal static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
         {
             throw new NotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
-#pragma warning restore
 
         [SupportedOSPlatform("windows")]
         public static string GetTypeInfoName(ITypeInfo typeInfo)

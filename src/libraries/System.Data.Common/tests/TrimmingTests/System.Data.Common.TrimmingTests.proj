@@ -4,6 +4,9 @@
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="CreateSqlXmlReader.cs" />
     <TestConsoleAppSourceFiles Include="DbConnectionStringBuilder.cs" />
+    <TestConsoleAppSourceFiles Include="DataSetXmlSerialization.cs" >
+      <DisabledFeatureSwitches>System.Data.DataSet.XmlSerializationIsSupported</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

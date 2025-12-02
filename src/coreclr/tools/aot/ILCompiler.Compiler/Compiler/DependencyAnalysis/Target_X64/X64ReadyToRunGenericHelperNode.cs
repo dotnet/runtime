@@ -44,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // If there's any invalid entries, we need to test for them
             //
-            // Only do this in relocsOnly to make it easier to weed out bugs - the _hasInvalidEntries
+            // Skip this in relocsOnly to make it easier to weed out bugs - the _hasInvalidEntries
             // flag can change over the course of compilation and the bad slot helper dependency
             // should be reported by someone else - the system should not rely on it coming from here.
             if (!relocsOnly && _hasInvalidEntries)
@@ -196,6 +196,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 // These are all simple: just get the thing from the dictionary and we're done
                 case ReadyToRunHelperId.TypeHandle:
+                case ReadyToRunHelperId.NecessaryTypeHandle:
+                case ReadyToRunHelperId.MetadataTypeHandle:
                 case ReadyToRunHelperId.MethodHandle:
                 case ReadyToRunHelperId.FieldHandle:
                 case ReadyToRunHelperId.MethodDictionary:

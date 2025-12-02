@@ -45,6 +45,7 @@ internal static class ReflectionTest
         TestTypesInMethodSignatures.Run();
 
         TestAttributeInheritance.Run();
+        Test113750Regression.Run();
         TestStringConstructor.Run();
         TestAssemblyAndModuleAttributes.Run();
         TestAttributeExpressions.Run();
@@ -66,10 +67,17 @@ internal static class ReflectionTest
         TestGenericMethodOnGenericType.Run();
         TestIsValueTypeWithoutTypeHandle.Run();
         TestMdArrayLoad.Run();
+        TestMdArrayLoad2.Run();
         TestByRefTypeLoad.Run();
         TestGenericLdtoken.Run();
         TestAbstractGenericLdtoken.Run();
         TestTypeHandlesVisibleFromIDynamicInterfaceCastable.Run();
+        TestCompilerGeneratedCode.Run();
+        Test105034Regression.Run();
+        TestMethodsNeededFromNativeLayout.Run();
+        TestFieldAndParamMetadata.Run();
+        TestActivationWithoutConstructor.Run();
+        TestNestedMakeGeneric.Run();
 
         //
         // Mostly functionality tests
@@ -88,6 +96,11 @@ internal static class ReflectionTest
         TestAssemblyLoad.Run();
         TestBaseOnlyUsedFromCode.Run();
         TestEntryPoint.Run();
+        TestGenericAttributesOnEnum.Run();
+        TestLdtokenWithSignaturesDifferingInModifiers.Run();
+        TestActivatingThingsInSignature.Run();
+        TestArrayInitialize.Run();
+        TestDelegateInvokeFromEvent.Run();
 
         return 100;
     }
@@ -711,6 +724,198 @@ internal static class ReflectionTest
         }
     }
 
+    class Test105034Regression
+    {
+        interface IFactory
+        {
+            object Make();
+        }
+
+        interface IOption<T> where T : new() { }
+
+        class OptionFactory<T> : IFactory where T : class, new()
+        {
+            public object Make() => new T();
+        }
+
+        class Gen<T> { }
+
+        struct Atom { }
+
+        static Type Register<T>() => typeof(T).GetGenericArguments()[0];
+        static IFactory Activate(Type t) => (IFactory)Activator.CreateInstance(typeof(OptionFactory<>).MakeGenericType(t));
+
+        public static void Run()
+        {
+            Console.WriteLine(nameof(Test105034Regression));
+
+            Wrap<Atom>();
+
+            static void Wrap<T>()
+            {
+
+                Type t = Register();
+                static Type Register() => Register<IOption<Gen<T>>>();
+
+                var f = Activate(t);
+                f.Make();
+            }
+        }
+    }
+
+    class TestMethodsNeededFromNativeLayout
+    {
+        class MyAttribute : Attribute;
+
+        class GenericClass<T> where T : class
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            [My]
+            public static void GenericMethod<U>([My] string namedParameter = "Hello") { }
+
+            public GenericClass() => GenericMethod<T>(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetObjectType() => typeof(object);
+
+        public static void Run()
+        {
+            // This tests that limited reflection metadata (that was only needed for native layout)
+            // works within the reflection stack.
+            Activator.CreateInstance(typeof(GenericClass<>).MakeGenericType(GetObjectType()));
+
+            // This should succeed because of the Activator
+            Type testType = GetTestType(nameof(TestMethodsNeededFromNativeLayout), "GenericClass`1");
+
+            // This should succeed because native layout forces the metadata.
+            // If this ever starts breaking, replace this pattern with something else that forces limited method metadata.
+            MethodInfo mi = testType.GetMethod(nameof(GenericClass<object>.GenericMethod));
+
+            // We got a MethodInfo that is limited, check the reflection APIs work fine with it
+            if (mi.Name != nameof(GenericClass<object>.GenericMethod))
+                throw new Exception("Name");
+
+            // Unless we're doing REFLECTION_FROM_USAGE, we don't expect to see attributes
+#if !REFLECTION_FROM_USAGE
+            if (mi.GetCustomAttributes(inherit: true).Length != 0)
+                throw new Exception("Attributes");
+#endif
+
+            // Unless we're doing REFLECTION_FROM_USAGE, we don't expect to be able to reflection-invoke
+            var mi2 = (MethodInfo)typeof(GenericClass<string>).GetMemberWithSameMetadataDefinitionAs(mi);
+#if !REFLECTION_FROM_USAGE
+            try
+#endif
+            {
+
+                mi2.MakeGenericMethod(typeof(string)).Invoke(null, [ null ]);
+#if !REFLECTION_FROM_USAGE
+                throw new Exception("Invoke");
+#endif
+            }
+#if !REFLECTION_FROM_USAGE
+            catch (NotSupportedException)
+            {
+            }
+#endif
+
+            // Parameter count should match no matter what
+            var parameters = mi.GetParameters();
+            if (parameters.Length != 1)
+                throw new Exception("ParamCount");
+
+            // But parameter names, default values, attributes should only work in REFLECTION_FROM_USAGE
+#if !REFLECTION_FROM_USAGE
+            if (parameters[0].Name != null)
+                throw new Exception("ParamName");
+
+            if (parameters[0].HasDefaultValue)
+                throw new Exception("DefaultValue");
+
+            if (parameters[0].GetCustomAttributes(inherit: true).Length != 0)
+                throw new Exception("Attributes");
+#endif
+        }
+    }
+
+    class TestFieldAndParamMetadata
+    {
+        public class FieldType;
+
+        public FieldType TheField;
+
+        public class ParameterType;
+
+        public static void TheMethod(ParameterType p) { }
+
+        public static void Run()
+        {
+            Type fieldType = typeof(TestFieldAndParamMetadata).GetField(nameof(TheField)).FieldType;
+
+            if (fieldType.Name != nameof(FieldType))
+                throw new Exception();
+
+            Type parameterType = typeof(TestFieldAndParamMetadata).GetMethod(nameof(TheMethod)).GetParameters()[0].ParameterType;
+            if (parameterType.Name != nameof(ParameterType))
+                throw new Exception();
+        }
+    }
+
+    class TestActivationWithoutConstructor
+    {
+        public static void Run()
+        {
+            {
+                object o = Activator.CreateInstance(typeof(StructForCreateInstanceDirect<>).MakeGenericType(GetTheType()));
+                if (!o.ToString().Contains(nameof(StructForCreateInstanceDirect<>)))
+                    throw new Exception();
+            }
+
+            {
+                object o = CreateInstance(typeof(StructForCreateInstanceIndirect<>).MakeGenericType(GetTheType()));
+                if (!o.ToString().Contains(nameof(StructForCreateInstanceIndirect<>)))
+                    throw new Exception();
+
+                static object CreateInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type t)
+                    => Activator.CreateInstance(t);
+            }
+
+            {
+                object o = RuntimeHelpers.GetUninitializedObject(typeof(StructForGetUninitializedObject<>).MakeGenericType(GetTheType()));
+                if (!o.ToString().Contains(nameof(StructForGetUninitializedObject<>)))
+                    throw new Exception();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetTheType() => typeof(Atom);
+        }
+
+        class Atom;
+
+        struct StructForCreateInstanceDirect<T> where T : class;
+        struct StructForCreateInstanceIndirect<T> where T : class;
+        struct StructForGetUninitializedObject<T> where T : class;
+    }
+
+    class TestNestedMakeGeneric
+    {
+        class Outie<T> where T : class;
+        class Innie<T> where T : class;
+        class Atom;
+
+        public static void Run()
+        {
+            Type inner = typeof(Innie<>).MakeGenericType(GetAtom());
+            Type outer = typeof(Outie<>).MakeGenericType(inner);
+
+            Console.WriteLine(Activator.CreateInstance(outer));
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetAtom() => typeof(Atom);
+        }
+    }
+
     class TestCreateDelegate
     {
         internal class Greeter
@@ -762,6 +967,18 @@ internal static class ReflectionTest
             public override int GetHashCode() => 500;
         }
 
+        class NeverAllocatedButUsedInGenericMethod<T>
+        {
+        }
+
+        class Atom;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Type GetNeverAllocatedButUsedInGenericMethod() => typeof(NeverAllocatedButUsedInGenericMethod<>);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static object GenericMethod<T>() => null;
+
         public static void Run()
         {
             Console.WriteLine(nameof(TestGetUninitializedObject));
@@ -775,6 +992,31 @@ internal static class ReflectionTest
             // Check that the vtable of a type passed to GetUninitializedObject is intact.
             var obj2 = RuntimeHelpers.GetUninitializedObject(typeof(AlsoNeverAllocated));
             if (obj2.GetHashCode() != 500)
+                throw new Exception();
+
+            // Do what's needed so that we force an unconstructed MT for NeverAllocatedButUsedInGenericMethod<Atom> into the program
+            // 1. Statically call the method
+            // 2. Make the method visible target of reflection
+            // This will force the compiler to place the method generic dictionary into a hashtable addressable using the instantiation.
+            GenericMethod<NeverAllocatedButUsedInGenericMethod<Atom>>();
+            typeof(TestGetUninitializedObject).GetMethod(nameof(GenericMethod));
+
+            Type t1 = GetNeverAllocatedButUsedInGenericMethod().MakeGenericType(typeof(Atom));
+            _ = t1.TypeHandle; // Type handle is only suitable for casting but we can get it
+
+            bool thrown = true;
+            try
+            {
+                // Needs to throw, the MT is only a necessary MT, not constructed MT
+                RuntimeHelpers.GetUninitializedObject(t1);
+                thrown = false;
+            }
+            catch (NotSupportedException e)
+            {
+                if (!e.Message.Contains("ReflectionTest+TestGetUninitializedObject+NeverAllocatedButUsedInGenericMethod`1[ReflectionTest+TestGetUninitializedObject+Atom]"))
+                    throw new Exception();
+            }
+            if (!thrown)
                 throw new Exception();
         }
     }
@@ -1020,6 +1262,22 @@ internal static class ReflectionTest
         }
     }
 
+    class Test113750Regression
+    {
+        class Atom;
+
+        public static void Run()
+        {
+            var arr = Array.CreateInstance(GetAtom(), 0);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetAtom() => typeof(Atom);
+
+            if (!(arr is Atom[]))
+                throw new Exception();
+        }
+    }
+
     class TestStringConstructor
     {
         public static void Run()
@@ -1041,7 +1299,9 @@ internal static class ReflectionTest
     {
         interface IUnreferenced { }
 
-        class UnreferencedBaseType : IUnreferenced { }
+        interface IReferenced { }
+
+        class UnreferencedBaseType : IUnreferenced, IReferenced { }
         class UnreferencedMidType : UnreferencedBaseType { }
         class ReferencedDerivedType : UnreferencedMidType { }
 
@@ -1060,8 +1320,9 @@ internal static class ReflectionTest
 
             Assert.Equal(count, 3);
 
-            // This one could in theory fail if we start trimming interface lists
+            // We expect to see only IReferenced but not IUnreferenced
             Assert.Equal(1, mi.GetParameters()[0].ParameterType.GetInterfaces().Length);
+            Assert.Equal(typeof(IReferenced), mi.GetParameters()[0].ParameterType.GetInterfaces()[0]);
         }
     }
 
@@ -1508,6 +1769,7 @@ internal static class ReflectionTest
             try
             {
                 Type.GetType("System.Span`1[[System.Byte, System.Runtime]][], System.Runtime");
+                Type.GetType("System.Collections.Generic.Dictionary`2[System.String]");
             }
             catch { }
 
@@ -1822,9 +2084,10 @@ internal static class ReflectionTest
                 typeof(GenericType<>).MakeGenericType(typeof(object)).GetMethod("Gimme");
             }
 
-            var t = (Type)s_type.MakeGenericType(typeof(double)).GetMethod("Gimme").Invoke(null, Array.Empty<object>());
+            var t = (Type)s_type.MakeGenericType(GetDouble()).GetMethod("Gimme").Invoke(null, Array.Empty<object>());
             if (t != typeof(double))
                 throw new Exception();
+            static Type GetDouble() => typeof(double);
         }
     }
 
@@ -1884,17 +2147,24 @@ internal static class ReflectionTest
     class TypeConstructionTest
     {
         struct Atom { }
+        struct ArrayElementUsedInGenericDictionary { }
 
         class Gen<T> { }
 
         static Type s_atom = typeof(Atom);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetArrayElementUsedInGenericDictionary() => typeof(ArrayElementUsedInGenericDictionary);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static object GenericMethod<T>() => null;
 
         public static void Run()
         {
             string message1 = "";
             try
             {
-                typeof(Gen<>).MakeGenericType(s_atom);
+                _ = typeof(Gen<>).MakeGenericType(s_atom).TypeHandle;
             }
             catch (Exception ex)
             {
@@ -1906,7 +2176,7 @@ internal static class ReflectionTest
             string message2 = "";
             try
             {
-                s_atom.MakeArrayType();
+                _ = s_atom.MakeArrayType().TypeHandle;
             }
             catch (Exception ex)
             {
@@ -1925,6 +2195,24 @@ internal static class ReflectionTest
                 message3 = ex.Message;
             }
             if (!message3.Contains("ReflectionTest+TypeConstructionTest+Atom[]"))
+                throw new Exception();
+
+            // Do what's needed so that we force an unconstructed MT for ArrayElementUsedInGenericDictionary[] into the program
+            // 1. Statically call the method
+            // 2. Make the method visible target of reflection
+            // This will force the compiler to place the method generic dictionary into a hashtable addressable using the instantiation.
+            GenericMethod<ArrayElementUsedInGenericDictionary[]>();
+            typeof(TestGetUninitializedObject).GetMethod(nameof(GenericMethod));
+            string message4 = "";
+            try
+            {
+                Array.CreateInstance(GetArrayElementUsedInGenericDictionary(), 10);
+            }
+            catch (Exception ex)
+            {
+                message4 = ex.Message;
+            }
+            if (!message4.Contains("ReflectionTest+TypeConstructionTest+ArrayElementUsedInGenericDictionary[]"))
                 throw new Exception();
         }
     }
@@ -2134,7 +2422,7 @@ internal static class ReflectionTest
             bool exists = false;
             try
             {
-                typeof(GenericClass<>).MakeGenericType(GetAtom3());
+                _ = typeof(GenericClass<>).MakeGenericType(GetAtom3()).TypeHandle;
                 exists = true;
             }
             catch
@@ -2200,13 +2488,50 @@ internal static class ReflectionTest
             }
         }
 
+        class ClassWithCctor
+        {
+            static ClassWithCctor() => s_field = 42;
+        }
+
+        class ClassWithCctor<T>
+        {
+            static ClassWithCctor() => s_field = 11;
+        }
+
+        class DynamicClassWithCctor<T>
+        {
+            static DynamicClassWithCctor() => s_field = 1000;
+        }
+
+        class Atom { }
+
         private static bool s_cctorRan;
+        private static int s_field;
 
         public static void Run()
         {
             RuntimeHelpers.RunClassConstructor(typeof(TypeWithNoStaticFieldsButACCtor).TypeHandle);
             if (!s_cctorRan)
                 throw new Exception();
+
+            RunTheCctor(typeof(ClassWithCctor));
+            if (s_field != 42)
+                throw new Exception();
+
+            RunTheCctor(typeof(ClassWithCctor<Atom>));
+            if (s_field != 11)
+                throw new Exception();
+
+            RunTheCctor(typeof(DynamicClassWithCctor<>).MakeGenericType(GetAtom()));
+            if (s_field != 1000)
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void RunTheCctor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type t)
+                => RuntimeHelpers.RunClassConstructor(t.TypeHandle);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetAtom() => typeof(Atom);
         }
     }
 
@@ -2430,9 +2755,25 @@ internal static class ReflectionTest
 
         public static void Run()
         {
-            var mi = typeof(TestMdArrayLoad).GetMethod(nameof(MakeMdArray)).MakeGenericMethod(typeof(Atom));
+            var mi = typeof(TestMdArrayLoad).GetMethod(nameof(MakeMdArray)).MakeGenericMethod(GetAtom());
             if ((Type)mi.Invoke(null, Array.Empty<object>()) != typeof(Atom[,,]))
                 throw new Exception();
+            static Type GetAtom() => typeof(Atom);
+        }
+    }
+
+    class TestMdArrayLoad2
+    {
+        class Atom { }
+
+        public static object MakeMdArray<T>() => new T[1, 1, 1];
+
+        public static void Run()
+        {
+            var mi = typeof(TestMdArrayLoad2).GetMethod(nameof(MakeMdArray)).MakeGenericMethod(GetAtom());
+            if (mi.Invoke(null, Array.Empty<object>()) is not Atom[,,])
+                throw new Exception();
+            static Type GetAtom() => typeof(Atom);
         }
     }
 
@@ -2444,9 +2785,10 @@ internal static class ReflectionTest
 
         public static void Run()
         {
-            var mi = typeof(TestByRefTypeLoad).GetMethod(nameof(MakeFnPtrType)).MakeGenericMethod(typeof(Atom));
+            var mi = typeof(TestByRefTypeLoad).GetMethod(nameof(MakeFnPtrType)).MakeGenericMethod(GetAtom());
             if ((Type)mi.Invoke(null, Array.Empty<object>()) != typeof(delegate*<ref Atom>))
                 throw new Exception();
+            static Type GetAtom() => typeof(Atom);
         }
     }
 
@@ -2538,6 +2880,175 @@ internal static class ReflectionTest
         {
             Console.WriteLine(nameof(TestEntryPoint));
             if (Assembly.GetEntryAssembly().EntryPoint == null)
+                throw new Exception();
+        }
+    }
+
+    class TestCompilerGeneratedCode
+    {
+        class Canary1 { }
+        class Canary2 { }
+        class Canary3 { }
+        class Canary4 { }
+
+        private static void ReflectionInLambda()
+        {
+            var func = () => {
+                Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary1));
+                Assert.NotNull(helpersType);
+            };
+
+            func();
+        }
+
+        private static void ReflectionInLocalFunction()
+        {
+            func();
+
+            void func()
+            {
+                Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary2));
+                Assert.NotNull(helpersType);
+            };
+        }
+
+        private static async void ReflectionInAsync()
+        {
+            await System.Threading.Tasks.Task.Delay(100);
+            Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary3));
+            Assert.NotNull(helpersType);
+        }
+
+        private static async void ReflectionInLambdaAsync()
+        {
+            await System.Threading.Tasks.Task.Delay(100);
+
+            var func = () => {
+                Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary4));
+                Assert.NotNull(helpersType);
+            };
+
+            func();
+        }
+
+        public static void Run()
+        {
+            ReflectionInLambda();
+            ReflectionInLocalFunction();
+            ReflectionInAsync();
+            ReflectionInLambdaAsync();
+        }
+    }
+
+    // Regression test for https://github.com/dotnet/runtime/issues/111578
+    class TestGenericAttributesOnEnum
+    {
+        class MyAttribute<T> : Attribute { }
+
+        [My<int>]
+        enum MyEnum { A = 1, B = 2 }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object GetVal() => MyEnum.A | MyEnum.B;
+
+        public static void Run()
+        {
+            if (GetVal().ToString() != "3")
+                throw new Exception();
+        }
+    }
+
+    unsafe class TestLdtokenWithSignaturesDifferingInModifiers
+    {
+        delegate string StdcallDelegate(delegate* unmanaged[Stdcall]<void>[] p);
+        delegate string CdeclDelegate(delegate* unmanaged[Cdecl]<void>[] p);
+
+        static string Method(delegate* unmanaged[Stdcall]<void>[] p) => "Stdcall";
+        static string Method(delegate* unmanaged[Cdecl]<void>[] p) => "Cdecl";
+
+        public static void Run()
+        {
+            Expression<StdcallDelegate> stdcall = x => Method(x);
+            if (stdcall.Compile()(null) != "Stdcall")
+                throw new Exception();
+
+            Expression<CdeclDelegate> cdecl = x => Method(x);
+            if (cdecl.Compile()(null) != "Cdecl")
+                throw new Exception();
+        }
+    }
+
+    class TestActivatingThingsInSignature
+    {
+        public static unsafe void Run()
+        {
+            var mi = typeof(TestActivatingThingsInSignature).GetMethod(nameof(MethodWithThingsInSignature));
+            var p = mi.GetParameters();
+
+            var d = typeof(TestActivatingThingsInSignature).GetMethod(nameof(Run)).CreateDelegate(p[0].ParameterType);
+            Console.WriteLine(d.ToString());
+
+            Span<byte> storage = stackalloc byte[sizeof(MyStruct)];
+            var s = RuntimeHelpers.Box(ref MemoryMarshal.GetReference(storage), p[1].ParameterType.TypeHandle);
+            Console.WriteLine(s.ToString());
+
+            var a = Array.CreateInstanceFromArrayType(p[2].ParameterType, 0);
+            Console.WriteLine(a.ToString());
+        }
+
+        public void MethodWithThingsInSignature(MyDelegate d, MyStruct s, MyArrayElementStruct[] a) { }
+
+        public delegate void MyDelegate();
+
+        public struct MyStruct;
+
+        public struct MyArrayElementStruct;
+    }
+
+    class TestArrayInitialize
+    {
+        static int s_constructorCallCount = 0;
+
+        public struct ValueTypeWithConstructor
+        {
+            public ValueTypeWithConstructor()
+            {
+                s_constructorCallCount++;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Array AllocateArray() => new ValueTypeWithConstructor[3];
+
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestArrayInitialize));
+
+            s_constructorCallCount = 0;
+
+            // Create an array and call Initialize
+            var array = AllocateArray();
+            array.Initialize();
+
+            // Verify that the constructor was called for each element
+            if (s_constructorCallCount != 3)
+                throw new Exception($"Expected constructor to be called 3 times, but was called {s_constructorCallCount} times");
+        }
+    }
+
+    class TestDelegateInvokeFromEvent
+    {
+        class MyClass
+        {
+            public event EventHandler<int> MyEvent { add { } remove { } }
+        }
+
+        static EventInfo s_eventInfo = typeof(MyClass).GetEvent("MyEvent");
+
+        public static unsafe void Run()
+        {
+            var invokeMethod = s_eventInfo.EventHandlerType.GetMethod("Invoke");
+            if (invokeMethod.Name != "Invoke")
                 throw new Exception();
         }
     }

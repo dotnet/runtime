@@ -12,6 +12,7 @@
 **=========================================================*/
 
 #include <palsuite.h>
+#include <time.h>
 
 #define MAX_COUNT 10000
 #define MAX_THREADS 256

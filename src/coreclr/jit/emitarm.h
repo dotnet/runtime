@@ -65,10 +65,15 @@ void emitDispInsHelp(instrDesc* id,
 
 private:
 instrDesc* emitNewInstrCallDir(
-    int argCnt, VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize);
+    int argCnt, VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize, bool hasAsyncRet);
 
-instrDesc* emitNewInstrCallInd(
-    int argCnt, ssize_t disp, VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize);
+instrDesc* emitNewInstrCallInd(int              argCnt,
+                               ssize_t          disp,
+                               VARSET_VALARG_TP GCvars,
+                               regMaskTP        gcrefRegs,
+                               regMaskTP        byrefRegs,
+                               emitAttr         retSize,
+                               bool             hasAsyncRet);
 
 /************************************************************************/
 /*               Private helpers for instruction output                 */
@@ -81,7 +86,7 @@ bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
 
 emitter::insFormat emitInsFormat(instruction ins);
-emitter::code_t emitInsCode(instruction ins, insFormat fmt);
+emitter::code_t    emitInsCode(instruction ins, insFormat fmt);
 
 // Generate code for a load or store operation and handle the case
 // of contained GT_LEA op1 with [base + index<<scale + offset]
@@ -90,7 +95,7 @@ void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTr
 
 static bool IsMovInstruction(instruction ins);
 static bool isModImmConst(int imm);
-static int encodeModImmConst(int imm);
+static int  encodeModImmConst(int imm);
 
 static int insUnscaleImm(instruction ins, int imm);
 
@@ -313,29 +318,6 @@ void emitIns_ARR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg
 
 void emitIns_R_ARX(
     instruction ins, emitAttr attr, regNumber ireg, regNumber reg, regNumber rg2, unsigned mul, int disp);
-
-enum EmitCallType
-{
-    EC_FUNC_TOKEN, // Direct call to a helper/static/nonvirtual/global method
-    EC_INDIR_R,    // Indirect call via register
-    EC_COUNT
-};
-
-void emitIns_Call(EmitCallType          callType,
-                  CORINFO_METHOD_HANDLE methHnd,                   // used for pretty printing
-                  INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                  void*            addr,
-                  int              argSize,
-                  emitAttr         retSize,
-                  VARSET_VALARG_TP ptrVars,
-                  regMaskTP        gcrefRegs,
-                  regMaskTP        byrefRegs,
-                  const DebugInfo& di     = DebugInfo(),
-                  regNumber        ireg   = REG_NA,
-                  regNumber        xreg   = REG_NA,
-                  unsigned         xmul   = 0,
-                  ssize_t          disp   = 0,
-                  bool             isJump = false);
 
 /*****************************************************************************
  *

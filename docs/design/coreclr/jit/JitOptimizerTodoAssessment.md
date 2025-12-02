@@ -49,7 +49,7 @@ the code quality improvements, though most have issues associated with them.
 We may well be able to find some additional benchmarks or real-world-code with some looking,
 though it may be the case that current performance-sensitive code avoids structs.
 
-There's also work going on in corefx to use `Span<T>` more broadly.  We should
+There's also work going on to use `Span<T>` more broadly.  We should
 make sure we are expanding our span benchmarks appropriately to track and
 respond to any particular issues that come out of that work.
 

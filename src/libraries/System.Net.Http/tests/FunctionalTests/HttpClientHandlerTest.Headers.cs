@@ -5,11 +5,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Net.Quic;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -24,6 +23,7 @@ namespace System.Net.Http.Functional.Tests
         private sealed class DerivedHttpHeaders : HttpHeaders { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_RequestWithSimpleHeader_ResponseReferencesUnmodifiedRequestHeaders()
         {
             const string HeaderKey = "some-header-123", HeaderValue = "this is the expected header value";
@@ -71,6 +71,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_LargeHeaders_CorrectlyWritten()
         {
             if (UseVersion == HttpVersion.Version30)
@@ -106,6 +107,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_DefaultHeaders_CorrectlyWritten()
         {
             const string Version = "2017-04-17";
@@ -157,7 +159,8 @@ namespace System.Net.Http.Functional.Tests
                     // Client should abort at some point so this is going to throw.
                     HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK).ConfigureAwait(false);
                 }
-                catch (Exception) { };
+                catch (Exception) { }
+                ;
             });
         }
 
@@ -167,6 +170,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Accept-CharSet", "text/plain, text/json", false)] // invalid format for header but added with TryAddWithoutValidation
         [InlineData("Content-Location", "", false)] // invalid format for header but added with TryAddWithoutValidation
         [InlineData("Max-Forwards", "NotAnInteger", false)] // invalid format for header but added with TryAddWithoutValidation
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_SpecialHeaderKeyOrValue_Success(string key, string value, bool parsable)
         {
             if (PlatformDetection.IsBrowser && (key == "Content-Location" || key == "Date" || key == "Accept-CharSet"))
@@ -349,6 +353,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_GetWithValidHostHeader_Success(bool withPort)
         {
             if (UseVersion == HttpVersion.Version30)
@@ -589,6 +594,60 @@ namespace System.Net.Http.Functional.Tests
                     }
                 });
             });
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [InlineData(false, "test\nxwow\nmore\n", false)]
+        [InlineData(false, "test\rwow\rmore\r\n", false)]
+        [InlineData(true, "one\0two\0three\0", false)]
+        [InlineData(false, "test\nxwow\nmore\n", true)]
+        [InlineData(false, "test\rwow\rmore\r\n", true)]
+        [InlineData(true, "one\0two\0three\0", true)]
+        public async Task SendAsync_InvalidCharactersInResponseHeader_ReplacedWithSpaces(bool testHttp11, string value, bool testTrailers)
+        {
+            if (!testHttp11 && UseVersion == HttpVersion.Version11)
+            {
+                throw new SkipTestException("This case is not valid for HTTP 1.1");
+            }
+
+            string expectedValue = value.Replace('\r', ' ').Replace('\n', ' ').Replace('\0', ' ');
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient client = CreateHttpClient();
+
+                    using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri)
+                    {
+                        Version = UseVersion,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+
+                    using HttpResponseMessage response = await client.SendAsync(request);
+                    HttpResponseHeaders headerCollection = testTrailers ? response.TrailingHeaders : response.Headers;
+                    Assert.Equal(expectedValue, headerCollection.GetValues("test").Single());
+                },
+                async server =>
+                {
+                    List<HttpHeaderData>? headers = testTrailers ? null : [new HttpHeaderData("test", value)];
+                    List<HttpHeaderData>? trailers = testTrailers ? [new HttpHeaderData("test", value)] : null;
+                    string content = "hello";
+
+                    if (testTrailers && UseVersion == HttpVersion.Version11)
+                    {
+                        headers = [new HttpHeaderData("Transfer-Encoding", "chunked")];
+                        content = $"{content.Length:X}\r\n{content}\r\n";
+                    }
+
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestDataAsync();
+                        await connection.SendResponseAsync(headers: headers, content: content, isFinal: trailers is null);
+                        if (trailers is { })
+                        {
+                            await connection.SendResponseHeadersAsync(headers: trailers, isTrailingHeader: true);
+                        }
+                    });
+                });
         }
     }
 }

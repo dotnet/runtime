@@ -446,6 +446,8 @@ namespace System.Threading.Tests
                 // Typical order of execution: 7
 
                 writeWaiterThread.Join();
+                readerThreads[0].Join();
+                readerThreads[1].Join();
             }
         }
 

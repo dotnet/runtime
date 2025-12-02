@@ -9,6 +9,7 @@
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 // Copyright (C) 2004-2005, 2008 Novell, Inc (http://www.novell.com)
 
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Net;
@@ -291,8 +292,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(v1.CheckSignature());
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public void AsymmetricDSASignature()
         {
             SignedXml signedXml = MSDNSample();
@@ -391,8 +391,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
         // Using empty constructor
         // The two other constructors don't seems to apply in verifying signatures
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public void AsymmetricDSAVerify()
         {
             string value = "<Signature xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><SignedInfo><CanonicalizationMethod Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /><SignatureMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#dsa-sha1\" /><Reference URI=\"#MyObjectId\"><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>/Vvq6sXEVbtZC8GwNtLQnGOy/VI=</DigestValue></Reference></SignedInfo><SignatureValue>BYz/qRGjGsN1yMFPxWa3awUZm1y4I/IxOQroMxkOteRGgk1HIwhRYw==</SignatureValue><KeyInfo><KeyValue xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><DSAKeyValue><P>iglVaZ+LsSL8Y0aDXmFMBwva3xHqIypr3l/LtqBH9ziV2Sh1M4JVasAiKqytWIWt/s/Uk8Ckf2tO2Ww1vsNi1NL+Kg9T7FE52sn380/rF0miwGkZeidzm74OWhykb3J+wCTXaIwOzAWI1yN7FoeoN7wzF12jjlSXAXeqPMlViqk=</P><Q>u4sowiJMHilNRojtdmIuQY2YnB8=</Q><G>SdnN7d+wn1n+HH4Hr8MIryIRYgcXdbZ5TH7jAnuWc1koqRc1AZfcYAZ6RDf+orx6Lzn055FTFiN+1NHQfGUtXJCWW0zz0FVV1NJux7WRj8vGTldjJ5ef0oCenkpwDjcIxWsZgVobve4GPoyN1sAc1scnkJB59oupibklmF4y72A=</G><Y>XejzS8Z51yfl0zbYnxSYYbHqreSLjNCoGPB/KjM1TOyV5sMjz0StKtGrFWryTWc7EgvFY7kUth4e04VKf9HbK8z/FifHTXj8+Tszbjzw8GfInnBwLN+vJgbpnjtypmiI5Bm2nLiRbfkdAHP+OrKtr/EauM9GQfYuaxm3/Vj8B84=</Y><J>vGwGg9wqwwWP9xsoPoXu6kHArJtadiNKe9azBiUx5Ob883gd5wlKfEcGuKkBmBySGbgwxyOsIBovd9Kk48hF01ymfQzAAuHR0EdJECSsTsTTKVTLQNBU32O+PRbLYpv4E8kt6rNL83JLJCBY</J><Seed>sqzn8J6fd2gtEyq6YOqiUSHgPE8=</Seed><PgenCounter>sQ==</PgenCounter></DSAKeyValue></KeyValue></KeyInfo><Object Id=\"MyObjectId\"><MyElement xmlns=\"samples\">This is some text</MyElement></Object></Signature>";
@@ -542,8 +541,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Throws<CryptographicException>(() => signedXml.ComputeSignature());
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public void ComputeSignatureMissingReferencedObject()
         {
             XmlDocument doc = new XmlDocument();
@@ -1672,7 +1670,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
                     try
                     {
-#if NETCOREAPP
+#if NET
                         socket = await listener.AcceptSocketAsync(cancellationToken);
 #else
                         socket = await listener.AcceptSocketAsync();
@@ -1992,6 +1990,46 @@ namespace System.Security.Cryptography.Xml.Tests
             SignedXml subject = CreateSubjectForMultipleEnvelopedSignatures(tampered, signatureParent);
 
             Assert.False(subject.CheckSignature());
+        }
+
+        public static object[][] EnvelopedSignatureWithRootXpointerReference = new object[][]
+        {
+            new object[] { true,  """<?xml version="1.0" encoding="UTF-8"?><hello><world>Hi</world><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#WithComments" /><SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" /><Reference URI="#xpointer(/)"><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#WithComments" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256" /><DigestValue>SVaCE5w9iLXTVYTKP1t/yjjmPXvWovMYpgljGgpgz2Y=</DigestValue></Reference></SignedInfo><SignatureValue>dqcBmS1ZvDJNhmCEgobpAb+A2XaiuB69dfGIhisZvqoxaWqAqv/0w49jp38+usJ5t3wcq3aMC631QE8iln+lHWrarojDMDWLa00isv3oE3q9UgOIV9e6MUSoRTTvQkmlK/LSYV9T/SKx6h03vLLcIkUMXaTkC/n2kthlJTGkLbU=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>t6qV1iTlkCPoaIeOTvnDczQv5pytUxMoyNXws5vaMQYxfJMKos47dvmiLtfWUDLYXFX3Yf/JMC14plJw2JA5jLrlHLnZj/vCjRtXckmWW/wGYewXUqrgR1CytStUeQKj9mNsi76erukua10UhzIrWG+H6YQ/qS4AMMJZU6jBvO0=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo></Signature></hello>""" },
+            new object[] { false, """<?xml version="1.0" encoding="UTF-8"?><hello>Tempered world<Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#WithComments" /><SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" /><Reference URI="#xpointer(/)"><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#WithComments" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256" /><DigestValue>SVaCE5w9iLXTVYTKP1t/yjjmPXvWovMYpgljGgpgz2Y=</DigestValue></Reference></SignedInfo><SignatureValue>dqcBmS1ZvDJNhmCEgobpAb+A2XaiuB69dfGIhisZvqoxaWqAqv/0w49jp38+usJ5t3wcq3aMC631QE8iln+lHWrarojDMDWLa00isv3oE3q9UgOIV9e6MUSoRTTvQkmlK/LSYV9T/SKx6h03vLLcIkUMXaTkC/n2kthlJTGkLbU=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>t6qV1iTlkCPoaIeOTvnDczQv5pytUxMoyNXws5vaMQYxfJMKos47dvmiLtfWUDLYXFX3Yf/JMC14plJw2JA5jLrlHLnZj/vCjRtXckmWW/wGYewXUqrgR1CytStUeQKj9mNsi76erukua10UhzIrWG+H6YQ/qS4AMMJZU6jBvO0=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo></Signature></hello>""" },
+        };
+
+        [Theory]
+        [MemberData(nameof(EnvelopedSignatureWithRootXpointerReference))]
+        public void CheckSignatureHandlesEnvelopedSignatureWithRootXpointerReference(bool isValid, string xml)
+        {
+            XmlDocument xmlDoc = new ();
+            xmlDoc.LoadXml(xml);
+            SignedXml signedXml = new (xmlDoc);
+            signedXml.LoadXml(xmlDoc.GetElementsByTagName("Signature", SignedXml.XmlDsigNamespaceUrl)[0] as XmlElement);
+
+            Assert.Equal(isValid, signedXml.CheckSignature());
+        }
+
+
+        public static object[][] EnvelopedSignatureWithEmptyReference = new object[][]
+        {
+            new object[] { true,  """<?xml version="1.0" encoding="UTF-8"?><hello><world>Hi</world><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#WithComments" /><SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" /><Reference><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256" /><DigestValue>SVaCE5w9iLXTVYTKP1t/yjjmPXvWovMYpgljGgpgz2Y=</DigestValue></Reference></SignedInfo><SignatureValue>CiB9jgIS7+Wq+lpyzCGsBZQcQ2BxqQuEU9VCvb3Li5jMtjwRV1bMO+4Wfnb4VWhEtEUq6NdiVGXhC1xvtVLnnLDX7CD/jG6NvM1Yd0/rf0UUceBhzYLFE9HLsopsBmmm3t8FO6ZtRr1QqKM0XDaQleGK9vYd2m2Jq8OR3r/w4OY=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>vcM1wQVmLB9DwdnAym8l8nw63/HlTVzgTDhIwNzWPhsPE/qr2wlK4TEQ3rjU+RAdNytfFNCnuuh75ZVMjAWCV9h6VDlp0DOvBhb6GenhymtTAdJJKzBXKJP6mNPga9cPOP31IZ36Ui00G3fjBBPrHa7nStludgL9Wi0dBU28DjU=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo></Signature></hello>""" },
+            new object[] { false, """<?xml version="1.0" encoding="UTF-8"?><hello><WORLD>HI</WORLD><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#WithComments" /><SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256" /><Reference><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256" /><DigestValue>SVaCE5w9iLXTVYTKP1t/yjjmPXvWovMYpgljGgpgz2Y=</DigestValue></Reference></SignedInfo><SignatureValue>CiB9jgIS7+Wq+lpyzCGsBZQcQ2BxqQuEU9VCvb3Li5jMtjwRV1bMO+4Wfnb4VWhEtEUq6NdiVGXhC1xvtVLnnLDX7CD/jG6NvM1Yd0/rf0UUceBhzYLFE9HLsopsBmmm3t8FO6ZtRr1QqKM0XDaQleGK9vYd2m2Jq8OR3r/w4OY=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>vcM1wQVmLB9DwdnAym8l8nw63/HlTVzgTDhIwNzWPhsPE/qr2wlK4TEQ3rjU+RAdNytfFNCnuuh75ZVMjAWCV9h6VDlp0DOvBhb6GenhymtTAdJJKzBXKJP6mNPga9cPOP31IZ36Ui00G3fjBBPrHa7nStludgL9Wi0dBU28DjU=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo></Signature></hello>""" },
+        };
+
+        [Theory]
+        [MemberData(nameof(EnvelopedSignatureWithEmptyReference))]
+        public void CheckSignatureHandlesEnvelopedSignatureWithEmptyReference(bool isValid, string xml)
+        {
+            XmlDocument xmlDoc = new ();
+            xmlDoc.LoadXml(xml);
+            SignedXml signedXml = new (xmlDoc);
+            signedXml.LoadXml(xmlDoc.GetElementsByTagName("Signature", SignedXml.XmlDsigNamespaceUrl)[0] as XmlElement);
+
+            // without this, CheckSignature throws
+            ((Reference)signedXml.SignedInfo.References[0]).TransformChain[0].LoadInput(xmlDoc);
+
+            Assert.Equal(isValid, signedXml.CheckSignature());
         }
     }
 }

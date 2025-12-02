@@ -271,7 +271,7 @@ namespace System.Threading
                 // there should be no race conditions accessing it, as concurrent consumption is invalid. If there
                 // is invalid usage, with GetResult used erroneously/concurrently, the worst that happens is cancellation
                 // may not take effect for the in-flight operation, with its registration erroneously disposed.
-                // Note we use Dispose rather than Unregister (which wouldn't risk deadlock) so that we know that thecancellation callback associated with this operation
+                // Note we use Dispose rather than Unregister (which wouldn't risk deadlock) so that we know that the cancellation callback associated with this operation
                 // won't potentially still fire after we've completed this GetResult and a new operation
                 // has potentially started.
                 _ctr.Dispose();

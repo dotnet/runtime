@@ -17,7 +17,7 @@ namespace System.Reflection.TypeLoading
         public sealed override Module? GetModule(string name) => GetRoModule(name);
         public sealed override Module[] GetModules(bool getResourceModules) => ComputeRoModules(getResourceModules).CloneArray<Module>();
 
-#if NETCOREAPP
+#if NET
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
 #endif
         public sealed override FileStream? GetFile(string name)
@@ -28,7 +28,7 @@ namespace System.Reflection.TypeLoading
             return new FileStream(m.FullyQualifiedName, FileMode.Open, FileAccess.Read, FileShare.Read);
         }
 
-#if NETCOREAPP
+#if NET
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
 #endif
         public sealed override FileStream[] GetFiles(bool getResourceModules)
@@ -61,8 +61,7 @@ namespace System.Reflection.TypeLoading
 
         internal RoModule? GetRoModule(string name)
         {
-            if (name is null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             if (!TryGetAssemblyFileInfo(name, includeManifestModule: true, out AssemblyFileInfo afi))
                 return null;
@@ -100,10 +99,9 @@ namespace System.Reflection.TypeLoading
         public sealed override Module LoadModule(string moduleName, byte[]? rawModule, byte[]? rawSymbolStore)
 #pragma warning restore CS8995
         {
-            if (moduleName is null)
-                throw new ArgumentNullException(nameof(moduleName));
-            if (rawModule is null)
-                throw new ArgumentNullException(nameof(rawModule));
+            ArgumentNullException.ThrowIfNull(moduleName);
+            ArgumentNullException.ThrowIfNull(rawModule);
+
             if (!TryGetAssemblyFileInfo(moduleName, includeManifestModule: false, out AssemblyFileInfo afi))
                 throw new ArgumentException(SR.Format(SR.SpecifiedFileNameInvalid, moduleName)); // Name not in manifest.
 

@@ -1,9 +1,9 @@
 # System.Collections
 This is the assembly that generally surfaces generic collections such as [`List<T>`](https://learn.microsoft.com/dotnet/api/system.collections.generic.list-1) and [`PriorityQueue<TElement, TPriority>`](https://learn.microsoft.com/dotnet/api/system.collections.generic.priorityqueue-2).
 
-Generic collection interfaces that are used by lower-level parts of the framework, such as [`IList<T>`](https://learn.microsoft.com/dotnet/api/system.collections.generic.ilist-1) and [`IAsyncEnumerable<T>`](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1) are surfaced by the `System.Runtime` assembly. The implementations for these collections live in [System.Private.Corelib](../System.Private.Corelib/src/System/Collections/Generic).
+Generic collection interfaces that are used by lower-level parts of the framework, such as [`IList<T>`](https://learn.microsoft.com/dotnet/api/system.collections.generic.ilist-1) and [`IAsyncEnumerable<T>`](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1) are surfaced by the `System.Runtime` assembly. The implementations for these collections live in [System.Private.CoreLib](../System.Private.CoreLib/src/System/Collections/Generic).
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/collections.
+Documentation can be found at https://learn.microsoft.com/dotnet/csharp/programming-guide/concepts/collections.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)

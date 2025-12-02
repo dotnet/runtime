@@ -51,6 +51,23 @@ namespace System.IO.Hashing
             Reset();
         }
 
+        /// <summary>Initializes a new instance of the <see cref="XxHash64"/> class using the state from another instance.</summary>
+        private XxHash64(ulong seed, State state, byte[]? holdback, long length) :
+            base(HashSize)
+        {
+            _seed = seed;
+            _state = state;
+            if (((int)length & 0x1F) > 0)
+            {
+                _holdback = (byte[]?)holdback?.Clone();
+            }
+            _length = length;
+        }
+
+        /// <summary>Returns a clone of the current instance, with a copy of the current instance's internal state.</summary>
+        /// <returns>A new instance that will produce the same sequence of values as the current instance.</returns>
+        public XxHash64 Clone() => new(_seed, _state, _holdback, _length);
+
         /// <summary>
         ///   Resets the hash computation to the initial state.
         /// </summary>
@@ -144,10 +161,7 @@ namespace System.IO.Hashing
         /// </exception>
         public static byte[] Hash(byte[] source)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             return Hash(new ReadOnlySpan<byte>(source));
         }
@@ -163,10 +177,7 @@ namespace System.IO.Hashing
         /// </exception>
         public static byte[] Hash(byte[] source, long seed)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             return Hash(new ReadOnlySpan<byte>(source), seed);
         }
@@ -196,7 +207,7 @@ namespace System.IO.Hashing
         /// <param name="seed">The seed value for this hash computation. The default is zero.</param>
         /// <returns>
         ///   <see langword="true"/> if <paramref name="destination"/> is long enough to receive
-        ///   the computed hash value (4 bytes); otherwise, <see langword="false"/>.
+        ///   the computed hash value (8 bytes); otherwise, <see langword="false"/>.
         /// </returns>
         public static bool TryHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, long seed = 0)
         {

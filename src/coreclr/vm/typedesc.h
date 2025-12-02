@@ -32,10 +32,10 @@ class TypeDesc
 {
 public:
 #ifndef DACCESS_COMPILE
-    TypeDesc(CorElementType type) {
+    TypeDesc(CorElementType type, bool isCollectible) {
         LIMITED_METHOD_CONTRACT;
 
-        m_typeAndFlags = type;
+        _typeAndFlags = type | (isCollectible ? enum_flag_IsCollectible : 0);
     }
 #endif
 
@@ -44,7 +44,7 @@ public:
     inline CorElementType GetInternalCorElementType() {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (CorElementType) (m_typeAndFlags & 0xff);
+        return (CorElementType) (_typeAndFlags & 0xff);
     }
 
     // Get the exact parent (superclass) of this type
@@ -112,36 +112,29 @@ public:
     // Is actually ParamTypeDesc (BYREF, PTR)
     BOOL HasTypeParam();
 
-    void DoRestoreTypeKey();
-    void Restore();
-    BOOL IsRestored();
-    void SetIsRestored();
-
-    inline BOOL HasUnrestoredTypeKey() const
+    bool IsCollectible() const
     {
         LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-
-        return (m_typeAndFlags & TypeDesc::enum_flag_UnrestoredTypeKey) != 0;
+        return (_typeAndFlags & TypeDesc::enum_flag_IsCollectible) != 0;
     }
 
-    BOOL HasTypeEquivalence() const
+    bool HasTypeEquivalence() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_typeAndFlags & TypeDesc::enum_flag_HasTypeEquivalence) != 0;
+        return (_typeAndFlags & TypeDesc::enum_flag_HasTypeEquivalence) != 0;
     }
 
-    BOOL IsFullyLoaded() const
+    bool IsFullyLoaded() const
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (m_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded) == 0;
+        return (_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded) == 0;
     }
 
     VOID SetIsFullyLoaded()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedAnd((LONG*)&m_typeAndFlags, ~TypeDesc::enum_flag_IsNotFullyLoaded);
+        InterlockedAnd((LONG*)&_typeAndFlags, ~TypeDesc::enum_flag_IsNotFullyLoaded);
     }
 
     ClassLoadLevel GetLoadLevel();
@@ -164,15 +157,6 @@ public:
     Instantiation GetClassOrArrayInstantiation();    // only meaningful for ParamTypeDesc; see above
     TypeHandle GetRootTypeParam();                   // only allowed for ParamTypeDesc, helper method used to avoid recursion
 
-    // Note that if the TypeDesc, e.g. a function pointer type, involves parts that may
-    // come from either a SharedDomain or an AppDomain then special rules apply to GetDomain.
-    // It returns the SharedDomain if all the
-    // constituent parts of the type are SharedDomain (i.e. domain-neutral),
-    // and returns an AppDomain if any of the parts are from an AppDomain,
-    // i.e. are domain-bound.  If any of the parts are domain-bound
-    // then they will all belong to the same domain.
-    PTR_BaseDomain GetDomain();
-
     PTR_LoaderAllocator GetLoaderAllocator()
     {
         SUPPORTS_DAC;
@@ -184,14 +168,33 @@ public:
 
     BOOL ContainsGenericVariables(BOOL methodOnly);
 
+#ifndef DACCESS_COMPILE
+    OBJECTREF GetManagedClassObject();
+
+    OBJECTREF GetManagedClassObjectIfExists() const
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        const RUNTIMETYPEHANDLE handle = _exposedClassObject;
+        OBJECTREF retVal = ObjectToOBJECTREF(handle);
+        return retVal;
+    }
+#endif
+
  protected:
     // See methodtable.h for details of the flags with the same name there
     enum
     {
-        // unused                        = 0x00000100,
+        enum_flag_IsCollectible          = 0x00000100,
         // unused                        = 0x00000200,
-        enum_flag_Unrestored             = 0x00000400,
-        enum_flag_UnrestoredTypeKey      = 0x00000800,
+        // unused                        = 0x00000400,
+        // unused                        = 0x00000800,
         enum_flag_IsNotFullyLoaded       = 0x00001000,
         enum_flag_DependenciesLoaded     = 0x00002000,
         enum_flag_HasTypeEquivalence     = 0x00004000
@@ -202,9 +205,18 @@ public:
     //
     // The remaining bits are available for flags
     //
-    DWORD m_typeAndFlags;
+    DWORD _typeAndFlags;
+
+    // internal RuntimeType object handle
+    RUNTIMETYPEHANDLE _exposedClassObject;
+    friend struct ::cdac_data<TypeDesc>;
 };
 
+template<>
+struct cdac_data<TypeDesc>
+{
+    static constexpr size_t TypeAndFlags = offsetof(TypeDesc, _typeAndFlags);
+};
 
 /*************************************************************************/
 // This variant is used for parameterized types that have exactly one argument
@@ -221,17 +233,17 @@ class ParamTypeDesc : public TypeDesc {
 public:
 #ifndef DACCESS_COMPILE
     ParamTypeDesc(CorElementType type, TypeHandle arg)
-        : TypeDesc(type), m_Arg(arg), m_hExposedClassObject(0) {
+        : TypeDesc(type, arg.IsCollectible()), m_Arg(arg) {
 
         LIMITED_METHOD_CONTRACT;
 
         // ParamTypeDescs start out life not fully loaded
-        m_typeAndFlags |= TypeDesc::enum_flag_IsNotFullyLoaded;
+        _typeAndFlags |= TypeDesc::enum_flag_IsNotFullyLoaded;
 
         // Param type descs can only be equivalent if their constituent bits are equivalent.
         if (arg.HasTypeEquivalence())
         {
-            m_typeAndFlags |= TypeDesc::enum_flag_HasTypeEquivalence;
+            _typeAndFlags |= TypeDesc::enum_flag_HasTypeEquivalence;
         }
 
         INDEBUGIMPL(Verify());
@@ -239,46 +251,6 @@ public:
 #endif
 
     INDEBUGIMPL(BOOL Verify();)
-
-#ifndef DACCESS_COMPILE
-    OBJECTREF GetManagedClassObject();
-
-    OBJECTREF GetManagedClassObjectIfExists()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        const RUNTIMETYPEHANDLE handle = m_hExposedClassObject;
-
-        OBJECTREF retVal;
-        if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&
-            !GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
-        {
-            return NULL;
-        }
-
-        COMPILER_ASSUME(retVal != NULL);
-        return retVal;
-    }
-
-    OBJECTREF GetManagedClassObjectFast()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRef;
-        if (!TypeHandle::GetManagedClassObjectFromHandleFast(m_hExposedClassObject, &objRef))
-        {
-            return FALSE;
-        }
-        COMPILER_ASSUME(objRef != NULL);
-        return objRef;
-    }
-#endif
 
     TypeHandle GetModifiedType()
     {
@@ -295,19 +267,28 @@ public:
 
     friend class StubLinkerCPU;
 
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     friend class ArrayOpLinker;
-#endif
 protected:
 
-    // the m_typeAndFlags field in TypeDesc tell what kind of parameterized type we have
+    // the _typeAndFlags field in TypeDesc tell what kind of parameterized type we have
 
     // The type that is being modified
-    TypeHandle        m_Arg; 
+    TypeHandle        m_Arg;
+    friend struct ::cdac_data<ParamTypeDesc>;
+};
 
-    // Non-unloadable context: internal RuntimeType object handle
-    // Unloadable context: slot index in LoaderAllocator's pinned table
-    RUNTIMETYPEHANDLE m_hExposedClassObject;
+template<>
+struct cdac_data<ParamTypeDesc>
+{
+    static constexpr size_t TypeArg = offsetof(ParamTypeDesc, m_Arg);
+};
+
+enum class WhichConstraintsToLoad
+{
+    All = 0,
+    TypeOrMethodVarsAndNonInterfacesOnly = 1,
+    Invalid = 2,
+    None = 3,
 };
 
 /*************************************************************************/
@@ -318,12 +299,14 @@ protected:
 
 class TypeVarTypeDesc : public TypeDesc
 {
+    static const DWORD WhichConstraintsLoadedMask = 0xC0000000;
+    static const DWORD WhichConstraintsLoadedShift = 30;
 public:
 
 #ifndef DACCESS_COMPILE
 
     TypeVarTypeDesc(PTR_Module pModule, mdToken typeOrMethodDef, unsigned int index, mdGenericParam token) :
-        TypeDesc(TypeFromToken(typeOrMethodDef) == mdtTypeDef ? ELEMENT_TYPE_VAR : ELEMENT_TYPE_MVAR)
+        TypeDesc(TypeFromToken(typeOrMethodDef) == mdtTypeDef ? ELEMENT_TYPE_VAR : ELEMENT_TYPE_MVAR, pModule->IsCollectible())
     {
         CONTRACTL
         {
@@ -340,9 +323,8 @@ public:
         m_typeOrMethodDef = typeOrMethodDef;
         m_token = token;
         m_index = index;
-        m_hExposedClassObject = 0;
         m_constraints = NULL;
-        m_numConstraints = (DWORD)-1;
+        m_numConstraintsWithFlags = (DWORD)-1;
     }
 #endif // #ifndef DACCESS_COMPILE
 
@@ -378,59 +360,20 @@ public:
         return m_typeOrMethodDef;
     }
 
-#ifndef DACCESS_COMPILE
-    OBJECTREF GetManagedClassObject();
-    OBJECTREF GetManagedClassObjectIfExists()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        const RUNTIMETYPEHANDLE handle = m_hExposedClassObject;
-
-        OBJECTREF retVal;
-        if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&
-            !GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
-        {
-            return NULL;
-        }
-
-        COMPILER_ASSUME(retVal != NULL);
-        return retVal;
-    }
-
-    OBJECTREF GetManagedClassObjectFast()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRef;
-        if (!TypeHandle::GetManagedClassObjectFromHandleFast(m_hExposedClassObject, &objRef))
-        {
-            return FALSE;
-        }
-        COMPILER_ASSUME(objRef != NULL);
-        return objRef;
-    }
-#endif
-
     // Load the owning type. Note that the result is not guaranteed to be full loaded
     MethodDesc * LoadOwnerMethod();
     TypeHandle LoadOwnerType();
 
-    BOOL ConstraintsLoaded() { LIMITED_METHOD_CONTRACT; return m_numConstraints != (DWORD)-1; }
+    BOOL ConstraintsLoaded(WhichConstraintsToLoad which) { LIMITED_METHOD_CONTRACT; if (((m_numConstraintsWithFlags & WhichConstraintsLoadedMask) >> WhichConstraintsLoadedShift) <= (DWORD)which) return TRUE; return FALSE; }
 
     // Return NULL if no constraints are specified
     // Return an array of type handles if constraints are specified,
     // with the number of constraints returned in pNumConstraints
-    TypeHandle* GetCachedConstraints(DWORD *pNumConstraints);
-    TypeHandle* GetConstraints(DWORD *pNumConstraints, ClassLoadLevel level = CLASS_LOADED);
+    TypeHandle* GetCachedConstraints(DWORD *pNumConstraints, WhichConstraintsToLoad which);
+    TypeHandle* GetConstraints(DWORD *pNumConstraints, ClassLoadLevel level, WhichConstraintsToLoad which);
 
     // Load the constraints if not already loaded
-    void LoadConstraints(ClassLoadLevel level = CLASS_LOADED);
+    void LoadConstraints(ClassLoadLevel level, WhichConstraintsToLoad which);
 
     // Check the constraints on this type parameter hold in the supplied context for the supplied type
     BOOL SatisfiesConstraints(SigTypeContext *pTypeContext, TypeHandle thArg,
@@ -458,18 +401,23 @@ protected:
     mdToken m_typeOrMethodDef;
 
     // Constraints, determined on first call to GetConstraints
-    Volatile<DWORD> m_numConstraints;    // -1 until number has been determined
+    Volatile<DWORD> m_numConstraintsWithFlags;    // -1 until number has been determined. Bit 31 and 30 bits are WhichConstraintsToLoad
     PTR_TypeHandle m_constraints;
-  
-    // Non-unloadable context: internal RuntimeType object handle
-    // Unloadable context: slot index in LoaderAllocator's pinned table
-    RUNTIMETYPEHANDLE m_hExposedClassObject;
 
     // token for GenericParam entry
     mdGenericParam    m_token;
 
     // index within declaring type or method, numbered from zero
     unsigned int m_index;
+
+    friend struct ::cdac_data<TypeVarTypeDesc>;
+};
+
+template<>
+struct cdac_data<TypeVarTypeDesc>
+{
+    static constexpr size_t Module = offsetof(TypeVarTypeDesc, m_pModule);
+    static constexpr size_t Token = offsetof(TypeVarTypeDesc, m_token);
 };
 
 /*************************************************************************/
@@ -482,8 +430,8 @@ class FnPtrTypeDesc : public TypeDesc
 
 public:
 #ifndef DACCESS_COMPILE
-    FnPtrTypeDesc(BYTE callConv, DWORD numArgs, TypeHandle * retAndArgTypes)
-        : TypeDesc(ELEMENT_TYPE_FNPTR), m_NumArgs(numArgs), m_CallConv(callConv)
+    FnPtrTypeDesc(BYTE callConv, DWORD numArgs, TypeHandle * retAndArgTypes, PTR_Module pLoaderModule)
+        : TypeDesc(ELEMENT_TYPE_FNPTR, pLoaderModule->IsCollectible()), m_pLoaderModule(pLoaderModule), m_NumArgs(numArgs), m_CallConv(callConv)
     {
         LIMITED_METHOD_CONTRACT;
         for (DWORD i = 0; i <= numArgs; i++)
@@ -536,6 +484,8 @@ public:
     BOOL IsExternallyVisible() const;
 #endif //DACCESS_COMPILE
 
+    PTR_Module GetLoaderModule() const { LIMITED_METHOD_DAC_CONTRACT; return m_pLoaderModule; }
+
 #ifdef DACCESS_COMPILE
     static ULONG32 DacSize(TADDR addr)
     {
@@ -547,50 +497,9 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif //DACCESS_COMPILE
 
-#ifndef DACCESS_COMPILE
-    OBJECTREF GetManagedClassObject();
-
-    OBJECTREF GetManagedClassObjectIfExists()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        const RUNTIMETYPEHANDLE handle = m_hExposedClassObject;
-
-        OBJECTREF retVal;
-        if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&
-            !GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
-        {
-            return NULL;
-        }
-
-        COMPILER_ASSUME(retVal != NULL);
-        return retVal;
-    }
-
-    OBJECTREF GetManagedClassObjectFast()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRef;
-        if (!TypeHandle::GetManagedClassObjectFromHandleFast(m_hExposedClassObject, &objRef))
-        {
-            return FALSE;
-        }
-        COMPILER_ASSUME(objRef != NULL);
-        return objRef;
-    }
-#endif
-
 protected:
-    // Non-unloadable context: internal RuntimeType object handle
-    // Unloadable context: slot index in LoaderAllocator's pinned table
-    RUNTIMETYPEHANDLE m_hExposedClassObject;
+    // LoaderModule of the TypeDesc
+    PTR_Module m_pLoaderModule;
 
     // Number of arguments
     DWORD m_NumArgs;
@@ -600,6 +509,17 @@ protected:
 
     // Return type first, then argument types
     TypeHandle m_RetAndArgTypes[1];
+
+    friend struct ::cdac_data<FnPtrTypeDesc>;
 }; // class FnPtrTypeDesc
+
+template<>
+struct cdac_data<FnPtrTypeDesc>
+{
+    static constexpr size_t NumArgs = offsetof(FnPtrTypeDesc, m_NumArgs);
+    static constexpr size_t RetAndArgTypes = offsetof(FnPtrTypeDesc, m_RetAndArgTypes);
+    static constexpr size_t CallConv = offsetof(FnPtrTypeDesc, m_CallConv);
+    static constexpr size_t LoaderModule = offsetof(FnPtrTypeDesc, m_pLoaderModule);
+};
 
 #endif // TYPEDESC_H

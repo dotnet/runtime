@@ -38,7 +38,7 @@ namespace BoxTest_instance_cs
             return N;
         }
 
-        public Test(object num)
+        private Test(object num)
         {
             _num = (float)(double)num;
         }
@@ -51,6 +51,7 @@ namespace BoxTest_instance_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static void TestEntryPoint()
         {
             Test test = new Test(20.0d);

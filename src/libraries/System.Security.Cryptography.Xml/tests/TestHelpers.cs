@@ -229,7 +229,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             DSA dsa = DSA.Create();
 
-#if NETCOREAPP
+#if NET
             if (OperatingSystem.IsMacOS())
             {
                 // macOS cannot generate DSA keys, so for this platform we will use a fixed key.

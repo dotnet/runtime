@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <BuildDebPackage>false</BuildDebPackage>
+    <BuildRpmPackage>true</BuildRpmPackage>
+    <PackageTargetOS>azl.3</PackageTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <LinuxPackageDependency Include="openssl-libs;icu;krb5;ca-certificates" />
+  </ItemGroup>
+</Project>

@@ -1,13 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
-
-  <ItemGroup>
-    <RdXmlFile Include="default.rd.xml" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\src\Microsoft.Extensions.FileSystemGlobbing.csproj" />

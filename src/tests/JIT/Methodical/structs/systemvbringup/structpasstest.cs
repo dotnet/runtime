@@ -8,6 +8,7 @@ namespace structinreg
     public class Program
     {
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             try

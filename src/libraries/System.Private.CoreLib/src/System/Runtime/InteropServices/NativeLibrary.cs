@@ -225,7 +225,7 @@ namespace System.Runtime.InteropServices
         /// <param name="libraryName">The native library to load.</param>
         /// <param name="assembly">The assembly trying load the native library.</param>
         /// <param name="hasDllImportSearchPathFlags">If the pInvoke has DefaultDllImportSearchPathAttribute.</param>
-        /// <param name="dllImportSearchPathFlags">If hasdllImportSearchPathFlags is true, the flags in
+        /// <param name="dllImportSearchPathFlags">If <paramref name="hasDllImportSearchPathFlags"/> is true, the flags in
         ///                                       DefaultDllImportSearchPathAttribute; meaningless otherwise </param>
         /// <returns>The handle for the loaded library on success. Null on failure.</returns>
         internal static IntPtr LoadLibraryCallbackStub(string libraryName, Assembly assembly,
@@ -264,5 +264,28 @@ namespace System.Runtime.InteropServices
             }
             return result;
         }
+
+#if !MONO
+        private static IntPtr LoadFromPath(string libraryName, bool throwOnError)
+        {
+            LoadLibErrorTracker errorTracker = default;
+            IntPtr ret = LoadLibraryHelper(libraryName, LoadWithAlteredSearchPathFlag, ref errorTracker);
+            if (throwOnError && ret == IntPtr.Zero)
+            {
+                errorTracker.Throw(libraryName);
+            }
+
+            return ret;
+        }
+
+        private static unsafe IntPtr GetSymbol(IntPtr handle, string symbolName, bool throwOnError)
+        {
+            IntPtr ret = GetSymbolOrNull(handle, symbolName);
+            if (throwOnError && ret == IntPtr.Zero)
+                throw new EntryPointNotFoundException(SR.Format(SR.Arg_EntryPointNotFoundExceptionParameterizedNoLibrary, symbolName));
+
+            return ret;
+        }
+#endif
     }
 }

@@ -173,10 +173,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static DomainController FindOne(DirectoryContext context)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
@@ -188,30 +185,21 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static DomainController FindOne(DirectoryContext context, string siteName)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
                 throw new ArgumentException(SR.TargetShouldBeDomain, nameof(context));
             }
 
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             return FindOneWithCredentialValidation(context, siteName, 0);
         }
 
         public static DomainController FindOne(DirectoryContext context, LocatorOptions flag)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
@@ -223,30 +211,21 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static DomainController FindOne(DirectoryContext context, string siteName, LocatorOptions flag)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
                 throw new ArgumentException(SR.TargetShouldBeDomain, nameof(context));
             }
 
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             return FindOneWithCredentialValidation(context, siteName, flag);
         }
 
         public static DomainControllerCollection FindAll(DirectoryContext context)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
@@ -261,20 +240,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static DomainControllerCollection FindAll(DirectoryContext context, string siteName)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
             if (context.ContextType != DirectoryContextType.Domain)
             {
                 throw new ArgumentException(SR.TargetShouldBeDomain, nameof(context));
             }
 
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             //  work with copy of the context
             context = new DirectoryContext(context);
@@ -1003,12 +976,12 @@ namespace System.DirectoryServices.ActiveDirectory
             // call DsGetDcName
             errorCode = Locator.DsGetDcNameWrapper(null, domainName, siteName, (long)flag | (long)PrivateLocatorFlags.DirectoryServicesRequired, out domainControllerInfo);
 
-            if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+            if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
             {
                 throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.DCNotFoundInDomain, domainName), typeof(DomainController), null);
             }
             // this can only occur when flag is being explicitly passed (since the flags that we pass internally are valid)
-            if (errorCode == NativeMethods.ERROR_INVALID_FLAGS)
+            if (errorCode == Interop.Errors.ERROR_INVALID_FLAGS)
             {
                 throw new ArgumentException(SR.InvalidFlags, nameof(flag));
             }
@@ -1042,7 +1015,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 DomainControllerInfo domainControllerInfo;
                 int errorCode = Locator.DsGetDcNameWrapper(null, domainName ?? DirectoryContext.GetLoggedOnDomain(), null, (long)PrivateLocatorFlags.DirectoryServicesRequired, out domainControllerInfo);
 
-                if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
+                if (errorCode == Interop.Errors.ERROR_NO_SUCH_DOMAIN)
                 {
                     // return an empty collection
                     return new DomainControllerCollection(dcList);
@@ -1276,7 +1249,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         Marshal.PtrToStructure(currentItem, dsNameResultItem);
 
                         // check if the role owner is this dc
-                        if (dsNameResultItem.status == NativeMethods.DsNameNoError)
+                        if (dsNameResultItem.status == NativeMethods.DS_NAME_NO_ERROR)
                         {
                             if (dsNameResultItem.name!.Equals(NtdsaObjectName))
                             {

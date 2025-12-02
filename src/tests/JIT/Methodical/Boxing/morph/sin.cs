@@ -30,6 +30,7 @@ namespace SinCalc_sin_morph_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             object i;

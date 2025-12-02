@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-haiku;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DisableBitTests.cs" />
+    <Compile Include="..\TestConfiguration.cs" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj" />
+  </ItemGroup>
+  <!--
+      We're testing the BinaryFormatter enablement / disablement switch, so we need to suppress any inherited behavior.
+      See https://github.com/dotnet/runtime/issues/87811 for more details.
+      This is a temporary solution and should be reverted back to the original once the necessary changes are made in
+      shared frameworks and SDK.
+    -->
+  <Target Name="RemoveSerializationRuntimeOption" BeforeTargets="GenerateBuildRuntimeConfigurationFiles">
+    <ItemGroup>
+      <RuntimeHostConfigurationOption Remove="System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -31,6 +31,11 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (UseVersion.Major != 1)
+            {
+                return;
+            }
+
             await Task.Run(async delegate // escape xunit's sync ctx
             {
                 await LoopbackServer.CreateClientAndServerAsync(uri =>

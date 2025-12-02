@@ -37,6 +37,7 @@ namespace Microsoft.Extensions.Hosting
         private HostingEnvironment? _hostingEnvironment;
         private IServiceProvider? _appServices;
         private PhysicalFileProvider? _defaultProvider;
+        private bool _defaultProviderFactoryUsed;
 
         /// <summary>
         /// Initializes a new instance of <see cref="HostBuilder"/>.
@@ -44,10 +45,11 @@ namespace Microsoft.Extensions.Hosting
         public HostBuilder()
         {
             _serviceProviderFactory = new ServiceFactoryAdapter<IServiceCollection>(new DefaultServiceProviderFactory());
+            _defaultProviderFactoryUsed = true;
         }
 
         /// <summary>
-        /// A central location for sharing state between components during the host building process.
+        /// Gets a central location for sharing state between components during the host building process.
         /// </summary>
         public IDictionary<object, object> Properties { get; } = new Dictionary<object, object>();
 
@@ -60,7 +62,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder ConfigureHostConfiguration(Action<IConfigurationBuilder> configureDelegate)
         {
-            ThrowHelper.ThrowIfNull(configureDelegate);
+            ArgumentNullException.ThrowIfNull(configureDelegate);
 
             _configureHostConfigActions.Add(configureDelegate);
             return this;
@@ -76,7 +78,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder ConfigureAppConfiguration(Action<HostBuilderContext, IConfigurationBuilder> configureDelegate)
         {
-            ThrowHelper.ThrowIfNull(configureDelegate);
+            ArgumentNullException.ThrowIfNull(configureDelegate);
 
             _configureAppConfigActions.Add(configureDelegate);
             return this;
@@ -90,7 +92,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder ConfigureServices(Action<HostBuilderContext, IServiceCollection> configureDelegate)
         {
-            ThrowHelper.ThrowIfNull(configureDelegate);
+            ArgumentNullException.ThrowIfNull(configureDelegate);
 
             _configureServicesActions.Add(configureDelegate);
             return this;
@@ -104,9 +106,10 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory) where TContainerBuilder : notnull
         {
-            ThrowHelper.ThrowIfNull(factory);
+            ArgumentNullException.ThrowIfNull(factory);
 
             _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(factory);
+            _defaultProviderFactoryUsed = false;
             return this;
         }
 
@@ -118,9 +121,10 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory) where TContainerBuilder : notnull
         {
-            ThrowHelper.ThrowIfNull(factory);
+            ArgumentNullException.ThrowIfNull(factory);
 
             _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(() => _hostBuilderContext!, factory);
+            _defaultProviderFactoryUsed = false;
             return this;
         }
 
@@ -134,7 +138,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public IHostBuilder ConfigureContainer<TContainerBuilder>(Action<HostBuilderContext, TContainerBuilder> configureDelegate)
         {
-            ThrowHelper.ThrowIfNull(configureDelegate);
+            ArgumentNullException.ThrowIfNull(configureDelegate);
 
             _configureContainerActions.Add(new ConfigureContainerAdapter<TContainerBuilder>(configureDelegate));
             return this;
@@ -143,7 +147,7 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// Run the given actions to initialize the host. This can only be called once.
         /// </summary>
-        /// <returns>An initialized <see cref="IHost"/></returns>
+        /// <returns>An initialized <see cref="IHost"/>.</returns>
         /// <remarks>Adds basic services to the host such as application lifetime, host environment, and logging.</remarks>
         public IHost Build()
         {
@@ -190,11 +194,6 @@ namespace Microsoft.Extensions.Hosting
             return diagnosticListener;
         }
 
-// Remove when https://github.com/dotnet/runtime/pull/78532 is merged and consumed by the used SDK.
-#if NET7_0
-        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
-            Justification = "DiagnosticSource is used here to pass objects in-memory to code using HostFactoryResolver. This won't require creating new generic types.")]
-#endif
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
             Justification = "The values being passed into Write are being consumed by the application already.")]
         private static void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
@@ -278,7 +277,7 @@ namespace Microsoft.Extensions.Hosting
         private void InitializeAppConfiguration()
         {
             IConfigurationBuilder configBuilder = new ConfigurationBuilder()
-                .SetBasePath(_hostingEnvironment!.ContentRootPath)
+                .SetFileProvider(_hostingEnvironment!.ContentRootFileProvider)
                 .AddConfiguration(_hostConfiguration!, shouldDisposeConfiguration: true);
 
             foreach (Action<HostBuilderContext, IConfigurationBuilder> buildAction in _configureAppConfigActions)
@@ -347,6 +346,11 @@ namespace Microsoft.Extensions.Hosting
             foreach (Action<HostBuilderContext, IServiceCollection> configureServicesAction in _configureServicesActions)
             {
                 configureServicesAction(_hostBuilderContext!, services);
+            }
+
+            if (_hostBuilderContext!.HostingEnvironment.IsDevelopment() && _defaultProviderFactoryUsed)
+            {
+                _serviceProviderFactory = new ServiceFactoryAdapter<IServiceCollection>(new DefaultServiceProviderFactory(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true }));
             }
 
             object containerBuilder = _serviceProviderFactory.CreateBuilder(services);

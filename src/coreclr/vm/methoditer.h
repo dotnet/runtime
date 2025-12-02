@@ -56,14 +56,14 @@ class LoadedMethodDescIterator
     BOOL                                    m_fFirstTime;
 
 #ifdef _DEBUG
-    DomainAssembly * dbg_m_pDomainAssembly;
+    Assembly * dbg_m_pAssembly;
 #endif //_DEBUG
 
 public:
     // Iterates next MethodDesc. Updates the holder only if the assembly differs from the previous one.
     // Caller should not release (i.e. change) the holder explicitly between calls, otherwise collectible
     // assembly might be without a reference and get deallocated (even the native part).
-    BOOL Next(CollectibleAssemblyHolder<DomainAssembly *> * pDomainAssemblyHolder);
+    BOOL Next(CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder);
     MethodDesc *Current();
     void Start(AppDomain * pAppDomain,
                Module *pModule,

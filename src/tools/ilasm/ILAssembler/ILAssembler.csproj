@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn);CS3021</NoWarn>
@@ -15,11 +15,5 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Antlr4.Runtime" Version="4.6.6" />
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="$(RepoRoot)/src/tasks/Common/IsExternalInit.cs" />
   </ItemGroup>
 </Project>

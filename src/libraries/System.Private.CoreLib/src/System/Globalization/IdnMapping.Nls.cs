@@ -26,7 +26,7 @@ namespace System.Globalization
 
             // Do the conversion
             const int StackAllocThreshold = 512; // arbitrary limit to switch from stack to heap allocation
-            if (length < StackAllocThreshold)
+            if ((uint)length < StackAllocThreshold)
             {
                 char* output = stackalloc char[length];
                 return NlsGetAsciiCore(unicodeString, unicode, count, flags, output, length);
@@ -73,7 +73,7 @@ namespace System.Globalization
 
             // Do the conversion
             const int StackAllocThreshold = 512; // arbitrary limit to switch from stack to heap allocation
-            if (length < StackAllocThreshold)
+            if ((uint)length < StackAllocThreshold)
             {
                 char* output = stackalloc char[length];
                 return NlsGetUnicodeCore(asciiString, ascii, count, flags, output, length);

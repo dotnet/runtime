@@ -18,8 +18,25 @@ namespace Microsoft.Interop
         public IEnumerable<ComMethodContext> DeclaredMethods => Methods.Where(m => !m.IsInheritedMethod);
 
         /// <summary>
+        /// COM methods that require shadowing declarations on the derived interface.
+        /// </summary>
+        public IEnumerable<ComMethodContext> ShadowingMethods => Methods.Where(m => m.IsInheritedMethod && !m.IsHiddenOnDerivedInterface && !m.IsExternallyDefined);
+
+        /// <summary>
         /// COM methods that are declared on an interface the interface inherits from.
         /// </summary>
-        public IEnumerable<ComMethodContext> ShadowingMethods => Methods.Where(m => m.IsInheritedMethod);
+        public IEnumerable<ComMethodContext> InheritedMethods => Methods.Where(m => m.IsInheritedMethod);
+
+        /// <summary>
+        /// The size of the vtable for this interface, including the base interface methods and IUnknown methods.
+        /// </summary>
+        public int VTableSize => Methods.Length == 0
+                                    ? IUnknownConstants.VTableSize
+                                    : 1 + Methods.Max(m => m.GenerationContext.VtableIndexData.Index);
+
+        /// <summary>
+        /// The size of the vtable for the base interface, including it's base interface methods and IUnknown methods.
+        /// </summary>
+        public int BaseVTableSize => VTableSize - DeclaredMethods.Count();
     }
 }

@@ -17,6 +17,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     internal static class ComRuntimeHelpers
     {
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static void CheckThrowException(int hresult, ref ExcepInfo excepInfo, uint argErr, string message)
         {
             if (ComHresults.IsSuccess(hresult))
@@ -166,7 +167,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return typeInfo;
         }
 
-        internal static ComTypes.TYPEATTR GetTypeAttrForTypeInfo(ComTypes.ITypeInfo typeInfo)
+        internal static unsafe ComTypes.TYPEATTR GetTypeAttrForTypeInfo(ComTypes.ITypeInfo typeInfo)
         {
             IntPtr pAttrs;
             typeInfo.GetTypeAttr(out pAttrs);
@@ -179,7 +180,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             try
             {
-                return (ComTypes.TYPEATTR)Marshal.PtrToStructure(pAttrs, typeof(ComTypes.TYPEATTR));
+                return *(ComTypes.TYPEATTR*)pAttrs;
             }
             finally
             {
@@ -187,7 +188,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
-        internal static ComTypes.TYPELIBATTR GetTypeAttrForTypeLib(ComTypes.ITypeLib typeLib)
+        internal static unsafe ComTypes.TYPELIBATTR GetTypeAttrForTypeLib(ComTypes.ITypeLib typeLib)
         {
             IntPtr pAttrs;
             typeLib.GetLibAttr(out pAttrs);
@@ -200,7 +201,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
             try
             {
-                return (ComTypes.TYPELIBATTR)Marshal.PtrToStructure(pAttrs, typeof(ComTypes.TYPELIBATTR));
+                return *(ComTypes.TYPELIBATTR*)pAttrs;
             }
             finally
             {
@@ -209,11 +210,13 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static BoundDispEvent CreateComEvent(object rcw, Guid sourceIid, int dispid)
         {
             return new BoundDispEvent(rcw, sourceIid, dispid);
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static DispCallable CreateDispCallable(IDispatchComObject dispatch, ComMethodDesc method)
         {
             return new DispCallable(dispatch, method.Name, method.DispId);
@@ -350,6 +353,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         internal static ModuleBuilder DynamicModule
         {
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             get
             {
                 if (s_dynamicModule != null)

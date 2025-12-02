@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Security;
 using System.Security.Principal;
@@ -24,6 +25,7 @@ namespace System.IO.Pipes
         private readonly PipeOptions _pipeOptions;
         private readonly HandleInheritability _inheritability;
         private readonly PipeDirection _direction;
+        private readonly int _accessRights;
 
         // Creates a named pipe client using default server (same machine, or "."), and PipeDirection.InOut
         public NamedPipeClientStream(string pipeName)
@@ -84,10 +86,17 @@ namespace System.IO.Pipes
             _inheritability = inheritability;
             _impersonationLevel = impersonationLevel;
             _pipeOptions = options;
+            _accessRights = AccessRightsFromDirection(direction);
         }
 
-        // Create a NamedPipeClientStream from an existing server pipe handle.
+        [Obsolete(Obsoletions.NamedPipeClientStreamIsConnectedMessage, DiagnosticId = Obsoletions.NamedPipeClientStreamIsConnectedDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
+            : this(direction, isAsync, safePipeHandle)
+        {
+        }
+
+        public NamedPipeClientStream(PipeDirection direction, bool isAsync, SafePipeHandle safePipeHandle)
             : base(direction, 0)
         {
             ArgumentNullException.ThrowIfNull(safePipeHandle);
@@ -99,10 +108,7 @@ namespace System.IO.Pipes
             ValidateHandleIsPipe(safePipeHandle);
 
             InitializeHandle(safePipeHandle, true, isAsync);
-            if (isConnected)
-            {
-                State = PipeState.Connected;
-            }
+            State = PipeState.Connected;
         }
 
         ~NamedPipeClientStream()

@@ -6,7 +6,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Transactions.DtcProxyShim.DtcInterfaces;
 
-// https://docs.microsoft.com/previous-versions/windows/desktop/ms686489(v=vs.85)
+// https://learn.microsoft.com/previous-versions/windows/desktop/ms686489(v=vs.85)
 [GeneratedComInterface, Guid("3A6AD9E0-23B9-11cf-AD60-00AA00A74CCD"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal partial interface ITransactionOptions
 {

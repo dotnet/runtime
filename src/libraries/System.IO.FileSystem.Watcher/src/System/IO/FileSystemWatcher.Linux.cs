@@ -84,6 +84,20 @@ namespace System.IO
             }
         }
 
+        /// <summary>Allocates a buffer of the requested internal buffer size.</summary>
+        /// <returns>The allocated buffer.</returns>
+        private byte[] AllocateBuffer()
+        {
+            try
+            {
+                return new byte[_internalBufferSize];
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new OutOfMemoryException(SR.Format(SR.BufferSizeTooLarge, _internalBufferSize));
+            }
+        }
+
         /// <summary>Cancels the currently running watch operation if there is one.</summary>
         private void StopRaisingEvents()
         {
@@ -720,9 +734,9 @@ namespace System.IO
 
                         break;
                     case Interop.Sys.NotifyEvents.IN_MOVED_TO:
-                        if (previousEventName != null)
+                        if (!previousEventName.IsEmpty)
                         {
-                            // If the previous name from IN_MOVED_FROM is non-null, then this is a rename.
+                            // If the previous name from IN_MOVED_FROM is non-empty, then this is a rename.
                             watcher.NotifyRenameEventArgs(WatcherChangeTypes.Renamed, expandedName, previousEventName);
                         }
                         else

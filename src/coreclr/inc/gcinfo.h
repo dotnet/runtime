@@ -4,6 +4,7 @@
 // ******************************************************************************
 // WARNING!!!: These values are used by SOS in the diagnostics repo. Values should
 // added or removed in a backwards and forwards compatible way.
+// There are scenarios in diagnostics that support parsing of old GC Info formats.
 // See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/gcinfo.h
 // ******************************************************************************
 
@@ -13,9 +14,6 @@
 /*****************************************************************************/
 
 #include "daccess.h"
-#include "windef.h"     // For BYTE
-
-// Some declarations in this file are used on non-x86 platforms, but most are x86-specific.
 
 // Use the lower 2 bits of the offsets stored in the tables
 // to encode properties
@@ -23,14 +21,15 @@
 const unsigned        OFFSET_MASK  = 0x3;  // mask to access the low 2 bits
 
 //
-//  Note for untracked locals the flags allowed are "pinned" and "byref"
-//   and for tracked locals the flags allowed are "this" and "byref"
 //  Note that these definitions should also match the definitions of
 //   GC_CALL_INTERIOR and GC_CALL_PINNED in VM/gc.h
 //
 const unsigned  byref_OFFSET_FLAG  = 0x1;  // the offset is an interior ptr
 const unsigned pinned_OFFSET_FLAG  = 0x2;  // the offset is a pinned ptr
-#if !defined(TARGET_X86) || !defined(FEATURE_EH_FUNCLETS)
+#if defined(TARGET_X86)
+// JIT32_ENCODER has additional restriction on x86 without funclets: 
+// - for untracked locals the flags allowed are "pinned" and "byref"
+// - for tracked locals the flags allowed are "this" and "byref"
 const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 #endif
 
@@ -38,7 +37,18 @@ const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 // The current GCInfo Version
 //-----------------------------------------------------------------------------
 
-#define GCINFO_VERSION 2
+#define GCINFO_VERSION 4
+
+#ifdef SOS_INCLUDE
+extern bool IsRuntimeVersionAtLeast(DWORD major);
+inline int GCInfoVersion()
+{
+    // In SOS we only care about ability to parse/dump the GC Info.
+    // Since v2 and v3 had the same file format and v1 is no longer supported,
+    // we can assume that everything before net10.0 uses GCInfo v3.
+    return IsRuntimeVersionAtLeast(10) ? 4 : 3;
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // GCInfoToken: A wrapper that contains the GcInfo data and version number.
@@ -57,12 +67,25 @@ const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 struct GCInfoToken
 {
     PTR_VOID Info;
-    UINT32 Version;
+    uint32_t Version;
 
-    static UINT32 ReadyToRunVersionToGcInfoVersion(UINT32 readyToRunMajorVersion)
+#ifdef FEATURE_NATIVEAOT
+    GCInfoToken(PTR_VOID info)
     {
-        // GcInfo version is current from  ReadyToRun version 2.0
-        return GCINFO_VERSION;
+        Info = info;
+        Version = GCINFO_VERSION;
+    }
+#endif
+
+    // Keep this in sync with GetR2RGCInfoVersion in cDac (ExecutionManagerCore.ReadyToRunJitManager.cs)
+    static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion, uint32_t readyToRunMinorVersion)
+    {
+        if (readyToRunMajorVersion >= 11)
+            return 4;
+
+        // Since v2 and v3 had the same file format and v1 is no longer supported,
+        // we can assume GCInfo v3.
+        return 3;
     }
 };
 

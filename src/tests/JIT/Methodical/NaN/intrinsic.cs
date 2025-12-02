@@ -486,6 +486,7 @@ namespace JitTest
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             try

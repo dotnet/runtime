@@ -149,7 +149,7 @@ namespace System.Buffers
                 log.BufferReturned(bufferId, array.Length, Id);
                 if (!haveBucket)
                 {
-                    log.BufferDropped(bufferId, array.Length, Id, ArrayPoolEventSource.NoBucketId, ArrayPoolEventSource.BufferDroppedReason.Full);
+                    log.BufferDropped(bufferId, array.Length, Id, ArrayPoolEventSource.NoBucketId, ArrayPoolEventSource.BufferDroppedReason.OverMaximumSize);
                 }
             }
         }

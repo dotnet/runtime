@@ -230,7 +230,7 @@ namespace LibraryImportGenerator.UnitTests
         [InlineData(CallingConvention.StdCall, typeof(CallConvStdcall))]
         [InlineData(CallingConvention.ThisCall, typeof(CallConvThiscall))]
         [InlineData(CallingConvention.FastCall, typeof(CallConvFastcall))]
-        public async Task ReplaceableCallingConvention(CallingConvention callConv, Type callConvType)
+        public async Task ReplaceableCallingConvention_DifferentLanguageVersions(CallingConvention callConv, Type callConvType)
         {
             string source = $$"""
                 using System.Runtime.InteropServices;
@@ -241,7 +241,7 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
             // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
-            string fixedSource = $$"""
+            string fixedSourceWithArrayCreationExpression = $$"""
                 using System.Runtime.InteropServices;
                 partial class Test
                 {
@@ -250,9 +250,78 @@ namespace LibraryImportGenerator.UnitTests
                     public static partial int {|CS8795:Method1|}(out int ret);
                 }
                 """;
+            string fixedSourceWithCollectionExpression = $$"""
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist", EntryPoint = "Entry")]
+                    [UnmanagedCallConv(CallConvs = [typeof({{callConvType.FullName}})])]
+                    public static partial int {|CS8795:Method1|}(out int ret);
+                }
+                """;
+
             await VerifyCodeFixAsync(
                 source,
-                fixedSource);
+                fixedSourceWithArrayCreationExpression,
+                LanguageVersion.CSharp11);
+            await VerifyCodeFixAsync(
+                source,
+                fixedSourceWithCollectionExpression,
+                LanguageVersion.CSharp12);
+        }
+
+        [Theory]
+        [InlineData("true", true)]
+        [InlineData("when_types_exactly_match", true)]
+        [InlineData("when_types_loosely_match", true)]
+        [InlineData("false", false)]
+        [InlineData("never", false)]
+        [InlineData("true:warning", true)]
+        [InlineData("when_types_exactly_match:warning", true)]
+        [InlineData("when_types_loosely_match:warning", true)]
+        [InlineData("false:warning", false)]
+        [InlineData("never:warning", false)]
+        public async Task ReplaceableCallingConvention_UserPreferenceOfCollectionExpressions(string optionValue, bool useCollectionExpression)
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [DllImport("DoesNotExist", CallingConvention = CallingConvention.Cdecl, EntryPoint = "Entry")]
+                    public static extern int [|Method1|](out int ret);
+                }
+                """;
+            string editorconfig = $"""
+                root = true
+
+                [*]
+                dotnet_style_prefer_collection_expression = {optionValue}
+                """;
+            // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
+            string fixedSourceWithArrayCreationExpression = """
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist", EntryPoint = "Entry")]
+                    [UnmanagedCallConv(CallConvs = new System.Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+                    public static partial int {|CS8795:Method1|}(out int ret);
+                }
+                """;
+            string fixedSourceWithCollectionExpression = """
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist", EntryPoint = "Entry")]
+                    [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+                    public static partial int {|CS8795:Method1|}(out int ret);
+                }
+                """;
+
+            await VerifyCodeFixAsync(
+                source,
+                useCollectionExpression ? fixedSourceWithCollectionExpression : fixedSourceWithArrayCreationExpression,
+                LanguageVersion.CSharp12,
+                editorconfig);
         }
 
         [Fact]
@@ -1160,13 +1229,19 @@ namespace LibraryImportGenerator.UnitTests
             await VerifyCodeFixAsync(source, fixedSource);
         }
 
-        private static async Task VerifyCodeFixAsync(string source, string fixedSource)
+        private static async Task VerifyCodeFixAsync(string source, string fixedSource, LanguageVersion languageVersion = LanguageVersion.Default, string? editorconfig = null)
         {
-            var test = new VerifyCS.Test
+            var test = new TestWithLanguageVersion
             {
                 TestCode = source,
                 FixedCode = fixedSource,
+                LanguageVersion = languageVersion,
             };
+
+            if (editorconfig is not null)
+            {
+                test.TestState.AnalyzerConfigFiles.Add(("/.editorconfig", editorconfig));
+            }
 
             await test.RunAsync();
         }
@@ -1215,6 +1290,13 @@ namespace LibraryImportGenerator.UnitTests
         class TestNoUnsafe : VerifyCS.Test
         {
             protected override CompilationOptions CreateCompilationOptions() => ((CSharpCompilationOptions)base.CreateCompilationOptions()).WithAllowUnsafe(false);
+        }
+
+        class TestWithLanguageVersion : VerifyCS.Test
+        {
+            public LanguageVersion LanguageVersion { get; set; }
+
+            protected override ParseOptions CreateParseOptions() => ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion);
         }
     }
 }

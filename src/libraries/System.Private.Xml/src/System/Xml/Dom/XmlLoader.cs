@@ -82,7 +82,8 @@ namespace System.Xml
             }
             if (reader.ReadState == ReadState.Interactive)
             {
-                XmlNode n = LoadNode(true)!;
+                XmlNode? n = LoadNode(true);
+                Debug.Assert(n != null);
 
                 // Move to the next node
                 if (n.NodeType != XmlNodeType.Attribute)
@@ -150,10 +151,7 @@ namespace System.Xml
                         if (schemaInfo != null)
                         {
                             element = parent as XmlElement;
-                            if (element != null)
-                            {
-                                element.XmlName = _doc!.AddXmlName(element.Prefix, element.LocalName, element.NamespaceURI, schemaInfo);
-                            }
+                            element?.XmlName = _doc!.AddXmlName(element.Prefix, element.LocalName, element.NamespaceURI, schemaInfo);
                         }
                         if (parent.ParentNode == null)
                         {

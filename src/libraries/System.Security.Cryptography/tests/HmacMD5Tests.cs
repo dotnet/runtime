@@ -9,12 +9,12 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    [ConditionalClass(typeof(HmacMD5Tests.Traits), nameof(HmacMD5Tests.Traits.IsSupported))]
     public class HmacMD5Tests : Rfc2202HmacTests<HmacMD5Tests.Traits>
     {
         public sealed class Traits : IHmacTrait
         {
-            public static bool IsSupported => true;
+            public static bool IsSupported => !PlatformDetection.IsSymCryptOpenSsl && !PlatformDetection.IsBrowser;
             public static int HashSizeInBytes => HMACMD5.HashSizeInBytes;
         }
 
@@ -92,6 +92,34 @@ namespace System.Security.Cryptography.Tests
             Stream source,
             CancellationToken cancellationToken) => HMACMD5.HashDataAsync(key, source, cancellationToken);
 
+        protected override bool Verify(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> hash) =>
+            HMACMD5.Verify(key, source, hash);
+
+        protected override bool Verify(byte[] key, byte[] source, byte[] hash) => HMACMD5.Verify(key, source, hash);
+
+        protected override bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash) =>
+            HMACMD5.Verify(key, source, hash);
+
+        protected override bool Verify(byte[] key, Stream source, byte[] hash) => HMACMD5.Verify(key, source, hash);
+
+        protected override ValueTask<bool> VerifyAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            ReadOnlyMemory<byte> hash,
+            CancellationToken cancellationToken)
+        {
+            return HMACMD5.VerifyAsync(key, source, hash, cancellationToken);
+        }
+
+        protected override ValueTask<bool> VerifyAsync(
+            byte[] key,
+            Stream source,
+            byte[] hash,
+            CancellationToken cancellationToken)
+        {
+            return HMACMD5.VerifyAsync(key, source, hash, cancellationToken);
+        }
+
         [Fact]
         public void HmacMD5_Rfc2202_1()
         {
@@ -159,7 +187,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void HmacMD5_Stream_MultipleOf4096()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl md5 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             VerifyRepeating(
                 input: "0102030405060708",
@@ -171,7 +199,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void HmacMD5_Stream_NotMultipleOf4096()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl md5 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             VerifyRepeating(
                 input: "0102030405060708",
@@ -183,7 +211,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void HmacMD5_Stream_Empty()
         {
-            // Verfied with:
+            // Verified with:
             // echo -n "" | openssl md5 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             VerifyRepeating(
                 input: "",
@@ -195,7 +223,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public async Task HmacMD5_Stream_MultipleOf4096_Async()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl md5 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             await VerifyRepeatingAsync(
                 input: "0102030405060708",
@@ -207,7 +235,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public async Task HmacMD5_Stream_NotMultipleOf4096_Async()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl md5 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             await VerifyRepeatingAsync(
                 input: "0102030405060708",
@@ -219,7 +247,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public async Task HmacMD5_Stream_Empty_Async()
         {
-            // Verfied with:
+            // Verified with:
             // echo -n "" | openssl md5 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             await VerifyRepeatingAsync(
                 input: "",

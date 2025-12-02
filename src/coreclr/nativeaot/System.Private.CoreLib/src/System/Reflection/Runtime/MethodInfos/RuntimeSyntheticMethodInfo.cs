@@ -80,7 +80,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override int GetHashCode()
         {
-            return _declaringType.GetHashCode();
+            return HashCode.Combine(_syntheticMethodId, _declaringType);
         }
 
         public sealed override bool IsConstructedGenericMethod
@@ -116,7 +116,7 @@ namespace System.Reflection.Runtime.MethodInfos
             throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));
         }
 
-        public sealed override MethodBase MetadataDefinitionMethod
+        internal sealed override MethodBase MetadataDefinitionMethod
         {
             get
             {

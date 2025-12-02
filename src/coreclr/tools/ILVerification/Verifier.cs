@@ -34,7 +34,7 @@ namespace ILVerify
             _verifierOptions = verifierOptions ?? new VerifierOptions();
         }
 
-        public void SetSystemModuleName(AssemblyName name)
+        public void SetSystemModuleName(AssemblyNameInfo name)
         {
             PEReader peReader = _typeSystemContext._resolver.ResolveAssembly(name);
             if (peReader is null)
@@ -158,7 +158,7 @@ namespace ILVerify
         {
             foreach (var methodHandle in methodHandles)
             {
-                var method = (EcmaMethod)module.GetMethod(methodHandle);
+                var method = module.GetMethod(methodHandle);
                 var methodIL = EcmaMethodIL.Create(method);
 
                 if (methodIL != null)

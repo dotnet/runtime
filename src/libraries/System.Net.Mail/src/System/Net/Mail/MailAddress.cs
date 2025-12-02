@@ -216,6 +216,12 @@ namespace System.Net.Mail
                     throw new SmtpException(SR.Format(SR.SmtpInvalidHostName, Address), argEx);
                 }
             }
+
+            if (domain.AsSpan().ContainsAny('\r', '\n'))
+            {
+                throw new SmtpException(SR.Format(SR.SmtpInvalidHostName, Address));
+            }
+
             return domain;
         }
 

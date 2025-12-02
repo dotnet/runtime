@@ -9,6 +9,8 @@ namespace ILCompiler.DependencyAnalysis
         Writeable,
         Executable,
         Uninitialized,
+        Debug,
+        UnwindData,
     }
 
     /// <summary>
@@ -30,17 +32,6 @@ namespace ILCompiler.DependencyAnalysis
         public ObjectNodeSection(string name, SectionType type) : this(name, type, null)
         { }
 
-        /// <summary>
-        /// Returns true if the section is a standard one (defined as text, data, or rdata currently)
-        /// </summary>
-        public bool IsStandardSection
-        {
-            get
-            {
-                return this == DataSection || this == ReadOnlyDataSection || this == FoldableReadOnlyDataSection || this == TextSection || this == XDataSection || this == BssSection;
-            }
-        }
-
         public static readonly ObjectNodeSection XDataSection = new ObjectNodeSection("xdata", SectionType.ReadOnly);
         public static readonly ObjectNodeSection DataSection = new ObjectNodeSection("data", SectionType.Writeable);
         public static readonly ObjectNodeSection ReadOnlyDataSection = new ObjectNodeSection("rdata", SectionType.ReadOnly);
@@ -50,9 +41,7 @@ namespace ILCompiler.DependencyAnalysis
         public static readonly ObjectNodeSection BssSection = new ObjectNodeSection("bss", SectionType.Uninitialized);
         public static readonly ObjectNodeSection HydrationTargetSection = new ObjectNodeSection("hydrated", SectionType.Uninitialized);
         public static readonly ObjectNodeSection ManagedCodeWindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
-        public static readonly ObjectNodeSection FoldableManagedCodeWindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
         public static readonly ObjectNodeSection ManagedCodeUnixContentSection = new ObjectNodeSection("__managedcode", SectionType.Executable);
-        public static readonly ObjectNodeSection FoldableManagedCodeUnixContentSection = new ObjectNodeSection("__managedcode", SectionType.Executable);
 
         // Section name on Windows has to be alphabetically less than the ending WindowsUnboxingStubsRegionNode node, and larger than
         // the begining WindowsUnboxingStubsRegionNode node, in order to have proper delimiters to the begining/ending of the
@@ -62,5 +51,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public static readonly ObjectNodeSection ModulesWindowsContentSection = new ObjectNodeSection(".modules$I", SectionType.ReadOnly);
         public static readonly ObjectNodeSection ModulesUnixContentSection = new ObjectNodeSection("__modules", SectionType.Writeable);
+
+        public static readonly ObjectNodeSection DebugDirectorySection = new ObjectNodeSection("debug", SectionType.Debug);
+        public static readonly ObjectNodeSection CorMetaSection = new ObjectNodeSection("cormeta", SectionType.ReadOnly);
+        public static readonly ObjectNodeSection Win32ResourcesSection = new ObjectNodeSection("rsrc", SectionType.ReadOnly);
+        public static readonly ObjectNodeSection PDataSection = new ObjectNodeSection("pdata", SectionType.ReadOnly);
     }
 }

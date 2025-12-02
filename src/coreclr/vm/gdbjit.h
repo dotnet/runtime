@@ -74,6 +74,7 @@ static constexpr const int CorElementTypeToDWEncoding[] =
 /* ELEMENT_TYPE_CMOD_REQD */    DW_ATE_address,
 /* ELEMENT_TYPE_CMOD_OPT */     DW_ATE_address,
 /* ELEMENT_TYPE_INTERNAL */     DW_ATE_address,
+/* ELEMENT_TYPE_CMOD_INTERNAL */DW_ATE_address,
 /* ELEMENT_TYPE_MAX */          DW_ATE_address,
 };
 
@@ -352,7 +353,6 @@ public:
     class FileTableBuilder;
     static void Initialize();
     static void MethodPrepared(MethodDesc* methodDescPtr);
-    static void MethodPitched(MethodDesc* methodDescPtr);
     template <typename PARENT_TRAITS>
     class DeleteValuesOnDestructSHashTraits : public PARENT_TRAITS
     {

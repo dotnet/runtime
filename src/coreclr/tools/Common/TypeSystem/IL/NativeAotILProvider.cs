@@ -3,6 +3,8 @@
 
 using System;
 
+using ILCompiler;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -44,35 +46,29 @@ namespace Internal.IL
             if (owningType == null)
                 return null;
 
-            switch (owningType.Name)
+            switch (owningType.GetName())
             {
-                case "Interlocked":
-                    {
-                        if (owningType.Namespace == "System.Threading")
-                            return InterlockedIntrinsics.EmitIL(method);
-                    }
-                    break;
                 case "Unsafe":
                     {
-                        if (owningType.Namespace == "System.Runtime.CompilerServices")
+                        if (owningType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
                             return UnsafeIntrinsics.EmitIL(method);
                     }
                     break;
                 case "Debug":
                     {
-                        if (owningType.Namespace == "System.Diagnostics" && method.Name == "DebugBreak")
+                        if (owningType.Namespace.SequenceEqual("System.Diagnostics"u8) && method.Name.SequenceEqual("DebugBreak"u8))
                             return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.break_, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
                     }
                     break;
                 case "RuntimeAugments":
                     {
-                        if (owningType.Namespace == "Internal.Runtime.Augments" && method.Name == "GetCanonType")
+                        if (owningType.Namespace.SequenceEqual("Internal.Runtime.Augments"u8) && method.Name.SequenceEqual("GetCanonType"u8))
                             return GetCanonTypeIntrinsic.EmitIL(method);
                     }
                     break;
                 case "MethodTable":
                     {
-                        if (owningType.Namespace == "Internal.Runtime" && method.Name == "get_SupportsRelativePointers")
+                        if (owningType.Namespace.SequenceEqual("Internal.Runtime"u8) && method.Name.SequenceEqual("get_SupportsRelativePointers"u8))
                         {
                             ILOpcode value = method.Context.Target.SupportsRelativePointers ?
                                 ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0;
@@ -82,7 +78,7 @@ namespace Internal.IL
                     break;
                 case "Stream":
                     {
-                        if (owningType.Namespace == "System.IO")
+                        if (owningType.Namespace.SequenceEqual("System.IO"u8))
                             return StreamIntrinsics.EmitIL(method);
                     }
                     break;
@@ -104,10 +100,16 @@ namespace Internal.IL
             if (owningType == null)
                 return null;
 
-            string methodName = method.Name;
+            string methodName = method.GetName();
 
-            switch (owningType.Name)
+            switch (owningType.GetName())
             {
+                case "Interlocked":
+                    {
+                        if (owningType.Namespace.SequenceEqual("System.Threading"u8))
+                            return InterlockedIntrinsics.EmitIL(method);
+                    }
+                    break;
                 case "Activator":
                     {
                         TypeSystemContext context = owningType.Context;
@@ -132,25 +134,25 @@ namespace Internal.IL
                     break;
                 case "RuntimeHelpers":
                     {
-                        if (owningType.Namespace == "System.Runtime.CompilerServices")
+                        if (owningType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
                             return RuntimeHelpersIntrinsics.EmitIL(method);
                     }
                     break;
                 case "Comparer`1":
                     {
-                        if (methodName == "Create" && owningType.Namespace == "System.Collections.Generic")
+                        if (methodName == "Create" && owningType.Namespace.SequenceEqual("System.Collections.Generic"u8))
                             return ComparerIntrinsics.EmitComparerCreate(method);
                     }
                     break;
                 case "EqualityComparer`1":
                     {
-                        if (methodName == "Create" && owningType.Namespace == "System.Collections.Generic")
+                        if (methodName == "Create" && owningType.Namespace.SequenceEqual("System.Collections.Generic"u8))
                             return ComparerIntrinsics.EmitEqualityComparerCreate(method);
                     }
                     break;
                 case "ComparerHelpers":
                     {
-                        if (owningType.Namespace != "Internal.IntrinsicSupport")
+                        if (!owningType.Namespace.SequenceEqual("Internal.IntrinsicSupport"u8))
                             return null;
 
                         if (methodName == "EnumOnlyCompare")
@@ -163,7 +165,7 @@ namespace Internal.IL
 
                             TypeDesc underlyingType = elementType.UnderlyingType;
                             TypeDesc returnType = method.Context.GetWellKnownType(WellKnownType.Int32);
-                            MethodDesc underlyingCompareToMethod = underlyingType.GetKnownMethod("CompareTo",
+                            MethodDesc underlyingCompareToMethod = underlyingType.GetKnownMethod("CompareTo"u8,
                                 new MethodSignature(
                                     MethodSignatureFlags.None,
                                     genericParameterCount: 0,
@@ -184,7 +186,7 @@ namespace Internal.IL
                     break;
                 case "EqualityComparerHelpers":
                     {
-                        if (owningType.Namespace != "Internal.IntrinsicSupport")
+                        if (!owningType.Namespace.SequenceEqual("Internal.IntrinsicSupport"u8))
                             return null;
 
                         if (methodName == "EnumOnlyEquals")
@@ -261,17 +263,17 @@ namespace Internal.IL
                                 static MethodDesc GetMethodToCall(TypeDesc elementType)
                                 {
                                     TypeSystemContext context = elementType.Context;
-                                    MetadataType helperType = context.SystemModule.GetKnownType("Internal.IntrinsicSupport", "EqualityComparerHelpers");
+                                    MetadataType helperType = context.SystemModule.GetKnownType("Internal.IntrinsicSupport"u8, "EqualityComparerHelpers"u8);
 
                                     if (elementType.IsEnum)
-                                        return helperType.GetKnownMethod("EnumOnlyEquals", null)
+                                        return helperType.GetKnownMethod("EnumOnlyEquals"u8, null)
                                             .MakeInstantiatedMethod(elementType);
 
                                     if (elementType.IsNullable)
                                     {
                                         bool? nullableOfEquatable = ComparerIntrinsics.ImplementsIEquatable(elementType.Instantiation[0]);
                                         if (nullableOfEquatable.HasValue && nullableOfEquatable.Value)
-                                            return helperType.GetKnownMethod("StructOnlyEqualsNullable", null)
+                                            return helperType.GetKnownMethod("StructOnlyEqualsNullable"u8, null)
                                                 .MakeInstantiatedMethod(elementType.Instantiation[0]);
                                         return null; // Fallback to default implementation based on EqualityComparer
                                     }
@@ -279,7 +281,7 @@ namespace Internal.IL
                                     bool? equatable = ComparerIntrinsics.ImplementsIEquatable(elementType);
                                     if (!equatable.HasValue)
                                         return null;
-                                    return helperType.GetKnownMethod(equatable.Value ? "StructOnlyEqualsIEquatable" : "StructOnlyNormalEquals", null)
+                                    return helperType.GetKnownMethod(equatable.Value ? "StructOnlyEqualsIEquatable"u8 : "StructOnlyNormalEquals"u8, null)
                                         .MakeInstantiatedMethod(elementType);
                                 }
                             }
@@ -309,6 +311,20 @@ namespace Internal.IL
                         return result;
                 }
 
+                if (ecmaMethod.IsAsync)
+                {
+                    if (ecmaMethod.Signature.ReturnsTaskOrValueTask())
+                    {
+                        return AsyncThunkILEmitter.EmitTaskReturningThunk(ecmaMethod, ((CompilerTypeSystemContext)ecmaMethod.Context).GetAsyncVariantMethod(ecmaMethod));
+                    }
+                    else
+                    {
+                        // We only allow non-Task returning runtime async methods in CoreLib
+                        if (ecmaMethod.OwningType.Module != ecmaMethod.Context.SystemModule)
+                            ThrowHelper.ThrowBadImageFormatException();
+                    }
+                }
+
                 MethodIL methodIL = EcmaMethodIL.Create(ecmaMethod);
                 if (methodIL != null)
                     return methodIL;
@@ -330,7 +346,15 @@ namespace Internal.IL
                         return methodIL;
                 }
 
-                var methodDefinitionIL = GetMethodIL(method.GetTypicalMethodDefinition());
+                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
+                if (typicalMethod is SpecializableILStubMethod specializableMethod)
+                {
+                    MethodIL methodIL = specializableMethod.EmitIL(method);
+                    if (methodIL != null)
+                        return methodIL;
+                }
+
+                var methodDefinitionIL = GetMethodIL(typicalMethod);
                 if (methodDefinitionIL == null)
                     return null;
                 return new InstantiatedMethodIL(method, methodDefinitionIL);
@@ -346,10 +370,43 @@ namespace Internal.IL
                 return ArrayMethodILEmitter.EmitIL((ArrayMethod)method);
             }
             else
+            if (method is AsyncMethodVariant asyncVariantImpl)
+            {
+                if (asyncVariantImpl.IsAsync)
+                {
+                    return new AsyncEcmaMethodIL(asyncVariantImpl, EcmaMethodIL.Create(asyncVariantImpl.Target));
+                }
+                else
+                {
+                    return AsyncThunkILEmitter.EmitAsyncMethodThunk(asyncVariantImpl, asyncVariantImpl.Target);
+                }
+            }
+            else
             {
                 Debug.Assert(!(method is PInvokeTargetNativeMethod), "Who is asking for IL of PInvokeTargetNativeMethod?");
                 return null;
             }
+        }
+
+        private sealed class AsyncEcmaMethodIL : MethodIL
+        {
+            private readonly AsyncMethodVariant _variant;
+            private readonly EcmaMethodIL _ecmaIL;
+
+            public AsyncEcmaMethodIL(AsyncMethodVariant variant, EcmaMethodIL ecmaIL)
+                => (_variant, _ecmaIL) = (variant, ecmaIL);
+
+            // This is the reason we need this class - the method that owns the IL is the variant.
+            public override MethodDesc OwningMethod => _variant;
+
+            // Everything else dispatches to EcmaMethodIL
+            public override MethodDebugInformation GetDebugInfo() => _ecmaIL.GetDebugInfo();
+            public override ILExceptionRegion[] GetExceptionRegions() => _ecmaIL.GetExceptionRegions();
+            public override byte[] GetILBytes() => _ecmaIL.GetILBytes();
+            public override LocalVariableDefinition[] GetLocals() => _ecmaIL.GetLocals();
+            public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw) => _ecmaIL.GetObject(token, notFoundBehavior);
+            public override bool IsInitLocals => _ecmaIL.IsInitLocals;
+            public override int MaxStack => _ecmaIL.MaxStack;
         }
     }
 }

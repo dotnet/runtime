@@ -98,7 +98,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return result!;
         }
 
-        public abstract override MethodBase MetadataDefinitionMethod { get; }
+        internal abstract override MethodBase MetadataDefinitionMethod { get; }
 
         public abstract override int MetadataToken
         {

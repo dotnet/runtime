@@ -51,7 +51,6 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <minipal/getexepath.h>
-#include "cominterop.h"
 #include <mono/utils/w32api.h>
 #include <mono/utils/unlocked.h>
 #include "external-only.h"
@@ -101,8 +100,6 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (execution_context, "System.Threading",
 #define ldstr_lock() mono_coop_mutex_lock (&ldstr_section)
 #define ldstr_unlock() mono_coop_mutex_unlock (&ldstr_section)
 static MonoCoopMutex ldstr_section;
-/* Used by remoting proxies */
-static MonoMethod *create_proxy_for_type_method;
 static MonoGHashTable *ldstr_table;
 
 static GString *
@@ -457,21 +454,24 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	 * on this cond var.
 	 */
 
+	HANDLE_FUNCTION_ENTER ();
+
 retry_top:
+	(void)0; // appease C compiler; label must preceed a statement not a var declaration
+
+	gboolean ret = FALSE;
+
 	mono_type_initialization_lock ();
 	/* double check... */
 	if (vtable->initialized) {
 		mono_type_initialization_unlock ();
-		return TRUE;
+		goto return_true;
 	}
 
 	gboolean do_initialization = FALSE;
 	TypeInitializationLock *lock = NULL;
 	gboolean pending_tae = FALSE;
 
-	gboolean ret = FALSE;
-
-	HANDLE_FUNCTION_ENTER ();
 
 	if (vtable->init_failed) {
 		/* The type initialization already failed once, rethrow the same exception */
@@ -614,8 +614,8 @@ retry_top:
 		if (!lock->done) {
 			int timeout_ms = 500;
 			int wait_result = mono_coop_cond_timedwait (&lock->cond, &lock->mutex, timeout_ms);
-			if (wait_result == -1) {
-				/* timed out - go around again from the beginning.  If we got here
+			if (wait_result == -1 || (wait_result == 0 && !lock->done)) {
+				/* timed out or spurious wakeup - go around again from the beginning.  If we got here
 				 * from the "is_blocked = FALSE" case, above (another thread was
 				 * blocked on the current thread, but on a lock that was already
 				 * done but it didn't get to wake up yet), then it might still be
@@ -646,7 +646,7 @@ retry_top:
 					g_hash_table_remove (type_initialization_hash, vtable);
 				mono_type_initialization_unlock ();
 				goto retry_top;
-			} else if (wait_result == 0) {
+			} else if (wait_result == 0 && lock->done) {
 				/* Success: we were signaled that the other thread is done.  Proceed */
 			} else {
 				g_assert_not_reached ();
@@ -906,9 +906,13 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 
 			guint32 field_iter = 1;
 			guint32 field_instance_offset = field_offset;
+			int field_size = 0;
 			// If struct has InlineArray attribute, iterate `length` times to set a bitmap
-			if (m_class_is_inlinearray (p))
-				field_iter = m_class_inlinearray_value (p);
+			if (m_class_is_inlinearray (p)) {
+				int align;
+				field_iter = mono_class_get_inlinearray_value (p);
+				field_size = mono_type_size (field->type, &align);
+			}
 
 			if (field_iter > 500)
 				g_warning ("Large number of iterations detected when creating a GC bitmap, might affect performance.");
@@ -973,7 +977,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 					break;
 				}
 
-				field_instance_offset += field_offset;
+				field_instance_offset += field_size;
 				field_iter--;
 			}
 		}
@@ -1307,7 +1311,6 @@ field_is_special_static (MonoClass *fklass, MonoClassField *field)
  *   The IMT slot is embedded into AOTed code, so this must return the same value
  * for the same method across all executions. This means:
  * - pointers shouldn't be used as hash values.
- * - mono_metadata_str_hash () should be used for hashing strings.
  */
 guint32
 mono_method_get_imt_slot (MonoMethod *method)
@@ -1343,9 +1346,9 @@ mono_method_get_imt_slot (MonoMethod *method)
 	}
 
 	/* Initialize hashes */
-	hashes [0] = mono_metadata_str_hash (m_class_get_name (method->klass));
-	hashes [1] = mono_metadata_str_hash (m_class_get_name_space (method->klass));
-	hashes [2] = mono_metadata_str_hash (method->name);
+	hashes [0] = m_class_get_name_hash (method->klass);
+	hashes [1] = g_str_hash (m_class_get_name_space (method->klass));
+	hashes [2] = g_str_hash (method->name);
 	hashes [3] = mono_metadata_type_hash (sig->ret);
 	for (i = 0; i < sig->param_count; i++) {
 		hashes [4 + i] = mono_metadata_type_hash (sig->params [i]);
@@ -1588,7 +1591,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 						vt_slot ++;
 					continue;
 				}
-				if (mono_method_get_imt_slot (method) != slot_num) {
+				if (m_method_is_virtual (method) && mono_method_get_imt_slot (method) != slot_num) {
 					vt_slot ++;
 					continue;
 				}
@@ -2624,7 +2627,7 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	for (int i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
-		if (t->type == MONO_TYPE_GENERICINST && t->data.generic_class->container_class == mono_defaults.generic_nullable_class) {
+		if (t->type == MONO_TYPE_GENERICINST && m_type_data_get_generic_class_unchecked (t)->container_class == mono_defaults.generic_nullable_class) {
 			MonoClass *klass = mono_class_from_mono_type_internal (t);
 			MonoObject *boxed_vt = (MonoObject*)params [i];
 			gpointer nullable_vt = g_alloca (mono_class_value_size (klass, NULL));
@@ -2667,7 +2670,7 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 		// to return it as boxed vt or NULL
 		for (int i = 0; i < sig->param_count; i++) {
 			MonoType *t = sig->params [i];
-			if (t->type == MONO_TYPE_GENERICINST && m_type_is_byref (t) && t->data.generic_class->container_class == mono_defaults.generic_nullable_class) {
+			if (t->type == MONO_TYPE_GENERICINST && m_type_is_byref (t) && m_type_data_get_generic_class_unchecked (t)->container_class == mono_defaults.generic_nullable_class) {
 				MonoClass *klass = mono_class_from_mono_type_internal (t);
 				gpointer nullable_vt = params_arg [i];
 				params [i] = mono_nullable_box (nullable_vt, klass, error);
@@ -2950,8 +2953,8 @@ handle_enum:
 	}
 	case MONO_TYPE_VALUETYPE:
 		/* note that 't' and 'type->type' can be different */
-		if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass)) {
-			t = mono_class_enum_basetype_internal (type->data.klass)->type;
+		if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass (type))) {
+			t = mono_class_enum_basetype_internal (m_type_data_get_klass (type))->type;
 			goto handle_enum;
 		} else {
 			MonoClass *klass = mono_class_from_mono_type_internal (type);
@@ -2963,7 +2966,7 @@ handle_enum:
 		}
 		return;
 	case MONO_TYPE_GENERICINST:
-		t = m_class_get_byval_arg (type->data.generic_class->container_class)->type;
+		t = m_class_get_byval_arg (m_type_data_get_generic_class (type)->container_class)->type;
 		goto handle_enum;
 	default:
 		g_error ("got type %x", type->type);
@@ -2986,7 +2989,7 @@ mono_field_set_value_internal (MonoObject *obj, MonoClassField *field, void *val
 	} else
 		dest = (char*)obj + m_field_get_offset (field);
 
-	mono_copy_value (field->type, dest, value, value && field->type->type == MONO_TYPE_PTR);
+	mono_copy_value (field->type, dest, value, value && (field->type->type == MONO_TYPE_PTR || field->type->type == MONO_TYPE_FNPTR));
 }
 
 /**
@@ -3019,7 +3022,7 @@ mono_field_static_set_value_internal (MonoVTable *vt, MonoClassField *field, voi
 		return;
 
 	dest = mono_static_field_get_addr (vt, field);
-	mono_copy_value (field->type, dest, value, value && field->type->type == MONO_TYPE_PTR);
+	mono_copy_value (field->type, dest, value, value && (field->type->type == MONO_TYPE_PTR || field->type->type == MONO_TYPE_FNPTR));
 }
 
 gpointer
@@ -3231,6 +3234,7 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 	gboolean is_ref = FALSE;
 	gboolean is_literal = FALSE;
 	gboolean is_ptr = FALSE;
+	gboolean is_fnptr = FALSE;
 
 	MonoStringHandle string_handle = MONO_HANDLE_NEW (MonoString, NULL);
 
@@ -3268,6 +3272,9 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 		break;
 	case MONO_TYPE_PTR:
 		is_ptr = TRUE;
+		break;
+	case MONO_TYPE_FNPTR:
+		is_fnptr = TRUE;
 		break;
 	default:
 		g_error ("type 0x%x not handled in "
@@ -3339,6 +3346,12 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 		goto_if_nok (error, return_null);
 
 		goto exit;
+	}
+
+	if (G_UNLIKELY (is_fnptr)) {
+		// CoreCLR behavior: returns an IntPtr value if we're getting a function pointer field.
+		// Does not return a System.Reflection.Pointer value in this case
+		type = mono_get_int_type ();
 	}
 
 	/* boxed value type */
@@ -4233,6 +4246,8 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 						    basename,
 						    (const char*)NULL);
 
+		g_assert (fullpath);
+
 		utf8_fullpath = utf8_from_external (fullpath);
 		if(utf8_fullpath == NULL) {
 			/* Printing the arg text will cause glib to
@@ -4973,9 +4988,9 @@ again:
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (m_type_is_byref (t))
-				t = m_class_get_this_arg (t->data.generic_class->container_class);
+				t = m_class_get_this_arg (m_type_data_get_generic_class_unchecked (t)->container_class);
 			else
-				t = m_class_get_byval_arg (t->data.generic_class->container_class);
+				t = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (t)->container_class);
 			goto again;
 		case MONO_TYPE_PTR: {
 			MonoObject *arg;
@@ -5094,7 +5109,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 		// to return it as boxed vt or NULL
 		for (int i = 0; i < param_count; i++) {
 			MonoType *t = sig->params [i];
-			if (t->type == MONO_TYPE_GENERICINST && m_type_is_byref (t) && t->data.generic_class->container_class == mono_defaults.generic_nullable_class) {
+			if (t->type == MONO_TYPE_GENERICINST && m_type_is_byref (t) && m_type_data_get_generic_class_unchecked (t)->container_class == mono_defaults.generic_nullable_class) {
 				MonoClass *klass = mono_class_from_mono_type_internal (t);
 				MonoObject *boxed_vt = mono_nullable_box (pa [i], klass, error);
 				goto_if_nok (error, return_error);
@@ -5148,9 +5163,9 @@ again:
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (m_type_is_byref (t))
-				t = m_class_get_this_arg (t->data.generic_class->container_class);
+				t = m_class_get_this_arg (m_type_data_get_generic_class_unchecked (t)->container_class);
 			else
-				t = m_class_get_byval_arg (t->data.generic_class->container_class);
+				t = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (t)->container_class);
 			goto again;
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_FNPTR:
@@ -5213,10 +5228,6 @@ exit_null:
 exit:
 	return res;
 }
-
-// FIXME these will move to header soon
-static MonoObjectHandle
-mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error);
 
 /**
  * object_new_common_tail:
@@ -5350,11 +5361,16 @@ mono_object_new_handle (MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	if (MONO_CLASS_IS_IMPORT(klass)) {
+		mono_error_set_not_supported (error, "Built-in COM interop is not supported on Mono.");
+		return MONO_HANDLE_NEW (MonoObject, NULL);
+	}
+
 	MonoVTable* const vtable = mono_class_vtable_checked (klass, error);
 
 	return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
 
-	return mono_object_new_by_vtable (vtable, error);
+	return mono_object_new_alloc_by_vtable (vtable, error);
 }
 
 /**
@@ -5415,89 +5431,14 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoObject *o;
-
 	error_init (error);
 
-	/* check for is_com_object for COM Interop */
-	if (mono_class_is_com_object (vtable->klass)) {
-		gpointer pa [1];
-		MonoMethod *im = create_proxy_for_type_method;
-
-		if (im == NULL) {
-			MonoClass *klass = mono_class_get_activation_services_class ();
-
-			if (!m_class_is_inited (klass))
-				mono_class_init_internal (klass);
-
-			im = mono_class_get_method_from_name_checked (klass, "CreateProxyForType", 1, 0, error);
-			return_val_if_nok (error, NULL);
-			if (!im) {
-				mono_error_set_not_supported (error, "Linked away.");
-				return NULL;
-			}
-			create_proxy_for_type_method = im;
-		}
-
-		pa [0] = mono_type_get_object_checked (m_class_get_byval_arg (vtable->klass), error);
-		if (!is_ok (error))
-			return NULL;
-
-		o = mono_runtime_invoke_checked (im, NULL, pa, error);
-		if (!is_ok (error))
-			return NULL;
-
-		if (o != NULL)
-			return o;
+	if (MONO_CLASS_IS_IMPORT(vtable->klass)) {
+		mono_error_set_not_supported (error, "Built-in COM interop is not supported on Mono.");
+		return NULL;
 	}
 
 	return mono_object_new_alloc_specific_checked (vtable, error);
-}
-
-static MonoObjectHandle
-mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
-{
-	// This function handles remoting and COM.
-	// mono_object_new_alloc_by_vtable does not.
-
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoObjectHandle o = MONO_HANDLE_NEW (MonoObject, NULL);
-
-	error_init (error);
-
-	/* check for is_com_object for COM Interop */
-	if (mono_class_is_com_object (vtable->klass)) {
-		MonoMethod *im = create_proxy_for_type_method;
-
-		if (im == NULL) {
-			MonoClass *klass = mono_class_get_activation_services_class ();
-
-			if (!m_class_is_inited (klass))
-				mono_class_init_internal (klass);
-
-			im = mono_class_get_method_from_name_checked (klass, "CreateProxyForType", 1, 0, error);
-			return_val_if_nok (error, mono_new_null ());
-			if (!im) {
-				mono_error_set_not_supported (error, "Linked away.");
-				return MONO_HANDLE_NEW (MonoObject, NULL);
-			}
-			create_proxy_for_type_method = im;
-		}
-
-		// FIXMEcoop
-		gpointer pa[ ] = { mono_type_get_object_checked (m_class_get_byval_arg (vtable->klass), error) };
-		return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
-
-		// FIXMEcoop
-		o = MONO_HANDLE_NEW (MonoObject, mono_runtime_invoke_checked (im, NULL, pa, error));
-		return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
-
-		if (!MONO_HANDLE_IS_NULL (o))
-			return o;
-	}
-
-	return mono_object_new_alloc_by_vtable (vtable, error);
 }
 
 MonoObject *
@@ -6591,7 +6532,7 @@ mono_value_box_handle (MonoClass *klass, gpointer value, MonoError *error)
 
 	error_init (error);
 
-	g_assert (m_class_is_valuetype (klass));
+	g_assert (m_class_is_valuetype (klass) || mono_class_is_pointer (klass));
 	g_assert (value != NULL);
 	if (G_UNLIKELY (m_class_is_byreflike (klass))) {
 		char *full_name = mono_type_get_full_name (klass);
@@ -6867,6 +6808,8 @@ MonoObjectHandle
 mono_object_handle_isinst (MonoObjectHandle obj, MonoClass *klass, MonoError *error)
 {
 	error_init (error);
+
+	g_assert (klass);
 
 	if (!m_class_is_inited (klass))
 		mono_class_init_internal (klass);

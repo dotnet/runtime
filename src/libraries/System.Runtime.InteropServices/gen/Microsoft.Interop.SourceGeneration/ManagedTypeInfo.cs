@@ -63,7 +63,7 @@ namespace Microsoft.Interop
             }
             if (type.TypeKind == TypeKind.Delegate)
             {
-                return new DelegateTypeInfo(typeName, diagnosticFormattedName);
+                return new DelegateTypeInfo(typeName, diagnosticFormattedName, type is INamedTypeSymbol { IsGenericType: true });
             }
             if (type.TypeKind == TypeKind.TypeParameter)
             {
@@ -80,11 +80,15 @@ namespace Microsoft.Interop
     public sealed record SpecialTypeInfo(string FullTypeName, string DiagnosticFormattedName, SpecialType SpecialType) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName)
     {
         public static readonly SpecialTypeInfo Byte = new("byte", "byte", SpecialType.System_Byte);
+        public static readonly SpecialTypeInfo SByte = new("sbyte", "sbyte", SpecialType.System_SByte);
+        public static readonly SpecialTypeInfo Int16 = new("short", "short", SpecialType.System_Int16);
+        public static readonly SpecialTypeInfo UInt16 = new("ushort", "ushort", SpecialType.System_UInt16);
         public static readonly SpecialTypeInfo Int32 = new("int", "int", SpecialType.System_Int32);
+        public static readonly SpecialTypeInfo UInt32 = new("uint", "uint", SpecialType.System_UInt32);
         public static readonly SpecialTypeInfo Void = new("void", "void", SpecialType.System_Void);
         public static readonly SpecialTypeInfo String = new("string", "string", SpecialType.System_String);
         public static readonly SpecialTypeInfo Boolean = new("bool", "bool", SpecialType.System_Boolean);
-        public static readonly SpecialTypeInfo IntPtr = new("System.IntPtr", "System.IntPtr", SpecialType.System_IntPtr);
+        public static readonly SpecialTypeInfo IntPtr = new("nint", "nint", SpecialType.System_IntPtr);
 
         public bool Equals(SpecialTypeInfo? other)
         {
@@ -103,7 +107,7 @@ namespace Microsoft.Interop
 
     public sealed record SzArrayType(ManagedTypeInfo ElementTypeInfo) : ManagedTypeInfo($"{ElementTypeInfo.FullTypeName}[]", $"{ElementTypeInfo.DiagnosticFormattedName}[]");
 
-    public sealed record DelegateTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+    public sealed record DelegateTypeInfo(string FullTypeName, string DiagnosticFormattedName, bool IsGeneric) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 
     public sealed record TypeParameterTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 

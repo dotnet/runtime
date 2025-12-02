@@ -226,7 +226,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("NTLM")]
         [InlineData("Kerberos")]
         [InlineData("Negotiate")]
-        public async Task PreAuthenticate_NoPreviousAuthenticatedRequests_NoCredentialsSent(string credCacheScheme)
+        public async Task PreAuthenticate_NoPreviousAuthenticatedRequests_NoCredentialsSent(string? credCacheScheme)
         {
             const int NumRequests = 3;
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -268,7 +268,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(null, "WWW-Authenticate: Basic realm=\"hello\"\r\n")]
         [InlineData("Basic", "WWW-Authenticate: Basic realm=\"hello\"\r\n")]
-        public async Task PreAuthenticate_FirstRequestNoHeaderAndAuthenticates_SecondRequestPreauthenticates(string credCacheScheme, string authResponse)
+        public async Task PreAuthenticate_FirstRequestNoHeaderAndAuthenticates_SecondRequestPreauthenticates(string? credCacheScheme, string authResponse)
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
@@ -546,7 +546,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> EchoServersData()
         {
-            foreach (Uri serverUri in Configuration.Http.EchoServerList)
+            foreach (Uri serverUri in Configuration.Http.GetEchoServerList())
             {
                 yield return new object[] { serverUri };
             }

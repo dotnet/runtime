@@ -302,7 +302,14 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
         COMPlusThrow(kNotSupportedException);
     }
 
-    if (pMeth->GetMethodTable()->GetModule() == pModule)
+    // TODO: (async) revisit and examine if this needs to be supported somehow
+    if (pMeth->IsAsyncVariantMethod())
+    {
+        _ASSERTE(!"Async variants should be hidden from reflection.");
+        COMPlusThrow(kNotSupportedException);
+    }
+
+    if ((pMeth->GetMethodTable()->GetModule() == pModule))
     {
         // If the passed in method is defined in the same module, just return the MethodDef token
         memberRefE = pMeth->GetMemberDef();
@@ -626,7 +633,7 @@ extern "C" void QCALLTYPE RuntimeModule_GetFullyQualifiedName(QCall::ModuleHandl
 
     HRESULT hr = S_OK;
 
-    if (pModule->IsPEFile())
+    if (!pModule->IsReflectionEmit())
     {
         LPCWSTR fileName = pModule->GetPath();
         if (*fileName != W('\0'))
@@ -662,8 +669,7 @@ extern "C" HINSTANCE QCALLTYPE MarshalNative_GetHINSTANCE(QCall::ModuleHandle pM
 
     // This returns the base address
     // Other modules should have zero base
-    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
-    if (!pPEAssembly->IsDynamic())
+    if (!pModule->IsReflectionEmit())
     {
         hMod = (HMODULE) pModule->GetPEAssembly()->GetManagedFileContents();
     }
@@ -679,78 +685,45 @@ extern "C" HINSTANCE QCALLTYPE MarshalNative_GetHINSTANCE(QCall::ModuleHandle pM
     return (HINSTANCE)hMod;
 }
 
-static Object* GetTypesInner(Module* pModule);
-
 // Get class will return an array contain all of the classes
 //  that are defined within this Module.
-FCIMPL1(Object*, COMModule::GetTypes, ReflectModuleBaseObject* pModuleUNSAFE)
+extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retTypes)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    OBJECTREF   refRetVal   = NULL;
-    REFLECTMODULEBASEREF refModule = (REFLECTMODULEBASEREF)ObjectToOBJECTREF(pModuleUNSAFE);
-    if (refModule == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+    BEGIN_QCALL;
 
-    Module *pModule = refModule->GetModule();
+    GCX_COOP();
 
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refRetVal, refModule);
+    struct
+    {
+        PTRARRAYREF refArrClasses;
+        PTRARRAYREF xcept;
+        PTRARRAYREF xceptRet;
+        OBJECTREF throwable;
+    } gc;
 
-    refRetVal = (OBJECTREF) GetTypesInner(pModule);
+    ZeroMemory(&gc, sizeof(gc));
 
-    HELPER_METHOD_FRAME_END();
+    GCPROTECT_BEGIN(gc);
 
-    return OBJECTREFToObject(refRetVal);
-}
-FCIMPLEND
-
-Object* GetTypesInner(Module* pModule)
-{
-    CONTRACT(Object*) {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-
-        PRECONDITION(CheckPointer(pModule));
-
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    DWORD           dwNumTypeDefs = 0;
-    DWORD           i;
-    IMDInternalImport *pInternalImport;
-    PTRARRAYREF     refArrClasses = NULL;
-    PTRARRAYREF     xcept = NULL;
     DWORD           cXcept = 0;
-    HENUMInternal   hEnum;
-    bool            bSystemAssembly;    // Don't expose transparent proxy
-    int             AllocSize = 0;
-    MethodTable* pMT = NULL;
 
-    GCPROTECT_BEGIN(refArrClasses);
-    GCPROTECT_BEGIN(xcept);
-
-    pInternalImport = pModule->GetMDImport();
+    IMDInternalImport* pInternalImport = pModule->GetMDImport();
 
     HENUMTypeDefInternalHolder hEnum(pInternalImport);
     // Get the count of typedefs
     hEnum.EnumTypeDefInit();
 
-    dwNumTypeDefs = pInternalImport->EnumGetCount(&hEnum);
+    DWORD dwNumTypeDefs = pInternalImport->EnumGetCount(&hEnum);
 
-    // Allocate the COM+ array
-    bSystemAssembly = (pModule->GetAssembly() == SystemDomain::SystemAssembly());
-    AllocSize = dwNumTypeDefs;
-    refArrClasses = (PTRARRAYREF) AllocateObjectArray(AllocSize, CoreLibBinder::GetClass(CLASS__CLASS));
+    // Allocate the CLR array
+    gc.refArrClasses = (PTRARRAYREF) AllocateObjectArray(dwNumTypeDefs, CoreLibBinder::GetClass(CLASS__CLASS));
 
-    int curPos = 0;
-    OBJECTREF throwable = 0;
+    DWORD curPos = 0;
     mdTypeDef tdCur = mdTypeDefNil;
 
-    GCPROTECT_BEGIN(throwable);
-    // Now create each COM+ Method object and insert it into the array.
+    // Now create each CLR Method object and insert it into the array.
     while (pInternalImport->EnumNext(&hEnum, &tdCur))
     {
         // Get the VM class for the current class token
@@ -761,54 +734,50 @@ Object* GetTypesInner(Module* pModule)
                                              ClassLoader::ThrowIfNotFound,
                                              ClassLoader::PermitUninstDefOrRef);
         }
-        EX_CATCH_THROWABLE(&throwable);
+        EX_CATCH_THROWABLE(&gc.throwable);
 
-        if (throwable != 0) {
+        if (gc.throwable != NULL) {
             // Lazily allocate an array to store the exceptions in
-            if (xcept == NULL)
-                xcept = (PTRARRAYREF) AllocateObjectArray(dwNumTypeDefs,g_pExceptionClass);
+            if (gc.xcept == NULL)
+                gc.xcept = (PTRARRAYREF) AllocateObjectArray(dwNumTypeDefs,g_pExceptionClass);
 
             _ASSERTE(cXcept < dwNumTypeDefs);
-            xcept->SetAt(cXcept++, throwable);
-            throwable = 0;
+            gc.xcept->SetAt(cXcept++, gc.throwable);
+            gc.throwable = 0;
             continue;
         }
 
         _ASSERTE("LoadClass failed." && !curClass.IsNull());
 
-        pMT = curClass.GetMethodTable();
-        PREFIX_ASSUME(pMT != NULL);
+        MethodTable* pMT = curClass.GetMethodTable();
+        _ASSERTE(pMT != NULL);
 
-        // Get the COM+ Class object
+        // Get the CLR Class object
         OBJECTREF refCurClass = pMT->GetManagedClassObject();
         _ASSERTE("GetManagedClassObject failed." && refCurClass != NULL);
 
-        _ASSERTE(curPos < AllocSize);
-        refArrClasses->SetAt(curPos++, refCurClass);
+        _ASSERTE(curPos < dwNumTypeDefs);
+        gc.refArrClasses->SetAt(curPos++, refCurClass);
     }
-    GCPROTECT_END();    //throwable
 
     // check if there were exceptions thrown
     if (cXcept > 0) {
-        PTRARRAYREF xceptRet = NULL;
-        GCPROTECT_BEGIN(xceptRet);
 
-        xceptRet = (PTRARRAYREF) AllocateObjectArray(cXcept,g_pExceptionClass);
-        for (i=0;i<cXcept;i++) {
-            xceptRet->SetAt(i, xcept->GetAt(i));
+        gc.xceptRet = (PTRARRAYREF) AllocateObjectArray(cXcept,g_pExceptionClass);
+        for (DWORD i=0;i<cXcept;i++) {
+            gc.xceptRet->SetAt(i, gc.xcept->GetAt(i));
         }
-        OBJECTREF except = InvokeUtil::CreateClassLoadExcept((OBJECTREF*) &refArrClasses,(OBJECTREF*) &xceptRet);
+        OBJECTREF except = InvokeUtil::CreateClassLoadExcept((OBJECTREF*) &gc.refArrClasses,(OBJECTREF*) &gc.xceptRet);
         COMPlusThrow(except);
-
-        GCPROTECT_END();
     }
 
     // We should have filled the array exactly.
-    _ASSERTE(curPos == AllocSize);
+    _ASSERTE(curPos == dwNumTypeDefs);
 
-    // Assign the return value to the COM+ array
-    GCPROTECT_END();
+    // Assign the return value to the CLR array
+    retTypes.Set(gc.refArrClasses);
+
     GCPROTECT_END();
 
-    RETURN(OBJECTREFToObject(refArrClasses));
+    END_QCALL;
 }

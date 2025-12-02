@@ -33,6 +33,7 @@ set(SUPERPMI_SOURCES
     methodstatsemitter.cpp
     neardiffer.cpp
     parallelsuperpmi.cpp
+    streamingsuperpmi.cpp
     superpmi.cpp
     fileio.cpp
     jithost.cpp
@@ -63,7 +64,6 @@ if(CLR_CMAKE_HOST_UNIX)
         utilcodestaticnohost
         mscorrc
         coreclrpal
-        palrt
         coreclrminipal
     )
 else()

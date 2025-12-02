@@ -19,6 +19,8 @@ namespace System.Diagnostics
     {
         private static volatile DebugProvider s_provider = new DebugProvider();
 
+        public static DebugProvider GetProvider() => s_provider;
+
         public static DebugProvider SetProvider(DebugProvider provider)
         {
             ArgumentNullException.ThrowIfNull(provider);
@@ -32,15 +34,14 @@ namespace System.Diagnostics
             set { }
         }
 
-        [ThreadStatic]
-        private static int t_indentLevel;
+        [field: ThreadStatic]
         public static int IndentLevel
         {
-            get => t_indentLevel;
+            get => field;
             set
             {
-                t_indentLevel = value < 0 ? 0 : value;
-                s_provider.OnIndentLevelChanged(t_indentLevel);
+                field = value < 0 ? 0 : value;
+                s_provider.OnIndentLevelChanged(field);
             }
         }
 
@@ -78,11 +79,12 @@ namespace System.Diagnostics
             WriteLine(string.Format(null, format, args));
 
         [Conditional("DEBUG")]
+        [OverloadResolutionPriority(-1)] // lower priority than (bool, string) overload so that the compiler prefers using CallerArgumentExpression
         public static void Assert([DoesNotReturnIf(false)] bool condition) =>
             Assert(condition, string.Empty, string.Empty);
 
         [Conditional("DEBUG")]
-        public static void Assert([DoesNotReturnIf(false)] bool condition, string? message) =>
+        public static void Assert([DoesNotReturnIf(false)] bool condition, [CallerArgumentExpression(nameof(condition))] string? message = null) =>
             Assert(condition, message, string.Empty);
 
         [Conditional("DEBUG")]

@@ -291,7 +291,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         return null;
                     }
 
-                    minfo.Module = _context.ResolveAssembly(new AssemblyName(minfo.AssemblyName), throwIfNotFound);
+                    minfo.Module = _context.ResolveAssembly(AssemblyNameInfo.Parse(minfo.AssemblyName), throwIfNotFound);
                     return minfo.Module;
                 }
                 else
@@ -426,7 +426,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         }
                         else
                         {
-                            if ((uninstantiatedType.Name == "__Canon") && uninstantiatedType.Namespace == "System" && (uninstantiatedType.Module == uninstantiatedType.Context.SystemModule))
+                            if ((uninstantiatedType.Name.SequenceEqual("__Canon"u8)) && uninstantiatedType.Namespace.SequenceEqual("System"u8) && (uninstantiatedType.Module == uninstantiatedType.Context.SystemModule))
                             {
                                 tinfo.Type = uninstantiatedType.Context.CanonType;
                             }

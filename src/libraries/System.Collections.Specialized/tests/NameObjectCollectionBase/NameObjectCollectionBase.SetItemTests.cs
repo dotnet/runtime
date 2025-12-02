@@ -7,7 +7,7 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameObjectCollectionBaseSetItemTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Set_ObjectAtIndex_ModifiesCollection()
         {
             var noc = new MyNameObjectCollection();

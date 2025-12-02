@@ -18,51 +18,24 @@ namespace ILCompiler.DependencyAnalysis
         {
             switch (Id)
             {
-                case ReadyToRunHelperId.VirtualCall:
-                    {
-                        MethodDesc targetMethod = (MethodDesc)Target;
-
-                        Debug.Assert(!targetMethod.OwningType.IsInterface);
-                        Debug.Assert(!targetMethod.CanMethodBeInSealedVTable());
-
-                        AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
-                        encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
-
-                        int pointerSize = factory.Target.PointerSize;
-
-                        int slot = 0;
-                        if (!relocsOnly)
-                        {
-                            slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
-                            Debug.Assert(slot != -1);
-                        }
-                        Debug.Assert(((NativeSequencePoint[])((INodeWithDebugInfo)this).GetNativeSequencePoints())[1].NativeOffset == encoder.Builder.CountBytes);
-
-                        AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(pointerSize) + (slot * pointerSize), 0, AddrModeSize.Int64);
-                        encoder.EmitJmpToAddrMode(ref jmpAddrMode);
-                    }
-                    break;
-
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;
                         bool hasLazyStaticConstructor = factory.PreinitializationManager.HasLazyStaticConstructor(target);
-                        encoder.EmitLEAQ(encoder.TargetRegister.Result, factory.TypeNonGCStaticsSymbol(target));
 
                         if (!hasLazyStaticConstructor)
                         {
+                            encoder.EmitLEAQ(encoder.TargetRegister.Result, factory.TypeNonGCStaticsSymbol(target));
                             encoder.EmitRET();
                         }
                         else
                         {
-                            // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
-                            encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeNonGCStaticsSymbol(target), -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
+                            // The fast path check is not necessary. It is always expanded by RyuJIT.
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.TypeNonGCStaticsSymbol(target));
 
-                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
-                            encoder.EmitCMP(ref initialized, 0);
-                            encoder.EmitRETIfEqual();
+                            AddrMode loadCctor = new AddrMode(encoder.TargetRegister.Arg1, null, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target), 0, AddrModeSize.Int64);
+                            encoder.EmitLEA(encoder.TargetRegister.Arg0, ref loadCctor);
 
-                            encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase));
                         }
                     }
@@ -74,26 +47,7 @@ namespace ILCompiler.DependencyAnalysis
                         ISortableSymbolNode index = factory.TypeThreadStaticIndex(target);
                         if (index is TypeThreadStaticIndexNode ti && ti.IsInlined)
                         {
-                            if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
-                            {
-                                EmitInlineTLSAccess(factory, ref encoder);
-                            }
-                            else
-                            {
-                                // First arg: unused address of the TypeManager
-                                // encoder.EmitMOV(encoder.TargetRegister.Arg0, 0);
-
-                                // Second arg: -1 (index of inlined storage)
-                                encoder.EmitMOV(encoder.TargetRegister.Arg1, -1);
-
-                                encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target), -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-
-                                AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
-                                encoder.EmitCMP(ref initialized, 0);
-                                encoder.EmitJNE(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
-
-                                EmitInlineTLSAccess(factory, ref encoder);
-                            }
+                            throw new NotImplementedException();
                         }
                         else
                         {
@@ -133,24 +87,19 @@ namespace ILCompiler.DependencyAnalysis
                         MetadataType target = (MetadataType)Target;
 
                         encoder.EmitLEAQ(encoder.TargetRegister.Result, factory.TypeGCStaticsSymbol(target));
-                        AddrMode loadFromRax = new AddrMode(encoder.TargetRegister.Result, null, 0, 0, AddrModeSize.Int64);
-                        encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromRax);
 
                         if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                         {
+                            AddrMode loadFromRax = new AddrMode(encoder.TargetRegister.Result, null, 0, 0, AddrModeSize.Int64);
+                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromRax);
                             encoder.EmitRET();
                         }
                         else
                         {
-                            // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
+                            // The fast path check is not necessary. It is always expanded by RyuJIT.
+                            AddrMode loadFromRax = new AddrMode(encoder.TargetRegister.Result, null, 0, 0, AddrModeSize.Int64);
+                            encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromRax);
                             encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeNonGCStaticsSymbol(target), -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-
-                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
-                            encoder.EmitCMP(ref initialized, 0);
-                            encoder.EmitRETIfEqual();
-
-                            encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
-
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnGCStaticBase));
                         }
                     }
@@ -162,7 +111,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         if (target.TargetNeedsVTableLookup)
                         {
-                            Debug.Assert(!target.TargetMethod.CanMethodBeInSealedVTable());
+                            Debug.Assert(!target.TargetMethod.CanMethodBeInSealedVTable(factory));
 
                             AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg1, null, 0, 0, AddrModeSize.Int64);
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, ref loadFromThisPtr);
@@ -200,7 +149,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (targetMethod.OwningType.IsInterface)
                         {
                             encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.InterfaceDispatchCell(targetMethod));
-                            encoder.EmitJMP(factory.ExternSymbol("RhpResolveInterfaceMethod"));
+                            encoder.EmitJMP(factory.ExternFunctionSymbol("RhpResolveInterfaceMethod"));
                         }
                         else
                         {
@@ -210,7 +159,7 @@ namespace ILCompiler.DependencyAnalysis
                             AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
                             encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
 
-                            Debug.Assert(!targetMethod.CanMethodBeInSealedVTable());
+                            Debug.Assert(!targetMethod.CanMethodBeInSealedVTable(factory));
 
                             int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
                             Debug.Assert(slot != -1);
@@ -223,100 +172,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 default:
                     throw new NotImplementedException();
-            }
-        }
-
-        // emits code that results in ThreadStaticBase referenced in RAX.
-        // may trash volatile registers. (there are calls to the slow helper and possibly to platform's TLS support)
-        private static void EmitInlineTLSAccess(NodeFactory factory, ref X64Emitter encoder)
-        {
-            ISymbolNode getInlinedThreadStaticBaseSlow = factory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow);
-            ISymbolNode tlsRoot = factory.TlsRoot;
-            // IsSingleFileCompilation is not enough to guarantee that we can use "Initial Executable" optimizations.
-            // we need a special compiler flag analogous to /GA. Just assume "false" for now.
-            // bool isInitialExecutable = factory.CompilationModuleGroup.IsSingleFileCompilation;
-            bool isInitialExecutable = false;
-
-            if (factory.Target.IsWindows)
-            {
-                if (isInitialExecutable)
-                {
-                    // mov         rax,qword ptr gs:[58h]
-                    encoder.Builder.EmitBytes(new byte[] { 0x65, 0x48, 0x8B, 0x04, 0x25, 0x58, 0x00, 0x00, 0x00 });
-
-                    // mov         ecx, SECTIONREL tlsRoot
-                    encoder.Builder.EmitBytes(new byte[] { 0xB9 });
-                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_SECREL);
-
-                    // add         rcx,qword ptr [rax]
-                    encoder.Builder.EmitBytes(new byte[] { 0x48, 0x03, 0x08 });
-                }
-                else
-                {
-                    // mov         ecx,dword ptr [_tls_index]
-                    encoder.Builder.EmitBytes(new byte[] { 0x8B, 0x0D });
-                    encoder.Builder.EmitReloc(factory.ExternSymbol("_tls_index"), RelocType.IMAGE_REL_BASED_REL32);
-
-                    // mov         rax,qword ptr gs:[58h]
-                    encoder.Builder.EmitBytes(new byte[] { 0x65, 0x48, 0x8B, 0x04, 0x25, 0x58, 0x00, 0x00, 0x00 });
-
-                    // mov         rax,qword ptr [rax+rcx*8]
-                    encoder.Builder.EmitBytes(new byte[] { 0x48, 0x8B, 0x04, 0xC8 });
-
-                    // mov         ecx, SECTIONREL tlsRoot
-                    encoder.Builder.EmitBytes(new byte[] { 0xB9 });
-                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_SECREL);
-
-                    // add         rcx,rax
-                    encoder.Builder.EmitBytes(new byte[] { 0x48, 0x01, 0xC1 });
-                }
-
-                // mov rax, qword ptr[rcx]
-                encoder.Builder.EmitBytes(new byte[] { 0x48, 0x8b, 0x01 });
-                encoder.EmitCompareToZero(Register.RAX);
-                encoder.EmitJE(getInlinedThreadStaticBaseSlow);
-                encoder.EmitRET();
-            }
-            else if (factory.Target.OperatingSystem == TargetOS.Linux)
-            {
-                if (isInitialExecutable)
-                {
-                    // movq %fs:0x0,%rax
-                    encoder.Builder.EmitBytes(new byte[] { 0x64, 0x48, 0x8B, 0x04, 0x25, 0x00, 0x00, 0x00, 0x00 });
-
-                    // leaq tlsRoot@TPOFF(%rax), %rdi
-                    encoder.Builder.EmitBytes(new byte[] { 0x48, 0x8D, 0xB8 });
-                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_TPOFF);
-                }
-                else
-                {
-                    // data16 leaq tlsRoot@TLSGD(%rip), %rdi
-                    encoder.Builder.EmitBytes(new byte[] { 0x66, 0x48, 0x8D, 0x3D });
-                    encoder.Builder.EmitReloc(tlsRoot, RelocType.IMAGE_REL_TLSGD, -4);
-
-                    // data16 data16 rex.W callq __tls_get_addr@PLT
-                    encoder.Builder.EmitBytes(new byte[] { 0x66, 0x66, 0x48, 0xE8 });
-                    encoder.Builder.EmitReloc(factory.ExternSymbol("__tls_get_addr"), RelocType.IMAGE_REL_BASED_REL32);
-
-                    encoder.EmitMOV(Register.RDI, Register.RAX);
-                }
-
-                // mov  rax, qword ptr[rdi]
-                encoder.Builder.EmitBytes(new byte[] { 0x48, 0x8B, 0x07 });
-                encoder.EmitCompareToZero(Register.RAX);
-                encoder.EmitJE(getInlinedThreadStaticBaseSlow);
-                encoder.EmitRET();
-            }
-            else if (factory.Target.IsOSXLike)
-            {
-                // movq _\Var @TLVP(% rip), % rdi
-                // callq * (% rdi)
-
-                throw new NotImplementedException();
-            }
-            else
-            {
-                throw new NotImplementedException();
             }
         }
     }

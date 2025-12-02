@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Formats.Asn1
@@ -31,47 +29,6 @@ namespace System.Formats.Asn1
                 UniversalTagNumber.T61String => s_t61Encoding,
                 _ => throw new ArgumentOutOfRangeException(nameof(encodingType), encodingType, null),
             };
-
-        internal static int GetByteCount(this Encoding encoding, ReadOnlySpan<char> str)
-        {
-            if (str.IsEmpty)
-            {
-                // Ensure a non-null pointer is obtained, even though the expected answer is 0.
-                str = string.Empty.AsSpan();
-            }
-
-            unsafe
-            {
-                fixed (char* strPtr = &MemoryMarshal.GetReference(str))
-                {
-                    return encoding.GetByteCount(strPtr, str.Length);
-                }
-            }
-        }
-
-        internal static int GetBytes(this Encoding encoding, ReadOnlySpan<char> chars, Span<byte> bytes)
-        {
-            if (chars.IsEmpty)
-            {
-                // Ensure a non-null pointer is obtained.
-                chars = string.Empty.AsSpan();
-            }
-
-            if (bytes.IsEmpty)
-            {
-                // Ensure a non-null pointer is obtained.
-                bytes = Array.Empty<byte>();
-            }
-
-            unsafe
-            {
-                fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
-                fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
-                {
-                    return encoding.GetBytes(charsPtr, chars.Length, bytesPtr, bytes.Length);
-                }
-            }
-        }
     }
 
     internal abstract class SpanBasedEncoding : Encoding
@@ -100,7 +57,7 @@ namespace System.Formats.Asn1
         }
 
         public
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
             override
 #endif
         int GetByteCount(ReadOnlySpan<char> chars)
@@ -135,7 +92,7 @@ namespace System.Formats.Asn1
         }
 
         public
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
             override
 #endif
         int GetCharCount(ReadOnlySpan<byte> bytes)
@@ -234,7 +191,7 @@ namespace System.Formats.Asn1
                     throw new ArgumentOutOfRangeException(nameof(allowedChars));
                 }
 
-                Debug.Assert(isAllowed[c] == false);
+                Debug.Assert(!isAllowed[c]);
                 isAllowed[c] = true;
             }
 
@@ -435,7 +392,7 @@ namespace System.Formats.Asn1
             return s_utf8Encoding.GetByteCount(s);
         }
 
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
         public override int GetByteCount(ReadOnlySpan<char> chars)
         {
             return s_utf8Encoding.GetByteCount(chars);
@@ -476,7 +433,7 @@ namespace System.Formats.Asn1
             }
         }
 
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
         public override int GetCharCount(ReadOnlySpan<byte> bytes)
         {
             try

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -42,6 +43,8 @@ namespace System.Text.RegularExpressions.Tests
 
                 yield return new object[] { engine, "a(?<dot1>.)c(.)e", "123abcde456aBCDe789", RegexOptions.None, 19, 0, new string[] { "123", "d", "b", "456aBCDe789" } };
                 yield return new object[] { engine, "a(?<dot1>.)c(.)e", "123abcde456aBCDe789", RegexOptions.IgnoreCase, 19, 0, new string[] { "123", "d", "b", "456", "D", "B", "789" } };
+
+                yield return new object[] { engine, "a", string.Concat(Enumerable.Repeat("ab", 1000)), RegexOptions.None, 0, 0, new[] { "" }.Concat(Enumerable.Repeat("b", 1000)).ToArray() };
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {

@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__HotColdMap");
+            sb.Append("__HotColdMap"u8);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

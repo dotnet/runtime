@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -18,9 +20,10 @@ namespace Internal.IL.Stubs
 #endif // READYTORUN
             MethodDesc method)
         {
-            Debug.Assert(((MetadataType)method.OwningType).Name == "Interlocked");
+            Debug.Assert(((MetadataType)method.OwningType).Name.SequenceEqual("Interlocked"u8));
+            Debug.Assert(!method.IsGenericMethodDefinition);
 
-            if (method.HasInstantiation && method.Name == "CompareExchange")
+            if (method.HasInstantiation && method.Name.SequenceEqual("CompareExchange"u8))
             {
 #if READYTORUN
                 // Check to see if the tokens needed to describe the CompareExchange are naturally present within
@@ -30,22 +33,45 @@ namespace Internal.IL.Stubs
                 if (compilationModuleGroup.ContainsType(method.OwningType))
 #endif // READYTORUN
                 {
-                    TypeDesc objectType = method.Context.GetWellKnownType(WellKnownType.Object);
-                    MethodDesc compareExchangeObject = method.OwningType.GetKnownMethod("CompareExchange",
-                        new MethodSignature(
-                            MethodSignatureFlags.Static,
-                            genericParameterCount: 0,
-                            returnType: objectType,
-                            parameters: new TypeDesc[] { objectType.MakeByRefType(), objectType, objectType }));
+                    // Rewrite the generic Interlocked.CompareExchange<T> to be a call to one of the non-generic overloads.
+                    TypeDesc ceArgType = null;
 
-                    ILEmitter emit = new ILEmitter();
-                    ILCodeStream codeStream = emit.NewCodeStream();
-                    codeStream.EmitLdArg(0);
-                    codeStream.EmitLdArg(1);
-                    codeStream.EmitLdArg(2);
-                    codeStream.Emit(ILOpcode.call, emit.NewToken(compareExchangeObject));
-                    codeStream.Emit(ILOpcode.ret);
-                    return emit.Link(method);
+                    TypeDesc tType = method.Instantiation[0];
+                    if (!tType.IsValueType)
+                    {
+                        ceArgType = method.Context.GetWellKnownType(WellKnownType.Object);
+                    }
+                    else if ((tType.IsPrimitive || tType.IsEnum) && (tType.UnderlyingType.Category is not (TypeFlags.Single or TypeFlags.Double)))
+                    {
+                        int size = tType.GetElementSize().AsInt;
+                        Debug.Assert(size is 1 or 2 or 4 or 8);
+                        ceArgType = size switch
+                        {
+                            1 => method.Context.GetWellKnownType(WellKnownType.Byte),
+                            2 => method.Context.GetWellKnownType(WellKnownType.UInt16),
+                            4 => method.Context.GetWellKnownType(WellKnownType.Int32),
+                            _ => method.Context.GetWellKnownType(WellKnownType.Int64),
+                        };
+                    }
+
+                    if (ceArgType is not null)
+                    {
+                        MethodDesc compareExchangeNonGeneric = method.OwningType.GetKnownMethod("CompareExchange"u8,
+                            new MethodSignature(
+                                MethodSignatureFlags.Static,
+                                genericParameterCount: 0,
+                                returnType: ceArgType,
+                                parameters: [ceArgType.MakeByRefType(), ceArgType, ceArgType]));
+
+                        ILEmitter emit = new ILEmitter();
+                        ILCodeStream codeStream = emit.NewCodeStream();
+                        codeStream.EmitLdArg(0);
+                        codeStream.EmitLdArg(1);
+                        codeStream.EmitLdArg(2);
+                        codeStream.Emit(ILOpcode.call, emit.NewToken(compareExchangeNonGeneric));
+                        codeStream.Emit(ILOpcode.ret);
+                        return emit.Link(method);
+                    }
                 }
             }
 

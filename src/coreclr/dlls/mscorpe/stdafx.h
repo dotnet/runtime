@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <algorithm>
 
 #define FEATURE_NO_HOST     // Do not use host interface
 #include <utilcode.h>
@@ -21,3 +22,6 @@
 #include "ceegen.h"
 #include "ceefilegenwriter.h"
 #include "ceesectionstring.h"
+
+using std::min;
+using std::max;

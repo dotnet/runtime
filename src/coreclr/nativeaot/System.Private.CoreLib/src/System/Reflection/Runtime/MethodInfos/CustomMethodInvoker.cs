@@ -36,7 +36,7 @@ namespace System.Reflection.Runtime.MethodInfos
             if (!(thisObject == null && 0 != (_options & InvokerOptions.AllowNullThis)))
                 ValidateThis(thisObject, _thisType.TypeHandle);
 
-            int argCount = (arguments != null) ? arguments.Length : 0;
+            int argCount = arguments.Length;
             if (argCount != _parameterTypes.Length)
                 throw new TargetParameterCountException();
 

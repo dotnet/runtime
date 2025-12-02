@@ -5,10 +5,8 @@ using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
 {
-    public static class Debugger
+    public static partial class Debugger
     {
-        public static readonly string? DefaultCategory;
-
         public static bool IsAttached => IsAttached_internal();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

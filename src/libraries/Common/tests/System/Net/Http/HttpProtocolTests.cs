@@ -66,36 +66,9 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(9)]
-        public async Task GetAsync_RequestVersion0X_ThrowsNotSupportedException(int minorVersion)
-        {
-            if (IsWinHttpHandler)
-            {
-                return;
-            }
-
-            using (HttpClient client = CreateHttpClient())
-            {
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://nosuchhost.invalid");
-                request.Version = new Version(0, minorVersion);
-
-                Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
-
-                await Assert.ThrowsAsync<NotSupportedException>(() => getResponseTask);
-            }
-        }
-
-        [Theory]
-        [InlineData(1, 2)]
-        [InlineData(1, 6)]
-        [InlineData(2, 0)]  // Note, this is plain HTTP (not HTTPS), so 2.0 is not supported and should degrade to 1.1
-        [InlineData(2, 1)]
-        [InlineData(2, 7)]
+        [InlineData(2, 0)]  // This is plain HTTP (not HTTPS), so 2.0 is not supported and should degrade to 1.1
         [InlineData(3, 0)]
-        [InlineData(4, 2)]
-        public async Task GetAsync_UnknownRequestVersion_DegradesTo11(int majorVersion, int minorVersion)
+        public async Task GetAsync_PlainHttpRequestOnVersion20Or30_DegradesTo11(int majorVersion, int minorVersion)
         {
             // Sync API supported only up to HTTP/1.1
             if (!TestAsync && majorVersion >= 2)
@@ -118,6 +91,35 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal($"GET {url.PathAndQuery} HTTP/1.1", requestLines[0]);
                 }
             }, new LoopbackServer.Options { StreamWrapper = GetStream });
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(0, 1)]
+        [InlineData(0, 9)]
+        [InlineData(1, 2)]
+        [InlineData(1, 6)]
+        [InlineData(2, 1)]
+        [InlineData(2, 7)]
+        [InlineData(4, 2)]
+        public async Task GetAsync_UnknownRequestVersion_ThrowsException(int majorVersion, int minorVersion)
+        {
+            // Sync API supported only up to HTTP/1.1
+            if (!TestAsync && majorVersion >= 2)
+            {
+                return;
+            }
+
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                Version version = new Version(majorVersion, minorVersion);
+                using (HttpClient client = CreateHttpClient(version.ToString()))
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Version = version;
+                    await Assert.ThrowsAsync<NotSupportedException>(() => client.SendAsync(TestAsync, request));
+                }
+            });
         }
 
         [Theory]
@@ -192,23 +194,23 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(2, 1)]
         [InlineData(3, 0)]
         [InlineData(4, 2)]
-        public async Task GetAsyncVersion11_BadResponseVersion_ThrowsOr00(int responseMajorVersion, int responseMinorVersion)
+        public async Task GetAsyncVersion11_BadResponseVersion_Throws(int responseMajorVersion, int responseMinorVersion)
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                using (HttpClient client = CreateHttpClient())
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
                 {
-                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+                    using HttpClient client = CreateHttpClient();
+
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri);
                     request.Version = HttpVersion.Version11;
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
-                    Task<List<string>> serverTask =
-                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
-                            $"HTTP/{responseMajorVersion}.{responseMinorVersion} 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
-
-                    await Assert.ThrowsAsync<HttpRequestException>(() => getResponseTask);
-                }
-            }, new LoopbackServer.Options { StreamWrapper = GetStream });
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(TestAsync, request));
+                },
+                async server =>
+                {
+                    await IgnoreExceptions(server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                        $"HTTP/{responseMajorVersion}.{responseMinorVersion} 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n"));
+                }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
 
         [Theory]
@@ -285,44 +287,33 @@ namespace System.Net.Http.Functional.Tests
             }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
 
-        public static IEnumerable<string> GetInvalidStatusLine()
-        {
-            yield return "HTTP/1.1 2345";
-            yield return "HTTP/A.1 200 OK";
-            yield return "HTTP/X.Y.Z 200 OK";
-
-            yield return "HTTP/0.1 200 OK";
-            yield return "HTTP/3.5 200 OK";
-            yield return "HTTP/1.12 200 OK";
-            yield return "HTTP/12.1 200 OK";
-            yield return "HTTP/1.1 200 O\rK";
-
-            yield return "HTTP/1.A 200 OK";
-            yield return "HTTP/1.1 ";
-            yield return "HTTP/1.1 !11";
-            yield return "HTTP/1.1 a11";
-            yield return "HTTP/1.1 abc";
-            yield return "HTTP/1.1\t\t";
-            yield return "HTTP/1.1\t";
-            yield return "HTTP/1.1  ";
-
-            yield return "HTTP/1.1 200OK";
-            yield return "HTTP/1.1 20c";
-            yield return "HTTP/1.1 23";
-            yield return "HTTP/1.1 2bc";
-
-            yield return "NOTHTTP/1.1";
-            yield return "HTTP 1.1 200 OK";
-            yield return "ABCD/1.1 200 OK";
-            yield return "HTTP/1.1";
-            yield return "HTTP\\1.1 200 OK";
-            yield return "NOTHTTP/1.1 200 OK";
-        }
-
-        public static TheoryData InvalidStatusLine = GetInvalidStatusLine().ToTheoryData();
-
         [Theory]
-        [MemberData(nameof(InvalidStatusLine))]
+        [InlineData("HTTP/1.1 2345")]
+        [InlineData("HTTP/A.1 200 OK")]
+        [InlineData("HTTP/X.Y.Z 200 OK")]
+        [InlineData("HTTP/0.1 200 OK")]
+        [InlineData("HTTP/3.5 200 OK")]
+        [InlineData("HTTP/1.12 200 OK")]
+        [InlineData("HTTP/12.1 200 OK")]
+        [InlineData("HTTP/1.1 200 O\rK")]
+        [InlineData("HTTP/1.A 200 OK")]
+        [InlineData("HTTP/1.1 ")]
+        [InlineData("HTTP/1.1 !11")]
+        [InlineData("HTTP/1.1 a11")]
+        [InlineData("HTTP/1.1 abc")]
+        [InlineData("HTTP/1.1\t\t")]
+        [InlineData("HTTP/1.1\t")]
+        [InlineData("HTTP/1.1  ")]
+        [InlineData("HTTP/1.1 200OK")]
+        [InlineData("HTTP/1.1 20c")]
+        [InlineData("HTTP/1.1 23")]
+        [InlineData("HTTP/1.1 2bc")]
+        [InlineData("NOTHTTP/1.1")]
+        [InlineData("HTTP 1.1 200 OK")]
+        [InlineData("ABCD/1.1 200 OK")]
+        [InlineData("HTTP/1.1")]
+        [InlineData("HTTP\\1.1 200 OK")]
+        [InlineData("NOTHTTP/1.1 200 OK")]
         public async Task GetAsync_InvalidStatusLine_ThrowsException(string responseString)
         {
             await GetAsyncThrowsExceptionHelper(responseString);
@@ -350,16 +341,17 @@ namespace System.Net.Http.Functional.Tests
 
         private async Task GetAsyncThrowsExceptionHelper(string responseString)
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                using (HttpClient client = CreateHttpClient())
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
                 {
-                    Task ignoredServerTask = server.AcceptConnectionSendCustomResponseAndCloseAsync(
-                        responseString + "\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
-
-                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(TestAsync, url));
-                }
-            }, new LoopbackServer.Options { StreamWrapper = GetStream });
+                    using HttpClient client = CreateHttpClient();
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(TestAsync, uri));
+                },
+                async server =>
+                {
+                    await IgnoreExceptions(server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                        responseString + "\r\nConnection: close\r\nContent-Length: 0\r\n\r\n"));
+                }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
 
         [Theory]

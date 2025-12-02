@@ -128,7 +128,7 @@ namespace ILCompiler
 
         protected virtual AllowedAssemblies AllowedAssemblySelector { get => _owningModule != null ? AllowedAssemblies.ContainingAssembly : AllowedAssemblies.AnyAssembly; }
 
-        private bool ShouldProcessAllAssemblies(XPathNavigator nav, [NotNullWhen(false)] out AssemblyName? assemblyName)
+        private bool ShouldProcessAllAssemblies(XPathNavigator nav, [NotNullWhen(false)] out AssemblyNameInfo? assemblyName)
         {
             assemblyName = null;
             if (GetFullName(nav) == AllAssembliesFullName)
@@ -147,7 +147,7 @@ namespace ILCompiler
 
                 // Errors for invalid assembly names should show up even if this element will be
                 // skipped due to feature conditions.
-                bool processAllAssemblies = ShouldProcessAllAssemblies(assemblyNav, out AssemblyName? name);
+                bool processAllAssemblies = ShouldProcessAllAssemblies(assemblyNav, out AssemblyNameInfo? name);
                 if (processAllAssemblies && !_globalAttributeRemoval)
                 {
 #if !READYTORUN
@@ -175,7 +175,7 @@ namespace ILCompiler
                         if (_owningModule.Assembly.GetName().Name != name!.Name)
                         {
 #if !READYTORUN
-                            LogWarning(assemblyNav, DiagnosticId.AssemblyWithEmbeddedXmlApplyToAnotherAssembly, _owningModule.Assembly.GetName().Name ?? "", name.ToString());
+                            LogWarning(assemblyNav, DiagnosticId.AssemblyWithEmbeddedXmlApplyToAnotherAssembly, _owningModule.Assembly.GetName().Name, name.FullName);
 #endif
                             continue;
                         }
@@ -188,7 +188,7 @@ namespace ILCompiler
                     if (assembly == null)
                     {
 #if !READYTORUN
-                        LogWarning(assemblyNav, DiagnosticId.XmlCouldNotResolveAssembly, name!.Name ?? "");
+                        LogWarning(assemblyNav, DiagnosticId.XmlCouldNotResolveAssembly, name!.Name);
 #endif
                         continue;
                     }
@@ -217,9 +217,10 @@ namespace ILCompiler
                         continue;
                 }
 
-                // TODO: Process exported types
+                MetadataType? type = CecilCompatibleTypeParser.GetType(assembly, fullname);
 
-                TypeDesc? type = CecilCompatibleTypeParser.GetType(assembly, fullname);
+                if (type != null && type.Module != assembly)
+                    type = ProcessExportedType(type, assembly, typeNav);
 
                 if (type == null)
                 {
@@ -234,11 +235,13 @@ namespace ILCompiler
             }
         }
 
+        protected virtual MetadataType? ProcessExportedType(MetadataType exported, ModuleDesc assembly, XPathNavigator nav) => exported;
+
         private void MatchType(TypeDesc type, Regex regex, XPathNavigator nav)
         {
             StringBuilder sb = new StringBuilder();
             CecilTypeNameFormatter.Instance.AppendName(sb, type);
-            if (regex.Match(sb.ToString()).Success)
+            if (regex.IsMatch(sb.ToString()))
                 ProcessType(type, nav);
         }
 
@@ -298,7 +301,7 @@ namespace ILCompiler
                 bool foundMatch = false;
                 foreach (FieldDesc field in type.GetFields())
                 {
-                    if (field.Name == name)
+                    if (field.Name.StringEquals(name))
                     {
                         foundMatch = true;
                         ProcessField(type, field, nav);
@@ -322,7 +325,7 @@ namespace ILCompiler
             {
                 sb.Clear();
                 CecilTypeNameFormatter.Instance.AppendName(sb, field.FieldType);
-                if (signature == sb.ToString() + " " + field.Name)
+                if (signature == sb.ToString() + " " + field.GetName())
                     return field;
             }
 
@@ -364,7 +367,7 @@ namespace ILCompiler
                 bool foundMatch = false;
                 foreach (MethodDesc method in type.GetAllMethods())
                 {
-                    if (name == method.Name)
+                    if (method.Name.StringEquals(name))
                     {
                         foundMatch = true;
                         ProcessMethod(type, method, nav, customData);
@@ -499,9 +502,9 @@ namespace ILCompiler
 
         protected virtual void ProcessProperty(TypeDesc type, PropertyPseudoDesc property, XPathNavigator nav, object? customData, bool fromSignature) { }
 
-        protected virtual AssemblyName GetAssemblyName(XPathNavigator nav)
+        protected virtual AssemblyNameInfo GetAssemblyName(XPathNavigator nav)
         {
-            return new AssemblyName(GetFullName(nav));
+            return AssemblyNameInfo.Parse(GetFullName(nav));
         }
 
         protected static string GetFullName(XPathNavigator nav)
@@ -529,7 +532,7 @@ namespace ILCompiler
             StringBuilder sb = new StringBuilder();
             CecilTypeNameFormatter.Instance.AppendName(sb, meth.Signature.ReturnType);
             sb.Append(' ');
-            sb.Append(meth.Name);
+            sb.Append(meth.GetName());
             if (includeGenericParameters && meth.HasInstantiation)
             {
                 sb.Append('`');
@@ -576,7 +579,7 @@ namespace ILCompiler
                 AppendName(sb, type.ElementType);
                 sb.Append('[');
                 if (type.Rank > 1)
-                    sb.Append(new string(',', type.Rank - 1));
+                    sb.Append(',', type.Rank - 1);
                 sb.Append(']');
             }
             public override void AppendName(StringBuilder sb, ByRefType type)
@@ -639,20 +642,20 @@ namespace ILCompiler
             }
             protected override void AppendNameForNamespaceType(StringBuilder sb, DefType type)
             {
-                if (!string.IsNullOrEmpty(type.Namespace))
+                if (!type.Namespace.IsEmpty)
                 {
-                    sb.Append(type.Namespace);
+                    sb.Append(type.GetNamespace());
                     sb.Append('.');
                 }
 
-                sb.Append(type.Name);
+                sb.Append(type.GetName());
             }
 
             protected override void AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType)
             {
                 AppendName(sb, containingType);
                 sb.Append('/');
-                sb.Append(nestedType.Name);
+                sb.Append(nestedType.GetName());
             }
 
 #if false
@@ -759,7 +762,7 @@ namespace ILCompiler
 
     public class CecilCompatibleTypeParser
     {
-        public static TypeDesc? GetType(ModuleDesc assembly, string fullName)
+        public static MetadataType? GetType(ModuleDesc assembly, string fullName)
         {
             Debug.Assert(!string.IsNullOrEmpty(fullName));
             var position = fullName.IndexOf('/');
@@ -768,7 +771,7 @@ namespace ILCompiler
             string @namespace, name;
             SplitFullName(fullName, out @namespace, out name);
 
-            return assembly.GetType(@namespace, name, throwIfNotFound: false);
+            return assembly.GetType(Encoding.UTF8.GetBytes(@namespace), Encoding.UTF8.GetBytes(name), throwIfNotFound: false);
         }
 
         private static MetadataType? GetNestedType(ModuleDesc assembly, string fullName)

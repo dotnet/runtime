@@ -208,10 +208,7 @@ namespace System.Security.Cryptography.Xml
         [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public void LoadXml(XmlElement value)
         {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             _id = Utils.GetAttribute(value, "Id", SignedXml.XmlDsigNamespaceUrl);
             _uri = Utils.GetAttribute(value, "URI", SignedXml.XmlDsigNamespaceUrl);
@@ -266,18 +263,31 @@ namespace System.Security.Cryptography.Xml
                         // let the transform read the children of the transformElement for data
                         transform.LoadInnerXml(transformElement.ChildNodes);
                         // Hack! this is done to get around the lack of here() function support in XPath
-                        if (transform is XmlDsigEnvelopedSignatureTransform
-                            && _uri != null && (_uri.Length == 0 || _uri[0] == '#'))
+                        if (transform is XmlDsigEnvelopedSignatureTransform)
                         {
                             // Walk back to the Signature tag. Find the nearest signature ancestor
                             // Signature-->SignedInfo-->Reference-->Transforms-->Transform
                             XmlNode? signatureTag = transformElement.SelectSingleNode("ancestor::ds:Signature[1]", nsm);
 
                             // Resolve the reference to get starting point for position calculation.
-                            XmlNode? referenceTarget =
-                                _uri.Length == 0
-                                ? transformElement.OwnerDocument
-                                : SignedXml!.GetIdElement(transformElement.OwnerDocument, Utils.GetIdFromLocalUri(_uri, out bool _));
+                            // This needs to match the way CalculateSignature resolves URI references.
+                            XmlNode? referenceTarget = null;
+                            if (_uri == null || _uri.Length == 0)
+                            {
+                                referenceTarget = transformElement.OwnerDocument;
+                            }
+                            else if (_uri[0] == '#')
+                            {
+                                string idref = Utils.ExtractIdFromLocalUri(_uri);
+                                if (idref == "xpointer(/)")
+                                {
+                                    referenceTarget = transformElement.OwnerDocument;
+                                }
+                                else
+                                {
+                                    referenceTarget = SignedXml!.GetIdElement(transformElement.OwnerDocument, idref);
+                                }
+                            }
 
                             XmlNodeList? signatureList = referenceTarget?.SelectNodes(".//ds:Signature", nsm);
                             if (signatureList != null)
@@ -327,10 +337,7 @@ namespace System.Security.Cryptography.Xml
 
         public void AddTransform(Transform transform)
         {
-            if (transform is null)
-            {
-                throw new ArgumentNullException(nameof(transform));
-            }
+            ArgumentNullException.ThrowIfNull(transform);
 
             transform.Reference = this;
             TransformChain.Add(transform);

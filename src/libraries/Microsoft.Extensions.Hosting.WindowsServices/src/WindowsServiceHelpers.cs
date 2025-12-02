@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             if (
 #if NETFRAMEWORK
                 Environment.OSVersion.Platform != PlatformID.Win32NT
-#elif NET5_0_OR_GREATER
+#elif NET
                 !OperatingSystem.IsWindows()
 #else
                 !RuntimeInformation.IsOSPlatform(OSPlatform.Windows)

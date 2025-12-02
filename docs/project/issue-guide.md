@@ -1,14 +1,14 @@
 Issue Guide
 ===========
 
-This page outlines how the CoreFx team thinks about and handles issues.  For us, issues on GitHub represent actionable work that should be done at some future point.  It may be as simple as a small product or test bug or as large as the work tracking the design of a new feature.  However, it should be work that falls under the charter of CoreFx, which is a collection of foundational libraries that make up the .NET Core development stack.  We will keep issues open even if the CoreFx team internally has no plans to address them in an upcoming release, as long as we consider the issue to fall under our purview.
+This page outlines how the team thinks about and handles issues in this repo.  For us, issues on GitHub represent actionable work that should be done at some future point.  It may be as simple as a small product or test bug or as large as the work tracking the design of a new feature.  However, it should be work that falls under the charter of the team.  We will keep issues open even if the team internally has no plans to address them in an upcoming release, as long as we consider the issue to fall under our purview and something we would potentially take a change for.
 
 ### When we close issues
 As noted above, we don't close issues just because we don't plan to address them in an upcoming release.  So why do we close issues?  There are few major reasons:
 
-1. Issues unrelated to CoreFx.  When possible, we'll try to find a better home for the issue and point you to it.
+1. Issues unrelated to code in this repo.  When possible, we'll try to find a better home for the issue and point you to it.
 2. Cross cutting work better suited for another team.  Sometimes the line between the framework, languages and runtime blurs.  For some issues, we may feel that the work is better suited for the runtime team, language team or other partner.  In these cases, we'll close the issue and open it with the partner team.  If they end up not deciding to take on the issue, we can reconsider it here.
-3. Nebulous and Large open issues.  Large open issues are sometimes better suited for [User Voice](http://visualstudio.uservoice.com/forums/121579-visual-studio/category/31481--net), especially when the work will cross the boundaries of the framework, language and runtime.  A good example of this is the SIMD support we recently added to CoreFx.  This started as a [User Voice request](https://visualstudio.uservoice.com/forums/121579-visual-studio-2015/suggestions/2212443-c-and-simd), and eventually turned into work for both the core libraries and runtime.
+3. Nebulous and Large open issues.  Large open issues are sometimes better suited for [User Voice](http://visualstudio.uservoice.com/forums/121579-visual-studio/category/31481--net), especially when the work will cross the boundaries of the framework, language and runtime.  A good example of this is the SIMD support we recently added to the core libraries.  This started as a [User Voice request](https://visualstudio.uservoice.com/forums/121579-visual-studio-2015/suggestions/2212443-c-and-simd), and eventually turned into work for both the core libraries and runtime.
 
 Sometimes after debate, we'll decide an issue isn't a good fit for the .NET runtime codebase.  In that case, we'll also close it.  Because of this, we ask that you don't start working on an issue until it's tagged with [help wanted](https://github.com/dotnet/runtime/labels/help%20wanted) or [api-approved](https://github.com/dotnet/runtime/labels/api-approved).  Both you and the team will be unhappy if you spend time and effort working on a change we'll ultimately be unable to take. We try to avoid that.
 
@@ -78,8 +78,8 @@ Feel free to use other labels if it helps your triage efforts (e.g. **needs more
 
 1. Each PR has exactly one **area-\*** label
     * Movitation: Area owners will get email notification about new issue in their area.
-1. PR has **Assignee** set to author of the PR, if it is non-CoreFX engineer, then area owners are co-assignees
-    * Motivation #1: Area owners are responsible to do code reviews for PRs from external contributors. CoreFX engineers know how to get code reviews from others.
+1. PR has **Assignee** set to author of the PR, if it is engineer that does not work in this repo, then area owners are co-assignees
+    * Motivation #1: Area owners are responsible to do code reviews for PRs from external contributors. Committers know how to get code reviews from others.
     * Motivation #2: Assignees will get notifications for anything happening on the PR.
 1. [Optional] Set milestone according to the branch the PR is against (main = 6.0, release/5.0 = 5.0)
     * Motivation: Easier to track and audit where which fix ended up and if it needs to be ported into another branch (hence reflecting branch the specific PR ended up and not the abstract issue).

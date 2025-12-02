@@ -1229,6 +1229,6 @@ namespace System.Globalization
 
         internal override CalendarId ID => CalendarId.KOREANLUNISOLAR;
 
-        public override int[] Eras => new int[] { GregorianEra };
+        public override int[] Eras => [GregorianEra];
     }
 }

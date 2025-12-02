@@ -25,16 +25,17 @@ jobs:
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
       - name: workloadsTestPreviousVersionsVar
-        value: $[
-          or(
-            eq(variables['Build.SourceBranchName'], 'main'),
-            eq(variables['System.PullRequest.TargetBranch'], 'main'))
-          ]
+        value: false
+#       value: $[
+#         or(
+#           eq(variables['Build.SourceBranchName'], 'main'),
+#           eq(variables['System.PullRequest.TargetBranch'], 'main'))
+#         ]
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: WasmBuildTests
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:WorkloadsTestPreviousVersions=$(workloadsTestPreviousVersionsVar) ${{ parameters.extraBuildArgs }}
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:MonoEnableAssertMessages=true /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:WorkloadsTestPreviousVersions=$(workloadsTestPreviousVersionsVar) ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 180
       condition: >-
         or(

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using ILCompiler;
 using Internal.TypeSystem;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.IO;
 
@@ -36,7 +37,7 @@ namespace TypeSystemTests
         public TestTypeSystemContext(TargetArchitecture arch, TargetOS targetOS = TargetOS.Unknown)
             : base(new TargetDetails(arch, targetOS, TargetAbi.Unknown))
         {
-            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayout, true);
+            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayout);
             _int128FieldLayoutAlgorithm = new Int128FieldLayoutAlgorithm(_metadataFieldLayout);
         }
 
@@ -61,7 +62,7 @@ namespace TypeSystemTests
             return module;
         }
 
-        public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name, bool throwIfNotFound)
+        public override ModuleDesc ResolveAssembly(AssemblyNameInfo name, bool throwIfNotFound)
         {
             return GetModuleForSimpleName(name.Name);
         }
@@ -84,7 +85,7 @@ namespace TypeSystemTests
 
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
         {
-            _arrayOfTRuntimeInterfacesAlgorithm ??= new ArrayOfTRuntimeInterfacesAlgorithm(SystemModule.GetType("System", "Array`1"));
+            _arrayOfTRuntimeInterfacesAlgorithm ??= new ArrayOfTRuntimeInterfacesAlgorithm(SystemModule.GetType("System"u8, "Array`1"u8));
             return _arrayOfTRuntimeInterfacesAlgorithm;
         }
 

@@ -12,7 +12,7 @@ namespace System.Text.Json
                 return name;
             }
 
-#if NETCOREAPP
+#if NET
             return string.Create(name.Length, name, (chars, name) =>
             {
                 name.CopyTo(chars);

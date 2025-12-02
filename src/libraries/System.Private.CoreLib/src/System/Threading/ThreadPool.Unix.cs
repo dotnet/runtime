@@ -16,18 +16,14 @@ namespace System.Threading
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", "DOTNET_ThreadPool_EnableWorkerTracking");
 #endif
 
-#if !(TARGET_BROWSER && FEATURE_WASM_THREADS)
+#if !(TARGET_BROWSER && FEATURE_WASM_MANAGED_THREADS)
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work.
         internal static bool YieldFromDispatchLoop => false;
 #endif
 
-#if !CORECLR
-        internal static bool EnsureConfigInitialized() => true;
-#endif
-
-        internal static object GetOrCreateThreadLocalCompletionCountObject() =>
-            PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
+        internal static ThreadInt64PersistentCounter.ThreadLocalNode GetOrCreateThreadLocalCompletionCountNode() =>
+            PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountNode();
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads) =>
             PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads, completionPortThreads);
@@ -65,8 +61,8 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool NotifyWorkItemComplete(object threadLocalCompletionCountObject, int currentTimeMs) =>
-            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTimeMs);
+        internal static bool NotifyWorkItemComplete(ThreadInt64PersistentCounter.ThreadLocalNode threadLocalCompletionCountNode, int currentTimeMs) =>
+            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(threadLocalCompletionCountNode, currentTimeMs);
 
         /// <summary>
         /// This method is called to request a new thread pool worker to handle pending work.

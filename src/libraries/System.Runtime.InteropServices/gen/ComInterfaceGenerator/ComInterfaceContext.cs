@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -9,8 +10,20 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    internal sealed record ComInterfaceContext(ComInterfaceInfo Info, ComInterfaceContext? Base, ComInterfaceOptions Options)
+    internal sealed record ComInterfaceContext
     {
+        internal ComInterfaceInfo Info { get; init; }
+        internal ComInterfaceContext? Base { get; init; }
+        internal ComInterfaceOptions Options { get; init; }
+        internal bool IsExternallyDefined { get; init; }
+
+        private ComInterfaceContext(ComInterfaceInfo info, ComInterfaceContext? @base, ComInterfaceOptions options)
+        {
+            Info = info;
+            Base = @base;
+            Options = options;
+        }
+
         /// <summary>
         /// Takes a list of ComInterfaceInfo, and creates a list of ComInterfaceContext.
         /// </summary>
@@ -39,7 +52,7 @@ namespace Microsoft.Interop
 
                 if (iface.BaseInterfaceKey is null)
                 {
-                    var baselessCtx = DiagnosticOr<ComInterfaceContext>.From(new ComInterfaceContext(iface, null, iface.Options));
+                    var baselessCtx = DiagnosticOr<ComInterfaceContext>.From(new ComInterfaceContext(iface, null, iface.Options) { IsExternallyDefined = iface.IsExternallyDefined });
                     nameToContextCache[iface.ThisInterfaceKey] = baselessCtx;
                     return baselessCtx;
                 }
@@ -63,7 +76,7 @@ namespace Microsoft.Interop
                 }
                 DiagnosticOr<ComInterfaceContext> baseContext = baseCachedValue ?? baseReturnedValue;
                 Debug.Assert(baseContext.HasValue);
-                var ctx = DiagnosticOr<ComInterfaceContext>.From(new ComInterfaceContext(iface, baseContext.Value, iface.Options));
+                var ctx = DiagnosticOr<ComInterfaceContext>.From(new ComInterfaceContext(iface, baseContext.Value, iface.Options) { IsExternallyDefined = iface.IsExternallyDefined });
                 nameToContextCache[iface.ThisInterfaceKey] = ctx;
                 return ctx;
             }

@@ -43,8 +43,6 @@ namespace DelegateTest
             retVal = PosTest1() && retVal;
             retVal = PosTest2() && retVal;
             retVal = PosTest3() && retVal;
-            retVal = PosTest4() && retVal;
-            retVal = PosTest6() && retVal;
             retVal = PosTest7() && retVal;
             retVal = PosTest8() && retVal;
             return retVal;
@@ -142,71 +140,6 @@ namespace DelegateTest
             catch (Exception e)
             {
                 TestLibrary.TestFramework.LogError("006", "Unexpected exception: " + e);
-                retVal = false;
-            }
-
-            return retVal;
-        }
-        // Returns true if the expected result is right
-        // Returns false if the expected result is wrong
-        // the same delegate object  is booldelegate
-        public bool PosTest4()
-        {
-            bool retVal = true;
-
-            TestLibrary.TestFramework.BeginScenario("PosTest4: Use the same type's different static method to create two delegate which delegate object is the same,their hashcode is equal ");
-
-            try
-            {
-                DelegateGetHashCode delctor = new DelegateGetHashCode();
-                booldelegate workDelegate1= new booldelegate(TestClass.Working_Bool);
-                booldelegate workDelegate = new booldelegate(TestClass.Completed_Bool);
-                if (workDelegate.GetHashCode() != workDelegate1.GetHashCode())
-                {
-                    TestLibrary.TestFramework.LogError("007", "HashCode is not excepted ");
-                    retVal = false;
-                }
-
-                workDelegate();
-                workDelegate1();
-
-            }
-            catch (Exception e)
-            {
-                TestLibrary.TestFramework.LogError("008", "Unexpected exception: " + e);
-                retVal = false;
-            }
-
-            return retVal;
-        }
-        // Returns true if the expected result is right
-        // Returns false if the expected result is wrong
-        // the same delegate object  is booldelegate
-        public bool PosTest6()
-        {
-            bool retVal = true;
-
-            TestLibrary.TestFramework.BeginScenario("PosTest6:  Use the different type's same static method to create two delegate ,which delegate object is the same,their hashcode is equal");
-
-            try
-            {
-                DelegateGetHashCode delctor = new DelegateGetHashCode();
-                booldelegate workDelegate = new booldelegate(TestClass.Completed_Bool);
-                booldelegate workDelegate1 = new booldelegate(TestClass1.Completed_Bool);
-
-                if (workDelegate.GetHashCode()!=workDelegate1.GetHashCode())
-                {
-                    TestLibrary.TestFramework.LogError("011", "HashCode is not excepted");
-                    retVal = false;
-                }
-
-                workDelegate();
-                workDelegate1();
-
-            }
-            catch (Exception e)
-            {
-                TestLibrary.TestFramework.LogError("012", "Unexpected exception: " + e);
                 retVal = false;
             }
 

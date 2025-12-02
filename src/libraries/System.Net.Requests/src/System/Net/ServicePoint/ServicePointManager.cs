@@ -9,6 +9,7 @@ using System.Threading;
 
 namespace System.Net
 {
+    [Obsolete(Obsoletions.WebRequestMessage + " Settings on ServicePointManager no longer affect SslStream or HttpClient.", DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public class ServicePointManager
     {
         public const int DefaultNonPersistentConnectionLimit = 4;
@@ -78,7 +79,7 @@ namespace System.Net
             }
         }
 
-        public static bool UseNagleAlgorithm { get; set; } = true;
+        public static bool UseNagleAlgorithm { get; set; }
 
         public static bool Expect100Continue { get; set; } = true;
 
@@ -99,13 +100,10 @@ namespace System.Net
         [UnsupportedOSPlatform("browser")]
         public static EncryptionPolicy EncryptionPolicy { get; } = EncryptionPolicy.RequireEncryption;
 
-        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static ServicePoint FindServicePoint(Uri address) => FindServicePoint(address, null);
 
-        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static ServicePoint FindServicePoint(string uriString, IWebProxy? proxy) => FindServicePoint(new Uri(uriString), proxy);
 
-        [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static ServicePoint FindServicePoint(Uri address, IWebProxy? proxy)
         {
             ArgumentNullException.ThrowIfNull(address);
@@ -156,7 +154,8 @@ namespace System.Net
                     IdleSince = DateTime.Now,
                     Expect100Continue = Expect100Continue,
                     UseNagleAlgorithm = UseNagleAlgorithm,
-                    KeepAlive = KeepAlive
+                    KeepAlive = KeepAlive,
+                    MaxIdleTime = MaxServicePointIdleTime
                 };
                 s_servicePointTable[tableKey] = new WeakReference<ServicePoint>(sp);
 
@@ -177,11 +176,6 @@ namespace System.Net
                     Uri? proxyAddress = proxy.GetProxy(address);
                     if (proxyAddress != null)
                     {
-                        if (proxyAddress.Scheme != Uri.UriSchemeHttp)
-                        {
-                            throw new NotSupportedException(SR.Format(SR.net_proxyschemenotsupported, address.Scheme));
-                        }
-
                         address = proxyAddress;
                         return true;
                     }

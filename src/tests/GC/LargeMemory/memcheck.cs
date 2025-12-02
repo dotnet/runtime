@@ -75,7 +75,7 @@ public static class MemCheck {
     [DllImport("kernel32.dll", SetLastError = true)]
     static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX lpBuffer);
 
-    // https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/ns-sysinfoapi-memorystatusex
+    // https://learn.microsoft.com/windows/win32/api/sysinfoapi/ns-sysinfoapi-memorystatusex
     [StructLayout(LayoutKind.Sequential)]
     public struct MEMORYSTATUSEX
     {

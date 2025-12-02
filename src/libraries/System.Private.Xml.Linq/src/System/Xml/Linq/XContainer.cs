@@ -75,7 +75,7 @@ namespace System.Xml.Linq
                     XText t = new XText(s);
                     t.parent = this;
                     t.next = t;
-                    Interlocked.CompareExchange<object>(ref content, t, s);
+                    Interlocked.CompareExchange(ref content, t, s);
                 }
                 return (XNode)content;
             }
@@ -880,8 +880,8 @@ namespace System.Xml.Linq
 
         private sealed class ContentReader
         {
-            private readonly NamespaceCache _eCache;
-            private readonly NamespaceCache _aCache;
+            private NamespaceCache _eCache;
+            private NamespaceCache _aCache;
             private readonly IXmlLineInfo? _lineInfo;
             private XContainer _currentContainer;
             private string? _baseUri;

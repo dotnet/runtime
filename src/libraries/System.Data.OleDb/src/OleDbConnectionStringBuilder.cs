@@ -15,6 +15,9 @@ namespace System.Data.OleDb
     [DefaultProperty("Provider")]
     [RefreshProperties(RefreshProperties.All)]
     [TypeConverter(typeof(OleDbConnectionStringBuilder.OleDbConnectionStringBuilderConverter))]
+#if NET
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
+#endif
     public sealed class OleDbConnectionStringBuilder : DbConnectionStringBuilder
     {
         private enum Keywords
@@ -115,7 +118,7 @@ namespace System.Data.OleDb
                                 PersistSecurityInfo = ConvertToBoolean(value);
                                 break;
                             default:
-                                Debug.Assert(false, "unexpected keyword");
+                                Debug.Fail("unexpected keyword");
                                 throw ADP.KeywordNotSupported(keyword);
                         }
                     }
@@ -310,7 +313,7 @@ namespace System.Data.OleDb
                 case Keywords.Provider:
                     return Provider;
                 default:
-                    Debug.Assert(false, "unexpected keyword");
+                    Debug.Fail("unexpected keyword");
                     throw ADP.KeywordNotSupported(s_validKeywords[(int)index]);
             }
         }
@@ -354,7 +357,7 @@ namespace System.Data.OleDb
                     RestartProvider();
                     break;
                 default:
-                    Debug.Assert(false, "unexpected keyword");
+                    Debug.Fail("unexpected keyword");
                     throw ADP.KeywordNotSupported(s_validKeywords[(int)index]);
             }
         }
@@ -528,6 +531,7 @@ namespace System.Data.OleDb
             return providerInfo;
         }
 
+        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
         private sealed class OleDbProviderConverter : StringConverter
         {
             private const int DBSOURCETYPE_DATASOURCE_TDP = 1;
@@ -599,6 +603,7 @@ namespace System.Data.OleDb
             Default = ~(ClientCursor | AggregationAfterSession),
         };
 
+        [RequiresDynamicCode(OleDbConnection.TrimWarning)]
         internal sealed class OleDbServicesConverter : TypeConverter
         {
             private StandardValuesCollection? _standardValues;

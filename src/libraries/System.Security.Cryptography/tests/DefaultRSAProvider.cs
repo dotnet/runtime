@@ -3,19 +3,20 @@
 
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Tests;
+using Test.Cryptography;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
     public class DefaultRSAProvider : IRSAProvider
     {
-        private bool? _supports384PrivateKey;
         private bool? _supportsSha1Signatures;
+        private bool? _supportsMd5Signatures;
 
         public RSA Create() => RSA.Create();
 
         public RSA Create(int keySize)
         {
-#if NETCOREAPP
+#if NET
             return RSA.Create(keySize);
 #else
             RSA rsa = Create();
@@ -25,22 +26,9 @@ namespace System.Security.Cryptography.Rsa.Tests
 #endif
         }
 
-        public bool Supports384PrivateKey
-        {
-            get
-            {
-                if (!_supports384PrivateKey.HasValue)
-                {
-                    // For Windows 7 (Microsoft Windows 6.1) and Windows 8 (Microsoft Windows 6.2) this is false for RSACng.
-                    _supports384PrivateKey = !RuntimeInformation.OSDescription.Contains("Windows 6.1") &&
-                        !RuntimeInformation.OSDescription.Contains("Windows 6.2");
-                }
-
-                return _supports384PrivateKey.Value;
-            }
-        }
-
+        public bool Supports384PrivateKey => PlatformSupport.IsRSA384Supported;
         public bool SupportsSha1Signatures => _supportsSha1Signatures ??= SignatureSupport.CanProduceSha1Signature(Create());
+        public bool SupportsMd5Signatures => _supportsMd5Signatures ??= SignatureSupport.CanProduceMd5Signature(Create());
 
         public bool SupportsLargeExponent => true;
 

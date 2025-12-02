@@ -26,6 +26,7 @@ namespace JitTest_ldc_mul_unsigned_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             if (!check(0x00000000ffffffff, 0x00000000ffffffff, 0xfffffffe00000001, false))

@@ -186,7 +186,7 @@ public class OptionsValidationTests
     [Fact]
     public void RangeAttributeModelDateValid()
     {
-#if NETCOREAPP3_1_OR_GREATER
+#if NET
         // Setting non-invariant culture to check that
         // attribute's "ParseLimitsInInvariantCulture" property
         // was set up correctly in the validator:
@@ -241,7 +241,7 @@ public class OptionsValidationTests
     [InlineData("abc", 0, 4, 9)]
     [InlineData("abc", 2, 8, 8)]
     [InlineData("abc", 2, 4, 10)]
-    public void MultipleAttributeModelInvalid(string val1, int val2, int val3, int val4)
+    public void MultipleAttributeModelInvalid(string? val1, int val2, int val3, int val4)
     {
         var validModel = new MultipleAttributeModel
         {

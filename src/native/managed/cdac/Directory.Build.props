@@ -1,0 +1,8 @@
+<Project>
+    <Import Project="..\Directory.Build.props" />
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Diagnostics.CodeAnalysis.ExperimentalAttribute">
+        <_Parameter1>NETCDAC0001</_Parameter1>
+      </AssemblyAttribute>
+    </ItemGroup>
+</Project>

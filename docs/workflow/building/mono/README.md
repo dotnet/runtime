@@ -72,7 +72,7 @@ The build has a number of options that you can learn about using build -?.
 
 ### WebAssembly
 
-See the instructions for [Building WebAssembly](../../../../src/mono/wasm/README.md).
+See the instructions for [Building WebAssembly](../../../../src/mono/browser/README.md).
 
 ### Android
 

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -22,12 +23,28 @@ namespace TestStackOverflow
             testProcess.StartInfo.Arguments = $"{Path.Combine(Directory.GetCurrentDirectory(), "..", testName, $"{testName}.dll")} {testArgs}";
             testProcess.StartInfo.UseShellExecute = false;
             testProcess.StartInfo.RedirectStandardError = true;
+            testProcess.StartInfo.Environment.Add("DOTNET_DbgEnableMiniDump", "0");
+            testProcess.StartInfo.Environment.Add("DOTNET_LogStackOverflowExit", "1");
+            bool endOfStackTrace = false;
+            
             testProcess.ErrorDataReceived += (sender, line) => 
             {
                 Console.WriteLine($"\"{line.Data}\"");
-                if (!string.IsNullOrEmpty(line.Data))
+                if (!endOfStackTrace && !string.IsNullOrEmpty(line.Data))
                 {
-                    lines.Add(line.Data);
+                    // Store lines only till the end of the stack trace.
+                    // In the CI it can also contain lines with createdump info.
+                    if (line.Data.StartsWith("Stack overflow.") ||
+                        line.Data.StartsWith("Repeated ") ||
+                        line.Data.StartsWith("------") ||
+                        line.Data.StartsWith("   at "))
+                    {
+                        lines.Add(line.Data);
+                    }
+                    else if (!line.Data.StartsWith("@"))
+                    {
+                        endOfStackTrace = true;
+                    }
                 }
             };
 
@@ -99,6 +116,18 @@ namespace TestStackOverflow
         [Fact]
         public static void TestStackOverflowLargeFrameMainThread()
         {
+            if (((RuntimeInformation.ProcessArchitecture == Architecture.Arm64) || (RuntimeInformation.ProcessArchitecture == Architecture.RiscV64) ||
+                (RuntimeInformation.ProcessArchitecture == Architecture.LoongArch64)) &&
+                ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX)))
+            {
+                // Disabled on Unix RISCV64 and LoongArch64, similar to ARM64.
+                // LoongArch64 hit this issue on Alpine. TODO: implement stack probing using helpers.
+                // Disabled on Unix ARM64 due to https://github.com/dotnet/runtime/issues/13519
+                // The current stack probing doesn't move the stack pointer and so the runtime sometimes cannot
+                // recognize the underlying sigsegv as stack overflow when it probes too far from SP.
+                return;
+            }
+
             TestStackOverflow("stackoverflow", "largeframe main", out List<string> lines);
 
             if (!lines[lines.Count - 1].EndsWith("at TestStackOverflow.Program.Main(System.String[])"))
@@ -156,6 +185,19 @@ namespace TestStackOverflow
         [Fact]
         public static void TestStackOverflowLargeFrameSecondaryThread()
         {
+            if (((RuntimeInformation.ProcessArchitecture == Architecture.Arm64) || (RuntimeInformation.ProcessArchitecture == Architecture.X64) || (RuntimeInformation.ProcessArchitecture == Architecture.RiscV64) ||
+                (RuntimeInformation.ProcessArchitecture == Architecture.LoongArch64) || (RuntimeInformation.ProcessArchitecture == Architecture.Arm)) &&
+                ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX)))
+            {
+                // Disabled on Unix RISCV64 and LoongArch64, similar to ARM64.
+                // LoongArch64 hit this issue on Alpine. TODO: implement stack probing using helpers.
+                // Disabled on Unix ARM64 due to https://github.com/dotnet/runtime/issues/13519
+                // The current stack probing doesn't move the stack pointer and so the runtime sometimes cannot
+                // recognize the underlying sigsegv as stack overflow when it probes too far from SP.
+                // Disabled on Unix X64/Arm due to https://github.com/dotnet/runtime/issues/110173 which needs investigation.
+                return;
+            }
+
             TestStackOverflow("stackoverflow", "largeframe secondary", out List<string> lines);
 
             if (!lines.Exists(elem => elem.EndsWith("at TestStackOverflow.Program.Test(Boolean)")))
@@ -182,6 +224,13 @@ namespace TestStackOverflow
         [Fact]
         public static void TestStackOverflow3()
         {
+            if ((RuntimeInformation.ProcessArchitecture == Architecture.Arm) || ((RuntimeInformation.ProcessArchitecture == Architecture.Arm64) && (Environment.OSVersion.Platform == PlatformID.Unix)))
+            {
+                // Disabled on ARM due to https://github.com/dotnet/runtime/issues/107184
+                // Disabled on Unix ARM64 due to https://github.com/dotnet/runtime/issues/110173 which needs investigation.
+                return;
+            }
+
             TestStackOverflow("stackoverflow3", "", out List<string> lines);
 
             if (!lines[lines.Count - 1].EndsWith("at TestStackOverflow3.Program.Main()"))

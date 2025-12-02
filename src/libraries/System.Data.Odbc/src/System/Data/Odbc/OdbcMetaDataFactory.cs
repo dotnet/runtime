@@ -103,7 +103,7 @@ namespace System.Data.Odbc
 
                     // does the provider support the necessary odbc function
                     // if not delete the row from the table
-                    if (connection.SQLGetFunctions(_schemaMapping[mapping]._odbcFunction) == false)
+                    if (!connection.SQLGetFunctions(_schemaMapping[mapping]._odbcFunction))
                     {
                         // but first delete any related restrictions
                         if (restrictionsTable != null)
@@ -134,7 +134,6 @@ namespace System.Data.Odbc
             }
         }
 
-#pragma warning disable CA1859 // https://github.com/dotnet/roslyn-analyzers/issues/6440
         private static object BooleanFromODBC(object odbcSource)
         {
             if (odbcSource != DBNull.Value)
@@ -154,7 +153,6 @@ namespace System.Data.Odbc
 
             return DBNull.Value;
         }
-#pragma warning disable CA1859
 
         private static OdbcCommand GetCommand(OdbcConnection connection)
         {
@@ -253,7 +251,7 @@ namespace System.Data.Odbc
                 sqlType = (ODBC32.SQL_TYPE)(int)Convert.ChangeType(getTypeInfoValues[indexDATA_TYPE], typeof(int), null);
                 // if the driver is pre version 3 and it returned the v2 SQL_DATE or SQL_TIME types they need
                 // to be mapped to their v3 equivalent
-                if (connection.IsV3Driver == false)
+                if (!connection.IsV3Driver)
                 {
                     if ((int)sqlType == SQL_DATE_V2)
                     {
@@ -561,7 +559,7 @@ namespace System.Data.Odbc
         private DataTable GetDataSourceInformationCollection(string?[]? restrictions,
                                                              OdbcConnection connection)
         {
-            if (ADP.IsEmptyArray(restrictions) == false)
+            if (!ADP.IsEmptyArray(restrictions))
             {
                 throw ADP.TooManyRestrictions(DbMetaDataCollectionNames.DataSourceInformation);
             }
@@ -779,7 +777,7 @@ namespace System.Data.Odbc
 
         private DataTable GetDataTypesCollection(string?[]? restrictions, OdbcConnection connection)
         {
-            if (ADP.IsEmptyArray(restrictions) == false)
+            if (!ADP.IsEmptyArray(restrictions))
             {
                 throw ADP.TooManyRestrictions(DbMetaDataCollectionNames.DataTypes);
             }
@@ -963,7 +961,7 @@ namespace System.Data.Odbc
 
         private DataTable GetReservedWordsCollection(string?[]? restrictions, OdbcConnection connection)
         {
-            if (ADP.IsEmptyArray(restrictions) == false)
+            if (!ADP.IsEmptyArray(restrictions))
             {
                 throw ADP.TooManyRestrictions(DbMetaDataCollectionNames.ReservedWords);
             }

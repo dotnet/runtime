@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             // Arrange
             var sink = new ConsoleSink();
             var console = new TestConsole(sink);
-            var processor = new ConsoleLoggerProcessor(console, null!, ConsoleLoggerQueueFullMode.Wait, 1024);
+            using var processor = new ConsoleLoggerProcessor(console, null!, ConsoleLoggerQueueFullMode.Wait, 1024);
 
             var logger = new ConsoleLogger(_loggerName, loggerProcessor: processor,
                 new SimpleConsoleFormatter(new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(new SimpleConsoleFormatterOptions())),
@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             // Arrange
             var sink = new ConsoleSink();
             var console = new TestConsole(sink);
-            var processor = new ConsoleLoggerProcessor(console, null!, ConsoleLoggerQueueFullMode.Wait, 1024);
+            using var processor = new ConsoleLoggerProcessor(console, null!, ConsoleLoggerQueueFullMode.Wait, 1024);
 
             var logger = new ConsoleLogger(_loggerName, loggerProcessor: processor,
                 new SimpleConsoleFormatter(new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(new SimpleConsoleFormatterOptions())),
@@ -70,7 +70,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             // Arrange
             var sink = new ConsoleSink();
             var console = new TestConsole(sink);
-            var processor = new ConsoleLoggerProcessor(console, null!, ConsoleLoggerQueueFullMode.Wait, 1024);
+            using var processor = new ConsoleLoggerProcessor(console, null!, ConsoleLoggerQueueFullMode.Wait, 1024);
 
             // Act & Assert
             Assert.Throws<ArgumentOutOfRangeException>(() => processor.MaxQueueLength = invalidMaxQueueLength);
@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             // Arrange
             var sink = new ConsoleSink();
             var console = new TestConsole(sink);
-            var processor = new ConsoleLoggerProcessor(console, null!, ConsoleLoggerQueueFullMode.Wait, 1024);
+            using var processor = new ConsoleLoggerProcessor(console, null!, ConsoleLoggerQueueFullMode.Wait, 1024);
 
             // Act & Assert
             Assert.Throws<ArgumentOutOfRangeException>(() => processor.FullMode = (ConsoleLoggerQueueFullMode)10);
@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var errorConsole = new TimesWriteCalledConsole();
             string queueName = nameof(CheckForNotificationWhenQueueIsFull) + (okToDrop ? "InDropWriteMode" : "InWaitMode");
             var fullMode = okToDrop ? ConsoleLoggerQueueFullMode.DropWrite : ConsoleLoggerQueueFullMode.Wait;
-            var processor = new ConsoleLoggerProcessor(console, errorConsole, fullMode, maxQueueLength: 1);
+            using var processor = new ConsoleLoggerProcessor(console, errorConsole, fullMode, maxQueueLength: 1);
             var formatter = new SimpleConsoleFormatter(new TestFormatterOptionsMonitor<SimpleConsoleFormatterOptions>(
                 new SimpleConsoleFormatterOptions()));
 
@@ -150,7 +150,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         {
             var console = new TimesWriteCalledConsole();
             var writeThrowingConsole = new WriteThrowingConsole();
-            var processor = new ConsoleLoggerProcessor(
+            using var processor = new ConsoleLoggerProcessor(
                 console,
                 writeThrowingConsole,
                 ConsoleLoggerQueueFullMode.Wait,

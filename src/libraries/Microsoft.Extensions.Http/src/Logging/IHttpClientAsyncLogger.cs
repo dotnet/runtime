@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Http.Logging
     /// would be called from the corresponding sync code paths.
     /// </para>
     /// <para>
-    /// It is up to the user implementing the interface to decide where (to <see cref="Microsoft.Extensions.Logging.ILogger"/>, or anything else) and what exactly to log.
+    /// It is up to the user implementing the interface to decide whether to use <see cref="Microsoft.Extensions.Logging.ILogger"/>, or anything else, and what exactly to log.
     /// However, the implementation should be mindful about potential adverse side effects of accessing some of the <see cref="HttpRequestMessage"/> or
     /// <see cref="HttpResponseMessage"/> properties, such as reading from a content stream; if possible, such behavior should be avoided.
     /// </para>
@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Http.Logging
         /// <param name="request">The HTTP request message that will be sent.</param>
         /// <param name="cancellationToken">The cancellation token to cancel operation.</param>
         /// <returns>The task object representing the asynchronous operation. The result of the operation is a context object that will
-        /// be passed to a corresponding <see cref="LogRequestStopAsync"/> or <see cref="LogRequestFailedAsync"/>. Can be `null`
+        /// be passed to a corresponding <see cref="LogRequestStopAsync"/> or <see cref="LogRequestFailedAsync"/>. Can be <see langword="null" />
         /// if no context object is needed by the implementation.</returns>
         ValueTask<object?> LogRequestStartAsync(HttpRequestMessage request, CancellationToken cancellationToken = default);
 
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Http.Logging
         /// </summary>
         /// <param name="context">The context object that was previously returned by <see cref="LogRequestStartAsync"/>.</param>
         /// <param name="request">The HTTP request message that was sent.</param>
-        /// <param name="response">If available, the HTTP response message that was received, and `null` otherwise.</param>
+        /// <param name="response">If available, the HTTP response message that was received, and <see langword="null" /> otherwise.</param>
         /// <param name="exception">Exception that happened during processing the HTTP request.</param>
         /// <param name="elapsed">Time elapsed since calling <see cref="LogRequestStartAsync"/>.</param>
         /// <param name="cancellationToken">The cancellation token to cancel operation.</param>

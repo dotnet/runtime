@@ -18,6 +18,7 @@ namespace System.IO.Compression
         public override Stream CreateStream(Stream stream, CompressionMode mode, bool leaveOpen) => new GZipStream(stream, mode, leaveOpen);
         public override Stream CreateStream(Stream stream, CompressionLevel level) => new GZipStream(stream, level);
         public override Stream CreateStream(Stream stream, CompressionLevel level, bool leaveOpen) => new GZipStream(stream, level, leaveOpen);
+        public override Stream CreateStream(Stream stream, ZLibCompressionOptions options, bool leaveOpen) => new GZipStream(stream, options, leaveOpen);
         public override Stream BaseStream(Stream stream) => ((GZipStream)stream).BaseStream;
         protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("GZipTestData", Path.GetFileName(uncompressedPath) + ".gz");
 
@@ -125,7 +126,7 @@ namespace System.IO.Compression
         [InlineData(10, TestScenario.ReadAsync, 1000, 2000)]
         [InlineData(10, TestScenario.Copy, 1000, 2000)]
         [InlineData(10, TestScenario.CopyAsync, 1000, 2000)]
-        [InlineData(2, TestScenario.Copy, 1000, 0x2000-30)]
+        [InlineData(2, TestScenario.Copy, 1000, 0x2000 - 30)]
         [InlineData(2, TestScenario.CopyAsync, 1000, 0x2000 - 30)]
         [InlineData(1000, TestScenario.Read, 1, 1)]
         [InlineData(1000, TestScenario.ReadAsync, 1, 1)]
@@ -314,7 +315,7 @@ namespace System.IO.Compression
                     {
                         Assert.Throws<InvalidDataException>(() =>
                         {
-                            while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0);
+                            while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0) ;
                         });
                     }
                 }
@@ -376,11 +377,11 @@ namespace System.IO.Compression
                                         break;
 
                                     case TestScenario.Read:
-                                        while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0) { };
+                                        while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0) { }
                                         break;
 
                                     case TestScenario.ReadAsync:
-                                        while (await ZipFileTestBase.ReadAllBytesAsync(decompressor, buffer, 0, buffer.Length) != 0) { };
+                                        while (await ZipFileTestBase.ReadAllBytesAsync(decompressor, buffer, 0, buffer.Length) != 0) { }
                                         break;
 
                                     case TestScenario.ReadByte:
@@ -438,6 +439,48 @@ namespace System.IO.Compression
             {
                 WriteArrayInvoked = true;
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
+            }
+        }
+
+        [Fact]
+        public void EmptyGZipStream_WritesHeaderAndFooter()
+        {
+            // Test that an empty GZip stream still writes the required headers and footers
+            using (var ms = new MemoryStream())
+            {
+                using (var gzipStream = new GZipStream(ms, CompressionMode.Compress, leaveOpen: true))
+                {
+                    // Write nothing
+                }
+
+                // At minimum it should have the GZip signature (0x1f 0x8b) and other required data
+                Assert.True(ms.Length > 0, "Empty GZip stream should write headers and footers");
+
+                // Verify the compressed data can be decompressed successfully
+                ms.Seek(0, SeekOrigin.Begin);
+                using (var decompressStream = new GZipStream(ms, CompressionMode.Decompress))
+                using (var resultStream = new MemoryStream())
+                {
+                    decompressStream.CopyTo(resultStream);
+                    Assert.Equal(0, resultStream.Length);
+                }
+            }
+        }
+
+        [Fact]
+        public void EmptyStream_CanBeDecompressed()
+        {
+            // For compatibility reasons, an empty stream should be decompressible back to an empty stream
+            using (var ms = new MemoryStream())
+            {
+                ms.Position = 0;
+
+                using (var deflateStream = new DeflateStream(ms, CompressionMode.Decompress))
+                using (var reader = new StreamReader(deflateStream))
+                {
+                    string result = reader.ReadToEnd();
+                    Assert.Equal(string.Empty, result);
+                }
             }
         }
     }

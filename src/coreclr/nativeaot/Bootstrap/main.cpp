@@ -2,6 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdint.h>
+#include <stddef.h>
+#include <minipal/descriptorlimit.h>
+
+#if defined(DEBUG) && defined(_WIN32)
+#include <process.h>
+#include <windows.h>
+#endif
 
 //
 // This is the mechanism whereby multiple linked modules contribute their global data for initialization at
@@ -101,41 +108,58 @@ extern "C" bool RhRegisterOSModule(void * pModule,
     void * pvUnboxingStubsStartRange, uint32_t cbUnboxingStubsRange,
     void ** pClasslibFunctions, uint32_t nClasslibFunctions);
 
-extern "C" void* PalGetModuleHandleFromPointer(void* pointer);
+void* PalGetModuleHandleFromPointer(void* pointer);
 
-extern "C" void GetRuntimeException();
-extern "C" void RuntimeFailFast();
-extern "C" void AppendExceptionStackFrame();
-extern "C" void GetSystemArrayEEType();
-extern "C" void OnFirstChanceException();
-extern "C" void OnUnhandledException();
-extern "C" void IDynamicCastableIsInterfaceImplemented();
-extern "C" void IDynamicCastableGetInterfaceImplementation();
-#ifdef FEATURE_OBJCMARSHAL
-extern "C" void ObjectiveCMarshalTryGetTaggedMemory();
-extern "C" void ObjectiveCMarshalGetIsTrackedReferenceCallback();
-extern "C" void ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback();
-extern "C" void ObjectiveCMarshalGetUnhandledExceptionPropagationHandler();
+#if defined(HOST_X86) && defined(HOST_WINDOWS)
+#define STRINGIFY(s) #s
+#define MANAGED_RUNTIME_EXPORT_ALTNAME(_method) STRINGIFY(/alternatename:_##_method=_method)
+#define MANAGED_RUNTIME_EXPORT_CALLCONV __cdecl
+#define MANAGED_RUNTIME_EXPORT(_name) \
+    __pragma(comment (linker, MANAGED_RUNTIME_EXPORT_ALTNAME(_name))) \
+    extern "C" void MANAGED_RUNTIME_EXPORT_CALLCONV _name();
+#define MANAGED_RUNTIME_EXPORT_NAME(_name) _name
+#else
+#define MANAGED_RUNTIME_EXPORT_CALLCONV
+#define MANAGED_RUNTIME_EXPORT(_name) \
+    extern "C" void _name();
+#define MANAGED_RUNTIME_EXPORT_NAME(_name) _name
 #endif
 
-typedef void(*pfn)();
+MANAGED_RUNTIME_EXPORT(GetRuntimeException)
+MANAGED_RUNTIME_EXPORT(RuntimeFailFast)
+MANAGED_RUNTIME_EXPORT(AppendExceptionStackFrame)
+MANAGED_RUNTIME_EXPORT(GetSystemArrayEEType)
+MANAGED_RUNTIME_EXPORT(OnFirstChanceException)
+MANAGED_RUNTIME_EXPORT(OnUnhandledException)
+#ifdef FEATURE_OBJCMARSHAL
+MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalTryGetTaggedMemory)
+MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetIsTrackedReferenceCallback)
+MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback)
+MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetUnhandledExceptionPropagationHandler)
+#endif
+
+typedef void (MANAGED_RUNTIME_EXPORT_CALLCONV *pfn)();
+
+#if defined(_WIN32)
+extern "C" int ThreadEntryPoint(void* pContext);
+#else
+extern "C" size_t ThreadEntryPoint(void* pContext);
+#endif
 
 static const pfn c_classlibFunctions[] = {
-    &GetRuntimeException,
-    &RuntimeFailFast,
-    nullptr, // &UnhandledExceptionHandler,
-    &AppendExceptionStackFrame,
+    &MANAGED_RUNTIME_EXPORT_NAME(GetRuntimeException),
+    &MANAGED_RUNTIME_EXPORT_NAME(RuntimeFailFast),
+    (pfn)&ThreadEntryPoint,
+    &MANAGED_RUNTIME_EXPORT_NAME(AppendExceptionStackFrame),
     nullptr, // &CheckStaticClassConstruction,
-    &GetSystemArrayEEType,
-    &OnFirstChanceException,
-    &OnUnhandledException,
-    &IDynamicCastableIsInterfaceImplemented,
-    &IDynamicCastableGetInterfaceImplementation,
+    &MANAGED_RUNTIME_EXPORT_NAME(GetSystemArrayEEType),
+    &MANAGED_RUNTIME_EXPORT_NAME(OnFirstChanceException),
+    &MANAGED_RUNTIME_EXPORT_NAME(OnUnhandledException),
 #ifdef FEATURE_OBJCMARSHAL
-    &ObjectiveCMarshalTryGetTaggedMemory,
-    &ObjectiveCMarshalGetIsTrackedReferenceCallback,
-    &ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback,
-    &ObjectiveCMarshalGetUnhandledExceptionPropagationHandler,
+    &MANAGED_RUNTIME_EXPORT_NAME(ObjectiveCMarshalTryGetTaggedMemory),
+    &MANAGED_RUNTIME_EXPORT_NAME(ObjectiveCMarshalGetIsTrackedReferenceCallback),
+    &MANAGED_RUNTIME_EXPORT_NAME(ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback),
+    &MANAGED_RUNTIME_EXPORT_NAME(ObjectiveCMarshalGetUnhandledExceptionPropagationHandler),
 #else
     nullptr,
     nullptr,
@@ -207,7 +231,16 @@ int main(int argc, char* argv[])
     if (initval != 0)
         return initval;
 
+    minipal_increase_descriptor_limit();
+
+#if defined(DEBUG) && defined(_WIN32)
+    // work around Debug UCRT shutdown issues: https://github.com/dotnet/runtime/issues/108640
+    int exitCode = __managed__Main(argc, argv);
+    _cexit();
+    ExitProcess(exitCode);
+#else
     return __managed__Main(argc, argv);
+#endif
 }
 
 #ifdef HAS_ADDRESS_SANITIZER
@@ -215,7 +248,7 @@ int main(int argc, char* argv[])
 // the linker can detect that we have ASAN components early enough in the build.
 // Include our asan support sources for executable projects here to ensure they
 // are compiled into the bootstrapper object.
-#include "minipal/asansupport.cpp"
+#include "minipal/sansupport.c"
 #endif // HAS_ADDRESS_SANITIZER
 
 #endif // !NATIVEAOT_DLL

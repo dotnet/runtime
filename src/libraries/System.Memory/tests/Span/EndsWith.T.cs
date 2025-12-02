@@ -88,5 +88,34 @@ namespace System.SpanTests
                 }
             }
         }
+
+        [Fact]
+        public static void EndsWithSingle()
+        {
+            ReadOnlySpan<char> chars = [];
+            Assert.False(chars.EndsWith('\0'));
+            Assert.False(chars.EndsWith('f'));
+
+            chars = "foo";
+            Assert.True(chars.EndsWith(chars[^1]));
+            Assert.True(chars.EndsWith('o'));
+            Assert.False(chars.EndsWith('f'));
+
+            scoped ReadOnlySpan<string> strings = [];
+            Assert.False(strings.EndsWith((string)null));
+            Assert.False(strings.EndsWith("foo"));
+
+            strings = ["foo", "bar"];
+            Assert.True(strings.EndsWith(strings[^1]));
+            Assert.True(strings.EndsWith("bar"));
+            Assert.True(strings.EndsWith("*bar".Substring(1)));
+            Assert.False(strings.EndsWith("foo"));
+            Assert.False(strings.EndsWith((string)null));
+
+            strings = ["foo", null];
+            Assert.True(strings.EndsWith(strings[^1]));
+            Assert.True(strings.EndsWith((string)null));
+            Assert.False(strings.EndsWith("foo"));
+        }
     }
 }

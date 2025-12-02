@@ -746,7 +746,7 @@ namespace Mono.Options
 
         public override bool GetArguments(string value, out IEnumerable<string> replacement)
         {
-            if (string.IsNullOrEmpty(value) || !value.StartsWith("@"))
+            if (string.IsNullOrEmpty(value) || !value.StartsWith('@'))
             {
                 replacement = null;
                 return false;
@@ -1738,10 +1738,7 @@ namespace Mono.Options
                 throw new ArgumentException("Command instances can only be added to a single CommandSet.", nameof(value));
             }
             value.CommandSet = this;
-            if (value.Options != null)
-            {
-                value.Options.MessageLocalizer = options.MessageLocalizer;
-            }
+            value.Options?.MessageLocalizer = options.MessageLocalizer;
 
             base.Add(value);
 

@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-
-//
 
 /*  EXCEP.CPP:
  *
@@ -23,7 +20,6 @@
 #include "eedbginterfaceimpl.h" //so we can clearexception in RealCOMPlusThrow
 #include "dllimportcallback.h"
 #include "stackwalk.h" //for CrawlFrame, in SetIPFromSrcToDst
-#include "shimload.h"
 #include "eeconfig.h"
 #include "virtualcallstub.h"
 #include "typestring.h"
@@ -128,11 +124,10 @@ BOOL ShouldOurUEFDisplayUI(PEXCEPTION_POINTERS pExceptionInfo)
     return IsComPlusException(pExceptionInfo->ExceptionRecord) || ExecutionManager::IsManagedCode(GetIP(pExceptionInfo->ContextRecord));
 }
 
-BOOL NotifyAppDomainsOfUnhandledException(
+void NotifyAppDomainsOfUnhandledException(
     PEXCEPTION_POINTERS pExceptionPointers,
     OBJECTREF   *pThrowableIn,
-    BOOL        useLastThrownObject,
-    BOOL        isTerminating);
+    BOOL        useLastThrownObject);
 
 VOID SetManagedUnhandledExceptionBit(
     BOOL        useLastThrownObject);
@@ -474,7 +469,7 @@ void WrapNonCompliantException(OBJECTREF *ppThrowable)
 
         *ppThrowable = orReplacement;
 
-    } EX_END_CATCH(SwallowAllExceptions);
+    } EX_END_CATCH
 }
 
 // Before presenting an exception object to a handler (filter or catch, not finally or fault), it
@@ -498,7 +493,7 @@ OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly)
     }
     CONTRACTL_END;
 
-    if (fIsRuntimeWrappedException && (!pAssembly->GetModule()->IsRuntimeWrapExceptions()))
+    if (fIsRuntimeWrappedException && (!pAssembly->GetModule()->IsRuntimeWrapExceptionsDuringEH()))
     {
         // We already created the instance, fetched the field.  We know it is
         // not marshal by ref, or any of the other cases that might trigger GC.
@@ -617,7 +612,7 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
             *pInitException = pInnerException ? *pInnerException : NULL;
             *pThrowable = GET_THROWABLE();
         }
-    } EX_END_CATCH(SwallowAllExceptions);
+    } EX_END_CATCH
 
     CONSISTENCY_CHECK(*pInitException != NULL || !pInnerException);
 
@@ -951,8 +946,8 @@ bool EHRangeTreeNode::TryContains(EHRangeTreeNode* pNode)
     {
         // Iterate all the contained clauses, and for the ones which are contained in the try region,
         // ask if the requested range is contained by it.
-        USHORT i        = 0;
-        USHORT numNodes = m_containees.Count();
+        INT32 i        = 0;
+        INT32 numNodes = m_containees.Count();
         EHRangeTreeNode** ppNodes = NULL;
         for (i = 0, ppNodes = m_containees.Table(); i < numNodes; i++, ppNodes++)
         {
@@ -1028,8 +1023,8 @@ bool EHRangeTreeNode::HandlerContains(EHRangeTreeNode* pNode)
     {
         // Iterate all the contained clauses, and for the ones which are contained in the try region,
         // ask if the requested range is contained by it.
-        USHORT i        = 0;
-        USHORT numNodes = m_containees.Count();
+        INT32 i        = 0;
+        INT32 numNodes = m_containees.Count();
         EHRangeTreeNode** ppNodes = NULL;
         for (i = 0, ppNodes = m_containees.Table(); i < numNodes; i++, ppNodes++)
         {
@@ -1104,8 +1099,8 @@ bool EHRangeTreeNode::FilterContains(EHRangeTreeNode* pNode)
     {
         // Iterate all the contained clauses, and for the ones which are contained in the try region,
         // ask if the requested range is contained by it.
-        USHORT i        = 0;
-        USHORT numNodes = m_containees.Count();
+        INT32 i        = 0;
+        INT32 numNodes = m_containees.Count();
         EHRangeTreeNode** ppNodes = NULL;
         for (i = 0, ppNodes = m_containees.Table(); i < numNodes; i++, ppNodes++)
         {
@@ -1421,10 +1416,10 @@ EHRangeTreeNode *EHRangeTree::FindNextMostSpecificContainer(EHRangeTreeNode *pNo
     // keep a reasonable default around.
     EHRangeTreeNode *pNodeCandidate = pNodeSearch;
 
-    USHORT cSubRanges = pNodeSearch->m_containees.Count();
+    INT32 cSubRanges = pNodeSearch->m_containees.Count();
     EHRangeTreeNode **ppNodeCur = pNodeSearch->m_containees.Table();
 
-    for (int i = 0; i < cSubRanges; i++, ppNodeCur++)
+    for (INT32 i = 0; i < cSubRanges; i++, ppNodeCur++)
     {
         if ((*ppNodeCur)->Contains(addr) &&
             pNodeCandidate->Contains((*ppNodeCur)))
@@ -2125,374 +2120,6 @@ void UnwindFrames(                      // No return value.
 
 #endif // !defined(FEATURE_EH_FUNCLETS)
 
-void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable, BOOL bReplaceStack, BOOL bSkipLastElement)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // Do not save stacktrace to preallocated exception.  These are shared.
-    if (CLRException::IsPreallocatedExceptionHandle(hThrowable))
-    {
-        // Preallocated exceptions will never have this flag set. However, its possible
-        // that after this flag is set for a regular exception but before we throw, we have an async
-        // exception like a RudeThreadAbort, which will replace the exception
-        // containing the restored stack trace.
-        //
-        // In such a case, we should clear the flag as the throwable representing the
-        // preallocated exception will not have the restored (or any) stack trace.
-        PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
-        pCurTES->ResetRaisingForeignException();
-
-        return;
-    }
-
-    LOG((LF_EH, LL_INFO1000, "StackTraceInfo::SaveStackTrace (%p), alloc = %d, replace = %d, skiplast = %d\n", this, bAllowAllocMem, bReplaceStack, bSkipLastElement));
-
-    // if have bSkipLastElement, must also keep the stack
-    _ASSERTE(! bSkipLastElement || ! bReplaceStack);
-
-    bool         fSuccess = false;
-    MethodTable* pMT      = ObjectFromHandle(hThrowable)->GetMethodTable();
-
-    // Check if the flag indicating foreign exception raise has been setup or not,
-    // and then reset it so that subsequent processing of managed frames proceeds
-    // normally.
-    PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
-    BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
-    pCurTES->ResetRaisingForeignException();
-
-    if (bAllowAllocMem && m_dFrameCount != 0)
-    {
-        EX_TRY
-        {
-            // Only save stack trace info on exceptions
-            _ASSERTE(IsException(pMT));     // what is the pathway here?
-            if (!IsException(pMT))
-            {
-                fSuccess = true;
-            }
-            else
-            {
-                // If the stack trace contains DynamicMethodDescs, we need to save the corrosponding
-                // System.Resolver objects in the Exception._dynamicMethods field. Failing to do that
-                // will cause an AV in the runtime when we try to visit those MethodDescs in the
-                // Exception._stackTrace field, because they have been recycled or destroyed.
-                unsigned    iNumDynamics      = 0;
-
-                // How many DynamicMethodDescs do we need to keep alive?
-                for (unsigned iElement=0; iElement < m_dFrameCount; iElement++)
-                {
-                    MethodDesc *pMethod = m_pStackTrace[iElement].pFunc;
-                    _ASSERTE(pMethod);
-
-                    if (pMethod->IsLCGMethod())
-                    {
-                        // Increment the number of new dynamic methods we have found
-                        iNumDynamics++;
-                    }
-                    else
-                    if (pMethod->GetMethodTable()->Collectible())
-                    {
-                        iNumDynamics++;
-                    }
-                }
-
-                struct _gc
-                {
-                    StackTraceArray stackTrace;
-                    StackTraceArray stackTraceTemp;
-                    PTRARRAYREF dynamicMethodsArrayTemp;
-                    PTRARRAYREF dynamicMethodsArray; // Object array of Managed Resolvers
-                    PTRARRAYREF pOrigDynamicArray;
-
-                    _gc()
-                        : stackTrace()
-                        , stackTraceTemp()
-                        , dynamicMethodsArrayTemp(static_cast<PTRArray *>(NULL))
-                        , dynamicMethodsArray(static_cast<PTRArray *>(NULL))
-                        , pOrigDynamicArray(static_cast<PTRArray *>(NULL))
-                    {}
-                };
-
-                _gc gc;
-                GCPROTECT_BEGIN(gc);
-
-                // If the flag indicating foreign exception raise has been setup, then check
-                // if the exception object has stacktrace or not. If we have an async non-preallocated
-                // exception after setting this flag but before we throw, then the new
-                // exception will not have any stack trace set and thus, we should behave as if
-                // the flag was not setup.
-                if (fRaisingForeignException)
-                {
-                    // Get the reference to stack trace and reset our flag if applicable.
-                    ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->GetStackTrace(gc.stackTraceTemp);
-                    if (gc.stackTraceTemp.Size() == 0)
-                    {
-                        fRaisingForeignException = FALSE;
-                    }
-                }
-
-                // Replace stack (i.e. build a new stack trace) only if we are not raising a foreign exception.
-                // If we are, then we will continue to extend the existing stack trace.
-                if (bReplaceStack
-                    && (!fRaisingForeignException)
-                    )
-                {
-                    // Cleanup previous info
-                    gc.stackTrace.Append(m_pStackTrace, m_pStackTrace + m_dFrameCount);
-
-                    if (iNumDynamics)
-                    {
-                        // Adjust the allocation size of the array, if required
-                        if (iNumDynamics > m_cDynamicMethodItems)
-                        {
-                            S_UINT32 cNewSize = S_UINT32(2) * S_UINT32(iNumDynamics);
-                            if (cNewSize.IsOverflow())
-                            {
-                                // Overflow here implies we cannot allocate memory anymore
-                                LOG((LF_EH, LL_INFO100, "StackTraceInfo::SaveStackTrace - Cannot calculate initial resolver array size due to overflow!\n"));
-                                COMPlusThrowOM();
-                            }
-
-                            m_cDynamicMethodItems = cNewSize.Value();
-                        }
-
-                        gc.dynamicMethodsArray = (PTRARRAYREF)AllocateObjectArray(m_cDynamicMethodItems, g_pObjectClass);
-                        LOG((LF_EH, LL_INFO100, "StackTraceInfo::SaveStackTrace - allocated dynamic array for first frame of size %lu\n",
-                            m_cDynamicMethodItems));
-                    }
-
-                    m_dCurrentDynamicIndex = 0;
-                }
-                else
-                {
-                    // Fetch the stacktrace and the dynamic method array
-                    ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->GetStackTrace(gc.stackTrace, &gc.pOrigDynamicArray);
-
-                    if (fRaisingForeignException)
-                    {
-                        // Just before we append to the stack trace, mark the last recorded frame to be from
-                        // the foreign thread so that we can insert an annotation indicating so when building
-                        // the stack trace string.
-                        size_t numCurrentFrames = gc.stackTrace.Size();
-                        if (numCurrentFrames > 0)
-                        {
-                            // "numCurrentFrames" can be zero if the user created an EDI using
-                            // an unthrown exception.
-                            StackTraceElement & refLastElementFromForeignStackTrace = gc.stackTrace[numCurrentFrames - 1];
-                            refLastElementFromForeignStackTrace.flags |= STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE;
-                        }
-                    }
-
-                    if (!bSkipLastElement)
-                        gc.stackTrace.Append(m_pStackTrace, m_pStackTrace + m_dFrameCount);
-
-                    //////////////////////////////
-
-                    unsigned   cOrigDynamic = 0;    // number of objects in the old array
-                    if (gc.pOrigDynamicArray != NULL)
-                    {
-                        cOrigDynamic = gc.pOrigDynamicArray->GetNumComponents();
-                    }
-                    else
-                    {
-                        // Since there is no dynamic method array, reset the corresponding state variables
-                        m_dCurrentDynamicIndex = 0;
-                        m_cDynamicMethodItems = 0;
-                    }
-
-                    if ((gc.pOrigDynamicArray != NULL)
-                    || (fRaisingForeignException)
-                    )
-                    {
-                        // Since we have just restored the dynamic method array as well,
-                        // calculate the dynamic array index which would be the total
-                        // number of dynamic methods present in the stack trace.
-                        //
-                        // In addition to the ForeignException scenario, we need to reset these
-                        // values incase the exception object in question is being thrown by
-                        // multiple threads in parallel and thus, could have potentially different
-                        // dynamic method array contents/size as opposed to the current state of
-                        // StackTraceInfo.
-
-                        unsigned iStackTraceElements = (unsigned)gc.stackTrace.Size();
-                        m_dCurrentDynamicIndex = 0;
-                        for (unsigned iIndex = 0; iIndex < iStackTraceElements; iIndex++)
-                        {
-                            MethodDesc *pMethod = gc.stackTrace[iIndex].pFunc;
-                            if (pMethod)
-                            {
-                                if ((pMethod->IsLCGMethod()) || (pMethod->GetMethodTable()->Collectible()))
-                                {
-                                    // Increment the number of new dynamic methods we have found
-                                    m_dCurrentDynamicIndex++;
-                                }
-                            }
-                        }
-
-                        // Total number of elements in the dynamic method array should also be
-                        // reset based upon the restored array size.
-                        m_cDynamicMethodItems = cOrigDynamic;
-                    }
-
-                    // Make the dynamic Array field reference the original array we got from the
-                    // Exception object. If, below, we have to add new entries, we will add it to the
-                    // array if it is allocated, or else, we will allocate it before doing so.
-                    gc.dynamicMethodsArray = gc.pOrigDynamicArray;
-
-                    // Create an object array if we have new dynamic method entries AND
-                    // if we are at the (or went past) the current size limit
-                    if (iNumDynamics > 0)
-                    {
-                        // Reallocate the array if we are at the (or went past) the current size limit
-                        unsigned cTotalDynamicMethodCount = m_dCurrentDynamicIndex;
-
-                        S_UINT32 cNewSum = S_UINT32(cTotalDynamicMethodCount) + S_UINT32(iNumDynamics);
-                        if (cNewSum.IsOverflow())
-                        {
-                            // If the current size is already the UINT32 max size, then we
-                            // cannot go further. Overflow here implies we cannot allocate memory anymore.
-                            LOG((LF_EH, LL_INFO100, "StackTraceInfo::SaveStackTrace - Cannot calculate resolver array size due to overflow!\n"));
-                            COMPlusThrowOM();
-                        }
-
-                        cTotalDynamicMethodCount = cNewSum.Value();
-
-                        if (cTotalDynamicMethodCount > m_cDynamicMethodItems)
-                        {
-                            // Double the current limit of the array.
-                            S_UINT32 cNewSize = S_UINT32(2) * S_UINT32(cTotalDynamicMethodCount);
-                            if (cNewSize.IsOverflow())
-                            {
-                                // Overflow here implies that we cannot allocate any more memory
-                                LOG((LF_EH, LL_INFO100, "StackTraceInfo::SaveStackTrace - Cannot resize resolver array beyond max size due to overflow!\n"));
-                                COMPlusThrowOM();
-                            }
-
-                            m_cDynamicMethodItems = cNewSize.Value();
-                            gc.dynamicMethodsArray = (PTRARRAYREF)AllocateObjectArray(m_cDynamicMethodItems,
-                                                                                      g_pObjectClass);
-
-                            _ASSERTE(!(cOrigDynamic && !gc.pOrigDynamicArray));
-
-                            LOG((LF_EH, LL_INFO100, "StackTraceInfo::SaveStackTrace - resized dynamic array to size %lu\n",
-                            m_cDynamicMethodItems));
-
-                            // Copy previous entries if there are any, and update iCurDynamic to point
-                            // to the following index.
-                            if (cOrigDynamic && (gc.pOrigDynamicArray != NULL))
-                            {
-                                memmoveGCRefs(gc.dynamicMethodsArray->GetDataPtr(),
-                                              gc.pOrigDynamicArray->GetDataPtr(),
-                                              cOrigDynamic * sizeof(Object *));
-
-                                // m_dCurrentDynamicIndex is already referring to the correct index
-                                // at which the next resolver object will be saved
-                            }
-                        }
-                        else
-                        {
-                            // We are adding objects to the existing array.
-                            //
-                            // We have new dynamic method entries for which
-                            // resolver objects need to be saved. Ensure
-                            // that we have the array to store them
-                            if (gc.dynamicMethodsArray == NULL)
-                            {
-                                _ASSERTE(m_cDynamicMethodItems > 0);
-
-                                gc.dynamicMethodsArray = (PTRARRAYREF)AllocateObjectArray(m_cDynamicMethodItems,
-                                                                                          g_pObjectClass);
-                                m_dCurrentDynamicIndex = 0;
-                                LOG((LF_EH, LL_INFO100, "StackTraceInfo::SaveStackTrace - allocated dynamic array of size %lu\n",
-                                    m_cDynamicMethodItems));
-                            }
-                            else
-                            {
-                                // The array exists for storing resolver objects.
-                                // Simply set the index at which the next resolver
-                                // will be stored in it.
-                            }
-                        }
-                    }
-                }
-
-                // Update _dynamicMethods field
-                if (iNumDynamics)
-                {
-                    // At this point, we should be having a valid array for storage
-                    _ASSERTE(gc.dynamicMethodsArray != NULL);
-
-                    // Assert that we are in valid range of the array in which resolver objects will be saved.
-                    // We subtract 1 below since storage will start from m_dCurrentDynamicIndex onwards and not
-                    // from (m_dCurrentDynamicIndex + 1).
-                    _ASSERTE((m_dCurrentDynamicIndex + iNumDynamics - 1) < gc.dynamicMethodsArray->GetNumComponents());
-
-                    for (unsigned i=0; i < m_dFrameCount; i++)
-                    {
-                        MethodDesc *pMethod = m_pStackTrace[i].pFunc;
-                        _ASSERTE(pMethod);
-
-                        if (pMethod->IsLCGMethod())
-                        {
-                            // We need to append the corresponding System.Resolver for
-                            // this DynamicMethodDesc to keep it alive.
-                            DynamicMethodDesc *pDMD = (DynamicMethodDesc *) pMethod;
-                            OBJECTREF pResolver = pDMD->GetLCGMethodResolver()->GetManagedResolver();
-
-                            _ASSERTE(pResolver != NULL);
-
-                            // Store Resolver information in the array
-                            gc.dynamicMethodsArray->SetAt(m_dCurrentDynamicIndex++, pResolver);
-                        }
-                        else
-                        if (pMethod->GetMethodTable()->Collectible())
-                        {
-                            OBJECTREF pLoaderAllocator = pMethod->GetMethodTable()->GetLoaderAllocator()->GetExposedObject();
-                            _ASSERTE(pLoaderAllocator != NULL);
-                            gc.dynamicMethodsArray->SetAt (m_dCurrentDynamicIndex++, pLoaderAllocator);
-                        }
-                    }
-                }
-
-                ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(gc.stackTrace.Get(), gc.dynamicMethodsArray);
-
-                // Update _stackTraceString field.
-                ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTraceString(NULL);
-                fSuccess = true;
-
-                GCPROTECT_END();    // gc
-            }
-        }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(SwallowAllExceptions)
-    }
-
-    ClearStackTrace();
-
-    if (!fSuccess)
-    {
-        EX_TRY
-        {
-            _ASSERTE(IsException(pMT));         // what is the pathway here?
-            if (bReplaceStack && IsException(pMT))
-                ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->ClearStackTraceForThrow();
-        }
-        EX_CATCH
-        {
-            // Do nothing
-        }
-        EX_END_CATCH(SwallowAllExceptions);
-    }
-}
-
 // Copy a context record, being careful about whether or not the target
 // is large enough to support CONTEXT_EXTENDED_REGISTERS.
 //
@@ -2560,15 +2187,7 @@ VOID FixupOnRethrow(Thread* pCurThread, EXCEPTION_POINTERS* pExceptionPointers)
 
     ThreadExceptionState* pExState = pCurThread->GetExceptionState();
 
-#ifdef FEATURE_INTERPRETER
-    // Abort if we don't have any state from the original exception.
-    if (!pExState->IsExceptionInProgress())
-    {
-        return;
-    }
-#endif // FEATURE_INTERPRETER
-
-    // Don't allow rethrow of a STATUS_STACK_OVERFLOW -- it's a new throw of the COM+ exception.
+    // Don't allow rethrow of a STATUS_STACK_OVERFLOW -- it's a new throw of the CLR exception.
     if (pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW)
     {
         return;
@@ -2737,9 +2356,6 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
         pParam->throwable = pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
 
         if (!pParam->isRethrown ||
-#ifdef FEATURE_INTERPRETER
-            !pParam->pExState->IsExceptionInProgress() ||
-#endif // FEATURE_INTERPRETER
              pParam->pExState->IsComPlusException() ||
             (pParam->pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW))
         {
@@ -2793,7 +2409,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     {
     }
     PAL_ENDTRY
-    _ASSERTE(!"Cannot continue after COM+ exception");      // Debugger can bring you here.
+    _ASSERTE(!"Cannot continue after CLR exception");      // Debugger can bring you here.
     // For example,
     // Debugger breaks in due to second chance exception (unhandled)
     // User hits 'g'
@@ -2853,7 +2469,10 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
     //  a good thing to preserve the stack trace.
     if (!rethrow)
     {
+        Thread *pThread = GetThread();
+        pThread->IncPreventAbort();
         ExceptionPreserveStackTrace(throwable);
+        pThread->DecPreventAbort();
     }
 
     RealCOMPlusThrowWorker(throwable, rethrow);
@@ -2874,8 +2493,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
     RealCOMPlusThrow(throwable, FALSE);
 }
 
-#ifdef USE_CHECKED_OBJECTREFS
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(Object *exceptionObj)
+VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj)
 {
     CONTRACTL
     {
@@ -2886,9 +2504,8 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(Object *exceptionObj)
     CONTRACTL_END;
 
     OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
-    RealCOMPlusThrow(throwable, FALSE);
+    RealCOMPlusThrowWorker(throwable, FALSE);
 }
-#endif // USE_CHECKED_OBJECTREFS
 
 // this function finds the managed callback to get a resource
 // string from the then current local domain and calls it
@@ -2986,7 +2603,6 @@ void FreeExceptionData(ExceptionData *pedata)
     if (pedata->bstrHelpFile)
         SysFreeString(pedata->bstrHelpFile);
 }
-#endif // FEATURE_COMINTEROP
 
 void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedThrowable)
 {
@@ -3002,7 +2618,6 @@ void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedTh
     // Initialize
     *pProtectedThrowable = NULL;
 
-#if defined(FEATURE_COMINTEROP)
     if (pErrInfo != NULL)
     {
         // If this represents a managed object...
@@ -3036,7 +2651,6 @@ void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedTh
             (*pProtectedThrowable) = ex.GetThrowable();
         }
     }
-#endif // defined(FEATURE_COMINTEROP)
 
     // If we made it here and we don't have an exception object, we didn't have a valid IErrorInfo
     // so we'll create an exception based solely on the hresult.
@@ -3053,23 +2667,35 @@ void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
     {
         THROWS;
         GC_TRIGGERS;        // because of IErrorInfo
-        MODE_ANY;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
     // Get an IErrorInfo if one is available.
     IErrorInfo *pErrInfo = NULL;
-#ifdef FEATURE_COMINTEROP
     if (SafeGetErrorInfo(&pErrInfo) != S_OK)
         pErrInfo = NULL;
-#endif // FEATURE_COMINTEROP
 
     GetExceptionForHR(hr, pErrInfo, pProtectedThrowable);
 }
+#else
+void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        NOTHROW;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
+    EEMessageException ex(hr);
+    (*pProtectedThrowable) = ex.GetThrowable();
+}
+#endif // FEATURE_COMINTEROP
 
 //
-// Maps a Win32 fault to a COM+ Exception enumeration code
+// Maps a Win32 fault to a CLR Exception enumeration code
 //
 DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
 {
@@ -3166,7 +2792,7 @@ void CheckStackBarrier(EXCEPTION_REGISTRATION_RECORD *exRecord)
 // gc mode.  As we leave the EE, we fix a few things:
 //
 //      - the gc state must be set back to preemptive-operative
-//      - the COM+ frame chain must be rewound to what it was on entry
+//      - the CLR frame chain must be rewound to what it was on entry
 //      - ExInfo()->m_pSearchBoundary must be adjusted
 //        if we popped the frame that is identified as begnning the next
 //        crawl.
@@ -3195,9 +2821,9 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame)
     CONSISTENCY_CHECK(pFrame == pThread->GetFrame());
 
 #ifndef FEATURE_EH_FUNCLETS
-    // An exception is being thrown through here.  The COM+ exception
+    // An exception is being thrown through here.  The CLR exception
     // info keeps a pointer to a frame that is used by the next
-    // COM+ Exception Handler as the starting point of its crawl.
+    // CLR Exception Handler as the starting point of its crawl.
     // We may have popped this marker -- in which case, we need to
     // update it to the current frame.
     //
@@ -3221,174 +2847,9 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame)
     GCX_PREEMP_NO_DTOR();
 }
 
-
-
-void StackTraceInfo::Init()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::Init (%p)\n", this));
-
-    m_pStackTrace = NULL;
-    m_cStackTrace = 0;
-    m_dFrameCount = 0;
-    m_cDynamicMethodItems = 0;
-    m_dCurrentDynamicIndex = 0;
-}
-
-void StackTraceInfo::FreeStackTrace()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    if (m_pStackTrace)
-    {
-        delete [] m_pStackTrace;
-        m_pStackTrace = NULL;
-        m_cStackTrace = 0;
-        m_dFrameCount = 0;
-        m_cDynamicMethodItems = 0;
-        m_dCurrentDynamicIndex = 0;
-    }
-}
-
-BOOL StackTraceInfo::IsEmpty()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return 0 == m_dFrameCount;
-}
-
-void StackTraceInfo::ClearStackTrace()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    LOG((LF_EH, LL_INFO1000, "StackTraceInfo::ClearStackTrace (%p)\n", this));
-    m_dFrameCount = 0;
-}
-
-// allocate stack trace info. As each function is found in the stack crawl, it will be added
-// to this list. If the list is too small, it is reallocated.
-void StackTraceInfo::AllocateStackTrace()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_FORBID_FAULT;
-
-    LOG((LF_EH, LL_INFO1000, "StackTraceInfo::AllocateStackTrace (%p)\n", this));
-
-    if (!m_pStackTrace)
-    {
-#ifdef _DEBUG
-        unsigned int allocSize = 2;    // make small to exercise realloc
-#else
-        unsigned int allocSize = 30;
-#endif
-
-        SCAN_IGNORE_FAULT; // A fault of new is okay here. The rest of the system is cool if we don't have enough
-                           // memory to remember the stack as we run our first pass.
-        m_pStackTrace = new (nothrow) StackTraceElement[allocSize];
-
-        if (m_pStackTrace != NULL)
-        {
-            // Remember how much we allocated.
-            m_cStackTrace = allocSize;
-            m_cDynamicMethodItems = allocSize;
-        }
-        else
-        {
-            m_cStackTrace = 0;
-            m_cDynamicMethodItems = 0;
-        }
-    }
-}
-
-//
-// Returns true if it appended the element, false otherwise.
-//
-BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        NOTHROW;
-    }
-    CONTRACTL_END
-
-    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement (%p), IP = %p, SP = %p, %s::%s\n", this, currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
-    BOOL bRetVal = FALSE;
-
-    if (pFunc != NULL && pFunc->IsILStub())
-        return FALSE;
-
-    // Save this function in the stack trace array, which we only build on the first pass. We'll try to expand the
-    // stack trace array if we don't have enough room. Note that we only try to expand if we're allowed to allocate
-    // memory (bAllowAllocMem).
-    if (bAllowAllocMem && (m_dFrameCount >= m_cStackTrace))
-    {
-        StackTraceElement* pTempElement = new (nothrow) StackTraceElement[m_cStackTrace*2];
-
-        if (pTempElement != NULL)
-        {
-            memcpy(pTempElement, m_pStackTrace, m_cStackTrace * sizeof(StackTraceElement));
-            delete [] m_pStackTrace;
-            m_pStackTrace = pTempElement;
-            m_cStackTrace *= 2;
-        }
-    }
-
-    // Add the function to the stack trace array if there's room.
-    if (m_dFrameCount < m_cStackTrace)
-    {
-        StackTraceElement* pStackTraceElem;
-
-        // If we get in here, we'd better have a stack trace array.
-        CONSISTENCY_CHECK(m_pStackTrace != NULL);
-
-        pStackTraceElem = &(m_pStackTrace[m_dFrameCount]);
-
-        pStackTraceElem->pFunc = pFunc;
-
-        pStackTraceElem->ip = currentIP;
-        pStackTraceElem->sp = currentSP;
-
-        // When we are building stack trace as we encounter managed frames during exception dispatch,
-        // then none of those frames represent a stack trace from a foreign exception (as they represent
-        // the current exception). Hence, set the corresponding flag to FALSE.
-        pStackTraceElem->flags = 0;
-
-        // This is a workaround to fix the generation of stack traces from exception objects so that
-        // they point to the line that actually generated the exception instead of the line
-        // following.
-        if (pCf->IsIPadjusted())
-        {
-            pStackTraceElem->flags |= STEF_IP_ADJUSTED;
-        }
-        else if (!pCf->HasFaulted() && pStackTraceElem->ip != 0)
-        {
-            pStackTraceElem->ip -= 1;
-            pStackTraceElem->flags |= STEF_IP_ADJUSTED;
-        }
-
-        ++m_dFrameCount;
-        bRetVal = TRUE;
-    }
-
 #ifndef TARGET_UNIX // Watson is supported on Windows only
+void SetupWatsonBucket(UINT_PTR currentIP, CrawlFrame* pCf)
+{
     Thread *pThread = GetThread();
 
     if (pThread && (currentIP != 0))
@@ -3410,24 +2871,288 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
             SetupInitialThrowBucketDetails(adjustedIp);
         }
     }
+}
 #endif // !TARGET_UNIX
 
-    return bRetVal;
+// Ensure that there is space for neededSize elements in the stack trace array.
+void StackTraceInfo::EnsureStackTraceArray(StackTraceArrayProtect *pStackTraceProtected, size_t neededSize)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        PRECONDITION(CheckPointer(pStackTraceProtected));
+    }
+    CONTRACTL_END;
+
+    size_t stackTraceCapacity = pStackTraceProtected->m_pStackTraceArray.Capacity();
+    if (neededSize > stackTraceCapacity)
+    {
+        S_SIZE_T newCapacity = S_SIZE_T(stackTraceCapacity) * S_SIZE_T(2);
+        if (newCapacity.IsOverflow() || (neededSize > newCapacity.Value()))
+        {
+            newCapacity = S_SIZE_T(neededSize);
+            if (newCapacity.IsOverflow())
+            {
+                EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
+            }
+        }
+
+        stackTraceCapacity = newCapacity.Value();
+
+        // Allocate a new array with the needed size
+        pStackTraceProtected->m_pStackTraceArrayNew.Allocate(stackTraceCapacity);
+        if (pStackTraceProtected->m_pStackTraceArray.Get() != NULL)
+        {
+            // Copy the original array to the new one
+            pStackTraceProtected->m_pStackTraceArrayNew.CopyDataFrom(pStackTraceProtected->m_pStackTraceArray);
+            _ASSERTE(pStackTraceProtected->m_pStackTraceArrayNew.Size() == (neededSize - 1));
+        }
+        // Update the stack trace array
+        pStackTraceProtected->m_pStackTraceArray.Set(pStackTraceProtected->m_pStackTraceArrayNew.Get());
+    }
 }
 
-void StackTraceInfo::GetLeafFrameInfo(StackTraceElement* pStackTraceElement)
+// Ensure that there is space for the neededSize elements in the keepAlive array.
+void StackTraceInfo::EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t neededSize)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        PRECONDITION(CheckPointer(ppKeepAliveArray));
+    }
+    CONTRACTL_END;
+
+    PTRARRAYREF pNewKeepAliveArray = NULL;
+    GCPROTECT_BEGIN(pNewKeepAliveArray);
+
+    size_t keepAliveArrayCapacity = (*ppKeepAliveArray != NULL) ? (*ppKeepAliveArray)->GetNumComponents() : 0;
+    if (neededSize > keepAliveArrayCapacity)
+    {
+        S_SIZE_T newCapacity = S_SIZE_T(keepAliveArrayCapacity) * S_SIZE_T(2);
+        if (newCapacity.IsOverflow() || (neededSize > newCapacity.Value()))
+        {
+            newCapacity = S_SIZE_T(neededSize);
+            if (newCapacity.IsOverflow())
+            {
+                EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
+            }
+        }
+
+        keepAliveArrayCapacity = newCapacity.Value();
+
+        if (!FitsIn<DWORD>(keepAliveArrayCapacity))
+        {
+            EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
+        }
+
+        // Allocate a new array with the needed size
+        pNewKeepAliveArray = (PTRARRAYREF)AllocateObjectArray(static_cast<DWORD>(keepAliveArrayCapacity), g_pObjectClass);
+        if ((*ppKeepAliveArray) != NULL)
+        {
+            memmoveGCRefs(pNewKeepAliveArray->GetDataPtr(),
+                          (*ppKeepAliveArray)->GetDataPtr(),
+                          (*ppKeepAliveArray)->GetNumComponents() * sizeof(Object *));
+        }
+        // Update the keepAlive array
+        *ppKeepAliveArray = pNewKeepAliveArray;
+    }
+
+    GCPROTECT_END();
+}
+
+// Get a keepAlive object for the given method. The keepAlive object is either a
+// Resolver object for DynamicMethodDesc or a LoaderAllocator object for methods in
+// collectible assemblies.
+// Returns NULL if the method code cannot be destroyed.
+OBJECTREF StackTraceInfo::GetKeepAliveObject(MethodDesc* pMethod)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (NULL == m_pStackTrace)
+    if (pMethod->IsLCGMethod())
     {
-        return;
-    }
-    _ASSERTE(NULL != pStackTraceElement);
+        // We need to append the corresponding System.Resolver for
+        // this DynamicMethodDesc to keep it alive.
+        DynamicMethodDesc *pDMD = (DynamicMethodDesc *) pMethod;
+        OBJECTREF pResolver = pDMD->GetLCGMethodResolver()->GetManagedResolver();
 
-    *pStackTraceElement = m_pStackTrace[0];
+        _ASSERTE(pResolver != NULL);
+
+        // Store Resolver information in the array
+        return pResolver;
+    }
+    else if (pMethod->GetMethodTable()->Collectible())
+    {
+        OBJECTREF pLoaderAllocator = pMethod->GetMethodTable()->GetLoaderAllocator()->GetExposedObject();
+        _ASSERTE(pLoaderAllocator != NULL);
+        return pLoaderAllocator;
+    }
+
+    return NULL;
 }
 
+//
+// Append stack frame to an exception stack trace.
+//
+void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        NOTHROW;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END
+
+    Thread *pThread = GetThread();
+    MethodTable* pMT = ObjectFromHandle(hThrowable)->GetMethodTable();
+    _ASSERTE(IsException(pMT));
+
+    PTR_ThreadExceptionState pCurTES = pThread->GetExceptionState();
+    // Check if the flag indicating foreign exception raise has been setup or not,
+    // and then reset it so that subsequent processing of managed frames proceeds
+    // normally.
+    BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
+    pCurTES->ResetRaisingForeignException();
+
+    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
+
+    if ((pFunc != NULL && pFunc->IsDiagnosticsHidden()))
+        return;
+
+    // Do not save stacktrace to preallocated exception.  These are shared.
+    if (CLRException::IsPreallocatedExceptionHandle(hThrowable))
+    {
+        // Preallocated exceptions will never have this flag set. However, its possible
+        // that after this flag is set for a regular exception but before we throw, we have an async
+        // exception like a RudeThreadAbort, which will replace the exception
+        // containing the restored stack trace.
+
+        return;
+    }
+
+    StackTraceElement stackTraceElem;
+
+    stackTraceElem.pFunc = pFunc;
+
+    stackTraceElem.ip = currentIP;
+    stackTraceElem.sp = currentSP;
+
+    // When we are building stack trace as we encounter managed frames during exception dispatch,
+    // then none of those frames represent a stack trace from a foreign exception (as they represent
+    // the current exception). Hence, set the corresponding flag to FALSE.
+    stackTraceElem.flags = 0;
+
+    // This is a workaround to fix the generation of stack traces from exception objects so that
+    // they point to the line that actually generated the exception instead of the line
+    // following.
+    if (pCf != NULL)
+    {
+        if (pCf->IsIPadjusted())
+        {
+            stackTraceElem.flags |= STEF_IP_ADJUSTED;
+        }
+        else if (!pCf->HasFaulted() && stackTraceElem.ip != 0)
+        {
+            stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+            stackTraceElem.flags |= STEF_IP_ADJUSTED;
+        }
+    }
+
+#ifndef TARGET_UNIX // Watson is supported on Windows only
+    SetupWatsonBucket(currentIP, pCf);
+#endif // !TARGET_UNIX
+
+    EX_TRY
+    {
+        struct
+        {
+            StackTraceArrayProtect stackTrace;
+            PTRARRAYREF pKeepAliveArray = NULL; // Object array of Managed Resolvers / Loader Allocators of methods that can be collected
+            OBJECTREF keepAliveObject = NULL;
+        } gc;
+
+        GCPROTECT_BEGIN_THREAD(pThread, gc);
+
+        // Fetch the stacktrace and the keepAlive array from the exception object. It returns clones of those arrays in case the
+        // stack trace was created by a different thread.
+        ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->GetStackTrace(gc.stackTrace.m_pStackTraceArray, &gc.pKeepAliveArray, pThread);
+
+        // The stack trace returned by the GetStackTrace has to be created by the current thread or be NULL.
+        _ASSERTE((gc.stackTrace.m_pStackTraceArray.Get() == NULL) || (gc.stackTrace.m_pStackTraceArray.GetObjectThread() == pThread));
+
+        EnsureStackTraceArray(&gc.stackTrace, gc.stackTrace.m_pStackTraceArray.Size() + 1);
+
+        if (fRaisingForeignException)
+        {
+            // Just before we append to the stack trace, mark the last recorded frame to be from
+            // the foreign thread so that we can insert an annotation indicating so when building
+            // the stack trace string.
+            size_t numCurrentFrames = gc.stackTrace.m_pStackTraceArray.Size();
+            if (numCurrentFrames > 0)
+            {
+                // "numCurrentFrames" can be zero if the user created an EDI using
+                // an unthrown exception.
+                StackTraceElement & refLastElementFromForeignStackTrace = gc.stackTrace.m_pStackTraceArray[numCurrentFrames - 1];
+                refLastElementFromForeignStackTrace.flags |= STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE;
+            }
+        }
+
+        uint32_t keepAliveItemsCount = gc.stackTrace.m_pStackTraceArray.GetKeepAliveItemsCount();
+        _ASSERTE(keepAliveItemsCount == gc.stackTrace.m_pStackTraceArray.ComputeKeepAliveItemsCount());
+
+        gc.keepAliveObject = GetKeepAliveObject(pFunc);
+        if (gc.keepAliveObject != NULL)
+        {
+            // The new frame to be added is a method that can be collected, so we need to update the keepAlive items count.
+            keepAliveItemsCount++;
+            stackTraceElem.flags |= STEF_KEEPALIVE;
+        }
+
+        if (keepAliveItemsCount != 0)
+        {
+            // One extra slot is added for the stack trace array
+            EnsureKeepAliveArray(&gc.pKeepAliveArray, keepAliveItemsCount + 1);
+            if (gc.keepAliveObject != NULL)
+            {
+                // Add the method to the keepAlive array
+                gc.pKeepAliveArray->SetAt(keepAliveItemsCount, gc.keepAliveObject);
+            }
+        }
+        else
+        {
+            // There are no methods that can be collected, so we don't need the keepAlive array
+            gc.pKeepAliveArray = NULL;
+        }
+
+        gc.stackTrace.m_pStackTraceArray.SetKeepAliveItemsCount(keepAliveItemsCount);
+
+        gc.stackTrace.m_pStackTraceArray.Append(&stackTraceElem);
+       _ASSERTE(gc.stackTrace.m_pStackTraceArray.ComputeKeepAliveItemsCount() == keepAliveItemsCount);
+
+        if (gc.pKeepAliveArray != NULL)
+        {
+            _ASSERTE(keepAliveItemsCount > 0);
+            gc.pKeepAliveArray->SetAt(0, gc.stackTrace.m_pStackTraceArray.Get());
+            ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(dac_cast<OBJECTREF>(gc.pKeepAliveArray));
+        }
+        else
+        {
+            _ASSERTE(keepAliveItemsCount == 0);
+            ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(dac_cast<OBJECTREF>(gc.stackTrace.m_pStackTraceArray.Get()));
+        }
+
+        // Clear the _stackTraceString field as it no longer matches the stack trace
+        ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTraceString(NULL);
+
+        GCPROTECT_END();    // gc
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH
+}
 
 void UnwindFrameChain(Thread* pThread, LPVOID pvLimitSP)
 {
@@ -3496,21 +3221,6 @@ BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable)
     MethodTable *pThrowableMT = (*pThrowable)->GetMethodTable();
 
     return CoreLibBinder::IsException(pThrowableMT, reKind);
-}
-
-BOOL IsAsyncThreadException(OBJECTREF *pThrowable) {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_FORBID_FAULT;
-
-    if (  (GetThreadNULLOk() && GetThread()->IsRudeAbort() && GetThread()->IsRudeAbortInitiated())
-        ||IsExceptionOfType(kThreadAbortException, pThrowable)
-        ||IsExceptionOfType(kThreadInterruptedException, pThrowable)) {
-        return TRUE;
-    } else {
-        return FALSE;
-    }
 }
 
 BOOL IsUncatchable(OBJECTREF *pThrowable)
@@ -3634,7 +3344,7 @@ LONG NotifyDebuggerLastChance(Thread *pThread,
     EX_CATCH // if we fail to intercept just continue as is
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 #endif // DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
 
     return retval;
@@ -3762,12 +3472,12 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
 
     // VS debugger team requested the Whidbey experience, which is no Watson when the debugger thread detects
     // that the debugger process is abruptly terminated, and triggers a failfast error.  In this particular
-    // scenario CORDebuggerAttached() will be TRUE, but IsDebuggerPresent() will be FALSE because from OS
+    // scenario CORDebuggerAttached() will be TRUE, but minipal_is_native_debugger_present() will be FALSE because from OS
     // perspective the native debugger has been detached from the debuggee, but CLR has not yet marked the
     // managed debugger as detached.  Therefore, CORDebuggerAttached() is checked, so Watson will not pop up
     // when a debugger is abruptly terminated.  It also prevents a debugger from being launched on a helper
     // thread.
-    BOOL alreadyDebugging     = CORDebuggerAttached() || IsDebuggerPresent();
+    BOOL alreadyDebugging     = CORDebuggerAttached() || minipal_is_native_debugger_present();
 
     BOOL jitAttachRequested   = !alreadyDebugging; // Launch debugger if not already running.
 
@@ -3842,8 +3552,14 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
 #ifdef HOST_WINDOWS
                 CreateCrashDumpIfEnabled(fSOException);
 #endif
-                RaiseFailFastException(pExceptionInfo == NULL ? NULL : pExceptionInfo->ExceptionRecord,
-                                       pExceptionInfo == NULL ? NULL : pExceptionInfo->ContextRecord,
+                // RaiseFailFastException validates that the context matches a valid return address on the stack as part of CET.
+                // If the return address is not valid, it rejects the context, flags it as a potential attack and asserts in
+                // checked builds of Windows OS.
+                // Avoid reporting thread context captured by EEPolicy::HandleFatalError since it has IP that does not
+                // match a valid return address on the stack.
+                bool fAvoidReportContextToRaiseFailFast = tore.IsFatalError();
+                RaiseFailFastException(pExceptionInfo == NULL                                       ? NULL : pExceptionInfo->ExceptionRecord,
+                                       pExceptionInfo == NULL || fAvoidReportContextToRaiseFailFast ? NULL : pExceptionInfo->ContextRecord,
                                        0);
                 STRESS_LOG0(LF_CORDB, LL_INFO10, "D::RFFE: Return from RaiseFailFastException\n");
             }
@@ -3858,7 +3574,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
         }
 
 
-        if (IsDebuggerPresent())
+        if (minipal_is_native_debugger_present())
         {
             result = FaultReportResultDebug;
             jitAttachRequested = FALSE;
@@ -3932,9 +3648,9 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
         }
     }
     // When the debugger thread detects that the debugger process is abruptly terminated, and triggers
-    // a failfast error, CORDebuggerAttached() will be TRUE, but IsDebuggerPresent() will be FALSE.
-    // If IsDebuggerPresent() is FALSE, do not try to notify the deubgger.
-    else if (CORDebuggerAttached() && IsDebuggerPresent())
+    // a failfast error, CORDebuggerAttached() will be TRUE, but minipal_is_native_debugger_present() will be FALSE.
+    // If minipal_is_native_debugger_present() is FALSE, do not try to notify the deubgger.
+    else if (CORDebuggerAttached() && minipal_is_native_debugger_present())
 #else
     }
     else if (CORDebuggerAttached())
@@ -3979,7 +3695,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
                 NotifyDebuggerLastChance(pThread, pExceptionInfo, jitAttachRequested);
 
                 // If the registed debugger is not a managed debugger, we need to stop the debugger here.
-                if (!CORDebuggerAttached() && IsDebuggerPresent())
+                if (!CORDebuggerAttached() && minipal_is_native_debugger_present())
                 {
                     DebugBreak();
                 }
@@ -4119,7 +3835,7 @@ LaunchCreateDump(LPCWSTR lpCommandLine)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return fSuccess;
 }
@@ -4596,13 +4312,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
     STRESS_LOG2(LF_EH, LL_INFO10, "In InternalUnhandledExceptionFilter_Worker, Exception = %x, sp = %p\n",
                                     pExceptionInfo->ExceptionRecord->ExceptionCode, GetCurrentSP());
 
-    // If we can't enter the EE, done.
-    if (g_fForbidEnterEE)
-    {
-        LOG((LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter_Worker: g_fForbidEnterEE is TRUE\n"));
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-
     // We don't do anything when this is called from an unmanaged thread.
     Thread *pThread = GetThreadNULLOk();
 
@@ -4633,18 +4342,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
         }
     }
 #endif
-
-    // This shouldn't be possible, but MSVC re-installs us... for now, just bail if this happens.
-    if (g_fNoExceptions)
-    {
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-
-    // Are we looking at a stack overflow here?
-    if ((pThread !=  NULL) && !pThread->DetermineIfGuardPagePresent())
-    {
-        g_fForbidEnterEE = true;
-    }
 
 #ifdef DEBUGGING_SUPPORTED
 
@@ -4750,32 +4447,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
 
         if (pParam->pThread != NULL)
         {
-            BOOL fIsProcessTerminating = TRUE;
-
-            // In CoreCLR, we can be asked to not let an exception go unhandled on managed threads in a given AppDomain.
-            // If the exception reaches the top of the thread's stack, we simply deliver AppDomain's UnhandledException event and
-            // return back to the filter, instead of letting the process terminate because of unhandled exception.
-
-            // Below is how we perform the check:
-            //
-            // 1) The flag is specified on the AD when it is created by the host and all managed threads created
-            //    in such an AD will inherit the flag. For non-finalizer and non-threadpool threads, we check the flag against the thread.
-            // 2) The finalizer thread always switches to the AD of the object that is going to be finalized. Thus,
-            //    while it wont have the flag specified, the AD it switches to will.
-            // 3) The threadpool thread also switches to the correct AD before executing the request. The thread wont have the
-            //    flag specified, but the AD it switches to will.
-
-            // This code must only be exercised when running as a normal filter; returning
-            // EXCEPTION_EXECUTE_HANDLER is not valid if this code is being invoked from
-            // the UEF.
-            // Fortunately, we should never get into this case, since the thread flag about
-            // ignoring unhandled exceptions cannot be set on the default domain.
-
-            if (IsFinalizerThread() || (pParam->pThread->IsThreadPoolThread()))
-                fIsProcessTerminating = !(pParam->pThread->GetDomain()->IgnoreUnhandledExceptions());
-            else
-                fIsProcessTerminating = !(pParam->pThread->HasThreadStateNC(Thread::TSNC_IgnoreUnhandledExceptions));
-
 #ifndef TARGET_UNIX
             // Setup the watson bucketing details for UE processing.
             // do this before notifying appdomains of the UE so if an AD attempts to
@@ -4784,14 +4455,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
 #endif // !TARGET_UNIX
 
             // Send notifications to the AppDomains.
-            NotifyAppDomainsOfUnhandledException(pParam->pExceptionInfo, NULL, useLastThrownObject, fIsProcessTerminating /*isTerminating*/);
-
-            // If the process is not terminating, then return back to the filter and ask it to execute
-            if (!fIsProcessTerminating)
-            {
-                pParam->retval = EXCEPTION_EXECUTE_HANDLER;
-                goto lDone;
-            }
+            NotifyAppDomainsOfUnhandledException(pParam->pExceptionInfo, NULL, useLastThrownObject);
         }
         else
         {
@@ -4860,8 +4524,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
         LOG((LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter_Worker: Calling DefaultCatchHandler\n"));
 
         // Call our default catch handler to do the managed unhandled exception work.
-        DefaultCatchHandler(pParam->pExceptionInfo, NULL, useLastThrownObject,
-            TRUE /*isTerminating*/, FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/, TRUE /* sendWindowsEventLog */);
+        DefaultCatchHandler(pParam->pExceptionInfo, NULL, useLastThrownObject, TRUE /* sendWindowsEventLog */);
 
 lDone: ;
     }
@@ -4871,7 +4534,7 @@ lDone: ;
 #ifdef _DEBUG
         char buffer[200];
         sprintf_s(buffer, 200, "\nInternal error: Uncaught exception was thrown from IP = %p in UnhandledExceptionFilter_Worker on thread 0x%08x\n",
-                param.ExceptionEIP, ((GetThreadNULLOk() == NULL) ? NULL : GetThread()->GetThreadId()));
+                param.ExceptionEIP, ((GetThreadNULLOk() == NULL) ? 0 : GetThread()->GetThreadId()));
         PrintToStdErrA(buffer);
         _ASSERTE(!"Unexpected exception in UnhandledExceptionFilter_Worker");
 #endif
@@ -5078,8 +4741,6 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 #pragma code_seg(pop, uef)
 #endif // !TARGET_UNIX
 
-void PrintStackTraceToStdout();
-
 static SString GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
@@ -5110,16 +4771,16 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
             wcsncpy_s(buf, buf_size, SZ_UNHANDLED_EXCEPTION, SZ_UNHANDLED_EXCEPTION_CHARLEN);
         }
 
-        PrintToStdErrW(buf);
-        PrintToStdErrA(" ");
+        SString message(buf);
+        SString exceptionMessage = GetExceptionMessageWrapper(pThread, throwable);
 
-        SString message = GetExceptionMessageWrapper(pThread, throwable);
-
-        if (!message.IsEmpty())
+        message.Append(W(" "));
+        if (!exceptionMessage.IsEmpty())
         {
-            PrintToStdErrW(message);
+            message.Append(exceptionMessage);
         }
 
+        PrintToStdErrW(message.GetUnicode());
         PrintToStdErrA("\n");
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)
@@ -5132,9 +4793,9 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
 
                 if (IsException(throwable->GetMethodTable()))
                 {
-                    if (!message.IsEmpty())
+                    if (!exceptionMessage.IsEmpty())
                     {
-                        reporter.AddDescription(message);
+                        reporter.AddDescription(exceptionMessage);
                     }
                     reporter.Report();
                 }
@@ -5149,7 +4810,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
 #endif
     }
@@ -5163,9 +4824,6 @@ void STDMETHODCALLTYPE
 DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
                     OBJECTREF *pThrowableIn,
                     BOOL useLastThrownObject,
-                    BOOL isTerminating,
-                    BOOL isThreadBaseFilter,
-                    BOOL sendAppDomainEvents,
                     BOOL sendWindowsEventLog)
 {
     CONTRACTL
@@ -5252,12 +4910,12 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
     }
 
 #ifdef _DEBUG
-    DWORD unbreakableLockCount = 0;
+    DWORD LockCount = 0;
     // Do not care about lock check for unhandled exception.
-    while (pThread->HasUnbreakableLock())
+    while (pThread->HasLock())
     {
-        pThread->DecUnbreakableLockCount();
-        unbreakableLockCount ++;
+        pThread->DecLockCount();
+        LockCount ++;
     }
     BOOL fOwnsSpinLock = pThread->HasThreadStateNC(Thread::TSNC_OwnsSpinLock);
     if (fOwnsSpinLock)
@@ -5267,18 +4925,6 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 #endif
 
     GCPROTECT_BEGIN(throwable);
-    //BOOL IsStackOverflow = (throwable->GetMethodTable() == g_pStackOverflowExceptionClass);
-    BOOL IsOutOfMemory = (throwable->GetMethodTable() == g_pOutOfMemoryExceptionClass);
-
-    // Notify the AppDomain that we have taken an unhandled exception.  Can't notify of stack overflow -- guard
-    // page is not yet reset.
-    BOOL SentEvent = FALSE;
-
-    // Send up the unhandled exception appdomain event.
-    if (sendAppDomainEvents)
-    {
-        SentEvent = NotifyAppDomainsOfUnhandledException(pExceptionPointers, &throwable, useLastThrownObject, isTerminating);
-    }
 
     const int buf_size = 128;
     WCHAR buf[buf_size] = {0};
@@ -5288,37 +4934,14 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
         {
             EX_TRY
             {
-                // If this isn't ThreadAbortException, we want to print a stack trace to indicate why this thread abruptly
-                // terminated. Exceptions kill threads rarely enough that an uncached name check is reasonable.
-                BOOL        dump = TRUE;
-
-                if (/*IsStackOverflow ||*/
-                    !pThread->DetermineIfGuardPagePresent() ||
-                    IsOutOfMemory)
+                if (!pThread->DetermineIfGuardPagePresent())
                 {
                     // We have to be very careful.  If we walk off the end of the stack, the process will just
-                    // die. e.g. IsAsyncThreadException() and Exception.ToString both consume too much stack -- and can't
+                    // die. e.g. Exception.ToString both consume too much stack -- and can't
                     // be called here.
-                    dump = FALSE;
-
-                    if (IsOutOfMemory)
-                    {
-                        PrintToStdErrA("Out of memory.\n");
-                    }
-                    else
-                    {
-                        PrintToStdErrA("Stack overflow.\n");
-                    }
+                    PrintToStdErrA("Stack overflow.\n");
                 }
-                else if (SentEvent || IsAsyncThreadException(&throwable))
-                {
-                    // We don't print anything on async exceptions, like ThreadAbort.
-                    dump = FALSE;
-                    INDEBUG(suppressSelectiveBreak=TRUE);
-                }
-
-                // Finally, should we print the message?
-                if (dump)
+                else
                 {
                     // this is stack heavy because of the CQuickWSTRBase, so we break it out
                     // and don't have to carry the weight through our other code paths.
@@ -5327,20 +4950,31 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
             }
             EX_CATCH
             {
-                LOG((LF_EH, LL_INFO10, "Exception occurred while processing uncaught exception\n"));
-                UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf, buf_size);
-                PrintToStdErrA("\n   ");
-                PrintToStdErrW(buf);
-                PrintToStdErrA("\n");
+                if (throwable->GetMethodTable() == g_pOutOfMemoryExceptionClass)
+                {
+                    // Try to print a short message at least.
+                    PrintToStdErrA("Out of memory.\n");
+                }
+                else
+                {
+                    LOG((LF_EH, LL_INFO10, "Exception occurred while processing uncaught exception\n"));
+
+                    _ASSERTE(buf_size > 6);
+                    wcscpy_s(buf, buf_size, W("\n   "));
+                    UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf + 4, buf_size - 6);
+                    wcscat_s(buf, buf_size, W("\n"));
+
+                    PrintToStdErrW(buf);
+                }
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
         EX_CATCH
         {   // If we got here, we can't even print the localized error message.  Print non-localized.
             LOG((LF_EH, LL_INFO10, "Exception occurred while logging processing uncaught exception\n"));
             PrintToStdErrA("\n   Error: Can't print exception string because Exception.ToString() failed.\n");
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
 #if defined(_DEBUG)
@@ -5355,10 +4989,10 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 
 #ifdef _DEBUG
     // Do not care about lock check for unhandled exception.
-    while (unbreakableLockCount)
+    while (LockCount)
     {
-        pThread->IncUnbreakableLockCount();
-        unbreakableLockCount --;
+        pThread->IncLockCount();
+        LockCount --;
     }
     if (fOwnsSpinLock)
     {
@@ -5371,11 +5005,10 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 //******************************************************************************
 // NotifyAppDomainsOfUnhandledException -- common processing for otherwise uncaught exceptions.
 //******************************************************************************
-BOOL NotifyAppDomainsOfUnhandledException(
+void NotifyAppDomainsOfUnhandledException(
     PEXCEPTION_POINTERS pExceptionPointers,
     OBJECTREF   *pThrowableIn,
-    BOOL        useLastThrownObject,
-    BOOL        isTerminating)
+    BOOL        useLastThrownObject)
 {
     CONTRACTL
     {
@@ -5391,8 +5024,6 @@ BOOL NotifyAppDomainsOfUnhandledException(
     _ASSERTE(!fBreakOnNotify);
 #endif
 
-    BOOL SentEvent = FALSE;
-
     LOG((LF_EH, LL_INFO10, "In NotifyAppDomainsOfUnhandledException\n"));
 
     Thread *pThread = GetThreadNULLOk();
@@ -5401,7 +5032,7 @@ BOOL NotifyAppDomainsOfUnhandledException(
     if (!pThread)
     {
         _ASSERTE(g_fEEShutDown);
-        return FALSE;
+        return;
     }
 
     ThreadPreventAsyncHolder prevAsync;
@@ -5426,16 +5057,16 @@ BOOL NotifyAppDomainsOfUnhandledException(
     // If we've got no managed object, then we can't send an event, so we just return.
     if (throwable == NULL)
     {
-        return FALSE;
+        return;
     }
 
 #ifdef _DEBUG
-    DWORD unbreakableLockCount = 0;
+    DWORD LockCount = 0;
     // Do not care about lock check for unhandled exception.
-    while (pThread->HasUnbreakableLock())
+    while (pThread->HasLock())
     {
-        pThread->DecUnbreakableLockCount();
-        unbreakableLockCount ++;
+        pThread->DecLockCount();
+        LockCount ++;
     }
     BOOL fOwnsSpinLock = pThread->HasThreadStateNC(Thread::TSNC_OwnsSpinLock);
     if (fOwnsSpinLock)
@@ -5472,7 +5103,7 @@ BOOL NotifyAppDomainsOfUnhandledException(
 
         // This guy will never throw, but it will need a spot to store
         // any nested exceptions it might find.
-        SentEvent = AppDomain::OnUnhandledException(&throwable, isTerminating);
+        AppDomain::OnUnhandledException(&throwable);
 
         UNINSTALL_NESTED_EXCEPTION_HANDLER();
 
@@ -5489,12 +5120,16 @@ BOOL NotifyAppDomainsOfUnhandledException(
 
     GCPROTECT_END();
 
+#ifdef HOST_WINDOWS
+    CreateCrashDumpIfEnabled();
+#endif
+
 #ifdef _DEBUG
     // Do not care about lock check for unhandled exception.
-    while (unbreakableLockCount)
+    while (LockCount)
     {
-        pThread->IncUnbreakableLockCount();
-        unbreakableLockCount --;
+        pThread->IncLockCount();
+        LockCount --;
     }
     if (fOwnsSpinLock)
     {
@@ -5502,126 +5137,7 @@ BOOL NotifyAppDomainsOfUnhandledException(
     }
 #endif
 
-    return SentEvent;
-
 } // NotifyAppDomainsOfUnhandledException()
-
-
-//******************************************************************************
-//
-//  ThreadBaseExceptionFilter_Worker
-//
-//    The return from the function can be EXCEPTION_CONTINUE_SEARCH to let an
-//     exception go unhandled.  This is the default behaviour (starting in v2.0),
-//     but can be overridden by hosts or by config file.
-//    When the behaviour is overridden, the return will be EXCEPTION_EXECUTE_HANDLER
-//     to swallow the exception.
-//    Note that some exceptions are always swallowed: ThreadAbort, and AppDomainUnload.
-//
-//  Parameters:
-//    pExceptionInfo    EXCEPTION_POINTERS for current exception
-//    _location         A constant as an INT_PTR.  Tells the context from whence called.
-//    swallowing        Are we swallowing unhandled exceptions based on policy?
-//
-//  Returns:
-//    EXCEPTION_CONTINUE_SEARCH     Generally returns this to let the exception go unhandled.
-//    EXCEPTION_EXECUTE_HANDLER     May return this to swallow the exception.
-//
-static LONG ThreadBaseExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo,
-                                             PVOID pvParam,
-                                             BOOL swallowing)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_EH, LL_INFO100, "ThreadBaseExceptionFilter_Worker: Enter\n"));
-
-    ThreadBaseExceptionFilterParam *pParam = (ThreadBaseExceptionFilterParam *) pvParam;
-    UnhandledExceptionLocation location = pParam->location;
-
-    _ASSERTE(!g_fNoExceptions);
-
-    Thread* pThread = GetThread();
-
-#ifdef _DEBUG
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnUncaughtException) &&
-        !(swallowing && ExceptionIsAlwaysSwallowed(pExceptionInfo)) &&
-        !(location == ClassInitUnhandledException && pThread->IsRudeAbortInitiated()))
-        _ASSERTE(!"BreakOnUnCaughtException");
-#endif
-
-    BOOL doDefault =  ((location != ClassInitUnhandledException) &&
-                       (pExceptionInfo->ExceptionRecord->ExceptionCode != STATUS_BREAKPOINT) &&
-                       (pExceptionInfo->ExceptionRecord->ExceptionCode != STATUS_SINGLE_STEP));
-
-    if (swallowing)
-    {
-        // No, don't swallow unhandled exceptions...
-        // ...except if the exception is of a type that is always swallowed (ThreadAbort, ...)
-        if (ExceptionIsAlwaysSwallowed(pExceptionInfo))
-        {   // ...return EXCEPTION_EXECUTE_HANDLER to swallow the exception anyway.
-            return EXCEPTION_EXECUTE_HANDLER;
-        }
-
-        #ifdef _DEBUG
-        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnUncaughtException))
-            _ASSERTE(!"BreakOnUnCaughtException");
-        #endif
-
-        // ...so, continue search. i.e. let the exception go unhandled.
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-
-#ifdef DEBUGGING_SUPPORTED
-    // If there's a debugger (and not doing a thread abort), give the debugger a shot at the exception.
-    // If the debugger is going to try to continue the exception, it will return ContinueException (which
-    // we see here as EXCEPTION_CONTINUE_EXECUTION).
-    if (!pThread->IsAbortRequested())
-    {
-        // TODO: do we really need this check? I don't think we do
-        if(CORDebuggerAttached())
-        {
-            if (NotifyDebuggerLastChance(pThread, pExceptionInfo, FALSE) == EXCEPTION_CONTINUE_EXECUTION)
-            {
-                LOG((LF_EH, LL_INFO100, "ThreadBaseExceptionFilter_Worker: EXCEPTION_CONTINUE_EXECUTION\n"));
-                return EXCEPTION_CONTINUE_EXECUTION;
-            }
-        }
-    }
-#endif // DEBUGGING_SUPPORTED
-
-    // Do default handling, but ignore breakpoint exceptions and class init exceptions
-    if (doDefault)
-    {
-        LOG((LF_EH, LL_INFO100, "ThreadBaseExceptionFilter_Worker: Calling DefaultCatchHandler\n"));
-
-        BOOL useLastThrownObject = UpdateCurrentThrowable(pExceptionInfo->ExceptionRecord);
-
-        DefaultCatchHandler(pExceptionInfo,
-                            NULL,
-                            useLastThrownObject,
-                            FALSE,
-                            location == ManagedThread || location == ThreadPoolThread || location == FinalizerThread);
-    }
-
-    // Return EXCEPTION_EXECUTE_HANDLER to swallow the exception.
-    return (swallowing
-            ? EXCEPTION_EXECUTE_HANDLER
-            : EXCEPTION_CONTINUE_SEARCH);
-} // LONG ThreadBaseExceptionFilter_Worker()
-
-
-//    This is the filter for new managed threads, for threadpool threads, and for
-//     running finalizer methods.
-LONG ThreadBaseExceptionSwallowingFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam)
-{
-    return ThreadBaseExceptionFilter_Worker(pExceptionInfo, pvParam, /*swallowing=*/true);
-}
 
 //    This is the filter that we install when transitioning an AppDomain at the base of a managed
 //     thread.  Nothing interesting will get swallowed after us.  So we never decide to continue
@@ -5630,10 +5146,12 @@ LONG ThreadBaseExceptionSwallowingFilter(PEXCEPTION_POINTERS pExceptionInfo, PVO
 //     relevant information.
 LONG ThreadBaseExceptionAppDomainFilter(EXCEPTION_POINTERS *pExceptionInfo, PVOID pvParam)
 {
-    LONG ret = ThreadBaseExceptionSwallowingFilter(pExceptionInfo, pvParam);
-
-    if (ret != EXCEPTION_CONTINUE_SEARCH)
-        return ret;
+    // No, don't swallow unhandled exceptions...
+    // ...except if the exception is of a type that is always swallowed (ThreadAbort, ...)
+    if (ExceptionIsAlwaysSwallowed(pExceptionInfo))
+    {   // ...return EXCEPTION_EXECUTE_HANDLER to swallow the exception anyway.
+        return EXCEPTION_EXECUTE_HANDLER;
+    }
 
     // Consider the exception to be unhandled
     return InternalUnhandledExceptionFilter_Worker(pExceptionInfo);
@@ -5819,7 +5337,7 @@ LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress)
 
     // Reverse COM interop IL stubs map all exceptions to HRESULTs and must not propagate Thread.Abort
     // to their unmanaged callers.
-    if (uTryCatchResumeAddress != NULL)
+    if (uTryCatchResumeAddress != (UINT_PTR)NULL)
     {
         MethodDesc * pMDResumeMethod = ExecutionManager::GetCodeMethodDesc((PCODE)uTryCatchResumeAddress);
         if (pMDResumeMethod->IsILStub())
@@ -5993,9 +5511,6 @@ void AdjustContextForThreadStop(Thread* pThread,
 
     pThread->ResetThrowControlForThread();
 
-    // Should never get here if we're already throwing an exception.
-    _ASSERTE(!pThread->IsExceptionInProgress() || pThread->IsRudeAbort());
-
     // Should never get here if we're already abort initiated.
     _ASSERTE(!pThread->IsAbortInitiated() || pThread->IsRudeAbort());
 
@@ -6005,7 +5520,7 @@ void AdjustContextForThreadStop(Thread* pThread,
     }
 }
 
-// Create a COM+ exception , stick it in the thread.
+// Create a CLR exception , stick it in the thread.
 OBJECTREF
 CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, BOOL bAsynchronousThreadStop)
 {
@@ -6074,7 +5589,7 @@ CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord
             // exception.
             result = GET_THROWABLE();
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
     }
 
     return result;
@@ -6198,9 +5713,10 @@ bool IsGcMarker(CONTEXT* pContext, EXCEPTION_RECORD *pExceptionRecord)
         {
             // GCStress processing can disturb last error, so preserve it.
             BOOL res;
-            BEGIN_PRESERVE_LAST_ERROR;
-            res = OnGcCoverageInterrupt(pContext);
-            END_PRESERVE_LAST_ERROR;
+            {
+                PreserveLastErrorHolder preserveLastError;
+                res = OnGcCoverageInterrupt(pContext);
+            }
             if (res)
             {
                 return true;
@@ -6273,7 +5789,7 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
     }
 #endif // FEATURE_EMULATE_SINGLESTEP
 
-    // Is this exception really meant for the COM+ Debugger? Note: we will let the debugger have a chance if there
+    // Is this exception really meant for the CLR Debugger? Note: we will let the debugger have a chance if there
     // is a debugger attached to any part of the process. It is incorrect to consider whether or not the debugger
     // is attached the thread's current app domain at this point.
 
@@ -6303,9 +5819,6 @@ EXTERN_C void JIT_StackProbe_End();
 #ifdef FEATURE_EH_FUNCLETS
 
 #ifndef TARGET_X86
-EXTERN_C void JIT_MemSet_End();
-EXTERN_C void JIT_MemCpy_End();
-
 EXTERN_C void JIT_WriteBarrier_End();
 EXTERN_C void JIT_CheckedWriteBarrier_End();
 EXTERN_C void JIT_ByRefWriteBarrier_End();
@@ -6330,6 +5843,12 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
         return FALSE;
     }
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    if (VirtualCallStubManager::isCachedInterfaceDispatchStubAVLocation(f_IP))
+        return TRUE;
+#endif
+
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
 
     if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
@@ -6344,21 +5863,87 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
     else {
         return FALSE;
     }
+#else // FEATURE_VIRTUAL_STUB_DISPATCH
+    return FALSE;
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 }
+#endif // FEATURE_EH_FUNCLETS
+
+typedef uint8_t CODE_LOCATION;
+EXTERN_C CODE_LOCATION RhpAssignRefAVLocation;
+#if defined(HOST_X86)
+EXTERN_C CODE_LOCATION RhpAssignRefEAXAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefECXAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefEBXAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefESIAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefEDIAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefEBPAVLocation;
+#endif
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefAVLocation;
+#if defined(HOST_X86)
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefEAXAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefECXAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBXAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefESIAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefEDIAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
+#endif
+EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
+
+#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
+EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation2;
+#endif
+
+static uintptr_t writeBarrierAVLocations[] =
+{
+    (uintptr_t)&RhpAssignRefAVLocation,
+#if defined(HOST_X86)
+    (uintptr_t)&RhpAssignRefEAXAVLocation,
+    (uintptr_t)&RhpAssignRefECXAVLocation,
+    (uintptr_t)&RhpAssignRefEBXAVLocation,
+    (uintptr_t)&RhpAssignRefESIAVLocation,
+    (uintptr_t)&RhpAssignRefEDIAVLocation,
+    (uintptr_t)&RhpAssignRefEBPAVLocation,
+#endif
+    (uintptr_t)&RhpCheckedAssignRefAVLocation,
+#if defined(HOST_X86)
+    (uintptr_t)&RhpCheckedAssignRefEAXAVLocation,
+    (uintptr_t)&RhpCheckedAssignRefECXAVLocation,
+    (uintptr_t)&RhpCheckedAssignRefEBXAVLocation,
+    (uintptr_t)&RhpCheckedAssignRefESIAVLocation,
+    (uintptr_t)&RhpCheckedAssignRefEDIAVLocation,
+    (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
+#endif
+    (uintptr_t)&RhpByRefAssignRefAVLocation1,
+#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
+    (uintptr_t)&RhpByRefAssignRefAVLocation2,
+#endif
+};
 
 // Check if the passed in instruction pointer is in one of the
 // JIT helper functions.
-bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
+bool IsIPInMarkedJitHelper(PCODE uControlPc)
 {
     LIMITED_METHOD_CONTRACT;
+
+#ifndef FEATURE_PORTABLE_HELPERS
+    // compare the IP against the list of known possible AV locations in the write barrier helpers
+    for (size_t i = 0; i < sizeof(writeBarrierAVLocations)/sizeof(writeBarrierAVLocations[0]); i++)
+    {
+#if defined(HOST_AMD64) || defined(HOST_X86)
+        // Verify that the runtime is not linked with incremental linking enabled. Incremental linking
+        // wraps every method symbol with a jump stub that breaks the following check.
+        ASSERT(*(uint8_t*)writeBarrierAVLocations[i] != 0xE9); // jmp XXXXXXXX
+#endif
+
+        if (writeBarrierAVLocations[i] == PCODEToPINSTR(uControlPc))
+            return true;
+    }
 
 #define CHECK_RANGE(name) \
     if (GetEEFuncEntryPoint(name) <= uControlPc && uControlPc < GetEEFuncEntryPoint(name##_End)) return true;
 
 #ifndef TARGET_X86
-    CHECK_RANGE(JIT_MemSet)
-    CHECK_RANGE(JIT_MemCpy)
-
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
     CHECK_RANGE(JIT_ByRefWriteBarrier)
@@ -6366,19 +5951,17 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
     CHECK_RANGE(JIT_StackProbe)
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 #else
-#ifdef TARGET_UNIX
     CHECK_RANGE(JIT_WriteBarrierGroup)
     CHECK_RANGE(JIT_PatchedWriteBarrierGroup)
-#endif // TARGET_UNIX
 #endif // TARGET_X86
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
     CHECK_RANGE(JIT_WriteBarrier_Debug)
 #endif
+#endif // !FEATURE_PORTABLE_HELPERS
 
     return false;
 }
-#endif // FEATURE_EH_FUNCLETS
 
 // Returns TRUE if caller should resume execution.
 BOOL
@@ -6408,24 +5991,27 @@ AdjustContextForJITHelpers(
     if (pExceptionRecord == nullptr)
     {
 #if defined(TARGET_X86)
-        bool withinWriteBarrierGroup = ((ip >= (PCODE) JIT_WriteBarrierGroup) && (ip <= (PCODE) JIT_WriteBarrierGroup_End));
-        bool withinPatchedWriteBarrierGroup = ((ip >= (PCODE) JIT_PatchedWriteBarrierGroup) && (ip <= (PCODE) JIT_PatchedWriteBarrierGroup_End));
-        if (withinWriteBarrierGroup || withinPatchedWriteBarrierGroup)
+        if (IsIPInMarkedJitHelper(ip))
         {
             DWORD* esp = (DWORD*)pContext->Esp;
+#if defined(WRITE_BARRIER_CHECK)
+            // The assembly for patched write barriers carries the shadow gc heap writing code in such a way that the GC
+            // heap change is done after pushing some state and always happens in the non-patched region.
+            // (We don't check for this in the normal AV pathway, as in that case, we have an instruction which triggers
+            // the AV without writing to memory before adjusting the stack.
+            bool withinWriteBarrierGroup = ((ip >= (PCODE) JIT_WriteBarrierGroup) && (ip <= (PCODE) JIT_WriteBarrierGroup_End));
             if (withinWriteBarrierGroup)
             {
-#if defined(WRITE_BARRIER_CHECK)
                 pContext->Ebp = *esp++;
                 pContext->Ecx = *esp++;
-#endif
             }
+#endif
             pContext->Eip = *esp++;
             pContext->Esp = (DWORD)esp;
             return TRUE;
         }
 #elif defined(TARGET_AMD64)
-        if (IsIPInMarkedJitHelper((UINT_PTR)ip))
+        if (IsIPInMarkedJitHelper(ip))
         {
             Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
             return TRUE;
@@ -6439,10 +6025,9 @@ AdjustContextForJITHelpers(
 #endif // FEATURE_DATABREAKPOINT
 
 #if defined(TARGET_X86) && !defined(TARGET_UNIX)
-    void* f_IP = (void *)GetIP(pContext);
+    PCODE f_IP = GetIP(pContext);
 
-    if (((f_IP >= (void *) JIT_WriteBarrierGroup) && (f_IP <= (void *) JIT_WriteBarrierGroup_End)) ||
-        ((f_IP >= (void *) JIT_PatchedWriteBarrierGroup) && (f_IP <= (void *) JIT_PatchedWriteBarrierGroup_End)))
+    if (IsIPInMarkedJitHelper(ip))
     {
         // set the exception IP to be the instruction that called the write barrier
         void* callsite = (void *)GetAdjustedCallAddress(*dac_cast<PTR_PCODE>(GetSP(pContext)));
@@ -6453,7 +6038,7 @@ AdjustContextForJITHelpers(
         SetSP(pContext, PCODE((BYTE*)GetSP(pContext) + sizeof(void*)));
     }
 
-    if ((f_IP >= (void *) JIT_StackProbe) && (f_IP <= (void *) JIT_StackProbe_End))
+    if ((f_IP >= (PCODE) JIT_StackProbe) && (f_IP <= (PCODE) JIT_StackProbe_End))
     {
         TADDR ebp = GetFP(pContext);
         void* callsite = (void *)*dac_cast<PTR_PCODE>(ebp + 4);
@@ -6467,12 +6052,12 @@ AdjustContextForJITHelpers(
 
     return FALSE;
 #elif defined(FEATURE_EH_FUNCLETS) // TARGET_X86 && !TARGET_UNIX
-    void* f_IP = dac_cast<PTR_VOID>(GetIP(pContext));
+    PCODE f_IP = GetIP(pContext);
 
     CONTEXT             tempContext;
     CONTEXT*            pExceptionContext = pContext;
 
-    BOOL fExcluded = IsIPInMarkedJitHelper((UINT_PTR)f_IP);
+    BOOL fExcluded = IsIPInMarkedJitHelper(f_IP);
 
     if (fExcluded)
     {
@@ -6500,7 +6085,7 @@ AdjustContextForJITHelpers(
         // instruction where the call will return.
         //
         // On ARM, just like we perform ControlPC adjustment
-        // during exception dispatch (refer to ExceptionTracker::InitializeCrawlFrame),
+        // during exception dispatch (refer to ExInfo::InitializeCrawlFrame),
         // we will need to perform the corresponding adjustment of IP
         // we got from unwind above, so as to indicate that the AV
         // happened "before" the call to the writebarrier and not at
@@ -6565,31 +6150,24 @@ static LONG HandleManagedFaultFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
+void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
 {
     WRAPPER_NO_CONTRACT;
 
-    FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
-    FaultingExceptionFrame *frame = &frameWithCookie;
-#if defined(FEATURE_EH_FUNCLETS)
-    *frame->GetGSCookiePtr() = GetProcessGSCookie();
-#endif // FEATURE_EH_FUNCLETS
-    pContext->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+    FaultingExceptionFrame fef;
+    FaultingExceptionFrame *frame = &fef;
     frame->InitAndLink(pContext);
 
-    CONTEXT ctx = {};
-    ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-    REGDISPLAY rd;
     Thread *pThread = GetThread();
 
-    ExInfo exInfo(pThread, &ctx, &rd, ExKind::HardwareFault);
+    ExInfo exInfo(pThread, pExceptionRecord, pContext, ExKind::HardwareFault);
 
     DWORD exceptionCode = pExceptionRecord->ExceptionCode;
     if (exceptionCode == STATUS_ACCESS_VIOLATION)
     {
         if (pExceptionRecord->ExceptionInformation[1] < NULL_AREA_SIZE)
         {
-            exceptionCode = 0; //STATUS_REDHAWK_NULL_REFERENCE;
+            exceptionCode = 0; //STATUS_NATIVEAOT_NULL_REFERENCE;
         }
     }
 
@@ -6604,38 +6182,10 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
     //Ex.RhThrowHwEx(exceptionCode, &exInfo)
     CALL_MANAGED_METHOD_NORET(args)
 
+    DispatchExSecondPass(&exInfo);
+
     GCPROTECT_END();
-}
-
-void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Ok.  Now we have a brand new fault in jitted code.
-    FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
-    FaultingExceptionFrame *frame = &frameWithCookie;
-#if defined(FEATURE_EH_FUNCLETS)
-    *frame->GetGSCookiePtr() = GetProcessGSCookie();
-#endif // FEATURE_EH_FUNCLETS
-    frame->InitAndLink(pContext);
-
-    HandleManagedFaultFilterParam param;
-    param.fFilterExecuted = FALSE;
-    param.pOriginalExceptionRecord = pExceptionRecord;
-
-    PAL_TRY(HandleManagedFaultFilterParam *, pParam, &param)
-    {
-        GetThread()->SetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
-
-        EXCEPTION_RECORD *pRecord = pParam->pOriginalExceptionRecord;
-
-        RaiseException(pRecord->ExceptionCode, 0,
-            pRecord->NumberParameters, pRecord->ExceptionInformation);
-    }
-    PAL_EXCEPT_FILTER(HandleManagedFaultFilter)
-    {
-    }
-    PAL_ENDTRY
+    UNREACHABLE();
 }
 
 #endif // USE_FEF && !TARGET_UNIX
@@ -6661,6 +6211,11 @@ void FaultingExceptionFrame::Init(CONTEXT *pContext)
     m_ReturnAddress = ::GetIP(pContext);
     CopyOSContext(&m_ctx, pContext);
 #endif // !FEATURE_EH_FUNCLETS
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    m_SSP = 0;
+#endif
+
 }
 
 //
@@ -6698,7 +6253,7 @@ bool ShouldHandleManagedFault(
     //
     //  The helper will push a frame for us, and then throw the correct managed exception.
     //
-    // Is this exception really meant for the COM+ Debugger? Note: we will let the debugger have a chance if there is a
+    // Is this exception really meant for the CLR Debugger? Note: we will let the debugger have a chance if there is a
     // debugger attached to any part of the process. It is incorrect to consider whether or not the debugger is attached
     // the thread's current app domain at this point.
 
@@ -6758,14 +6313,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
 
 VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
 {
-    // It is not safe to execute code inside VM after we shutdown EE.  One example is DisablePreemptiveGC
-    // will block forever.
-    if (g_fForbidEnterEE)
-    {
-        return VEH_CONTINUE_SEARCH;
-    }
-
-
     //
     // DO NOT USE CONTRACTS HERE AS THIS ROUTINE MAY NEVER RETURN.  You can use
     // static contracts, but currently this is all WRAPPER_NO_CONTRACT.
@@ -6817,40 +6364,38 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
 
     if (pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT)
     {
-        HijackArgs hijackArgs;
-        hijackArgs.Rax = pExceptionInfo->ContextRecord->Rax;
-        hijackArgs.Rsp = pExceptionInfo->ContextRecord->Rsp;
-
-        bool areCetShadowStacksEnabled = Thread::AreCetShadowStacksEnabled();
-        if (areCetShadowStacksEnabled)
+        if (pThread == NULL || !pThread->PreemptiveGCDisabled())
         {
-            // When the CET is enabled, the return address is still on stack, so we need to set the Rsp as
-            // if it was popped.
-            hijackArgs.Rsp += 8;
+            // if we are not in coop mode, this cannot be our hijack
+            // Perhaps some other runtime is responsible.
+            return VEH_CONTINUE_SEARCH;
         }
-        hijackArgs.Rip = 0 ; // The OnHijackWorker sets this
-        #define CALLEE_SAVED_REGISTER(regname) hijackArgs.Regs.regname = pExceptionInfo->ContextRecord->regname;
-        ENUM_CALLEE_SAVED_REGISTERS();
-        #undef CALLEE_SAVED_REGISTER
 
-        OnHijackWorker(&hijackArgs);
+        // Sanity check. The thread should be hijacked by us.
+        _ASSERTE_ALL_BUILDS(pThread->HasThreadState(Thread::TS_Hijacked));
 
-        #define CALLEE_SAVED_REGISTER(regname) pExceptionInfo->ContextRecord->regname = hijackArgs.Regs.regname;
-        ENUM_CALLEE_SAVED_REGISTERS();
-        #undef CALLEE_SAVED_REGISTER
-        pExceptionInfo->ContextRecord->Rax = hijackArgs.Rax;
-
-        if (areCetShadowStacksEnabled)
+        PCONTEXT interruptedContext = pExceptionInfo->ContextRecord;
+        bool areShadowStacksEnabled = Thread::AreShadowStacksEnabled();
+        if (areShadowStacksEnabled)
         {
-            // The context refers to the return instruction
-            // Set the return address on the stack to the original one
-            *(size_t *)pExceptionInfo->ContextRecord->Rsp = hijackArgs.ReturnAddress;
+            // OS should have fixed the SP value to the same as we`ve stashed for the hijacked thread
+            _ASSERTE(*(size_t *)interruptedContext->Rsp == (uintptr_t)pThread->GetHijackedReturnAddress());
+
+            // When the CET is enabled, the interruption happens on the ret instruction in the calee.
+            // We need to "pop" rsp to the caller, as if the ret has consumed it.
+            interruptedContext->Rsp += 8;
+            DWORD64 ssp = GetSSP(interruptedContext);
+            SetSSP(interruptedContext, ssp + 8);
         }
-        else
-        {
-            // The context refers to the location after the return was processed
-            pExceptionInfo->ContextRecord->Rip = hijackArgs.ReturnAddress;
-        }
+
+        // Change the IP to be at the original return site, as if we have returned to the caller.
+        // That IP is an interruptible safe point, so we can suspend right there.
+        interruptedContext->Rip = (uintptr_t)pThread->GetHijackedReturnAddress();
+
+        ResumableFrame frame(pExceptionInfo->ContextRecord);
+        frame.Push(pThread);
+        CommonTripThread();
+        frame.Pop(pThread);
 
         return VEH_CONTINUE_EXECUTION;
     }
@@ -6877,10 +6422,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         // Not an Out-of-memory situation, so no need for a forbid fault region here
         //
 #ifdef FEATURE_EH_FUNCLETS
-        if (g_isNewExceptionHandlingEnabled)
-        {
-            EEPolicy::HandleStackOverflow();
-        }
+        EEPolicy::HandleStackOverflow();
 #endif // FEATURE_EH_FUNCLETS
         return VEH_CONTINUE_SEARCH;
     }
@@ -7116,12 +6658,14 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                 // the subsequent logic here sees a managed fault.
                 //
                 // On 64-bit, some additional work is required..
+                pContext->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
 #ifdef FEATURE_EH_FUNCLETS
                 return VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION;
 #endif // defined(FEATURE_EH_FUNCLETS)
             }
             else if (AdjustContextForVirtualStub(pExceptionRecord, pContext))
             {
+                pContext->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
 #ifdef FEATURE_EH_FUNCLETS
                 return VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION;
 #endif
@@ -7172,7 +6716,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
 
                     DWORD tid = GetCurrentThreadId();
 
-                    BOOL debuggerPresentBeforeAssert = IsDebuggerPresent();
+                    BOOL debuggerPresentBeforeAssert = minipal_is_native_debugger_present();
 
 
                     CONSISTENCY_CHECK_MSGF(false, ("AV in clr at this callstack:\n------\n%s\n-----\n.AV on tid=0x%x (%d), cxr=%p, exr=%p\n",
@@ -7184,7 +6728,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                     // return EXCEPTION_CONTINUE_EXECUTION to re-execute the faulting instruction. This is
                     // supposed to be a nice little feature for CLR devs who attach debuggers on the "Av in
                     // mscorwks" assert above. Since this is only for that case, its only in debug builds.
-                    if (!debuggerPresentBeforeAssert && IsDebuggerPresent())
+                    if (!debuggerPresentBeforeAssert && minipal_is_native_debugger_present())
                     {
                         return VEH_CONTINUE_EXECUTION;;
                     }
@@ -7453,11 +6997,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     // WARNING WARNING WARNING WARNING WARNING WARNING WARNING
     //
 
-    // If exceptions (or runtime) have been disabled, then simply return.
-    if (g_fForbidEnterEE || g_fNoExceptions)
-    {
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
+    pExceptionInfo->ContextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
 
     // WARNING
     //
@@ -7501,7 +7041,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
-#if defined(TARGET_X86)
+#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
     if (dwCode == EXCEPTION_BREAKPOINT || dwCode == EXCEPTION_SINGLE_STEP)
     {
         // For interop debugging, debugger bashes our managed exception handler.
@@ -7577,14 +7117,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                 //
                 // HandleManagedFault may never return, so we cannot use a forbid fault region around it.
                 //
-                if (g_isNewExceptionHandlingEnabled)
-                {
-                    HandleManagedFaultNew(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
-                }
-                else
-                {
-                    HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
-                }
+                HandleManagedFault(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
                 return EXCEPTION_CONTINUE_EXECUTION;
             }
 #endif // FEATURE_EH_FUNCLETS
@@ -7655,10 +7188,6 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                     pFrame = pFrame->Next();
                 }
                 STRESS_LOG0(LF_EH, LL_INFO100, "CLRVectoredExceptionHandlerShim: stack");
-                while (count < 20 && sp < stopPoint)
-                {
-                    sp += 1;
-                }
             }
         }
 #endif // _DEBUG
@@ -7700,35 +7229,6 @@ void CLRAddVectoredHandlers(void)
     }
 
     LOG((LF_EH, LL_INFO100, "CLRAddVectoredHandlers: AddVectoredExceptionHandler() succeeded\n"));
-#endif // !TARGET_UNIX
-}
-
-// This function removes the vectored exception and continue handler registration
-// from the OS.
-void CLRRemoveVectoredHandlers(void)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-#ifndef TARGET_UNIX
-
-    // Unregister the vectored exception handler if one is registered (and we can).
-    if (g_hVectoredExceptionHandler != NULL)
-    {
-        // Unregister the vectored exception handler
-        if (RemoveVectoredExceptionHandler(g_hVectoredExceptionHandler) == FALSE)
-        {
-            LOG((LF_EH, LL_INFO100, "CLRRemoveVectoredHandlers: RemoveVectoredExceptionHandler() failed.\n"));
-        }
-        else
-        {
-            LOG((LF_EH, LL_INFO100, "CLRRemoveVectoredHandlers: RemoveVectoredExceptionHandler() succeeded.\n"));
-        }
-    }
 #endif // !TARGET_UNIX
 }
 
@@ -7791,9 +7291,26 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     Exception::Delete(pException);
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled && !nativeRethrow)
+    if (!nativeRethrow)
     {
-        DispatchManagedException(orThrowable);
+        Thread *pThread = GetThread();
+        ThreadExceptionState* pExState = pThread->GetExceptionState();
+        ExInfo *pPrevExInfo = (ExInfo*)pExState->GetCurrentExceptionTracker();
+        if (pPrevExInfo != NULL && pPrevExInfo->m_DebuggerExState.GetDebuggerInterceptContext() != NULL)
+        {
+            ContinueExceptionInterceptionUnwind();
+            UNREACHABLE();
+        }
+        else
+        {
+#ifdef FEATURE_INTERPRETER
+            if ((pEntryFrame != FRAME_TOP) && (pEntryFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+            {
+                ((InterpreterFrame*)pEntryFrame)->SetIsFaulting(true);
+            }
+#endif // FEATURE_INTERPRETER
+            DispatchManagedException(orThrowable);
+        }
     }
     else
 #endif // FEATURE_EH_FUNCLETS
@@ -7801,6 +7318,50 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         RaiseTheExceptionInternalOnly(orThrowable, FALSE);
     }
 }
+
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+size_t GetSSPForFrameOnCurrentStack(TADDR ip);
+#endif // HOST_AMD64 && HOST_WINDOWS
+
+#ifdef FEATURE_INTERPRETER
+void ThrowResumeAfterCatchException(TADDR resumeSP, TADDR resumeIP)
+{
+    throw ResumeAfterCatchException(resumeSP, resumeIP);
+}
+
+VOID DECLSPEC_NORETURN UnwindAndContinueResumeAfterCatch(TADDR resumeSP, TADDR resumeIP)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_ANY;
+
+    CONTEXT context;
+    ClrCaptureContext(&context);
+
+    // Unwind to the caller of the Ex.RhThrowEx / Ex.RhThrowHwEx
+    Thread::VirtualUnwindToFirstManagedCallFrame(&context);
+
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    size_t targetSSP = GetSSPForFrameOnCurrentStack(GetIP(&context));
+#else
+    size_t targetSSP = 0;
+#endif
+
+    // Skip all managed frames upto a native frame
+    while (ExecutionManager::IsManagedCode(GetIP(&context)))
+    {
+        Thread::VirtualUnwindCallFrame(&context);
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+        if (targetSSP != 0)
+        {
+            targetSSP += sizeof(size_t);
+        }
+#endif
+    }
+
+    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, &context, targetSSP, resumeSP, resumeIP);
+}
+#endif // FEATURE_INTERPRETER
 
 thread_local DWORD t_dwCurrentExceptionCode;
 thread_local PEXCEPTION_RECORD t_pCurrentExceptionRecord;
@@ -7926,12 +7487,12 @@ LONG NotifyOfCHFFilterWrapper(
          (pThread->GetExceptionState()->GetContextRecord() == NULL)  ||
          (GetSP(pThread->GetExceptionState()->GetContextRecord()) != GetSP(pExceptionInfo->ContextRecord) ) )
     {
-        LOG((LF_EH, LL_INFO1000, "NotifyOfCHFFilterWrapper: not sending notices. pThread: %0x8", pThread));
+        LOG((LF_EH, LL_INFO1000, "NotifyOfCHFFilterWrapper: not sending notices. pThread: %p", pThread));
         if (pThread)
         {
-            LOG((LF_EH, LL_INFO1000, ", Thread SP: %0x8, Exception SP: %08x",
-                 pThread->GetExceptionState()->GetContextRecord() ? GetSP(pThread->GetExceptionState()->GetContextRecord()) : NULL,
-                 pExceptionInfo->ContextRecord ? GetSP(pExceptionInfo->ContextRecord) : NULL ));
+            LOG((LF_EH, LL_INFO1000, ", Thread SP: %p, Exception SP: %p",
+                 pThread->GetExceptionState()->GetContextRecord() ? GetSP(pThread->GetExceptionState()->GetContextRecord()) : (TADDR)NULL,
+                 pExceptionInfo->ContextRecord ? GetSP(pExceptionInfo->ContextRecord) : (TADDR)NULL ));
         }
         LOG((LF_EH, LL_INFO1000, "\n"));
         return ret;
@@ -8140,7 +7701,7 @@ bool DebugIsEECxxExceptionPointer(void* pv)
     {
         // Swallow any exception out of the exception constructors above and simply return false.
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return retVal;
 }
@@ -8239,14 +7800,17 @@ BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT)
     // find the slot corresponding to get_StackTrace
     for (DWORD slot = g_pObjectClass->GetNumVirtuals(); slot < g_pExceptionClass->GetNumVirtuals(); slot++)
     {
-        MethodDesc *pMD = g_pExceptionClass->GetMethodDescForSlot(slot);
-        LPCUTF8 name = pMD->GetName();
-
-        if (name != NULL && strcmp(name, "get_StackTrace") == 0)
+        MethodDesc *pMD = g_pExceptionClass->GetMethodDescForSlot_NoThrow(slot);
+        if (pMD != nullptr)
         {
-            // see if the slot is overridden by pMT
-            MethodDesc *pDerivedMD = pMT->GetMethodDescForSlot(slot);
-            return (pDerivedMD != pMD);
+            LPCUTF8 name = pMD->GetName();
+
+            if (name != NULL && strcmp(name, "get_StackTrace") == 0)
+            {
+                // see if the slot is overridden by pMT
+                MethodDesc *pDerivedMD = pMT->GetMethodDescForSlot_NoThrow(slot);
+                return (pDerivedMD != pMD);
+            }
         }
     }
 
@@ -8456,7 +8020,7 @@ BOOL SetupWatsonBucketsForNonPreallocatedExceptions(OBJECTREF oThrowable /* = NU
                     // OOM can bring us here
                     fSetupWatsonBuckets = FALSE;
                 }
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
 
                 if (!fSetupWatsonBuckets)
                 {
@@ -8859,15 +8423,8 @@ BOOL IsThrowableThreadAbortException(OBJECTREF oThrowable)
 // The caller can also specify the starting EHTracker to walk the list from.
 // If not specified, this will default to the current exception tracker active
 // on the thread.
-#if defined(FEATURE_EH_FUNCLETS)
-PTR_ExceptionTracker GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
-                                                          PTR_ExceptionTracker pStartingEHTracker)
-#elif TARGET_X86
 PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
                                                 PTR_ExInfo pStartingEHTracker)
-#else
-#error Unsupported platform
-#endif
 {
     CONTRACTL
     {
@@ -8882,13 +8439,7 @@ PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
     CONTRACTL_END;
 
     // Get the reference to the current exception tracker
-#if defined(FEATURE_EH_FUNCLETS)
-    PTR_ExceptionTracker pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-#elif TARGET_X86
     PTR_ExInfo pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-#else // !(HOST_64BIT || TARGET_X86)
-#error Unsupported platform
-#endif // HOST_64BIT
 
     BOOL fFoundTracker = FALSE;
 
@@ -8960,16 +8511,8 @@ PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTR
     {
         // Find the reference to the exception tracker corresponding to the preallocated exception,
         // starting the search from the current exception tracker (2nd arg of NULL specifies that).
- #if defined(FEATURE_EH_FUNCLETS)
-        PTR_ExceptionTracker pEHTracker = NULL;
-        PTR_ExceptionTracker pPreviousEHTracker = NULL;
-
-#elif TARGET_X86
         PTR_ExInfo pEHTracker = NULL;
         PTR_ExInfo pPreviousEHTracker = NULL;
-#else // !(HOST_64BIT || TARGET_X86)
-#error Unsupported platform
-#endif // HOST_64BIT
 
         if (fStartSearchFromPreviousTracker)
         {
@@ -9370,17 +8913,7 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
     // being thrown, then get them.
     ThreadExceptionState *pExState = pThread->GetExceptionState();
 
-#ifdef FEATURE_EH_FUNCLETS
-    // Ensure that the exception tracker exists
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        _ASSERTE(pExState->GetCurrentExInfo() != NULL);
-    }
-    else
-#endif // FEATURE_EH_FUNCLETS
-    {
-        _ASSERTE(pExState->GetCurrentExceptionTracker() != NULL);
-    }
+    _ASSERTE(pExState->GetCurrentExceptionTracker() != NULL);
 
     // Switch to COOP mode
     GCX_COOP();
@@ -9405,17 +8938,7 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
 
     // Get the WatsonBucketTracker for the current exception
     PTR_EHWatsonBucketTracker pWatsonBucketTracker;
-#ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        pWatsonBucketTracker = pExState->GetCurrentExInfo()->GetWatsonBucketTracker();
-
-    }
-    else
-#endif // FEATURE_EH_FUNCLETS
-    {
-        pWatsonBucketTracker = pExState->GetCurrentExceptionTracker()->GetWatsonBucketTracker();
-    }
+    pWatsonBucketTracker = pExState->GetCurrentExceptionTracker()->GetWatsonBucketTracker();
 
     // Get the innermost exception object (if any)
     gc.oInnerMostExceptionThrowable = ((EXCEPTIONREF)gc.oCurrentThrowable)->GetBaseException();
@@ -9572,7 +9095,7 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
                     {
                         fCopiedBuckets = FALSE;
                     }
-                    EX_END_CATCH(SwallowAllExceptions);
+                    EX_END_CATCH
 
                     if (fCopiedBuckets)
                     {
@@ -9739,7 +9262,7 @@ phase1:
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
 
             LOG((LF_EH, LL_INFO100, "SetupInitialThrowBucketDetails - Copied watson bucket details from the innermost exception\n"));
         }
@@ -10230,7 +9753,7 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
                         // the native watson helper functions failing under OOM
                         fCopied = FALSE;
                     }
-                    EX_END_CATCH(SwallowAllExceptions);
+                    EX_END_CATCH
                 }
             }
             else
@@ -10253,7 +9776,7 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
                         // Dont do anything if we fail to copy the buckets - this is no different than
                         // the native watson helper functions failing under OOM
                     }
-                    EX_END_CATCH(SwallowAllExceptions);
+                    EX_END_CATCH
                 }
                 else if (ipForWatsonBuckets != NULL)
                 {
@@ -10547,56 +10070,6 @@ void EHWatsonBucketTracker::CaptureUnhandledInfoForWatson(TypeOfReportedError to
 }
 #endif // !TARGET_UNIX
 
-// Given a throwable, this function will attempt to find an active EH tracker corresponding to it.
-// If none found, it will return NULL
-#ifdef FEATURE_EH_FUNCLETS
-PTR_ExceptionTracker GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExceptionTracker pStartingEHTracker)
-#elif TARGET_X86
-PTR_ExInfo GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExInfo pStartingEHTracker)
-#else
-#error Unsupported platform
-#endif
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        NOTHROW;
-        PRECONDITION(GetThreadNULLOk() != NULL);
-        PRECONDITION(oThrowable != NULL);
-    }
-    CONTRACTL_END;
-
-    // Get the reference to the exception tracker to start with. If one has been provided to us,
-    // then use it. Otherwise, start from the current one.
-#ifdef FEATURE_EH_FUNCLETS
-    PTR_ExceptionTracker pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-#elif TARGET_X86
-    PTR_ExInfo pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-#else
-#error Unsupported platform
-#endif
-
-    BOOL fFoundTracker = FALSE;
-
-    // Start walking the list to find the tracker corresponding
-    // to the exception object.
-    while (pEHTracker != NULL)
-    {
-        if (pEHTracker->GetThrowable() == oThrowable)
-        {
-            // found the tracker - break out.
-            fFoundTracker = TRUE;
-            break;
-        }
-
-        // move to the previous tracker...
-        pEHTracker = pEHTracker->GetPreviousExceptionTracker();
-    }
-
-    return fFoundTracker ? pEHTracker : NULL;
-}
-
 // Given an exception code, this method returns a BOOL to indicate if the
 // code belongs to a corrupting exception or not.
 BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable)
@@ -10605,7 +10078,7 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        if (throwable != NULL) MODE_COOPERATIVE; else MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -10726,8 +10199,9 @@ void ExceptionNotifications::GetEventArgsForNotification(ExceptionNotificationHa
         // Set event args to be NULL incase of any error (e.g. OOM)
         *pOutEventArgs = NULL;
         LOG((LF_EH, LL_INFO100, "ExceptionNotifications::GetEventArgsForNotification: Setting event args to NULL due to an exception.\n"));
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 }
 
 // This SEH filter will be invoked when an exception escapes out of the exception notification
@@ -11006,9 +10480,6 @@ StackWalkAction TAResetStateCallback(CrawlFrame* pCf, void* data)
 // Note: This function should be invoked ONLY during unwind.
 #ifndef FEATURE_EH_FUNCLETS
 void ResetThreadAbortState(PTR_Thread pThread, void *pEstablisherFrame)
-#else
-void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCurrentStackFrame)
-#endif
 {
     CONTRACTL
     {
@@ -11016,77 +10487,19 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(pThread != NULL);
-#ifndef FEATURE_EH_FUNCLETS
         PRECONDITION(pEstablisherFrame != NULL);
-#else
-        PRECONDITION(pCf != NULL);
-        PRECONDITION(!sfCurrentStackFrame.IsNull());
-#endif
     }
     CONTRACTL_END;
 
     if (pThread->IsAbortRequested())
     {
-#ifndef FEATURE_EH_FUNCLETS
         if (GetNextCOMPlusSEHRecord(static_cast<EXCEPTION_REGISTRATION_RECORD *>(pEstablisherFrame)) == EXCEPTION_CHAIN_END)
         {
             _ASSERTE(!"Topmost handler and abort requested.");
         }
-#else // !FEATURE_EH_FUNCLETS
-        // Get the active exception tracker
-        PTR_ExceptionTracker pCurEHTracker = pThread->GetExceptionState()->GetCurrentExceptionTracker();
-        _ASSERTE(pCurEHTracker != NULL);
-
-        // We will check if thread abort state needs to be reset only for the case of exception caught in
-        // native code. This will happen when:
-        //
-        // 1) an unwind is triggered and
-        // 2) current frame is the topmost frame we saw in the first pass and
-        // 3) a thread abort is requested and
-        // 4) we dont have address of the exception handler to be invoked.
-        //
-        // (1), (2) and (4) above are checked for in ExceptionTracker::ProcessOSExceptionNotification from where we call this
-        // function.
-
-        // Current frame should be the topmost frame we saw in the first pass
-        _ASSERTE(pCurEHTracker->GetTopmostStackFrameFromFirstPass() == sfCurrentStackFrame);
-
-        // If the exception has been caught in native code, then alongwith not having address of the handler to be
-        // invoked, we also wont have the IL clause for the catch block and resume stack frame will be NULL as well.
-        _ASSERTE((pCurEHTracker->GetCatchToCallPC() == NULL) &&
-            (pCurEHTracker->GetCatchHandlerExceptionClauseToken() == NULL) &&
-                 (pCurEHTracker->GetResumeStackFrame().IsNull()));
-
-        // Walk the frame chain to see if there is any more managed code on the stack. If not, then this is the last managed frame
-        // on the stack and we can reset the thread abort state.
-        //
-        // Get the frame from which to start the stack walk from
-        Frame*  pFrame = pCurEHTracker->GetLimitFrame();
-
-        // At this point, we are at the topmost frame we saw during the first pass
-        // before the unwind began. Walk the stack using the specified crawlframe and the topmost
-        // explicit frame to determine if we have more managed code up the stack. If none is found,
-        // we can reset the thread abort state.
-
-        // Setup the data structure to be passed to the callback
-        TAResetStateCallbackData dataCallback;
-        dataCallback.fDoWeHaveMoreManagedCodeOnStack = FALSE;
-
-        // At this point, the StackFrame in CrawlFrame should represent the current frame we have been called for.
-        // _ASSERTE(sfCurrentStackFrame == StackFrame::FromRegDisplay(pCf->GetRegisterSet()));
-
-        // Reference to the StackFrame beyond which we are looking for managed code.
-        dataCallback.sfSeedCrawlFrame = sfCurrentStackFrame;
-
-        pThread->StackWalkFramesEx(pCf->GetRegisterSet(), TAResetStateCallback, &dataCallback, QUICKUNWIND, pFrame);
-
-        if (!dataCallback.fDoWeHaveMoreManagedCodeOnStack)
-        {
-            _ASSERTE(!"There is no more managed code on the stack, and thread abort is requested.");
-        }
-#endif // !FEATURE_EH_FUNCLETS
     }
 }
+#endif // !FEATURE_EH_FUNCLETS
 #endif // !DACCESS_COMPILE
 
 
@@ -11317,6 +10730,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowNonLocalized(RuntimeExceptionKind reKind,
 //==========================================================================
 // Throw a runtime exception based on an HResult
 //==========================================================================
+#ifdef FEATURE_COMINTEROP
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exception * pInnerException)
 {
     CONTRACTL
@@ -11339,7 +10753,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exce
     //_ASSERTE((hr != COR_E_EXECUTIONENGINE) ||
     //         !"ExecutionEngineException shouldn't be thrown. Use EEPolicy to failfast or a better exception. The caller of this function should modify their code.");
 
-#ifdef FEATURE_COMINTEROP
     // check for complus created IErrorInfo pointers
     if (pErrInfo != NULL)
     {
@@ -11353,9 +10766,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exce
             GCPROTECT_END ();
         }
     }
-#endif // FEATURE_COMINTEROP
 
-    _ASSERTE((pErrInfo == NULL) || !"pErrInfo should always be null when FEATURE_COMINTEROP is disabled.");
     if (pInnerException == NULL)
     {
         EX_THROW(EEMessageException, (hr));
@@ -11371,7 +10782,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -11384,11 +10795,9 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
     // !
     // ! COMPlusThrowHR(hr, kGetErrorInfo)
 
-    RealCOMPlusThrowHR(hr, (IErrorInfo*)NULL);
+    EX_THROW(EEMessageException, (hr));
 }
 
-
-#ifdef FEATURE_COMINTEROP
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
 {
     CONTRACTL
@@ -11408,6 +10817,19 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
     // Throw the exception.
     RealCOMPlusThrowHR(hr, pErrInfo);
 }
+#else // FEATURE_COMINTEROP
+VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
+{
+    CONTRACTL
+    {
+        THROWS;
+        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    EX_THROW(EEMessageException, (hr));
+}
 #endif // FEATURE_COMINTEROP
 
 
@@ -11419,7 +10841,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -11735,11 +11157,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
 VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
                                                           TypeHandle thCastTo)
 {
-     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
      Module *pModuleTypeFrom = thCastFrom.GetModule();
      Module *pModuleTypeTo = thCastTo.GetModule();
@@ -11795,11 +11213,7 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
 
 VOID RealCOMPlusThrowInvalidCastException(TypeHandle thCastFrom, TypeHandle thCastTo)
 {
-     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     // Use an InlineSString with a size of MAX_CLASSNAME_LENGTH + 1 to prevent
     // TypeHandle::GetName from having to allocate a new block of memory. This
@@ -11837,6 +11251,7 @@ VOID RealCOMPlusThrowInvalidCastException(OBJECTREF *pObj, TypeHandle thCastTo)
         ComObject::ThrowInvalidCastException(pObj, thCastTo.GetMethodTable());
     }
 #endif
+    GCX_PREEMP();
     COMPlusThrowInvalidCastException(thCastFrom, thCastTo);
 }
 
@@ -11882,7 +11297,7 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
         // should be present further up the stack. Normally, the ComMethodFrame in question is
         // simply the next stack frame; however, there are situations where there may be other
         // stack frames present (such as an inlined stack frame from a QCall in the IL stub).
-        while (pCurFrame->GetVTablePtr() != ComMethodFrame::GetMethodFrameVPtr())
+        while (pCurFrame->GetFrameIdentifier() != FrameIdentifier::ComMethodFrame)
         {
             pCurFrame = pCurFrame->PtrNextFrame();
         }
@@ -11890,7 +11305,7 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
         ComMethodFrame * pComFrame = (ComMethodFrame *)pCurFrame;
         _ASSERTE((UINT_PTR)pComFrame > uStubSP);
 
-        CONSISTENCY_CHECK_MSG(pComFrame->GetVTablePtr() == ComMethodFrame::GetMethodFrameVPtr(),
+        CONSISTENCY_CHECK_MSG(pComFrame->GetFrameIdentifier() == FrameIdentifier::ComMethodFrame,
                               "Expected to find a ComMethodFrame.");
 
         ComCallMethodDesc * pCMD = pComFrame->GetComCallMethodDesc();
@@ -11904,3 +11319,133 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
 #endif // FEATURE_COMINTEROP
     return pUserMD;
 }
+
+
+void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+#ifdef FEATURE_EH_FUNCLETS
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *dac_cast<PTR_SIZE_T>((TADDR)m_ContextPointers.regname);
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#if defined(DACCESS_COMPILE) && defined(TARGET_X86)
+// X86 unwinding always works in terms of context pointers, so they need to be in the correct address space when debugging
+// This may work for other architectures as well, but that isn't tested.
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = &pRD->pCurrentContext->regname;
+#else
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = m_ContextPointers.regname;
+#endif
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = m_Context.regname;
+    ENUM_FP_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    SetIP(pRD->pCurrentContext, ::GetIP(&m_Context));
+    SetSP(pRD->pCurrentContext, ::GetSP(&m_Context));
+
+    pRD->ControlPC = ::GetIP(&m_Context);
+    pRD->SP = ::GetSP(&m_Context);
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+#elif defined(TARGET_X86)
+#define CALLEE_SAVED_REGISTER(regname) pRD->Set##regname##Location(&m_Context.regname);
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    pRD->ControlPC = ::GetIP(&m_Context);
+    pRD->SP = ::GetSP(&m_Context);
+#else // FEATURE_EH_FUNCLETS
+    PORTABILITY_ASSERT("SoftwareExceptionFrame::UpdateRegDisplay_Impl");
+#endif // FEATURE_EH_FUNCLETS
+}
+
+#ifndef DACCESS_COMPILE
+#ifdef TARGET_X86
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    m_Context.SegCs = 0;
+    m_Context.SegSs = 0;
+    m_Context.EFlags = 0;
+    m_Context.Eax = 0;
+    m_Context.Ecx = pTransitionBlock->m_argumentRegisters.ECX;
+    m_Context.Edx = pTransitionBlock->m_argumentRegisters.EDX;
+#ifdef FEATURE_EH_FUNCLETS
+    m_ContextPointers.Ecx = &m_Context.Ecx;
+    m_ContextPointers.Edx = &m_Context.Edx;
+
+#define CALLEE_SAVED_REGISTER(reg) \
+    m_Context.reg = pTransitionBlock->m_calleeSavedRegisters.reg; \
+    m_ContextPointers.reg = &m_Context.reg;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#else // FEATURE_EH_FUNCLETS
+#define CALLEE_SAVED_REGISTER(reg) \
+    m_Context.reg = pTransitionBlock->m_calleeSavedRegisters.reg;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#endif // FEATURE_EH_FUNCLETS
+
+    m_Context.Esp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Eip = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#endif // TARGET_X86
+
+//
+// Init a new frame
+//
+void SoftwareExceptionFrame::Init()
+{
+    WRAPPER_NO_CONTRACT;
+
+    // On x86 we initialize the context state from transition block in
+    // UpdateContextFromTransitionBlock method.
+#ifndef TARGET_X86
+#define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = NULL;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#ifndef TARGET_UNIX
+    Thread::VirtualUnwindCallFrame(&m_Context, &m_ContextPointers);
+#else // !TARGET_UNIX
+    BOOL success = PAL_VirtualUnwind(&m_Context, &m_ContextPointers);
+    if (!success)
+    {
+        _ASSERTE(!"SoftwareExceptionFrame::Init failed");
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    }
+#endif // !TARGET_UNIX
+
+#define CALLEE_SAVED_REGISTER(regname) if (m_ContextPointers.regname == NULL) m_ContextPointers.regname = &m_Context.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    _ASSERTE(ExecutionManager::IsManagedCode(::GetIP(&m_Context)));
+
+    m_ReturnAddress = ::GetIP(&m_Context);
+#endif // !TARGET_X86
+}
+
+//
+// Init and Link in a new frame
+//
+void SoftwareExceptionFrame::InitAndLink(Thread *pThread)
+{
+    WRAPPER_NO_CONTRACT;
+
+    Init();
+
+    Push(pThread);
+}
+
+#endif // DACCESS_COMPILE

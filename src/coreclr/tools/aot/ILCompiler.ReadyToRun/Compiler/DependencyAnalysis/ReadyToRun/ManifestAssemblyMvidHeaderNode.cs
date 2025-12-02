@@ -38,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ManifestAssemblyMvids");
+            sb.Append("__ManifestAssemblyMvids"u8);
         }
 
         protected override string GetName(NodeFactory nodeFactory)
@@ -56,7 +56,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             byte[] manifestAssemblyMvidTable = _manifestNode.GetManifestAssemblyMvidTableData();
-            return new ObjectData(manifestAssemblyMvidTable, Array.Empty<Relocation>(), alignment: 0, new ISymbolDefinitionNode[] { this });
+            return new ObjectData(manifestAssemblyMvidTable, Array.Empty<Relocation>(), alignment: 1, new ISymbolDefinitionNode[] { this });
         }
     }
 }

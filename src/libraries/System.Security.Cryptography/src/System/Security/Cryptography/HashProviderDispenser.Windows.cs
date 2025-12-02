@@ -73,9 +73,43 @@ namespace System.Security.Cryptography
             }
         }
 
+        internal static bool KmacSupported(string algorithmId)
+        {
+            switch (algorithmId)
+            {
+                case HashAlgorithmNames.KMAC128:
+                case HashAlgorithmNames.KMAC256:
+                    break;
+                default:
+                    return false;
+            }
+
+            // KMAC was originally introduced in Windows build 25324. However, it contains a bug that results in incorrect
+            // behavior when the handle is duplicated. Therefore, we require Windows build 26016 or later for KMAC
+            // so that a broken KMAC is not used. This Windows build is known to have the fix for KMAC.
+            // As an additional sanity check we also ensure the algorithm is available by asking CNG.
+            return OperatingSystem.IsWindowsVersionAtLeast(10, 0, 26016) &&
+                BCryptAlgorithmCache.IsBCryptAlgorithmSupported(algorithmId, BCryptOpenAlgorithmProviderFlags.None);
+        }
+
         public static class OneShotHashProvider
         {
-            public static unsafe int MacData(
+            public static void KmacData(
+                string algorithmId,
+                ReadOnlySpan<byte> key,
+                ReadOnlySpan<byte> source,
+                Span<byte> destination,
+                ReadOnlySpan<byte> customizationString,
+                bool xof)
+            {
+                using (LiteKmac kmac = LiteHashProvider.CreateKmac(algorithmId, key, customizationString, xof))
+                {
+                    kmac.Append(source);
+                    kmac.Finalize(destination);
+                }
+            }
+
+            public static int MacData(
                 string hashAlgorithmId,
                 ReadOnlySpan<byte> key,
                 ReadOnlySpan<byte> source,
@@ -115,7 +149,7 @@ namespace System.Security.Cryptography
                 HashDataUsingPseudoHandle(hashAlgorithmId, source, key: default, isHmac: false, destination, out _);
             }
 
-            public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+            public static int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
                 int hashSize; // in bytes
 

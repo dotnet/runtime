@@ -43,7 +43,7 @@ namespace System.Data.OleDb
                     break;
 
                 case DBStatus.E_CANTCREATE:
-                    Debug.Assert(false, "CommandParameterStatus: unexpected E_CANTCREATE");
+                    Debug.Fail("CommandParameterStatus: unexpected E_CANTCREATE");
                     goto default;
 
                 case DBStatus.E_UNAVAILABLE:
@@ -52,19 +52,19 @@ namespace System.Data.OleDb
                     break;
 
                 case DBStatus.E_PERMISSIONDENIED:
-                    Debug.Assert(false, "CommandParameterStatus: unexpected E_PERMISSIONDENIED");
+                    Debug.Fail("CommandParameterStatus: unexpected E_PERMISSIONDENIED");
                     goto default;
 
                 case DBStatus.E_INTEGRITYVIOLATION:
-                    Debug.Assert(false, "CommandParameterStatus: unexpected E_INTEGRITYVIOLATION");
+                    Debug.Fail("CommandParameterStatus: unexpected E_INTEGRITYVIOLATION");
                     goto default;
 
                 case DBStatus.E_SCHEMAVIOLATION:
-                    Debug.Assert(false, "CommandParameterStatus: unexpected E_SCHEMAVIOLATION");
+                    Debug.Fail("CommandParameterStatus: unexpected E_SCHEMAVIOLATION");
                     goto default;
 
                 case DBStatus.E_BADSTATUS:
-                    Debug.Assert(false, "CommandParameterStatus: unexpected E_BADSTATUS");
+                    Debug.Fail("CommandParameterStatus: unexpected E_BADSTATUS");
                     goto default;
 
                 case DBStatus.S_DEFAULT:
@@ -559,16 +559,16 @@ namespace System.Data.OleDb
 
         internal static readonly bool IsRunningOnX86 = RuntimeInformation.ProcessArchitecture == Architecture.X86;
 
-        /*internal static readonly int SizeOf_tagDBPARAMINFO = Marshal.SizeOf(typeof(tagDBPARAMINFO));*/
-        internal static readonly int SizeOf_tagDBBINDING = Marshal.SizeOf(typeof(tagDBBINDING));
-        internal static readonly int SizeOf_tagDBCOLUMNINFO = Marshal.SizeOf(typeof(tagDBCOLUMNINFO));
-        internal static readonly int SizeOf_tagDBLITERALINFO = Marshal.SizeOf(typeof(tagDBLITERALINFO));
-        internal static readonly int SizeOf_tagDBPROPSET = Marshal.SizeOf(typeof(tagDBPROPSET));
-        internal static readonly int SizeOf_tagDBPROP = IsRunningOnX86 ? Marshal.SizeOf(typeof(tagDBPROP_x86)) : Marshal.SizeOf(typeof(tagDBPROP));
-        internal static readonly int SizeOf_tagDBPROPINFOSET = Marshal.SizeOf(typeof(tagDBPROPINFOSET));
-        internal static readonly int SizeOf_tagDBPROPINFO = IsRunningOnX86 ? Marshal.SizeOf(typeof(tagDBPROPINFO_x86)) : Marshal.SizeOf(typeof(tagDBPROPINFO));
-        internal static readonly int SizeOf_tagDBPROPIDSET = Marshal.SizeOf(typeof(tagDBPROPIDSET));
-        internal static readonly int SizeOf_Guid = Marshal.SizeOf(typeof(Guid));
+        /*internal static readonly int SizeOf_tagDBPARAMINFO = Marshal.SizeOf<tagDBPARAMINFO>();*/
+        internal static readonly int SizeOf_tagDBBINDING = Marshal.SizeOf<tagDBBINDING>();
+        internal static readonly int SizeOf_tagDBCOLUMNINFO = Marshal.SizeOf<tagDBCOLUMNINFO>();
+        internal static readonly int SizeOf_tagDBLITERALINFO = Marshal.SizeOf<tagDBLITERALINFO>();
+        internal static readonly int SizeOf_tagDBPROPSET = Marshal.SizeOf<tagDBPROPSET>();
+        internal static readonly int SizeOf_tagDBPROP = IsRunningOnX86 ? Marshal.SizeOf<tagDBPROP_x86>() : Marshal.SizeOf<tagDBPROP>();
+        internal static readonly int SizeOf_tagDBPROPINFOSET = Marshal.SizeOf<tagDBPROPINFOSET>();
+        internal static readonly int SizeOf_tagDBPROPINFO = IsRunningOnX86 ? Marshal.SizeOf<tagDBPROPINFO_x86>() : Marshal.SizeOf<tagDBPROPINFO>();
+        internal static readonly int SizeOf_tagDBPROPIDSET = Marshal.SizeOf<tagDBPROPIDSET>();
+        internal static readonly int SizeOf_Guid = Marshal.SizeOf<Guid>();
         internal static readonly int SizeOf_Variant = 8 + (2 * IntPtr.Size); // 16 on 32bit, 24 on 64bit
 
         internal static readonly int OffsetOf_tagDBPROP_Status = IsRunningOnX86 ? Marshal.OffsetOf(typeof(tagDBPROP_x86), "dwStatus").ToInt32() : Marshal.OffsetOf(typeof(tagDBPROP), "dwStatus").ToInt32();
@@ -580,24 +580,24 @@ namespace System.Data.OleDb
         internal static readonly int OffsetOf_tagDBBINDING_obValue = Marshal.OffsetOf(typeof(tagDBBINDING), "obValue").ToInt32();
         internal static readonly int OffsetOf_tagDBBINDING_wType = Marshal.OffsetOf(typeof(tagDBBINDING), "wType").ToInt32();
 
-        internal static Guid IID_NULL = Guid.Empty;
-        internal static Guid IID_IUnknown = new Guid(0x00000000, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
-        internal static Guid IID_IDBInitialize = new Guid(0x0C733A8B, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
-        internal static Guid IID_IDBCreateSession = new Guid(0x0C733A5D, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
-        internal static Guid IID_IDBCreateCommand = new Guid(0x0C733A1D, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
-        internal static Guid IID_ICommandText = new Guid(0x0C733A27, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
-        internal static Guid IID_IMultipleResults = new Guid(0x0C733A90, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
-        internal static Guid IID_IRow = new Guid(0x0C733AB4, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
-        internal static Guid IID_IRowset = new Guid(0x0C733A7C, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
-        internal static Guid IID_ISQLErrorInfo = new Guid(0x0C733A74, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
+        internal static readonly Guid IID_NULL = Guid.Empty;
+        internal static readonly Guid IID_IUnknown = new Guid(0x00000000, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
+        internal static readonly Guid IID_IDBInitialize = new Guid(0x0C733A8B, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
+        internal static readonly Guid IID_IDBCreateSession = new Guid(0x0C733A5D, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
+        internal static readonly Guid IID_IDBCreateCommand = new Guid(0x0C733A1D, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
+        internal static readonly Guid IID_ICommandText = new Guid(0x0C733A27, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
+        internal static readonly Guid IID_IMultipleResults = new Guid(0x0C733A90, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
+        internal static readonly Guid IID_IRow = new Guid(0x0C733AB4, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
+        internal static readonly Guid IID_IRowset = new Guid(0x0C733A7C, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
+        internal static readonly Guid IID_ISQLErrorInfo = new Guid(0x0C733A74, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
 
-        internal static Guid CLSID_DataLinks = new Guid(0x2206CDB2, 0x19C1, 0x11D1, 0x89, 0xE0, 0x00, 0xC0, 0x4F, 0xD7, 0xA8, 0x29);
+        internal static readonly Guid CLSID_DataLinks = new Guid(0x2206CDB2, 0x19C1, 0x11D1, 0x89, 0xE0, 0x00, 0xC0, 0x4F, 0xD7, 0xA8, 0x29);
 
-        internal static Guid DBGUID_DEFAULT = new Guid(0xc8b521fb, 0x5cf3, 0x11ce, 0xad, 0xe5, 0x00, 0xaa, 0x00, 0x44, 0x77, 0x3d);
-        internal static Guid DBGUID_ROWSET = new Guid(0xc8b522f6, 0x5cf3, 0x11ce, 0xad, 0xe5, 0x00, 0xaa, 0x00, 0x44, 0x77, 0x3d);
-        internal static Guid DBGUID_ROW = new Guid(0xc8b522f7, 0x5cf3, 0x11ce, 0xad, 0xe5, 0x00, 0xaa, 0x00, 0x44, 0x77, 0x3d);
+        internal static readonly Guid DBGUID_DEFAULT = new Guid(0xc8b521fb, 0x5cf3, 0x11ce, 0xad, 0xe5, 0x00, 0xaa, 0x00, 0x44, 0x77, 0x3d);
+        internal static readonly Guid DBGUID_ROWSET = new Guid(0xc8b522f6, 0x5cf3, 0x11ce, 0xad, 0xe5, 0x00, 0xaa, 0x00, 0x44, 0x77, 0x3d);
+        internal static readonly Guid DBGUID_ROW = new Guid(0xc8b522f7, 0x5cf3, 0x11ce, 0xad, 0xe5, 0x00, 0xaa, 0x00, 0x44, 0x77, 0x3d);
 
-        internal static Guid DBGUID_ROWDEFAULTSTREAM = new Guid(0x0C733AB7, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
+        internal static readonly Guid DBGUID_ROWDEFAULTSTREAM = new Guid(0x0C733AB7, 0x2A1C, 0x11CE, 0xAD, 0xE5, 0x00, 0xAA, 0x00, 0x44, 0x77, 0x3D);
 
         internal static readonly Guid CLSID_MSDASQL = new Guid(0xc8b522cb, 0x5cf3, 0x11ce, 0xad, 0xe5, 0x00, 0xaa, 0x00, 0x44, 0x77, 0x3d);
 

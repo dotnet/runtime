@@ -27,6 +27,7 @@ namespace Microsoft.Interop
             public const string AnalysisFailed = Prefix + "1093";
             public const string BaseInterfaceFailedGeneration = Prefix + "1094";
             public const string InvalidGeneratedComClassAttributeUsage = Prefix + "1095";
+            public const string BaseInterfaceDefinedInOtherAssembly = Prefix + "1230";
         }
 
         private const string Category = "ComInterfaceGenerator";
@@ -140,6 +141,16 @@ namespace Microsoft.Interop
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
+        /// <inheritdoc cref="SR.ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode"/>
+        public static readonly DiagnosticDescriptor ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode =
+            DiagnosticDescriptorHelper.Create(
+            Ids.InvalidGeneratedComInterfaceAttributeUsage,
+            GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageTitle)),
+            GetResourceString(nameof(SR.ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
         /// <inheritdoc cref="SR.InvalidExceptionMarshallingConfigurationMessage"/>
         public static readonly DiagnosticDescriptor InvalidExceptionMarshallingConfiguration =
             DiagnosticDescriptorHelper.Create(
@@ -150,6 +161,16 @@ namespace Microsoft.Interop
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
             description: GetResourceString(nameof(SR.InvalidExceptionMarshallingConfigurationDescription)));
+
+        /// <inheritdoc cref="SR.InvalidExceptionToUnmanagedMarshallerType"/>
+        public static readonly DiagnosticDescriptor InvalidExceptionToUnmanagedMarshallerType =
+            DiagnosticDescriptorHelper.Create(
+            Ids.InvalidGeneratedComInterfaceAttributeUsage,
+            GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageTitle)),
+            GetResourceString(nameof(SR.InvalidExceptionToUnmanagedMarshallerType)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
 
         /// <inheritdoc cref="SR.TypeNotSupportedMessageParameterCom"/>
         public static readonly DiagnosticDescriptor ParameterTypeNotSupported =
@@ -425,10 +446,10 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Info,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.UnnecessaryMarshallingInfoDescription)),
-                customTags: new[]
-                {
+                customTags:
+                [
                     WellKnownDiagnosticTags.Unnecessary
-                });
+                ]);
 
         /// <inheritdoc cref="SR.UnnecessaryReturnMarshallingInfoMessage"/>
         public static readonly DiagnosticDescriptor UnnecessaryReturnMarshallingInfo =
@@ -440,10 +461,10 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Info,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.UnnecessaryMarshallingInfoDescription)),
-                customTags: new[]
-                {
+                customTags:
+                [
                     WellKnownDiagnosticTags.Unnecessary
-                });
+                ]);
 
         /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam"/>
         public static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallOutParam =
@@ -493,6 +514,17 @@ namespace Microsoft.Interop
                 GetResourceString(nameof(SR.ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails)),
                 Category,
                 DiagnosticSeverity.Info,
+                isEnabledByDefault: true,
+                helpLinkUri: "aka.ms/GeneratedComInterfaceUsage");
+
+        /// <inheritdoc cref="SR.BaseInterfaceDefinedInOtherAssemblyMessage" />
+        public static readonly DiagnosticDescriptor BaseInterfaceDefinedInOtherAssembly =
+            new DiagnosticDescriptor(
+                Ids.BaseInterfaceDefinedInOtherAssembly,
+                GetResourceString(nameof(SR.BaseInterfaceDefinedInOtherAssemblyTitle)),
+                GetResourceString(nameof(SR.BaseInterfaceDefinedInOtherAssemblyMessage)),
+                Category,
+                DiagnosticSeverity.Warning,
                 isEnabledByDefault: true,
                 helpLinkUri: "aka.ms/GeneratedComInterfaceUsage");
 

@@ -31,14 +31,16 @@
         '$(Scenario)' == 'gcstress0x3' or
         '$(Scenario)' == 'gcstress0xc' or
         '$(Scenario)' == 'heapverify1' or
-        '$(Scenario)' == 'gcstress0xc_zapdisable' or
-        '$(Scenario)' == 'gcstress0xc_zapdisable_jitstress2' or
-        '$(Scenario)' == 'gcstress0xc_zapdisable_heapverify1' or
+        '$(Scenario)' == 'gcstress0xc_disabler2r' or
+        '$(Scenario)' == 'gcstress0xc_disabler2r_jitstress2' or
+        '$(Scenario)' == 'gcstress0xc_disabler2r_heapverify1' or
         '$(Scenario)' == 'gcstress0xc_jitstress1' or
         '$(Scenario)' == 'gcstress0xc_jitstress2' or
         '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">06:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetsAppleMobile)' == 'true'">01:15:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'android'">00:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser'">00:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'wasi'">00:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">00:45:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' != '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all')">00:20:00</_workItemTimeout>
@@ -106,14 +108,17 @@
     <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'">SetStressModes_$(Scenario).sh</TestEnvFileName>
   </PropertyGroup>
 
-  <ItemGroup>
-    <__HelixDependenciesToStageThatDontExist Include="@(HelixDependenciesToStage)" />
-    <__HelixDependenciesToStageThatDontExist Remove="@(HelixDependenciesToStage->Exists())" />
-  </ItemGroup>
-
   <!-- HelixPreCommands is a set of commands run before the work item command. We use it here to inject
        setting up the per-scenario environment.
   -->
+
+  <ItemGroup Condition="'$(WindowsShell)' == 'true'">
+    <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(WindowsShell)' != 'true'">
+    <HelixPreCommand Include="export __TestArchitecture=$(TargetArchitecture)" />
+  </ItemGroup>
 
   <ItemGroup Condition=" '$(TestEnvFileName)' != '' and '$(TargetOS)' == 'windows' ">
     <HelixPreCommand Include="set __TestEnv=%HELIX_CORRELATION_PAYLOAD%\$(TestEnvFileName)" />
@@ -147,7 +152,10 @@
 
     <HelixCommandPrefixEnvVarItem Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
     <HelixCommandPrefixEnvVarItem Condition="'$(TestUsingWorkloads)' == 'true'" Include="TEST_USING_WORKLOADS=true" />
-    <HelixCommandPrefixEnvVarItem Condition="'$(TestUsingWebcil)' == 'false'" Include="TEST_USING_WEBCIL=false" />
+    <HelixCommandPrefixEnvVarItem Condition="'$(WasmEnableWebcil)' == 'false'" Include="WASM_ENABLE_WEBCIL=false" />
+    <HelixCommandPrefixEnvVarItem Condition="'$(WasmFingerprintAssets)' == 'false'" Include="WASM_FINGERPRINT_ASSETS=false" />
+    <HelixCommandPrefixEnvVarItem Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'" Include="WASM_BUNDLER_FRIENDLY_BOOT_CONFIG=true" />
+    <HelixCommandPrefixEnvVarItem Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" Include="WORKLOADS_TEST_PREVIOUS_VERSIONS=true" />
   </ItemGroup>
 
   <PropertyGroup Condition="$(TargetRuntimeIdentifier.ToLowerInvariant().StartsWith('linux-bionic'))">
@@ -165,14 +173,6 @@
   <ItemGroup>
     <HelixProperties Condition="'$(RuntimeFlavor)' != ''" Include="runtimeFlavor" Value="$(RuntimeFlavor)" />
     <HelixProperties Condition="'$(Scenario)' != ''" Include="scenario" Value="$(Scenario)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(RunGrpcTestsOnly)' == 'true' and '$(BuildGrpcServerDockerImage)' == 'true'">
-    <HelixCorrelationPayload Include="$(GrpcServerDockerImageDir)" Destination="grpcserver" />
-    <HelixPreCommand Include="docker load -i $HELIX_CORRELATION_PAYLOAD/grpcserver/grpcserver.tar" />
-    <HelixPreCommand Include="docker run --name grpc-server -d -p 50052:50052 -p 80:80 grpc-server:latest" />
-    <HelixPostCommand Include="docker stop grpc-server" />
-    <HelixPostCommand Include="docker rmi -f grpc-server:latest" />
   </ItemGroup>
 
   <!-- Ensure that all HelixPreCommand items are ready before this -->
@@ -207,8 +207,8 @@
 
       <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(WindowsShell)' != 'true'">$(HelixCommand) dotnet dev-certs https &amp;&amp; </HelixCommand>
 
-      <!-- on windows `dotnet dev-certs https shows a dialog, so instead install the certificate with powershell -->
-      <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(WindowsShell)' == 'true'">$(HelixCommand) powershell -command &quot;New-SelfSignedCertificate -FriendlyName &#39;ASP.NET Core HTTPS development certificate&#39; -DnsName @(&#39;localhost&#39;) -Subject &#39;CN = localhost&#39; -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm sha256 -CertStoreLocation &#39;Cert:\CurrentUser\My&#39; -TextExtension @(&#39;2.5.29.37={text}1.3.6.1.5.5.7.3.1&#39;,&#39;1.3.6.1.4.1.311.84.1.1={hex}02&#39;,&#39;2.5.29.19={text}&#39;) -KeyUsage DigitalSignature,KeyEncipherment&quot; &amp;&amp; </HelixCommand>
+      <!-- on windows `dotnet dev-certs https -trust` shows a dialog, so instead install the certificate with powershell -->
+      <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(WindowsShell)' == 'true'">$(HelixCommand) powershell -command &quot;dotnet dev-certs https --export-path devcerts.pfx --password PLACEHOLDER %3B $pw = ConvertTo-SecureString PLACEHOLDER -AsPlainText -Force %3B Import-PfxCertificate -FilePath devcerts.pfx -Password $pw -CertStoreLocation Cert:\LocalMachine\Root &quot; &amp;&amp; </HelixCommand>
 
       <!--
         For Windows we need to use "call", since the command is going to be called from a batch script created by Helix.
@@ -232,9 +232,20 @@
     </ItemGroup>
   </Target>
 
+  <!-- XUnitLogChecker required configuration -->
   <ItemGroup Condition="Exists('$(XUnitLogCheckerLibrariesOutDir)')">
     <HelixCorrelationPayload Include="$(XUnitLogCheckerLibrariesOutDir)" />
-  </ItemGroup>  
+    <HelixCorrelationPayload Condition="'$(WindowsShell)' == 'true'" Include="dotnet-sos">
+      <Destination>sos</Destination>
+      <Uri>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/flat2/dotnet-sos/$(DotnetSosVersion)/dotnet-sos.$(DotnetSosVersion).nupkg</Uri>
+    </HelixCorrelationPayload>
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
+    <NtSymbolPathEnvVar>set _NT_SYMBOL_PATH=%25HELIX_CORRELATION_PAYLOAD%25%3B%25HELIX_CORRELATION_PAYLOAD%25\PDB%3B%25HELIX_CORRELATION_PAYLOAD%25\shared\$(MicrosoftNetCoreAppFrameworkName)\$(ProductVersion)</NtSymbolPathEnvVar>
+    <ExecuteDotNetSos>%25HELIX_CORRELATION_PAYLOAD%25\dotnet %25HELIX_CORRELATION_PAYLOAD%25\sos\tools\net$(DotnetSosTargetFrameworkVersion)\any\dotnet-sos.dll install --architecture $(TargetArchitecture)</ExecuteDotNetSos>
+    <HelixPreCommands>$(HelixPreCommands);$(NtSymbolPathEnvVar);$(ExecuteDotNetSos)</HelixPreCommands>
+  </PropertyGroup>
 
   <!--
     Create all the Helix data to start a set of jobs. Create a set of work items, one for each libraries
@@ -325,7 +336,7 @@
   <Target Name="PrintHelixQueues">
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
     <Message Condition="'$(Scenario)' == 'BuildWasmApps'" Importance="High"
-             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads), TestUsingWebcil: $(TestUsingWebcil)" />
+             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads), WasmEnableWebcil: $(WasmEnableWebcil), WasmFingerprintAssets: $(WasmFingerprintAssets), WasmBundlerFriendlyBootConfig: $(WasmBundlerFriendlyBootConfig)" />
   </Target>
 
   <Target Name="PrintBuildTargetFramework">
@@ -338,7 +349,12 @@
         `WASI_SDK_PATH=/usr/local/wasi-sdk`
       .. then we need to stage that before passing the path to helix like under `artifacts/obj/helix-staging`
   -->
-  <Target Name="StageDependenciesForHelix" Condition="@(__HelixDependenciesToStageThatDontExist->Count()) > 0">
+  <Target Name="StageDependenciesForHelix"
+          Condition="'@(HelixDependenciesToStage->Exists())' != '@(HelixDependenciesToStage)'">
+    <ItemGroup>
+      <__HelixDependenciesToStageThatDontExist Include="@(HelixDependenciesToStage)" Condition="!Exists('%(Identity)')" />
+    </ItemGroup>
+
     <Error Condition="'%(__HelixDependenciesToStageThatDontExist.SourcePath)' == '' or !Exists(%(__HelixDependenciesToStageThatDontExist.SourcePath))"
            Text="Could not find %(__HelixDependenciesToStageThatDontExist.Name) at %(__HelixDependenciesToStageThatDontExist.SourcePath), needed to provision for running tests on helix" />
 

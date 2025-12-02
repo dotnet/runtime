@@ -170,7 +170,10 @@ namespace Internal.Reflection.Execution
             public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override bool IsDefined(Type attributeType, bool inherit) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override Guid GUID { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
+                DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
+                DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
+                DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             public override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) { Debug.Assert(false); throw NotImplemented.ByDesign; }
             public override Module Module { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
             public override string Namespace { get { Debug.Assert(false); throw NotImplemented.ByDesign; } }
@@ -258,11 +261,6 @@ namespace Internal.Reflection.Execution
         private static bool IsSystemObject(this Type type)
         {
             return typeof(object) == type;
-        }
-
-        private static bool IsSystemValueType(this Type type)
-        {
-            return typeof(ValueType) == type;
         }
 
         private static bool IsSystemArray(this Type type)

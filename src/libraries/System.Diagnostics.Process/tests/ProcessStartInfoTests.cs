@@ -235,6 +235,8 @@ namespace System.Diagnostics.Tests
         {
             const string ExtraEnvVar = "TestEnvironmentOfChildProcess_SpecialStuff";
             Environment.SetEnvironmentVariable(ExtraEnvVar, "\x1234" + Environment.NewLine + "\x5678"); // ensure some Unicode characters and newlines are in the output
+            const string EmptyEnvVar = "TestEnvironmentOfChildProcess_Empty";
+            Environment.SetEnvironmentVariable(EmptyEnvVar, "");
             try
             {
                 // Schedule a process to see what env vars it gets.  Have it write out those variables
@@ -274,6 +276,31 @@ namespace System.Diagnostics.Tests
             finally
             {
                 Environment.SetEnvironmentVariable(ExtraEnvVar, null);
+                Environment.SetEnvironmentVariable(EmptyEnvVar, null);
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void EnvironmentNullValue()
+        {
+            const string NullEnvVar = "TestEnvironmentOfChildProcess_Null";
+            Environment.SetEnvironmentVariable(NullEnvVar, "");
+            try
+            {
+                Process p = CreateProcess(() =>
+                {
+                    // Verify that setting the value to null in StartInfo is going to remove the process environment.
+                    Assert.Null(Environment.GetEnvironmentVariable(NullEnvVar));
+                    return RemoteExecutor.SuccessExitCode;
+                });
+                p.StartInfo.Environment[NullEnvVar] = null;
+                Assert.Null(p.StartInfo.Environment[NullEnvVar]);
+                p.Start();
+                Assert.True(p.WaitForExit(WaitInMS));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(NullEnvVar, null);
             }
         }
 
@@ -878,12 +905,35 @@ namespace System.Diagnostics.Tests
             });
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CreateNewProcessGroup_SetWindows_GetReturnsExpected()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo();
+            Assert.False(psi.CreateNewProcessGroup);
+
+            psi.CreateNewProcessGroup = true;
+            Assert.True(psi.CreateNewProcessGroup);
+
+            psi.CreateNewProcessGroup = false;
+            Assert.False(psi.CreateNewProcessGroup);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void CreateNewProcessGroup_GetSetUnix_ThrowsPlatformNotSupportedException()
+        {
+            var info = new ProcessStartInfo();
+            Assert.Throws<PlatformNotSupportedException>(() => info.CreateNewProcessGroup);
+            Assert.Throws<PlatformNotSupportedException>(() => info.CreateNewProcessGroup = true);
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("domain")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void Domain_SetWindows_GetReturnsExpected(string domain)
+        public void Domain_SetWindows_GetReturnsExpected(string? domain)
         {
             var info = new ProcessStartInfo { Domain = domain };
             Assert.Equal(domain ?? string.Empty, info.Domain);
@@ -902,7 +952,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("filename")]
-        public void FileName_Set_GetReturnsExpected(string fileName)
+        public void FileName_Set_GetReturnsExpected(string? fileName)
         {
             var info = new ProcessStartInfo { FileName = fileName };
             Assert.Equal(fileName ?? string.Empty, info.FileName);
@@ -951,7 +1001,7 @@ namespace System.Diagnostics.Tests
         [InlineData("")]
         [InlineData("passwordInClearText")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void PasswordInClearText_SetWindows_GetReturnsExpected(string passwordInClearText)
+        public void PasswordInClearText_SetWindows_GetReturnsExpected(string? passwordInClearText)
         {
             var info = new ProcessStartInfo { PasswordInClearText = passwordInClearText };
             Assert.Equal(passwordInClearText, info.PasswordInClearText);
@@ -991,7 +1041,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("domain")]
-        public void UserName_Set_GetReturnsExpected(string userName)
+        public void UserName_Set_GetReturnsExpected(string? userName)
         {
             var info = new ProcessStartInfo { UserName = userName };
             Assert.Equal(userName ?? string.Empty, info.UserName);
@@ -1001,7 +1051,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("verb")]
-        public void Verb_Set_GetReturnsExpected(string verb)
+        public void Verb_Set_GetReturnsExpected(string? verb)
         {
             var info = new ProcessStartInfo { Verb = verb };
             Assert.Equal(verb ?? string.Empty, info.Verb);
@@ -1031,7 +1081,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("workingdirectory")]
-        public void WorkingDirectory_Set_GetReturnsExpected(string workingDirectory)
+        public void WorkingDirectory_Set_GetReturnsExpected(string? workingDirectory)
         {
             var info = new ProcessStartInfo { WorkingDirectory = workingDirectory };
             Assert.Equal(workingDirectory ?? string.Empty, info.WorkingDirectory);
@@ -1240,13 +1290,13 @@ namespace System.Diagnostics.Tests
                 FileName = tempFile
             };
 
-            int expected = ERROR_BAD_EXE_FORMAT;
-
-            // Windows Nano bug see https://github.com/dotnet/runtime/issues/17919
-            if (PlatformDetection.IsWindowsNanoServer)
-                expected = ERROR_SUCCESS;
-
-            Assert.Equal(expected, Assert.Throws<Win32Exception>(() => Process.Start(info)).NativeErrorCode);
+            int errorCode = Assert.Throws<Win32Exception>(() => Process.Start(info)).NativeErrorCode;
+            
+            if (!PlatformDetection.IsWindowsNanoServer)
+            {
+                // We can not rely on the error code returned on Windows Nano https://github.com/dotnet/runtime/issues/17919
+                Assert.Equal(ERROR_BAD_EXE_FORMAT, errorCode);
+            }
         }
 
         [Fact]

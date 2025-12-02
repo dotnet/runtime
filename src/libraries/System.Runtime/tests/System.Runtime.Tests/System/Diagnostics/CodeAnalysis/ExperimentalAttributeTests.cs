@@ -26,7 +26,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("https://contoso.com/obsoletion-warnings/{0}")]
-        public void TestSetUrlFormat(string urlFormat)
+        public void TestSetUrlFormat(string? urlFormat)
         {
             var attr = new ExperimentalAttribute("diagnosticId")
             {
@@ -35,6 +35,21 @@ namespace System.Diagnostics.CodeAnalysis.Tests
 
             Assert.Equal("diagnosticId", attr.DiagnosticId);
             Assert.Equal(urlFormat, attr.UrlFormat);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("This is an experimental feature")]
+        public void TestSetMessage(string? message)
+        {
+            var attribute = new ExperimentalAttribute("diagnosticId")
+            {
+                Message = message
+            };
+
+            Assert.Equal("diagnosticId", attribute.DiagnosticId);
+            Assert.Equal(message, attribute.Message);
         }
     }
 }

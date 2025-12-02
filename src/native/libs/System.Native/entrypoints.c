@@ -16,6 +16,7 @@
 #include "pal_log.h"
 #include "pal_memory.h"
 #include "pal_mount.h"
+#include "pal_crossprocessmutex.h"
 #include "pal_networkchange.h"
 #include "pal_networking.h"
 #include "pal_networkstatistics.h"
@@ -35,9 +36,9 @@ static const Entry s_sysNative[] =
 {
     DllImportEntry(SystemNative_FStat)
     DllImportEntry(SystemNative_GetWindowSize)
-    DllImportEntry(SystemNative_SetWindowSize)
     DllImportEntry(SystemNative_IsATty)
     DllImportEntry(SystemNative_InitializeTerminalAndSignalHandling)
+    DllImportEntry(SystemNative_UninitializeTerminal)
     DllImportEntry(SystemNative_SetKeypadXmit)
     DllImportEntry(SystemNative_GetControlCharacters)
     DllImportEntry(SystemNative_StdinReady)
@@ -62,10 +63,11 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_Close)
     DllImportEntry(SystemNative_Dup)
     DllImportEntry(SystemNative_Unlink)
+    DllImportEntry(SystemNative_IsMemfdSupported)
+    DllImportEntry(SystemNative_MemfdCreate)
     DllImportEntry(SystemNative_ShmOpen)
     DllImportEntry(SystemNative_ShmUnlink)
-    DllImportEntry(SystemNative_GetReadDirRBufferSize)
-    DllImportEntry(SystemNative_ReadDirR)
+    DllImportEntry(SystemNative_ReadDir)
     DllImportEntry(SystemNative_OpenDir)
     DllImportEntry(SystemNative_CloseDir)
     DllImportEntry(SystemNative_Pipe)
@@ -130,10 +132,12 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_Malloc)
     DllImportEntry(SystemNative_Realloc)
     DllImportEntry(SystemNative_GetSpaceInfoForMountPoint)
-    DllImportEntry(SystemNative_GetFormatInfoForMountPoint)
+    DllImportEntry(SystemNative_GetFileSystemTypeNameForMountPoint)
     DllImportEntry(SystemNative_GetAllMountPoints)
+#if !defined(TARGET_WASM) && !defined(TARGET_WASI)
     DllImportEntry(SystemNative_ReadEvents)
     DllImportEntry(SystemNative_CreateNetworkChangeListenerSocket)
+#endif // !defined(TARGET_WASM) && !defined(TARGET_WASI)
     DllImportEntry(SystemNative_GetHostEntryForName)
     DllImportEntry(SystemNative_FreeHostEntry)
     DllImportEntry(SystemNative_GetNameInfo)
@@ -160,11 +164,13 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_SetSendTimeout)
     DllImportEntry(SystemNative_Receive)
     DllImportEntry(SystemNative_ReceiveMessage)
+    DllImportEntry(SystemNative_ReceiveSocketError)
     DllImportEntry(SystemNative_Send)
     DllImportEntry(SystemNative_SendMessage)
     DllImportEntry(SystemNative_Accept)
     DllImportEntry(SystemNative_Bind)
     DllImportEntry(SystemNative_Connect)
+    DllImportEntry(SystemNative_Connectx)
     DllImportEntry(SystemNative_GetPeerName)
     DllImportEntry(SystemNative_GetSockName)
     DllImportEntry(SystemNative_Listen)
@@ -184,6 +190,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_FreeSocketEventBuffer)
     DllImportEntry(SystemNative_TryChangeSocketEventRegistration)
     DllImportEntry(SystemNative_WaitForSocketEvents)
+    DllImportEntry(SystemNative_GetWasiSocketDescriptor)
     DllImportEntry(SystemNative_PlatformSupportsDualModeIPv4PacketInfo)
     DllImportEntry(SystemNative_GetDomainSocketSizes)
     DllImportEntry(SystemNative_GetMaximumAddressSize)
@@ -228,6 +235,8 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_SetDelayedSigChildConsoleConfigurationHandler)
     DllImportEntry(SystemNative_SetTerminalInvalidationHandler)
     DllImportEntry(SystemNative_SNPrintF)
+    DllImportEntry(SystemNative_SNPrintF_1S)
+    DllImportEntry(SystemNative_SNPrintF_1I)
     DllImportEntry(SystemNative_Sysctl)
     DllImportEntry(SystemNative_MapTcpState)
     DllImportEntry(SystemNative_LowLevelMonitor_Create)
@@ -248,6 +257,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_UTimensat)
     DllImportEntry(SystemNative_FUTimens)
     DllImportEntry(SystemNative_GetTimestamp)
+    DllImportEntry(SystemNative_GetLowResolutionTimestamp)
     DllImportEntry(SystemNative_GetBootTimeTicks)
     DllImportEntry(SystemNative_GetCpuUtilization)
     DllImportEntry(SystemNative_GetPwUidR)
@@ -278,6 +288,16 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetGroupName)
     DllImportEntry(SystemNative_GetUInt64OSThreadId)
     DllImportEntry(SystemNative_TryGetUInt32OSThreadId)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Size)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Init)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Acquire)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Release)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_Destroy)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_IsAbandoned)
+    DllImportEntry(SystemNative_LowLevelCrossProcessMutex_SetAbandoned)
+    DllImportEntry(SystemNative_Select)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

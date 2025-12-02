@@ -3,11 +3,11 @@
 
 namespace Mono.Linker
 {
-	public enum AssemblyRootMode
-	{
-		AllMembers = 0,
-		EntryPoint,
-		VisibleMembers,
-		Library
-	}
+    public enum AssemblyRootMode
+    {
+        AllMembers = 0,
+        EntryPoint,
+        VisibleMembers,
+        Library
+    }
 }

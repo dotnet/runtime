@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 namespace System.Collections.Frozen
 {
     /// <summary>Provides a frozen dictionary implementation where strings are grouped by their lengths.</summary>
-    internal sealed class LengthBucketsFrozenDictionary<TValue> : FrozenDictionary<string, TValue>
+    internal sealed partial class LengthBucketsFrozenDictionary<TValue> : FrozenDictionary<string, TValue>
     {
         private readonly int[] _lengthBuckets;
         private readonly int _minLength;
@@ -81,7 +81,7 @@ namespace System.Collections.Frozen
                         }
                         else
                         {
-                            // -1 is used to indicate a null, when it's casted to unit it becomes > keys.Length
+                            // -1 is used to indicate a null, when it's casted to uint it becomes > keys.Length
                             break;
                         }
                     }
@@ -100,7 +100,7 @@ namespace System.Collections.Frozen
                         }
                         else
                         {
-                            // -1 is used to indicate a null, when it's casted to unit it becomes > keys.Length
+                            // -1 is used to indicate a null, when it's casted to uint it becomes > keys.Length
                             break;
                         }
                     }

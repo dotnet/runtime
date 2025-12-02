@@ -16,6 +16,7 @@ namespace GCTest_gcarr_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static void TestEntryPoint()
         {
             Test[] arr = new Test[97];

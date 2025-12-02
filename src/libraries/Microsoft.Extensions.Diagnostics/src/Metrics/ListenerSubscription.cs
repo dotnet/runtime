@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 
                 if (_instruments.ContainsKey(instrument))
                 {
-                    Debug.Assert(false, "InstrumentPublished called for an instrument we're already listening to.");
+                    Debug.Fail("InstrumentPublished called for an instrument we're already listening to.");
                     return;
                 }
 

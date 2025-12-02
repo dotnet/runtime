@@ -11,11 +11,25 @@ namespace System.Text.Json
 {
     internal static partial class JsonHelpers
     {
-#if !NETCOREAPP
+#if !NET
         /// <summary>
         /// netstandard/netfx polyfill for Dictionary.TryAdd
         /// </summary>
         public static bool TryAdd<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value) where TKey : notnull
+        {
+            if (!dictionary.ContainsKey(key))
+            {
+                dictionary[key] = value;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// netstandard/netfx polyfill for IDictionary.TryAdd
+        /// </summary>
+        public static bool TryAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value) where TKey : notnull
         {
             if (!dictionary.ContainsKey(key))
             {
@@ -55,7 +69,7 @@ namespace System.Text.Json
         internal static void StableSortByKey<T, TKey>(this List<T> items, Func<T, TKey> keySelector)
             where TKey : unmanaged, IComparable<TKey>
         {
-#if NET6_0_OR_GREATER
+#if NET
             Span<T> span = CollectionsMarshal.AsSpan(items);
 
             // Tuples implement lexical ordering OOTB which can be used to encode stable sorting

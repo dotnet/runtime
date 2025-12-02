@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataSignatureBuilder builder = new ObjectDataSignatureBuilder();
+            ObjectDataSignatureBuilder builder = new ObjectDataSignatureBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
             builder.EmitByte((byte)ReadyToRunFixupKind.Helper);
             builder.EmitUInt((uint)_helperID);
@@ -33,7 +33,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("ReadyToRunHelper_");
+            sb.Append("ReadyToRunHelper_"u8);
             sb.Append(_helperID.ToString());
         }
 

@@ -33,10 +33,6 @@
 #define STATUS_LONGJUMP        ((NTSTATUS)0x80000026L)
 #endif
 
-#ifndef LOCALE_NAME_MAX_LENGTH
-#define LOCALE_NAME_MAX_LENGTH 85
-#endif // !LOCALE_NAME_MAX_LENGTH
-
 #ifndef IMAGE_FILE_MACHINE_RISCV64
 #define IMAGE_FILE_MACHINE_RISCV64        0x5064  // RISCV64
 #endif // !IMAGE_FILE_MACHINE_RISCV64
@@ -184,19 +180,23 @@ RtlVirtualUnwind_Unsafe(
 #ifdef HOST_X86
 typedef struct _RUNTIME_FUNCTION {
     DWORD BeginAddress;
+    // NOTE: R2R doesn't include EndAddress (see docs/design/coreclr/botr/readytorun-format.md).
+    // NativeAOT does include the EndAddress because the Microsoft linker expects it. In NativeAOT
+    // the info is generated in the managed ObjectWriter, so the structures don't have to match.
+    // DWORD EndAddress;
     DWORD UnwindData;
 } RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
 
 typedef struct _DISPATCHER_CONTEXT {
     _EXCEPTION_REGISTRATION_RECORD* RegistrationPointer;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
 #endif // HOST_X86
 #endif // !HOST_UNIX
 
 #define RUNTIME_FUNCTION__BeginAddress(prf)             (prf)->BeginAddress
 #define RUNTIME_FUNCTION__SetBeginAddress(prf,addr)     ((prf)->BeginAddress = (addr))
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "win64unwind.h"
 #include "daccess.h"
 
@@ -207,7 +207,7 @@ RtlpGetFunctionEndAddress (
     _In_ TADDR ImageBase
     )
 {
-    PTR_UNWIND_INFO pUnwindInfo = (PTR_UNWIND_INFO)(ImageBase + FunctionEntry->UnwindData);
+    DPTR(UNWIND_INFO) pUnwindInfo = dac_cast<DPTR(UNWIND_INFO)>(ImageBase + FunctionEntry->UnwindData);
 
     return FunctionEntry->BeginAddress + pUnwindInfo->FunctionLength;
 }
@@ -218,10 +218,7 @@ RtlpGetFunctionEndAddress (
 #define RUNTIME_FUNCTION__SetUnwindInfoAddress(prf, addr) do { (prf)->UnwindData = (addr); } while(0)
 
 #ifdef HOST_X86
-EXTERN_C
-NTSYSAPI
 PEXCEPTION_ROUTINE
-NTAPI
 RtlVirtualUnwind (
     _In_ DWORD HandlerType,
     _In_ DWORD ImageBase,
@@ -233,7 +230,6 @@ RtlVirtualUnwind (
     __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
     );
 #endif // HOST_X86
-#endif // FEATURE_EH_FUNCLETS
 
 #endif // TARGET_X86
 
@@ -369,6 +365,24 @@ RtlVirtualUnwind(
     IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
     );
 
+// Mirror the XSTATE_ARM64_SVE flags from winnt.h
+
+#ifndef XSTATE_ARM64_SVE
+#define XSTATE_ARM64_SVE (2)
+#endif // XSTATE_ARM64_SVE
+
+#ifndef XSTATE_MASK_ARM64_SVE
+#define XSTATE_MASK_ARM64_SVE (1ui64 << (XSTATE_ARM64_SVE))
+#endif // XSTATE_MASK_ARM64_SVE
+
+#ifndef CONTEXT_ARM64_XSTATE
+#define CONTEXT_ARM64_XSTATE (CONTEXT_ARM64 | 0x20L)
+#endif // CONTEXT_ARM64_XSTATE
+
+#ifndef CONTEXT_XSTATE
+#define CONTEXT_XSTATE CONTEXT_ARM64_XSTATE
+#endif // CONTEXT_XSTATE
+
 #endif
 
 #ifdef TARGET_LOONGARCH64
@@ -393,8 +407,7 @@ RtlpGetFunctionEndAddress (
     if ((FunctionLength & 3) != 0) {
         FunctionLength = (FunctionLength >> 2) & 0x7ff;
     } else {
-        memcpy(&FunctionLength, (void*)(ImageBase + FunctionLength), sizeof(UINT32));
-        FunctionLength &= 0x3ffff;
+        FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
     return FunctionEntry->BeginAddress + 4 * FunctionLength;
@@ -453,7 +466,7 @@ RtlpGetFunctionEndAddress (
         FunctionLength = *(PTR_ULONG64)(ImageBase + FunctionLength) & 0x3ffff;
     }
 
-    return FunctionEntry->BeginAddress + 4 * FunctionLength;
+    return FunctionEntry->BeginAddress + 2 * FunctionLength;
 }
 
 #define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress)
@@ -483,5 +496,53 @@ RtlVirtualUnwind(
     );
 
 #endif // TARGET_RISCV64
+
+#ifdef TARGET_WASM
+//
+// Define unwind information flags.
+//
+
+#define UNW_FLAG_NHANDLER               0x0             /* any handler */
+#define UNW_FLAG_EHANDLER               0x1             /* filter handler */
+#define UNW_FLAG_UHANDLER               0x2             /* unwind handler */
+
+inline PEXCEPTION_ROUTINE
+RtlVirtualUnwind (
+    _In_ DWORD HandlerType,
+    _In_ DWORD ImageBase,
+    _In_ DWORD ControlPc,
+    _In_ PRUNTIME_FUNCTION FunctionEntry,
+    __inout PT_CONTEXT ContextRecord,
+    _Out_ PVOID *HandlerData,
+    _Out_ PDWORD EstablisherFrame,
+    __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
+    )
+{
+    PORTABILITY_ASSERT("The function RtlVirtualUnwind is not implemented on wasm");
+    return nullptr;
+}
+
+FORCEINLINE
+ULONG
+RtlpGetFunctionEndAddress (
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ TADDR ImageBase
+    )
+{
+    PORTABILITY_ASSERT("The function RtlpGetFunctionEndAddress is not implemented on wasm");
+    return 0;
+}
+
+#define RUNTIME_FUNCTION__BeginAddress(FunctionEntry)               ((FunctionEntry)->BeginAddress)
+#define RUNTIME_FUNCTION__SetBeginAddress(FunctionEntry,address)    ((FunctionEntry)->BeginAddress = (address))
+
+#define RUNTIME_FUNCTION__EndAddress(FunctionEntry, ImageBase)      (RtlpGetFunctionEndAddress(FunctionEntry, (ULONG64)(ImageBase)))
+
+#define RUNTIME_FUNCTION__SetUnwindInfoAddress(prf,address)         do { (prf)->UnwindData = (address); } while (0)
+
+typedef struct _UNWIND_INFO {
+    // dummy
+} UNWIND_INFO, *PUNWIND_INFO;
+#endif
 
 #endif  // CLRNT_H_

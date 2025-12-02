@@ -18,6 +18,7 @@ namespace System
         private const string InitializeMethodName = "Initialize";
         private const string DisallowedSimpleAssemblyNameSuffix = ".dll";
 
+        [FeatureSwitchDefinition("System.StartupHookProvider.IsSupported")]
         private static bool IsSupported => AppContext.TryGetSwitch("System.StartupHookProvider.IsSupported", out bool isSupported) ? isSupported : true;
 
         private struct StartupHookNameOrPath
@@ -85,13 +86,13 @@ namespace System
 
         private static void ParseStartupHook(ref StartupHookNameOrPath startupHook, string startupHookPart)
         {
-            ReadOnlySpan<char> disallowedSimpleAssemblyNameChars = stackalloc char[4]
-            {
+            ReadOnlySpan<char> disallowedSimpleAssemblyNameChars =
+            [
                 Path.DirectorySeparatorChar,
                 Path.AltDirectorySeparatorChar,
                 ' ',
                 ','
-            };
+            ];
 
             if (string.IsNullOrEmpty(startupHookPart))
             {
@@ -160,7 +161,7 @@ namespace System
             catch (Exception assemblyLoadException)
             {
                 throw new ArgumentException(
-                    SR.Format(SR.Argument_StartupHookAssemblyLoadFailed, startupHook.Path ?? startupHook.AssemblyName!.ToString()),
+                    SR.Format(SR.Argument_StartupHookAssemblyLoadFailed, startupHook.Path ?? startupHook.AssemblyName.ToString()),
                     assemblyLoadException);
             }
 
@@ -171,7 +172,7 @@ namespace System
             MethodInfo? initializeMethod = type.GetMethod(InitializeMethodName,
                                                          BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
                                                          null, // use default binder
-                                                         Type.EmptyTypes, // parameters
+                                                         [], // parameters
                                                          null); // no parameter modifiers
             if (initializeMethod == null)
             {
@@ -184,12 +185,8 @@ namespace System
                     // with the correct name.
                     MethodInfo? wrongSigMethod = type.GetMethod(InitializeMethodName,
                                                       BindingFlags.Public | BindingFlags.NonPublic |
-                                                      BindingFlags.Static | BindingFlags.Instance);
-                    // Didn't find any
-                    if (wrongSigMethod == null)
-                    {
-                        throw new MissingMethodException(StartupHookTypeName, InitializeMethodName);
-                    }
+                                                      BindingFlags.Static | BindingFlags.Instance) ??
+                                                      throw new MissingMethodException(StartupHookTypeName, InitializeMethodName);
                 }
                 catch (AmbiguousMatchException)
                 {

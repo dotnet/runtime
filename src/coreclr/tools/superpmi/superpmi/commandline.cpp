@@ -110,6 +110,11 @@ void CommandLine::DumpHelp(const char* program)
     printf("     If 'workerCount' is not specified, the number of workers used is\n");
     printf("     the number of processors on the machine.\n");
     printf("\n");
+    printf(" -streaming filename\n");
+    printf("     Streaming mode. Read and execute work requests from indicated file (can be 'stdin').\n");
+    printf("     Each line is a method context number and additional force jit options for that method.\n");
+    printf("     Blank line or EOF terminates\n");
+    printf("\n");
     printf(" -failureLimit <limit>\n");
     printf("     For a positive 'limit' number, replay and asm diffs will exit if it sees more than 'limit' failures.\n");
     printf("     Otherwise, all methods will be compiled.\n");
@@ -122,8 +127,10 @@ void CommandLine::DumpHelp(const char* program)
     printf("     trying to measure JIT throughput for a specific set of methods. Default=1.\n");
     printf("\n");
     printf(" -target <target>\n");
-    printf("     Used by the assembly differences calculator. This specifies the target\n");
-    printf("     architecture for cross-compilation. Currently allowed <target> values: x64, x86, arm, arm64\n");
+    printf("     Specifies the target architecture if doing cross-compilation.\n");
+    printf("     Allowed <target> values: x64, x86, arm, arm64, loongarch64, riscv64\n");
+    printf("     Used by the assembly differences calculator; to determine a default JIT dll name;\n");
+    printf("     and to avoid treating mismatched cross-compilation replay as failure.\n");
     printf("\n");
     printf(" -coredistools\n");
     printf("     Use disassembly tools from the CoreDisTools library\n");
@@ -170,7 +177,7 @@ void CommandLine::DumpHelp(const char* program)
     printf("     ; if there are any failures, record their MC numbers in the file fail.mcl\n");
 }
 
-static bool ParseJitOption(const char* optionString, WCHAR** key, WCHAR** value)
+bool CommandLine::ParseJitOption(const char* optionString, char** key, char** value)
 {
     char tempKey[1024];
 
@@ -188,12 +195,12 @@ static bool ParseJitOption(const char* optionString, WCHAR** key, WCHAR** value)
     const char* tempVal = &optionString[i + 1];
 
     const unsigned keyLen = i;
-    WCHAR*       keyBuf = new WCHAR[keyLen + 1];
-    MultiByteToWideChar(CP_UTF8, 0, tempKey, keyLen + 1, keyBuf, keyLen + 1);
+    char*          keyBuf = new char[keyLen + 1];
+    strcpy_s(keyBuf, keyLen + 1, tempKey);
 
     const unsigned valLen = (unsigned)strlen(tempVal);
-    WCHAR*       valBuf = new WCHAR[valLen + 1];
-    MultiByteToWideChar(CP_UTF8, 0, tempVal, valLen + 1, valBuf, valLen + 1);
+    char*          valBuf = new char[valLen + 1];
+    strcpy_s(valBuf, valLen + 1, tempVal);
 
     *key   = keyBuf;
     *value = valBuf;
@@ -468,6 +475,17 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 }
                 o->hash = argv[i];
             }
+            else if ((_strnicmp(&argv[i][1], "streaming", argLen) == 0))
+            {
+                if (++i >= argc)
+                {
+                    LogError("'-streaming' must be followed by a file name or 'stdin'.");
+                    DumpHelp(argv[0]);
+                    return false;
+                }
+
+                o->streamFile = argv[i];
+            }
             else if ((_strnicmp(&argv[i][1], "parallel", argLen) == 0))
             {
                 o->parallel = true;
@@ -669,10 +687,27 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             (0 != _stricmp(o->targetArchitecture, "x86")) &&
             (0 != _stricmp(o->targetArchitecture, "arm64")) &&
             (0 != _stricmp(o->targetArchitecture, "arm")) &&
-            (0 != _stricmp(o->targetArchitecture, "arm32")))
+            (0 != _stricmp(o->targetArchitecture, "arm32")) &&
+            (0 != _stricmp(o->targetArchitecture, "loongarch64")) &&
+            (0 != _stricmp(o->targetArchitecture, "riscv64")))
         {
-            LogError("Illegal target architecture specified with -target (use 'x64', 'x86', 'arm64', or 'arm').");
+            LogError("Illegal target architecture specified with -target.");
             DumpHelp(argv[0]);
+            return false;
+        }
+    }
+
+    if (o->streamFile != nullptr)
+    {
+        if (o->parallel)
+        {
+            LogError("streaming mode and parallel mode are incompatible.");
+            return false;
+        }
+
+        if (o->nameOfJit2 != nullptr)
+        {
+            LogError("streaming mode and diff mode are incompatible.");
             return false;
         }
     }
@@ -722,6 +757,10 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         hostArch = "arm";
 #elif defined(HOST_ARM64)
         hostArch = "arm64";
+#elif defined(HOST_LOONGARCH64)
+        hostArch = "loongarch64";
+#elif defined(HOST_RISCV64)
+        hostArch = "riscv64";
 #else
         allowDefaultJIT = false;
 #endif
@@ -741,6 +780,12 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 break;
             case SPMI_TARGET_ARCHITECTURE_ARM64:
                 targetArch = "arm64";
+                break;
+            case SPMI_TARGET_ARCHITECTURE_LOONGARCH64:
+                targetArch = "loongarch64";
+                break;
+            case SPMI_TARGET_ARCHITECTURE_RISCV64:
+                targetArch = "riscv64";
                 break;
             default:
                 allowDefaultJIT = false;
@@ -778,6 +823,10 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     case SPMI_TARGET_ARCHITECTURE_ARM:
                     case SPMI_TARGET_ARCHITECTURE_ARM64:
                         jitOSName = "universal";
+                        break;
+                    case SPMI_TARGET_ARCHITECTURE_LOONGARCH64:
+                    case SPMI_TARGET_ARCHITECTURE_RISCV64:
+                        jitOSName = "unix";
                         break;
                     default:
                         // Can't get here if `allowDefaultJIT` was properly set above.
@@ -881,8 +930,8 @@ bool CommandLine::AddJitOption(int&  currArgument,
         targetjitOptions = *pJitOptions;
     }
 
-    WCHAR* key;
-    WCHAR* value;
+    char* key;
+    char* value;
     if ((currArgument >= argc) || !ParseJitOption(argv[currArgument], &key, &value))
     {
         DumpHelp(argv[0]);
@@ -890,9 +939,9 @@ bool CommandLine::AddJitOption(int&  currArgument,
     }
 
     DWORD keyIndex =
-        (DWORD)targetjitOptions->AddBuffer((unsigned char*)key, sizeof(WCHAR) * ((unsigned int)u16_strlen(key) + 1));
+        (DWORD)targetjitOptions->AddBuffer((unsigned char*)key, sizeof(char) * ((unsigned int)strlen(key) + 1));
     DWORD valueIndex =
-        (DWORD)targetjitOptions->AddBuffer((unsigned char*)value, sizeof(WCHAR) * ((unsigned int)u16_strlen(value) + 1));
+        (DWORD)targetjitOptions->AddBuffer((unsigned char*)value, sizeof(char) * ((unsigned int)strlen(value) + 1));
     targetjitOptions->Add(keyIndex, valueIndex);
 
     delete[] key;

@@ -34,8 +34,8 @@ enum ValueNumKind
 struct ValueNumPair
 {
 private:
-    ValueNum m_liberal;
     ValueNum m_conservative;
+    ValueNum m_liberal;
 
 public:
     ValueNum GetLiberal() const
@@ -115,7 +115,9 @@ public:
     // Initializes both elements to "NoVN".  Defined in ValueNum.cpp.
     ValueNumPair();
 
-    ValueNumPair(ValueNum lib, ValueNum cons) : m_liberal(lib), m_conservative(cons)
+    ValueNumPair(ValueNum lib, ValueNum cons)
+        : m_conservative(cons)
+        , m_liberal(lib)
     {
     }
 

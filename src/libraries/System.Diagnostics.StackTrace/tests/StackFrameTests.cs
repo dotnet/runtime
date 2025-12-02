@@ -36,17 +36,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15183", TestRuntimes.Mono)]
-        [InlineData(StackFrame.OFFSET_UNKNOWN)]
-        [InlineData(0)]
-        [InlineData(1)]
-        public void Ctor_SkipFrames(int skipFrames)
-        {
-            var stackFrame = new StackFrame(skipFrames);
-            VerifyStackFrame(stackFrame, true, skipFrames, typeof(StackFrameTests).GetMethod(nameof(Ctor_SkipFrames)), isCurrentFrame: skipFrames == 0);
-        }
-
-        [Theory]
         [ActiveIssue("https://github.com/mono/mono/issues/15187", TestRuntimes.Mono)]
         [InlineData(StackFrame.OFFSET_UNKNOWN, true)]
         [InlineData(0, true)]
@@ -75,6 +64,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(int.MinValue)]
         [InlineData(int.MaxValue)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103218", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void SkipFrames_ManyFrames_HasNoMethod(int skipFrames)
         {
             var stackFrame = new StackFrame(skipFrames);
@@ -86,7 +76,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null, StackFrame.OFFSET_UNKNOWN)]
         [InlineData("", 0)]
         [InlineData("FileName", 1)]
-        public void Ctor_Filename_LineNumber(string fileName, int lineNumber)
+        public void Ctor_Filename_LineNumber(string? fileName, int lineNumber)
         {
             var stackFrame = new StackFrame(fileName, lineNumber);
             Assert.Equal(fileName, stackFrame.GetFileName());
@@ -101,7 +91,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null, StackFrame.OFFSET_UNKNOWN, 0)]
         [InlineData("", 0, StackFrame.OFFSET_UNKNOWN)]
         [InlineData("FileName", 1, 2)]
-        public void Ctor_Filename_LineNumber_ColNumber(string fileName, int lineNumber, int columnNumber)
+        public void Ctor_Filename_LineNumber_ColNumber(string? fileName, int lineNumber, int columnNumber)
         {
             var stackFrame = new StackFrame(fileName, lineNumber, columnNumber);
             Assert.Equal(fileName, stackFrame.GetFileName());
@@ -123,6 +113,7 @@ namespace System.Diagnostics.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/mono/mono/issues/15186", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103156", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(ToString_TestData))]
         public void ToString_Invoke_ReturnsExpected(StackFrame stackFrame, string expectedToString)
         {
@@ -168,7 +159,10 @@ namespace System.Diagnostics.Tests
             }
             else
             {
-                Assert.True(stackFrame.GetILOffset() >= 0, $"Expected GetILOffset() {stackFrame.GetILOffset()} for {stackFrame} to be greater or equal to zero.");
+                if (PlatformDetection.IsILOffsetsSupported)
+                {
+                    Assert.True(stackFrame.GetILOffset() >= 0, $"Expected GetILOffset() {stackFrame.GetILOffset()} for {stackFrame} to be greater or equal to zero.");
+                }
             }
 
             // GetMethod returns null for unknown frames.

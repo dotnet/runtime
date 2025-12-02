@@ -10,7 +10,7 @@
 #ifndef _DbgIPCEvents_h_
 #define _DbgIPCEvents_h_
 
-#include <new.hpp>
+#include <new>
 #include <cor.h>
 #include <cordebug.h>
 #include <corjit.h> // for ICorDebugInfo::VarLocType & VarLoc
@@ -24,6 +24,8 @@
 #include "dbgappdomain.h"
 
 #include "./common.h"
+
+using std::nothrow;
 
 //-----------------------------------------------------------------------------
 // V3 additions to IPC protocol between LS and RS.
@@ -433,18 +435,9 @@ public:
 
     static LsPointer<T> MakePtr(T* p)
     {
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6001) // PREfast warning: Using uninitialize memory 't'
-#endif // _PREFAST_
-
         LsPointer<T> t;
         t.Set(p);
         return t;
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
     }
 
     bool operator!= (void * p) { return m_ptr != p; }
@@ -534,18 +527,9 @@ public:
 
     static LsPointer<T> MakePtr(T * p)
     {
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6001) // PREfast warning: Using uninitialize memory 't'
-#endif // _PREFAST_
-
         LsPointer<T> t;
         t.Set(p);
         return t;
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
     }
 
     bool operator!= (void * p) { return m_ptr != p; }
@@ -594,9 +578,9 @@ public:
 #endif // !RIGHT_SIDE_COMPILE
 
 // We must be binary compatible w/ a pointer.
-static_assert_no_msg(sizeof(LsPointer<void>) == sizeof(GeneralLsPointer));
+static_assert(sizeof(LsPointer<void>) == sizeof(GeneralLsPointer));
 
-static_assert_no_msg(sizeof(void*) == sizeof(GeneralLsPointer));
+static_assert(sizeof(void*) == sizeof(GeneralLsPointer));
 
 
 
@@ -732,18 +716,9 @@ public:
     // Convenience for converting TTargetPtr --> VMPTR
     static VMPTR_This MakePtr(TTargetPtr * ptr)
     {
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6001) // PREfast warning: Using uninitialize memory 't'
-#endif // _PREFAST_
-
         VMPTR_This t;
         t.SetRawPtr(ptr);
         return t;
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
     }
 
 
@@ -768,24 +743,15 @@ public:
     //
     // Operators to emulate Pointer semantics.
     //
-    bool IsNull() { SUPPORTS_DAC; return m_addr == NULL; }
+    bool IsNull() { SUPPORTS_DAC; return m_addr == (TADDR)0; }
 
     static VMPTR_This NullPtr()
     {
         SUPPORTS_DAC;
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6001) // PREfast warning: Using uninitialize memory 't'
-#endif // _PREFAST_
-
         VMPTR_This dummy;
-        dummy.m_addr = NULL;
+        dummy.m_addr = (TADDR)NULL;
         return dummy;
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
     }
 
     bool operator!= (VMPTR_This vmOther) const { SUPPORTS_DAC; return this->m_addr != vmOther.m_addr; }
@@ -854,8 +820,10 @@ DEFINE_VMPTR(class SimpleRWLock,    PTR_SimpleRWLock,   VMPTR_SimpleRWLock);
 DEFINE_VMPTR(class SimpleRWLock,    PTR_SimpleRWLock,   VMPTR_RWLock);
 DEFINE_VMPTR(struct ReJitInfo,       PTR_ReJitInfo,      VMPTR_ReJitInfo);
 DEFINE_VMPTR(struct SharedReJitInfo, PTR_SharedReJitInfo, VMPTR_SharedReJitInfo);
+#ifdef FEATURE_CODE_VERSIONING
 DEFINE_VMPTR(class NativeCodeVersionNode, PTR_NativeCodeVersionNode, VMPTR_NativeCodeVersionNode);
 DEFINE_VMPTR(class ILCodeVersionNode, PTR_ILCodeVersionNode, VMPTR_ILCodeVersionNode);
+#endif // FEATURE_CODE_VERSIONING
 
 typedef CORDB_ADDRESS GENERICS_TYPE_TOKEN;
 
@@ -1284,7 +1252,7 @@ private:
 #define LEAF_MOST_FRAME FramePointer::MakeFramePointer((LPVOID)NULL)
 #define ROOT_MOST_FRAME FramePointer::MakeFramePointer((LPVOID)-1)
 
-static_assert_no_msg(sizeof(FramePointer) == sizeof(void*));
+static_assert(sizeof(FramePointer) == sizeof(void*));
 
 
 inline bool IsCloserToLeaf(FramePointer fp1, FramePointer fp2)
@@ -1898,44 +1866,47 @@ struct MSLAYOUT DebuggerMDANotification
 #define DBG_TARGET_REGNUM_SP 4
 #define DBG_TARGET_REGNUM_AMBIENT_SP 9
 #ifdef TARGET_X86
-static_assert_no_msg(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-static_assert_no_msg(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif // TARGET_X86
 #elif defined(TARGET_AMD64)
 #define DBG_TARGET_REGNUM_SP 4
 #define DBG_TARGET_REGNUM_AMBIENT_SP 17
 #ifdef TARGET_AMD64
-static_assert_no_msg(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-static_assert_no_msg(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif // TARGET_AMD64
 #elif defined(TARGET_ARM)
 #define DBG_TARGET_REGNUM_SP 13
 #define DBG_TARGET_REGNUM_AMBIENT_SP 17
 #ifdef TARGET_ARM
-C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif // TARGET_ARM
 #elif defined(TARGET_ARM64)
 #define DBG_TARGET_REGNUM_SP 31
 #define DBG_TARGET_REGNUM_AMBIENT_SP 34
 #ifdef TARGET_ARM64
-C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif // TARGET_ARM64
 #elif defined(TARGET_LOONGARCH64)
 #define DBG_TARGET_REGNUM_SP 3
 #define DBG_TARGET_REGNUM_AMBIENT_SP 34
 #ifdef TARGET_LOONGARCH64
-C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif
 #elif defined(TARGET_RISCV64)
 #define DBG_TARGET_REGNUM_SP 2
 #define DBG_TARGET_REGNUM_AMBIENT_SP 34
 #ifdef TARGET_RISCV64
-C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
-C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+static_assert(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+static_assert(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif
+#elif defined(TARGET_WASM)
+#define DBG_TARGET_REGNUM_SP 0
+#define DBG_TARGET_REGNUM_AMBIENT_SP 0
 #else
 #error Target registers are not defined for this platform
 #endif
@@ -2053,6 +2024,19 @@ struct MSLAYOUT DebuggerIPCEvent
             mdMethodDef funcMetadataToken;
             VMPTR_Module pModule;
         } DisableOptData;
+
+        struct MSLAYOUT
+        {
+            BOOL enableEvents;
+            VMPTR_Object vmObj;
+        } ForceCatchHandlerFoundData;
+
+        struct MSLAYOUT
+        {
+            VMPTR_Module vmModule;
+            mdTypeDef    classMetadataToken;
+            BOOL Enabled;
+        } CustomNotificationData;
 
         struct MSLAYOUT
         {
@@ -2413,8 +2397,8 @@ struct MSLAYOUT DebuggerIPCEvent
 #define CorDBIPC_TRANSPORT_BUFFER_SIZE (((sizeof(DebuggerIPCEvent) + 7) / 8) * 8)
 
 // A DebuggerIPCEvent must fit in the send & receive buffers, which are CorDBIPC_BUFFER_SIZE bytes.
-static_assert_no_msg(sizeof(DebuggerIPCEvent) <= CorDBIPC_BUFFER_SIZE);
-static_assert_no_msg(CorDBIPC_TRANSPORT_BUFFER_SIZE <= CorDBIPC_BUFFER_SIZE);
+static_assert(sizeof(DebuggerIPCEvent) <= CorDBIPC_BUFFER_SIZE);
+static_assert(CorDBIPC_TRANSPORT_BUFFER_SIZE <= CorDBIPC_BUFFER_SIZE);
 
 // 2*sizeof(WCHAR) for the two string terminating characters in the FirstLogMessage
 #define LOG_MSG_PADDING         4

@@ -34,8 +34,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal struct SupportedCapability
     {
-        public static string ADOid = "1.2.840.113556.1.4.800";
-        public static string ADAMOid = "1.2.840.113556.1.4.1851";
+        public const string ADOid = "1.2.840.113556.1.4.800";
+        public const string ADAMOid = "1.2.840.113556.1.4.1851";
     }
 
     internal sealed class Utils
@@ -43,9 +43,6 @@ namespace System.DirectoryServices.ActiveDirectory
         private const int LOGON32_LOGON_NEW_CREDENTIALS = 9;
         private const int LOGON32_PROVIDER_WINNT50 = 3;
 
-        private const uint STANDARD_RIGHTS_REQUIRED = 0x000F0000;
-        private const uint SYNCHRONIZE = 0x00100000;
-        private const uint THREAD_ALL_ACCESS = STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3FF;
         internal const AuthenticationTypes DefaultAuthType = AuthenticationTypes.Secure | AuthenticationTypes.Signing | AuthenticationTypes.Sealing;
 
         /*
@@ -873,7 +870,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 string? stringGuid = null;
 
                 // encode the byte arry into binary string representation
-                int hr = UnsafeNativeMethods.ADsEncodeBinaryData(byteGuid, byteGuid.Length, ref ptr);
+                int hr = Interop.Activeds.ADsEncodeBinaryData(byteGuid, byteGuid.Length, ref ptr);
 
                 if (hr == 0)
                 {
@@ -884,7 +881,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     finally
                     {
                         if (ptr != (IntPtr)0)
-                            UnsafeNativeMethods.FreeADsMem(ptr);
+                            Interop.Activeds.FreeADsMem(ptr);
                     }
                 }
                 else
@@ -988,14 +985,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static void ImpersonateAnonymous()
         {
-            IntPtr hThread = UnsafeNativeMethods.OpenThread(THREAD_ALL_ACCESS, false, global::Interop.Kernel32.GetCurrentThreadId());
+            IntPtr hThread = Interop.Kernel32.OpenThread(Interop.Kernel32.THREAD_ALL_ACCESS, false, global::Interop.Kernel32.GetCurrentThreadId());
             if (hThread == (IntPtr)0)
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
 
             try
             {
-                int result = UnsafeNativeMethods.ImpersonateAnonymousToken(hThread);
-                if (result == 0)
+                bool success = Interop.Advapi32.ImpersonateAnonymousToken(hThread);
+                if (!success)
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
             finally
@@ -1845,7 +1842,7 @@ namespace System.DirectoryServices.ActiveDirectory
         internal static int Compare(string? s1, string? s2, uint compareFlags)
         {
             // This code block was specifically written for handling string comparison
-            // involving null strings. The unmanged API "NativeMethods.CompareString"
+            // involving null strings. The unmanaged API "Interop.Kernel32.CompareString"
             // does not handle null strings elegantly.
             //
             // This method handles comparison of the specified strings
@@ -1856,34 +1853,17 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             int result = 0;
-            IntPtr lpString1 = IntPtr.Zero;
-            IntPtr lpString2 = IntPtr.Zero;
             int cchCount1 = 0;
             int cchCount2 = 0;
 
-            try
-            {
-                lpString1 = Marshal.StringToHGlobalUni(s1);
-                cchCount1 = s1.Length;
-                lpString2 = Marshal.StringToHGlobalUni(s2);
-                cchCount2 = s2.Length;
+            cchCount1 = s1.Length;
+            cchCount2 = s2.Length;
 
-                result = NativeMethods.CompareString(LCID, compareFlags, lpString1, cchCount1, lpString2, cchCount2);
-                if (result == 0)
-                {
-                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
-                }
-            }
-            finally
+            result = Interop.Kernel32.CompareString(LCID, compareFlags, s1, cchCount1, s2, cchCount2);
+
+            if (result == 0)
             {
-                if (lpString1 != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(lpString1);
-                }
-                if (lpString2 != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(lpString2);
-                }
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
 
             return (result - 2); // to give the semantics of <0, ==0, >0
@@ -1896,27 +1876,15 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static int Compare(string s1, int offset1, int length1, string s2, int offset2, int length2)
         {
-            if (s1 == null)
-            {
-                throw new ArgumentNullException(nameof(s1));
-            }
-            if (s2 == null)
-            {
-                throw new ArgumentNullException(nameof(s2));
-            }
+            ArgumentNullException.ThrowIfNull(s1);
+            ArgumentNullException.ThrowIfNull(s2);
             return Compare(s1.Substring(offset1, length1), s2.Substring(offset2, length2));
         }
 
         internal static int Compare(string s1, int offset1, int length1, string s2, int offset2, int length2, uint compareFlags)
         {
-            if (s1 == null)
-            {
-                throw new ArgumentNullException(nameof(s1));
-            }
-            if (s2 == null)
-            {
-                throw new ArgumentNullException(nameof(s2));
-            }
+            ArgumentNullException.ThrowIfNull(s1);
+            ArgumentNullException.ThrowIfNull(s2);
             return Compare(s1.Substring(offset1, length1), s2.Substring(offset2, length2), compareFlags);
         }
 
@@ -2058,7 +2026,7 @@ namespace System.DirectoryServices.ActiveDirectory
         }
 
 
-        internal static IntPtr GetCurrentUserSid()
+        internal static unsafe IntPtr GetCurrentUserSid()
         {
             SafeTokenHandle? tokenHandle = null;
             IntPtr pBuffer = IntPtr.Zero;
@@ -2140,7 +2108,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 // Retrieve the user's SID from the user info
-                global::Interop.TOKEN_USER tokenUser = (global::Interop.TOKEN_USER)Marshal.PtrToStructure(pBuffer, typeof(global::Interop.TOKEN_USER))!;
+                Interop.TOKEN_USER tokenUser = *(Interop.TOKEN_USER*)pBuffer;
                 IntPtr pUserSid = tokenUser.sidAndAttributes.Sid;   // this is a reference into the NATIVE memory (into pBuffer)
 
                 Debug.Assert(global::Interop.Advapi32.IsValidSid(pUserSid));
@@ -2167,7 +2135,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal static IntPtr GetMachineDomainSid()
+        internal static unsafe IntPtr GetMachineDomainSid()
         {
             SafeLsaPolicyHandle? policyHandle = null;
             IntPtr pBuffer = IntPtr.Zero;
@@ -2198,8 +2166,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 Debug.Assert(pBuffer != IntPtr.Zero);
-                POLICY_ACCOUNT_DOMAIN_INFO info = (POLICY_ACCOUNT_DOMAIN_INFO)
-                                    Marshal.PtrToStructure(pBuffer, typeof(POLICY_ACCOUNT_DOMAIN_INFO))!;
+                POLICY_ACCOUNT_DOMAIN_INFO info = *(POLICY_ACCOUNT_DOMAIN_INFO*)pBuffer;
 
                 Debug.Assert(global::Interop.Advapi32.IsValidSid(info.DomainSid));
 
@@ -2233,9 +2200,9 @@ namespace System.DirectoryServices.ActiveDirectory
             try
             {
                 if (null == computerName)
-                    err = UnsafeNativeMethods.DsRoleGetPrimaryDomainInformation(IntPtr.Zero, DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
+                    err = Interop.Netapi32.DsRoleGetPrimaryDomainInformation(null, Interop.Netapi32.DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
                 else
-                    err = UnsafeNativeMethods.DsRoleGetPrimaryDomainInformation(computerName, DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
+                    err = Interop.Netapi32.DsRoleGetPrimaryDomainInformation(computerName, Interop.Netapi32.DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
 
                 if (err != 0)
                 {
@@ -2246,7 +2213,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 DSROLE_PRIMARY_DOMAIN_INFO_BASIC dsRolePrimaryDomainInfo =
-                    (DSROLE_PRIMARY_DOMAIN_INFO_BASIC)Marshal.PtrToStructure(dsRoleInfoPtr, typeof(DSROLE_PRIMARY_DOMAIN_INFO_BASIC))!;
+                    Marshal.PtrToStructure<DSROLE_PRIMARY_DOMAIN_INFO_BASIC>(dsRoleInfoPtr)!;
 
                 return (dsRolePrimaryDomainInfo.MachineRole == DSROLE_MACHINE_ROLE.DsRole_RoleBackupDomainController ||
                              dsRolePrimaryDomainInfo.MachineRole == DSROLE_MACHINE_ROLE.DsRole_RolePrimaryDomainController);
@@ -2254,19 +2221,18 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 if (dsRoleInfoPtr != IntPtr.Zero)
-                    UnsafeNativeMethods.DsRoleFreeMemory(dsRoleInfoPtr);
+                    Interop.Netapi32.DsRoleFreeMemory(dsRoleInfoPtr);
             }
         }
 
-        internal static SidType ClassifySID(IntPtr pSid)
+        internal static unsafe SidType ClassifySID(IntPtr pSid)
         {
             Debug.Assert(global::Interop.Advapi32.IsValidSid(pSid));
 
             // Get the issuing authority and the first RID
             IntPtr pIdentAuth = global::Interop.Advapi32.GetSidIdentifierAuthority(pSid);
 
-            global::Interop.Advapi32.SID_IDENTIFIER_AUTHORITY identAuth =
-                (global::Interop.Advapi32.SID_IDENTIFIER_AUTHORITY)Marshal.PtrToStructure(pIdentAuth, typeof(global::Interop.Advapi32.SID_IDENTIFIER_AUTHORITY))!;
+            Interop.Advapi32.SID_IDENTIFIER_AUTHORITY identAuth = *(Interop.Advapi32.SID_IDENTIFIER_AUTHORITY*)pIdentAuth;
 
             IntPtr pRid = global::Interop.Advapi32.GetSidSubAuthority(pSid, 0);
             int rid = Marshal.ReadInt32(pRid);
@@ -2285,6 +2251,12 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // No, so it can't be an account or builtin SID.
                 // Probably something like \Everyone or \LOCAL.
+                return SidType.FakeObject;
+            }
+
+            // Is the SID S-1-5-0-0-0-RID(sentinel SID)?
+            if (IsSentinelSID(pSid))
+            {
                 return SidType.FakeObject;
             }
 
@@ -2345,6 +2317,59 @@ namespace System.DirectoryServices.ActiveDirectory
 
             Debug.Assert(pBytes != IntPtr.Zero);
             return pBytes;
+        }
+
+        //
+        // The sentinel SID were placed in the domain SID range S-1-5-21-X-Y-Z-R with R < 512 because the existing domain controllers would always filter those SIDs out at boundaries.
+        // That way, the sentinel SID which says the claims or compound data is safe to consume would be removed should the claims or compound PAC ever pass through a domain controller
+        // that did not know how to apply security checks. S-1-5-21-X-Y-Z-R means that the SID belongs to a domain(including the local account domain) unless X=Y=Z=0 in which
+        // case it's a sentinel SID, a special type of pseudo-object that can't be interpreted in isolation.
+        //
+        internal static bool IsSentinelSID(IntPtr pSid)
+        {
+            Debug.Assert(global::Interop.Advapi32.IsValidSid(pSid));
+
+            IntPtr psubAuthorityCount = global::Interop.Advapi32.GetSidSubAuthorityCount(pSid);
+            int subAuthorityCount = Marshal.ReadByte(psubAuthorityCount);
+
+            //
+            // Sentinel SIDs are of format S-1-5-21-X-Y-Z-R, so if the subauthority count is not equal to 5
+            // (21-X-Y-Z-R), then it is not a sentinel SID.
+            //
+            if (subAuthorityCount != 5)
+            {
+                return false;
+            }
+
+            //
+            // If the rid is greater than equal to 512 then it is not a sentinel sid
+            //
+            int rid = GetLastRidFromSid(pSid);
+            if (rid >= 512)
+            {
+                return false;
+            }
+
+            // We  are going to check for X, Y and Z only hence starting the for loop
+            // with i = 1, and not reading sunAuthority-1 which is the RID
+            for (int i = 1; i < subAuthorityCount - 1; i++)
+            {
+                IntPtr pcurrentSubauthority = global::Interop.Advapi32.GetSidSubAuthority(pSid, i);
+                int currentSubauthority = Marshal.ReadInt32(pcurrentSubauthority);
+
+                //
+                // We return false as soon as we know the first subauthority is not 0
+                //
+                if (currentSubauthority != 0)
+                {
+                    return false;
+                }
+            }
+
+            //
+            // This means X=Y=Z=0
+            //
+            return true;
         }
     }
 }

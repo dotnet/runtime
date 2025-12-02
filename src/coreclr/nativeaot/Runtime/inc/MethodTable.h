@@ -11,14 +11,9 @@
 class MethodTable;
 class TypeManager;
 struct TypeManagerHandle;
-struct EETypeRef;
-
-#if !defined(USE_PORTABLE_HELPERS)
-#define SUPPORTS_WRITABLE_DATA 1
-#endif
 
 //-------------------------------------------------------------------------------------------------
-// The subset of TypeFlags that Redhawk knows about at runtime
+// The subset of TypeFlags that NativeAOT knows about at runtime
 // This should match the TypeFlags enum in the managed type system.
 enum EETypeElementType : uint8_t
 {
@@ -67,12 +62,14 @@ enum EETypeField
 {
     ETF_TypeManagerIndirection,
     ETF_WritableData,
+    ETF_DispatchMap,
     ETF_Finalizer,
-    ETF_OptionalFieldsPtr,
     ETF_SealedVirtualSlots,
     ETF_DynamicTemplateType,
     ETF_GenericDefinition,
     ETF_GenericComposition,
+    ETF_FunctionPointerParameters,
+    ETF_DynamicTypeFlags,
     ETF_DynamicGcStatics,
     ETF_DynamicNonGcStatics,
     ETF_DynamicThreadStaticOffset,
@@ -131,16 +128,17 @@ private:
         // simplified version of MethodTable. See LimitedEEType definition below.
         EETypeKindMask = 0x00030000,
 
-        // This type has optional fields present.
-        OptionalFieldsFlag      = 0x00040000,
-
         // GC depends on this bit, this bit must be zero
         CollectibleFlag         = 0x00200000,
+
+        HasDispatchMapFlag      = 0x00040000,
 
         IsDynamicTypeFlag       = 0x00080000,
 
         // GC depends on this bit, this type requires finalization
         HasFinalizerFlag        = 0x00100000,
+
+        HasSealedVTableEntriesFlag = 0x00400000,
 
         // GC depends on this bit, this type contain gc pointers
         HasPointersFlag         = 0x01000000,
@@ -166,6 +164,18 @@ private:
         // GC depends on this bit, this type has a critical finalizer
         HasCriticalFinalizerFlag = 0x0002,
         IsTrackedReferenceWithFinalizerFlag = 0x0004,
+
+        // This MethodTable is for a Byref-like class (TypedReference, Span<T>, ...)
+        IsByRefLikeFlag = 0x0010,
+
+        // This type requires 8-byte alignment for its fields on certain platforms (ARM32, WASM)
+        RequiresAlign8Flag = 0x1000
+    };
+
+    enum FunctionPointerFlags
+    {
+        IsUnmanaged = 0x80000000,
+        FunctionPointerFlagsMask = IsUnmanaged
     };
 
 public:
@@ -173,13 +183,25 @@ public:
     enum Kinds
     {
         CanonicalEEType         = 0x00000000,
-        // unused               = 0x00010000,
+        FunctionPointerEEType   = 0x00010000,
         ParameterizedEEType     = 0x00020000,
         GenericTypeDefEEType    = 0x00030000,
     };
 
     uint32_t GetBaseSize()
         { return m_uBaseSize; }
+
+    uint32_t GetNumFunctionPointerParameters()
+    {
+        ASSERT(IsFunctionPointer());
+        return m_uBaseSize & ~FunctionPointerFlagsMask;
+    }
+
+    uint32_t GetParameterizedTypeShape()
+    {
+        ASSERT(IsParameterizedType());
+        return m_uBaseSize;
+    }
 
     Kinds GetKind();
 
@@ -192,24 +214,27 @@ public:
     bool IsSzArray()
         { return GetElementType() == ElementType_SzArray; }
 
+    uint32_t GetArrayRank();
+
     bool IsParameterizedType()
         { return (GetKind() == ParameterizedEEType); }
 
     bool IsGenericTypeDefinition()
-        { return (GetKind() == GenericTypeDefEEType); }
+        { return GetKind() == GenericTypeDefEEType; }
 
-    bool IsCanonical()
-        { return GetKind() == CanonicalEEType; }
+    bool IsFunctionPointer()
+        { return GetKind() == FunctionPointerEEType; }
 
     bool IsInterface()
         { return GetElementType() == ElementType_Interface; }
 
     MethodTable * GetRelatedParameterType();
 
-    // A parameterized type shape less than SZARRAY_BASE_SIZE indicates that this is not
-    // an array but some other parameterized type (see: ParameterizedTypeShapeConstants)
-    // For arrays, this number uniquely captures both Sz/Md array flavor and rank.
-    uint32_t GetParameterizedTypeShape() { return m_uBaseSize; }
+    MethodTable* GetNonArrayBaseType()
+    {
+        ASSERT(!IsArray());
+        return PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_pBaseType));
+    }
 
     bool IsValueType()
         { return GetElementType() < ElementType_Class; }
@@ -257,11 +282,6 @@ public:
         return (m_uFlags & HasPointersFlag) != 0;
     }
 
-    bool HasOptionalFields()
-    {
-        return (m_uFlags & OptionalFieldsFlag) != 0;
-    }
-
     // How many vtable slots are there?
     uint16_t GetNumVtableSlots()
         { return m_usNumVtableSlots; }
@@ -270,25 +290,15 @@ public:
     uint16_t GetNumInterfaces()
         { return m_usNumInterfaces; }
 
-    // Does this class (or its base classes) implement any interfaces?
-    bool HasInterfaces()
-        { return GetNumInterfaces() != 0; }
-
-    bool IsGeneric()
-        { return (m_uFlags & IsGenericFlag) != 0; }
-
     TypeManagerHandle* GetTypeManagerPtr();
+
+    MethodTable* GetDynamicTemplateType();
 
     // Used only by GC initialization, this initializes the MethodTable used to mark free entries in the GC heap.
     // It should be an array type with a component size of one (so the GC can easily size it as appropriate)
     // and should be marked as not containing any references. The rest of the fields don't matter: the GC does
     // not query them and the rest of the runtime will never hold a reference to free object.
     inline void InitializeAsGcFreeType();
-
-#ifdef DACCESS_COMPILE
-    bool DacVerify();
-    static bool DacVerifyWorker(MethodTable* pThis);
-#endif // DACCESS_COMPILE
 
     // Mark or determine that a type is generic and one or more of it's type parameters is co- or
     // contra-variant. This only applies to interface and delegate types.
@@ -298,15 +308,18 @@ public:
     EETypeElementType GetElementType()
         { return (EETypeElementType)((m_uFlags & ElementTypeMask) >> ElementTypeShift); }
 
-    // Determine whether a type is an instantiation of Nullable<T>.
-    bool IsNullable()
-        { return GetElementType() == ElementType_Nullable; }
+    bool IsGeneric()
+        { return (m_uFlags & IsGenericFlag) != 0; }
+
+    bool HasDispatchMap()
+        { return (m_uFlags & HasDispatchMapFlag) != 0; }
+
+    bool HasSealedVTableEntries()
+        { return (m_uFlags & HasSealedVTableEntriesFlag) != 0; }
 
     // Determine whether a type was created by dynamic type loader
     bool IsDynamicType()
         { return (m_uFlags & IsDynamicTypeFlag) != 0; }
-
-    uint32_t GetHashCode();
 
     // Helper methods that deal with MethodTable topology (size and field layout). These are useful since as we
     // optimize for pay-for-play we increasingly want to customize exactly what goes into an MethodTable on a
@@ -328,8 +341,8 @@ public:
 
 public:
     // Methods expected by the GC
-    uint32_t ContainsPointers() { return HasReferenceFields(); }
-    uint32_t ContainsPointersOrCollectible() { return HasReferenceFields(); }
+    uint32_t ContainsGCPointers() { return HasReferenceFields(); }
+    uint32_t ContainsGCPointersOrCollectible() { return HasReferenceFields(); }
     UInt32_BOOL SanityCheck() { return Validate(); }
 };
 

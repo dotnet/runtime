@@ -63,7 +63,7 @@ namespace System.Runtime.CompilerServices
                     return default;
                 }
 
-                // With normal access paterns, m_task should always be non-null here: the async method should have
+                // With normal access patterns, m_task should always be non-null here: the async method should have
                 // either completed synchronously, in which case SetResult would have set m_task to a non-null object,
                 // or it should be completing asynchronously, in which case AwaitUnsafeOnCompleted would have similarly
                 // initialized m_task to a state machine object.  However, if the type is used manually (not via

@@ -62,7 +62,6 @@ namespace System.IO
             return null; // Let SafeFileHandle create the exception for this error.
         }
 
-#pragma warning disable IDE0060
         public static void Encrypt(string path)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
@@ -72,7 +71,6 @@ namespace System.IO
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
         }
-#pragma warning restore IDE0060
 
         private static void LinkOrCopyFile (string sourceFullPath, string destFullPath)
         {
@@ -669,16 +667,21 @@ namespace System.IO
         }
 #pragma warning restore IDE0060
 
+        internal static void CreateHardLink(string path, string pathToTarget)
+        {
+            Interop.CheckIo(Interop.Sys.Link(pathToTarget, path), path);
+        }
+
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
         {
-            ValueStringBuilder sb = new(Interop.DefaultPathBufferSize);
+            ValueStringBuilder sb = new(stackalloc char[Interop.DefaultPathBufferSize]);
             sb.Append(linkPath);
 
             string? linkTarget = Interop.Sys.ReadLink(linkPath);
             if (linkTarget == null)
             {
-                sb.Dispose();
                 Interop.Error error = Interop.Sys.GetLastError();
+                sb.Dispose();
                 // Not a link, return null
                 if (error == Interop.Error.EINVAL)
                 {

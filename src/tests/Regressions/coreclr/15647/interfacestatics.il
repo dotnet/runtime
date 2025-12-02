@@ -39,59 +39,63 @@
   }
 }
 
-.method public static hidebysig int32 Main()
+.class public auto ansi abstract sealed beforefieldinit interfacestatics
+    extends [System.Runtime]System.Object
 {
-  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-      01 00 00 00
-  )
-  .entrypoint
+  .method public static hidebysig int32 Main()
+  {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .entrypoint
 
-  ldsfld class [System.Runtime]System.Type class IFoo<object>::O
-  ldtoken object[]
-  call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)    
-  ceq
-  brtrue IFoo_object_O_Okay
-  ldc.i4.1
-  ret
+    ldsfld class [System.Runtime]System.Type class IFoo<object>::O
+    ldtoken object[]
+    call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    ceq
+    brtrue IFoo_object_O_Okay
+    ldc.i4.1
+    ret
 
-IFoo_object_O_Okay:
-  ldsfld class [System.Runtime]System.Type class IFoo<string>::O
-  ldtoken string[]
-  call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)    
-  ceq
-  brtrue IFoo_string_O_Okay
-  ldc.i4.2
-  ret
+  IFoo_object_O_Okay:
+    ldsfld class [System.Runtime]System.Type class IFoo<string>::O
+    ldtoken string[]
+    call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    ceq
+    brtrue IFoo_string_O_Okay
+    ldc.i4.2
+    ret
 
-IFoo_string_O_Okay:
-  call class [System.Runtime]System.Type class IFoo<object>::GimmeT()
-  ldtoken object[0...]
-  call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)    
-  ceq
-  brtrue IFoo_object_Gimme_T_Okay
-  ldc.i4.3
-  ret
+  IFoo_string_O_Okay:
+    call class [System.Runtime]System.Type class IFoo<object>::GimmeT()
+    ldtoken object[0...]
+    call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    ceq
+    brtrue IFoo_object_Gimme_T_Okay
+    ldc.i4.3
+    ret
 
-IFoo_object_Gimme_T_Okay:
-  call class [System.Runtime]System.Type class IFoo<object>::GimmeU<string>()
-  ldtoken string
-  call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)    
-  ceq
-  brtrue IFoo_object_Gimme_U_Okay
-  ldc.i4.4
-  ret
+  IFoo_object_Gimme_T_Okay:
+    call class [System.Runtime]System.Type class IFoo<object>::GimmeU<string>()
+    ldtoken string
+    call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    ceq
+    brtrue IFoo_object_Gimme_U_Okay
+    ldc.i4.4
+    ret
 
-IFoo_object_Gimme_U_Okay:
-  call class [System.Runtime]System.Type class IFoo<object>::GimmeU_T<string>()
-  ldtoken string[0...]
-  call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)    
-  ceq
-  brtrue IFoo_object_Gimme_U_T_Okay
-  ldc.i4.5
-  ret
+  IFoo_object_Gimme_U_Okay:
+    call class [System.Runtime]System.Type class IFoo<object>::GimmeU_T<string>()
+    ldtoken string[0...]
+    call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    ceq
+    brtrue IFoo_object_Gimme_U_T_Okay
+    ldc.i4.5
+    ret
 
-IFoo_object_Gimme_U_T_Okay:
+  IFoo_object_Gimme_U_T_Okay:
 
-  ldc.i4 100
-  ret
+    ldc.i4 100
+    ret
+  }
 }

@@ -1,0 +1,21 @@
+
+parameters:
+  - name: templatePath
+    type: string
+    default: 'templates'
+  - name: stages
+    type: stageList
+  - name: containers
+    type: object
+
+resources:
+  containers:
+    - ${{ each container_pair in parameters.containers }}:
+      - ${{ if container_pair.value.image }}:
+        - container: ${{ container_pair.key }}
+          ${{ each pair in container_pair.value }}:
+            ${{ if notIn(pair.key, 'tenantId', 'identityType', 'registry') }}:
+              ${{ pair.key }}: ${{ pair.value }}
+
+
+stages: ${{ parameters.stages }}

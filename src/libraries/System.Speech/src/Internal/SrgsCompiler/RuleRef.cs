@@ -125,7 +125,7 @@ namespace System.Speech.Internal.SrgsCompiler
                     break;
 
                 default:
-                    System.Diagnostics.Debug.Assert(false, "Unknown special ruleref type");
+                    System.Diagnostics.Debug.Fail("Unknown special ruleref type");
                     break;
             }
         }

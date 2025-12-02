@@ -65,10 +65,10 @@ namespace Microsoft.Extensions.Http
             IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor,
             IEnumerable<IHttpMessageHandlerBuilderFilter> filters)
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(scopeFactory);
-            ThrowHelper.ThrowIfNull(optionsMonitor);
-            ThrowHelper.ThrowIfNull(filters);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(scopeFactory);
+            ArgumentNullException.ThrowIfNull(optionsMonitor);
+            ArgumentNullException.ThrowIfNull(filters);
 
             _services = services;
             _scopeFactory = scopeFactory;
@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.Http
             _cleanupTimerLock = new object();
             _cleanupActiveLock = new object();
 
-            // We want to prevent a circular depencency between ILoggerFactory and IHttpClientFactory, in case
+            // We want to prevent a circular dependency between ILoggerFactory and IHttpClientFactory, in case
             // any of ILoggerProvider instances use IHttpClientFactory to send logs to an external server.
             // Logger will be created during the first ExpiryTimer_Tick execution. Lazy guarantees thread safety
             // to prevent creation of unnecessary ILogger objects in case several handlers expired at the same time.
@@ -102,7 +102,7 @@ namespace Microsoft.Extensions.Http
 
         public HttpClient CreateClient(string name)
         {
-            ThrowHelper.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(name);
 
             HttpMessageHandler handler = CreateHandler(name);
             var client = new HttpClient(handler, disposeHandler: false);
@@ -118,7 +118,7 @@ namespace Microsoft.Extensions.Http
 
         public HttpMessageHandler CreateHandler(string name)
         {
-            ThrowHelper.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(name);
 
             ActiveHandlerTrackingEntry entry = _activeHandlers.GetOrAdd(name, _entryFactory).Value;
 

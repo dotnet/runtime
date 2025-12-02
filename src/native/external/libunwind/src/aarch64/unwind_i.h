@@ -59,9 +59,7 @@ extern int aarch64_local_resume (unw_addr_space_t as, unw_cursor_t *cursor,
   } while (0)
 #endif
 
-#if defined(__FreeBSD__)
-#define GET_FPCTX(uc) ((unw_tdep_context_t *)(&uc->uc_mcontext.mc_spare))
-#else
+#if defined(__linux__)
 #define GET_FPCTX(uc) ((unw_fpsimd_context_t *)(&uc->uc_mcontext.__reserved))
 #endif
 

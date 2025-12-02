@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Checks if two specified <see cref="EventId"/> instances have the same value. They are equal if they have the same Id.
+        /// Checks if two specified <see cref="EventId"/> instances have the same value. They are equal if they have the same ID.
         /// </summary>
         /// <param name="left">The first <see cref="EventId"/>.</param>
         /// <param name="right">The second <see cref="EventId"/>.</param>
@@ -70,10 +70,10 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Indicates whether the current object is equal to another object of the same type. Two events are equal if they have the same id.
+        /// Compares the current instance to another object of the same type. Two events are equal if they have the same ID.
         /// </summary>
         /// <param name="other">An object to compare with this object.</param>
-        /// <returns><see langword="true" /> if the current object is equal to the other parameter; otherwise, <see langword="false" />.</returns>
+        /// <returns><see langword="true" /> if the current object is equal to <paramref name="other" />; otherwise, <see langword="false" />.</returns>
         public bool Equals(EventId other)
         {
             return Id == other.Id;

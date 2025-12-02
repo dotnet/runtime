@@ -33,14 +33,19 @@ struct DhContext
 class GCScan
 {
   public:
-
+#ifdef FEATURE_SIZED_REF_HANDLES
     static void GcScanSizedRefs(promote_func* fn, int condemned, int max_gen, ScanContext* sc);
+#endif // FEATURE_SIZED_REF_HANDLES
 
     // Regular stack Roots
     static void GcScanRoots (promote_func* fn, int condemned, int max_gen, ScanContext* sc);
 
     //
     static void GcScanHandles (promote_func* fn, int condemned, int max_gen, ScanContext* sc);
+
+#ifdef FEATURE_JAVAMARSHAL
+    static uint8_t** GcProcessBridgeObjects (int condemned, int max_gen, ScanContext* sc, size_t* numObjs);
+#endif //FEATURE_JAVAMARSHAL
 
     static void GcRuntimeStructuresValid (BOOL bValid);
 
@@ -80,8 +85,6 @@ class GCScan
 
     // post-promotions callback some roots were demoted
     static void GcDemote (int condemned, int max_gen, ScanContext* sc);
-
-    static size_t AskForMoreReservedMemory (size_t old_size, size_t need_size);
 
     static void VerifyHandleTable(int condemned, int max_gen, ScanContext* sc);
 

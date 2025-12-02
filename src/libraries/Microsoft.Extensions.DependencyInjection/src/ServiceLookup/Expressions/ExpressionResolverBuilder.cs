@@ -32,6 +32,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private static readonly ParameterExpression CaptureDisposableParameter = Expression.Parameter(typeof(object));
         private static readonly LambdaExpression CaptureDisposable = Expression.Lambda(
+                    delegateType: typeof(Func<object?, object?>),
                     Expression.Call(ScopeParameter, ServiceLookupHelpers.CaptureDisposableMethodInfo, CaptureDisposableParameter),
                     CaptureDisposableParameter);
 

@@ -260,7 +260,7 @@ namespace System.Xml
         private long _charactersFromEntities;
 
         // All entities that are currently being processed
-        private Dictionary<IDtdEntityInfo, IDtdEntityInfo>? _currentEntities;
+        private HashSet<IDtdEntityInfo>? _currentEntities;
 
         // DOM helpers
         private bool _disableUndeclaredEntityCheck;
@@ -368,7 +368,7 @@ namespace System.Xml
                 if (nt == null)
                 {
                     nt = new NameTable();
-                    Debug.Assert(_nameTableFromSettings == false);
+                    Debug.Assert(!_nameTableFromSettings);
                 }
                 else
                 {
@@ -8062,7 +8062,7 @@ namespace System.Xml
             // check entity recursion
             if (_currentEntities != null)
             {
-                if (_currentEntities.ContainsKey(entity))
+                if (_currentEntities.Contains(entity))
                 {
                     Throw(entity.IsParameterEntity ? SR.Xml_RecursiveParEntity : SR.Xml_RecursiveGenEntity, entity.Name,
                         _parsingStatesStack![_parsingStatesStackTop].LineNo, _parsingStatesStack[_parsingStatesStackTop].LinePos);
@@ -8076,9 +8076,9 @@ namespace System.Xml
             // register entity for recursion checkes
             if (entity != null)
             {
-                _currentEntities ??= new Dictionary<IDtdEntityInfo, IDtdEntityInfo>();
+                _currentEntities ??= new HashSet<IDtdEntityInfo>();
 
-                _currentEntities.Add(entity, entity);
+                _currentEntities.Add(entity);
             }
         }
 
@@ -9036,7 +9036,7 @@ namespace System.Xml
             else if (nt == null)
             {
                 nt = new NameTable();
-                Debug.Assert(_nameTableFromSettings == false);
+                Debug.Assert(!_nameTableFromSettings);
             }
             _nameTable = nt;
 

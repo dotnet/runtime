@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.IO;
@@ -10,7 +11,6 @@ using System.Linq;
 using System.Text.Json;
 using Microsoft.Extensions.Logging.EventSource;
 using Xunit;
-using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 
 namespace Microsoft.Extensions.Logging.Test
@@ -135,7 +135,7 @@ namespace Microsoft.Extensions.Logging.Test
                 var logger2 = loggerFactory.CreateLogger("Logger2");
                 var logger3 = loggerFactory.CreateLogger("Logger3");
                 var logger4 = loggerFactory.CreateLogger("Logger4");
-                
+
                 foreach (LogLevel level in Enum.GetValues(typeof(LogLevel)))
                 {
                     Assert.False(logger.IsEnabled(LogLevel.None));
@@ -192,6 +192,67 @@ namespace Microsoft.Extensions.Logging.Test
                     "E7FM", "E7MSG", "E7JS",
                     "OuterScopeJsonStop",
                     "E8FM", "E8MSG", "E8JS");
+            }
+        }
+
+        [Theory]
+        [InlineData(true, true, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, false, true)]
+        [InlineData(false, true, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73438", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public void Logs_TracingDetailsAsExpected_WithDefaults(bool hasTrace, bool useW3CFormatId, bool sampled)
+        {
+            using (var testListener = new TestEventListener())
+            {
+                var factory = CreateLoggerFactory();
+
+                var listenerSettings = new TestEventListener.ListenerSettings();
+                listenerSettings.Keywords = (EventKeywords)(-1);
+                listenerSettings.FilterSpec = null;
+                listenerSettings.Level = default(EventLevel);
+                testListener.EnableEvents(listenerSettings);
+
+                using Activity activity = new Activity("TestOperation");
+
+                if (hasTrace)
+                {
+                    if (useW3CFormatId)
+                    {
+                        activity.SetIdFormat(ActivityIdFormat.W3C);
+                    }
+                    else
+                    {
+                        activity.SetIdFormat(ActivityIdFormat.Hierarchical);
+                    }
+
+                    activity.Start();
+
+                    if (sampled)
+                    {
+                        activity.ActivityTraceFlags = ActivityTraceFlags.Recorded;
+                    }
+                }
+
+                var logger = factory.CreateLogger("TestLogger");
+
+                logger.LogInformation("Hello world");
+
+                foreach (var eventJson in testListener.Events)
+                {
+                    if (hasTrace && useW3CFormatId)
+                    {
+                        Assert.Contains($@"""ActivityTraceId"":""{activity.TraceId.ToHexString()}""", eventJson);
+                        Assert.Contains($@"""ActivitySpanId"":""{activity.SpanId.ToHexString()}""", eventJson);
+                        Assert.Contains($@"""ActivityTraceFlags"":""{(activity.Recorded ? "1" : "0")}""", eventJson);
+                    }
+                    else
+                    {
+                        Assert.Contains(@"""ActivityTraceId"":""""", eventJson);
+                        Assert.Contains(@"""ActivitySpanId"":""""", eventJson);
+                        Assert.Contains(@"""ActivityTraceFlags"":""""", eventJson);
+                    }
+                }
             }
         }
 
@@ -588,7 +649,7 @@ namespace Microsoft.Extensions.Logging.Test
                 // Write some MessageJson events with null string.
                 for (var i = 0; i < 100; i++)
                 {
-                    LoggingEventSource.Instance.MessageJson(LogLevel.Trace, 1, "MyLogger", 5, null, null, "testJson", "formattedMessage");
+                    LoggingEventSource.Instance.MessageJson(LogLevel.Trace, 1, "MyLogger", 5, null, "testJson", "testJson", "formattedMessage", string.Empty, string.Empty, string.Empty);
                 }
 
                 bool containsNullEventName = false;
@@ -605,7 +666,7 @@ namespace Microsoft.Extensions.Logging.Test
                     }
                 }
 
-                Assert.True(containsNullEventName, "EventName and ExceptionJson is supposed to be null but it isn't.");
+                Assert.True(containsNullEventName, "EventName is supposed to be null but it isn't.");
                 Assert.True(containsFormattedMessage, "FormattedMessage is supposed to be present but it isn't.");
             }
         }
@@ -904,7 +965,7 @@ namespace Microsoft.Extensions.Logging.Test
                 @"""FormattedMessage"":""Logger2 Event5 Critical bar 23 45") },
 
 // Starting in netcoreapp3.0 Exception.ToString() puts a newline before inner exceptions
-#if NETCOREAPP
+#if NET
             { "E5JS", (e) => VerifySingleEvent(e, "Logger2", EventTypes.MessageJson, 5, null, LogLevel.Critical,
                 @"""ArgumentsJson"":{""stringParam"":""bar"",""int1Param"":""23"",""int2Param"":""45""",
                 @$"""ExceptionJson"":{{""TypeName"":""System.Exception"",""Message"":""oops"",""HResult"":""-2146233088"",""VerboseMessage"":""System.Exception: oops{EscapedNewline()} ---\u003E System.Exception: inner oops") },

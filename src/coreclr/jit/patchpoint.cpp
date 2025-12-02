@@ -34,7 +34,9 @@ class PatchpointTransformer
     Compiler* compiler;
 
 public:
-    PatchpointTransformer(Compiler* compiler) : ppCounterLclNum(BAD_VAR_NUM), compiler(compiler)
+    PatchpointTransformer(Compiler* compiler)
+        : ppCounterLclNum(BAD_VAR_NUM)
+        , compiler(compiler)
     {
     }
 
@@ -45,12 +47,6 @@ public:
     //   Number of patchpoints transformed.
     int Run()
     {
-        // If the first block is a patchpoint, insert a scratch block.
-        if (compiler->fgFirstBB->HasFlag(BBF_PATCHPOINT))
-        {
-            compiler->fgEnsureFirstBBisScratch();
-        }
-
         int count = 0;
         for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB->Next()))
         {
@@ -101,13 +97,12 @@ private:
     // Arguments:
     //    jumpKind - jump kind for the new basic block
     //    insertAfter - basic block, after which compiler has to insert the new one.
-    //    jumpDest - jump target for the new basic block. Defaults to nullptr.
     //
     // Return Value:
     //    new basic block.
-    BasicBlock* CreateAndInsertBasicBlock(BBKinds jumpKind, BasicBlock* insertAfter, BasicBlock* jumpDest = nullptr)
+    BasicBlock* CreateAndInsertBasicBlock(BBKinds jumpKind, BasicBlock* insertAfter)
     {
-        BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true, jumpDest);
+        BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true);
         block->SetFlags(BBF_IMPORTED);
         return block;
     }
@@ -143,16 +138,21 @@ private:
 
         // Current block now becomes the test block
         BasicBlock* remainderBlock = compiler->fgSplitBlockAtBeginning(block);
-        BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_ALWAYS, block, block->Next());
+        BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_ALWAYS, block);
 
         // Update flow and flags
-        block->SetCond(remainderBlock);
         block->SetFlags(BBF_INTERNAL);
+        helperBlock->SetFlags(BBF_BACKWARD_JUMP);
 
-        helperBlock->SetFlags(BBF_BACKWARD_JUMP | BBF_NONE_QUIRK);
+        assert(block->TargetIs(remainderBlock));
+        FlowEdge* const falseEdge = compiler->fgAddRefPred(helperBlock, block);
+        FlowEdge* const trueEdge  = block->GetTargetEdge();
+        trueEdge->setLikelihood(HIGH_PROBABILITY / 100.0);
+        falseEdge->setLikelihood((100 - HIGH_PROBABILITY) / 100.0);
+        block->SetCond(trueEdge, falseEdge);
 
-        compiler->fgAddRefPred(helperBlock, block);
-        compiler->fgAddRefPred(remainderBlock, helperBlock);
+        FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, helperBlock);
+        helperBlock->SetTargetEdge(newEdge);
 
         // Update weights
         remainderBlock->inheritWeight(block);
@@ -190,8 +190,6 @@ private:
     //  ppCounter = <initial value>
     void TransformEntry(BasicBlock* block)
     {
-        assert(!block->HasFlag(BBF_PATCHPOINT));
-
         int initialCounterValue = JitConfig.TC_OnStackReplacement_InitialCounter();
 
         if (initialCounterValue < 0)
@@ -202,7 +200,7 @@ private:
         GenTree* initialCounterNode = compiler->gtNewIconNode(initialCounterValue, TYP_INT);
         GenTree* ppCounterStore     = compiler->gtNewStoreLclVarNode(ppCounterLclNum, initialCounterNode);
 
-        compiler->fgNewStmtNearEnd(block, ppCounterStore);
+        compiler->fgNewStmtAtBeg(block, ppCounterStore);
     }
 
     //------------------------------------------------------------------------
@@ -233,15 +231,14 @@ private:
         }
 
         // Update flow
-        block->SetKindAndTarget(BBJ_THROW);
+        block->SetKindAndTargetEdge(BBJ_THROW);
 
         // Add helper call
         //
         // call PartialCompilationPatchpointHelper(ilOffset)
         //
         GenTree*     ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
-        GenTreeCall* helperCall =
-            compiler->gtNewHelperCallNode(CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT, TYP_VOID, ilOffsetNode);
+        GenTreeCall* helperCall = compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT_FORCED, TYP_VOID, ilOffsetNode);
 
         compiler->fgNewStmtAtEnd(block, helperCall);
     }

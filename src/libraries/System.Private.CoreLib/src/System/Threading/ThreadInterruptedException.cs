@@ -14,28 +14,29 @@ namespace System.Threading
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ThreadInterruptedException : SystemException
     {
-        public ThreadInterruptedException() : base(
-#if CORECLR
-            GetMessageFromNativeResources(ExceptionMessageKind.ThreadInterrupted)
-#else
-            SR.Threading_ThreadInterrupted
-#endif
-            )
+        public ThreadInterruptedException() : base(GetDefaultMessage())
         {
             HResult = HResults.COR_E_THREADINTERRUPTED;
         }
 
         public ThreadInterruptedException(string? message)
-            : base(message)
+            : base(message ?? GetDefaultMessage())
         {
             HResult = HResults.COR_E_THREADINTERRUPTED;
         }
 
         public ThreadInterruptedException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? GetDefaultMessage(), innerException)
         {
             HResult = HResults.COR_E_THREADINTERRUPTED;
         }
+
+        private static string GetDefaultMessage()
+#if CORECLR
+            => GetMessageFromNativeResources(ExceptionMessageKind.ThreadInterrupted);
+#else
+            => SR.Threading_ThreadInterrupted;
+#endif
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]

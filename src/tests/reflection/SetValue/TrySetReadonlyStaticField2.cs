@@ -5,47 +5,37 @@ using System;
 using System.Reflection;
 using Xunit;
 
-public class TestSetValue
+public class SetValueScenario
 {
     public static readonly long MagicNumber = 42;
 }
 
-public class TestSetValueDirect
+public class SetValueDirectScenario
 {
     public static readonly string MagicString = "";
 }
 
-public class Test_TrySetReadonlyStaticField2
+// Validate that the readonly static field cannot be set via reflection when the static constructor is triggered
+// by the reflection SetValue operation itself.
+public class TrySetReadonlyStaticField2
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestSetValue()
     {
-        // Validate that the readonly static field cannot be set via reflection when the static constructor is triggered 
-        // by the reflection SetValue operation itself.
-
-        try
+        Assert.Throws<FieldAccessException>(() =>
         {
-            typeof(TestSetValue).GetField(nameof(TestSetValue.MagicNumber)).SetValue(null, 0x123456789);
-            Console.WriteLine("FAILED: TestSetValue - Exception expected");
-            return -1;
-        }
-        catch (FieldAccessException)
-        {
-            Console.WriteLine("TestSetValue - Caught expected exception");
-        }
+            typeof(SetValueScenario).GetField(nameof(SetValueScenario.MagicNumber)).SetValue(null, 0x123456789);
+        });
+    }
 
-        try 
+    [Fact]
+    public static void TestSetValueDirect()
+    {
+        Assert.Throws<FieldAccessException>(() =>
         {
             int i = 0;
-            typeof(TestSetValueDirect).GetField(nameof(TestSetValueDirect.MagicString)).SetValueDirect(__makeref(i), "Hello");
-            Console.WriteLine("FAILED: TestSetValueDirect - Exception expected");
-            return -1;
-        }
-        catch (FieldAccessException)
-        {
-            Console.WriteLine("TestSetValueDirect - Caught expected exception");
-        }
-        return 100;
+            typeof(SetValueDirectScenario).GetField(nameof(SetValueDirectScenario.MagicString)).SetValueDirect(__makeref(i), "Hello");
+        });
     }
 }
 

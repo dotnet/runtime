@@ -178,7 +178,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             if ((attributes & GenericParameterAttributes.DefaultConstructorConstraint) != 0)
             {
                 // value types always have default constructors
-                if (!type.IsValueType && (type.GetConstructor(Type.EmptyTypes) == null))
+                if (!type.IsValueType && ((type.GetConstructor(Type.EmptyTypes) == null) || type.IsAbstract))
                 {
                     return false;
                 }

@@ -4,7 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO.Compression;
-using System.Reflection;
+using System.Reflection.Metadata;
+using System.Text;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -184,7 +185,7 @@ namespace ILCompiler.IBC
 
             var mibcModule = EcmaModule.Create(tsc, peReader, null, null, new CustomCanonResolver(tsc));
 
-            var assemblyDictionary = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod("AssemblyDictionary", null);
+            EcmaMethod assemblyDictionary = mibcModule.GetGlobalModuleType().GetMethod("AssemblyDictionary"u8, null);
             IEnumerable<MethodProfileData> loadedMethodProfileData = Enumerable.Empty<MethodProfileData>();
 
             EcmaMethodIL ilBody = EcmaMethodIL.Create(assemblyDictionary);
@@ -266,7 +267,7 @@ namespace ILCompiler.IBC
         public static MibcConfig ParseMibcConfig(TypeSystemContext tsc, PEReader pEReader)
         {
             EcmaModule mibcModule = EcmaModule.Create(tsc, pEReader, null);
-            EcmaMethod mibcConfigMth = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod(nameof(MibcConfig), null);
+            EcmaMethod mibcConfigMth = mibcModule.GetGlobalModuleType().GetMethod("MibcConfig"u8, null);
 
             if (mibcConfigMth == null)
                 return null;
@@ -353,7 +354,7 @@ namespace ILCompiler.IBC
         ///
         /// This format is designed to be extensible to hold more data as we add new per method profile data without breaking existing parsers.
         /// </summary>
-        private static IEnumerable<MethodProfileData> ReadMIbcGroup(EcmaMethod method)
+        private static List<MethodProfileData> ReadMIbcGroup(EcmaMethod method)
         {
             EcmaMethodIL ilBody = EcmaMethodIL.Create(method);
             MetadataLoaderForPgoData metadataLoader = new MetadataLoaderForPgoData(ilBody);
@@ -369,6 +370,7 @@ namespace ILCompiler.IBC
             Dictionary<MethodDesc, int> weights = null;
             List<long> instrumentationDataLongs = null;
             PgoSchemaElem[] pgoSchemaData = null;
+            var methodProfileData = new List<MethodProfileData>();
 
             while (ilReader.HasNext)
             {
@@ -552,8 +554,7 @@ namespace ILCompiler.IBC
                             if (methodInProgress != null)
                             {
                                 // If the method being loaded didn't have meaningful input, skip
-                                MethodProfileData mibcData = new MethodProfileData((MethodDesc)methodInProgress, MethodProfilingDataFlags.ReadMethodCode, exclusiveWeight, weights, 0xFFFFFFFF, pgoSchemaData);
-                                yield return mibcData;
+                                methodProfileData.Add(new MethodProfileData((MethodDesc)methodInProgress, MethodProfilingDataFlags.ReadMethodCode, exclusiveWeight, weights, 0xFFFFFFFF, pgoSchemaData));
                             }
                             state = MibcGroupParseState.LookingForNextMethod;
                             exclusiveWeight = 0;
@@ -608,6 +609,8 @@ namespace ILCompiler.IBC
                     }
                 }
             }
+
+            return methodProfileData;
         }
 
         /// <summary>
@@ -618,6 +621,8 @@ namespace ILCompiler.IBC
         {
             private sealed class CanonModule : ModuleDesc, IAssemblyDesc
             {
+                public ReadOnlySpan<byte> Name => "System.Private.Canon"u8;
+
                 public CanonModule(TypeSystemContext wrappedContext) : base(wrappedContext, null)
                 {
                 }
@@ -632,19 +637,19 @@ namespace ILCompiler.IBC
                     throw new NotImplementedException();
                 }
 
-                public override object GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
+                public override object GetType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, NotFoundBehavior notFoundBehavior)
                 {
                     TypeSystemContext context = Context;
 
-                    if (context.SupportsCanon && (nameSpace == context.CanonType.Namespace) && (name == context.CanonType.Name))
+                    if (context.SupportsCanon && nameSpace.SequenceEqual(context.CanonType.Namespace) && name.SequenceEqual(context.CanonType.Name))
                         return Context.CanonType;
-                    if (context.SupportsUniversalCanon && (nameSpace == context.UniversalCanonType.Namespace) && (name == context.UniversalCanonType.Name))
+                    if (context.SupportsUniversalCanon && nameSpace.SequenceEqual(context.UniversalCanonType.Namespace) && name.SequenceEqual(context.UniversalCanonType.Name))
                         return Context.UniversalCanonType;
                     else
                     {
                         if (notFoundBehavior != NotFoundBehavior.ReturnNull)
                         {
-                            var failure = ResolutionFailure.GetTypeLoadResolutionFailure(nameSpace, name, "System.Private.Canon");
+                            var failure = ResolutionFailure.GetTypeLoadResolutionFailure(Encoding.UTF8.GetString(nameSpace), Encoding.UTF8.GetString(name), "System.Private.Canon");
                             if (notFoundBehavior == NotFoundBehavior.Throw)
                                 failure.Throw();
 
@@ -654,14 +659,14 @@ namespace ILCompiler.IBC
                     }
                 }
 
-                public AssemblyName GetName()
+                public AssemblyNameInfo GetName()
                 {
-                    return new AssemblyName("System.Private.Canon");
+                    return new AssemblyNameInfo("System.Private.Canon");
                 }
             }
 
             private CanonModule _canonModule;
-            private AssemblyName _canonModuleName;
+            private AssemblyNameInfo _canonModuleName;
             private IModuleResolver _wrappedResolver;
 
             public CustomCanonResolver(TypeSystemContext wrappedContext)
@@ -671,7 +676,7 @@ namespace ILCompiler.IBC
                 _wrappedResolver = wrappedContext;
             }
 
-            ModuleDesc IModuleResolver.ResolveAssembly(AssemblyName name, bool throwIfNotFound)
+            ModuleDesc IModuleResolver.ResolveAssembly(AssemblyNameInfo name, bool throwIfNotFound)
             {
                 if (name.Name == _canonModuleName.Name)
                     return _canonModule;

@@ -1,12 +1,13 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.Cli.Build;
 using System;
 using System.IO;
+using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.DotNet.TestUtils;
 using Xunit;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
+namespace HostActivation.Tests
 {
     public class DotnetArgValidation : IClassFixture<DotnetArgValidation.SharedTestState>
     {
@@ -24,7 +25,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             TestContext.BuiltDotNet.Exec("exec", assemblyName)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(expectedToFail: true)
+                .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining($"The application to execute does not exist: '{assemblyName}'");
         }
@@ -36,7 +37,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             TestContext.BuiltDotNet.Exec("exec", assemblyName)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(expectedToFail: true)
+                .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining($"The application to execute does not exist: '{assemblyName}'");
         }
@@ -51,7 +52,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             TestContext.BuiltDotNet.Exec("exec", assemblyName)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(expectedToFail: true)
+                .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining($"dotnet exec needs a managed .dll or .exe extension. The application specified was '{assemblyName}'");
         }
@@ -62,7 +63,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             TestContext.BuiltDotNet.Exec("--fx-version")
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(expectedToFail: true)
+                .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining($"Failed to parse supported options or their values:");
         }
@@ -75,39 +76,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .WorkingDirectory(sharedTestState.BaseDirectory.Location)
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(expectedToFail: true)
+                .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining($"The application '{fileName}' does not exist")
                 .And.FindAnySdk(false);
-        }
-
-        [Fact]
-        public void DotNetInfo_NoSDK()
-        {
-            TestContext.BuiltDotNet.Exec("--info")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutMatching($@"Architecture:\s*{TestContext.BuildArchitecture}")
-                .And.HaveStdOutMatching($@"RID:\s*{TestContext.BuildRID}");
-        }
-
-        [Fact]
-        public void DotNetInfo_WithSDK()
-        {
-            DotNetCli dotnet = new DotNetBuilder(sharedTestState.BaseDirectory.Location, TestContext.BuiltDotNet.BinPath, "withSdk")
-                .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("1.0.0")
-                .AddMockSDK("1.0.0", "1.0.0")
-                .Build();
-
-            dotnet.Exec("--info")
-                .WorkingDirectory(sharedTestState.BaseDirectory.Location)
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should().Pass()
-                .And.NotHaveStdOutMatching($@"RID:\s*{TestContext.BuildRID}");
         }
 
         // Return a non-existent path that contains a mix of / and \
@@ -118,17 +90,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         public class SharedTestState : IDisposable
         {
-            public RepoDirectoriesProvider RepoDirectories { get; }
-
             public TestArtifact BaseDirectory { get; }
 
             public SharedTestState()
             {
-                BaseDirectory = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "argValidation")));
+                BaseDirectory = TestArtifact.Create("argValidation");
 
                 // Create an empty global.json file
                 Directory.CreateDirectory(BaseDirectory.Location);
-                File.WriteAllText(Path.Combine(BaseDirectory.Location, "global.json"), "{}");
+                GlobalJson.CreateEmpty(BaseDirectory.Location);
             }
 
             public void Dispose()

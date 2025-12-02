@@ -37,7 +37,8 @@ namespace System.Threading.Tasks.Tests
 
         protected override void QueueTask(Task task)
         {
-            if (task == null) throw new ArgumentNullException("When requesting to QueueTask, the input task can not be null");
+            ArgumentNullException.ThrowIfNull(task);
+
             Task.Factory.StartNew(() =>
             {
                 lock (_lockObj) //Locking so that if multiple threads in threadpool does not incorrectly increment the counter.
@@ -244,7 +245,7 @@ namespace System.Threading.Tasks.Tests
             }
 
             //finally wait for all of the tasks, to ensure they all executed properly
-            Task.WaitAll(taskList.ToArray());
+            Task.WaitAll(taskList);
 
             if (!completeBeforeTaskWait)
             {
@@ -292,7 +293,7 @@ namespace System.Threading.Tasks.Tests
 
             //finally unblock the blocjedTask and wait for all of the tasks, to ensure they all executed properly
             blockReaderTaskEvent.Set();
-            Task.WaitAll(taskList.ToArray());
+            Task.WaitAll(taskList);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -325,7 +326,7 @@ namespace System.Threading.Tasks.Tests
             }
 
             blockExclusiveTaskEvent.Set();
-            Task.WaitAll(taskList.ToArray());
+            Task.WaitAll(taskList);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -482,7 +483,7 @@ namespace System.Threading.Tasks.Tests
             }
 
             // Wait for all tasks to complete, then complete the schedulers
-            Task.WaitAll(tasks.ToArray());
+            Task.WaitAll(tasks);
             foreach (var cesp in cesps)
             {
                 cesp.Complete();

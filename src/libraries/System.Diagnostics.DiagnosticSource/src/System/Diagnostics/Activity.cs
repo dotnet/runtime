@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Collections;
@@ -53,15 +54,18 @@ namespace System.Diagnostics
     /// but the exception is suppressed, and the operation does something reasonable (typically
     /// doing nothing).
     /// </summary>
+    [DebuggerDisplay("{DebuggerDisplayString,nq}")]
+    [DebuggerTypeProxy(typeof(ActivityDebuggerProxy))]
     public partial class Activity : IDisposable
     {
 #pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
         private static readonly IEnumerable<KeyValuePair<string, string?>> s_emptyBaggageTags = new KeyValuePair<string, string?>[0];
         private static readonly IEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = new KeyValuePair<string, object?>[0];
-        private static readonly IEnumerable<ActivityLink> s_emptyLinks = new ActivityLink[0];
-        private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new ActivityEvent[0];
+        private static readonly IEnumerable<ActivityLink> s_emptyLinks = new DiagLinkedList<ActivityLink>();
+        private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new DiagLinkedList<ActivityEvent>();
 #pragma warning restore CA1825
         private static readonly ActivitySource s_defaultSource = new ActivitySource(string.Empty);
+        private static readonly AsyncLocal<Activity?> s_current = new AsyncLocal<Activity?>();
 
         private const byte ActivityTraceFlagsIsSet = 0b_1_0000000; // Internal flag to indicate if flags have been set
         private const int RequestIdMaxLength = 1024;
@@ -129,6 +133,22 @@ namespace System.Diagnostics
         /// Gets whether the parent context was created from remote propagation.
         /// </summary>
         public bool HasRemoteParent { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the current operation (Activity) for the current thread. This flows
+        /// across async calls.
+        /// </summary>
+        public static Activity? Current
+        {
+            get { return s_current.Value; }
+            set
+            {
+                if (ValidateSetCurrent(value))
+                {
+                    SetCurrent(value);
+                }
+            }
+        }
 
         /// <summary>
         /// Sets the status code and description on the current activity object.
@@ -200,7 +220,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// This is an ID that is specific to a particular request.   Filtering
-        /// to a particular ID insures that you get only one request that matches.
+        /// to a particular ID ensures that you get only one request that matches.
         /// Id has a hierarchical structure: '|root-id.id1_id2.id3_' Id is generated when
         /// <see cref="Start"/> is called by appending suffix to Parent.Id
         /// or ParentId; Activity has no Id until it started
@@ -226,7 +246,7 @@ namespace System.Diagnostics
                     Span<char> flagsChars = stackalloc char[2];
                     HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _w3CIdFlags), flagsChars, 0, HexConverter.Casing.Lower);
                     string id =
-#if NET6_0_OR_GREATER
+#if NET
                         string.Create(null, stackalloc char[128], $"00-{_traceId}-{_spanId}-{flagsChars}");
 #else
                         "00-" + _traceId + "-" + _spanId + "-" + flagsChars.ToString();
@@ -258,7 +278,7 @@ namespace System.Diagnostics
                         Span<char> flagsChars = stackalloc char[2];
                         HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _parentTraceFlags), flagsChars, 0, HexConverter.Casing.Lower);
                         string parentId =
-#if NET6_0_OR_GREATER
+#if NET
                             string.Create(null, stackalloc char[128], $"00-{_traceId}-{_parentSpanId}-{flagsChars}");
 #else
                             "00-" + _traceId + "-" + _parentSpanId + "-" + flagsChars.ToString();
@@ -512,6 +532,91 @@ namespace System.Diagnostics
             if (_events != null || Interlocked.CompareExchange(ref _events, new DiagLinkedList<ActivityEvent>(e), null) != null)
             {
                 _events.Add(e);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Add an <see cref="ActivityEvent" /> object containing the exception information to the <see cref="Events" /> list.
+        /// </summary>
+        /// <param name="exception">The exception to add to the attached events list.</param>
+        /// <param name="tags">The tags to add to the exception event.</param>
+        /// <param name="timestamp">The timestamp to add to the exception event.</param>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
+        /// <remarks>
+        /// <para>- The name of the event will be "exception", and it will include the tags "exception.message", "exception.stacktrace", and "exception.type",
+        /// in addition to the tags provided in the <paramref name="tags"/> parameter.</para>
+        /// <para>- Any registered <see cref="ActivityListener"/> with the <see cref="ActivityListener.ExceptionRecorder"/> callback will be notified about this exception addition
+        /// before the <see cref="ActivityEvent" /> object is added to the <see cref="Events" /> list.</para>
+        /// <para>- Any registered <see cref="ActivityListener"/> with the <see cref="ActivityListener.ExceptionRecorder"/> callback that adds "exception.message", "exception.stacktrace", or "exception.type" tags
+        /// will not have these tags overwritten, except by any subsequent <see cref="ActivityListener"/> that explicitly overwrites them.</para>
+        /// </remarks>
+        public Activity AddException(Exception exception, in TagList tags = default, DateTimeOffset timestamp = default)
+        {
+            ArgumentNullException.ThrowIfNull(exception);
+
+            TagList exceptionTags = tags;
+
+            Source.NotifyActivityAddException(this, exception, ref exceptionTags);
+
+            const string ExceptionEventName = "exception";
+            const string ExceptionMessageTag = "exception.message";
+            const string ExceptionStackTraceTag = "exception.stacktrace";
+            const string ExceptionTypeTag = "exception.type";
+
+            bool hasMessage = false;
+            bool hasStackTrace = false;
+            bool hasType = false;
+
+            for (int i = 0; i < exceptionTags.Count; i++)
+            {
+                if (exceptionTags[i].Key == ExceptionMessageTag)
+                {
+                    hasMessage = true;
+                }
+                else if (exceptionTags[i].Key == ExceptionStackTraceTag)
+                {
+                    hasStackTrace = true;
+                }
+                else if (exceptionTags[i].Key == ExceptionTypeTag)
+                {
+                    hasType = true;
+                }
+            }
+
+            if (!hasMessage)
+            {
+                exceptionTags.Add(new KeyValuePair<string, object?>(ExceptionMessageTag, exception.Message));
+            }
+
+            if (!hasStackTrace)
+            {
+                exceptionTags.Add(new KeyValuePair<string, object?>(ExceptionStackTraceTag, exception.ToString()));
+            }
+
+            if (!hasType)
+            {
+                exceptionTags.Add(new KeyValuePair<string, object?>(ExceptionTypeTag, exception.GetType().ToString()));
+            }
+
+            return AddEvent(new ActivityEvent(ExceptionEventName, timestamp, ref exceptionTags));
+        }
+
+        /// <summary>
+        /// Add an <see cref="ActivityLink"/> to the <see cref="Links"/> list.
+        /// </summary>
+        /// <param name="link">The <see cref="ActivityLink"/> to add.</param>
+        /// <returns><see langword="this" /> for convenient chaining.</returns>
+        /// <remarks>
+        /// For contexts that are available during span creation, adding links at span creation is preferred to calling <see cref="AddLink(ActivityLink)" /> later,
+        /// because head sampling decisions can only consider information present during span creation.
+        /// </remarks>
+        public Activity AddLink(ActivityLink link)
+        {
+            if (_links != null || Interlocked.CompareExchange(ref _links, new DiagLinkedList<ActivityLink>(link), null) != null)
+            {
+                _links.Add(link);
             }
 
             return this;
@@ -1128,7 +1233,9 @@ namespace System.Diagnostics
                     activity._parentSpanId = parentContext.SpanId.ToString();
                 }
 
-                activity.ActivityTraceFlags = parentContext.TraceFlags;
+                // Note: Don't inherit Recorded from parent as it is set below
+                // based on sampling decision
+                activity.ActivityTraceFlags = parentContext.TraceFlags & ~ActivityTraceFlags.Recorded;
                 activity._parentTraceFlags = (byte)parentContext.TraceFlags;
                 activity.HasRemoteParent = parentContext.IsRemote;
             }
@@ -1151,6 +1258,21 @@ namespace System.Diagnostics
             }
 
             return activity;
+        }
+
+        private static void SetCurrent(Activity? activity)
+        {
+            EventHandler<ActivityChangedEventArgs>? handler = CurrentChanged;
+            if (handler is null)
+            {
+                s_current.Value = activity;
+            }
+            else
+            {
+                Activity? previous = s_current.Value;
+                s_current.Value = activity;
+                handler.Invoke(null, new ActivityChangedEventArgs(previous, activity));
+            }
         }
 
         /// <summary>
@@ -1719,6 +1841,15 @@ namespace System.Diagnostics
             }
         }
 
+        private string DebuggerDisplayString
+        {
+            get
+            {
+                string? id = Id;
+                return $"OperationName = {OperationName}, Id = {(id is not null ? id : "(null)")}";
+            }
+        }
+
         [Flags]
         private enum State : byte
         {
@@ -1884,7 +2015,7 @@ namespace System.Diagnostics
         /// Sets the bytes in 'outBytes' to be random values. outBytes.Length must be either 8 or 16 bytes.
         /// </summary>
         /// <param name="outBytes"></param>
-        internal static unsafe void SetToRandomBytes(Span<byte> outBytes)
+        internal static void SetToRandomBytes(Span<byte> outBytes)
         {
             Debug.Assert(outBytes.Length == 16 || outBytes.Length == 8);
             RandomNumberGenerator r = RandomNumberGenerator.Current;
@@ -1919,26 +2050,12 @@ namespace System.Diagnostics
             return (byte)((hi << 4) | lo);
         }
 
+        private static readonly SearchValues<char> s_hexLowerChars = SearchValues.Create("0123456789abcdef");
+
         internal static bool IsLowerCaseHexAndNotAllZeros(ReadOnlySpan<char> idData)
         {
             // Verify lower-case hex and not all zeros https://w3c.github.io/trace-context/#field-value
-            bool isNonZero = false;
-            int i = 0;
-            for (; i < idData.Length; i++)
-            {
-                char c = idData[i];
-                if (!HexConverter.IsHexLowerChar(c))
-                {
-                    return false;
-                }
-
-                if (c != '0')
-                {
-                    isNonZero = true;
-                }
-            }
-
-            return isNonZero;
+            return !idData.ContainsAnyExcept(s_hexLowerChars) && idData.ContainsAnyExcept('0');
         }
     }
 
@@ -2061,5 +2178,31 @@ namespace System.Diagnostics
         {
             ActivityTraceId.SetSpanFromHexChars(ToHexString().AsSpan(), destination);
         }
+    }
+
+    internal sealed class ActivityDebuggerProxy(Activity activity)
+    {
+        public ActivityTraceFlags ActivityTraceFlags => activity.ActivityTraceFlags;
+        public List<KeyValuePair<string, string?>> Baggage => new List<KeyValuePair<string, string?>>(activity.Baggage);
+        public ActivityContext Context => activity.Context;
+        public string DisplayName => activity.DisplayName;
+        public TimeSpan Duration => activity.Duration;
+        public List<ActivityEvent> Events => new List<ActivityEvent>(activity.Events);
+        public bool HasRemoteParent => activity.HasRemoteParent;
+        public string? Id => activity.Id;
+        public ActivityKind Kind => activity.Kind;
+        public List<ActivityLink> Links => new List<ActivityLink>(activity.Links);
+        public string OperationName => activity.OperationName;
+        public Activity? Parent => activity.Parent;
+        public string? ParentId => activity.ParentId;
+        public ActivitySpanId ParentSpanId => activity.ParentSpanId;
+        public ActivitySource Source => activity.Source;
+        public ActivitySpanId SpanId => activity.SpanId;
+        public DateTime StartTimeUtc => activity.StartTimeUtc;
+        public ActivityStatusCode Status => activity.Status;
+        public string? StatusDescription => activity.StatusDescription;
+        public List<KeyValuePair<string, object?>> TagObjects => new List<KeyValuePair<string, object?>>(activity.TagObjects);
+        public ActivityTraceId TraceId => activity.TraceId;
+        public string? TraceStateString => activity.TraceStateString;
     }
 }

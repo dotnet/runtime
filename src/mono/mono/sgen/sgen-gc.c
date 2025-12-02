@@ -2733,32 +2733,9 @@ gc_pump_callback (void)
 }
 #endif
 
-#if defined(HOST_BROWSER) || defined(HOST_WASI)
-extern gboolean mono_wasm_enable_gc;
-#endif
-
 void
 sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean forced_serial, gboolean stw)
 {
-#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
-	if (!mono_wasm_enable_gc) {
-		g_assert (stw); //can't handle non-stw mode (IE, domain unload)
-		//we ignore forced_serial
-
-		//There's a window for racing where we're executing other bg jobs before the GC, they trigger a GC request and it overrides this one.
-		//I belive this case to be benign as it will, in the worst case, upgrade a minor to a major collection.
-		if (gc_request.generation_to_collect <= generation_to_collect) {
-			gc_request.requested_size = requested_size;
-			gc_request.generation_to_collect = generation_to_collect;
-			gc_request.reason = reason;
-			sgen_client_schedule_background_job (gc_pump_callback);
-		}
-
-		sgen_degraded_mode = 1; //enable degraded mode so allocation can continue
-		return;
-	}
-#endif
-
 	sgen_perform_collection_inner (requested_size, generation_to_collect, reason, forced_serial, stw);
 }
 /*
@@ -2848,6 +2825,9 @@ sgen_gc_invoke_finalizers (void)
 
 	g_assert (!pending_unqueued_finalizer);
 
+	gboolean gchandle_allocated = FALSE;
+	guint32 gchandle = 0;
+
 	/* FIXME: batch to reduce lock contention */
 	while (sgen_have_pending_finalizers ()) {
 		GCObject *obj;
@@ -2878,8 +2858,16 @@ sgen_gc_invoke_finalizers (void)
 		if (!obj)
 			break;
 
+		// We explicitly pin the object via a gchandle so we don't rely on the ref being
+		// present on stack/regs which is not scannable on WASM.
+		if (!gchandle_allocated) {
+			gchandle = sgen_gchandle_new (obj, TRUE);
+			gchandle_allocated = TRUE;
+		} else {
+			sgen_gchandle_set_target (gchandle, obj);
+		}
+
 		count++;
-		/* the object is on the stack so it is pinned */
 		/*g_print ("Calling finalizer for object: %p (%s)\n", obj, sgen_client_object_safe_name (obj));*/
 		sgen_client_run_finalize (obj);
 	}
@@ -2888,6 +2876,9 @@ sgen_gc_invoke_finalizers (void)
 		mono_memory_write_barrier ();
 		pending_unqueued_finalizer = FALSE;
 	}
+
+	if (gchandle_allocated)
+		sgen_gchandle_free (gchandle);
 
 	return count;
 }
@@ -3455,7 +3446,7 @@ sgen_gc_init (void)
 	size_t soft_limit = 0;
 	int result;
 	gboolean debug_print_allowance = FALSE;
-	double allowance_ratio = 0, save_target = 0;
+	double allowance_ratio = 0;
 	gboolean cement_enabled = TRUE;
 
 	do {
@@ -3612,15 +3603,6 @@ sgen_gc_init (void)
 				}
 				continue;
 			}
-			if (g_str_has_prefix (opt, "save-target-ratio=")) {
-				double val;
-				opt = strchr (opt, '=') + 1;
-				if (parse_double_in_interval (MONO_GC_PARAMS_NAME, "save-target-ratio", opt,
-						SGEN_MIN_SAVE_TARGET_RATIO, SGEN_MAX_SAVE_TARGET_RATIO, &val)) {
-					save_target = val;
-				}
-				continue;
-			}
 			if (g_str_has_prefix (opt, "default-allowance-ratio=")) {
 				double val;
 				opt = strchr (opt, '=') + 1;
@@ -3696,14 +3678,12 @@ sgen_gc_init (void)
 			fprintf (stderr, "  [no-]cementing\n");
 			fprintf (stderr, "  [no-]dynamic-nursery\n");
 			fprintf (stderr, "  remset-copy-clear-par\n");
+			fprintf (stderr, "  default-allowance-ratio=R (where R must be between %.2f - %.2f).\n", SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO, SGEN_MAX_ALLOWANCE_NURSERY_SIZE_RATIO);
 			if (sgen_major_collector.print_gc_param_usage)
 				sgen_major_collector.print_gc_param_usage ();
 			if (sgen_minor_collector.print_gc_param_usage)
 				sgen_minor_collector.print_gc_param_usage ();
 			sgen_client_print_gc_params_usage ();
-			fprintf (stderr, " Experimental options:\n");
-			fprintf (stderr, "  save-target-ratio=R (where R must be between %.2f - %.2f).\n", SGEN_MIN_SAVE_TARGET_RATIO, SGEN_MAX_SAVE_TARGET_RATIO);
-			fprintf (stderr, "  default-allowance-ratio=R (where R must be between %.2f - %.2f).\n", SGEN_MIN_ALLOWANCE_NURSERY_SIZE_RATIO, SGEN_MAX_ALLOWANCE_NURSERY_SIZE_RATIO);
 			fprintf (stderr, "\n");
 
 			usage_printed = TRUE;
@@ -3891,11 +3871,11 @@ sgen_gc_init (void)
 
 	sgen_thread_pool_start ();
 
-	sgen_memgov_init (max_heap, soft_limit, debug_print_allowance, allowance_ratio, save_target);
+	sgen_memgov_init (max_heap, soft_limit, debug_print_allowance, allowance_ratio);
 
 	memset (&remset, 0, sizeof (remset));
 
-	sgen_card_table_init (&remset);
+	sgen_card_table_init (&remset, remset_consistency_checks);
 
 	sgen_register_root (NULL, 0, sgen_make_user_root_descriptor (sgen_mark_normal_gc_handles), ROOT_TYPE_NORMAL, MONO_ROOT_SOURCE_GC_HANDLE, GINT_TO_POINTER (ROOT_TYPE_NORMAL), "GC Handles (SGen, Normal)");
 

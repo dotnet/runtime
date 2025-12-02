@@ -22,7 +22,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _module = sourceModule;
         }
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+        {
+            // Put the CLR metadata into the correct section for the PE writer to
+            // hook up the CLR header entry in the PE header.
+            // Don't emit a separate section for other formats to reduce cost.
+            return factory.Format switch
+            {
+                ReadyToRunContainerFormat.PE => ObjectNodeSection.CorMetaSection,
+                _ => ObjectNodeSection.ReadOnlyDataSection
+            };
+        }
 
         public override bool IsShareable => false;
 
@@ -53,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (_module != null)
                 sb.Append($"__CorHeader_{_module.Assembly.GetName().Name}");
             else
-                sb.Append("__CompositeCorHeader_");
+                sb.Append("__CompositeCorHeader_"u8);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);

@@ -290,7 +290,7 @@ inline void EEFunctionIDMapperHelper(ProfilerInfo *pProfilerInfo, FunctionID fun
 inline UINT_PTR ProfControlBlock::EEFunctionIDMapper(FunctionID funcId, BOOL *pbHookFunction)
 {
     LIMITED_METHOD_CONTRACT;
-    UINT_PTR ptr = NULL;
+    UINT_PTR ptr = 0;
     DoOneProfilerIteration(&mainProfilerInfo,
                           ProfilerCallbackType::Active,
                           &EEFunctionIDMapperHelper,
@@ -2114,7 +2114,7 @@ FORCEINLINE BOOL CORProfilerTrackEventPipe()
 // These macros must be placed around any callbacks to g_profControlBlock by
 // the EE. Example:
 //    {
-//        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads;
+//        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
 //        g_profControlBlock.AppDomainCreationStarted(MyAppDomainID);
 //        END_PROFILER_CALLBACK();
 //    }
@@ -2129,7 +2129,7 @@ FORCEINLINE BOOL CORProfilerTrackEventPipe()
 // block. Example:
 //
 //    {
-//        BEGIN_PROFILER_CALLBACK(CorProfilerTrackTransitions);
+//        BEGIN_PROFILER_CALLBACK(CorProfilerTrackTransitions());
 //        if (!pNSL->pMD->IsQCall())
 //        {
 //            g_profControlBlock.

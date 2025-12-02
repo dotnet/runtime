@@ -24,4 +24,14 @@ namespace System.Text.Json.Serialization.Tests
     {
         public CollectionTestsDynamic_SyncStream() : base(JsonSerializerWrapper.SyncStreamSerializer) { }
     }
+
+    public sealed partial class CollectionTestsDynamic_Pipe : CollectionTests
+    {
+        public CollectionTestsDynamic_Pipe() : base(JsonSerializerWrapper.AsyncPipeSerializer) { }
+    }
+
+    public sealed partial class CollectionTestsDynamic_PipeWithSmallBuffer : CollectionTests
+    {
+        public CollectionTestsDynamic_PipeWithSmallBuffer() : base(JsonSerializerWrapper.AsyncPipeSerializerWithSmallBuffer) { }
+    }
 }

@@ -10,19 +10,17 @@ namespace System.Diagnostics.Tracing
     /// <summary>
     /// RuntimeEventSource is an EventSource that represents events emitted by the managed runtime.
     /// </summary>
-    [EventSource(Guid = "49592C0F-5A05-516D-AA4B-A64E02026C89", Name = EventSourceName)]
-    [EventSourceAutoGenerate]
+    [EventSource(Guid = "49592C0F-5A05-516D-AA4B-A64E02026C89", Name = "System.Runtime")]
     internal sealed partial class RuntimeEventSource : EventSource
     {
-        internal const string EventSourceName = "System.Runtime";
-
         public static class Keywords
         {
             public const EventKeywords AppContext = (EventKeywords)0x1;
             public const EventKeywords ProcessorCount = (EventKeywords)0x2;
         }
 
-        private static RuntimeEventSource? s_RuntimeEventSource;
+        // this roots the singleton instance of the event source
+        internal static RuntimeEventSource Log { get; } = new RuntimeEventSource();
         private PollingCounter? _gcHeapSizeCounter;
         private IncrementingPollingCounter? _gen0GCCounter;
         private IncrementingPollingCounter? _gen1GCCounter;
@@ -50,25 +48,6 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _ilBytesJittedCounter;
         private PollingCounter? _methodsJittedCounter;
         private IncrementingPollingCounter? _jitTimeCounter;
-
-#if NATIVEAOT
-        // If EventSource feature is enabled, RuntimeEventSource needs to be initialized for NativeAOT
-        // In CoreCLR, this is done via StartupHookProvider.CoreCLR.cs
-#pragma warning disable CA2255
-        [ModuleInitializer]
-#pragma warning restore CA2255
-#endif
-        public static void Initialize()
-        {
-            // initializing more than once may lead to missing events
-            Debug.Assert(s_RuntimeEventSource == null);
-            if (IsSupported)
-                s_RuntimeEventSource = new RuntimeEventSource();
-        }
-
-        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
-        // as you can't make a constructor partial.
-        private RuntimeEventSource(int _) { }
 
         private enum EventId : int
         {

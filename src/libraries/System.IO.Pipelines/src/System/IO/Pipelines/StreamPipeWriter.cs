@@ -20,7 +20,7 @@ namespace System.IO.Pipelines
         private BufferSegment? _tail;
         private Memory<byte> _tailMemory;
         private int _tailBytesBuffered;
-        private int _bytesBuffered;
+        private long _bytesBuffered;
 
         private readonly MemoryPool<byte>? _pool;
         private readonly int _maxPooledBufferSize;
@@ -286,7 +286,7 @@ namespace System.IO.Pipelines
             InternalTokenSource.Cancel();
         }
 
-#if NETCOREAPP
+#if NET
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
 #endif
         private async ValueTask<FlushResult> FlushAsyncInternal(bool writeToStream, ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)

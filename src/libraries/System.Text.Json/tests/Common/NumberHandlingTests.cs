@@ -63,7 +63,7 @@ namespace System.Text.Json.Serialization.Tests
             await RunAsRootTypeTest(JsonNumberTestData.Floats);
             await RunAsRootTypeTest(JsonNumberTestData.Doubles);
             await RunAsRootTypeTest(JsonNumberTestData.Decimals);
-#if NETCOREAPP
+#if NET
             await RunAsRootTypeTest(JsonNumberTestData.Int128s);
             await RunAsRootTypeTest(JsonNumberTestData.UInt128s);
             await RunAsRootTypeTest(JsonNumberTestData.Halfs);
@@ -79,7 +79,7 @@ namespace System.Text.Json.Serialization.Tests
             await RunAsRootTypeTest(JsonNumberTestData.NullableFloats);
             await RunAsRootTypeTest(JsonNumberTestData.NullableDoubles);
             await RunAsRootTypeTest(JsonNumberTestData.NullableDecimals);
-#if NETCOREAPP
+#if NET
             await RunAsRootTypeTest(JsonNumberTestData.NullableInt128s);
             await RunAsRootTypeTest(JsonNumberTestData.NullableUInt128s);
             await RunAsRootTypeTest(JsonNumberTestData.NullableHalfs);
@@ -383,7 +383,7 @@ namespace System.Text.Json.Serialization.Tests
             await RunAsCollectionElementTest(JsonNumberTestData.Floats);
             await RunAsCollectionElementTest(JsonNumberTestData.Doubles);
             await RunAsCollectionElementTest(JsonNumberTestData.Decimals);
-#if NETCOREAPP
+#if NET
             await RunAsCollectionElementTest(JsonNumberTestData.Int128s);
             await RunAsCollectionElementTest(JsonNumberTestData.UInt128s);
             await RunAsCollectionElementTest(JsonNumberTestData.Halfs);
@@ -403,10 +403,14 @@ namespace System.Text.Json.Serialization.Tests
                 await RunAsCollectionElementTest(JsonNumberTestData.NullableFloats);
                 await RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
                 await RunAsCollectionElementTest(JsonNumberTestData.NullableDecimals);
-#if NETCOREAPP
-                await RunAsCollectionElementTest(JsonNumberTestData.NullableInt128s);
-                await RunAsCollectionElementTest(JsonNumberTestData.NullableUInt128s);
-                await RunAsCollectionElementTest(JsonNumberTestData.NullableHalfs);
+#if NET
+                // https://github.com/dotnet/runtime/issues/119143
+                if (!PlatformDetection.IsBrowser)
+                {
+                    await RunAsCollectionElementTest(JsonNumberTestData.NullableInt128s);
+                    await RunAsCollectionElementTest(JsonNumberTestData.NullableUInt128s);
+                    await RunAsCollectionElementTest(JsonNumberTestData.NullableHalfs);
+                }
 #endif
             }
         }
@@ -781,7 +785,7 @@ namespace System.Text.Json.Serialization.Tests
             async Task PerformFloatingPointSerialization(string testString)
             {
                 string testStringAsJson = $@"""{testString}""";
-#if NETCOREAPP
+#if NET
                 string testJson = @$"{{""HalfNumber"":{testStringAsJson},""FloatNumber"":{testStringAsJson},""DoubleNumber"":{testStringAsJson}}}";
 #else
                 string testJson = @$"{{""FloatNumber"":{testStringAsJson},""DoubleNumber"":{testStringAsJson}}}";
@@ -792,14 +796,14 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     case "NaN":
                         obj = await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionsAllowFloatConstants);
-#if NETCOREAPP
+#if NET
                         Assert.Equal(Half.NaN, obj.HalfNumber);
 #endif
                         Assert.Equal(float.NaN, obj.FloatNumber);
                         Assert.Equal(double.NaN, obj.DoubleNumber);
 
                         obj = await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionReadFromStr);
-#if NETCOREAPP
+#if NET
                         Assert.Equal(Half.NaN, obj.HalfNumber);
 #endif
                         Assert.Equal(float.NaN, obj.FloatNumber);
@@ -807,14 +811,14 @@ namespace System.Text.Json.Serialization.Tests
                         break;
                     case "Infinity":
                         obj = await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionsAllowFloatConstants);
-#if NETCOREAPP
+#if NET
                         Assert.Equal(Half.PositiveInfinity, obj.HalfNumber);
 #endif
                         Assert.Equal(float.PositiveInfinity, obj.FloatNumber);
                         Assert.Equal(double.PositiveInfinity, obj.DoubleNumber);
 
                         obj = await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionReadFromStr);
-#if NETCOREAPP
+#if NET
                         Assert.Equal(Half.PositiveInfinity, obj.HalfNumber);
 #endif
                         Assert.Equal(float.PositiveInfinity, obj.FloatNumber);
@@ -822,14 +826,14 @@ namespace System.Text.Json.Serialization.Tests
                         break;
                     case "-Infinity":
                         obj = await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionsAllowFloatConstants);
-#if NETCOREAPP
+#if NET
                         Assert.Equal(Half.NegativeInfinity, obj.HalfNumber);
 #endif
                         Assert.Equal(float.NegativeInfinity, obj.FloatNumber);
                         Assert.Equal(double.NegativeInfinity, obj.DoubleNumber);
 
                         obj = await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionReadFromStr);
-#if NETCOREAPP
+#if NET
                         Assert.Equal(Half.NegativeInfinity, obj.HalfNumber);
 #endif
                         Assert.Equal(float.NegativeInfinity, obj.FloatNumber);
@@ -877,7 +881,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string testStringAsJson = $@"""{testString}""";
             string testJson;
-#if NETCOREAPP
+#if NET
             testJson = @$"{{""HalfNumber"":{testStringAsJson}}}";
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionReadFromStr));
@@ -894,7 +898,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task AllowFloatingPointConstants_WriteAsNumber_IfNotConstant()
         {
-#if NETCOREAPP
+#if NET
             Half half = (Half)1;
             // Not written as "1"
             Assert.Equal("1", await Serializer.SerializeWrapper(half, s_optionsAllowFloatConstants));
@@ -914,7 +918,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("-Infinity")]
         public async Task Unquoted_FloatingPointConstants_Read_Fail(string testString)
         {
-#if NETCOREAPP
+#if NET
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Half>(testString, s_optionsAllowFloatConstants));
 #endif
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<float>(testString, s_optionsAllowFloatConstants));
@@ -924,7 +928,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public struct StructWithNumbers
         {
-#if NETCOREAPP
+#if NET
             public Half HalfNumber { get; set; }
 #endif
             public float FloatNumber { get; set; }
@@ -985,7 +989,7 @@ namespace System.Text.Json.Serialization.Tests
             await AssertFloatingPointIncompatible_Fails<uint?>();
             await AssertFloatingPointIncompatible_Fails<ulong?>();
             await AssertFloatingPointIncompatible_Fails<decimal?>();
-#if NETCOREAPP
+#if NET
             await AssertFloatingPointIncompatible_Fails<Int128>();
             await AssertFloatingPointIncompatible_Fails<UInt128>();
             await AssertFloatingPointIncompatible_Fails<Int128?>();
@@ -1031,7 +1035,7 @@ namespace System.Text.Json.Serialization.Tests
             await AssertUnsupportedFormatThrows<ulong?>();
             await AssertUnsupportedFormatThrows<float?>();
             await AssertUnsupportedFormatThrows<decimal?>();
-#if NETCOREAPP
+#if NET
             await AssertUnsupportedFormatThrows<Int128>();
             await AssertUnsupportedFormatThrows<UInt128>();
             await AssertUnsupportedFormatThrows<Half>();
@@ -1058,7 +1062,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-#if NETCOREAPP
+#if NET
         [Fact]
         public async Task InvalidNumberFormatThrows()
         {
@@ -1103,7 +1107,7 @@ namespace System.Text.Json.Serialization.Tests
             await PerformEscapingTest(JsonNumberTestData.Floats, options);
             await PerformEscapingTest(JsonNumberTestData.Doubles, options);
             await PerformEscapingTest(JsonNumberTestData.Decimals, options);
-#if NETCOREAPP
+#if NET
             await PerformEscapingTest(JsonNumberTestData.Int128s, options);
             await PerformEscapingTest(JsonNumberTestData.UInt128s, options);
             await PerformEscapingTest(JsonNumberTestData.Halfs, options);
@@ -1180,7 +1184,7 @@ namespace System.Text.Json.Serialization.Tests
             await Perform_Number_RoundTripNull_Test<ulong>();
             await Perform_Number_RoundTripNull_Test<float>();
             await Perform_Number_RoundTripNull_Test<decimal>();
-#if NETCOREAPP
+#if NET
             await Perform_Number_RoundTripNull_Test<Int128>();
             await Perform_Number_RoundTripNull_Test<UInt128>();
             await Perform_Number_RoundTripNull_Test<Half>();
@@ -1210,7 +1214,7 @@ namespace System.Text.Json.Serialization.Tests
             await Perform_NullableNumber_RoundTripNull_Test<ulong?>();
             await Perform_NullableNumber_RoundTripNull_Test<float?>();
             await Perform_NullableNumber_RoundTripNull_Test<decimal?>();
-#if NETCOREAPP
+#if NET
             await Perform_NullableNumber_RoundTripNull_Test<Int128?>();
             await Perform_NullableNumber_RoundTripNull_Test<UInt128?>();
             await Perform_NullableNumber_RoundTripNull_Test<Half?>();
@@ -1243,7 +1247,7 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<float>(json, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<double>(json, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<decimal>(json, s_optionsAllowFloatConstants));
-#if NETCOREAPP
+#if NET
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Int128>(json, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<UInt128>(json, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Half>(json, s_optionsAllowFloatConstants));
@@ -1259,7 +1263,7 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<float?>(json, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<double?>(json, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<decimal?>(json, s_optionsAllowFloatConstants));
-#if NETCOREAPP
+#if NET
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Int128?>(json, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<UInt128?>(json, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Half?>(json, s_optionsAllowFloatConstants));
@@ -1734,13 +1738,13 @@ namespace System.Text.Json.Serialization.Tests
             // Global options
             ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(
                 () => new JsonSerializerOptions { NumberHandling = (JsonNumberHandling)(-1) });
-            Assert.Contains("value", ex.ToString());
+            Assert.Contains("value", ex.Message);
             Assert.Throws<ArgumentOutOfRangeException>(
                 () => new JsonSerializerOptions { NumberHandling = (JsonNumberHandling)(8) });
 
             ex = Assert.Throws<ArgumentOutOfRangeException>(
                 () => new JsonNumberHandlingAttribute((JsonNumberHandling)(-1)));
-            Assert.Contains("handling", ex.ToString());
+            Assert.Contains("handling", ex.Message);
             Assert.Throws<ArgumentOutOfRangeException>(
                 () => new JsonNumberHandlingAttribute((JsonNumberHandling)(8)));
         }
@@ -1798,24 +1802,24 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Invalid to set number handling for number collection property when number is handled with custom converter.
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<ClassWithListPropAndAttribute_ConverterOnProp>(""));
-            Assert.Contains(nameof(ClassWithListPropAndAttribute_ConverterOnProp), ex.ToString());
-            Assert.Contains("IntProp", ex.ToString());
+            Assert.Contains(nameof(ClassWithListPropAndAttribute_ConverterOnProp), ex.Message);
+            Assert.Contains("IntProp", ex.Message);
 
             ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(new ClassWithListPropAndAttribute_ConverterOnProp()));
-            Assert.Contains(nameof(ClassWithListPropAndAttribute_ConverterOnProp), ex.ToString());
-            Assert.Contains("IntProp", ex.ToString());
+            Assert.Contains(nameof(ClassWithListPropAndAttribute_ConverterOnProp), ex.Message);
+            Assert.Contains("IntProp", ex.Message);
 
 #if !BUILDING_SOURCE_GENERATOR_TESTS
             // Source-gen isn't currently validating that the converter on the test prop
             // is invalid so JsonException is being thrown instead due to invalid JSON.
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/73714"]
             ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<ClassWithDictPropAndAttribute_ConverterOnProp>(""));
-            Assert.Contains(nameof(ClassWithDictPropAndAttribute_ConverterOnProp), ex.ToString());
-            Assert.Contains("IntProp", ex.ToString());
+            Assert.Contains(nameof(ClassWithDictPropAndAttribute_ConverterOnProp), ex.Message);
+            Assert.Contains("IntProp", ex.Message);
 
             ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(new ClassWithDictPropAndAttribute_ConverterOnProp()));
-            Assert.Contains(nameof(ClassWithDictPropAndAttribute_ConverterOnProp), ex.ToString());
-            Assert.Contains("IntProp", ex.ToString());
+            Assert.Contains(nameof(ClassWithDictPropAndAttribute_ConverterOnProp), ex.Message);
+            Assert.Contains("IntProp", ex.Message);
 #endif
         }
 
@@ -1949,6 +1953,57 @@ namespace System.Text.Json.Serialization.Tests
                     writer.WriteNumberValue(value + 100);
                 }
             }
+        }
+
+        [Theory]
+        // -2 for Quotes
+        [InlineData(32 - 2)] // Common ArrayPool buffer size for numbers
+        [InlineData(256 - 2)] // Common stackalloc constant
+        [InlineData(512 - 2)] // Less common stackalloc constant
+        [InlineData(700)] // Random large number
+        public async Task JsonExceptionForVariousSizedValues(int size)
+        {
+            await DeserializeWithInvalidValue<byte>(size);
+            await DeserializeWithInvalidValue<sbyte>(size);
+            await DeserializeWithInvalidValue<short>(size);
+            await DeserializeWithInvalidValue<int>(size);
+            await DeserializeWithInvalidValue<long>(size);
+            await DeserializeWithInvalidValue<ushort>(size);
+            await DeserializeWithInvalidValue<uint>(size);
+            await DeserializeWithInvalidValue<ulong>(size);
+            await DeserializeWithInvalidValue<float>(size);
+            await DeserializeWithInvalidValue<decimal>(size);
+            await DeserializeWithInvalidValue<byte?>(size);
+            await DeserializeWithInvalidValue<sbyte?>(size);
+            await DeserializeWithInvalidValue<short?>(size);
+            await DeserializeWithInvalidValue<int?>(size);
+            await DeserializeWithInvalidValue<long?>(size);
+            await DeserializeWithInvalidValue<ushort?>(size);
+            await DeserializeWithInvalidValue<uint?>(size);
+            await DeserializeWithInvalidValue<ulong?>(size);
+            await DeserializeWithInvalidValue<float?>(size);
+            await DeserializeWithInvalidValue<decimal?>(size);
+#if NET
+            await DeserializeWithInvalidValue<Int128>(size);
+            await DeserializeWithInvalidValue<UInt128>(size);
+            await DeserializeWithInvalidValue<Half>(size);
+            await DeserializeWithInvalidValue<Int128?>(size);
+            await DeserializeWithInvalidValue<UInt128?>(size);
+            await DeserializeWithInvalidValue<Half?>(size);
+#endif
+        }
+
+        private async Task DeserializeWithInvalidValue<T>(int size)
+        {
+            await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<T>(
+                    $"\"{string.Concat(Enumerable.Repeat("\\uFFFF", size / 6))}\"",
+                    s_optionReadFromStr));
+
+            await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<T>(
+                    $"\"{string.Concat(Enumerable.Repeat("a", size))}\"",
+                    s_optionReadFromStr));
         }
     }
 }

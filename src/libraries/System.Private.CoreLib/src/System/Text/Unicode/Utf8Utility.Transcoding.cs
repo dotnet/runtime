@@ -6,9 +6,11 @@ using System.Buffers.Text;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+#if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+#endif
 
 namespace System.Text.Unicode
 {
@@ -878,12 +880,14 @@ namespace System.Text.Unicode
             // vector is only used in those code paths, we leave it uninitialized if SSE4.1
             // is not enabled.
 
+#if NET
             Vector128<short> nonAsciiUtf16DataMask;
 
             if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
             {
                 nonAsciiUtf16DataMask = Vector128.Create(unchecked((short)0xFF80)); // mask of non-ASCII bits in a UTF-16 char
             }
+#endif
 
             // Begin the main loop.
 
@@ -938,6 +942,7 @@ namespace System.Text.Unicode
                     uint inputCharsRemaining = (uint)(pFinalPosWhereCanReadDWordFromInputBuffer - pInputBuffer) + 2;
                     uint minElementsRemaining = (uint)Math.Min(inputCharsRemaining, outputBytesRemaining);
 
+#if NET
                     if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
                     {
                         // Try reading and writing 8 elements per iteration.
@@ -966,15 +971,20 @@ namespace System.Text.Unicode
                                 Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16Data);
                                 AdvSimd.Store(pOutputBuffer, lower);
                             }
-                            else
+                            else if (Sse41.IsSupported)
                             {
-                                if (!Sse41.TestZ(utf16Data, nonAsciiUtf16DataMask))
+                                if ((utf16Data & nonAsciiUtf16DataMask) != Vector128<short>.Zero)
                                 {
                                     goto LoopTerminatedDueToNonAsciiDataInVectorLocal;
                                 }
 
                                 // narrow and write
                                 Sse2.StoreScalar((ulong*)pOutputBuffer /* unaligned */, Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt64());
+                            }
+                            else
+                            {
+                                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                                ThrowHelper.ThrowUnreachableException();
                             }
 
                             pInputBuffer += 8;
@@ -1000,9 +1010,14 @@ namespace System.Text.Unicode
                                 Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16Data);
                                 AdvSimd.StoreSelectedScalar((uint*)pOutputBuffer, lower.AsUInt32(), 0);
                             }
-                            else
+                            else if (Sse2.IsSupported)
                             {
                                 Unsafe.WriteUnaligned(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+                            }
+                            else
+                            {
+                                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                                ThrowHelper.ThrowUnreachableException();
                             }
 
                             pInputBuffer += 4;
@@ -1038,9 +1053,14 @@ namespace System.Text.Unicode
                                 Vector64<byte> lower = AdvSimd.ExtractNarrowingSaturateUnsignedLower(utf16Data);
                                 AdvSimd.StoreSelectedScalar((uint*)pOutputBuffer, lower.AsUInt32(), 0);
                             }
-                            else
+                            else if (Sse2.IsSupported)
                             {
                                 Unsafe.WriteUnaligned(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
+                            }
+                            else
+                            {
+                                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                                ThrowHelper.ThrowUnreachableException();
                             }
                             pInputBuffer += 4;
                             pOutputBuffer += 4;
@@ -1066,6 +1086,7 @@ namespace System.Text.Unicode
                         goto AfterReadDWordSkipAllCharsAsciiCheck;
                     }
                     else
+#endif
                     {
                         // Can't use SSE41 x64, so we'll only read and write 4 elements per iteration.
                         uint maxIters = minElementsRemaining / 4;

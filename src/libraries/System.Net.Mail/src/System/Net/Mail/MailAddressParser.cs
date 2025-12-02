@@ -422,7 +422,7 @@ namespace System.Net.Mail
 
                 // Do not include the Comma (if any), and because there were no bounding quotes,
                 // trim extra whitespace.
-                displayName = data.SubstringTrim(index + 1, startingIndex - index);
+                displayName = data.AsSpan(index + 1, startingIndex - index).Trim().ToString();
             }
 
             if (!TryNormalizeOrThrow(displayName, out displayName, throwExceptionIfFail))

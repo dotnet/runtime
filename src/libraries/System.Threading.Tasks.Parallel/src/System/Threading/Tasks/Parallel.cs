@@ -238,9 +238,9 @@ namespace System.Threading.Tasks
             {
                 // If we've gotten this far, it's time to process the actions.
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
                 // Web browsers need special treatment that is implemented in TaskReplicator
-                if (OperatingSystem.IsBrowser() ||
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi() ||
 #else
                 if (
 #endif
@@ -997,7 +997,7 @@ namespace System.Threading.Tasks
                             TInt nFromInclusiveLocal;
                             TInt nToExclusiveLocal;
 
-                            if (currentWorker.FindNewWork(out nFromInclusiveLocal, out nToExclusiveLocal) == false ||
+                            if (!currentWorker.FindNewWork(out nFromInclusiveLocal, out nToExclusiveLocal) ||
                                 sharedPStateFlags.ShouldExitLoop(nFromInclusiveLocal))
                             {
                                 return; // no need to run
@@ -2649,7 +2649,7 @@ namespace System.Threading.Tasks
                                         TSource value = kvp.Value;
 
                                         // Update our iteration index
-                                        if (state != null) state.CurrentIteration = index;
+                                        state?.CurrentIteration = index;
 
                                         if (simpleBody != null)
                                             simpleBody(value);
@@ -2689,8 +2689,7 @@ namespace System.Threading.Tasks
                                         throw new InvalidOperationException(SR.Parallel_ForEach_NullEnumerator);
 
                                     // I'm not going to try to maintain this
-                                    if (state != null)
-                                        state.CurrentIteration = 0;
+                                    state?.CurrentIteration = 0;
 
                                     while (myPartition.MoveNext())
                                     {

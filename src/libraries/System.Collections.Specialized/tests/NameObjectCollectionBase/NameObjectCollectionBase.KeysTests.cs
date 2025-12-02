@@ -7,7 +7,7 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameObjectCollectionBaseKeysTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(0)]
         [InlineData(10)]
         public void Keys_PreservesInstance(int count)
@@ -16,7 +16,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Same(nameObjectCollection.Keys, nameObjectCollection.Keys);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(0)]
         [InlineData(10)]
         public void Keys_GetEnumerator(int count)
@@ -40,7 +40,7 @@ namespace System.Collections.Specialized.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(0)]
         [InlineData(10)]
         public void Keys_GetEnumerator_Invalid(int count)
@@ -85,7 +85,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Throws<InvalidOperationException>(() => enumerator.Reset());
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(0)]
         [InlineData(10)]
         public void Keys_Properties(int count)
@@ -97,7 +97,7 @@ namespace System.Collections.Specialized.Tests
             Assert.False(keysCollection.IsSynchronized);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(0, 0)]
         [InlineData(0, 5)]
         [InlineData(10, 0)]
@@ -145,7 +145,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Equal(previousCount, keysArray.Length);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(0)]
         [InlineData(10)]
         public void Keys_CopyTo_Invalid(int count)

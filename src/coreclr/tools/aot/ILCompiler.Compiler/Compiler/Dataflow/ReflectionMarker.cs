@@ -30,6 +30,7 @@ namespace ILCompiler.Dataflow
         public NodeFactory Factory { get; }
         public FlowAnnotations Annotations { get; }
         public DependencyList Dependencies { get => _dependencies; }
+        public List<INodeWithRuntimeDeterminedDependencies> RuntimeDeterminedDependencies { get; } = new List<INodeWithRuntimeDeterminedDependencies>();
 
         internal enum AccessKind
         {
@@ -47,14 +48,15 @@ namespace ILCompiler.Dataflow
             _enabled = enabled;
         }
 
-        internal void MarkTypeForDynamicallyAccessedMembers(in MessageOrigin origin, TypeDesc typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, string reason, bool declaredOnly = false)
+        internal void MarkTypeForDynamicallyAccessedMembers(in MessageOrigin origin, TypeDesc typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, TypeSystemEntity reason, bool declaredOnly = false)
         {
             if (!_enabled)
                 return;
 
+            string displayName = reason.GetDisplayName();
             foreach (var member in typeDefinition.GetDynamicallyAccessedMembers(requiredMemberTypes, declaredOnly))
             {
-                MarkTypeSystemEntity(origin, member, reason, AccessKind.DynamicallyAccessedMembersMark);
+                MarkTypeSystemEntity(origin, member, displayName, AccessKind.DynamicallyAccessedMembersMark);
             }
         }
 
@@ -78,22 +80,51 @@ namespace ILCompiler.Dataflow
                     MarkEvent(origin, @event, reason, accessKind);
                     break;
                     // case InterfaceImplementation
-                    //  Nothing to do currently as Native AOT will preserve all interfaces on a preserved type
+                    //  This is handled in the MetadataType case above
             }
         }
 
-        internal bool TryResolveTypeNameAndMark(string typeName, in DiagnosticContext diagnosticContext, bool needsAssemblyName, string reason, [NotNullWhen(true)] out TypeDesc? type)
+        internal bool TryResolveTypeNameAndMark(string typeName, in DiagnosticContext diagnosticContext, bool needsAssemblyName, TypeSystemEntity reason, [NotNullWhen(true)] out TypeDesc? type)
         {
-            ModuleDesc? callingModule = ((diagnosticContext.Origin.MemberDefinition as MethodDesc)?.OwningType as MetadataType)?.Module;
+            ModuleDesc? callingModule = (diagnosticContext.Origin.MemberDefinition.GetOwningType() as MetadataType)?.Module;
 
             List<ModuleDesc> referencedModules = new();
-            TypeDesc foundType = System.Reflection.TypeNameParser.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context,
-                referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary);
+            TypeDesc foundType = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeNameForDataFlow(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context,
+                referencedModules, needsAssemblyName, out bool failedBecauseNotFullyQualified);
             if (foundType == null)
             {
-                if (needsAssemblyName && typeWasNotFoundInAssemblyNorBaseLibrary)
-                    diagnosticContext.AddDiagnostic(DiagnosticId.TypeWasNotFoundInAssemblyNorBaseLibrary, typeName);
+                if (failedBecauseNotFullyQualified)
+                {
+                    diagnosticContext.AddDiagnostic(DiagnosticId.TypeNameIsNotAssemblyQualified, typeName);
+                }
+                type = default;
+                return false;
+            }
 
+            if (_enabled)
+            {
+                string displayName = reason.GetDisplayName();
+                foreach (ModuleDesc referencedModule in referencedModules)
+                {
+                    // Also add module metadata in case this reference was through a type forward
+                    if (Factory.MetadataManager.CanGenerateMetadata(referencedModule.GetGlobalModuleType()))
+                        _dependencies.Add(Factory.ModuleMetadata(referencedModule), displayName);
+                }
+
+                MarkType(diagnosticContext.Origin, foundType, displayName);
+            }
+
+            type = foundType;
+            return true;
+        }
+
+        internal bool TryResolveTypeNameAndMark(ModuleDesc assembly, string typeName, in DiagnosticContext diagnosticContext, string reason, [NotNullWhen(true)] out TypeDesc? type)
+        {
+            List<ModuleDesc> referencedModules = new();
+            TypeDesc foundType = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeNameForDataFlow(typeName, assembly, assembly.Context,
+                referencedModules, needsAssemblyName: false, out _);
+            if (foundType == null)
+            {
                 type = default;
                 return false;
             }
@@ -114,12 +145,28 @@ namespace ILCompiler.Dataflow
             return true;
         }
 
+        internal void MarkType(in MessageOrigin origin, TypeDesc type, TypeSystemEntity reason, AccessKind accessKind = AccessKind.Unspecified)
+        {
+            if (!_enabled)
+                return;
+
+            MarkType(origin, type, reason.GetDisplayName(), accessKind);
+        }
+
         internal void MarkType(in MessageOrigin origin, TypeDesc type, string reason, AccessKind accessKind = AccessKind.Unspecified)
         {
             if (!_enabled)
                 return;
 
             RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, Factory, type, reason);
+        }
+
+        internal void MarkMethod(in MessageOrigin origin, MethodDesc method, TypeSystemEntity reason, AccessKind accessKind = AccessKind.Unspecified)
+        {
+            if (!_enabled)
+                return;
+
+            MarkMethod(origin, method, reason.GetDisplayName(), accessKind);
         }
 
         internal void MarkMethod(in MessageOrigin origin, MethodDesc method, string reason, AccessKind accessKind = AccessKind.Unspecified)
@@ -140,6 +187,14 @@ namespace ILCompiler.Dataflow
             CheckAndWarnOnReflectionAccess(origin, field, accessKind);
 
             RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, Factory, field, reason);
+        }
+
+        internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, TypeSystemEntity reason, AccessKind accessKind = AccessKind.Unspecified)
+        {
+            if (!_enabled)
+                return;
+
+            MarkProperty(origin, property, reason.GetDisplayName(), accessKind);
         }
 
         internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, string reason, AccessKind accessKind = AccessKind.Unspecified)
@@ -164,56 +219,54 @@ namespace ILCompiler.Dataflow
                 MarkMethod(origin, @event.RemoveMethod, reason);
         }
 
-        internal void MarkConstructorsOnType(in MessageOrigin origin, TypeDesc type, Func<MethodDesc, bool>? filter, string reason, BindingFlags? bindingFlags = null)
+        internal void MarkConstructorsOnType(in MessageOrigin origin, TypeDesc type, Func<MethodDesc, bool>? filter, TypeSystemEntity reason, BindingFlags? bindingFlags = null)
         {
             if (!_enabled)
                 return;
 
+            string displayName = reason.GetDisplayName();
             foreach (var ctor in type.GetConstructorsOnType(filter, bindingFlags))
-                MarkMethod(origin, ctor, reason);
+                MarkMethod(origin, ctor, displayName);
         }
 
-        internal void MarkFieldsOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<FieldDesc, bool> filter, string reason, BindingFlags? bindingFlags = BindingFlags.Default)
+        internal void MarkFieldsOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<FieldDesc, bool> filter, TypeSystemEntity reason, BindingFlags? bindingFlags = BindingFlags.Default)
         {
             if (!_enabled)
                 return;
 
+            string displayName = reason.GetDisplayName();
             foreach (var field in type.GetFieldsOnTypeHierarchy(filter, bindingFlags))
-                MarkField(origin, field, reason);
+                MarkField(origin, field, displayName);
         }
 
-        internal void MarkPropertiesOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<PropertyPseudoDesc, bool> filter, string reason, BindingFlags? bindingFlags = BindingFlags.Default)
+        internal void MarkPropertiesOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<PropertyPseudoDesc, bool> filter, TypeSystemEntity reason, BindingFlags? bindingFlags = BindingFlags.Default)
         {
             if (!_enabled)
                 return;
 
+            string displayName = reason.GetDisplayName();
             foreach (var property in type.GetPropertiesOnTypeHierarchy(filter, bindingFlags))
-                MarkProperty(origin, property, reason);
+                MarkProperty(origin, property, displayName);
         }
 
-        internal void MarkEventsOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<EventPseudoDesc, bool> filter, string reason, BindingFlags? bindingFlags = BindingFlags.Default)
+        internal void MarkEventsOnTypeHierarchy(in MessageOrigin origin, TypeDesc type, Func<EventPseudoDesc, bool> filter, TypeSystemEntity reason, BindingFlags? bindingFlags = BindingFlags.Default)
         {
             if (!_enabled)
                 return;
 
+            string displayName = reason.GetDisplayName();
             foreach (var @event in type.GetEventsOnTypeHierarchy(filter, bindingFlags))
-                MarkEvent(origin, @event, reason);
+                MarkEvent(origin, @event, displayName);
         }
 
-        internal void MarkStaticConstructor(in MessageOrigin origin, TypeDesc type, string reason)
+        internal void MarkStaticConstructor(in MessageOrigin origin, TypeDesc type, TypeSystemEntity reason)
         {
             if (!_enabled)
                 return;
 
-            if (type.HasStaticConstructor)
-                CheckAndWarnOnReflectionAccess(origin, type.GetStaticConstructor());
-
-            if (!type.IsGenericDefinition && !type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true) && Factory.PreinitializationManager.HasLazyStaticConstructor(type))
-            {
-                // Mark the GC static base - it contains a pointer to the class constructor, but also info
-                // about whether the class constructor already executed and it's what is looked at at runtime.
-                _dependencies.Add(Factory.TypeNonGCStaticsSymbol((MetadataType)type), "RunClassConstructor reference");
-            }
+            MethodDesc cctor = type.GetStaticConstructor();
+            if (cctor != null)
+                MarkMethod(origin, cctor, reason.GetDisplayName());
         }
 
         internal void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, AccessKind accessKind = AccessKind.Unspecified)
@@ -329,9 +382,6 @@ namespace ILCompiler.Dataflow
                 var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
                 _logger.LogWarning(origin, id, _typeHierarchyDataFlowOrigin.GetDisplayName(), entity.GetDisplayName());
             }
-
-            // We decided to not warn on reflection access to compiler-generated methods:
-            // https://github.com/dotnet/runtime/issues/85042
         }
 
         private void ReportRequires(in MessageOrigin origin, TypeSystemEntity entity, string requiresAttributeName, in CustomAttributeValue<TypeDesc> requiresAttribute)

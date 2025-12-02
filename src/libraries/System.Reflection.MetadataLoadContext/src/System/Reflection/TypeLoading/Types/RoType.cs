@@ -105,21 +105,18 @@ namespace System.Reflection.TypeLoading
         protected internal abstract RoType[] GetGenericArgumentsNoCopy();
 
         // Naming
-        public sealed override string Name => _lazyName ??= ComputeName();
+        public sealed override string Name => field ??= ComputeName();
         protected abstract string ComputeName();
         internal string Call_ComputeName() => ComputeName();
-        private volatile string? _lazyName;
 
-        public sealed override string? Namespace => _lazyNamespace ??= ComputeNamespace();
+        public sealed override string? Namespace => field ??= ComputeNamespace();
         protected abstract string? ComputeNamespace();
         internal string? Call_ComputeNamespace() => ComputeNamespace();
-        private volatile string? _lazyNamespace;
 
-        public sealed override string? FullName => _lazyFullName ??= ComputeFullName();
+        public sealed override string? FullName => field ??= ComputeFullName();
         protected abstract string? ComputeFullName();
         internal string? Call_ComputeFullName() => ComputeFullName();
-        private volatile string? _lazyFullName;
-        public override string? AssemblyQualifiedName => _lazyAssemblyQualifiedFullName ??= ComputeAssemblyQualifiedName();
+        public override string? AssemblyQualifiedName => field ??= ComputeAssemblyQualifiedName();
         private string? ComputeAssemblyQualifiedName()
         {
             string? fullName = FullName;
@@ -128,7 +125,6 @@ namespace System.Reflection.TypeLoading
             string? assemblyName = Assembly.FullName;
             return fullName + ", " + assemblyName;
         }
-        private volatile string? _lazyAssemblyQualifiedFullName;
 
         // Assembly and module
         public sealed override Assembly Assembly => Module.Assembly;
@@ -331,7 +327,7 @@ namespace System.Reflection.TypeLoading
         private volatile RoType? _lazyUnderlyingEnumType;
         public sealed override Array GetEnumValues() => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
-#if NET7_0_OR_GREATER
+#if NET
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "Enum Types are not trimmed.")]
         public override Array GetEnumValuesAsUnderlyingType()

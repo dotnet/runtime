@@ -255,8 +255,8 @@ HRESULT GetAppDomainStaticAddress::ClassLoadFinished(ClassID classId, HRESULT hr
 
     HRESULT hr = S_OK;
 
-    ThreadID threadId = NULL;
-    AppDomainID appDomainId = NULL;
+    ThreadID threadId = 0;
+    AppDomainID appDomainId = 0;
     CorElementType baseElemType;
     ClassID        baseClassId;
     ULONG          cRank;
@@ -298,7 +298,7 @@ HRESULT GetAppDomainStaticAddress::ClassLoadFinished(ClassID classId, HRESULT hr
                                           &modId,
                                           NULL,
                                           NULL,
-                                          NULL,
+                                          0,
                                           NULL,
                                           NULL);
     if (FAILED(hr))
@@ -390,12 +390,12 @@ HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
             fflush(stdout);
         }
 
-        ModuleID classModuleId = NULL;
+        ModuleID classModuleId = 0;
         hr = pCorProfilerInfo->GetClassIDInfo2(classId,
                                     &classModuleId,
                                     NULL,
                                     NULL,
-                                    NULL,
+                                    0,
                                     NULL,
                                     NULL);
         if (FAILED(hr))
@@ -424,9 +424,9 @@ HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
         }
 
         HCORENUM hEnum = NULL;
-        mdTypeDef token = NULL;
+        mdTypeDef token = 0;
         mdFieldDef fieldTokens[SHORT_LENGTH];
-        ULONG cTokens = NULL;
+        ULONG cTokens = 0;
 
         if (DEBUG_OUT)
         {
@@ -439,7 +439,7 @@ HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
                                             NULL,
                                             &token,
                                             NULL,
-                                            NULL,
+                                            0,
                                             NULL,
                                             NULL);
         if (hr == CORPROF_E_DATAINCOMPLETE)
@@ -469,13 +469,13 @@ HRESULT GetAppDomainStaticAddress::GarbageCollectionFinished()
 
         for (ULONG i = 0; i < cTokens; i++)
         {
-            mdTypeDef fieldClassToken = NULL;
+            mdTypeDef fieldClassToken = 0;
             WCHAR tokenName[256];
-            ULONG nameLength = NULL;
-            DWORD fieldAttributes = NULL;
-            PCCOR_SIGNATURE pvSig = NULL;
-            ULONG cbSig = NULL;
-            DWORD corElementType = NULL;
+            ULONG nameLength = 0;
+            DWORD fieldAttributes = 0;
+            PCCOR_SIGNATURE pvSig = 0;
+            ULONG cbSig = 0;
+            DWORD corElementType = 0;
 
             hr = pIMDImport->GetFieldProps(fieldTokens[i],
                                             &fieldClassToken,

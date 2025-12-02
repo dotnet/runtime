@@ -2,54 +2,37 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);netstandard2.1</TargetFrameworks>
-    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <!-- This assembly should never be placed inbox as it is only for downlevel compatibility. -->
-    <PackageDescription>Provides the IAsyncEnumerable&lt;T&gt; and IAsyncDisposable interfaces and helper types for .NET Standard 2.0. This package is not required starting with .NET Standard 2.1 and .NET Core 3.0.
-
-Commonly Used Types:
-System.IAsyncDisposable
-System.Collections.Generic.IAsyncEnumerable
-System.Collections.Generic.IAsyncEnumerator</PackageDescription>
+    <PackageDescription>Provides the IAsyncEnumerable&lt;T&gt; and IAsyncDisposable interfaces and helper types for .NET Standard 2.0. This package is not required starting with .NET Standard 2.1 and .NET Core 3.0.</PackageDescription>
   </PropertyGroup>
 
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="'$(TargetFramework)' == 'netstandard2.1'">true</IsPartialFacadeAssembly>
-  </PropertyGroup>
+  <Choose>
+    <When Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
+      <ItemGroup>
+        <Compile Include="Microsoft.Bcl.AsyncInterfaces.Forwards.cs" />
+      </ItemGroup>
+    </When>
 
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <Compile Include="System\Threading\Tasks\Sources\ManualResetValueTaskSourceCore.cs" />
-    <Compile Include="System\Runtime\CompilerServices\AsyncIteratorMethodBuilder.cs" />
-    <Compile Include="$(CoreLibSharedDir)\System\Collections\Generic\IAsyncEnumerable.cs">
-      <Link>System.Private.CoreLib\System\Collections\Generic\IAsyncEnumerable.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\Collections\Generic\IAsyncEnumerator.cs">
-      <Link>System.Private.CoreLib\System\Collections\Generic\IAsyncEnumerator.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\IAsyncDisposable.cs">
-      <Link>System.Private.CoreLib\System\IAsyncDisposable.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\AsyncIteratorStateMachineAttribute.cs">
-      <Link>System.Private.CoreLib\System\Runtime\CompilerServices\AsyncIteratorStateMachineAttribute.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\ConfiguredAsyncDisposable.cs">
-      <Link>System.Private.CoreLib\System\Runtime\CompilerServices\ConfiguredAsyncDisposable.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\ConfiguredCancelableAsyncEnumerable.cs">
-      <Link>System.Private.CoreLib\System\Runtime\CompilerServices\ConfiguredCancelableAsyncEnumerable.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\Threading\Tasks\TaskAsyncEnumerableExtensions.cs">
-      <Link>System.Private.CoreLib\System\Threading\Tasks\TaskAsyncEnumerableExtensions.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\EnumeratorCancellationAttribute.cs">
-      <Link>System.Private.CoreLib\System\Runtime\CompilerServices\EnumeratorCancellationAttribute.cs</Link>
-    </Compile>
+    <Otherwise>
+      <ItemGroup>
+        <Compile Include="System\Threading\Tasks\Sources\ManualResetValueTaskSourceCore.cs" />
+        <Compile Include="System\Runtime\CompilerServices\AsyncIteratorMethodBuilder.cs" />
 
-  </ItemGroup>
+        <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\IAsyncEnumerable.cs" Link="System.Private.CoreLib\System\Collections\Generic\IAsyncEnumerable.cs" />
+        <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\IAsyncEnumerator.cs" Link="System.Private.CoreLib\System\Collections\Generic\IAsyncEnumerator.cs" />
+        <Compile Include="$(CoreLibSharedDir)System\IAsyncDisposable.cs" Link="System.Private.CoreLib\System\IAsyncDisposable.cs" />
+        <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\AsyncIteratorStateMachineAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\AsyncIteratorStateMachineAttribute.cs" />
+        <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\ConfiguredAsyncDisposable.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\ConfiguredAsyncDisposable.cs" />
+        <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\ConfiguredCancelableAsyncEnumerable.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\ConfiguredCancelableAsyncEnumerable.cs" />
+        <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskAsyncEnumerableExtensions.cs" Link="System.Private.CoreLib\System\Threading\Tasks\TaskAsyncEnumerableExtensions.cs" />
+        <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\EnumeratorCancellationAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\EnumeratorCancellationAttribute.cs" />
+      </ItemGroup>
 
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
-  </ItemGroup>
+      <ItemGroup>
+        <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
 
 </Project>

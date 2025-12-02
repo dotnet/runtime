@@ -4,7 +4,7 @@
 
 /*
  *
- * COM+99 EE to Debugger Interface Implementation
+ * EE to Debugger Interface Implementation
  *
  */
 
@@ -173,11 +173,7 @@ void* EEDbgInterfaceImpl::GetObjectFromHandle(OBJECTHANDLE handle)
     }
     CONTRACTL_END;
 
-    void *v;
-
-    *((OBJECTREF *)&v) = *(OBJECTREF *)handle;
-
-    return v;
+    return OBJECTREFToObject(ObjectFromHandle(handle));
 }
 
 OBJECTHANDLE EEDbgInterfaceImpl::GetHandleFromObject(void *obj,
@@ -415,7 +411,7 @@ BOOL EEDbgInterfaceImpl::IsManagedNativeCode(const BYTE *address)
 PCODE EEDbgInterfaceImpl::GetNativeCodeStartAddress(PCODE address)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(address != NULL);
+    _ASSERTE(address != (PCODE)NULL);
 
     return ExecutionManager::GetCodeStartAddress(address);
 }
@@ -546,11 +542,11 @@ void EEDbgInterfaceImpl::GetMethodRegionInfo(const PCODE    pStart,
     }
     CONTRACTL_END;
 
-    IJitManager::MethodRegionInfo methodRegionInfo = {NULL, 0, NULL, 0};
+    IJitManager::MethodRegionInfo methodRegionInfo = {(TADDR)NULL, 0, (TADDR)NULL, 0};
 
     EECodeInfo codeInfo(pStart);
 
-    if (codeInfo.IsValid() != NULL)
+    if (codeInfo.IsValid() != (TADDR)NULL)
     {
         codeInfo.GetMethodRegionInfo(&methodRegionInfo);
     }
@@ -592,7 +588,7 @@ StackFrame EEDbgInterfaceImpl::FindParentStackFrame(CrawlFrame* pCF)
     return StackFrame();
 
 #else  // !DACCESS_COMPILE
-    return ExceptionTracker::FindParentStackFrameForStackWalk(pCF);
+    return ExInfo::FindParentStackFrameForStackWalk(pCF);
 
 #endif // !DACCESS_COMPILE
 }
@@ -611,7 +607,7 @@ size_t EEDbgInterfaceImpl::GetFunctionSize(MethodDesc *pFD)
 
     PCODE methodStart = pFD->GetNativeCode();
 
-    if (methodStart == NULL)
+    if (methodStart == (PCODE)NULL)
         return 0;
 
     EECodeInfo codeInfo(methodStart);
@@ -652,7 +648,7 @@ void EEDbgInterfaceImpl::EnablePreemptiveGC(void)
     CONTRACTL
     {
         NOTHROW;
-        DISABLED(GC_TRIGGERS); // Disabled because disabled in RareEnablePreemptiveGC()
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -719,19 +715,6 @@ COR_ILMETHOD* EEDbgInterfaceImpl::MethodDescGetILHeader(MethodDesc *pFD)
     }
 
     RETURN NULL;
-}
-
-ULONG EEDbgInterfaceImpl::MethodDescGetRVA(MethodDesc *pFD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pFD));
-    }
-    CONTRACTL_END;
-
-    return pFD->GetRVA();
 }
 
 MethodDesc *EEDbgInterfaceImpl::FindLoadedMethodRefOrDef(Module* pModule,
@@ -1266,7 +1249,7 @@ bool EEDbgInterfaceImpl::TraceManager(Thread *thread,
         _ASSERTE(!"Fail to trace a stub through TraceManager()");
         fResult = false;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
 #ifdef _DEBUG
     StubManager::DbgWriteLog("Doing TraceManager on %s (0x%p) for IP=0x%p, yields:\n", stubManager->DbgGetName(), stubManager, GetIP(context));
@@ -1331,7 +1314,7 @@ void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
 
 #ifdef TARGET_WINDOWS
     *pTLSIndex = _tls_index;
-    *pTLSEEThreadOffset = Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo.m_pThread);
+    *pTLSEEThreadOffset = Thread::GetOffsetOfThreadStatic(&t_CurrentThreadInfo.m_pThread);
     *pTLSIsSpecialOffset = Thread::GetOffsetOfThreadStatic(&t_ThreadType);
     *pTLSCantStopOffset = Thread::GetOffsetOfThreadStatic(&t_CantStopCount);
 #else

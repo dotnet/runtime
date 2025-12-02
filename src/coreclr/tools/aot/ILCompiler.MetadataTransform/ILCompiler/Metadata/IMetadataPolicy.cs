@@ -44,9 +44,20 @@ namespace ILCompiler.Metadata
         bool GeneratesMetadata(Cts.Ecma.EcmaModule module, Ecma.CustomAttributeHandle customAttribute);
 
         /// <summary>
+        /// Returns true if the parameter should generate <see cref="Parameter"/> metadata.
+        /// If false, the parameter is not generated.
+        /// </summary>
+        bool GeneratesMetadata(Cts.Ecma.EcmaModule module, Ecma.ParameterHandle parameter);
+
+        /// <summary>
         /// Returns true if an exported type entry should generate <see cref="TypeForwarder"/> metadata.
         /// </summary>
         bool GeneratesMetadata(Cts.Ecma.EcmaModule module, Ecma.ExportedTypeHandle exportedType);
+
+        /// <summary>
+        /// Returns true if InterfaceImpl should be generated for this type.
+        /// </summary>
+        bool GeneratesInterfaceImpl(Cts.MetadataType typeDef, Cts.MetadataType interfaceImpl);
 
         /// <summary>
         /// Returns true if a type should be blocked from generating any metadata.

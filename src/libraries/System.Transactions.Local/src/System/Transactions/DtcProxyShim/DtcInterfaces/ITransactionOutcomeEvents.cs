@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 namespace System.Transactions.DtcProxyShim.DtcInterfaces;
 
 // Keep this type as a ComImport type as it is used with IConnectionPointContainer (and as a result needs to use built-in COM).
-// https://docs.microsoft.com/previous-versions/windows/desktop/ms686465(v=vs.85)
+// https://learn.microsoft.com/previous-versions/windows/desktop/ms686465(v=vs.85)
 [ComImport, Guid("3A6AD9E2-23B9-11cf-AD60-00AA00A74CCD"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal interface ITransactionOutcomeEvents
 {

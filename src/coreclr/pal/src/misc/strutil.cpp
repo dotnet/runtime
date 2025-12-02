@@ -18,7 +18,6 @@ Abstract:
 
 #include "pal/corunix.hpp"
 #include "pal/thread.hpp"
-#include "pal/malloc.hpp"
 #include "pal/dbgmsg.h"
 
 SET_DEFAULT_DEBUG_CHANNEL(PAL);
@@ -53,7 +52,7 @@ CPalString::CopyString(
         _ASSERTE(psSource->GetMaxLength() > psSource->GetStringLength());
 
         WCHAR *pwsz = reinterpret_cast<WCHAR*>(
-            InternalMalloc(psSource->GetMaxLength() * sizeof(WCHAR))
+            malloc(psSource->GetMaxLength() * sizeof(WCHAR))
             );
 
         if (NULL != pwsz)

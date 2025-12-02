@@ -16,7 +16,6 @@
 #include "gcheaputilities.h"
 #include "field.h"
 #include "eeconfig.h"
-#include "runtimehandles.h" // for SignatureNative
 #include "winwrap.h"
 #include <formattype.h>
 #include "sigbuilder.h"
@@ -126,6 +125,7 @@ DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_MVAR,           -1,                   TYPE_GC
 DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_CMOD_REQD,      -1,                   TYPE_GC_NONE,  1)
 DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_CMOD_OPT,       -1,                   TYPE_GC_NONE,  1)
 DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_INTERNAL,       -1,                   TYPE_GC_NONE,  0)
+DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_CMOD_INTERNAL,  -1,                   TYPE_GC_NONE,  0)
 };
 
 unsigned GetSizeForCorElementType(CorElementType etyp)
@@ -137,7 +137,7 @@ unsigned GetSizeForCorElementType(CorElementType etyp)
 
 #ifndef DACCESS_COMPILE
 
-void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
+void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, const SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
 {
     CONTRACTL
     {
@@ -152,8 +152,9 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
 
     CorElementType typ = ELEMENT_TYPE_END;
 
-    // Check whether we need to skip custom modifier
-    // Only preserve custom modifier when calculating IL stub hash blob
+    // If we don't have a token lookup map, skip custom modifiers.
+    // We can't accurately represent them in the internal signature unless we can
+    // resolve tokens through a token lookup map.
     if (bSkipCustomModifier)
     {
         // GetElemType eats sentinel and custom modifiers
@@ -178,6 +179,17 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
         pSigBuilder->AppendElementType(ELEMENT_TYPE_INTERNAL);
         pSigBuilder->AppendPointer(th.AsPtr());
         return;
+    }
+
+    if (typ == ELEMENT_TYPE_CMOD_REQD || typ == ELEMENT_TYPE_CMOD_OPT)
+    {
+        mdToken tk;
+        IfFailThrowBF(GetToken(&tk), BFA_BAD_COMPLUS_SIG, pSigModule);
+        TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pSigModule, tk, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef);
+        pSigBuilder->AppendElementType(ELEMENT_TYPE_CMOD_INTERNAL);
+        pSigBuilder->AppendByte(typ == ELEMENT_TYPE_CMOD_REQD); // "is required" byte
+        pSigBuilder->AppendPointer(th.AsPtr());
+        return ConvertToInternalExactlyOne(pSigModule, pTypeContext, pSigBuilder, bSkipCustomModifier);
     }
 
     if (pTypeContext != NULL)
@@ -272,6 +284,29 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
                 }
                 break;
 
+            case ELEMENT_TYPE_CMOD_INTERNAL:
+                {
+                    uint8_t required;
+                    IfFailThrowBF(GetByte(&required), BFA_BAD_COMPLUS_SIG, pSigModule);
+                    pSigBuilder->AppendByte(required);
+
+                    // this check is not functional in DAC and provides no security against a malicious dump
+                    // the DAC is prepared to receive an invalid type handle
+#ifndef DACCESS_COMPILE
+                    if (pSigModule->IsSigInIL(m_ptr))
+                        THROW_BAD_FORMAT(BFA_BAD_COMPLUS_SIG, pSigModule);
+#endif
+
+                    TypeHandle hType;
+
+                    IfFailThrowBF(GetPointer((void**)&hType), BFA_BAD_COMPLUS_SIG, pSigModule);
+
+                    pSigBuilder->AppendPointer(hType.AsPtr());
+
+                    ConvertToInternalExactlyOne(pSigModule, pTypeContext, pSigBuilder, bSkipCustomModifier);
+                }
+                break;
+
             case ELEMENT_TYPE_INTERNAL:
                 {
                     // this check is not functional in DAC and provides no security against a malicious dump
@@ -306,25 +341,11 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
                     }
                 }
                 break;
-
-            // Note: the following is only for correctly computing IL stub hash for modifiers in order to support C++ scenarios
-            case ELEMENT_TYPE_CMOD_OPT:
-            case ELEMENT_TYPE_CMOD_REQD:
-                {
-                    mdToken tk;
-                    IfFailThrowBF(GetToken(&tk), BFA_BAD_COMPLUS_SIG, pSigModule);
-                    TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pSigModule, tk);
-                    pSigBuilder->AppendElementType(ELEMENT_TYPE_INTERNAL);
-                    pSigBuilder->AppendPointer(th.AsPtr());
-
-                    ConvertToInternalExactlyOne(pSigModule, pTypeContext, pSigBuilder, bSkipCustomModifier);
-                }
-                break;
         }
     }
 }
 
-void SigPointer::ConvertToInternalSignature(Module* pSigModule, SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
+void SigPointer::ConvertToInternalSignature(Module* pSigModule, const SigTypeContext *pTypeContext, SigBuilder * pSigBuilder, BOOL bSkipCustomModifier)
 {
     CONTRACTL
     {
@@ -364,6 +385,65 @@ void SigPointer::ConvertToInternalSignature(Module* pSigModule, SigTypeContext *
         ConvertToInternalExactlyOne(pSigModule, pTypeContext, pSigBuilder, bSkipCustomModifier);
         cArgs--;
     }
+}
+
+void SigPointer::CopyModOptsReqs(Module* pSigModule, SigBuilder* pSigBuilder)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+    }
+    CONTRACTL_END
+
+    CorElementType typ;
+    IfFailThrowBF(PeekElemType(&typ), BFA_BAD_COMPLUS_SIG, pSigModule);
+    while (typ == ELEMENT_TYPE_CMOD_REQD || typ == ELEMENT_TYPE_CMOD_OPT)
+    {
+        // Skip the custom modifier
+        IfFailThrowBF(GetByte(NULL), BFA_BAD_COMPLUS_SIG, pSigModule);
+
+        // Get the encoded token.
+        uint32_t token;
+        IfFailThrowBF(GetToken(&token), BFA_BAD_COMPLUS_SIG, pSigModule);
+
+        // Append the custom modifier and encoded token to the signature.
+        pSigBuilder->AppendElementType(typ);
+        pSigBuilder->AppendToken(token);
+
+        typ = ELEMENT_TYPE_END;
+        IfFailThrowBF(PeekElemType(&typ), BFA_BAD_COMPLUS_SIG, pSigModule);
+    }
+}
+
+void SigPointer::CopyExactlyOne(Module* pSigModule, SigBuilder* pSigBuilder)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+    }
+    CONTRACTL_END
+
+    intptr_t beginExactlyOne = (intptr_t)m_ptr;
+    IfFailThrowBF(SkipExactlyOne(), BFA_BAD_COMPLUS_SIG, pSigModule);
+    intptr_t endExactlyOne = (intptr_t)m_ptr;
+    pSigBuilder->AppendBlob((const PVOID)beginExactlyOne, endExactlyOne - beginExactlyOne);
+}
+
+void SigPointer::CopySignature(Module* pSigModule, SigBuilder* pSigBuilder, BYTE additionalCallConv)
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+    }
+    CONTRACTL_END
+
+    PCCOR_SIGNATURE beginSignature = m_ptr;
+    IfFailThrowBF(SkipSignature(), BFA_BAD_COMPLUS_SIG, pSigModule);
+    pSigBuilder->AppendByte(*beginSignature | additionalCallConv);
+    pSigBuilder->AppendBlob((const PVOID)(beginSignature + 1), m_ptr - (beginSignature + 1));
 }
 #endif // DACCESS_COMPILE
 
@@ -663,6 +743,8 @@ MetaSig::MetaSig(MethodDesc *pMD, Instantiation classInst, Instantiation methodI
 
     if (pMD->RequiresInstArg())
         SetHasParamTypeArg();
+    if (pMD->IsAsyncMethod())
+        SetIsAsyncCall();
 }
 
 MetaSig::MetaSig(MethodDesc *pMD, TypeHandle declaringType)
@@ -684,6 +766,8 @@ MetaSig::MetaSig(MethodDesc *pMD, TypeHandle declaringType)
 
     if (pMD->RequiresInstArg())
         SetHasParamTypeArg();
+    if (pMD->IsAsyncMethod())
+        SetIsAsyncCall();
 }
 
 #ifdef _DEBUG
@@ -937,6 +1021,25 @@ IsTypeRefOrDef(
     return(true);
 } // IsTypeRefOrDef
 
+BOOL IsTypeRefOrDef(
+    LPCSTR   szClassName,
+    DynamicResolver * pResolver,
+    mdToken  token)
+{
+    STANDARD_VM_CONTRACT;
+
+    ResolvedToken resolved;
+    pResolver->ResolveToken(token, &resolved);
+
+    if (resolved.TypeHandle.IsNull())
+        return false;
+
+    DefineFullyQualifiedNameForClassOnStack();
+    LPCUTF8 fullyQualifiedName = GetFullyQualifiedNameForClass(resolved.TypeHandle.GetMethodTable());
+
+    return (strcmp(szClassName, fullyQualifiedName) == 0);
+}
+
 TypeHandle SigPointer::GetTypeHandleNT(Module* pModule,
                                        const SigTypeContext *pTypeContext) const
 {
@@ -957,7 +1060,7 @@ TypeHandle SigPointer::GetTypeHandleNT(Module* pModule,
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     return(th);
 }
 
@@ -988,11 +1091,6 @@ static uint32_t NormalizeFnPtrCallingConvention(uint32_t callConv)
     return callConv;
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
-
 // Method: TypeHandle SigPointer::GetTypeHandleThrowing()
 // pZapSigContext is only set when decoding zapsigs
 //
@@ -1005,7 +1103,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                  const Substitution *        pSubst/*=NULL*/,
                  // ZapSigContext is only set when decoding zapsigs
                  const ZapSig::Context *     pZapSigContext,
-                 MethodTable *               pMTInterfaceMapOwner,
+                 MethodTable*                 pMTInterfaceMapOwner,
                  HandleRecursiveGenericsForFieldLayoutLoad *pRecursiveFieldGenericHandling) const
 {
     CONTRACT(TypeHandle)
@@ -1518,7 +1616,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
                 Instantiation genericLoadInst(thisinst, ntypars);
 
-                if (pMTInterfaceMapOwner != NULL && genericLoadInst.ContainsAllOneType(pMTInterfaceMapOwner))
+                if (pMTInterfaceMapOwner != NULL && genericLoadInst.ContainsAllOneType(pMTInterfaceMapOwner->GetSpecialInstantiationType()))
                 {
                     thRet = ClassLoader::LoadTypeDefThrowing(pGenericTypeModule, tkGenericType, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, level);
                 }
@@ -1539,7 +1637,16 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                                                         &instContext,
                                                                         pZapSigContext && pZapSigContext->externalTokens == ZapSig::NormalTokens));
 
-                    if (!handlingRecursiveGenericFieldScenario)
+                    if (!thFound.IsNull() && pMTInterfaceMapOwner != NULL && !thFound.IsTypeDesc() && thFound.AsMethodTable()->IsSpecialMarkerTypeForGenericCasting())
+                    {
+                        // We are trying to load an interface instantiation, and we have a concept of the special marker type enabled, but
+                        // the loaded type is not the expected type we should be looking for to return a special marker type, but the normal load has
+                        // found a type which claims to be a special marker type. In this case return something else (object) to indicate that
+                        // we found an invalid situation and this function should be retried without the special marker type logic enabled.
+                        thRet = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_OBJECT));
+                        break;
+                    }
+                    else if (!handlingRecursiveGenericFieldScenario)
                     {
                         thRet = thFound;
                         break;
@@ -1842,9 +1949,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
     RETURN thRet;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 TypeHandle SigPointer::GetGenericInstType(ModuleBase *        pModule,
                                     ClassLoader::LoadTypesFlag  fLoadTypes/*=LoadTypes*/,
@@ -1988,9 +2092,6 @@ TypeHandle SigPointer::GetTypeVariable(CorElementType et,
         GC_NOTRIGGER;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK)); // will return TypeHandle() if index is out of range
         SUPPORTS_DAC;
-#ifndef DACCESS_COMPILE
-        //        POSTCONDITION(RETVAL.IsNull() || RETVAL.IsRestored() || RETVAL.GetMethodTable()->IsRestoring());
-#endif
         MODE_ANY;
     }
     CONTRACT_END
@@ -2285,7 +2386,7 @@ BOOL SigPointer::IsClassHelper(Module* pModule, LPCUTF8 szClassName, const SigTy
 //------------------------------------------------------------------------
 // Tests for the existence of a custom modifier
 //------------------------------------------------------------------------
-BOOL SigPointer::HasCustomModifier(Module *pModule, LPCSTR szModName, CorElementType cmodtype) const
+BOOL SigPointer::HasCustomModifier(Module *pModule, LPCSTR szModName, CorElementType cmodtype, Module** pModifierScope, mdToken* pModifierType) const
 {
     CONTRACTL
     {
@@ -2313,14 +2414,41 @@ BOOL SigPointer::HasCustomModifier(Module *pModule, LPCSTR szModName, CorElement
     etyp = (CorElementType)data;
 
 
-    while (etyp == ELEMENT_TYPE_CMOD_OPT || etyp == ELEMENT_TYPE_CMOD_REQD) {
-
+    while (etyp == ELEMENT_TYPE_CMOD_OPT || etyp == ELEMENT_TYPE_CMOD_REQD || etyp == ELEMENT_TYPE_CMOD_INTERNAL) {
+        Module* lookupModule = pModule;
         mdToken tk;
-        if (FAILED(sp.GetToken(&tk)))
-            return FALSE;
 
-        if (etyp == cmodtype && IsTypeRefOrDef(szModName, pModule, tk))
+        if (etyp == ELEMENT_TYPE_CMOD_INTERNAL)
         {
+            uint8_t required;
+            if (FAILED(sp.GetByte(&required)))
+                return FALSE;
+
+            void* typeHandle;
+            if (FAILED(sp.GetPointer(&typeHandle)))
+                return FALSE;
+
+            TypeHandle type = TypeHandle::FromPtr(typeHandle);
+            tk = type.GetCl();
+            lookupModule = type.GetModule();
+            etyp = required ? ELEMENT_TYPE_CMOD_REQD : ELEMENT_TYPE_CMOD_OPT;
+        }
+        else
+        {
+            if (FAILED(sp.GetToken(&tk)))
+                return FALSE;
+        }
+
+        if (etyp == cmodtype && IsTypeRefOrDef(szModName, lookupModule, tk))
+        {
+            if (pModifierScope != nullptr)
+            {
+                *pModifierScope = lookupModule;
+            }
+            if (pModifierType != nullptr)
+            {
+                *pModifierType = tk;
+            }
             return(TRUE);
         }
 
@@ -3208,11 +3336,6 @@ BOOL IsTypeDefEquivalent(mdToken tk, Module *pModule)
         if (!IsTypeDefExternallyVisible(tk, pModule, dwAttrType))
             return FALSE;
 
-        // since the token has not been loaded yet,
-        // its module might be not fully initialized in this domain
-        // take care of that possibility
-        pModule->EnsureAllocated();
-
         // 6. If type is nested, nesting type must be equivalent.
         if (IsTdNested(dwAttrType))
         {
@@ -3607,9 +3730,10 @@ ErrExit:
 #endif //!DACCESS_COMPILE
 } // CompareTypeTokens
 
-static void ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSig)
+void MetaSig::ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSig)
 {
     mdToken tk;
+    void* ptr;
     CorElementType type;
 
     PCCOR_SIGNATURE pSigTmp = pSig;
@@ -3620,6 +3744,15 @@ static void ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSi
 
         switch (type)
         {
+        case ELEMENT_TYPE_CMOD_INTERNAL:
+            if (pSigTmp + 1 > pEndSig)
+            {
+                IfFailThrow(META_E_BAD_SIGNATURE);
+            }
+            pSigTmp++; // Skip the required bit
+            IfFailThrow(CorSigUncompressPointer_EndPtr(pSigTmp, pEndSig, &ptr));
+            pSig = pSigTmp;
+            break;
         case ELEMENT_TYPE_CMOD_REQD:
         case ELEMENT_TYPE_CMOD_OPT:
             IfFailThrow(CorSigUncompressToken_EndPtr(pSigTmp, pEndSig, &tk));
@@ -3630,11 +3763,6 @@ static void ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSi
         }
     }
 }
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 
 //---------------------------------------------------------------------------------------
 //
@@ -3792,7 +3920,6 @@ MetaSig::CompareElementType(
                 pOtherModule = pModule1;
             }
 
-            // Internal types can only correspond to types or value types.
             switch (eOtherType)
             {
                 case ELEMENT_TYPE_OBJECT:
@@ -3820,7 +3947,7 @@ MetaSig::CompareElementType(
                         pOtherModule,
                         tkOther,
                         ClassLoader::ReturnNullIfNotFound,
-                        ClassLoader::FailIfUninstDefOrRef);
+                        ClassLoader::PermitUninstDefOrRef);
 
                     return (hInternal == hOtherType);
                 }
@@ -3831,6 +3958,71 @@ MetaSig::CompareElementType(
             }
         }
 
+        if (Type1 == ELEMENT_TYPE_CMOD_INTERNAL || Type2 == ELEMENT_TYPE_CMOD_INTERNAL)
+        {
+            bool internalRequired;
+            TypeHandle     hInternal;
+            CorElementType eOtherType;
+            ModuleBase *   pOtherModule;
+
+            // One type is already loaded, collect all the necessary information to identify the other type.
+            if (Type1 == ELEMENT_TYPE_CMOD_INTERNAL)
+            {
+                 if (pSig1 + 1 > pEndSig1)
+                {
+                    IfFailThrow(META_E_BAD_SIGNATURE);
+                }
+                internalRequired = *pSig1++;
+                IfFailThrow(CorSigUncompressPointer_EndPtr(pSig1, pEndSig1, (void**)&hInternal));
+
+                eOtherType = Type2;
+                pOtherModule = pModule2;
+            }
+            else
+            {
+                if (pSig2 + 1 > pEndSig2)
+                {
+                    IfFailThrow(META_E_BAD_SIGNATURE);
+                }
+                internalRequired = *pSig2++;
+                IfFailThrow(CorSigUncompressPointer_EndPtr(pSig2, pEndSig2, (void **)&hInternal));
+
+                eOtherType = Type1;
+                pOtherModule = pModule1;
+            }
+
+            if (internalRequired && (eOtherType != ELEMENT_TYPE_CMOD_REQD))
+            {
+                return FALSE;
+            }
+            else if (!internalRequired && (eOtherType != ELEMENT_TYPE_CMOD_OPT))
+            {
+                return FALSE;
+            }
+
+            mdToken tkOther;
+            if (Type1 == ELEMENT_TYPE_CMOD_INTERNAL)
+            {
+                IfFailThrow(CorSigUncompressToken_EndPtr(pSig2, pEndSig2, &tkOther));
+            }
+            else
+            {
+                IfFailThrow(CorSigUncompressToken_EndPtr(pSig1, pEndSig1, &tkOther));
+            }
+
+            TypeHandle hOtherType = ClassLoader::LoadTypeDefOrRefThrowing(
+                pOtherModule,
+                tkOther,
+                ClassLoader::ReturnNullIfNotFound,
+                ClassLoader::FailIfUninstDefOrRef);
+
+            if (hInternal != hOtherType)
+            {
+                return FALSE;
+            }
+            goto redo;
+
+        }
         return FALSE; // types must be the same
     }
 
@@ -4147,14 +4339,43 @@ MetaSig::CompareElementType(
 
             return (hType1 == hType2);
         }
+        case ELEMENT_TYPE_CMOD_INTERNAL:
+        {
+            uint8_t required1, required2;
+
+            if (pSig1 + 1 > pEndSig1)
+            {
+                IfFailThrow(META_E_BAD_SIGNATURE);
+            }
+            required1 = *pSig1++;
+
+            if (pSig2 + 1 > pEndSig2)
+            {
+                IfFailThrow(META_E_BAD_SIGNATURE);
+            }
+            required2 = *pSig2++;
+
+            if (required1 != required2)
+            {
+                return FALSE;
+            }
+
+            TypeHandle hType1, hType2;
+
+            IfFailThrow(CorSigUncompressPointer_EndPtr(pSig1, pEndSig1, (void **)&hType1));
+            IfFailThrow(CorSigUncompressPointer_EndPtr(pSig2, pEndSig2, (void **)&hType2));
+
+            if (hType1 != hType2)
+            {
+                return FALSE;
+            }
+
+            goto redo;
+        }
     } // switch
     // Unreachable
     UNREACHABLE();
 } // MetaSig::CompareElementType
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
 
 //---------------------------------------------------------------------------------------
 //
@@ -4204,8 +4425,6 @@ MetaSig::CompareTypeDefsUnderSubstitutions(
     SigPointer inst1 = pSubst1->GetInst();
     SigPointer inst2 = pSubst2->GetInst();
 
-    TokenPairList visited { pVisited };
-    CompareState state{ &visited };
     for (DWORD i = 0; i < pTypeDef1->GetNumGenericArgs(); i++)
     {
         PCCOR_SIGNATURE startInst1 = inst1.GetPtr();
@@ -4214,6 +4433,8 @@ MetaSig::CompareTypeDefsUnderSubstitutions(
         PCCOR_SIGNATURE startInst2 = inst2.GetPtr();
         IfFailThrow(inst2.SkipExactlyOne());
         PCCOR_SIGNATURE endInst2ptr = inst2.GetPtr();
+        TokenPairList visited{ pVisited };
+        CompareState state{ &visited };
         if (!CompareElementType(
                 startInst1,
                 startInst2,
@@ -4363,7 +4584,7 @@ MetaSig::CompareMethodSigs(
         return FALSE;
     }
 
-    __int8 callConv = *pSig1;
+    int8_t callConv = *pSig1;
 
     pSig1++;
     pSig2++;
@@ -4381,8 +4602,6 @@ MetaSig::CompareMethodSigs(
 
     IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &ArgCount1));
     IfFailThrow(CorSigUncompressData_EndPtr(pSig2, pEndSig2, &ArgCount2));
-
-    TokenPairList visited{ pVisited };
 
     if (ArgCount1 != ArgCount2)
     {
@@ -4405,7 +4624,6 @@ MetaSig::CompareMethodSigs(
         // to correctly handle overloads, where there are a number of varargs methods
         // to pick from, like m1(int,...) and m2(int,int,...), etc.
 
-        CompareState state{ &visited };
         // <= because we want to include a check of the return value!
         for (i = 0; i <= ArgCount1; i++)
         {
@@ -4437,6 +4655,8 @@ MetaSig::CompareMethodSigs(
             else
             {
                 // We are in bounds on both sides.  Compare the element.
+                TokenPairList visited{ pVisited };
+                CompareState state{ &visited };
                 if (!CompareElementType(
                     pSig1,
                     pSig2,
@@ -4461,7 +4681,6 @@ MetaSig::CompareMethodSigs(
     }
 
     // do return type as well
-    CompareState state{ &visited };
     for (i = 0; i <= ArgCount1; i++)
     {
         if (i == 0 && skipReturnTypeSig)
@@ -4476,6 +4695,8 @@ MetaSig::CompareMethodSigs(
         }
         else
         {
+            TokenPairList visited{ pVisited };
+            CompareState state{ &visited };
             if (!CompareElementType(
                 pSig1,
                 pSig2,
@@ -4816,9 +5037,11 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
             if ((specialConstraints2 & (gpDefaultConstructorConstraint | gpNotNullableValueTypeConstraint)) == 0)
                 return FALSE;
         }
-        if ((specialConstraints1 & gpAcceptByRefLike) != 0)
+
+        // Constraints that 'allow' must check the overridden first
+        if ((specialConstraints2 & gpAllowByRefLike) != 0)
         {
-            if ((specialConstraints2 & gpAcceptByRefLike) == 0)
+            if ((specialConstraints1 & gpAllowByRefLike) == 0)
                 return FALSE;
         }
     }
@@ -4976,12 +5199,9 @@ void PromoteCarefully(promote_func   fn,
 
     if (sc->promotion)
     {
-        LoaderAllocator*pLoaderAllocator = LoaderAllocator::GetAssociatedLoaderAllocator_Unsafe(PTR_TO_TADDR(*ppObj));
-        if (pLoaderAllocator != NULL)
-        {
-            GcReportLoaderAllocator(fn, sc, pLoaderAllocator);
-        }
+        LoaderAllocator::GcReportAssociatedLoaderAllocators_Unsafe(PTR_TO_TADDR(*ppObj), fn, sc);
     }
+
 #endif // !defined(DACCESS_COMPILE)
 
     (*fn) (ppObj, sc, flags);
@@ -5063,7 +5283,7 @@ void ReportPointersFromValueType(promote_func *fn, ScanContext *sc, PTR_MethodTa
         reporter.Find(pMT, 0 /* baseOffset */);
     }
 
-    if (!pMT->ContainsPointers())
+    if (!pMT->ContainsGCPointers())
         return;
 
     CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
@@ -5092,7 +5312,7 @@ void ReportPointersFromValueTypeArg(promote_func *fn, ScanContext *sc, PTR_Metho
 {
     WRAPPER_NO_CONTRACT;
 
-    if (!pMT->ContainsPointers() && !pMT->IsByRefLike())
+    if (!pMT->ContainsGCPointers() && !pMT->IsByRefLike())
     {
         return;
     }
@@ -5106,6 +5326,13 @@ void ReportPointersFromValueTypeArg(promote_func *fn, ScanContext *sc, PTR_Metho
 #endif // UNIX_AMD64_ABI
 
     ReportPointersFromValueType(fn, sc, pMT, pSrc->GetDestinationAddress());
+}
+
+BOOL MetaSig::HasAsyncContinuation()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return IsAsyncCall();
 }
 
 //------------------------------------------------------------------
@@ -5245,7 +5472,7 @@ void MetaSig::EnsureSigValueTypesLoaded(MethodDesc *pMD)
     // The signature format is approximately:
     // CallingConvention   NumberOfArguments    ReturnType   Arg1  ...
     // There is also a blob length at pSig-1.
-    SigPointer ptr(pMD->GetSig());
+    SigPointer ptr = pMD->GetSigPointer();
 
     // Skip over calling convention.
     IfFailThrowBF(ptr.GetCallingConv(NULL), BFA_BAD_SIGNATURE, pModule);
@@ -5284,7 +5511,7 @@ void MetaSig::CheckSigTypesCanBeLoaded(MethodDesc * pMD)
     // The signature format is approximately:
     // CallingConvention   NumberOfArguments    ReturnType   Arg1  ...
     // There is also a blob length at pSig-1.
-    SigPointer ptr(pMD->GetSig());
+    SigPointer ptr = pMD->GetSigPointer();
 
     // Skip over calling convention.
     IfFailThrowBF(ptr.GetCallingConv(NULL), BFA_BAD_SIGNATURE, pModule);
@@ -5515,6 +5742,12 @@ TokenPairList TokenPairList::AdjustForTypeSpec(TokenPairList *pTemplate, ModuleB
 
             result.m_bInTypeEquivalenceForbiddenScope = !IsTdInterface(dwAttrType);
         }
+    }
+    else if (elemType == ELEMENT_TYPE_INTERNAL)
+    {
+        TypeHandle typeHandle;
+        IfFailThrow(sig.GetPointer((void**)&typeHandle));
+        result.m_bInTypeEquivalenceForbiddenScope = !typeHandle.IsInterface();
     }
     else
     {

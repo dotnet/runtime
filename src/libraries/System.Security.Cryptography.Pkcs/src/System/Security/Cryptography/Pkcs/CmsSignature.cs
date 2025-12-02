@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Numerics;
 using System.Security.Cryptography.X509Certificates;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
 {
@@ -20,17 +21,22 @@ namespace System.Security.Cryptography.Pkcs
             PrepareRegistrationRsa(s_lookup);
             PrepareRegistrationDsa(s_lookup);
             PrepareRegistrationECDsa(s_lookup);
+            PrepareRegistrationMLDsa(s_lookup);
+            PrepareRegistrationSlhDsa(s_lookup);
         }
 
         static partial void PrepareRegistrationRsa(Dictionary<string, CmsSignature> lookup);
         static partial void PrepareRegistrationDsa(Dictionary<string, CmsSignature> lookup);
         static partial void PrepareRegistrationECDsa(Dictionary<string, CmsSignature> lookup);
+        static partial void PrepareRegistrationMLDsa(Dictionary<string, CmsSignature> lookup);
+        static partial void PrepareRegistrationSlhDsa(Dictionary<string, CmsSignature> lookup);
 
         internal abstract RSASignaturePadding? SignaturePadding { get; }
-        protected abstract bool VerifyKeyType(AsymmetricAlgorithm key);
+        protected abstract bool VerifyKeyType(object key);
+        internal abstract bool NeedsHashedMessage { get; }
 
         internal abstract bool VerifySignature(
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
             ReadOnlySpan<byte> valueHash,
             ReadOnlyMemory<byte> signature,
 #else
@@ -38,19 +44,18 @@ namespace System.Security.Cryptography.Pkcs
             byte[] signature,
 #endif
             string? digestAlgorithmOid,
-            HashAlgorithmName digestAlgorithmName,
             ReadOnlyMemory<byte>? signatureParameters,
             X509Certificate2 certificate);
 
         protected abstract bool Sign(
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
             ReadOnlySpan<byte> dataHash,
 #else
             byte[] dataHash,
 #endif
-            HashAlgorithmName hashAlgorithmName,
+            string? hashAlgorithmOid,
             X509Certificate2 certificate,
-            AsymmetricAlgorithm? key,
+            object? key,
             bool silent,
             [NotNullWhen(true)] out string? signatureAlgorithm,
             [NotNullWhen(true)] out byte[]? signatureValue,
@@ -58,7 +63,7 @@ namespace System.Security.Cryptography.Pkcs
 
         internal static CmsSignature? ResolveAndVerifyKeyType(
             string signatureAlgorithmOid,
-            AsymmetricAlgorithm? key,
+            object? key,
             RSASignaturePadding? rsaSignaturePadding)
         {
             // Rules:
@@ -111,34 +116,23 @@ namespace System.Security.Cryptography.Pkcs
             return null;
         }
 
-        internal static bool Sign(
-#if NETCOREAPP || NETSTANDARD2_1
+        internal bool Sign(
+#if NET || NETSTANDARD2_1
             ReadOnlySpan<byte> dataHash,
 #else
             byte[] dataHash,
 #endif
-            HashAlgorithmName hashAlgorithmName,
+            string? hashAlgorithmOid,
             X509Certificate2 certificate,
-            AsymmetricAlgorithm? key,
+            object? key,
             bool silent,
-            RSASignaturePadding? rsaSignaturePadding,
             out string? oid,
             out ReadOnlyMemory<byte> signatureValue,
             out ReadOnlyMemory<byte> signatureParameters)
         {
-            CmsSignature? processor = ResolveAndVerifyKeyType(certificate.GetKeyAlgorithm(), key, rsaSignaturePadding);
-
-            if (processor == null)
-            {
-                oid = null;
-                signatureValue = default;
-                signatureParameters = default;
-                return false;
-            }
-
-            bool signed = processor.Sign(
+            bool signed = Sign(
                 dataHash,
-                hashAlgorithmName,
+                hashAlgorithmOid,
                 certificate,
                 key,
                 silent,
@@ -149,6 +143,27 @@ namespace System.Security.Cryptography.Pkcs
             signatureValue = signature;
             signatureParameters = parameters;
             return signed;
+        }
+
+        private static IDisposable? GetSigningKey<T>(
+            object? privateKey,
+            X509Certificate2 certificate,
+            bool silent,
+            Func<X509Certificate2, T?> getCertPublicKey,
+            out T? signingKey)
+            where T : class, IDisposable
+        {
+            signingKey = privateKey as T;
+            IDisposable? signingKeyResources = null;
+
+            if (signingKey is null)
+            {
+                // If there's no private key, fall back to the public key for a "no private key" exception.
+                signingKeyResources = signingKey =
+                    PkcsPal.Instance.GetPrivateKeyForSigning<T>(certificate, silent) ?? getCertPublicKey(certificate);
+            }
+
+            return signingKeyResources;
         }
 
         private static bool DsaDerToIeee(
@@ -224,7 +239,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 writer.PushSequence();
 
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
                 // r
                 BigInteger val = new BigInteger(
                     ieeeSignature.Slice(0, fieldSize),

@@ -61,21 +61,8 @@ namespace System.Threading.Tasks
         /// <summary>A cached task for default(TResult).</summary>
         internal static readonly Task<TResult> s_defaultResultTask = TaskCache.CreateCacheableTask<TResult>(default);
 
-        private static TaskFactory<TResult>? s_Factory;
-
         // The value itself, if set.
         internal TResult? m_result;
-
-        // Extract rarely used helper for a static method in a separate type so that the Func<Task<Task>, Task<TResult>>
-        // generic instantiations don't contribute to all Task instantiations, but only those where WhenAny is used.
-        internal static class TaskWhenAnyCast
-        {
-            // Delegate used by:
-            //     public static Task<Task<TResult>> WhenAny<TResult>(IEnumerable<Task<TResult>> tasks);
-            //     public static Task<Task<TResult>> WhenAny<TResult>(params Task<TResult>[] tasks);
-            // Used to "cast" from Task<Task> to Task<Task<TResult>>.
-            internal static readonly Func<Task<Task>, Task<TResult>> Value = completed => (Task<TResult>)completed.Result;
-        }
 
         // Construct a promise-style task without any options.
         internal Task()
@@ -485,9 +472,7 @@ namespace System.Threading.Tasks
         /// the default constructor on the factory type.
         /// </remarks>
         public static new TaskFactory<TResult> Factory =>
-            Volatile.Read(ref s_Factory) ??
-            Interlocked.CompareExchange(ref s_Factory, new TaskFactory<TResult>(), null) ??
-            s_Factory;
+            field ?? Interlocked.CompareExchange(ref field, new(), null) ?? field;
 
         /// <summary>
         /// Evaluates the value selector of the Task which is passed in as an object and stores the result.
@@ -524,6 +509,7 @@ namespace System.Threading.Tasks
         /// true to attempt to marshal the continuation back to the original context captured; otherwise, false.
         /// </param>
         /// <returns>An object used to await this task.</returns>
+        [Intrinsic]
         public new ConfiguredTaskAwaitable<TResult> ConfigureAwait(bool continueOnCapturedContext)
         {
             return new ConfiguredTaskAwaitable<TResult>(this, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
@@ -533,6 +519,7 @@ namespace System.Threading.Tasks
         /// <param name="options">Options used to configure how awaits on this task are performed.</param>
         /// <returns>An object used to await this task.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The <paramref name="options"/> argument specifies an invalid value.</exception>
+        [Intrinsic]
         public new ConfiguredTaskAwaitable<TResult> ConfigureAwait(ConfigureAwaitOptions options)
         {
             if ((options & ~(ConfigureAwaitOptions.ContinueOnCapturedContext |

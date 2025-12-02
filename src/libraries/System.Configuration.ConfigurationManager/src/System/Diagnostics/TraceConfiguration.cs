@@ -3,6 +3,9 @@
 
 namespace System.Diagnostics
 {
+    /// <summary>
+    /// Provides methods to register and configure tracing settings from configuration files to <see cref="TraceSource" /> and related classes.
+    /// </summary>
     public static class TraceConfiguration
     {
         private static volatile bool s_registered;
@@ -55,7 +58,7 @@ namespace System.Diagnostics
 
                             if (!string.IsNullOrEmpty(sourceElement.SwitchValue))
                             {
-                                traceSource.Switch.Level = (SourceLevels)Enum.Parse(typeof(SourceLevels), sourceElement.SwitchValue);
+                                traceSource.Switch.Level = Enum.Parse<SourceLevels>(sourceElement.SwitchValue);
                             }
                         }
                     }
@@ -74,7 +77,7 @@ namespace System.Diagnostics
                         // The SwitchValue changed; just update our internalSwitch.
                         if (!string.IsNullOrEmpty(sourceElement.SwitchValue))
                         {
-                            traceSource.Switch.Level = (SourceLevels)Enum.Parse(typeof(SourceLevels), sourceElement.SwitchValue);
+                            traceSource.Switch.Level = Enum.Parse<SourceLevels>(sourceElement.SwitchValue);
                         }
                         else
                         {

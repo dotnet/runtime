@@ -5,7 +5,7 @@
 
 \begin{document}
 
-\begin{Name}{3}{unw\_reg\_states\_iterate}{David Mosberger-Tang}{Programming Library}{unw\_reg\_states\_iterate}unw\_reg\_states\_iterate -- get register state info on current procedure
+\begin{Name}{3libunwind}{unw\_reg\_states\_iterate}{David Mosberger-Tang}{Programming Library}{unw\_reg\_states\_iterate}unw\_reg\_states\_iterate -- get register state info on current procedure
 \end{Name}
 
 \section{Synopsis}
@@ -46,12 +46,12 @@ The callback function may be invoked several times for each call of \Func{unw\_r
 On successful completion, \Func{unw\_reg\_states\_iterate}() returns
 0.  If the callback function returns a nonzero value, that indicates
 failure and the function returns immediately.  Otherwise the negative
-value of one of the error-codes below is returned.
+value of one of the error codes below is returned.
 
 \section{Thread and Signal Safety}
 
-\Func{unw\_reg\_states\_iterate}() is thread-safe.  If cursor \Var{cp} is
-in the local address-space, this routine is also safe to use from a
+\Func{unw\_reg\_states\_iterate}() is thread safe.  If cursor \Var{cp} is
+in the local address space, this routine is also safe to use from a
 signal handler.
 
 \section{Errors}
@@ -65,12 +65,12 @@ signal handler.
 \end{Description}
 In addition, \Func{unw\_reg\_states\_iterate}() may return any error
 returned by the \Func{access\_mem}() call-back (see
-\Func{unw\_create\_addr\_space}(3)).
+\Func{unw\_create\_addr\_space}(3libunwind)).
 
 \section{See Also}
 
-\SeeAlso{libunwind(3)},
-\SeeAlso{unw\_apply\_reg\_state(3)}
+\SeeAlso{libunwind}(3libunwind),
+\SeeAlso{unw\_apply\_reg\_state}(3libunwind)
 
 \section{Author}
 

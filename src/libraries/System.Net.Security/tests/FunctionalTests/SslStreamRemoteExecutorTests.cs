@@ -21,21 +21,38 @@ namespace System.Net.Security.Tests
         public SslStreamRemoteExecutorTests()
         { }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94843", ~TestPlatforms.Linux)]
-        public void SslKeyLogFile_IsCreatedAndFilled()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)] // SSLKEYLOGFILE is only supported on Linux for SslStream
+        [InlineData(true)]
+        [InlineData(false)]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/116473")]
+        public async Task SslKeyLogFile_IsCreatedAndFilled(bool enabledBySwitch)
         {
-            if (PlatformDetection.IsReleaseLibrary(typeof(SslStream).Assembly))
+            if (PlatformDetection.IsDebugLibrary(typeof(SslStream).Assembly) && !enabledBySwitch)
             {
-                throw new SkipTestException("Retrieving SSL secrets is not supported in Release mode.");
+                // AppCtxSwitch is not checked for SSLKEYLOGFILE in Debug builds, the same code path
+                // will be tested by the enabledBySwitch = true case. Skip it here.
+                return;
+            }
+
+            if (PlatformDetection.IsOpenSsl3_5 && !enabledBySwitch)
+            {
+                // OpenSSL 3.5 and later versions log into file in SSLKEYLOGFILE environment variable by default,
+                // regardless of AppContext switch.
+                return;
             }
 
             var psi = new ProcessStartInfo();
             var tempFile = Path.GetTempFileName();
             psi.Environment.Add("SSLKEYLOGFILE", tempFile);
 
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async (enabledBySwitch) =>
             {
+                if (bool.Parse(enabledBySwitch))
+                {
+                    AppContext.SetSwitch("System.Net.EnableSslKeyLogging", true);
+                }
+
                 (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
                 using (clientStream)
                 using (serverStream)
@@ -55,10 +72,16 @@ namespace System.Net.Security.Tests
 
                     await TestHelper.PingPong(client, server);
                 }
-            }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }, enabledBySwitch.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
 
-            Assert.True(File.Exists(tempFile));
-            Assert.True(File.ReadAllText(tempFile).Length > 0);
+            if (enabledBySwitch)
+            {
+                Assert.True(File.ReadAllText(tempFile).Length > 0);
+            }
+            else
+            {
+                Assert.True(File.ReadAllText(tempFile).Length == 0);
+            }
         }
     }
 }

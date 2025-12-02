@@ -36,7 +36,7 @@ namespace vxsort {
 namespace smallsort {
 template<> struct bitonic<int32_t, AVX512> {
     static const int N = 16;
-    static constexpr int32_t MAX = std::numeric_limits<int32_t>::Max();
+    static constexpr int32_t MAX = std::numeric_limits<int32_t>::max();
 public:
 
     static INLINE void sort_01v_ascending(__m512i& d01) {

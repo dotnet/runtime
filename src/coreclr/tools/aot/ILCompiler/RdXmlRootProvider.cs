@@ -4,12 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Xml.Linq;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-
-using AssemblyName = System.Reflection.AssemblyName;
 
 namespace ILCompiler
 {
@@ -59,7 +58,7 @@ namespace ILCompiler
             if (assemblyNameAttribute == null)
                 throw new Exception("The \"Name\" attribute is required on the \"Assembly\" Runtime Directive.");
 
-            ModuleDesc assembly = _context.ResolveAssembly(new AssemblyName(assemblyNameAttribute.Value));
+            ModuleDesc assembly = _context.ResolveAssembly(new AssemblyNameInfo(assemblyNameAttribute.Value));
 
             rootProvider.RootModuleMetadata(assembly, "RD.XML root");
 
@@ -181,7 +180,7 @@ namespace ILCompiler
             foreach (var m in containingType.GetMethods())
             {
                 var method = m;
-                if (method.Name != methodName)
+                if (method.GetName() != methodName)
                     continue;
 
                 if (instArgs.Count != method.Instantiation.Length)

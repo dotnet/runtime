@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -40,7 +41,13 @@ public sealed class BasicTestMethod : ITestInfo
                                                                .FullyQualifiedWithoutGlobalNamespace);
         Method = method.Name;
         DisplayNameForFiltering = $"{ContainingType}.{Method}({args})";
-        TestNameExpression = displayNameExpression ?? $"\"{externAlias}::{ContainingType}.{Method}({args})\"";
+
+        // Make arguments interpolated expressions to avoid issues with string arguments.
+        ImmutableArray<string> argumentsForName = arguments.IsDefaultOrEmpty
+            ? ImmutableArray<string>.Empty
+            : arguments.Select(arg => $"{{{arg}}}").ToImmutableArray();
+
+        TestNameExpression = displayNameExpression ?? $"$\"{externAlias}::{ContainingType}.{Method}({string.Join(", ", argumentsForName)})\"";
 
         if (method.IsStatic)
         {
@@ -241,6 +248,10 @@ public sealed class ConditionalTest : ITestInfo
         {
             platformCheckConditions.Add("global::System.OperatingSystem.IsBrowser()");
         }
+        if (platform.HasFlag(Xunit.TestPlatforms.Wasi))
+        {
+            platformCheckConditions.Add("global::System.OperatingSystem.IsWasi()");
+        }
         if (platform.HasFlag(Xunit.TestPlatforms.FreeBSD))
         {
             platformCheckConditions.Add(@"global::System.OperatingSystem.IsFreeBSD()");
@@ -336,12 +347,15 @@ public sealed class OutOfProcessTest : ITestInfo
     private CodeBuilder _executionStatement { get; }
     private string RelativeAssemblyPath { get; }
 
-    public OutOfProcessTest(string displayName, string relativeAssemblyPath)
+    public OutOfProcessTest(string displayName, string relativeAssemblyPath, string? testBuildMode)
     {
         Method = displayName;
         DisplayNameForFiltering = displayName;
         TestNameExpression = $"@\"{displayName}\"";
         RelativeAssemblyPath = relativeAssemblyPath;
+
+        // Native AOT tests get generated into a 'native' directory, so we need to get out of that one first to find the test
+        string testPathPrefix = string.Equals(testBuildMode, "nativeaot", StringComparison.OrdinalIgnoreCase) ? "\"..\"" : "null";
 
         _executionStatement = new CodeBuilder();
         _executionStatement.AppendLine();
@@ -350,7 +364,7 @@ public sealed class OutOfProcessTest : ITestInfo
         using (_executionStatement.NewBracesScope())
         {
             _executionStatement.AppendLine($@"TestLibrary.OutOfProcessTest"
-                                        + $@".RunOutOfProcessTest(@""{relativeAssemblyPath}"");");
+                                        + $@".RunOutOfProcessTest(@""{relativeAssemblyPath}"", {testPathPrefix});");
         }
     }
 

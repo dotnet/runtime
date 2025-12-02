@@ -899,7 +899,7 @@ namespace System.Runtime.Serialization
             if (knownTypeDictionary == null)
                 return null;
 
-            ICollection<DataContract>? knownTypeContracts = knownTypeDictionary.Values;
+            DataContractDictionary.ValueCollection? knownTypeContracts = knownTypeDictionary.Values;
             if (knownTypeContracts == null || knownTypeContracts.Count == 0)
                 return null;
 
@@ -1314,7 +1314,7 @@ namespace System.Runtime.Serialization
                 bool isElementNameDifferent =
                     (xmlDataContract.TopLevelElementName != null && xmlDataContract.TopLevelElementName.Value != xmlDataContract.XmlName.Name) ||
                     (xmlDataContract.TopLevelElementNamespace != null && xmlDataContract.TopLevelElementNamespace.Value != xmlDataContract.XmlName.Namespace);
-                if (isElementNameDifferent || xmlDataContract.IsTopLevelElementNullable == false)
+                if (isElementNameDifferent || !xmlDataContract.IsTopLevelElementNullable)
                 {
                     CodeAttributeDeclaration xmlRootAttribute = new CodeAttributeDeclaration(GetClrTypeFullName(typeof(XmlRootAttribute)));
                     if (isElementNameDifferent)
@@ -1328,7 +1328,7 @@ namespace System.Runtime.Serialization
                             xmlRootAttribute.Arguments.Add(new CodeAttributeArgument("Namespace", new CodePrimitiveExpression(xmlDataContract.TopLevelElementNamespace.Value)));
                         }
                     }
-                    if (xmlDataContract.IsTopLevelElementNullable == false)
+                    if (!xmlDataContract.IsTopLevelElementNullable)
                         xmlRootAttribute.Arguments.Add(new CodeAttributeArgument("IsNullable", new CodePrimitiveExpression(false)));
                     type.CustomAttributes.Add(xmlRootAttribute);
                 }

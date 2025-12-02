@@ -19,19 +19,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "jitgcinfo.h"
 
-#ifdef TARGET_AMD64
-#include "gcinfoencoder.h" //this includes a LOT of other files too
-#endif
-
-/*****************************************************************************/
-/*****************************************************************************/
-
-/*****************************************************************************/
-
-extern int JITGcBarrierCall;
-
-/*****************************************************************************/
-
 #if MEASURE_PTRTAB_SIZE
 /* static */ size_t GCInfo::s_gcRegPtrDscSize   = 0;
 /* static */ size_t GCInfo::s_gcTotalPtrTabSize = 0;
@@ -46,7 +33,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-GCInfo::GCInfo(Compiler* theCompiler) : compiler(theCompiler)
+GCInfo::GCInfo(Compiler* theCompiler)
+    : compiler(theCompiler)
 {
     regSet         = nullptr;
     gcVarPtrList   = nullptr;
@@ -56,12 +44,15 @@ GCInfo::GCInfo(Compiler* theCompiler) : compiler(theCompiler)
     gcPtrArgCnt    = 0;
     gcCallDescList = nullptr;
     gcCallDescLast = nullptr;
+#if EMIT_GENERATE_GCINFO
 #ifdef JIT32_GCENCODER
+    // TODO-WASM-Factoring: exclude this whole file from the wasm build by factoring out write barrier selection.
     gcEpilogTable = nullptr;
 #else  // !JIT32_GCENCODER
     m_regSlotMap   = nullptr;
     m_stackSlotMap = nullptr;
 #endif // JIT32_GCENCODER
+#endif // EMIT_GENERATE_GC_INFO
 }
 
 /*****************************************************************************/
@@ -205,6 +196,7 @@ void GCInfo::gcMarkRegSetNpt(regMaskTP regMask DEBUGARG(bool forceOutput))
 
 void GCInfo::gcMarkRegPtrVal(regNumber reg, var_types type)
 {
+#if EMIT_GENERATE_GCINFO
     regMaskTP regMask = genRegMask(reg);
 
     switch (type)
@@ -219,6 +211,7 @@ void GCInfo::gcMarkRegPtrVal(regNumber reg, var_types type)
             gcMarkRegSetNpt(regMask);
             break;
     }
+#endif // EMIT_GENERATE_GCINFO
 }
 
 //------------------------------------------------------------------------
@@ -239,32 +232,30 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
         return WBF_NoBarrier;
     }
 
-    // Ignore any assignments of NULL.
-    GenTree* data = store->Data()->gtSkipReloadOrCopy();
-    if ((data->GetVN(VNK_Liberal) == ValueNumStore::VNForNull()) || data->IsIntegralConst(0))
+    // Ignore any assignments of NULL or nongc object
+    GenTree* const value = store->Data()->gtSkipReloadOrCopy();
+    if (value->IsIntegralConst(0) || value->IsIconHandle(GTF_ICON_OBJ_HDL))
     {
         return WBF_NoBarrier;
     }
 
     if ((store->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0)
     {
-        // This indirection is not from to the heap.
-        // This case occurs for stack-allocated objects.
+        // This indirection is known to not store to the heap.
         return WBF_NoBarrier;
     }
 
-    // Write-barriers are no-op for frozen objects (as values)
-    if (data->IsIconHandle(GTF_ICON_OBJ_HDL))
+    if ((store->gtFlags & GTF_IND_TGT_HEAP) != 0)
     {
-        // Ignore frozen objects
-        return WBF_NoBarrier;
+        // This indirection is known to store to the heap.
+        return WBF_BarrierUnchecked;
     }
 
     WriteBarrierForm wbf = gcWriteBarrierFormFromTargetAddress(store->Addr());
 
     if (wbf == WBF_BarrierUnknown)
     {
-        wbf = ((store->gtFlags & GTF_IND_TGT_HEAP) != 0) ? WBF_BarrierUnchecked : WBF_BarrierChecked;
+        wbf = WBF_BarrierChecked;
     }
 
     return wbf;
@@ -292,13 +283,13 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
     }
 
     // No point in trying to further deconstruct a TYP_I_IMPL address.
-    if (tgtAddr->TypeGet() == TYP_I_IMPL)
+    if (tgtAddr->TypeIs(TYP_I_IMPL))
     {
         return GCInfo::WBF_BarrierUnknown;
     }
 
     // Otherwise...
-    assert(tgtAddr->TypeGet() == TYP_BYREF);
+    assert(tgtAddr->TypeIs(TYP_BYREF));
     bool simplifiedExpr = true;
     while (simplifiedExpr)
     {
@@ -310,7 +301,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
         // source.
         while (tgtAddr->OperIs(GT_ADD, GT_LEA))
         {
-            if (tgtAddr->OperGet() == GT_ADD)
+            if (tgtAddr->OperIs(GT_ADD))
             {
                 GenTree*  addOp1     = tgtAddr->AsOp()->gtGetOp1();
                 GenTree*  addOp2     = tgtAddr->AsOp()->gtGetOp2();
@@ -319,7 +310,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
 
                 if (addOp1Type == TYP_BYREF || addOp1Type == TYP_REF)
                 {
-                    assert(((addOp2Type != TYP_BYREF) || (addOp2->OperIs(GT_CNS_INT))) && (addOp2Type != TYP_REF));
+                    assert(((addOp2Type != TYP_BYREF) || addOp2->OperIs(GT_CNS_INT)) && (addOp2Type != TYP_REF));
                     tgtAddr        = addOp1;
                     simplifiedExpr = true;
                 }
@@ -340,9 +331,9 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
             else
             {
                 // Must be an LEA (i.e., an AddrMode)
-                assert(tgtAddr->OperGet() == GT_LEA);
+                assert(tgtAddr->OperIs(GT_LEA));
                 tgtAddr = tgtAddr->AsAddrMode()->Base();
-                if (tgtAddr->TypeGet() == TYP_BYREF || tgtAddr->TypeGet() == TYP_REF)
+                if (tgtAddr->TypeIs(TYP_BYREF, TYP_REF))
                 {
                     simplifiedExpr = true;
                 }
@@ -355,7 +346,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
         }
     }
 
-    if (tgtAddr->TypeGet() == TYP_REF)
+    if (tgtAddr->TypeIs(TYP_REF))
     {
         return GCInfo::WBF_BarrierUnchecked;
     }
@@ -420,12 +411,33 @@ GCInfo::regPtrDsc* GCInfo::gcRegPtrAllocDsc()
 
 #ifdef JIT32_GCENCODER
 
+// Small helper class to handle the No-GC-Interrupt callbacks
+// when reporting interruptible ranges.
+struct NoGCRegionCounter
+{
+    unsigned noGCRegionCount;
+
+    NoGCRegionCounter()
+        : noGCRegionCount(0)
+    {
+    }
+
+    // This callback is called for each insGroup marked with IGF_NOGCINTERRUPT.
+    bool operator()(unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInProlog)
+    {
+        noGCRegionCount++;
+        return true;
+    }
+};
+
 /*****************************************************************************
  *
  *  Compute the various counts that get stored in the info block header.
  */
 
-void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED unsigned int* pVarPtrTableSize)
+void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
+                              UNALIGNED unsigned int* pVarPtrTableSize,
+                              UNALIGNED unsigned int* pNoGCRegionCount)
 {
     unsigned   varNum;
     LclVarDsc* varDsc;
@@ -474,7 +486,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED
 
             untrackedCount++;
         }
-        else if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->lvOnFrame)
+        else if (varDsc->TypeIs(TYP_STRUCT) && varDsc->lvOnFrame)
         {
             untrackedCount += varDsc->GetLayout()->GetGCPtrCount();
         }
@@ -557,6 +569,19 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED
 #endif
 
     *pVarPtrTableSize = varPtrTableSize;
+
+    // Count the number of no GC regions
+
+    unsigned int noGCRegionCount = 0;
+
+    if (compiler->codeGen->GetInterruptible())
+    {
+        NoGCRegionCounter counter;
+        compiler->GetEmitter()->emitGenNoGCLst(counter, /* skipMainPrologsAndEpilogs = */ true);
+        noGCRegionCount = counter.noGCRegionCount;
+    }
+
+    *pNoGCRegionCount = noGCRegionCount;
 }
 
 //------------------------------------------------------------------------
@@ -566,7 +591,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED
 //
 // Arguments:
 //   varNum - the variable number to check;
-//   pKeepThisAlive - if !FEATURE_EH_FUNCLETS and the argument != nullptr remember
+//   pKeepThisAlive - if !UsesFunclets() and the argument != nullptr remember
 //   if `this` should be kept alive and considered tracked.
 //
 // Return value:
@@ -615,16 +640,16 @@ bool GCInfo::gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum, bool* pKeep
         }
     }
 
-#if !defined(FEATURE_EH_FUNCLETS)
-    if (compiler->lvaIsOriginalThisArg(varNum) && compiler->lvaKeepAliveAndReportThis())
+#if defined(FEATURE_EH_WINDOWS_X86)
+    if (!compiler->UsesFunclets() && compiler->lvaIsOriginalThisArg(varNum) && compiler->lvaKeepAliveAndReportThis())
     {
         // "this" is in the untracked variable area, but encoding of untracked variables does not support reporting
         // "this". So report it as a tracked variable with a liveness extending over the entire method.
         //
         // TODO-x86-Cleanup: the semantic here is not clear, it would be useful to check different cases and
         // add a description where "this" is saved and how it is tracked in each of them:
-        // 1) when FEATURE_EH_FUNCLETS defined (x86 Linux);
-        // 2) when FEATURE_EH_FUNCLETS not defined, lvaKeepAliveAndReportThis == true, compJmpOpUsed == true;
+        // 1) when UsesFunclets() == true (x86 Linux);
+        // 2) when UsesFunclets() == false, lvaKeepAliveAndReportThis == true, compJmpOpUsed == true;
         // 3) when there is regPtrDsc for "this", but keepThisAlive == true;
         // etc.
 
@@ -634,7 +659,7 @@ bool GCInfo::gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum, bool* pKeep
         }
         return false;
     }
-#endif // !FEATURE_EH_FUNCLETS
+#endif // FEATURE_EH_WINDOWS_X86
     return true;
 }
 
@@ -700,73 +725,3 @@ void GCInfo::gcRegPtrSetInit()
 }
 
 #endif // JIT32_GCENCODER
-
-//------------------------------------------------------------------------
-// gcUpdateForRegVarMove: Update the masks when a variable is moved
-//
-// Arguments:
-//    srcMask - The register mask for the register(s) from which it is being moved
-//    dstMask - The register mask for the register(s) to which it is being moved
-//    type    - The type of the variable
-//
-// Return Value:
-//    None
-//
-// Notes:
-//    This is called during codegen when a var is moved due to an LSRA_ASG.
-//    It is also called by LinearScan::recordVarLocationAtStartOfBB() which is in turn called by
-//    CodeGen::genCodeForBBList() at the block boundary.
-
-void GCInfo::gcUpdateForRegVarMove(regMaskTP srcMask, regMaskTP dstMask, LclVarDsc* varDsc)
-{
-    var_types type    = varDsc->TypeGet();
-    bool      isGCRef = (type == TYP_REF);
-    bool      isByRef = (type == TYP_BYREF);
-
-    if (srcMask != RBM_NONE)
-    {
-        regSet->RemoveMaskVars(srcMask);
-        if (isGCRef)
-        {
-            assert((gcRegByrefSetCur & srcMask) == 0);
-            gcRegGCrefSetCur &= ~srcMask;
-            gcRegGCrefSetCur |= dstMask; // safe if no dst, i.e. RBM_NONE
-        }
-        else if (isByRef)
-        {
-            assert((gcRegGCrefSetCur & srcMask) == 0);
-            gcRegByrefSetCur &= ~srcMask;
-            gcRegByrefSetCur |= dstMask; // safe if no dst, i.e. RBM_NONE
-        }
-    }
-    else if (isGCRef || isByRef)
-    {
-        // In this case, we are moving it from the stack to a register,
-        // so remove it from the set of live stack gc refs
-        VarSetOps::RemoveElemD(compiler, gcVarPtrSetCur, varDsc->lvVarIndex);
-    }
-    if (dstMask != RBM_NONE)
-    {
-        regSet->AddMaskVars(dstMask);
-        // If the source is a reg, then the gc sets have been set appropriately
-        // Otherwise, we have to determine whether to set them
-        if (srcMask == RBM_NONE)
-        {
-            if (isGCRef)
-            {
-                gcRegGCrefSetCur |= dstMask;
-            }
-            else if (isByRef)
-            {
-                gcRegByrefSetCur |= dstMask;
-            }
-        }
-    }
-    else if (isGCRef || isByRef)
-    {
-        VarSetOps::AddElemD(compiler, gcVarPtrSetCur, varDsc->lvVarIndex);
-    }
-}
-
-/*****************************************************************************/
-/*****************************************************************************/

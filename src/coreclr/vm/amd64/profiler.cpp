@@ -56,7 +56,7 @@ void ProfileSetFunctionIDInPlatformSpecificHandle(void * pPlatformSpecificHandle
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(pPlatformSpecificHandle != NULL);
-    _ASSERTE(functionID != NULL);
+    _ASSERTE(functionID != 0);
 
     PROFILE_PLATFORM_SPECIFIC_DATA * pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA *>(pPlatformSpecificHandle);
     pData->functionId = functionID;
@@ -156,7 +156,7 @@ ProfileArgIterator::ProfileArgIterator(MetaSig * pSig, void * platformSpecificHa
             EECodeInfo codeInfo((PCODE)pData->ip);
 
             // We want to pass the caller SP here.
-            pData->hiddenArg = EECodeManager::GetExactGenericsToken((SIZE_T)(pData->profiledRsp), &codeInfo);
+            pData->hiddenArg = EECodeManager::GetExactGenericsToken((TADDR)(pData->probeRsp), (TADDR)(pData->rbp), &codeInfo);
         }
     }
 }

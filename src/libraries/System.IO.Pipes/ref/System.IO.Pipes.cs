@@ -42,9 +42,14 @@ namespace System.IO.Pipes
     }
     public sealed partial class NamedPipeClientStream : System.IO.Pipes.PipeStream
     {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This constructor has been deprecated and argument bool isConnected does not have any effect. Use NamedPipeClientStream(PipeDirection direction, bool isAsync, SafePipeHandle safePipeHandle) instead.", DiagnosticId = "SYSLIB0063", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public NamedPipeClientStream(System.IO.Pipes.PipeDirection direction, bool isAsync, bool isConnected, Microsoft.Win32.SafeHandles.SafePipeHandle safePipeHandle) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
+        public NamedPipeClientStream(System.IO.Pipes.PipeDirection direction, bool isAsync, Microsoft.Win32.SafeHandles.SafePipeHandle safePipeHandle) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
         public NamedPipeClientStream(string pipeName) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
         public NamedPipeClientStream(string serverName, string pipeName) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public NamedPipeClientStream(string serverName, string pipeName, System.IO.Pipes.PipeAccessRights desiredAccessRights, PipeOptions options, System.Security.Principal.TokenImpersonationLevel impersonationLevel, HandleInheritability inheritability) : base(default(System.IO.Pipes.PipeDirection), default(int)) { }
         public NamedPipeClientStream(string serverName, string pipeName, System.IO.Pipes.PipeDirection direction) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
         public NamedPipeClientStream(string serverName, string pipeName, System.IO.Pipes.PipeDirection direction, System.IO.Pipes.PipeOptions options) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
         public NamedPipeClientStream(string serverName, string pipeName, System.IO.Pipes.PipeDirection direction, System.IO.Pipes.PipeOptions options, System.Security.Principal.TokenImpersonationLevel impersonationLevel) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
@@ -81,6 +86,27 @@ namespace System.IO.Pipes
         public void WaitForConnection() { }
         public System.Threading.Tasks.Task WaitForConnectionAsync() { throw null; }
         public System.Threading.Tasks.Task WaitForConnectionAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+    }
+    [System.FlagsAttribute]
+    public enum PipeAccessRights
+    {
+        ReadData = 1,
+        WriteData = 2,
+        CreateNewInstance = 4,
+        ReadExtendedAttributes = 8,
+        WriteExtendedAttributes = 16,
+        ReadAttributes = 128,
+        WriteAttributes = 256,
+        Write = 274,
+        Delete = 65536,
+        ReadPermissions = 131072,
+        Read = 131209,
+        ReadWrite = 131483,
+        ChangePermissions = 262144,
+        TakeOwnership = 524288,
+        Synchronize = 1048576,
+        FullControl = 2032031,
+        AccessSystemSecurity = 16777216,
     }
     public enum PipeDirection
     {

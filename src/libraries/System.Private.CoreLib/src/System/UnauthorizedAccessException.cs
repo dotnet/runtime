@@ -21,13 +21,13 @@ namespace System
         }
 
         public UnauthorizedAccessException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_UnauthorizedAccessException)
         {
             HResult = HResults.COR_E_UNAUTHORIZEDACCESS;
         }
 
         public UnauthorizedAccessException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_UnauthorizedAccessException, inner)
         {
             HResult = HResults.COR_E_UNAUTHORIZEDACCESS;
         }

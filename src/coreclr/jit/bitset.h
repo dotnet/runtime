@@ -59,7 +59,10 @@ public:
         FILE*       OpOutputFile;
 
     public:
-        BitSetOpCounter(const char* fileName) : TotalOps(0), m_fileName(fileName), OpOutputFile(nullptr)
+        BitSetOpCounter(const char* fileName)
+            : TotalOps(0)
+            , m_fileName(fileName)
+            , OpOutputFile(nullptr)
         {
             for (unsigned i = 0; i < BSOP_NUMOPS; i++)
             {
@@ -435,7 +438,9 @@ public:
         Env      m_env;
 
     public:
-        Iter(Env env, BitSetValueArgType bs) : m_iter(env, bs), m_env(env)
+        Iter(Env env, BitSetValueArgType bs)
+            : m_iter(env, bs)
+            , m_env(env)
         {
         }
 
@@ -449,8 +454,8 @@ public:
 
 // We define symbolic names for the various bitset implementations available, to allow choices between them.
 
-#define BSUInt64 0
-#define BSShortLong 1
+#define BSUInt64      0
+#define BSShortLong   1
 #define BSUInt64Class 2
 
 /*****************************************************************************/

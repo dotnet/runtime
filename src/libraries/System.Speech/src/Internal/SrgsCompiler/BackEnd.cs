@@ -588,7 +588,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         else if (arc.RuleRef.Name.StartsWith("URL:STATIC#", StringComparison.Ordinal))
                         {
                             ruleName = arc.RuleRef.Name.Substring(11);
-                            if (fromOrg == false && FindInRules(ruleName) == null)
+                            if (!fromOrg && FindInRules(ruleName) == null)
                             {
                                 Rule ruleOrg = org.FindInRules(ruleName);
                                 if (ruleOrg == null)
@@ -602,7 +602,7 @@ namespace System.Speech.Internal.SrgsCompiler
                         {
                             ruleName = arc.RuleRef.Name;
                             Rule ruleExtra = org.FindInRules(ruleName);
-                            if (fromOrg == false)
+                            if (!fromOrg)
                             {
                                 CloneSubGraph(arc.RuleRef, org, extra, srcToDestHash, true);
                             }
@@ -819,7 +819,7 @@ namespace System.Speech.Internal.SrgsCompiler
             bool fLastArcNull = true;
             CfgArc pLastArc = new();
             State currentState = null;
-            IEnumerator<KeyValuePair<int, Rule>> ieFirstArcs = ruleFirstArcs.GetEnumerator();
+            SortedDictionary<int, Rule>.Enumerator ieFirstArcs = ruleFirstArcs.GetEnumerator();
 
             // If no rules, then we have no arcs
             if (ieFirstArcs.MoveNext())

@@ -182,12 +182,10 @@ namespace System.Formats.Tar.Tests
                 Assert.NotNull(regularFile.ExtendedAttributes);
 
                 // path, mtime, atime and ctime are always collected by default
-                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 5);
+                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 3);
 
                 Assert.Contains(PaxEaName, regularFile.ExtendedAttributes);
                 Assert.Contains(PaxEaMTime, regularFile.ExtendedAttributes);
-                Assert.Contains(PaxEaATime, regularFile.ExtendedAttributes);
-                Assert.Contains(PaxEaCTime, regularFile.ExtendedAttributes);
 
                 Assert.Contains(expectedKey, regularFile.ExtendedAttributes);
                 Assert.Equal(expectedValue, regularFile.ExtendedAttributes[expectedKey]);
@@ -210,10 +208,8 @@ namespace System.Formats.Tar.Tests
             {
                 PaxTarEntry regularFile = reader.GetNextEntry() as PaxTarEntry;
 
-                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 4);
+                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 2);
                 VerifyExtendedAttributeTimestamp(regularFile, PaxEaMTime, minimumTime);
-                VerifyExtendedAttributeTimestamp(regularFile, PaxEaATime, minimumTime);
-                VerifyExtendedAttributeTimestamp(regularFile, PaxEaCTime, minimumTime);
             }
         }
 
@@ -269,13 +265,11 @@ namespace System.Formats.Tar.Tests
 
                 Assert.NotNull(regularFile.ExtendedAttributes);
 
-                // path, mtime, atime and ctime are always collected by default
-                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 6);
+                // path, mtime are always collected by default
+                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 4);
 
                 Assert.Contains(PaxEaName, regularFile.ExtendedAttributes);
                 Assert.Contains(PaxEaMTime, regularFile.ExtendedAttributes);
-                Assert.Contains(PaxEaATime, regularFile.ExtendedAttributes);
-                Assert.Contains(PaxEaCTime, regularFile.ExtendedAttributes);
 
                 Assert.Contains(PaxEaUName, regularFile.ExtendedAttributes);
                 Assert.Equal(userName, regularFile.ExtendedAttributes[PaxEaUName]);
@@ -304,7 +298,7 @@ namespace System.Formats.Tar.Tests
             {
                 PaxTarEntry regularFile = reader.GetNextEntry() as PaxTarEntry;
 
-                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 4);
+                AssertExtensions.GreaterThanOrEqualTo(regularFile.ExtendedAttributes.Count, 2);
                 Assert.Contains(PaxEaName, regularFile.ExtendedAttributes);
             }
         }
@@ -332,7 +326,7 @@ namespace System.Formats.Tar.Tests
             {
                 PaxTarEntry symlink = reader.GetNextEntry() as PaxTarEntry;
 
-                AssertExtensions.GreaterThanOrEqualTo(symlink.ExtendedAttributes.Count, 5);
+                AssertExtensions.GreaterThanOrEqualTo(symlink.ExtendedAttributes.Count, 3);
 
                 Assert.Contains(PaxEaName, symlink.ExtendedAttributes);
                 Assert.Equal("symlink", symlink.ExtendedAttributes[PaxEaName]);
@@ -341,7 +335,7 @@ namespace System.Formats.Tar.Tests
 
                 PaxTarEntry hardlink = reader.GetNextEntry() as PaxTarEntry;
 
-                AssertExtensions.GreaterThanOrEqualTo(hardlink.ExtendedAttributes.Count, 5);
+                AssertExtensions.GreaterThanOrEqualTo(hardlink.ExtendedAttributes.Count, 3);
 
                 Assert.Contains(PaxEaName, hardlink.ExtendedAttributes);
                 Assert.Equal("hardlink", hardlink.ExtendedAttributes[PaxEaName]);
@@ -375,36 +369,30 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        [Fact]
-        // Y2K38 will happen one second after "2038/19/01 03:14:07 +00:00". This timestamp represents the seconds since the Unix epoch with a
-        // value of int.MaxValue: 2,147,483,647.
-        // The fixed size fields for mtime, atime and ctime can fit 12 ASCII characters, but the last character is reserved for an ASCII space.
-        // All our entry types should survive the Epochalypse because we internally use long to represent the seconds since Unix epoch, not int.
-        // So if the max allowed value is 77,777,777,777 in octal, then the max allowed seconds since the Unix epoch are 8,589,934,591, which
-        // is way past int MaxValue, but still within the long limits. That number represents the date "2242/16/03 12:56:32 +00:00".
-        public void WriteTimestampsBeyondEpochalypseInPax()
+        [Theory]
+        [MemberData(nameof(WriteTimeStamp_Pax_TheoryData))]
+        public void WriteTimestampsInPax(DateTimeOffset timestamp)
         {
-            DateTimeOffset epochalypse = new DateTimeOffset(2038, 1, 19, 3, 14, 8, TimeSpan.Zero);
-            string strEpochalypse = GetTimestampStringFromDateTimeOffset(epochalypse);
+            string strTimestamp = GetTimestampStringFromDateTimeOffset(timestamp);
 
             Dictionary<string, string> ea = new Dictionary<string, string>()
             {
-                { PaxEaATime, strEpochalypse },
-                { PaxEaCTime, strEpochalypse }
+                { PaxEaATime, strTimestamp },
+                { PaxEaCTime, strTimestamp }
             };
 
             PaxTarEntry entry = new PaxTarEntry(TarEntryType.Directory, "dir", ea);
 
-            entry.ModificationTime = epochalypse;
-            Assert.Equal(epochalypse, entry.ModificationTime);
+            entry.ModificationTime = timestamp;
+            Assert.Equal(timestamp, entry.ModificationTime);
 
             Assert.Contains(PaxEaATime, entry.ExtendedAttributes);
             DateTimeOffset atime = GetDateTimeOffsetFromTimestampString(entry.ExtendedAttributes, PaxEaATime);
-            Assert.Equal(epochalypse, atime);
+            Assert.Equal(timestamp, atime);
 
             Assert.Contains(PaxEaCTime, entry.ExtendedAttributes);
             DateTimeOffset ctime = GetDateTimeOffsetFromTimestampString(entry.ExtendedAttributes, PaxEaCTime);
-            Assert.Equal(epochalypse, ctime);
+            Assert.Equal(timestamp, ctime);
 
             using MemoryStream archiveStream = new MemoryStream();
             using (TarWriter writer = new TarWriter(archiveStream, leaveOpen: true))
@@ -418,71 +406,15 @@ namespace System.Formats.Tar.Tests
                 PaxTarEntry readEntry = reader.GetNextEntry() as PaxTarEntry;
                 Assert.NotNull(readEntry);
 
-                Assert.Equal(epochalypse, readEntry.ModificationTime);
+                Assert.Equal(timestamp, readEntry.ModificationTime);
 
                 Assert.Contains(PaxEaATime, readEntry.ExtendedAttributes);
                 DateTimeOffset actualATime = GetDateTimeOffsetFromTimestampString(readEntry.ExtendedAttributes, PaxEaATime);
-                Assert.Equal(epochalypse, actualATime);
+                Assert.Equal(timestamp, actualATime);
 
                 Assert.Contains(PaxEaCTime, readEntry.ExtendedAttributes);
                 DateTimeOffset actualCTime = GetDateTimeOffsetFromTimestampString(readEntry.ExtendedAttributes, PaxEaCTime);
-                Assert.Equal(epochalypse, actualCTime);
-            }
-        }
-
-        [Fact]
-        // The fixed size fields for mtime, atime and ctime can fit 12 ASCII characters, but the last character is reserved for an ASCII space.
-        // We internally use long to represent the seconds since Unix epoch, not int.
-        // If the max allowed value is 77,777,777,777 in octal, then the max allowed seconds since the Unix epoch are 8,589,934,591,
-        // which represents the date "2242/03/16 12:56:32 +00:00".
-        // Pax should survive after this date because it stores the timestamps in the extended attributes dictionary
-        // without size restrictions.
-        public void WriteTimestampsBeyondOctalLimitInPax()
-        {
-            DateTimeOffset overLimitTimestamp = new DateTimeOffset(2242, 3, 16, 12, 56, 33, TimeSpan.Zero); // One second past the octal limit
-
-            string strOverLimitTimestamp = GetTimestampStringFromDateTimeOffset(overLimitTimestamp);
-
-            Dictionary<string, string> ea = new Dictionary<string, string>()
-            {
-                { PaxEaATime, strOverLimitTimestamp },
-                { PaxEaCTime, strOverLimitTimestamp }
-            };
-
-            PaxTarEntry entry = new PaxTarEntry(TarEntryType.Directory, "dir", ea);
-
-            entry.ModificationTime = overLimitTimestamp;
-            Assert.Equal(overLimitTimestamp, entry.ModificationTime);
-
-            Assert.Contains(PaxEaATime, entry.ExtendedAttributes);
-            DateTimeOffset atime = GetDateTimeOffsetFromTimestampString(entry.ExtendedAttributes, PaxEaATime);
-            Assert.Equal(overLimitTimestamp, atime);
-
-            Assert.Contains(PaxEaCTime, entry.ExtendedAttributes);
-            DateTimeOffset ctime = GetDateTimeOffsetFromTimestampString(entry.ExtendedAttributes, PaxEaCTime);
-            Assert.Equal(overLimitTimestamp, ctime);
-
-            using MemoryStream archiveStream = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archiveStream, leaveOpen: true))
-            {
-                writer.WriteEntry(entry);
-            }
-
-            archiveStream.Position = 0;
-            using (TarReader reader = new TarReader(archiveStream))
-            {
-                PaxTarEntry readEntry = reader.GetNextEntry() as PaxTarEntry;
-                Assert.NotNull(readEntry);
-
-                Assert.Equal(overLimitTimestamp, readEntry.ModificationTime);
-
-                Assert.Contains(PaxEaATime, readEntry.ExtendedAttributes);
-                DateTimeOffset actualATime = GetDateTimeOffsetFromTimestampString(readEntry.ExtendedAttributes, PaxEaATime);
-                Assert.Equal(overLimitTimestamp, actualATime);
-
-                Assert.Contains(PaxEaCTime, readEntry.ExtendedAttributes);
-                DateTimeOffset actualCTime = GetDateTimeOffsetFromTimestampString(readEntry.ExtendedAttributes, PaxEaCTime);
-                Assert.Equal(overLimitTimestamp, actualCTime);
+                Assert.Equal(timestamp, actualCTime);
             }
         }
 

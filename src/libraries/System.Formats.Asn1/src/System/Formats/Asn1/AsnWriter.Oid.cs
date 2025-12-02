@@ -31,10 +31,7 @@ namespace System.Formats.Asn1
         /// </exception>
         public void WriteObjectIdentifier(string oidValue, Asn1Tag? tag = null)
         {
-            if (oidValue is null)
-            {
-                throw new ArgumentNullException(nameof(oidValue));
-            }
+            ArgumentNullException.ThrowIfNull(oidValue);
 
             WriteObjectIdentifier(oidValue.AsSpan(), tag);
         }
@@ -59,7 +56,7 @@ namespace System.Formats.Asn1
         {
             CheckUniversalTag(tag, UniversalTagNumber.ObjectIdentifier);
 
-#if NETCOREAPP
+#if NET
             ReadOnlySpan<byte> wellKnownContents = WellKnownOids.GetContents(oidValue);
 
             if (!wellKnownContents.IsEmpty)
@@ -117,6 +114,12 @@ namespace System.Formats.Asn1
                 ReadOnlySpan<char> remaining = oidValue.Slice(2);
 
                 BigInteger subIdentifier = ParseSubIdentifier(ref remaining);
+
+                if (firstComponent <= 1 && subIdentifier >= 40)
+                {
+                    throw new ArgumentException(SR.Argument_InvalidOidValue, nameof(oidValue));
+                }
+
                 subIdentifier += 40 * firstComponent;
 
                 int localLen = EncodeSubIdentifier(tmp.AsSpan(tmpOffset), ref subIdentifier);

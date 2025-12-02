@@ -75,12 +75,6 @@ namespace System.Configuration
             }
         }
 
-        private static bool IsHostedInAspnet()
-        {
-            // See System.Web.Hosting.ApplicationManager::PopulateDomainBindings
-            return AppDomain.CurrentDomain.GetData(".appDomain") != null;
-        }
-
         private object Deserialize()
         {
             object value = null;
@@ -95,11 +89,11 @@ namespace System.Configuration
                     {
                         value = GetObjectFromString(Property.PropertyType, Property.SerializeAs, (string)SerializedValue);
                     }
-                    else
+                    else if (SerializedValue is byte[] serializedBytes)
                     {
                         if (SettingsProperty.EnableUnsafeBinaryFormatterInPropertyValueSerialization)
                         {
-                            using (MemoryStream ms = new MemoryStream((byte[])SerializedValue))
+                            using (MemoryStream ms = new MemoryStream(serializedBytes))
                             {
 #pragma warning disable SYSLIB0011 // BinaryFormatter serialization is obsolete and should not be used.
                                 value = (new BinaryFormatter()).Deserialize(ms);
@@ -112,25 +106,8 @@ namespace System.Configuration
                         }
                     }
                 }
-                catch (Exception exception)
+                catch (Exception)
                 {
-                    try
-                    {
-                        if (IsHostedInAspnet())
-                        {
-                            object[] args = new object[] { Property, this, exception };
-
-                            const string webBaseEventTypeName = "System.Web.Management.WebBaseEvent, System.Web";
-                            Type type = Type.GetType(webBaseEventTypeName, true);
-
-                            type.InvokeMember("RaisePropertyDeserializationWebErrorEvent",
-                                BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.InvokeMethod,
-                                null, null, args, CultureInfo.InvariantCulture);
-                        }
-                    }
-                    catch
-                    {
-                    }
                 }
 
                 if (throwBinaryFormatterDeprecationException)

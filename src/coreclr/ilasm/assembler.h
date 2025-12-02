@@ -34,7 +34,7 @@
 #define MAX_SIGNATURE_LENGTH        256       // unused
 #define MAX_LABEL_SIZE              256       //64
 #define MAX_CALL_SIG_SIZE           32        // unused
-#define MAX_SCOPE_LENGTH            _MAX_PATH // follow the RegMeta::SetModuleProps limitation
+#define MAX_SCOPE_LENGTH            MAX_PATH  // follow the RegMeta::SetModuleProps limitation
 
 #define MAX_NAMESPACE_LENGTH        1024      //256    //64
 #define MAX_MEMBER_NAME_LENGTH      1024      //256    //64
@@ -538,7 +538,7 @@ private:
                 *pBlob++ = pVal[1];
                 break;
             case SERIALIZATION_TYPE_I4:
-                *(__int32*)pBlob = *(__int32*)&pVal[1];
+                *(int32_t*)pBlob = *(int32_t*)&pVal[1];
                 pBlob += 4;
                 break;
             case SERIALIZATION_TYPE_STRING:
@@ -552,15 +552,15 @@ private:
                 // We can have enums with base type of I1, I2 and I4.
                 switch (pVal[1 + length + 1]) {
                 case 1:
-                    *(__int8*)pBlob = *(__int8*)&pVal[1 + length + 2];
+                    *(int8_t*)pBlob = *(int8_t*)&pVal[1 + length + 2];
                     pBlob += 1;
                     break;
                 case 2:
-                    *(__int16*)pBlob = *(__int16*)&pVal[1 + length + 2];
+                    *(int16_t*)pBlob = *(int16_t*)&pVal[1 + length + 2];
                     pBlob += 2;
                     break;
                 case 4:
-                    *(__int32*)pBlob = *(__int32*)&pVal[1 + length + 2];
+                    *(int32_t*)pBlob = *(int32_t*)&pVal[1 + length + 2];
                     pBlob += 4;
                     break;
                 default:
@@ -644,22 +644,22 @@ typedef FIFO<MethodBody> MethodBodyList;
 
 struct Clockwork
 {
-    DWORD  cBegin;
-    DWORD  cEnd;
-    DWORD  cParsBegin;
-    DWORD  cParsEnd;
-    DWORD  cMDInitBegin;
-    DWORD  cMDInitEnd;
-    DWORD  cMDEmitBegin;
-    DWORD  cMDEmitEnd;
-    DWORD  cMDEmit1;
-    DWORD  cMDEmit2;
-    DWORD  cMDEmit3;
-    DWORD  cMDEmit4;
-    DWORD  cRef2DefBegin;
-    DWORD  cRef2DefEnd;
-    DWORD  cFilegenBegin;
-    DWORD  cFilegenEnd;
+    int64_t  cBegin;
+    int64_t  cEnd;
+    int64_t  cParsBegin;
+    int64_t  cParsEnd;
+    int64_t  cMDInitBegin;
+    int64_t  cMDInitEnd;
+    int64_t  cMDEmitBegin;
+    int64_t  cMDEmitEnd;
+    int64_t  cMDEmit1;
+    int64_t  cMDEmit2;
+    int64_t  cMDEmit3;
+    int64_t  cMDEmit4;
+    int64_t  cRef2DefBegin;
+    int64_t  cRef2DefEnd;
+    int64_t  cFilegenBegin;
+    int64_t  cFilegenEnd;
 };
 
 struct TypeDefDescr
@@ -752,6 +752,7 @@ public:
     BOOL    m_fIsMscorlib;
     BOOL    m_fTolerateDupMethods;
     BOOL    m_fOptimize;
+    BOOL    m_fDeterministic;
     mdToken m_tkSysObject;
     mdToken m_tkSysString;
     mdToken m_tkSysValue;
@@ -760,6 +761,7 @@ public:
 
     IMetaDataDispenserEx2 *m_pDisp;
     IMetaDataEmit3      *m_pEmitter;
+    IMDInternalEmit     *m_pInternalEmitForDeterministicMvid;
     ICeeFileGen        *m_pCeeFileGen;
     IMetaDataImport2    *m_pImporter;			// Import interface.
     HCEEFILE m_pCeeFile;
@@ -845,7 +847,7 @@ public:
     BOOL EmitClass(Class *pClass);
     HRESULT CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename);
     HRESULT CreateTLSDirectory();
-    HRESULT CreateDebugDirectory();
+    HRESULT CreateDebugDirectory(BYTE(&pdbChecksum)[32]);
     HRESULT InitMetaData();
     Class *FindCreateClass(_In_ __nullterminated const char *pszFQN);
     BOOL EmitFieldRef(_In_z_ char *pszArg, int opcode);
@@ -901,7 +903,7 @@ public:
     void EmitInstrVar(Instr* instr, int var);
     void EmitInstrVarByName(Instr* instr, _In_ __nullterminated char* label);
     void EmitInstrI(Instr* instr, int val);
-    void EmitInstrI8(Instr* instr, __int64* val);
+    void EmitInstrI8(Instr* instr, int64_t* val);
     void EmitInstrR(Instr* instr, double* val);
     void EmitInstrBrOffset(Instr* instr, int offset);
     void EmitInstrBrTarget(Instr* instr, _In_ __nullterminated char* label);
@@ -1254,6 +1256,7 @@ public:
 
     void EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, mdToken tkOwner, GenericParamConstraintList* pGPCL);
 
+    char *m_pOverrideAssemblyName;
 };
 
 #endif  // Assember_h

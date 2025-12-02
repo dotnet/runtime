@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- SYSLIB0005: The GAC is obsolete, but there are unit tests still referencing it.
          SYSLIB0037: AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete. -->
@@ -73,6 +73,10 @@
     <Compile Include="src\TestUtils\TypeWrapper.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\src\System.Reflection.MetadataLoadContext.csproj" />
   </ItemGroup>
@@ -90,7 +94,9 @@
     <WasmFilesToIncludeFromPublishDir Include="System.Private.CoreLib.dll" />
     <WasmFilesToIncludeFromPublishDir Include="System.Reflection.MetadataLoadContext.Tests.dll" />
     <WasmFilesToIncludeFromPublishDir Include="mscorlib.dll" />
+  </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' or ('$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true')">
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 

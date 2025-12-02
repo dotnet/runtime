@@ -114,11 +114,19 @@ namespace System.ComponentModel
         /// interested in providing type information for the object it should
         /// return null.
         /// </summary>
-        public override ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objectType, object? instance)
+        public override ICustomTypeDescriptor? GetTypeDescriptor([DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type objectType, object? instance)
         {
             return Provider.GetTypeDescriptor(objectType, instance);
         }
 
         public override bool IsSupportedType(Type type) => Provider.IsSupportedType(type);
+
+        public override bool IsRegisteredType(Type type) => Provider.IsRegisteredType(type);
+
+        public override bool? RequireRegisteredTypes => Provider.RequireRegisteredTypes;
+
+        public override ICustomTypeDescriptor? GetTypeDescriptorFromRegisteredType(Type objectType, object? instance) => Provider.GetTypeDescriptorFromRegisteredType(objectType, instance);
+
+        public override void RegisterType<[DynamicallyAccessedMembers(TypeDescriptor.RegisteredTypesDynamicallyAccessedMembers)] T>() => Provider.RegisterType<T>();
     }
 }

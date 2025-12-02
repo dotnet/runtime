@@ -113,8 +113,8 @@ class Program
         }
     }
 
-    [DebuggerVisualizer("Program+MyClassWithVisualizerStringVisualizer")]
-    [DebuggerVisualizer("Program+MyClassWithVisualizerStringVisualizer2", "Program+MyClassWithVisualizerStringVisualizerObjectSource")]
+    [DebuggerVisualizer("Program+MyClassWithVisualizerStringVisualizer, project")]
+    [DebuggerVisualizer("Program+MyClassWithVisualizerStringVisualizer2, project", "Program+MyClassWithVisualizerStringVisualizerObjectSource, project")]
     public class MyClassWithVisualizerString
     {
         public string Name { get; set; }

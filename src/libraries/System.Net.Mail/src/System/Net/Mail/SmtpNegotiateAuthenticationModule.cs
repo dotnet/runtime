@@ -63,10 +63,6 @@ namespace System.Net.Mail
                     {
                         return null;
                     }
-                    if (clientContext.IsAuthenticated && resp == null)
-                    {
-                        resp = "\r\n";
-                    }
                 }
                 else
                 {

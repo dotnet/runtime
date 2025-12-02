@@ -66,12 +66,6 @@ namespace System.Transactions.Oletx
 
         protected OletxTransaction(SerializationInfo serializationInfo, StreamingContext context)
         {
-            //if (serializationInfo == null)
-            //{
-            //    throw new ArgumentNullException(nameof(serializationInfo));
-            //}
-
-            //throw NotSupported();
             throw new PlatformNotSupportedException();
         }
 
@@ -116,13 +110,6 @@ namespace System.Transactions.Oletx
 
         public void GetObjectData(SerializationInfo serializationInfo, StreamingContext context)
         {
-            //if (serializationInfo == null)
-            //{
-            //    throw new ArgumentNullException(nameof(serializationInfo));
-            //}
-
-            //throw NotSupported();
-
             throw new PlatformNotSupportedException();
         }
 

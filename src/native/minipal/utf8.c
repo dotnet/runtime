@@ -7,6 +7,7 @@
 #include <limits.h>
 #include <string.h>
 #include <assert.h>
+#include "minipalconfig.h"
 
 #define HIGH_SURROGATE_START 0xd800
 #define HIGH_SURROGATE_END 0xdbff

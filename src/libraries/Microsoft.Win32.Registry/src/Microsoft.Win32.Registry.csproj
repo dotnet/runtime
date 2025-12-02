@@ -14,6 +14,7 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_Registry</GeneratePlatformNotSupportedAssemblyMessage>
     <NoWarn Condition="'$(TargetPlatformIdentifier)' != 'windows'">$(NoWarn);IDE0280</NoWarn> <!-- https://github.com/dotnet/runtime/issues/84104 -->
   </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
@@ -70,12 +71,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Security.AccessControl" />
-    <Reference Include="System.Security.Principal.Windows" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
 
 </Project>

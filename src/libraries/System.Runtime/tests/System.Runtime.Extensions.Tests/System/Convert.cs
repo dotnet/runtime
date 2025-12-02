@@ -33,6 +33,12 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void ToBase64CharArray_NonEmptyInput_ZeroLength_Test()
+        {
+            Assert.Equal(0, Convert.ToBase64CharArray(new byte[1], 0, 0, new char[0], 0, Base64FormattingOptions.None));
+        }
+
+        [Fact]
         public static void ToBase64StringTest()
         {
             byte[] barray = new byte[] { 1, 2, 3 };
@@ -75,6 +81,12 @@ namespace System.Tests
                 Assert.Equal(original.Length, bytesWritten);
                 AssertExtensions.SequenceEqual(original, actualBytes);
             }
+        }
+
+        [Fact]
+        public static void FromBase64CharArray_NonEmptyInputZeroLength_ReturnsEmptyArray()
+        {
+            Assert.Same(Array.Empty<byte>(), Convert.FromBase64CharArray(new char[42], 0, 0));
         }
 
         [Fact]
@@ -387,8 +399,8 @@ namespace System.Tests
                 // All whitespace characters.
                 yield return Tuple.Create<string, byte[]>(" \t\r\n", Array.Empty<byte>());
 
-                // Pad characters
-                yield return Tuple.Create<string, byte[]>("BQYHCAZ=", "0506070806".HexToByteArray());
+                // Pad characters (using valid encodings with zero unused bits per RFC 4648)
+                yield return Tuple.Create<string, byte[]>("BQYHCAY=", "0506070806".HexToByteArray());
                 yield return Tuple.Create<string, byte[]>("BQYHCA==", "05060708".HexToByteArray());
 
                 // Typical

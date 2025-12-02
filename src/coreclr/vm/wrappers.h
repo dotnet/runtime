@@ -152,11 +152,11 @@ FORCEINLINE void VariantPtrRelease(VARIANT* value)
     }
 }
 
-class VariantPtrHolder : public Wrapper<VARIANT*, VariantPtrDoNothing, VariantPtrRelease, NULL>
+class VariantPtrHolder : public Wrapper<VARIANT*, VariantPtrDoNothing, VariantPtrRelease, 0>
 {
 public:
     VariantPtrHolder(VARIANT* p = NULL)
-        : Wrapper<VARIANT*, VariantPtrDoNothing, VariantPtrRelease, NULL>(p)
+        : Wrapper<VARIANT*, VariantPtrDoNothing, VariantPtrRelease, 0>(p)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -165,7 +165,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        Wrapper<VARIANT*, VariantPtrDoNothing, VariantPtrRelease, NULL>::operator=(p);
+        Wrapper<VARIANT*, VariantPtrDoNothing, VariantPtrRelease, 0>::operator=(p);
     }
 };
 
@@ -194,11 +194,11 @@ FORCEINLINE void SafeArrayPtrRelease(SAFEARRAY* value)
     }
 }
 
-class SafeArrayPtrHolder : public Wrapper<SAFEARRAY*, SafeArrayDoNothing, SafeArrayPtrRelease, NULL>
+class SafeArrayPtrHolder : public Wrapper<SAFEARRAY*, SafeArrayDoNothing, SafeArrayPtrRelease, 0>
 {
 public:
     SafeArrayPtrHolder(SAFEARRAY* p = NULL)
-        : Wrapper<SAFEARRAY*, SafeArrayDoNothing, SafeArrayPtrRelease, NULL>(p)
+        : Wrapper<SAFEARRAY*, SafeArrayDoNothing, SafeArrayPtrRelease, 0>(p)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -207,7 +207,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        Wrapper<SAFEARRAY*, SafeArrayDoNothing, SafeArrayPtrRelease, NULL>::operator=(p);
+        Wrapper<SAFEARRAY*, SafeArrayDoNothing, SafeArrayPtrRelease, 0>::operator=(p);
     }
 };
 
@@ -230,11 +230,11 @@ FORCEINLINE void ZeroRelease(VOID* value)
     }
 }
 
-class ZeroHolder : public Wrapper<VOID*, ZeroDoNothing, ZeroRelease, NULL>
+class ZeroHolder : public Wrapper<VOID*, ZeroDoNothing, ZeroRelease, 0>
 {
 public:
     ZeroHolder(VOID* p = NULL)
-        : Wrapper<VOID*, ZeroDoNothing, ZeroRelease, NULL>(p)
+        : Wrapper<VOID*, ZeroDoNothing, ZeroRelease, 0>(p)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -243,7 +243,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        Wrapper<VOID*, ZeroDoNothing, ZeroRelease, NULL>::operator=(p);
+        Wrapper<VOID*, ZeroDoNothing, ZeroRelease, 0>::operator=(p);
     }
 };
 

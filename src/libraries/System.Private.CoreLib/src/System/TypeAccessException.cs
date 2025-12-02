@@ -20,13 +20,13 @@ namespace System
         }
 
         public TypeAccessException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_TypeAccessException)
         {
             HResult = HResults.COR_E_TYPEACCESS;
         }
 
         public TypeAccessException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_TypeAccessException, inner)
         {
             HResult = HResults.COR_E_TYPEACCESS;
         }

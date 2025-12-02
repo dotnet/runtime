@@ -33,8 +33,8 @@ namespace System.Threading.Tasks
         // that range, minimizing the chances it'll be near the objects from other threads.
         internal volatile StrongBox<long>? _nSharedCurrentIndexOffset;
 
-        // to be set to 1 by the worker that finishes this range. It's OK to do a non-interlocked write here.
-        internal int _bRangeFinished;
+        // to be set to true by the worker that finishes this range. It's OK to do a non-interlocked write here.
+        internal bool _bRangeFinished;
     }
 
 
@@ -101,7 +101,7 @@ namespace System.Threading.Tasks
                 // local snap to save array access bounds checks in places where we only read fields
                 IndexRange currentRange = _indexRanges[_nCurrentIndexRange];
 
-                if (currentRange._bRangeFinished == 0)
+                if (!currentRange._bRangeFinished)
                 {
                     StrongBox<long>? sharedCurrentIndexOffset = _indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset;
                     if (sharedCurrentIndexOffset == null)
@@ -157,7 +157,7 @@ namespace System.Threading.Tasks
                     else
                     {
                         // this index range is completed, mark it so that others can skip it quickly
-                        Interlocked.Exchange(ref _indexRanges[_nCurrentIndexRange]._bRangeFinished, 1);
+                        Interlocked.Exchange(ref _indexRanges[_nCurrentIndexRange]._bRangeFinished, true);
                     }
                 }
 
@@ -262,7 +262,7 @@ namespace System.Threading.Tasks
                 // the fromInclusive of the new index range is always on nCurrentIndex
                 _indexRanges[i]._nFromInclusive = nCurrentIndex;
                 _indexRanges[i]._nSharedCurrentIndexOffset = null;
-                _indexRanges[i]._bRangeFinished = 0;
+                _indexRanges[i]._bRangeFinished = false;
 
                 // now increment it to find the toExclusive value for our range
                 nCurrentIndex = unchecked(nCurrentIndex + nRangeSize);

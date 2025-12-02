@@ -42,7 +42,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
         {
             _refReaders = refReaders.ToArray();
 
-            TypeRefTypeSystemModule coreLibModule = new TypeRefTypeSystemModule(this, new System.Reflection.AssemblyName("System.Private.CoreLib"));
+            TypeRefTypeSystemModule coreLibModule = new TypeRefTypeSystemModule(this, new AssemblyNameInfo("System.Private.CoreLib"));
             foreach (string name in MetadataTypeSystemContext.WellKnownTypeNames)
             {
                 coreLibModule.GetOrAddType("System", name);
@@ -144,7 +144,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
                     }
 
                     EcmaSignatureParser ecmaSigParse = new EcmaSignatureParser(this, ResolveTypeRefForPeInfo, peInfo.reader.GetBlobReader(memberRef.Signature), NotFoundBehavior.ReturnNull);
-                    string name = peInfo.reader.GetString(memberRef.Name);
+                    ReadOnlySpan<byte> name = peInfo.reader.GetStringBytes(memberRef.Name);
 
                     if (memberRef.GetKind() == MemberReferenceKind.Method)
                     {
@@ -198,7 +198,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
                     string assemblyName = peInfo.reader.GetString(assemblyReference.Name);
                     if (!_typeRefModules.TryGetValue(assemblyName, out module))
                     {
-                        module = new TypeRefTypeSystemModule(this, new System.Reflection.AssemblyName(assemblyName));
+                        module = new TypeRefTypeSystemModule(this, new AssemblyNameInfo(assemblyName));
                         _typeRefModules.Add(module.Assembly.GetName().Name, module);
                     }
                     peInfo.assemblyLookup.Add(asmRefHandle, module);
@@ -219,7 +219,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             return type;
         }
 
-        public override ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
+        public override ModuleDesc ResolveAssembly(AssemblyNameInfo name, bool throwIfNotFound = true)
         {
             if (_typeRefModules.TryGetValue(name.Name, out TypeRefTypeSystemModule foundModule))
             {

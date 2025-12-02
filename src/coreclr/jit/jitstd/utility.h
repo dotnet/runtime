@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "clr_std/type_traits"
+#include <type_traits>
 
 namespace jitstd
 {

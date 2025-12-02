@@ -40,9 +40,9 @@ STDMETHODIMP RegMeta::GetCustomAttributeByName( // S_OK or error.
     LOCKREAD();
     pMiniMd = &(m_pStgdb->m_MiniMd);
 
-    iLen = WszWideCharToMultiByte(CP_UTF8,0, wzName,-1, NULL,0, 0,0);
+    iLen = WideCharToMultiByte(CP_UTF8,0, wzName,-1, NULL,0, 0,0);
     szName = (LPUTF8)_alloca(iLen);
-    VERIFY(WszWideCharToMultiByte(CP_UTF8,0, wzName,-1, szName,iLen, 0,0));
+    VERIFY(WideCharToMultiByte(CP_UTF8,0, wzName,-1, szName,iLen, 0,0));
 
     hr = ImportHelper::GetCustomAttributeByName(pMiniMd, tkObj, szName, ppData, pcbData);
 

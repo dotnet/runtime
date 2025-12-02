@@ -56,6 +56,17 @@ internal static partial class Interop
                 certificates.Length);
         }
 
+        [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreateWithKeyStorePrivateKeyEntry")]
+        private static partial SafeSslHandle SSLStreamCreateWithKeyStorePrivateKeyEntry(
+            IntPtr sslStreamProxyHandle,
+            IntPtr keyStorePrivateKeyEntryHandle);
+        internal static SafeSslHandle SSLStreamCreateWithKeyStorePrivateKeyEntry(
+            SslStream.JavaProxy sslStreamProxy,
+            IntPtr keyStorePrivateKeyEntryHandle)
+        {
+            return SSLStreamCreateWithKeyStorePrivateKeyEntry(sslStreamProxy.Handle, keyStorePrivateKeyEntryHandle);
+        }
+
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_RegisterRemoteCertificateValidationCallback")]
         internal static unsafe partial void RegisterRemoteCertificateValidationCallback(
             delegate* unmanaged<IntPtr, bool> verifyRemoteCertificate);
@@ -67,6 +78,7 @@ internal static partial class Interop
             IntPtr managedContextHandle,
             delegate* unmanaged<IntPtr, byte*, int*, PAL_SSLStreamStatus> streamRead,
             delegate* unmanaged<IntPtr, byte*, int, void> streamWrite,
+            delegate* unmanaged<IntPtr, void> managedContextCleanup,
             int appBufferSize,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string? peerHost);
         internal static unsafe void SSLStreamInitialize(
@@ -75,10 +87,11 @@ internal static partial class Interop
             IntPtr managedContextHandle,
             delegate* unmanaged<IntPtr, byte*, int*, PAL_SSLStreamStatus> streamRead,
             delegate* unmanaged<IntPtr, byte*, int, void> streamWrite,
+            delegate* unmanaged<IntPtr, void> managedContextCleanup,
             int appBufferSize,
             string? peerHost)
         {
-            int ret = SSLStreamInitializeImpl(sslHandle, isServer, managedContextHandle, streamRead, streamWrite, appBufferSize, peerHost);
+            int ret = SSLStreamInitializeImpl(sslHandle, isServer, managedContextHandle, streamRead, streamWrite, managedContextCleanup, appBufferSize, peerHost);
             if (ret != SUCCESS)
                 throw new SslException();
         }

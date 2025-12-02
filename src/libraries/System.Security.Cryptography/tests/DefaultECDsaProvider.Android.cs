@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             get
             {
-                if (PlatformDetection.IsOSXLike)
+                if (PlatformDetection.IsApplePlatform)
                 {
                     return false;
                 }
@@ -52,8 +52,8 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
-        [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByOid")]
-        internal static extern System.IntPtr EcKeyCreateByOid(string oid);
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyCreateByOid", StringMarshalling = StringMarshalling.Utf8)]
+        internal static partial System.IntPtr EcKeyCreateByOid(string oid);
 
         [DllImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_EcKeyDestroy")]
         internal static extern void EcKeyDestroy(System.IntPtr r);

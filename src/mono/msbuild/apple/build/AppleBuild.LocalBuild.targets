@@ -34,8 +34,38 @@
     <GenerateCMakeProject>false</GenerateCMakeProject>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
+    <!-- Suppress trimming warnings as these are tests -->
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <NoWarn>$(NoWarn);IL2103;IL2025;IL2111;IL2122</NoWarn>
+  </PropertyGroup>
+
+  <!-- This .targets file is also imported by the runtime Trimming tests, and we want to be able to manually configure trimming in them so this
+  should be considered if we ever want to change the Condition of the ConfigureTrimming target -->
+  <Target Name="ConfigureTrimming" Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(SkipConfigureTrimming)' != 'true'">
+    <ItemGroup>
+      <!-- Mark all the assemblies for link. We will explicitly mark the non-trimmable ones -->
+      <AppleAssembliesToBundle TrimMode="$(TrimMode)" />
+
+      <!-- Don't trim the main assembly.
+           TrimMode="" is needed so the root assemblies are correctly identified -->
+      <AppleAssembliesToBundle TrimMode="" Condition="'%(FileName)' == '$(AssemblyName)'" />
+
+      <TrimmerRootAssembly
+          Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == '$(AssemblyName).dll'"
+          Include="%(AppleAssembliesToBundle.Identity)" />
+      <!-- PrepareForILLink target sets the IntermediateAssembly as an entry point for ILLink
+          which doesn't exist at the path when BuildTestsOnHelix -->
+      <IntermediateAssembly Remove="@(IntermediateAssembly)" />
+
+      <ManagedAssemblyToLink Include="@(AppleAssembliesToBundle)">
+        <RelativePath>%(Filename)%(Extension)</RelativePath>
+      </ManagedAssemblyToLink>
+    </ItemGroup>
+  </Target>
+
   <!-- Use local runtime pack -->
-  <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences" DependsOnTargets="_PrepareAndValidateAppleInputs">
+  <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences" DependsOnTargets="_PrepareAndValidateAppleInputs;ConfigureTrimming">
     <ItemGroup>
       <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackLocationToUse)"
                            Condition="'$(MicrosoftNetCoreAppRuntimePackLocationToUse)' != '' and

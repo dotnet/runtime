@@ -110,7 +110,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// The size of the code block in bytes
         /// </summary>
-        /// /// <remarks>
+        /// <remarks>
         /// The EndAddress field in the runtime functions section is conditional on machine type
         /// Size is -1 for images without the EndAddress field
         /// </remarks>
@@ -228,6 +228,10 @@ namespace ILCompiler.Reflection.ReadyToRun
             else if (UnwindInfo is LoongArch64.UnwindInfo loongarch64Info)
             {
                 return (int)loongarch64Info.FunctionLength;
+            }
+            else if (UnwindInfo is RiscV64.UnwindInfo riscv64Info)
+            {
+                return (int)riscv64Info.FunctionLength;
             }
             else if (Method.GcInfo != null)
             {
@@ -395,32 +399,33 @@ namespace ILCompiler.Reflection.ReadyToRun
             switch (MethodHandle.Kind)
             {
                 case HandleKind.MethodDefinition:
+                {
+                    MethodDefinition methodDef = ComponentReader.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)MethodHandle);
+                    if (methodDef.RelativeVirtualAddress != 0)
                     {
-                        MethodDefinition methodDef = ComponentReader.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)MethodHandle);
-                        if (methodDef.RelativeVirtualAddress != 0)
+                        System.Diagnostics.Debug.Assert(ComponentReader.ImageReader != null, "Component should be a PE and have an associated PEReader");
+                        MethodBodyBlock mbb = ComponentReader.ImageReader.GetMethodBody(methodDef.RelativeVirtualAddress);
+                        if (!mbb.LocalSignature.IsNil)
                         {
-                            MethodBodyBlock mbb = ComponentReader.ImageReader.GetMethodBody(methodDef.RelativeVirtualAddress);
-                            if (!mbb.LocalSignature.IsNil)
-                            {
-                                StandaloneSignature ss = ComponentReader.MetadataReader.GetStandaloneSignature(mbb.LocalSignature);
-                                LocalSignature = ss.DecodeLocalSignature(typeProvider, genericContext);
-                            }
+                            StandaloneSignature ss = ComponentReader.MetadataReader.GetStandaloneSignature(mbb.LocalSignature);
+                            LocalSignature = ss.DecodeLocalSignature(typeProvider, genericContext);
                         }
-                        Name = ComponentReader.MetadataReader.GetString(methodDef.Name);
-                        Signature = methodDef.DecodeSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);
-                        owningTypeHandle = methodDef.GetDeclaringType();
-                        genericParams = methodDef.GetGenericParameters();
                     }
-                    break;
+                    Name = ComponentReader.MetadataReader.GetString(methodDef.Name);
+                    Signature = methodDef.DecodeSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);
+                    owningTypeHandle = methodDef.GetDeclaringType();
+                    genericParams = methodDef.GetGenericParameters();
+                }
+                break;
 
                 case HandleKind.MemberReference:
-                    {
-                        MemberReference memberRef = ComponentReader.MetadataReader.GetMemberReference((MemberReferenceHandle)MethodHandle);
-                        Name = ComponentReader.MetadataReader.GetString(memberRef.Name);
-                        Signature = memberRef.DecodeMethodSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);
-                        owningTypeHandle = memberRef.Parent;
-                    }
-                    break;
+                {
+                    MemberReference memberRef = ComponentReader.MetadataReader.GetMemberReference((MemberReferenceHandle)MethodHandle);
+                    Name = ComponentReader.MetadataReader.GetString(memberRef.Name);
+                    Signature = memberRef.DecodeMethodSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);
+                    owningTypeHandle = memberRef.Parent;
+                }
+                break;
 
                 default:
                     throw new NotImplementedException();
@@ -488,12 +493,17 @@ namespace ILCompiler.Reflection.ReadyToRun
                     int gcInfoOffset = _readyToRunReader.CompositeReader.GetOffset(GcInfoRva);
                     if (_readyToRunReader.Machine == Machine.I386)
                     {
-                        _gcInfo = new x86.GcInfo(_readyToRunReader.Image, gcInfoOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                        _gcInfo = new x86.GcInfo(_readyToRunReader.ImageReader, gcInfoOffset);
                     }
                     else
                     {
-                        // Arm, Arm64 and LoongArch64 use the same GcInfo format as Amd64
-                        _gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, gcInfoOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
+                        // Arm, Arm64, LoongArch64 and RISCV64 use the same GcInfo format as Amd64
+                        _gcInfo = new Amd64.GcInfo(
+                            _readyToRunReader.ImageReader,
+                            gcInfoOffset,
+                            _readyToRunReader.Machine,
+                            _readyToRunReader.ReadyToRunHeader.MajorVersion,
+                            _readyToRunReader.ReadyToRunHeader.MinorVersion);
                     }
                 }
             }
@@ -518,7 +528,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return;
             }
             _fixupCells = new List<FixupCell>();
-            NibbleReader reader = new NibbleReader(_readyToRunReader.Image, _fixupOffset.Value);
+            NibbleReader reader = new NibbleReader(_readyToRunReader.ImageReader, _fixupOffset.Value);
 
             // The following algorithm has been loosely ported from CoreCLR,
             // src\vm\ceeload.inl, BOOL Module::FixupDelayListAux
@@ -576,7 +586,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     curOffset = coldOffset;
                     runtimeFunctionId = coldRuntimeFunctionId;
                 }
-                int startRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
+                int startRva = _readyToRunReader.ImageReader.ReadInt32(ref curOffset);
                 if (_readyToRunReader.Machine == Machine.ArmThumb2)
                 {
                     // The low bit of this address is set since the function contains thumb code.
@@ -586,31 +596,35 @@ namespace ILCompiler.Reflection.ReadyToRun
                 int endRva = -1;
                 if (_readyToRunReader.Machine == Machine.Amd64)
                 {
-                    endRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
+                    endRva = _readyToRunReader.ImageReader.ReadInt32(ref curOffset);
                 }
-                int unwindRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
+                int unwindRva = _readyToRunReader.ImageReader.ReadInt32(ref curOffset);
                 int unwindOffset = _readyToRunReader.CompositeReader.GetOffset(unwindRva);
 
                 BaseUnwindInfo unwindInfo = null;
                 if (_readyToRunReader.Machine == Machine.I386)
                 {
-                    unwindInfo = new x86.UnwindInfo(_readyToRunReader.Image, unwindOffset);
+                    unwindInfo = new x86.UnwindInfo(_readyToRunReader.ImageReader, unwindOffset);
                 }
                 else if (_readyToRunReader.Machine == Machine.Amd64)
                 {
-                    unwindInfo = new Amd64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
+                    unwindInfo = new Amd64.UnwindInfo(_readyToRunReader.ImageReader, unwindOffset);
                 }
                 else if (_readyToRunReader.Machine == Machine.ArmThumb2)
                 {
-                    unwindInfo = new Arm.UnwindInfo(_readyToRunReader.Image, unwindOffset);
+                    unwindInfo = new Arm.UnwindInfo(_readyToRunReader.ImageReader, unwindOffset);
                 }
                 else if (_readyToRunReader.Machine == Machine.Arm64)
                 {
-                    unwindInfo = new Arm64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
+                    unwindInfo = new Arm64.UnwindInfo(_readyToRunReader.ImageReader, unwindOffset);
                 }
                 else if (_readyToRunReader.Machine == Machine.LoongArch64)
                 {
-                    unwindInfo = new LoongArch64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
+                    unwindInfo = new LoongArch64.UnwindInfo(_readyToRunReader.ImageReader, unwindOffset);
+                }
+                else if (_readyToRunReader.Machine == Machine.RiscV64)
+                {
+                    unwindInfo = new RiscV64.UnwindInfo(_readyToRunReader.ImageReader, unwindOffset);
                 }
 
                 if (i == 0 && unwindInfo != null)

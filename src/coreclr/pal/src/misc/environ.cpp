@@ -20,10 +20,8 @@ Revision History:
 --*/
 
 #include "pal/palinternal.h"
-#include "pal/critsect.h"
 #include "pal/dbgmsg.h"
 #include "pal/environ.h"
-#include "pal/malloc.hpp"
 
 #if HAVE_CRT_EXTERNS_H
 #include <crt_externs.h>
@@ -39,7 +37,7 @@ char **palEnvironment = nullptr;
 int palEnvironmentCount = 0;
 int palEnvironmentCapacity = 0;
 
-CRITICAL_SECTION gcsEnvironment;
+minipal_mutex gcsEnvironment;
 
 /*++
 Function:
@@ -115,7 +113,7 @@ GetEnvironmentVariableA(
         // the environment variable value without EnvironGetenv making an
         // intermediate copy. We will just copy the string to the output
         // buffer anyway, so just stay in the critical section until then.
-        InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+        minipal_mutex_enter(&gcsEnvironment);
 
         value = EnvironGetenv(lpName, /* copyValue */ FALSE);
 
@@ -135,7 +133,7 @@ GetEnvironmentVariableA(
             SetLastError(ERROR_SUCCESS);
         }
 
-        InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
+        minipal_mutex_leave(&gcsEnvironment);
     }
 
     if (value == nullptr)
@@ -183,7 +181,7 @@ GetEnvironmentVariableW(
         goto done;
     }
 
-    inBuff = (CHAR *)PAL_malloc(inBuffSize);
+    inBuff = (CHAR *)malloc(inBuffSize);
     if (inBuff == nullptr)
     {
         ERROR("malloc failed\n");
@@ -193,7 +191,7 @@ GetEnvironmentVariableW(
 
     if (nSize)
     {
-        outBuff = (CHAR *)PAL_malloc(nSize*2);
+        outBuff = (CHAR *)malloc(nSize*2);
         if (outBuff == nullptr)
         {
             ERROR("malloc failed\n");
@@ -243,8 +241,8 @@ GetEnvironmentVariableW(
     }
 
 done:
-    PAL_free(outBuff);
-    PAL_free(inBuff);
+    free(outBuff);
+    free(inBuff);
 
     LOGEXIT("GetEnvironmentVariableW returns DWORD 0x%x\n", size);
     PERF_EXIT(GetEnvironmentVariableW);
@@ -310,7 +308,7 @@ SetEnvironmentVariableW(
         goto done;
     }
 
-    name = (PCHAR)PAL_malloc(sizeof(CHAR)* nameSize);
+    name = (PCHAR)malloc(sizeof(CHAR)* nameSize);
     if (name == nullptr)
     {
         ERROR("malloc failed\n");
@@ -336,7 +334,7 @@ SetEnvironmentVariableW(
             goto done;
         }
 
-        value = (PCHAR)PAL_malloc(sizeof(CHAR)*valueSize);
+        value = (PCHAR)malloc(sizeof(CHAR)*valueSize);
 
         if (value == nullptr)
         {
@@ -356,8 +354,8 @@ SetEnvironmentVariableW(
 
     bRet = SetEnvironmentVariableA(name, value);
 done:
-    PAL_free(value);
-    PAL_free(name);
+    free(value);
+    free(name);
 
     LOGEXIT("SetEnvironmentVariableW returning BOOL %d\n", bRet);
     PERF_EXIT(SetEnvironmentVariableW);
@@ -402,7 +400,7 @@ GetEnvironmentStringsW(
     ENTRY("GetEnvironmentStringsW()\n");
 
     CPalThread * pthrCurrent = InternalGetCurrentThread();
-    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+    minipal_mutex_enter(&gcsEnvironment);
 
     envNum = 0;
     len    = 0;
@@ -414,7 +412,7 @@ GetEnvironmentStringsW(
         envNum += len;
     }
 
-    wenviron = (WCHAR *)PAL_malloc(sizeof(WCHAR)* (envNum + 1));
+    wenviron = (WCHAR *)malloc(sizeof(WCHAR)* (envNum + 1));
     if (wenviron == nullptr)
     {
         ERROR("malloc failed\n");
@@ -434,7 +432,7 @@ GetEnvironmentStringsW(
     *tempEnviron = 0; /* Put an extra null at the end */
 
  EXIT:
-    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
+    minipal_mutex_leave(&gcsEnvironment);
 
     LOGEXIT("GetEnvironmentStringsW returning %p\n", wenviron);
     PERF_EXIT(GetEnvironmentStringsW);
@@ -476,7 +474,7 @@ FreeEnvironmentStringsW(
 
     if (lpValue != nullptr)
     {
-        PAL_free(lpValue);
+        free(lpValue);
     }
 
     LOGEXIT("FreeEnvironmentStringW returning BOOL TRUE\n");
@@ -559,7 +557,7 @@ SetEnvironmentVariableA(
     {
         // All the conditions are met. Set the variable.
         int iLen = strlen(lpName) + strlen(lpValue) + 2;
-        LPSTR string = (LPSTR) PAL_malloc(iLen);
+        LPSTR string = (LPSTR) malloc(iLen);
         if (string == nullptr)
         {
             bRet = FALSE;
@@ -571,7 +569,7 @@ SetEnvironmentVariableA(
         sprintf_s(string, iLen, "%s=%s", lpName, lpValue);
         nResult = EnvironPutenv(string, FALSE) ? 0 : -1;
 
-        PAL_free(string);
+        free(string);
         string = nullptr;
 
         // If EnvironPutenv returns FALSE, it almost certainly failed to allocate memory.
@@ -611,7 +609,7 @@ Return Values
 BOOL ResizeEnvironment(int newSize)
 {
     CPalThread * pthrCurrent = InternalGetCurrentThread();
-    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+    minipal_mutex_enter(&gcsEnvironment);
 
     BOOL ret = FALSE;
     if (newSize >= palEnvironmentCount)
@@ -631,7 +629,7 @@ BOOL ResizeEnvironment(int newSize)
         ASSERT("ResizeEnvironment: newSize < current palEnvironmentCount!\n");
     }
 
-    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
+    minipal_mutex_leave(&gcsEnvironment);
     return ret;
 }
 
@@ -653,7 +651,7 @@ void EnvironUnsetenv(const char *name)
     int nameLength = strlen(name);
 
     CPalThread * pthrCurrent = InternalGetCurrentThread();
-    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+    minipal_mutex_enter(&gcsEnvironment);
 
     for (int i = 0; palEnvironment[i] != nullptr; ++i)
     {
@@ -681,7 +679,7 @@ void EnvironUnsetenv(const char *name)
         }
     }
 
-    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
+    minipal_mutex_leave(&gcsEnvironment);
 }
 
 /*++
@@ -747,7 +745,7 @@ BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
     {
         // See if we are replacing an item or adding one.
 
-        InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+        minipal_mutex_enter(&gcsEnvironment);
         fOwningCS = true;
 
         int i;
@@ -802,7 +800,7 @@ done:
 
     if (fOwningCS)
     {
-        InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
+        minipal_mutex_leave(&gcsEnvironment);
     }
 
     return result;
@@ -884,7 +882,7 @@ Return Value
 char* EnvironGetenv(const char* name, BOOL copyValue)
 {
     CPalThread * pthrCurrent = InternalGetCurrentThread();
-    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+    minipal_mutex_enter(&gcsEnvironment);
 
     char* retValue = FindEnvVarValue(name);
 
@@ -893,7 +891,7 @@ char* EnvironGetenv(const char* name, BOOL copyValue)
         retValue = strdup(retValue);
     }
 
-    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
+    minipal_mutex_leave(&gcsEnvironment);
     return retValue;
 }
 
@@ -940,10 +938,10 @@ EnvironInitialize(void)
 {
     BOOL ret = FALSE;
 
-    InternalInitializeCriticalSection(&gcsEnvironment);
+    minipal_mutex_init(&gcsEnvironment);
 
     CPalThread * pthrCurrent = InternalGetCurrentThread();
-    InternalEnterCriticalSection(pthrCurrent, &gcsEnvironment);
+    minipal_mutex_enter(&gcsEnvironment);
 
     char** sourceEnviron = EnvironGetSystemEnvironment();
 
@@ -975,7 +973,7 @@ EnvironInitialize(void)
         palEnvironment[variableCount] = nullptr;
     }
 
-    InternalLeaveCriticalSection(pthrCurrent, &gcsEnvironment);
+    minipal_mutex_leave(&gcsEnvironment);
     return ret;
 }
 

@@ -1,0 +1,78 @@
+\documentclass{article}
+\usepackage[fancyhdr,pdf]{latex2man}
+
+\input{common.tex}
+
+\begin{document}
+
+\begin{Name}{3libunwind}{unw\_get\_elf\_filename\_by\_ip}{Xiang Lin}{Programming Library}{unw\_get\_elf\_filename}unw\_get\_elf\_filename\_by\_ip -- get backing elf filename by instruction pointer
+\end{Name}
+
+\section{Synopsis}
+
+\File{\#include $<$libunwind.h$>$}\\
+
+\Type{int} \Func{unw\_get\_elf\_filename\_by\_ip}(\Type{unw\_addr\_space\_t~}\Var{as}, \Type{unw\_word\_t~}\Var{ip}, \Type{char~*}\Var{bufp}, \Type{size\_t} \Var{len}, \Type{unw\_word\_t~*}\Var{offp}, \Type{void~*}\Var{arg});\\
+
+\section{Description}
+
+The \Func{unw\_get\_elf\_filename\_by\_ip}() routine returns the backing
+elf filename of a instruction pointer just like \Func{unw\_get\_elf\_filename}(),
+except that the name is looked up by instruction pointer (IP) instead
+of a cursor.
+
+The routine expects the following arguments: \Var{as} is the
+address-space in which the instruction pointer should be looked up.
+For a look-up in the local address-space,
+\Var{unw\_local\_addr\_space} can be passed for this argument.
+Argument \Var{ip} is the instruction-pointer for which the elf filename
+should be looked up.  The \Var{bufp} argument is a pointer to
+a character buffer that is at least \Var{len} bytes long.  This buffer
+is used to return the elf filename.  The \Var{offp} argument
+is a pointer to a word that is used to return the byte offset of the
+instruction-pointer relative to the start of the elf filename.
+Lastly, \Var{arg} is the address space argument that should be used
+when accessing the address space.  It has the same purpose as the
+argument of the same name for \Func{unw\_init\_remote}().  When
+accessing the local address space (first argument is
+\Var{unw\_local\_addr\_space}), \Const{NULL} must be passed for this
+argument.
+
+\section{Return Value}
+
+On successful completion, \Func{unw\_get\_elf\_filename\_by\_ip}()
+returns 0.  Otherwise the negative value of one of the error codes
+below is returned.
+
+\section{Thread and Signal Safety}
+
+\Func{unw\_get\_elf\_filename\_by\_ip}() is thread safe.  If the local
+address-space is passed in argument \Var{as}, this routine is also
+safe to use from a signal handler.
+
+\section{Errors}
+
+\begin{Description}
+\item[\Const{UNW\_EUNSPEC}] An unspecified error occurred.
+\item[\Const{UNW\_ENOINFO}] \Prog{Libunwind} was unable to determine
+  the elf filename of the instruction pointer.
+\item[\Const{UNW\_ENOMEM}] The elf filename is too long to fit
+  in the buffer provided.  A truncated version of the name has been
+  returned.
+\end{Description}
+
+\section{See Also}
+
+\SeeAlso{libunwind}(3libunwind),
+\SeeAlso{unw\_get\_elf\_filename}(3libunwind),
+\SeeAlso{unw\_create\_addr\_space}(3libunwind),
+\SeeAlso{unw\_init\_remote}(3libunwind)
+
+\section{Author}
+
+\noindent
+Xiang Lin\\
+Email: \Email{myd.xia@gmail.com}\\
+\LatexManEnd
+
+\end{document}

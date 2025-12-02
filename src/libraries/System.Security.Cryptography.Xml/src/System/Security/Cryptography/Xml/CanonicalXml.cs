@@ -12,17 +12,9 @@ namespace System.Security.Cryptography.Xml
         private readonly CanonicalXmlDocument _c14nDoc;
         private readonly C14NAncestralNamespaceContextManager _ancMgr;
 
-        // private static string defaultXPathWithoutComments = "(//. | //@* | //namespace::*)[not(self::comment())]";
-        // private static string defaultXPathWithoutComments = "(//. | //@* | //namespace::*)";
-        // private static string defaultXPathWithComments = "(//. | //@* | //namespace::*)";
-        // private static string defaultXPathWithComments = "(//. | //@* | //namespace::*)";
-
         internal CanonicalXml(Stream inputStream, bool includeComments, XmlResolver? resolver, string strBaseUri)
         {
-            if (inputStream is null)
-            {
-                throw new ArgumentNullException(nameof(inputStream));
-            }
+            ArgumentNullException.ThrowIfNull(inputStream);
 
             _c14nDoc = new CanonicalXmlDocument(true, includeComments);
             _c14nDoc.XmlResolver = resolver;
@@ -33,10 +25,7 @@ namespace System.Security.Cryptography.Xml
         internal CanonicalXml(XmlDocument document, XmlResolver? resolver) : this(document, resolver, false) { }
         internal CanonicalXml(XmlDocument document, XmlResolver? resolver, bool includeComments)
         {
-            if (document is null)
-            {
-                throw new ArgumentNullException(nameof(document));
-            }
+            ArgumentNullException.ThrowIfNull(document);
 
             _c14nDoc = new CanonicalXmlDocument(true, includeComments);
             _c14nDoc.XmlResolver = resolver;
@@ -46,10 +35,7 @@ namespace System.Security.Cryptography.Xml
 
         internal CanonicalXml(XmlNodeList nodeList, XmlResolver? resolver, bool includeComments)
         {
-            if (nodeList is null)
-            {
-                throw new ArgumentNullException(nameof(nodeList));
-            }
+            ArgumentNullException.ThrowIfNull(nodeList);
 
             XmlDocument? doc = Utils.GetOwnerDocument(nodeList);
             if (doc == null)

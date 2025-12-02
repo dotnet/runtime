@@ -167,7 +167,19 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal("_-ABC", option.Message);
         }
 
-        public static TheoryData Configure_GetsNullableOptionsFromConfiguration_Data
+        [Fact]
+        public void SingleValidateOnStartRegistrationTest()
+        {
+            ServiceCollection sc = new();
+            sc.AddOptions<FakeOptions>("name1").Configure(o => o.Message += "1").Validate(o => o.Message.Length > 0).ValidateOnStart();
+            sc.AddOptions<FakeOptions>("name2").Configure(o => o.Message += "2").Validate(o => o.Message.Length > 0).ValidateOnStart();
+            sc.AddOptions<FakeOptions>("name3").Configure(o => o.Message += "3").Validate(o => o.Message.Length > 0).ValidateOnStart();
+            sc.AddOptions<FakeOptions>("name4").Configure(o => o.Message += "4").Validate(o => o.Message.Length > 0).ValidateOnStart();
+
+            Assert.Equal(1, sc.Count(sd => sd.ServiceType == typeof(IStartupValidator)));
+        }
+
+        public static TheoryData<IDictionary<string, string>, IDictionary<string, object>> Configure_GetsNullableOptionsFromConfiguration_Data
         {
             get
             {
@@ -242,7 +254,7 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Collection(expectedValues, assertions.ToArray());
         }
 
-        public static TheoryData Configure_GetsEnumOptionsFromConfiguration_Data
+        public static TheoryData<IDictionary<string, string>, IDictionary<string, object>> Configure_GetsEnumOptionsFromConfiguration_Data
         {
             get
             {

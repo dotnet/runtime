@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 
 namespace System.Globalization
 {
@@ -111,14 +112,13 @@ namespace System.Globalization
         private string? _sAM1159; // (user can override) AM designator
         private string? _sPM2359; // (user can override) PM designator
         private string? _sTimeSeparator;
-        private volatile string[]? _saLongTimes; // (user can override) time format
-        private volatile string[]? _saShortTimes; // (user can override) short time format
-        private volatile string[]? _saDurationFormats; // time duration format
+        private string[]? _saLongTimes; // (user can override) time format
+        private string[]? _saShortTimes; // (user can override) short time format
 
         // Calendar specific data
         private int _iFirstDayOfWeek = undef; // (user can override) first day of week (gregorian really)
         private int _iFirstWeekOfYear = undef; // (user can override) first week of year (gregorian really)
-        private volatile CalendarId[]? _waCalendars; // all available calendar type(s).  The first one is the default calendar
+        private CalendarId[]? _waCalendars; // all available calendar type(s).  The first one is the default calendar
 
         // Store for specific data about each calendar
         private CalendarData?[]? _calendars; // Store for specific calendar data
@@ -150,7 +150,7 @@ namespace System.Globalization
         /// </remarks>
         private static Dictionary<string, string> RegionNames =>
             s_regionNames ??=
-            new Dictionary<string, string>(257 /* prime */, StringComparer.OrdinalIgnoreCase)
+            new Dictionary<string, string>(255, StringComparer.OrdinalIgnoreCase)
             {
                 { "001", "en-001" },
                 { "029", "en-029" },
@@ -164,7 +164,7 @@ namespace System.Globalization
                 { "AL", "sq-AL" },
                 { "AM", "hy-AM" },
                 { "AO", "pt-AO" },
-                { "AQ", "en-A" },
+                { "AQ", "en-AQ" },
                 { "AR", "es-AR" },
                 { "AS", "en-AS" },
                 { "AT", "de-AT" },
@@ -189,7 +189,7 @@ namespace System.Globalization
                 { "BR", "pt-BR" },
                 { "BS", "en-BS" },
                 { "BT", "dz-BT" },
-                { "BV", "nb-B" },
+                { "BV", "nb-BV" },
                 { "BW", "en-BW" },
                 { "BY", "be-BY" },
                 { "BZ", "en-BZ" },
@@ -202,7 +202,7 @@ namespace System.Globalization
                 { "CI", "fr-CI" },
                 { "CK", "en-CK" },
                 { "CL", "es-CL" },
-                { "CM", "fr-C" },
+                { "CM", "fr-CM" },
                 { "CN", "zh-CN" },
                 { "CO", "es-CO" },
                 { "CR", "es-CR" },
@@ -245,13 +245,13 @@ namespace System.Globalization
                 { "GP", "fr-GP" },
                 { "GQ", "es-GQ" },
                 { "GR", "el-GR" },
-                { "GS", "en-G" },
+                { "GS", "en-GS" },
                 { "GT", "es-GT" },
                 { "GU", "en-GU" },
                 { "GW", "pt-GW" },
                 { "GY", "en-GY" },
                 { "HK", "zh-HK" },
-                { "HM", "en-H" },
+                { "HM", "en-HM" },
                 { "HN", "es-HN" },
                 { "HR", "hr-HR" },
                 { "HT", "fr-HT" },
@@ -372,7 +372,7 @@ namespace System.Globalization
                 { "SZ", "ss-SZ" },
                 { "TC", "en-TC" },
                 { "TD", "fr-TD" },
-                { "TF", "fr-T" },
+                { "TF", "fr-TF" },
                 { "TG", "fr-TG" },
                 { "TH", "th-TH" },
                 { "TJ", "tg-Cyrl-TJ" },
@@ -411,7 +411,7 @@ namespace System.Globalization
 
         // Cache of regions we've already looked up
         private static volatile Dictionary<string, CultureData>? s_cachedRegions;
-        private static volatile Dictionary<string, string>? s_regionNames;
+        private static Dictionary<string, string>? s_regionNames;
 
         /// <summary>
         /// The culture name to use to interop with the underlying native globalization libraries like ICU or Windows NLS APIs.
@@ -444,12 +444,13 @@ namespace System.Globalization
             if (tempHashTable == null)
             {
                 // No table yet, make a new one
-                tempHashTable = new Dictionary<string, CultureData>();
+                var newTable = new Dictionary<string, CultureData>();
+                tempHashTable = Interlocked.CompareExchange(ref s_cachedRegions, newTable, null) ?? newTable;
             }
             else
             {
                 // Check the hash table
-                lock (s_lock)
+                lock (tempHashTable)
                 {
                     tempHashTable.TryGetValue(hashName, out retVal);
                 }
@@ -482,14 +483,10 @@ namespace System.Globalization
             if (retVal != null && !retVal.IsNeutralCulture)
             {
                 // first add it to the cache
-                lock (s_lock)
+                lock (tempHashTable)
                 {
                     tempHashTable[hashName] = retVal;
                 }
-
-                // Copy the hashtable to the corresponding member variables.  This will potentially overwrite
-                // new tables simultaneously created by a new thread, but maximizes thread safety.
-                s_cachedRegions = tempHashTable;
             }
             else
             {
@@ -537,7 +534,7 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
             {
                 // in invariant mode we always return invariant culture only from the enumeration
-                return new CultureInfo[] { new CultureInfo("") };
+                return [new CultureInfo("")];
             }
 
 #pragma warning restore 618
@@ -586,7 +583,7 @@ namespace System.Globalization
             invariant._sNegativeSign = "-";                    // negative sign
             invariant._iDigits = 2;                      // number of fractional digits
             invariant._iNegativeNumber = 1;                      // negative number format
-            invariant._waGrouping = new int[] { 3 };          // grouping of digits
+            invariant._waGrouping = [3];          // grouping of digits
             invariant._sDecimalSeparator = ".";                    // decimal separator
             invariant._sThousandSeparator = ",";                    // thousands separator
             invariant._sNaN = "NaN";                  // Not a Number
@@ -607,7 +604,7 @@ namespace System.Globalization
             invariant._iCurrencyDigits = 2;                      // # local monetary fractional digits
             invariant._iCurrency = 0;                      // positive currency format
             invariant._iNegativeCurrency = 0;                      // negative currency format
-            invariant._waMonetaryGrouping = new int[] { 3 };          // monetary grouping of digits
+            invariant._waMonetaryGrouping = [3];          // monetary grouping of digits
             invariant._sMonetaryDecimal = ".";                    // monetary decimal separator
             invariant._sMonetaryThousand = ",";                    // monetary thousands separator
 
@@ -619,23 +616,18 @@ namespace System.Globalization
             invariant._sTimeSeparator = ":";
             invariant._sAM1159 = "AM";                   // AM designator
             invariant._sPM2359 = "PM";                   // PM designator
-            invariant._saLongTimes = new string[] { "HH:mm:ss" };                             // time format
-            invariant._saShortTimes = new string[] { "HH:mm", "hh:mm tt", "H:mm", "h:mm tt" }; // short time format
-            invariant._saDurationFormats = new string[] { "HH:mm:ss" };                             // time duration format
+            invariant._saLongTimes = ["HH:mm:ss"];                             // time format
+            invariant._saShortTimes = ["HH:mm", "hh:mm tt", "H:mm", "h:mm tt"]; // short time format
 
             // Calendar specific data
             invariant._iFirstDayOfWeek = 0;                      // first day of week
             invariant._iFirstWeekOfYear = 0;                      // first week of year
 
-            // all available calendar type(s).  The first one is the default calendar
-            invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };
-
-            if (!GlobalizationMode.Invariant)
-            {
-                // Store for specific data about each calendar
-                invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
-                invariant._calendars[0] = CalendarData.Invariant;
-            }
+            // Calendar information is expensive size-wise, especially for AOT.
+            // CalendarData.Invariant is special cased in _waCalendars and _calendars
+            // accessors and gets initialized lazily.
+            // invariant._waCalendars
+            // invariant._calendars
 
             // Text information
             invariant._iReadingLayout = 0;
@@ -648,7 +640,7 @@ namespace System.Globalization
             invariant._iDefaultMacCodePage = 10000;         // default macintosh code page
             invariant._iDefaultEbcdicCodePage = 037;        // default EBCDIC code page
 
-            if (GlobalizationMode.Invariant)
+            if (GlobalizationMode.InvariantNoLoad)
             {
                 invariant._sLocalizedCountry = invariant._sNativeCountry;
             }
@@ -660,17 +652,18 @@ namespace System.Globalization
         /// Build our invariant information
         /// We need an invariant instance, which we build hard-coded
         /// </summary>
-        internal static CultureData Invariant => s_Invariant ??= CreateCultureWithInvariantData();
-        private static volatile CultureData? s_Invariant;
+        internal static CultureData Invariant => field ??= CreateCultureWithInvariantData();
 
         // Cache of cultures we've already looked up
         private static volatile Dictionary<string, CultureData>? s_cachedCultures;
-        private static readonly object s_lock = new object();
 
         internal static CultureData? GetCultureData(string? cultureName, bool useUserOverride)
         {
+            // The undetermined culture name "und" is not a real culture, but it resolves to the invariant culture because ICU typically normalizes it to an empty string.
+            const string UndeterminedCultureName = "und";
+
             // First do a shortcut for Invariant
-            if (string.IsNullOrEmpty(cultureName))
+            if (string.IsNullOrEmpty(cultureName) || cultureName.Equals(UndeterminedCultureName, StringComparison.OrdinalIgnoreCase))
             {
                 return Invariant;
             }
@@ -687,14 +680,15 @@ namespace System.Globalization
             if (tempHashTable == null)
             {
                 // No table yet, make a new one
-                tempHashTable = new Dictionary<string, CultureData>();
+                var newTable = new Dictionary<string, CultureData>();
+                tempHashTable = Interlocked.CompareExchange(ref s_cachedCultures, newTable, null) ?? newTable;
             }
             else
             {
                 // Check the hash table
                 bool ret;
                 CultureData? retVal;
-                lock (s_lock)
+                lock (tempHashTable)
                 {
                     ret = tempHashTable.TryGetValue(hashName, out retVal);
                 }
@@ -711,14 +705,10 @@ namespace System.Globalization
             }
 
             // Found one, add it to the cache
-            lock (s_lock)
+            lock (tempHashTable)
             {
                 tempHashTable[hashName] = culture;
             }
-
-            // Copy the hashtable to the corresponding member variables.  This will potentially overwrite
-            // new tables simultaneously created by a new thread, but maximizes thread safety.
-            s_cachedCultures = tempHashTable;
 
             return culture;
         }
@@ -817,11 +807,7 @@ namespace System.Globalization
                 return null;
             }
 #if TARGET_BROWSER
-            // populate fields for which ICU does not provide data in Hybrid mode
-            if (GlobalizationMode.Hybrid && !string.IsNullOrEmpty(culture._sName))
-            {
-                culture = JSLoadCultureInfoFromBrowser(culture._sName, culture);
-            }
+            culture.JSInitLocaleInfo();
 #endif
 
             // We need _sWindowsName to be initialized to know if we're using overrides.
@@ -832,7 +818,7 @@ namespace System.Globalization
         private bool InitCompatibilityCultureData()
         {
             // for compatibility handle the deprecated ids: zh-chs, zh-cht
-            string cultureName = _sRealName!;
+            string cultureName = _sRealName;
 
             string fallbackCultureName;
             string realCultureName;
@@ -919,13 +905,7 @@ namespace System.Globalization
                 // since windows doesn't know about zh-CHS and zh-CHT,
                 // we leave sRealName == zh-Hanx but we still need to
                 // pretend that it was zh-CHX.
-                switch (_sName)
-                {
-                    case "zh-CHS":
-                    case "zh-CHT":
-                        return _sName;
-                }
-                return _sRealName;
+                return _sName is "zh-CHS" or "zh-CHT" ? _sName : _sRealName;
             }
         }
 
@@ -941,7 +921,7 @@ namespace System.Globalization
 
         // Parent name (which may be a custom locale/culture)
         // Ask using the real name, so that we get parents of neutrals
-        internal string ParentName => _sParent ??= GetLocaleInfoCore(_sRealName!, LocaleStringData.ParentName);
+        internal string ParentName => _sParent ??= GetLocaleInfoCore(_sRealName, LocaleStringData.ParentName);
 
         // Localized pretty name for this locale (ie: Inglis (estados Unitos))
         internal string DisplayName
@@ -970,18 +950,17 @@ namespace System.Globalization
                     }
                 }
 
-                return localizedDisplayName!;
+                return localizedDisplayName;
             }
         }
 
         private string GetLanguageDisplayNameCore(string cultureName) => GlobalizationMode.UseNls ?
                                                                             NlsGetLanguageDisplayName(cultureName) :
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                                                                            GlobalizationMode.Hybrid ? GetLocaleInfoNative(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name) :
-                                                                            IcuGetLanguageDisplayName(cultureName);
-#else
-                                                                            IcuGetLanguageDisplayName(cultureName);
+                                                                         GlobalizationMode.Hybrid ?
+                                                                            GetLocaleInfoNative(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name) :
 #endif
+                                                                            IcuGetLanguageDisplayName(cultureName);
 
         /// <summary>
         /// English pretty name for this locale (ie: English (United States))
@@ -1121,8 +1100,8 @@ namespace System.Globalization
         /// abbreviated windows language name (ie: enu) (non-standard, avoid this)
         /// </summary>
         internal string ThreeLetterWindowsLanguageName => _sAbbrevLang ??= GlobalizationMode.UseNls ?
-                                                                            NlsGetThreeLetterWindowsLanguageName(_sRealName!) :
-                                                                            IcuGetThreeLetterWindowsLanguageName(_sRealName!);
+                                                                            NlsGetThreeLetterWindowsLanguageName(_sRealName) :
+                                                                            IcuGetThreeLetterWindowsLanguageName(_sRealName);
 
         /// <summary>
         /// Localized name for this language
@@ -1166,7 +1145,7 @@ namespace System.Globalization
             {
                 if (_iGeoId == undef && !GlobalizationMode.Invariant)
                 {
-                    _iGeoId = GlobalizationMode.UseNls ? NlsGetLocaleInfo(LocaleNumberData.GeoId) : IcuGetGeoId(_sRealName!);
+                    _iGeoId = GlobalizationMode.UseNls ? NlsGetLocaleInfo(LocaleNumberData.GeoId) : IcuGetGeoId(_sRealName);
                 }
                 return _iGeoId;
             }
@@ -1243,8 +1222,8 @@ namespace System.Globalization
         /// Console fallback name (ie: locale to use for console apps for unicode-only locales)
         /// </summary>
         internal string SCONSOLEFALLBACKNAME => _sConsoleFallbackName ??= GlobalizationMode.UseNls ?
-                                                                            NlsGetConsoleFallbackName(_sRealName!) :
-                                                                            IcuGetConsoleFallbackName(_sRealName!);
+                                                                            NlsGetConsoleFallbackName(_sRealName) :
+                                                                            IcuGetConsoleFallbackName(_sRealName);
 
         /// <summary>
         /// grouping of digits
@@ -1380,18 +1359,10 @@ namespace System.Globalization
             {
                 if (_saLongTimes == null && !GlobalizationMode.Invariant)
                 {
-                    Debug.Assert(!GlobalizationMode.Invariant);
-
                     string[]? longTimes = GetTimeFormatsCore(shortFormat: false);
-                    if (longTimes == null || longTimes.Length == 0)
-                    {
-                        _saLongTimes = Invariant._saLongTimes!;
-                    }
-                    else
-                    {
-                        _saLongTimes = longTimes;
-                    }
+                    _saLongTimes = longTimes != null && longTimes.Length != 0 ? longTimes : Invariant._saLongTimes!;
                 }
+
                 return _saLongTimes!;
             }
         }
@@ -1406,23 +1377,13 @@ namespace System.Globalization
             {
                 if (_saShortTimes == null && !GlobalizationMode.Invariant)
                 {
-                    Debug.Assert(!GlobalizationMode.Invariant);
-
                     // Try to get the short times from the OS/culture.dll
+                    // If we couldn't find short times, then compute them from long times
+                    // (eg: CORECLR on < Win7 OS & fallback for missing culture.dll)
                     string[]? shortTimes = GetTimeFormatsCore(shortFormat: true);
-
-                    if (shortTimes == null || shortTimes.Length == 0)
-                    {
-                        //
-                        // If we couldn't find short times, then compute them from long times
-                        // (eg: CORECLR on < Win7 OS & fallback for missing culture.dll)
-                        //
-                        shortTimes = DeriveShortTimesFromLong();
-                    }
-
-                    // Found short times, use them
-                    _saShortTimes = shortTimes;
+                    _saShortTimes = shortTimes != null && shortTimes.Length != 0 ? shortTimes : DeriveShortTimesFromLong();
                 }
+
                 return _saShortTimes!;
             }
         }
@@ -1564,20 +1525,15 @@ namespace System.Globalization
                 if (_iFirstDayOfWeek == undef && !GlobalizationMode.Invariant)
                 {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                    _iFirstDayOfWeek = GlobalizationMode.Hybrid ? GetLocaleInfoNative(LocaleNumberData.FirstDayOfWeek) : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
-#elif TARGET_BROWSER
                     if (GlobalizationMode.Hybrid)
                     {
-                        Debug.Assert(_sName != null, "[FirstDayOfWeek] Expected _sName to be populated already");
-                        _iFirstDayOfWeek = GetFirstDayOfWeek(_sName);
+                        _iFirstDayOfWeek = GetLocaleInfoNative(LocaleNumberData.FirstDayOfWeek);
                     }
                     else
-                    {
-                        _iFirstDayOfWeek = IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
-                    }
-#else
-                    _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
 #endif
+                    {
+                        _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
+                    }
                 }
                 return _iFirstDayOfWeek;
             }
@@ -1593,19 +1549,7 @@ namespace System.Globalization
             {
                 if (_iFirstWeekOfYear == undef)
                 {
-#if TARGET_BROWSER
-                    if (GlobalizationMode.Hybrid)
-                    {
-                        Debug.Assert(_sName != null, "[CalendarWeekRule] Expected _sName to be populated already");
-                        _iFirstWeekOfYear = GetFirstWeekOfYear(_sName);
-                    }
-                    else
-                    {
-                        _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
-                    }
-#else
                     _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
-#endif
                 }
                 return _iFirstWeekOfYear;
             }
@@ -1693,61 +1637,68 @@ namespace System.Globalization
         {
             get
             {
-                if (_waCalendars == null && !GlobalizationMode.Invariant)
+                if (_waCalendars == null)
                 {
-                    // We pass in an array of ints, and native side fills it up with count calendars.
-                    // We then have to copy that list to a new array of the right size.
-                    // Default calendar should be first
-                    CalendarId[] calendars = new CalendarId[23];
-                    Debug.Assert(_sWindowsName != null, "[CultureData.CalendarIds] Expected _sWindowsName to be populated by already");
-
-                    int count = CalendarData.GetCalendarsCore(_sWindowsName, _bUseOverrides, calendars);
-
-                    // See if we had a calendar to add.
-                    if (count == 0)
+                    if (GlobalizationMode.Invariant || IsInvariantCulture)
                     {
-                        // Failed for some reason, just grab Gregorian from Invariant
-                        _waCalendars = Invariant._waCalendars!;
+                        // We do this lazily as opposed in CreateCultureWithInvariantData to avoid introducing
+                        // enum arrays into apps that otherwise wouldn't have them. This helps with size in AOT.
+                        _waCalendars = [CalendarId.GREGORIAN];
                     }
                     else
                     {
-                        // The OS may not return calendar 4 for zh-TW, but we've always allowed it.
-                        // TODO: Is this hack necessary long-term?
-                        if (_sWindowsName == "zh-TW")
-                        {
-                            bool found = false;
+                        // We pass in an array of ints, and native side fills it up with count calendars.
+                        // We then have to copy that list to a new array of the right size.
+                        // Default calendar should be first
+                        CalendarId[] calendars = new CalendarId[23];
+                        Debug.Assert(_sWindowsName != null, "[CultureData.CalendarIds] Expected _sWindowsName to be populated by already");
 
-                            // Do we need to insert calendar 4?
-                            for (int i = 0; i < count; i++)
+                        int count = CalendarData.GetCalendarsCore(_sWindowsName, _bUseOverrides, calendars);
+
+                        // See if we had a calendar to add.
+                        if (count == 0)
+                        {
+                            // Failed for some reason, just use Gregorian
+                            _waCalendars = Invariant.CalendarIds;
+                        }
+                        else
+                        {
+                            // The OS may not return calendar 4 for zh-TW, but we've always allowed it.
+                            // TODO: Is this hack necessary long-term?
+                            if (_sWindowsName == "zh-TW")
                             {
-                                // Stop if we found calendar four
-                                if (calendars[i] == CalendarId.TAIWAN)
+                                bool found = false;
+
+                                // Do we need to insert calendar 4?
+                                for (int i = 0; i < count; i++)
                                 {
-                                    found = true;
-                                    break;
+                                    // Stop if we found calendar four
+                                    if (calendars[i] == CalendarId.TAIWAN)
+                                    {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+
+                                // If not found then insert it
+                                if (!found)
+                                {
+                                    // Insert it as the 2nd calendar
+                                    count++;
+                                    // Copy them from the 2nd position to the end, -1 for skipping 1st, -1 for one being added.
+                                    Array.Copy(calendars, 1, calendars, 2, 23 - 1 - 1);
+                                    calendars[1] = CalendarId.TAIWAN;
                                 }
                             }
 
-                            // If not found then insert it
-                            if (!found)
-                            {
-                                // Insert it as the 2nd calendar
-                                count++;
-                                // Copy them from the 2nd position to the end, -1 for skipping 1st, -1 for one being added.
-                                Array.Copy(calendars, 1, calendars, 2, 23 - 1 - 1);
-                                calendars[1] = CalendarId.TAIWAN;
-                            }
+                            // It worked, remember the list
+                            CalendarId[] temp = new CalendarId[count];
+                            Array.Copy(calendars, temp, count);
+                            _waCalendars = temp;
                         }
-
-                        // It worked, remember the list
-                        CalendarId[] temp = new CalendarId[count];
-                        Array.Copy(calendars, temp, count);
-
-                        _waCalendars = temp;
                     }
                 }
-
-                return _waCalendars!;
+                return _waCalendars;
             }
         }
 
@@ -1783,8 +1734,17 @@ namespace System.Globalization
             // Make sure that calendar has data
             if (calendarData == null)
             {
-                Debug.Assert(_sWindowsName != null, "[CultureData.GetCalendar] Expected _sWindowsName to be populated by already");
-                calendarData = new CalendarData(_sWindowsName, calendarId, _bUseOverrides);
+                if (calendarIndex == 0 && IsInvariantCulture)
+                {
+                    // We do this lazily as opposed in CreateCultureWithInvariantData to avoid introducing
+                    // invariant calendar data into apps that don't even need calendar.
+                    calendarData = CalendarData.Invariant;
+                }
+                else
+                {
+                    Debug.Assert(_sWindowsName != null, "[CultureData.GetCalendar] Expected _sWindowsName to be populated by already");
+                    calendarData = new CalendarData(_sWindowsName, calendarId, _bUseOverrides);
+                }
                 _calendars[calendarIndex] = calendarData;
             }
 
@@ -1864,7 +1824,7 @@ namespace System.Globalization
             {
                 if (_iDefaultAnsiCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultAnsiCodePage = GetAnsiCodePage(_sRealName!);
+                    _iDefaultAnsiCodePage = GetAnsiCodePage(_sRealName);
                 }
                 return _iDefaultAnsiCodePage;
             }
@@ -1879,7 +1839,7 @@ namespace System.Globalization
             {
                 if (_iDefaultOemCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultOemCodePage = GetOemCodePage(_sRealName!);
+                    _iDefaultOemCodePage = GetOemCodePage(_sRealName);
                 }
                 return _iDefaultOemCodePage;
             }
@@ -1894,7 +1854,7 @@ namespace System.Globalization
             {
                 if (_iDefaultMacCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultMacCodePage = GetMacCodePage(_sRealName!);
+                    _iDefaultMacCodePage = GetMacCodePage(_sRealName);
                 }
                 return _iDefaultMacCodePage;
             }
@@ -1909,7 +1869,7 @@ namespace System.Globalization
             {
                 if (_iDefaultEbcdicCodePage == undef && !GlobalizationMode.Invariant)
                 {
-                    _iDefaultEbcdicCodePage = GetEbcdicCodePage(_sRealName!);
+                    _iDefaultEbcdicCodePage = GetEbcdicCodePage(_sRealName);
                 }
                 return _iDefaultEbcdicCodePage;
             }
@@ -1997,11 +1957,7 @@ namespace System.Globalization
                     }
                     else
                     {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                        string? longTimeFormat = GlobalizationMode.Hybrid ? GetTimeFormatStringNative() : IcuGetTimeFormatString();
-#else
                         string? longTimeFormat = ShouldUseUserOverrideNlsData ? NlsGetTimeFormatString() : IcuGetTimeFormatString();
-#endif
                         if (string.IsNullOrEmpty(longTimeFormat))
                         {
                             longTimeFormat = LongTimes[0];
@@ -2247,7 +2203,7 @@ namespace System.Globalization
 
         internal void GetNFIValues(NumberFormatInfo nfi)
         {
-            if (GlobalizationMode.Invariant || IsInvariantCulture)
+            if (GlobalizationMode.InvariantNoLoad || IsInvariantCulture)
             {
                 nfi._positiveSign = _sPositiveSign!;
                 nfi._negativeSign = _sNegativeSign!;

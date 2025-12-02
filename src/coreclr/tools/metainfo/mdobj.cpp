@@ -208,7 +208,7 @@ void DisplayArchive(_In_z_ WCHAR* szFile, ULONG DumpFilter, _In_opt_z_ WCHAR* sz
     {
         if((szName = GetNameOfObj(pbLongNameAddress, (PIMAGE_ARCHIVE_MEMBER_HEADER)pbMapAddress, szBuf))!=NULL)
         {
-            if (Wsz_mbstowcs(wzName, szName, 1024) == -1)
+            if (MultiByteToWideChar(CP_ACP, 0, szName, -1, wzName, 1024) == -1)
                 MDInfo::Error("Conversion from Multi-Byte to Wide-Char failed.");
 
             // Display metadata only for object files.
@@ -253,7 +253,7 @@ void DisplayFile(_In_z_ WCHAR* szFile, BOOL isFile, ULONG DumpFilter, _In_opt_z_
 {
     // Open the emit scope
 
-    // We need to make sure this file isn't too long. Checking _MAX_PATH is probably safe, but since we have a much
+    // We need to make sure this file isn't too long. Checking MAX_PATH is probably safe, but since we have a much
     // larger buffer, we might as well use it all.
     if (u16_strlen(szFile) > 1000)
         return;

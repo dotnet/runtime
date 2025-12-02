@@ -15,8 +15,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#if defined(FEATURE_EH_FUNCLETS)
-
 //------------------------------------------------------------------------
 // Compiler::unwindGetFuncLocations: Get the start/end emitter locations for this
 // function or funclet. If 'getHotSectionData' is true, get the start/end locations
@@ -53,6 +51,8 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
                                       /* OUT */ emitLocation** ppStartLoc,
                                       /* OUT */ emitLocation** ppEndLoc)
 {
+    assert(UsesFunclets());
+
     if (func->funKind == FUNC_ROOT)
     {
         // Since all funclets are pulled out of line, the main code size is everything
@@ -128,13 +128,11 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
             assert(func->funKind == FUNC_HANDLER);
             *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdHndBeg));
             *ppEndLoc   = HBtab->ebdHndLast->IsLast() ? nullptr
-                                                    : new (this, CMK_UnwindInfo)
+                                                      : new (this, CMK_UnwindInfo)
                                                           emitLocation(ehEmitCookie(HBtab->ebdHndLast->Next()));
         }
     }
 }
-
-#endif // FEATURE_EH_FUNCLETS
 
 #if defined(FEATURE_CFI_SUPPORT)
 
@@ -165,17 +163,31 @@ void Compiler::unwindPushPopCFI(regNumber reg)
 #endif
         ;
 
+#if defined(TARGET_ARM)
+    createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL,
+                  reg >= REG_FP_FIRST ? 2 * REGSIZE_BYTES : REGSIZE_BYTES);
+#else
+    assert(reg < REG_FP_FIRST);
+    createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, REGSIZE_BYTES);
+#endif
     if (relOffsetMask & genRegMask(reg))
     {
-#ifndef TARGET_ARM
-        createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, REGSIZE_BYTES);
-#endif
         createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg));
     }
-    else
-    {
-        createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, REGSIZE_BYTES);
-    }
+}
+
+//------------------------------------------------------------------------
+// Compiler::unwindPush2Pop2CFI: Record  push/save of 2 registers simultaneously.
+//
+// Arguments:
+//    reg1 - The first register being pushed/saved.
+//    reg2 - The second register being pushed/saved.
+//
+void Compiler::unwindPush2Pop2CFI(regNumber reg1, regNumber reg2)
+{
+    // ToDo: This is a placeholder till OS has unwind support for push2/pop2.
+    unwindPushPopCFI(reg1);
+    unwindPushPopCFI(reg2);
 }
 
 typedef jitstd::vector<CFI_CODE> CFICodeVector;
@@ -184,38 +196,40 @@ void Compiler::unwindBegPrologCFI()
 {
     assert(compGeneratingProlog);
 
-#if defined(FEATURE_EH_FUNCLETS)
-    FuncInfoDsc* func = funCurrentFunc();
-
-    // There is only one prolog for a function/funclet, and it comes first. So now is
-    // a good time to initialize all the unwind data structures.
-
-    unwindGetFuncLocations(func, true, &func->startLoc, &func->endLoc);
-
-    if (fgFirstColdBlock != nullptr)
+    if (UsesFunclets())
     {
-        unwindGetFuncLocations(func, false, &func->coldStartLoc, &func->coldEndLoc);
-    }
+        FuncInfoDsc* func = funCurrentFunc();
 
-    func->cfiCodes = new (getAllocator(CMK_UnwindInfo)) CFICodeVector(getAllocator());
-#endif // FEATURE_EH_FUNCLETS
+        // There is only one prolog for a function/funclet, and it comes first. So now is
+        // a good time to initialize all the unwind data structures.
+
+        unwindGetFuncLocations(func, true, &func->startLoc, &func->endLoc);
+
+        if (fgFirstColdBlock != nullptr)
+        {
+            unwindGetFuncLocations(func, false, &func->coldStartLoc, &func->coldEndLoc);
+        }
+
+        func->cfiCodes = new (getAllocator(CMK_UnwindInfo)) CFICodeVector(getAllocator());
+    }
 }
 
 void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
 {
-    regMaskTP regBit = isFloat ? genRegMask(REG_FP_FIRST) : 1;
+#if TARGET_ARM
+    regNumber regNum = isFloat ? REG_PREV(REG_FP_LAST) : REG_INT_LAST;
+    regMaskTP regBit = isFloat ? genRegMask(regNum) | genRegMask(REG_NEXT(regNum)) : genRegMask(regNum);
+#else
+    regNumber regNum = isFloat ? REG_FP_LAST : REG_INT_LAST;
+    regMaskTP regBit = genRegMask(regNum);
+#endif
 
-    regNumber regNum = isFloat ? REG_FP_FIRST : REG_FIRST;
-    for (; regNum < REG_COUNT;)
+    for (; regMask != 0 && regBit != RBM_NONE;)
     {
-        if (regBit > regMask)
-        {
-            break;
-        }
-
         if (regBit & regMask)
         {
             unwindPushPopCFI(regNum);
+            regMask &= ~regBit;
         }
 
 #if TARGET_ARM
@@ -224,11 +238,11 @@ void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
         // because LLVM only know about D0-D31.
         // As such pairs Sx,Sx+1 are referenced as D0-D15 registers in DWARF
         // For that we process registers in pairs.
-        regNum = isFloat ? REG_NEXT(REG_NEXT(regNum)) : REG_NEXT(regNum);
-        regBit <<= isFloat ? 2 : 1;
+        regBit >>= isFloat ? 2 : 1;
+        regNum = isFloat ? REG_PREV(REG_PREV(regNum)) : REG_PREV(regNum);
 #else
-        regNum = REG_NEXT(regNum);
-        regBit <<= 1;
+        regBit >>= 1;
+        regNum = REG_PREV(regNum);
 #endif
     }
 }

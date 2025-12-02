@@ -279,13 +279,8 @@ namespace System.Transactions
             }
         }
 
-
-        private static DefaultSettingsSection? s_defaultSettings;
-        private static DefaultSettingsSection DefaultSettings => s_defaultSettings ??= DefaultSettingsSection.GetSection();
-
-
-        private static MachineSettingsSection? s_machineSettings;
-        private static MachineSettingsSection MachineSettings => s_machineSettings ??= MachineSettingsSection.GetSection();
+        private static DefaultSettingsSection DefaultSettings => field ??= DefaultSettingsSection.GetSection();
+        private static MachineSettingsSection MachineSettings => field ??= MachineSettingsSection.GetSection();
 
         private static bool s_defaultTimeoutValidated;
         private static long s_defaultTimeoutTicks;
@@ -432,7 +427,7 @@ namespace System.Transactions
         }
 
         internal static bool? s_implicitDistributedTransactions;
-        internal static object s_implicitDistributedTransactionsLock = new();
+        internal static readonly object s_implicitDistributedTransactionsLock = new();
 #else
         public static bool ImplicitDistributedTransactions
         {

@@ -17,20 +17,7 @@ namespace Internal.Reflection.Extensions.NonPortable
     {
         public static MethodInfo GetDelegateMethodInfo(Delegate del)
         {
-            Delegate[] invokeList = del.GetInvocationList();
-            del = invokeList[invokeList.Length - 1];
-            IntPtr originalLdFtnResult = RuntimeAugments.GetDelegateLdFtnResult(del, out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver, out bool isInterpreterEntrypoint);
-
-            if (isInterpreterEntrypoint)
-            {
-                // This is a special kind of delegate where the invoke method is "ObjectArrayThunk". Typically,
-                // this will be a delegate that points the LINQ Expression interpreter. We could manufacture
-                // a MethodInfo based on the delegate's Invoke signature, but let's just throw for now.
-                throw new NotSupportedException(SR.DelegateGetMethodInfo_ObjectArrayDelegate);
-            }
-
-            if (originalLdFtnResult == (IntPtr)0)
-                return null;
+            IntPtr originalLdFtnResult = RuntimeAugments.GetDelegateLdFtnResult(del, out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver);
 
             QMethodDefinition methodHandle = default(QMethodDefinition);
             RuntimeTypeHandle[] genericMethodTypeArgumentHandles = null;
@@ -60,7 +47,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                         callTryGetMethod = false;
                         methodHandle = QMethodDefinition.FromObjectAndInt(resolver->Reader, resolver->Handle);
 
-                        if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(resolver->GVMMethodHandle, out _, out _, out genericMethodTypeArgumentHandles))
+                        if (!TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(resolver->GVMMethodHandle, out _, out QMethodDefinition dummy, out genericMethodTypeArgumentHandles))
                             throw new NotSupportedException(SR.DelegateGetMethodInfo_NoInstantiation);
                     }
                 }
@@ -79,11 +66,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                         throw new NotSupportedException(SR.Format(SR.DelegateGetMethodInfo_NoDynamic_WithDisplayString, methodDisplayString));
                 }
             }
-            MethodBase methodBase = ExecutionDomain.GetMethod(typeOfFirstParameterIfInstanceDelegate, methodHandle, genericMethodTypeArgumentHandles);
-            MethodInfo methodInfo = methodBase as MethodInfo;
-            if (methodInfo != null)
-                return methodInfo;
-            return null; // GetMethod() returned a ConstructorInfo.
+            return (MethodInfo)ExecutionDomain.GetMethod(typeOfFirstParameterIfInstanceDelegate, methodHandle, genericMethodTypeArgumentHandles);
         }
     }
 }

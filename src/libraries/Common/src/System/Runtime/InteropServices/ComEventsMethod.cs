@@ -63,7 +63,7 @@ namespace System.Runtime.InteropServices
                     }
                 }
 
-                return Delegate.DynamicInvoke(WrapArgs ? new object[] { args } : args);
+                return Delegate.DynamicInvoke(WrapArgs ? [args] : args);
             }
 
             private void PreProcessSignature()
@@ -144,10 +144,7 @@ namespace System.Runtime.InteropServices
                     current = current._next;
                 }
 
-                if (current != null)
-                {
-                    current._next = method._next;
-                }
+                current?._next = method._next;
 
                 return methods;
             }

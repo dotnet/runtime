@@ -19,7 +19,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         SET_EPILOGSIZE_MAX = 10,
         SET_EPILOGCNT_MAX = 4,
         SET_UNTRACKED_MAX = 3,
-        SET_RET_KIND_MAX = 4,
+        SET_RET_KIND_MAX = 3,
+        SET_NOGCREGIONS_MAX = 4,
         ADJ_ENCODING_MAX = 0x7f,
         MORE_BYTES_TO_FOLLOW = 0x80
     };
@@ -68,11 +69,22 @@ namespace ILCompiler.Reflection.ReadyToRun
     };
 
     /// <summary>
+    /// Second set of opcodes, when first code is 0x4F
+    /// </summary>
+    enum InfoHdrAdjust2
+    {
+        SET_RETURNKIND = 0,  // 0x00-SET_RET_KIND_MAX Set ReturnKind to value
+        SET_NOGCREGIONS_CNT = SET_RETURNKIND + InfoHdrAdjustConstants.SET_RET_KIND_MAX + 1,        // 0x04
+        FFFF_NOGCREGION_CNT = SET_NOGCREGIONS_CNT + InfoHdrAdjustConstants.SET_NOGCREGIONS_MAX + 1 // 0x09 There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
+    };
+
+    /// <summary>
     /// based on macros defined in <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcinfotypes.h">src\inc\gcinfotypes.h</a>
     /// </summary>
     public class GcInfoTypes
     {
         private Machine _target;
+        private bool _denormalizeCodeOffsets;
 
         internal int SIZE_OF_RETURN_KIND_SLIM { get; } = 2;
         internal int SIZE_OF_RETURN_KIND_FAT { get; } = 2;
@@ -105,9 +117,10 @@ namespace ILCompiler.Reflection.ReadyToRun
         internal int LIVESTATE_RLE_SKIP_ENCBASE { get; } = 4;
         internal int NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 { get; } = 6;
 
-        internal GcInfoTypes(Machine machine)
+        internal GcInfoTypes(Machine machine, bool denormalizeCodeOffsets)
         {
             _target = machine;
+            _denormalizeCodeOffsets = denormalizeCodeOffsets;
 
             switch (machine)
             {
@@ -154,6 +167,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                     STACK_BASE_REGISTER_ENCBASE = 2;
                     NUM_REGISTERS_ENCBASE = 3;
                     break;
+                case Machine.RiscV64:
+                    SIZE_OF_RETURN_KIND_FAT = 4;
+                    STACK_BASE_REGISTER_ENCBASE = 2;
+                    NUM_REGISTERS_ENCBASE = 3;
+                    break;
             }
         }
 
@@ -162,12 +180,41 @@ namespace ILCompiler.Reflection.ReadyToRun
             switch (_target)
             {
                 case Machine.ArmThumb2:
+                case Machine.RiscV64:
                     return (x << 1);
                 case Machine.Arm64:
                 case Machine.LoongArch64:
                     return (x << 2);
             }
             return x;
+        }
+
+        internal int NormalizeCodeLength(int x)
+        {
+            switch (_target)
+            {
+                case Machine.ArmThumb2:
+                case Machine.RiscV64:
+                    return (x >> 1);
+                case Machine.Arm64:
+                case Machine.LoongArch64:
+                    return (x >> 2);
+            }
+            return x;
+        }
+
+        internal uint DenormalizeCodeOffset(uint x)
+        {
+            return _denormalizeCodeOffsets ?
+                (uint)DenormalizeCodeLength((int)x) :
+                x;
+        }
+
+        internal uint NormalizeCodeOffset(uint x)
+        {
+            return _denormalizeCodeOffsets ?
+                (uint)NormalizeCodeLength((int)x) :
+                x;
         }
 
         internal int DenormalizeStackSlot(int x)
@@ -180,6 +227,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     return (x << 2);
                 case Machine.Arm64:
                 case Machine.LoongArch64:
+                case Machine.RiscV64:
                     return (x << 3);
             }
             return x;
@@ -197,6 +245,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                     return (x ^ 29);
                 case Machine.LoongArch64:
                     return ((x ^ 22) & 0x3);
+                case Machine.RiscV64:
+                    return (x ^ 8);
             }
             return x;
         }
@@ -211,6 +261,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     return (x << 2);
                 case Machine.Arm64:
                 case Machine.LoongArch64:
+                case Machine.RiscV64:
                     return (x << 3);
             }
             return x;

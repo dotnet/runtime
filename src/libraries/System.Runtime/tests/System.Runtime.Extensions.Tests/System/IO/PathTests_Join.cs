@@ -200,36 +200,42 @@ namespace System.IO.Tests
         public void JoinStringArray_ZeroLengthArray()
         {
             Assert.Equal(string.Empty, Path.Join(new string[0]));
+            Assert.Equal(string.Empty, Path.Join((ReadOnlySpan<string>)new string[0]));
         }
 
         [Theory, MemberData(nameof(TestData_JoinOnePath))]
         public void JoinStringArray_1(string path1, string expected)
         {
             Assert.Equal(expected, Path.Join(new string[] { path1 }));
+            Assert.Equal(expected, Path.Join((ReadOnlySpan<string>)new string[] { path1 }));
         }
 
         [Theory, MemberData(nameof(TestData_JoinTwoPaths))]
         public void JoinStringArray_2(string path1, string path2, string expected)
         {
             Assert.Equal(expected, Path.Join(new string[] { path1, path2 }));
+            Assert.Equal(expected, Path.Join((ReadOnlySpan<string>)new string[] { path1, path2 }));
         }
 
         [Theory, MemberData(nameof(TestData_JoinThreePaths))]
         public void JoinStringArray_3(string path1, string path2, string path3, string expected)
         {
             Assert.Equal(expected, Path.Join(new string[] { path1, path2, path3 }));
+            Assert.Equal(expected, Path.Join((ReadOnlySpan<string>)new string[] { path1, path2, path3 }));
         }
 
         [Theory, MemberData(nameof(TestData_JoinFourPaths))]
         public void JoinStringArray_4(string path1, string path2, string path3, string path4, string expected)
         {
             Assert.Equal(expected, Path.Join(new string[] { path1, path2, path3, path4 }));
+            Assert.Equal(expected, Path.Join((ReadOnlySpan<string>)new string[] { path1, path2, path3, path4 }));
         }
 
         [Theory, MemberData(nameof(TestData_JoinFourPaths))]
         public void JoinStringArray_8(string path1, string path2, string path3, string path4, string fourJoined)
         {
             Assert.Equal(Path.Join(fourJoined, fourJoined), Path.Join(new string[] { path1, path2, path3, path4, path1, path2, path3, path4 }));
+            Assert.Equal(Path.Join(fourJoined, fourJoined), Path.Join((ReadOnlySpan<string>)new string[] { path1, path2, path3, path4, path1, path2, path3, path4 }));
         }
     }
 }

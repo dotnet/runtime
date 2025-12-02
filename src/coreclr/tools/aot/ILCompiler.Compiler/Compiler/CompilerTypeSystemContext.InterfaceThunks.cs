@@ -62,13 +62,11 @@ namespace ILCompiler
     // Contains functionality related to instantiating thunks for default interface methods
     public partial class CompilerTypeSystemContext
     {
-        private const int UseContextFromRuntime = -1;
-
         /// <summary>
         /// For a shared (canonical) default interface method, gets a method that can be used to call the
         /// method on a specific implementing class.
         /// </summary>
-        public MethodDesc GetDefaultInterfaceMethodImplementationThunk(MethodDesc targetMethod, TypeDesc implementingClass, DefType interfaceOnDefinition)
+        public MethodDesc GetDefaultInterfaceMethodImplementationThunk(MethodDesc targetMethod, TypeDesc implementingClass, DefType interfaceOnDefinition, out int interfaceIndex)
         {
             Debug.Assert(targetMethod.IsSharedByGenericInstantiations);
             Debug.Assert(!targetMethod.Signature.IsStatic);
@@ -76,11 +74,16 @@ namespace ILCompiler
             Debug.Assert(interfaceOnDefinition.GetTypeDefinition() == targetMethod.OwningType.GetTypeDefinition());
             Debug.Assert(targetMethod.OwningType.IsInterface);
 
-            int interfaceIndex;
+            bool useContextFromRuntime = false;
             if (implementingClass.IsInterface)
             {
                 Debug.Assert(((MetadataType)implementingClass).IsDynamicInterfaceCastableImplementation());
-                interfaceIndex = UseContextFromRuntime;
+                useContextFromRuntime = true;
+            }
+
+            if (useContextFromRuntime && targetMethod.OwningType == implementingClass)
+            {
+                interfaceIndex = -1;
             }
             else
             {
@@ -90,38 +93,23 @@ namespace ILCompiler
 
             // Get a method that will inject the appropriate instantiation context to the
             // target default interface method.
-            var methodKey = new DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey(targetMethod, interfaceIndex);
+            var methodKey = new DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey(targetMethod, interfaceIndex, useContextFromRuntime);
             MethodDesc thunk = _dimThunkHashtable.GetOrCreateValue(methodKey);
 
             return thunk;
-        }
-
-        /// <summary>
-        /// Returns true of <paramref name="method"/> is a standin method for instantiating thunk target.
-        /// </summary>
-        public bool IsDefaultInterfaceMethodImplementationThunkTargetMethod(MethodDesc method)
-        {
-            return method.GetTypicalMethodDefinition().GetType() == typeof(DefaultInterfaceMethodImplementationWithHiddenParameter);
-        }
-
-        /// <summary>
-        /// Returns the real target method of an instantiating thunk.
-        /// </summary>
-        public MethodDesc GetRealDefaultInterfaceMethodImplementationThunkTargetMethod(MethodDesc method)
-        {
-            MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
-            return ((DefaultInterfaceMethodImplementationWithHiddenParameter)typicalMethod).MethodRepresented;
         }
 
         private struct DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey
         {
             public readonly MethodDesc TargetMethod;
             public readonly int InterfaceIndex;
+            public bool UseContextFromRuntime;
 
-            public DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey(MethodDesc targetMethod, int interfaceIndex)
+            public DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey(MethodDesc targetMethod, int interfaceIndex, bool useContextFromRuntime)
             {
                 TargetMethod = targetMethod;
                 InterfaceIndex = interfaceIndex;
+                UseContextFromRuntime = useContextFromRuntime;
             }
         }
 
@@ -138,17 +126,19 @@ namespace ILCompiler
             protected override bool CompareKeyToValue(DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey key, DefaultInterfaceMethodImplementationInstantiationThunk value)
             {
                 return ReferenceEquals(key.TargetMethod, value.TargetMethod) &&
-                    key.InterfaceIndex == value.InterfaceIndex;
+                    key.InterfaceIndex == value.InterfaceIndex &&
+                    key.UseContextFromRuntime == value.UseContextFromRuntime;
             }
             protected override bool CompareValueToValue(DefaultInterfaceMethodImplementationInstantiationThunk value1, DefaultInterfaceMethodImplementationInstantiationThunk value2)
             {
                 return ReferenceEquals(value1.TargetMethod, value2.TargetMethod) &&
-                    value1.InterfaceIndex == value2.InterfaceIndex;
+                    value1.InterfaceIndex == value2.InterfaceIndex &&
+                    value1.UseContextFromRuntime == value2.UseContextFromRuntime;
             }
             protected override DefaultInterfaceMethodImplementationInstantiationThunk CreateValueFromKey(DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey key)
             {
                 TypeDesc owningTypeOfThunks = ((CompilerTypeSystemContext)key.TargetMethod.Context).GeneratedAssembly.GetGlobalModuleType();
-                return new DefaultInterfaceMethodImplementationInstantiationThunk(owningTypeOfThunks, key.TargetMethod, key.InterfaceIndex);
+                return new DefaultInterfaceMethodImplementationInstantiationThunk(owningTypeOfThunks, key.TargetMethod, key.InterfaceIndex, key.UseContextFromRuntime);
             }
         }
         private DefaultInterfaceMethodImplementationInstantiationThunkHashtable _dimThunkHashtable = new DefaultInterfaceMethodImplementationInstantiationThunkHashtable();
@@ -159,19 +149,19 @@ namespace ILCompiler
         private sealed partial class DefaultInterfaceMethodImplementationInstantiationThunk : ILStubMethod, IPrefixMangledMethod
         {
             private readonly MethodDesc _targetMethod;
-            private readonly DefaultInterfaceMethodImplementationWithHiddenParameter _nakedTargetMethod;
             private readonly TypeDesc _owningType;
             private readonly int _interfaceIndex;
+            private readonly bool _useContextFromRuntime;
 
-            public DefaultInterfaceMethodImplementationInstantiationThunk(TypeDesc owningType, MethodDesc targetMethod, int interfaceIndex)
+            public DefaultInterfaceMethodImplementationInstantiationThunk(TypeDesc owningType, MethodDesc targetMethod, int interfaceIndex, bool useContextFromRuntime)
             {
                 Debug.Assert(targetMethod.OwningType.IsInterface);
                 Debug.Assert(!targetMethod.Signature.IsStatic);
 
                 _owningType = owningType;
                 _targetMethod = targetMethod;
-                _nakedTargetMethod = new DefaultInterfaceMethodImplementationWithHiddenParameter(targetMethod, owningType);
                 _interfaceIndex = interfaceIndex;
+                _useContextFromRuntime = useContextFromRuntime;
             }
 
             public override TypeSystemContext Context => _targetMethod.Context;
@@ -180,11 +170,13 @@ namespace ILCompiler
 
             public int InterfaceIndex => _interfaceIndex;
 
+            public bool UseContextFromRuntime => _useContextFromRuntime;
+
             public override MethodSignature Signature => _targetMethod.Signature;
 
             public MethodDesc TargetMethod => _targetMethod;
 
-            public override string Name
+            public override ReadOnlySpan<byte> Name
             {
                 get
                 {
@@ -202,25 +194,35 @@ namespace ILCompiler
 
             public MethodDesc BaseMethod => _targetMethod;
 
-            public string Prefix => $"__InstantiatingStub_{_interfaceIndex}_";
+            public string Prefix => $"__InstantiatingStub_{(uint)_interfaceIndex}_{(_useContextFromRuntime ? "_FromRuntime" : "")}_";
 
             public override MethodIL EmitIL()
             {
+                // TODO: (async) https://github.com/dotnet/runtime/issues/121781
+                if (_targetMethod.IsAsyncCall())
+                {
+                    ILEmitter e = new ILEmitter();
+                    ILCodeStream c = e.NewCodeStream();
+
+                    c.EmitCallThrowHelper(e, Context.GetCoreLibEntryPoint("System.Runtime"u8, "InternalCalls"u8, "RhpFallbackFailFast"u8, null));
+                    return e.Link(this);
+                }
+
                 // Generate the instantiating stub. This loosely corresponds to following C#:
                 // return Interface.Method(this, GetOrdinalInterface(this.m_pEEType, Index), [rest of parameters])
 
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
 
-                FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType");
-                MethodDesc getOrdinalInterfaceMethod = Context.GetHelperEntryPoint("SharedCodeHelpers", "GetOrdinalInterface");
-                MethodDesc getCurrentContext = Context.GetHelperEntryPoint("SharedCodeHelpers", "GetCurrentSharedThunkContext");
+                FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"u8);
+                MethodDesc getOrdinalInterfaceMethod = Context.GetHelperEntryPoint("SharedCodeHelpers"u8, "GetOrdinalInterface"u8);
+                MethodDesc getCurrentContext = Context.GetHelperEntryPoint("SharedCodeHelpers"u8, "GetCurrentSharedThunkContext"u8);
 
                 // Load "this"
                 codeStream.EmitLdArg(0);
 
                 // Load the instantiating argument.
-                if (_interfaceIndex == UseContextFromRuntime)
+                if (_useContextFromRuntime)
                 {
                     codeStream.Emit(ILOpcode.call, emit.NewToken(getCurrentContext));
                 }
@@ -228,9 +230,15 @@ namespace ILCompiler
                 {
                     codeStream.EmitLdArg(0);
                     codeStream.Emit(ILOpcode.ldfld, emit.NewToken(eeTypeField));
+                }
+
+                if (_interfaceIndex >= 0)
+                {
                     codeStream.EmitLdc(_interfaceIndex);
                     codeStream.Emit(ILOpcode.call, emit.NewToken(getOrdinalInterfaceMethod));
                 }
+
+                codeStream.Emit(ILOpcode.call, emit.NewToken(Context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8, "SetNextCallGenericContext"u8, null)));
 
                 // Load rest of the arguments
                 for (int i = 0; i < _targetMethod.Signature.Length; i++)
@@ -238,75 +246,11 @@ namespace ILCompiler
                     codeStream.EmitLdArg(i + 1);
                 }
 
-                // Call an instance method on the target interface that has a fake instantiation parameter
-                // in it's signature. This will be swapped by the actual instance method after codegen is done.
-                codeStream.Emit(ILOpcode.call, emit.NewToken(_nakedTargetMethod));
+                codeStream.Emit(ILOpcode.call, emit.NewToken(_targetMethod));
                 codeStream.Emit(ILOpcode.ret);
 
                 return emit.Link(this);
             }
-        }
-
-        /// <summary>
-        /// Represents an instance method on a generic interface with an explicit instantiation parameter in the
-        /// signature. This is so that we can refer to the parameter from IL. References to this method will
-        /// be replaced by the actual instance method after codegen is done.
-        /// </summary>
-        internal sealed partial class DefaultInterfaceMethodImplementationWithHiddenParameter : MethodDesc
-        {
-            private readonly MethodDesc _methodRepresented;
-            private readonly TypeDesc _owningType;
-            private MethodSignature _signature;
-
-            public DefaultInterfaceMethodImplementationWithHiddenParameter(MethodDesc methodRepresented, TypeDesc owningType)
-            {
-                Debug.Assert(methodRepresented.OwningType.IsInterface);
-                Debug.Assert(!methodRepresented.Signature.IsStatic);
-
-                _methodRepresented = methodRepresented;
-                _owningType = owningType;
-            }
-
-            public MethodDesc MethodRepresented => _methodRepresented;
-
-            // We really don't want this method to be inlined.
-            public override bool IsNoInlining => true;
-
-            public override bool IsInternalCall => true;
-
-            public override bool IsIntrinsic => true;
-
-            public override TypeSystemContext Context => _methodRepresented.Context;
-            public override TypeDesc OwningType => _owningType;
-
-            public override string Name => _methodRepresented.Name;
-            public override string DiagnosticName => _methodRepresented.DiagnosticName;
-
-            public override MethodSignature Signature
-            {
-                get
-                {
-                    if (_signature == null)
-                    {
-                        TypeDesc[] parameters = new TypeDesc[_methodRepresented.Signature.Length + 1];
-
-                        // Shared instance methods on generic interfaces have a hidden parameter with the generic context.
-                        // We add it to the signature so that we can refer to it from IL.
-                        parameters[0] = Context.GetWellKnownType(WellKnownType.IntPtr);
-                        for (int i = 0; i < _methodRepresented.Signature.Length; i++)
-                            parameters[i + 1] = _methodRepresented.Signature[i];
-
-                        _signature = new MethodSignature(_methodRepresented.Signature.Flags,
-                            _methodRepresented.Signature.GenericParameterCount,
-                            _methodRepresented.Signature.ReturnType,
-                            parameters);
-                    }
-
-                    return _signature;
-                }
-            }
-
-            public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => false;
         }
     }
 }

@@ -90,17 +90,8 @@ namespace System.Collections.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void DebuggerAttribute_NullStack_ThrowsArgumentNullException()
         {
-            bool threwNull = false;
-            try
-            {
-                DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(Stack), null);
-            }
-            catch (TargetInvocationException ex)
-            {
-                threwNull = ex.InnerException is ArgumentNullException;
-            }
-
-            Assert.True(threwNull);
+            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(typeof(Stack)));
+            Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
         [Fact]

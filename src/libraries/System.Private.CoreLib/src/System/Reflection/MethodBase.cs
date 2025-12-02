@@ -81,7 +81,7 @@ namespace System.Reflection
                 return true;
             }
 
-            return (left is null) ? false : left.Equals(right);
+            return left is not null && left.Equals(right);
         }
 
         public static bool operator !=(MethodBase? left, MethodBase? right) => !(left == right);
@@ -128,7 +128,7 @@ namespace System.Reflection
             ReadOnlySpan<ParameterInfo> paramInfo = GetParametersAsSpan();
             if (paramInfo.Length == 0)
             {
-                return Type.EmptyTypes;
+                return [];
             }
 
             Type[] parameterTypes = new Type[paramInfo.Length];
@@ -190,19 +190,6 @@ namespace System.Reflection
         internal struct ArgumentData<T>
         {
             private T _arg0;
-
-            [UnscopedRef]
-            public Span<T> AsSpan(int length)
-            {
-                Debug.Assert((uint)length <= MaxStackAllocArgCount);
-                return new Span<T>(ref _arg0, length);
-            }
-
-            public void Set(int index, T value)
-            {
-                Debug.Assert((uint)index < MaxStackAllocArgCount);
-                Unsafe.Add(ref _arg0, index) = value;
-            }
         }
 
         // Helper struct to avoid intermediate object[] allocation in calls to the native reflection stack.
@@ -214,10 +201,10 @@ namespace System.Reflection
         {
             public StackAllocatedArguments(object? obj1, object? obj2, object? obj3, object? obj4)
             {
-                _args.Set(0, obj1);
-                _args.Set(1, obj2);
-                _args.Set(2, obj3);
-                _args.Set(3, obj4);
+                _args[0] = obj1;
+                _args[1] = obj2;
+                _args[2] = obj3;
+                _args[3] = obj4;
             }
 
             internal ArgumentData<object?> _args;

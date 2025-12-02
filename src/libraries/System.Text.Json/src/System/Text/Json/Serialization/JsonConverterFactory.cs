@@ -32,10 +32,6 @@ namespace System.Text.Json.Serialization
         /// </returns>
         public abstract JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options);
 
-        internal sealed override Type? KeyType => null;
-
-        internal sealed override Type? ElementType => null;
-
         internal JsonConverter GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(CanConvert(typeToConvert));

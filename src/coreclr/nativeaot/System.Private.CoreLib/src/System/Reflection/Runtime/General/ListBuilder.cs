@@ -51,20 +51,6 @@ namespace System.Reflection.Runtime.General
             return _items;
         }
 
-        public void CopyTo(object[] array, int index)
-        {
-            if (_count == 0)
-                return;
-
-            if (_count == 1)
-            {
-                array[index] = _item;
-                return;
-            }
-
-            Array.Copy(_items, 0, array, index, _count);
-        }
-
         public int Count
         {
             get

@@ -104,16 +104,19 @@ namespace System.Net.Sockets.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class SendReceiveNonParallel_Sync : SendReceiveNonParallel<SocketHelperArraySync>
     {
         public SendReceiveNonParallel_Sync(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class SendReceiveNonParallel_SyncForceNonBlocking : SendReceiveNonParallel<SocketHelperSyncForceNonBlocking>
     {
         public SendReceiveNonParallel_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class SendReceiveNonParallel_Apm : SendReceiveNonParallel<SocketHelperApm>
     {
         public SendReceiveNonParallel_Apm(ITestOutputHelper output) : base(output) { }
@@ -134,11 +137,13 @@ namespace System.Net.Sockets.Tests
         public SendReceiveNonParallel_Eap(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class SendReceiveNonParallel_SpanSync : SendReceiveNonParallel<SocketHelperSpanSync>
     {
         public SendReceiveNonParallel_SpanSync(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class SendReceiveNonParallel_SpanSyncForceNonBlocking : SendReceiveNonParallel<SocketHelperSpanSyncForceNonBlocking>
     {
         public SendReceiveNonParallel_SpanSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }

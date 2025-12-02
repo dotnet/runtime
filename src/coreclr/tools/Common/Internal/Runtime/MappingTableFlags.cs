@@ -22,11 +22,11 @@ namespace Internal.Runtime
     {
         HasVirtualInvoke = 0x00000001,
         IsGenericMethod = 0x00000002,
-        HasMetadataHandle = 0x00000004,
+        // = 0x00000004,
         IsDefaultConstructor = 0x00000008,
         RequiresInstArg = 0x00000010,
         HasEntrypoint = 0x00000020,
-        IsUniversalCanonicalEntry = 0x00000040,
+        // = 0x00000040,
         NeedsParameterInterpretation = 0x00000080,
         CallingConventionDefault = 0x00000000,
         Cdecl = 0x00001000,
@@ -47,8 +47,8 @@ namespace Internal.Runtime
 
         StorageClass = 0x03,
 
-        IsUniversalCanonicalEntry = 0x04,
-        HasMetadataHandle = 0x08,
+        // = 0x04,
+        // = 0x08,
         FieldOffsetEncodedDirectly = 0x20,
         IsAnyCanonicalEntry = 0x40,
         IsInitOnly = 0x80

@@ -243,7 +243,7 @@
         ;; x1: ExInfo*
         bl          RhThrowHwEx
 
-    EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowHwEx2
+    ALTERNATE_ENTRY RhpThrowHwEx2
 
         ;; no return
         EMIT_BREAKPOINT
@@ -333,7 +333,7 @@ NotHijacked
         ;; x1: ExInfo*
         bl          RhThrowEx
 
-    EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowEx2
+    ALTERNATE_ENTRY RhpThrowEx2
 
         ;; no return
         EMIT_BREAKPOINT
@@ -379,7 +379,7 @@ NotHijacked
         ;; x1 contains the address of the new ExInfo
         bl          RhRethrow
 
-    EXPORT_POINTER_TO_ADDRESS PointerToRhpRethrow2
+    ALTERNATE_ENTRY RhpRethrow2
 
         ;; no return
         EMIT_BREAKPOINT
@@ -387,7 +387,7 @@ NotHijacked
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; void* FASTCALL RhpCallCatchFunclet(RtuObjectRef exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
+;; void* FASTCALL RhpCallCatchFunclet(OBJECTREF exceptionObj, void* pHandlerIP, REGDISPLAY* pRegDisplay,
 ;;                                    ExInfo* pExInfo)
 ;;
 ;; INPUT:  X0:  exception object
@@ -406,9 +406,8 @@ NotHijacked
         stp d12, d13, [sp, #0x20]
         stp d14, d15, [sp, #0x30]
         stp x0, x2,   [sp, #0x40]  ;; x0, x2 & x3 are saved so we have the exception object, REGDISPLAY and
-        stp x3, xzr,  [sp, #0x50]  ;; ExInfo later, xzr makes space for the local "is_not_handling_thread_abort"
+        str x3,       [sp, #0x50]  ;; ExInfo later
 
-#define rsp_offset_is_not_handling_thread_abort 0x58
 #define rsp_offset_x2 0x48
 #define rsp_offset_x3 0x50
 
@@ -416,10 +415,6 @@ NotHijacked
         ;; clear the DoNotTriggerGc flag, trashes x4-x6
         ;;
         INLINE_GETTHREAD    x5, x6      ;; x5 <- Thread*, x6 <- trashed
-
-        ldr         x4, [x5, #OFFSETOF__Thread__m_threadAbortException]
-        sub         x4, x4, x0
-        str         x4, [sp, #rsp_offset_is_not_handling_thread_abort] ;; Non-zero if the exception is not ThreadAbortException
 
         add         x12, x5, #OFFSETOF__Thread__m_ThreadStateFlags
 
@@ -446,7 +441,7 @@ ClearSuccess_Catch
         ;; x0 still contains the exception object
         blr         x1
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallCatchFunclet2
+    ALTERNATE_ENTRY RhpCallCatchFunclet2
 
         ;; x0 contains resume IP
 
@@ -472,21 +467,6 @@ PopExInfoLoop
 DonePopping
         str         x3, [x1, #OFFSETOF__Thread__m_pExInfoStackHead]     ;; store the new head on the Thread
 
-        ldr         x3, =RhpTrapThreads
-        ldr         w3, [x3]
-        tbz         x3, #TrapThreadsFlags_AbortInProgress_Bit, NoAbort
-
-        ldr         x3, [sp, #rsp_offset_is_not_handling_thread_abort]
-        cbnz        x3, NoAbort
-
-        ;; It was the ThreadAbortException, so rethrow it
-        ;; reset SP
-        mov         x1, x0                                     ;; x1 <- continuation address as exception PC
-        mov         w0, #STATUS_REDHAWK_THREAD_ABORT
-        mov         sp, x2
-        b           RhpThrowHwEx
-
-NoAbort
         ;; reset SP and jump to continuation address
         mov         sp, x2
         br          x0
@@ -551,7 +531,7 @@ ClearSuccess
         ;;
         blr         x0
 
-    EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFinallyFunclet2
+    ALTERNATE_ENTRY RhpCallFinallyFunclet2
 
         ldr         x1, [sp, #rsp_offset_x1]        ;; reload REGDISPLAY pointer
 
@@ -587,7 +567,7 @@ SetSuccess
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; void* FASTCALL RhpCallFilterFunclet(RtuObjectRef exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
+;; void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
 ;;
 ;; INPUT:  X0:  exception object
 ;;         X1:  filter funclet address
@@ -612,7 +592,7 @@ SetSuccess
         ;; x0 still contains the exception object
         blr         x1
 
-    EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFilterFunclet2
+    ALTERNATE_ENTRY RhpCallFilterFunclet2
 
         ldp         d8, d9,   [sp, #0x00]
         ldp         d10, d11, [sp, #0x10]

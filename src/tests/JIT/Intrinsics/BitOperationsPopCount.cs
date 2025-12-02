@@ -5,14 +5,16 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace BitOperationsPopCountTest
 {
-    class Program
+    public class Program
     {
         private static int _errorCode = 100;
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // PopCount calls with a constant argument are folded
 

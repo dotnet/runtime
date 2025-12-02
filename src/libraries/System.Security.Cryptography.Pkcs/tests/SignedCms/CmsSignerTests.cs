@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
+using System.Security.Cryptography.SLHDsa.Tests;
 using Xunit;
 
 namespace System.Security.Cryptography.Pkcs.Tests
@@ -21,7 +22,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 () => signer.SignerIdentifierType = invalidType);
         }
 
-#if NETCOREAPP
+#if NET
         [Fact]
         public static void SignaturePadding_InvalidValue()
         {

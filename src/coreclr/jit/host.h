@@ -28,15 +28,15 @@ public:
 };
 
 bool vlogf(unsigned level, const char* fmt, va_list args);
-int vflogf(FILE* file, const char* fmt, va_list args);
+int  vflogf(FILE* file, const char* fmt, va_list args);
 
-int logf(const char* fmt, ...);
-int flogf(FILE* file, const char* fmt, ...);
+int  logf(const char* fmt, ...);
+int  flogf(FILE* file, const char* fmt, ...);
 void gcDump_logf(const char* fmt, ...);
 
 void logf(unsigned level, const char* fmt, ...);
 
-extern "C" void ANALYZER_NORETURN __cdecl assertAbort(const char* why, const char* file, unsigned line);
+extern "C" void ANALYZER_NORETURN assertAbort(const char* why, const char* file, unsigned line);
 
 #undef assert
 #define assert(p) (void)((p) || (assertAbort(#p, __FILE__, __LINE__), 0))

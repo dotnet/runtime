@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.Extensions.Logging
 {
     /// <summary>
-    /// Options for <see cref="LoggerMessage.Define(LogLevel, EventId, string)"/> and its overloads
+    /// Options for <see cref="LoggerMessage.Define(LogLevel, EventId, string)"/> and its overloads.
     /// </summary>
     public class LogDefineOptions
     {

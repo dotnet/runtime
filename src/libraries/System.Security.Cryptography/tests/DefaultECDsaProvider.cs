@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             return ec;
         }
 
-#if NETCOREAPP
+#if NET
         public ECDsa Create(ECCurve curve)
         {
             return ECDsa.Create(curve);

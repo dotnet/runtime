@@ -5,13 +5,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
-    <DebugType />
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="test17398.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

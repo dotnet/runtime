@@ -24,7 +24,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
         // To keep the synchronization simple, we execute all dynamic generic type registration/lookups under a global lock
-        private Lock _dynamicGenericsLock = new Lock();
+        private Lock _dynamicGenericsLock = new Lock(useTrivialWaits: true);
 
         internal void RegisterDynamicGenericTypesAndMethods(DynamicGenericsRegistrationData registrationData)
         {
@@ -102,19 +102,16 @@ namespace Internal.Runtime.TypeLoader
                             var typeEntry = registeredTypes[i];
                             // There is no Remove feature in the LockFreeReaderHashtable...
                             GenericTypeEntry failedEntry = _dynamicGenericTypes.GetValueIfExists(typeEntry);
-                            if (failedEntry != null)
-                                failedEntry._isRegisteredSuccessfully = false;
+                            failedEntry?._isRegisteredSuccessfully = false;
                         }
                         for (int i = 0; i < registeredMethodsCount; i++)
                         {
                             // There is no Remove feature in the LockFreeReaderHashtable...
                             GenericMethodEntry failedEntry = _dynamicGenericMethods.GetValueIfExists(registeredMethods[i]);
-                            if (failedEntry != null)
-                                failedEntry._isRegisteredSuccessfully = false;
+                            failedEntry?._isRegisteredSuccessfully = false;
 
                             failedEntry = _dynamicGenericMethodComponents.GetValueIfExists(registeredMethods[i]);
-                            if (failedEntry != null)
-                                failedEntry._isRegisteredSuccessfully = false;
+                            failedEntry?._isRegisteredSuccessfully = false;
                         }
                     }
                     catch (Exception e)

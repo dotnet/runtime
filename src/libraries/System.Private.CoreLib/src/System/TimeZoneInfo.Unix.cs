@@ -16,7 +16,11 @@ namespace System
 {
     public sealed partial class TimeZoneInfo
     {
+#if TARGET_ILLUMOS || TARGET_SOLARIS
+        private const string DefaultTimeZoneDirectory = "/usr/share/lib/zoneinfo/";
+#else
         private const string DefaultTimeZoneDirectory = "/usr/share/zoneinfo/";
+#endif
 
         // Set fallback values using abbreviations, base offset, and id
         // These are expected in environments without time zone globalization data
@@ -220,6 +224,10 @@ namespace System
             return rulesList.ToArray();
         }
 
+        private string NameLookupId =>
+                HasIanaId ? Id :
+                (_equivalentZones is not null && _equivalentZones.Count > 0 ? _equivalentZones[0].Id : (GetAlternativeId(Id, out _) ?? Id));
+
         private string? PopulateDisplayName()
         {
             if (IsUtcAlias(Id))
@@ -235,7 +243,7 @@ namespace System
             if (!GlobalizationMode.Hybrid)
                 return displayName;
 #endif
-            GetFullValueForDisplayNameField(Id, BaseUtcOffset, ref displayName);
+            GetFullValueForDisplayNameField(NameLookupId, BaseUtcOffset, ref displayName);
 
             return displayName;
         }
@@ -253,7 +261,7 @@ namespace System
             if (!GlobalizationMode.Hybrid)
                 return standardDisplayName;
 #endif
-            GetStandardDisplayName(Id, ref standardDisplayName);
+            GetStandardDisplayName(NameLookupId, ref standardDisplayName);
 
             return standardDisplayName;
         }
@@ -271,19 +279,43 @@ namespace System
             if (!GlobalizationMode.Hybrid)
                 return daylightDisplayName;
 #endif
-            GetDaylightDisplayName(Id, ref daylightDisplayName);
+            GetDaylightDisplayName(NameLookupId, ref daylightDisplayName);
 
             return daylightDisplayName;
         }
 
-        private static void PopulateAllSystemTimeZones(CachedData cachedData)
+        private static Dictionary<string, TimeZoneInfo> PopulateAllSystemTimeZones(CachedData cachedData)
         {
             Debug.Assert(Monitor.IsEntered(cachedData));
 
+            cachedData._systemTimeZones ??= new Dictionary<string, TimeZoneInfo>(StringComparer.OrdinalIgnoreCase)
+            {
+                { UtcId, s_utcTimeZone }
+            };
+
+            if (Invariant)
+            {
+                return cachedData._systemTimeZones;
+            }
+
+            const int initialCapacity = 430; // Should be enough for all time zones
+
+            // The filtered list that shouldn't have any duplicates.
+            Dictionary<string, TimeZoneInfo> filteredTimeZones = new Dictionary<string, TimeZoneInfo>(capacity: initialCapacity, comparer: StringComparer.OrdinalIgnoreCase)
+            {
+                { UtcId, s_utcTimeZone }
+            };
+
             foreach (string timeZoneId in GetTimeZoneIds())
             {
-                TryGetTimeZone(timeZoneId, false, out _, out _, cachedData, alwaysFallbackToLocalMachine: true);  // populate the cache
+                if (TryGetTimeZone(timeZoneId, false, out TimeZoneInfo? timeZone, out _, cachedData, alwaysFallbackToLocalMachine: true) == TimeZoneInfoResult.Success &&
+                    timeZone is not null)
+                {
+                    filteredTimeZones[timeZoneId] = timeZone;
+                }
             }
+
+            return filteredTimeZones;
         }
 
         /// <summary>
@@ -335,13 +367,6 @@ namespace System
         /// </summary>
         private static TimeZoneInfoResult TryGetTimeZone(string id, out TimeZoneInfo? timeZone, out Exception? e, CachedData cachedData)
             => TryGetTimeZone(id, false, out timeZone, out e, cachedData, alwaysFallbackToLocalMachine: true);
-
-        // DateTime.Now fast path that avoids allocating an historically accurate TimeZoneInfo.Local and just creates a 1-year (current year) accurate time zone
-        internal static TimeSpan GetDateTimeNowUtcOffsetFromUtc(DateTime time, out bool isAmbiguousLocalDst)
-        {
-            // Use the standard code path for Unix since there isn't a faster way of handling current-year-only time zones
-            return GetUtcOffsetFromUtc(time, Local, out _, out isAmbiguousLocalDst);
-        }
 
         // TZFILE(5)                   BSD File Formats Manual                  TZFILE(5)
         //

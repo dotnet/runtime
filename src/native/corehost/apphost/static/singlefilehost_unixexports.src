@@ -9,3 +9,6 @@ g_dacTable
 
 ; Used by profilers
 MetaDataGetDispenser
+
+; cDAC contract descriptor
+DotNetRuntimeContractDescriptor

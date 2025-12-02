@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__GenericMethodsTemplateMap");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__GenericMethodsTemplateMap"u8);
         }
 
         int INodeWithSize.Size => _size.Value;
@@ -100,12 +100,6 @@ namespace ILCompiler.DependencyAnalysis
                 // Must be fully canonical
                 Debug.Assert(method == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
                 return true;
-            }
-            else if (method.IsCanonicalMethod(CanonicalFormKind.Universal))
-            {
-                // Must be fully canonical
-                if (method == method.GetCanonMethodTarget(CanonicalFormKind.Universal))
-                    return true;
             }
 
             return false;

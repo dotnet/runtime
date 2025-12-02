@@ -137,7 +137,7 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
     // In a DAC build, this function assumes the input is an host address.
     LIMITED_METHOD_DAC_CONTRACT;
 
-    ULONGLONG ptraddr = dac_cast<ULONGLONG>(address);
+    TADDR ptraddr = dac_cast<TADDR>(address);
     *(PRD_TYPE *)ptraddr = instruction;
     FlushInstructionCache(GetCurrentProcess(),
                           address,
@@ -148,7 +148,7 @@ inline PRD_TYPE CORDbgGetInstruction(UNALIGNED CORDB_ADDRESS_TYPE* address)
 {
     LIMITED_METHOD_CONTRACT;
 
-    ULONGLONG ptraddr = dac_cast<ULONGLONG>(address);
+    TADDR ptraddr = dac_cast<TADDR>(address);
     return *(PRD_TYPE *)ptraddr;
 }
 

@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        public async void GetService_Throws_WhenGetServiceForScopedServiceIsCalledOnRoot_IL_Replacement()
+        public async Task GetService_Throws_WhenGetServiceForScopedServiceIsCalledOnRoot_IL_Replacement()
         {
             // Arrange
             var serviceCollection = new ServiceCollection();
@@ -146,6 +146,131 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.IsType<Bar3>(actual);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void BuildServiceProvider_AnyKey_ServiceKeyWithStronglyTypedArgument(bool validateOnBuild)
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedTransient<ServiceKeyWithStronglyTypedArgument>(KeyedService.AnyKey);
+            using var serviceProvider = serviceCollection.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateScopes = true,
+                ValidateOnBuild = validateOnBuild
+            });
+
+            // Act
+            var actual = serviceProvider.GetKeyedService<ServiceKeyWithStronglyTypedArgument>(42);
+
+            // Assert
+            Assert.Equal(42, actual.Key);
+            Assert.Throws<InvalidOperationException>(() => serviceProvider.GetKeyedService<ServiceKeyWithStronglyTypedArgument>("Hello"));
+        }
+
+        private class ServiceKeyWithStronglyTypedArgument
+        {
+            public int Key { get; set; }
+
+            public ServiceKeyWithStronglyTypedArgument([ServiceKey] int key)
+            {
+                Key = key;
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void BuildServiceProvider_AnyKey_ServiceKeyWithObjectTypedArgument(bool validateOnBuild)
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedTransient<ServiceKeyWithObjectTypedArgument>(KeyedService.AnyKey);
+            using var serviceProvider = serviceCollection.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateScopes = true,
+                ValidateOnBuild = validateOnBuild
+            });
+
+            // Act
+            var actualInt = serviceProvider.GetKeyedService<ServiceKeyWithObjectTypedArgument>(42);
+            var actualString = serviceProvider.GetKeyedService<ServiceKeyWithObjectTypedArgument>("hello");
+
+            // Assert
+            Assert.Equal(42, actualInt.Key);
+            Assert.Equal("hello", actualString.Key);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void BuildServiceProvider_ServiceKeyWithObjectTypedArgument(bool validateOnBuild)
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedTransient<ServiceKeyWithObjectTypedArgument>(42);
+            serviceCollection.AddKeyedTransient<ServiceKeyWithObjectTypedArgument>("hello");
+            using var serviceProvider = serviceCollection.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateScopes = true,
+                ValidateOnBuild = validateOnBuild
+            });
+
+            // Act
+            var actualInt = serviceProvider.GetKeyedService<ServiceKeyWithObjectTypedArgument>(42);
+            var actualString = serviceProvider.GetKeyedService<ServiceKeyWithObjectTypedArgument>("hello");
+            var notFound = serviceProvider.GetKeyedService<ServiceKeyWithObjectTypedArgument>(false);
+
+            // Assert
+            Assert.Equal(42, actualInt.Key);
+            Assert.Equal("hello", actualString.Key);
+            Assert.Null(notFound);
+        }
+
+        private class ServiceKeyWithObjectTypedArgument
+        {
+            public object Key { get; set; }
+
+            public ServiceKeyWithObjectTypedArgument([ServiceKey] object key)
+            {
+                Key = key;
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void BuildServiceProvider_AnyKey_ServiceKeyWithObjectAndIntTypedArguments(bool validateOnBuild)
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedTransient<ServiceKeyWithObjectAndIntTypedArguments>(KeyedService.AnyKey);
+            using var serviceProvider = serviceCollection.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateScopes = true,
+                ValidateOnBuild = validateOnBuild
+            });
+
+            // Act
+            var actual = serviceProvider.GetKeyedService<ServiceKeyWithObjectAndIntTypedArguments>(42);
+
+            // Assert
+            Assert.Equal(42, actual.Key);
+            Assert.Equal(42, actual.IntKey);
+        }
+
+        private class ServiceKeyWithObjectAndIntTypedArguments
+        {
+            public object Key { get; set; }
+            public int IntKey { get; set; }
+
+            public ServiceKeyWithObjectAndIntTypedArguments([ServiceKey] object key, [ServiceKey] int intKey)
+            {
+                Key = key;
+                IntKey = intKey;
+            }
+        }
+
         [Fact]
         public void ScopeValidation_ShouldBeAbleToDistingushGenericCollections_WhenGetServiceIsCalledOnRoot()
         {
@@ -178,6 +303,143 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             // Act + Assert
             var result = serviceProvider.GetService(typeof(IBoo));
             Assert.NotNull(result);
+        }
+
+        [Fact]
+        public void GetService_DoesNotThrow_WhenGetServiceForServiceWithMultipleImplementationScopesWhereLastIsNotScoped()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<IBar, Bar>();
+            serviceCollection.AddSingleton<IBar, Bar2>();
+            serviceCollection.AddSingleton<IBaz, Baz>();
+            var serviceProvider = serviceCollection.BuildServiceProvider(true);
+
+
+            // Act + Assert
+            var exception = Assert.Throws<InvalidOperationException>(() => serviceProvider.GetService(typeof(IEnumerable<IBar>)));
+            Assert.Equal($"Cannot resolve scoped service '{typeof(IEnumerable<IBar>)}' from root provider.", exception.Message);
+
+            var result = serviceProvider.GetService(typeof(IBar));
+            Assert.NotNull(result);
+        }
+
+
+        [Fact]
+        public void GetService_Throws_WhenGetServiceForServiceWithMultipleImplementationScopesWhereLastIsScoped()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IBar, Bar>();
+            serviceCollection.AddScoped<IBar, Bar2>();
+            serviceCollection.AddSingleton<IBaz, Baz>();
+            var serviceProvider = serviceCollection.BuildServiceProvider(true);
+
+
+            // Act + Assert
+            var exception = Assert.Throws<InvalidOperationException>(() => serviceProvider.GetService(typeof(IEnumerable<IBar>)));
+            Assert.Equal($"Cannot resolve scoped service '{typeof(IEnumerable<IBar>)}' from root provider.", exception.Message);
+
+            exception = Assert.Throws<InvalidOperationException>(() => serviceProvider.GetService(typeof(IBar)));
+            Assert.Equal($"Cannot resolve scoped service '{typeof(IBar)}' from root provider.", exception.Message);
+        }
+
+        [Fact]
+        public void GetService_DoesNotThrow_WhenGetServiceForNonScopedImplementationWithMultipleImplementationScopesWhereLastIsScoped()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IBar, Bar>();
+            serviceCollection.AddSingleton<Bar>();
+            serviceCollection.AddScoped<IBar, Bar2>();
+            serviceCollection.AddSingleton<IBaz, Baz>();
+            var serviceProvider = serviceCollection.BuildServiceProvider(true);
+
+
+            // Act + Assert
+            var exception = Assert.Throws<InvalidOperationException>(() => serviceProvider.GetService(typeof(IEnumerable<IBar>)));
+            Assert.Equal($"Cannot resolve scoped service '{typeof(IEnumerable<IBar>)}' from root provider.", exception.Message);
+
+            var result = serviceProvider.GetService(typeof(Bar));
+            Assert.NotNull(result);
+        }
+
+        [Fact]
+        public void BuildServiceProvider_ValidateOnBuild_Throws_WhenScopedIsInjectedIntoSingleton()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<IBar, Bar>();
+            serviceCollection.AddSingleton<IFoo, Foo>();
+
+            // Act + Assert
+            var aggregateException = Assert.Throws<AggregateException>(() => serviceCollection.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = true, ValidateScopes = true }));
+            Assert.StartsWith("Some services are not able to be constructed", aggregateException.Message);
+            Assert.Equal(1, aggregateException.InnerExceptions.Count);
+            Assert.Equal("Error while validating the service descriptor 'ServiceType: Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IFoo Lifetime: Singleton ImplementationType: Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+Foo': " +
+                         "Cannot consume scoped service 'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IBar' from singleton 'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IFoo'."
+                , aggregateException.InnerExceptions[0].Message);
+        }
+
+        [Fact]
+        public void BuildServiceProvider_ValidateOnBuild_Throws_WhenScopedIsInjectedIntoSingleton_ReverseRegistrationOrder()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IFoo, Foo>();
+            serviceCollection.AddScoped<IBar, Bar>();
+
+            // Act + Assert
+            var aggregateException = Assert.Throws<AggregateException>(() => serviceCollection.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = true, ValidateScopes = true }));
+            Assert.StartsWith("Some services are not able to be constructed", aggregateException.Message);
+            Assert.Equal(1, aggregateException.InnerExceptions.Count);
+            Assert.Equal("Error while validating the service descriptor 'ServiceType: Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IFoo Lifetime: Singleton ImplementationType: Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+Foo': " +
+                         "Cannot consume scoped service 'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IBar' from singleton 'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IFoo'."
+                , aggregateException.InnerExceptions[0].Message);
+        }
+
+        [Fact]
+        public void BuildServiceProvider_ValidateOnBuild_DoesNotThrow_WhenScopeFactoryIsInjectedIntoSingleton()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddSingleton<IBoo, Boo>();
+
+            // Act + Assert
+            serviceCollection.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = true, ValidateScopes = true });
+        }
+
+        [Fact]
+        public void BuildServiceProvider_ValidateOnBuild_Throws_WhenScopedIsInjectedIntoSingleton_CachedCallSites()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<Foo>();
+            serviceCollection.AddSingleton<Foo2>();
+            serviceCollection.AddScoped<IBar, Bar2>();
+            serviceCollection.AddScoped<IBaz, Baz>();
+
+            // Act + Assert
+            var aggregateException = Assert.Throws<AggregateException>(() => serviceCollection.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = true, ValidateScopes = true }));
+            Assert.StartsWith("Some services are not able to be constructed", aggregateException.Message);
+            Assert.Equal(1, aggregateException.InnerExceptions.Count);
+            Assert.Equal("Error while validating the service descriptor 'ServiceType: Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+Foo2 Lifetime: Singleton ImplementationType: Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+Foo2': " +
+                         "Cannot consume scoped service 'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+IBar' from singleton 'Microsoft.Extensions.DependencyInjection.Tests.ServiceProviderValidationTests+Foo2'."
+                , aggregateException.InnerExceptions[0].Message);
+        }
+
+        [Fact]
+        public void BuildServiceProvider_ValidateOnBuild_DoesNotThrow_CachedCallSites()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<Foo>();
+            serviceCollection.AddScoped<Foo2>();
+            serviceCollection.AddScoped<IBar, Bar2>();
+            serviceCollection.AddScoped<IBaz, Baz>();
+
+            // Act + Assert
+            serviceCollection.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = true, ValidateScopes = true });
         }
 
         [Fact]
@@ -264,6 +526,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         private class Foo : IFoo
         {
             public Foo(IBar bar)
+            {
+            }
+        }
+
+        private class Foo2 : IFoo
+        {
+            public Foo2(IBar bar)
             {
             }
         }

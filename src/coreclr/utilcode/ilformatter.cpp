@@ -133,12 +133,12 @@ void ILFormatter::setTarget(size_t ilOffset, size_t depth) {
 /***************************************************************************/
 void ILFormatter::spillStack(OutString* out) {
 
-    for(unsigned i = 0; i < stackDepth(); i++) {
+    for(size_t i = 0; i < stackDepth(); i++) {
         // don't bother spilling something already spilled.
         if (memcmp(stackStart[i].val.val(), "@STK", 4) != 0)
-            *out << "@STK" << i << " = " << stackStart[i].val.val() << "\n";
+            *out << "@STK" << static_cast<unsigned int>(i) << " = " << stackStart[i].val.val() << "\n";
         stackStart[i].val.clear();
-        stackStart[i].val << "@STK" << i ;
+        stackStart[i].val << "@STK" << static_cast<unsigned int>(i);
     }
 }
 
@@ -196,7 +196,7 @@ void ILFormatter::formatInstrArgs(OpInfo op, OpArgsVal arg, OutString* out, size
             _ASSERTE(curILOffset != INVALID_IL_OFFSET);
             size_t target = curILOffset + arg.i;
             setTarget(target, stackDepth());
-            *out << "IL_"; out->hex(static_cast<unsigned __int64>(target), 4, OutString::zeroFill);
+            *out << "IL_"; out->hex(static_cast<uint64_t>(target), 4, OutString::zeroFill);
             } break;
         case InlineI8:
             out->hex(arg.i, 0, OutString::put0x);
@@ -273,7 +273,7 @@ void ILFormatter::formatInstrArgs(OpInfo op, OpArgsVal arg, OutString* out, size
             for (i = 0; i < count; i++) {
                 size_t target = curILOffset + GET_UNALIGNED_VAL32(&arg.switch_.targets[i]);
                 setTarget(target, stackDepth()-1);
-                *out << "IL_"; out->hex(static_cast<unsigned __int64>(target), 4, OutString::zeroFill);
+                *out << "IL_"; out->hex(static_cast<uint64_t>(target), 4, OutString::zeroFill);
                 *out << ' ';
                 }
             } break;
@@ -290,10 +290,6 @@ void ILFormatter::formatInstrArgs(OpInfo op, OpArgsVal arg, OutString* out, size
     }
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 /***************************************************************************/
 const BYTE* ILFormatter::formatStatement(const BYTE* instrPtr, OutString* out) {
 
@@ -478,7 +474,7 @@ const BYTE* ILFormatter::formatStatement(const BYTE* instrPtr, OutString* out) {
             DO_BR: {
                 size_t target = (instrPtr - start) + inlineArg.i;
                 setTarget(target, stackDepth());
-                result << "goto IL_"; result.hex(static_cast<unsigned __int64>(target), 4, OutString::zeroFill);
+                result << "goto IL_"; result.hex(static_cast<uint64_t>(target), 4, OutString::zeroFill);
                 } goto DO_STMT;
 
             case CEE_BRFALSE_S:
@@ -811,8 +807,3 @@ const BYTE* ILFormatter::formatStatement(const BYTE* instrPtr, OutString* out) {
     }
     return(instrPtr);
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
-

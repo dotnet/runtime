@@ -9,4 +9,7 @@
     <Compile Include="seq_r.il" />
     <Compile Include="seq.il" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

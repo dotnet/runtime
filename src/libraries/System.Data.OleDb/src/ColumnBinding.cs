@@ -235,7 +235,7 @@ namespace System.Data.OleDb
                 case DBStatus.S_DEFAULT:
                     break;
                 default:
-                    Debug.Assert(false, "unexpected StatusValue");
+                    Debug.Fail("unexpected StatusValue");
                     break;
             }
 #endif
@@ -380,16 +380,16 @@ namespace System.Data.OleDb
                                 throw ODB.GVtUnknown(DbType);
 #if DEBUG
                             case NativeDBType.STR:
-                                Debug.Assert(false, "should have bound as WSTR");
+                                Debug.Fail("should have bound as WSTR");
                                 goto default;
                             case NativeDBType.VARNUMERIC:
-                                Debug.Assert(false, "should have bound as NUMERIC");
+                                Debug.Fail("should have bound as NUMERIC");
                                 goto default;
                             case NativeDBType.UDT:
-                                Debug.Assert(false, "UDT binding should not have been encountered");
+                                Debug.Fail("UDT binding should not have been encountered");
                                 goto default;
                             case (NativeDBType.BYREF | NativeDBType.STR):
-                                Debug.Assert(false, "should have bound as BYREF|WSTR");
+                                Debug.Fail("should have bound as BYREF|WSTR");
                                 goto default;
 #endif
                         }
@@ -413,10 +413,10 @@ namespace System.Data.OleDb
                                 throw ODB.GVtUnknown(DbType);
 #if DEBUG
                             case NativeDBType.STR:
-                                Debug.Assert(false, "should have bound as WSTR");
+                                Debug.Fail("should have bound as WSTR");
                                 goto default;
                             case (NativeDBType.BYREF | NativeDBType.STR):
-                                Debug.Assert(false, "should have bound as BYREF|WSTR");
+                                Debug.Fail("should have bound as BYREF|WSTR");
                                 goto default;
 #endif
                         }
@@ -584,23 +584,23 @@ namespace System.Data.OleDb
                         }
                         break;
                     default:
-                        Debug.Assert(false, "unknown DBTYPE");
+                        Debug.Fail("unknown DBTYPE");
                         throw ODB.SVtUnknown(DbType);
 #if DEBUG
                     case NativeDBType.STR:
-                        Debug.Assert(false, "Should have bound as WSTR");
+                        Debug.Fail("Should have bound as WSTR");
                         goto default;
                     case NativeDBType.UDT:
-                        Debug.Assert(false, "UDT binding should not have been encountered");
+                        Debug.Fail("UDT binding should not have been encountered");
                         goto default;
                     case NativeDBType.HCHAPTER:
-                        Debug.Assert(false, "not allowed to set HCHAPTER");
+                        Debug.Fail("not allowed to set HCHAPTER");
                         goto default;
                     case NativeDBType.VARNUMERIC:
-                        Debug.Assert(false, "should have bound as NUMERIC");
+                        Debug.Fail("should have bound as NUMERIC");
                         goto default;
                     case (NativeDBType.BYREF | NativeDBType.STR):
-                        Debug.Assert(false, "should have bound as BYREF|WSTR");
+                        Debug.Fail("should have bound as BYREF|WSTR");
                         goto default;
 #endif
                 }
@@ -1668,10 +1668,10 @@ namespace System.Data.OleDb
             switch (StatusValue())
             {
                 case DBStatus.S_OK:
-                    Debug.Assert(false, "CheckStatusValue: unhandled data with ok status");
+                    Debug.Fail("CheckStatusValue: unhandled data with ok status");
                     goto case DBStatus.E_CANTCONVERTVALUE;
                 case DBStatus.S_TRUNCATED:
-                    Debug.Assert(false, "CheckStatusValue: unhandled data with truncated status");
+                    Debug.Fail("CheckStatusValue: unhandled data with truncated status");
                     goto case DBStatus.E_CANTCONVERTVALUE;
                 case DBStatus.E_BADACCESSOR:
                     return ODB.BadAccessor();

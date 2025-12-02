@@ -6,12 +6,13 @@ using System.Runtime.Versioning;
 using System.Threading;
 
 using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerHelpers;
 
 using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 
 namespace Internal.Runtime.CompilerHelpers
 {
-    public partial class StartupCodeHelpers
+    internal partial class StartupCodeHelpers
     {
         /// <summary>
         /// Return the registered logical modules; optionally copy them into an array.
@@ -66,7 +67,14 @@ namespace Internal.Runtime.CompilerHelpers
 
             Environment.ShutdownCore();
 
-            return Environment.ExitCode;
+            int exitCode = Environment.ExitCode;
+
+            if (ReachabilityInstrumentationSupport.IsSupported)
+            {
+                ReachabilityInstrumentationSupport.Shutdown();
+            }
+
+            return exitCode;
         }
 
 #if TARGET_WINDOWS

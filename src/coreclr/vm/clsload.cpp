@@ -78,14 +78,14 @@ NameHandle::NameHandle(Module* pModule, mdToken token) :
 // This method determines the "loader module" for an instantiated type
 // or method. The rule must ensure that any types involved in the
 // instantiated type or method do not outlive the loader module itself
-// with respect to app-domain unloading (e.g. MyList<MyType> can't be
+// with respect to module unloading (e.g. MyList<MyType> can't be
 // put in the module of MyList if MyList's assembly is
-// app-domain-neutral but MyType's assembly is app-domain-specific).
+// non-collectible but MyType's assembly is collectible).
 // The rule we use is:
 //
 // * Pick the first type in the class instantiation, followed by
-//   method instantiation, whose loader module is non-shared (app-domain-bound)
-// * If no type is app-domain-bound, return the module containing the generic type itself
+//   method instantiation, whose loader allocator is collectible and has the highest creation number.
+// * If no type is in collectible assembly, return the module containing the generic type itself.
 //
 // Some useful effects of this rule (for ngen purposes) are:
 //
@@ -113,18 +113,15 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
     }
     CONTRACT_END
 
+    // No generic instantiation, return the definition module
     if (classInst.IsEmpty() && methodInst.IsEmpty())
         RETURN PTR_Module(pDefinitionModule);
 
-    Module *pLoaderModule = NULL;
+    // Use the definition module as the loader module by default
+    Module *pLoaderModule = pDefinitionModule;
 
-    if (pDefinitionModule)
-    {
-        if (pDefinitionModule->IsCollectible())
-            goto ComputeCollectibleLoaderModule;
-        pLoaderModule = pDefinitionModule;
-    }
-
+    // If any of generic type arguments are in collectible module,
+    // we use a generic procedure.
     for (DWORD i = 0; i < classInst.GetNumArgs(); i++)
     {
         TypeHandle classArg = classInst[i];
@@ -135,6 +132,8 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
             pLoaderModule = pModule;
     }
 
+    // If any of generic method arguments are in collectible module,
+    // we also use a generic procedure.
     for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
     {
         TypeHandle methodArg = methodInst[i];
@@ -155,14 +154,18 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
     if (FALSE)
     {
 ComputeCollectibleLoaderModule:
-        LoaderAllocator *pLoaderAllocatorOfDefiningType = NULL;
-        LoaderAllocator *pOldestLoaderAllocator = NULL;
-        Module *pOldestLoaderModule = NULL;
-        UINT64 oldestFoundAge = 0;
+        Module *pLatestLoaderModule = NULL;
+        UINT64 latestFoundNumber = 0;
         DWORD classArgsCount = classInst.GetNumArgs();
         DWORD totalArgsCount = classArgsCount + methodInst.GetNumArgs();
 
-        if (pDefinitionModule != NULL) pLoaderAllocatorOfDefiningType = pDefinitionModule->GetLoaderAllocator();
+        // If loader allocator of the defining type is collectible, we use it
+        // and its creation number as the starting age.
+        if (pDefinitionModule != NULL && pDefinitionModule->IsCollectible())
+        {
+            pLatestLoaderModule = pDefinitionModule;
+            latestFoundNumber = pDefinitionModule->GetLoaderAllocator()->GetCreationNumber();
+        }
 
         for (DWORD i = 0; i < totalArgsCount; i++) {
 
@@ -176,22 +179,18 @@ ComputeCollectibleLoaderModule:
             Module *pModuleCheck = arg.GetLoaderModule();
             LoaderAllocator *pLoaderAllocatorCheck = pModuleCheck->GetLoaderAllocator();
 
-            if (pLoaderAllocatorCheck != pLoaderAllocatorOfDefiningType &&
-                pLoaderAllocatorCheck->IsCollectible() &&
-                pLoaderAllocatorCheck->GetCreationNumber() > oldestFoundAge)
+            if (pLoaderAllocatorCheck->IsCollectible() &&
+                pLoaderAllocatorCheck->GetCreationNumber() > latestFoundNumber)
             {
-                pOldestLoaderModule = pModuleCheck;
-                pOldestLoaderAllocator = pLoaderAllocatorCheck;
-                oldestFoundAge = pLoaderAllocatorCheck->GetCreationNumber();
+                pLatestLoaderModule = pModuleCheck;
+                latestFoundNumber = pLoaderAllocatorCheck->GetCreationNumber();
             }
         }
 
-        // Only if we didn't find a different loader allocator than the defining loader allocator do we
-        // use the defining loader allocator
-        if (pOldestLoaderModule != NULL)
-            pLoaderModule = pOldestLoaderModule;
-        else
-            pLoaderModule = pDefinitionModule;
+        // Use the module of the latest found collectible loader allocator.
+        // If nothing was found, then by default we use the defining module.
+        if (pLatestLoaderModule != NULL)
+            pLoaderModule = pLatestLoaderModule;
     }
     RETURN PTR_Module(pLoaderModule);
 }
@@ -216,7 +215,7 @@ Module * ClassLoader::ComputeLoaderModule(MethodTable * pMT,
                                methodInst);
 }
 /*static*/
-Module *ClassLoader::ComputeLoaderModule(TypeKey *typeKey)
+Module *ClassLoader::ComputeLoaderModule(const TypeKey *typeKey)
 {
     CONTRACTL
     {
@@ -261,7 +260,7 @@ BOOL ClassLoader::IsTypicalInstantiation(Module *pModule, mdToken token, Instant
         {
             TypeVarTypeDesc* tyvar = thArg.AsGenericVariable();
 
-            PREFIX_ASSUME(tyvar!=NULL);
+            _ASSERTE(tyvar!=NULL);
             if ((tyvar->GetTypeOrMethodDef() != token) ||
                 (tyvar->GetModule() != dac_cast<PTR_Module>(pModule)) ||
                 (tyvar->GetIndex() != i))
@@ -284,6 +283,26 @@ TypeHandle ClassLoader::LoadTypeByNameThrowing(Assembly *pAssembly,
                                                ClassLoadLevel level)
 {
     WRAPPER_NO_CONTRACT;
+
+    CQuickBytes qbszNamespace;
+
+    if (nameSpace == NULL)
+    {
+        LPCUTF8 szFullyQualifiedName = name;
+        nameSpace = "";
+
+        if ((name = ns::FindSep(szFullyQualifiedName)) != NULL)
+        {
+            SIZE_T d = name - szFullyQualifiedName;
+            nameSpace = qbszNamespace.SetString(szFullyQualifiedName, d);
+            name++;
+        }
+        else
+        {
+            name = szFullyQualifiedName;
+        }
+    }
+
     NameHandle nameHandle(nameSpace, name);
     return LoadTypeByNameThrowing(pAssembly, &nameHandle, fNotFound, fLoadTypes, level);
 }
@@ -436,214 +455,6 @@ EEClassHashEntry_t* ClassLoader::InsertValue(EEClassHashTable *pClassHash, EECla
 
 #endif // #ifndef DACCESS_COMPILE
 
-BOOL ClassLoader::CompareNestedEntryWithExportedType(IMDInternalImport *  pImport,
-                                                     mdExportedType       mdCurrent,
-                                                     EEClassHashTable *   pClassHash,
-                                                     PTR_EEClassHashEntry pEntry)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        FORBID_FAULT;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    LPCUTF8 Key[2];
-
-    do
-    {
-        if (FAILED(pImport->GetExportedTypeProps(
-            mdCurrent,
-            &Key[0],
-            &Key[1],
-            &mdCurrent,
-            NULL,   //binding (type def)
-            NULL))) //flags
-        {
-            return FALSE;
-        }
-
-        if (pClassHash->CompareKeys(pEntry, Key))
-        {
-            // Reached top level class for mdCurrent - return whether
-            // or not pEntry is a top level class
-            // (pEntry is a top level class if its pEncloser is NULL)
-            if ((TypeFromToken(mdCurrent) != mdtExportedType) ||
-                (mdCurrent == mdExportedTypeNil))
-            {
-                return pEntry->GetEncloser() == NULL;
-            }
-        }
-        else // Keys don't match - wrong entry
-        {
-            return FALSE;
-        }
-    }
-    while ((pEntry = pEntry->GetEncloser()) != NULL);
-
-    // Reached the top level class for pEntry, but mdCurrent is nested
-    return FALSE;
-}
-
-
-BOOL ClassLoader::CompareNestedEntryWithTypeDef(IMDInternalImport *  pImport,
-                                                mdTypeDef            mdCurrent,
-                                                EEClassHashTable *   pClassHash,
-                                                PTR_EEClassHashEntry pEntry)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        FORBID_FAULT;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    LPCUTF8 Key[2];
-
-    do {
-        if (FAILED(pImport->GetNameOfTypeDef(mdCurrent, &Key[1], &Key[0])))
-        {
-            return FALSE;
-        }
-
-        if (pClassHash->CompareKeys(pEntry, Key)) {
-            // Reached top level class for mdCurrent - return whether
-            // or not pEntry is a top level class
-            // (pEntry is a top level class if its pEncloser is NULL)
-            if (FAILED(pImport->GetNestedClassProps(mdCurrent, &mdCurrent)))
-                return pEntry->GetEncloser() == NULL;
-        }
-        else // Keys don't match - wrong entry
-            return FALSE;
-    }
-    while ((pEntry = pEntry->GetEncloser()) != NULL);
-
-    // Reached the top level class for pEntry, but mdCurrent is nested
-    return FALSE;
-}
-
-
-BOOL ClassLoader::CompareNestedEntryWithTypeRef(IMDInternalImport *  pImport,
-                                                mdTypeRef            mdCurrent,
-                                                EEClassHashTable *   pClassHash,
-                                                PTR_EEClassHashEntry pEntry)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        FORBID_FAULT;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    LPCUTF8 Key[2];
-
-    do {
-        if (FAILED(pImport->GetNameOfTypeRef(mdCurrent, &Key[0], &Key[1])))
-        {
-            return FALSE;
-        }
-
-        if (pClassHash->CompareKeys(pEntry, Key))
-        {
-            if (FAILED(pImport->GetResolutionScopeOfTypeRef(mdCurrent, &mdCurrent)))
-            {
-                return FALSE;
-            }
-            // Reached top level class for mdCurrent - return whether
-            // or not pEntry is a top level class
-            // (pEntry is a top level class if its pEncloser is NULL)
-            if ((TypeFromToken(mdCurrent) != mdtTypeRef) ||
-                (mdCurrent == mdTypeRefNil))
-                return pEntry->GetEncloser() == NULL;
-        }
-        else // Keys don't match - wrong entry
-            return FALSE;
-    }
-    while ((pEntry = pEntry->GetEncloser())!=NULL);
-
-    // Reached the top level class for pEntry, but mdCurrent is nested
-    return FALSE;
-}
-
-
-/*static*/
-BOOL ClassLoader::IsNested(ModuleBase *pModule, mdToken token, mdToken *mdEncloser)
-{
-    CONTRACTL
-    {
-        if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    switch(TypeFromToken(token)) {
-        case mdtTypeDef:
-            return (SUCCEEDED(pModule->GetMDImport()->GetNestedClassProps(token, mdEncloser)));
-
-        case mdtTypeRef:
-            IfFailThrow(pModule->GetMDImport()->GetResolutionScopeOfTypeRef(token, mdEncloser));
-            return ((TypeFromToken(*mdEncloser) == mdtTypeRef) &&
-                    (*mdEncloser != mdTypeRefNil));
-
-        case mdtExportedType:
-            _ASSERTE(pModule->IsFullModule());
-            IfFailThrow(((Module*)pModule)->GetAssembly()->GetMDImport()->GetExportedTypeProps(
-                token,
-                NULL,   // namespace
-                NULL,   // name
-                mdEncloser,
-                NULL,   //binding (type def)
-                NULL)); //flags
-            return ((TypeFromToken(*mdEncloser) == mdtExportedType) &&
-                    (*mdEncloser != mdExportedTypeNil));
-
-        default:
-            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_TOKEN_TYPE);
-    }
-}
-
-BOOL ClassLoader::IsNested(const NameHandle* pName, mdToken *mdEncloser)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    if (pName->GetTypeModule()) {
-        if (TypeFromToken(pName->GetTypeToken()) == mdtBaseType)
-        {
-            if (!pName->GetBucket().IsNull())
-                return TRUE;
-            return FALSE;
-        }
-        else
-            return IsNested(pName->GetTypeModule(), pName->GetTypeToken(), mdEncloser);
-    }
-    else
-        return FALSE;
-}
-
 void ClassLoader::GetClassValue(NameHandleTable nhTable,
                                     const NameHandle *pName,
                                     HashDatum *pData,
@@ -666,7 +477,7 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
     CONTRACTL_END
 
 
-    EEClassHashEntry_t  *pBucket = NULL;
+    PTR_EEClassHashEntry pBucket = NULL;
 
     needsToBuildHashtable = FALSE;
 
@@ -749,54 +560,11 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
             }
             _ASSERTE(pTable);
 
-            mdToken             mdEncloser;
-            BOOL isNested = IsNested(pName, &mdEncloser);
-
-            if (isNested)
-            {
-                ModuleBase *pNameModule = pName->GetTypeModule();
-                PREFIX_ASSUME(pNameModule != NULL);
-
-                EEClassHashTable::LookupContext sContext;
-                if ((pBucket = pTable->GetValue(pName, pData, TRUE, &sContext)) != NULL)
-                {
-                    switch (TypeFromToken(pName->GetTypeToken()))
-                    {
-                    case mdtTypeDef:
-                        while ((!CompareNestedEntryWithTypeDef(pNameModule->GetMDImport(),
-                                                               mdEncloser,
-                                                               pCurrentClsModule->GetAvailableClassHash(),
-                                                               pBucket->GetEncloser())) &&
-                                                               (pBucket = pTable->FindNextNestedClass(pName, pData, &sContext)) != NULL);
-                        break;
-                    case mdtTypeRef:
-                        while ((!CompareNestedEntryWithTypeRef(pNameModule->GetMDImport(),
-                                                               mdEncloser,
-                                                               pCurrentClsModule->GetAvailableClassHash(),
-                                                               pBucket->GetEncloser())) &&
-                                                               (pBucket = pTable->FindNextNestedClass(pName, pData, &sContext)) != NULL);
-                        break;
-                    case mdtExportedType:
-                        _ASSERTE(pNameModule->IsFullModule());
-                        while ((!CompareNestedEntryWithExportedType(((Module*)pNameModule)->GetAssembly()->GetMDImport(),
-                                                                    mdEncloser,
-                                                                    pCurrentClsModule->GetAvailableClassHash(),
-                                                                    pBucket->GetEncloser())) &&
-                                                                    (pBucket = pTable->FindNextNestedClass(pName, pData, &sContext)) != NULL);
-                        break;
-                    default:
-                        while ((pBucket->GetEncloser() != pName->GetBucket().GetClassHashBasedEntryValue()) &&
-                            (pBucket = pTable->FindNextNestedClass(pName, pData, &sContext)) != NULL);
-                    }
-                }
-            }
-            else
-            {
-                pBucket = pTable->GetValue(pName, pData, FALSE, NULL);
-            }
+            pBucket = pTable->FindByNameHandle(pName);
 
             if (pBucket) // Return on the first success
             {
+                *pData = pBucket->GetData();
                 pFoundEntry->SetClassHashBasedEntryValue(pBucket);
                 return;
             }
@@ -822,20 +590,45 @@ VOID ClassLoader::PopulateAvailableClassHashTable(Module* pModule,
     }
     CONTRACTL_END;
 
-    mdTypeDef           td;
-    HENUMInternal       hTypeDefEnum;
+    SArray<EEClassHashEntry_t*> entries;
     IMDInternalImport * pImport = pModule->GetMDImport();
+    {
+        mdTypeDef           td;
+        HENUMInternalHolder hTypeDefEnum(pImport);
 
-    IfFailThrow(pImport->EnumTypeDefInit(&hTypeDefEnum));
+        hTypeDefEnum.EnumTypeDefInit();
 
-    // Now loop through all the classdefs adding the CVID and scope to the hash
-    while(pImport->EnumNext(&hTypeDefEnum, &td)) {
+        DWORD cEntries = hTypeDefEnum.EnumGetCount() + 1; // Add 1 since this enum doesn't report the <module> class
+        EEClassHashEntry_t** pBuffer = entries.OpenRawBuffer(cEntries);
+        memset(pBuffer, 0, sizeof(EEClassHashEntry_t*) * cEntries);
+        entries.CloseRawBuffer();
 
-        AddAvailableClassHaveLock(pModule,
-                                  td,
-                                  pamTracker);
+        // Now loop through all the classdefs adding the CVID and scope to the hash
+        while(pImport->EnumNext(&hTypeDefEnum, &td))
+        {
+            AddAvailableClassHaveLock(pModule,
+                                      td,
+                                      &entries,
+                                      pamTracker);
+        }
     }
-    pImport->EnumClose(&hTypeDefEnum);
+
+    {
+        // Add exported types to the hashtable
+        HENUMInternalHolder phEnum(pImport);
+        phEnum.EnumInit(mdtExportedType, mdTokenNil);
+
+        DWORD cEntries = phEnum.EnumGetCount();
+        EEClassHashEntry_t** pBuffer = entries.OpenRawBuffer(cEntries);
+        memset(pBuffer, 0, sizeof(EEClassHashEntry_t*) * cEntries);
+        entries.CloseRawBuffer();
+
+        mdToken mdExportedType;
+        while (pImport->EnumNext(&phEnum, &mdExportedType))
+        {
+            AddExportedTypeHaveLock(pModule, mdExportedType, &entries, pamTracker);
+        }
+    }
 }
 
 
@@ -881,20 +674,11 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
         // (either images compiled with an old version of crossgen, or for case-insensitive type lookups in R2R modules)
         _ASSERT(pModule->IsReadyToRun());
 
-        EEClassHashTable * pNewClassHash = EEClassHashTable::Create(pModule, AVAILABLE_CLASSES_HASH_BUCKETS, FALSE /* bCaseInsensitive */, &amTracker);
+        EEClassHashTable * pNewClassHash = EEClassHashTable::Create(pModule, AVAILABLE_CLASSES_HASH_BUCKETS, NULL, &amTracker);
         pModule->SetAvailableClassHash(pNewClassHash);
 
         PopulateAvailableClassHashTable(pModule, &amTracker);
     }
-
-    // Add exported types to the hashtable
-    IMDInternalImport * pManifestImport = GetAssembly()->GetMDImport();
-    HENUMInternalHolder phEnum(pManifestImport);
-    phEnum.EnumInit(mdtExportedType, mdTokenNil);
-
-    mdToken mdExportedType;
-    while (pManifestImport->EnumNext(&phEnum, &mdExportedType))
-        AddExportedTypeHaveLock(GetAssembly()->GetModule(), mdExportedType, &amTracker);
 
     amTracker.SuppressRelease();
 }
@@ -944,7 +728,7 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
 }
 
 /*static*/
-void DECLSPEC_NORETURN ClassLoader::ThrowTypeLoadException(TypeKey *pKey,
+void DECLSPEC_NORETURN ClassLoader::ThrowTypeLoadException(const TypeKey *pKey,
                                                            UINT resIDWhy)
 {
     STATIC_CONTRACT_THROWS;
@@ -958,7 +742,7 @@ void DECLSPEC_NORETURN ClassLoader::ThrowTypeLoadException(TypeKey *pKey,
 
 #endif
 
-TypeHandle ClassLoader::LoadConstructedTypeThrowing(TypeKey *pKey,
+TypeHandle ClassLoader::LoadConstructedTypeThrowing(const TypeKey *pKey,
                                                     LoadTypesFlag fLoadTypes /*= LoadTypes*/,
                                                     ClassLoadLevel level /*=CLASS_LOADED*/,
                                                     const InstantiationContext *pInstContext /*=NULL*/)
@@ -979,30 +763,15 @@ TypeHandle ClassLoader::LoadConstructedTypeThrowing(TypeKey *pKey,
     }
     CONTRACT_END
 
-    TypeHandle typeHnd;
-    ClassLoadLevel existingLoadLevel = CLASS_LOAD_BEGIN;
-
     // Lookup in the classes that this class loader knows about
-
-    if (pKey->HasInstantiation() && ClassLoader::IsTypicalSharedInstantiation(pKey->GetInstantiation()))
+    TypeHandle typeHnd = LookupTypeHandleForTypeKey(pKey);
+    if (!typeHnd.IsNull())
     {
-        _ASSERTE(pKey->GetModule() == ComputeLoaderModule(pKey));
-        typeHnd = pKey->GetModule()->LookupFullyCanonicalInstantiation(pKey->GetTypeToken(), &existingLoadLevel);
-    }
-
-    if (typeHnd.IsNull())
-    {
-        typeHnd = LookupTypeHandleForTypeKey(pKey);
-        if (!typeHnd.IsNull())
+        if (typeHnd.GetLoadLevel() >= level)
         {
-            existingLoadLevel = typeHnd.GetLoadLevel();
+            // If something has been published in the tables, and it's at the right level, just return it
+            RETURN typeHnd;
         }
-    }
-
-    // If something has been published in the tables, and it's at the right level, just return it
-    if (!typeHnd.IsNull() && existingLoadLevel >= level)
-    {
-        RETURN typeHnd;
     }
 
 #ifndef DACCESS_COMPILE
@@ -1054,7 +823,7 @@ void ClassLoader::EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
 
     if (typeHnd.GetLoadLevel() < level)
     {
-        if (level > CLASS_LOAD_UNRESTORED)
+        if (level >= CLASS_LOAD_APPROXPARENTS)
         {
             TypeKey typeKey = typeHnd.GetTypeKey();
 
@@ -1066,29 +835,8 @@ void ClassLoader::EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
 #endif // DACCESS_COMPILE
 }
 
-/*static*/
-void ClassLoader::TryEnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifndef DACCESS_COMPILE // Nothing to do for the DAC case
-
-    EX_TRY
-    {
-        ClassLoader::EnsureLoaded(typeHnd, level);
-    }
-    EX_CATCH
-    {
-        // Some type may not load successfully. For eg. generic instantiations
-        // that do not satisfy the constraints of the type arguments.
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
-
-#endif // DACCESS_COMPILE
-}
-
 /* static */
-TypeHandle ClassLoader::LookupTypeKey(TypeKey *pKey, EETypeHashTable *pTable)
+TypeHandle ClassLoader::LookupTypeKey(const TypeKey *pKey, EETypeHashTable *pTable)
 {
     CONTRACTL {
         NOTHROW;
@@ -1105,7 +853,7 @@ TypeHandle ClassLoader::LookupTypeKey(TypeKey *pKey, EETypeHashTable *pTable)
 }
 
 /* static */
-TypeHandle ClassLoader::LookupInLoaderModule(TypeKey *pKey)
+TypeHandle ClassLoader::LookupInLoaderModule(const TypeKey *pKey)
 {
     CONTRACTL {
         NOTHROW;
@@ -1118,14 +866,14 @@ TypeHandle ClassLoader::LookupInLoaderModule(TypeKey *pKey)
     } CONTRACTL_END;
 
     Module *pLoaderModule = ComputeLoaderModule(pKey);
-    PREFIX_ASSUME(pLoaderModule!=NULL);
+    _ASSERTE(pLoaderModule!=NULL);
 
     return LookupTypeKey(pKey, pLoaderModule->GetAvailableParamTypes());
 }
 
 
 /* static */
-TypeHandle ClassLoader::LookupTypeHandleForTypeKey(TypeKey *pKey)
+TypeHandle ClassLoader::LookupTypeHandleForTypeKey(const TypeKey *pKey)
 {
     CONTRACTL
     {
@@ -1260,7 +1008,7 @@ BOOL ClassLoader::FindClassModuleThrowing(
         return TRUE;
     }
 
-    EEClassHashEntry_t * pBucket = foundEntry.GetClassHashBasedEntryValue();
+    PTR_EEClassHashEntry pBucket = foundEntry.GetClassHashBasedEntryValue();
 
     if (pBucket == NULL)
     {
@@ -1310,7 +1058,7 @@ BOOL ClassLoader::FindClassModuleThrowing(
     if (pName->GetTable() == nhCaseInsensitive)
     {
         _ASSERTE(Data);
-        pBucket = PTR_EEClassHashEntry(Data);
+        pBucket = dac_cast<PTR_EEClassHashEntry>(dac_cast<TADDR>((Data)));
         Data = pBucket->GetData();
     }
 
@@ -1376,9 +1124,9 @@ bool CompareNameHandleWithTypeHandleNoThrow(
         // Technically, the above operations should never result in a non-OOM
         // exception, but we'll put the rethrow line in there just in case.
         CONSISTENCY_CHECK(!GET_EXCEPTION()->IsTerminal());
-        RethrowTerminalExceptions;
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return fRet;
 }
@@ -1547,16 +1295,7 @@ ClassLoader::LoadTypeHandleThrowing(
             const HashedTypeEntry& bucket = pName->GetBucket();
 
             // Reset pName's bucket entry
-            if (bucket.GetEntryType() == HashedTypeEntry::IsHashedClassEntry && bucket.GetClassHashBasedEntryValue()->GetEncloser())
-            {
-                // We will be searching for the type name again, so set the nesting/context type to the
-                // encloser of just found type
-                pName->SetBucket(HashedTypeEntry().SetClassHashBasedEntryValue(bucket.GetClassHashBasedEntryValue()->GetEncloser()));
-            }
-            else
-            {
-                pName->SetBucket(HashedTypeEntry());
-            }
+            pName->SetBucket(HashedTypeEntry());
 
             // Update the class loader for the new module/token pair.
             pClsLdr = pFoundModule->GetClassLoader();
@@ -1567,7 +1306,6 @@ ClassLoader::LoadTypeHandleThrowing(
 #ifndef DACCESS_COMPILE
     // Replace AvailableClasses Module entry with found TypeHandle
     if (!typeHnd.IsNull() &&
-        typeHnd.IsRestored() &&
         foundEntry.GetEntryType() == HashedTypeEntry::EntryType::IsHashedClassEntry &&
         (foundEntry.GetClassHashBasedEntryValue() != NULL) &&
         (foundEntry.GetClassHashBasedEntryValue()->GetData() != typeHnd.AsPtr()))
@@ -1855,12 +1593,6 @@ TypeHandle ClassLoader::LookupTypeDefOrRefInModule(ModuleBase *pModule, mdToken 
     RETURN(typeHandle);
 }
 
-DomainAssembly *ClassLoader::GetDomainAssembly()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetAssembly()->GetDomainAssembly();
-}
-
 #ifndef DACCESS_COMPILE
 
 //
@@ -1897,12 +1629,6 @@ ClassLoader::~ClassLoader()
         DISABLED(FORBID_FAULT);  //Lots of crud to clean up to make this work
     }
     CONTRACTL_END
-
-#ifdef _DEBUG
-    // Do not walk m_pUnresolvedClassHash at destruct time as it is loaderheap allocated memory
-    // and may already have been deallocated via an AllocMemTracker.
-    m_pUnresolvedClassHash = (PendingTypeLoadTable*)(UINT_PTR)0xcccccccc;
-#endif
 
 #ifdef _DEBUG
 //     LOG((
@@ -1943,7 +1669,6 @@ ClassLoader::~ClassLoader()
 
     FreeModules();
 
-    m_UnresolvedClassLock.Destroy();
     m_AvailableClassLock.Destroy();
     m_AvailableTypesLock.Destroy();
 }
@@ -1968,7 +1693,6 @@ ClassLoader::ClassLoader(Assembly *pAssembly)
 
     m_pAssembly = pAssembly;
 
-    m_pUnresolvedClassHash          = NULL;
     m_cUnhashedModules              = 0;
 
 #ifdef _DEBUG
@@ -1999,12 +1723,6 @@ VOID ClassLoader::Init(AllocMemTracker *pamTracker)
 {
     STANDARD_VM_CONTRACT;
 
-    m_pUnresolvedClassHash = PendingTypeLoadTable::Create(GetAssembly()->GetLowFrequencyHeap(),
-                                                          UNRESOLVED_CLASS_HASH_BUCKETS,
-                                                          pamTracker);
-
-    m_UnresolvedClassLock.Init(CrstUnresolvedClassLock);
-
     // This lock is taken within the classloader whenever we have to enter a
     // type in one of the modules governed by the loader.
     // The process of creating these types may be reentrant.  The ordering has
@@ -2017,7 +1735,7 @@ VOID ClassLoader::Init(AllocMemTracker *pamTracker)
     // This lock is taken within the classloader whenever we have to insert a new param. type into the table.
     m_AvailableTypesLock.Init(
                               CrstAvailableParamTypes,
-                              CRST_DEBUGGER_THREAD);
+                              CrstFlags(CRST_DEBUGGER_THREAD | CRST_GC_NOTRIGGER_WHEN_TAKEN | CRST_UNSAFE_ANYMODE));
 
 #ifdef _DEBUG
     CorTypeInfo::CheckConsistency();
@@ -2186,7 +1904,7 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
 #endif
             TRIGGERSGC();
 
-            if (pModule->IsReflection())
+            if (pModule->IsReflectionEmit())
             {
                 // Don't try to load types that are not in available table, when this
                 // is an in-memory module.  Raise the type-resolve event instead.
@@ -2212,17 +1930,17 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
                                                         className);
                         GCX_COOP();
                         ASSEMBLYREF asmRef = NULL;
-                        DomainAssembly *pDomainAssembly = NULL;
+                        Assembly* pAssembly = NULL;
                         GCPROTECT_BEGIN(asmRef);
 
-                        pDomainAssembly = pDomain->RaiseTypeResolveEventThrowing(
-                            pModule->GetAssembly()->GetDomainAssembly(),
+                        pAssembly = pDomain->RaiseTypeResolveEventThrowing(
+                            pModule->GetAssembly(),
                             pszFullName, &asmRef);
 
                         if (asmRef != NULL)
                         {
-                            _ASSERTE(pDomainAssembly != NULL);
-                            if (pDomainAssembly->GetAssembly()->GetLoaderAllocator()->IsCollectible())
+                            _ASSERTE(pAssembly != NULL);
+                            if (pAssembly->GetLoaderAllocator()->IsCollectible())
                             {
                                 if (!pModule->GetLoaderAllocator()->IsCollectible())
                                 {
@@ -2230,14 +1948,12 @@ TypeHandle ClassLoader::LoadTypeDefThrowing(Module *pModule,
                                     COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
                                 }
 
-                                pModule->GetLoaderAllocator()->EnsureReference(pDomainAssembly->GetAssembly()->GetLoaderAllocator());
+                                pModule->GetLoaderAllocator()->EnsureReference(pAssembly->GetLoaderAllocator());
                             }
                         }
                         GCPROTECT_END();
-                        if (pDomainAssembly != NULL)
+                        if (pAssembly != NULL)
                         {
-                            Assembly *pAssembly = pDomainAssembly->GetAssembly();
-
                             NameHandle name(nameSpace, className);
                             name.SetTypeToken(pModule, typeDef);
                             name.SetTokenNotToLoad(tdAllAssemblies);
@@ -2298,7 +2014,6 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
 
         POSTCONDITION(CheckPointer(RETVAL, NameHandle::OKToLoad(typeDefOrRef, tokenNotToLoad) && (fNotFoundAction == ThrowIfNotFound) ? NULL_NOT_OK : NULL_OK));
-        POSTCONDITION(level <= CLASS_LOAD_UNRESTORED || RETVAL.IsNull() || RETVAL.IsRestored());
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -2406,7 +2121,7 @@ TypeHandle ClassLoader::LoadTypeDefOrRefThrowing(ModuleBase *pModule,
                         nameHandle.SetTokenNotToLoad(tokenNotToLoad);
                         typeHnd = pFoundModule->GetClassLoader()->
                             LoadTypeHandleThrowIfFailed(&nameHandle, level,
-                                                        pFoundModule->IsFullModule() ? (static_cast<Module*>(pFoundModule)->IsReflection() ? NULL : static_cast<Module*>(pFoundModule)) : NULL);
+                                                        pFoundModule->IsFullModule() ? (static_cast<Module*>(pFoundModule)->IsReflectionEmit() ? NULL : static_cast<Module*>(pFoundModule)) : NULL);
                     }
                 }
 
@@ -2581,7 +2296,7 @@ ClassLoader::ResolveNameToTypeDefThrowing(
             &pFoundModule,
             &foundExportedType,
             NULL,
-            pSourceModule->IsReflection() ? NULL : pSourceModule,
+            pSourceModule->IsReflectionEmit() ? NULL : pSourceModule,
             loadFlag))
         {
             RETURN FALSE;
@@ -2844,7 +2559,7 @@ ClassLoader::LoadApproxParentThrowing(
 // Perform a single phase of class loading
 // It is the caller's responsibility to lock
 /*static*/
-TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd, ClassLoadLevel currentLevel)
+TypeHandle ClassLoader::DoIncrementalLoad(const TypeKey *pTypeKey, TypeHandle typeHnd, ClassLoadLevel currentLevel)
 {
     CONTRACTL
     {
@@ -2869,8 +2584,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
 
     switch (currentLevel)
     {
-        // Attain at least level CLASS_LOAD_UNRESTORED (if just locating type in ngen image)
-        // or at least level CLASS_LOAD_APPROXPARENTS (if creating type for the first time)
+        // Attain at least level CLASS_LOAD_APPROXPARENTS (if creating type for the first time)
         case CLASS_LOAD_BEGIN :
             {
                 AllocMemTracker amTracker;
@@ -2881,13 +2595,6 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
                     amTracker.SuppressRelease();
                 typeHnd = published;
             }
-            break;
-
-        case CLASS_LOAD_UNRESTOREDTYPEKEY :
-            break;
-
-        // Attain level CLASS_LOAD_APPROXPARENTS, starting with unrestored class
-        case CLASS_LOAD_UNRESTORED :
             break;
 
         // Attain level CLASS_LOAD_EXACTPARENTS
@@ -2907,7 +2614,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
 
     if (typeHnd.GetLoadLevel() >= CLASS_LOAD_EXACTPARENTS)
     {
-        Notify(typeHnd);
+        NotifyLoad(typeHnd);
     }
 
     return typeHnd;
@@ -2918,7 +2625,7 @@ TypeHandle ClassLoader::DoIncrementalLoad(TypeKey *pTypeKey, TypeHandle typeHnd,
 // For canonical instantiations of generic types, create a brand new method table
 // For other constructed types, create a type desc and template method table if necessary
 // For all other types, create a method table
-TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracker* pamTracker)
+TypeHandle ClassLoader::CreateTypeHandleForTypeKey(const TypeKey* pKey, AllocMemTracker* pamTracker)
 {
     CONTRACT(TypeHandle)
     {
@@ -2960,18 +2667,18 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
     else if (pKey->GetKind() == ELEMENT_TYPE_FNPTR)
     {
         Module *pLoaderModule = ComputeLoaderModule(pKey);
-        PREFIX_ASSUME(pLoaderModule != NULL);
+        _ASSERTE(pLoaderModule != NULL);
         pLoaderModule->GetLoaderAllocator()->EnsureInstantiation(NULL, Instantiation(pKey->GetRetAndArgTypes(), pKey->GetNumArgs() + 1));
 
         DWORD numArgs = pKey->GetNumArgs();
         BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(FnPtrTypeDesc)) + S_SIZE_T(sizeof(TypeHandle)) * S_SIZE_T(numArgs)));
 
-        typeHnd = TypeHandle(new(mem)  FnPtrTypeDesc(pKey->GetCallConv(), numArgs, pKey->GetRetAndArgTypes()));
+        typeHnd = TypeHandle(new(mem)  FnPtrTypeDesc(pKey->GetCallConv(), numArgs, pKey->GetRetAndArgTypes(), pLoaderModule));
     }
     else
     {
         Module *pLoaderModule = ComputeLoaderModule(pKey);
-        PREFIX_ASSUME(pLoaderModule!=NULL);
+        _ASSERTE(pLoaderModule!=NULL);
 
         CorElementType kind = pKey->GetKind();
         TypeHandle paramType = pKey->GetElementType();
@@ -3014,7 +2721,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
             // no parameterized type allowed on a reference
             if (paramType.GetInternalCorElementType() == ELEMENT_TYPE_BYREF)
             {
-                ThrowTypeLoadException(pKey, IDS_CLASSLOAD_GENERAL);
+                ThrowTypeLoadException(pKey, (kind == ELEMENT_TYPE_BYREF) ? IDS_CLASSLOAD_BYREF_OF_BYREF : IDS_CLASSLOAD_POINTER_OF_BYREF);
             }
 
             // We do allow parameterized types of ByRefLike types. Languages may restrict them to produce safe or verifiable code,
@@ -3033,7 +2740,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
 // particular, exact parent info (base class and interfaces) is loaded
 // in a later phase
 /*static*/
-TypeHandle ClassLoader::PublishType(TypeKey *pTypeKey, TypeHandle typeHnd)
+TypeHandle ClassLoader::PublishType(const TypeKey *pTypeKey, TypeHandle typeHnd)
 {
     CONTRACTL
     {
@@ -3046,6 +2753,16 @@ TypeHandle ClassLoader::PublishType(TypeKey *pTypeKey, TypeHandle typeHnd)
     }
     CONTRACTL_END;
 
+#ifdef _DEBUG
+    if (!typeHnd.IsTypeDesc())
+    {
+        // The IsPublished flag is used by various asserts to assure that allocations of
+        // MethodTable associated memory which do not use the AllocMemTracker of the MethodTableBuilder
+        // aren't permitted until the MethodTable is in a state where the MethodTable object
+        // cannot be freed (except by freeing an entire LoaderAllocator)
+        typeHnd.AsMethodTable()->GetAuxiliaryDataForWrite()->SetIsPublished();
+    }
+#endif
 
     if (pTypeKey->IsConstructed())
     {
@@ -3084,7 +2801,10 @@ TypeHandle ClassLoader::PublishType(TypeKey *pTypeKey, TypeHandle typeHnd)
         {
             MethodDesc * pMD = it.GetMethodDesc();
             CONSISTENCY_CHECK(pMD != NULL && pMD->GetMethodTable() == pMT);
-            if (!pMD->IsUnboxingStub())
+            // For {Task-returning, Async} variants of the same definition
+            // we associate the methoddef with the Task-returning variant since it
+            // matches the methadata signature.
+            if (!pMD->IsUnboxingStub() && !pMD->IsAsyncVariantMethod())
             {
                 pModule->EnsuredStoreMethodDef(pMD->GetMemberDef(), pMD);
             }
@@ -3111,7 +2831,7 @@ TypeHandle ClassLoader::PublishType(TypeKey *pTypeKey, TypeHandle typeHnd)
 // Notify profiler and debugger that a type load has completed
 // Also adjust perf counters
 /*static*/
-void ClassLoader::Notify(TypeHandle typeHnd)
+void ClassLoader::NotifyLoad(TypeHandle typeHnd)
 {
     CONTRACTL
     {
@@ -3131,14 +2851,8 @@ void ClassLoader::Notify(TypeHandle typeHnd)
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackClasses());
         // We don't tell profilers about typedescs, as per IF above.  Also, we don't
-        // tell profilers about:
-        if (
-            // ...generics with unbound variables
-            (!pMT->ContainsGenericVariables()) &&
-            // ...or array method tables
-            // (This check is mainly for NGEN restore, as JITted code won't hit
-            // this code path for array method tables anyway)
-            (!pMT->IsArray()))
+        // tell profilers about generics with unbound variables.
+        if (!pMT->ContainsGenericVariables())
         {
             LOG((LF_CLASSLOADER, LL_INFO1000, "Notifying profiler of Started1 %p %s\n", pMT, pMT->GetDebugClassName()));
             // Record successful load of the class for the profiler
@@ -3159,7 +2873,7 @@ void ClassLoader::Notify(TypeHandle typeHnd)
     }
 #endif //PROFILING_SUPPORTED
 
-    if (pMT->IsTypicalTypeDefinition())
+    if (pMT->IsTypicalTypeDefinition() && !IsNilToken(pMT->GetCl()))
     {
         LOG((LF_CLASSLOADER, LL_INFO100, "Successfully loaded class %s\n", pMT->GetDebugClassName()));
 
@@ -3173,12 +2887,69 @@ void ClassLoader::Notify(TypeHandle typeHnd)
         if (CORDebuggerAttached())
         {
             LOG((LF_CORDB, LL_EVERYTHING, "NotifyDebuggerLoad clsload 2239 class %s\n", pMT->GetDebugClassName()));
-            typeHnd.NotifyDebuggerLoad(NULL, FALSE);
+            typeHnd.NotifyDebuggerLoad(FALSE);
         }
 #endif // DEBUGGING_SUPPORTED
     }
 }
 
+// Notify profiler that a MethodTable is being unloaded
+/*static*/
+void ClassLoader::NotifyUnload(MethodTable* pMT, bool unloadStarted)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        FORBID_FAULT;
+        PRECONDITION(pMT != NULL);
+    }
+    CONTRACTL_END
+
+#ifdef PROFILING_SUPPORTED
+    // If profiling, then notify the class is getting unloaded.
+    {
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackClasses());
+        {
+            if (pMT->ContainsGenericVariables() || pMT->IsArray())
+            {
+                // Don't notify the profiler about types with unbound variables or arrays.
+                // See ClassLoadStarted callback for more details.
+                return;
+            }
+
+            // Calls to the profiler callback may throw, or otherwise fail, if
+            // the profiler AVs/throws an unhandled exception/etc. We don't want
+            // those failures to affect the runtime, so we'll ignore them.
+            //
+            // Note that the profiler callback may turn around and make calls into
+            // the profiling runtime that may throw. This try/catch block doesn't
+            // protect the profiler against such failures. To protect the profiler
+            // against that, we will need try/catch blocks around all calls into the
+            // profiling API.
+            //
+
+            FAULT_NOT_FATAL();
+
+            EX_TRY
+            {
+                GCX_PREEMP();
+
+                if (unloadStarted)
+                    (&g_profControlBlock)->ClassUnloadStarted((ClassID) pMT);
+                else
+                    (&g_profControlBlock)->ClassUnloadFinished((ClassID) pMT, S_OK);
+            }
+            EX_SWALLOW_NONTERMINAL
+            // The exception here came from the profiler itself. We'll just
+            // swallow the exception, since we don't want the profiler to bring
+            // down the runtime.
+        }
+        END_PROFILER_CALLBACK();
+    }
+#endif // PROFILING_SUPPORTED
+}
 
 //-----------------------------------------------------------------------------
 // Common helper for LoadTypeHandleForTypeKey and LoadTypeHandleForTypeKeyNoLock.
@@ -3233,7 +3004,7 @@ static void PushFinalLevels(TypeHandle typeHnd, ClassLoadLevel targetLevel, cons
 
 
 //
-TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
+TypeHandle ClassLoader::LoadTypeHandleForTypeKey(const TypeKey *pTypeKey,
                                                  TypeHandle typeHnd,
                                                  ClassLoadLevel targetLevel/*=CLASS_LOADED*/,
                                                  const InstantiationContext *pInstContext/*=NULL*/)
@@ -3257,8 +3028,7 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
         SString name;
         TypeString::AppendTypeKeyDebug(name, pTypeKey);
         LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: LoadTypeHandleForTypeKey for type %s to level %s\n", name.GetUTF8(), classLoadLevelName[targetLevel]));
-        CrstHolder unresolvedClassLockHolder(&m_UnresolvedClassLock);
-        m_pUnresolvedClassHash->Dump();
+        PendingTypeLoadTable::GetTable()->Dump();
     }
 #endif
 
@@ -3290,7 +3060,7 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKey(TypeKey *pTypeKey,
 }
 
 //
-TypeHandle ClassLoader::LoadTypeHandleForTypeKeyNoLock(TypeKey *pTypeKey,
+TypeHandle ClassLoader::LoadTypeHandleForTypeKeyNoLock(const TypeKey *pTypeKey,
                                                        ClassLoadLevel targetLevel/*=CLASS_LOADED*/,
                                                        const InstantiationContext *pInstContext/*=NULL*/)
 {
@@ -3329,35 +3099,34 @@ TypeHandle ClassLoader::LoadTypeHandleForTypeKeyNoLock(TypeKey *pTypeKey,
 //
 class PendingTypeLoadHolder
 {
-    Thread * m_pThread;
-    PendingTypeLoadEntry * m_pEntry;
+    static thread_local PendingTypeLoadHolder * t_pCurrent;
+    PendingTypeLoadTable::Entry * m_pEntry;
     PendingTypeLoadHolder * m_pPrevious;
 
 public:
-    PendingTypeLoadHolder(PendingTypeLoadEntry * pEntry)
+    PendingTypeLoadHolder(PendingTypeLoadTable::Entry * pEntry)
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_pThread = GetThread();
         m_pEntry = pEntry;
 
-        m_pPrevious = m_pThread->GetPendingTypeLoad();
-        m_pThread->SetPendingTypeLoad(this);
+        m_pPrevious = t_pCurrent;
+        t_pCurrent = this;
     }
 
     ~PendingTypeLoadHolder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(m_pThread->GetPendingTypeLoad() == this);
-        m_pThread->SetPendingTypeLoad(m_pPrevious);
+        _ASSERTE(t_pCurrent == this);
+        t_pCurrent = m_pPrevious;
     }
 
-    static bool CheckForDeadLockOnCurrentThread(PendingTypeLoadEntry * pEntry)
+    static bool CheckForDeadLockOnCurrentThread(PendingTypeLoadTable::Entry * pEntry)
     {
         LIMITED_METHOD_CONTRACT;
 
-        PendingTypeLoadHolder * pCurrent = GetThread()->GetPendingTypeLoad();
+        PendingTypeLoadHolder * pCurrent = t_pCurrent;
 
         while (pCurrent != NULL)
         {
@@ -3371,11 +3140,13 @@ public:
     }
 };
 
+thread_local PendingTypeLoadHolder * PendingTypeLoadHolder::t_pCurrent = NULL;
+
 //---------------------------------------------------------------------------------------
 //
 TypeHandle
 ClassLoader::LoadTypeHandleForTypeKey_Body(
-    TypeKey *                         pTypeKey,
+    const TypeKey *                         pTypeKey,
     TypeHandle                        typeHnd,
     ClassLoadLevel                    targetLevel)
 {
@@ -3406,14 +3177,16 @@ ClassLoader::LoadTypeHandleForTypeKey_Body(
 #endif
     }
 
-    ReleaseHolder<PendingTypeLoadEntry> pLoadingEntry;
-    CrstHolderWithState unresolvedClassLockHolder(&m_UnresolvedClassLock, false);
+    ReleaseHolder<PendingTypeLoadTable::Entry> pLoadingEntry;
+    DWORD dwHashedTypeKey;
+    PendingTypeLoadTable::Shard *pPendingTypeLoadShard = PendingTypeLoadTable::GetTable()->GetShard(*pTypeKey, this, &dwHashedTypeKey);
+    CrstHolderWithState unresolvedClassLockHolder(pPendingTypeLoadShard->GetCrst(), false);
 
 retry:
     unresolvedClassLockHolder.Acquire();
 
     // Is it in the hash of classes currently being loaded?
-    pLoadingEntry = m_pUnresolvedClassHash->GetValue(pTypeKey);
+    pLoadingEntry = pPendingTypeLoadShard->FindPendingTypeLoadEntry(dwHashedTypeKey, *pTypeKey);
     if (pLoadingEntry)
     {
         pLoadingEntry->AddRef();
@@ -3458,15 +3231,8 @@ retry:
             goto retry;
         }
 
-        {
-            // Wait for class to be loaded by another thread.  This is where we start tracking the
-            // entry, so there is an implicit Acquire in our use of Assign here.
-            CrstHolder loadingEntryLockHolder(&pLoadingEntry->m_Crst);
-            _ASSERTE(pLoadingEntry->HasLock());
-        }
-
         // Result of other thread loading the class
-        HRESULT hr = pLoadingEntry->m_hrResult;
+        HRESULT hr = pLoadingEntry->DelayForProgress(&typeHnd);
 
         if (FAILED(hr)) {
 
@@ -3501,9 +3267,6 @@ retry:
             pLoadingEntry->ThrowException();
         }
 
-        // Get a pointer to the EEClass being loaded
-        typeHnd = pLoadingEntry->m_typeHandle;
-
         if (!typeHnd.IsNull())
         {
             // If the type load on the other thread loaded the type to the needed level, return it here.
@@ -3533,12 +3296,7 @@ retry:
 
     // It was not loaded, and it is not being loaded, so we must load it.  Create a new LoadingEntry
     // and acquire it immediately so that other threads will block.
-    pLoadingEntry = new PendingTypeLoadEntry(*pTypeKey, typeHnd);  // this atomically creates a crst and acquires it
-
-    if (!(m_pUnresolvedClassHash->InsertValue(pLoadingEntry)))
-    {
-        COMPlusThrowOM();
-    }
+    pLoadingEntry = pPendingTypeLoadShard->InsertPendingTypeLoadEntry(dwHashedTypeKey, *pTypeKey, typeHnd);  // this atomically creates a crst and acquires it
 
     // Leave the global lock, so that other threads may now start waiting on our class's lock
     unresolvedClassLockHolder.Release();
@@ -3576,7 +3334,7 @@ retry:
 
         // Unlink this class from the unresolved class list.
         unresolvedClassLockHolder.Acquire();
-        m_pUnresolvedClassHash->DeleteValue(pTypeKey);
+        pPendingTypeLoadShard->RemovePendingTypeLoadEntry(pLoadingEntry);
 
         // Release the lock before proceeding. The unhandled exception filters take number of locks that
         // have ordering violations with this lock.
@@ -3589,13 +3347,13 @@ retry:
 
     // Unlink this class from the unresolved class list.
     unresolvedClassLockHolder.Acquire();
-    m_pUnresolvedClassHash->DeleteValue(pTypeKey);
+    pPendingTypeLoadShard->RemovePendingTypeLoadEntry(pLoadingEntry);
     unresolvedClassLockHolder.Release();
 
     // Unblock any thread waiting to load same type as in TypeLoadEntry. This should be done
-    // after pLoadingEntry is removed from m_pUnresolvedClassHash. Otherwise the other thread
+    // after pLoadingEntry is removed from the PendingTypeLoadTable. Otherwise the other thread
     // (which was waiting) will keep spinning for a while after waking up, till the current thread removes
-    //  pLoadingEntry from m_pUnresolvedClassHash. This can cause hang in situation when the current
+    //  pLoadingEntry from the PendingTypeLoadTable. This can cause hang in situation when the current
     // thread is a background thread and so will get very less processor cycle to perform subsequent
     // operations to remove the entry from hash later.
     pLoadingEntry->UnblockWaiters();
@@ -3704,10 +3462,12 @@ VOID ClassLoader::AddAvailableClassDontHaveLock(Module *pModule,
     CONTRACTL_END
 
     CrstHolder ch(&m_AvailableClassLock);
+    SArray<EEClassHashEntry_t *> classEntries;
 
     AddAvailableClassHaveLock(
         pModule,
         classdef,
+        &classEntries,
         pamTracker);
 }
 
@@ -3723,6 +3483,7 @@ VOID ClassLoader::AddAvailableClassDontHaveLock(Module *pModule,
 VOID ClassLoader::AddAvailableClassHaveLock(
     Module *          pModule,
     mdTypeDef         classdef,
+    SArray<EEClassHashEntry_t *>* classEntries,
     AllocMemTracker * pamTracker)  // Optimization for faster prefix comparison implementation
 {
     CONTRACTL
@@ -3737,10 +3498,10 @@ VOID ClassLoader::AddAvailableClassHaveLock(
 
     EEClassHashTable *pClassHash = pModule->GetAvailableClassHash();
     EEClassHashTable *pClassCaseInsHash = pModule->GetAvailableClassCaseInsHash();
+    EEClassHashEntry_t * insertedEntry = NULL;
 
     LPCUTF8        pszName;
     LPCUTF8        pszNameSpace;
-    HashDatum      ThrowawayData;
     IMDInternalImport *pMDImport = pModule->GetMDImport();
     if (FAILED(pMDImport->GetNameOfTypeDef(classdef, &pszName, &pszNameSpace)))
     {
@@ -3748,101 +3509,50 @@ VOID ClassLoader::AddAvailableClassHaveLock(
         pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_INVALID_TOKEN);
     }
 
-    EEClassHashEntry_t *pBucket;
     mdTypeDef      enclosing;
+    EEClassHashEntry_t *pEncloser = NULL;
     if (SUCCEEDED(pMDImport->GetNestedClassProps(classdef, &enclosing))) {
         // nested type
 
-        LPCUTF8 pszEnclosingName;
-        LPCUTF8 pszEnclosingNameSpace;
-        mdTypeDef enclEnclosing;
-
-        // Find this type's encloser's entry in the available table.
-        // We'll save a pointer to it in the new hash entry for this type.
-        BOOL fNestedEncl = SUCCEEDED(pMDImport->GetNestedClassProps(enclosing, &enclEnclosing));
-
-        EEClassHashTable::LookupContext sContext;
-        if (FAILED(pMDImport->GetNameOfTypeDef(enclosing, &pszEnclosingName, &pszEnclosingNameSpace)))
+        if (enclosing == COR_GLOBAL_PARENT_TOKEN)
         {
-            pszName = pszNameSpace = "Invalid TypeDef token";
-            pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_INVALID_TOKEN);
+            // Types nested in the <module> class can't be found by lookup.
+            return;
         }
-        if ((pBucket = pClassHash->GetValue(pszEnclosingNameSpace,
-                                            pszEnclosingName,
-                                            &ThrowawayData,
-                                            fNestedEncl,
-                                            &sContext)) != NULL) {
-            if (fNestedEncl) {
-                // Find entry for enclosing class - NOTE, this assumes that the
-                // enclosing class's TypeDef or ExportedType was inserted previously,
-                // which assumes that, when enuming TD's, we get the enclosing class first
-                while ((!CompareNestedEntryWithTypeDef(pMDImport,
-                                                       enclEnclosing,
-                                                       pClassHash,
-                                                       pBucket->GetEncloser())) &&
-                       (pBucket = pClassHash->FindNextNestedClass(pszEnclosingNameSpace,
-                                                                  pszEnclosingName,
-                                                                  &ThrowawayData,
-                                                                  &sContext)) != NULL);
+
+        COUNT_T classEntryIndex = RidFromToken(enclosing) - 1;
+        _ASSERTE(RidFromToken(enclosing) < RidFromToken(classdef));
+        if (classEntries->GetCount() > classEntryIndex)
+        {
+            pEncloser = (*classEntries)[classEntryIndex];
+        }
+        else
+        {
+            LPCUTF8 pszEnclosingName;
+            LPCUTF8 pszEnclosingNameSpace;
+            if (FAILED(pMDImport->GetNameOfTypeDef(enclosing, &pszEnclosingName, &pszEnclosingNameSpace)))
+            {
+                pszName = pszNameSpace = "Invalid TypeDef token";
+                pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_INVALID_TOKEN);
             }
+            NameHandle nameHandleEncloser(pModule, enclosing);
+            nameHandleEncloser.SetName(pszEnclosingNameSpace, pszEnclosingName);
 
-            if (!pBucket) // Enclosing type not found in hash table
-                pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_ENCLOSING_TYPE_NOT_FOUND);
+            pEncloser = pClassHash->FindByNameHandle(&nameHandleEncloser);
+        }
 
-            // In this hash table, if the lower bit is set, it means a Module, otherwise it means EEClass*
-            ThrowawayData = EEClassHashTable::CompressClassDef(classdef);
-            InsertValue(pClassHash, pClassCaseInsHash, pszNameSpace, pszName, ThrowawayData, pBucket, pamTracker);
+        if (pEncloser == NULL)
+        {
+            pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_ENCLOSING_TYPE_NOT_FOUND);
         }
     }
-    else {
-        // Don't add duplicate top-level classes.  Top-level classes are
-        // added to the beginning of the bucket, while nested classes are
-        // added to the end.  So, a duplicate top-level class could hide
-        // the previous type's EEClass* entry in the hash table.
-        EEClassHashEntry_t *pCaseInsEntry = NULL;
-        LPUTF8 pszLowerCaseNS = NULL;
-        LPUTF8 pszLowerCaseName = NULL;
+    insertedEntry = InsertValue(pClassHash, pClassCaseInsHash, pszNameSpace, pszName, EEClassHashTable::CompressClassDef(classdef), pEncloser, pamTracker);
 
-        if (pClassCaseInsHash) {
-            CreateCanonicallyCasedKey(pszNameSpace, pszName, &pszLowerCaseNS, &pszLowerCaseName);
-            pCaseInsEntry = pClassCaseInsHash->AllocNewEntry(pamTracker);
-        }
-
-        EEClassHashEntry_t *pEntry = pClassHash->FindItem(pszNameSpace, pszName, FALSE, NULL);
-        if (pEntry) {
-            HashDatum Data = pEntry->GetData();
-
-            if (((size_t)Data & EECLASSHASH_TYPEHANDLE_DISCR) &&
-                ((size_t)Data & EECLASSHASH_MDEXPORT_DISCR)) {
-
-                // it's an ExportedType - check the 'already seen' bit and if on, report a class loading exception
-                // otherwise, set it
-                if ((size_t)Data & EECLASSHASH_ALREADYSEEN)
-                    pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_MULT_TYPE_SAME_NAME);
-                else {
-                    Data = (HashDatum)((size_t)Data | EECLASSHASH_ALREADYSEEN);
-                    pEntry->SetData(Data);
-                }
-            }
-            else {
-                // We want to throw an exception for a duplicate typedef.
-                // However, this used to be allowed in 1.0/1.1, and some third-party DLLs have
-                // been obfuscated so that they have duplicate private typedefs.
-                // We must allow this for old assemblies for app compat reasons
-                pModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_MULT_TYPE_SAME_NAME);
-            }
-        }
-        else {
-            pEntry = pClassHash->AllocNewEntry(pamTracker);
-
-            CANNOTTHROWCOMPLUSEXCEPTION();
-            FAULT_FORBID();
-
-            pClassHash->InsertValueUsingPreallocatedEntry(pEntry, pszNameSpace, pszName, EEClassHashTable::CompressClassDef(classdef), NULL);
-
-            if (pClassCaseInsHash)
-                pClassCaseInsHash->InsertValueUsingPreallocatedEntry(pCaseInsEntry, pszLowerCaseNS, pszLowerCaseName, pEntry, pEntry->GetEncloser());
-        }
+    _ASSERTE(insertedEntry != NULL);
+    COUNT_T classEntryIndex = RidFromToken(classdef) - 1;
+    if (classEntryIndex < classEntries->GetCount())
+    {
+        (*classEntries)[classEntryIndex] = insertedEntry;
     }
 }
 
@@ -3861,15 +3571,18 @@ VOID ClassLoader::AddExportedTypeDontHaveLock(Module *pManifestModule,
     CONTRACTL_END
 
     CrstHolder ch(&m_AvailableClassLock);
+    SArray<EEClassHashEntry_t *> exportedEntries;
 
     AddExportedTypeHaveLock(
         pManifestModule,
         cl,
+        &exportedEntries,
         pamTracker);
 }
 
 VOID ClassLoader::AddExportedTypeHaveLock(Module *pManifestModule,
                                           mdExportedType cl,
+                                          SArray<EEClassHashEntry_t *>* exportedEntries,
                                           AllocMemTracker *pamTracker)
 {
     CONTRACTL
@@ -3882,6 +3595,10 @@ VOID ClassLoader::AddExportedTypeHaveLock(Module *pManifestModule,
     }
     CONTRACTL_END
 
+    EEClassHashTable *pClassHash = pManifestModule->GetAvailableClassHash();
+    EEClassHashTable *pClassCaseInsHash = pManifestModule->GetAvailableClassCaseInsHash();
+    EEClassHashEntry_t * insertedEntry = NULL;
+    EEClassHashEntry_t *pEncloser = NULL;
 
     mdToken mdImpl;
     LPCSTR pszName;
@@ -3898,92 +3615,55 @@ VOID ClassLoader::AddExportedTypeHaveLock(Module *pManifestModule,
         pManifestModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_INVALID_TOKEN);
     }
 
-    HashDatum ThrowawayData;
-
     if (TypeFromToken(mdImpl) == mdtExportedType)
     {
-        // nested class
-        LPCUTF8 pszEnclosingNameSpace;
-        LPCUTF8 pszEnclosingName;
-        mdToken nextImpl;
-        if (FAILED(pAsmImport->GetExportedTypeProps(
-            mdImpl,
-            &pszEnclosingNameSpace,
-            &pszEnclosingName,
-            &nextImpl,
-            NULL,   // type def
-            NULL))) // flags
+        COUNT_T exportedEntryIndex = RidFromToken(mdImpl) - 1;
+        _ASSERTE(RidFromToken(mdImpl) < RidFromToken(cl));
+        if (exportedEntries->GetCount() > exportedEntryIndex)
         {
-            pManifestModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_INVALID_TOKEN);
+            pEncloser = (*exportedEntries)[exportedEntryIndex];
+        }
+        else
+        {
+            // nested class
+            LPCUTF8 pszEnclosingNameSpace;
+            LPCUTF8 pszEnclosingName;
+            mdToken nextImpl;
+            if (FAILED(pAsmImport->GetExportedTypeProps(
+                mdImpl,
+                &pszEnclosingNameSpace,
+                &pszEnclosingName,
+                &nextImpl,
+                NULL,   // type def
+                NULL))) // flags
+            {
+                pManifestModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_INVALID_TOKEN);
+            }
+
+            NameHandle nameHandleEncloser(pManifestModule, mdImpl);
+            nameHandleEncloser.SetName(pszEnclosingNameSpace, pszEnclosingName);
+            pEncloser = pClassHash->FindByNameHandle(&nameHandleEncloser);
         }
 
-        // Find entry for enclosing class - NOTE, this assumes that the
-        // enclosing class's ExportedType was inserted previously, which assumes that,
-        // when enuming ExportedTypes, we get the enclosing class first
-        EEClassHashEntry_t *pBucket;
-        EEClassHashTable::LookupContext sContext;
-        if ((pBucket = pManifestModule->GetAvailableClassHash()->GetValue(pszEnclosingNameSpace,
-                                                                          pszEnclosingName,
-                                                                          &ThrowawayData,
-                                                                          TypeFromToken(nextImpl) == mdtExportedType,
-                                                                          &sContext)) != NULL) {
-            do {
-                // check to see if this is the correct class
-                if (EEClassHashTable::UncompressModuleAndClassDef(ThrowawayData) == mdImpl) {
-                    ThrowawayData = EEClassHashTable::CompressClassDef(cl);
-
-                    // we explicitly don't check for the case insensitive hash table because we know it can't have been created yet
-                    pManifestModule->GetAvailableClassHash()->InsertValue(pszNameSpace, pszName, ThrowawayData, pBucket, pamTracker);
-                }
-                pBucket = pManifestModule->GetAvailableClassHash()->FindNextNestedClass(pszEnclosingNameSpace, pszEnclosingName, &ThrowawayData, &sContext);
-            } while (pBucket);
+        if (pEncloser == NULL)
+        {
+            // This can happen if the enclosing type was defined in the manifest module, and was instead added by TypeDef instead.
+            return;
         }
-
-        // If the encloser is not in the hash table, this nested class
-        // was defined in the manifest module, so it doesn't need to be added
-        return;
     }
     else {
         // Defined in the manifest module - add to the hash table by TypeDef instead
         if (mdImpl == mdFileNil)
             return;
+    }
 
-        // Don't add duplicate top-level classes
-        // In this hash table, if the lower bit is set, it means a Module, otherwise it means EEClass*
-        ThrowawayData = EEClassHashTable::CompressClassDef(cl);
-        // ThrowawayData is an IN OUT param. Going in its the pointer to the new value if the entry needs
-        // to be inserted. The OUT param points to the value stored in the hash table.
-        BOOL bFound;
-        pManifestModule->GetAvailableClassHash()->InsertValueIfNotFound(pszNameSpace, pszName, &ThrowawayData, NULL, FALSE, &bFound, pamTracker);
-        if (bFound) {
+    insertedEntry = InsertValue(pClassHash, pClassCaseInsHash, pszNameSpace, pszName, EEClassHashTable::CompressClassDef(cl), pEncloser, pamTracker);
 
-            // Check for duplicate ExportedTypes
-            // Let it slide if it's pointing to the same type
-            mdToken foundTypeImpl;
-            if ((size_t)ThrowawayData & EECLASSHASH_MDEXPORT_DISCR)
-            {
-                mdExportedType foundExportedType = EEClassHashTable::UncompressModuleAndClassDef(ThrowawayData);
-                if (FAILED(pAsmImport->GetExportedTypeProps(
-                    foundExportedType,
-                    NULL,   // namespace
-                    NULL,   // name
-                    &foundTypeImpl,
-                    NULL,   // TypeDef
-                    NULL))) // flags
-                {
-                    pManifestModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_INVALID_TOKEN);
-                }
-            }
-            else
-            {
-                foundTypeImpl = mdFileNil;
-            }
-
-            if (mdImpl != foundTypeImpl)
-            {
-                pManifestModule->GetAssembly()->ThrowBadImageException(pszNameSpace, pszName, BFA_MULT_TYPE_SAME_NAME);
-            }
-        }
+    _ASSERTE(insertedEntry != NULL);
+    COUNT_T exportedEntryIndex = RidFromToken(cl) - 1;
+    if (exportedEntryIndex < exportedEntries->GetCount())
+    {
+        (*exportedEntries)[exportedEntryIndex] = insertedEntry;
     }
 }
 
@@ -4382,9 +4062,6 @@ void DECLSPEC_NORETURN ThrowTypeAccessException(MethodDesc* pCallerMD,
 // Arguments:
 //    pAccessingAssembly    - The assembly requesting access to the internal member
 //    pTargetAssembly       - The assembly which contains the target member
-//    pOptionalTargetField  - Internal field being accessed OR
-//    pOptionalTargetMethod - Internal type being accessed OR
-//    pOptionalTargetType   - Internal type being accessed
 //
 // Return Value:
 //    TRUE if pTargetAssembly is pAccessingAssembly, or if pTargetAssembly allows
@@ -4392,10 +4069,7 @@ void DECLSPEC_NORETURN ThrowTypeAccessException(MethodDesc* pCallerMD,
 //
 
 static BOOL AssemblyOrFriendAccessAllowed(Assembly       *pAccessingAssembly,
-                                          Assembly       *pTargetAssembly,
-                                          FieldDesc      *pOptionalTargetField,
-                                          MethodDesc     *pOptionalTargetMethod,
-                                          MethodTable    *pOptionalTargetType)
+                                          Assembly       *pTargetAssembly)
 {
     CONTRACTL
     {
@@ -4403,8 +4077,6 @@ static BOOL AssemblyOrFriendAccessAllowed(Assembly       *pAccessingAssembly,
         GC_TRIGGERS;
         PRECONDITION(CheckPointer(pAccessingAssembly));
         PRECONDITION(CheckPointer(pTargetAssembly));
-        PRECONDITION(pOptionalTargetField != NULL || pOptionalTargetMethod != NULL || pOptionalTargetType != NULL);
-        PRECONDITION(pOptionalTargetField == NULL || pOptionalTargetMethod == NULL);
     }
     CONTRACTL_END;
 
@@ -4417,18 +4089,9 @@ static BOOL AssemblyOrFriendAccessAllowed(Assembly       *pAccessingAssembly,
     {
         return TRUE;
     }
-
-    else if (pOptionalTargetField != NULL)
-    {
-        return pTargetAssembly->GrantsFriendAccessTo(pAccessingAssembly, pOptionalTargetField);
-    }
-    else if (pOptionalTargetMethod != NULL)
-    {
-        return pTargetAssembly->GrantsFriendAccessTo(pAccessingAssembly, pOptionalTargetMethod);
-    }
     else
     {
-        return pTargetAssembly->GrantsFriendAccessTo(pAccessingAssembly, pOptionalTargetType);
+        return pTargetAssembly->GrantsFriendAccessTo(pAccessingAssembly);
     }
 }
 
@@ -4561,10 +4224,7 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
             _ASSERTE(pCurrentAssembly != NULL);
 
             if (AssemblyOrFriendAccessAllowed(pCurrentAssembly,
-                                              pTargetAssembly,
-                                              NULL,
-                                              NULL,
-                                              pTargetClass))
+                                              pTargetAssembly))
             {
                 return TRUE;
             }
@@ -4604,7 +4264,7 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
             // protection, we can fail the request now.  Otherwise we can check to make sure a public member
             // of the outer class is allowed, since we have satisfied the target's accessibility rules.
 
-            if (AssemblyOrFriendAccessAllowed(pContext->GetCallerAssembly(), pTargetAssembly, NULL, NULL, pTargetClass))
+            if (AssemblyOrFriendAccessAllowed(pContext->GetCallerAssembly(), pTargetAssembly))
                 dwProtection = (dwProtection == tdNestedFamANDAssem) ? mdFamily : mdPublic;
             else if (dwProtection == tdNestedFamORAssem)
                 dwProtection = mdFamily;
@@ -4628,7 +4288,6 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
         pTargetAssembly,
         dwProtection,
         NULL,
-        NULL,
         accessCheckOptions);
 } // BOOL ClassLoader::CanAccessClass()
 
@@ -4645,7 +4304,6 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
     DWORD               dwMemberAccess,                 // Member access flags of the desired target member (as method bits).
     MethodDesc*         pOptionalTargetMethod,          // The target method; NULL if the target is a not a method or
                                                         // there is no need to check the method's instantiation.
-    FieldDesc*          pOptionalTargetField,           // or The desired field; if NULL, return TRUE
     const AccessCheckOptions & accessCheckOptions)      // = s_NormalAccessChecks
 {
     CONTRACT(BOOL)
@@ -4665,7 +4323,6 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
                            pTargetAssembly,
                            dwMemberAccess,
                            pOptionalTargetMethod,
-                           pOptionalTargetField,
                            // Suppress exceptions for nested classes since this is not a hard-failure,
                            // and we can do additional checks
                            accessCheckOptionsNoThrow))
@@ -4698,7 +4355,6 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
                                  pTargetAssembly,
                                  dwMemberAccess,
                                  pOptionalTargetMethod,
-                                 pOptionalTargetField,
                                  accessCheckOptionsNoThrow);
         }
 
@@ -4728,7 +4384,6 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
     DWORD                   dwMemberAccess,         // Member access flags of the desired target member (as method bits).
     MethodDesc*             pOptionalTargetMethod,  // The target method; NULL if the target is a not a method or
                                                     // there is no need to check the method's instantiation.
-    FieldDesc*              pOptionalTargetField,   // target field, NULL if there is no Target field
     const AccessCheckOptions & accessCheckOptions
     )
 {
@@ -4762,9 +4417,6 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
     {
         return FALSE;
     }
-
-    // pOptionalTargetMethod and pOptionalTargetField can never be NULL at the same time.
-    _ASSERTE(pOptionalTargetMethod == NULL || pOptionalTargetField == NULL);
 
     // Perform transparency checks
     // We don't need to do transparency check against pTargetMT here because
@@ -4817,10 +4469,7 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
         _ASSERTE(pCurrentAssembly != NULL);
 
         const BOOL fAssemblyOrFriendAccessAllowed = AssemblyOrFriendAccessAllowed(pCurrentAssembly,
-                                                                                  pTargetAssembly,
-                                                                                  pOptionalTargetField,
-                                                                                  pOptionalTargetMethod,
-                                                                                  pTargetMT);
+                                                                                  pTargetAssembly);
 
         if ((pTargetMT == NULL || IsMdAssem(dwMemberAccess) || IsMdFamORAssem(dwMemberAccess)) &&
             fAssemblyOrFriendAccessAllowed)

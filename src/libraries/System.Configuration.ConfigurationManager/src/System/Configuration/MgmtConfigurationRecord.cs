@@ -335,6 +335,7 @@ namespace System.Configuration
 
             string configKey = section.SectionInformation.SectionName;
             SectionRecord sectionRecord = GetSectionRecord(configKey, false);
+            Debug.Assert(sectionRecord != null);
             if (sectionRecord.HasLocationInputs)
             {
                 SectionInput input = sectionRecord.LastLocationInput;
@@ -1212,7 +1213,7 @@ namespace System.Configuration
                     );
             }
 
-            if ((configSection.SectionInformation.OverrideModeDefaultSetting.IsDefaultForSection == false) ||
+            if (!configSection.SectionInformation.OverrideModeDefaultSetting.IsDefaultForSection ||
                 (saveMode == ConfigurationSaveMode.Full) ||
                 ((saveMode == ConfigurationSaveMode.Modified) &&
                 configSection.SectionInformation.OverrideModeDefaultModified))

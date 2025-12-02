@@ -118,6 +118,32 @@ namespace System.IO.Compression
             }
         }
 
+        /// <summary>
+        /// Rewinds the underlying stream to the exact end of the compressed data if there are unconsumed bytes.
+        /// This is called when decompression finishes to reset the stream position.
+        /// </summary>
+        private void TryRewindStream(Stream stream)
+        {
+            Debug.Assert(stream != null);
+            Debug.Assert(_mode == CompressionMode.Decompress);
+            Debug.Assert(stream.CanSeek);
+
+            // Check if there are unconsumed bytes in the buffer
+            int unconsumedBytes = _bufferCount;
+            if (unconsumedBytes > 0)
+            {
+                try
+                {
+                    // Rewind the stream to the exact end of the compressed data
+                    stream.Seek(-unconsumedBytes, SeekOrigin.Current);
+                }
+                catch
+                {
+                    // If seeking fails, we don't want to throw during disposal
+                }
+            }
+        }
+
         private void ReleaseStateForDispose()
         {
             _stream = null!;
@@ -128,7 +154,7 @@ namespace System.IO.Compression
             if (buffer != null)
             {
                 _buffer = null!;
-                if (!AsyncOperationIsActive)
+                if (!_activeAsyncOperation)
                 {
                     ArrayPool<byte>.Shared.Return(buffer);
                 }
@@ -138,7 +164,14 @@ namespace System.IO.Compression
         /// <summary>Gets a reference to the underlying stream.</summary>
         /// <value>A stream object that represents the underlying stream.</value>
         /// <exception cref="System.ObjectDisposedException">The underlying stream is closed.</exception>
-        public Stream BaseStream => _stream;
+        public Stream BaseStream
+        {
+            get
+            {
+                EnsureNotDisposed();
+                return _stream;
+            }
+        }
         /// <summary>Gets a value indicating whether the stream supports reading while decompressing a file.</summary>
         /// <value><see langword="true" /> if the <see cref="System.IO.Compression.CompressionMode" /> value is <see langword="Decompress," /> and the underlying stream supports reading and is not closed; otherwise, <see langword="false" />.</value>
         public override bool CanRead => _mode == CompressionMode.Decompress && _stream != null && _stream.CanRead;
@@ -170,18 +203,19 @@ namespace System.IO.Compression
         /// <param name="value">The length of the stream.</param>
         public override void SetLength(long value) => throw new NotSupportedException();
 
-        private int _activeAsyncOperation; // 1 == true, 0 == false
-        private bool AsyncOperationIsActive => _activeAsyncOperation != 0;
+        private volatile bool _activeAsyncOperation;
 
         private void EnsureNoActiveAsyncOperation()
         {
-            if (AsyncOperationIsActive)
+            if (_activeAsyncOperation)
+            {
                 ThrowInvalidBeginCall();
+            }
         }
 
         private void AsyncOperationStarting()
         {
-            if (Interlocked.Exchange(ref _activeAsyncOperation, 1) != 0)
+            if (Interlocked.Exchange(ref _activeAsyncOperation, true))
             {
                 ThrowInvalidBeginCall();
             }
@@ -189,8 +223,8 @@ namespace System.IO.Compression
 
         private void AsyncOperationCompleting()
         {
-            Debug.Assert(_activeAsyncOperation == 1);
-            Volatile.Write(ref _activeAsyncOperation, 0);
+            Debug.Assert(_activeAsyncOperation);
+            _activeAsyncOperation = false;
         }
 
         private static void ThrowInvalidBeginCall() =>

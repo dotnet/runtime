@@ -7,16 +7,14 @@ using System.Net.Test.Common;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public class ClientWebSocketOptionsTests : ClientWebSocketTestBase
+    public class ClientWebSocketOptionsTests(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
-        public ClientWebSocketOptionsTests(ITestOutputHelper output) : base(output) { }
-
         [ConditionalFact(nameof(WebSocketsSupported))]
         [SkipOnPlatform(TestPlatforms.Browser, "Credentials not supported on browser")]
         public static void UseDefaultCredentials_Roundtrips()
@@ -52,7 +50,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             for (int i = 0; i < 3; i++) // Connect and disconnect multiple times to exercise shared handler on netcoreapp
             {
-                var ws = await WebSocketHelper.Retry(_output, async () =>
+                var ws = await WebSocketHelper.Retry(async () =>
                 {
                     var cws = new ClientWebSocket();
                     cws.Options.Proxy = null;
@@ -72,19 +70,13 @@ namespace System.Net.WebSockets.Client.Tests
             string proxyServerUri = System.Net.Test.Common.Configuration.WebSockets.ProxyServerUri;
             if (string.IsNullOrEmpty(proxyServerUri))
             {
-                _output.WriteLine("Skipping test...no proxy server defined.");
-                return;
+                throw new SkipTestException("No proxy server defined.");
             }
 
             _output.WriteLine($"ProxyServer: {proxyServerUri}");
 
             IWebProxy proxy = new WebProxy(new Uri(proxyServerUri));
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(
-                server,
-                TimeOutMilliseconds,
-                _output,
-                default(TimeSpan),
-                proxy))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, o => o.Proxy = proxy))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
                 Assert.Equal(WebSocketState.Open, cws.State);
@@ -119,7 +111,7 @@ namespace System.Net.WebSockets.Client.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("receiveBufferSize", () => cws.Options.SetBuffer(0, 0, new ArraySegment<byte>(new byte[1])));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("receiveBufferSize", () => cws.Options.SetBuffer(0, minSendBufferSize, new ArraySegment<byte>(new byte[1])));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sendBufferSize", () => cws.Options.SetBuffer(minReceiveBufferSize, 0, new ArraySegment<byte>(new byte[1])));
-            AssertExtensions.Throws<ArgumentNullException>("buffer.Array", () => cws.Options.SetBuffer(minReceiveBufferSize, minSendBufferSize, default(ArraySegment<byte>)));
+            AssertExtensions.Throws<ArgumentNullException>("buffer.Array", () => cws.Options.SetBuffer(minReceiveBufferSize, minSendBufferSize, default));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(bufferName, () => cws.Options.SetBuffer(minReceiveBufferSize, minSendBufferSize, new ArraySegment<byte>(new byte[0])));
         }
 
@@ -140,6 +132,25 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Equal(Timeout.InfiniteTimeSpan, cws.Options.KeepAliveInterval);
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => cws.Options.KeepAliveInterval = TimeSpan.MinValue);
+        }
+
+        [ConditionalFact(nameof(WebSocketsSupported))]
+        [SkipOnPlatform(TestPlatforms.Browser, "KeepAlive not supported on browser")]
+        public static void KeepAliveTimeout_Roundtrips()
+        {
+            var cws = new ClientWebSocket();
+            Assert.True(cws.Options.KeepAliveTimeout == Timeout.InfiniteTimeSpan);
+
+            cws.Options.KeepAliveTimeout = TimeSpan.Zero;
+            Assert.Equal(TimeSpan.Zero, cws.Options.KeepAliveTimeout);
+
+            cws.Options.KeepAliveTimeout = TimeSpan.MaxValue;
+            Assert.Equal(TimeSpan.MaxValue, cws.Options.KeepAliveTimeout);
+
+            cws.Options.KeepAliveTimeout = Timeout.InfiniteTimeSpan;
+            Assert.Equal(Timeout.InfiniteTimeSpan, cws.Options.KeepAliveTimeout);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => cws.Options.KeepAliveTimeout = TimeSpan.MinValue);
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]

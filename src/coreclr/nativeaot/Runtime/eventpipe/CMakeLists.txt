@@ -27,9 +27,14 @@ set (EventingHeaders
   ${GENERATED_INCLUDE_DIR}/clretwallmain.cpp
 )
 
+if(CMAKE_CROSSCOMPILING)
+  set(GEN_EVENTING_TARGETOS --targetos)
+  set(GEN_EVENTING_TARGETOS_ARG ${CLR_CMAKE_TARGET_OS})
+endif()
+
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/aot_eventing_headers.timestamp
-  COMMAND ${Python_EXECUTABLE} ${GENERATE_PLAT_AGNOSTIC_SCRIPT} --man ${EVENT_MANIFEST} --incdir ${GENERATED_INCLUDE_DIR} --inc ${EVENT_INCLUSION_FILE} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h  --runtimeflavor nativeaot ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
+  COMMAND ${Python_EXECUTABLE} ${GENERATE_PLAT_AGNOSTIC_SCRIPT} --man ${EVENT_MANIFEST} --incdir ${GENERATED_INCLUDE_DIR} --inc ${EVENT_INCLUSION_FILE} ${GEN_EVENTING_TARGETOS} ${GEN_EVENTING_TARGETOS_ARG} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h  --runtimeflavor nativeaot ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
   COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/aot_eventing_headers.timestamp
   DEPENDS ${EVENT_MANIFEST} ${GENERATE_PLAT_AGNOSTIC_SCRIPT}
   VERBATIM
@@ -106,89 +111,11 @@ endif()
 
 set(AOT_EVENTPIPE_SHIM_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
-set (CONTAINER_SOURCES "")
-set (CONTAINER_HEADERS "")
-set (MINIPAL_SOURCES "")
 set (EVENTPIPE_SOURCES "")
-set (EVENTPIPE_HEADERS "")
-
-# Use TCP for EventPipe on mobile platforms
-if (CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID)
-  set(FEATURE_PERFTRACING_PAL_TCP 1)
-  set(FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT 1)
-endif()
-
-set (SHARED_CONTAINERS_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/containers")
-set (SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe")
-set (SHARED_MINIPAL_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/minipal")
-include (${SHARED_EVENTPIPE_SOURCE_PATH}/eventpipe.cmake)
-include (${SHARED_CONTAINERS_SOURCE_PATH}/containers.cmake)
-
-list(APPEND MINIPAL_SOURCES
-  utf8.c
-)
-
-if(CLR_CMAKE_HOST_WIN32)
-  list(APPEND SHARED_DIAGNOSTIC_SERVER_SOURCES
-    ds-ipc-pal-namedpipe.c
-  )
-
-  list(APPEND SHARED_DIAGNOSTIC_SERVER_HEADERS
-    ds-ipc-pal-namedpipe.h
-  )
-endif(CLR_CMAKE_HOST_WIN32)
-
-if(CLR_CMAKE_HOST_UNIX)
-  list(APPEND SHARED_DIAGNOSTIC_SERVER_SOURCES
-    ds-ipc-pal-socket.c
-  )
-
-  list(APPEND SHARED_DIAGNOSTIC_SERVER_HEADERS
-    ds-ipc-pal-socket.h
-  )
-
-  include(${CLR_SRC_NATIVE_DIR}/minipal/configure.cmake)
-  list(APPEND MINIPAL_SOURCES
-    random.c
-  )
-
-endif(CLR_CMAKE_HOST_UNIX)
-
-list(APPEND EVENTPIPE_SOURCES
-  ${SHARED_EVENTPIPE_SOURCES}
-  ${SHARED_DIAGNOSTIC_SERVER_SOURCES}
-)
-
-list(APPEND EVENTPIPE_HEADERS
-  ${SHARED_EVENTPIPE_HEADERS}
-  ${SHARED_DIAGNOSTIC_SERVER_HEADERS}
-)
-
-addprefix(CONTAINER_SOURCES ${SHARED_CONTAINERS_SOURCE_PATH} "${SHARED_CONTAINER_SOURCES}")
-addprefix(CONTAINER_HEADERS ${SHARED_CONTAINERS_SOURCE_PATH} "${SHARED_CONTAINER_HEADERS}")
-addprefix(MINIPAL_SOURCES ${SHARED_MINIPAL_SOURCE_PATH} "${MINIPAL_SOURCES}")
-
-addprefix(EVENTPIPE_SOURCES ${SHARED_EVENTPIPE_SOURCE_PATH} "${EVENTPIPE_SOURCES}")
-addprefix(EVENTPIPE_HEADERS ${SHARED_EVENTPIPE_SOURCE_PATH} "${EVENTPIPE_HEADERS}")
-
-set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ep-sources.c PROPERTIES COMPILE_DEFINITIONS EP_FORCE_INCLUDE_SOURCE_FILES)
-set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ds-sources.c PROPERTIES COMPILE_DEFINITIONS DS_FORCE_INCLUDE_SOURCE_FILES)
-
-set_source_files_properties(${CONTAINER_SOURCES} PROPERTIES LANGUAGE CXX)
-set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES LANGUAGE CXX)
-
-if(CLR_CMAKE_HOST_UNIX)
-    set_source_files_properties(${CONTAINER_SOURCES} PROPERTIES COMPILE_OPTIONS -xc++)
-    set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES COMPILE_OPTIONS -xc++)
-endif(CLR_CMAKE_HOST_UNIX)
-
-if (CLR_CMAKE_TARGET_WIN32)
-    set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
-endif()
 
 list(APPEND AOT_EVENTPIPE_SHIM_SOURCES
   ${AOT_EVENTPIPE_SHIM_DIR}/ep-rt-aot.cpp
-  ${AOT_EVENTPIPE_SHIM_DIR}/ds-rt-aot.cpp  
+  ${AOT_EVENTPIPE_SHIM_DIR}/ds-rt-aot.cpp
 )
 
 list(APPEND AOT_EVENTPIPE_SHIM_HEADERS
@@ -201,58 +128,74 @@ list(APPEND AOT_EVENTPIPE_SHIM_HEADERS
 
 
 list(APPEND AOT_EVENTPIPE_MANAGED_TO_NATIVE_SOURCES
-   ${RUNTIME_DIR}/eventpipeinternal.cpp
-   ${RUNTIME_DIR}/EnabledEventPipeInterface.cpp
-   ${RUNTIME_DIR}/runtimeeventinternal.cpp
+   ${NATIVEAOT_RUNTIME_DIR}/eventpipeinternal.cpp
+   ${NATIVEAOT_RUNTIME_DIR}/EnabledEventPipeInterface.cpp
+   ${NATIVEAOT_RUNTIME_DIR}/runtimeeventinternal.cpp
 )
 
 if (FEATURE_EVENT_TRACE)
   list(APPEND AOT_EVENTTRACE_SOURCES
-    ${RUNTIME_DIR}/eventtrace.cpp
-    ${RUNTIME_DIR}/profheapwalkhelper.cpp
+    ${NATIVEAOT_RUNTIME_DIR}/eventtrace.cpp
+    ${NATIVEAOT_RUNTIME_DIR}/eventtrace_bulktype.cpp
+    ${NATIVEAOT_RUNTIME_DIR}/eventtrace_gcheap.cpp
+    ${NATIVEAOT_RUNTIME_DIR}/profheapwalkhelper.cpp
   )
 
-  # These are carry-overs from .NET Native and only included for ETW currently
-  #   bulktype : directly emits via ETW with EventWrite
-  #   gcheap : GCHeapDump, GCHeapSurvivalAndMovement - not prioritizing for nativeaot yet
-  if (FEATURE_ETW)
-    list(APPEND AOT_EVENTTRACE_SOURCES
-      ${RUNTIME_DIR}/eventtrace_bulktype.cpp
-      ${RUNTIME_DIR}/eventtrace_gcheap.cpp
-    )
-  endif()
-
   if(CLR_CMAKE_TARGET_WIN32)
-    set_source_files_properties(${GEN_EVENTPIPE_PROVIDER_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
-    set_source_files_properties(${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
-    set_source_files_properties(${AOT_EVENTTRACE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
+    set_source_files_properties(${GEN_EVENTPIPE_PROVIDER_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${NATIVEAOT_RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
+    set_source_files_properties(${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${NATIVEAOT_RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
+    set_source_files_properties(${AOT_EVENTTRACE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${NATIVEAOT_RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
   endif()
 endif()
 
+# The NativeAOT EventPipe runtime is C++, but the EventPipe and DiagnosticServer sources are C.
+# Forcibly override them to build as C++.
+get_property(diagnosticserver_sources TARGET dn-diagnosticserver PROPERTY INTERFACE_SOURCES)
+get_property(diagnosticserver_pal_sources TARGET dn-diagnosticserver-pal PROPERTY INTERFACE_SOURCES)
+get_property(eventpipe_sources TARGET dn-eventpipe PROPERTY INTERFACE_SOURCES)
+set_source_files_properties(${diagnosticserver_sources} ${diagnosticserver_pal_sources} ${eventpipe_sources} PROPERTIES LANGUAGE CXX)
 
+add_library(eventpipe-shared-objects OBJECT)
+target_link_libraries(eventpipe-shared-objects PRIVATE dn-diagnosticserver dn-eventpipe dn-diagnosticserver-pal)
+# Build EventPipe and DiagnosticServer as unity-builds for better inlining.
+set_target_properties(eventpipe-shared-objects PROPERTIES
+  UNITY_BUILD ON
+  UNITY_BUILD_BATCH_SIZE 0
+  COMPILE_PDB_NAME "eventpipe-shared-objects"
+  COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>"
+)
+if (CLR_CMAKE_TARGET_WIN32)
+    target_compile_options(eventpipe-shared-objects PRIVATE
+        "/FI${NATIVEAOT_RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h")
+
+    # Install the compile PDB for the eventpipe unity builds.
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/eventpipe-shared-objects.pdb" DESTINATION aotsdk COMPONENT nativeaot)
+    # For the container library, we need to produce a compile PDB and install it
+    set_target_properties(dn-containers-no-lto PROPERTIES
+        COMPILE_PDB_NAME "dn-containers"
+        COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/dn-containers.pdb" DESTINATION aotsdk COMPONENT nativeaot)
+endif()
 
 list(APPEND EVENTPIPE_SOURCES
   ${AOT_EVENTPIPE_SHIM_SOURCES}
-  ${AOT_EVENTPIPE_SHIM_HEADERS}
   ${AOT_EVENTPIPE_MANAGED_TO_NATIVE_SOURCES}
   ${AOT_EVENTTRACE_SOURCES}
-  ${SHARED_EVENTPIPE_CONFIG_HEADERS}
   ${GEN_EVENTPIPE_PROVIDER_SOURCES}
   ${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES}
-  ${CONTAINER_SOURCES}
-  ${CONTAINER_HEADERS}
-  ${MINIPAL_SOURCES}
 )
 
 list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
-  ${RUNTIME_DIR}/DisabledEventPipeInterface.cpp
-  ${RUNTIME_DIR}/disabledeventpipeinternal.cpp
-  ${RUNTIME_DIR}/disabledeventtrace.cpp
-  ${RUNTIME_DIR}/disabledruntimeeventinternal.cpp
+  ${NATIVEAOT_RUNTIME_DIR}/DisabledEventPipeInterface.cpp
+  ${NATIVEAOT_RUNTIME_DIR}/disabledeventpipeinternal.cpp
+  ${NATIVEAOT_RUNTIME_DIR}/disabledeventtrace.cpp
+  ${NATIVEAOT_RUNTIME_DIR}/disabledruntimeeventinternal.cpp
   ${GEN_EVENTPIPE_PLAT_AGNOSTIC_DISABLED_SOURCES}
 )
 
 add_library(eventpipe-enabled STATIC ${EVENTPIPE_SOURCES})
+
+target_link_libraries(eventpipe-enabled PRIVATE eventpipe-shared-objects dn-containers-no-lto)
 add_dependencies(eventpipe-enabled aot_eventing_headers)
 if(CLR_CMAKE_TARGET_WIN32)
   add_dependencies(eventpipe-enabled aot_etw_headers)
@@ -261,19 +204,5 @@ endif()
 add_library(eventpipe-disabled STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
 add_dependencies(eventpipe-disabled aot_eventing_headers)
 
-if (CLR_CMAKE_TARGET_WIN32)
-  add_library(eventpipe-enabled.GuardCF STATIC ${EVENTPIPE_SOURCES})
-  add_dependencies(eventpipe-enabled.GuardCF aot_eventing_headers)
-  add_dependencies(eventpipe-enabled.GuardCF aot_etw_headers)
-  add_library(eventpipe-disabled.GuardCF STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
-  add_dependencies(eventpipe-disabled.GuardCF aot_eventing_headers)
-  set_target_properties(eventpipe-enabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
-  set_target_properties(eventpipe-disabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
-endif (CLR_CMAKE_TARGET_WIN32)
-
 install_static_library(eventpipe-enabled aotsdk nativeaot)
 install_static_library(eventpipe-disabled aotsdk nativeaot)
-if (CLR_CMAKE_TARGET_WIN32)
-  install_static_library(eventpipe-enabled.GuardCF aotsdk nativeaot)
-  install_static_library(eventpipe-disabled.GuardCF aotsdk nativeaot)
-endif (CLR_CMAKE_TARGET_WIN32)

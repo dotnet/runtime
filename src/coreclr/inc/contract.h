@@ -140,7 +140,6 @@
 //              ModeViolation
 //              FaultViolation
 //              FaultNotFatal
-//              HostViolation
 //              LoadsTypeViolation
 //              TakesLockViolation
 //
@@ -233,9 +232,7 @@
 
 #include "specstrings.h"
 #include "clrtypes.h"
-#include "malloc.h"
 #include "check.h"
-#include "debugreturn.h"
 #include "staticcontract.h"
 
 #ifdef ENABLE_CONTRACTS_DATA
@@ -299,14 +296,8 @@ struct TakenLockInfo
 
 enum DbgStateLockType
 {
-    // EE locks (used to sync EE structures).  These do not include
-    // CRST_HOST_BREAKABLE Crsts, and are thus not held while managed
-    // code runs
+    // EE locks (used to sync EE structures).
     kDbgStateLockType_EE,
-
-    // CRST_HOST_BREAKABLE Crsts.  These can be held while arbitrary
-    // managed code runs.
-    kDbgStateLockType_HostBreakableCrst,
 
     // User locks (e.g., Monitor.Enter, ReaderWriterLock class)
     kDbgStateLockType_User,
@@ -378,7 +369,7 @@ public:
 
 #define CONTRACT_BITMASK_OK_TO_THROW          0x1 << 0
 #define CONTRACT_BITMASK_FAULT_FORBID         0x1 << 1
-#define CONTRACT_BITMASK_HOSTCALLS            0x1 << 2
+// Unused                                     0x1 << 2
 #define CONTRACT_BITMASK_SOTOLERANT           0x1 << 3
 #define CONTRACT_BITMASK_DEBUGONLY            0x1 << 4
 #define CONTRACT_BITMASK_SONOTMAINLINE        0x1 << 5
@@ -422,7 +413,6 @@ public:
         // By default, GetThread() is perfectly fine to call
         // By default, it's ok to take a lock (or call someone who does)
         m_flags             = CONTRACT_BITMASK_OK_TO_THROW|
-                              CONTRACT_BITMASK_HOSTCALLS|
                               CONTRACT_BITMASK_SOTOLERANT|
                               CONTRACT_BITMASK_OK_TO_LOCK|
                               CONTRACT_BITMASK_OK_TO_RETAKE_LOCK;
@@ -510,30 +500,6 @@ public:
     void ResetFaultForbid()
     {
         CONTRACT_BITMASK_RESET(CONTRACT_BITMASK_FAULT_FORBID);
-    }
-
-    //--//
-    BOOL IsHostCaller()
-    {
-        return CONTRACT_BITMASK_IS_SET(CONTRACT_BITMASK_HOSTCALLS);
-    }
-
-    void SetHostCaller()
-    {
-        CONTRACT_BITMASK_SET(CONTRACT_BITMASK_HOSTCALLS);
-    }
-
-
-    BOOL SetHostCaller(BOOL value)
-    {
-        BOOL prevState = CONTRACT_BITMASK_IS_SET(CONTRACT_BITMASK_HOSTCALLS);
-        CONTRACT_BITMASK_UPDATE(CONTRACT_BITMASK_HOSTCALLS,value);
-        return prevState;
-    }
-
-    void ResetHostCaller()
-    {
-        CONTRACT_BITMASK_RESET(CONTRACT_BITMASK_HOSTCALLS);
     }
 
     //--//
@@ -737,7 +703,6 @@ public:
     // we don't recreated one on exit if its been deleted.
     DEBUG_NOINLINE void Enter()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_DEBUG_ONLY;
 
         m_pClrDebugState = GetClrDebugState();
@@ -750,7 +715,6 @@ public:
 
     DEBUG_NOINLINE void Leave()
     {
-        SCAN_SCOPE_END;
         STATIC_CONTRACT_DEBUG_ONLY;
 
         m_pClrDebugState = CheckClrDebugState();
@@ -778,7 +742,6 @@ class AutoCleanupDebugOnlyCodeHolder : public DebugOnlyCodeHolder
 public:
     DEBUG_NOINLINE AutoCleanupDebugOnlyCodeHolder()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_DEBUG_ONLY;
 
         Enter();
@@ -786,8 +749,6 @@ public:
 
     DEBUG_NOINLINE ~AutoCleanupDebugOnlyCodeHolder()
     {
-        SCAN_SCOPE_END;
-
         Leave();
     };
 };
@@ -896,11 +857,8 @@ class BaseContract
 
         SO_MAINLINE_No          = 0x00000800,  // code is not part of our mainline SO scenario
 
-        // Any place where we can't safely call into the host should have a HOST_NoCalls contract
-        HOST_Mask               = 0x00003000,
-        HOST_Calls              = 0x00002000,
-        HOST_NoCalls            = 0x00001000,
-        HOST_Disabled           = 0x00000000,   // the default
+        // Unused               = 0x00002000,
+        // Unused               = 0x00001000,
 
         // These enforce the CAN_TAKE_LOCK / CANNOT_TAKE_LOCK contracts
         CAN_TAKE_LOCK_Mask      = 0x00060000,
@@ -920,7 +878,7 @@ class BaseContract
         LOADS_TYPE_Disabled     = 0x00000000,   // the default
 
         ALL_Disabled            = THROWS_Disabled|GC_Disabled|FAULT_Disabled|MODE_Disabled|LOADS_TYPE_Disabled|
-                                  HOST_Disabled|CAN_TAKE_LOCK_Disabled|CAN_RETAKE_LOCK_No_Disabled
+                                  CAN_TAKE_LOCK_Disabled|CAN_RETAKE_LOCK_No_Disabled
 
     };
 
@@ -1124,7 +1082,6 @@ enum ContractViolationBits
     FaultNotFatal   = 0x00000010,  // suppress INJECT_FAULT but not fault injection by harness
     LoadsTypeViolation      = 0x00000040,  // suppress LOADS_TYPE tags in this scope
     TakesLockViolation      = 0x00000080,  // suppress CAN_TAKE_LOCK tags in this scope
-    HostViolation           = 0x00000100,  // suppress HOST_CALLS tags in this scope
 
     //These are not violation bits. We steal some bits out of the violation mask to serve as
     // general flag bits.
@@ -1191,7 +1148,6 @@ typedef __SafeToUsePostCondition __PostConditionOK;
     Contract::RanPostconditions ___ran(__FUNCTION__);                   \
     Contract::Operation ___op = Contract::Setup;                        \
     BOOL ___contract_enabled = FALSE;                                   \
-    DEBUG_ASSURE_NO_RETURN_BEGIN(CONTRACT)                              \
     ___contract_enabled = Contract::EnforceContract();                  \
     enum {___disabled = 0};                                             \
     if (!___contract_enabled)                                           \
@@ -1212,10 +1168,8 @@ typedef __SafeToUsePostCondition __PostConditionOK;
             }                                                           \
             else                                                        \
             {                                                           \
-                DEBUG_OK_TO_RETURN_BEGIN(CONTRACT)                      \
               ___run_return:                                            \
                 return _returnexp;                                      \
-                DEBUG_OK_TO_RETURN_END(CONTRACT)                        \
             }                                                           \
         }                                                               \
         if (0)                                                          \
@@ -1257,7 +1211,6 @@ typedef __SafeToUsePostCondition __PostConditionOK;
         Contract::Returner<_returntype> ___returner(RETVAL);                \
         Contract::RanPostconditions ___ran(__FUNCTION__);                   \
         Contract::Operation ___op = Contract::Setup;                        \
-        DEBUG_ASSURE_NO_RETURN_BEGIN(CONTRACT)                              \
         BOOL ___contract_enabled = Contract::EnforceContract();             \
         enum {___disabled = 0};                                             \
         {                                                                   \
@@ -1275,10 +1228,8 @@ typedef __SafeToUsePostCondition __PostConditionOK;
                 }                                                           \
                 else                                                        \
                 {                                                           \
-                    DEBUG_OK_TO_RETURN_BEGIN(CONTRACT)                      \
                   ___run_return:                                            \
                     return _returnexp;                                      \
-                    DEBUG_OK_TO_RETURN_END(CONTRACT)                        \
                 }                                                           \
             }                                                               \
             if (0)                                                          \
@@ -1440,7 +1391,6 @@ typedef __SafeToUsePostCondition __PostConditionOK;
 
 #define UNCHECKED(thecheck)                                                                 \
         do {                                                                                \
-            ANNOTATION_UNCHECKED(thecheck);                                                 \
             enum {___disabled = 1 };                                                        \
             thecheck;                                                                       \
         } while(0)
@@ -1491,8 +1441,7 @@ typedef __SafeToUsePostCondition __PostConditionOK;
 
 #endif // __FORCE_NORUNTIME_CONTRACTS__
 
-#define CONTRACT_END   CONTRACTL_END                                                        \
-   DEBUG_ASSURE_NO_RETURN_END(CONTRACT)                                                     \
+#define CONTRACT_END   CONTRACTL_END
 
 
 // The final expression in the RETURN macro deserves special explanation (or something.)
@@ -1527,7 +1476,7 @@ typedef __SafeToUsePostCondition __PostConditionOK;
 // to return and we need to ensure that we don't allow a return where one should not happen
 //
 #define RETURN                                                                              \
-    while (DEBUG_ASSURE_SAFE_TO_RETURN, TRUE)                                               \
+    while (TRUE)                                                                            \
         RETURN_BODY                                                                         \
 
 #define RETURN_VOID                                                                         \
@@ -1639,7 +1588,7 @@ typedef __SafeToUsePostCondition __PostConditionOK;
 #define WRAPPER_NO_CONTRACT CUSTOM_WRAPPER_NO_CONTRACT(Contract)
 
 // GC_NOTRIGGER allowed but not currently enforced at runtime
-#define GC_NOTRIGGER STATIC_CONTRACT_GC_NOTRIGGER
+#define GC_NOTRIGGER do { STATIC_CONTRACT_GC_NOTRIGGER; } while(0)
 #define GC_TRIGGERS static_assert(false, "TriggersGC not supported in utilcode contracts")
 
 #ifdef ENABLE_CONTRACTS_IMPL
@@ -1657,7 +1606,6 @@ public:
 
     DEBUG_NOINLINE void Leave()
     {
-        SCAN_SCOPE_END;
         LeaveInternal();
     };
 
@@ -1667,7 +1615,7 @@ protected:
     FORCEINLINE void EnterInternal(UINT_PTR violationMask)
     {
         _ASSERTE(0 == (violationMask & ~(ThrowsViolation | GCViolation | ModeViolation | FaultViolation |
-            FaultNotFatal | HostViolation |
+            FaultNotFatal |
             TakesLockViolation | LoadsTypeViolation)) ||
             violationMask == AllViolation);
 
@@ -1698,7 +1646,6 @@ public:
 
     DEBUG_NOINLINE ~AutoCleanupContractViolationHolder()
     {
-        SCAN_SCOPE_END;
         this->LeaveInternal();
     };
 };
@@ -1710,7 +1657,6 @@ public:
     {                                                                       \
         ContractViolationHolder<violationmask> __violationHolder_onlyOneAllowedPerScope;   \
         __violationHolder_onlyOneAllowedPerScope.Enter();                   \
-        DEBUG_ASSURE_NO_RETURN_BEGIN(CONTRACT)                              \
 
 // Use this to jump out prematurely from a violation.  Used for EH
 // when the function might not return
@@ -1718,7 +1664,6 @@ public:
         __violationHolder_onlyOneAllowedPerScope.Leave();                   \
 
 #define END_CONTRACT_VIOLATION                                              \
-        DEBUG_ASSURE_NO_RETURN_END(CONTRACT)                                \
         __violationHolder_onlyOneAllowedPerScope.Leave();                   \
     }                                                                       \
 
@@ -1738,9 +1683,6 @@ enum PermanentContractViolationReason
     ReasonIBC,                           // Code runs in IBC scenarios only and the violation is safe.
     ReasonNGEN,                          // Code runs in NGEN scenarios only and the violation is safe.
     ReasonProfilerCallout,               // Profiler implementers are guaranteed not to throw.
-    ReasonUnsupportedForSQLF1Profiling,  // This code path violates HOST_NOCALLS, but that's ok b/c SQL will never
-                                         // invoke it, and thus SQL/F1 profiling (the primary reason to enforce
-                                         // HOST_NOCALLS) is not in danger.
     ReasonRuntimeReentrancy,             // e.g. SafeQueryInterface
     ReasonShutdownOnly,                  // Code path only runs as part of Shutdown and the violation is safe.
     ReasonSOTolerance,                   // We would like to redesign SO contracts anyways
@@ -1780,7 +1722,6 @@ class FaultForbidHolder
  public:
     DEBUG_NOINLINE FaultForbidHolder(BOOL fConditional, BOOL fAlloc, const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_FORBID_FAULT;
 
         m_fConditional = fConditional;
@@ -1815,8 +1756,6 @@ class FaultForbidHolder
 
     DEBUG_NOINLINE ~FaultForbidHolder()
     {
-        SCAN_SCOPE_END;
-
         if (m_fConditional)
         {
             *m_pClrDebugState = m_oldClrDebugState;
@@ -1957,7 +1896,6 @@ class ClrTryMarkerHolder
 public:
     DEBUG_NOINLINE ClrTryMarkerHolder()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_THROWS;
 
         m_pClrDebugState = GetClrDebugState();
@@ -1967,8 +1905,6 @@ public:
 
     DEBUG_NOINLINE ~ClrTryMarkerHolder()
     {
-        SCAN_SCOPE_END;
-
         m_pClrDebugState->SetOkToThrow( m_oldOkayToThrowValue );
     }
 
@@ -2006,54 +1942,6 @@ inline ClrDebugState *GetClrDebugState(BOOL fAlloc)
 
     return NULL;
 }
-#endif // ENABLE_CONTRACTS_IMPL
-
-#ifdef ENABLE_CONTRACTS_IMPL
-
-class HostNoCallHolder
-{
-    public:
-    DEBUG_NOINLINE HostNoCallHolder()
-        {
-        SCAN_SCOPE_BEGIN;
-        STATIC_CONTRACT_HOST_NOCALLS;
-
-            m_clrDebugState = GetClrDebugState();
-            m_previousState = m_clrDebugState->SetHostCaller(FALSE);
-        }
-
-    DEBUG_NOINLINE ~HostNoCallHolder()
-        {
-        SCAN_SCOPE_END;
-
-            m_clrDebugState->SetHostCaller(m_previousState);
-        }
-
-     private:
-        BOOL m_previousState;
-        ClrDebugState* m_clrDebugState;
-
-};
-
-#define BEGIN_HOST_NOCALL_CODE \
-    {                             \
-        HostNoCallHolder __hostNoCallHolder;        \
-        CantAllocHolder __cantAlloc;
-
-#define END_HOST_NOCALL_CODE   \
-    }
-
-#else // ENABLE_CONTRACTS_IMPL
-#define BEGIN_HOST_NOCALL_CODE                      \
-    {                                               \
-        CantAllocHolder __cantAlloc;                \
-
-#define END_HOST_NOCALL_CODE                        \
-    }
-#endif
-
-
-#if defined(ENABLE_CONTRACTS_IMPL)
 
 // Macros to indicate we're taking or releasing locks
 
@@ -2063,30 +1951,11 @@ class HostNoCallHolder
 #define LOCK_RELEASED_MULTIPLE(dbgStateLockType, cExits, pvLock)     \
     ::GetClrDebugState()->LockReleased((dbgStateLockType), (cExits), (void*) (pvLock))
 
-// Use these only if you need to force multiple entrances or exits in a single
-// line (e.g., to restore the lock to a previous state). CRWLock in vm\rwlock.cpp does this
-#define EE_LOCK_TAKEN_MULTIPLE(cEntrances, pvLock)                          \
-    LOCK_TAKEN_MULTIPLE(kDbgStateLockType_EE, cEntrances, pvLock)
-#define EE_LOCK_RELEASED_MULTIPLE(cExits, pvLock)                           \
-    LOCK_RELEASED_MULTIPLE(kDbgStateLockType_EE, cExits, pvLock)
-#define HOST_BREAKABLE_CRST_TAKEN_MULTIPLE(cEntrances, pvLock)              \
-    LOCK_TAKEN_MULTIPLE(kDbgStateLockType_HostBreakableCrst, cEntrances, pvLock)
-#define HOST_BREAKABLE_CRST_RELEASED_MULTIPLE(cExits, pvLock)               \
-    LOCK_RELEASED_MULTIPLE(kDbgStateLockType_HostBreakableCrst, cExits, pvLock)
-#define USER_LOCK_TAKEN_MULTIPLE(cEntrances, pvLock)                        \
-    LOCK_TAKEN_MULTIPLE(kDbgStateLockType_User, cEntrances, pvLock)
-#define USER_LOCK_RELEASED_MULTIPLE(cExits, pvLock)                         \
-    LOCK_RELEASED_MULTIPLE(kDbgStateLockType_User, cExits, pvLock)
-
 // These are most typically used
 #define EE_LOCK_TAKEN(pvLock)                   \
     LOCK_TAKEN_MULTIPLE(kDbgStateLockType_EE, 1, pvLock)
 #define EE_LOCK_RELEASED(pvLock)                \
     LOCK_RELEASED_MULTIPLE(kDbgStateLockType_EE, 1, pvLock)
-#define HOST_BREAKABLE_CRST_TAKEN(pvLock)       \
-    LOCK_TAKEN_MULTIPLE(kDbgStateLockType_HostBreakableCrst, 1, pvLock)
-#define HOST_BREAKABLE_CRST_RELEASED(pvLock)    \
-    LOCK_RELEASED_MULTIPLE(kDbgStateLockType_HostBreakableCrst, 1, pvLock)
 #define USER_LOCK_TAKEN(pvLock)                 \
     LOCK_TAKEN_MULTIPLE(kDbgStateLockType_User, 1, pvLock)
 #define USER_LOCK_RELEASED(pvLock)              \
@@ -2096,16 +1965,8 @@ class HostNoCallHolder
 
 #define LOCK_TAKEN_MULTIPLE(dbgStateLockType, cEntrances, pvLock)
 #define LOCK_RELEASED_MULTIPLE(dbgStateLockType, cExits, pvLock)
-#define EE_LOCK_TAKEN_MULTIPLE(cEntrances, pvLock)
-#define EE_LOCK_RELEASED_MULTIPLE(cExits, pvLock)
-#define HOST_BREAKABLE_CRST_TAKEN_MULTIPLE(cEntrances, pvLock)
-#define HOST_BREAKABLE_CRST_RELEASED_MULTIPLE(cExits, pvLock)
-#define USER_LOCK_TAKEN_MULTIPLE(cEntrances, pvLock)
-#define USER_LOCK_RELEASED_MULTIPLE(cExits, pvLock)
 #define EE_LOCK_TAKEN(pvLock)
 #define EE_LOCK_RELEASED(pvLock)
-#define HOST_BREAKABLE_CRST_TAKEN(pvLock)
-#define HOST_BREAKABLE_CRST_RELEASED(pvLock)
 #define USER_LOCK_TAKEN(pvLock)
 #define USER_LOCK_RELEASED(pvLock)
 

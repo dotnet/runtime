@@ -2,13 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #import <UIKit/UIKit.h>
+
+#if !USE_LIBRARY_MODE
 #if !USE_NATIVE_AOT
 #import "runtime.h"
 #else
 #import <os/log.h>
 #import "util.h"
 extern int __managed__Main(int argc, char* argv[]);
-#endif
+#endif // !USE_NATIVE_AOT
+#else
+#import "runtime-librarymode.h"
+#endif // !USE_LIBRARY_MODE
 
 @interface ViewController : UIViewController
 @end
@@ -69,19 +74,23 @@ UITextView* logLabel;
     [self.view addSubview:summaryLabel];
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+#if !USE_LIBRARY_MODE
 #if !USE_NATIVE_AOT
         mono_ios_runtime_init ();
 #else
 #if INVARIANT_GLOBALIZATION
         setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
-#endif
+#endif // INVARIANT_GLOBALIZATION
         char **managed_argv;
         int managed_argc = get_managed_args (&managed_argv);
         int ret_val = __managed__Main (managed_argc, managed_argv);
         free_managed_args (&managed_argv, managed_argc);
         os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", ret_val);
         exit (ret_val);
-#endif
+#endif // !USE_NATIVE_AOT
+#else
+        library_mode_init();
+#endif //!USE_LIBRARY_MODE
     });
 }
 

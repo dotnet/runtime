@@ -37,15 +37,35 @@ private:
 
     // Intrinsic related transformations
     void RewriteNodeAsCall(GenTree**             use,
+                           CORINFO_SIG_INFO*     sig,
                            ArrayStack<GenTree*>& parents,
                            CORINFO_METHOD_HANDLE callHnd,
-#ifdef FEATURE_READYTORUN
+#if defined(FEATURE_READYTORUN)
                            CORINFO_CONST_LOOKUP entryPoint,
-#endif
-                           GenTree* arg1 = nullptr,
-                           GenTree* arg2 = nullptr);
+#endif // FEATURE_READYTORUN
+                           GenTree** operands,
+                           size_t    operandCount,
+                           bool      isSpecialIntrinsic);
 
     void RewriteIntrinsicAsUserCall(GenTree** use, Compiler::GenTreeStack& parents);
+#if defined(FEATURE_HW_INTRINSICS)
+    // pre-order rewriting
+    void RewriteHWIntrinsicAsUserCall(GenTree** use, Compiler::GenTreeStack& parents);
+
+    // post-order rewriting
+    void RewriteHWIntrinsic(GenTree** use, Compiler::GenTreeStack& parents);
+
+#if defined(TARGET_XARCH)
+    void RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStack& parents);
+    void RewriteHWIntrinsicMaskOp(GenTree** use, Compiler::GenTreeStack& parents);
+    void RewriteHWIntrinsicToNonMask(GenTree** use, Compiler::GenTreeStack& parents);
+    void RewriteHWIntrinsicBitwiseOpToNonMask(GenTree** use, Compiler::GenTreeStack& parents, genTreeOps oper);
+
+    bool ShouldRewriteToNonMaskHWIntrinsic(GenTree* node);
+#endif // TARGET_XARCH
+
+    void RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTreeStack& parents);
+#endif // FEATURE_HW_INTRINSICS
 
 #ifdef TARGET_ARM64
     void RewriteSubLshDiv(GenTree** use);
@@ -53,9 +73,34 @@ private:
 
     // Root visitor
     Compiler::fgWalkResult RewriteNode(GenTree** useEdge, Compiler::GenTreeStack& parents);
+
+private:
+    class RationalizeVisitor final : public GenTreeVisitor<RationalizeVisitor>
+    {
+        Rationalizer& m_rationalizer;
+
+    public:
+        enum
+        {
+            ComputeStack      = true,
+            DoPreOrder        = true,
+            DoPostOrder       = true,
+            UseExecutionOrder = true,
+        };
+
+        RationalizeVisitor(Rationalizer& rationalizer)
+            : GenTreeVisitor<RationalizeVisitor>(rationalizer.comp)
+            , m_rationalizer(rationalizer)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user);
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
+    };
 };
 
-inline Rationalizer::Rationalizer(Compiler* _comp) : Phase(_comp, PHASE_RATIONALIZE)
+inline Rationalizer::Rationalizer(Compiler* _comp)
+    : Phase(_comp, PHASE_RATIONALIZE)
 {
 }
 

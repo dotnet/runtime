@@ -64,6 +64,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public INamedTypeSymbol? MemberInfo  { get; }
         public INamedTypeSymbol? ParameterInfo { get; }
         public INamedTypeSymbol? Delegate   { get; }
+        public INamedTypeSymbol? NotNullIfNotNullAttribute { get; }
 
         public KnownTypeSymbols(CSharpCompilation compilation)
         {
@@ -83,7 +84,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             Uri = compilation.GetBestTypeByMetadataName(typeof(Uri));
             Version = compilation.GetBestTypeByMetadataName(typeof(Version));
 
-            // Used to verify input configuation binding API calls.
+            // Used to verify input configuration binding API calls.
             INamedTypeSymbol? binderOptions = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.BinderOptions");
             ActionOfBinderOptions = binderOptions is null ? null : compilation.GetBestTypeByMetadataName(typeof(Action<>))?.Construct(binderOptions);
             ConfigurationBinder = compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Configuration.ConfigurationBinder");
@@ -132,6 +133,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             IntPtr = Compilation.GetSpecialType(SpecialType.System_IntPtr);
             UIntPtr = Compilation.GetSpecialType(SpecialType.System_UIntPtr);
             Delegate = Compilation.GetSpecialType(SpecialType.System_Delegate);
+
+            // Only generate nullable attributes if available
+            NotNullIfNotNullAttribute = compilation.GetBestTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute");
         }
     }
 }

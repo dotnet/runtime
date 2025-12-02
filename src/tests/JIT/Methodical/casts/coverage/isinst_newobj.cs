@@ -49,6 +49,7 @@ namespace JitTest_isinst_newobj_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             TestClass _this = new TestClass();

@@ -5,11 +5,11 @@ using TestLibrary;
 
 namespace Mono.Linker.Tests.Cases.CppCLI.Dependencies
 {
-	public static class CallCppCLIFromManaged
-	{
-		public static void TriggerWarning ()
-		{
-			TestClass.TriggerWarningFromCppCLI ();
-		}
-	}
+    public static class CallCppCLIFromManaged
+    {
+        public static void TriggerWarning()
+        {
+            TestClass.TriggerWarningFromCppCLI();
+        }
+    }
 }

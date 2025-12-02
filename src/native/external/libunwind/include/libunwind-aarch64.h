@@ -2,6 +2,7 @@
    Copyright (C) 2001-2004 Hewlett-Packard Co
         Contributed by David Mosberger-Tang <davidm@hpl.hp.com>
    Copyright (C) 2013 Linaro Limited
+   Copyright 2022 Blackberry Limited
 
 This file is part of libunwind.
 
@@ -35,6 +36,7 @@ extern "C" {
 #include <stddef.h>
 #include <ucontext.h>
 #include <stdalign.h>
+#include <stdint.h>
 
 #ifndef UNW_EMPTY_STRUCT
 #  define UNW_EMPTY_STRUCT uint8_t unused;
@@ -61,6 +63,8 @@ typedef uint64_t unw_word_t;
 typedef int64_t unw_sword_t;
 
 typedef long double unw_tdep_fpreg_t;
+
+#define UNW_WORD_MAX UINT64_MAX
 
 typedef struct
   {
@@ -228,9 +232,6 @@ typedef struct
 #else
 /* On AArch64, we can directly use ucontext_t as the unwind context.  */
 typedef ucontext_t unw_tdep_context_t;
-#if defined(__FreeBSD__)
-typedef ucontext_t unw_fpsimd_context_t;
-#endif
 #endif
 
 
@@ -238,9 +239,11 @@ typedef ucontext_t unw_fpsimd_context_t;
 #include "libunwind-dynamic.h"
 
 #if defined(__FreeBSD__)
-#define UNW_BASE register uint64_t unw_base __asm__ ("x0") = (uint64_t) unw_ctx->uc_mcontext.mc_gpregs.gp_x[0];
+# define UNW_BASE register uint64_t unw_base __asm__ ("x0") = (uint64_t) unw_ctx->uc_mcontext.mc_gpregs.gp_x;
+#elif defined(__QNX__)
+# define UNW_BASE register uint64_t unw_base __asm__ ("x0") = (uint64_t) unw_ctx->uc_mcontext.cpu.gpr;
 #else
-#define UNW_BASE register uint64_t unw_base __asm__ ("x0") = (uint64_t) unw_ctx->uc_mcontext.regs;
+# define UNW_BASE register uint64_t unw_base __asm__ ("x0") = (uint64_t) unw_ctx->uc_mcontext.regs;
 #endif
 
 #define unw_tdep_getcontext(uc) ({					\

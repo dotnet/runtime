@@ -18,6 +18,8 @@
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
     <!-- System.Net Common -->
+    <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs"
+             Link="Common\System\Net\RemoteExecutorExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
              Link="SocketCommon\Configuration.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Ping.cs"
@@ -34,7 +36,7 @@
              Link="Common\System\Net\NetworkInformation\UnixCommandLinePing.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.RawSocketPermissions.cs"
              Link="Common\System\Net\Capability.RawSocketPermissions.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
-             Link="Common\System\Text\ValueUtf8Converter.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\SpanOfCharAsUtf8StringMarshaller.cs"
+             Link="Common\System\Runtime\InteropServices\SpanOfCharAsUtf8StringMarshaller.cs" />
   </ItemGroup>
 </Project>

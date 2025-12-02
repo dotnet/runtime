@@ -25,11 +25,27 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public static IJsonTypeInfoResolver Combine(params IJsonTypeInfoResolver?[] resolvers)
         {
-            if (resolvers is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(resolvers));
-            }
+            ArgumentNullException.ThrowIfNull(resolvers);
 
+            return Combine((ReadOnlySpan<IJsonTypeInfoResolver?>)resolvers);
+        }
+
+        /// <summary>
+        /// Combines multiple <see cref="IJsonTypeInfoResolver"/> sources into one.
+        /// </summary>
+        /// <param name="resolvers">Sequence of contract resolvers to be queried for metadata.</param>
+        /// <returns>A <see cref="IJsonTypeInfoResolver"/> combining results from <paramref name="resolvers"/>.</returns>
+        /// <remarks>
+        /// The combined resolver will query each of <paramref name="resolvers"/> in the specified order,
+        /// returning the first result that is non-null. If all <paramref name="resolvers"/> return null,
+        /// then the combined resolver will also return <see langword="null"/>.
+        ///
+        /// Can be used to combine multiple <see cref="JsonSerializerContext"/> sources,
+        /// which typically define contract metadata for small subsets of types.
+        /// It can also be used to fall back to <see cref="DefaultJsonTypeInfoResolver"/> wherever necessary.
+        /// </remarks>
+        public static IJsonTypeInfoResolver Combine(params ReadOnlySpan<IJsonTypeInfoResolver?> resolvers)
+        {
             var resolverChain = new JsonTypeInfoResolverChain();
             foreach (IJsonTypeInfoResolver? resolver in resolvers)
             {
@@ -51,14 +67,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public static IJsonTypeInfoResolver WithAddedModifier(this IJsonTypeInfoResolver resolver, Action<JsonTypeInfo> modifier)
         {
-            if (resolver is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(resolver));
-            }
-            if (modifier is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(modifier));
-            }
+            ArgumentNullException.ThrowIfNull(resolver);
+            ArgumentNullException.ThrowIfNull(modifier);
 
             return resolver is JsonTypeInfoResolverWithAddedModifiers resolverWithModifiers
                 ? resolverWithModifiers.WithAddedModifier(modifier)

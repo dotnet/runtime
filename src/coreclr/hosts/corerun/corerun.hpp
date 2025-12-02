@@ -37,13 +37,6 @@ namespace pal
 
     template<typename T>
     using malloc_ptr = std::unique_ptr<T, free_delete>;
-
-    enum class debugger_state_t
-    {
-        na,
-        attached,
-        not_attached,
-    };
 }
 
 #ifdef TARGET_WINDOWS
@@ -136,14 +129,37 @@ namespace pal
         return (uint32_t)::GetCurrentProcessId();
     }
 
-    inline debugger_state_t is_debugger_attached()
-    {
-        return (::IsDebuggerPresent() == TRUE) ? debugger_state_t::attached : debugger_state_t::not_attached;
-    }
-
     inline bool does_file_exist(const string_t& file_path)
     {
         return INVALID_FILE_ATTRIBUTES != ::GetFileAttributesW(file_path.c_str());
+    }
+
+    inline bool try_map_file_readonly(const char* path, void** mapped, int64_t* size)
+    {
+        HANDLE file = ::CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (file == INVALID_HANDLE_VALUE)
+            return false;
+
+        HANDLE file_mapping = ::CreateFileMappingA(file, nullptr, PAGE_READONLY, 0, 0, nullptr);
+        if (file_mapping  == nullptr)
+        {
+            ::CloseHandle(file);
+            return false;
+        }
+
+        void* mapped_local = ::MapViewOfFile(file_mapping, FILE_MAP_READ, 0, 0, 0);
+        if (mapped_local == nullptr)
+        {
+            ::CloseHandle(file);
+            ::CloseHandle(file_mapping);
+            return false;
+        }
+
+        *size = ::GetFileSize(file, nullptr);
+        *mapped = mapped_local;
+        ::CloseHandle(file_mapping);
+        ::CloseHandle(file);
+        return true;
     }
 
     // Forward declaration
@@ -207,6 +223,39 @@ namespace pal
         return { buffer.get() };
     }
 
+    inline string_t convert_from_utf8(const char* str)
+    {
+        int wchar_req = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
+
+        malloc_ptr<wchar_t> buffer{ (wchar_t*)::malloc(wchar_req * sizeof(wchar_t)) };
+        assert(buffer != nullptr);
+
+        int written = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, buffer.get(), wchar_req);
+        assert(wchar_req == written);
+
+        return { buffer.get() };
+    }
+
+    inline void* get_image_base(mod_t m, void* sym)
+    {
+        // On Windows, the HMODULE is the base address
+        return (void*)m;
+    }
+
+    inline size_t get_image_size(void* base_address)
+    {
+        IMAGE_DOS_HEADER* dos_header = (IMAGE_DOS_HEADER*)base_address;
+        if (dos_header->e_magic == IMAGE_DOS_SIGNATURE)
+        {
+            IMAGE_NT_HEADERS* nt_headers = (IMAGE_NT_HEADERS*)((BYTE*)base_address + dos_header->e_lfanew);
+            if (nt_headers->Signature == IMAGE_NT_SIGNATURE)
+            {
+                return nt_headers->OptionalHeader.SizeOfImage;
+            }
+        }
+        return 0;
+    }
+
     inline bool try_load_hostpolicy(pal::string_t mock_hostpolicy_value)
     {
         const char_t* hostpolicyName = W("hostpolicy.dll");
@@ -222,6 +271,17 @@ namespace pal
             pal::fprintf(stderr, W("Failed to load mock hostpolicy at path '%s'. Error: 0x%08x\n"), mock_hostpolicy_value.c_str(), ::GetLastError());
 
         return hMod != nullptr;
+    }
+
+    inline bool try_load_library(const pal::string_t& path, pal::mod_t& hMod)
+    {
+        hMod = (pal::mod_t)::LoadLibraryExW(path.c_str(), nullptr, 0);
+        if (hMod == nullptr)
+        {
+            pal::fprintf(stderr, W("Failed to load: '%s'. Error: 0x%08x\n"), path.c_str(), ::GetLastError());
+            return false;
+        }
+        return true;
     }
 
     inline bool try_load_coreclr(const pal::string_t& core_root, pal::mod_t& hMod)
@@ -301,18 +361,30 @@ public:
 #else // !TARGET_WINDOWS
 #include <dirent.h>
 #include <dlfcn.h>
+#include <fcntl.h>
 #include <limits.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <cstddef>
 
 // Needed for detecting the debugger attach scenario
 #if defined(__APPLE__)
 #include <sys/sysctl.h>
 #include <sys/types.h>
 #else // !__APPLE__
-#include <fcntl.h>
 #include <ctype.h>
 #endif // !__APPLE__
+
+// For getting image size
+#if defined(TARGET_APPLE)
+#include <mach-o/dyld.h>
+#include <mach-o/loader.h>
+#elif !defined(TARGET_WASM)
+#include <link.h>
+#include <elf.h>
+#include <cstring>
+#endif
 
 // CMake generated
 #include <config.h>
@@ -347,12 +419,14 @@ namespace pal
     const char_t dir_delim = W('/');
     const char_t env_path_delim = W(':');
 
+#ifndef TARGET_WASM
 #if defined(__APPLE__)
     const char_t nativelib_ext[] = W(".dylib");
 #else // Various Linux-related OS-es
     const char_t nativelib_ext[] = W(".so");
 #endif
     const char_t coreclr_lib[] = W("libcoreclr");
+#endif // !TARGET_WASM
 
     inline int strcmp(const char_t* str1, const char_t* str2) { return ::strcmp(str1, str2); }
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
@@ -409,83 +483,6 @@ namespace pal
         return (uint32_t)getpid();
     }
 
-    inline debugger_state_t is_debugger_attached()
-    {
-#if defined(__APPLE__)
-        // Taken from https://developer.apple.com/library/archive/qa/qa1361/_index.html
-        int                 junk;
-        int                 mib[4];
-        struct kinfo_proc   info;
-        size_t              size;
-
-        // Initialize the flags so that, if sysctl fails for some bizarre
-        // reason, we get a predictable result.
-
-        info.kp_proc.p_flag = 0;
-
-        // Initialize mib, which tells sysctl the info we want, in this case
-        // we're looking for information about a specific process ID.
-
-        mib[0] = CTL_KERN;
-        mib[1] = KERN_PROC;
-        mib[2] = KERN_PROC_PID;
-        mib[3] = getpid();
-
-        // Call sysctl.
-
-        size = sizeof(info);
-        junk = sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &size, NULL, 0);
-        assert(junk == 0);
-
-        // We're being debugged if the P_TRACED flag is set.
-
-        return ( (info.kp_proc.p_flag & P_TRACED) != 0 ) ? debugger_state_t::attached : debugger_state_t::not_attached;
-
-#else // !__APPLE__
-        // Use procfs to detect if there is a tracer process.
-        // See https://www.kernel.org/doc/html/latest/filesystems/proc.html
-        char status[2048] = { 0 };
-        int fd = ::open("/proc/self/status", O_RDONLY);
-        if (fd == -1)
-        {
-            // If the file can't be opened assume we are on a not supported platform.
-            return debugger_state_t::na;
-        }
-
-        // Attempt to read
-        ssize_t bytes_read = ::read(fd, status, sizeof(status) - 1);
-        ::close(fd);
-
-        if (bytes_read > 0)
-        {
-            // We have data. At this point we can likely make a strong decision.
-            const char tracer_pid_name[] = "TracerPid:";
-            const char* tracer_pid_ptr = ::strstr(status, tracer_pid_name);
-            if (tracer_pid_ptr == nullptr)
-                return debugger_state_t::not_attached;
-
-            // The number after the name is the process ID of the
-            // tracer application or 0 if none exists.
-            const char* curr = tracer_pid_ptr + (sizeof(tracer_pid_name) - 1);
-            const char* end = status + bytes_read;
-            for (;curr < end; ++curr)
-            {
-                if (::isspace(*curr))
-                    continue;
-
-                // Check the first non-space if it is 0. If so, we have
-                // a non-zero process ID and a tracer is attached.
-                return (::isdigit(*curr) && *curr != '0') ? debugger_state_t::attached : debugger_state_t::not_attached;
-            }
-        }
-
-        // The read in data is either incomplete (i.e. small buffer) or
-        // the returned content is not expected. Let's fallback to not available.
-        return debugger_state_t::na;
-
-#endif // !__APPLE__
-    }
-
     inline bool does_file_exist(const char_t* file_path)
     {
         // Check if the specified path exists
@@ -509,6 +506,33 @@ namespace pal
             return false;
         }
 
+        return true;
+    }
+
+    inline bool try_map_file_readonly(const char* path, void** mapped, int64_t* size)
+    {
+        int fd = open(path, O_RDONLY);
+        if (fd == -1)
+            return false;
+
+        struct stat buf;
+        if (fstat(fd, &buf) == -1)
+        {
+            close(fd);
+            return false;
+        }
+
+        int64_t size_local = buf.st_size;
+        void* mapped_local = mmap(NULL, size_local, PROT_READ, MAP_PRIVATE, fd, 0);
+        if (mapped == MAP_FAILED)
+        {
+            close(fd);
+            return false;
+        }
+
+        *mapped = mapped_local;
+        *size = size_local;
+        close(fd);
         return true;
     }
 
@@ -588,8 +612,92 @@ namespace pal
         return { str };
     }
 
+    inline string_t convert_from_utf8(const char* str)
+    {
+        return { str };
+    }
+
+    inline void* get_image_base(mod_t m, void* sym)
+    {
+#ifndef TARGET_WASM
+        Dl_info info;
+        if (dladdr(sym, &info) != 0)
+        {
+            return info.dli_fbase;
+        }
+#endif
+        return nullptr;
+    }
+
+    inline size_t get_image_size(void* base_address)
+    {
+        if (base_address == nullptr)
+            return 0;
+
+#if defined(TARGET_APPLE)
+        uint32_t image_count = _dyld_image_count();
+        for (uint32_t i = 0; i < image_count; ++i)
+        {
+            const struct mach_header_64* header =
+                reinterpret_cast<const struct mach_header_64*>(_dyld_get_image_header(i));
+            if (reinterpret_cast<const void*>(header) != base_address)
+                continue;
+
+            const struct load_command* cmd =
+                reinterpret_cast<const struct load_command*>(
+                    reinterpret_cast<const char*>(header) + sizeof(struct mach_header_64));
+
+            size_t image_size = 0;
+            for (uint32_t j = 0; j < header->ncmds; ++j)
+            {
+                if (cmd->cmd == LC_SEGMENT_64)
+                {
+                    const struct segment_command_64* seg =
+                        reinterpret_cast<const struct segment_command_64*>(cmd);
+                    size_t end_addr = static_cast<size_t>(seg->vmaddr + seg->vmsize);
+                    if (end_addr > image_size)
+                        image_size = end_addr;
+                }
+
+                cmd = reinterpret_cast<const struct load_command*>(
+                    reinterpret_cast<const char*>(cmd) + cmd->cmdsize);
+            }
+
+            return image_size;
+        }
+#elif !defined(TARGET_WASM)
+        ElfW(Ehdr)* ehdr = reinterpret_cast<ElfW(Ehdr)*>(base_address);
+        if (std::memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0)
+            return 0;
+
+        ElfW(Phdr)* phdr = reinterpret_cast<ElfW(Phdr)*>(
+            reinterpret_cast<char*>(base_address) + ehdr->e_phoff);
+
+        size_t max_addr = 0;
+        size_t min_addr = static_cast<size_t>(-1);
+
+        for (int i = 0; i < ehdr->e_phnum; ++i)
+        {
+            if (phdr[i].p_type == PT_LOAD)
+            {
+                size_t seg_start = phdr[i].p_vaddr;
+                size_t seg_end   = phdr[i].p_vaddr + phdr[i].p_memsz;
+                if (seg_start < min_addr)
+                    min_addr = seg_start;
+                if (seg_end > max_addr)
+                    max_addr = seg_end;
+            }
+        }
+
+        if (max_addr > min_addr)
+            return max_addr - min_addr;
+#endif
+        return 0;
+    }
+
     inline bool try_load_hostpolicy(pal::string_t mock_hostpolicy_value)
     {
+#ifndef TARGET_WASM
         if (!string_ends_with(mock_hostpolicy_value, pal::nativelib_ext))
             mock_hostpolicy_value.append(pal::nativelib_ext);
 
@@ -598,10 +706,26 @@ namespace pal
             pal::fprintf(stderr, W("Failed to load mock hostpolicy at path '%s'. Error: %s\n"), mock_hostpolicy_value.c_str(), dlerror());
 
         return hMod != nullptr;
+#else // !TARGET_WASM
+        return false;
+#endif // !TARGET_WASM
     }
+
+    inline bool try_load_library(const pal::string_t& path, pal::mod_t& hMod)
+    {
+        hMod = (pal::mod_t)dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
+        if (hMod == nullptr)
+        {
+            pal::fprintf(stderr, W("Failed to load: '%s'. Error: %s\n"), path.c_str(), dlerror());
+            return false;
+        }
+        return true;
+    }
+
 
     inline bool try_load_coreclr(const pal::string_t& core_root, pal::mod_t& hMod)
     {
+#ifndef TARGET_WASM
         pal::string_t coreclr_path = core_root;
         pal::ensure_trailing_delimiter(coreclr_path);
         coreclr_path.append(pal::coreclr_lib);
@@ -613,7 +737,7 @@ namespace pal
             pal::fprintf(stderr, W("Failed to load: '%s'. Error: %s\n"), coreclr_path.c_str(), dlerror());
             return false;
         }
-
+#endif // !TARGET_WASM
         return true;
     }
 }

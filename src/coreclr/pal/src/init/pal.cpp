@@ -19,19 +19,16 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/thread.hpp"
 #include "pal/synchobjects.hpp"
 #include "pal/procobj.hpp"
-#include "pal/cs.hpp"
 #include "pal/file.hpp"
 #include "pal/map.hpp"
-#include "../objmgr/shmobjectmanager.hpp"
+#include "../objmgr/listedobjectmanager.hpp"
 #include "pal/seh.hpp"
 #include "pal/palinternal.h"
 #include "pal/sharedmemory.h"
-#include "pal/shmemory.h"
 #include "pal/process.h"
 #include "../thread/procprivate.hpp"
 #include "pal/module.h"
 #include "pal/virtual.h"
-#include "pal/misc.h"
 #include "pal/environ.h"
 #include "pal/utils.h"
 #include "pal/debug.h"
@@ -39,6 +36,8 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/stackstring.hpp"
 #include "pal/cgroup.h"
 #include <minipal/getexepath.h>
+#include <minipal/memorybarrierprocesswide.h>
+#include <minipal/descriptorlimit.h>
 
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
@@ -50,7 +49,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/param.h>
-#include <sys/resource.h>
 #include <sys/stat.h>
 #include <limits.h>
 #include <string.h>
@@ -76,15 +74,10 @@ int CacheLineSize;
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <kvm.h>
-#elif defined(__sun)
-#ifndef _KERNEL
-#define _KERNEL
-#define UNDEF_KERNEL
 #endif
-#include <sys/procfs.h>
-#ifdef UNDEF_KERNEL
-#undef _KERNEL
-#endif
+
+#if defined(__sun)
+#include <procfs.h>
 #endif
 
 #ifdef __FreeBSD__
@@ -95,13 +88,6 @@ int CacheLineSize;
 #include <clrconfignocache.h>
 
 using namespace CorUnix;
-
-//
-// $$TODO The C++ compiler doesn't like pal/cruntime.h so duplicate the
-// necessary prototype here
-//
-
-extern "C" BOOL CRTInitStdStreams(void);
 
 extern bool g_running_in_exe;
 
@@ -125,12 +111,11 @@ BOOL g_useDefaultBaseAddr = FALSE;
 
 /* critical section to protect access to init_count. This is allocated on the
    very first PAL_Initialize call, and is freed afterward. */
-static PCRITICAL_SECTION init_critsec = NULL;
+static minipal_mutex* init_critsec = NULL;
 
 static DWORD g_initializeDLLFlags = PAL_INITIALIZE_DLL;
 
 static int Initialize(int argc, const char *const argv[], DWORD flags);
-static BOOL INIT_IncreaseDescriptorLimit(void);
 static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv);
 static LPWSTR INIT_GetCurrentEXEPath();
 static BOOL INIT_SharedFilesPath(void);
@@ -138,21 +123,6 @@ static BOOL INIT_SharedFilesPath(void);
 #ifdef _DEBUG
 extern void PROCDumpThreadList(void);
 #endif
-
-#if defined(__APPLE__)
-static bool RunningNatively()
-{
-    int ret = 0;
-    size_t sz = sizeof(ret);
-    if (sysctlbyname("sysctl.proc_native", &ret, &sz, nullptr, 0) != 0)
-    {
-        // if the sysctl failed, we'll assume this OS does not support
-        // binary translation - so we must be running natively.
-        return true;
-    }
-    return ret != 0;
-}
-#endif // __APPLE__
 
 /*++
 Function:
@@ -278,7 +248,7 @@ Abstract:
 void
 InitializeDefaultStackSize()
 {
-    CLRConfigNoCache defStackSize = CLRConfigNoCache::Get("DefaultStackSize", /*noprefix*/ false, &getenv);
+    CLRConfigNoCache defStackSize = CLRConfigNoCache::Get("Thread_DefaultStackSize", /*noprefix*/ false, &getenv);
     if (defStackSize.IsSet())
     {
         DWORD size;
@@ -287,6 +257,14 @@ InitializeDefaultStackSize()
             g_defaultStackSize = std::max(size, (DWORD)PTHREAD_STACK_MIN);
         }
     }
+
+#ifdef HOST_APPLE
+    // Match Windows stack size
+    if (g_defaultStackSize == 0)
+    {
+        g_defaultStackSize = 1536 * 1024;
+    }
+#endif
 
 #ifdef ENSURE_PRIMARY_STACK_SIZE
     if (g_defaultStackSize == 0)
@@ -318,7 +296,7 @@ Initialize(
 {
     PAL_ERROR palError = ERROR_GEN_FAILURE;
     CPalThread *pThread = nullptr;
-    CSharedMemoryObjectManager *pshmom = nullptr;
+    CListedObjectManager *plom = nullptr;
     LPWSTR command_line = nullptr;
     LPWSTR exe_path = nullptr;
     int retval = -1;
@@ -332,39 +310,29 @@ Initialize(
     /*Firstly initiate a lastError */
     SetLastError(ERROR_GEN_FAILURE);
 
-#ifdef __APPLE__
-    if (!RunningNatively())
-    {
-        SetLastError(ERROR_BAD_FORMAT);
-        goto exit;
-    }
-#endif // __APPLE__
-
-    CriticalSectionSubSysInitialize();
-
     if(nullptr == init_critsec)
     {
         pthread_mutex_lock(&init_critsec_mutex); // prevents race condition of two threads
                                                  // initializing the critical section.
         if(nullptr == init_critsec)
         {
-            static CRITICAL_SECTION temp_critsec;
+            static minipal_mutex temp_critsec;
 
             // Want this critical section to NOT be internal to avoid the use of unsafe region markers.
-            InternalInitializeCriticalSectionAndSpinCount(&temp_critsec, 0, false);
+            minipal_mutex_init(&temp_critsec);
 
             if(nullptr != InterlockedCompareExchangePointer(&init_critsec, &temp_critsec, nullptr))
             {
                 // Another thread got in before us! shouldn't happen, if the PAL
                 // isn't initialized there shouldn't be any other threads
                 WARN("Another thread initialized the critical section\n");
-                InternalDeleteCriticalSection(&temp_critsec);
+                minipal_mutex_destroy(&temp_critsec);
             }
         }
         pthread_mutex_unlock(&init_critsec_mutex);
     }
 
-    InternalEnterCriticalSection(pThread, init_critsec); // here pThread is always nullptr
+    minipal_mutex_enter(init_critsec);
 
     if (init_count == 0)
     {
@@ -388,7 +356,7 @@ Initialize(
 
         // The gSharedFilesPath is allocated dynamically so its destructor does not get
         // called unexpectedly during cleanup
-        gSharedFilesPath = InternalNew<PathCharString>();
+        gSharedFilesPath = new(std::nothrow) PathCharString();
         if (gSharedFilesPath == nullptr)
         {
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -429,30 +397,17 @@ Initialize(
         if (FALSE == EnvironInitialize())
         {
             palError = ERROR_PALINIT_ENV;
-            goto CLEANUP0;
+            goto CLEANUP1;
         }
 
-        if (!INIT_IncreaseDescriptorLimit())
+        if (!minipal_increase_descriptor_limit())
         {
             ERROR("Unable to increase the file descriptor limit!\n");
             // We can continue if this fails; we'll just have problems if
             // we use large numbers of threads or have many open files.
         }
 
-        if (!SharedMemoryManager::StaticInitialize())
-        {
-            ERROR("Shared memory static initialization failed!\n");
-            palError = ERROR_PALINIT_SHARED_MEMORY_MANAGER;
-            goto CLEANUP0;
-        }
-
-        /* initialize the shared memory infrastructure */
-        if (!SHMInitialize())
-        {
-            ERROR("Shared memory initialization failed!\n");
-            palError = ERROR_PALINIT_SHM;
-            goto CLEANUP0;
-        }
+        SharedMemoryManager::StaticInitialize();
 
         //
         // Initialize global process data
@@ -509,23 +464,23 @@ Initialize(
         // Initialize the object manager
         //
 
-        pshmom = InternalNew<CSharedMemoryObjectManager>();
-        if (nullptr == pshmom)
+        plom = new(std::nothrow) CListedObjectManager();
+        if (nullptr == plom)
         {
             ERROR("Unable to allocate new object manager\n");
             palError = ERROR_OUTOFMEMORY;
             goto CLEANUP1b;
         }
 
-        palError = pshmom->Initialize();
+        palError = plom->Initialize();
         if (NO_ERROR != palError)
         {
             ERROR("object manager initialization failed!\n");
-            InternalDelete(pshmom);
+            delete plom;
             goto CLEANUP1b;
         }
 
-        g_pObjectManager = pshmom;
+        g_pObjectManager = plom;
 
         //
         // Initialize the synchronization manager
@@ -580,17 +535,6 @@ Initialize(
         // InitializeProcessCommandLine took ownership of this memory.
         command_line = nullptr;
 
-#ifdef PAL_PERF
-        // Initialize the Profiling structure
-        if(FALSE == PERFInitialize(command_line, exe_path))
-        {
-            ERROR("Performance profiling initial failed\n");
-            palError = ERROR_PALINIT_PERF;
-            goto CLEANUP2;
-        }
-        PERFAllocThreadInfo();
-#endif
-
         if (!LOADSetExeName(exe_path))
         {
             ERROR("Unable to set exe name\n");
@@ -633,6 +577,18 @@ Initialize(
             goto CLEANUP10;
         }
 
+        if (flags & PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
+        {
+            // Initialize before first thread is created for faster load on Linux
+            if (!minipal_initialize_memory_barrier_process_wide())
+            {
+                ERROR("Unable to initialize flush process write buffers\n");
+                palError = ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
+                goto CLEANUP10;
+            }
+        }
+
+#ifndef TARGET_WASM
         if (flags & PAL_INITIALIZE_SYNC_THREAD)
         {
             //
@@ -645,7 +601,7 @@ Initialize(
                 goto CLEANUP13;
             }
         }
-
+#endif // !TARGET_WASM
         /* initialize structured exception handling stuff (signals, etc) */
         if (FALSE == SEHInitialize(pThread, flags))
         {
@@ -663,13 +619,6 @@ Initialize(
                 palError = ERROR_PALINIT_STD_HANDLES;
                 goto CLEANUP14;
             }
-        }
-
-        if (FALSE == CRTInitStdStreams())
-        {
-            ERROR("Unable to initialize CRT standard streams\n");
-            palError = ERROR_PALINIT_STD_STREAMS;
-            goto CLEANUP15;
         }
 
         TRACE("First-time PAL initialization complete.\n");
@@ -691,9 +640,6 @@ Initialize(
     }
     goto done;
 
-    /* No cleanup required for CRTInitStdStreams */
-CLEANUP15:
-    FILECleanupStdHandles();
 CLEANUP14:
     SEHCleanup();
 CLEANUP13:
@@ -715,24 +661,13 @@ CLEANUP1b:
 CLEANUP1a:
     // Cleanup global process data
 CLEANUP1:
-    SHMCleanup();
-CLEANUP0:
     CleanupCGroup();
 CLEANUP0a:
     TLSCleanup();
     ERROR("PAL_Initialize failed\n");
     SetLastError(palError);
 done:
-#ifdef PAL_PERF
-    if( retval == 0)
-    {
-         PERFEnableProcessProfile();
-         PERFEnableThreadProfile(FALSE);
-         PERFCalibrate("Overhead of PERF entry/exit");
-    }
-#endif
-
-    InternalLeaveCriticalSection(pThread, init_critsec);
+    minipal_mutex_leave(init_critsec);
 
     if (fFirstTimeInit && 0 == retval)
     {
@@ -744,9 +679,6 @@ done:
         ASSERT("returning failure, but last error not set\n");
     }
 
-#ifdef __APPLE__
-exit :
-#endif // __APPLE__
     LOGEXIT("PAL_Initialize returns int %d\n", retval);
     return retval;
 }
@@ -787,6 +719,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
         return ERROR_SUCCESS;
     }
 
+#ifndef TARGET_WASM // we don't use shared libraries on wasm
     // Now that the PAL is initialized it's safe to call the initialization methods for the code that used to
     // be dynamically loaded libraries but is now statically linked into CoreCLR just like the PAL, i.e. the
     // PAL RT and mscorwks.
@@ -794,6 +727,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
     {
         return ERROR_DLL_INIT_FAILED;
     }
+#endif // !TARGET_WASM
 
     if (!PROCAbortInitialize())
     {
@@ -801,114 +735,7 @@ PAL_InitializeCoreCLR(const char *szExePath, BOOL runningInExe)
         return ERROR_PALINIT_PROCABORT_INITIALIZE;
     }
 
-    if (!InitializeFlushProcessWriteBuffers())
-    {
-        return ERROR_PALINIT_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS;
-    }
-
     return ERROR_SUCCESS;
-}
-
-/*++
-Function:
-PAL_IsDebuggerPresent
-
-Abstract:
-This function should be used to determine if a debugger is attached to the process.
---*/
-PALIMPORT
-BOOL
-PALAPI
-PAL_IsDebuggerPresent()
-{
-#if defined(__linux__)
-    BOOL debugger_present = FALSE;
-    char buf[2048];
-
-    int status_fd = open("/proc/self/status", O_RDONLY);
-    if (status_fd == -1)
-    {
-        return FALSE;
-    }
-    ssize_t num_read = read(status_fd, buf, sizeof(buf) - 1);
-
-    if (num_read > 0)
-    {
-        static const char TracerPid[] = "TracerPid:";
-        char *tracer_pid;
-
-        buf[num_read] = '\0';
-        tracer_pid = strstr(buf, TracerPid);
-        if (tracer_pid)
-        {
-            debugger_present = !!atoi(tracer_pid + sizeof(TracerPid) - 1);
-        }
-    }
-
-    close(status_fd);
-
-    return debugger_present;
-#elif defined(__APPLE__) || defined(__FreeBSD__)
-    struct kinfo_proc info = {};
-    size_t size = sizeof(info);
-    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid() };
-    int ret = sysctl(mib, sizeof(mib)/sizeof(*mib), &info, &size, nullptr, 0);
-
-    if (ret == 0)
-#if defined(__APPLE__)
-        return ((info.kp_proc.p_flag & P_TRACED) != 0);
-#else // __FreeBSD__
-        return ((info.ki_flag & P_TRACED) != 0);
-#endif
-
-    return FALSE;
-#elif defined(__NetBSD__)
-    int traced;
-    kvm_t *kd;
-    int cnt;
-
-    struct kinfo_proc *info;
-
-    kd = kvm_open(nullptr, nullptr, nullptr, KVM_NO_FILES, "kvm_open");
-    if (kd == nullptr)
-        return FALSE;
-
-    info = kvm_getprocs(kd, KERN_PROC_PID, getpid(), &cnt);
-    if (info == nullptr || cnt < 1)
-    {
-        kvm_close(kd);
-        return FALSE;
-    }
-
-    traced = info->kp_proc.p_slflag & PSL_TRACED;
-    kvm_close(kd);
-
-    if (traced != 0)
-        return TRUE;
-    else
-        return FALSE;
-#elif defined(__sun)
-    int readResult;
-    char statusFilename[64];
-    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/status", getpid());
-    int fd = open(statusFilename, O_RDONLY);
-    if (fd == -1)
-    {
-        return FALSE;
-    }
-
-    pstatus_t status;
-    do
-    {
-        readResult = read(fd, &status, sizeof(status));
-    }
-    while ((readResult == -1) && (errno == EINTR));
-
-    close(fd);
-    return status.pr_flttrace.word[0] != 0;
-#else
-    return FALSE;
-#endif
 }
 
 /*++
@@ -1054,10 +881,7 @@ BOOL PALInitLock(void)
         return FALSE;
     }
 
-    CPalThread * pThread =
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
-
-    InternalEnterCriticalSection(pThread, init_critsec);
+    minipal_mutex_enter(init_critsec);
     return TRUE;
 }
 
@@ -1076,55 +900,10 @@ void PALInitUnlock(void)
         return;
     }
 
-    CPalThread * pThread =
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
-
-    InternalLeaveCriticalSection(pThread, init_critsec);
+    minipal_mutex_leave(init_critsec);
 }
 
 /* Internal functions *********************************************************/
-
-/*++
-Function:
-    INIT_IncreaseDescriptorLimit [internal]
-
-Abstract:
-    Calls setrlimit(2) to increase the maximum number of file descriptors
-    this process can open.
-
-Return value:
-    TRUE if the call to setrlimit succeeded; FALSE otherwise.
---*/
-static BOOL INIT_IncreaseDescriptorLimit(void)
-{
-#ifndef DONT_SET_RLIMIT_NOFILE
-    struct rlimit rlp;
-    int result;
-
-    result = getrlimit(RLIMIT_NOFILE, &rlp);
-    if (result != 0)
-    {
-        return FALSE;
-    }
-    // Set our soft limit for file descriptors to be the same
-    // as the max limit.
-    rlp.rlim_cur = rlp.rlim_max;
-#ifdef __APPLE__
-    // Based on compatibility note in setrlimit(2) manpage for OSX,
-    // trim the limit to OPEN_MAX.
-    if (rlp.rlim_cur > OPEN_MAX)
-    {
-        rlp.rlim_cur = OPEN_MAX;
-    }
-#endif
-    result = setrlimit(RLIMIT_NOFILE, &rlp);
-    if (result != 0)
-    {
-        return FALSE;
-    }
-#endif // !DONT_SET_RLIMIT_NOFILE
-    return TRUE;
-}
 
 /*++
 Function:
@@ -1179,7 +958,7 @@ static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv)
         length+=3;
         length+=strlen(argv[i])*2;
     }
-    command_line = reinterpret_cast<LPSTR>(InternalMalloc(length));
+    command_line = reinterpret_cast<LPSTR>(malloc(length != 0 ? length : 1));
 
     if(!command_line)
     {
@@ -1231,7 +1010,7 @@ static LPWSTR INIT_FormatCommandLine (int argc, const char * const *argv)
         return nullptr;
     }
 
-    retval = reinterpret_cast<LPWSTR>(InternalMalloc((sizeof(WCHAR)*i)));
+    retval = reinterpret_cast<LPWSTR>(malloc((sizeof(WCHAR)*i)));
     if(retval == nullptr)
     {
         ERROR("can't allocate memory for Unicode command line!\n");
@@ -1287,7 +1066,7 @@ static LPWSTR INIT_GetCurrentEXEPath()
         return nullptr;
     }
 
-    return_value = reinterpret_cast<LPWSTR>(InternalMalloc((return_size*sizeof(WCHAR))));
+    return_value = reinterpret_cast<LPWSTR>(malloc((return_size*sizeof(WCHAR))));
     if (nullptr == return_value)
     {
         ERROR("Not enough memory to create full path\n");
@@ -1368,5 +1147,5 @@ static BOOL INIT_SharedFilesPath(void)
     return gSharedFilesPath->Set(TEMP_DIRECTORY_PATH);
 
     // We can verify statically the non sandboxed case, since the size is known during compile time
-    static_assert_no_msg(STRING_LENGTH(TEMP_DIRECTORY_PATH) + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ <= MAX_LONGPATH);
+    static_assert(STRING_LENGTH(TEMP_DIRECTORY_PATH) + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ <= MAX_LONGPATH);
 }

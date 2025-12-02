@@ -9,6 +9,7 @@
 #include <cor.h>                // for debugMacros.h
 #include "debugmacros.h"        // for ASSERTE
 #include "opinfo.h"
+#include "check.h"
 
 
 OpInfo::OpInfoData OpInfo::table[] = {
@@ -97,7 +98,7 @@ AGAIN:
             args->i8 = GET_UNALIGNED_VAL64(instrPtr); instrPtr +=8;
             break;
         case InlineR: {
-            __int64 d = GET_UNALIGNED_VAL64(instrPtr); instrPtr +=8;
+            int64_t d = GET_UNALIGNED_VAL64(instrPtr); instrPtr +=8;
             args->r = *((double*) (&d));
             } break;
         case InlineSwitch:
@@ -109,11 +110,7 @@ AGAIN:
             args->phi.vars  = (unsigned short*) instrPtr; instrPtr += (2 * args->phi.count);
             break;
         default:
-#ifdef _DEBUG
-            _ASSERTE(!"BadType");
-#else
-            __assume(0);        // we are really certain the default case does not happen
-#endif
+            UNREACHABLE();        // we are really certain the default case does not happen
             break;
         }
     return(instrPtr);

@@ -46,6 +46,7 @@ namespace hello_throwinfinallyerrpath_basics_cs
             Console.WriteLine("in Finally");
         }
         [Fact]
+        [OuterLoop]
         static public int TestEntryPoint()
         {
             //Start recording

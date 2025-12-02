@@ -12,8 +12,8 @@ namespace System.Security.Cryptography
         private static readonly ConcurrentDictionary<string, string> s_lateBoundOidToFriendlyName =
             new ConcurrentDictionary<string, string>();
 
-        private static readonly ConcurrentDictionary<string, string?> s_lateBoundFriendlyNameToOid =
-            new ConcurrentDictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, string> s_lateBoundFriendlyNameToOid =
+            new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         //
         // Attempts to map a friendly name to an OID. Returns null if not a known name.
@@ -33,7 +33,7 @@ namespace System.Security.Cryptography
             if (shouldUseCache)
             {
                 if (s_oidToFriendlyName.TryGetValue(oid, out mappedName) ||
-                    s_compatOids.TryGetValue(oid, out mappedName) ||
+                    ((mappedName = LookupCompatOidName(oid)) is not null) ||
                     s_lateBoundOidToFriendlyName.TryGetValue(oid, out mappedName))
                 {
                     return mappedName;
@@ -77,19 +77,13 @@ namespace System.Security.Cryptography
 
             mappedOid = NativeFriendlyNameToOid(friendlyName, oidGroup, fallBackToAllGroups);
 
-            if (shouldUseCache)
+            if (shouldUseCache && mappedOid != null)
             {
                 s_lateBoundFriendlyNameToOid.TryAdd(friendlyName, mappedOid);
 
                 // Don't add the reverse here.  Friendly Name => OID is a case insensitive search,
                 // so the casing provided as input here may not be the 'correct' one.  Just let
                 // ToFriendlyName capture the response and cache it itself.
-
-                // Also, mappedOid could be null here if the lookup failed.  Allowing storing null
-                // means we're able to cache that a lookup failed so we don't repeat it.  It's
-                // theoretically possible, however, the failure could have been intermittent, e.g.
-                // if the call was forced to follow an AD fallback path and the relevant servers
-                // were offline.
             }
 
             return mappedOid;
@@ -107,22 +101,6 @@ namespace System.Security.Cryptography
         private static readonly Dictionary<string, string> s_oidToFriendlyName =
             new Dictionary<string, string>(OidToFriendlyNameCount, StringComparer.Ordinal);
 
-        private static readonly Dictionary<string, string> s_compatOids =
-            new Dictionary<string, string>
-            {
-                { "1.2.840.113549.1.3.1", "DH" },
-                { "1.3.14.3.2.12", "DSA" },
-                { "1.3.14.3.2.13", "sha1DSA" },
-                { "1.3.14.3.2.15", "shaRSA" },
-                { "1.3.14.3.2.18", "sha" },
-                { "1.3.14.3.2.2", "md4RSA" },
-                { "1.3.14.3.2.22", "RSA_KEYX" },
-                { "1.3.14.3.2.29", "sha1RSA" },
-                { "1.3.14.3.2.3", "md5RSA" },
-                { "1.3.14.3.2.4", "md4RSA" },
-                { "1.3.14.7.2.3.1", "md2RSA" },
-            };
-
         static OidLookup()
         {
             InitializeLookupDictionaries();
@@ -137,19 +115,34 @@ namespace System.Security.Cryptography
 #endif
         }
 
+        private static string? LookupCompatOidName(string oid)
+        {
+            return oid switch
+            {
+                "1.2.840.113549.1.3.1" => "DH",
+                "1.3.14.3.2.12" => "DSA",
+                "1.3.14.3.2.13" => "sha1DSA",
+                "1.3.14.3.2.15" => "shaRSA",
+                "1.3.14.3.2.18" => "sha",
+                "1.3.14.3.2.2" or "1.3.14.3.2.4" => "md4RSA",
+                "1.3.14.3.2.22" => "RSA_KEYX",
+                "1.3.14.3.2.29" => "sha1RSA",
+                "1.3.14.3.2.3" => "md5RSA",
+                "1.3.14.7.2.3.1" => "md2RSA",
+                _ => null,
+            };
+        }
+
         private static void InitializeLookupDictionaries()
         {
-            static void AddEntry(string oid, string primaryFriendlyName, string[]? additionalFriendlyNames = null)
+            static void AddEntry(string oid, string primaryFriendlyName, ReadOnlySpan<string> additionalFriendlyNames = default)
             {
                 s_oidToFriendlyName.Add(oid, primaryFriendlyName);
                 s_friendlyNameToOid.Add(primaryFriendlyName, oid);
 
-                if (additionalFriendlyNames != null)
+                foreach (string additionalName in additionalFriendlyNames)
                 {
-                    foreach (var additionalName in additionalFriendlyNames)
-                    {
-                        s_friendlyNameToOid.Add(additionalName, oid);
-                    }
+                    s_friendlyNameToOid.Add(additionalName, oid);
                 }
             }
 
@@ -162,7 +155,7 @@ namespace System.Security.Cryptography
             // Japanese (Win10).
             //
             // Sometimes wincrypt.h has more than one OID which results in the same name.  The OIDs whose value
-            // doesn't roundtrip (new Oid(new Oid(value).FriendlyName).Value) are contained in s_compatOids.
+            // doesn't roundtrip (new Oid(new Oid(value).FriendlyName).Value) are contained in LookupCompatOidName.
             //
             // X-Plat: The names (and casing) in this table come from Windows. Part of the intent of this table
             // is to prevent issues wherein an identifier is different between Windows and Unix;
@@ -206,10 +199,9 @@ namespace System.Security.Cryptography
             AddEntry("1.3.133.16.840.63.0.2", "ECDH_STD_SHA1_KDF");
             AddEntry("1.3.132.1.11.1", "ECDH_STD_SHA256_KDF");
             AddEntry("1.3.132.1.11.2", "ECDH_STD_SHA384_KDF");
-#pragma warning disable CA1861 // Avoid constant arrays as arguments. Loaded by static constructor
-            AddEntry("1.2.840.10045.3.1.7", "ECDSA_P256", new[] { "nistP256", "secP256r1", "x962P256v1", "ECDH_P256" });
-            AddEntry("1.3.132.0.34", "ECDSA_P384", new[] { "nistP384", "secP384r1", "ECDH_P384" });
-            AddEntry("1.3.132.0.35", "ECDSA_P521", new[] { "nistP521", "secP521r1", "ECDH_P521" });
+            AddEntry("1.2.840.10045.3.1.7", "ECDSA_P256", ["nistP256", "secP256r1", "x962P256v1", "ECDH_P256"]);
+            AddEntry("1.3.132.0.34", "ECDSA_P384", ["nistP384", "secP384r1", "ECDH_P384"]);
+            AddEntry("1.3.132.0.35", "ECDSA_P521", ["nistP521", "secP521r1", "ECDH_P521"]);
             AddEntry("1.2.840.113549.1.9.16.3.5", "ESDH");
             AddEntry("2.5.4.42", "G");
             AddEntry("2.5.4.43", "I");
@@ -236,8 +228,7 @@ namespace System.Security.Cryptography
             AddEntry("1.2.840.113549.1.1.1", "RSA");
             AddEntry("1.2.840.113549.1.1.7", "RSAES_OAEP");
             AddEntry("1.2.840.113549.1.1.10", "RSASSA-PSS");
-            AddEntry("2.5.4.8", "S", new[] { "ST" });
-#pragma warning restore CA1861 // Avoid constant arrays as arguments
+            AddEntry("2.5.4.8", "S", ["ST"]);
             AddEntry("1.3.132.0.9", "secP160k1");
             AddEntry("1.3.132.0.8", "secP160r1");
             AddEntry("1.3.132.0.30", "secP160r2");

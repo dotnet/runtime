@@ -254,7 +254,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 
     if (setCredentials && groupsLength > 0)
     {
-        getGroupsBuffer = malloc(sizeof(uint32_t) * Int32ToSizeT(groupsLength));
+        getGroupsBuffer = (uint32_t*)(malloc(sizeof(uint32_t) * Int32ToSizeT(groupsLength)));
         if (getGroupsBuffer == NULL)
         {
             success = false;
@@ -314,7 +314,11 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     sigfillset(&signal_set);
     pthread_sigmask(SIG_SETMASK, &signal_set, &old_signal_set);
 
-#if HAVE_VFORK && !(defined(__APPLE__)) // We don't trust vfork on OS X right now.
+// vfork on OS X is deprecated
+// On Android, signal handlers between parent and child processes are shared with vfork, so when we reset
+// the signal handlers during child startup, we end up incorrectly clearing also the ones for the parent.
+#if HAVE_VFORK && !defined(__APPLE__) && !defined(TARGET_ANDROID)
+
     // This platform has vfork(). vfork() is either a synonym for fork or provides shared memory
     // semantics. For a one gigabyte process, the expected performance gain of using shared memory
     // vfork() rather than fork() is 99.5% merely due to avoiding page faults as the kernel does not
@@ -507,6 +511,23 @@ done:;
 
     return success ? 0 : -1;
 #else
+    // ignore unused parameters
+    (void)filename;
+    (void)argv;
+    (void)envp;
+    (void)cwd;
+    (void)redirectStdin;
+    (void)redirectStdout;
+    (void)redirectStderr;
+    (void)setCredentials;
+    (void)userId;
+    (void)groupId;
+    (void)groups;
+    (void)groupsLength;
+    (void)childPid;
+    (void)stdinFd;
+    (void)stdoutFd;
+    (void)stderrFd;
     return -1;
 #endif
 }

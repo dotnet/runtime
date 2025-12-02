@@ -53,15 +53,20 @@ int32_t AppleCryptoNative_X509ChainEvaluate(SecTrustRef chain,
         return -3;
     }
 
-    SecTrustResultType trustResult;
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    *pOSStatus = SecTrustEvaluate(chain, &trustResult);
-#pragma clang diagnostic pop
+    // If the chain built successfully return 1. We pass in NULL for the CFError, since we don't care what it is. We use
+    // the SecTrustResultType for that.
+    if (SecTrustEvaluateWithError(chain, NULL))
+    {
+        *pOSStatus = noErr;
+        return 1;
+    }
 
-    // If any error is reported from the function or the trust result value indicates that
-    // otherwise was a failed chain build (vs an untrusted chain, etc) return failure and
-    // we'll throw in the managed layer.  (but if we hit the "or" the message is "No error")
+    SecTrustResultType trustResult;
+    *pOSStatus = SecTrustGetTrustResult(chain, &trustResult);
+
+    // If SecTrustGetTrustResult couldn't get the trust result, return an error.
+    // If the result is kSecTrustResultInvalid then that means you asked for the result before building a chain.
+    // This shouldn't happen but we shouldn't treat it as success, so it's also a fail.
     if (*pOSStatus != noErr || trustResult == kSecTrustResultInvalid)
     {
         return 0;
@@ -92,7 +97,10 @@ SecCertificateRef AppleCryptoNative_X509ChainGetCertificateAtIndex(SecTrustRef c
     if (chain == NULL || index < 0)
         return NULL;
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     return SecTrustGetCertificateAtIndex(chain, index);
+#pragma clang diagnostic pop
 }
 
 CFArrayRef AppleCryptoNative_X509ChainGetTrustResults(SecTrustRef chain)
@@ -204,7 +212,7 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
 #if defined DEBUG || defined DEBUGGING_UNKNOWN_VALUE
         CFIndex keyStringLength = CFStringGetLength(keyString);
         CFIndex maxEncodedLength = CFStringGetMaximumSizeForEncoding(keyStringLength, kCFStringEncodingUTF8) + 1;
-        char* keyStringBuffer = malloc(maxEncodedLength);
+        char* keyStringBuffer = malloc((size_t)maxEncodedLength);
 
         if (keyStringBuffer)
         {

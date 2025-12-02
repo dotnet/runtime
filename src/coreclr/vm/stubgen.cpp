@@ -148,7 +148,7 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting
     {
         strTokenFormatting.Printf("%d", token);
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 void ILCodeStream::Emit(ILInstrEnum instr, INT16 iStackDelta, UINT_PTR uArg)
@@ -173,6 +173,21 @@ void ILCodeStream::Emit(ILInstrEnum instr, INT16 iStackDelta, UINT_PTR uArg)
     pInstrBuffer[idxCurInstr].uInstruction = static_cast<UINT16>(instr);
     pInstrBuffer[idxCurInstr].iStackDelta = iStackDelta;
     pInstrBuffer[idxCurInstr].uArg = uArg;
+
+    if(m_buildingEHClauses.GetCount() > 0)
+    {
+        ILStubEHClauseBuilder& clause = m_buildingEHClauses[m_buildingEHClauses.GetCount() - 1];
+
+        if (clause.tryBeginLabel != NULL && clause.tryEndLabel != NULL &&
+             clause.handlerBeginLabel != NULL && clause.kind == ILStubEHClause::kTypedCatch)
+        {
+            if (clause.handlerBeginLabel->m_idxLabeledInstruction == idxCurInstr)
+            {
+                // Catch clauses start with an exception on the stack
+                pInstrBuffer[idxCurInstr].iStackDelta++;
+            }
+        }
+    }
 }
 
 ILCodeLabel* ILStubLinker::NewCodeLabel()
@@ -342,9 +357,9 @@ lShortForm:
             if (FitsInI1(uConst))
             {
                 static const UINT_PTR c_uMakeShortDelta = ((UINT_PTR)CEE_LDARG - (UINT_PTR)CEE_LDARG_S);
-                static_assert_no_msg(((UINT_PTR)CEE_LDARG - c_uMakeShortDelta) == (UINT_PTR)CEE_LDARG_S);
-                static_assert_no_msg(((UINT_PTR)CEE_LDLOC - c_uMakeShortDelta) == (UINT_PTR)CEE_LDLOC_S);
-                static_assert_no_msg(((UINT_PTR)CEE_STLOC - c_uMakeShortDelta) == (UINT_PTR)CEE_STLOC_S);
+                static_assert(((UINT_PTR)CEE_LDARG - c_uMakeShortDelta) == (UINT_PTR)CEE_LDARG_S);
+                static_assert(((UINT_PTR)CEE_LDLOC - c_uMakeShortDelta) == (UINT_PTR)CEE_LDLOC_S);
+                static_assert(((UINT_PTR)CEE_STLOC - c_uMakeShortDelta) == (UINT_PTR)CEE_STLOC_S);
 
                 instr = (ILInstrEnum)((UINT_PTR)instr - c_uMakeShortDelta);
             }
@@ -358,9 +373,9 @@ lShortForm:
             if (FitsInI1(uConst))
             {
                 static const UINT_PTR c_uMakeShortDelta = ((UINT_PTR)CEE_LDARGA - (UINT_PTR)CEE_LDARGA_S);
-                static_assert_no_msg(((UINT_PTR)CEE_LDARGA - c_uMakeShortDelta) == (UINT_PTR)CEE_LDARGA_S);
-                static_assert_no_msg(((UINT_PTR)CEE_STARG  - c_uMakeShortDelta) == (UINT_PTR)CEE_STARG_S);
-                static_assert_no_msg(((UINT_PTR)CEE_LDLOCA - c_uMakeShortDelta) == (UINT_PTR)CEE_LDLOCA_S);
+                static_assert(((UINT_PTR)CEE_LDARGA - c_uMakeShortDelta) == (UINT_PTR)CEE_LDARGA_S);
+                static_assert(((UINT_PTR)CEE_STARG  - c_uMakeShortDelta) == (UINT_PTR)CEE_STARG_S);
+                static_assert(((UINT_PTR)CEE_LDLOCA - c_uMakeShortDelta) == (UINT_PTR)CEE_LDLOCA_S);
 
                 instr = (ILInstrEnum)((UINT_PTR)instr - c_uMakeShortDelta);
             }
@@ -595,7 +610,7 @@ ILStubLinker::LogILStubWorker(
         //
         // calculate the code size
         //
-        PREFIX_ASSUME((size_t)instr < sizeof(s_rgbOpcodeSizes));
+        _ASSERTE((size_t)instr < sizeof(s_rgbOpcodeSizes));
         *pcbCode += s_rgbOpcodeSizes[instr];
 
         //
@@ -718,7 +733,7 @@ bool ILStubLinker::FirstPassLink(ILInstruction* pInstrBuffer, UINT numInstr, siz
         //
         // calculate the code size
         //
-        PREFIX_ASSUME((size_t)instr < sizeof(s_rgbOpcodeSizes));
+        _ASSERTE((size_t)instr < sizeof(s_rgbOpcodeSizes));
         *pcbCode += s_rgbOpcodeSizes[instr];
 
         //
@@ -916,7 +931,7 @@ BYTE* ILStubLinker::GenerateCodeWorker(BYTE* pbBuffer, ILInstruction* pInstrBuff
         {
             const ILOpcode* pOpcode = &s_rgOpcodes[instr];
 
-            PREFIX_ASSUME((size_t)instr < sizeof(s_rgbOpcodeSizes));
+            _ASSERTE((size_t)instr < sizeof(s_rgbOpcodeSizes));
             int     opSize = s_rgbOpcodeSizes[instr];
             bool    twoByteOp = (pOpcode->byte1 != 0xFF);
             int     argSize = opSize - (twoByteOp ? 2 : 1);
@@ -1034,6 +1049,8 @@ LPCSTR ILCodeStream::GetStreamDescription(ILStubLinker::CodeStreamType streamTyp
         "ExceptionCleanup",
         "Cleanup",
         "ExceptionHandler",
+        "TypeCheckAndCallMethod",
+        "UpdateByRefsAndReturn"
     };
 
 #ifdef _DEBUG
@@ -1176,6 +1193,11 @@ void ILCodeStream::EmitBNE_UN(ILCodeLabel* pCodeLabel)
 {
     WRAPPER_NO_CONTRACT;
     Emit(CEE_BNE_UN, -2, (UINT_PTR)pCodeLabel);
+}
+void ILCodeStream::EmitBOX(int token)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_BOX, 0, token);
 }
 void ILCodeStream::EmitBR(ILCodeLabel* pCodeLabel)
 {
@@ -1812,6 +1834,17 @@ void ILCodeStream::EmitUNALIGNED(BYTE alignment)
     Emit(CEE_UNALIGNED, 0, alignment);
 }
 
+void ILCodeStream::EmitUNBOX(int token)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_UNBOX, 0, token);
+}
+
+void ILCodeStream::EmitUNBOX_ANY(int token)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_UNBOX_ANY, 0, token);
+}
 
 void ILCodeStream::EmitNEWOBJ(BinderMethodID id, int numInArgs)
 {
@@ -1938,7 +1971,13 @@ DWORD StubSigBuilder::Append(LocalDesc* pLoc)
     }
     CONTRACTL_END;
 
-    EnsureEnoughQuickBytes(pLoc->cbType + sizeof(TypeHandle));
+    // Ensure we have enough bytes for the provided signature,
+    // the handle for ELEMENT_TYPE_INTERNAL,
+    // and the byte and handle for ELEMENT_TYPE_CMOD_INTERNAL
+    const size_t InternalPayloadSize = sizeof(TypeHandle);
+    const size_t CModInternalPayloadSize = sizeof(BYTE) + sizeof(TypeHandle);
+    EnsureEnoughQuickBytes(pLoc->cbType + InternalPayloadSize + CModInternalPayloadSize);
+    BYTE* pbSigStart = m_pbSigCursor;
 
     memcpyNoGCRefs(m_pbSigCursor, pLoc->ElementType, pLoc->cbType);
     m_pbSigCursor   += pLoc->cbType;
@@ -1958,6 +1997,23 @@ DWORD StubSigBuilder::Append(LocalDesc* pLoc)
                 m_pbSigCursor   += sizeof(TypeHandle);
                 m_cbSig         += sizeof(TypeHandle);
                 break;
+
+            case ELEMENT_TYPE_CMOD_INTERNAL:
+            {
+                // Nove later elements in the signature to make room for the CMOD_INTERNAL payload
+                memmove(pbSigStart + i + 1 + CModInternalPayloadSize, pbSigStart + i + 1, pLoc->cbType - i - 1);
+                _ASSERTE(pbSigStart[i] == ELEMENT_TYPE_CMOD_INTERNAL);
+                BYTE* pbSigInternalPayload = pbSigStart + i + 1;
+
+                // Write the "required" byte
+                *pbSigInternalPayload++ = pLoc->InternalModifierRequired ? 1 : 0;
+
+                // Write the modifier
+                SET_UNALIGNED_PTR(pbSigInternalPayload, (UINT_PTR)pLoc->InternalModifierToken.AsPtr());
+                m_pbSigCursor   += CModInternalPayloadSize;
+                m_cbSig         += CModInternalPayloadSize;
+                break;
+            }
 
             case ELEMENT_TYPE_FNPTR:
                 {
@@ -2044,7 +2100,7 @@ LocalSigBuilder::GetSig(
     }
     else
     {
-        return NULL;
+        return 0;
     }
 }
 
@@ -2083,8 +2139,26 @@ void FunctionSigBuilder::SetReturnType(LocalDesc* pLoc)
         {
             case ELEMENT_TYPE_INTERNAL:
                 m_qbReturnSig.ReSizeThrows(m_qbReturnSig.Size() + sizeof(TypeHandle));
-                SET_UNALIGNED_PTR((BYTE *)m_qbReturnSig.Ptr() + m_qbReturnSig.Size() - + sizeof(TypeHandle), (UINT_PTR)pLoc->InternalToken.AsPtr());
+                SET_UNALIGNED_PTR((BYTE *)m_qbReturnSig.Ptr() + m_qbReturnSig.Size() - sizeof(TypeHandle), (UINT_PTR)pLoc->InternalToken.AsPtr());
                 break;
+
+            case ELEMENT_TYPE_CMOD_INTERNAL:
+                {
+                    // Nove later elements in the signature to make room for the CMOD_INTERNAL payload
+                    const size_t CModInternalPayloadSize = sizeof(BYTE) + sizeof(TypeHandle);
+                    m_qbReturnSig.ReSizeThrows(m_qbReturnSig.Size() + CModInternalPayloadSize);
+                    BYTE* pbSigStart = (BYTE*)m_qbReturnSig.Ptr();
+                    memmove(pbSigStart + i + 1 + CModInternalPayloadSize, pbSigStart + i + 1, pLoc->cbType - i);
+                    _ASSERTE(pbSigStart[i] == ELEMENT_TYPE_CMOD_INTERNAL);
+                    BYTE* pbSigInternalPayload = pbSigStart + i + 1;
+
+                    // Write the "required" byte
+                    *pbSigInternalPayload++ = pLoc->InternalModifierRequired ? 1 : 0;
+
+                    // Write the modifier
+                    SET_UNALIGNED_PTR(pbSigInternalPayload, (UINT_PTR)pLoc->InternalModifierToken.AsPtr());
+                    break;
+                }
 
             case ELEMENT_TYPE_FNPTR:
                 {
@@ -2239,7 +2313,7 @@ FunctionSigBuilder::GetSig(
     }
     else
     {
-        return NULL;
+        return 0;
     }
 }
 
@@ -2443,7 +2517,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
 
         if ((flags & (ILSTUB_LINKER_FLAG_TARGET_HAS_THIS | ILSTUB_LINKER_FLAG_NDIRECT)) == ILSTUB_LINKER_FLAG_TARGET_HAS_THIS)
         {
-            // ndirect native sig never has a 'this' pointer
+            // PInvoke native sig never has a 'this' pointer
             uNativeCallingConv |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
         }
 
@@ -2606,77 +2680,92 @@ void ILStubLinker::TransformArgForJIT(LocalDesc *pLoc)
     STANDARD_VM_CONTRACT;
     // Turn everything into blittable primitives. The reason this method is needed are
     // byrefs which are OK only when they ref stack data or are pinned. This condition
-    // cannot be verified by code:NDirect.MarshalingRequired so we explicitly get rid
+    // cannot be verified by code:PInvoke.MarshalingRequired so we explicitly get rid
     // of them here.
-    switch (pLoc->ElementType[0])
+    bool again;
+    BYTE* elementType = pLoc->ElementType;
+    do
     {
-        // primitives
-        case ELEMENT_TYPE_VOID:
-        case ELEMENT_TYPE_BOOLEAN:
-        case ELEMENT_TYPE_CHAR:
-        case ELEMENT_TYPE_I1:
-        case ELEMENT_TYPE_U1:
-        case ELEMENT_TYPE_I2:
-        case ELEMENT_TYPE_U2:
-        case ELEMENT_TYPE_I4:
-        case ELEMENT_TYPE_U4:
-        case ELEMENT_TYPE_I8:
-        case ELEMENT_TYPE_U8:
-        case ELEMENT_TYPE_R4:
-        case ELEMENT_TYPE_R8:
-        case ELEMENT_TYPE_I:
-        case ELEMENT_TYPE_U:
+        again = false;
+        switch (*elementType)
         {
-            // no transformation needed
-            break;
-        }
-
-        case ELEMENT_TYPE_VALUETYPE:
-        {
-            _ASSERTE(!"Should have been replaced by a native value type!");
-            break;
-        }
-
-        case ELEMENT_TYPE_PTR:
-        {
-#ifdef TARGET_X86
-            if (pLoc->bIsCopyConstructed)
+            // primitives
+            case ELEMENT_TYPE_VOID:
+            case ELEMENT_TYPE_BOOLEAN:
+            case ELEMENT_TYPE_CHAR:
+            case ELEMENT_TYPE_I1:
+            case ELEMENT_TYPE_U1:
+            case ELEMENT_TYPE_I2:
+            case ELEMENT_TYPE_U2:
+            case ELEMENT_TYPE_I4:
+            case ELEMENT_TYPE_U4:
+            case ELEMENT_TYPE_I8:
+            case ELEMENT_TYPE_U8:
+            case ELEMENT_TYPE_R4:
+            case ELEMENT_TYPE_R8:
+            case ELEMENT_TYPE_I:
+            case ELEMENT_TYPE_U:
             {
-                // The only pointers that we don't transform to ELEMENT_TYPE_I are those that are
-                // ET_TYPE_CMOD_REQD<IsCopyConstructed>/ET_TYPE_CMOD_REQD<NeedsCopyConstructorModifier>
-                // in the original signature. This convention is understood by the UM thunk compiler
-                // (code:UMThunkMarshInfo.CompileNExportThunk) which will generate different thunk code.
-                // Such parameters come from unmanaged by value but must enter the IL stub by reference
-                // because we are not supposed to make a copy.
+                // no transformation needed
+                break;
             }
-            else
-#endif // TARGET_X86
+
+            case ELEMENT_TYPE_VALUETYPE:
+            {
+                _ASSERTE(!"Should have been replaced by a native value type!");
+                break;
+            }
+
+            case ELEMENT_TYPE_PTR:
+            {
+                // Don't transform pointer types to ELEMENT_TYPE_I. The JIT can handle the correct type information,
+                // and it's required for some cases (such as SwiftError*).
+                break;
+            }
+
+            case ELEMENT_TYPE_BYREF:
+            {
+                // Transform ELEMENT_TYPE_BYREF to ELEMENT_TYPE_PTR to retain the pointed-to type information
+                // while making the type blittable.
+                *elementType = ELEMENT_TYPE_PTR;
+                break;
+            }
+
+            case ELEMENT_TYPE_INTERNAL:
+            {
+                // JIT will handle structures
+                if (pLoc->InternalToken.IsValueType())
+                {
+                    _ASSERTE(pLoc->InternalToken.IsNativeValueType() || !pLoc->InternalToken.GetMethodTable()->ContainsGCPointers());
+                    break;
+                }
+                FALLTHROUGH;
+            }
+
+            case ELEMENT_TYPE_CMOD_REQD:
+            case ELEMENT_TYPE_CMOD_OPT:
+            {
+                _ASSERTE("Custom modifiers should be represented in a LocalDesc as ELEMENT_TYPE_CMOD_INTERNAL. Use AddModifier to add custom modifiers.");
+                FALLTHROUGH;
+            }
+            case ELEMENT_TYPE_CMOD_INTERNAL:
+            {
+                again = true;
+                break;
+            }
+
+            // ref types -> ELEMENT_TYPE_I
+            default:
             {
                 pLoc->ElementType[0] = ELEMENT_TYPE_I;
                 pLoc->cbType = 1;
+                return;
             }
-            break;
         }
-
-        case ELEMENT_TYPE_INTERNAL:
-        {
-            // JIT will handle structures
-            if (pLoc->InternalToken.IsValueType())
-            {
-                _ASSERTE(pLoc->InternalToken.IsNativeValueType() || !pLoc->InternalToken.GetMethodTable()->ContainsPointers());
-                break;
-            }
-            FALLTHROUGH;
-        }
-
-        // pointers, byrefs, strings, arrays, other ref types -> ELEMENT_TYPE_I
-        default:
-        {
-            pLoc->ElementType[0] = ELEMENT_TYPE_I;
-            pLoc->cbType = 1;
-            break;
-        }
+        elementType++;
+        _ASSERTE(elementType - pLoc->ElementType <= (ptrdiff_t)pLoc->cbType);
     }
+    while(again);
 }
 
 Module *ILStubLinker::GetStubSigModule()
@@ -2818,6 +2907,9 @@ void ILStubLinker::SetStubTargetCallingConv(CorInfoCallConvExtension callConv)
             case CorInfoCallConvExtension::FastcallMemberFunction:
                 m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_FASTCALL)));
                 m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_MEMBERFUNCTION)));
+                break;
+            case CorInfoCallConvExtension::Swift:
+                m_nativeFnSigBuilder.AddCallConvModOpt(GetToken(CoreLibBinder::GetClass(CLASS__CALLCONV_SWIFT)));
                 break;
             default:
                 _ASSERTE("Unknown calling convention. Unable to encode it in the native function pointer signature.");
@@ -3130,10 +3222,16 @@ int ILStubLinker::GetToken(MethodDesc* pMD)
     return m_tokenMap.GetToken(pMD);
 }
 
-int ILStubLinker::GetToken(MethodTable* pMT)
+int ILStubLinker::GetToken(MethodDesc* pMD, mdToken typeSignature)
 {
     STANDARD_VM_CONTRACT;
-    return m_tokenMap.GetToken(TypeHandle(pMT));
+    return m_tokenMap.GetToken(pMD, typeSignature);
+}
+
+int ILStubLinker::GetToken(MethodDesc* pMD, mdToken typeSignature, mdToken methodSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_tokenMap.GetToken(pMD, typeSignature, methodSignature);
 }
 
 int ILStubLinker::GetToken(TypeHandle th)
@@ -3142,10 +3240,22 @@ int ILStubLinker::GetToken(TypeHandle th)
     return m_tokenMap.GetToken(th);
 }
 
+int ILStubLinker::GetToken(TypeHandle th, mdToken typeSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_tokenMap.GetToken(th, typeSignature);
+}
+
 int ILStubLinker::GetToken(FieldDesc* pFD)
 {
     STANDARD_VM_CONTRACT;
     return m_tokenMap.GetToken(pFD);
+}
+
+int ILStubLinker::GetToken(FieldDesc* pFD, mdToken typeSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_tokenMap.GetToken(pFD, typeSignature);
 }
 
 int ILStubLinker::GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig)
@@ -3224,6 +3334,16 @@ int ILCodeStream::GetToken(MethodDesc* pMD)
     STANDARD_VM_CONTRACT;
     return m_pOwner->GetToken(pMD);
 }
+int ILCodeStream::GetToken(MethodDesc* pMD, mdToken typeSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_pOwner->GetToken(pMD, typeSignature);
+}
+int ILCodeStream::GetToken(MethodDesc* pMD, mdToken typeSignature, mdToken methodSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_pOwner->GetToken(pMD, typeSignature, methodSignature);
+}
 int ILCodeStream::GetToken(MethodTable* pMT)
 {
     STANDARD_VM_CONTRACT;
@@ -3234,10 +3354,20 @@ int ILCodeStream::GetToken(TypeHandle th)
     STANDARD_VM_CONTRACT;
     return m_pOwner->GetToken(th);
 }
+int ILCodeStream::GetToken(TypeHandle th, mdToken typeSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_pOwner->GetToken(th, typeSignature);
+}
 int ILCodeStream::GetToken(FieldDesc* pFD)
 {
     STANDARD_VM_CONTRACT;
     return m_pOwner->GetToken(pFD);
+}
+int ILCodeStream::GetToken(FieldDesc* pFD, mdToken typeSignature)
+{
+    STANDARD_VM_CONTRACT;
+    return m_pOwner->GetToken(pFD, typeSignature);
 }
 int ILCodeStream::GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig)
 {

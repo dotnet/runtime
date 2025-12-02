@@ -51,10 +51,20 @@ if [%TEST_USING_WORKLOADS%] == [true] (
 ) else (
     set SDK_HAS_WORKLOAD_INSTALLED=false
 )
-if [%TEST_USING_WEBCIL%] == [false] (
+if [%WASM_ENABLE_WEBCIL%] == [false] (
    set USE_WEBCIL_FOR_TESTS=false
 ) else (
    set USE_WEBCIL_FOR_TESTS=true
+)
+if [%WASM_FINGERPRINT_ASSETS%] == [false] (
+   set USE_FINGERPRINTING_FOR_TESTS=false
+) else (
+   set USE_FINGERPRINTING_FOR_TESTS=true
+)
+if [%WASM_BUNDLER_FRIENDLY_BOOT_CONFIG%] == [true] (
+   set USE_JAVASCRIPT_BUNDLER_FOR_TESTS=true
+) else (
+   set USE_JAVASCRIPT_BUNDLER_FOR_TESTS=false
 )
 
 if [%HELIX_CORRELATION_PAYLOAD%] NEQ [] (
@@ -64,6 +74,5 @@ if [%HELIX_CORRELATION_PAYLOAD%] NEQ [] (
     set _SDK_DIR=%BASE_DIR%\%SDK_DIR_NAME%
 )
 
-set "PATH=%_SDK_DIR%;%PATH%"
 set "SDK_FOR_WORKLOAD_TESTING_PATH=%_SDK_DIR%"
 EXIT /b 0

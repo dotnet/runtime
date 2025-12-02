@@ -7,7 +7,7 @@
 // This module contains helper functions used to encode and manipulate
 // signatures for scenarios where runtime-specific signatures
 // including specific generic instantiations are persisted,
-// like Ready-To-Run decoding, IBC, and Multi-core JIT recording/playback
+// like Ready-To-Run decoding, and Multi-core JIT recording/playback
 //
 // ===========================================================================
 
@@ -39,7 +39,7 @@ BOOL ZapSig::GetSignatureForTypeDesc(TypeDesc * desc, SigBuilder * pSigBuilder)
     }
     else if (elemType == ELEMENT_TYPE_VAR || elemType == ELEMENT_TYPE_MVAR)
     {
-        // Enable encoding of type variables for NGen signature only. IBC toolchain is not aware of them yet.
+        // Enable encoding of type variables for R2R signature only.
         if (context.externalTokens == ZapSig::NormalTokens)
             elemType = (CorElementType) ELEMENT_TYPE_VAR_ZAPSIG;
     }
@@ -140,7 +140,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
         PRECONDITION(CheckPointer(handle));
         PRECONDITION(CheckPointer(this->context.pInfoModule));
-        PRECONDITION(!handle.HasUnrestoredTypeKey());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -196,10 +195,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
     if (pTypeHandleModule != this->context.pInfoModule)
     {
-        // During IBC profiling this calls
-        //     code:Module.EncodeModuleHelper
-        // During ngen this calls
-        //     code:ZapImportTable.EncodeModuleHelper
         // During multicorejit this calls
         //     code:MulticoreJitManager.EncodeModuleHelper
         //
@@ -307,7 +302,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         PRECONDITION(CheckPointer(pZapSigContext->pInfoModule));
         PRECONDITION(CheckPointer(handle));
         PRECONDITION(CheckPointer(pSig));
-        PRECONDITION(!handle.HasUnrestoredTypeKey());
     }
     CONTRACT_END
 
@@ -425,7 +419,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
                 EX_CATCH
                 {
                 }
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
                 if (!resolved)
                     RETURN(FALSE);
             }
@@ -488,7 +482,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
                 EX_CATCH
                 {
                 }
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
                 if (!resolved)
                     RETURN(FALSE);
             }
@@ -585,7 +579,7 @@ ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
         }
         else
         {
-            pAssembly = fromModule->LoadAssembly(RidToToken(index, mdtAssemblyRef))->GetAssembly();
+            pAssembly = fromModule->LoadAssembly(RidToToken(index, mdtAssemblyRef));
         }
     }
     else
@@ -605,7 +599,7 @@ ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
 
         if(pAssembly == NULL)
         {
-            DomainAssembly *pParentAssembly = fromModule->GetDomainAssembly();
+            Assembly *pParentAssembly = fromModule->GetAssembly();
             if (nativeImage != NULL)
             {
                 pAssembly = nativeImage->LoadManifestAssembly(index, pParentAssembly);
@@ -927,12 +921,15 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
     // in non-generic structs.
     BOOL isInstantiatingStub = (methodFlags & ENCODE_METHOD_SIG_InstantiatingStub);
     BOOL isUnboxingStub = (methodFlags & ENCODE_METHOD_SIG_UnboxingStub);
+    bool isAsyncVariant = (methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0;
 
     pMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pMethod, thOwner.GetMethodTable(),
                                                             isUnboxingStub,
                                                             inst,
                                                             !(isInstantiatingStub || isUnboxingStub) && !actualOwnerRequired,
-                                                            actualOwnerRequired);
+                                                            actualOwnerRequired,
+                                                            TRUE,
+                                                            isAsyncVariant == pMethod->IsAsyncVariantMethod() ? AsyncVariantLookup::MatchingAsyncVariant : AsyncVariantLookup::AsyncOtherVariant);
 
     if (methodFlags & ENCODE_METHOD_SIG_Constrained)
     {
@@ -954,6 +951,11 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
             _ASSERTE(!"Constrained method resolution failed");
 
             MemberLoader::ThrowMissingMethodException(constrainedType.GetMethodTable(), NULL, NULL, NULL, 0, NULL);
+        }
+
+        if (directMethod->IsStatic() && (ppTH != NULL))
+        {
+            *ppTH = directMethod->GetMethodTable();
         }
 
         // Strip the instantiating stub if the signature did not ask for one
@@ -1030,45 +1032,31 @@ FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
         IfFailThrow(sig.SkipExactlyOne());
     }
 
-    if (fieldFlags & ENCODE_FIELD_SIG_IndexInsteadOfToken)
+    RID rid;
+    IfFailThrow(sig.GetData(&rid));
+
+    if (fieldFlags & ENCODE_FIELD_SIG_MemberRefToken)
     {
-        // get the field desc using index
-        uint32_t fieldIndex;
-        IfFailThrow(sig.GetData(&fieldIndex));
-
-        _ASSERTE(pOwnerMT != NULL);
-
-        pField = pOwnerMT->GetFieldDescByIndex(fieldIndex);
-        _ASSERTE(pOwnerMT == pField->GetApproxEnclosingMethodTable());
-    }
-    else
-    {
-        RID rid;
-        IfFailThrow(sig.GetData(&rid));
-
-        if (fieldFlags & ENCODE_FIELD_SIG_MemberRefToken)
+        if (pOwnerMT == NULL)
         {
-            if (pOwnerMT == NULL)
-            {
-                TypeHandle th;
-                MethodDesc * pMD = NULL;
-                FieldDesc * pFD = NULL;
+            TypeHandle th;
+            MethodDesc * pMD = NULL;
+            FieldDesc * pFD = NULL;
 
-                MemberLoader::GetDescFromMemberRef(pInfoModule, TokenFromRid(rid, mdtMemberRef), &pMD, &pFD, NULL, FALSE, &th);
-                _ASSERTE(pFD != NULL);
+            MemberLoader::GetDescFromMemberRef(pInfoModule, TokenFromRid(rid, mdtMemberRef), &pMD, &pFD, NULL, FALSE, &th);
+            _ASSERTE(pFD != NULL);
 
-                pField = pFD;
-            }
-            else
-            {
-                pField = MemberLoader::GetFieldDescFromMemberRefAndType(pInfoModule, TokenFromRid(rid, mdtMemberRef), pOwnerMT);
-            }
+            pField = pFD;
         }
         else
         {
-            _ASSERTE(pInfoModule->IsFullModule());
-            pField = MemberLoader::GetFieldDescFromFieldDef(static_cast<Module*>(pInfoModule), TokenFromRid(rid, mdtFieldDef), FALSE);
+            pField = MemberLoader::GetFieldDescFromMemberRefAndType(pInfoModule, TokenFromRid(rid, mdtMemberRef), pOwnerMT);
         }
+    }
+    else
+    {
+        _ASSERTE(pInfoModule->IsFullModule());
+        pField = MemberLoader::GetFieldDescFromFieldDef(static_cast<Module*>(pInfoModule), TokenFromRid(rid, mdtFieldDef), FALSE);
     }
 
     if (ppTH != NULL)
@@ -1236,6 +1224,8 @@ BOOL ZapSig::EncodeMethod(
         methodFlags |= ENCODE_METHOD_SIG_InstantiatingStub;
     if (fMethodNeedsInstantiation)
         methodFlags |= ENCODE_METHOD_SIG_MethodInstantiation;
+    if (pMethod->IsAsyncVariantMethod())
+        methodFlags |= ENCODE_METHOD_SIG_AsyncVariant;
 
     // Assume that the owner type is going to be needed
     methodFlags |= ENCODE_METHOD_SIG_OwnerType;
@@ -1250,11 +1240,8 @@ BOOL ZapSig::EncodeMethod(
 
         if (pTypeHandleModule != pInfoModule)
         {
-            // During IBC profiling this calls
-            //     code:Module.EncodeModuleHelper
-            // During ngen this calls
-            //     code:ZapImportTable.EncodeModuleHelper)
-            //
+            // During multicorejit this calls
+            //     code:MulticoreJitManager.EncodeModuleHelper
             DWORD index = (*((EncodeModuleCallback) pfnEncodeModule))(pEncodeModuleContext, pTypeHandleModule);
 
             if (index == ENCODE_MODULE_FAILED)
@@ -1350,6 +1337,9 @@ BOOL ZapSig::EncodeMethod(
         else
         {
             Instantiation inst = pMethod->GetMethodInstantiation();
+
+            pSigBuilder->AppendData(inst.GetNumArgs());
+
             for (DWORD i = 0; i < inst.GetNumArgs(); i++)
             {
                 TypeHandle t = inst[i];

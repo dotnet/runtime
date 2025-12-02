@@ -20,6 +20,8 @@
 
 #include "gchandletableimpl.h"
 
+#include "gcbridge.h"
+
 HandleTableMap g_HandleTableMap;
 
 // Array of contexts used while scanning dependent handles for promotion. There are as many contexts as GC
@@ -142,6 +144,47 @@ void CALLBACK TraceDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pEx
     {
         // yes - call the tracing function for this handle
         pfnTrace(pObjRef, NULL, lp1, (uintptr_t)(pInfo->pfnProfilingOrETW));
+    }
+}
+
+void CALLBACK UpdateWeakInteriorHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtraInfo, uintptr_t lp1, uintptr_t lp2)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(pExtraInfo);
+
+    Object **pPrimaryRef = (Object **)pObjRef;
+    uintptr_t **ppInteriorPtrRef = (uintptr_t **)pExtraInfo;
+
+    LOG((LF_GC, LL_INFO10000, LOG_HANDLE_OBJECT("Querying for new location of ",
+            pPrimaryRef, "to ", *pPrimaryRef)));
+
+    Object *pOldPrimary = *pPrimaryRef;
+
+	_ASSERTE(lp2);
+	promote_func* callback = (promote_func*) lp2;
+	callback(pPrimaryRef, (ScanContext *)lp1, 0);
+
+    Object *pNewPrimary = *pPrimaryRef;
+    if (pNewPrimary != NULL)
+    {
+        uintptr_t pOldInterior = **ppInteriorPtrRef;
+        uintptr_t delta = ((uintptr_t)pNewPrimary) - ((uintptr_t)pOldPrimary);
+        uintptr_t pNewInterior = pOldInterior + delta;
+        **ppInteriorPtrRef = pNewInterior;
+#ifdef _DEBUG
+        if (pOldPrimary != *pPrimaryRef)
+            LOG((LF_GC, LL_INFO10000,  "Updating " FMT_HANDLE "from" FMT_ADDR "to " FMT_OBJECT "\n",
+                DBG_ADDR(pPrimaryRef), DBG_ADDR(pOldPrimary), DBG_ADDR(*pPrimaryRef)));
+        else
+            LOG((LF_GC, LL_INFO10000, "Updating " FMT_HANDLE "- " FMT_OBJECT "did not move\n",
+                DBG_ADDR(pPrimaryRef), DBG_ADDR(*pPrimaryRef)));
+        if (pOldInterior != pNewInterior)
+            LOG((LF_GC, LL_INFO10000,  "Updating " FMT_HANDLE "from" FMT_ADDR "to " FMT_OBJECT "\n",
+                DBG_ADDR(*ppInteriorPtrRef), DBG_ADDR(pOldInterior), DBG_ADDR(pNewInterior)));
+        else
+            LOG((LF_GC, LL_INFO10000, "Updating " FMT_HANDLE "- " FMT_OBJECT "did not move\n",
+                DBG_ADDR(*ppInteriorPtrRef), DBG_ADDR(pOldInterior)));
+#endif
     }
 }
 
@@ -427,20 +470,26 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
         break;
     case    HNDTYPE_WEAK_SHORT:
     case    HNDTYPE_WEAK_LONG:
+    case    HNDTYPE_WEAK_INTERIOR_POINTER:
 #ifdef FEATURE_WEAK_NATIVE_COM_HANDLES
     case    HNDTYPE_WEAK_NATIVE_COM:
-#endif // FEATURE_WEAK_NATIVE_COM_HANDLES
+#endif
         rootFlags |= kEtwGCRootFlagsWeakRef;
         break;
 
     case    HNDTYPE_STRONG:
+#ifdef FEATURE_SIZED_REF_HANDLES
     case    HNDTYPE_SIZEDREF:
+#endif // FEATURE_SIZED_REF_HANDLES
+#ifdef FEATURE_JAVAMARSHAL
+    case    HNDTYPE_CROSSREFERENCE:
+#endif // FEATURE_JAVAMARSHAL
         break;
 
     case    HNDTYPE_PINNED:
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
     case    HNDTYPE_ASYNCPINNED:
-#endif // FEATURE_ASYNC_PINNED_HANDLES
+#endif
         rootFlags |= kEtwGCRootFlagsPinning;
         break;
 
@@ -527,6 +576,8 @@ static const uint32_t s_rgTypeFlags[] =
     HNDF_NORMAL,    // HNDTYPE_ASYNCPINNED
     HNDF_EXTRAINFO, // HNDTYPE_SIZEDREF
     HNDF_EXTRAINFO, // HNDTYPE_WEAK_NATIVE_COM
+    HNDF_EXTRAINFO, // HNDTYPE_WEAK_INTERIOR_POINTER
+    HNDF_EXTRAINFO, // HNDTYPE_CROSSREFERENCE
 };
 
 int getNumberOfSlots()
@@ -693,7 +744,6 @@ void Ref_Shutdown()
     }
 }
 
-#ifndef FEATURE_NATIVEAOT
 bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket)
 {
     CONTRACTL
@@ -782,7 +832,6 @@ bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket)
         offset = last->dwMaxIndex;
     }
 }
-#endif // !FEATURE_NATIVEAOT
 
 void Ref_RemoveHandleTableBucket(HandleTableBucket *pBucket)
 {
@@ -1062,7 +1111,12 @@ void Ref_TraceNormalRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, 
 
     // promote objects pointed to by strong handles
     // during ephemeral GCs we also want to promote the ones pointed to by sizedref handles.
-    uint32_t types[2] = {HNDTYPE_STRONG, HNDTYPE_SIZEDREF};
+    uint32_t types[] = {
+        HNDTYPE_STRONG,
+#ifdef FEATURE_SIZED_REF_HANDLES
+        HNDTYPE_SIZEDREF
+#endif
+    };
     uint32_t uTypeCount = (((condemned >= maxgen) && !g_theGCHeap->IsConcurrentGCInProgress()) ? 1 : ARRAY_SIZE(types));
     uint32_t flags = (sc->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
 
@@ -1154,9 +1208,6 @@ void Ref_TraceRefCountHandles(HANDLESCANPROC callback, uintptr_t lParam1, uintpt
 #endif // FEATURE_REFCOUNTED_HANDLES
 }
 
-
-
-
 void Ref_CheckReachable(uint32_t condemned, uint32_t maxgen, ScanContext *sc)
 {
     WRAPPER_NO_CONTRACT;
@@ -1170,6 +1221,7 @@ void Ref_CheckReachable(uint32_t condemned, uint32_t maxgen, ScanContext *sc)
 #ifdef FEATURE_REFCOUNTED_HANDLES
         HNDTYPE_REFCOUNTED,
 #endif
+        HNDTYPE_WEAK_INTERIOR_POINTER
     };
 
     // check objects pointed to by short weak handles
@@ -1339,6 +1391,40 @@ void Ref_ScanDependentHandlesForClearing(uint32_t condemned, uint32_t maxgen, Sc
     }
 }
 
+// Perform a scan of weak interior pointers for the purpose of updating handles to track relocated objects.
+void Ref_ScanWeakInteriorPointersForRelocation(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn)
+{
+    LOG((LF_GC, LL_INFO10000, "Relocating moved dependent handles in generation %u\n", condemned));
+    uint32_t type = HNDTYPE_WEAK_INTERIOR_POINTER;
+    uint32_t flags = (sc->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
+    flags |= HNDGCF_EXTRAINFO;
+
+    HandleTableMap *walk = &g_HandleTableMap;
+    while (walk)
+    {
+        for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++)
+        {
+            if (walk->pBuckets[i] != NULL)
+            {
+                int uCPUindex = getSlotNumber(sc);
+                int uCPUlimit = getNumberOfSlots();
+                assert(uCPUlimit > 0);
+                int uCPUstep = getThreadCount(sc);
+                HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
+                {
+                    HHANDLETABLE hTable = pTable[uCPUindex];
+                    if (hTable)
+                    {
+                        HndScanHandlesForGC(hTable, UpdateWeakInteriorHandle, uintptr_t(sc), uintptr_t(fn), &type, 1, condemned, maxgen, flags );
+                    }
+                }
+            }
+        }
+        walk = walk->pNext;
+    }
+}
+
 // Perform a scan of dependent handles for the purpose of updating handles to track relocated objects.
 void Ref_ScanDependentHandlesForRelocation(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn)
 {
@@ -1404,6 +1490,7 @@ void TraceDependentHandlesBySingleThread(HANDLESCANPROC pfnTrace, uintptr_t lp1,
     }
 }
 
+#ifdef FEATURE_SIZED_REF_HANDLES
 void ScanSizedRefByCPU(uint32_t maxgen, HANDLESCANPROC scanProc, ScanContext* sc, Ref_promote_func* fn, uint32_t flags)
 {
     HandleTableMap *walk = &g_HandleTableMap;
@@ -1443,6 +1530,110 @@ void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* s
 
     ScanSizedRefByCPU(maxgen, CalculateSizedRefSize, sc, fn, flags);
 }
+#endif // FEATURE_SIZED_REF_HANDLES
+
+#ifdef FEATURE_JAVAMARSHAL
+
+static void NullBridgeObjectWeakRef(Object **handle, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2)
+{
+    size_t length = (size_t)param1;
+    Object*** bridgeHandleArray = (Object***)param2;
+
+    Object* weakRef = *handle;
+    for (size_t i = 0; i < length; i++)
+    {
+        Object* bridgeRef = *bridgeHandleArray[i];
+        // FIXME Store these objects in a hashtable in order to optimize lookup
+        if (weakRef == bridgeRef)
+        {
+            LOG((LF_GC, LL_INFO100, LOG_HANDLE_OBJECT_CLASS("Null bridge Weak-", handle, "to unreachable ", weakRef)));
+            *handle = NULL;
+        }
+    }
+}
+
+void Ref_NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles)
+{
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // We are in cooperative mode so no GC should happen while we null these handles.
+    // WeakReference access from managed code should wait for this to finish as part
+    // of bridge processing finish. Other GCHandle accesses could be racy with this.
+
+    int max_slots = getNumberOfSlots();
+    uint32_t handleType[] = { HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG };
+
+    HandleTableMap *walk = &g_HandleTableMap;
+    while (walk)
+    {
+        for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i++)
+        {
+            if (walk->pBuckets[i] != NULL)
+            {
+                for (int j = 0; j < max_slots; j++)
+                {
+                    HHANDLETABLE hTable = walk->pBuckets[i]->pTable[j];
+                    if (hTable)
+                        HndEnumHandles(hTable, handleType, 2, NullBridgeObjectWeakRef, length, (uintptr_t)unreachableObjectHandles, false);
+                }
+            }
+        }
+        walk = walk->pNext;
+    }
+}
+
+void CALLBACK GetBridgeObjectsForProcessing(_UNCHECKED_OBJECTREF* pObjRef, uintptr_t* pExtraInfo, uintptr_t lp1, uintptr_t lp2)
+{
+    WRAPPER_NO_CONTRACT;
+
+    Object** ppRef = (Object**)pObjRef;
+    if (!g_theGCHeap->IsPromoted(*ppRef))
+    {
+        RegisterBridgeObject(*ppRef, *pExtraInfo);
+    }
+}
+
+uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext* sc, size_t* numObjs)
+{
+    WRAPPER_NO_CONTRACT;
+
+    LOG((LF_GC | LF_CORPROF, LL_INFO10000, "Building bridge object graphs.\n"));
+    uint32_t flags = HNDGCF_NORMAL;
+    uint32_t type = HNDTYPE_CROSSREFERENCE;
+
+    BridgeResetData();
+
+    HandleTableMap* walk = &g_HandleTableMap;
+    while (walk) {
+        for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i++)
+            if (walk->pBuckets[i] != NULL)
+            {
+                for (int uCPUindex = 0; uCPUindex < getNumberOfSlots(); uCPUindex++)
+                {
+                    HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
+                    if (hTable)
+                        // or have a local var for bridgeObjectsToPromote/size (instead of NULL) that's passed in as lp2
+                        HndScanHandlesForGC(hTable, GetBridgeObjectsForProcessing, uintptr_t(sc), 0, &type, 1, condemned, maxgen, HNDGCF_EXTRAINFO | flags);
+                }
+            }
+        walk = walk->pNext;
+    }
+
+    // The callee here will free the allocated memory.
+    MarkCrossReferencesArgs *args = ProcessBridgeObjects();
+
+    if (args != NULL)
+    {
+        GCToEEInterface::TriggerClientBridgeProcessing(args);
+    }
+
+    return GetRegisteredBridges(numObjs);
+}
+#endif // FEATURE_JAVAMARSHAL
 
 void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, ScanContext *sc)
 {
@@ -1526,7 +1717,12 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
 #ifdef FEATURE_WEAK_NATIVE_COM_HANDLES
         HNDTYPE_WEAK_NATIVE_COM,
 #endif
+#ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
+#endif
+#ifdef FEATURE_JAVAMARSHAL
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     // perform a multi-type scan that updates pointers
@@ -1589,7 +1785,13 @@ void Ref_ScanHandlesForProfilerAndETW(uint32_t maxgen, uintptr_t lp1, handle_sca
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
 #endif
+#ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
+#endif
+        HNDTYPE_WEAK_INTERIOR_POINTER,
+#ifdef FEATURE_JAVAMARSHAL
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     uint32_t flags = HNDGCF_NORMAL;
@@ -1711,7 +1913,13 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
 #endif
+#ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
+#endif
+        HNDTYPE_WEAK_INTERIOR_POINTER,
+#ifdef FEATURE_JAVAMARSHAL
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     // perform a multi-type scan that ages the handles
@@ -1765,7 +1973,13 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
 #endif
+#ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
+#endif
+        HNDTYPE_WEAK_INTERIOR_POINTER,
+#ifdef FEATURE_JAVAMARSHAL
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     // reset the ages of these handles
@@ -1817,8 +2031,14 @@ void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
 #endif
+#ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
+#endif
         HNDTYPE_DEPENDENT,
+        HNDTYPE_WEAK_INTERIOR_POINTER,
+#ifdef FEATURE_JAVAMARSHAL
+        HNDTYPE_CROSSREFERENCE,
+#endif
     };
 
     // verify these handles

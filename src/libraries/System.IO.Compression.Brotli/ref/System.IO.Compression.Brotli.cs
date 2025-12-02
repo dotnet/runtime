@@ -6,6 +6,12 @@
 
 namespace System.IO.Compression
 {
+    public sealed partial class BrotliCompressionOptions
+    {
+        public BrotliCompressionOptions() { }
+        public int Quality { get { throw null; } set { } }
+        public int WindowLog { get { throw null; } set { } }
+    }
     public partial struct BrotliDecoder : System.IDisposable
     {
         private object _dummy;
@@ -28,6 +34,7 @@ namespace System.IO.Compression
     }
     public sealed partial class BrotliStream : System.IO.Stream
     {
+        public BrotliStream(System.IO.Stream stream, System.IO.Compression.BrotliCompressionOptions compressionOptions, bool leaveOpen = false) { }
         public BrotliStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel) { }
         public BrotliStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel, bool leaveOpen) { }
         public BrotliStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode) { }

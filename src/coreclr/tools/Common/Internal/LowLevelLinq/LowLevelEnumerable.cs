@@ -17,18 +17,6 @@ namespace Internal.LowLevelLinq
             return enumerator.MoveNext();
         }
 
-        public static bool Any<T>(this IEnumerable<T> values, Func<T, bool> predicate)
-        {
-            Debug.Assert(values != null);
-            Debug.Assert(predicate != null);
-            foreach (T value in values)
-            {
-                if (predicate(value))
-                    return true;
-            }
-            return false;
-        }
-
         public static IEnumerable<U> Select<T, U>(this IEnumerable<T> values, Func<T, U> func)
         {
             Debug.Assert(values != null);
@@ -38,17 +26,6 @@ namespace Internal.LowLevelLinq
                 yield return func(value);
             }
         }
-
-        public static IEnumerable<U> Select<T, U>(this T[] values, Func<T, U> func)
-        {
-            Debug.Assert(values != null);
-
-            foreach (T value in values)
-            {
-                yield return func(value);
-            }
-        }
-
         public static IEnumerable<T> Where<T>(this IEnumerable<T> source, Func<T, bool> filter)
         {
             Debug.Assert(source != null);
@@ -59,29 +36,6 @@ namespace Internal.LowLevelLinq
                 if (filter(value))
                     yield return value;
             }
-        }
-
-        public static IEnumerable<T> AsEnumerable<T>(this IEnumerable<T> source)
-        {
-            Debug.Assert(source != null);
-            return source;
-        }
-
-        public static int Count<T>(this IEnumerable<T> enumeration)
-        {
-            Debug.Assert(enumeration != null);
-
-            var collection = enumeration as ICollection<T>;
-            if (collection != null)
-                return collection.Count;
-
-            int i = 0;
-            foreach (T element in enumeration)
-            {
-                i++;
-            }
-
-            return i;
         }
     }
 }

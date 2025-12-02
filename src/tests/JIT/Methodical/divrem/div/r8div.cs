@@ -93,6 +93,7 @@ public class r8div
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         bool passed = true;

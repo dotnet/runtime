@@ -901,7 +901,7 @@ namespace System.Xml.XslTransformApiTests
   </xsl:template>
 </xsl:stylesheet>");
 
-            using XmlReader reader = XmlReader.Create(xslFile); 
+            using XmlReader reader = XmlReader.Create(xslFile);
             XslTransform xslt = new XslTransform();
             XsltCompileException compilationException = Assert.Throws<XsltCompileException>(() => xslt.Load(reader));
             Assert.True(compilationException.InnerException != null && compilationException.InnerException is PlatformNotSupportedException);

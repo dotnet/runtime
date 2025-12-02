@@ -10,7 +10,7 @@
   <Target Name="CreateTestWasmAppBundle"
           AfterTargets="Publish"
           DependsOnTargets="BundleTestWasmApp"
-          Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOS)' == 'browser'" />
+          Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'" />
 
   <PropertyGroup Condition="'$(PublishAot)' == 'true'">
     <_IlcReferencedAsPackage>false</_IlcReferencedAsPackage>

@@ -252,6 +252,21 @@ enum {
 	RISCV_ROUND_DY = 0b111, // Use current rounding mode in the FRM CSR.
 };
 
+enum {
+	RISCV_FCLASS_NINF = 0b1 << 0, // Negative infinity.
+	RISCV_FCLASS_NN = 0b1 << 1,   // Negative normal.
+	RISCV_FCLASS_ND = 0b1 << 2,   // Negative denormal.
+	RISCV_FCLASS_NZ = 0b1 << 3,   // Negative zero.
+	RISCV_FCLASS_PZ = 0b1 << 4,   // Positive zero.
+	RISCV_FCLASS_PD = 0b1 << 5,   // Positive denormal.
+	RISCV_FCLASS_PN = 0b1 << 6,   // Positive normal.
+	RISCV_FCLASS_PINF = 0b1 << 7, // Positive infinity.
+	RISCV_FCLASS_SNAN = 0b1 << 8, // Signalling NaN.
+	RISCV_FCLASS_QNAN = 0b1 << 9, // Quiet NaN.
+	RISCV_FCLASS_INF = RISCV_FCLASS_NINF | RISCV_FCLASS_PINF,
+	RISCV_FCLASS_NAN = RISCV_FCLASS_SNAN | RISCV_FCLASS_QNAN,
+};
+
 #define _riscv_emit(p, insn) \
 	do { \
 		*(guint32 *) (p) = (insn); \

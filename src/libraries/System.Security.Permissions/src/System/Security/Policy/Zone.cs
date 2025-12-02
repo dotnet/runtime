@@ -3,7 +3,7 @@
 
 namespace System.Security.Policy
 {
-#if NETCOREAPP
+#if NET
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public sealed partial class Zone : EvidenceBase, IIdentityPermissionFactory

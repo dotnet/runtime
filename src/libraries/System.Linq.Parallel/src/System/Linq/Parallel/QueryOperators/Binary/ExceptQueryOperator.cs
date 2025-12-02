@@ -230,7 +230,9 @@ namespace System.Linq.Parallel
             private readonly QueryOperatorEnumerator<Pair<TInputOutput, NoKeyMemoizationRequired>, int> _rightSource; // Right data source.
             private readonly IEqualityComparer<TInputOutput>? _comparer; // A comparer used for equality checks/hash-coding.
             private readonly IComparer<TLeftKey> _leftKeyComparer; // A comparer for order keys.
+#pragma warning disable CA1859
             private IEnumerator<KeyValuePair<Wrapper<TInputOutput>, Pair<TInputOutput, TLeftKey>>>? _outputEnumerator; // The enumerator output elements + order keys.
+#pragma warning restore
             private readonly CancellationToken _cancellationToken;
 
             //---------------------------------------------------------------------------------------

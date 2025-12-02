@@ -17,7 +17,6 @@ namespace ILCompiler
     public partial class CompilerTypeSystemContext : MetadataTypeSystemContext, IMetadataStringDecoderProvider
     {
         private readonly MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
-        private readonly MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
 
         private MetadataStringDecoder _metadataStringDecoder;
 
@@ -98,7 +97,7 @@ namespace ILCompiler
             set;
         }
 
-        public override ModuleDesc ResolveAssembly(System.Reflection.AssemblyName name, bool throwIfNotFound)
+        public override ModuleDesc ResolveAssembly(AssemblyNameInfo name, bool throwIfNotFound)
         {
             // TODO: catch typesystem BadImageFormatException and throw a new one that also captures the
             // assembly name that caused the failure. (Along with the reason, which makes this rather annoying).

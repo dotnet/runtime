@@ -171,6 +171,9 @@ namespace System.Threading
         // need to look at the long list because the current time will be <= _currentAbsoluteThreshold.
         private const int ShortTimersThresholdMilliseconds = 333;
 
+        // Lock shared by the TimerQueue and associated TimerQueueTimer instances
+        internal Lock SharedLock { get; } = new Lock();
+
         // Fire any timers that have expired, and update the native timer to schedule the rest of them.
         // We're in a thread pool work item here, and if there are multiple timers to be fired, we want
         // to queue all but the first one.  The first may can then be invoked synchronously or queued,
@@ -181,7 +184,7 @@ namespace System.Threading
             // are queued to the ThreadPool.
             TimerQueueTimer? timerToFireOnThisThread = null;
 
-            lock (this)
+            lock (SharedLock)
             {
                 // Since we got here, that means our previous timer has fired.
                 _isTimerScheduled = false;
@@ -384,10 +387,7 @@ namespace System.Threading
             // Use timer._short to decide to which list to add.
             ref TimerQueueTimer? listHead = ref timer._short ? ref _shortTimers : ref _longTimers;
             timer._next = listHead;
-            if (timer._next != null)
-            {
-                timer._next._prev = timer;
-            }
+            timer._next?._prev = timer;
             timer._prev = null;
             listHead = timer;
         }
@@ -395,10 +395,7 @@ namespace System.Threading
         private void UnlinkTimer(TimerQueueTimer timer)
         {
             TimerQueueTimer? t = timer._next;
-            if (t != null)
-            {
-                t._prev = timer._prev;
-            }
+            t?._prev = timer._prev;
 
             if (_shortTimers == timer)
             {
@@ -412,10 +409,7 @@ namespace System.Threading
             }
 
             t = timer._prev;
-            if (t != null)
-            {
-                t._next = timer._next;
-            }
+            t?._next = timer._next;
 
             // At this point the timer is no longer in a list, but its next and prev
             // references may still point to other nodes.  UnlinkTimer should thus be
@@ -540,7 +534,7 @@ namespace System.Threading
         {
             bool success;
 
-            lock (_associatedTimerQueue)
+            lock (_associatedTimerQueue.SharedLock)
             {
                 if (_canceled)
                 {
@@ -567,7 +561,7 @@ namespace System.Threading
 
         public void Dispose()
         {
-            lock (_associatedTimerQueue)
+            lock (_associatedTimerQueue.SharedLock)
             {
                 if (!_canceled)
                 {
@@ -584,7 +578,7 @@ namespace System.Threading
             bool success;
             bool shouldSignal = false;
 
-            lock (_associatedTimerQueue)
+            lock (_associatedTimerQueue.SharedLock)
             {
                 if (_canceled)
                 {
@@ -608,7 +602,7 @@ namespace System.Threading
 
         public ValueTask DisposeAsync()
         {
-            lock (_associatedTimerQueue)
+            lock (_associatedTimerQueue.SharedLock)
             {
                 object? notifyWhenNoCallbacksRunning = _notifyWhenNoCallbacksRunning;
 
@@ -668,9 +662,9 @@ namespace System.Threading
 
         internal void Fire(bool isThreadPool = false)
         {
-            bool canceled = false;
+            bool canceled;
 
-            lock (_associatedTimerQueue)
+            lock (_associatedTimerQueue.SharedLock)
             {
                 canceled = _canceled;
                 if (!canceled)
@@ -683,7 +677,7 @@ namespace System.Threading
             CallCallback(isThreadPool);
 
             bool shouldSignal;
-            lock (_associatedTimerQueue)
+            lock (_associatedTimerQueue.SharedLock)
             {
                 _callbacksRunning--;
                 shouldSignal = _canceled && _callbacksRunning == 0 && _notifyWhenNoCallbacksRunning != null;
@@ -943,7 +937,7 @@ namespace System.Threading
                 long count = 0;
                 foreach (TimerQueue queue in TimerQueue.Instances)
                 {
-                    lock (queue)
+                    lock (queue.SharedLock)
                     {
                         count += queue.ActiveCount;
                     }
@@ -970,23 +964,5 @@ namespace System.Threading
         }
 
         private string DisplayString => _timer._timer.DisplayString;
-
-        /// <summary>Gets a list of all timers for debugging purposes.</summary>
-        private static IEnumerable<TimerQueueTimer> AllTimers // intended to be used by devs from debugger
-        {
-            get
-            {
-                var timers = new List<TimerQueueTimer>();
-
-                foreach (TimerQueue queue in TimerQueue.Instances)
-                {
-                    timers.AddRange(queue.GetTimersForDebugger());
-                }
-
-                timers.Sort((t1, t2) => t1._dueTime.CompareTo(t2._dueTime));
-
-                return timers;
-            }
-        }
     }
 }

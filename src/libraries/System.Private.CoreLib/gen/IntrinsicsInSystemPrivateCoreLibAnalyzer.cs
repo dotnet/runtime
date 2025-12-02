@@ -293,6 +293,12 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 if (propertyDefiningSyntax is PropertyDeclarationSyntax propertyDeclaration
                     && propertyDeclaration.ExpressionBody is ArrowExpressionClauseSyntax arrowExpression)
                 {
+                    if (model.SyntaxTree != arrowExpression.SyntaxTree)
+                    {
+#pragma warning disable RS1030
+                        model = model.Compilation.GetSemanticModel(arrowExpression.SyntaxTree);
+#pragma warning restore RS1030
+                    }
                     return DecomposeConditionForIsSupportedGroups(context, model, arrowExpression.Expression);
                 }
             }

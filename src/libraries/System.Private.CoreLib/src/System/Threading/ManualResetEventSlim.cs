@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
 namespace System.Threading
@@ -35,7 +36,7 @@ namespace System.Threading
         // These are the default spin counts we use on single-proc and MP machines.
         private const int DEFAULT_SPIN_SP = 1;
 
-        private volatile object? m_lock;
+        private object? m_lock;
         // A lock used for waiting and pulsing. Lazily initialized via EnsureLockObjectCreated()
 
         private volatile ManualResetEvent? m_eventObj; // A true Win32 event used for waiting.
@@ -185,6 +186,7 @@ namespace System.Threading
         /// </summary>
         /// <param name="initialState">Whether the event is set initially or not.</param>
         /// <param name="spinCount">The spin count that decides when the event will block.</param>
+#pragma warning disable IDE0060 // Remove unused parameter spinCount, on single-threaded systems, the spin count is not used.
         private void Initialize(bool initialState, int spinCount)
         {
             m_combinedState = initialState ? (1 << SignalledState_ShiftCount) : 0;
@@ -195,17 +197,18 @@ namespace System.Threading
 
             SpinCount = Environment.IsSingleProcessor ? DEFAULT_SPIN_SP : spinCount;
         }
+#pragma warning restore IDE0060
 
         /// <summary>
         /// Helper to ensure the lock object is created before first use.
         /// </summary>
+        [MemberNotNull(nameof(m_lock))]
         private void EnsureLockObjectCreated()
         {
-            if (m_lock != null)
-                return;
-
-            object newObj = new object();
-            Interlocked.CompareExchange(ref m_lock, newObj, null); // failure is benign. Someone else set the value.
+            if (m_lock is null)
+            {
+                Interlocked.CompareExchange(ref m_lock, new object(), null); // failure is benign. Someone else set the value.
+            }
         }
 
         /// <summary>
@@ -344,9 +347,14 @@ namespace System.Threading
         /// The caller of this method blocks indefinitely until the current instance is set. The caller will
         /// return immediately if the event is currently in a set state.
         /// </remarks>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public void Wait()
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             Wait(Timeout.Infinite, CancellationToken.None);
         }
 
@@ -365,7 +373,9 @@ namespace System.Threading
         /// The caller of this method blocks indefinitely until the current instance is set. The caller will
         /// return immediately if the event is currently in a set state.
         /// </remarks>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public void Wait(CancellationToken cancellationToken)
         {
             Wait(Timeout.Infinite, cancellationToken);
@@ -386,7 +396,9 @@ namespace System.Threading
         /// <exception cref="InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public bool Wait(TimeSpan timeout)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
@@ -417,7 +429,9 @@ namespace System.Threading
         /// <exception cref="InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
@@ -441,7 +455,9 @@ namespace System.Threading
         /// <exception cref="InvalidOperationException">
         /// The maximum number of waiters has been exceeded.
         /// </exception>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public bool Wait(int millisecondsTimeout)
         {
             return Wait(millisecondsTimeout, CancellationToken.None);
@@ -465,13 +481,22 @@ namespace System.Threading
         /// </exception>
         /// <exception cref="OperationCanceledException"><paramref
         /// name="cancellationToken"/> was canceled.</exception>
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
             cancellationToken.ThrowIfCancellationRequested(); // an early convenience check
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
+
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
+#if FEATURE_WASM_MANAGED_THREADS
+            Thread.AssureBlockingPossible();
+#endif
 
             if (!IsSet)
             {
@@ -483,7 +508,7 @@ namespace System.Threading
 
 
                 // We spin briefly before falling back to allocating and/or waiting on a true event.
-                uint startTime = 0;
+                long startTime = 0;
                 bool bNeedTimeoutAdjustment = false;
                 int realMillisecondsTimeout = millisecondsTimeout; // this will be adjusted if necessary.
 
@@ -495,7 +520,7 @@ namespace System.Threading
                     // period of time.  The timeout adjustments only take effect when and if we actually
                     // decide to block in the kernel below.
 
-                    startTime = TimeoutHelper.GetTime();
+                    startTime = Environment.TickCount64;
                     bNeedTimeoutAdjustment = true;
                 }
 
@@ -522,7 +547,7 @@ namespace System.Threading
                 // We must register and unregister the token outside of the lock, to avoid deadlocks.
                 using (cancellationToken.UnsafeRegister(s_cancellationTokenCallback, this))
                 {
-                    lock (m_lock!)
+                    lock (m_lock)
                     {
                         // Loop to cope with spurious wakeups from other waits being canceled
                         while (!IsSet)
@@ -533,7 +558,8 @@ namespace System.Threading
                             // update timeout (delays in wait commencement are due to spinning and/or spurious wakeups from other waits being canceled)
                             if (bNeedTimeoutAdjustment)
                             {
-                                realMillisecondsTimeout = TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout);
+                                // TimeoutHelper.UpdateTimeOut returns a long but the value is capped as millisecondsTimeout is an int.
+                                realMillisecondsTimeout = (int)TimeoutHelper.UpdateTimeOut(startTime, millisecondsTimeout);
                                 if (realMillisecondsTimeout <= 0)
                                     return false;
                             }

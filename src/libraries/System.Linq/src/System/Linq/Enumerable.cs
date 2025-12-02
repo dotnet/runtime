@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -9,7 +10,23 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
+        [FeatureSwitchDefinition("System.Linq.Enumerable.IsSizeOptimized")]
+        internal static bool IsSizeOptimized { get; } = AppContext.TryGetSwitch("System.Linq.Enumerable.IsSizeOptimized", out bool isEnabled) ? isEnabled : false;
+
         public static IEnumerable<TSource> AsEnumerable<TSource>(this IEnumerable<TSource> source) => source;
+
+        /// <summary>Returns an empty <see cref="IEnumerable{TResult}"/>.</summary>
+        public static IEnumerable<TResult> Empty<TResult>() =>
+            Array.Empty<TResult>(); // explicitly not using [] in case the compiler ever changed to using Enumerable.Empty
+
+        /// <summary>Gets whether the enumerable is an empty array</summary>
+        /// <remarks>
+        /// If <see cref="Empty{TResult}"/> is ever changed to return something other than an empty array,
+        /// this helper should also be updated to return true for that in addition to for an empty array.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsEmptyArray<TSource>(IEnumerable<TSource> source) =>
+            source is TSource[] { Length: 0 };
 
         /// <summary>
         /// Sets the <paramref name="list"/>'s <see cref="List{T}.Count"/> to be <paramref name="count"/>
@@ -24,18 +41,8 @@ namespace System.Linq
 
         /// <summary>Validates that source is not null and then tries to extract a span from the source.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // fast type checks that don't add a lot of overhead
-        private static bool TryGetSpan<TSource>(this IEnumerable<TSource> source, out ReadOnlySpan<TSource> span)
-            // This constraint isn't required, but the overheads involved here can be more substantial when TSource
-            // is a reference type and generic implementations are shared.  So for now we're protecting ourselves
-            // and forcing a conscious choice to remove this in the future, at which point it should be paired with
-            // sufficient performance testing.
-            where TSource : struct
+        internal static bool TryGetSpan<TSource>(this IEnumerable<TSource> source, out ReadOnlySpan<TSource> span)
         {
-            if (source is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
             // Use `GetType() == typeof(...)` rather than `is` to avoid cast helpers.  This is measurably cheaper
             // but does mean we could end up missing some rare cases where we could get a span but don't (e.g. a uint[]
             // masquerading as an int[]).  That's an acceptable tradeoff.  The Unsafe usage is only after we've

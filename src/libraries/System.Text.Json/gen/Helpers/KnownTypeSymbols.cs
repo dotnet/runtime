@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
@@ -117,6 +118,9 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? IImmutableDictionaryType => GetOrResolveType(typeof(IImmutableDictionary<,>), ref _IImmutableDictionaryType);
         private Option<INamedTypeSymbol?> _IImmutableDictionaryType;
 
+        public INamedTypeSymbol? KeyedCollectionType => GetOrResolveType(typeof(KeyedCollection<,>), ref _KeyedCollectionType);
+        private Option<INamedTypeSymbol?> _KeyedCollectionType;
+
         public INamedTypeSymbol ObjectType => _ObjectType ??= Compilation.GetSpecialType(SpecialType.System_Object);
         private INamedTypeSymbol? _ObjectType;
 
@@ -186,6 +190,18 @@ namespace System.Text.Json.SourceGeneration
 
         public INamedTypeSymbol? JsonElementType => GetOrResolveType("System.Text.Json.JsonElement", ref _JsonElementType);
         private Option<INamedTypeSymbol?> _JsonElementType;
+
+        public INamedTypeSymbol? StringObjectDictionaryType => _StringObjectDictionaryType.HasValue
+            ? _StringObjectDictionaryType.Value
+            : (_StringObjectDictionaryType = new(DictionaryOfTKeyTValueType?.Construct(StringType, ObjectType))).Value;
+        private Option<INamedTypeSymbol?> _StringObjectDictionaryType;
+
+        public INamedTypeSymbol? StringJsonElementDictionaryType => _StringJsonElementDictionaryType.HasValue
+            ? _StringJsonElementDictionaryType.Value
+            : (_StringJsonElementDictionaryType = new(DictionaryOfTKeyTValueType is { } dictType && JsonElementType is { } jsonElemType
+                ? dictType.Construct(StringType, jsonElemType)
+                : null)).Value;
+        private Option<INamedTypeSymbol?> _StringJsonElementDictionaryType;
 
         public INamedTypeSymbol? JsonNodeType => GetOrResolveType("System.Text.Json.Nodes.JsonNode", ref _JsonNodeType);
         private Option<INamedTypeSymbol?> _JsonNodeType;

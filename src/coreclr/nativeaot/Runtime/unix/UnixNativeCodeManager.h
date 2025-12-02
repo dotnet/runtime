@@ -43,7 +43,7 @@ public:
     PTR_VOID GetFramePointer(MethodInfo *   pMethodInfo,
                              REGDISPLAY *   pRegisterSet);
 
-    uint32_t GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID address, PTR_UInt8* gcInfo);
+    uint32_t GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID address, PTR_uint8_t* gcInfo);
 
     bool IsSafePoint(PTR_VOID pvAddress);
 
@@ -63,14 +63,15 @@ public:
 
     bool IsUnwindable(PTR_VOID pvAddress);
 
+#if (defined(TARGET_APPLE) && defined(TARGET_ARM64)) || defined(TARGET_ARM)
     int IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddress);
+#endif
 
     int TrailingEpilogueInstructionsCount(MethodInfo * pMethodInfo, PTR_VOID pvAddress);
 
     bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                     REGDISPLAY *    pRegisterSet,       // in
-                                    PTR_PTR_VOID *  ppvRetAddrLocation, // out
-                                    GCRefKind *     pRetValueKind);     // out
+                                    PTR_PTR_VOID *  ppvRetAddrLocation);     // out
 
     PTR_VOID RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC);
 

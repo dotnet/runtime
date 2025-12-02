@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -45,33 +44,35 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(password != null);
 
             ICertificatePal? cert;
-            Exception? openSslException;
-            bool ephemeralSpecified = keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
 
             if (TryReadX509Der(rawData, out cert) ||
                 TryReadX509Pem(rawData, out cert) ||
                 OpenSslPkcsFormatReader.TryReadPkcs7Der(rawData, out cert) ||
-                OpenSslPkcsFormatReader.TryReadPkcs7Pem(rawData, out cert) ||
-                OpenSslPkcsFormatReader.TryReadPkcs12(rawData, password, ephemeralSpecified, readingFromFile: false, out cert, out openSslException))
+                OpenSslPkcsFormatReader.TryReadPkcs7Pem(rawData, out cert))
             {
-                if (cert == null)
-                {
-                    // Empty collection, most likely.
-                    throw new CryptographicException();
-                }
-
+                Debug.Assert(cert is not null);
                 return cert;
             }
 
-            // Unsupported
-            Debug.Assert(openSslException != null);
-            throw openSslException;
+            try
+            {
+                return X509CertificateLoader.LoadPkcs12Pal(
+                    rawData,
+                    password.DangerousGetSpan(),
+                    keyStorageFlags,
+                    X509Certificate.GetPkcs12Limits(fromFile: false, password));
+            }
+            catch (Pkcs12LoadLimitExceededException e)
+            {
+                throw new CryptographicException(
+                    SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
+                    e);
+            }
         }
 
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             ICertificatePal? pal;
-            bool ephemeralSpecified = keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
 
             // If we can't open the file, fail right away.
             using (SafeBioHandle fileBio = Interop.Crypto.BioNewFile(fileName, "rb"))
@@ -83,20 +84,20 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (pal == null)
             {
-                OpenSslPkcsFormatReader.TryReadPkcs12(
-                    File.ReadAllBytes(fileName),
-                    password,
-                    ephemeralSpecified,
-                    readingFromFile: true,
-                    out pal,
-                    out Exception? exception);
-
-                if (exception != null)
+                try
                 {
-                    throw exception;
+                    pal = X509CertificateLoader.LoadPkcs12PalFromFile(
+                        fileName,
+                        password.DangerousGetSpan(),
+                        keyStorageFlags,
+                        X509Certificate.GetPkcs12Limits(fromFile: true, password));
                 }
-
-                Debug.Assert(pal != null);
+                catch (Pkcs12LoadLimitExceededException e)
+                {
+                    throw new CryptographicException(
+                        SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
+                        e);
+                }
             }
 
             return pal;
@@ -109,14 +110,6 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(bioPosition >= 0);
 
             ICertificatePal? certPal;
-            if (TryReadX509Pem(bio, out certPal))
-            {
-                return certPal;
-            }
-
-            // Rewind, try again.
-            RewindBio(bio, bioPosition);
-
             if (TryReadX509Der(bio, out certPal))
             {
                 return certPal;
@@ -125,7 +118,7 @@ namespace System.Security.Cryptography.X509Certificates
             // Rewind, try again.
             RewindBio(bio, bioPosition);
 
-            if (OpenSslPkcsFormatReader.TryReadPkcs7Pem(bio, out certPal))
+            if (TryReadX509Pem(bio, out certPal))
             {
                 return certPal;
             }
@@ -134,6 +127,14 @@ namespace System.Security.Cryptography.X509Certificates
             RewindBio(bio, bioPosition);
 
             if (OpenSslPkcsFormatReader.TryReadPkcs7Der(bio, out certPal))
+            {
+                return certPal;
+            }
+
+            // Rewind, try again.
+            RewindBio(bio, bioPosition);
+
+            if (OpenSslPkcsFormatReader.TryReadPkcs7Pem(bio, out certPal))
             {
                 return certPal;
             }
@@ -310,7 +311,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public byte[] KeyAlgorithmParameters
+        public byte[]? KeyAlgorithmParameters
         {
             get
             {
@@ -607,6 +608,36 @@ namespace System.Security.Cryptography.X509Certificates
             return new ECDiffieHellmanOpenSsl(_privateKey);
         }
 
+        public MLDsa? GetMLDsaPrivateKey()
+        {
+            if (_privateKey == null || _privateKey.IsInvalid)
+            {
+                return null;
+            }
+
+            return new MLDsaOpenSsl(_privateKey);
+        }
+
+        public MLKem? GetMLKemPrivateKey()
+        {
+            if (_privateKey is null || _privateKey.IsInvalid)
+            {
+                return null;
+            }
+
+            return new MLKemOpenSsl(_privateKey);
+        }
+
+        public SlhDsa? GetSlhDsaPrivateKey()
+        {
+            if (_privateKey == null || _privateKey.IsInvalid)
+            {
+                return null;
+            }
+
+            return new SlhDsaOpenSsl(_privateKey);
+        }
+
         private OpenSslX509CertificateReader CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
         {
             // This could be X509Duplicate for a full clone, but since OpenSSL certificates
@@ -673,6 +704,58 @@ namespace System.Security.Cryptography.X509Certificates
                 typedKey.ImportParameters(ecParameters);
 
                 return CopyWithPrivateKey(typedKey.DuplicateKeyHandle());
+            }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(MLDsa privateKey)
+        {
+            if (privateKey is MLDsaImplementation impl)
+            {
+                return CopyWithPrivateKey(impl.DuplicateHandle());
+            }
+
+            if (privateKey is MLDsaOpenSsl implOpenSsl)
+            {
+                return CopyWithPrivateKey(implOpenSsl.DuplicateKeyHandle());
+            }
+
+            using (MLDsaImplementation clone = MLDsaImplementation.DuplicatePrivateKey(privateKey))
+            {
+                return CopyWithPrivateKey(clone.DuplicateHandle());
+            }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(MLKem privateKey)
+        {
+            switch (privateKey)
+            {
+                case MLKemOpenSsl implOpenSsl:
+                    return CopyWithPrivateKey(implOpenSsl.DuplicateKeyHandle());
+                case MLKemImplementation impl:
+                    return CopyWithPrivateKey(impl.DuplicateHandle());
+                default:
+                    using (MLKemImplementation clone = MLKemImplementation.DuplicatePrivateKey(privateKey))
+                    {
+                        return CopyWithPrivateKey(clone.DuplicateHandle());
+                    }
+            }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(SlhDsa privateKey)
+        {
+            if (privateKey is SlhDsaImplementation impl)
+            {
+                return CopyWithPrivateKey(impl.DuplicateHandle());
+            }
+
+            if (privateKey is SlhDsaOpenSsl implOpenSsl)
+            {
+                return CopyWithPrivateKey(implOpenSsl.DuplicateKeyHandle());
+            }
+
+            using (SlhDsaImplementation clone = SlhDsaImplementation.DuplicatePrivateKey(privateKey))
+            {
+                return CopyWithPrivateKey(clone.DuplicateHandle());
             }
         }
 
@@ -834,6 +917,22 @@ namespace System.Security.Cryptography.X509Certificates
                 byte[]? exported = storePal.Export(contentType, password);
                 Debug.Assert(exported != null);
                 return exported;
+            }
+        }
+
+        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password)
+        {
+            using (IExportPal storePal = StorePal.FromCertificate(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, password);
+            }
+        }
+
+        public byte[] ExportPkcs12(PbeParameters exportParameters, SafePasswordHandle password)
+        {
+            using (IExportPal storePal = StorePal.FromCertificate(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, password);
             }
         }
 

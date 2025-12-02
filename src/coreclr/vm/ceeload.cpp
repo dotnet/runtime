@@ -37,10 +37,12 @@
 #include <formattype.h>
 #include "fieldmarshaler.h"
 #include "sigbuilder.h"
-#include "metadataexports.h"
 #include "inlinetracking.h"
 #include "threads.h"
 #include "nativeimage.h"
+
+#include "CachedInterfaceDispatchPal.h"
+#include "CachedInterfaceDispatch.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -63,6 +65,8 @@
 #include "../md/compiler/custattr.h"
 #include "typekey.h"
 #include "peimagelayout.inl"
+
+#include "interpexec.h"
 
 #ifdef TARGET_64BIT
 #define COR_VTABLE_PTRSIZED     COR_VTABLE_64BIT
@@ -293,7 +297,6 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
 
         {
             BEGIN_PROFILER_CALLBACK(CORProfilerTrackAssemblyLoads());
-            if (IsManifest())
             {
                 GCX_COOP();
                 (&g_profControlBlock)->AssemblyLoadFinished((AssemblyID) m_pAssembly, hr);
@@ -330,6 +333,11 @@ void Module::NotifyEtwLoadFinished(HRESULT hr)
 // It cannot throw or fail.
 //
 Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
+    : m_pPEAssembly{pPEAssembly}
+    , m_dwTransientFlags{CLASSES_FREED}
+    , m_pAssembly{pAssembly}
+    , m_pDynamicMethodTable{NULL}
+    , m_hExposedObject{}
 {
     CONTRACTL
     {
@@ -339,17 +347,12 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     }
     CONTRACTL_END
 
-    PREFIX_ASSUME(pAssembly != NULL);
+    _ASSERTE(m_pAssembly != NULL);
 
     m_loaderAllocator = NULL;
-    m_pAssembly = pAssembly;
-    m_pPEAssembly      = pPEAssembly;
-    m_dwTransientFlags = CLASSES_FREED;
+    m_pDynamicMetadata = (TADDR)NULL;
 
-    // Memory allocated on LoaderHeap is zero-filled. Spot-check it here.
-    _ASSERTE(m_pBinder == NULL);
-
-    pPEAssembly->AddRef();
+    m_pPEAssembly->AddRef();
 }
 
 uint32_t Module::GetNativeMetadataAssemblyCount()
@@ -410,33 +413,37 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
         PRECONDITION(szName == NULL);
+        PRECONDITION(m_pPEAssembly->IsLoaded());
     }
     CONTRACTL_END;
 
     m_loaderAllocator = GetAssembly()->GetLoaderAllocator();
     m_pSimpleName = m_pPEAssembly->GetSimpleName();
+    m_path = m_pPEAssembly->GetPath().GetUnicode();
+    m_fileName = m_pPEAssembly->GetModuleFileNameHint();
+    _ASSERTE(m_path != NULL);
+    m_baseAddress = m_pPEAssembly->HasLoadedPEImage() ? m_pPEAssembly->GetLoadedLayout()->GetBase() : NULL;
+    if (m_pPEAssembly->IsReflectionEmit())
+        m_dwTransientFlags |= IS_REFLECTION_EMIT;
 
     m_Crst.Init(CrstModule);
     m_LookupTableCrst.Init(CrstModuleLookupTable, CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
-    m_FixupCrst.Init(CrstModuleFixup, (CrstFlags)(CRST_HOST_BREAKABLE|CRST_REENTRANCY));
     m_InstMethodHashTableCrst.Init(CrstInstMethodHashTable, CRST_REENTRANCY);
     m_ISymUnmanagedReaderCrst.Init(CrstISymUnmanagedReader, CRST_DEBUGGER_THREAD);
-    m_DictionaryCrst.Init(CrstDomainLocalBlock);
 
     AllocateMaps();
     m_dwTransientFlags &= ~((DWORD)CLASSES_FREED);  // Set flag indicating LookupMaps are now in a consistent and destructable state
 
-#ifdef FEATURE_COLLECTIBLE_TYPES
-    if (GetAssembly()->IsCollectible())
-    {
-        InterlockedOr((LONG*)&m_dwPersistedFlags, COLLECTIBLE_MODULE);
-    }
-#endif // FEATURE_COLLECTIBLE_TYPES
+    if (IsSystem())
+        m_dwPersistedFlags |= SKIP_TYPE_VALIDATION; // Skip type validation on System
 
 #ifdef FEATURE_READYTORUN
     m_pNativeImage = NULL;
     if ((m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker)) != NULL)
     {
+        if (m_pReadyToRunInfo->SkipTypeValidation())
+            m_dwPersistedFlags |= SKIP_TYPE_VALIDATION; // Skip type validation on System
+
         m_pNativeImage = m_pReadyToRunInfo->GetNativeImage();
         if (m_pNativeImage != NULL)
         {
@@ -460,7 +467,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     {
         m_pAvailableClasses = EEClassHashTable::Create(this,
             GetAssembly()->IsCollectible() ? AVAILABLE_CLASSES_HASH_BUCKETS_COLLECTIBLE : AVAILABLE_CLASSES_HASH_BUCKETS,
-                                                        FALSE /* bCaseInsensitive */, pamTracker);
+                                                        NULL, pamTracker);
     }
 
     if (m_pAvailableParamTypes == NULL)
@@ -473,31 +480,28 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         m_pInstMethodHashTable = InstMethodHashTable::Create(GetLoaderAllocator(), this, PARAMMETHODS_HASH_BUCKETS, pamTracker);
     }
 
-    // this will be initialized a bit later.
-    m_ModuleID = NULL;
-    m_ModuleIndex.m_dwIndex = (SIZE_T)-1;
-
     // These will be initialized in NotifyProfilerLoadFinished, set them to
     // a safe initial value now.
     m_dwTypeCount = 0;
     m_dwExportedTypeCount = 0;
     m_dwCustomAttributeCount = 0;
-
-    // Prepare statics that are known at module load time
-    AllocateStatics(pamTracker);
-
-    if (m_AssemblyRefByNameTable == NULL)
+#ifdef PROFILING_SUPPORTED
+    // set profiler related JIT flags
+    if (CORProfilerDisableInlining())
     {
-        Module::CreateAssemblyRefByNameTable(pamTracker);
+        m_dwTransientFlags |= PROF_DISABLE_INLINING;
+    }
+    if (CORProfilerDisableOptimizations())
+    {
+        m_dwTransientFlags |= PROF_DISABLE_OPTIMIZATIONS;
     }
 
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
     m_pJitInlinerTrackingMap = NULL;
     if (ReJitManager::IsReJITInlineTrackingEnabled())
     {
         m_pJitInlinerTrackingMap = new JITInlineTrackingMap(GetLoaderAllocator());
     }
-#endif // defined (PROFILING_SUPPORTED) &&!defined(DACCESS_COMPILE)
+#endif // PROFILING_SUPPORTED
 
     LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%s\".\n", GetDebugName()));
 }
@@ -519,7 +523,7 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
 #ifdef DEBUGGING_SUPPORTED
     if (IsEditAndContinueCapable())
     {
-        BOOL setEnC = (newBits & DACF_ENC_ENABLED) != 0 || g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && CORDisableJITOptimizations(GetDebuggerInfoBits()));
+        BOOL setEnC = (newBits & DACF_ENC_ENABLED) != 0 || g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && AreJITOptimizationsDisabled());
         if (setEnC)
         {
             EnableEditAndContinue();
@@ -555,7 +559,7 @@ static BOOL IsEditAndContinueCapable(Assembly *pAssembly, PEAssembly *pPEAssembl
     // Some modules are never EnC-capable
     return ! (pAssembly->GetDebuggerInfoBits() & DACF_ALLOW_JIT_OPTS ||
               pPEAssembly->IsSystem() ||
-              pPEAssembly->IsDynamic());
+              pPEAssembly->IsReflectionEmit());
 }
 
 /* static */
@@ -594,7 +598,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
         pModule = new (pMemory) Module(pAssembly, pPEAssembly);
     }
 
-    PREFIX_ASSUME(pModule != NULL);
+    _ASSERTE(pModule != NULL);
     ModuleHolder pModuleSafe(pModule);
     pModuleSafe->DoInit(pamTracker, NULL);
 
@@ -664,7 +668,7 @@ void Module::Destruct()
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
         END_PROFILER_CALLBACK();
     }
@@ -689,16 +693,6 @@ void Module::Destruct()
 
     ReleaseISymUnmanagedReader();
 
-    // Clean up sig cookies
-    VASigCookieBlock    *pVASigCookieBlock = m_pVASigCookieBlock;
-    while (pVASigCookieBlock)
-    {
-        VASigCookieBlock    *pNext = pVASigCookieBlock->m_Next;
-        delete pVASigCookieBlock;
-
-        pVASigCookieBlock = pNext;
-    }
-
     // Clean up the IL stub cache
     if (m_pILStubCache != NULL)
     {
@@ -720,7 +714,7 @@ void Module::Destruct()
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
         END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
@@ -731,7 +725,6 @@ void Module::Destruct()
     ClearInMemorySymbolStream();
 
     m_Crst.Destroy();
-    m_FixupCrst.Destroy();
     m_LookupTableCrst.Destroy();
     m_InstMethodHashTableCrst.Destroy();
     m_ISymUnmanagedReaderCrst.Destroy();
@@ -745,11 +738,6 @@ void Module::Destruct()
     if (m_debuggerSpecificData.m_pDynamicILBlobTable)
     {
         delete m_debuggerSpecificData.m_pDynamicILBlobTable;
-    }
-
-    if (m_debuggerSpecificData.m_pTemporaryILBlobTable)
-    {
-        delete m_debuggerSpecificData.m_pTemporaryILBlobTable;
     }
 
     if (m_debuggerSpecificData.m_pILOffsetMappingTable)
@@ -766,14 +754,12 @@ void Module::Destruct()
     }
 
     m_pPEAssembly->Release();
+    if (m_pDynamicMethodTable)
+        m_pDynamicMethodTable->Destroy();
 
 #if defined(PROFILING_SUPPORTED)
     delete m_pJitInlinerTrackingMap;
 #endif
-
-    // If this module was loaded as domain-specific, then
-    // we must free its ModuleIndex so that it can be reused
-    FreeModuleIndex();
 }
 
 bool Module::NeedsGlobalMethodTable()
@@ -847,375 +833,21 @@ MethodTable *Module::GetGlobalMethodTable()
 
 #endif // !DACCESS_COMPILE
 
-BOOL Module::IsManifest()
+BOOL Module::IsCollectible()
 {
-    WRAPPER_NO_CONTRACT;
-    return dac_cast<TADDR>(GetAssembly()->GetModule()) ==
-           dac_cast<TADDR>(this);
+    LIMITED_METHOD_DAC_CONTRACT;
+    return GetAssembly()->IsCollectible();
 }
 
 DomainAssembly* Module::GetDomainAssembly()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return dac_cast<PTR_DomainAssembly>(m_ModuleID->GetDomainAssembly());
+    return m_pDomainAssembly;
 }
 
 #ifndef DACCESS_COMPILE
 #include "staticallocationhelpers.inl"
-
-// Parses metadata and initializes offsets of per-class static blocks.
-void Module::BuildStaticsOffsets(AllocMemTracker *pamTracker)
-{
-    STANDARD_VM_CONTRACT;
-
-    // Trade off here. We want a slot for each type. That way we can get to 2 bits per class and
-    // index directly and not need a mapping from ClassID to MethodTable (we will use the RID
-    // as the mapping)
-    IMDInternalImport *pImport = GetMDImport();
-
-    DWORD * pRegularStaticOffsets = NULL;
-    DWORD * pThreadStaticOffsets = NULL;
-
-    // Get the number of types/classes defined in this module. Add 1 to count the module itself
-    DWORD dwNumTypes   = pImport->GetCountWithTokenKind(mdtTypeDef) + 1; // +1 for module type
-
-    // [0] covers regular statics, [1] covers thread statics
-    DWORD      dwGCHandles[2] = { 0, 0 };
-
-    // Organization in memory of the static block
-    //
-    //
-    //                                       |  GC Statics             |
-    //                                                  |
-    //                                                  |
-    //    | Class Data (one byte per class)  |   pointer to gc statics | primitive type statics |
-    //
-    //
-#ifndef CROSSBITNESS_COMPILE
-    // The assertions must hold in every non-crossbitness scenario
-    _ASSERTE(OFFSETOF__DomainLocalModule__m_pDataBlob_ == DomainLocalModule::OffsetOfDataBlob());
-    _ASSERTE(OFFSETOF__ThreadLocalModule__m_pDataBlob  == ThreadLocalModule::OffsetOfDataBlob());
-#endif
-
-    DWORD      dwNonGCBytes[2] = {
-        DomainLocalModule::OffsetOfDataBlob() + (DWORD)(sizeof(BYTE)*dwNumTypes),
-        ThreadLocalModule::OffsetOfDataBlob() + (DWORD)(sizeof(BYTE)*dwNumTypes)
-    };
-
-    HENUMInternalHolder hTypeEnum(pImport);
-    hTypeEnum.EnumAllInit(mdtTypeDef);
-
-    mdTypeDef type;
-    // Parse each type of the class
-    while (pImport->EnumNext(&hTypeEnum, &type))
-    {
-        // Set offset for this type
-        DWORD dwIndex = RidFromToken(type) - 1;
-
-        // [0] covers regular statics, [1] covers thread statics
-        DWORD dwAlignment[2] = { 1, 1 };
-        DWORD dwClassNonGCBytes[2] = { 0, 0 };
-        DWORD dwClassGCHandles[2]  = { 0, 0 };
-
-        // need to check if the type is generic and if so exclude it from iteration as we don't know the size
-        if (!m_pTypeGenericInfoMap->IsGeneric(type, pImport))
-        {
-            HENUMInternalHolder hFieldEnum(pImport);
-            hFieldEnum.EnumInit(mdtFieldDef, type);
-
-            mdFieldDef field;
-            // Parse each field of the type
-            while (pImport->EnumNext(&hFieldEnum, &field))
-            {
-                BOOL fSkip = FALSE;
-
-                CorElementType ElementType = ELEMENT_TYPE_END;
-                mdToken tkValueTypeToken = 0;
-                int kk; // Use one set of variables for regular statics, and the other set for thread statics
-
-                fSkip = GetStaticFieldElementTypeForFieldDef(this, pImport, field, &ElementType, &tkValueTypeToken, &kk);
-                if (fSkip)
-                    continue;
-
-                // We account for "regular statics" and "thread statics" separately.
-                // Currently we are lumping RVA into "regular statics",
-                // but we probably shouldn't.
-                switch (ElementType)
-                {
-                    case ELEMENT_TYPE_I1:
-                    case ELEMENT_TYPE_U1:
-                    case ELEMENT_TYPE_BOOLEAN:
-                        dwClassNonGCBytes[kk] += 1;
-                        break;
-                    case ELEMENT_TYPE_I2:
-                    case ELEMENT_TYPE_U2:
-                    case ELEMENT_TYPE_CHAR:
-                        dwAlignment[kk] =  max(2, dwAlignment[kk]);
-                        dwClassNonGCBytes[kk] += 2;
-                        break;
-                    case ELEMENT_TYPE_I4:
-                    case ELEMENT_TYPE_U4:
-                    case ELEMENT_TYPE_R4:
-                        dwAlignment[kk] =  max(4, dwAlignment[kk]);
-                        dwClassNonGCBytes[kk] += 4;
-                        break;
-                    case ELEMENT_TYPE_FNPTR:
-                    case ELEMENT_TYPE_PTR:
-                    case ELEMENT_TYPE_I:
-                    case ELEMENT_TYPE_U:
-                        dwAlignment[kk] =  max((1 << LOG2_PTRSIZE), dwAlignment[kk]);
-                        dwClassNonGCBytes[kk] += (1 << LOG2_PTRSIZE);
-                        break;
-                    case ELEMENT_TYPE_I8:
-                    case ELEMENT_TYPE_U8:
-                    case ELEMENT_TYPE_R8:
-                        dwAlignment[kk] =  max(8, dwAlignment[kk]);
-                        dwClassNonGCBytes[kk] += 8;
-                        break;
-                    case ELEMENT_TYPE_VAR:
-                    case ELEMENT_TYPE_MVAR:
-                    case ELEMENT_TYPE_STRING:
-                    case ELEMENT_TYPE_SZARRAY:
-                    case ELEMENT_TYPE_ARRAY:
-                    case ELEMENT_TYPE_CLASS:
-                    case ELEMENT_TYPE_OBJECT:
-                        dwClassGCHandles[kk]  += 1;
-                        break;
-                    case ELEMENT_TYPE_VALUETYPE:
-                        // Statics for valuetypes where the valuetype is defined in this module are handled here. Other valuetype statics utilize the pessimistic model below.
-                        dwClassGCHandles[kk]  += 1;
-                        break;
-                    case ELEMENT_TYPE_END:
-                    default:
-                        // The actual element type was ELEMENT_TYPE_VALUETYPE, but the as we don't want to load additional assemblies
-                        // to determine these static offsets, we've fallen back to a pessimistic model.
-                        if (tkValueTypeToken != 0)
-                        {
-                            // We'll have to be pessimistic here
-                            dwClassNonGCBytes[kk] += MAX_PRIMITIVE_FIELD_SIZE;
-                            dwAlignment[kk] = max(MAX_PRIMITIVE_FIELD_SIZE, dwAlignment[kk]);
-
-                            dwClassGCHandles[kk]  += 1;
-                            break;
-                        }
-                        else
-                        {
-                            // field has an unexpected type
-                            ThrowHR(VER_E_FIELD_SIG);
-                            break;
-                        }
-                }
-            }
-
-            if (pRegularStaticOffsets == NULL && (dwClassGCHandles[0] != 0 || dwClassNonGCBytes[0] != 0))
-            {
-                // Lazily allocate table for offsets. We need offsets for GC and non GC areas. We add +1 to use as a sentinel.
-                pRegularStaticOffsets = (PTR_DWORD)pamTracker->Track(
-                    GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(
-                        (S_SIZE_T(2 * sizeof(DWORD))*(S_SIZE_T(dwNumTypes)+S_SIZE_T(1)))));
-
-                for (DWORD i = 0; i < dwIndex; i++) {
-                    pRegularStaticOffsets[i * 2    ] = dwGCHandles[0]*TARGET_POINTER_SIZE;
-                    pRegularStaticOffsets[i * 2 + 1] = dwNonGCBytes[0];
-                }
-            }
-
-            if (pThreadStaticOffsets == NULL && (dwClassGCHandles[1] != 0 || dwClassNonGCBytes[1] != 0))
-            {
-                // Lazily allocate table for offsets. We need offsets for GC and non GC areas. We add +1 to use as a sentinel.
-                pThreadStaticOffsets = (PTR_DWORD)pamTracker->Track(
-                    GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(
-                        (S_SIZE_T(2 * sizeof(DWORD))*(S_SIZE_T(dwNumTypes)+S_SIZE_T(1)))));
-
-                for (DWORD i = 0; i < dwIndex; i++) {
-                    pThreadStaticOffsets[i * 2    ] = dwGCHandles[1]*TARGET_POINTER_SIZE;
-                    pThreadStaticOffsets[i * 2 + 1] = dwNonGCBytes[1];
-                }
-            }
-        }
-
-        if (pRegularStaticOffsets != NULL)
-        {
-            // Align the offset of non gc statics
-            dwNonGCBytes[0] = (DWORD) ALIGN_UP(dwNonGCBytes[0], dwAlignment[0]);
-
-            // Save current offsets
-            pRegularStaticOffsets[dwIndex*2]     = dwGCHandles[0]*TARGET_POINTER_SIZE;
-            pRegularStaticOffsets[dwIndex*2 + 1] = dwNonGCBytes[0];
-
-            // Increment for next class
-            dwGCHandles[0]  += dwClassGCHandles[0];
-            dwNonGCBytes[0] += dwClassNonGCBytes[0];
-        }
-
-        if (pThreadStaticOffsets != NULL)
-        {
-            // Align the offset of non gc statics
-            dwNonGCBytes[1] = (DWORD) ALIGN_UP(dwNonGCBytes[1], dwAlignment[1]);
-
-            // Save current offsets
-            pThreadStaticOffsets[dwIndex*2]     = dwGCHandles[1]*TARGET_POINTER_SIZE;
-            pThreadStaticOffsets[dwIndex*2 + 1] = dwNonGCBytes[1];
-
-            // Increment for next class
-            dwGCHandles[1]  += dwClassGCHandles[1];
-            dwNonGCBytes[1] += dwClassNonGCBytes[1];
-        }
-    }
-
-    m_maxTypeRidStaticsAllocated = dwNumTypes;
-
-    if (pRegularStaticOffsets != NULL)
-    {
-        pRegularStaticOffsets[dwNumTypes*2]     = dwGCHandles[0]*TARGET_POINTER_SIZE;
-        pRegularStaticOffsets[dwNumTypes*2 + 1] = dwNonGCBytes[0];
-    }
-
-    if (pThreadStaticOffsets != NULL)
-    {
-        pThreadStaticOffsets[dwNumTypes*2]     = dwGCHandles[1]*TARGET_POINTER_SIZE;
-        pThreadStaticOffsets[dwNumTypes*2 + 1] = dwNonGCBytes[1];
-    }
-
-    m_pRegularStaticOffsets = pRegularStaticOffsets;
-    m_pThreadStaticOffsets = pThreadStaticOffsets;
-
-    m_dwMaxGCRegularStaticHandles = dwGCHandles[0];
-    m_dwMaxGCThreadStaticHandles = dwGCHandles[1];
-
-    m_dwRegularStaticsBlockSize = dwNonGCBytes[0];
-    m_dwThreadStaticsBlockSize = dwNonGCBytes[1];
-}
-
-void  Module::GetOffsetsForRegularStaticData(
-                    mdToken cl,
-                    BOOL bDynamic, DWORD dwGCStaticHandles,
-                    DWORD dwNonGCStaticBytes,
-                    DWORD * pOutStaticHandleOffset,
-                    DWORD * pOutNonGCStaticOffset)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACTL_END
-
-    *pOutStaticHandleOffset = 0;
-    *pOutNonGCStaticOffset  = 0;
-
-    if (!dwGCStaticHandles && !dwNonGCStaticBytes)
-    {
-        return;
-    }
-
-#ifndef CROSSBITNESS_COMPILE
-    _ASSERTE(OFFSETOF__DomainLocalModule__NormalDynamicEntry__m_pDataBlob == DomainLocalModule::DynamicEntry::GetOffsetOfDataBlob());
-#endif
-    // Statics for instantiated types are allocated dynamically per-instantiation
-    if (bDynamic)
-    {
-        // Non GC statics are embedded in the Dynamic Entry.
-        *pOutNonGCStaticOffset  = OFFSETOF__DomainLocalModule__NormalDynamicEntry__m_pDataBlob;
-        return;
-    }
-
-    if (m_pRegularStaticOffsets == NULL)
-    {
-        THROW_BAD_FORMAT(BFA_METADATA_CORRUPT, this);
-    }
-    _ASSERTE(m_pRegularStaticOffsets != (PTR_DWORD) NGEN_STATICS_ALLCLASSES_WERE_LOADED);
-
-    // We allocate in the big blob.
-    DWORD index = RidFromToken(cl) - 1;
-
-    *pOutStaticHandleOffset = m_pRegularStaticOffsets[index*2];
-
-    *pOutNonGCStaticOffset  = m_pRegularStaticOffsets[index*2 + 1];
-#ifdef CROSSBITNESS_COMPILE
-    *pOutNonGCStaticOffset += OFFSETOF__DomainLocalModule__m_pDataBlob_ - DomainLocalModule::OffsetOfDataBlob();
-#endif
-
-    // Check we didnt go out of what we predicted we would need for the class
-    if (*pOutStaticHandleOffset + TARGET_POINTER_SIZE*dwGCStaticHandles >
-                m_pRegularStaticOffsets[(index+1)*2] ||
-        *pOutNonGCStaticOffset + dwNonGCStaticBytes >
-                m_pRegularStaticOffsets[(index+1)*2 + 1])
-    {   // It's most likely that this is due to bad metadata, thus the exception. However, the
-        // previous comments for this bit of code mentioned that this could be a corner case bug
-        // with static field size estimation, though this is entirely unlikely since the code has
-        // been this way for at least two releases.
-        THROW_BAD_FORMAT(BFA_METADATA_CORRUPT, this);
-    }
-}
-
-
-void  Module::GetOffsetsForThreadStaticData(
-                    mdToken cl,
-                    BOOL bDynamic, DWORD dwGCStaticHandles,
-                    DWORD dwNonGCStaticBytes,
-                    DWORD * pOutStaticHandleOffset,
-                    DWORD * pOutNonGCStaticOffset)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACTL_END
-
-    *pOutStaticHandleOffset = 0;
-    *pOutNonGCStaticOffset  = 0;
-
-    if (!dwGCStaticHandles && !dwNonGCStaticBytes)
-    {
-        return;
-    }
-
-#ifndef CROSSBITNESS_COMPILE
-    _ASSERTE(OFFSETOF__ThreadLocalModule__DynamicEntry__m_pDataBlob == ThreadLocalModule::DynamicEntry::GetOffsetOfDataBlob());
-#endif
-    // Statics for instantiated types are allocated dynamically per-instantiation
-    if (bDynamic)
-    {
-        // Non GC thread statics are embedded in the Dynamic Entry.
-        *pOutNonGCStaticOffset  = OFFSETOF__ThreadLocalModule__DynamicEntry__m_pDataBlob;
-        return;
-    }
-
-    if (m_pThreadStaticOffsets == NULL)
-    {
-        THROW_BAD_FORMAT(BFA_METADATA_CORRUPT, this);
-    }
-    _ASSERTE(m_pThreadStaticOffsets != (PTR_DWORD) NGEN_STATICS_ALLCLASSES_WERE_LOADED);
-
-    // We allocate in the big blob.
-    DWORD index = RidFromToken(cl) - 1;
-
-    *pOutStaticHandleOffset = m_pThreadStaticOffsets[index*2];
-
-    *pOutNonGCStaticOffset  = m_pThreadStaticOffsets[index*2 + 1];
-#ifdef CROSSBITNESS_COMPILE
-    *pOutNonGCStaticOffset += OFFSETOF__ThreadLocalModule__m_pDataBlob - ThreadLocalModule::GetOffsetOfDataBlob();
-#endif
-
-    // Check we didnt go out of what we predicted we would need for the class
-    if (*pOutStaticHandleOffset + TARGET_POINTER_SIZE*dwGCStaticHandles >
-                m_pThreadStaticOffsets[(index+1)*2] ||
-        *pOutNonGCStaticOffset + dwNonGCStaticBytes >
-                m_pThreadStaticOffsets[(index+1)*2 + 1])
-    {
-        // It's most likely that this is due to bad metadata, thus the exception. However, the
-        // previous comments for this bit of code mentioned that this could be a corner case bug
-        // with static field size estimation, though this is entirely unlikely since the code has
-        // been this way for at least two releases.
-        THROW_BAD_FORMAT(BFA_METADATA_CORRUPT, this);
-    }
-}
-
 
 // initialize Crst controlling the Dynamic IL hashtable
 void Module::InitializeDynamicILCrst()
@@ -1231,15 +863,12 @@ void Module::InitializeDynamicILCrst()
 // Add a (token, address) pair to the table of IL blobs for reflection/dynamics
 // Arguments:
 //     Input:
-//         token        method token
+//         token        method token or field token (See SetDynamicRvaField)
 //         blobAddress  address of the start of the IL blob address, including the header
-//         fTemporaryOverride
-//                      is this a permanent override that should go in the
-//                      DynamicILBlobTable, or a temporary one?
 //     Output: not explicit, but if the pair was not already in the table it will be added.
 //             Does not add duplicate tokens to the table.
 
-void Module::SetDynamicIL(mdToken token, TADDR blobAddress, BOOL fTemporaryOverride)
+void Module::SetDynamicIL(mdToken token, TADDR blobAddress)
 {
     DynamicILBlobEntry entry = {mdToken(token), TADDR(blobAddress)};
 
@@ -1252,16 +881,12 @@ void Module::SetDynamicIL(mdToken token, TADDR blobAddress, BOOL fTemporaryOverr
 
     CrstHolder ch(m_debuggerSpecificData.m_pDynamicILCrst);
 
-    // Figure out which table to fill in
-    PTR_DynamicILBlobTable &table(fTemporaryOverride ? m_debuggerSpecificData.m_pTemporaryILBlobTable
-                                                     : m_debuggerSpecificData.m_pDynamicILBlobTable);
-
     // Lazily allocate the hash table.
-    if (table == NULL)
+    if (m_debuggerSpecificData.m_pDynamicILBlobTable == NULL)
     {
-        table = PTR_DynamicILBlobTable(new DynamicILBlobTable);
+        m_debuggerSpecificData.m_pDynamicILBlobTable = PTR_DynamicILBlobTable(new DynamicILBlobTable);
     }
-    table->AddOrReplace(entry);
+    m_debuggerSpecificData.m_pDynamicILBlobTable->AddOrReplace(entry);
 }
 
 #endif // !DACCESS_COMPILE
@@ -1273,7 +898,7 @@ void Module::SetDynamicIL(mdToken token, TADDR blobAddress, BOOL fTemporaryOverr
 //         fAllowTemporary also check the temporary overrides
 // Return Value: starting (target) address of the IL blob corresponding to the input token
 
-TADDR Module::GetDynamicIL(mdToken token, BOOL fAllowTemporary)
+TADDR Module::GetDynamicIL(mdToken token)
 {
     SUPPORTS_DAC;
 
@@ -1288,19 +913,8 @@ TADDR Module::GetDynamicIL(mdToken token, BOOL fAllowTemporary)
     CrstHolder ch(m_debuggerSpecificData.m_pDynamicILCrst);
 #endif
 
-    // Both hash tables are lazily allocated, so if they're NULL
+    // The hash table is lazily allocated, so if it is NULL
     // then we have no IL blobs
-
-    if (fAllowTemporary && m_debuggerSpecificData.m_pTemporaryILBlobTable != NULL)
-    {
-        DynamicILBlobEntry entry = m_debuggerSpecificData.m_pTemporaryILBlobTable->Lookup(token);
-
-        // Only return a value if the lookup succeeded
-        if (!DynamicILBlobTraits::IsNull(entry))
-        {
-            return entry.m_il;
-        }
-    }
 
     if (m_debuggerSpecificData.m_pDynamicILBlobTable == NULL)
     {
@@ -1311,6 +925,35 @@ TADDR Module::GetDynamicIL(mdToken token, BOOL fAllowTemporary)
     // If the lookup fails, it returns the 'NULL' entry
     // The 'NULL' entry has m_il set to NULL, so either way we're safe
     return entry.m_il;
+}
+
+#ifndef DACCESS_COMPILE
+void Module::SetDynamicRvaField(mdToken token, TADDR blobAddress)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // Reuse existing dynamic IL mechanism to store/map the data.
+    SetDynamicIL(token, blobAddress);
+}
+#endif // !DACCESS_COMPILE
+
+TADDR Module::GetDynamicRvaField(mdToken token)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END
+
+    // Reuse existing dynamic IL mechanism to store/map the data.
+    return GetDynamicIL(token);
 }
 
 #if !defined(DACCESS_COMPILE)
@@ -1449,56 +1092,77 @@ BOOL Module::IsRuntimeWrapExceptionsStatusComputed()
     return (m_dwPersistedFlags & COMPUTED_WRAP_EXCEPTIONS);
 }
 
+BOOL Module::IsRuntimeWrapExceptionsDuringEH()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    // This method assumes that the runtime wrap exceptions status has already been computed.
+    // IsRuntimeWrapExceptionsStatusComputed() returns TRUE before calling this method, but
+    // that should be done as part of Module activation, so we shouldn't need to worry about that.
+    _ASSERTE(IsRuntimeWrapExceptionsStatusComputed());
+    return (m_dwPersistedFlags & WRAP_EXCEPTIONS) != 0;
+}
+
 BOOL Module::IsRuntimeWrapExceptions()
 {
     CONTRACTL
     {
         NOTHROW;
-        if (IsRuntimeWrapExceptionsStatusComputed()) GC_NOTRIGGER; else GC_TRIGGERS;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END
 
     if (!(IsRuntimeWrapExceptionsStatusComputed()))
     {
-        HRESULT hr;
-        BOOL fRuntimeWrapExceptions = FALSE;
-
-        IMDInternalImport *mdImport = GetAssembly()->GetMDImport();
-
-        mdToken token;
-        IfFailGo(mdImport->GetAssemblyFromScope(&token));
-
-        const BYTE *pVal;
-        ULONG       cbVal;
-
-        hr = mdImport->GetCustomAttributeByName(token,
-                        RUNTIMECOMPATIBILITY_TYPE,
-                        (const void**)&pVal, &cbVal);
-
-        // Parse the attribute
-        if (hr == S_OK)
-        {
-            CustomAttributeParser ca(pVal, cbVal);
-            CaNamedArg namedArgs[1] = {{0}};
-
-            // First, the void constructor:
-            IfFailGo(ParseKnownCaArgs(ca, NULL, 0));
-
-            // Then, find the named argument
-            namedArgs[0].InitBoolField("WrapNonExceptionThrows");
-
-            IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs)));
-
-            if (namedArgs[0].val.boolean)
-                fRuntimeWrapExceptions = TRUE;
-        }
-ErrExit:
-        InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_WRAP_EXCEPTIONS |
-            (fRuntimeWrapExceptions ? WRAP_EXCEPTIONS : 0));
+        UpdateCachedIsRuntimeWrapExceptions();
     }
-
     return !!(m_dwPersistedFlags & WRAP_EXCEPTIONS);
+}
+
+void Module::UpdateCachedIsRuntimeWrapExceptions()
+{
+    HRESULT hr;
+    BOOL fRuntimeWrapExceptions = FALSE;
+
+    IMDInternalImport *mdImport = GetAssembly()->GetMDImport();
+
+    mdToken token;
+    IfFailGo(mdImport->GetAssemblyFromScope(&token));
+
+    const BYTE *pVal;
+    ULONG       cbVal;
+
+    hr = mdImport->GetCustomAttributeByName(token,
+                    RUNTIMECOMPATIBILITY_TYPE,
+                    (const void**)&pVal, &cbVal);
+
+    // Parse the attribute
+    if (hr == S_OK)
+    {
+        CustomAttributeParser ca(pVal, cbVal);
+        CaNamedArg namedArgs[1] = {{0}};
+
+        // First, the void constructor:
+        IfFailGo(ParseKnownCaArgs(ca, NULL, 0));
+
+        // Then, find the named argument
+        namedArgs[0].InitBoolField("WrapNonExceptionThrows");
+
+        IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs)));
+
+        if (namedArgs[0].val.boolean)
+            fRuntimeWrapExceptions = TRUE;
+    }
+ErrExit:
+    InterlockedOr((LONG*)&m_dwPersistedFlags, COMPUTED_WRAP_EXCEPTIONS |
+        (fRuntimeWrapExceptions ? WRAP_EXCEPTIONS : 0));
 }
 
 BOOL Module::IsRuntimeMarshallingEnabled()
@@ -1537,242 +1201,18 @@ BOOL Module::IsRuntimeMarshallingEnabled()
     return hr != S_OK;
 }
 
-
-DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(pMT->GetModuleForStatics() == this);
-        PRECONDITION(pMT->IsDynamicStatics());
-        PRECONDITION(!pMT->ContainsGenericVariables());
-    }
-    CONTRACTL_END;
-
-    CrstHolder ch(&m_Crst);
-    DWORD newId = (LONG)m_cDynamicEntries++;
-
-    if (newId >= m_maxDynamicEntries)
-    {
-        SIZE_T maxDynamicEntries = max(16, m_maxDynamicEntries);
-        while (maxDynamicEntries <= newId)
-        {
-            maxDynamicEntries *= 2;
-        }
-
-        DynamicStaticsInfo* pNewDynamicStaticsInfo = (DynamicStaticsInfo*)
-            (void*)GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(DynamicStaticsInfo)) * S_SIZE_T(maxDynamicEntries));
-
-        if (m_pDynamicStaticsInfo)
-            memcpy(pNewDynamicStaticsInfo, m_pDynamicStaticsInfo, sizeof(DynamicStaticsInfo) * m_maxDynamicEntries);
-
-        m_pDynamicStaticsInfo = pNewDynamicStaticsInfo;
-        m_maxDynamicEntries = maxDynamicEntries;
-    }
-
-    m_pDynamicStaticsInfo[newId].pEnclosingMT = pMT;
-
-    LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Assigned dynamic ID %d to %s\n", newId, pMT->GetDebugClassName()));
-
-    return newId;
-}
-
-void Module::FreeModuleIndex()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    if (m_ModuleID != NULL)
-    {
-        _ASSERTE(m_ModuleIndex == m_ModuleID->GetModuleIndex());
-
-        if (IsCollectible())
-        {
-            ThreadStoreLockHolder tsLock;
-            Thread *pThread = NULL;
-            while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
-            {
-                pThread->DeleteThreadStaticData(m_ModuleIndex);
-            }
-        }
-
-        // Get the ModuleIndex from the DLM and free it
-        Module::FreeModuleIndex(m_ModuleIndex);
-    }
-    else
-    {
-        // This was an empty, short-lived Module object that
-        // was never assigned a ModuleIndex...
-    }
-}
-
-
-
-
-ModuleIndex Module::AllocateModuleIndex()
-{
-    DWORD val;
-    g_pModuleIndexDispenser->NewId(NULL, val);
-
-    // For various reasons, the IDs issued by the IdDispenser start at 1.
-    // Domain neutral module IDs have historically started at 0, and we
-    // have always assigned ID 0 to CoreLib. Thus, to make it so that
-    // domain neutral module IDs start at 0, we will subtract 1 from the
-    // ID that we got back from the ID dispenser.
-    ModuleIndex index((SIZE_T)(val-1));
-
-    return index;
-}
-
-void Module::FreeModuleIndex(ModuleIndex index)
-{
-    WRAPPER_NO_CONTRACT;
-    // We subtracted 1 after we allocated this ID, so we need to
-    // add 1 before we free it.
-    SIZE_T val = index.m_dwIndex + 1;
-
-    _ASSERTE(val <= MAXDWORD);
-    g_pModuleIndexDispenser->DisposeId((DWORD)val);
-}
-
-
-void Module::AllocateRegularStaticHandles(AppDomain* pDomain)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    // Allocate the handles we will need. Note that AllocateStaticFieldObjRefPtrs will only
-    // allocate if pModuleData->GetGCStaticsBasePointerAddress(pMT) != 0, avoiding creating
-    // handles more than once for a given MT or module
-
-    DomainLocalModule *pModuleData = GetDomainLocalModule();
-
-    _ASSERTE(pModuleData->GetPrecomputedGCStaticsBasePointerAddress() != NULL);
-    if (this->m_dwMaxGCRegularStaticHandles > 0)
-    {
-        pDomain->AllocateStaticFieldObjRefPtrs(this->m_dwMaxGCRegularStaticHandles,
-                                               pModuleData->GetPrecomputedGCStaticsBasePointerAddress());
-
-        // We should throw if we fail to allocate and never hit this assert
-        _ASSERTE(pModuleData->GetPrecomputedGCStaticsBasePointer() != NULL);
-    }
-}
-
-BOOL Module::IsStaticStoragePrepared(mdTypeDef tkType)
+void Module::SetDomainAssembly(DomainAssembly *pDomainAssembly)
 {
     LIMITED_METHOD_CONTRACT;
 
-    // Right now the design is that we do one static allocation pass during NGEN,
-    // and a 2nd pass for it at module init time for modules that weren't NGENed or the NGEN
-    // pass was unsuccessful. If we are loading types after that then we must use dynamic
-    // static storage. These dynamic statics require an additional indirection so they
-    // don't perform quite as well.
-    //
-    // This check was created for the scenario where a profiler adds additional types
-    // however it seems likely this check would also accurately handle other dynamic
-    // scenarios such as ref.emit and EnC as long as they are adding new types and
-    // not new statics to existing types.
-    _ASSERTE(TypeFromToken(tkType) == mdtTypeDef);
-    return m_maxTypeRidStaticsAllocated >= RidFromToken(tkType);
+    m_pDomainAssembly = pDomainAssembly;
 }
 
-void Module::AllocateStatics(AllocMemTracker *pamTracker)
-{
-    STANDARD_VM_CONTRACT;
-
-    LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Allocating statics for module %s\n", GetSimpleName()));
-
-    // Build the offset table, which will tell us what the offsets for the statics of each class are (one offset for gc handles, one offset
-    // for non gc types)
-    BuildStaticsOffsets(pamTracker);
-}
-
-void Module::SetDomainAssembly(DomainAssembly *pDomainAssembly)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(pDomainAssembly));
-        PRECONDITION(IsManifest());
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    DomainLocalModule* pModuleData = 0;
-
-    // Do we need to allocate memory for the non GC statics?
-    if (m_ModuleID == NULL)
-    {
-        // Allocate memory for the module statics.
-        LoaderAllocator *pLoaderAllocator = NULL;
-        if (GetAssembly()->IsCollectible())
-        {
-            pLoaderAllocator = GetAssembly()->GetLoaderAllocator();
-        }
-        else
-        {
-            pLoaderAllocator = pDomainAssembly->GetAppDomain()->GetLoaderAllocator();
-        }
-
-        SIZE_T size = GetDomainLocalModuleSize();
-
-        LOG((LF_CLASSLOADER, LL_INFO10, "STATICS: Allocating %zi bytes for precomputed statics in module %s in LoaderAllocator %p\n",
-            size, this->GetDebugName(), pLoaderAllocator));
-
-        // We guarantee alignment for 64-bit regular statics on 32-bit platforms even without FEATURE_64BIT_ALIGNMENT for performance reasons.
-
-        _ASSERTE(size >= DomainLocalModule::OffsetOfDataBlob());
-
-        pModuleData = (DomainLocalModule*)(void*)
-            pLoaderAllocator->GetHighFrequencyHeap()->AllocAlignedMem(
-                size, MAX_PRIMITIVE_FIELD_SIZE);
-
-        // Note: Memory allocated on loader heap is zero filled
-        // memset(pModuleData, 0, size);
-
-        // Verify that the space is really zero initialized
-        _ASSERTE(pModuleData->GetPrecomputedGCStaticsBasePointer() == NULL);
-
-        // If the module was loaded as domain-specific, then we need to assign
-        // this module a domain-neutral module ID.
-        pModuleData->m_ModuleIndex = Module::AllocateModuleIndex();
-        m_ModuleIndex = pModuleData->m_ModuleIndex;
-    }
-    else
-    {
-        pModuleData = this->m_ModuleID;
-        LOG((LF_CLASSLOADER, LL_INFO10, "STATICS: Allocation not needed for ngened non shared module %s in Appdomain %08x\n"));
-    }
-
-    // Non shared case, module points directly to the statics. In ngen case
-    // m_pDomainModule is already set for the non shared case
-    if (m_ModuleID == NULL)
-    {
-        m_ModuleID = pModuleData;
-    }
-
-    m_ModuleID->SetDomainAssembly(pDomainAssembly);
-
-    // Allocate static handles now.
-    // NOTE: Bootstrapping issue with CoreLib - we will manually allocate later
-    // If the assembly is collectible, we don't initialize static handles for them
-    // as it is currently initialized through the DomainLocalModule::PopulateClass in MethodTable::CheckRunClassInitThrowing
-    // (If we don't do this, it would allocate here unused regular static handles that will be overridden later)
-    if (g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] != NULL && !GetAssembly()->IsCollectible())
-        AllocateRegularStaticHandles(pDomainAssembly->GetAppDomain());
-}
-
+//---------------------------------------------------------------------------------------
+//
+// Returns managed representation of the module (Module or ModuleBuilder).
+// Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
+//
 OBJECTREF Module::GetExposedObject()
 {
     CONTRACT(OBJECTREF)
@@ -1785,7 +1225,62 @@ OBJECTREF Module::GetExposedObject()
     }
     CONTRACT_END;
 
-    RETURN GetDomainAssembly()->GetExposedModuleObject();
+        LoaderAllocator * pLoaderAllocator = GetLoaderAllocator();
+
+    if (m_hExposedObject == (LOADERHANDLE)NULL)
+    {
+        // Atomically create a handle
+        LOADERHANDLE handle = pLoaderAllocator->AllocateHandle(NULL);
+
+        InterlockedCompareExchangeT(&m_hExposedObject, handle, static_cast<LOADERHANDLE>(0));
+    }
+
+    if (pLoaderAllocator->GetHandleValue(m_hExposedObject) == NULL)
+    {
+        REFLECTMODULEBASEREF refClass = NULL;
+
+        // Will be true only if LoaderAllocator managed object was already collected and therefore we should
+        // return NULL
+        bool fIsLoaderAllocatorCollected = false;
+
+        GCPROTECT_BEGIN(refClass);
+
+        refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
+        refClass->SetModule(this);
+
+        // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type
+        // alive as long as a reference to the module is kept alive.
+        if (GetAssembly() != NULL)
+        {
+            OBJECTREF refAssembly = GetAssembly()->GetExposedObject();
+            if ((refAssembly == NULL) && GetAssembly()->IsCollectible())
+            {
+                fIsLoaderAllocatorCollected = true;
+            }
+            refClass->SetAssembly(refAssembly);
+        }
+
+        pLoaderAllocator->CompareExchangeValueInHandle(m_hExposedObject, (OBJECTREF)refClass, NULL);
+        GCPROTECT_END();
+
+        if (fIsLoaderAllocatorCollected)
+        {   // The LoaderAllocator managed object was already collected, we cannot re-create it
+            // Note: We did not publish the allocated Module/ModuleBuilder object, it will get collected
+            // by GC
+            return NULL;
+        }
+    }
+
+    RETURN pLoaderAllocator->GetHandleValue(m_hExposedObject);
+}
+
+OBJECTREF Module::GetExposedObjectIfExists()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    OBJECTREF objRet = NULL;
+    GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedObject, &objRet);
+    return objRet;
 }
 
 //
@@ -1818,7 +1313,7 @@ void Module::AllocateMaps()
 
     PTR_TADDR pTable = NULL;
 
-    if (IsReflection())
+    if (IsReflectionEmit())
     {
         // For dynamic modules, it is essential that we at least have a TypeDefToMethodTable
         // map with an initial block.  Otherwise, all the iterators will abort on an
@@ -1832,9 +1327,10 @@ void Module::AllocateMaps()
         m_MethodDefToDescMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
         m_FieldDefToDescMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
         m_GenericParamToDescMap.dwCount = GENERICPARAM_MAP_INITIAL_SIZE;
-        m_GenericTypeDefToCanonMethodTableMap.dwCount = TYPEDEF_MAP_INITIAL_SIZE;
         m_ManifestModuleReferencesMap.dwCount = ASSEMBLYREFERENCES_MAP_INITIAL_SIZE;
-        m_MethodDefToPropertyInfoMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
+#ifdef FEATURE_CODE_VERSIONING
+        m_ILCodeVersioningStateMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
+#endif // FEATURE_CODE_VERSIONING
     }
     else
     {
@@ -1861,8 +1357,10 @@ void Module::AllocateMaps()
         // Get the number of AssemblyReferences in the map
         m_ManifestModuleReferencesMap.dwCount = pImport->GetCountWithTokenKind(mdtAssemblyRef)+1;
 
-        m_GenericTypeDefToCanonMethodTableMap.dwCount = 0;
-        m_MethodDefToPropertyInfoMap.dwCount = 0;
+#ifdef FEATURE_CODE_VERSIONING
+        // IL code versions are relatively rare so keep small.
+        m_ILCodeVersioningStateMap.dwCount = 1;
+#endif // FEATURE_CODE_VERSIONING
     }
 
     S_SIZE_T nTotal;
@@ -1873,9 +1371,10 @@ void Module::AllocateMaps()
     nTotal += m_MethodDefToDescMap.dwCount;
     nTotal += m_FieldDefToDescMap.dwCount;
     nTotal += m_GenericParamToDescMap.dwCount;
-    nTotal += m_GenericTypeDefToCanonMethodTableMap.dwCount;
     nTotal += m_ManifestModuleReferencesMap.dwCount;
-    nTotal += m_MethodDefToPropertyInfoMap.dwCount;
+#ifdef FEATURE_CODE_VERSIONING
+    nTotal += m_ILCodeVersioningStateMap.dwCount;
+#endif // FEATURE_CODE_VERSIONING
 
     _ASSERTE (m_pAssembly && m_pAssembly->GetLowFrequencyHeap());
     pTable = (PTR_TADDR)(void*)m_pAssembly->GetLowFrequencyHeap()->AllocMem(nTotal * S_SIZE_T(sizeof(TADDR)));
@@ -1889,7 +1388,7 @@ void Module::AllocateMaps()
 
     m_TypeRefToMethodTableMap.pNext  = NULL;
     m_TypeRefToMethodTableMap.supportedFlags = TYPE_REF_MAP_ALL_FLAGS;
-    m_TypeRefToMethodTableMap.pTable = &pTable[m_TypeDefToMethodTableMap.dwCount];
+    m_TypeRefToMethodTableMap.pTable = &m_TypeDefToMethodTableMap.pTable[m_TypeDefToMethodTableMap.dwCount];
 
     m_MemberRefMap.pNext = NULL;
     m_MemberRefMap.supportedFlags = MEMBER_REF_MAP_ALL_FLAGS;
@@ -1907,17 +1406,15 @@ void Module::AllocateMaps()
     m_GenericParamToDescMap.supportedFlags = GENERIC_PARAM_MAP_ALL_FLAGS;
     m_GenericParamToDescMap.pTable = &m_FieldDefToDescMap.pTable[m_FieldDefToDescMap.dwCount];
 
-    m_GenericTypeDefToCanonMethodTableMap.pNext  = NULL;
-    m_GenericTypeDefToCanonMethodTableMap.supportedFlags = GENERIC_TYPE_DEF_MAP_ALL_FLAGS;
-    m_GenericTypeDefToCanonMethodTableMap.pTable = &m_GenericParamToDescMap.pTable[m_GenericParamToDescMap.dwCount];
-
     m_ManifestModuleReferencesMap.pNext  = NULL;
     m_ManifestModuleReferencesMap.supportedFlags = MANIFEST_MODULE_MAP_ALL_FLAGS;
-    m_ManifestModuleReferencesMap.pTable = &m_GenericTypeDefToCanonMethodTableMap.pTable[m_GenericTypeDefToCanonMethodTableMap.dwCount];
+    m_ManifestModuleReferencesMap.pTable = &m_GenericParamToDescMap.pTable[m_GenericParamToDescMap.dwCount];
 
-    m_MethodDefToPropertyInfoMap.pNext = NULL;
-    m_MethodDefToPropertyInfoMap.supportedFlags = PROPERTY_INFO_MAP_ALL_FLAGS;
-    m_MethodDefToPropertyInfoMap.pTable = &m_ManifestModuleReferencesMap.pTable[m_ManifestModuleReferencesMap.dwCount];
+#ifdef FEATURE_CODE_VERSIONING
+    m_ILCodeVersioningStateMap.pNext  = NULL;
+    m_ILCodeVersioningStateMap.supportedFlags = METHOD_DEF_MAP_ALL_FLAGS;
+    m_ILCodeVersioningStateMap.pTable = &m_ManifestModuleReferencesMap.pTable[m_ManifestModuleReferencesMap.dwCount];
+#endif // FEATURE_CODE_VERSIONING
 }
 
 
@@ -1954,10 +1451,11 @@ void Module::FreeClassTables()
     while (typeDefIter.Next())
     {
         MethodTable * pMT = typeDefIter.GetElement();
-
-        if (pMT != NULL && pMT->IsRestored())
+        if (pMT != NULL)
         {
-            pMT->GetClass()->Destruct(pMT);
+            ClassLoader::NotifyUnload(pMT, true);
+            pMT->GetClass()->Destruct();
+            ClassLoader::NotifyUnload(pMT, false);
         }
     }
 
@@ -1973,17 +1471,20 @@ void Module::FreeClassTables()
             {
                 TypeHandle th = pEntry->GetTypeHandle();
 
-                if (!th.IsRestored())
+                // Array EEClass doesn't need notification and there is no work for Destruct()
+                if (th.IsTypeDesc())
                     continue;
 
+                MethodTable * pMT = th.AsMethodTable();
+                ClassLoader::NotifyUnload(pMT, true);
+
                 // We need to call destruct on instances of EEClass whose "canonical" dependent lives in this table
-                // There is nothing interesting to destruct on array EEClass
-                if (!th.IsTypeDesc())
+                if (pMT->IsCanonicalMethodTable())
                 {
-                    MethodTable * pMT = th.AsMethodTable();
-                    if (pMT->IsCanonicalMethodTable())
-                        pMT->GetClass()->Destruct(pMT);
+                    pMT->GetClass()->Destruct();
                 }
+
+                ClassLoader::NotifyUnload(pMT, false);
             }
         }
     }
@@ -1997,14 +1498,6 @@ ClassLoader *Module::GetClassLoader()
     SUPPORTS_DAC;
     _ASSERTE(m_pAssembly != NULL);
     return m_pAssembly->GetLoader();
-}
-
-PTR_BaseDomain Module::GetDomain()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    _ASSERTE(m_pAssembly != NULL);
-    return m_pAssembly->GetDomain();
 }
 
 #ifndef DACCESS_COMPILE
@@ -2027,7 +1520,7 @@ void Module::StartUnload()
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
         END_PROFILER_CALLBACK();
     }
@@ -2169,18 +1662,9 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReaderNoThrow(void)
     {
         ret = GetISymUnmanagedReader();
     }
-    EX_CATCH
-    {
-        // We swallow any exception and say that we simply couldn't get a reader by returning NULL.
-        // The only type of error that should be possible here is OOM.
-        /* DISABLED due to Dev10 bug 619495
-        CONSISTENCY_CHECK_MSG(
-            GET_EXCEPTION()->GetHR() == E_OUTOFMEMORY,
-            "Exception from GetISymUnmanagedReader");
-         */
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
-
+    EX_SWALLOW_NONTERMINAL
+    // We swallow any exception and say that we simply couldn't get a reader by returning NULL.
+    // The only type of error that should be possible here is OOM.
     RETURN (ret);
 }
 
@@ -2295,7 +1779,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             if (GetInMemorySymbolStream() )
             {
 
-                if( IsReflection() )
+                if( IsReflectionEmit() )
                 {
                     // If this is Reflection.Emit, we must clone the stream because another thread may
                     // update it when someone is using the reader we create here leading to AVs.
@@ -2435,10 +1919,9 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     if (CORDebuggerAttached())
     {
         AppDomain *pDomain = AppDomain::GetCurrentDomain();
-        if (pDomain->IsDebuggerAttached() && (GetDomain() == SystemDomain::System() ||
-                                                pDomain->ContainsAssembly(m_pAssembly)))
+        if (pDomain->IsDebuggerAttached() && pDomain->ContainsAssembly(m_pAssembly))
         {
-            g_pDebugInterface->SendUpdateModuleSymsEventAndBlock(this, pDomain);
+            g_pDebugInterface->SendUpdateModuleSymsEventAndBlock(this);
         }
     }
 }
@@ -2482,13 +1965,12 @@ ILStubCache* Module::GetILStubCache()
     CONTRACTL_END;
 
     // Use per-LoaderAllocator cache for modules
-    BaseDomain *pDomain = GetDomain();
     if (!IsSystem())
         return GetLoaderAllocator()->GetILStubCache();
 
     if (m_pILStubCache == NULL)
     {
-        ILStubCache *pILStubCache = new ILStubCache(GetLoaderAllocator()->GetHighFrequencyHeap());
+        ILStubCache *pILStubCache = new ILStubCache(GetLoaderAllocator());
 
         if (InterlockedCompareExchangeT(&m_pILStubCache, pILStubCache, NULL) != NULL)
         {
@@ -2578,7 +2060,7 @@ BOOL Module::IsVisibleToDebugger()
     return TRUE;
 }
 
-PEImageLayout * Module::GetReadyToRunImage()
+ReadyToRunLoadedImage * Module::GetReadyToRunImage()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2626,13 +2108,13 @@ PTR_READYTORUN_IMPORT_SECTION Module::GetImportSectionForRVA(RVA rva)
     return GetReadyToRunInfo()->GetImportSectionForRVA(rva);
 }
 
-TADDR Module::GetIL(DWORD target)
+TADDR Module::GetIL(RVA target)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
     if (target == 0)
-        return NULL;
+        return (TADDR)NULL;
 
     return m_pPEAssembly->GetIL(target);
 }
@@ -2650,7 +2132,7 @@ PTR_VOID Module::GetRvaField(DWORD rva)
 CHECK Module::CheckRvaField(RVA field)
 {
     WRAPPER_NO_CONTRACT;
-    if (!IsReflection())
+    if (!IsReflectionEmit())
         CHECK(m_pPEAssembly->CheckRvaField(field));
     CHECK_OK;
 }
@@ -2664,7 +2146,7 @@ CHECK Module::CheckRvaField(RVA field, COUNT_T size)
     }
     CONTRACTL_END;
 
-    if (!IsReflection())
+    if (!IsReflectionEmit())
         CHECK(m_pPEAssembly->CheckRvaField(field, size));
     CHECK_OK;
 }
@@ -2772,21 +2254,18 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
 }
 
 
-OBJECTHANDLE ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
+STRINGREF* ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(TypeFromToken(token) == mdtString);
     }
     CONTRACTL_END;
 
     EEStringData strData;
-    OBJECTHANDLE string = NULL;
 
 #if !BIGENDIAN
     InitializeStringData(token, &strData, NULL);
@@ -2796,14 +2275,8 @@ OBJECTHANDLE ModuleBase::ResolveStringRef(DWORD token, void** ppPinnedString)
 #endif // !!BIGENDIAN
 
     GCX_COOP();
-
-    LoaderAllocator *pLoaderAllocator;
-
-    pLoaderAllocator = this->GetLoaderAllocator();
-
-    string = (OBJECTHANDLE)pLoaderAllocator->GetStringObjRefPtrFromUnicodeString(&strData, ppPinnedString);
-
-    return string;
+    LoaderAllocator* pLoaderAllocator = this->GetLoaderAllocator();
+    return pLoaderAllocator->GetStringObjRefPtrFromUnicodeString(&strData, ppPinnedString);
 }
 
 mdToken Module::GetEntryPointToken()
@@ -2843,7 +2316,6 @@ Assembly *
 Module::GetAssemblyIfLoaded(
     mdAssemblyRef       kAssemblyRef,
     IMDInternalImport * pMDImportOverride,  // = NULL
-    BOOL                fDoNotUtilizeExtraChecks, // = FALSE
     AssemblyBinder      *pBinderForLoadedAssembly // = NULL
 )
 {
@@ -2886,65 +2358,43 @@ Module::GetAssemblyIfLoaded(
     if ((pAssembly != NULL) && !IsGCThread() && !IsStackWalkerThread())
     {
         _ASSERTE(::GetAppDomain() != NULL);
-        DomainAssembly * pDomainAssembly = pAssembly->GetDomainAssembly();
-        if ((pDomainAssembly == NULL) || !pDomainAssembly->IsLoaded())
+        if (!pAssembly->IsLoaded())
             pAssembly = NULL;
     }
-#endif //!DACCESS_COMPILE
 
     if (pAssembly == NULL)
     {
-        do
+        IMDInternalImport * pMDImport = (pMDImportOverride == NULL) ? (GetMDImport()) : (pMDImportOverride);
+
+        //we have to be very careful here.
+        //we are using InitializeSpecInternal so we need to make sure that under no condition
+        //the data we pass to it can outlive the assembly spec.
+        AssemblySpec spec;
+        if (FAILED(spec.InitializeSpecInternal(kAssemblyRef,
+                                                pMDImport,
+                                                GetAssembly())))
         {
-            AppDomain * pAppDomainExamine = AppDomain::GetCurrentDomain();
+            return NULL;
+        }
 
-            DomainAssembly * pCurAssemblyInExamineDomain = GetAssembly()->GetDomainAssembly();
-            if (pCurAssemblyInExamineDomain == NULL)
-            {
-                continue;
-            }
+        // If we have been passed the binding context for the loaded assembly that is being looked up in the
+        // cache, then set it up in the AssemblySpec for the cache lookup to use it below.
+        if (pBinderForLoadedAssembly != NULL)
+        {
+            _ASSERTE(spec.GetBinder() == NULL);
+            spec.SetBinder(pBinderForLoadedAssembly);
+        }
 
-#ifndef DACCESS_COMPILE
-            {
-                IMDInternalImport * pMDImport = (pMDImportOverride == NULL) ? (GetMDImport()) : (pMDImportOverride);
+        Assembly * pCachedAssembly = AppDomain::GetCurrentDomain()->FindCachedAssembly(&spec, FALSE /*fThrow*/);
 
-                //we have to be very careful here.
-                //we are using InitializeSpecInternal so we need to make sure that under no condition
-                //the data we pass to it can outlive the assembly spec.
-                AssemblySpec spec;
-                if (FAILED(spec.InitializeSpecInternal(kAssemblyRef,
-                                                       pMDImport,
-                                                       pCurAssemblyInExamineDomain)))
-                {
-                    continue;
-                }
+        if (pCachedAssembly && pCachedAssembly->IsLoaded())
+            pAssembly = pCachedAssembly;
 
-                // If we have been passed the binding context for the loaded assembly that is being looked up in the
-                // cache, then set it up in the AssemblySpec for the cache lookup to use it below.
-                if (pBinderForLoadedAssembly != NULL)
-                {
-                    _ASSERTE(spec.GetBinder() == NULL);
-                    spec.SetBinder(pBinderForLoadedAssembly);
-                }
-                DomainAssembly * pDomainAssembly = nullptr;
-
-                {
-                    pDomainAssembly = pAppDomainExamine->FindCachedAssembly(&spec, FALSE /*fThrow*/);
-                }
-
-                if (pDomainAssembly && pDomainAssembly->IsLoaded())
-                    pAssembly = pDomainAssembly->GetAssembly();
-
-                // Only store in the rid map if working with the current AppDomain.
-                if (fCanUseRidMap && pAssembly)
-                    StoreAssemblyRef(kAssemblyRef, pAssembly);
-
-                if (pAssembly != NULL)
-                    break;
-            }
-#endif //!DACCESS_COMPILE
-        } while (false);
+        // Only store in the rid map if working with the current AppDomain.
+        if (fCanUseRidMap && pAssembly)
+            StoreAssemblyRef(kAssemblyRef, pAssembly);
     }
+#endif //!DACCESS_COMPILE
 
     // When walking the stack or computing GC information this function should never fail.
     _ASSERTE((pAssembly != NULL) || !(IsStackWalkerThread() || IsGCThread()));
@@ -2993,9 +2443,9 @@ ModuleBase::GetAssemblyRefFlags(
 } // Module::GetAssemblyRefFlags
 
 #ifndef DACCESS_COMPILE
-DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
+Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 {
-    CONTRACT(DomainAssembly *)
+    CONTRACT(Assembly *)
     {
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
@@ -3008,24 +2458,20 @@ DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 
     ETWOnStartup (LoaderCatchCall_V1, LoaderCatchCallEnd_V1);
 
-    DomainAssembly * pDomainAssembly;
-
     //
     // Early out quickly if the result is cached
     //
     Assembly * pAssembly = LookupAssemblyRef(kAssemblyRef);
     if (pAssembly != NULL)
     {
-        pDomainAssembly = pAssembly->GetDomainAssembly();
-        ::GetAppDomain()->LoadDomainAssembly(pDomainAssembly, FILE_LOADED);
-
-        RETURN pDomainAssembly;
+        ::GetAppDomain()->LoadAssembly(pAssembly, FILE_LOADED);
+        RETURN pAssembly;
     }
 
     {
-        PEAssemblyHolder pPEAssembly = GetDomainAssembly()->GetPEAssembly()->LoadAssembly(kAssemblyRef);
+        PEAssemblyHolder pPEAssembly = GetPEAssembly()->LoadAssembly(kAssemblyRef);
         AssemblySpec spec;
-        spec.InitializeSpec(kAssemblyRef, GetMDImport(), GetDomainAssembly());
+        spec.InitializeSpec(kAssemblyRef, GetMDImport(), GetAssembly());
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up
         // invoking the custom AssemblyLoadContext implementation that returned a reference to an assembly bound to a different
         // AssemblyLoadContext implementation.
@@ -3034,26 +2480,20 @@ DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
         {
             spec.SetBinder(pBinder);
         }
-        pDomainAssembly = GetAppDomain()->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
+        pAssembly = GetAppDomain()->LoadAssembly(&spec, pPEAssembly, FILE_LOADED);
     }
 
-    if (pDomainAssembly != NULL)
-    {
-        _ASSERTE(
-            pDomainAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find CoreLib (see AppDomain::FindCachedFile)
-            !pDomainAssembly->IsLoaded() ||                 // GetAssemblyIfLoaded will not find not-yet-loaded assemblies
-            GetAssemblyIfLoaded(kAssemblyRef, NULL, FALSE, pDomainAssembly->GetPEAssembly()->GetHostAssembly()->GetBinder()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
+    _ASSERTE(pAssembly != NULL && pAssembly->IsLoaded());
+    _ASSERTE(
+        pAssembly->IsSystem() ||                  // GetAssemblyIfLoaded will not find CoreLib (see AppDomain::FindCachedFile)
+        GetAssemblyIfLoaded(kAssemblyRef, NULL, pAssembly->GetPEAssembly()->GetHostAssembly()->GetBinder()) != NULL);     // GetAssemblyIfLoaded should find all remaining cases
 
-        if (pDomainAssembly->GetAssembly() != NULL)
-        {
-            StoreAssemblyRef(kAssemblyRef, pDomainAssembly->GetAssembly());
-        }
-    }
+    StoreAssemblyRef(kAssemblyRef, pAssembly);
 
-    RETURN pDomainAssembly;
+    RETURN pAssembly;
 }
 #else
-DomainAssembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
+Assembly * Module::LoadAssemblyImpl(mdAssemblyRef kAssemblyRef)
 {
     WRAPPER_NO_CONTRACT;
     ThrowHR(E_FAIL);
@@ -3078,6 +2518,9 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
 
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
+    if (kFile == mdFileNil)
+        return this;
+
     // Handle the module ref case
     if (TypeFromToken(kFile) == mdtModuleRef)
     {
@@ -3090,19 +2533,14 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
         RETURN GetAssembly()->GetModule()->GetModuleIfLoaded(mdFileNil);
     }
 
-    if (kFile == mdFileNil)
-    {
-        return this;
-    }
-
     RETURN NULL;
 }
 
 #ifndef DACCESS_COMPILE
 
-DomainAssembly *ModuleBase::LoadModule(mdFile kFile)
+Module *ModuleBase::LoadModule(mdFile kFile)
 {
-    CONTRACT(DomainAssembly *)
+    CONTRACT(Module *)
     {
         INSTANCE_CHECK;
         THROWS;
@@ -3326,7 +2764,7 @@ void LookupMapBase::DebugGetRidMapOccupancy(DWORD *pdwOccupied, DWORD *pdwSize)
 
         for (DWORD i = 0; i < dwIterCount; i++)
         {
-            if (pMap->pTable[i] != NULL)
+            if (pMap->pTable[i] != 0)
                 (*pdwOccupied)++;
         }
 
@@ -3348,9 +2786,7 @@ void Module::DebugLogRidMapOccupancy()
     COMPUTE_RID_MAP_OCCUPANCY(3, m_MethodDefToDescMap);
     COMPUTE_RID_MAP_OCCUPANCY(4, m_FieldDefToDescMap);
     COMPUTE_RID_MAP_OCCUPANCY(5, m_GenericParamToDescMap);
-    COMPUTE_RID_MAP_OCCUPANCY(6, m_GenericTypeDefToCanonMethodTableMap);
-    COMPUTE_RID_MAP_OCCUPANCY(7, m_ManifestModuleReferencesMap);
-    COMPUTE_RID_MAP_OCCUPANCY(8, m_MethodDefToPropertyInfoMap);
+    COMPUTE_RID_MAP_OCCUPANCY(6, m_ManifestModuleReferencesMap);
 
     LOG((
         LF_EEMEM,
@@ -3361,18 +2797,14 @@ void Module::DebugLogRidMapOccupancy()
         "      MethodDefToDesc map:  %4d/%4d (%2d %%)\n"
         "      FieldDefToDesc map:  %4d/%4d (%2d %%)\n"
         "      GenericParamToDesc map:  %4d/%4d (%2d %%)\n"
-        "      GenericTypeDefToCanonMethodTable map:  %4d/%4d (%2d %%)\n"
         "      AssemblyReferences map:  %4d/%4d (%2d %%)\n"
-        "      MethodDefToPropInfo map: %4d/%4d (%2d %%)\n"
         ,
         dwOccupied1, dwSize1, dwPercent1,
         dwOccupied2, dwSize2, dwPercent2,
         dwOccupied3, dwSize3, dwPercent3,
         dwOccupied4, dwSize4, dwPercent4,
         dwOccupied5, dwSize5, dwPercent5,
-        dwOccupied6, dwSize6, dwPercent6,
-        dwOccupied7, dwSize7, dwPercent7,
-        dwOccupied8, dwSize8, dwPercent8
+        dwOccupied6, dwSize6, dwPercent6
     ));
 
 #undef COMPUTE_RID_MAP_OCCUPANCY
@@ -3432,78 +2864,9 @@ MethodDesc *Module::FindMethod(mdToken pMethod)
         LOG((LF_INTEROP, LL_INFO10, "Failed to find Method: %s for Vtable Fixup\n", szMethodName));
 #endif // _DEBUG
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     RETURN pMDRet;
-}
-
-//
-// GetPropertyInfoForMethodDef wraps the metadata function of the same name,
-// first trying to use the information stored in m_MethodDefToPropertyInfoMap.
-//
-
-HRESULT Module::GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPCSTR *pName, ULONG *pSemantic)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr;
-
-    if ((m_dwPersistedFlags & COMPUTED_METHODDEF_TO_PROPERTYINFO_MAP) != 0)
-    {
-        SIZE_T value = m_MethodDefToPropertyInfoMap.GetElement(RidFromToken(md));
-        if (value == 0)
-        {
-            _ASSERTE(GetMDImport()->GetPropertyInfoForMethodDef(md, ppd, pName, pSemantic) == S_FALSE);
-            return S_FALSE;
-        }
-        else
-        {
-            // Decode the value into semantic and mdProperty as described in PopulatePropertyInfoMap
-            ULONG semantic = (value & 0xFF000000) >> 24;
-            mdProperty prop = TokenFromRid(value & 0x00FFFFFF, mdtProperty);
-
-#ifdef _DEBUG
-            mdProperty dbgPd;
-            LPCSTR dbgName;
-            ULONG dbgSemantic;
-            _ASSERTE(GetMDImport()->GetPropertyInfoForMethodDef(md, &dbgPd, &dbgName, &dbgSemantic) == S_OK);
-#endif
-
-            if (ppd != NULL)
-            {
-                *ppd = prop;
-                _ASSERTE(*ppd == dbgPd);
-            }
-
-            if (pSemantic != NULL)
-            {
-                *pSemantic = semantic;
-                _ASSERTE(*pSemantic == dbgSemantic);
-            }
-
-            if (pName != NULL)
-            {
-                IfFailRet(GetMDImport()->GetPropertyProps(prop, pName, NULL, NULL, NULL));
-
-#ifdef _DEBUG
-                HRESULT hr = GetMDImport()->GetPropertyProps(prop, pName, NULL, NULL, NULL);
-                _ASSERTE(hr == S_OK);
-                _ASSERTE(strcmp(*pName, dbgName) == 0);
-#endif
-            }
-
-            return S_OK;
-        }
-    }
-
-    return GetMDImport()->GetPropertyInfoForMethodDef(md, ppd, pName, pSemantic);
 }
 
 // Return true if this module has any live (jitted) JMC functions.
@@ -3566,7 +2929,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
     CONTRACTL_END;
 
     // Only need to serializing metadata for dynamic modules. For non-dynamic modules, metadata is already available.
-    if (!IsReflection())
+    if (!IsReflectionEmit())
     {
         return;
     }
@@ -3601,7 +2964,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
 
 #endif // DEBUGGING_SUPPORTED
 
-BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAssembly, int flags, BOOL attaching)
+BOOL Module::NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -3612,14 +2975,14 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAsse
     // Always capture metadata, even if no debugger is attached. If a debugger later attaches, it will use
     // this data.
     {
-        Module * pModule = pDomainAssembly->GetModule();
+        Module * pModule = pDomainAssembly->GetAssembly()->GetModule();
         pModule->UpdateDynamicMetadataIfNeeded();
     }
-
 
     //
     // Remaining work is only needed if a debugger is attached
     //
+    AppDomain* pDomain = AppDomain::GetCurrentDomain();
     if (!attaching && !pDomain->IsDebuggerAttached())
         return FALSE;
 
@@ -3632,7 +2995,6 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAsse
                                       m_pPEAssembly->GetPath(),
                                       m_pPEAssembly->GetPath().GetCount(),
                                       GetAssembly(),
-                                      pDomain,
                                       pDomainAssembly,
                                       attaching);
 
@@ -3645,10 +3007,9 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAsse
         while (typeDefIter.Next())
         {
             MethodTable * pMT = typeDefIter.GetElement();
-
-            if (pMT != NULL && pMT->IsRestored())
+            if (pMT != NULL)
             {
-                result = TypeHandle(pMT).NotifyDebuggerLoad(pDomain, attaching) || result;
+                result = TypeHandle(pMT).NotifyDebuggerLoad(attaching) || result;
             }
         }
     }
@@ -3656,10 +3017,11 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAsse
     return result;
 }
 
-void Module::NotifyDebuggerUnload(AppDomain *pDomain)
+void Module::NotifyDebuggerUnload()
 {
     LIMITED_METHOD_CONTRACT;
 
+    AppDomain* pDomain = AppDomain::GetCurrentDomain();
     if (!pDomain->IsDebuggerAttached())
         return;
 
@@ -3671,14 +3033,13 @@ void Module::NotifyDebuggerUnload(AppDomain *pDomain)
     while (typeDefIter.Next())
     {
         MethodTable * pMT = typeDefIter.GetElement();
-
-        if (pMT != NULL && pMT->IsRestored())
+        if (pMT != NULL)
         {
-            TypeHandle(pMT).NotifyDebuggerUnload(pDomain);
+            TypeHandle(pMT).NotifyDebuggerUnload();
         }
     }
 
-    g_pDebugInterface->UnloadModule(this, pDomain);
+    g_pDebugInterface->UnloadModule(this);
 }
 
 using GetTokenForVTableEntry_t = mdToken(STDMETHODCALLTYPE*)(HMODULE module, BYTE**ppVTEntry);
@@ -3717,7 +3078,7 @@ static HMODULE GetIJWHostForModule(Module* module)
                 {
                     HMODULE ijwHost;
 
-                    if (WszGetModuleHandleEx(
+                    if (GetModuleHandleEx(
                         GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
                         (LPCWSTR)importAddressTable[thunkIndex].u1.Function,
                         &ijwHost))
@@ -3790,16 +3151,18 @@ BYTE * GetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry)
     return *ppVTEntry;
 }
 
+#ifdef FEATURE_IJW
 //======================================================================================
 // Fixup vtables stored in the header to contain pointers to method desc
 // prestubs rather than metadata method tokens.
 void Module::FixupVTables()
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
-    } CONTRACTL_END;
-
+    }
+    CONTRACTL_END;
 
     // If we've already fixed up, or this is not an IJW module, just return.
     // NOTE: This relies on ILOnly files not having fixups. If this changes,
@@ -3998,11 +3361,11 @@ void Module::FixupVTables()
                     iCurMethod++;
 
 #ifdef _DEBUG
-                    if (pMD->IsNDirect())
+                    if (pMD->IsPInvoke())
                     {
                         LOG((LF_INTEROP, LL_INFO10, "[0x%lx] <-- PINV thunk for \"%s\" (target = 0x%lx)\n",
                             (size_t)&(pPointers[iMethod]), pMD->m_pszDebugMethodName,
-                            (size_t)(((NDirectMethodDesc*)pMD)->GetNDirectTarget())));
+                            (size_t)(((PInvokeMethodDesc*)pMD)->GetPInvokeTarget())));
                     }
 #endif // _DEBUG
 
@@ -4031,18 +3394,14 @@ void Module::FixupVTables()
                     LOG((LF_INTEROP, LL_INFO10, "[0x%p] <-- VTable  thunk for \"%s\" (pMD = 0x%p)\n",
                         (UINT_PTR)&(pPointers[iMethod]), pMD->m_pszDebugMethodName, pMD));
 
-                    UMEntryThunk *pUMEntryThunk = (UMEntryThunk*)(void*)(GetDllThunkHeap()->AllocAlignedMem(sizeof(UMEntryThunk), CODE_SIZE_ALIGN)); // UMEntryThunk contains code
-                    ExecutableWriterHolder<UMEntryThunk> uMEntryThunkWriterHolder(pUMEntryThunk, sizeof(UMEntryThunk));
-                    FillMemory(uMEntryThunkWriterHolder.GetRW(), sizeof(UMEntryThunk), 0);
+                    UMEntryThunkData *pUMEntryThunkData = UMEntryThunkData::CreateUMEntryThunk();
 
-                    UMThunkMarshInfo *pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)(GetThunkHeap()->AllocAlignedMem(sizeof(UMThunkMarshInfo), CODE_SIZE_ALIGN));
-                    ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
-                    FillMemory(uMThunkMarshInfoWriterHolder.GetRW(), sizeof(UMThunkMarshInfo), 0);
+                    UMThunkMarshInfo *pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)(SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->AllocAlignedMem(sizeof(UMThunkMarshInfo), CODE_SIZE_ALIGN));
 
-                    uMThunkMarshInfoWriterHolder.GetRW()->LoadTimeInit(pMD);
-                    uMEntryThunkWriterHolder.GetRW()->LoadTimeInit(pUMEntryThunk, NULL, NULL, pUMThunkMarshInfo, pMD);
+                    pUMThunkMarshInfo->LoadTimeInit(pMD);
+                    pUMEntryThunkData->LoadTimeInit((PCODE)0, NULL, pUMThunkMarshInfo, pMD);
 
-                    SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunk->GetCode());
+                    SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunkData->GetCode());
 
                     pData->MarkMethodFixedUp(iFixup, iMethod);
                 }
@@ -4063,49 +3422,7 @@ void Module::FixupVTables()
         SetIsIJWFixedUp();      // On the module
     } // End of Stage 3
 }
-
-// Self-initializing accessor for m_pThunkHeap
-LoaderHeap *Module::GetDllThunkHeap()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    return PEImage::GetDllThunkHeap(GetPEAssembly()->GetIJWBase());
-
-}
-
-LoaderHeap *Module::GetThunkHeap()
-{
-    CONTRACT(LoaderHeap *)
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END
-
-    if (!m_pThunkHeap)
-    {
-        LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
-            0,                                 // DWORD dwCommitBlockSize
-            ThunkHeapStubManager::g_pManager->GetRangeList(),
-            UnlockedLoaderHeap::HeapKind::Executable);
-
-        if (InterlockedCompareExchangeT(&m_pThunkHeap, pNewHeap, 0) != 0)
-        {
-            delete pNewHeap;
-        }
-    }
-
-    RETURN m_pThunkHeap;
-}
+#endif // FEATURE_IJW
 
 ModuleBase *Module::GetModuleFromIndex(DWORD ix)
 {
@@ -4213,21 +3530,26 @@ void Module::RunEagerFixups()
 
 #ifdef _DEBUG
     // Loading types during eager fixup is not a tested scenario. Make bugs out of any attempts to do so in a
-    // debug build. Use holder to recover properly in case of exception.
+    // debug build. Use holder to recover properly in case of exception. We make a narrow exception for
+    // System.Private.CoreLib so we can lazily load JIT helpers written in managed code.
     class ForbidTypeLoadHolder
     {
+        BOOL _isCoreLib;
     public:
-        ForbidTypeLoadHolder()
+        ForbidTypeLoadHolder(BOOL isCoreLib)
+            : _isCoreLib{ isCoreLib }
         {
-            BEGIN_FORBID_TYPELOAD();
+            if (!_isCoreLib)
+                BEGIN_FORBID_TYPELOAD();
         }
 
         ~ForbidTypeLoadHolder()
         {
-            END_FORBID_TYPELOAD();
+            if (!_isCoreLib)
+                END_FORBID_TYPELOAD();
         }
     }
-    forbidTypeLoad;
+    forbidTypeLoad{ GetPEAssembly()->GetHostAssembly()->GetAssemblyName()->IsCoreLib() };
 #endif
 
     // TODO: Verify that eager fixup dependency graphs can contain no cycles
@@ -4261,7 +3583,7 @@ void Module::RunEagerFixupsUnlocked()
 {
     COUNT_T nSections;
     PTR_READYTORUN_IMPORT_SECTION pSections = GetImportSections(&nSections);
-    PEImageLayout *pNativeImage = GetReadyToRunImage();
+    ReadyToRunLoadedImage *pNativeImage = GetReadyToRunImage();
 
     for (COUNT_T iSection = 0; iSection < nSections; iSection++)
     {
@@ -4285,7 +3607,7 @@ void Module::RunEagerFixupsUnlocked()
             }
             else
             {
-                _ASSERTE(*fixupCell != NULL);
+                _ASSERTE(*fixupCell != 0);
             }
         }
     }
@@ -4304,7 +3626,7 @@ void Module::RunEagerFixupsUnlocked()
 
 //-----------------------------------------------------------------------------
 
-BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledNDirectMethods)
+BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell, BOOL mayUsePrecompiledPInvokeMethods)
 {
     CONTRACTL
     {
@@ -4316,14 +3638,14 @@ BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupI
     // Ensure that the compiler won't fetch the value twice
     SIZE_T fixup = VolatileLoadWithoutBarrier(fixupCell);
 
-    if (fixup == NULL)
+    if (fixup == 0)
     {
         PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetReadyToRunImage()->GetRvaData(pSection->Signatures));
 
-        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledNDirectMethods))
+        if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell, mayUsePrecompiledPInvokeMethods))
             return FALSE;
 
-        _ASSERTE(*fixupCell != NULL);
+        _ASSERTE(*fixupCell != 0);
     }
 
     return TRUE;
@@ -4429,10 +3751,19 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
 #endif
 }
 
+static bool g_fIJWLoaded = false;
+
 void Module::SetIsIJWFixedUp()
 {
     LIMITED_METHOD_CONTRACT;
     InterlockedOr((LONG*)&m_dwTransientFlags, IS_IJW_FIXED_UP);
+    g_fIJWLoaded = true;
+}
+
+bool Module::HasAnyIJWBeenLoaded()
+{
+    LIMITED_METHOD_CONTRACT;
+    return g_fIJWLoaded;
 }
 #endif // !DACCESS_COMPILE
 
@@ -4455,7 +3786,7 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pAssembly));
         PRECONDITION(CheckPointer(pPEAssembly));
-        PRECONDITION(pPEAssembly->IsDynamic());
+        PRECONDITION(pPEAssembly->IsReflectionEmit());
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
@@ -4469,6 +3800,7 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
     ReflectionModuleHolder pModule(new (pMemory) ReflectionModule(pAssembly, pPEAssembly));
 
     pModule->DoInit(pamTracker, szName);
+    pModule->SetIsRuntimeWrapExceptionsCached_ForReflectionEmitModules();
 
     RETURN pModule.Extract();
 }
@@ -4493,7 +3825,6 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly)
     m_pInMemoryWriter = NULL;
     m_sdataSection = NULL;
     m_pCeeFileGen = NULL;
-    m_pDynamicMetadata = NULL;
 }
 
 HRESULT STDMETHODCALLTYPE CreateICeeGen(REFIID riid, void **pCeeGen);
@@ -4551,8 +3882,8 @@ void ReflectionModule::Destruct()
 
     Module::Destruct();
 
-    delete m_pDynamicMetadata;
-    m_pDynamicMetadata = NULL;
+    delete (uint32_t*)m_pDynamicMetadata;
+    m_pDynamicMetadata = (TADDR)NULL;
 
     m_CrstLeafLock.Destroy();
 }
@@ -4639,13 +3970,10 @@ private:
 //      The debugger can slip this thread outside the locks to ensure the data is consistent.
 //
 //    This does not raise a debug notification to invalidate the metadata. Reasoning is that this only
-//    happens in two cases:
-//    1) manifest module is updated with the name of a new dynamic module.
-//    2) on each class load, in which case we already send a debug event. In this case, we already send a
-//    class-load notification, so sending a separate "metadata-refresh" would make the eventing twice as
-//    chatty. Class-load events are high-volume and events are slow.
-//    Thus we can avoid the chatiness by ensuring the debugger knows that Class-load also means "refresh
-//    metadata".
+//    happens in one case: on each class load. In this case, we already send a class-load notification
+//    debug event, so sending a separate "metadata-refresh" would make the eventing twice as chatty.
+//    Class-load events are high-volume and events are slow. We can avoid the chattiness by ensuring
+//    the debugger knows that Class-load also means "refresh metadata".
 //
 void ReflectionModule::CaptureModuleMetaDataToMemory()
 {
@@ -4671,17 +3999,19 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     IfFailThrow(hr);
 
     // Operate on local data, and then persist it into the module once we know it's valid.
-    NewHolder<SBuffer> pBuffer(new SBuffer());
+    NewArrayHolder<uint8_t> pBuffer(new uint8_t[numBytes + sizeof(DynamicMetadata)]);
     _ASSERTE(pBuffer != NULL); // allocation would throw first
+
+    DynamicMetadata *pDynamicMetadata = (DynamicMetadata*)(uint8_t*)pBuffer;
 
     // ReflectionModule is still in a consistent state, and now we're just operating on local data to
     // assemble the new metadata buffer. If this fails, then worst case is that metadata does not include
     // recently generated classes.
 
     // Caller ensures serialization that guarantees that the metadata doesn't grow underneath us.
-    BYTE * pRawData = pBuffer->OpenRawBuffer(numBytes);
+    BYTE * pRawData = &pDynamicMetadata->Data[0];
     hr = pEmitter->SaveToMemory(pRawData, numBytes);
-    pBuffer->CloseRawBuffer();
+    pDynamicMetadata->Size = numBytes;
 
     IfFailThrow(hr);
 
@@ -4689,9 +4019,9 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     {
         CrstHolder ch(&m_CrstLeafLock);
 
-        delete m_pDynamicMetadata;
+        delete (uint32_t*)m_pDynamicMetadata;
 
-        m_pDynamicMetadata = pBuffer.Extract();
+        m_pDynamicMetadata = (TADDR)pBuffer.Extract();
     }
 
     //
@@ -4713,7 +4043,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
 // Notes:
 //    Only used by the debugger, so only accessible via DAC.
 //    The buffer is updated via code:ReflectionModule.CaptureModuleMetaDataToMemory
-PTR_SBuffer ReflectionModule::GetDynamicMetadataBuffer() const
+TADDR ReflectionModule::GetDynamicMetadataBuffer() const
 {
     SUPPORTS_DAC;
 
@@ -4733,14 +4063,14 @@ TADDR ReflectionModule::GetIL(RVA il) // virtual
 {
 #ifndef DACCESS_COMPILE
     WRAPPER_NO_CONTRACT;
-
     BYTE* pByte = NULL;
-    m_pCeeFileGen->GetMethodBuffer(il, &pByte);
+    if (il != 0)
+        m_pCeeFileGen->GetMethodBuffer(il, &pByte);
     return TADDR(pByte);
 #else // DACCESS_COMPILE
     SUPPORTS_DAC;
     DacNotImpl();
-    return NULL;
+    return (TADDR)NULL;
 #endif // DACCESS_COMPILE
 }
 
@@ -4765,37 +4095,223 @@ PTR_VOID ReflectionModule::GetRvaField(RVA field) // virtual
 // VASigCookies
 // ===========================================================================
 
+static bool TypeSignatureContainsGenericVariables(SigParser& sp);
+static bool MethodSignatureContainsGenericVariables(SigParser& sp);
+
+static bool TypeSignatureContainsGenericVariables(SigParser& sp)
+{
+    STANDARD_VM_CONTRACT;
+
+    CorElementType et = ELEMENT_TYPE_END;
+    IfFailThrow(sp.GetElemType(&et));
+
+    if (CorIsPrimitiveType(et))
+        return false;
+
+    switch (et)
+    {
+        case ELEMENT_TYPE_OBJECT:
+        case ELEMENT_TYPE_STRING:
+        case ELEMENT_TYPE_TYPEDBYREF:
+            return false;
+
+        case ELEMENT_TYPE_BYREF:
+        case ELEMENT_TYPE_PTR:
+        case ELEMENT_TYPE_SZARRAY:
+            return TypeSignatureContainsGenericVariables(sp);
+
+        case ELEMENT_TYPE_VALUETYPE:
+        case ELEMENT_TYPE_CLASS:
+            IfFailThrow(sp.GetToken(NULL)); // Skip RID
+            return false;
+
+        case ELEMENT_TYPE_FNPTR:
+            return MethodSignatureContainsGenericVariables(sp);
+
+        case ELEMENT_TYPE_ARRAY:
+            {
+                if (TypeSignatureContainsGenericVariables(sp))
+                    return true;
+
+                uint32_t rank;
+                IfFailThrow(sp.GetData(&rank)); // Get rank
+                if (rank)
+                {
+                    uint32_t nsizes;
+                    IfFailThrow(sp.GetData(&nsizes)); // Get # of sizes
+                    while (nsizes--)
+                    {
+                        IfFailThrow(sp.GetData(NULL)); // Skip size
+                    }
+
+                    uint32_t nlbounds;
+                    IfFailThrow(sp.GetData(&nlbounds)); // Get # of lower bounds
+                    while (nlbounds--)
+                    {
+                        IfFailThrow(sp.GetData(NULL)); // Skip lower bounds
+                    }
+                }
+            }
+            return false;
+
+        case ELEMENT_TYPE_GENERICINST:
+            {
+                if (TypeSignatureContainsGenericVariables(sp))
+                    return true;
+
+                uint32_t argCnt;
+                IfFailThrow(sp.GetData(&argCnt)); // Get number of parameters
+                while (argCnt--)
+                {
+                    if (TypeSignatureContainsGenericVariables(sp))
+                        return true;
+                }
+            }
+            return false;
+
+        case ELEMENT_TYPE_INTERNAL:
+            IfFailThrow(sp.GetPointer(NULL));
+            return false;
+
+        case ELEMENT_TYPE_VAR:
+        case ELEMENT_TYPE_MVAR:
+            return true;
+
+        default:
+            // Return conservative answer for unhandled elements
+            _ASSERTE(!"Unexpected element type.");
+            return true;
+    }
+}
+
+static bool MethodSignatureContainsGenericVariables(SigParser& sp)
+{
+    STANDARD_VM_CONTRACT;
+
+    uint32_t callConv = 0;
+    IfFailThrow(sp.GetCallingConvInfo(&callConv));
+
+    if (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
+    {
+        // Generic signatures should never show up here, return conservative answer.
+        _ASSERTE(!"Unexpected generic signature.");
+        return true;
+    }
+
+    uint32_t numArgs = 0;
+    IfFailThrow(sp.GetData(&numArgs));
+
+    // iterate over the return type and parameters
+    for (uint32_t i = 0; i <= numArgs; i++)
+    {
+        if (TypeSignatureContainsGenericVariables(sp))
+            return true;
+    }
+
+    return false;
+}
+
 //==========================================================================
 // Enregisters a VASig.
 //==========================================================================
-VASigCookie *Module::GetVASigCookie(Signature vaSignature)
+VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext)
 {
     CONTRACT(VASigCookie*)
     {
         INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         POSTCONDITION(CheckPointer(RETVAL));
         INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACT_END;
 
-    VASigCookieBlock *pBlock;
-    VASigCookie      *pCookie;
+    SigTypeContext emptyContext;
 
-    pCookie = NULL;
-
-    // First, see if we already enregistered this sig.
-    // Note that we're outside the lock here, so be a bit careful with our logic
-    for (pBlock = m_pVASigCookieBlock; pBlock != NULL; pBlock = pBlock->m_Next)
+    Module* pLoaderModule = this;
+    if (!typeContext->IsEmpty())
     {
-        for (UINT i = 0; i < pBlock->m_numcookies; i++)
+        // Strip the generic context if it is not actually used by the signature. It is nececessary for both:
+        // - Performance: allow more sharing of vasig cookies
+        // - Functionality: built-in runtime marshalling is disallowed for generic signatures
+        SigParser sigParser = vaSignature.CreateSigParser();
+        if (MethodSignatureContainsGenericVariables(sigParser))
         {
-            if (pBlock->m_cookies[i].signature.GetRawSig() == vaSignature.GetRawSig())
+            pLoaderModule = ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, typeContext->m_classInst, typeContext->m_methodInst);
+        }
+        else
+        {
+            typeContext = &emptyContext;
+        }
+    }
+    else
+    {
+#ifdef _DEBUG
+        // The method signature should not contain any generic variables if the generic context is not provided.
+        SigParser sigParser = vaSignature.CreateSigParser();
+        _ASSERTE(!MethodSignatureContainsGenericVariables(sigParser));
+#endif
+    }
+
+    VASigCookie *pCookie = GetVASigCookieWorker(this, pLoaderModule, vaSignature, typeContext);
+
+    RETURN pCookie;
+}
+
+VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, Signature vaSignature, const SigTypeContext* typeContext)
+{
+    CONTRACT(VASigCookie*)
+    {
+        STANDARD_VM_CHECK;
+        POSTCONDITION(CheckPointer(RETVAL));
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACT_END;
+
+    VASigCookie *pCookie = NULL;
+
+    // First, see if we already have a match for this signature.
+    // Note that we're outside the lock here, so be a bit careful with our logic
+    VASigCookieBlock* pBlock;
+    for (pBlock = pLoaderModule->m_pVASigCookieBlock; pBlock != NULL; pBlock = pBlock->m_Next)
+    {
+        for (UINT i = 0; i < pBlock->m_numCookies; i++)
+        {
+            VASigCookie* cookieMaybe = &pBlock->m_cookies[i];
+
+            // Check if the cookie has the same signature.
+            if (cookieMaybe->signature.GetRawSig() == vaSignature.GetRawSig())
             {
-                pCookie = &(pBlock->m_cookies[i]);
-                break;
+                _ASSERTE(cookieMaybe->classInst.GetNumArgs() == typeContext->m_classInst.GetNumArgs());
+                _ASSERTE(cookieMaybe->methodInst.GetNumArgs() == typeContext->m_methodInst.GetNumArgs());
+
+                bool instMatch = true;
+
+                for (DWORD j = 0; j < cookieMaybe->classInst.GetNumArgs(); j++)
+                {
+                    if (cookieMaybe->classInst[j] != typeContext->m_classInst[j])
+                    {
+                        instMatch = false;
+                        break;
+                    }
+                }
+
+                if (instMatch)
+                {
+                    for (DWORD j = 0; j < cookieMaybe->methodInst.GetNumArgs(); j++)
+                    {
+                        if (cookieMaybe->methodInst[j] != typeContext->m_methodInst[j])
+                        {
+                            instMatch = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (instMatch)
+                {
+                    pCookie = cookieMaybe;
+                    break;
+                }
             }
         }
     }
@@ -4806,21 +4322,23 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature)
 
         // Compute the size of args first, outside of the lock.
 
-        // @TODO GENERICS: We may be calling a varargs method from a
-        // generic type/method. Using an empty context will make such a
-        // case cause an unexpected exception. To make this work,
-        // we need to create a specialized signature for every instantiation
-        SigTypeContext typeContext;
-
-        MetaSig metasig(vaSignature, this, &typeContext);
+        MetaSig metasig(vaSignature, pDefiningModule, typeContext);
         ArgIterator argit(&metasig);
 
         // Upper estimate of the vararg size
         DWORD sizeOfArgs = argit.SizeOfArgStack();
 
+        // Prepare instantiation
+        LoaderAllocator* pLoaderAllocator = pLoaderModule->GetLoaderAllocator();
+
+        DWORD classInstCount = typeContext->m_classInst.GetNumArgs();
+        DWORD methodInstCount = typeContext->m_methodInst.GetNumArgs();
+        pLoaderAllocator->EnsureInstantiation(pDefiningModule, typeContext->m_classInst);
+        pLoaderAllocator->EnsureInstantiation(pDefiningModule, typeContext->m_methodInst);
+
         // enable gc before taking lock
         {
-            CrstHolder ch(&m_Crst);
+            CrstHolder ch(&pLoaderModule->m_Crst);
 
             // Note that we were possibly racing to create the cookie, and another thread
             // may have already created it.  We could put another check
@@ -4828,32 +4346,57 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature)
             // occasional duplicate cookie instead.
 
             // Is the first block in the list full?
-            if (m_pVASigCookieBlock && m_pVASigCookieBlock->m_numcookies
-                < VASigCookieBlock::kVASigCookieBlockSize)
+            if (pLoaderModule->m_pVASigCookieBlock
+                && pLoaderModule->m_pVASigCookieBlock->m_numCookies < VASigCookieBlock::kVASigCookieBlockSize)
             {
                 // Nope, reserve a new slot in the existing block.
-                pCookie = &(m_pVASigCookieBlock->m_cookies[m_pVASigCookieBlock->m_numcookies]);
+                pCookie = &(pLoaderModule->m_pVASigCookieBlock->m_cookies[pLoaderModule->m_pVASigCookieBlock->m_numCookies]);
             }
             else
             {
                 // Yes, create a new block.
-                VASigCookieBlock *pNewBlock = new VASigCookieBlock();
+                VASigCookieBlock* pNewBlock = (VASigCookieBlock*)(void*)pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(VASigCookieBlock)));
+                pNewBlock->m_Next = pLoaderModule->m_pVASigCookieBlock;
+                pNewBlock->m_numCookies = 0;
+                pLoaderModule->m_pVASigCookieBlock = pNewBlock;
 
-                pNewBlock->m_Next = m_pVASigCookieBlock;
-                pNewBlock->m_numcookies = 0;
-                m_pVASigCookieBlock = pNewBlock;
                 pCookie = &(pNewBlock->m_cookies[0]);
             }
 
             // Now, fill in the new cookie (assuming we had enough memory to create one.)
-            pCookie->pModule = this;
-            pCookie->pNDirectILStub = NULL;
+            pCookie->pModule = pDefiningModule;
+            pCookie->pPInvokeILStub = (PCODE)NULL;
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
+            pCookie->pLoaderModule = pLoaderModule;
+
+            AllocMemTracker amt;
+
+            if (classInstCount != 0)
+            {
+                TypeHandle* pClassInst = (TypeHandle*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(classInstCount) * S_SIZE_T(sizeof(TypeHandle))));
+                for (DWORD i = 0; i < classInstCount; i++)
+                {
+                    pClassInst[i] = typeContext->m_classInst[i];
+                }
+                pCookie->classInst = Instantiation(pClassInst, classInstCount);
+            }
+
+            if (methodInstCount != 0)
+            {
+                TypeHandle* pMethodInst = (TypeHandle*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(methodInstCount) * S_SIZE_T(sizeof(TypeHandle))));
+                for (DWORD i = 0; i < methodInstCount; i++)
+                {
+                    pMethodInst[i] = typeContext->m_methodInst[i];
+                }
+                pCookie->methodInst = Instantiation(pMethodInst, methodInstCount);
+            }
+
+            amt.SuppressRelease();
 
             // Finally, now that it's safe for asynchronous readers to see it,
             // update the count.
-            m_pVASigCookieBlock->m_numcookies++;
+            pLoaderModule->m_pVASigCookieBlock->m_numCookies++;
         }
     }
 
@@ -4937,34 +4480,11 @@ VOID Module::EnsureActive()
         MODE_ANY;
     }
     CONTRACTL_END;
-    GetDomainAssembly()->EnsureActive();
+    GetAssembly()->EnsureActive();
 }
 #endif // DACCESS_COMPILE
 
 #include <optdefault.h>
-
-
-#ifndef DACCESS_COMPILE
-
-VOID Module::EnsureAllocated()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    GetDomainAssembly()->EnsureAllocated();
-}
-
-VOID Module::EnsureLibraryLoaded()
-{
-    STANDARD_VM_CONTRACT;
-    GetDomainAssembly()->EnsureLibraryLoaded();
-}
-#endif // !DACCESS_COMPILE
 
 CHECK Module::CheckActivated()
 {
@@ -4977,10 +4497,10 @@ CHECK Module::CheckActivated()
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-    DomainAssembly *pDomainAssembly = GetDomainAssembly();
-    CHECK(pDomainAssembly != NULL);
-    PREFIX_ASSUME(pDomainAssembly != NULL);
-    CHECK(pDomainAssembly->CheckActivated());
+    Assembly *pAssembly = GetAssembly();
+    CHECK(pAssembly != NULL);
+    _ASSERTE(pAssembly != NULL);
+    CHECK(pAssembly->CheckActivated());
 #endif
     CHECK_OK;
 }
@@ -5007,11 +4527,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         EMEM_OUT(("MEM: %p Module\n", dac_cast<TADDR>(this)));
     }
 
-    //Save module id data only if it a real pointer, not a tagged sugestion to use ModuleIndex.
-    if (m_ModuleID.IsValid())
-    {
-        m_ModuleID->EnumMemoryRegions(flags);
-    }
     if (m_pPEAssembly.IsValid())
     {
         m_pPEAssembly->EnumMemoryRegions(flags);
@@ -5046,19 +4561,13 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         {
             m_pAvailableClassesCaseIns->EnumMemoryRegions(flags);
         }
-        if (m_pBinder.IsValid())
-        {
-            m_pBinder->EnumMemoryRegions(flags);
-        }
 
         // Save the LookupMap structures.
         m_MethodDefToDescMap.ListEnumMemoryRegions(flags);
         m_FieldDefToDescMap.ListEnumMemoryRegions(flags);
         m_MemberRefMap.ListEnumMemoryRegions(flags);
         m_GenericParamToDescMap.ListEnumMemoryRegions(flags);
-        m_GenericTypeDefToCanonMethodTableMap.ListEnumMemoryRegions(flags);
         m_ManifestModuleReferencesMap.ListEnumMemoryRegions(flags);
-        m_MethodDefToPropertyInfoMap.ListEnumMemoryRegions(flags);
 
         LookupMap<PTR_MethodTable>::Iterator typeDefIter(&m_TypeDefToMethodTableMap);
         while (typeDefIter.Next())
@@ -5106,15 +4615,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
             }
         }
 
-        LookupMap<PTR_MethodTable>::Iterator genericTypeDefIter(&m_GenericTypeDefToCanonMethodTableMap);
-        while (genericTypeDefIter.Next())
-        {
-            if (genericTypeDefIter.GetElement())
-            {
-                genericTypeDefIter.GetElement()->EnumMemoryRegions(flags);
-            }
-        }
-
     }   // !CLRDATA_ENUM_MEM_MINI && !CLRDATA_ENUM_MEM_TRIAGE && !CLRDATA_ENUM_MEM_HEAP2
 
     LookupMap<PTR_Module>::Iterator asmRefIter(&m_ManifestModuleReferencesMap);
@@ -5125,8 +4625,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
             asmRefIter.GetElement()->GetAssembly()->EnumMemoryRegions(flags);
         }
     }
-
-    ECall::EnumFCallMethods();
 
 #ifdef FEATURE_METADATA_UPDATER
     m_ClassList.EnumMemoryRegions();
@@ -5265,7 +4763,7 @@ void Module::ExpandAll()
             {
                 hr = GET_EXCEPTION()->GetHR();
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
 
             //Only do this for non-generic types and unshared generic types
             //(canonical generics and value type generic instantiations).
@@ -5290,7 +4788,7 @@ void Module::ExpandAll()
             {
                 hr = GET_EXCEPTION()->GetHR();
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
         }
     };
     //Jit all methods eagerly
@@ -5349,127 +4847,19 @@ void Module::ExpandAll()
 
 // Verify consistency of asmconstants.h
 
-// Wrap all C_ASSERT's in asmconstants.h with a class definition.  Many of the
+// Wrap all static_assert's in asmconstants.h with a class definition.  Many of the
 // fields referenced below are private, and this class is a friend of the
-// enclosing type.  (A C_ASSERT isn't a compiler intrinsic, just a magic
-// typedef that produces a compiler error when the condition is false.)
+// enclosing type.
 #include "clrvarargs.h" /* for VARARG C_ASSERTs in asmconstants.h */
 class CheckAsmOffsets
 {
 #ifndef CROSSBITNESS_COMPILE
-#define ASMCONSTANTS_C_ASSERT(cond) static_assert(cond, #cond);
+#define ASMCONSTANTS_C_ASSERT(cond) static_assert(cond);
 #include "asmconstants.h"
 #endif // CROSSBITNESS_COMPILE
 };
 
 //-------------------------------------------------------------------------------
-
-#ifndef DACCESS_COMPILE
-
-void Module::CreateAssemblyRefByNameTable(AllocMemTracker *pamTracker)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-
-    LoaderHeap *        pHeap       = GetLoaderAllocator()->GetLowFrequencyHeap();
-    IMDInternalImport * pImport     = GetMDImport();
-
-    DWORD               dwMaxRid    = pImport->GetCountWithTokenKind(mdtAssemblyRef);
-    if (dwMaxRid == 0)
-        return;
-
-    S_SIZE_T            dwAllocSize = S_SIZE_T(sizeof(LPWSTR)) * S_SIZE_T(dwMaxRid);
-    m_AssemblyRefByNameTable = (LPCSTR *) pamTracker->Track( pHeap->AllocMem(dwAllocSize) );
-
-    DWORD dwCount = 0;
-    for (DWORD rid=1; rid <= dwMaxRid; rid++)
-    {
-        mdAssemblyRef mdToken = TokenFromRid(rid,mdtAssemblyRef);
-        LPCSTR        szName;
-        HRESULT       hr;
-
-        hr = pImport->GetAssemblyRefProps(mdToken, NULL, NULL, &szName, NULL, NULL, NULL, NULL);
-
-        if (SUCCEEDED(hr))
-        {
-            m_AssemblyRefByNameTable[dwCount++] = szName;
-        }
-    }
-    m_AssemblyRefByNameCount = dwCount;
-}
-
-bool Module::HasReferenceByName(LPCUTF8 pModuleName)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    for (DWORD i=0; i < m_AssemblyRefByNameCount; i++)
-    {
-        if (0 == strcmp(pModuleName, m_AssemblyRefByNameTable[i]))
-            return true;
-    }
-
-    return false;
-}
-#endif
-
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-NOINLINE void NgenForceFailure_AV()
-{
-    LIMITED_METHOD_CONTRACT;
-    static int* alwaysNull = 0;
-    *alwaysNull = 0;
-}
-
-NOINLINE void NgenForceFailure_TypeLoadException()
-{
-    WRAPPER_NO_CONTRACT;
-    ::ThrowTypeLoadException("ForceIBC", "Failure", W("Assembly"), NULL, IDS_CLASSLOAD_BADFORMAT);
-}
-
-void EEConfig::DebugCheckAndForceIBCFailure(BitForMask bitForMask)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    static DWORD s_ibcCheckCount = 0;
-
-    // Both of these must be set to non-zero values for us to force a failure
-    //
-    if ((NgenForceFailureCount() == 0) || (NgenForceFailureKind() == 0))
-        return;
-
-    // The bitForMask value must also beset in the FailureMask
-    //
-    if ((((DWORD) bitForMask) & NgenForceFailureMask()) == 0)
-        return;
-
-    s_ibcCheckCount++;
-    if (s_ibcCheckCount < NgenForceFailureCount())
-        return;
-
-    // We force one failure every NgenForceFailureCount()
-    //
-    s_ibcCheckCount = 0;
-    switch (NgenForceFailureKind())
-    {
-    case 1:
-        NgenForceFailure_TypeLoadException();
-        break;
-    case 2:
-        NgenForceFailure_AV();
-        break;
-    }
-}
-#endif // defined(_DEBUG) && !defined(DACCESS_COMPILE)
 
 #ifdef DACCESS_COMPILE
 void DECLSPEC_NORETURN ModuleBase::ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,

@@ -3,9 +3,10 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Text.Json.Serialization.Tests.Schemas.OrderPayload;
-using System.Threading.Tasks;
 using System.Text.Json.Serialization.Metadata;
+using System.Text.Json.Serialization.Tests.Schemas.OrderPayload;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -128,10 +129,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(551_368, stream.TestWriteBytesCount);
 
             // We should have more than one write called due to the large byte count.
-            Assert.InRange(stream.TestWriteCount, 1, int.MaxValue);
-
-            // We don't auto-flush.
-            Assert.Equal(0, stream.TestFlushCount);
+            if (Serializer.IsAsyncSerializer)
+            {
+                Assert.InRange(stream.TestAsyncWriteCount, 2, int.MaxValue);
+            }
+            else
+            {
+                Assert.InRange(stream.TestWriteCount, 2, int.MaxValue);
+            }
         }
 
         private async Task ReadAsync(TestStream stream)
@@ -147,7 +152,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.InRange(stream.TestRequestedReadBytesCount, 551368, int.MaxValue);
 
             // We should have more than one read called due to the large byte count.
-            Assert.InRange(stream.TestReadCount, 1, int.MaxValue);
+            Assert.InRange(stream.TestReadCount, 2, int.MaxValue);
 
             // We don't auto-flush.
             Assert.Equal(0, stream.TestFlushCount);
@@ -330,8 +335,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(2, true, false)]
         [InlineData(2, false, false)]
         [InlineData(4, false, false)]
-        [InlineData(8, false, false)]
-        [InlineData(16, false, false)] // This results a reader\writer depth of 324 which currently works on all test platforms.
+        [InlineData(8, false, false)] // Greater depths have caused failures on some test machine configurations due to memory constraints
         public async Task DeepNestedJsonFileTest(int depthFactor, bool ignoreNull, bool writeIndented)
         {
             const int ListLength = 10;
@@ -405,6 +409,115 @@ namespace System.Text.Json.Serialization.Tests
             using (var memoryStream = new MemoryStream())
             {
                 await Assert.ThrowsAsync<JsonException>(async () => await Serializer.SerializeWrapper(memoryStream, orders[0], options));
+            }
+        }
+
+        [Fact]
+        public void NestedSerializeCallsFlushAtThreshold()
+        {
+            var data = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var options = new JsonSerializerOptions { DefaultBufferSize = 512 };
+            options.Converters.Add(new MyStringConverter());
+
+            using var stream = new TestStream(1);
+            JsonSerializer.Serialize(stream, CreateManyTestObjects(), options);
+
+            // Flush should happen every ~460 bytes (+36 for writing data when just below threshold)
+            // Assuming a "perfect" array pool implementation, the number of write calls should be closer to (data.Length * 10_000 / (512 * .9))
+            // But because the array pool may give a larger buffer than 512, we need to be a little more permissive when checking how many writes occur
+            Assert.InRange(stream.TestWriteCount, data.Length * 10_000 / 5000, data.Length * 10_000 / 200);
+
+            IEnumerable<string> CreateManyTestObjects()
+            {
+                int i = 0;
+                while (++i < 10_000)
+                {
+                    yield return data;
+                }
+            }
+        }
+
+        [Fact]
+        public void SerializeCallsFlushAtThreshold()
+        {
+            var data = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var options = new JsonSerializerOptions { DefaultBufferSize = 512 };
+
+            using var stream = new TestStream(1);
+            JsonSerializer.Serialize(stream, CreateManyTestObjects(), options);
+
+            // Flush should happen every ~460 bytes (+36 for writing data when just below threshold)
+            // Assuming a "perfect" array pool implementation, the number of write calls should be closer to (data.Length * 10_000 / (512 * .9))
+            // But because the array pool may give a larger buffer than 512, we need to be a little more permissive when checking how many writes occur
+            Assert.InRange(stream.TestWriteCount, data.Length * 10_000 / 5000, data.Length * 10_000 / 200);
+
+            IEnumerable<string> CreateManyTestObjects()
+            {
+                int i = 0;
+                while (++i < 10_000)
+                {
+                    yield return data;
+                }
+            }
+        }
+
+        [Fact]
+        public async Task NestedSerializeAsyncCallsFlushAtThreshold()
+        {
+            var data = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var options = new JsonSerializerOptions { DefaultBufferSize = 512 };
+            options.Converters.Add(new MyStringConverter());
+
+            using var stream = new TestStream(1);
+            await JsonSerializer.SerializeAsync(stream, CreateManyTestObjects(), options);
+
+            // Flush should happen every ~460 bytes (+36 for writing data when just below threshold)
+            // Assuming a "perfect" array pool implementation, the number of write calls should be closer to (data.Length * 10_000 / (512 * .9))
+            // But because the array pool may give a larger buffer than 512, we need to be a little more permissive when checking how many writes occur
+            Assert.InRange(stream.TestAsyncWriteCount, data.Length * 10_000 / 5000, data.Length * 10_000 / 200);
+
+            IEnumerable<string> CreateManyTestObjects()
+            {
+                int i = 0;
+                while (++i < 10_000)
+                {
+                    yield return data;
+                }
+            }
+        }
+
+        [Fact]
+        public async Task SerializeAsyncCallsFlushAtThreshold()
+        {
+            var data = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var options = new JsonSerializerOptions { DefaultBufferSize = 512 };
+
+            using var stream = new TestStream(1);
+            await JsonSerializer.SerializeAsync(stream, CreateManyTestObjects(), options);
+
+            // Flush should happen every ~460 bytes (+36 for writing data when just below threshold)
+            // Assuming a "perfect" array pool implementation, the number of write calls should be closer to (data.Length * 10_000 / (512 * .9))
+            // But because the array pool may give a larger buffer than 512, we need to be a little more permissive when checking how many writes occur
+            Assert.InRange(stream.TestAsyncWriteCount, data.Length * 10_000 / 5000, data.Length * 10_000 / 200);
+
+            IEnumerable<string> CreateManyTestObjects()
+            {
+                int i = 0;
+                while (++i < 10_000)
+                {
+                    yield return data;
+                }
+            }
+        }
+
+        class MyStringConverter : JsonConverter<string>
+        {
+            public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+                throw new NotImplementedException();
+
+            public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
+            {
+                JsonSerializer.Serialize(writer, value);
             }
         }
 
@@ -602,6 +715,7 @@ namespace System.Text.Json.Serialization.Tests
         public int TestFlushCount { get; private set; }
 
         public int TestWriteCount { get; private set; }
+        public int TestAsyncWriteCount { get; private set; }
         public int TestWriteBytesCount { get; private set; }
         public int TestReadCount { get; private set; }
         public int TestRequestedReadBytesCount { get; private set; }
@@ -626,6 +740,13 @@ namespace System.Text.Json.Serialization.Tests
             TestReadCount++;
             TestRequestedReadBytesCount += count;
             return _stream.Read(buffer, offset, count);
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            TestAsyncWriteCount++;
+            TestWriteBytesCount += (count - offset);
+            return _stream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
         public override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);

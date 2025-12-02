@@ -13,12 +13,12 @@
 #include "daccess.h"
 
 #include "slist.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
+#include "thread.inl"
 
 #include "eventtrace_etw.h"
 #include "eventtracebase.h"
@@ -37,14 +37,14 @@ BOOL ETW::GCLog::ShouldWalkHeapObjectsForEtw()
 {
     return RUNTIME_PROVIDER_CATEGORY_ENABLED(
             TRACE_LEVEL_INFORMATION,
-            CLR_GCHEAPDUMP_KEYWORD);    
+            CLR_GCHEAPDUMP_KEYWORD);
 }
 
 BOOL ETW::GCLog::ShouldWalkHeapRootsForEtw()
 {
     return RUNTIME_PROVIDER_CATEGORY_ENABLED(
             TRACE_LEVEL_INFORMATION,
-            CLR_GCHEAPDUMP_KEYWORD);    
+            CLR_GCHEAPDUMP_KEYWORD);
 }
 
 BOOL ETW::GCLog::ShouldTrackMovementForEtw()
@@ -231,13 +231,13 @@ void ETW::GCLog::MovedReference(
 #ifdef PROFILING_SUPPORTED
     // ProfAPI
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC());
         g_profControlBlock.pProfInterface->MovedReference(pbMemBlockStart,
             pbMemBlockEnd,
             cbRelocDistance,
             &(pCtxForEtwAndProfapi->pctxProfAPI),
             fCompacting);
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -357,9 +357,9 @@ void ETW::GCLog::EndMovedReferences(size_t profilingContext,
 #ifdef PROFILING_SUPPORTED
     // ProfAPI
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC());
         g_profControlBlock.pProfInterface->EndMovedReferences(&(pCtxForEtwAndProfapi->pctxProfAPI));
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif //PROFILING_SUPPORTED
 
@@ -415,13 +415,7 @@ void ETW::GCLog::ForceGC(LONGLONG l64ClientSequenceNumber)
     if (!GCHeapUtilities::IsGCHeapInitialized())
         return;
 
-    // No InterlockedExchange64 on Redhawk, even though there is one for
-    // InterlockedCompareExchange64. Technically, there's a race here by using
-    // InterlockedCompareExchange64, but it's not worth addressing. The race would be
-    // between two ETW controllers trying to trigger GCs simultaneously, in which case
-    // one will win and get its sequence number to appear in the GCStart event, while the
-    // other will lose. Rare, uninteresting, and low-impact.
-    PalInterlockedCompareExchange64(&s_l64LastClientSequenceNumber, l64ClientSequenceNumber, s_l64LastClientSequenceNumber);
+    PalInterlockedExchange64(&s_l64LastClientSequenceNumber, l64ClientSequenceNumber);
 
     ForceGCForDiagnostics();
 }
@@ -983,7 +977,7 @@ namespace
         ScanRootsHelper(pObj, ppObject, pSC, dwFlags);
     }
 
-    void GcScanRootsForETW(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
+    void GcScanRootsForETW(ScanFunc* fn, int condemned, int max_gen, ScanContext* sc)
     {
         UNREFERENCED_PARAMETER(condemned);
         UNREFERENCED_PARAMETER(max_gen);
@@ -998,7 +992,7 @@ namespace
 
             sc->thread_under_crawl = pThread;
             sc->dwEtwRootKind = kEtwGCRootKindStack;
-            pThread->GcScanRoots(reinterpret_cast<void*>(fn), sc);
+            pThread->GcScanRoots(fn, sc);
             sc->dwEtwRootKind = kEtwGCRootKindOther;
         }
         END_FOREACH_THREAD

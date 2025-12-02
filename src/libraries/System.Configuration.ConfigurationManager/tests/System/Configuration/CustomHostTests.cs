@@ -19,7 +19,8 @@ namespace System.Configuration.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
-                MakeAssemblyGetEntryAssemblyReturnNull();
+                Assembly.SetEntryAssembly(null);
+                Assert.Null(Assembly.GetEntryAssembly());
 
                 string expectedFilePathEnding = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
                     "dotnet.exe.config" :
@@ -28,18 +29,6 @@ namespace System.Configuration.Tests
                 Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
                 Assert.EndsWith(expectedFilePathEnding, config.FilePath);
             }).Dispose();
-        }
-
-        /// <summary>
-        /// Makes Assembly.GetEntryAssembly() return null using private reflection.
-        /// </summary>
-        private static void MakeAssemblyGetEntryAssemblyReturnNull()
-        {
-            typeof(Assembly)
-                .GetField("s_forceNullEntryPoint", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, true);
-
-            Assert.Null(Assembly.GetEntryAssembly());
         }
     }
 }

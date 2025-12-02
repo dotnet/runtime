@@ -5,7 +5,7 @@
 
 \begin{document}
 
-\begin{Name}{3}{unw\_set\_caching\_policy}{David Mosberger-Tang}{Programming Library}{unw\_set\_caching\_policy}unw\_set\_caching\_policy -- set unwind caching policy
+\begin{Name}{3libunwind}{unw\_set\_caching\_policy}{David Mosberger-Tang}{Programming Library}{unw\_set\_caching\_policy}unw\_set\_caching\_policy -- set unwind caching policy
 \end{Name}
 
 \section{Synopsis}
@@ -41,7 +41,7 @@ For example, after unloading (removing) a shared library,
 \Func{unw\_flush\_cache}() would have to be called (at least) for the
 address-range that was covered by the shared library.
 
-For address spaces created via \Func{unw\_create\_addr\_space}(3),
+For address spaces created via \Func{unw\_create\_addr\_space}(3libunwind),
 caching is turned off by default.  For the local address space
 \Func{unw\_local\_addr\_space}, caching is turned on by default.
 
@@ -65,10 +65,10 @@ to use from a signal handler.
 
 \section{See Also}
 
-\SeeAlso{libunwind(3)},
-\SeeAlso{unw\_create\_addr\_space(3)},
-\SeeAlso{unw\_set\_cache\_size(3)},
-\SeeAlso{unw\_flush\_cache(3)}
+\SeeAlso{libunwind}(3libunwind),
+\SeeAlso{unw\_create\_addr\_space}(3libunwind),
+\SeeAlso{unw\_set\_cache\_size}(3libunwind),
+\SeeAlso{unw\_flush\_cache}(3libunwind)
 
 \section{Author}
 

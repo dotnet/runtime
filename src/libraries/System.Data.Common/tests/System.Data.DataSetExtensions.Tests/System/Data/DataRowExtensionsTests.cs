@@ -93,7 +93,7 @@ namespace System.Data.Tests
             AssertExtensions.Throws<ArgumentNullException>("column", () => DataRowExtensions.Field<int>(row, column: null, version: DataRowVersion.Default));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Field_NonNullable_Enum()
         {
             DataTable table = new DataTable("test");
@@ -105,7 +105,7 @@ namespace System.Data.Tests
             Assert.Equal(SomeEnum.Foo, table.Rows[0].Field<SomeEnum>("col"));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Field_Nullable_Enum()
         {
             DataTable table = new DataTable("test");
@@ -136,7 +136,7 @@ namespace System.Data.Tests
             Assert.Throws<IndexOutOfRangeException>(() => DataRowExtensions.SetField(row, columnIndex: -1, value: 0));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void SetField_IndexValue_NullValueReplacedByDBNull()
         {
             DataTable table = new DataTable("test");
@@ -161,7 +161,7 @@ namespace System.Data.Tests
             AssertExtensions.Throws<ArgumentNullException>("name", () => DataRowExtensions.SetField(row, columnName: null, value: 0));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void SetField_NameValue_NullValueReplacedByDBNull()
         {
             DataTable table = new DataTable("test");
@@ -187,7 +187,7 @@ namespace System.Data.Tests
             AssertExtensions.Throws<ArgumentNullException>("column", () => DataRowExtensions.SetField(row, column: null, value: 0));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void SetField_ColumnValue_NullValueReplacedByDBNull()
         {
             DataTable table = new DataTable("test");

@@ -13,6 +13,10 @@
 #include "logging.h"
 #include "runtimedetails.h"
 
+#if TARGET_UNIX
+#include <sys/stat.h>
+#endif // TARGET_UNIX
+
 // Just a helper...
 HANDLE MethodContextReader::OpenFile(const char* inputFile, DWORD flags)
 {
@@ -32,6 +36,20 @@ static std::string to_lower(const std::string& input)
     return res;
 }
 
+bool test_filename_available(const std::string& path)
+{
+#ifdef TARGET_WINDOWS
+    DWORD attribs = GetFileAttributesA(path.c_str());
+    return (attribs != INVALID_FILE_ATTRIBUTES) && !(attribs & FILE_ATTRIBUTE_DIRECTORY);
+#else // TARGET_WINDOWS
+    struct stat stat_data;
+    if (stat(path.c_str(), &stat_data) != 0)
+        return false;
+
+    return (stat_data.st_mode & S_IFMT) == S_IFREG;
+#endif // TARGET_WINDOWS
+}
+
 // Looks for a file named foo.origSuffix.newSuffix or foo.newSuffix
 // but only if foo.origSuffix exists.
 //
@@ -47,20 +65,17 @@ std::string MethodContextReader::CheckForPairedFile(const std::string& fileName,
     if (suffix_offset == std::string::npos || suffix_offset == 0 || (tmp != to_lower(fileName.substr(suffix_offset))))
         return std::string();
 
-    DWORD attribs = GetFileAttributesA(fileName.c_str());
-    if ((attribs == INVALID_FILE_ATTRIBUTES) || (attribs & FILE_ATTRIBUTE_DIRECTORY))
+    if (test_filename_available(fileName))
         return std::string();
 
     // next, check foo.orig.new from foo.orig
     tmp = fileName + newSuffix;
-    attribs = GetFileAttributesA(tmp.c_str());
-    if ((attribs != INVALID_FILE_ATTRIBUTES) && !(attribs & FILE_ATTRIBUTE_DIRECTORY))
+    if (test_filename_available(tmp))
         return tmp;
 
     // Finally, lets try foo.new from foo.orig
     tmp = fileName.substr(0, suffix_offset) + newSuffix;
-    attribs = GetFileAttributesA(tmp.c_str());
-    if ((attribs != INVALID_FILE_ATTRIBUTES) && !(attribs & FILE_ATTRIBUTE_DIRECTORY))
+    if (test_filename_available(tmp))
         return tmp;
 
     return std::string();
@@ -79,7 +94,7 @@ MethodContextReader::MethodContextReader(
     , Offset(offset)
     , Increment(increment)
 {
-    this->mutex = CreateMutexW(NULL, FALSE, nullptr);
+    minipal_mutex_init(&this->mutex);
 
     std::string tocFileName, mchFileName;
 
@@ -125,25 +140,24 @@ MethodContextReader::~MethodContextReader()
         CloseHandle(this->fileHandle);
     }
 
-    CloseHandle(this->mutex);
-
+    minipal_mutex_destroy(&this->mutex);
     CleanExcludedMethods();
 }
 
 bool MethodContextReader::AcquireLock()
 {
-    DWORD res = WaitForSingleObject(this->mutex, INFINITE);
-    return (res == WAIT_OBJECT_0);
+    minipal_mutex_enter(&this->mutex);
+    return true;
 }
 
 void MethodContextReader::ReleaseLock()
 {
-    ReleaseMutex(this->mutex);
+    minipal_mutex_leave(&this->mutex);
 }
 
 bool MethodContextReader::atEof()
 {
-    __int64 pos = 0;
+    int64_t pos = 0;
     SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos,
                      FILE_CURRENT); // LARGE_INTEGER is a crime against humanity
     return pos == this->fileSize;
@@ -163,7 +177,7 @@ MethodContextBuffer MethodContextReader::ReadMethodContextNoLock(bool justSkip)
     memcpy(&totalLen, &buff[2], sizeof(unsigned int));
     if (justSkip)
     {
-        __int64 pos = totalLen + 2;
+        int64_t pos = totalLen + 2;
         // Just move the file pointer ahead the correct number of bytes
         AssertMsg(SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT) == TRUE,
                   "SetFilePointerEx failed (Error %X)", GetLastError());
@@ -403,7 +417,7 @@ bool MethodContextReader::hasTOC()
 
 bool MethodContextReader::isValid()
 {
-    return this->fileHandle != INVALID_HANDLE_VALUE && this->mutex != INVALID_HANDLE_VALUE;
+    return this->fileHandle != INVALID_HANDLE_VALUE;
 }
 
 // Return a measure of "progress" through the method contexts, as follows:
@@ -424,7 +438,7 @@ double MethodContextReader::Progress()
     else
     {
         this->AcquireLock();
-        __int64 pos = 0;
+        int64_t pos = 0;
         SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT);
         this->ReleaseLock();
         return (double)pos;
@@ -465,7 +479,7 @@ double MethodContextReader::PercentComplete()
 // Returns -1 for not found, or -2 for not indexed
 // Interview question alert: hurray for CLR headers incompatibility with STL :-(
 // Note that TOC is 0 based and MC# are 1 based!
-__int64 MethodContextReader::GetOffset(unsigned int methodNumber)
+int64_t MethodContextReader::GetOffset(unsigned int methodNumber)
 {
     if (!this->hasTOC())
         return -2;
@@ -487,7 +501,7 @@ __int64 MethodContextReader::GetOffset(unsigned int methodNumber)
 
 MethodContextBuffer MethodContextReader::GetSpecificMethodContext(unsigned int methodNumber)
 {
-    __int64 pos = this->GetOffset(methodNumber);
+    int64_t pos = this->GetOffset(methodNumber);
     if (pos < 0)
     {
         return MethodContextBuffer(-3);
@@ -538,7 +552,7 @@ void MethodContextReader::ReadExcludedMethods(std::string mchFileName)
     HANDLE excludeFileHandle = OpenFile(excludeFileName.c_str());
     if (excludeFileHandle != INVALID_HANDLE_VALUE)
     {
-        __int64 excludeFileSizeLong;
+        int64_t excludeFileSizeLong;
         GetFileSizeEx(excludeFileHandle, (PLARGE_INTEGER)&excludeFileSizeLong);
         unsigned excludeFileSize = (unsigned)excludeFileSizeLong;
 
@@ -618,4 +632,17 @@ bool MethodContextReader::IsMethodExcluded(MethodContext* mc)
         }
     }
     return false;
+}
+
+void MethodContextReader::Reset(const int* newIndexes, int newIndexCount)
+{
+    int64_t pos    = 0;
+    BOOL    result = SetFilePointerEx(fileHandle, *(PLARGE_INTEGER)&pos, NULL, FILE_BEGIN);
+    assert(result);
+
+    Indexes     = newIndexes;
+    IndexCount  = newIndexCount;
+    curIndexPos = 0;
+    curMCIndex  = 0;
+    curTOCIndex = 0;
 }

@@ -16,7 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define _UTILS_H_
 
 #include "safemath.h"
-#include "clr_std/type_traits"
+#include <type_traits>
 #include "iallocator.h"
 #include "hostallocator.h"
 #include "cycletimer.h"
@@ -88,7 +88,9 @@ class IteratorPair
     TIterator m_end;
 
 public:
-    IteratorPair(TIterator begin, TIterator end) : m_begin(begin), m_end(end)
+    IteratorPair(TIterator begin, TIterator end)
+        : m_begin(begin)
+        , m_end(end)
     {
     }
 
@@ -116,7 +118,8 @@ struct ConstLog2
 {
     enum
     {
-        value = ConstLog2<val / 2, acc + 1>::value
+        value = ConstLog2 < val / 2,
+        acc + 1 > ::value
     };
 };
 
@@ -195,7 +198,7 @@ public:
     bool Contains(unsigned hash);
 
     // Ensure the range string has been parsed.
-    void EnsureInit(const WCHAR* rangeStr, unsigned capacity = DEFAULT_CAPACITY)
+    void EnsureInit(const char* rangeStr, unsigned capacity = DEFAULT_CAPACITY)
     {
         // Make sure that the memory was zero initialized
         assert(m_inited == 0 || m_inited == 1);
@@ -232,13 +235,85 @@ private:
         unsigned m_high;
     };
 
-    void InitRanges(const WCHAR* rangeStr, unsigned capacity);
+    void InitRanges(const char* rangeStr, unsigned capacity);
 
     unsigned m_entries;   // number of entries in the range array
     unsigned m_lastRange; // count of low-high pairs
     unsigned m_inited;    // 1 if range string has been parsed
     size_t   m_badChar;   // index + 1 of any bad character in range string
     Range*   m_ranges;    // ranges of functions to include
+};
+
+// ConfigInArray is an integer-valued array
+//
+class ConfigIntArray
+{
+public:
+    ConfigIntArray()
+        : m_values(nullptr)
+        , m_length(0)
+    {
+    }
+
+    // Ensure the string has been parsed.
+    void EnsureInit(const char* str)
+    {
+        if (m_values == nullptr)
+        {
+            Init(str);
+        }
+    }
+
+    void Dump();
+    int* GetData() const
+    {
+        return m_values;
+    }
+    unsigned GetLength() const
+    {
+        return m_length;
+    }
+
+private:
+    void     Init(const char* str);
+    int*     m_values;
+    unsigned m_length;
+};
+
+// ConfigDoubleArray is an double-valued array
+//
+class ConfigDoubleArray
+{
+public:
+    ConfigDoubleArray()
+        : m_values(nullptr)
+        , m_length(0)
+    {
+    }
+
+    // Ensure the string has been parsed.
+    void EnsureInit(const char* str)
+    {
+        if (m_values == nullptr)
+        {
+            Init(str);
+        }
+    }
+
+    void    Dump();
+    double* GetData() const
+    {
+        return m_values;
+    }
+    unsigned GetLength() const
+    {
+        return m_length;
+    }
+
+private:
+    void     Init(const char* str);
+    double*  m_values;
+    unsigned m_length;
 };
 
 #endif // defined(DEBUG)
@@ -336,7 +411,8 @@ template <typename T>
 class ScopedSetVariable
 {
 public:
-    ScopedSetVariable(T* pVariable, T value) : m_pVariable(pVariable)
+    ScopedSetVariable(T* pVariable, T value)
+        : m_pVariable(pVariable)
     {
         m_oldValue   = *m_pVariable;
         *m_pVariable = value;
@@ -374,7 +450,8 @@ class PhasedVar
 public:
     PhasedVar()
 #ifdef DEBUG
-        : m_initialized(false), m_writePhase(true)
+        : m_initialized(false)
+        , m_writePhase(true)
 #endif // DEBUG
     {
     }
@@ -503,16 +580,30 @@ private:
 #endif                  // DEBUG
 };
 
+enum class ExceptionSetFlags : uint32_t
+{
+    None                     = 0x0,
+    OverflowException        = 0x1,
+    DivideByZeroException    = 0x2,
+    ArithmeticException      = 0x4,
+    NullReferenceException   = 0x8,
+    IndexOutOfRangeException = 0x10,
+    StackOverflowException   = 0x20,
+    UnknownException         = 0x40,
+};
+
 class HelperCallProperties
 {
 private:
-    bool m_isPure[CORINFO_HELP_COUNT];
-    bool m_noThrow[CORINFO_HELP_COUNT];
-    bool m_alwaysThrow[CORINFO_HELP_COUNT];
-    bool m_nonNullReturn[CORINFO_HELP_COUNT];
-    bool m_isAllocator[CORINFO_HELP_COUNT];
-    bool m_mutatesHeap[CORINFO_HELP_COUNT];
-    bool m_mayRunCctor[CORINFO_HELP_COUNT];
+    bool              m_isPure[CORINFO_HELP_COUNT];
+    ExceptionSetFlags m_exceptions[CORINFO_HELP_COUNT];
+    bool              m_alwaysThrow[CORINFO_HELP_COUNT];
+    bool              m_nonNullReturn[CORINFO_HELP_COUNT];
+    bool              m_isAllocator[CORINFO_HELP_COUNT];
+    bool              m_mutatesHeap[CORINFO_HELP_COUNT];
+    bool              m_mayRunCctor[CORINFO_HELP_COUNT];
+    bool              m_isNoEscape[CORINFO_HELP_COUNT];
+    bool              m_isNoGC[CORINFO_HELP_COUNT];
 
     void init();
 
@@ -533,7 +624,14 @@ public:
     {
         assert(helperId > CORINFO_HELP_UNDEF);
         assert(helperId < CORINFO_HELP_COUNT);
-        return m_noThrow[helperId];
+        return (m_exceptions[helperId] == ExceptionSetFlags::None);
+    }
+
+    ExceptionSetFlags ThrownExceptions(CorInfoHelpFunc helperId)
+    {
+        assert(helperId > CORINFO_HELP_UNDEF);
+        assert(helperId < CORINFO_HELP_COUNT);
+        return m_exceptions[helperId];
     }
 
     bool AlwaysThrow(CorInfoHelpFunc helperId)
@@ -570,6 +668,20 @@ public:
         assert(helperId < CORINFO_HELP_COUNT);
         return m_mayRunCctor[helperId];
     }
+
+    bool IsNoEscape(CorInfoHelpFunc helperId)
+    {
+        assert(helperId > CORINFO_HELP_UNDEF);
+        assert(helperId < CORINFO_HELP_COUNT);
+        return m_isNoEscape[helperId];
+    }
+
+    bool IsNoGC(CorInfoHelpFunc helperId)
+    {
+        assert(helperId > CORINFO_HELP_UNDEF);
+        assert(helperId < CORINFO_HELP_COUNT);
+        return m_isNoGC[helperId];
+    }
 };
 
 //*****************************************************************************
@@ -597,8 +709,8 @@ class AssemblyNamesList2
     HostAllocator m_alloc;  // HostAllocator to use in this class
 
 public:
-    // Take a Unicode string list of assembly names, parse it, and store it.
-    AssemblyNamesList2(const WCHAR* list, HostAllocator alloc);
+    // Take a UTF8 string list of assembly names, parse it, and store it.
+    AssemblyNamesList2(const char* list, HostAllocator alloc);
 
     ~AssemblyNamesList2();
 
@@ -636,7 +748,9 @@ class MethodSet
         MethodInfo* m_next;
 
         MethodInfo(char* methodName, int methodHash)
-            : m_MethodName(methodName), m_MethodHash(methodHash), m_next(nullptr)
+            : m_MethodName(methodName)
+            , m_MethodHash(methodHash)
+            , m_next(nullptr)
         {
         }
     };
@@ -646,7 +760,7 @@ class MethodSet
 
 public:
     // Take a Unicode string with the filename containing a list of function names, parse it, and store it.
-    MethodSet(const WCHAR* filename, HostAllocator alloc);
+    MethodSet(const char* filename, HostAllocator alloc);
 
     ~MethodSet();
 
@@ -673,8 +787,8 @@ public:
 class CycleCount
 {
 private:
-    double           cps;         // cycles per second
-    unsigned __int64 beginCycles; // cycles at stop watch construction
+    double   cps;         // cycles per second
+    uint64_t beginCycles; // cycles at stop watch construction
 public:
     CycleCount();
 
@@ -687,14 +801,14 @@ public:
 
 private:
     // Return true if successful.
-    bool GetCycles(unsigned __int64* time);
+    bool GetCycles(uint64_t* time);
 };
 
-// Uses win API QueryPerformanceCounter/QueryPerformanceFrequency.
+// Uses minipal/time.h
 class PerfCounter
 {
-    LARGE_INTEGER beg;
-    double        freq;
+    int64_t beg;
+    double  freq;
 
 public:
     // If the method returns false, any other query yield unpredictable results.
@@ -718,16 +832,16 @@ unsigned CountDigits(double num, unsigned base = 10);
 #endif // DEBUG
 
 /*****************************************************************************
-* Floating point utility class
-*/
+ * Floating point utility class
+ */
 class FloatingPointUtils
 {
 public:
-    static double convertUInt64ToDouble(unsigned __int64 u64);
+    static double convertUInt64ToDouble(uint64_t u64);
 
-    static float convertUInt64ToFloat(unsigned __int64 u64);
+    static float convertUInt64ToFloat(uint64_t u64);
 
-    static unsigned __int64 convertDoubleToUInt64(double d);
+    static uint64_t convertDoubleToUInt64(double d);
 
     static double convertToDouble(float f);
 
@@ -752,6 +866,10 @@ public:
     static bool isAllBitsSet(float val);
 
     static bool isAllBitsSet(double val);
+
+    static bool isFinite(float val);
+
+    static bool isFinite(double val);
 
     static bool isNegative(float val);
 
@@ -798,6 +916,10 @@ public:
     static float minimumNumber(float val1, float val2);
 
     static double normalize(double x);
+
+    static int ilogb(double x);
+
+    static int ilogb(float f);
 };
 
 class BitOperations
@@ -943,7 +1065,7 @@ private:
     CRITSEC_COOKIE m_pCs;
 
     // No copying or assignment allowed.
-    CritSecObject(const CritSecObject&) = delete;
+    CritSecObject(const CritSecObject&)            = delete;
     CritSecObject& operator=(const CritSecObject&) = delete;
 };
 
@@ -953,7 +1075,8 @@ private:
 class CritSecHolder
 {
 public:
-    CritSecHolder(CritSecObject& critSec) : m_CritSec(critSec)
+    CritSecHolder(CritSecObject& critSec)
+        : m_CritSec(critSec)
     {
         ClrEnterCriticalSection(m_CritSec.Val());
     }
@@ -967,7 +1090,7 @@ private:
     CritSecObject& m_CritSec;
 
     // No copying or assignment allowed.
-    CritSecHolder(const CritSecHolder&) = delete;
+    CritSecHolder(const CritSecHolder&)            = delete;
     CritSecHolder& operator=(const CritSecHolder&) = delete;
 };
 
@@ -983,7 +1106,7 @@ int32_t GetSigned32Magic(int32_t d, int* shift /*out*/);
 #ifdef TARGET_64BIT
 int64_t GetSigned64Magic(int64_t d, int* shift /*out*/);
 #endif
-}
+} // namespace MagicDivide
 
 //
 // Profiling helpers
@@ -994,9 +1117,9 @@ double CachedCyclesPerSecond();
 template <typename T>
 bool FitsIn(var_types type, T value)
 {
-    static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
-                          std::is_same<T, size_t>::value || std::is_same<T, ssize_t>::value ||
-                          std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
+    static_assert((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
+                   std::is_same<T, size_t>::value || std::is_same<T, ssize_t>::value ||
+                   std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
 
     switch (type)
     {
@@ -1084,6 +1207,11 @@ bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned
 bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigned);
 bool CastFromFloatOverflows(float fromValue, var_types toType);
 bool CastFromDoubleOverflows(double fromValue, var_types toType);
-}
+} // namespace CheckedOps
+
+#define STRINGIFY_(x) #x
+#define STRINGIFY(x)  STRINGIFY_(x)
+
+FILE* fopen_utf8(const char* path, const char* mode);
 
 #endif // _UTILS_H_

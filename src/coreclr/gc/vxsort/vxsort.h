@@ -4,6 +4,7 @@
 #ifndef VXSORT_VXSORT_H
 #define VXSORT_VXSORT_H
 
+#if defined(TARGET_AMD64)
 #ifdef __GNUC__
 #ifdef __clang__
 #pragma clang attribute push (__attribute__((target("popcnt"))), apply_to = any(function))
@@ -12,10 +13,15 @@
 #pragma GCC target("popcnt")
 #endif
 #endif
-
+#endif // TARGET_AMD64
 
 #include <assert.h>
+
+#if defined(TARGET_AMD64)
 #include <immintrin.h>
+#endif
+
+#include <minipal/utils.h>
 
 #include "defs.h"
 #include "alignment.h"
@@ -25,6 +31,7 @@
 #endif //VXSORT_STATS
 #include "packer.h"
 #include "smallsort/bitonic_sort.h"
+#include "../introsort.h"
 
 namespace vxsort {
 using vxsort::smallsort::bitonic;
@@ -51,10 +58,7 @@ private:
 
     static const int ELEMENT_ALIGN = sizeof(T) - 1;
     static const int N = sizeof(TV) / sizeof(T);
-    static const int32_t MAX_BITONIC_SORT_VECTORS = 16;
-    static const int32_t SMALL_SORT_THRESHOLD_ELEMENTS = MAX_BITONIC_SORT_VECTORS * N;
-    static const int32_t MaxInnerUnroll = (MAX_BITONIC_SORT_VECTORS - 3) / 2;
-    static const int32_t SafeInnerUnroll = MaxInnerUnroll > Unroll ? Unroll : MaxInnerUnroll;
+    static const int32_t SafeInnerUnroll = MT::MaxInnerUnroll > Unroll ? Unroll : MT::MaxInnerUnroll;
     static const int32_t SLACK_PER_SIDE_IN_VECTORS = Unroll;
     static const size_t ALIGN = AH::ALIGN;
     static const size_t ALIGN_MASK = ALIGN - 1;
@@ -188,12 +192,12 @@ private:
         }
 
         // Go to insertion sort below this threshold
-        if (length <= SMALL_SORT_THRESHOLD_ELEMENTS) {
+        if (length <= MT::SMALL_SORT_THRESHOLD_ELEMENTS) {
 #ifdef VXSORT_STATS
             vxsort_stats<T>::bump_small_sorts();
             vxsort_stats<T>::record_small_sort_size(length);
 #endif
-            bitonic<T, M>::sort(left, length);
+            bitonic<T, MT::SMALL_SORT_TYPE>::sort(left, length);
             return;
         }
 
@@ -212,10 +216,10 @@ private:
 
         if (MT::supports_packing()) {
             if (MT::template can_pack<Shift>(right_hint - left_hint)) {
-                packer<T, TPACK, M, Shift, 2, SMALL_SORT_THRESHOLD_ELEMENTS>::pack(left, length, left_hint);
+                packer<T, TPACK, M, Shift, 2, MT::SMALL_SORT_THRESHOLD_ELEMENTS>::pack(left, length, left_hint);
                 auto packed_sorter = vxsort<TPACK, M, Unroll>();
                 packed_sorter.sort((TPACK *) left, ((TPACK *) left) + length - 1);
-                packer<T, TPACK, M, Shift, 2, SMALL_SORT_THRESHOLD_ELEMENTS>::unpack((TPACK *) left, length, left_hint);
+                packer<T, TPACK, M, Shift, 2, MT::SMALL_SORT_THRESHOLD_ELEMENTS>::unpack((TPACK *) left, length, left_hint);
                 return;
             }
         }
@@ -309,9 +313,9 @@ private:
         dataVec = MT::partition_vector(dataVec, mask);
         MT::store_vec(reinterpret_cast<TV*>(left), dataVec);
         MT::store_vec(reinterpret_cast<TV*>(right), dataVec);
-        auto popCount = -_mm_popcnt_u64(mask);
-        right += popCount;
-        left += popCount + N;
+        auto popCount = MT::mask_popcount(mask);
+        right -= popCount;
+        left += N - popCount;
     }
 
     static INLINE void partition_block_with_compress(TV& dataVec,
@@ -319,16 +323,16 @@ private:
                                                      T*& left,
                                                      T*& right) {
         auto mask = MT::get_cmpgt_mask(dataVec, P);
-        auto popCount = -_mm_popcnt_u64(mask);
+        auto popCount = MT::mask_popcount(mask);
         MT::store_compress_vec(reinterpret_cast<TV*>(left), dataVec, ~mask);
-        MT::store_compress_vec(reinterpret_cast<TV*>(right + N + popCount), dataVec, mask);
-        right += popCount;
-        left += popCount + N;
+        MT::store_compress_vec(reinterpret_cast<TV*>(right + N - popCount), dataVec, mask);
+        right -= popCount;
+        left += N - popCount;
     }
 
     template<int InnerUnroll>
     T* vectorized_partition(T* const left, T* const right, const AH hint) {
-        assert(right - left >= SMALL_SORT_THRESHOLD_ELEMENTS);
+        assert(right - left >= MT::SMALL_SORT_THRESHOLD_ELEMENTS);
         assert((reinterpret_cast<size_t>(left) & ELEMENT_ALIGN) == 0);
         assert((reinterpret_cast<size_t>(right) & ELEMENT_ALIGN) == 0);
 
@@ -374,7 +378,7 @@ private:
         auto pivot = *right;
         // We do this here just in case we need to pre-align to the right
         // We end up
-        *right = std::numeric_limits<T>::Max();
+        *right = std::numeric_limits<T>::max();
 
         // Broadcast the selected pivot
         const TV P = MT::broadcast(pivot);
@@ -421,16 +425,16 @@ private:
 
         // From now on, we are fully aligned
         // and all reading is done in full vector units
-        auto readLeftV = (TV*) readLeft;
-        auto readRightV = (TV*) readRight;
+        TV* readLeftV = (TV*) readLeft;
+        TV* readRightV = (TV*) readRight;
         #ifndef NDEBUG
         readLeft = nullptr;
         readRight = nullptr;
         #endif
 
         for (auto u = 0; u < InnerUnroll; u++) {
-            auto dl = MT::load_vec(readLeftV + u);
-            auto dr = MT::load_vec(readRightV - (u + 1));
+            TV dl = MT::load_vec(readLeftV + u);
+            TV dr = MT::load_vec(readRightV - (u + 1));
             partition_block(dl, P, tmpLeft, tmpRight);
             partition_block(dr, P, tmpLeft, tmpRight);
         }
@@ -458,31 +462,53 @@ private:
 
             switch (InnerUnroll) {
                 case 12: d12 = MT::load_vec(nextPtr + InnerUnroll - 12);
+                FALLTHROUGH;
                 case 11: d11 = MT::load_vec(nextPtr + InnerUnroll - 11);
+                FALLTHROUGH;
                 case 10: d10 = MT::load_vec(nextPtr + InnerUnroll - 10);
+                FALLTHROUGH;
                 case  9: d09 = MT::load_vec(nextPtr + InnerUnroll -  9);
+                FALLTHROUGH;
                 case  8: d08 = MT::load_vec(nextPtr + InnerUnroll -  8);
+                FALLTHROUGH;
                 case  7: d07 = MT::load_vec(nextPtr + InnerUnroll -  7);
+                FALLTHROUGH;
                 case  6: d06 = MT::load_vec(nextPtr + InnerUnroll -  6);
+                FALLTHROUGH;
                 case  5: d05 = MT::load_vec(nextPtr + InnerUnroll -  5);
+                FALLTHROUGH;
                 case  4: d04 = MT::load_vec(nextPtr + InnerUnroll -  4);
+                FALLTHROUGH;
                 case  3: d03 = MT::load_vec(nextPtr + InnerUnroll -  3);
+                FALLTHROUGH;
                 case  2: d02 = MT::load_vec(nextPtr + InnerUnroll -  2);
+                FALLTHROUGH;
                 case  1: d01 = MT::load_vec(nextPtr + InnerUnroll -  1);
             }
 
             switch (InnerUnroll) {
                 case 12: partition_block(d12, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case 11: partition_block(d11, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case 10: partition_block(d10, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  9: partition_block(d09, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  8: partition_block(d08, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  7: partition_block(d07, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  6: partition_block(d06, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  5: partition_block(d05, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  4: partition_block(d04, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  3: partition_block(d03, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  2: partition_block(d02, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  1: partition_block(d01, P, writeLeft, writeRight);
               }
           }
@@ -499,7 +525,7 @@ private:
                 readLeftV += 1;
             }
 
-            auto d = MT::load_vec(nextPtr);
+            TV d = MT::load_vec(nextPtr);
             partition_block(d, P, writeLeft, writeRight);
             //partition_block_without_compress(d, P, writeLeft, writeRight);
         }
@@ -534,8 +560,8 @@ private:
         const auto rightAlign = hint.right_align;
         const auto rai = ~((rightAlign - 1) >> 31);
         const auto lai = leftAlign >> 31;
-        const auto preAlignedLeft  = (TV*) (left + leftAlign);
-        const auto preAlignedRight = (TV*) (right + rightAlign - N);
+        TV* const  preAlignedLeft  = (TV*) (left + leftAlign);
+        TV* const  preAlignedRight = (TV*) (right + rightAlign - N);
 
 #ifdef VXSORT_STATS
         vxsort_stats<T>::bump_vec_loads(2);
@@ -554,12 +580,12 @@ private:
         //       were actually needed to be written to the right hand side
         //    e) We write the right portion of the left vector to the right side
         //       now that its write position has been updated
-        auto RT0 = MT::load_vec(preAlignedRight);
-        auto LT0 = MT::load_vec(preAlignedLeft);
+        TV RT0 = MT::load_vec(preAlignedRight);
+        TV LT0 = MT::load_vec(preAlignedLeft);
         auto rtMask = MT::get_cmpgt_mask(RT0, P);
         auto ltMask = MT::get_cmpgt_mask(LT0, P);
-        const auto rtPopCountRightPart = max(_mm_popcnt_u32(rtMask), rightAlign);
-        const auto ltPopCountRightPart = _mm_popcnt_u32(ltMask);
+        const auto rtPopCountRightPart = max(MT::mask_popcount(rtMask), (T)rightAlign);
+        const auto ltPopCountRightPart = MT::mask_popcount(ltMask);
         const auto rtPopCountLeftPart  = N - rtPopCountRightPart;
         const auto ltPopCountLeftPart  = N - ltPopCountRightPart;
 
@@ -617,8 +643,8 @@ private:
      *        larger-than than all values contained within the provided array.
      */
     NOINLINE void sort(T* left, T* right,
-                       T left_hint = std::numeric_limits<T>::Min(),
-                       T right_hint = std::numeric_limits<T>::Max())
+                       T left_hint = std::numeric_limits<T>::min(),
+                       T right_hint = std::numeric_limits<T>::max())
     {
 //        init_isa_detection();
 
@@ -633,6 +659,8 @@ private:
 
 }  // namespace gcsort
 
+#if defined(TARGET_AMD64)
 #include "vxsort_targets_disable.h"
+#endif
 
 #endif

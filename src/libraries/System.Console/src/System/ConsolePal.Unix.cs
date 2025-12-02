@@ -355,19 +355,22 @@ namespace System
                 // Invalidate before reading cached values.
                 CheckTerminalSettingsInvalidated();
 
-                Interop.Sys.WinSize winsize;
-                if (s_windowWidth == -1 &&
-                    s_terminalHandle != null &&
-                    Interop.Sys.GetWindowSize(s_terminalHandle, out winsize) == 0)
+                if (s_windowWidth == -1)
                 {
-                    s_windowWidth = winsize.Col;
-                    s_windowHeight = winsize.Row;
+                    Interop.Sys.WinSize winsize;
+                    if (s_terminalHandle != null &&
+                        Interop.Sys.GetWindowSize(s_terminalHandle, out winsize) == 0)
+                    {
+                        s_windowWidth = winsize.Col;
+                        s_windowHeight = winsize.Row;
+                    }
+                    else
+                    {
+                        s_windowWidth = TerminalFormatStringsInstance.Columns;
+                        s_windowHeight = TerminalFormatStringsInstance.Lines;
+                    }
                 }
-                else
-                {
-                    s_windowWidth = TerminalFormatStringsInstance.Columns;
-                    s_windowHeight = TerminalFormatStringsInstance.Lines;
-                }
+
                 width = s_windowWidth;
                 height = s_windowHeight;
             }
@@ -375,24 +378,11 @@ namespace System
 
         public static void SetWindowSize(int width, int height)
         {
-           lock (Console.Out)
-           {
-               Interop.Sys.WinSize winsize = default;
-               winsize.Row = (ushort)height;
-               winsize.Col = (ushort)width;
-               if (Interop.Sys.SetWindowSize(in winsize) == 0)
-               {
-                   s_windowWidth = winsize.Col;
-                   s_windowHeight = winsize.Row;
-               }
-               else
-               {
-                   Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                   throw errorInfo.Error == Interop.Error.ENOTSUP ?
-                       new PlatformNotSupportedException() :
-                       Interop.GetIOException(errorInfo);
-               }
-           }
+            // note: We can't implement SetWindowSize using TIOCSWINSZ.
+            // TIOCSWINSZ is meant to inform the kernel of the terminal size.
+            // The window that shows the terminal doesn't change to match that size.
+
+            throw new PlatformNotSupportedException();
         }
 
         public static bool CursorVisible
@@ -801,7 +791,7 @@ namespace System
             string evaluatedString = s_fgbgAndColorStrings[fgbgIndex, ccValue]; // benign race
             if (evaluatedString != null)
             {
-                WriteTerminalAnsiString(evaluatedString);
+                WriteTerminalAnsiColorString(evaluatedString);
                 return;
             }
 
@@ -841,7 +831,7 @@ namespace System
                     int ansiCode = consoleColorToAnsiCode[ccValue] % maxColors;
                     evaluatedString = TermInfo.ParameterizedStrings.Evaluate(formatString, ansiCode);
 
-                    WriteTerminalAnsiString(evaluatedString);
+                    WriteTerminalAnsiColorString(evaluatedString);
 
                     s_fgbgAndColorStrings[fgbgIndex, ccValue] = evaluatedString; // benign race
                 }
@@ -853,7 +843,7 @@ namespace System
         {
             if (ConsoleUtils.EmitAnsiColorCodes)
             {
-                WriteTerminalAnsiString(TerminalFormatStringsInstance.Reset);
+                WriteTerminalAnsiColorString(TerminalFormatStringsInstance.Reset);
             }
         }
 
@@ -895,6 +885,9 @@ namespace System
                     {
                         throw new Win32Exception();
                     }
+                    // InitializeTerminalAndSignalHandling will reset the terminal on a normal exit.
+                    // This also resets it for termination due to an unhandled exception.
+                    AppDomain.CurrentDomain.UnhandledException += (_, _) => { Interop.Sys.UninitializeTerminal(); };
 
                     s_terminalHandle = !Console.IsOutputRedirected ? Interop.Sys.FileDescriptors.STDOUT_FILENO :
                                        !Console.IsInputRedirected  ? Interop.Sys.FileDescriptors.STDIN_FILENO :
@@ -952,13 +945,14 @@ namespace System
             }
         }
 
-        internal static void WriteToTerminal(ReadOnlySpan<byte> buffer, bool mayChangeCursorPosition = true)
+        internal static void WriteToTerminal(ReadOnlySpan<byte> buffer, SafeFileHandle? handle = null, bool mayChangeCursorPosition = true)
         {
-            Debug.Assert(s_terminalHandle is not null);
+            handle ??= s_terminalHandle;
+            Debug.Assert(handle is not null);
 
             lock (Console.Out) // synchronize with other writers
             {
-                Write(s_terminalHandle, buffer, mayChangeCursorPosition);
+                Write(handle, buffer, mayChangeCursorPosition);
             }
         }
 
@@ -1110,10 +1104,17 @@ namespace System
             Volatile.Write(ref s_invalidateCachedSettings, 1);
         }
 
+        // Ansi colors are enabled when stdout is a terminal or when
+        // DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION is set.
+        // In both cases, they are written to stdout.
+        internal static void WriteTerminalAnsiColorString(string? value)
+            => WriteTerminalAnsiString(value, Interop.Sys.FileDescriptors.STDOUT_FILENO, mayChangeCursorPosition: false);
+
         /// <summary>Writes a terminfo-based ANSI escape string to stdout.</summary>
         /// <param name="value">The string to write.</param>
+        /// <param name="handle">Handle to use instead of s_terminalHandle.</param>
         /// <param name="mayChangeCursorPosition">Writing this value may change the cursor position.</param>
-        internal static void WriteTerminalAnsiString(string? value, bool mayChangeCursorPosition = true)
+        internal static void WriteTerminalAnsiString(string? value, SafeFileHandle? handle = null, bool mayChangeCursorPosition = true)
         {
             if (string.IsNullOrEmpty(value))
                 return;
@@ -1131,7 +1132,7 @@ namespace System
             }
 
             EnsureConsoleInitialized();
-            WriteToTerminal(data, mayChangeCursorPosition);
+            WriteToTerminal(data, handle, mayChangeCursorPosition);
         }
     }
 }

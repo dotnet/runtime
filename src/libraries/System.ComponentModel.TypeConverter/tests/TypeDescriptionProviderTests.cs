@@ -48,6 +48,9 @@ namespace System.ComponentModel.Tests
                 .Setup(p => p.CreateInstance(serviceProvider, objectType, argTypes, args))
                 .Returns(result)
                 .Verifiable();
+            mockParentProvider
+                .Setup(p => p.RequireRegisteredTypes)
+                .CallBase();
             var provider = new SubTypeDescriptionProvider(mockParentProvider.Object);
             Assert.Same(result, provider.CreateInstance(serviceProvider, objectType, argTypes, args));
             mockParentProvider.Verify(p => p.CreateInstance(serviceProvider, objectType, argTypes, args), Times.Once());
@@ -337,7 +340,7 @@ namespace System.ComponentModel.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void GetReflectionType_InvokeTypeWithoutParent_ReturnsExpected(Type objectType)
+        public void GetReflectionType_InvokeTypeWithoutParent_ReturnsExpected(Type? objectType)
         {
             var provider = new SubTypeDescriptionProvider();
             Assert.Same(objectType, provider.GetReflectionType(objectType));
@@ -350,7 +353,7 @@ namespace System.ComponentModel.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void GetReflectionType_InvokeTypeWithoutParent_CallsTypeObjectOverload_ByType(Type objectType)
+        public void GetReflectionType_InvokeTypeWithoutParent_CallsTypeObjectOverload_ByType(Type? objectType)
         {
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             mockProvider
@@ -427,7 +430,7 @@ namespace System.ComponentModel.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(1, null)]
         [InlineData(1, typeof(object))]
-        public void GetReflectionType_InvokeObjectWithParent_ReturnsExpected(object instance, Type result)
+        public void GetReflectionType_InvokeObjectWithParent_ReturnsExpected(object instance, Type? result)
         {
             var mockParentProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             mockParentProvider
@@ -449,7 +452,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null, 1)]
         [InlineData(typeof(object), null)]
         [InlineData(typeof(object), 1)]
-        public void GetReflectionType_InvokeTypeObjectWithoutParent_ReturnsExpected(Type objectType, object instance)
+        public void GetReflectionType_InvokeTypeObjectWithoutParent_ReturnsExpected(Type? objectType, object? instance)
         {
             var provider = new SubTypeDescriptionProvider();
             Assert.Same(objectType, provider.GetReflectionType(objectType, instance));
@@ -472,7 +475,7 @@ namespace System.ComponentModel.Tests
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(GetReflectionType_TypeObjectWithParent_TestData))]
-        public void GetReflectionType_InvokeTypeObjectWithParent_ReturnsExpected(Type objectType, object instance, Type result)
+        public void GetReflectionType_InvokeTypeObjectWithParent_ReturnsExpected(Type? objectType, object? instance, Type? result)
         {
             var mockParentProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             mockParentProvider
@@ -521,7 +524,7 @@ namespace System.ComponentModel.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void GetRuntimeType_InvokeWithoutParentWithUserDefinedType_RetunsUnderlyingSystemType(Type result)
+        public void GetRuntimeType_InvokeWithoutParentWithUserDefinedType_RetunsUnderlyingSystemType(Type? result)
         {
             var mockType = new Mock<Type>(MockBehavior.Strict);
             mockType
@@ -577,7 +580,7 @@ namespace System.ComponentModel.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void GetTypeDescriptor_InvokeTypeWithoutParent_ReturnsExpected(Type objectType)
+        public void GetTypeDescriptor_InvokeTypeWithoutParent_ReturnsExpected(Type? objectType)
         {
             var provider = new SubTypeDescriptionProvider();
             CustomTypeDescriptor result1 = Assert.IsAssignableFrom<CustomTypeDescriptor>(provider.GetTypeDescriptor(objectType));
@@ -592,11 +595,14 @@ namespace System.ComponentModel.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        public void GetTypeDescriptor_InvokeTypeWithoutParent_CallsTypeObjectOverload_Type(Type objectType)
+        public void GetTypeDescriptor_InvokeTypeWithoutParent_CallsTypeObjectOverload_Type(Type? objectType)
         {
             var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
             mockProvider
                 .Setup(p => p.GetTypeDescriptor(objectType, null))
+                .CallBase();
+            mockProvider
+                .Setup(p => p.RequireRegisteredTypes)
                 .CallBase();
             TypeDescriptionProvider provider = mockProvider.Object;
             CustomTypeDescriptor result1 = Assert.IsAssignableFrom<CustomTypeDescriptor>(provider.GetTypeDescriptor(objectType));
@@ -660,6 +666,9 @@ namespace System.ComponentModel.Tests
             mockProvider
                 .Setup(p => p.GetTypeDescriptor(instance.GetType(), instance))
                 .CallBase();
+            mockProvider
+                .Setup(p => p.RequireRegisteredTypes)
+                .CallBase();
             TypeDescriptionProvider provider = mockProvider.Object;
             CustomTypeDescriptor result1 = Assert.IsAssignableFrom<CustomTypeDescriptor>(provider.GetTypeDescriptor(instance));
             Assert.Empty(result1.GetProperties());
@@ -704,7 +713,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null, 1)]
         [InlineData(typeof(object), null)]
         [InlineData(typeof(object), 1)]
-        public void GetTypeDescriptor_InvokeTypeObjectWithoutParent_ReturnsExpected(Type objectType, object instance)
+        public void GetTypeDescriptor_InvokeTypeObjectWithoutParent_ReturnsExpected(Type? objectType, object? instance)
         {
             var provider = new SubTypeDescriptionProvider();
             CustomTypeDescriptor result1 = Assert.IsAssignableFrom<CustomTypeDescriptor>(provider.GetTypeDescriptor(objectType, instance));

@@ -322,7 +322,7 @@ namespace System.Transactions
 
         public static Transaction GetTransactionFromDtcTransaction(IDtcTransaction transactionNative)
         {
-            ArgumentNullException.ThrowIfNull(transactionNative, nameof(transactionNative));
+            ArgumentNullException.ThrowIfNull(transactionNative);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -442,7 +442,7 @@ namespace System.Transactions
                 unsafe
                 {
                     nint unknown = Marshal.GetIUnknownForObject(transactionNative);
-                    if (Marshal.QueryInterface(unknown, in Guids.IID_ITransaction_Guid, out IntPtr transactionNativePtr) == 0)
+                    if (Marshal.QueryInterface(unknown, Guids.IID_ITransaction_Guid, out IntPtr transactionNativePtr) == 0)
                     {
                         Marshal.Release(unknown);
                         myTransactionNative = ComInterfaceMarshaller<ITransaction>.ConvertToManaged((void*)transactionNativePtr)!;

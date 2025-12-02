@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
 
         public MethodImportAttributes Flags => _flags;
 
-        internal static DllImportData CreateDllImportData(CustomAttributeInfo attr, out bool preserveSig)
+        internal static DllImportData Create(CustomAttributeInfo attr, out bool preserveSig)
         {
             string? moduleName = (string?)attr._ctorArgs[0];
             if (string.IsNullOrEmpty(moduleName))
@@ -47,23 +47,10 @@ namespace System.Reflection.Emit
                         preserveSig = (bool)value;
                         break;
                     case "CallingConvention":
-                        importAttributes |= (CallingConvention)value switch
-                        {
-                            CallingConvention.Cdecl => MethodImportAttributes.CallingConventionCDecl,
-                            CallingConvention.FastCall => MethodImportAttributes.CallingConventionFastCall,
-                            CallingConvention.StdCall => MethodImportAttributes.CallingConventionStdCall,
-                            CallingConvention.ThisCall => MethodImportAttributes.CallingConventionThisCall,
-                            _ => MethodImportAttributes.CallingConventionWinApi // Roslyn defaults with this
-                        };
+                        importAttributes |= MatchNativeCallingConvention((CallingConvention)value);
                         break;
                     case "CharSet":
-                        importAttributes |= (CharSet)value switch
-                        {
-                            CharSet.Ansi => MethodImportAttributes.CharSetAnsi,
-                            CharSet.Auto => MethodImportAttributes.CharSetAuto,
-                            CharSet.Unicode => MethodImportAttributes.CharSetUnicode,
-                            _ => MethodImportAttributes.CharSetAuto
-                        };
+                        importAttributes |= MatchNativeCharSet((CharSet)value);
                         break;
                     case "EntryPoint":
                         entryPoint = (string?)value;
@@ -105,6 +92,38 @@ namespace System.Reflection.Emit
 
             return new DllImportData(moduleName, entryPoint, importAttributes);
         }
+
+        internal static DllImportData Create(string moduleName, string entryName, CallingConvention nativeCallConv, CharSet nativeCharSet)
+        {
+            if (string.IsNullOrEmpty(moduleName))
+            {
+                throw new ArgumentException(SR.Argument_DllNameCannotBeEmpty);
+            }
+
+            MethodImportAttributes importAttributes = MatchNativeCallingConvention(nativeCallConv);
+            importAttributes |= MatchNativeCharSet(nativeCharSet);
+
+            return new DllImportData(moduleName, entryName, importAttributes);
+        }
+
+        private static MethodImportAttributes MatchNativeCharSet(CharSet nativeCharSet) =>
+            nativeCharSet switch
+            {
+                CharSet.Ansi => MethodImportAttributes.CharSetAnsi,
+                CharSet.Auto => MethodImportAttributes.CharSetAuto,
+                CharSet.Unicode => MethodImportAttributes.CharSetUnicode,
+                _ => MethodImportAttributes.CharSetAuto
+            };
+
+        private static MethodImportAttributes MatchNativeCallingConvention(CallingConvention nativeCallConv) =>
+            nativeCallConv switch
+            {
+                CallingConvention.Cdecl => MethodImportAttributes.CallingConventionCDecl,
+                CallingConvention.FastCall => MethodImportAttributes.CallingConventionFastCall,
+                CallingConvention.StdCall => MethodImportAttributes.CallingConventionStdCall,
+                CallingConvention.ThisCall => MethodImportAttributes.CallingConventionThisCall,
+                _ => MethodImportAttributes.CallingConventionWinApi // Roslyn defaults with this
+            };
     }
 
     internal sealed class MarshallingData
@@ -113,7 +132,7 @@ namespace System.Reflection.Emit
         private int _marshalArrayElementType;      // safe array: VarEnum; array: UnmanagedType
         private int _marshalArrayElementCount;     // number of elements in an array, length of a string, or Unspecified
         private int _marshalParameterIndex;        // index of parameter that specifies array size (short) or IID (int), or Unspecified
-        private object? _marshalTypeNameOrSymbol;  // custom marshaller: string or Type; safe array: element type
+        private string? _marshalTypeName;          // custom marshaller: string or type name; safe array: element type name
         private string? _marshalCookie;
 
         internal const int Invalid = -1;
@@ -139,17 +158,14 @@ namespace System.Reflection.Emit
                 case UnmanagedType.CustomMarshaler:
                     writer.WriteUInt16(0); // padding
 
-                    switch (_marshalTypeNameOrSymbol)
+                    if (_marshalTypeName != null)
                     {
-                        case Type type:
-                            writer.WriteSerializedString(type.FullName); // or AssemblyQualifiedName?
-                            break;
-                        case null:
-                            writer.WriteByte(0);
-                            break;
-                        default:
-                            writer.WriteSerializedString((string)_marshalTypeNameOrSymbol);
-                            break;
+                        writer.WriteSerializedString(_marshalTypeName);
+                    }
+                    else
+                    {
+                        writer.WriteByte(0);
+
                     }
 
                     if (_marshalCookie != null)
@@ -186,9 +202,13 @@ namespace System.Reflection.Emit
                     {
                         writer.WriteCompressedInteger((int)safeArrayElementSubtype);
 
-                        if (_marshalTypeNameOrSymbol is Type elementType)
+                        if (_marshalTypeName != null)
                         {
-                            writer.WriteSerializedString(elementType.FullName);
+                            writer.WriteSerializedString(_marshalTypeName);
+                        }
+                        else
+                        {
+                            writer.WriteByte(0);
                         }
                     }
                     break;
@@ -209,10 +229,10 @@ namespace System.Reflection.Emit
             return writer;
         }
 
-        internal void SetMarshalAsCustom(object typeSymbolOrName, string? cookie)
+        internal void SetMarshalAsCustom(string? name, string? cookie)
         {
             _marshalType = UnmanagedType.CustomMarshaler;
-            _marshalTypeNameOrSymbol = typeSymbolOrName;
+            _marshalTypeName = name;
             _marshalCookie = cookie;
         }
 
@@ -245,13 +265,13 @@ namespace System.Reflection.Emit
             _marshalArrayElementCount = elementCount ?? Invalid;
         }
 
-        internal void SetMarshalAsSafeArray(VarEnum? elementType, Type? type)
+        internal void SetMarshalAsSafeArray(VarEnum? elementType, string? type)
         {
             Debug.Assert(elementType == null || elementType >= 0 && (int)elementType <= MaxMarshalInteger);
 
             _marshalType = UnmanagedType.SafeArray;
             _marshalArrayElementType = (int)(elementType ?? InvalidVariantType);
-            _marshalTypeNameOrSymbol = type;
+            _marshalTypeName = type;
         }
 
         internal void SetMarshalAsFixedString(int elementCount)
@@ -366,7 +386,7 @@ namespace System.Reflection.Emit
         private static void DecodeMarshalAsSafeArray(string[] paramNames, object?[] values, MarshallingData info)
         {
             VarEnum? elementTypeVariant = null;
-            Type? elementType = null;
+            string? elementType = null;
             int symbolIndex = -1;
 
             for (int i = 0; i < paramNames.Length; i++)
@@ -377,7 +397,7 @@ namespace System.Reflection.Emit
                         elementTypeVariant = (VarEnum)values[i]!;
                         break;
                     case "SafeArrayUserDefinedSubType":
-                        elementType = (Type?)values[i];
+                        elementType = (string?)values[i];
                         symbolIndex = i;
                         break;
                     case "ArraySubType":
@@ -470,17 +490,14 @@ namespace System.Reflection.Emit
         private static void DecodeMarshalAsCustom(string[] paramNames, object?[] values, MarshallingData info)
         {
             string? cookie = null;
-            Type? type = null;
             string? name = null;
             for (int i = 0; i < paramNames.Length; i++)
             {
                 switch (paramNames[i])
                 {
                     case "MarshalType":
-                        name = (string?)values[i];
-                        break;
                     case "MarshalTypeRef":
-                        type = (Type?)values[i];
+                        name = (string?)values[i];
                         break;
                     case "MarshalCookie":
                         cookie = (string?)values[i];
@@ -489,7 +506,7 @@ namespace System.Reflection.Emit
                 }
             }
 
-            info.SetMarshalAsCustom((object?)name ?? type!, cookie);
+            info.SetMarshalAsCustom(name, cookie);
         }
     }
 }

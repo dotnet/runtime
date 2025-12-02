@@ -131,7 +131,7 @@ namespace System.Collections.Concurrent
         /// <summary>
         /// Gets whether elements in each partition are yielded in the order of increasing keys.
         /// </summary>
-        public bool KeysOrderedInEachPartition { get; private set; }
+        public bool KeysOrderedInEachPartition { get; }
 
         /// <summary>
         /// Gets whether elements in an earlier partition always come before elements in a later partition.
@@ -141,7 +141,7 @@ namespace System.Collections.Concurrent
         /// smaller order key than any element in partition 1, each element in partition 1 has a smaller
         /// order key than any element in partition 2, and so on.
         /// </remarks>
-        public bool KeysOrderedAcrossPartitions { get; private set; }
+        public bool KeysOrderedAcrossPartitions { get; }
 
         /// <summary>
         /// Gets whether order keys are normalized.
@@ -151,7 +151,7 @@ namespace System.Collections.Concurrent
         /// [0 .. numberOfElements-1]. If the property returns false, order keys must still be distinct, but
         /// only their relative order is considered, not their absolute values.
         /// </remarks>
-        public bool KeysNormalized { get; private set; }
+        public bool KeysNormalized { get; }
 
         /// <summary>
         /// Partitions the underlying collection into the given number of ordered partitions.

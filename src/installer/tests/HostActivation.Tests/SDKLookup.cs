@@ -4,43 +4,43 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.DotNet.TestUtils;
 using Xunit;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
+namespace HostActivation.Tests
 {
     public class SDKLookup : IClassFixture<SDKLookup.SharedTestState>
     {
         private SharedTestState SharedState { get; }
 
-        readonly DotNetCli ExecutableDotNet;
-        readonly DotNetBuilder ExecutableDotNetBuilder;
-        string ExecutableSelectedMessage { get; }
+        private readonly DotNetCli ExecutableDotNet;
+        private readonly DotNetBuilder ExecutableDotNetBuilder;
 
         public SDKLookup(SharedTestState sharedState)
         {
             SharedState = sharedState;
 
-            string exeDotNetPath = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(sharedState.BaseDir, "exe"));
+            string exeDotNetPath = sharedState.BaseArtifact.GetUniqueSubdirectory("exe");
             ExecutableDotNetBuilder = new DotNetBuilder(exeDotNetPath, TestContext.BuiltDotNet.BinPath, null);
             ExecutableDotNet = ExecutableDotNetBuilder
                 .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("9999.0.0")
                 .Build();
 
-            // Trace messages used to identify from which folder the SDK was picked
-            ExecutableSelectedMessage = $"Using .NET SDK dll=[{Path.Combine(ExecutableDotNet.BinPath, "sdk")}";
-
             // Note: no need to delete the directory, it will be removed once the entire class is done
-            //       since everything is under the BaseDir from the shared state
+            //       since everything is under the BaseArtifact from the shared state
         }
 
         [Fact]
-        public void SdkLookup_Global_Json_Single_Digit_Patch_Rollup()
+        public void GlobalJson_SingleDigitPatch()
         {
             // Set specified SDK version = 9999.3.4-global-dummy
-            string globalJsonPath = CopyGlobalJson("SingleDigit-global.json");
             string requestedVersion = "9999.3.4-global-dummy";
+            string globalJsonPath = GlobalJson.CreateWithVersion(SharedState.CurrentWorkingDir, requestedVersion);
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Exe: empty
@@ -131,11 +131,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void SdkLookup_Global_Json_Two_Part_Patch_Rollup()
+        public void GlobalJson_TwoPartPatch()
         {
             // Set specified SDK version = 9999.3.304-global-dummy
-            string globalJsonPath = CopyGlobalJson("TwoPart-global.json");
             string requestedVersion = "9999.3.304-global-dummy";
+            string globalJsonPath = GlobalJson.CreateWithVersion(SharedState.CurrentWorkingDir, requestedVersion);
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Exe: empty
@@ -224,9 +224,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void SdkLookup_Negative_Version()
+        public void NegativeVersion()
         {
-            WriteEmptyGlobalJson();
+            GlobalJson.CreateEmpty(SharedState.CurrentWorkingDir);
 
             // Add a negative SDK version
             AddAvailableSdkVersions("-1.-1.-1");
@@ -255,9 +255,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void SdkLookup_Must_Pick_The_Highest_Semantic_Version()
+        public void PickHighestSemanticVersion()
         {
-            WriteEmptyGlobalJson();
+            GlobalJson.CreateEmpty(SharedState.CurrentWorkingDir);
 
             // Add SDK versions
             AddAvailableSdkVersions("9999.0.0", "9999.0.3-dummy.9", "9999.0.3-dummy.10");
@@ -353,15 +353,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [InlineData("Latestfeature")]
         [InlineData("latestMINOR")]
         [InlineData("latESTMajor")]
-        public void It_allows_case_insensitive_roll_forward_policy_names(string rollForward)
+        public void RollForwardPolicy_CaseInsensitive(string rollForward)
         {
             const string Requested = "9999.0.100";
-
-            WriteEmptyGlobalJson();
-
             AddAvailableSdkVersions(Requested);
 
-            WriteGlobalJson(FormatGlobalJson(policy: rollForward, version: Requested));
+            GlobalJson.CreateWithVersionSettings(SharedState.CurrentWorkingDir, policy: rollForward, version: Requested);
 
             RunTest()
                 .Should().Pass()
@@ -370,11 +367,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         [Theory]
         [MemberData(nameof(InvalidGlobalJsonData))]
-        public void It_falls_back_to_latest_sdk_for_invalid_global_json(string globalJsonContents, string[] messages)
+        public void InvalidGlobalJson_FallsBackToLatestSdk(string globalJsonContents, string[] messages)
         {
             AddAvailableSdkVersions("9999.0.100", "9999.0.300-dummy.9", "9999.1.402");
 
-            WriteGlobalJson(globalJsonContents);
+            GlobalJson.Write(SharedState.CurrentWorkingDir, globalJsonContents);
 
             var expectation = RunTest()
                 .Should().Pass()
@@ -388,16 +385,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         [Theory]
         [MemberData(nameof(SdkRollForwardData))]
-        public void It_rolls_forward_as_expected(string policy, string requested, bool allowPrerelease, string expected, string[] installed)
+        public void RollForward(string policy, string requested, bool allowPrerelease, string expected, string[] installed)
         {
             AddAvailableSdkVersions(installed);
 
-            WriteGlobalJson(FormatGlobalJson(policy: policy, version: requested, allowPrerelease: allowPrerelease));
+            string globalJson = GlobalJson.CreateWithVersionSettings(SharedState.CurrentWorkingDir, policy: policy, version: requested, allowPrerelease: allowPrerelease);
 
             var result = RunTest();
-
-            var globalJson = Path.Combine(SharedState.CurrentWorkingDir, "global.json");
-
             if (expected == null)
             {
                 result
@@ -413,7 +407,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void It_uses_latest_stable_sdk_if_allow_prerelease_is_false()
+        public void AllowPrereleaseFalse_UseLatestRelease()
         {
             var installed = new string[] {
                     "9999.1.702",
@@ -434,11 +428,198 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             AddAvailableSdkVersions(installed);
 
-            WriteGlobalJson(FormatGlobalJson(allowPrerelease: false));
+            GlobalJson.CreateWithVersionSettings(SharedState.CurrentWorkingDir, allowPrerelease: false);
 
             var result = RunTest()
                 .Should().Pass()
                 .And.HaveStdErrContaining($"SDK path resolved to [{Path.Combine(ExecutableDotNet.BinPath, "sdk", ExpectedVersion)}]");
+        }
+
+        [Fact]
+        public void GlobalJson_Paths()
+        {
+            GlobalJson.Sdk sdk = new() { Paths = [] };
+            string globalJsonPath = GlobalJson.Write(SharedState.CurrentWorkingDir, sdk );
+
+            // Add SDK versions
+            AddAvailableSdkVersions("9999.0.4");
+
+            // Paths: none
+            // Exe: 9999.0.4
+            // Expected: no SDKs found
+            RunTest()
+                .Should().Fail()
+                .And.FindAnySdk(false)
+                .And.HaveStdErrContaining($"Empty search paths specified in global.json file: {globalJsonPath}");
+
+            sdk.Paths = [ GlobalJson.HostSdkPath ];
+            globalJsonPath = GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
+
+            // Paths: $host$
+            // Exe: 9999.0.4
+            // Expected: 9999.0.4 from exe dir
+            RunTest()
+                .Should().Pass()
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.4"));
+
+            using TestArtifact custom = TestArtifact.Create("sdkPath");
+            AddSdkToCustomPath(custom.Location, "9999.0.4");
+            sdk.Paths = [ custom.Location ];
+            globalJsonPath = GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
+
+            // Paths: custom (absolute)
+            // Custom: 9999.0.4
+            // Exe: 9999.0.4
+            // Expected: 9999.0.4 from custom dir
+            RunTest()
+                .Should().Pass()
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.4", custom.Location));
+
+            string relativePath = Path.GetRelativePath(SharedState.CurrentWorkingDir, custom.Location);
+            sdk.Paths = [ relativePath ];
+            GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
+
+            // Paths: custom (relative, outside current directory)
+            // Custom: 9999.0.4
+            // Exe: 9999.0.4
+            // Expected: 9999.0.4 from custom dir
+            RunTest()
+                .Should().Pass()
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.4", custom.Location));
+
+            string underCurrent = SharedState.CurrentWorkingDirArtifact.GetUniqueSubdirectory("sdkPath");
+            AddSdkToCustomPath(underCurrent, "9999.0.4");
+
+            relativePath = Path.GetRelativePath(SharedState.CurrentWorkingDir, underCurrent);
+            sdk.Paths = [relativePath];
+            GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
+
+            // Paths: custom (relative, under current directory)
+            // Custom: 9999.0.4
+            // Exe: 9999.0.4
+            // Expected: 9999.0.4 from custom dir
+            RunTest()
+                .Should().Pass()
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.4", Path.Combine(SharedState.CurrentWorkingDir, relativePath)));
+        }
+
+        [Fact]
+        public void GlobalJson_Paths_Multiple()
+        {
+            using TestArtifact custom = TestArtifact.Create("sdkPath");
+            AddSdkToCustomPath(custom.Location, "9999.0.0");
+
+            GlobalJson.Sdk sdk = new() { Paths = [ custom.Location, GlobalJson.HostSdkPath ] };
+            GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
+
+            // Add SDK versions
+            AddAvailableSdkVersions("9999.0.4");
+
+            // Specified SDK
+            //   version: none
+            //   paths: custom, $host$
+            // Custom: 9999.0.0
+            // Exe: 9999.0.4
+            // Expected: 9999.0.0 from custom dir
+            RunTest()
+                .Should().Pass()
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.0", custom.Location));
+
+            sdk.Version = "9999.0.3";
+            GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
+
+            // Specified SDK
+            //   version: 9999.0.3
+            //   paths: custom, $host$
+            // Custom: 9999.0.0
+            // Exe: 9999.0.4
+            // Expected: 9999.0.4 from exe dir
+            RunTest()
+                .Should().Pass()
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.4"));
+
+            sdk.Version = "9999.0.5";
+            string globalJsonPath = GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
+
+            // Specified SDK
+            //   version: 9999.0.5
+            //   paths: custom, $host$
+            // Custom: 9999.0.0
+            // Exe: 9999.0.4
+            // Expected: no compatible version
+            RunTest()
+                .Should().Fail()
+                .And.NotFindCompatibleSdk(globalJsonPath, sdk.Version)
+                .And.FindAnySdk(true);
+
+            // Verify we have the expected SDK versions
+            RunTest("--list-sdks")
+                .Should().Pass()
+                .And.HaveStdOutContaining($"9999.0.0 [{custom.Location}")
+                .And.HaveStdOutContaining($"9999.0.4 [{ExecutableDotNet.BinPath}");
+        }
+
+        [Fact]
+        public void GlobalJson_Paths_FirstMatch()
+        {
+            using TestArtifact custom1 = TestArtifact.Create("sdkPath1");
+            AddSdkToCustomPath(custom1.Location, "9999.0.0");
+            using TestArtifact custom2 = TestArtifact.Create("sdkPath2");
+            AddSdkToCustomPath(custom2.Location, "9999.0.2");
+            AddAvailableSdkVersions("9999.0.1");
+
+            GlobalJson.Sdk sdk = new() { Version = "9999.0.1", Paths = [ custom1.Location, custom2.Location, GlobalJson.HostSdkPath ] };
+            GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
+
+            // Specified SDK
+            //   version: none
+            //   paths: custom1, custom2, $host$
+            // Custom1: 9999.0.0
+            // Custom2: 9999.0.2
+            // Exe: 9999.0.1
+            // Expected: 9999.0.2 from custom2 - first match is used, not best match (which would be exe which is an exact match)
+            RunTest()
+                .Should().Pass()
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.2", custom2.Location));
+
+            // Verify we have the expected SDK versions
+            RunTest("--list-sdks")
+                .Should().Pass()
+                .And.HaveStdOutContaining($"9999.0.0 [{custom1.Location}")
+                .And.HaveStdOutContaining($"9999.0.2 [{custom2.Location}")
+                .And.HaveStdOutContaining($"9999.0.1 [{ExecutableDotNet.BinPath}");
+        }
+
+        [Fact]
+        public void GlobalJson_ErrorMessage()
+        {
+            GlobalJson.Sdk sdk = new() { ErrorMessage = "Custom SDK resolution error" };
+            GlobalJson.Write(SharedState.CurrentWorkingDir, sdk);
+
+            RunTest()
+                .Should().Fail()
+                .And.HaveStdErrContaining(sdk.ErrorMessage);
+        }
+
+        [Fact]
+        public void SdkResolutionError()
+        {
+            // Set specified SDK version to one that will not exist
+            string requestedVersion = "9999.0.1";
+            string globalJsonPath = GlobalJson.CreateWithVersion(SharedState.CurrentWorkingDir, requestedVersion);
+
+            // When we fail to resolve SDK version, we print out all available SDKs
+            // Versions should be in ascending order.
+            string[] versions = ["5.0.2", "6.1.1", "9999.1.0"];
+            AddAvailableSdkVersions(versions);
+
+            string sdkPath = Path.Combine(ExecutableDotNet.BinPath, "sdk");
+            string expectedOutput = string.Join(string.Empty, versions.Select(v => $"{v} [{sdkPath}]{Environment.NewLine}"));
+
+            RunTest()
+                .Should().Fail()
+                .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
+                .And.HaveStdOutContaining(expectedOutput);
         }
 
         public static IEnumerable<object[]> InvalidGlobalJsonData
@@ -451,7 +632,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 yield return new object[] {
                     "{ sdk: { \"version\": \"9999.0.100\" } }",
                     new[] {
-                        "A JSON parsing exception occurred",
+                        "JSON parsing exception:",
                         IgnoringSDKSettings
                     }
                 };
@@ -476,7 +657,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 // Use an invalid version value
                 yield return new object[] {
-                    FormatGlobalJson(version: "invalid"),
+                    GlobalJson.FormatSettings(new GlobalJson.Sdk() { Version = "invalid" }),
                     new[] {
                         "Version 'invalid' is not valid for the 'sdk/version' value",
                         IgnoringSDKSettings
@@ -494,7 +675,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 // Use a policy but no version
                 yield return new object[] {
-                    FormatGlobalJson(policy: "latestPatch"),
+                    GlobalJson.FormatSettings(new GlobalJson.Sdk() { RollForward = "latestPatch" }),
                     new[] {
                         "The roll-forward policy 'latestPatch' requires a 'sdk/version' value",
                         IgnoringSDKSettings
@@ -503,7 +684,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 // Use an invalid policy value
                 yield return new object[] {
-                    FormatGlobalJson(policy: "invalid"),
+                    GlobalJson.FormatSettings(new GlobalJson.Sdk() { RollForward = "invalid" }),
                     new[] {
                         "The roll-forward policy 'invalid' is not supported for the 'sdk/rollForward' value",
                         IgnoringSDKSettings
@@ -521,7 +702,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 // Use a prerelease version and allowPrerelease = false
                 yield return new object[] {
-                    FormatGlobalJson(version: "9999.1.402-preview1", allowPrerelease: false),
+                    GlobalJson.FormatSettings(new GlobalJson.Sdk() { Version = "9999.1.402-preview1", AllowPrerelease = false }),
                     new[] { "Ignoring the 'sdk/allowPrerelease' value" }
                 };
             }
@@ -996,6 +1177,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
         }
 
+        private static void AddSdkToCustomPath(string sdkRoot, string version)
+        {
+            DotNetBuilder.AddMockSDK(sdkRoot, version, version);
+
+            // Add a mock framework matching the runtime version for the mock SDK
+            // This allows the host to successfully resolve frameworks for the SDK at the custom location
+            DotNetBuilder.AddMicrosoftNETCoreAppFrameworkMockHostPolicy(sdkRoot, version);
+        }
+
         // This method adds a list of new sdk version folders in the specified directory.
         // The actual contents are 'fake' and the minimum required for SDK discovery.
         // The dotnet.runtimeconfig.json created uses a dummy framework version (9999.0.0)
@@ -1007,93 +1197,44 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
         }
 
-        // Put a global.json file in the cwd in order to specify a CLI
-        private string CopyGlobalJson(string globalJsonFileName)
-        {
-            string destFile = Path.Combine(SharedState.CurrentWorkingDir, "global.json");
-            string srcFile = Path.Combine(SharedState.TestAssetsPath, globalJsonFileName);
+        private string ExpectedResolvedSdkOutput(string expectedVersion, string rootPath = null)
+            => $"Using .NET SDK dll=[{Path.Combine(rootPath == null ? ExecutableDotNet.BinPath : rootPath, "sdk", expectedVersion, "dotnet.dll")}]";
 
-            File.Copy(srcFile, destFile, true);
-            return destFile;
-        }
-
-        private static string FormatGlobalJson(string version = null, string policy = null, bool? allowPrerelease = null)
-        {
-            version = version == null ? "null" : string.Format("\"{0}\"", version);
-            policy = policy == null ? "null" : string.Format("\"{0}\"", policy);
-            string allow = allowPrerelease.HasValue ? (allowPrerelease.Value ? "true" : "false") : "null";
-
-            return $@"{{ ""sdk"": {{ ""version"": {version}, ""rollForward"": {policy}, ""allowPrerelease"": {allow} }} }}";
-        }
-
-        private void WriteGlobalJson(string contents)
-        {
-            File.WriteAllText(Path.Combine(SharedState.CurrentWorkingDir, "global.json"), contents);
-        }
-
-        private void WriteEmptyGlobalJson() => WriteGlobalJson("{}");
-
-        private string ExpectedResolvedSdkOutput(string expectedVersion)
-            => Path.Combine("Using .NET SDK dll=[", ExecutableDotNet.BinPath, "sdk", expectedVersion, "dotnet.dll]");
-
-        private CommandResult RunTest() => RunTest("help");
-
-        private CommandResult RunTest(string command)
+        private CommandResult RunTest(string command = "help", [CallerMemberName] string caller = "")
         {
             return ExecutableDotNet.Exec(command)
                 .WorkingDirectory(SharedState.CurrentWorkingDir)
                 .EnableTracingAndCaptureOutputs()
                 .MultilevelLookup(false)
-                .Execute();
+                .Execute(caller);
         }
 
-        public class SharedTestState : IDisposable
+        public sealed class SharedTestState : IDisposable
         {
-            private readonly RepoDirectoriesProvider RepoDirectories;
+            public TestArtifact BaseArtifact { get; }
 
-            public string BaseDir { get; }
-
+            public TestArtifact CurrentWorkingDirArtifact { get; }
             public string CurrentWorkingDir { get; }
-
-            public string TestAssetsPath { get; }
-
-            private readonly TestArtifact _baseDirArtifact;
 
             public SharedTestState()
             {
-                // The dotnetSDKLookup dir will contain some folders and files that will be
-                // necessary to perform the tests
-                string baseDir = Path.Combine(TestArtifact.TestArtifactsPath, "dotnetSDKLookup");
-                BaseDir = SharedFramework.CalculateUniqueTestDirectory(baseDir);
-                _baseDirArtifact = new TestArtifact(BaseDir);
+                BaseArtifact = TestArtifact.Create(nameof(SDKLookup));
 
-                // The three tested locations will be the cwd and the exe dir. cwd is no longer supported.
-                //     All dirs will be placed inside the base folder
-
-                RepoDirectories = new RepoDirectoriesProvider();
-
+                // The tested locations will be the cwd and the exe dir. cwd is no longer supported.
+                // All dirs will be placed inside the base folder
                 // Executable location is created per test as each test adds a different set of SDK versions
 
-                var currentWorkingSdk = new DotNetBuilder(BaseDir, TestContext.BuiltDotNet.BinPath, "current")
+                var currentWorkingSdk = new DotNetBuilder(BaseArtifact.Location, TestContext.BuiltDotNet.BinPath, "current")
                     .AddMockSDK("10000.0.0", "9999.0.0")
                     .Build();
                 CurrentWorkingDir = currentWorkingSdk.BinPath;
-
-                TestAssetsPath = Path.Combine(RepoDirectories.TestAssetsFolder, "TestUtils", "SDKLookup");
+                CurrentWorkingDirArtifact = new TestArtifact(CurrentWorkingDir);
             }
 
             public void Dispose()
             {
-                Dispose(true);
-                GC.SuppressFinalize(this);
-            }
-
-            protected virtual void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    _baseDirArtifact.Dispose();
-                }
+                CurrentWorkingDirArtifact.Dispose();
+                BaseArtifact.Dispose();
             }
         }
     }

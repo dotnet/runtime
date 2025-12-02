@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Versioning;
@@ -13,7 +14,7 @@ namespace Microsoft.Extensions.Logging.Console
     /// A logger that writes messages in the console.
     /// </summary>
     [UnsupportedOSPlatform("browser")]
-    internal sealed class ConsoleLogger : ILogger
+    internal sealed class ConsoleLogger : ILogger, IBufferedLogger
     {
         private readonly string _name;
         private readonly ConsoleLoggerProcessor _queueProcessor;
@@ -25,7 +26,7 @@ namespace Microsoft.Extensions.Logging.Console
             IExternalScopeProvider? scopeProvider,
             ConsoleLoggerOptions options)
         {
-            ThrowHelper.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(name);
 
             _name = name;
             _queueProcessor = loggerProcessor;
@@ -49,7 +50,7 @@ namespace Microsoft.Extensions.Logging.Console
                 return;
             }
 
-            ThrowHelper.ThrowIfNull(formatter);
+            ArgumentNullException.ThrowIfNull(formatter);
 
             t_stringWriter ??= new StringWriter();
             LogEntry<TState> logEntry = new LogEntry<TState>(logLevel, _name, eventId, state, exception, formatter);
@@ -67,6 +68,35 @@ namespace Microsoft.Extensions.Logging.Console
                 sb.Capacity = 1024;
             }
             _queueProcessor.EnqueueMessage(new LogMessageEntry(computedAnsiString, logAsError: logLevel >= Options.LogToStandardErrorThreshold));
+        }
+
+        /// <inheritdoc />
+        public void LogRecords(IEnumerable<BufferedLogRecord> records)
+        {
+            ArgumentNullException.ThrowIfNull(records);
+
+            StringWriter writer = t_stringWriter ??= new StringWriter();
+
+            var sb = writer.GetStringBuilder();
+            foreach (var rec in records)
+            {
+                var logEntry = new LogEntry<BufferedLogRecord>(rec.LogLevel, _name, rec.EventId, rec, null, static (s, _) => s.FormattedMessage ?? string.Empty);
+                Formatter.Write(in logEntry, null, writer);
+
+                if (sb.Length == 0)
+                {
+                    continue;
+                }
+
+                string computedAnsiString = sb.ToString();
+                sb.Clear();
+                _queueProcessor.EnqueueMessage(new LogMessageEntry(computedAnsiString, logAsError: rec.LogLevel >= Options.LogToStandardErrorThreshold));
+            }
+
+            if (sb.Capacity > 1024)
+            {
+                sb.Capacity = 1024;
+            }
         }
 
         /// <inheritdoc />

@@ -16,7 +16,7 @@
 #include "rtlfunctions.h"
 
 
-#ifdef TARGET_AMD64
+#ifdef HOST_AMD64
 
 RtlVirtualUnwindFn*                 RtlVirtualUnwind_Unsafe         = NULL;
 
@@ -45,7 +45,7 @@ HRESULT EnsureRtlFunctions()
     return S_OK;
 }
 
-#else // TARGET_AMD64
+#else // HOST_AMD64
 
 HRESULT EnsureRtlFunctions()
 {
@@ -53,17 +53,18 @@ HRESULT EnsureRtlFunctions()
     return S_OK;
 }
 
-#endif // TARGET_AMD64
+#endif // HOST_AMD64
 
-#if defined(FEATURE_EH_FUNCLETS)
+#ifndef HOST_X86
+
+#define DYNAMIC_FUNCTION_TABLE_MAX_RANGE INT32_MAX
 
 VOID InstallEEFunctionTable (
         PVOID pvTableID,
         PVOID pvStartRange,
         ULONG cbRange,
         PGET_RUNTIME_FUNCTION_CALLBACK pfnGetRuntimeFunctionCallback,
-        PVOID pvContext,
-        EEDynamicFunctionTableType TableType)
+        PVOID pvContext)
 {
     CONTRACTL
     {
@@ -75,41 +76,21 @@ VOID InstallEEFunctionTable (
     CONTRACTL_END;
 
     static LPWSTR wszModuleName = NULL;
-    static WCHAR  rgwModuleName[MAX_LONGPATH] = { 0 };
 
     if (wszModuleName == NULL)
     {
         StackSString ssTempName;
-        DWORD dwTempNameSize;
 
-        // Leaves trailing backslash on path, producing something like "c:\windows\microsoft.net\framework\v4.0.x86dbg\"
-        LPCWSTR pszSysDir = GetInternalSystemDirectory(&dwTempNameSize);
+        IfFailThrow(GetClrModuleDirectory(ssTempName));
 
-        //finish creating complete path and copy to buffer if we can
-        if (pszSysDir == NULL)
-        {   // The CLR should become unavailable in this case.
-            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-        }
-
-        ssTempName.Set(pszSysDir);
         ssTempName.Append(MAIN_DAC_MODULE_DLL_NAME_W);
 
-        if (ssTempName.GetCount() < MAX_LONGPATH)
-        {
-            wcscpy_s(rgwModuleName, MAX_LONGPATH, ssTempName.GetUnicode());
+        NewArrayHolder<WCHAR> wzTempName(ssTempName.GetCopyOfUnicodeString());
 
-            // publish result
-            InterlockedExchangeT(&wszModuleName, rgwModuleName);
-        }
-        else
+        // publish result
+        if (InterlockedCompareExchangeT(&wszModuleName, (LPWSTR)wzTempName, nullptr) == nullptr)
         {
-            NewArrayHolder<WCHAR> wzTempName(ssTempName.GetCopyOfUnicodeString());
-
-            // publish result
-            if (InterlockedCompareExchangeT(&wszModuleName, (LPWSTR)wzTempName, nullptr) == nullptr)
-            {
-                wzTempName.SuppressRelease();
-            }
+            wzTempName.SuppressRelease();
         }
     }
 
@@ -120,12 +101,11 @@ VOID InstallEEFunctionTable (
             (ULONG_PTR)pvStartRange,
             cbRange,
             pfnGetRuntimeFunctionCallback,
-            EncodeDynamicFunctionTableContext(pvContext, TableType),
+            pvContext,
             wszModuleName))
     {
         COMPlusThrowOM();
     }
 }
 
-#endif // FEATURE_EH_FUNCLETS
-
+#endif // HOST_X86

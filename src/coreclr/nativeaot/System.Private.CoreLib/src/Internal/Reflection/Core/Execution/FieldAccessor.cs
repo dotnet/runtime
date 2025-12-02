@@ -10,12 +10,11 @@ using System.Runtime.CompilerServices;
 namespace Internal.Reflection.Core.Execution
 {
     //
-    // This class abstracts the underlying Redhawk (or whatever execution engine) runtime that sets and gets fields.
+    // This class abstracts the underlying NativeAOT runtime (or whatever execution engine) runtime that sets and gets fields.
     //
     [CLSCompliant(false)]
     public abstract class FieldAccessor
     {
-        protected FieldAccessor() { }
         public abstract object GetField(object obj);
         public abstract object GetFieldDirect(TypedReference typedReference);
 

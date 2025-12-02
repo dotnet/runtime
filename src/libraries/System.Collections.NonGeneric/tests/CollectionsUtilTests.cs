@@ -8,7 +8,7 @@ namespace System.Collections.Tests
 {
     public static class CollectionsUtilTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void CreateCaseInsensitiveHashtable()
         {
             Hashtable hashtable = CollectionsUtil.CreateCaseInsensitiveHashtable();
@@ -20,7 +20,7 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => hashtable.Add("key1", "value1"));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void CreateCaseInsensitiveHashtable_Capacity()
         {
             Hashtable hashtable = CollectionsUtil.CreateCaseInsensitiveHashtable(15);
@@ -33,7 +33,7 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => hashtable.Add("key1", "value1"));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void CreateCaseInsensitiveHashtable_IDictionary()
         {
             Hashtable hashtable1 = CollectionsUtil.CreateCaseInsensitiveHashtable();

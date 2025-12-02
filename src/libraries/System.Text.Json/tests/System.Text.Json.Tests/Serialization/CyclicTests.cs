@@ -121,14 +121,14 @@ namespace System.Text.Json.Serialization.Tests
                 Name = name;
             }
 
-            public TestClassWithCycle Parent { get; set; }
+            public TestClassWithCycle? Parent { get; set; }
             public List<TestClassWithCycle> Children { get; set; } = new List<TestClassWithCycle>();
             public string Name { get; set; }
         }
 
         public class TestClassWithArrayOfElementsOfTheSameClass
         {
-            public TestClassWithArrayOfElementsOfTheSameClass[] Array { get; set; }
+            public TestClassWithArrayOfElementsOfTheSameClass[]? Array { get; set; }
         }
 
         public class CycleRoot
@@ -141,16 +141,16 @@ namespace System.Text.Json.Serialization.Tests
             public IList<Child2> Child2IList { get; set; } = new List<Child2>();
             public List<Child2> Child2List { get; set; } = new List<Child2>();
             public Dictionary<string, Child2> Child2Dictionary { get; set; } = new Dictionary<string, Child2>();
-            public Child2 Child2 { get; set; }
+            public Child2? Child2 { get; set; }
         }
 
         public class Child2
         {
             // Add properties that cause a cycle (Root->Child1->Child2->Child1)
-            public Child1 Child1 { get; set; }
-            public IList<Child1> Child1IList { get; set; }
-            public IList<Child1> Child1List { get; set; }
-            public Dictionary<string, Child1> Child1Dictionary { get; set; }
+            public Child1? Child1 { get; set; }
+            public IList<Child1>? Child1IList { get; set; }
+            public IList<Child1>? Child1List { get; set; }
+            public Dictionary<string, Child1>? Child1Dictionary { get; set; }
         }
 
         [Fact]

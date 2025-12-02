@@ -215,11 +215,12 @@ namespace System.Net.Http
             // If preauth is enabled and this isn't proxy auth, try to get a basic credential from the
             // preauth credentials cache, and if successful, set an auth header for it onto the request.
             // Currently we only support preauth for Basic.
-            bool performedBasicPreauth = false;
+            NetworkCredential? preAuthCredential = null;
+            Uri? preAuthCredentialUri = null;
             if (preAuthenticate)
             {
                 Debug.Assert(pool.PreAuthCredentials != null);
-                NetworkCredential? credential;
+                (Uri uriPrefix, NetworkCredential credential)? preAuthCredentialPair;
                 lock (pool.PreAuthCredentials)
                 {
                     // Just look for basic credentials.  If in the future we support preauth
@@ -227,13 +228,13 @@ namespace System.Net.Http
                     Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, NegotiateScheme) == null);
                     Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, NtlmScheme) == null);
                     Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, DigestScheme) == null);
-                    credential = pool.PreAuthCredentials.GetCredential(authUri, BasicScheme);
+                    preAuthCredentialPair = pool.PreAuthCredentials.GetCredential(authUri, BasicScheme);
                 }
 
-                if (credential != null)
+                if (preAuthCredentialPair != null)
                 {
-                    SetBasicAuthToken(request, credential, isProxyAuth);
-                    performedBasicPreauth = true;
+                    (preAuthCredentialUri, preAuthCredential) = preAuthCredentialPair.Value;
+                    SetBasicAuthToken(request, preAuthCredential, isProxyAuth);
                 }
             }
 
@@ -244,6 +245,12 @@ namespace System.Net.Http
                 switch (challenge.AuthenticationType)
                 {
                     case AuthenticationType.Digest:
+                        if (CredentialCache.DefaultCredentials == credentials)
+                        {
+                            // The DefaultCredentials applies only to NTLM, negotiate, and Kerberos-based authentication.
+                            break;
+                        }
+
                         var digestResponse = new DigestResponse(challenge.ChallengeData);
                         if (await TrySetDigestAuthToken(request, challenge.Credential, digestResponse, isProxyAuth).ConfigureAwait(false))
                         {
@@ -265,13 +272,27 @@ namespace System.Net.Http
                         break;
 
                     case AuthenticationType.Basic:
-                        if (performedBasicPreauth)
+                        if (CredentialCache.DefaultCredentials == credentials)
+                        {
+                            // The DefaultCredentials applies only to NTLM, negotiate, and Kerberos-based authentication.
+                            break;
+                        }
+
+                        if (preAuthCredential != null)
                         {
                             if (NetEventSource.Log.IsEnabled())
                             {
                                 NetEventSource.AuthenticationError(authUri, $"Pre-authentication with {(isProxyAuth ? "proxy" : "server")} failed.");
                             }
-                            break;
+
+                            if (challenge.Credential == preAuthCredential)
+                            {
+                                // Pre auth failed, and user supplied credentials are still same, we can stop there.
+                                break;
+                            }
+
+                            // Pre-auth credentials have changed, continue with the new ones.
+                            // The old ones will be removed below.
                         }
 
                         response.Dispose();
@@ -293,6 +314,17 @@ namespace System.Net.Http
                                 default:
                                     lock (pool.PreAuthCredentials!)
                                     {
+                                        // remove previously cached (failing) creds
+                                        if (preAuthCredentialUri != null)
+                                        {
+                                            if (NetEventSource.Log.IsEnabled())
+                                            {
+                                                NetEventSource.Info(pool.PreAuthCredentials, $"Removing Basic credential from cache, uri={preAuthCredentialUri}, username={preAuthCredential!.UserName}");
+                                            }
+
+                                            pool.PreAuthCredentials.Remove(preAuthCredentialUri, BasicScheme);
+                                        }
+
                                         try
                                         {
                                             if (NetEventSource.Log.IsEnabled())

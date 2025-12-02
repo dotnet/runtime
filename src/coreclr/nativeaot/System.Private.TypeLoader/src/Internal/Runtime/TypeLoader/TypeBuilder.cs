@@ -13,29 +13,6 @@ using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
 {
-    internal static class LowLevelListExtensions
-    {
-        public static void Expand<T>(this LowLevelList<T> list, int count)
-        {
-            if (list.Capacity < count)
-                list.Capacity = count;
-
-            while (list.Count < count)
-                list.Add(default(T));
-        }
-
-        public static bool HasSetBits(this LowLevelList<bool> list)
-        {
-            for (int index = 0; index < list.Count; index++)
-            {
-                if (list[index])
-                    return true;
-            }
-
-            return false;
-        }
-    }
-
     internal class TypeBuilder
     {
         public TypeBuilder()
@@ -49,11 +26,11 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         public static unsafe int ClassConstructorOffset => -sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
 
-        private LowLevelList<TypeDesc> _typesThatNeedTypeHandles = new LowLevelList<TypeDesc>();
+        private ArrayBuilder<TypeDesc> _typesThatNeedTypeHandles;
 
-        private LowLevelList<InstantiatedMethod> _methodsThatNeedDictionaries = new LowLevelList<InstantiatedMethod>();
+        private ArrayBuilder<InstantiatedMethod> _methodsThatNeedDictionaries;
 
-        private LowLevelList<TypeDesc> _typesThatNeedPreparation;
+        private ArrayBuilder<TypeDesc> _typesThatNeedPreparation;
 
 #if DEBUG
         private bool _finalTypeBuilding;
@@ -110,8 +87,6 @@ namespace Internal.Runtime.TypeLoader
 
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 return;
-
-            _typesThatNeedPreparation ??= new LowLevelList<TypeDesc>();
 
             _typesThatNeedPreparation.Add(type);
         }
@@ -289,10 +264,10 @@ namespace Internal.Runtime.TypeLoader
         private void ProcessTypesNeedingPreparation()
         {
             // Process the pending types
-            while (_typesThatNeedPreparation != null)
+            while (_typesThatNeedPreparation.Count > 0)
             {
                 var pendingTypes = _typesThatNeedPreparation;
-                _typesThatNeedPreparation = null;
+                _typesThatNeedPreparation = default;
 
                 for (int i = 0; i < pendingTypes.Count; i++)
                     PrepareType(pendingTypes[i]);
@@ -307,11 +282,11 @@ namespace Internal.Runtime.TypeLoader
 
             InstantiatedMethod nonTemplateMethod = method;
 
-            // Templates are always non-unboxing stubs
-            if (method.UnboxingStub)
+            // Templates are always unboxing stubs for valuetype instance methods
+            if (!method.UnboxingStub && method.OwningType.IsValueType && !TypeLoaderEnvironment.IsStaticMethodSignature(method.NameAndSignature))
             {
-                // Strip unboxing stub, note the first parameter which is false
-                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(false, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation, IntPtr.Zero, false);
+                // Make it an unboxing stub, note the first parameter which is true
+                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(true, method.AsyncVariant, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
             }
 
             uint nativeLayoutInfoToken;
@@ -324,12 +299,14 @@ namespace Internal.Runtime.TypeLoader
 
             if (templateMethod.FunctionPointer != IntPtr.Zero)
             {
-                nonTemplateMethod.SetFunctionPointer(templateMethod.FunctionPointer, isFunctionPointerUSG: false);
-            }
+                nonTemplateMethod.SetFunctionPointer(templateMethod.FunctionPointer);
 
-            // Ensure that if this method is non-shareable from a normal canonical perspective, then
-            // its template MUST be a universal canonical template method
-            Debug.Assert(!method.IsNonSharableMethod || (method.IsNonSharableMethod && templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal)));
+                // Compensate for the template being an unboxing stub
+                if (nonTemplateMethod != method)
+                {
+                    method.SetFunctionPointer(TypeLoaderEnvironment.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(templateMethod.FunctionPointer, templateMethod.OwningType.RuntimeTypeHandle));
+                }
+            }
 
             NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
 
@@ -353,7 +330,7 @@ namespace Internal.Runtime.TypeLoader
                         break;
 
                     default:
-                        Debug.Fail("Unexpected BagElementKind for generic method with name " + method.NameAndSignature.Name + "! Only BagElementKind.DictionaryLayout should appear.");
+                        Debug.Fail("Unexpected BagElementKind for generic method with name " + method.NameAndSignature.GetName() + "! Only BagElementKind.DictionaryLayout should appear.");
                         throw new BadImageFormatException();
                 }
             }
@@ -365,12 +342,6 @@ namespace Internal.Runtime.TypeLoader
         internal void ParseNativeLayoutInfo(TypeBuilderState state, TypeDesc type)
         {
             TypeLoaderLogger.WriteLine("Parsing NativeLayoutInfo for type " + type.ToString() + " ...");
-
-            bool isTemplateUniversalCanon = false;
-            if (state.TemplateType != null)
-            {
-                isTemplateUniversalCanon = state.TemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal);
-            }
 
             if (state.TemplateType == null)
             {
@@ -432,15 +403,8 @@ namespace Internal.Runtime.TypeLoader
                         state.ThreadStaticDesc = context.GetGCStaticInfo(typeInfoParser.GetUnsigned());
                         break;
 
-                    case BagElementKind.FieldLayout:
-                        TypeLoaderLogger.WriteLine("Found BagElementKind.FieldLayout");
-                        typeInfoParser.SkipInteger(); // Handled in type layout algorithm
-                        break;
-
                     case BagElementKind.DictionaryLayout:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.DictionaryLayout");
-                        Debug.Assert(!isTemplateUniversalCanon, "Universal template nativelayout do not have DictionaryLayout");
-
                         Debug.Assert(state.Dictionary == null);
                         if (!state.TemplateType.RetrieveRuntimeTypeHandleIfPossible())
                         {
@@ -469,24 +433,22 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         internal unsafe struct GCLayout
         {
-            private LowLevelList<bool> _bitfield;
+            private bool[] _bitfield;
             private unsafe void* _gcdesc;
             private int _size;
-            private bool _isReferenceTypeGCLayout;
 
             public static GCLayout None { get { return default(GCLayout); } }
-            public static GCLayout SingleReference { get; } = new GCLayout(new LowLevelList<bool>(new bool[1] { true }), false);
+            public static GCLayout SingleReference { get; } = new GCLayout([true]);
 
             public bool IsNone { get { return _bitfield == null && _gcdesc == null; } }
 
-            public GCLayout(LowLevelList<bool> bitfield, bool isReferenceTypeGCLayout)
+            public GCLayout(bool[] bitfield)
             {
                 Debug.Assert(bitfield != null);
 
                 _bitfield = bitfield;
                 _gcdesc = null;
                 _size = 0;
-                _isReferenceTypeGCLayout = isReferenceTypeGCLayout;
             }
 
             public GCLayout(RuntimeTypeHandle rtth)
@@ -495,37 +457,27 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(MethodTable != null);
 
                 _bitfield = null;
-                _isReferenceTypeGCLayout = false; // This field is only used for the LowLevelList<bool> path
                 _gcdesc = MethodTable->ContainsGCPointers ? (void**)MethodTable - 1 : null;
                 _size = (int)MethodTable->BaseSize;
             }
 
             /// <summary>
-            /// Writes this layout to the given bitfield.
+            /// Gets this layout in bitfield array.
             /// </summary>
-            /// <param name="bitfield">The bitfield to write a layout to (may be null, at which
-            /// point it will be created and assigned).</param>
-            /// <param name="offset">The offset at which we need to write the bitfield.</param>
-            public void WriteToBitfield(LowLevelList<bool> bitfield, int offset)
+            /// <returns>The layout in bitfield.</returns>
+            public bool[] AsBitfield()
             {
-                ArgumentNullException.ThrowIfNull(bitfield);
-
-                if (IsNone)
-                    return;
+                // This method should only be called when not none.
+                Debug.Assert(!IsNone);
 
                 // Ensure exactly one of these two are set.
                 Debug.Assert(_gcdesc != null ^ _bitfield != null);
 
-                if (_bitfield != null)
-                    MergeBitfields(bitfield, offset);
-                else
-                    WriteGCDescToBitfield(bitfield, offset);
+                return _bitfield ?? WriteGCDescToBitfield();
             }
 
-            private unsafe void WriteGCDescToBitfield(LowLevelList<bool> bitfield, int offset)
+            private unsafe bool[] WriteGCDescToBitfield()
             {
-                int startIndex = offset / IntPtr.Size;
-
                 void** ptr = (void**)_gcdesc;
                 Debug.Assert(_gcdesc != null);
 
@@ -534,8 +486,8 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(count >= 0);
 
                 // Ensure capacity for the values we are about to write
-                int capacity = startIndex + _size / IntPtr.Size - 2;
-                bitfield.Expand(capacity);
+                int capacity = _size / IntPtr.Size - 2;
+                bool[] bitfield = new bool[capacity];
 
                 while (count-- >= 0)
                 {
@@ -546,35 +498,10 @@ namespace Internal.Runtime.TypeLoader
                     Debug.Assert(offs >= 0);
 
                     for (int i = 0; i < len; i++)
-                        bitfield[startIndex + offs + i] = true;
+                        bitfield[offs + i] = true;
                 }
-            }
 
-            private void MergeBitfields(LowLevelList<bool> outputBitfield, int offset)
-            {
-                int startIndex = offset / IntPtr.Size;
-
-                // These routines represent the GC layout after the MethodTable pointer
-                // in an object, but the LowLevelList<bool> bitfield logically contains
-                // the EETypepointer if it is describing a reference type. So, skip the
-                // first value.
-                int itemsToSkip = _isReferenceTypeGCLayout ? 1 : 0;
-
-                // Assert that we only skip a non-reported pointer.
-                Debug.Assert(itemsToSkip == 0 || _bitfield[0] == false);
-
-                // Ensure capacity for the values we are about to write
-                int capacity = startIndex + _bitfield.Count - itemsToSkip;
-                outputBitfield.Expand(capacity);
-
-
-                for (int i = itemsToSkip; i < _bitfield.Count; i++)
-                {
-                    // We should never overwrite a TRUE value in the table.
-                    Debug.Assert(!outputBitfield[startIndex + i - itemsToSkip] || _bitfield[i]);
-
-                    outputBitfield[startIndex + i - itemsToSkip] = _bitfield[i];
-                }
+                return bitfield;
             }
         }
 
@@ -875,6 +802,7 @@ namespace Internal.Runtime.TypeLoader
                     _declaringTypeHandle = GetRuntimeTypeHandle(method.OwningType),
                     _genericMethodArgumentHandles = GetRuntimeTypeHandles(method.Instantiation),
                     _methodNameAndSignature = method.NameAndSignature,
+                    _isAsyncVariant = method.AsyncVariant,
                     _methodDictionary = method.RuntimeMethodDictionary
                 };
             }
@@ -1091,7 +1019,7 @@ namespace Internal.Runtime.TypeLoader
 
             // The first is a pointer that points to the TypeManager indirection cell.
             // The second is the offset into the native layout info blob in that TypeManager, where the native signature is encoded.
-            IntPtr** lazySignature = (IntPtr**)signature.ToPointer();
+            IntPtr** lazySignature = (IntPtr**)signature;
             typeManager = new TypeManagerHandle(lazySignature[0][0]);
             offset = checked((uint)new IntPtr(lazySignature[1]).ToInt32());
             reader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(typeManager);
@@ -1324,45 +1252,6 @@ namespace Internal.Runtime.TypeLoader
                 methodDictionary = IntPtr.Zero;
                 return false;
             }
-        }
-
-        private void ResolveSingleCell_Worker(GenericDictionaryCell cell, out IntPtr fixupResolution)
-        {
-            cell.Prepare(this);
-
-            // Process the pending types
-            ProcessTypesNeedingPreparation();
-            FinishTypeAndMethodBuilding();
-
-            // At this stage the pointer we need is accessible via a call to Create on the prepared cell
-            fixupResolution = cell.Create(this);
-        }
-
-        private void ResolveMultipleCells_Worker(GenericDictionaryCell[] cells, out IntPtr[] fixups)
-        {
-            foreach (var cell in cells)
-            {
-                cell.Prepare(this);
-            }
-
-            // Process the pending types
-            ProcessTypesNeedingPreparation();
-            FinishTypeAndMethodBuilding();
-
-            // At this stage the pointer we need is accessible via a call to Create on the prepared cell
-            fixups = new IntPtr[cells.Length];
-            for (int i = 0; i < fixups.Length; i++)
-                fixups[i] = cells[i].Create(this);
-        }
-
-        internal static void ResolveSingleCell(GenericDictionaryCell cell, out IntPtr fixupResolution)
-        {
-            new TypeBuilder().ResolveSingleCell_Worker(cell, out fixupResolution);
-        }
-
-        public static void ResolveMultipleCells(GenericDictionaryCell[] cells, out IntPtr[] fixups)
-        {
-            new TypeBuilder().ResolveMultipleCells_Worker(cells, out fixups);
         }
 
         public static IntPtr BuildGenericLookupTarget(IntPtr typeContext, IntPtr signature, out IntPtr auxResult)

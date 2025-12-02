@@ -72,6 +72,15 @@ inline bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     return g_theGCToCLR->RefCountedHandleCallbacks(pObject);
 }
 
+inline void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
+{
+    assert(g_theGCToCLR != nullptr);
+    if (g_runtimeSupportedVersion.MajorVersion >= 4)
+    {
+        g_theGCToCLR->TriggerClientBridgeProcessing(args);
+    }
+}
+
 inline void GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
 {
     assert(g_theGCToCLR != nullptr);
@@ -322,6 +331,18 @@ inline void GCToEEInterface::LogErrorToHost(const char *message)
     if (g_runtimeSupportedVersion.MajorVersion >= 1)
     {
         g_theGCToCLR->LogErrorToHost(message);
+    }
+}
+
+inline uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
+{
+    if (g_runtimeSupportedVersion.MajorVersion >= 3)
+    {
+        return g_theGCToCLR->GetThreadOSThreadId(thread);
+    }
+    else
+    {
+        return 0;
     }
 }
 

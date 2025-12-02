@@ -27,7 +27,7 @@ void
 ds_ipc_advertise_cookie_v1_init (void);
 
 bool
-ds_icp_advertise_v1_send (DiagnosticsIpcStream *stream);
+ds_ipc_advertise_v1_send (DiagnosticsIpcStream *stream);
 
 /*
 * DiagnosticsIpcHeader
@@ -59,8 +59,8 @@ struct _DiagnosticsIpcHeader {
 #endif
 
 DS_DEFINE_GETTER_ARRAY_REF(DiagnosticsIpcHeader *, ipc_header, uint8_t *, const uint8_t *, magic, magic[0])
-DS_DEFINE_GETTER(DiagnosticsIpcHeader *, ipc_header, uint8_t, commandset)
-DS_DEFINE_GETTER(DiagnosticsIpcHeader *, ipc_header, uint8_t, commandid)
+DS_DEFINE_GETTER(DiagnosticsIpcHeader *, ipc_header, uint8_t, commandset) // ds_ipc_header_get_commandset
+DS_DEFINE_GETTER(DiagnosticsIpcHeader *, ipc_header, uint8_t, commandid) // ds_ipc_header_get_commandid
 
 /*
 * DiagnosticsIpcMessage
@@ -87,7 +87,7 @@ struct _DiagnosticsIpcMessage {
 };
 #endif
 
-DS_DEFINE_GETTER_REF(DiagnosticsIpcMessage *, ipc_message, DiagnosticsIpcHeader *, header)
+DS_DEFINE_GETTER_REF(DiagnosticsIpcMessage *, ipc_message, DiagnosticsIpcHeader *, header) // ds_ipc_message_get_header_ref
 
 DiagnosticsIpcMessage *
 ds_ipc_message_init (DiagnosticsIpcMessage *message);
@@ -128,6 +128,12 @@ ds_ipc_message_try_parse_uint32_t (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
 	uint32_t *value);
+
+bool
+ds_ipc_message_try_parse_string_utf16_t_string_utf8_t_alloc (
+    uint8_t **buffer,
+    uint32_t *buffer_len,
+    ep_char8_t **string_utf8);
 
 bool
 ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (

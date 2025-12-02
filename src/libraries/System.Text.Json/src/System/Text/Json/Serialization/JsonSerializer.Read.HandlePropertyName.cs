@@ -25,17 +25,9 @@ namespace System.Text.Json
             bool createExtensionProperty = true)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
-#if DEBUG
-            if (jsonTypeInfo.Kind != JsonTypeInfoKind.Object)
-            {
-                string objTypeName = obj?.GetType().FullName ?? "<null>";
-                Debug.Fail($"obj.GetType() => {objTypeName}; {jsonTypeInfo.GetPropertyDebugInfo(unescapedPropertyName)}");
-            }
-#endif
-
             useExtensionProperty = false;
 
-            JsonPropertyInfo jsonPropertyInfo = jsonTypeInfo.GetProperty(
+            JsonPropertyInfo? jsonPropertyInfo = jsonTypeInfo.GetProperty(
                 unescapedPropertyName,
                 ref state.Current,
                 out byte[] utf8PropertyName);
@@ -47,19 +39,19 @@ namespace System.Text.Json
             state.Current.JsonPropertyName = utf8PropertyName;
 
             // Handle missing properties
-            if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
+            if (jsonPropertyInfo is null)
             {
                 if (jsonTypeInfo.EffectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                 {
                     Debug.Assert(jsonTypeInfo.ExtensionDataProperty is null, "jsonTypeInfo.Configure() should have caught conflicting configuration.");
-                    string stringPropertyName = JsonHelpers.Utf8GetString(unescapedPropertyName);
+                    string stringPropertyName = Encoding.UTF8.GetString(unescapedPropertyName);
                     ThrowHelper.ThrowJsonException_UnmappedJsonProperty(jsonTypeInfo.Type, stringPropertyName);
                 }
 
                 // Determine if we should use the extension property.
                 if (jsonTypeInfo.ExtensionDataProperty is JsonPropertyInfo { HasGetter: true, HasSetter: true } dataExtProperty)
                 {
-                    state.Current.JsonPropertyNameAsString = JsonHelpers.Utf8GetString(unescapedPropertyName);
+                    state.Current.JsonPropertyNameAsString = Encoding.UTF8.GetString(unescapedPropertyName);
 
                     if (createExtensionProperty)
                     {
@@ -69,6 +61,11 @@ namespace System.Text.Json
 
                     jsonPropertyInfo = dataExtProperty;
                     useExtensionProperty = true;
+                }
+                else
+                {
+                    // Populate with a placeholder value required by JsonPath calculations
+                    jsonPropertyInfo = JsonPropertyInfo.s_missingProperty;
                 }
             }
 
@@ -80,29 +77,29 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<byte> GetPropertyName(
             scoped ref ReadStack state,
-            ref Utf8JsonReader reader)
+            ref Utf8JsonReader reader,
+            JsonSerializerOptions options,
+            out bool isAlreadyReadMetadataProperty)
         {
-            ReadOnlySpan<byte> unescapedPropertyName;
-            ReadOnlySpan<byte> propertyName = reader.GetSpan();
-
-            if (reader.ValueIsEscaped)
-            {
-                unescapedPropertyName = JsonReaderHelper.GetUnescapedSpan(propertyName);
-            }
-            else
-            {
-                unescapedPropertyName = propertyName;
-            }
+            ReadOnlySpan<byte> propertyName = reader.GetUnescapedSpan();
+            isAlreadyReadMetadataProperty = false;
 
             if (state.Current.CanContainMetadata)
             {
                 if (IsMetadataPropertyName(propertyName, state.Current.BaseJsonTypeInfo.PolymorphicTypeResolver))
                 {
-                    ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                    if (options.AllowOutOfOrderMetadataProperties)
+                    {
+                        isAlreadyReadMetadataProperty = true;
+                    }
+                    else
+                    {
+                        ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                    }
                 }
             }
 
-            return unescapedPropertyName;
+            return propertyName;
         }
 
         internal static void CreateExtensionDataProperty(
@@ -113,11 +110,19 @@ namespace System.Text.Json
             Debug.Assert(jsonPropertyInfo != null);
 
             object? extensionData = jsonPropertyInfo.GetValueAsObject(obj);
-            if (extensionData == null)
+
+            // For IReadOnlyDictionary, if there's an existing non-null instance, we need to create a new mutable
+            // Dictionary seeded with the existing contents so we can add the deserialized extension data to it.
+            bool isReadOnlyDictionary = jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, object>) ||
+                                        jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, JsonElement>);
+
+            if (extensionData == null || (isReadOnlyDictionary && extensionData != null))
             {
                 // Create the appropriate dictionary type. We already verified the types.
 #if DEBUG
-                Type underlyingIDictionaryType = jsonPropertyInfo.PropertyType.GetCompatibleGenericInterface(typeof(IDictionary<,>))!;
+                Type? underlyingIDictionaryType = jsonPropertyInfo.PropertyType.GetCompatibleGenericInterface(typeof(IDictionary<,>))
+                    ?? jsonPropertyInfo.PropertyType.GetCompatibleGenericInterface(typeof(IReadOnlyDictionary<,>));
+                Debug.Assert(underlyingIDictionaryType is not null);
                 Type[] genericArgs = underlyingIDictionaryType.GetGenericArguments();
 
                 Debug.Assert(underlyingIDictionaryType.IsGenericType);
@@ -138,6 +143,48 @@ namespace System.Text.Json
                     if (jsonPropertyInfo.PropertyType.FullName == JsonTypeInfo.JsonObjectTypeName)
                     {
                         ThrowHelper.ThrowInvalidOperationException_NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty();
+                    }
+                    // For IReadOnlyDictionary<string, object> or IReadOnlyDictionary<string, JsonElement> interface types,
+                    // create a Dictionary<TKey, TValue> instance seeded with any existing contents.
+                    else if (jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, object>))
+                    {
+                        if (extensionData != null)
+                        {
+                            var existing = (IReadOnlyDictionary<string, object>)extensionData;
+                            var newDict = new Dictionary<string, object>();
+                            foreach (KeyValuePair<string, object> kvp in existing)
+                            {
+                                newDict[kvp.Key] = kvp.Value;
+                            }
+                            extensionData = newDict;
+                        }
+                        else
+                        {
+                            extensionData = new Dictionary<string, object>();
+                        }
+                        Debug.Assert(jsonPropertyInfo.Set != null);
+                        jsonPropertyInfo.Set(obj, extensionData);
+                        return;
+                    }
+                    else if (jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, JsonElement>))
+                    {
+                        if (extensionData != null)
+                        {
+                            var existing = (IReadOnlyDictionary<string, JsonElement>)extensionData;
+                            var newDict = new Dictionary<string, JsonElement>();
+                            foreach (KeyValuePair<string, JsonElement> kvp in existing)
+                            {
+                                newDict[kvp.Key] = kvp.Value;
+                            }
+                            extensionData = newDict;
+                        }
+                        else
+                        {
+                            extensionData = new Dictionary<string, JsonElement>();
+                        }
+                        Debug.Assert(jsonPropertyInfo.Set != null);
+                        jsonPropertyInfo.Set(obj, extensionData);
+                        return;
                     }
                     else
                     {

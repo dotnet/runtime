@@ -1,4 +1,20 @@
 <Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+
+  <ItemGroup Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">
+    <PackageReference Condition="'$(SkipInstallersPackageReference)' != 'true'" Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" />
+
+    <!-- Microsoft.Wix is a dotnet tool package, so exclude its assets. -->
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.Wix" Version="$(MicrosoftWixVersion)" ExcludeAssets="all" />
+    <!-- Installers needs the $(PkgMicrosoftWixToolsetUIwixext) property to locate the extension. -->
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.WixToolset.UI.wixext" Version="$(MicrosoftWixToolsetUIWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.WixToolset.Dependency.wixext" Version="$(MicrosoftWixToolsetDependencyWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.WixToolset.Util.wixext" Version="$(MicrosoftWixToolsetUtilWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.WixToolset.Bal.wixext" Version="$(MicrosoftWixToolsetBalWixextVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.WixToolset.Heat" Version="$(MicrosoftWixToolsetHeatVersion)" />
+  </ItemGroup>
+
   <Target Name="AddLongNameDacToPlatformManifest" DependsOnTargets="GetAssemblyVersion" BeforeTargets="GetFilesToPackage">
     <ItemGroup>
       <PlatformManifestFileEntry Include="mscordaccore_$(_hostArch)_$(_longNameTargetArch)_$(FileVersion).dll" />
@@ -8,11 +24,24 @@
 
   <Target Name="ReturnProductVersion" Returns="$(Version)" />
 
-  <ItemGroup Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'">
-    <PackageReference Condition="'$(SkipInstallersPackageReference)' != 'true'" Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" />
-  </ItemGroup>
+  <Target Name="CreatePackageOverrides">
+    <PropertyGroup>
+      <PackageOverridesInputPath>$(MSBuildThisFileDirectory)PackageOverrides.txt</PackageOverridesInputPath>
+      <PackageOverridesOutputPath>$(BaseOutputPath)PackageOverrides.txt</PackageOverridesOutputPath>
+    </PropertyGroup>
 
-  <UsingTask TaskName="GenerateFileFromTemplate" AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
+    <ItemGroup>
+      <CreatePackageOverridesTemplateProperty Include="ProductVersion=$(Version)" />
+    </ItemGroup>
 
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+    <GenerateFileFromTemplate
+      TemplateFile="$(PackageOverridesInputPath)"
+      Properties="@(CreatePackageOverridesTemplateProperty)"
+      OutputPath="$(PackageOverridesOutputPath)" />
+
+    <ItemGroup>
+      <PackageOverridesFile Include="$(PackageOverridesOutputPath)" />
+    </ItemGroup>
+  </Target>
+
 </Project>

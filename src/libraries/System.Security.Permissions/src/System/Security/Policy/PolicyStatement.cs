@@ -5,17 +5,17 @@ namespace System.Security.Policy
 {
     public sealed partial class PolicyStatement : ISecurityEncodable, ISecurityPolicyEncodable
     {
-#if NETCOREAPP
+#if NET
         [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public PolicyStatement(PermissionSet permSet) { }
-#if NETCOREAPP
+#if NET
         [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public PolicyStatement(PermissionSet permSet, PolicyStatementAttribute attributes) { }
         public PolicyStatementAttribute Attributes { get; set; }
         public string AttributeString { get { return null; } }
-#if NETCOREAPP
+#if NET
         [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public PermissionSet PermissionSet { get; set; }

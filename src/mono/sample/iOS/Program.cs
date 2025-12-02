@@ -21,8 +21,8 @@ public static class Program
     private static void SetText(string txt)
     {
         byte[] ascii = ASCIIEncoding.ASCII.GetBytes(txt);
-        
-        unsafe 
+
+        unsafe
         {
             fixed (byte* asciiPtr = ascii)
             {
@@ -37,7 +37,6 @@ public static class Program
     {
         SetText("OnButtonClick! #" + counter++);
     }
-
 #if CI_TEST
     public static async Task<int> Main(string[] args)
 #else
@@ -49,7 +48,7 @@ public static class Program
             delegate* unmanaged<void> unmanagedPtr = &OnButtonClick;
             ios_register_button_click(unmanagedPtr);
         }
-        const string msg = "Hello World!\n.NET 8.0";
+        const string msg = "Hello World!\n.NET Runtime";
         for (int i = 0; i < msg.Length; i++)
         {
             // a kind of an animation
@@ -63,6 +62,6 @@ public static class Program
         return 42;
 #else
         await Task.Delay(-1);
-#endif 
+#endif
     }
 }

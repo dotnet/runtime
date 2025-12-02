@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Text.RegularExpressions.Tests
 {
@@ -264,7 +261,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?<= ", RegexOptions.IgnorePatternWhitespace, (int)RegexParseError.InsufficientClosingParentheses, 5)]
         [InlineData("(?<!)", RegexOptions.None, null)]
         [InlineData("(?<!a)", RegexOptions.None, null)]
-        [InlineData("(?<!", RegexOptions.None, (int)RegexParseError.InsufficientClosingParentheses,4)]
+        [InlineData("(?<!", RegexOptions.None, (int)RegexParseError.InsufficientClosingParentheses, 4)]
         [InlineData("(?<! ", RegexOptions.IgnorePatternWhitespace, (int)RegexParseError.InsufficientClosingParentheses, 5)]
         [InlineData("(?<", RegexOptions.IgnorePatternWhitespace, (int)RegexParseError.InvalidGroupingConstruct, 3)]
         [InlineData("(?<>", RegexOptions.IgnorePatternWhitespace, (int)RegexParseError.CaptureGroupNameInvalid, 3)]
@@ -735,7 +732,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         private static void LogActual(string pattern, RegexOptions options, RegexParseError error, int offset)
-        {   
+        {
             // To conveniently add new interesting patterns to these tests, add them to the code in the format:
             //
             // [InlineData("SOMEREGEX1", RegexOptions.None, null)]

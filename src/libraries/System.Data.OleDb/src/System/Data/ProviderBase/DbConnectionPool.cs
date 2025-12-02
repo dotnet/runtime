@@ -50,10 +50,10 @@ namespace System.Data.ProviderBase
                 Owner = owner;
                 Completion = completion;
             }
-            public long DueTime { get; private set; }
-            public DbConnection Owner { get; private set; }
-            public TaskCompletionSource<DbConnectionInternal> Completion { get; private set; }
-            public DbConnectionOptions? UserOptions { get; private set; }
+            public long DueTime { get; }
+            public DbConnection Owner { get; }
+            public TaskCompletionSource<DbConnectionInternal> Completion { get; }
+            public DbConnectionOptions? UserOptions { get; }
         }
 
         private sealed class TransactedConnectionPool
@@ -856,7 +856,7 @@ namespace System.Data.ProviderBase
                 // Only push the connection into the general pool if we didn't
                 //   already push it onto the transacted pool, put it into stasis,
                 //   or want to destroy it.
-                Debug.Assert(destroyObject == false);
+                Debug.Assert(!destroyObject);
                 PutNewObject(obj);
             }
             else if (destroyObject)

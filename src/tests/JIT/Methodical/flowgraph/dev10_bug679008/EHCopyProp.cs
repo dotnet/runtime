@@ -7,6 +7,7 @@ using Xunit;
 public static class Exploit
 {
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         string s = "my string";

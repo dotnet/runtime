@@ -6,7 +6,7 @@
     <!-- None of the tools is localized. Strip System.CommandLine localized resources from the output. -->
     <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
   </PropertyGroup>
-  
+
   <!-- MSBuild doesn't understand the Checked configuration -->
   <PropertyGroup Condition="'$(Configuration)' == 'Checked'">
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
@@ -17,7 +17,7 @@
     These packages affect the design-time experience in VS, we update them
     at the same cadance as the MicrosoftCodeAnalysisVersion_LatestVS version.
     This property is set eng/Versions.props but we override it because the current
-    version 4.7.0 flags several warnings that need area-owner expertise to resolve.
+    version 4.8.0 flags several warnings that need area-owner expertise to resolve.
     TODO: https://github.com/dotnet/runtime/issues/91028.
   -->
   <PropertyGroup>

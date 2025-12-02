@@ -2,20 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================
-**
-**
-**
 ** Purpose: Exposes features of the Garbage Collector through
 ** the class libraries.  This is a class which cannot be
 ** instantiated.
-**
-**
 ===========================================================*/
 
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Threading;
 
@@ -103,17 +100,14 @@ namespace System
             GC_ALLOC_PINNED_OBJECT_HEAP = 64,
         };
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Array AllocateNewArray(IntPtr typeHandle, int length, GC_ALLOC_FLAGS flags);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int GetGenerationWR(IntPtr handle);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AllocateNewArray")]
+        private static partial void AllocateNewArray(IntPtr typeHandlePtr, int length, GC_ALLOC_FLAGS flags, ObjectHandleOnStack ret);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
         private static partial long GetTotalMemory();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_Collect")]
-        private static partial void _Collect(int generation, int mode);
+        private static partial void _Collect(int generation, int mode, [MarshalAs(UnmanagedType.U1)] bool lowMemoryPressure);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int GetMaxGeneration();
@@ -158,12 +152,16 @@ namespace System
             _RemoveMemoryPressure((ulong)bytesAllocated);
         }
 
-
         // Returns the generation that obj is currently in.
         //
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetGeneration(object obj);
+        public static int GetGeneration(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+            return GetGenerationInternal(obj);
+        }
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern int GetGenerationInternal(object obj);
 
         // Forces a collection of all generations from 0 through Generation.
         //
@@ -177,7 +175,7 @@ namespace System
         public static void Collect()
         {
             // -1 says to GC all generations.
-            _Collect(-1, (int)InternalGCCollectionMode.Blocking);
+            _Collect(-1, (int)InternalGCCollectionMode.Blocking, lowMemoryPressure: false);
         }
 
         public static void Collect(int generation, GCCollectionMode mode)
@@ -193,13 +191,17 @@ namespace System
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting)
         {
+            Collect(generation, mode, blocking, compacting, lowMemoryPressure: false);
+        }
+
+        internal static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting, bool lowMemoryPressure)
+        {
             ArgumentOutOfRangeException.ThrowIfNegative(generation);
 
             if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Aggressive))
             {
                 throw new ArgumentOutOfRangeException(nameof(mode), SR.ArgumentOutOfRange_Enum);
             }
-
 
             int iInternalModes = 0;
 
@@ -225,7 +227,9 @@ namespace System
             }
 
             if (compacting)
+            {
                 iInternalModes |= (int)InternalGCCollectionMode.Compacting;
+            }
 
             if (blocking)
             {
@@ -236,7 +240,7 @@ namespace System
                 iInternalModes |= (int)InternalGCCollectionMode.NonBlocking;
             }
 
-            _Collect(generation, iInternalModes);
+            _Collect(generation, (int)iInternalModes, lowMemoryPressure);
         }
 
         public static int CollectionCount(int generation)
@@ -290,14 +294,48 @@ namespace System
         //
         public static int GetGeneration(WeakReference wo)
         {
-            int result = GetGenerationWR(wo.WeakHandle);
+            // Note - This throws an NRE if given a null weak reference.
+            object? obj = GCHandle.InternalGet(wo.WeakHandle);
             KeepAlive(wo);
-            return result;
+
+            ArgumentNullException.ThrowIfNull(obj, nameof(wo));
+
+            return GetGeneration(obj);
         }
 
         // Returns the maximum GC generation.  Currently assumes only 1 heap.
         //
         public static int MaxGeneration => GetMaxGeneration();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetNextFinalizableObject")]
+        private static unsafe partial void* GetNextFinalizeableObject(ObjectHandleOnStack target);
+
+        private static unsafe uint RunFinalizers()
+        {
+            Thread currentThread = Thread.CurrentThread;
+
+            uint count = 0;
+            while (true)
+            {
+                object? target = null;
+                void* fptr = GetNextFinalizeableObject(ObjectHandleOnStack.Create(ref target));
+                if (fptr == null)
+                    break;
+
+                try
+                {
+                    ((delegate*<object, void>)fptr)(target!);
+                }
+                catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
+                {
+                    // the handler returned "true" means the exception is now "handled" and we should continue.
+                }
+
+                currentThread.ResetFinalizerThread();
+                count++;
+            }
+            return count;
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForPendingFinalizers")]
         private static partial void _WaitForPendingFinalizers();
@@ -311,27 +349,37 @@ namespace System
         // Indicates that the system should not call the Finalize() method on
         // an object that would normally require this call.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _SuppressFinalize(object o);
+        private static extern void SuppressFinalizeInternal(object o);
 
-        public static void SuppressFinalize(object obj)
+        public static unsafe void SuppressFinalize(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            _SuppressFinalize(obj);
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+            if (pMT->HasFinalizer)
+            {
+                SuppressFinalizeInternal(obj);
+            }
         }
 
         // Indicates that the system should call the Finalize() method on an object
         // for which SuppressFinalize has already been called. The other situation
         // where calling ReRegisterForFinalize is useful is inside a finalizer that
         // needs to resurrect itself or an object that it references.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _ReRegisterForFinalize(object o);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_ReRegisterForFinalize")]
+        private static partial void ReRegisterForFinalize(ObjectHandleOnStack o);
 
-        public static void ReRegisterForFinalize(object obj)
+        public static unsafe void ReRegisterForFinalize(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            _ReRegisterForFinalize(obj);
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+            if (pMT->HasFinalizer)
+            {
+                ReRegisterForFinalize(ObjectHandleOnStack.Create(ref obj));
+            }
+
+            // GC.KeepAlive(obj) not required. pMT kept alive via ObjectHandleOnStack
         }
 
         // Returns the total number of bytes currently in use by live objects in
@@ -376,8 +424,13 @@ namespace System
         /// Get a count of the bytes allocated over the lifetime of the process.
         /// </summary>
         /// <param name="precise">If true, gather a precise number, otherwise gather a fairly count. Gathering a precise value triggers at a significant performance penalty.</param>
+        public static long GetTotalAllocatedBytes(bool precise = false) => precise ? GetTotalAllocatedBytesPrecise() : GetTotalAllocatedBytesApproximate();
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern long GetTotalAllocatedBytes(bool precise = false);
+        private static extern long GetTotalAllocatedBytesApproximate();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalAllocatedBytesPrecise")]
+        private static partial long GetTotalAllocatedBytesPrecise();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool _RegisterForFullGCNotification(int maxGenerationPercentage, int largeObjectHeapPercentage);
@@ -385,11 +438,11 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool _CancelFullGCNotification();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int _WaitForFullGCApproach(int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCApproach")]
+        private static partial int _WaitForFullGCApproach(int millisecondsTimeout);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int _WaitForFullGCComplete(int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCComplete")]
+        private static partial int _WaitForFullGCComplete(int millisecondsTimeout);
 
         public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold)
         {
@@ -553,12 +606,14 @@ namespace System
                     return true;
                 }
 
-                // We need to take a snapshot of s_notifications.Count, so that in the case that s_notifications[i].Notification() registers new notifications,
-                // we neither get rid of them nor iterate over them
+                // We need to take a snapshot of s_notifications.Count, so that in the case that
+                // s_notifications[i].Notification() registers new notifications, we neither get rid
+                // of them nor iterate over them.
                 int count = s_notifications.Count;
 
-                // If there is no existing notifications, we won't be iterating over any and we won't be adding any new one. Also, there wasn't any added since
-                // we last invoked this method so it's safe to assume we can reset s_previousMemoryLoad.
+                // If there is no existing notifications, we won't be iterating over any and we won't
+                // be adding any new one. Also, there wasn't any added since we last invoked this
+                // method so it's safe to assume we can reset s_previousMemoryLoad.
                 if (count == 0)
                 {
                     s_previousMemoryLoad = float.MaxValue;
@@ -626,7 +681,7 @@ namespace System
             public bool scheduled;
             public bool abandoned;
 
-            public GCHandle action;
+            public GCHandle<Action> action;
         }
 
         internal enum EnableNoGCRegionCallbackStatus
@@ -662,7 +717,7 @@ namespace System
             try
             {
                 pWorkItem = (NoGCRegionCallbackFinalizerWorkItem*)NativeMemory.AllocZeroed((nuint)sizeof(NoGCRegionCallbackFinalizerWorkItem));
-                pWorkItem->action = GCHandle.Alloc(callback);
+                pWorkItem->action = new GCHandle<Action>(callback);
                 pWorkItem->callback = &Callback;
 
                 EnableNoGCRegionCallbackStatus status = (EnableNoGCRegionCallbackStatus)_EnableNoGCRegionCallback(pWorkItem, totalSize);
@@ -692,14 +747,13 @@ namespace System
             {
                 Debug.Assert(pWorkItem->scheduled);
                 if (!pWorkItem->abandoned)
-                    ((Action)(pWorkItem->action.Target!))();
+                    pWorkItem->action.Target();
                 Free(pWorkItem);
             }
 
             static void Free(NoGCRegionCallbackFinalizerWorkItem* pWorkItem)
             {
-                if (pWorkItem->action.IsAllocated)
-                    pWorkItem->action.Free();
+                pWorkItem->action.Dispose();
                 NativeMemory.Free(pWorkItem);
             }
         }
@@ -754,22 +808,29 @@ namespace System
                 // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
 #if !DEBUG
                 // small arrays are allocated using `new[]` as that is generally faster.
-#pragma warning disable 8500 // sizeof of managed types
                 if (length < 2048 / sizeof(T))
-#pragma warning restore 8500
                 {
                     return new T[length];
                 }
-
 #endif
             }
 
-            // Runtime overrides GC_ALLOC_ZEROING_OPTIONAL if the type contains references, so we don't need to worry about that.
-            GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
-            if (pinned)
-                flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
+            return AllocateNewArrayWorker(length, pinned);
 
-            return Unsafe.As<T[]>(AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags));
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static T[] AllocateNewArrayWorker(int length, bool pinned)
+            {
+                // Runtime overrides GC_ALLOC_ZEROING_OPTIONAL if the type contains references, so we don't need to worry about that.
+                GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
+                if (pinned)
+                {
+                    flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
+                }
+
+                T[]? result = null;
+                AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags, ObjectHandleOnStack.Create(ref result));
+                return result!;
+            }
         }
 
         /// <summary>
@@ -787,7 +848,9 @@ namespace System
                 flags = GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
             }
 
-            return Unsafe.As<T[]>(AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags));
+            T[]? result = null;
+            AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags, ObjectHandleOnStack.Create(ref result));
+            return result!;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -808,7 +871,7 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void ConfigCallback(void* configurationContext, void* name, void* publicKey, GCConfigurationType type, long data)
+        private static unsafe void ConfigCallback(void* configurationContext, byte* name, byte* publicKey, GCConfigurationType type, long data)
         {
             // If the public key is null, it means that the corresponding configuration isn't publicly available
             // and therefore, we shouldn't add it to the configuration dictionary to return to the user.
@@ -822,9 +885,9 @@ namespace System
 
             ref GCConfigurationContext context = ref Unsafe.As<byte, GCConfigurationContext>(ref *(byte*)configurationContext);
             Debug.Assert(context.Configurations != null);
-            Dictionary<string, object> configurationDictionary = context.Configurations!;
+            Dictionary<string, object> configurationDictionary = context.Configurations;
 
-            string nameAsString = Marshal.PtrToStringUTF8((IntPtr)name)!;
+            string nameAsString = Utf8StringMarshaller.ConvertToManaged(name)!;
             switch (type)
             {
                 case GCConfigurationType.Int64:
@@ -833,7 +896,7 @@ namespace System
 
                 case GCConfigurationType.StringUtf8:
                     {
-                        string? dataAsString = Marshal.PtrToStringUTF8((nint)data);
+                        string? dataAsString = Utf8StringMarshaller.ConvertToManaged((byte*)data);
                         configurationDictionary[nameAsString] = dataAsString ?? string.Empty;
                         break;
                     }
@@ -856,7 +919,7 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-            _EnumerateConfigurationValues(Unsafe.AsPointer(ref context), &ConfigCallback);
+            _EnumerateConfigurationValues(&context, &ConfigCallback);
             return context.Configurations!;
         }
 
@@ -869,7 +932,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnumerateConfigurationValues")]
-        internal static unsafe partial void _EnumerateConfigurationValues(void* configurationDictionary, delegate* unmanaged<void*, void*, void*, GCConfigurationType, long, void> callback);
+        internal static unsafe partial void _EnumerateConfigurationValues(void* configurationDictionary, delegate* unmanaged<void*, byte*, byte*, GCConfigurationType, long, void> callback);
 
         internal enum RefreshMemoryStatus
         {

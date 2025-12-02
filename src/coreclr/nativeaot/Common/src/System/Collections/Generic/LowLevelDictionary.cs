@@ -20,9 +20,6 @@ namespace System.Collections.Generic
     ** behavior.)
     **
     ===========================================================*/
-#if TYPE_LOADER_IMPLEMENTATION
-    [System.Runtime.CompilerServices.ForceDictionaryLookups]
-#endif
     internal class LowLevelDictionary<TKey, TValue> where TKey : IEquatable<TKey>
     {
         private const int DefaultSize = 17;
@@ -49,8 +46,7 @@ namespace System.Collections.Generic
         {
             get
             {
-                if (key == null)
-                    throw new ArgumentNullException(nameof(key));
+                ArgumentNullException.ThrowIfNull(key);
 
                 Entry entry = Find(key);
                 if (entry == null)
@@ -59,8 +55,7 @@ namespace System.Collections.Generic
             }
             set
             {
-                if (key == null)
-                    throw new ArgumentNullException(nameof(key));
+                ArgumentNullException.ThrowIfNull(key);
 
                 _version++;
                 Entry entry = Find(key);
@@ -73,9 +68,9 @@ namespace System.Collections.Generic
 
         public bool TryGetValue(TKey key, out TValue? value)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             value = default(TValue);
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
             Entry entry = Find(key);
             if (entry != null)
             {
@@ -87,8 +82,8 @@ namespace System.Collections.Generic
 
         public void Add(TKey key, TValue value)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
+
             Entry entry = Find(key);
             if (entry != null)
                 throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key));
@@ -105,8 +100,8 @@ namespace System.Collections.Generic
 
         public bool Remove(TKey key)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
+
             int bucket = GetBucket(key);
             Entry? prev = null;
             Entry? entry = _buckets[bucket];
@@ -208,10 +203,6 @@ namespace System.Collections.Generic
             return (h % (numBuckets == 0 ? _buckets.Length : numBuckets));
         }
 
-
-#if TYPE_LOADER_IMPLEMENTATION
-        [System.Runtime.CompilerServices.ForceDictionaryLookups]
-#endif
         private sealed class Entry
         {
             public TKey m_key;
@@ -223,9 +214,6 @@ namespace System.Collections.Generic
         private int _numEntries;
         private int _version;
 
-#if TYPE_LOADER_IMPLEMENTATION
-        [System.Runtime.CompilerServices.ForceDictionaryLookups]
-#endif
         protected sealed class LowLevelDictEnumerator : IEnumerator<KeyValuePair<TKey, TValue>>
         {
             public LowLevelDictEnumerator(LowLevelDictionary<TKey, TValue> dict)

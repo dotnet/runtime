@@ -152,11 +152,15 @@ Function:
 Parameters:
   signal - POSIX signal number
   siginfo - POSIX signal info
+  context - signal context or nullptr
 
   Does not return
 --*/
+#if !defined(HOST_ARM)  // PAL_NORETURN produces broken unwinding information for this method
+                        // making crash dumps impossible to analyze
 PAL_NORETURN
-VOID PROCAbort(int signal = SIGABRT, siginfo_t* siginfo = nullptr);
+#endif
+VOID PROCAbort(int signal = SIGABRT, siginfo_t* siginfo = nullptr, void* context = nullptr);
 
 /*++
 Function:
@@ -179,22 +183,12 @@ Function:
 Parameters:
   signal - POSIX signal number
   siginfo - POSIX signal info or nullptr
+  context - signal context or nullptr
   serialize - allow only one thread to generate core dump
 
 (no return value)
 --*/
-VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize);
-
-/*++
-Function:
-  InitializeFlushProcessWriteBuffers
-
-Abstract
-  This function initializes data structures needed for the FlushProcessWriteBuffers
-Return
-  TRUE if it succeeded, FALSE otherwise
---*/
-BOOL InitializeFlushProcessWriteBuffers();
+VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize);
 
 #ifdef __cplusplus
 }

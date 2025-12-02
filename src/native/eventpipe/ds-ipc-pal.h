@@ -35,6 +35,9 @@ ds_ipc_alloc (
 void
 ds_ipc_free (DiagnosticsIpc *ipc);
 
+void
+ds_ipc_reset (DiagnosticsIpc *ipc);
+
 // Poll
 // Parameters:
 // - IpcPollHandle * poll_handles_data: Array of IpcPollHandles to poll
@@ -111,6 +114,11 @@ ds_ipc_stream_read (
 	uint32_t timeout_ms);
 
 bool
+ds_ipc_stream_read_fd (
+	DiagnosticsIpcStream *ipc_stream,
+	int *data_fd);
+
+bool
 ds_ipc_stream_write (
 	DiagnosticsIpcStream *ipc_stream,
 	const uint8_t *buffer,
@@ -131,6 +139,11 @@ ds_ipc_stream_to_string (
 	DiagnosticsIpcStream *ipc_stream,
 	ep_char8_t *buffer,
 	uint32_t buffer_len);
+
+IpcPollEvents
+ds_ipc_stream_poll (
+	DiagnosticsIpcStream *ipc_stream,
+	uint32_t timeout_ms);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __DIAGNOSTICS_IPC_PAL_H__ */

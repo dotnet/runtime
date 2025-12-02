@@ -8,6 +8,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -18,7 +19,7 @@ namespace System.Security.Cryptography.X509Certificates
             return new AndroidX509Pal();
         }
 
-        private sealed partial class AndroidX509Pal : ManagedX509ExtensionProcessor, IX509Pal
+        private sealed partial class AndroidX509Pal : IX509Pal
         {
             public ECDsa DecodeECDsaPublicKey(ICertificatePal? certificatePal)
             {
@@ -36,7 +37,7 @@ namespace System.Security.Cryptography.X509Certificates
                 return new ECDiffieHellmanImplementation.ECDiffieHellmanAndroid(DecodeECPublicKey(certificatePal));
             }
 
-            public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters,
+            public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[]? encodedParameters,
                 ICertificatePal? certificatePal)
             {
                 switch (oid.Value)
@@ -98,7 +99,7 @@ namespace System.Security.Cryptography.X509Certificates
                     return contentType;
                 }
 
-                if (AndroidPkcs12Reader.IsPkcs12(rawData))
+                if (X509CertificateLoader.IsPkcs12(rawData))
                 {
                     return X509ContentType.Pkcs12;
                 }
@@ -144,34 +145,33 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            private static DSA DecodeDsaPublicKey(byte[] encodedKeyValue, byte[] encodedParameters)
+            private static DSA DecodeDsaPublicKey(byte[] encodedKeyValue, byte[]? encodedParameters)
             {
                 SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
                 {
-                    Algorithm = new AlgorithmIdentifierAsn { Algorithm = Oids.Dsa, Parameters = encodedParameters },
+                    Algorithm = new AlgorithmIdentifierAsn
+                    {
+                        Algorithm = Oids.Dsa,
+                        Parameters = encodedParameters.ToNullableMemory(),
+                    },
                     SubjectPublicKey = encodedKeyValue,
                 };
 
                 AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
                 spki.Encode(writer);
 
-                byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
-
-                int written = writer.Encode(rented);
-
                 DSA dsa = DSA.Create();
                 DSA? toDispose = dsa;
 
                 try
                 {
-                    dsa.ImportSubjectPublicKeyInfo(rented.AsSpan(0, written), out _);
+                    writer.Encode(dsa, static (dsa, encoded) => dsa.ImportSubjectPublicKeyInfo(encoded, out _));
                     toDispose = null;
                     return dsa;
                 }
                 finally
                 {
                     toDispose?.Dispose();
-                    CryptoPool.Return(rented, written);
                 }
             }
         }

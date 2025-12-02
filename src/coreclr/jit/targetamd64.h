@@ -7,10 +7,10 @@
 #endif
 
 // clang-format off
-  // TODO-AMD64-CQ: Fine tune the following xxBlk threshold values:
+  #define CORINFO_ARCH_TARGET      CORINFO_ARCH_X64
 
+  // TODO-AMD64-CQ: Fine tune the following xxBlk threshold values:
   #define CPU_LOAD_STORE_ARCH      0
-  #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
   #define CPOBJ_NONGC_SLOTS_LIMIT  4       // For CpObj code generation, this is the threshold of the number
@@ -29,21 +29,19 @@
   #define FEATURE_STRUCTPROMOTE    1       // JIT Optimization to promote fields of structs into registers
   #define FEATURE_FASTTAILCALL     1       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     1       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
-  #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
   #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (double).
 #ifdef    UNIX_AMD64_ABI
-  #define FEATURE_IMPLICIT_BYREFS       0  // Support for struct parameters passed via pointers to shadow copies
+  #define FEATURE_IMPLICIT_BYREFS       1  // Support for struct parameters passed via pointers to shadow copies
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
   #define FEATURE_MULTIREG_STRUCT_PROMOTE  1  // True when we want to promote fields of a multireg struct into registers
-  #define FEATURE_STRUCT_CLASSIFIER     1  // Uses a classifier function to determine if structs are passed/returned in more than one register
   #define MAX_PASS_MULTIREG_BYTES      32  // Maximum size of a struct that could be passed in more than one register (Max is two SIMD16s)
   #define MAX_RET_MULTIREG_BYTES       32  // Maximum size of a struct that could be returned in more than one register  (Max is two SIMD16s)
   #define MAX_ARG_REG_COUNT             2  // Maximum registers used to pass a single argument in multiple registers.
-  #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
+  #define MAX_RET_REG_COUNT             4  // Maximum registers used to return a value.
 
-  #define MAX_MULTIREG_COUNT            2  // Maximum number of registers defined by a single instruction (including calls).
+  #define MAX_MULTIREG_COUNT            4  // Maximum number of registers defined by a single instruction (including calls).
                                            // This is also the maximum number of registers for a MultiReg node.
 #else // !UNIX_AMD64_ABI
   #define WINDOWS_AMD64_ABI                // Uses the Windows ABI for AMD64
@@ -65,16 +63,16 @@
 
   #define NOGC_WRITE_BARRIERS      0       // We DO-NOT have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
   #define USER_ARGS_COME_LAST      1
-  #define EMIT_TRACK_STACK_DEPTH   1
   #define TARGET_POINTER_SIZE      8       // equal to sizeof(void*) and the managed pointer size in bytes for this target
-  #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
-  #define FEATURE_EH_CALLFINALLY_THUNKS 1  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
 #ifdef    UNIX_AMD64_ABI
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use EBP as a scratch register and must create EBP based frames for most methods
 #else // !UNIX_AMD64_ABI
   #define ETW_EBP_FRAMED           0       // if 1 we cannot use EBP as a scratch register and must create EBP based frames for most methods
 #endif // !UNIX_AMD64_ABI
+
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
+  #define EMIT_TRACK_STACK_DEPTH   1
+  #define EMIT_GENERATE_GCINFO     1       // Track GC ref liveness in codegen and emit and generate GCInfo based on that
 
   #define RBM_LOWFLOAT            (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM3 | RBM_XMM4 | RBM_XMM5 | RBM_XMM6 | RBM_XMM7 | RBM_XMM8 | RBM_XMM9 | RBM_XMM10 | RBM_XMM11 | RBM_XMM12 | RBM_XMM13 | RBM_XMM14 | RBM_XMM15 )
   #define RBM_HIGHFLOAT           (RBM_XMM16 | RBM_XMM17 | RBM_XMM18 | RBM_XMM19 | RBM_XMM20 | RBM_XMM21 | RBM_XMM22 | RBM_XMM23 | RBM_XMM24 | RBM_XMM25 | RBM_XMM26 | RBM_XMM27 | RBM_XMM28 | RBM_XMM29 | RBM_XMM30 | RBM_XMM31)
@@ -104,7 +102,8 @@
   #define LAST_FP_ARGREG        REG_XMM3
 #endif // !UNIX_AMD64_ABI
 
-  #define REGNUM_BITS              6       // number of bits in a REG_*
+  #define HAS_FIXED_REGISTER_SET   1       // Has a fixed register set
+  #define REGNUM_BITS              7       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one register
   #define XMM_REGSIZE_BYTES        16      // XMM register size in bytes
   #define YMM_REGSIZE_BYTES        32      // YMM register size in bytes
@@ -130,7 +129,7 @@
   #define MIN_ARG_AREA_FOR_CALL   0       // Minimum required outgoing argument space for a call.
 
   #define RBM_INT_CALLEE_SAVED    (RBM_EBX|RBM_ETW_FRAMED_EBP|RBM_R12|RBM_R13|RBM_R14|RBM_R15)
-  #define RBM_INT_CALLEE_TRASH    (RBM_EAX|RBM_RDI|RBM_RSI|RBM_EDX|RBM_ECX|RBM_R8|RBM_R9|RBM_R10|RBM_R11)
+  #define RBM_INT_CALLEE_TRASH_INIT (RBM_EAX|RBM_RDI|RBM_RSI|RBM_EDX|RBM_ECX|RBM_R8|RBM_R9|RBM_R10|RBM_R11)
   #define RBM_FLT_CALLEE_SAVED    (0)
 
   /* NOTE: Sync with variable name defined in compiler.h */
@@ -148,7 +147,7 @@
 #define MIN_ARG_AREA_FOR_CALL     (4 * REGSIZE_BYTES)       // Minimum required outgoing argument space for a call.
 
   #define RBM_INT_CALLEE_SAVED    (RBM_EBX|RBM_ESI|RBM_EDI|RBM_ETW_FRAMED_EBP|RBM_R12|RBM_R13|RBM_R14|RBM_R15)
-  #define RBM_INT_CALLEE_TRASH    (RBM_EAX|RBM_ECX|RBM_EDX|RBM_R8|RBM_R9|RBM_R10|RBM_R11)
+  #define RBM_INT_CALLEE_TRASH_INIT (RBM_EAX|RBM_ECX|RBM_EDX|RBM_R8|RBM_R9|RBM_R10|RBM_R11)
   #define RBM_FLT_CALLEE_SAVED    (RBM_XMM6|RBM_XMM7|RBM_XMM8|RBM_XMM9|RBM_XMM10|RBM_XMM11|RBM_XMM12|RBM_XMM13|RBM_XMM14|RBM_XMM15)
 
   /* NOTE: Sync with variable name defined in compiler.h */
@@ -169,10 +168,17 @@
   #define REG_FLT_CALLEE_SAVED_FIRST   REG_XMM6
   #define REG_FLT_CALLEE_SAVED_LAST    REG_XMM15
 
+  #define RBM_LOWINT              RBM_ALLINT_INIT
+  #define RBM_HIGHINT             (RBM_R16|RBM_R17|RBM_R18|RBM_R19|RBM_R20|RBM_R21|RBM_R22|RBM_R23|RBM_R24|RBM_R25|RBM_R26|RBM_R27|RBM_R28|RBM_R29|RBM_R30|RBM_R31)
+
+  #define RBM_ALLINT_INIT         (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH_INIT)
+  #define RBM_ALLINT              get_RBM_ALLINT()
+  #define RBM_INT_CALLEE_TRASH_ALL (RBM_INT_CALLEE_TRASH_INIT | RBM_HIGHINT)
+  #define RBM_ALLINT_ALL          (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH_ALL)
+  #define RBM_INT_CALLEE_TRASH    get_RBM_INT_CALLEE_TRASH()
+
   #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH | RBM_MSK_CALLEE_TRASH)
   #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED | RBM_MSK_CALLEE_SAVED)
-
-  #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
 
   // AMD64 write barrier ABI (see vm\amd64\JitHelpers_Fast.asm, vm\amd64\JitHelpers_Fast.S):
   // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
@@ -206,11 +212,11 @@
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
   #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
 
-  // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_RSI | RBM_RDI | RBM_CALLEE_TRASH_NOGC)
-
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF (RBM_CALLEE_TRASH_NOGC & ~(RBM_RDI | RBM_RSI))
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF (RBM_RAX | RBM_RCX)
+
+  // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
+  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_RSI | RBM_RDI | RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF)
 
   // We have two register classifications
   // * callee trash: aka     volatile or caller saved
@@ -260,7 +266,7 @@
   // when the hardware supports it. There are no additional hidden costs for these.
 
 #ifdef UNIX_AMD64_ABI
-  #define REG_VAR_ORDER_CALLEE_TRASH    REG_EAX,REG_ECX,REG_EDX,REG_EDI,REG_ESI,REG_R8,REG_R9,REG_R10,REG_R11
+  #define REG_VAR_ORDER_CALLEE_TRASH    REG_EAX,REG_ECX,REG_EDX,REG_EDI,REG_ESI,REG_R8,REG_R9,REG_R10,REG_R11,REG_R16,REG_R17,REG_R18,REG_R19,REG_R20,REG_R21,REG_R22,REG_R23,REG_R24,REG_R25,REG_R26,REG_R27,REG_R28,REG_R29,REG_R30,REG_R31
   #define REG_VAR_ORDER_CALLEE_SAVED    REG_EBX,REG_ETW_FRAMED_EBP_LIST REG_R15,REG_R14,REG_R13,REG_R12
 
   #define REG_VAR_ORDER_FLT_CALLEE_TRASH    REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3,REG_XMM4,REG_XMM5,REG_XMM6,REG_XMM7,   \
@@ -274,7 +280,7 @@
                                                 REG_XMM27,REG_XMM28,REG_XMM29,REG_XMM30,REG_XMM31
   #define REG_VAR_ORDER_FLT_EVEX_CALLEE_SAVED   REG_VAR_ORDER_FLT_CALLEE_SAVED
 #else // !UNIX_AMD64_ABI
-  #define REG_VAR_ORDER_CALLEE_TRASH    REG_EAX,REG_ECX,REG_EDX,REG_R8,REG_R10,REG_R9,REG_R11
+  #define REG_VAR_ORDER_CALLEE_TRASH    REG_EAX,REG_ECX,REG_EDX,REG_R8,REG_R10,REG_R9,REG_R11,REG_R16,REG_R17,REG_R18,REG_R19,REG_R20,REG_R21,REG_R22,REG_R23,REG_R24,REG_R25,REG_R26,REG_R27,REG_R28,REG_R29,REG_R30,REG_R31
   #define REG_VAR_ORDER_CALLEE_SAVED    REG_EBX,REG_ESI,REG_EDI,REG_ETW_FRAMED_EBP_LIST REG_R14,REG_R15,REG_R13,REG_R12
 
   #define REG_VAR_ORDER_FLT_CALLEE_TRASH    REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3,REG_XMM4,REG_XMM5
@@ -294,37 +300,41 @@
 
 #ifdef UNIX_AMD64_ABI
   #define CNT_CALLEE_SAVED         (5 + REG_ETW_FRAMED_EBP_COUNT)
-  #define CNT_CALLEE_TRASH         (9)
   #define CNT_CALLEE_ENREG         (CNT_CALLEE_SAVED)
 
-  #define CNT_CALLEE_SAVED_FLOAT   (0)
+  #define CNT_CALLEE_TRASH_INT_INIT   (9)
+  #define CNT_CALLEE_TRASH_HIGHINT    (16)
+
+  #define CNT_CALLEE_SAVED_FLOAT      (0)
+  #define CNT_CALLEE_ENREG_FLOAT      (CNT_CALLEE_SAVED_FLOAT)
+
   #define CNT_CALLEE_TRASH_FLOAT_INIT (16)
-  #define CNT_CALLEE_TRASH_HIGHFLOAT    (16)
-  /* NOTE: Sync with variable name defined in compiler.h */
-  #define REG_CALLEE_SAVED_ORDER   REG_EBX,REG_ETW_FRAMED_EBP_LIST REG_R12,REG_R13,REG_R14,REG_R15
-  #define RBM_CALLEE_SAVED_ORDER   RBM_EBX,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15
+  #define CNT_CALLEE_TRASH_HIGHFLOAT  (16)
 
   // For SysV we have more volatile registers so we do not save any callee saves for EnC.
   #define RBM_ENC_CALLEE_SAVED     0
 #else // !UNIX_AMD64_ABI
   #define CNT_CALLEE_SAVED         (7 + REG_ETW_FRAMED_EBP_COUNT)
-  #define CNT_CALLEE_TRASH         (7)
   #define CNT_CALLEE_ENREG         (CNT_CALLEE_SAVED)
 
+  #define CNT_CALLEE_TRASH_INT_INIT   (7)
+  #define CNT_CALLEE_TRASH_HIGHINT    (16)
+
   #define CNT_CALLEE_SAVED_FLOAT        (10)
+  #define CNT_CALLEE_ENREG_FLOAT        (CNT_CALLEE_SAVED_FLOAT)
+
   #define CNT_CALLEE_TRASH_FLOAT_INIT   (6)
   #define CNT_CALLEE_TRASH_HIGHFLOAT    (16)
-  /* NOTE: Sync with variable name defined in compiler.h */
-  #define REG_CALLEE_SAVED_ORDER   REG_EBX,REG_ESI,REG_EDI,REG_ETW_FRAMED_EBP_LIST REG_R12,REG_R13,REG_R14,REG_R15
-  #define RBM_CALLEE_SAVED_ORDER   RBM_EBX,RBM_ESI,RBM_EDI,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15
 
   // Callee-preserved registers we always save and allow use of for EnC code, since there are quite few volatile registers.
   #define RBM_ENC_CALLEE_SAVED     (RBM_RSI | RBM_RDI)
 #endif // !UNIX_AMD64_ABI
 
   #define CNT_CALLEE_TRASH_FLOAT   get_CNT_CALLEE_TRASH_FLOAT()
+  #define CNT_CALLEE_TRASH         get_CNT_CALLEE_TRASH_INT()
 
   #define CNT_CALLEE_SAVED_MASK      (0)
+  #define CNT_CALLEE_ENREG_MASK      (CNT_CALLEE_SAVED_MASK)
 
   #define CNT_CALLEE_TRASH_MASK_INIT (0)
   #define CNT_CALLEE_TRASH_MASK_EVEX (7)
@@ -342,11 +352,11 @@
 
 // Where is the exception object on entry to the handler block?
 #ifdef UNIX_AMD64_ABI
-  #define REG_EXCEPTION_OBJECT     REG_ESI
-  #define RBM_EXCEPTION_OBJECT     RBM_ESI
+  #define REG_EXCEPTION_OBJECT     REG_EDI
+  #define RBM_EXCEPTION_OBJECT     RBM_EDI
 #else // !UNIX_AMD64_ABI
-  #define REG_EXCEPTION_OBJECT     REG_EDX
-  #define RBM_EXCEPTION_OBJECT     RBM_EDX
+  #define REG_EXCEPTION_OBJECT     REG_ECX
+  #define RBM_EXCEPTION_OBJECT     RBM_ECX
 #endif // !UNIX_AMD64_ABI
 
   #define REG_JUMP_THUNK_PARAM     REG_EAX
@@ -382,19 +392,11 @@
   #define REG_SECRET_STUB_PARAM    REG_R10
   #define RBM_SECRET_STUB_PARAM    RBM_R10
 
-  // Registers used by PInvoke frame setup
-  #define REG_PINVOKE_FRAME        REG_EDI
-  #define RBM_PINVOKE_FRAME        RBM_EDI
-  #define REG_PINVOKE_TCB          REG_EAX
-  #define RBM_PINVOKE_TCB          RBM_EAX
-  #define REG_PINVOKE_SCRATCH      REG_EAX
-  #define RBM_PINVOKE_SCRATCH      RBM_EAX
-
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_EAX
   #define REG_INT_FIRST            REG_EAX
-  #define REG_INT_LAST             REG_R15
-  #define REG_INT_COUNT            (REG_INT_LAST - REG_INT_FIRST + 1)
+  #define REG_INT_LAST             REG_R31
+  #define REG_INT_COUNT            (get_REG_INT_LAST() - REG_INT_FIRST + 1)
   #define REG_NEXT(reg)           ((regNumber)((unsigned)(reg) + 1))
   #define REG_PREV(reg)           ((regNumber)((unsigned)(reg) - 1))
 
@@ -511,12 +513,6 @@
   #define RBM_FLTARG_REGS         (RBM_FLTARG_0|RBM_FLTARG_1|RBM_FLTARG_2|RBM_FLTARG_3)
 #endif // !UNIX_AMD64_ABI
 
-  // The registers trashed by profiler enter/leave/tailcall hook
-  // See vm\amd64\asmhelpers.asm for more details.
-  #define RBM_PROFILER_ENTER_TRASH          RBM_CALLEE_TRASH
-
-  #define RBM_PROFILER_TAILCALL_TRASH       RBM_PROFILER_LEAVE_TRASH
-
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper.
 #ifdef UNIX_AMD64_ABI
   // See vm\amd64\unixasmhelpers.S for more details.
@@ -525,25 +521,32 @@
   // The return registers could be any two from the set { RAX, RDX, XMM0, XMM1 }.
   // STOP_FOR_GC helper preserves all the 4 possible return registers.
   #define RBM_STOP_FOR_GC_TRASH (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
+
+  // The registers trashed by profiler enter/leave/tailcall hook
+  // See vm\amd64\asmhelpers.S for more details.
+  #define RBM_PROFILER_ENTER_TRASH  (RBM_CALLEE_TRASH & ~(RBM_ARG_REGS|RBM_FLTARG_REGS))
   #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
+  #define RBM_PROFILER_TAILCALL_TRASH RBM_PROFILER_LEAVE_TRASH
+
 #else
   // See vm\amd64\asmhelpers.asm for more details.
   #define RBM_STOP_FOR_GC_TRASH (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+
+  #define RBM_PROFILER_ENTER_TRASH  RBM_CALLEE_TRASH
   #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+  #define RBM_PROFILER_TAILCALL_TRASH RBM_PROFILER_LEAVE_TRASH
 #endif
 
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
   #define RBM_INIT_PINVOKE_FRAME_TRASH  RBM_CALLEE_TRASH
 
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~(RBM_R10 | RBM_RCX))
+  #define RBM_VALIDATE_INDIRECT_CALL_TRASH_ALL (RBM_INT_CALLEE_TRASH_ALL & ~(RBM_R10 | RBM_RCX))
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_RCX
   #define REG_DISPATCH_INDIRECT_CALL_ADDR REG_RAX
 
-  // What sort of reloc do we use for [disp32] address mode
-  #define IMAGE_REL_BASED_DISP32   IMAGE_REL_BASED_REL32
-
-  // What sort of reloc to we use for 'moffset' address mode (for 'mov eax, moffset' or 'mov moffset, eax')
-  #define IMAGE_REL_BASED_MOFFSET  IMAGE_REL_BASED_DIR64
+  #define REG_ASYNC_CONTINUATION_RET REG_RCX
+  #define RBM_ASYNC_CONTINUATION_RET RBM_RCX
 
   // Pointer-sized string move instructions
   #define INS_movsp                INS_movsq
@@ -562,5 +565,19 @@
 #else // !UNIX_AMD64_ABI
   #define RBM_STACK_PROBE_HELPER_TRASH RBM_RAX
 #endif // !UNIX_AMD64_ABI
+
+#ifdef UNIX_AMD64_ABI
+  #define SWIFT_SUPPORT
+  #define REG_SWIFT_ERROR REG_R12
+  #define RBM_SWIFT_ERROR RBM_R12
+  #define REG_SWIFT_SELF  REG_R13
+  #define RBM_SWIFT_SELF  RBM_R13
+
+  #define REG_SWIFT_INTRET_ORDER REG_RAX,REG_RDX,REG_RCX,REG_R8
+  #define REG_SWIFT_FLOATRET_ORDER REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3
+  #define REG_SWIFT_ARG_RET_BUFF REG_RAX
+  #define RBM_SWIFT_ARG_RET_BUFF RBM_RAX
+  #define SWIFT_RET_BUFF_ARGNUM  MAX_REG_ARG
+#endif // UNIX_AMD64_ABI
 
 // clang-format on

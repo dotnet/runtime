@@ -4,8 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -26,32 +24,15 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly SymbolicRegexNode<TSet> _anyStar;
         internal readonly SymbolicRegexNode<TSet> _anyStarLazy;
 
-        private SymbolicRegexNode<TSet>? _epsilon;
-        internal SymbolicRegexNode<TSet> Epsilon => _epsilon ??= SymbolicRegexNode<TSet>.CreateEpsilon(this);
-
-        private SymbolicRegexNode<TSet>? _beginningAnchor;
-        internal SymbolicRegexNode<TSet> BeginningAnchor => _beginningAnchor ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.BeginningAnchor);
-
-        private SymbolicRegexNode<TSet>? _endAnchor;
-        internal SymbolicRegexNode<TSet> EndAnchor => _endAnchor ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EndAnchor);
-
-        private SymbolicRegexNode<TSet>? _endAnchorZ;
-        internal SymbolicRegexNode<TSet> EndAnchorZ => _endAnchorZ ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EndAnchorZ);
-
-        private SymbolicRegexNode<TSet>? _endAnchorZReverse;
-        internal SymbolicRegexNode<TSet> EndAnchorZReverse => _endAnchorZReverse ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EndAnchorZReverse);
-
-        private SymbolicRegexNode<TSet>? _bolAnchor;
-        internal SymbolicRegexNode<TSet> BolAnchor => _bolAnchor ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.BOLAnchor);
-
-        private SymbolicRegexNode<TSet>? _eolAnchor;
-        internal SymbolicRegexNode<TSet> EolAnchor => _eolAnchor ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EOLAnchor);
-
-        private SymbolicRegexNode<TSet>? _wbAnchor;
-        internal SymbolicRegexNode<TSet> BoundaryAnchor => _wbAnchor ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.BoundaryAnchor);
-
-        private SymbolicRegexNode<TSet>? _nwbAnchor;
-        internal SymbolicRegexNode<TSet> NonBoundaryAnchor => _nwbAnchor ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.NonBoundaryAnchor);
+        internal SymbolicRegexNode<TSet> Epsilon => field ??= SymbolicRegexNode<TSet>.CreateEpsilon(this);
+        internal SymbolicRegexNode<TSet> BeginningAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.BeginningAnchor);
+        internal SymbolicRegexNode<TSet> EndAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EndAnchor);
+        internal SymbolicRegexNode<TSet> EndAnchorZ => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EndAnchorZ);
+        internal SymbolicRegexNode<TSet> EndAnchorZReverse => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EndAnchorZReverse);
+        internal SymbolicRegexNode<TSet> BolAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.BOLAnchor);
+        internal SymbolicRegexNode<TSet> EolAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.EOLAnchor);
+        internal SymbolicRegexNode<TSet> BoundaryAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.BoundaryAnchor);
+        internal SymbolicRegexNode<TSet> NonBoundaryAnchor => field ??= SymbolicRegexNode<TSet>.CreateAnchor(this, SymbolicRegexNodeKind.NonBoundaryAnchor);
 
         internal TSet _wordLetterForBoundariesSet;
         internal TSet _newLineSet;
@@ -70,29 +51,18 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Used instead of a ValueTuple`7 to avoid rooting that rarely used type that also
         /// includes much more code an interface implementation.
         /// </remarks>
-        internal readonly struct NodeCacheKey : IEquatable<NodeCacheKey>
+        internal readonly struct NodeCacheKey(
+            SymbolicRegexNodeKind kind, SymbolicRegexNode<TSet>? left, SymbolicRegexNode<TSet>? right,
+            int lower, int upper,
+            TSet set, SymbolicRegexInfo info) : IEquatable<NodeCacheKey>
         {
-            public readonly SymbolicRegexNodeKind Kind;
-            public readonly SymbolicRegexNode<TSet>? Left;
-            public readonly SymbolicRegexNode<TSet>? Right;
-            public readonly int Lower;
-            public readonly int Upper;
-            public readonly TSet Set;
-            public readonly SymbolicRegexInfo Info;
-
-            public NodeCacheKey(
-                SymbolicRegexNodeKind kind, SymbolicRegexNode<TSet>? left, SymbolicRegexNode<TSet>? right,
-                int lower, int upper,
-                TSet set, SymbolicRegexInfo info)
-            {
-                Kind = kind;
-                Left = left;
-                Right = right;
-                Lower = lower;
-                Upper = upper;
-                Set = set;
-                Info = info;
-            }
+            public readonly SymbolicRegexNodeKind Kind = kind;
+            public readonly SymbolicRegexNode<TSet>? Left = left;
+            public readonly SymbolicRegexNode<TSet>? Right = right;
+            public readonly int Lower = lower;
+            public readonly int Upper = upper;
+            public readonly TSet Set = set;
+            public readonly SymbolicRegexInfo Info = info;
 
             public override int GetHashCode() =>
                 HashCode.Combine((int)Kind, Left, Right, Lower, Upper, Set, Info);
@@ -154,7 +124,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // initialized to False but updated later to the actual condition of \n only if a line anchor occurs anywhere in the regex
             // this implies that if a regex never uses a line anchor then the character context will never
-            // update the previous character context to mark that the previous caharcter was \n
+            // update the previous character context to mark that the previous character was \n
             _newLineSet = solver.Empty;
             _nothing = SymbolicRegexNode<TSet>.CreateFalse(this);
             _anyChar = SymbolicRegexNode<TSet>.CreateTrue(this);

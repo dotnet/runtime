@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Same(a, c);
             Assert.Same(state, b);
         }
-#elif NETCOREAPP
+#elif NET
 #else
 #error Target framework needs to be updated
 #endif

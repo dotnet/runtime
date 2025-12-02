@@ -76,7 +76,7 @@ namespace System.IO
             {
                 // Call Kernel32.GetMessage directly in CoreLib. It eliminates one level of indirection and it is necessary to
                 // produce correct error messages for CoreCLR Win32 PAL.
-#if NET7_0_OR_GREATER && !SYSTEM_PRIVATE_CORELIB
+#if NET && !SYSTEM_PRIVATE_CORELIB
                 return Marshal.GetPInvokeErrorMessage(errorCode);
 #else
                 return Interop.Kernel32.GetMessage(errorCode);

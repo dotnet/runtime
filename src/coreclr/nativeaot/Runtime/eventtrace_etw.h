@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// This header provides Redhawk-specific ETW code and macros, to allow sharing of common
-// ETW code between Redhawk and desktop CLR.
+// This header provides NativeAOT-specific ETW code and macros, to allow sharing of common
+// ETW code.
 //
 #ifndef EVENTTRACE_ETW_H
 #define EVENTTRACE_ETW_H

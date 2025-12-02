@@ -1,9 +1,5 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
-using System.Linq;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -11,40 +7,30 @@ namespace Microsoft.DotNet.CoreSetup.Test
     {
         public static readonly RepoDirectoriesProvider Default = new RepoDirectoriesProvider();
 
-        // Values from test context can be overridden in constructor
-        public string BuiltDotnet { get; }
-
-        // Paths computed by looking for the repo root
+        // Paths computed by looking for the repo root or helix correlation payload
         public string BaseArtifactsFolder { get; }
         public string HostArtifacts { get; }
         public string HostTestArtifacts { get; }
 
-        // Paths used for building/publishing projects
-        public string TestAssetsFolder { get; }
-        public string NugetPackages { get; }
-        public string DotnetSDK { get; }
-
-        public RepoDirectoriesProvider(
-            string builtDotnet = null)
+        private RepoDirectoriesProvider()
         {
-            string repoRoot = GetRepoRootDirectory();
-            BaseArtifactsFolder = Path.Combine(repoRoot, "artifacts");
-
-            string osPlatformConfig = $"{TestContext.BuildRID}.{TestContext.Configuration}";
-            string artifacts = Path.Combine(BaseArtifactsFolder, "bin", osPlatformConfig);
-            HostArtifacts = Path.Combine(artifacts, "corehost");
-            HostTestArtifacts = Path.Combine(artifacts, "corehost_test");
-
-            TestAssetsFolder = TestContext.GetTestContextVariable("TEST_ASSETS");
-            DotnetSDK = TestContext.GetTestContextVariable("DOTNET_SDK_PATH");
-            if (!Directory.Exists(DotnetSDK))
+            string helixPayload = Environment.GetEnvironmentVariable("HELIX_CORRELATION_PAYLOAD");
+            if (helixPayload != null)
             {
-                throw new InvalidOperationException("ERROR: Test SDK folder not found.");
+                // See src/installer/tests/helixpublish.proj
+                HostArtifacts = Path.Combine(helixPayload, "host_bin");
+                HostTestArtifacts = Path.Combine(helixPayload, "host_test_bin");
             }
+            else
+            {
+                string repoRoot = GetRepoRootDirectory();
+                BaseArtifactsFolder = Path.Combine(repoRoot, "artifacts");
 
-            NugetPackages = TestContext.GetTestContextVariable("NUGET_PACKAGES");
-
-            BuiltDotnet = builtDotnet ?? TestContext.BuiltDotNet.BinPath;
+                string osPlatformConfig = $"{TestContext.BuildRID}.{TestContext.Configuration}";
+                string artifacts = Path.Combine(BaseArtifactsFolder, "bin", osPlatformConfig);
+                HostArtifacts = Path.Combine(artifacts, "corehost");
+                HostTestArtifacts = Path.Combine(artifacts, "corehost_test");
+            }
         }
 
         private static string GetRepoRootDirectory()

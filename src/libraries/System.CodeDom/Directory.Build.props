@@ -2,6 +2,7 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <UnsupportedOSPlatforms>browser;ios;tvos;maccatalyst</UnsupportedOSPlatforms>
+    <UnsupportedOSPlatforms>browser;wasi;ios;tvos;maccatalyst</UnsupportedOSPlatforms>
+    <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
 </Project>

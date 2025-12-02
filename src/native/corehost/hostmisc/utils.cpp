@@ -50,45 +50,40 @@ bool utils::ends_with(const pal::string_t& value, const pal::char_t* suffix, siz
         cmp(value.c_str() + value.size() - suffix_len, suffix) == 0;
 }
 
-bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case)
-{
-    return utils::ends_with(value, suffix.c_str(), suffix.size(), match_case);
-}
-
-bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case)
-{
-    return utils::starts_with(value, prefix.c_str(), prefix.size(), match_case);
-}
-
 void append_path(pal::string_t* path1, const pal::char_t* path2)
 {
-    if (pal::is_path_rooted(path2))
+    if (pal::strlen(path2) == 0)
+        return;
+
+    if (path1->empty())
     {
         path1->assign(path2);
+        return;
     }
-    else
+
+    if (path1->back() != DIR_SEPARATOR && path2[0] != DIR_SEPARATOR)
     {
-        if (!path1->empty() && path1->back() != DIR_SEPARATOR)
-        {
-            path1->push_back(DIR_SEPARATOR);
-        }
-        path1->append(path2);
+        path1->push_back(DIR_SEPARATOR);
     }
+
+    path1->append(path2);
 }
 
 pal::string_t strip_executable_ext(const pal::string_t& filename)
 {
-    pal::string_t exe_suffix = pal::exe_suffix();
-    if (exe_suffix.empty())
-    {
+    const pal::char_t* exe_suffix = pal::exe_suffix();
+    if (exe_suffix == nullptr)
         return filename;
-    }
 
-    if (ends_with(filename, exe_suffix, false))
+    size_t suffix_len = pal::strlen(exe_suffix);
+    if (suffix_len == 0)
+        return filename;
+
+    if (utils::ends_with(filename, exe_suffix, suffix_len, false))
     {
         // We need to strip off the old extension
         pal::string_t result(filename);
-        result.erase(result.size() - exe_suffix.size());
+        result.erase(result.size() - suffix_len);
         return result;
     }
 
@@ -209,7 +204,8 @@ namespace
         _X("riscv64"),
         _X("s390x"),
         _X("x64"),
-        _X("x86")
+        _X("x86"),
+        _X("wasm")
     };
     static_assert((sizeof(s_all_architectures) / sizeof(*s_all_architectures)) == static_cast<size_t>(pal::architecture::__last), "Invalid known architectures count");
 }
@@ -234,6 +230,8 @@ pal::architecture get_current_arch()
     return pal::architecture::s390X;
 #elif defined(TARGET_POWERPC64)
     return pal::architecture::ppc64le;
+#elif defined(TARGET_WASM)
+    return pal::architecture::wasm;
 #else
 #error "Unknown target"
 #endif
@@ -285,7 +283,7 @@ bool multilevel_lookup_enabled()
     return multilevel_lookup;
 }
 
-void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations)
+void get_framework_locations(const pal::string_t& dotnet_dir, const bool disable_multilevel_lookup, std::vector<pal::string_t>* locations)
 {
     bool multilevel_lookup = disable_multilevel_lookup ? false : multilevel_lookup_enabled();
 
@@ -328,7 +326,7 @@ bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv)
     pal::string_t file_path;
     if (pal::getenv(env_key, &file_path))
     {
-        if (pal::realpath(&file_path))
+        if (pal::fullpath(&file_path))
         {
             recv->assign(file_path);
             return true;
@@ -365,23 +363,33 @@ pal::string_t get_dotnet_root_env_var_for_arch(pal::architecture arch)
 
 bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::string_t* recv)
 {
-    *dotnet_root_env_var_name = get_dotnet_root_env_var_for_arch(get_current_arch());
-    if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
+    pal::string_t env_var_name = get_dotnet_root_env_var_for_arch(get_current_arch());
+    if (get_file_path_from_env(env_var_name.c_str(), recv))
+    {
+        *dotnet_root_env_var_name = env_var_name;
         return true;
+    }
 
 #if defined(WIN32)
     if (pal::is_running_in_wow64())
     {
-        *dotnet_root_env_var_name = _X("DOTNET_ROOT(x86)");
-        if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
+        if (get_file_path_from_env(_X("DOTNET_ROOT(x86)"), recv))
+        {
+            *dotnet_root_env_var_name = _X("DOTNET_ROOT(x86)");
             return true;
+        }
     }
 #endif
 
     // If no architecture-specific environment variable was set
     // fallback to the default DOTNET_ROOT.
-    *dotnet_root_env_var_name = DOTNET_ROOT_ENV_VAR;
-    return get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv);
+    if (get_file_path_from_env(DOTNET_ROOT_ENV_VAR, recv))
+    {
+        *dotnet_root_env_var_name = DOTNET_ROOT_ENV_VAR;
+        return true;
+    }
+
+    return false;
 }
 
 /**

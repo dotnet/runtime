@@ -8,6 +8,7 @@ using Xunit;
 public class BoxPatternMatchAndSideEffects
 {
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoMINIFULLAOT))]
     public static int TestEntryPoint()
     {
         if (!Problem(new Struct[0]))

@@ -16,21 +16,21 @@ namespace System.Diagnostics.Tests
             yield return new object[] { new StackFrame(int.MaxValue) };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [MemberData(nameof(StackFrame_TestData))]
         public void HasNativeImage_StackFrame_ReturnsFalse(StackFrame stackFrame)
         {
             Assert.False(stackFrame.HasNativeImage());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [MemberData(nameof(StackFrame_TestData))]
         public void GetNativeIP_StackFrame_ReturnsZero(StackFrame stackFrame)
         {
             Assert.Equal(IntPtr.Zero, stackFrame.GetNativeIP());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [MemberData(nameof(StackFrame_TestData))]
         public void GetNativeImageBase_StackFrame_ReturnsZero(StackFrame stackFrame)
         {
@@ -43,7 +43,7 @@ namespace System.Diagnostics.Tests
             yield return new object[] { new StackFrame(int.MaxValue), false };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsILOffsetsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [MemberData(nameof(HasMethod_TestData))]
         public void HasILOffset_Invoke_ReturnsExpected(StackFrame stackFrame, bool expected)
@@ -59,6 +59,7 @@ namespace System.Diagnostics.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103218", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(HasMethod_TestData))]
         public void HasMethod_Invoke_ReturnsExpected(StackFrame stackFrame, bool expected)
         {
@@ -79,6 +80,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103218", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(HasSource_TestData))]
         public void HasSource_Invoke_ReturnsExpected(StackFrame stackFrame, bool expected)
         {

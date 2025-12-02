@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Numerics;
+
 namespace System.Runtime.Intrinsics
 {
     internal static unsafe class SimdVectorExtensions
@@ -64,7 +66,6 @@ namespace System.Runtime.Intrinsics
             return TVector.GetElement(vector, index);
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="TVector">The type of the vector.</typeparam>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -101,7 +102,6 @@ namespace System.Runtime.Intrinsics
         {
             TVector.StoreAlignedNonTemporal(source, destination);
         }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="TVector">The type of the vector.</typeparam>

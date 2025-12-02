@@ -262,7 +262,7 @@ int32_t AppleCryptoNative_SSLSetALPNProtocol(SSLContextRef sslContext, void* pro
 
         // This is extra consistency check to verify that the ALPN data appeared where we expect them
         // before dereferencing sslContext
-        if (tls != NULL && tls->alpnOwnData.length == length + 1)
+        if (tls != NULL && tls->alpnOwnData.length == (size_t)length + 1)
         {
             tls->alpn_announced = 1;
             tls->alpn_received = 1 ;
@@ -416,177 +416,6 @@ PAL_TlsIo AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint
     return OSStatusToPAL_TlsIo(status);
 }
 
-int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore, int32_t* pOSStatus)
-{
-    if (pOSStatus != NULL)
-        *pOSStatus = noErr;
-
-    if (sslContext == NULL || notBefore == NULL || pOSStatus == NULL)
-        return -1;
-
-    if (cfHostname == NULL)
-        return -2;
-
-    SecPolicyRef sslPolicy = SecPolicyCreateSSL(true, cfHostname);
-
-    if (sslPolicy == NULL)
-        return -3;
-
-    CFMutableArrayRef certs = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
-
-    if (certs == NULL)
-        return -4;
-
-    SecTrustRef existingTrust = NULL;
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    OSStatus osStatus = SSLCopyPeerTrust(sslContext, &existingTrust);
-#pragma clang diagnostic pop
-
-    if (osStatus != noErr)
-    {
-        CFRelease(certs);
-        *pOSStatus = osStatus;
-        return -5;
-    }
-
-    CFMutableArrayRef anchors = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
-
-    if (anchors == NULL)
-    {
-        CFRelease(certs);
-        CFRelease(existingTrust);
-        return -6;
-    }
-
-    CFIndex certificateCount = SecTrustGetCertificateCount(existingTrust);
-
-    for (CFIndex i = 0; i < certificateCount; i++)
-    {
-        SecCertificateRef item = SecTrustGetCertificateAtIndex(existingTrust, i);
-        CFArrayAppendValue(certs, item);
-
-        // Copy the EE cert into the anchors set, this will make the chain part
-        // always return true.
-        if (i == 0)
-        {
-            CFArrayAppendValue(anchors, item);
-        }
-    }
-
-    SecTrustRef trust = NULL;
-    osStatus = SecTrustCreateWithCertificates(certs, sslPolicy, &trust);
-    int32_t ret = INT_MIN;
-
-    if (osStatus == noErr)
-    {
-        osStatus = SecTrustSetAnchorCertificates(trust, anchors);
-    }
-
-    if (osStatus == noErr)
-    {
-        osStatus = SecTrustSetVerifyDate(trust, notBefore);
-    }
-
-    if (osStatus == noErr)
-    {
-        SecTrustResultType trustResult;
-        memset(&trustResult, 0, sizeof(SecTrustResultType));
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        osStatus = SecTrustEvaluate(trust, &trustResult);
-
-        if (trustResult == kSecTrustResultRecoverableTrustFailure && osStatus == noErr && certificateCount > 1)
-        {
-            // If we get recoverable failure, let's try it again with full anchor list.
-            // We already stored just the first certificate into anchors; now we store the rest.
-            for (CFIndex i = 1; i < certificateCount; i++)
-            {
-                CFArrayAppendValue(anchors, SecTrustGetCertificateAtIndex(existingTrust, i));
-            }
-
-            osStatus = SecTrustSetAnchorCertificates(trust, anchors);
-            if (osStatus == noErr)
-            {
-                memset(&trustResult, 0, sizeof(SecTrustResultType));
-                osStatus = SecTrustEvaluate(trust, &trustResult);
-            }
-        }
-#pragma clang diagnostic pop
-
-        if (osStatus == noErr && trustResult != kSecTrustResultUnspecified && trustResult != kSecTrustResultProceed)
-        {
-            // If evaluation succeeded but result is not trusted try to get details.
-            CFDictionaryRef detailsAndStuff = SecTrustCopyResult(trust);
-
-            if (detailsAndStuff != NULL)
-            {
-                CFArrayRef details = CFDictionaryGetValue(detailsAndStuff, CFSTR("TrustResultDetails"));
-
-                if (details != NULL && CFArrayGetCount(details) > 0)
-                {
-                    CFArrayRef statusCodes = CFDictionaryGetValue(CFArrayGetValueAtIndex(details,0), CFSTR("StatusCodes"));
-
-                    if (statusCodes != NULL)
-                    {
-                        OSStatus status = 0;
-                        // look for first failure to keep it simple. Normally, there will be exactly one.
-                        for (int i = 0; i < CFArrayGetCount(statusCodes); i++)
-                        {
-                            CFNumberGetValue(CFArrayGetValueAtIndex(statusCodes, i), kCFNumberSInt32Type, &status);
-                            if (status != noErr)
-                            {
-                                *pOSStatus = status;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                CFRelease(detailsAndStuff);
-            }
-        }
-
-        if (osStatus != noErr)
-        {
-            ret = -7;
-            *pOSStatus = osStatus;
-        }
-        else if (trustResult == kSecTrustResultUnspecified || trustResult == kSecTrustResultProceed)
-        {
-            ret = 1;
-        }
-        else if (trustResult == kSecTrustResultDeny || trustResult == kSecTrustResultRecoverableTrustFailure)
-        {
-            ret = 0;
-        }
-        else
-        {
-            ret = -8;
-        }
-    }
-    else
-    {
-        *pOSStatus = osStatus;
-    }
-
-    if (trust != NULL)
-        CFRelease(trust);
-
-    if (certs != NULL)
-        CFRelease(certs);
-
-    if (anchors != NULL)
-        CFRelease(anchors);
-
-    if (existingTrust != NULL)
-        CFRelease(existingTrust);
-
-    CFRelease(sslPolicy);
-    return ret;
-}
-
 int32_t AppleCryptoNative_SslShutdown(SSLContextRef sslContext)
 {
 #pragma clang diagnostic push
@@ -696,10 +525,14 @@ PALEXPORT int32_t AppleCryptoNative_SslSetCertificateAuthorities(SSLContextRef s
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     // The underlying call handles NULL inputs, so just pass it through
-    return SSLSetCertificateAuthorities(sslContext, certificates, replaceExisting);
+    return SSLSetCertificateAuthorities(sslContext, certificates, replaceExisting > 0 ? 1 : 0);
 #pragma clang diagnostic pop
 
 #else
+    // ignore unused parameters
+    (void)sslContext;
+    (void)certificates;
+    (void)replaceExisting;
     return 0;
 #endif
 }

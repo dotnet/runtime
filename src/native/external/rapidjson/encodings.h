@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -177,10 +177,10 @@ struct UTF8 {
 
     template <typename InputStream, typename OutputStream>
     static bool Validate(InputStream& is, OutputStream& os) {
-#define RAPIDJSON_COPY() os.Put(c = is.Take())
+#define RAPIDJSON_COPY() if (c != '\0') os.Put(c = is.Take())
 #define RAPIDJSON_TRANS(mask) result &= ((GetRange(static_cast<unsigned char>(c)) & mask) != 0)
 #define RAPIDJSON_TAIL() RAPIDJSON_COPY(); RAPIDJSON_TRANS(0x70)
-        Ch c;
+        Ch c = static_cast<Ch>(-1);
         RAPIDJSON_COPY();
         if (!(c & 0x80))
             return true;

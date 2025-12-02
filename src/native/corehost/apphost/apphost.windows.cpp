@@ -19,7 +19,7 @@ namespace
         // Add to buffer for later use.
         g_buffered_errors.append(message).append(_X("\n"));
         // Also write to stderr immediately
-        pal::err_fputs(message);
+        pal::err_print_line(message);
     }
 
     // Determines if the current module (apphost executable) is marked as a Windows GUI application
@@ -28,7 +28,7 @@ namespace
         HMODULE module = ::GetModuleHandleW(nullptr);
         assert(module != nullptr);
 
-        // https://docs.microsoft.com/en-us/windows/win32/debug/pe-format
+        // https://learn.microsoft.com/windows/win32/debug/pe-format
         BYTE *bytes = reinterpret_cast<BYTE *>(module);
         UINT32 pe_header_offset = reinterpret_cast<IMAGE_DOS_HEADER *>(bytes)->e_lfanew;
         UINT16 subsystem = reinterpret_cast<IMAGE_NT_HEADERS *>(bytes + pe_header_offset)->OptionalHeader.Subsystem;

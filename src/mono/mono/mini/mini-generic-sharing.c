@@ -82,6 +82,7 @@ type_check_context_used (MonoType *type, gboolean recursive)
 		return MONO_GENERIC_CONTEXT_USED_CLASS;
 	case MONO_TYPE_MVAR:
 		return MONO_GENERIC_CONTEXT_USED_METHOD;
+	// FIXME: This is inconsistent - for SZARRAY it is checking T[] while for ARRAY it is checking T -kg
 	case MONO_TYPE_SZARRAY:
 		return mono_class_check_context_used (mono_type_get_class_internal (type));
 	case MONO_TYPE_ARRAY:
@@ -93,7 +94,7 @@ type_check_context_used (MonoType *type, gboolean recursive)
 			return 0;
 	case MONO_TYPE_GENERICINST:
 		if (recursive) {
-			MonoGenericClass *gclass = type->data.generic_class;
+			MonoGenericClass *gclass = m_type_data_get_generic_class_unchecked (type);
 
 			g_assert (mono_class_is_gtd (gclass->container_class));
 			return mono_generic_context_check_used (&gclass->context);
@@ -584,12 +585,14 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 
 		if (m_class_get_byval_arg (inflated_class)->type == MONO_TYPE_ARRAY ||
 			m_class_get_byval_arg (inflated_class)->type == MONO_TYPE_SZARRAY) {
+			g_assert (!mono_class_has_failure (inflated_class));
 			inflated_method = mono_method_search_in_array_class (inflated_class,
 				method->name, method->signature);
 		} else {
 			inflated_method = mono_class_inflate_generic_method_checked (method, context, error);
 			g_assert (is_ok (error)); /* FIXME don't swallow the error */
 		}
+		g_assert (inflated_method);
 		mono_class_init_internal (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);
 		return inflated_method;
@@ -648,12 +651,14 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 
 		if (m_class_get_byval_arg (inflated_class)->type == MONO_TYPE_ARRAY ||
 			m_class_get_byval_arg (inflated_class)->type == MONO_TYPE_SZARRAY) {
+			g_assert (!mono_class_has_failure (inflated_class));
 			inflated_method = mono_method_search_in_array_class (inflated_class,
 				method->name, method->signature);
 		} else {
 			inflated_method = mono_class_inflate_generic_method_checked (method, context, error);
 			g_assert (is_ok (error)); /* FIXME don't swallow the error */
 		}
+		g_assert (inflated_method);
 		mono_class_init_internal (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);
 
@@ -1187,8 +1192,41 @@ get_wrapper_shared_vtype (MonoType *t)
 	if (mono_class_has_failure (klass))
 		return NULL;
 
-	if (m_class_get_type_token (klass) && mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), NULL, NULL))
-		return NULL;
+	guint32 packing, packing_size;
+	gboolean has_explicit_size = FALSE;
+	if (m_class_get_type_token (klass) && mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), &packing, &packing_size) && packing == 0) {
+		has_explicit_size = TRUE;
+		switch (packing_size) {
+		case 1:
+			findex = 1;
+			args [0] = m_class_get_byval_arg (mono_get_byte_class ());
+			break;
+		case 2:
+			findex = 1;
+			args [0] = m_class_get_byval_arg (mono_get_int16_class ());
+			break;
+		case 4:
+			findex = 1;
+			args [0] = m_class_get_byval_arg (mono_get_int32_class ());
+			break;
+		case 8:
+			findex = 1;
+			args [0] = m_class_get_byval_arg (mono_get_int64_class ());
+			break;
+		case 16:
+			findex = 2;
+			for (int i = 0; i < findex; ++i)
+				args [i] = m_class_get_byval_arg (mono_get_int64_class ());
+			break;
+		case 32:
+			findex = 4;
+			for (int i = 0; i < findex; ++i)
+				args [i] = m_class_get_byval_arg (mono_get_int64_class ());
+			break;
+		default:
+			return NULL;
+		}
+	}
 
 	gpointer iter = NULL;
 	MonoClassField *field;
@@ -1199,9 +1237,11 @@ get_wrapper_shared_vtype (MonoType *t)
 		if (m_class_is_byreflike (mono_class_from_mono_type_internal (ftype)))
 			/* Cannot inflate generic params with byreflike types */
 			return NULL;
-		args [findex ++] = ftype;
-		if (findex >= 16)
-			break;
+		if (!has_explicit_size) {
+			args [findex ++] = ftype;
+			if (findex >= 16)
+				break;
+		}
 #ifdef TARGET_WASM
 		if (ftype->type == MONO_TYPE_R4 || ftype->type == MONO_TYPE_R8 || MONO_TYPE_ISSTRUCT (ftype))
 			has_fp = TRUE;
@@ -1209,10 +1249,9 @@ get_wrapper_shared_vtype (MonoType *t)
 	}
 
 #ifdef TARGET_WASM
-	if (!has_fp) {
+	if (!has_explicit_size && !has_fp) {
 		guint32 align;
 		int size = mono_class_value_size (klass, &align);
-
 		/* Other platforms might pass small valuetypes or valuetypes with non-int fields differently */
 		if (align == 4 && size <= 4 * 5) {
 			findex = size / align;
@@ -1274,6 +1313,7 @@ get_wrapper_shared_vtype (MonoType *t)
 
 	MonoClass *tuple_inst = mono_class_inflate_generic_class_checked (tuple_class, &ctx, error);
 	mono_error_assert_ok (error);
+	g_assert (tuple_inst);
 
 	//printf ("T: %s\n", mono_class_full_name (tuple_inst));
 
@@ -1281,7 +1321,7 @@ get_wrapper_shared_vtype (MonoType *t)
 }
 
 /*
- * get_wrapper_shared_type:
+ * get_wrapper_shared_type_full:
  *
  *   Return a type which is handled identically wrt to calling conventions as T.
  */
@@ -1373,6 +1413,9 @@ get_wrapper_shared_type_full (MonoType *t, gboolean is_field)
 		}
 		klass = mono_class_inflate_generic_class_checked (mono_class_get_generic_class (klass)->container_class, &ctx, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
+		g_assert (klass);
+
+		mono_class_set_skip_generic_constraints (klass);
 
 		t = m_class_get_byval_arg (klass);
 		MonoType *shared_type = get_wrapper_shared_vtype (t);
@@ -1854,7 +1897,7 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	int retval_var = 0;
 	if (return_native_struct) {
 		retval_var = mono_mb_add_local (mb, int_type);
-		mono_mb_emit_icon (mb, mono_class_native_size (sig->ret->data.klass, NULL));
+		mono_mb_emit_icon (mb, mono_class_native_size (m_type_data_get_klass (sig->ret), NULL));
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_LOCALLOC);
 		mono_mb_emit_stloc (mb, retval_var);
@@ -1923,7 +1966,7 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	if (return_native_struct) {
 		mono_mb_emit_ldloc (mb, retval_var);
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_op (mb, CEE_MONO_LDNATIVEOBJ, sig->ret->data.klass);
+		mono_mb_emit_op (mb, CEE_MONO_LDNATIVEOBJ, m_type_data_get_klass (sig->ret));
 	} else if (sig->ret->type != MONO_TYPE_VOID) {
 		mono_mb_emit_ldloc (mb, retval_var);
 	}
@@ -3364,7 +3407,7 @@ static gboolean
 type_is_sharable (MonoType *type, gboolean allow_type_vars, gboolean allow_partial)
 {
 	if (allow_type_vars && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
-		MonoType *constraint = type->data.generic_param->gshared_constraint;
+		MonoType *constraint = m_type_data_get_generic_param_unchecked (type)->gshared_constraint;
 		if (!constraint)
 			return TRUE;
 		type = constraint;
@@ -3374,11 +3417,11 @@ type_is_sharable (MonoType *type, gboolean allow_type_vars, gboolean allow_parti
 		return TRUE;
 
 	/* Allow non ref arguments if they are primitive types or enums (partial sharing). */
-	if (allow_partial && !m_type_is_byref (type) && (((type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8)) || (type->type == MONO_TYPE_I) || (type->type == MONO_TYPE_U) || (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass))))
+	if (allow_partial && !m_type_is_byref (type) && (((type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8)) || (type->type == MONO_TYPE_I) || (type->type == MONO_TYPE_U) || (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (type)))))
 		return TRUE;
 
 	if (allow_partial && !m_type_is_byref (type) && type->type == MONO_TYPE_GENERICINST && MONO_TYPE_ISSTRUCT (type)) {
-		MonoGenericClass *gclass = type->data.generic_class;
+		MonoGenericClass *gclass = m_type_data_get_generic_class_unchecked (type);
 
 		if (gclass->context.class_inst && !mini_generic_inst_is_sharable (gclass->context.class_inst, allow_type_vars, allow_partial))
 			return FALSE;
@@ -3578,8 +3621,8 @@ is_async_method (MonoMethod *method)
 	/* Do less expensive checks first */
 	sig = mono_method_signature_internal (method);
 	if (attr_class && sig && ((sig->ret->type == MONO_TYPE_VOID) ||
-				(sig->ret->type == MONO_TYPE_CLASS && !strcmp (m_class_get_name (sig->ret->data.generic_class->container_class), "Task")) ||
-				(sig->ret->type == MONO_TYPE_GENERICINST && !strcmp (m_class_get_name (sig->ret->data.generic_class->container_class), "Task`1")))) {
+				(sig->ret->type == MONO_TYPE_CLASS && !strcmp (m_class_get_name (m_type_data_get_klass_unchecked (sig->ret)), "Task")) ||
+				(sig->ret->type == MONO_TYPE_GENERICINST && !strcmp (m_class_get_name (m_type_data_get_generic_class_unchecked (sig->ret)->container_class), "Task`1")))) {
 		//printf ("X: %s\n", mono_method_full_name (method, TRUE));
 		cattr = mono_custom_attrs_from_method_checked (method, error);
 		if (!is_ok (error)) {
@@ -3743,6 +3786,23 @@ mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_v
 	if (mono_opt_experimental_gshared_mrgctx)
 		return method->is_inflated;
 
+	if (method->is_inflated && mono_method_get_context (method)->method_inst)
+		return TRUE;
+
+	return ((method->flags & METHOD_ATTRIBUTE_STATIC) ||
+			m_class_is_valuetype (method->klass) ||
+			mini_method_is_default_method (method)) &&
+		(mono_class_is_ginst (method->klass) || mono_class_is_gtd (method->klass));
+}
+
+/*
+ * mono_method_needs_mrgctx_arg_for_eh:
+ *
+ *   Return TRUE if the mrgctx arg to the gshared method METHOD cannot be eliminated.
+ */
+gboolean
+mono_method_needs_mrgctx_arg_for_eh (MonoMethod *method)
+{
 	if (method->is_inflated && mono_method_get_context (method)->method_inst)
 		return TRUE;
 
@@ -3949,7 +4009,7 @@ mini_get_basic_type_from_generic (MonoType *type)
 	if (!m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type (type))
 		return type;
 	else if (!m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
-		MonoType *constraint = type->data.generic_param->gshared_constraint;
+		MonoType *constraint = m_type_data_get_generic_param_unchecked (type)->gshared_constraint;
 		/* The gparam constraint encodes the type this gparam can represent */
 		if (!constraint) {
 			return mono_get_object_type ();
@@ -4071,7 +4131,7 @@ gboolean
 mini_type_var_is_vt (MonoType *type)
 {
 	if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) {
-		return type->data.generic_param->gshared_constraint && (type->data.generic_param->gshared_constraint->type == MONO_TYPE_VALUETYPE || type->data.generic_param->gshared_constraint->type == MONO_TYPE_GENERICINST);
+		return m_type_data_get_generic_param_unchecked (type)->gshared_constraint && (m_type_data_get_generic_param_unchecked (type)->gshared_constraint->type == MONO_TYPE_VALUETYPE || m_type_data_get_generic_param_unchecked (type)->gshared_constraint->type == MONO_TYPE_GENERICINST);
 	} else {
 		g_assert_not_reached ();
 		return FALSE;
@@ -4155,7 +4215,7 @@ gboolean
 mini_is_gsharedvt_gparam (MonoType *t)
 {
 	/* Matches get_gsharedvt_type () */
-	return (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) && t->data.generic_param->gshared_constraint && t->data.generic_param->gshared_constraint->type == MONO_TYPE_VALUETYPE;
+	return (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) && m_type_data_get_generic_param_unchecked (t)->gshared_constraint && m_type_data_get_generic_param_unchecked (t)->gshared_constraint->type == MONO_TYPE_VALUETYPE;
 }
 
 static char*
@@ -4219,7 +4279,7 @@ MonoType*
 mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 {
 	MonoMemoryManager *mm;
-	MonoGenericParam *par = t->data.generic_param;
+	MonoGenericParam *par = m_type_data_get_generic_param (t);
 	MonoGSharedGenericParam *copy, key;
 	MonoType *res;
 	char *name;
@@ -4262,7 +4322,7 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	copy->param.gshared_constraint = constraint;
 	copy->parent = par;
 	res = mono_metadata_type_dup (NULL, t);
-	res->data.generic_param = (MonoGenericParam*)copy;
+	m_type_data_set_generic_param (res, (MonoGenericParam*)copy);
 
 	mono_mem_manager_lock (mm);
 	/* Duplicates are ok */
@@ -4282,7 +4342,7 @@ get_shared_type (MonoType *t, MonoType *type)
 
 	if (!m_type_is_byref (type) && type->type == MONO_TYPE_GENERICINST && MONO_TYPE_ISSTRUCT (type)) {
 		ERROR_DECL (error);
-		MonoGenericClass *gclass = type->data.generic_class;
+		MonoGenericClass *gclass = m_type_data_get_generic_class_unchecked (type);
 		MonoGenericContext context;
 		MonoClass *k;
 
@@ -4294,6 +4354,7 @@ get_shared_type (MonoType *t, MonoType *type)
 
 		k = mono_class_inflate_generic_class_checked (gclass->container_class, &context, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
+		g_assert (k);
 
 		return mini_get_shared_gparam (t, m_class_get_byval_arg (k));
 	} else if (MONO_TYPE_ISSTRUCT (type)) {
@@ -4303,14 +4364,14 @@ get_shared_type (MonoType *t, MonoType *type)
 	/* Create a type variable with a constraint which encodes which types can match it */
 	ttype = type->type;
 	if (type->type == MONO_TYPE_VALUETYPE) {
-		ttype = mono_class_enum_basetype_internal (type->data.klass)->type;
-	} else if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype(type->data.generic_class->container_class)) {
+		ttype = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type))->type;
+	} else if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype(m_type_data_get_generic_class_unchecked (type)->container_class)) {
 		ttype = mono_class_enum_basetype_internal (mono_class_from_mono_type_internal (type))->type;
 	} else if (MONO_TYPE_IS_REFERENCE (type)) {
 		ttype = MONO_TYPE_OBJECT;
 	} else if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) {
-		if (type->data.generic_param->gshared_constraint)
-			return mini_get_shared_gparam (t, type->data.generic_param->gshared_constraint);
+		if (m_type_data_get_generic_param_unchecked (type)->gshared_constraint)
+			return mini_get_shared_gparam (t, m_type_data_get_generic_param_unchecked (type)->gshared_constraint);
 		ttype = MONO_TYPE_OBJECT;
 	}
 
@@ -4585,10 +4646,10 @@ mini_is_gsharedvt_type (MonoType *t)
 {
 	if (m_type_is_byref (t))
 		return FALSE;
-	if ((t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) && t->data.generic_param->gshared_constraint && t->data.generic_param->gshared_constraint->type == MONO_TYPE_VALUETYPE)
+	if ((t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) && m_type_data_get_generic_param_unchecked (t)->gshared_constraint && m_type_data_get_generic_param_unchecked (t)->gshared_constraint->type == MONO_TYPE_VALUETYPE)
 		return TRUE;
 	else if (t->type == MONO_TYPE_GENERICINST) {
-		MonoGenericClass *gclass = t->data.generic_class;
+		MonoGenericClass *gclass = m_type_data_get_generic_class_unchecked (t);
 		MonoGenericContext *context = &gclass->context;
 		MonoGenericInst *inst;
 
@@ -4642,11 +4703,11 @@ mini_is_gsharedvt_variable_type (MonoType *t)
 	if (!mini_is_gsharedvt_type (t))
 		return FALSE;
 	if (t->type == MONO_TYPE_GENERICINST) {
-		MonoGenericClass *gclass = t->data.generic_class;
+		MonoGenericClass *gclass = m_type_data_get_generic_class_unchecked (t);
 		MonoGenericContext *context = &gclass->context;
 		MonoGenericInst *inst;
 
-		if (m_class_get_byval_arg (t->data.generic_class->container_class)->type != MONO_TYPE_VALUETYPE || m_class_is_enumtype  (t->data.generic_class->container_class))
+		if (m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (t)->container_class)->type != MONO_TYPE_VALUETYPE || m_class_is_enumtype  (m_type_data_get_generic_class_unchecked (t)->container_class))
 			return FALSE;
 
 		inst = context->class_inst;
@@ -4674,7 +4735,7 @@ is_variable_size (MonoType *t)
 		return FALSE;
 
 	if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) {
-		MonoGenericParam *param = t->data.generic_param;
+		MonoGenericParam *param = m_type_data_get_generic_param_unchecked (t);
 
 		if (param->gshared_constraint && param->gshared_constraint->type != MONO_TYPE_VALUETYPE && param->gshared_constraint->type != MONO_TYPE_GENERICINST)
 			return FALSE;
@@ -4682,8 +4743,8 @@ is_variable_size (MonoType *t)
 			return is_variable_size (param->gshared_constraint);
 		return TRUE;
 	}
-	if (t->type == MONO_TYPE_GENERICINST && m_class_get_byval_arg (t->data.generic_class->container_class)->type == MONO_TYPE_VALUETYPE) {
-		MonoGenericClass *gclass = t->data.generic_class;
+	if (t->type == MONO_TYPE_GENERICINST && m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (t)->container_class)->type == MONO_TYPE_VALUETYPE) {
+		MonoGenericClass *gclass = m_type_data_get_generic_class_unchecked (t);
 		MonoGenericContext *context = &gclass->context;
 		MonoGenericInst *inst;
 

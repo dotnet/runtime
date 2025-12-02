@@ -8,6 +8,7 @@ using System.Threading;
 
 namespace System.Text.RegularExpressions
 {
+    [RequiresDynamicCode("Compiling a RegEx requires dynamic code.")]
     internal sealed class RegexLWCGCompiler : RegexCompiler
     {
         /// <summary>
@@ -24,14 +25,13 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         private static readonly bool s_includePatternInName = Environment.GetEnvironmentVariable(IncludePatternInNamesEnvVar) == "1";
 
-        /// <summary>Parameter types for the generated Go and FindFirstChar methods.</summary>
-        private static readonly Type[] s_paramTypes = new Type[] { typeof(RegexRunner), typeof(ReadOnlySpan<char>) };
+        /// <summary>Parameter types for the generated TryFindNextPossibleStartingPosition and TryMatchAtCurrentPosition methods.</summary>
+        private static readonly Type[] s_paramTypes = [typeof(RegexRunner), typeof(ReadOnlySpan<char>)];
 
         /// <summary>Id number to use for the next compiled regex.</summary>
         private static int s_regexCount;
 
         /// <summary>The top-level driver. Initializes everything then calls the Generate* methods.</summary>
-        [RequiresDynamicCode("Compiling a RegEx requires dynamic code.")]
         public RegexRunnerFactory? FactoryInstanceFromCode(string pattern, RegexTree regexTree, RegexOptions options, bool hasTimeout)
         {
             if (!regexTree.Root.SupportsCompilation(out _))
@@ -54,20 +54,19 @@ namespace System.Text.RegularExpressions
                 description = string.Concat("_", pattern.Length > DescriptionLimit ? pattern.AsSpan(0, DescriptionLimit) : pattern);
             }
 
-            DynamicMethod tryfindNextPossibleStartPositionMethod = DefineDynamicMethod($"Regex{regexNum}_TryFindNextPossibleStartingPosition{description}", typeof(bool), typeof(CompiledRegexRunner), s_paramTypes);
+            DynamicMethod tryFindNextPossibleStartPositionMethod = DefineDynamicMethod($"Regex{regexNum}_TryFindNextPossibleStartingPosition{description}", typeof(bool), typeof(CompiledRegexRunner), s_paramTypes);
             EmitTryFindNextPossibleStartingPosition();
 
             DynamicMethod tryMatchAtCurrentPositionMethod = DefineDynamicMethod($"Regex{regexNum}_TryMatchAtCurrentPosition{description}", typeof(bool), typeof(CompiledRegexRunner), s_paramTypes);
             EmitTryMatchAtCurrentPosition();
 
-            DynamicMethod scanMethod = DefineDynamicMethod($"Regex{regexNum}_Scan{description}", null, typeof(CompiledRegexRunner), new[] { typeof(RegexRunner), typeof(ReadOnlySpan<char>) });
-            EmitScan(options, tryfindNextPossibleStartPositionMethod, tryMatchAtCurrentPositionMethod);
+            DynamicMethod scanMethod = DefineDynamicMethod($"Regex{regexNum}_Scan{description}", null, typeof(CompiledRegexRunner), [typeof(RegexRunner), typeof(ReadOnlySpan<char>)]);
+            EmitScan(options, tryFindNextPossibleStartPositionMethod, tryMatchAtCurrentPositionMethod);
 
             return new CompiledRegexRunnerFactory(scanMethod, _searchValues?.ToArray(), regexTree.Culture);
         }
 
         /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>
-        [RequiresDynamicCode("Compiling a RegEx requires dynamic code.")]
         private DynamicMethod DefineDynamicMethod(string methname, Type? returntype, Type hostType, Type[] paramTypes)
         {
             // We're claiming that these are static methods, but really they are instance methods.

@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 
@@ -11,49 +12,48 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 {
     public abstract partial class FrameworkResolutionBase
     {
-        protected const string MicrosoftNETCoreApp = "Microsoft.NETCore.App";
-
         public static class ResolvedFramework
         {
             public const string NotFound = "[not found]";
             public const string FailedToReconcile = "[failed to reconcile]";
         }
 
+        protected Command GetTestCommand(
+            DotNetCli dotnet,
+            TestApp app,
+            TestSettings settings)
+        {
+            if (settings.RuntimeConfigCustomizer != null)
+            {
+                settings.RuntimeConfigCustomizer(RuntimeConfig.Path(app.RuntimeConfigJson)).Save();
+            }
+
+            settings.WithCommandLine(app.AppDll);
+
+            Command command = dotnet.Exec(settings.CommandLine.First(), settings.CommandLine.Skip(1).ToArray());
+
+            if (settings.WorkingDirectory != null)
+            {
+                command = command.WorkingDirectory(settings.WorkingDirectory);
+            }
+
+            return command
+                .EnableTracingAndCaptureOutputs()
+                .Environment(settings.Environment);
+        }
+
         protected CommandResult RunTest(
             DotNetCli dotnet,
             TestApp app,
             TestSettings settings,
-            Action<CommandResult> resultAction = null,
-            bool? multiLevelLookup = false)
+            [CallerMemberName] string caller = "")
         {
             using (DotNetCliExtensions.DotNetCliCustomizer dotnetCustomizer = settings.DotnetCustomizer == null ? null : dotnet.Customize())
             {
                 settings.DotnetCustomizer?.Invoke(dotnetCustomizer);
 
-                if (app is not null)
-                {
-                    if (settings.RuntimeConfigCustomizer != null)
-                    {
-                        settings.RuntimeConfigCustomizer(RuntimeConfig.Path(app.RuntimeConfigJson)).Save();
-                    }
-
-                    settings.WithCommandLine(app.AppDll);
-                }
-
-                Command command = dotnet.Exec(settings.CommandLine.First(), settings.CommandLine.Skip(1).ToArray());
-
-                if (settings.WorkingDirectory != null)
-                {
-                    command = command.WorkingDirectory(settings.WorkingDirectory);
-                }
-
-                CommandResult result = command
-                    .EnableTracingAndCaptureOutputs()
-                    .MultilevelLookup(multiLevelLookup)
-                    .Environment(settings.Environment)
-                    .Execute();
-
-                resultAction?.Invoke(result);
+                CommandResult result = GetTestCommand(dotnet, app, settings)
+                    .Execute(caller);
 
                 return result;
             }
@@ -61,7 +61,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
         protected CommandResult RunSelfContainedTest(
             TestApp app,
-            TestSettings settings)
+            TestSettings settings,
+            [CallerMemberName] string caller = "")
         {
             if (settings.RuntimeConfigCustomizer != null)
             {
@@ -80,35 +81,29 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             CommandResult result = command
                 .EnableTracingAndCaptureOutputs()
                 .Environment(settings.Environment)
-                .Execute();
+                .Execute(caller);
 
             return result;
         }
 
         public class SharedTestStateBase : IDisposable
         {
-            private readonly string _builtDotnet;
-            private readonly string _baseDir;
             private readonly TestArtifact _baseDirArtifact;
 
             public SharedTestStateBase()
             {
-                _builtDotnet = Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish");
-
-                string baseDir = Path.Combine(TestArtifact.TestArtifactsPath, "frameworkResolution");
-                _baseDir = SharedFramework.CalculateUniqueTestDirectory(baseDir);
-                _baseDirArtifact = new TestArtifact(_baseDir);
+                _baseDirArtifact = TestArtifact.Create("frameworkResolution");
             }
 
             public DotNetBuilder DotNet(string name)
             {
-                return new DotNetBuilder(_baseDir, _builtDotnet, name);
+                return new DotNetBuilder(_baseDirArtifact.Location, TestContext.BuiltDotNet.BinPath, name);
             }
 
             public TestApp CreateFrameworkReferenceApp()
             {
                 // Prepare the app mock - we're not going to run anything really, so we just need the basic files
-                string testAppDir = Path.Combine(_baseDir, "FrameworkReferenceApp");
+                string testAppDir = Path.Combine(_baseDirArtifact.Location, "FrameworkReferenceApp");
                 Directory.CreateDirectory(testAppDir);
 
                 // ./FrameworkReferenceApp.dll
@@ -122,7 +117,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
             public TestApp CreateSelfContainedAppWithMockHostPolicy()
             {
-                string testAppDir = Path.Combine(_baseDir, "SelfContainedApp");
+                string testAppDir = Path.Combine(_baseDirArtifact.Location, "SelfContainedApp");
                 TestApp testApp = new TestApp(testAppDir);
                 testApp.PopulateSelfContained(TestApp.MockedComponent.HostPolicy);
 

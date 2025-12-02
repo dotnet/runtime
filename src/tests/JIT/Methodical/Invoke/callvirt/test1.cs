@@ -33,6 +33,7 @@ namespace Test_test1_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             Base bas = new Derived();

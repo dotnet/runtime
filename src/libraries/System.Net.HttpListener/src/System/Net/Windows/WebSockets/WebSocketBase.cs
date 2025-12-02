@@ -50,7 +50,7 @@ namespace System.Net.WebSockets
         private volatile WebSocketOperation.CloseOutputOperation? _closeOutputOperation;
         private Nullable<WebSocketCloseStatus> _closeStatus;
         private string? _closeStatusDescription;
-        private int _receiveState;
+        private ReceiveState _receiveState;
         private Exception? _pendingException;
 
         protected WebSocketBase(Stream innerStream,
@@ -1199,9 +1199,9 @@ namespace System.Net.WebSockets
             ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
 
-        private void UpdateReceiveState(int newReceiveState, int expectedReceiveState)
+        private void UpdateReceiveState(ReceiveState newReceiveState, ReceiveState expectedReceiveState)
         {
-            int receiveState;
+            ReceiveState receiveState;
             if ((receiveState = Interlocked.Exchange(ref _receiveState, newReceiveState)) != expectedReceiveState)
             {
                 Debug.Fail($"'_receiveState' had an invalid value '{receiveState}'. The expected value was '{expectedReceiveState}'.");
@@ -1588,7 +1588,7 @@ namespace System.Net.WebSockets
 
             public sealed class ReceiveOperation : WebSocketOperation
             {
-                private int _receiveState;
+                private ReceiveState _receiveState;
                 private bool _pongReceived;
                 private bool _receiveCompleted;
 
@@ -1614,8 +1614,7 @@ namespace System.Net.WebSockets
                     _receiveCompleted = false;
                     _webSocket.ThrowIfDisposed();
 
-                    int originalReceiveState = Interlocked.CompareExchange(ref _webSocket._receiveState,
-                        ReceiveState.Application, ReceiveState.Idle);
+                    ReceiveState originalReceiveState = Interlocked.CompareExchange(ref _webSocket._receiveState, ReceiveState.Application, ReceiveState.Idle);
 
                     switch (originalReceiveState)
                     {
@@ -1709,7 +1708,7 @@ namespace System.Net.WebSockets
                     {
                         ArraySegment<byte> payload;
                         WebSocketMessageType messageType = GetMessageType(bufferType);
-                        int newReceiveState = ReceiveState.Idle;
+                        ReceiveState newReceiveState = ReceiveState.Idle;
 
                         if (bufferType == WebSocketProtocolComponent.BufferType.Close)
                         {
@@ -2156,12 +2155,12 @@ namespace System.Net.WebSockets
             Task CloseNetworkConnectionAsync(CancellationToken cancellationToken);
         }
 
-        private static class ReceiveState
+        private enum ReceiveState
         {
-            internal const int SendOperation = -1;
-            internal const int Idle = 0;
-            internal const int Application = 1;
-            internal const int PayloadAvailable = 2;
+            SendOperation = -1,
+            Idle = 0,
+            Application = 1,
+            PayloadAvailable = 2,
         }
     }
 }

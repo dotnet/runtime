@@ -32,6 +32,7 @@ msbuild.log
 msbuild.err
 msbuild.wrn
 *.binlog
+*.pp
 .deps/
 .dirstamp
 .libs/
@@ -187,10 +188,8 @@ node_modules/
 *.metaproj
 *.metaproj.tmp
 bin.localpkg/
-src/mono/wasm/runtime/dotnet.d.ts.sha256
-src/mono/wasm/runtime/dotnet-legacy.d.ts.sha256
-
-src/mono/sample/wasm/browser-nextjs/public/
+.mono/
+*.d.ts.sha256
 
 # RIA/Silverlight projects
 Generated_Code/
@@ -365,3 +364,8 @@ src/coreclr/System.Private.CoreLib/common
 .dotnet-daily/
 run-stress-*
 test:.cs
+
+# XUnit
+*.tempLog.xml
+*.testResults.xml
+*.testStats.csv

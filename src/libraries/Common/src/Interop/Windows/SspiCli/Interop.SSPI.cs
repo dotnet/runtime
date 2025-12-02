@@ -248,7 +248,7 @@ internal static partial class Interop
                 SCH_CRED_IGNORE_REVOCATION_OFFLINE = 0x1000,
                 SCH_CRED_CACHE_ONLY_URL_RETRIEVAL_ON_CREATE = 0x2000,
                 SCH_SEND_ROOT_CERT = 0x40000,
-                SCH_SEND_AUX_RECORD =   0x00200000,
+                SCH_SEND_AUX_RECORD = 0x00200000,
                 SCH_USE_STRONG_CRYPTO = 0x00400000,
                 SCH_USE_PRESHAREDKEY_ONLY = 0x800000,
                 SCH_ALLOW_NULL_ENCRYPTION = 0x02000000,
@@ -259,7 +259,7 @@ internal static partial class Interop
         internal unsafe struct TLS_PARAMETERS
         {
             public int cAlpnIds;                        // Valid for server applications only. Must be zero otherwise. Number of ALPN IDs in rgstrAlpnIds; set to 0 if applies to all.
-            public IntPtr rgstrAlpnIds;                 // Valid for server applications only. Must be NULL otherwise. Array of ALPN IDs that the following settings apply to; set to NULL if applies to all.
+            public UNICODE_STRING* rgstrAlpnIds;                 // Valid for server applications only. Must be NULL otherwise. Array of ALPN IDs that the following settings apply to; set to NULL if applies to all.
             public uint grbitDisabledProtocols;         // List protocols you DO NOT want negotiated.
             public int cDisabledCrypto;                 // Number of CRYPTO_SETTINGS structures; set to 0 if there are none.
             public CRYPTO_SETTINGS* pDisabledCrypto;    // Array of CRYPTO_SETTINGS structures; set to NULL if there are none;
@@ -278,7 +278,7 @@ internal static partial class Interop
         internal unsafe struct CRYPTO_SETTINGS
         {
             public TlsAlgorithmUsage eAlgorithmUsage;   // How this algorithm is being used.
-            public UNICODE_STRING* strCngAlgId;         // CNG algorithm identifier.
+            public UNICODE_STRING strCngAlgId;          // CNG algorithm identifier.
             public int cChainingModes;                  // Set to 0 if CNG algorithm does not have a chaining mode.
             public UNICODE_STRING* rgstrChainingModes;  // Set to NULL if CNG algorithm does not have a chaining mode.
             public int dwMinBitLength;                  // Minimum bit length for the specified CNG algorithm. Set to 0 if not defined or CNG algorithm implies bit length.
@@ -374,7 +374,7 @@ internal static partial class Interop
             ref CredHandle contextHandle,
             in SecBufferDesc input,
             uint sequenceNumber,
-            uint *qualityOfProtection);
+            uint* qualityOfProtection);
 
         [LibraryImport(Interop.Libraries.SspiCli, SetLastError = true)]
         internal static partial int QuerySecurityContextToken(

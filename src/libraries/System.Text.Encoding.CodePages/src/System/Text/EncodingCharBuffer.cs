@@ -53,7 +53,7 @@ namespace System.Text
                 {
                     // Throw maybe
                     _bytes -= numBytes;                                        // Didn't encode these bytes
-                    _enc.ThrowCharsOverflow(_decoder, _bytes <= _byteStart);    // Throw?
+                    _enc.ThrowCharsOverflow(_decoder, _chars == _charStart);    // Throw?
                     return false;                                           // No throw, but no store either
                 }
 
@@ -63,20 +63,25 @@ namespace System.Text
             return true;
         }
 
-        internal unsafe bool AddChar(char ch)
+        internal bool AddChar(char ch)
         {
             return AddChar(ch, 1);
         }
 
-
         internal unsafe bool AddChar(char ch1, char ch2, int numBytes)
         {
+            if (_chars is null)
+            {
+                _charCountResult += 2;
+                return true;
+            }
+
             // Need room for 2 chars
-            if (_chars >= _charEnd - 1)
+            if (_charEnd - _chars < 2)
             {
                 // Throw maybe
                 _bytes -= numBytes;                                        // Didn't encode these bytes
-                _enc.ThrowCharsOverflow(_decoder, _bytes <= _byteStart);    // Throw?
+                _enc.ThrowCharsOverflow(_decoder, _chars == _charStart);    // Throw?
                 return false;                                           // No throw, but no store either
             }
             return AddChar(ch1, numBytes) && AddChar(ch2, numBytes);
@@ -119,7 +124,7 @@ namespace System.Text
             }
         }
 
-        internal unsafe bool Fallback(byte fallbackByte)
+        internal bool Fallback(byte fallbackByte)
         {
             // Build our buffer
             byte[] byteBuffer = new byte[] { fallbackByte };
@@ -128,7 +133,7 @@ namespace System.Text
             return Fallback(byteBuffer);
         }
 
-        internal unsafe bool Fallback(byte byte1, byte byte2)
+        internal bool Fallback(byte byte1, byte byte2)
         {
             // Build our buffer
             byte[] byteBuffer = new byte[] { byte1, byte2 };
@@ -137,7 +142,7 @@ namespace System.Text
             return Fallback(byteBuffer);
         }
 
-        internal unsafe bool Fallback(byte byte1, byte byte2, byte byte3, byte byte4)
+        internal bool Fallback(byte byte1, byte byte2, byte byte3, byte byte4)
         {
             // Build our buffer
             byte[] byteBuffer = new byte[] { byte1, byte2, byte3, byte4 };
@@ -152,7 +157,7 @@ namespace System.Text
             if (_chars != null)
             {
                 char* pTemp = _chars;
-                if (_fallbackBufferHelper.InternalFallback(byteBuffer, _bytes, ref _chars) == false)
+                if (!_fallbackBufferHelper.InternalFallback(byteBuffer, _bytes, ref _chars))
                 {
                     // Throw maybe
                     _bytes -= byteBuffer.Length;                             // Didn't use how many ever bytes we're falling back
@@ -170,7 +175,7 @@ namespace System.Text
             return true;
         }
 
-        internal unsafe int Count
+        internal int Count
         {
             get
             {

@@ -63,6 +63,34 @@ namespace System.Security.Cryptography.Tests
             Stream source,
             CancellationToken cancellationToken) => HMACSHA3_256.HashDataAsync(key, source, cancellationToken);
 
+        protected override bool Verify(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, ReadOnlySpan<byte> hash) =>
+            HMACSHA3_256.Verify(key, source, hash);
+
+        protected override bool Verify(byte[] key, byte[] source, byte[] hash) => HMACSHA3_256.Verify(key, source, hash);
+
+        protected override bool Verify(ReadOnlySpan<byte> key, Stream source, ReadOnlySpan<byte> hash) =>
+            HMACSHA3_256.Verify(key, source, hash);
+
+        protected override bool Verify(byte[] key, Stream source, byte[] hash) => HMACSHA3_256.Verify(key, source, hash);
+
+        protected override ValueTask<bool> VerifyAsync(
+            ReadOnlyMemory<byte> key,
+            Stream source,
+            ReadOnlyMemory<byte> hash,
+            CancellationToken cancellationToken)
+        {
+            return HMACSHA3_256.VerifyAsync(key, source, hash, cancellationToken);
+        }
+
+        protected override ValueTask<bool> VerifyAsync(
+            byte[] key,
+            Stream source,
+            byte[] hash,
+            CancellationToken cancellationToken)
+        {
+            return HMACSHA3_256.VerifyAsync(key, source, hash, cancellationToken);
+        }
+
         private static readonly byte[][] s_testKeys = new byte[][]
         {
             // From: https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/HMAC_SHA3-256.pdf
@@ -150,7 +178,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(nameof(IsSupported))]
         public void HmacSha3_256_Stream_MultipleOf4096()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl sha3-256 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             VerifyRepeating(
                 input: "0102030405060708",
@@ -162,7 +190,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(nameof(IsSupported))]
         public void HmacSha3_256_Stream_NotMultipleOf4096()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl sha3-256 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             VerifyRepeating(
                 input: "0102030405060708",
@@ -174,7 +202,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(nameof(IsSupported))]
         public void HmacSha3_256_Stream_Empty()
         {
-            // Verfied with:
+            // Verified with:
             // echo -n "" | openssl sha3-256 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             VerifyRepeating(
                 input: "",
@@ -186,7 +214,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(nameof(IsSupported))]
         public async Task HmacSha3_256_Stream_MultipleOf4096_Async()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl sha3-256 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             await VerifyRepeatingAsync(
                 input: "0102030405060708",
@@ -198,7 +226,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(nameof(IsSupported))]
         public async Task HmacSha3_256_Stream_NotMultipleOf4096_Async()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl sha3-256 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             await VerifyRepeatingAsync(
                 input: "0102030405060708",
@@ -210,7 +238,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(nameof(IsSupported))]
         public async Task HmacSha3_256_Stream_Empty_Async()
         {
-            // Verfied with:
+            // Verified with:
             // echo -n "" | openssl sha3-256 -hex -mac HMAC -macopt hexkey:000102030405060708090A0B0C0D0E0F
             await VerifyRepeatingAsync(
                 input: "",

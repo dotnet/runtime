@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for CLRTestEnvironmentVariable -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <DebugType />
     <Optimize>True</Optimize>
    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -183,6 +183,9 @@
   </data>
   <data name="DiscardOnlyVoid" xml:space="preserve">
     <value>'JSType.Discard' could be only used with void return argument.</value>
+  </data>
+  <data name="DiscardNoWaitOnlyVoid" xml:space="preserve">
+    <value>'JSType.DiscardNoWait' could be only used with void returning method.</value>
   </data>
   <data name="FuncArgumentNotSupported" xml:space="preserve">
     <value>Type {0} is not supported as argument of marshaled function.</value>

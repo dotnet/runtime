@@ -46,6 +46,8 @@ namespace System.IO.Pipes
             if (inheritability == HandleInheritability.Inheritable &&
                 Interop.Sys.Fcntl.SetFD(clientHandle, 0) == -1)
             {
+                serverHandle.Dispose();
+                clientHandle.Dispose();
                 throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
             }
 

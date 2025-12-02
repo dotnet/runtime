@@ -6,26 +6,20 @@
 
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
   <!--<Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true'"/>-->
+  <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
   <Import Project="$(MSBuildThisFileDirectory)WasiApp.targets" />
+
+  <!-- Translate runtime-local $(RuntimeBuildWasiSdkPath) to $(WASI_SDK_PATH) that "WasiApp.targets" understands. -->
+  <Target Name="SetWasiSdkPathForRuntimeBuild"
+          DependsOnTargets="AcquireWasiSdk"
+          BeforeTargets="_SetupWasiSdk">
+    <PropertyGroup>
+      <WASI_SDK_PATH>$(RuntimeBuildWasiSdkPath)</WASI_SDK_PATH>
+    </PropertyGroup>
+  </Target>
 
   <!-- FIXME: use proper dependency -->
   <Target Name="SetupAppHostConfig" BeforeTargets="_WasmGenerateAppBundle">
-    <PropertyGroup>
-      <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
-    </PropertyGroup>
-    <ItemGroup>
-        <HostConfig Include="v8" Host="v8" js-path="$(_WasmMainJSFileName)" />
-        <HostConfig Include="node" Host="nodejs" js-path="$(_WasmMainJSFileName)" />
-        <HostConfig Include="browser" Host="browser" html-path="index.html" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="UpdateRuntimePackToAddNewRID" BeforeTargets="ProcessFrameworkReferences">
-    <Message Text="KnownRuntimePack: %(KnownRuntimePack.Identity), %(KnownRuntimePack.RuntimePackLabels), %(KnownRuntimePack.RuntimePackRuntimeIdentifiers)" />
-    <ItemGroup>
-      <KnownRuntimePack Condition="%(RuntimePackLabels) == 'Mono'" RuntimePackRuntimeIdentifiers="%(RuntimePackRuntimeIdentifiers);wasi-wasm" />
-    </ItemGroup>
-    <Message Text="KnownRuntimePack: %(KnownRuntimePack.Identity), %(KnownRuntimePack.RuntimePackLabels), %(KnownRuntimePack.RuntimePackRuntimeIdentifiers)" />
   </Target>
 
   <!-- Use local runtime pack -->

@@ -183,7 +183,7 @@ namespace System.Xml.Xsl
 
         /// <summary>
         /// Returns true is right is subset of left.
-        /// /// </summary>
+        /// </summary>
         public static bool operator >=(XmlQueryCardinality left, XmlQueryCardinality right)
         {
             return (right._value & ~left._value) == 0;

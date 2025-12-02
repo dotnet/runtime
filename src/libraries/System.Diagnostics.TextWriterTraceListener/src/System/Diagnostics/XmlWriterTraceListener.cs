@@ -16,7 +16,7 @@ namespace System.Diagnostics
     {
         private const string FixedHeader = "<E2ETraceEvent xmlns=\"http://schemas.microsoft.com/2004/06/E2ETraceEvent\"><System xmlns=\"http://schemas.microsoft.com/2004/06/windows/eventlog/system\">";
 
-        private static volatile string? s_processName;
+        private static string? s_processName;
         private readonly string _machineName = Environment.MachineName;
         private StringBuilder? _strBldr;
         private XmlTextWriter? _xmlBlobWriter;
@@ -250,15 +250,17 @@ namespace System.Diagnostics
             string? processName = s_processName;
             if (processName is null)
             {
-                if (OperatingSystem.IsBrowser()) // Process isn't supported on Browser
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi() ) // Process isn't supported on Browser
                 {
-                    s_processName = processName = string.Empty;
+                    processName = string.Empty;
                 }
                 else
                 {
                     using Process process = Process.GetCurrentProcess();
-                    s_processName = processName = process.ProcessName;
+                    processName = process.ProcessName;
                 }
+
+                s_processName = processName;
             }
 
             InternalWrite("\" />");

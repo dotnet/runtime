@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 
+using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -14,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
         int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-            => sb.Append(nameMangler.CompilationUnitPrefix).Append("__FrozenSegmentStart");
+            => sb.Append(nameMangler.CompilationUnitPrefix).Append("__FrozenSegmentStart"u8);
 
         public int Offset => 0;
 
@@ -30,9 +32,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, Array.Empty<ISymbolDefinitionNode>());
 
             var builder = new ObjectDataBuilder(factory, relocsOnly);
+            builder.RequireInitialAlignment(factory.Target.PointerSize);
             builder.AddSymbol(this);
             foreach (FrozenObjectNode node in factory.MetadataManager.GetFrozenObjects())
             {
+                Debug.Assert(node is not FrozenObjectNode frozenObj || !frozenObj.ObjectType.RequiresAlign8());
                 AlignNextObject(ref builder, factory);
 
                 node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);
@@ -40,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
                 int initialOffset = builder.CountBytes;
                 node.EncodeData(ref builder, factory, relocsOnly);
                 int objectSize = builder.CountBytes - initialOffset;
-                int minimumObjectSize = EETypeNode.GetMinimumObjectSize(factory.TypeSystemContext);
+                int minimumObjectSize = EETypeBuilderHelpers.GetMinimumObjectSize(factory.TypeSystemContext);
                 if (objectSize < minimumObjectSize)
                 {
                     builder.EmitZeros(minimumObjectSize - objectSize);

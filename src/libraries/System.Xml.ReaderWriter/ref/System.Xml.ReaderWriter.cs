@@ -119,6 +119,7 @@ namespace System.Xml
         public override System.Xml.XmlDocument OwnerDocument { get { throw null; } }
         public virtual System.Xml.XmlElement? OwnerElement { get { throw null; } }
         public override System.Xml.XmlNode? ParentNode { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public override string Prefix { get { throw null; } set { } }
         public override System.Xml.Schema.IXmlSchemaInfo SchemaInfo { get { throw null; } }
         public virtual bool Specified { get { throw null; } }
@@ -411,6 +412,7 @@ namespace System.Xml
         public override System.Xml.XmlNodeType NodeType { get { throw null; } }
         public override System.Xml.XmlDocument OwnerDocument { get { throw null; } }
         public override System.Xml.XmlNode? ParentNode { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public override string Prefix { get { throw null; } set { } }
         public override System.Xml.Schema.IXmlSchemaInfo SchemaInfo { get { throw null; } }
         public override System.Xml.XmlNode CloneNode(bool deep) { throw null; }
@@ -561,6 +563,7 @@ namespace System.Xml
         public virtual string OuterXml { get { throw null; } }
         public virtual System.Xml.XmlDocument? OwnerDocument { get { throw null; } }
         public virtual System.Xml.XmlNode? ParentNode { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public virtual string Prefix { get { throw null; } set { } }
         public virtual System.Xml.XmlNode? PreviousSibling { get { throw null; } }
         public virtual System.Xml.XmlNode? PreviousText { get { throw null; } }
@@ -1485,16 +1488,22 @@ namespace System.Xml.Schema
         public static System.Xml.Schema.XmlSchema? Read(System.IO.Stream stream, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
         public static System.Xml.Schema.XmlSchema? Read(System.IO.TextReader reader, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
         public static System.Xml.Schema.XmlSchema? Read(System.Xml.XmlReader reader, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XML serializer relies on dynamic code generation which is not available with Ahead of Time compilation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.IO.Stream stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XML serializer relies on dynamic code generation which is not available with Ahead of Time compilation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.IO.Stream stream, System.Xml.XmlNamespaceManager? namespaceManager) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XML serializer relies on dynamic code generation which is not available with Ahead of Time compilation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.IO.TextWriter writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XML serializer relies on dynamic code generation which is not available with Ahead of Time compilation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.IO.TextWriter writer, System.Xml.XmlNamespaceManager? namespaceManager) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XML serializer relies on dynamic code generation which is not available with Ahead of Time compilation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.Xml.XmlWriter writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XML serializer relies on dynamic code generation which is not available with Ahead of Time compilation")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly")]
         public void Write(System.Xml.XmlWriter writer, System.Xml.XmlNamespaceManager? namespaceManager) { }
     }
@@ -2933,6 +2942,7 @@ namespace System.Xml.Xsl
         public XsltSettings(bool enableDocumentFunction, bool enableScript) { }
         public static System.Xml.Xsl.XsltSettings Default { get { throw null; } }
         public bool EnableDocumentFunction { get { throw null; } set { } }
+        [System.ObsoleteAttribute("XSLT Script blocks are not supported.", DiagnosticId = "SYSLIB0062", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public bool EnableScript { get { throw null; } set { } }
         public static System.Xml.Xsl.XsltSettings TrustedXslt { get { throw null; } }
     }

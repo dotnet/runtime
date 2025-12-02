@@ -129,13 +129,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override ObjectNodeSection GetSection(NodeFactory factory)
-        {
-            if (factory.Target.IsWindows)
-                return ObjectNodeSection.ReadOnlyDataSection;
-            else
-                return ObjectNodeSection.DataSection;
-        }
+        // For R2R, we can put the header in the read-only section on non-Windows as well. Since we emit a PE image
+        // and do our own mapping, we don't need it to be writeable for the OS loader to handle absolute pointer relocs.
+        // Our R2R PE images group read-only data into the .text section, so this doesn't result in more work to map.
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -181,13 +178,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (!relocsOnly && item.Node is ObjectNode on && on.ShouldSkipEmittingObjectNode(factory))
                     continue;
 
-                // Unmarked nodes are not part of the graph
-                if (!item.Node.Marked && !(item.Node is ObjectNode))
-                {
-                    Debug.Assert(item.Node is DelayLoadMethodCallThunkNodeRange);
-                    continue;
-                }
-
                 builder.EmitInt((int)item.Id);
 
                 builder.EmitReloc(item.StartSymbol, RelocType.IMAGE_REL_BASED_ADDR32NB);
@@ -220,7 +210,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override void AppendMangledHeaderName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunHeader");
+            sb.Append("__ReadyToRunHeader"u8);
         }
 
         protected override void EmitHeaderPrefix(ref ObjectDataBuilder builder)
@@ -258,7 +248,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override void AppendMangledHeaderName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunAssemblyHeader__");
+            sb.Append("__ReadyToRunAssemblyHeader__"u8);
             sb.Append(_index.ToString());
         }
 

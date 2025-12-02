@@ -4,8 +4,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
-#pragma warning disable 8500 // taking address of managed types
+using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Net.NetworkInformation
 {
@@ -53,7 +52,7 @@ namespace System.Net.NetworkInformation
             /// <returns>The cached or new BsdNetworkInterface with the given name.</returns>
             internal unsafe BsdNetworkInterface GetOrCreate(byte* pName, int index)
             {
-                string name = new string((sbyte*)pName);
+                string name = Utf8StringMarshaller.ConvertToManaged(pName)!;
 
                 BsdNetworkInterface? oni;
                 if (!_interfaces.TryGetValue(name, out oni))

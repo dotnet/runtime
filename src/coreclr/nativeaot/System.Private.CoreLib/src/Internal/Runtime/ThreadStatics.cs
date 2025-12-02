@@ -137,7 +137,7 @@ namespace Internal.Runtime
                 gcDesc = Internal.Runtime.Augments.RuntimeAugments.TypeLoaderCallbacks.GetThreadStaticGCDescForDynamicType(typeManager, typeTlsIndex);
             }
 
-            return RuntimeImports.RhNewObject(new EETypePtr(gcDesc));
+            return RuntimeImports.RhNewObject((MethodTable*)gcDesc);
         }
     }
 }

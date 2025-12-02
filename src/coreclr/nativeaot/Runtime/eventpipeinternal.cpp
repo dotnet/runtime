@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-#include "PalRedhawk.h"
+#include "Pal.h"
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-provider.h>
 #include <eventpipe/ep-config.h>
@@ -13,6 +13,7 @@
 #include <eventpipe/ep-metadata-generator.h>
 #include <eventpipe/ep-event-payload.h>
 #include <eventpipe/ep-buffer-manager.h>
+#include "minipal/time.h"
 
 #ifdef FEATURE_PERFTRACING
 
@@ -43,7 +44,7 @@ struct EventPipeProviderConfigurationNative
     WCHAR *pFilterData;
 };
 
-EXTERN_C NATIVEAOT_API uint64_t __cdecl RhEventPipeInternal_Enable(
+EXTERN_C uint64_t QCALLTYPE EventPipeInternal_Enable(
     const WCHAR* outputFile,
     EventPipeSerializationFormat format,
     uint32_t circularBufferSizeInMB,
@@ -66,12 +67,16 @@ EXTERN_C NATIVEAOT_API uint64_t __cdecl RhEventPipeInternal_Enable(
 
     if (configProviders) {
         for (uint32_t i = 0; i < numProviders; ++i) {
+            ep_char8_t *providerName = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pProviderName));
+            ep_char8_t *filterData = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pFilterData));
             ep_provider_config_init (
                 &configProviders[i],
-                ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pProviderName)),
+                providerName,
                 nativeProviders[i].keywords,
                 static_cast<EventPipeEventLevel>(nativeProviders[i].loggingLevel),
-                ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pFilterData)));
+                filterData);
+            ep_rt_utf8_string_free (providerName);
+            ep_rt_utf8_string_free (filterData);
         }
     }
 
@@ -94,22 +99,20 @@ EXTERN_C NATIVEAOT_API uint64_t __cdecl RhEventPipeInternal_Enable(
     ep_start_streaming(result);
 
     if (configProviders) {
-        for (uint32_t i = 0; i < numProviders; ++i) {
-            ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (&configProviders[i]));
-            ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&configProviders[i]));
-        }
+        for (uint32_t i = 0; i < numProviders; ++i)
+            ep_provider_config_fini (&configProviders[i]);
         free(configProviders);
     }
 
     return result;
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_Disable(uint64_t sessionID)
+EXTERN_C void QCALLTYPE EventPipeInternal_Disable(uint64_t sessionID)
 {
     ep_disable(sessionID);
 }
 
-EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_CreateProvider(
+EXTERN_C intptr_t QCALLTYPE EventPipeInternal_CreateProvider(
     const WCHAR* providerName,
     EventPipeCallback pCallbackFunc,
     void* pCallbackContext)
@@ -120,7 +123,7 @@ EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_CreateProvider(
     return reinterpret_cast<intptr_t>(pProvider);
 }
 
-EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_DefineEvent(
+EXTERN_C intptr_t QCALLTYPE EventPipeInternal_DefineEvent(
     intptr_t provHandle,
     uint32_t eventID,
     int64_t keywords,
@@ -139,7 +142,7 @@ EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_DefineEvent(
     return reinterpret_cast<intptr_t>(pEvent);
 }
 
-EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_GetProvider(const WCHAR* providerName)
+EXTERN_C intptr_t QCALLTYPE EventPipeInternal_GetProvider(const WCHAR* providerName)
 {
     EventPipeProvider * provider = NULL;
     if (providerName)
@@ -152,7 +155,7 @@ EXTERN_C NATIVEAOT_API intptr_t __cdecl RhEventPipeInternal_GetProvider(const WC
     return reinterpret_cast<intptr_t>(provider);
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_DeleteProvider(intptr_t provHandle)
+EXTERN_C void QCALLTYPE EventPipeInternal_DeleteProvider(intptr_t provHandle)
 {
     if (provHandle != 0)
     {
@@ -161,7 +164,7 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_DeleteProvider(intptr_t 
     }
 }
 
-// All the runtime redefine this enum, should move to commmon code.
+// All the runtime redefine this enum, should move to common code.
 // https://github.com/dotnet/runtime/issues/87069
 enum class ActivityControlCode
 {
@@ -172,7 +175,7 @@ enum class ActivityControlCode
     EVENT_ACTIVITY_CONTROL_CREATE_SET_ID = 5
 };
 
-EXTERN_C NATIVEAOT_API int __cdecl RhEventPipeInternal_EventActivityIdControl(uint32_t controlCode, GUID *pActivityId)
+EXTERN_C int QCALLTYPE EventPipeInternal_EventActivityIdControl(uint32_t controlCode, GUID *pActivityId)
 {
     int retVal = 0;
     ep_rt_thread_activity_id_handle_t activityIdHandle = ep_thread_get_activity_id_handle ();
@@ -198,7 +201,7 @@ EXTERN_C NATIVEAOT_API int __cdecl RhEventPipeInternal_EventActivityIdControl(ui
 
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_CREATE_ID:
 
-            ep_rt_create_activity_id(reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
+            ep_thread_create_activity_id(reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
             break;
 
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_GET_SET_ID:
@@ -212,7 +215,7 @@ EXTERN_C NATIVEAOT_API int __cdecl RhEventPipeInternal_EventActivityIdControl(ui
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_CREATE_SET_ID:
 
             ep_rt_thread_get_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
-            ep_rt_create_activity_id(reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
+            ep_thread_create_activity_id(reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
             ep_rt_thread_set_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
             break;
 
@@ -224,7 +227,7 @@ EXTERN_C NATIVEAOT_API int __cdecl RhEventPipeInternal_EventActivityIdControl(ui
     return retVal;
 }
 
-EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_WriteEventData(
+EXTERN_C void QCALLTYPE EventPipeInternal_WriteEventData(
     intptr_t eventHandle,
     EventData *pEventData,
     uint32_t eventDataCount,
@@ -236,7 +239,7 @@ EXTERN_C NATIVEAOT_API void __cdecl RhEventPipeInternal_WriteEventData(
     ep_write_event_2(pEvent, pEventData, eventDataCount, reinterpret_cast<const uint8_t*>(pActivityId), reinterpret_cast<const uint8_t*>(pRelatedActivityId));
 }
 
-EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_GetSessionInfo(uint64_t sessionID, EventPipeSessionInfo *pSessionInfo)
+EXTERN_C UInt32_BOOL QCALLTYPE EventPipeInternal_GetSessionInfo(uint64_t sessionID, EventPipeSessionInfo *pSessionInfo)
 {
     bool retVal = false;
     if (pSessionInfo != NULL)
@@ -246,14 +249,14 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_GetSessionInfo(ui
         {
             pSessionInfo->StartTimeAsUTCFileTime = ep_session_get_session_start_time (pSession);
             pSessionInfo->StartTimeStamp = ep_session_get_session_start_timestamp(pSession);
-            pSessionInfo->TimeStampFrequency = PalQueryPerformanceFrequency();
+            pSessionInfo->TimeStampFrequency = minipal_hires_tick_frequency();
             retVal = true;
         }
     }
     return retVal;
 }
 
-EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_GetNextEvent(uint64_t sessionID, EventPipeEventInstanceData *pInstance)
+EXTERN_C UInt32_BOOL QCALLTYPE EventPipeInternal_GetNextEvent(uint64_t sessionID, EventPipeEventInstanceData *pInstance)
 {
     EventPipeEventInstance *pNextInstance = NULL;
     _ASSERTE(pInstance != NULL);
@@ -274,7 +277,7 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_GetNextEvent(uint
     return pNextInstance != NULL;
 }
 
-EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_SignalSession(uint64_t sessionID)
+EXTERN_C UInt32_BOOL QCALLTYPE EventPipeInternal_SignalSession(uint64_t sessionID)
 {
     EventPipeSession *const session = ep_get_session (sessionID);
     if (!session)
@@ -283,7 +286,7 @@ EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_SignalSession(uin
     return ep_rt_wait_event_set (ep_session_get_wait_event (session));
 }
 
-EXTERN_C NATIVEAOT_API UInt32_BOOL __cdecl RhEventPipeInternal_WaitForSessionSignal(uint64_t sessionID, int32_t timeoutMs)
+EXTERN_C UInt32_BOOL QCALLTYPE EventPipeInternal_WaitForSessionSignal(uint64_t sessionID, int32_t timeoutMs)
 {
     EventPipeSession *const session = ep_get_session (sessionID);
     if (!session)

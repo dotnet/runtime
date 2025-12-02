@@ -17,7 +17,7 @@ namespace System.Net.WebSockets
         /// <param name="endOfMessage">Whether this is the final message.</param>
         public ValueWebSocketReceiveResult(int count, WebSocketMessageType messageType, bool endOfMessage)
         {
-            if (count < 0) ThrowCountOutOfRange();
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if ((uint)messageType > (uint)WebSocketMessageType.Close) ThrowMessageTypeOutOfRange();
 
             _countAndEndOfMessage = (uint)count | (uint)(endOfMessage ? 1 << 31 : 0);
@@ -32,7 +32,6 @@ namespace System.Net.WebSockets
         public bool EndOfMessage => (_countAndEndOfMessage & 0x80000000) == 0x80000000;
         public WebSocketMessageType MessageType => _messageType;
 
-        private static void ThrowCountOutOfRange() => throw new ArgumentOutOfRangeException("count");
         private static void ThrowMessageTypeOutOfRange() => throw new ArgumentOutOfRangeException("messageType");
     }
 }

@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("PrecodeMethodImport -> ");
+            sb.Append("PrecodeMethodImport -> "u8);
             base.AppendMangledName(nameMangler, sb);
         }
 

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Apphost Bundle Tests</Description>
+    <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
+    <AssemblyName>AppHost.Bundle.Tests</AssemblyName>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <!-- Reduce the length of the test output dir to make it more reliable on Windows. -->
+    <TestsOutputName>ahb</TestsOutputName>
+    <!-- NuGet warns about a transitive P2P to System.Text.Json that can't be pruned.
+         This is a false positive: https://github.com/NuGet/Home/issues/14103 -->
+    <NoWarn>$(NoWarn);NU1511</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
+    <ProjectReference Include="..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
+  </ItemGroup>
+
+</Project>

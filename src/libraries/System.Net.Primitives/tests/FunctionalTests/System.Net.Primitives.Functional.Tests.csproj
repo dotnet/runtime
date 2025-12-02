@@ -25,7 +25,10 @@
     <Compile Include="LoggingTest.cs" />
     <Compile Include="RequestCachePolicyTest.cs" />
     <Compile Include="CookieContainerAddTest.cs" />
-    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs" Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
+             Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs"
+             Link="Common\System\Net\RemoteExecutorExtensions.cs" />
     <Compile Include="SocketExceptionTest.cs" />
   </ItemGroup>
 </Project>

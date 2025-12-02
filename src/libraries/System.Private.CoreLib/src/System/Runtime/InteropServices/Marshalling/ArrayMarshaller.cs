@@ -58,7 +58,12 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="numElements">The unmanaged element count.</param>
         /// <returns>The <see cref="Span{TUnmanagedElement}"/> of unmanaged elements.</returns>
         public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
-            => new Span<TUnmanagedElement>(unmanaged, numElements);
+        {
+            if (unmanaged is null)
+                return [];
+
+            return new Span<TUnmanagedElement>(unmanaged, numElements);
+        }
 
         /// <summary>
         /// Allocates memory for the managed representation of the array.
@@ -89,7 +94,12 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="numElements">The unmanaged element count.</param>
         /// <returns>The <see cref="ReadOnlySpan{TUnmanagedElement}"/> containing the unmanaged elements to marshal.</returns>
         public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements)
-            => new ReadOnlySpan<TUnmanagedElement>(unmanagedValue, numElements);
+        {
+            if (unmanagedValue is null)
+                return [];
+
+            return new ReadOnlySpan<TUnmanagedElement>(unmanagedValue, numElements);
+        }
 
         /// <summary>
         /// Frees memory for the unmanaged array.
@@ -110,7 +120,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// This property represents a potential optimization for the marshaller.
             /// </remarks>
             // We'll keep the buffer size at a maximum of 512 bytes to avoid overflowing the stack.
-            public static int BufferSize { get; } = 0x200 / sizeof(TUnmanagedElement);
+            public static int BufferSize => 0x200 / sizeof(TUnmanagedElement);
 
             private T[]? _managedArray;
             private TUnmanagedElement* _allocatedMemory;
@@ -173,7 +183,11 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Returns the unmanaged value representing the array.
             /// </summary>
             /// <returns>A pointer to the beginning of the unmanaged value.</returns>
-            public TUnmanagedElement* ToUnmanaged() => (TUnmanagedElement*)Unsafe.AsPointer(ref GetPinnableReference());
+            public TUnmanagedElement* ToUnmanaged()
+            {
+                // Unsafe.AsPointer is safe since buffer must be pinned
+                return (TUnmanagedElement*)Unsafe.AsPointer(ref GetPinnableReference());
+            }
 
             /// <summary>
             /// Frees resources.

@@ -12,8 +12,6 @@
     <Compile Include="System\Net\HttpRequestHeader.cs" />
     <Compile Include="System\Net\HeaderInfo.cs" />
     <Compile Include="System\Net\HeaderInfoTable.cs" />
-    <Compile Include="$(CommonPath)System\Net\CaseInsensitiveAscii.cs"
-             Link="Common\System\Net\CaseInsensitiveAscii.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
              Link="Common\System\Net\HttpKnownHeaderNames.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpValidationHelpers.cs"
@@ -23,11 +21,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\src\System.Collections.Specialized.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
   </ItemGroup>
 
 </Project>

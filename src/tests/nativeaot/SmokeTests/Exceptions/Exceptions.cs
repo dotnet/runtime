@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text;
 
@@ -25,9 +26,14 @@ public class BringUpTest
 
     public static int Main()
     {
-        // This test also doubles as server GC test
-        if (!System.Runtime.GCSettings.IsServerGC)
-            return 42;
+        if (!OperatingSystem.IsAndroid())
+        {
+            // Disabled on Android due to https://github.com/dotnet/runtime/issues/121353
+
+            // This test also doubles as server GC test
+            if (!System.Runtime.GCSettings.IsServerGC)
+                return 42;
+        }
 
         if (string.Empty.Length > 0)
         {
@@ -160,9 +166,19 @@ public class BringUpTest
 
         TestFirstChanceExceptionEvent();
 
-        throw new Exception("UnhandledException");
+        TestUnwindInFunclet();
 
-        return Fail;
+        if (!OperatingSystem.IsAndroid())
+        {
+            // Environment.Exit doesn't propagate to MonoRunner.java
+            throw new Exception("UnhandledException");
+
+            return Fail;
+        }
+        else
+        {
+            return Pass;
+        }
     }
 
     static void UnhandledExceptionEventHandler(object sender, UnhandledExceptionEventArgs e)
@@ -299,6 +315,28 @@ public class BringUpTest
         GC.Collect();
         CreateSomeGarbage();
         return true;
+    }
+
+    static void TestUnwindInFunclet()
+    {
+        try
+        {
+            throw new Exception();
+        }
+        catch (Exception e)
+        {
+            // x86 pushes the call arguments on the stack and moves the stack pointer.
+            // We use a non-inlined call with enough parameters to force this to happen,
+            // so we can verify that the unwinder can walk through this funclet. The
+            // unwinding is triggered by the GC.Collect call.
+            MultiparameterCallWithGC(0, 1, 2, 3, 4);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void MultiparameterCallWithGC(nint a, nint b, nint c, nint d, nint f)
+    {
+        GC.Collect();
     }
 }
 

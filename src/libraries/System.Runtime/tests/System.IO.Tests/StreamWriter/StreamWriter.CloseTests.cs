@@ -40,10 +40,7 @@ namespace System.IO.Tests
 
         private void ValidateDisposedExceptions(StreamWriter sw)
         {
-            if (PlatformDetection.IsNetCore)
-            {
-                Assert.NotNull(sw.BaseStream);
-            }
+            Assert.NotNull(sw.BaseStream);
             Assert.Throws<ObjectDisposedException>(() => sw.Write('A'));
             Assert.Throws<ObjectDisposedException>(() => sw.Write("hello"));
             Assert.Throws<ObjectDisposedException>(() => sw.Flush());

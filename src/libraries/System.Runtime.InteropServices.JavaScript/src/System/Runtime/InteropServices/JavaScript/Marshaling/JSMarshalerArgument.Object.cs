@@ -18,8 +18,10 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void ToManaged(out object? value)
+#endif
+        public void ToManaged(out object? value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -110,7 +112,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public void ToJS(object? value)
         {
             if (value == null)
@@ -317,7 +321,8 @@ namespace System.Runtime.InteropServices.JavaScript
             else
             {
                 slot.Type = MarshalerType.Object;
-                slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(value);
+                var ctx = ToJSContext;
+                slot.GCHandle = ctx.GetJSOwnedObjectGCHandle(value);
             }
         }
 
@@ -326,7 +331,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public unsafe void ToManaged(out object?[]? value)
         {
             if (slot.Type == MarshalerType.None)
@@ -347,7 +354,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !ENABLE_JS_INTEROP_BY_VALUE
             Interop.Runtime.DeregisterGCRoot(slot.IntPtrValue);
 #endif
-            Marshal.FreeHGlobal(slot.IntPtrValue);
+            NativeMemory.Free((void*)slot.IntPtrValue);
         }
 
         /// <summary>
@@ -355,7 +362,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public unsafe void ToJS(object?[] value)
         {
             if (value == null)
@@ -364,12 +373,12 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
             slot.Length = value.Length;
-            int bytes = value.Length * Marshal.SizeOf(typeof(JSMarshalerArgument));
+            int bytes = value.Length * sizeof(JSMarshalerArgument);
             slot.Type = MarshalerType.Array;
-            JSMarshalerArgument* payload = (JSMarshalerArgument*)Marshal.AllocHGlobal(bytes);
+            JSMarshalerArgument* payload = (JSMarshalerArgument*)NativeMemory.Alloc((nuint)bytes);
             Unsafe.InitBlock(payload, 0, (uint)bytes);
 #if !ENABLE_JS_INTEROP_BY_VALUE
-            Interop.Runtime.RegisterGCRoot((IntPtr)payload, bytes, IntPtr.Zero);
+            Interop.Runtime.RegisterGCRoot(payload, bytes, IntPtr.Zero);
 #endif
             for (int i = 0; i < slot.Length; i++)
             {

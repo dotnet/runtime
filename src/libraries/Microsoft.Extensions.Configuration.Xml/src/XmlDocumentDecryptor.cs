@@ -11,7 +11,7 @@ using System.Xml;
 namespace Microsoft.Extensions.Configuration.Xml
 {
     /// <summary>
-    /// Class responsible for encrypting and decrypting XML.
+    /// Encrypts and decrypts XML.
     /// </summary>
     public class XmlDocumentDecryptor
     {
@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Configuration.Xml
         private readonly Func<XmlDocument, EncryptedXml>? _encryptedXmlFactory;
 
         /// <summary>
-        /// Initializes a XmlDocumentDecryptor.
+        /// Initializes a new instance of the XmlDocumentDecryptor class.
         /// </summary>
         // don't create an instance of this directly
         protected XmlDocumentDecryptor()
@@ -96,12 +96,17 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// Creates a reader that can decrypt an encrypted XML document.
         /// </summary>
         /// <param name="document">The document.</param>
-        /// <returns>An XmlReader which can read the document.</returns>
+        /// <returns>An XmlReader that can read the document.</returns>
         [UnsupportedOSPlatform("browser")]
         [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         protected virtual XmlReader DecryptDocumentAndCreateXmlReader(XmlDocument document)
         {
+#if !NETSTANDARD2_1 && !NETSTANDARD2_0 && !NETFRAMEWORK // TODO remove with https://github.com/dotnet/runtime/pull/107185
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException();
+#else
+            #pragma warning disable CA1416
+#endif
             // Perform the actual decryption step, updating the XmlDocument in-place.
             EncryptedXml encryptedXml = _encryptedXmlFactory?.Invoke(document) ?? new EncryptedXml(document);
             encryptedXml.DecryptDocument();

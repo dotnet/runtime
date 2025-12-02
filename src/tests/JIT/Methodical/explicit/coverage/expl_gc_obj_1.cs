@@ -78,6 +78,7 @@ internal struct BB
 public static class Test_expl_gc_obj_1
 {
     [Fact]
+    [OuterLoop]
     public static int TestEntrypoint()
     {
         return TestApp.RunAllTests();

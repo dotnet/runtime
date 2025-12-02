@@ -74,7 +74,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataSignatureBuilder builder = new ObjectDataSignatureBuilder();
+            ObjectDataSignatureBuilder builder = new ObjectDataSignatureBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
 
             string[] supportedAndUnsupportedSplit = _instructionSetsSupport.Split(',');
@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("ReadyToRunInstructionSets_");
+            sb.Append("ReadyToRunInstructionSets_"u8);
             sb.Append(_instructionSetsSupport);
         }
 

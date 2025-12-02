@@ -1,7 +1,7 @@
 *This blog post originally appeared on David Broman's blog on 10/13/2005*
 
 
-If your profiler plays with metadata, you've undoubtedly come across signature blobs. They’re used to encode type information for method definitions & references, local variables, and a whole lot more. They’re wonderfully compact, recursively versatile, and sometimes, well, challenging to parse. Fortunately, [Rico Mariani](https://docs.microsoft.com/en-us/archive/blogs/ricom/) was feeling generous one day, and churned out a simple parser that can read these types of signatures:
+If your profiler plays with metadata, you've undoubtedly come across signature blobs. They’re used to encode type information for method definitions & references, local variables, and a whole lot more. They’re wonderfully compact, recursively versatile, and sometimes, well, challenging to parse. Fortunately, [Rico Mariani](https://learn.microsoft.com/archive/blogs/ricom/) was feeling generous one day, and churned out a simple parser that can read these types of signatures:
 
 - MethodDefSig
 - MethodRefSig

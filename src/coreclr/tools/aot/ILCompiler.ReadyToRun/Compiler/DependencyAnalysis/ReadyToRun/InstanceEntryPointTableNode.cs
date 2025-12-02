@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal;
 using Internal.JitInterface;
 using Internal.NativeFormat;
 using Internal.Runtime;
@@ -47,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunInstanceEntryPointTable");
+            sb.Append("__ReadyToRunInstanceEntryPointTable"u8);
         }
 
         public static byte[] BuildSignatureForMethodDefinedInModule(MethodDesc method, NodeFactory factory)
@@ -123,7 +124,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 EntryPointVertex entryPointVertex = new EntryPointWithBlobVertex((uint)methodIndex, fixupBlob, signatureBlob);
                 hashtableSection.Place(entryPointVertex);
-                vertexHashtable.Append(unchecked((uint)ReadyToRunHashCode.MethodHashCode(method.Method)), entryPointVertex);
+                vertexHashtable.Append(unchecked((uint)method.Method.GetHashCode()), entryPointVertex);
             }
 
             MemoryStream hashtableContent = new MemoryStream();

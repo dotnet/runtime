@@ -101,9 +101,9 @@ namespace Microsoft.Android.Build.Ndk
 
         private void ValidateRequiredProps(string hostOS)
         {
-            if (Ndk.NdkVersion.Main.Major != 23)
+            if (Ndk.NdkVersion.Main.Major != 27)
             {
-                throw new Exception($"NDK 23 is required. An unsupported NDK version was found ({Ndk.NdkVersion.Main.Major}).");
+                throw new Exception($"NDK 27 is required. An unsupported NDK version was found ({Ndk.NdkVersion.Main.Major}).");
             }
 
             try
@@ -119,7 +119,7 @@ namespace Microsoft.Android.Build.Ndk
             {
                 string host = validHosts[hostOS];
             }
-            catch(KeyNotFoundException)
+            catch (KeyNotFoundException)
             {
                 throw new Exception("An invalid HostOS value was supplied. Only windows, osx, and linux are supported.");
             }

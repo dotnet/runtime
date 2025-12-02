@@ -17,15 +17,15 @@ namespace Microsoft.Gen.OptionsValidation.Test;
 
 public class EmitterTests
 {
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task TestEmitter()
     {
         var sources = new List<string>();
 #pragma warning disable RS1035 // To allow using the File IO APIs inside the analyzer test
         foreach (var file in Directory.GetFiles("TestClasses"))
         {
-#if NETCOREAPP3_1_OR_GREATER
-            sources.Add("#define NETCOREAPP3_1_OR_GREATER\n" + File.ReadAllText(file));
+#if NET
+            sources.Add("#define NET\n" + File.ReadAllText(file));
 #else
             sources.Add(File.ReadAllText(file));
 #endif
@@ -46,7 +46,7 @@ public class EmitterTests
         Assert.Empty(d);
         _ = Assert.Single(r);
 
-#if NETCOREAPP3_1_OR_GREATER
+#if NET
         string baseline = File.ReadAllText(@"Baselines/NetCoreApp/Validators.g.cs");
 #else
         string baseline = File.ReadAllText(@"Baselines/NetFX/Validators.g.cs");

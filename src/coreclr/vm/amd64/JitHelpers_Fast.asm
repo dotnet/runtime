@@ -29,7 +29,7 @@ EXTERN g_card_bundle_table:QWORD
 endif
 
 ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-EXTERN  g_sw_ww_table:QWORD
+EXTERN  g_write_watch_table:QWORD
 EXTERN  g_sw_ww_enabled_for_gc_heap:BYTE
 endif
 
@@ -47,8 +47,6 @@ ifdef _DEBUG
 extern JIT_WriteBarrier_Debug:proc
 endif
 
-extern JIT_InternalThrow:proc
-
 
 ; JIT_ByRefWriteBarrier has weird semantics, see usage in StubLinkerX86.cpp
 ;
@@ -56,9 +54,14 @@ extern JIT_InternalThrow:proc
 ;   RDI - address of ref-field (assigned to)
 ;   RSI - address of the data  (source)
 ;   RCX is trashed
-;   RAX is trashed when FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is defined
+;   RAX is trashed
+;
+;   NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
+;         if you add more trashed registers.
+;
 ; Exit:
 ;   RDI, RSI are incremented by SIZEOF(LPVOID)
+;
 LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         mov     rcx, [rsi]
 
@@ -138,7 +141,7 @@ ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         je      CheckCardTable
         mov     rax, rdi
         shr     rax, 0Ch ; SoftwareWriteWatch::AddressToTableByteIndexShift
-        add     rax, qword ptr [g_sw_ww_table]
+        add     rax, qword ptr [g_write_watch_table]
         cmp     byte ptr [rax], 0h
         jne     CheckCardTable
         mov     byte ptr [rax], 0FFh
@@ -151,8 +154,6 @@ endif
         cmp     rcx, [g_ephemeral_high]
         jnb     Exit
 
-        ; do the following checks only if we are allowed to trash rax
-        ; otherwise we don't have enough registers
 ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         mov     rax, rcx
 

@@ -33,7 +33,7 @@ namespace System.IO.Packaging
         {
             get
             {
-                if (_canRead == false)
+                if (!_canRead)
                     return false;
                 return _baseStream.CanRead;
             }
@@ -43,7 +43,7 @@ namespace System.IO.Packaging
         {
             get
             {
-                if (_canWrite == false)
+                if (!_canWrite)
                     return false;
                 return _baseStream.CanWrite;
             }
@@ -67,7 +67,7 @@ namespace System.IO.Packaging
             return _baseStream.Read(buffer, offset, count);
         }
 
-#if NETCOREAPP
+#if NET
         public override void Write(
             ReadOnlySpan<byte> buffer
         )

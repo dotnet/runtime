@@ -3,6 +3,7 @@
 
 using Xunit;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json.Tests
 {
@@ -38,6 +39,51 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(ElementParseCases))]
+        public static void Parse_Valid(string json, JsonValueKind kind)
+        {
+            Validate(JsonElement.Parse(json));
+            Validate(JsonElement.Parse(json.AsSpan()));
+            Validate(JsonElement.Parse(Encoding.UTF8.GetBytes(json).AsSpan()));
+
+            void Validate(JsonElement element)
+            {
+                Assert.Equal(kind, element.ValueKind);
+                Assert.False(element.SniffDocument().IsDisposable());
+            }
+        }
+
+        [Fact]
+        public static void Parse_RespectsOptions()
+        {
+            const string Json = """
+                {
+                    /* comment */
+                    "someProp": "value"
+                }
+                """;
+
+            Assert.ThrowsAny<JsonException>(() => JsonElement.Parse(Json));
+            Assert.ThrowsAny<JsonException>(() => JsonElement.Parse(Json.AsSpan()));
+            Assert.ThrowsAny<JsonException>(() => JsonElement.Parse(Encoding.UTF8.GetBytes(Json).AsSpan()));
+
+            JsonDocumentOptions options = new()
+            {
+                CommentHandling = JsonCommentHandling.Skip,
+            };
+
+            Validate(JsonElement.Parse(Json, options));
+            Validate(JsonElement.Parse(Json.AsSpan(), options));
+            Validate(JsonElement.Parse(Encoding.UTF8.GetBytes(Json).AsSpan(), options));
+
+            void Validate(JsonElement element)
+            {
+                Assert.Equal(JsonValueKind.Object, element.ValueKind);
+                Assert.Equal(JsonValueKind.String, element.GetProperty("someProp").ValueKind);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ElementParseCases))]
         public static void TryParseValue(string json, JsonValueKind kind)
         {
             var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
@@ -47,6 +93,38 @@ namespace System.Text.Json.Tests
             Assert.Equal(kind, element!.Value.ValueKind);
             Assert.Equal(json.Length, reader.BytesConsumed);
             Assert.False(element!.Value.SniffDocument().IsDisposable());
+        }
+
+        [Fact]
+        public static void ParseValue_AllowMultipleValues_TrailingJson()
+        {
+            var options = new JsonReaderOptions { AllowMultipleValues = true };
+            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             [43]"u8, options);
+
+            JsonElement element;
+            element = JsonElement.ParseValue(ref reader);
+            Assert.Equal("[null,false,42,{},[1]]", element.GetRawText());
+            Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+
+            Assert.True(reader.Read());
+            element = JsonElement.ParseValue(ref reader);
+            Assert.Equal("[43]", element.GetRawText());
+
+            Assert.False(reader.Read());
+        }
+
+
+        [Fact]
+        public static void ParseValue_AllowMultipleValues_TrailingContent()
+        {
+            var options = new JsonReaderOptions { AllowMultipleValues = true };
+            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             <NotJson/>"u8, options);
+
+            JsonElement element = JsonElement.ParseValue(ref reader);
+            Assert.Equal("[null,false,42,{},[1]]", element.GetRawText());
+            Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+
+            JsonTestHelper.AssertThrows<JsonException>(ref reader, (ref Utf8JsonReader reader) => reader.Read());
         }
 
         public static IEnumerable<object[]> ElementParsePartialDataCases
@@ -81,6 +159,21 @@ namespace System.Text.Json.Tests
             Assert.IsAssignableFrom<JsonException>(ex);
 
             Assert.Equal(0, reader.BytesConsumed);
+        }
+
+        [Theory]
+        [MemberData(nameof(ElementParsePartialDataCases))]
+        public static void Parse_Invalid(string json)
+        {
+            Assert.ThrowsAny<JsonException>(() => JsonElement.Parse(json));
+            Assert.ThrowsAny<JsonException>(() => JsonElement.Parse(json.AsSpan()));
+            Assert.ThrowsAny<JsonException>(() => JsonElement.Parse(Encoding.UTF8.GetBytes(json).AsSpan()));
+        }
+
+        [Fact]
+        public static void Parse_NullString_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("json", () => JsonElement.Parse((string)null));
         }
 
         [Theory]
@@ -192,6 +285,135 @@ namespace System.Text.Json.Tests
             Assert.IsAssignableFrom<JsonException>(ex);
 
             Assert.Equal(0, reader.BytesConsumed);
+        }
+
+        [Theory]
+        [InlineData("null")]
+        [InlineData("\r\n    null ")]
+        [InlineData("false")]
+        [InlineData("true ")]
+        [InlineData("   42.0 ")]
+        [InlineData(" \"str\" \r\n")]
+        [InlineData(" \"string with escaping: \\u0041\\u0042\\u0043\" \r\n")]
+        [InlineData(" [     ]")]
+        [InlineData(" [null, true, 42.0, \"str\", [], {}, ]")]
+        [InlineData(" {  } ")]
+        [InlineData("""
+
+            {
+                /* I am a comment */
+                "key1" : 1,
+                "key2" : null,
+                "key3" : true,
+            }
+
+            """)]
+        public static void JsonMarshal_GetRawUtf8Value_RootValue_ReturnsFullValue(string json)
+        {
+            JsonDocumentOptions options = new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
+            using JsonDocument jDoc = JsonDocument.Parse(json, options);
+            JsonElement element = jDoc.RootElement;
+
+            ReadOnlySpan<byte> rawValue = JsonMarshal.GetRawUtf8Value(element);
+            Assert.Equal(json.Trim(), Encoding.UTF8.GetString(rawValue.ToArray()));
+        }
+
+        [Fact]
+        public static void JsonMarshal_GetRawUtf8Value_NestedValues_ReturnsExpectedValue()
+        {
+            const string json = """
+                {
+                    "date": "2021-06-01T00:00:00Z",
+                    "temperatureC": 25,
+                    "summary": "Hot",
+
+                    /* The next property is a JSON object */
+
+                    "nested": {
+                        /* This is a nested JSON object */
+
+                        "nestedDate": "2021-06-01T00:00:00Z",
+                        "nestedTemperatureC": 25,
+                        "nestedSummary": "Hot"
+                    },
+
+                    /* The next property is a JSON array */
+
+                    "nestedArray": [
+                        /* This is a JSON array */
+                        {
+                            "nestedDate": "2021-06-01T00:00:00Z",
+                            "nestedTemperatureC": 25,
+                            "nestedSummary": "Hot"
+                        },
+                    ]
+                }
+                """;
+
+            JsonDocumentOptions options = new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
+            using JsonDocument jDoc = JsonDocument.Parse(json, options);
+            JsonElement element = jDoc.RootElement;
+
+            AssertGetRawValue(json, element);
+            AssertGetRawValue("\"2021-06-01T00:00:00Z\"", element.GetProperty("date"));
+            AssertGetRawValue("25", element.GetProperty("temperatureC"));
+            AssertGetRawValue("\"Hot\"", element.GetProperty("summary"));
+
+            JsonElement nested = element.GetProperty("nested");
+            AssertGetRawValue("""
+                    {
+                        /* This is a nested JSON object */
+
+                        "nestedDate": "2021-06-01T00:00:00Z",
+                        "nestedTemperatureC": 25,
+                        "nestedSummary": "Hot"
+                    }
+                """, nested);
+
+            AssertGetRawValue("\"2021-06-01T00:00:00Z\"", nested.GetProperty("nestedDate"));
+            AssertGetRawValue("25", nested.GetProperty("nestedTemperatureC"));
+            AssertGetRawValue("\"Hot\"", nested.GetProperty("nestedSummary"));
+
+            JsonElement nestedArray = element.GetProperty("nestedArray");
+            AssertGetRawValue("""
+                    [
+                        /* This is a JSON array */
+                        {
+                            "nestedDate": "2021-06-01T00:00:00Z",
+                            "nestedTemperatureC": 25,
+                            "nestedSummary": "Hot"
+                        },
+                    ]
+                """, nestedArray);
+
+            JsonElement nestedArrayElement = nestedArray[0];
+            AssertGetRawValue("""
+                        {
+                            "nestedDate": "2021-06-01T00:00:00Z",
+                            "nestedTemperatureC": 25,
+                            "nestedSummary": "Hot"
+                        }
+                """, nestedArrayElement);
+
+            AssertGetRawValue("\"2021-06-01T00:00:00Z\"", nestedArrayElement.GetProperty("nestedDate"));
+            AssertGetRawValue("25", nestedArrayElement.GetProperty("nestedTemperatureC"));
+            AssertGetRawValue("\"Hot\"", nestedArrayElement.GetProperty("nestedSummary"));
+
+            static void AssertGetRawValue(string expectedJson, JsonElement element)
+            {
+                ReadOnlySpan<byte> rawValue = JsonMarshal.GetRawUtf8Value(element);
+                Assert.Equal(expectedJson.Trim(), Encoding.UTF8.GetString(rawValue.ToArray()));
+            }
+        }
+
+        [Fact]
+        public static void JsonMarshal_GetRawUtf8Value_DisposedDocument_ThrowsObjectDisposedException()
+        {
+            JsonDocument jDoc = JsonDocument.Parse("{}");
+            JsonElement element = jDoc.RootElement;
+            jDoc.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => JsonMarshal.GetRawUtf8Value(element));
         }
     }
 }

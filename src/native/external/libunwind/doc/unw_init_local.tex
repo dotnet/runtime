@@ -5,7 +5,7 @@
 
 \begin{document}
 
-\begin{Name}{3}{unw\_init\_local}{David Mosberger-Tang}{Programming Library}{unw\_init\_local}unw\_init\_local -- initialize cursor for local unwinding
+\begin{Name}{3libunwind}{unw\_init\_local}{David Mosberger-Tang}{Programming Library}{unw\_init\_local}unw\_init\_local -- initialize cursor for local unwinding
 \end{Name}
 
 \section{Synopsis}
@@ -18,14 +18,14 @@
 \section{Description}
 
 The \Func{unw\_init\_local}() routine initializes the unwind cursor
-pointed to by \Var{c} with the machine-state in the context structure
-pointed to by \Var{ctxt}.  As such, the machine-state pointed to by
+pointed to by \Var{c} with the machine state in the context structure
+pointed to by \Var{ctxt}.  As such, the machine state pointed to by
 \Var{ctxt} identifies the initial stack frame at which unwinding
-starts.  The machine-state is expected to be one provided by a call to
+starts.  The machine state is expected to be one provided by a call to
 \Func{unw\_getcontext}(); as such, the instruction pointer may point to
 the instruction after the last instruction of a function, and
 \Prog{libunwind} will back-up the instruction pointer before beginning
-a walk up the call stack.  The machine-state must remain valid for the
+a walk up the call stack.  The machine state must remain valid for the
 duration for which the cursor \Var{c} is in use.
 
 The \Func{unw\_init\_local}() routine can be used only for unwinding in
@@ -45,12 +45,12 @@ on some platforms, passing the \Const{UNW\_INIT\_SIGNAL\_FRAME} flag.
 \section{Return Value}
 
 On successful completion, \Func{unw\_init\_local}() returns 0.
-Otherwise the negative value of one of the error-codes below is
+Otherwise the negative value of one of the error codes below is
 returned.
 
 \section{Thread and Signal Safety}
 
-\Func{unw\_init\_local}() is thread-safe as well as safe to use from a
+\Func{unw\_init\_local}() is thread safe as well as safe to use from a
 signal handler.
 
 \section{Errors}
@@ -67,7 +67,8 @@ signal handler.
 
 \section{See Also}
 
-\SeeAlso{libunwind(3)}, \SeeAlso{unw\_init\_remote(3)}
+\SeeAlso{libunwind}(3libunwind),
+\SeeAlso{unw\_init\_remote}(3libunwind)
 
 \section{Author}
 

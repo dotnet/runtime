@@ -57,10 +57,6 @@ namespace System.Text.Json.Serialization
             return new JsonTypeInfo<T>(this, options);
         }
 
-        internal override Type? KeyType => null;
-
-        internal override Type? ElementType => null;
-
         /// <summary>
         /// Indicates whether <see langword="null"/> should be passed to the converter on serialization,
         /// and whether <see cref="JsonTokenType.Null"/> should be passed on deserialization.
@@ -214,7 +210,7 @@ namespace System.Text.Json.Serialization
             bool success;
 
             if (
-#if NETCOREAPP
+#if NET
                 !typeof(T).IsValueType &&
 #endif
                 CanBePolymorphic)
@@ -238,17 +234,16 @@ namespace System.Text.Json.Serialization
             state.Push();
             Debug.Assert(Type == state.Current.JsonTypeInfo.Type);
 
-#if DEBUG
-            // For performance, only perform validation on internal converters on debug builds.
             if (!isContinuation)
             {
+#if DEBUG
+                // For performance, only perform token type validation of converters on debug builds.
                 Debug.Assert(state.Current.OriginalTokenType == JsonTokenType.None);
                 state.Current.OriginalTokenType = reader.TokenType;
-
+#endif
                 Debug.Assert(state.Current.OriginalDepth == 0);
                 state.Current.OriginalDepth = reader.CurrentDepth;
             }
-#endif
 
             if (parentObj != null && propertyInfo != null && !propertyInfo.IsForTypeInfo)
             {
@@ -368,7 +363,7 @@ namespace System.Text.Json.Serialization
             bool success;
 
             if (
-#if NETCOREAPP
+#if NET
                 // Short-circuit the check against "is not null"; treated as a constant by recent versions of the JIT.
                 !typeof(T).IsValueType &&
 #else
@@ -387,7 +382,7 @@ namespace System.Text.Json.Serialization
                     ResolvePolymorphicConverter(value, jsonTypeInfo, options, ref state) :
                     null;
 
-                if (!isContinuation && options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None &&
+                if (!isContinuation && options.ReferenceHandlingStrategy != JsonKnownReferenceHandler.Unspecified &&
                     TryHandleSerializedObjectReference(writer, value, options, polymorphicConverter, ref state))
                 {
                     // The reference handler wrote reference metadata, serialization complete.
@@ -531,6 +526,10 @@ namespace System.Text.Json.Serialization
 
                     break;
 
+                case JsonTokenType.None:
+                    Debug.Assert(IsRootLevelMultiContentStreamingConverter);
+                    break;
+
                 default:
                     if (isValueConverter)
                     {
@@ -636,10 +635,7 @@ namespace System.Text.Json.Serialization
 
         internal virtual void WriteAsPropertyNameCore(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
-            if (value is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             if (isWritingExtensionDataProperty)
             {

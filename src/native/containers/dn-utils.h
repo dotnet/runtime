@@ -19,6 +19,10 @@
 // included unconditionally for static_assert macro on C11
 #include <assert.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 #if defined(_DEBUG)
 #define DN_ASSERT(x) assert(x)
 #else
@@ -39,7 +43,7 @@
 #define DN_CALLBACK_CALLTYPE
 #endif
 
-#if defined(__GNUC__) && (__GNUC__ > 2)
+#if defined(__clang__) || (defined(__GNUC__) && (__GNUC__ > 2))
 #define DN_LIKELY(expr) (__builtin_expect ((expr) != 0, 1))
 #define DN_UNLIKELY(expr) (__builtin_expect ((expr) != 0, 0))
 #else
@@ -51,6 +55,12 @@
 
 #define _DN_STATIC_ASSERT(expr) static_assert(expr, "")
 
+#ifdef _MSC_VER
+#define DN_FORCEINLINE(RET_TYPE) __forceinline RET_TYPE
+#else
+#define DN_FORCEINLINE(RET_TYPE) inline RET_TYPE __attribute__((always_inline))
+#endif
+
 static inline bool
 dn_safe_size_t_multiply (size_t lhs, size_t rhs, size_t *result)
 {
@@ -58,7 +68,7 @@ dn_safe_size_t_multiply (size_t lhs, size_t rhs, size_t *result)
 		*result = 0;
 		return true;
 	}
-	
+
 	if (((size_t)(~(size_t)0) / lhs) < rhs)
 		return false;
 
@@ -75,5 +85,9 @@ dn_safe_uint32_t_add (uint32_t lhs, uint32_t rhs, uint32_t *result)
 	*result = lhs + rhs;
 	return true;
 }
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 
 #endif /* __DN_UTILS_H__ */

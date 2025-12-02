@@ -18,7 +18,7 @@ namespace System.Speech.Recognition
 #pragma warning disable 6504, 56507
         public SemanticValue(string keyName, object value, float confidence)
         {
-            Helpers.ThrowIfNull(keyName, nameof(keyName));
+            ArgumentNullException.ThrowIfNull(keyName);
 
             _dictionary = new Dictionary<string, SemanticValue>();
             _confidence = confidence;
@@ -257,7 +257,7 @@ namespace System.Speech.Recognition
             private object _name;
             private object _value;
             private float _confidence;
-            private IDictionary<string, SemanticValue> _dictionary;
+            private Dictionary<string, SemanticValue> _dictionary;
         }
 
         #endregion

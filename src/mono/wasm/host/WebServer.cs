@@ -21,11 +21,12 @@ namespace Microsoft.WebAssembly.AppHost;
 
 public class WebServer
 {
-    internal static async Task<(ServerURLs, IWebHost)> StartAsync(WebServerOptions options, ILogger logger, CancellationToken token)
+    internal static async Task<(ServerURLs, IHost)> StartAsync(WebServerOptions options, ILogger logger, CancellationToken token)
     {
         TaskCompletionSource<ServerURLs> realUrlsAvailableTcs = new();
 
-        IWebHostBuilder builder = new WebHostBuilder()
+        IHostBuilder builder = new HostBuilder().ConfigureWebHost(webHostBuilder =>
+            webHostBuilder
             .UseKestrel()
             .UseStartup<WebServerStartup>()
             .ConfigureLogging(logging =>
@@ -49,12 +50,12 @@ public class WebServer
                 services.AddSingleton(realUrlsAvailableTcs);
                 services.AddRouting();
             })
-            .UseUrls(options.Urls);
+            .UseUrls(options.Urls));
 
         if (options.ContentRootPath != null)
             builder.UseContentRoot(options.ContentRootPath);
 
-        IWebHost? host = builder.Build();
+        IHost? host = builder.Build();
         await host.StartAsync(token);
 
         if (token.CanBeCanceled)

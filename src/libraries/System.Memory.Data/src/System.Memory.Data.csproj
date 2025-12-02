@@ -9,6 +9,7 @@
 
 Commonly Used Types:
 System.BinaryData</PackageDescription>
+    <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,7 +24,7 @@ System.BinaryData</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
   </ItemGroup>
 

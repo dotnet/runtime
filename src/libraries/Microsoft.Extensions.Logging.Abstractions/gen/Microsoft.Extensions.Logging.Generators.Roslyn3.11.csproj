@@ -3,6 +3,8 @@
   <PropertyGroup>
     <AnalyzerRoslynVersion>3.11</AnalyzerRoslynVersion>
     <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_3_11)</RoslynApiVersion>
+    <!-- this Roslyn version brings in NS1.x dependencies -->
+    <FlagNetStandard1XDependencies>false</FlagNetStandard1XDependencies>
   </PropertyGroup>
 
   <Import Project="Microsoft.Extensions.Logging.Generators.targets" />

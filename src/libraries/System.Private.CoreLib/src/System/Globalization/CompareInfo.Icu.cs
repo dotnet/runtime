@@ -24,7 +24,7 @@ namespace System.Globalization
             _isAsciiEqualityOrdinal = GetIsAsciiEqualityOrdinal(interopCultureName);
             if (!GlobalizationMode.Invariant)
             {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
                     return;
 #endif
@@ -78,16 +78,15 @@ namespace System.Globalization
             }
             else
             {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                    return IndexOfCoreNative(target, source, options, fromBeginning, matchLengthPtr);
+#endif
                 // GetReference may return nullptr if the input span is defaulted. The native layer handles
                 // this appropriately; no workaround is needed on the managed side.
-
                 fixed (char* pSource = &MemoryMarshal.GetReference(source))
                 fixed (char* pTarget = &MemoryMarshal.GetReference(target))
                 {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                    if (GlobalizationMode.Hybrid)
-                        return IndexOfCoreNative(pTarget, target.Length, pSource, source.Length, options, fromBeginning, matchLengthPtr);
-#endif
                     if (fromBeginning)
                         return Interop.Globalization.IndexOf(_sortHandle, pTarget, target.Length, pSource, source.Length, options, matchLengthPtr);
                     else
@@ -192,20 +191,22 @@ namespace System.Globalization
                 Next: ;
                 }
 
+                // Before we return -1, check if the remaining source contains any special or non-Ascii characters.
+                ReadOnlySpan<char> remainingSource = fromBeginning
+                    ? source.Slice(endIndex)
+                    : source.Slice(0, startIndex);
+
+                if (remainingSource.ContainsAnyExcept(s_nonSpecialAsciiChars))
+                {
+                    goto InteropCall;
+                }
+
                 return -1;
 
             InteropCall:
-#if TARGET_BROWSER
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
-                {
-                    int result = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int exception, out object ex_result);
-                    if (exception != 0)
-                        throw new Exception((string)ex_result);
-                    return result;
-                }
-#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                if (GlobalizationMode.Hybrid)
-                    return IndexOfCoreNative(b, target.Length, a, source.Length, options, fromBeginning, matchLengthPtr);
+                    return IndexOfCoreNative(target, source, options, fromBeginning, matchLengthPtr);
 #endif
                 if (fromBeginning)
                     return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
@@ -297,17 +298,9 @@ namespace System.Globalization
                 return -1;
 
             InteropCall:
-#if TARGET_BROWSER
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
-                {
-                    int result = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int exception, out object ex_result);
-                    if (exception != 0)
-                        throw new Exception((string)ex_result);
-                    return result;
-                }
-#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                if (GlobalizationMode.Hybrid)
-                    return IndexOfCoreNative(b, target.Length, a, source.Length, options, fromBeginning, matchLengthPtr);
+                    return IndexOfCoreNative(target, source, options, fromBeginning, matchLengthPtr);
 #endif
                 if (fromBeginning)
                     return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
@@ -334,13 +327,13 @@ namespace System.Globalization
             }
             else
             {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                    return NativeStartsWith(prefix, source, options);
+#endif
                 fixed (char* pSource = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
                 fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
                 {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                    if (GlobalizationMode.Hybrid)
-                        return NativeStartsWith(pPrefix, prefix.Length, pSource, source.Length, options);
-#endif
                     return Interop.Globalization.StartsWith(_sortHandle, pPrefix, prefix.Length, pSource, source.Length, options, matchLengthPtr);
                 }
             }
@@ -422,7 +415,7 @@ namespace System.Globalization
             InteropCall:
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
-                    return NativeStartsWith(bp, prefix.Length, ap, source.Length, options);
+                    return NativeStartsWith(prefix, source, options);
 #endif
                 return Interop.Globalization.StartsWith(_sortHandle, bp, prefix.Length, ap, source.Length, options, matchLengthPtr);
             }
@@ -494,7 +487,7 @@ namespace System.Globalization
             InteropCall:
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
-                    return NativeStartsWith(bp, prefix.Length, ap, source.Length, options);
+                    return NativeStartsWith(prefix, source, options);
 #endif
                 return Interop.Globalization.StartsWith(_sortHandle, bp, prefix.Length, ap, source.Length, options, matchLengthPtr);
             }
@@ -518,13 +511,13 @@ namespace System.Globalization
             }
             else
             {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                    return NativeEndsWith(suffix, source, options);
+#endif
                 fixed (char* pSource = &MemoryMarshal.GetReference(source)) // could be null (or otherwise unable to be dereferenced)
                 fixed (char* pSuffix = &MemoryMarshal.GetReference(suffix))
                 {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                    if (GlobalizationMode.Hybrid)
-                        return NativeEndsWith(pSuffix, suffix.Length, pSource, source.Length, options);
-#endif
                     return Interop.Globalization.EndsWith(_sortHandle, pSuffix, suffix.Length, pSource, source.Length, options, matchLengthPtr);
                 }
             }
@@ -607,7 +600,7 @@ namespace System.Globalization
             InteropCall:
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
-                    return NativeEndsWith(bp, suffix.Length, ap, source.Length, options);
+                    return NativeEndsWith(suffix, source, options);
 #endif
                 return Interop.Globalization.EndsWith(_sortHandle, bp, suffix.Length, ap, source.Length, options, matchLengthPtr);
             }
@@ -679,7 +672,7 @@ namespace System.Globalization
             InteropCall:
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
-                    return NativeEndsWith(bp, suffix.Length, ap, source.Length, options);
+                    return NativeEndsWith(suffix, source, options);
 #endif
                 return Interop.Globalization.EndsWith(_sortHandle, bp, suffix.Length, ap, source.Length, options, matchLengthPtr);
             }
@@ -696,6 +689,13 @@ namespace System.Globalization
             {
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
+
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                AssertComparisonSupported(options);
+            }
+#endif
 
             byte[] keyData;
             fixed (char* pSource = source)
@@ -743,6 +743,13 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
 
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                AssertComparisonSupported(options);
+            }
+#endif
+
             // It's ok to pass nullptr (for empty buffers) to ICU's sort key routines.
 
             int actualSortKeyLength;
@@ -784,6 +791,13 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert((options & ValidCompareMaskOffFlags) == 0);
+
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                AssertComparisonSupported(options);
+            }
+#endif
 
             // It's ok to pass nullptr (for empty buffers) to ICU's sort key routines.
 
@@ -833,15 +847,22 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                AssertComparisonSupported(options);
+            }
+#endif
+
             // according to ICU User Guide the performance of ucol_getSortKey is worse when it is called with null output buffer
             // the solution is to try to fill the sort key in a temporary buffer of size equal 4 x string length
             // (The ArrayPool used to have a limit on the length of buffers it would cache; this code was avoiding
             // exceeding that limit to avoid a per-operation allocation, and the performance implications here
             // were not re-evaluated when the limit was lifted.)
-            int sortKeyLength = (source.Length > 1024 * 1024 / 4) ? 0 : 4 * source.Length;
+            int sortKeyLength = checked((source.Length > 1024 * 1024 / 4) ? 0 : 4 * source.Length);
 
             byte[]? borrowedArray = null;
-            Span<byte> sortKey = sortKeyLength <= 1024
+            Span<byte> sortKey = (uint)sortKeyLength <= 1024
                 ? stackalloc byte[1024]
                 : (borrowedArray = ArrayPool<byte>.Shared.Rent(sortKeyLength));
 

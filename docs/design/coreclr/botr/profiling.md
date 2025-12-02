@@ -68,10 +68,10 @@ The other interface involved for profiling is _ICorProfilerInfo_.  The profiler 
 
 The picture so far describes what happens once the application and profiler are running.  But how are the two connected together when an application is started?  The CLR makes the connection during its initialization in each process.  It decides whether to connect to a profiler, and which profiler that should be, depending upon the value for two environment variables, checked one after the other:
 
-- Cor\_Enable\_Profiling - only connect with a profiler if this environment variable exists and is set to a non-zero value.
-- Cor\_Profiler - connect with the profiler with this CLSID or ProgID (which must have been stored previously in the Registry). The Cor\_Profiler environment variable is defined as a string:
-	- set Cor\_Profiler={32E2F4DA-1BEA-47ea-88F9-C5DAF691C94A}, or
-	- set Cor\_Profiler="MyProfiler"
+- CORECLR\_ENABLE\_PROFILING - only connect with a profiler if this environment variable exists and is set to a non-zero value.
+- CORECLR\_PROFILER - connect with the profiler with this CLSID or ProgID (which must have been stored previously in the Registry). The CORECLR\_PROFILER environment variable is defined as a string:
+	- set CORECLR\_PROFILER={32E2F4DA-1BEA-47ea-88F9-C5DAF691C94A}, or
+	- set CORECLR\_PROFILER="MyProfiler"
 - The profiler class is the one that implements _ICorProfilerCallback/ICorProfilerCallback2_. It is required that a profiler implement ICorProfilerCallback2; if it does not, it will not be loaded.
 
 When both checks above pass, the CLR creates an instance of the profiler in a similar fashion to _CoCreateInstance_.  The profiler is not loaded through a direct call to _CoCreateInstance_ so that a call to _CoInitialize_ may be avoided, which requires setting the threading model.  It then calls the _ICorProfilerCallback::Initialize_ method in the profiler.  The signature of this method is:
@@ -235,7 +235,7 @@ Profiling is enabled through environment variables, and since NT Services are st
 
 MyComputer -> Properties -> Advanced -> EnvironmentVariables -> System Variables
 
-Both **Cor\_Enable\_Profiling** and **COR\_PROFILER have to be set** , and the user must ensure that the Profiler DLL is registered.  Then, the target machine should be re-booted so that the NT Services pick up those changes.  Note that this will enable profiling on a system-wide basis.  So, to prevent every managed application that is run subsequently from being profiled, the user should delete those system environment variables after the re-boot.
+Both **CORECLR\_ENABLE\_PROFILING** and **CORECLR\_PROFILER have to be set** , and the user must ensure that the Profiler DLL is registered.  Then, the target machine should be re-booted so that the NT Services pick up those changes.  Note that this will enable profiling on a system-wide basis.  So, to prevent every managed application that is run subsequently from being profiled, the user should delete those system environment variables after the re-boot.
 
 Profiling API – High-Level Description
 ======================================
@@ -477,7 +477,7 @@ A profiler DLL is an unmanaged DLL that is effectively running as part of the CL
 Combining Managed and Unmanaged Code in a Code Profiler
 =======================================================
 
-A close review of the CLR Profiling API creates the impression that you could write a profiler that has managed and unmanaged components that call to each other through COM Interop or ndirect calls.
+A close review of the CLR Profiling API creates the impression that you could write a profiler that has managed and unmanaged components that call to each other through COM Interop or PInvoke calls.
 
 Although this is possible from a design perspective, the CLR Profiling API does not support it. A CLR profiler is supposed to be purely unmanaged. Attempts to combine managed and unmanaged code from a CLR profiler can cause crashes, hangs and deadlocks. The danger is clear since the managed parts of the profiler will "fire" events back to its unmanaged component, which subsequently would call into the managed part of the profiler etc. The danger at this point is clear.
 

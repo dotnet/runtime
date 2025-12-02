@@ -151,17 +151,16 @@ namespace System.Text.RegularExpressions.Tests
             {
                 // When RegexOptions.IgnoreCase is supplied the current thread culture is used to lowercase the input string.
                 // Except if RegexOptions.CultureInvariant is additionally added locale dependent effects on the generated code or state machine may happen.
-                return new Regex[]
-                {
+                return
+                [
                     new Regex(input, additional),
                     new Regex(input, RegexOptions.Compiled | additional)
-                };
+                ];
             }
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95471", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public async Task TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture_NonBacktracking()
         {

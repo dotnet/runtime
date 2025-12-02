@@ -25,8 +25,8 @@ static void get_environ_helper(const void *key, const void *value, void *context
     char ***temp_environ_ptr = (char***)context;
     const char *utf8_key = [(NSString *)key UTF8String];
     const char *utf8_value = [(NSString *)value UTF8String];
-    int utf8_key_length = strlen(utf8_key);
-    int utf8_value_length = strlen(utf8_value);
+    size_t utf8_key_length = strlen(utf8_key);
+    size_t utf8_value_length = strlen(utf8_value);
     char *key_value_pair;
 
     key_value_pair = malloc(utf8_key_length + utf8_value_length + 2);
@@ -47,13 +47,13 @@ static void get_environ_helper(const void *key, const void *value, void *context
     (*temp_environ_ptr)++;
 }
 
-char** SystemNative_GetEnviron()
+char** SystemNative_GetEnviron(void)
 {
     char **temp_environ;
     char **temp_environ_ptr;
 
     CFDictionaryRef environment = (CFDictionaryRef)[[NSProcessInfo processInfo] environment];
-    int count = CFDictionaryGetCount(environment);
+    size_t count = (size_t)CFDictionaryGetCount(environment);
     temp_environ = (char **)malloc((count + 1) * sizeof(char *));
     if (temp_environ != NULL)
     {

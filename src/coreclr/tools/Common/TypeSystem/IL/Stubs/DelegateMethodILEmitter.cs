@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -15,17 +17,17 @@ namespace Internal.IL.Stubs
             Debug.Assert(method.OwningType.IsTypeDefinition);
             Debug.Assert(method.IsRuntimeImplemented);
 
-            if (method.Name == "BeginInvoke" || method.Name == "EndInvoke")
+            if (method.Name.SequenceEqual("BeginInvoke"u8) || method.Name.SequenceEqual("EndInvoke"u8))
             {
                 // BeginInvoke and EndInvoke are not supported on .NET Core
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
-                MethodDesc notSupportedExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowPlatformNotSupportedException");
+                MethodDesc notSupportedExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowPlatformNotSupportedException"u8);
                 codeStream.EmitCallThrowHelper(emit, notSupportedExceptionHelper);
                 return emit.Link(method);
             }
 
-            if (method.Name == ".ctor")
+            if (method.Name.SequenceEqual(".ctor"u8))
             {
                 // We only support delegate creation if the IL follows the delegate creation verifiability requirements
                 // described in ECMA-335 III.4.21 (newobj - create a new object). The codegen is expected to
@@ -35,20 +37,27 @@ namespace Internal.IL.Stubs
                 // but it remains to be proven that this is an actual customer scenario.
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
-                MethodDesc notSupportedExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowPlatformNotSupportedException");
+                MethodDesc notSupportedExceptionHelper = method.Context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowPlatformNotSupportedException"u8);
                 codeStream.EmitCallThrowHelper(emit, notSupportedExceptionHelper);
                 return emit.Link(method);
             }
 
-            if (method.Name == "Invoke")
+            if (method.Name.SequenceEqual("Invoke"u8))
             {
                 TypeSystemContext context = method.Context;
 
                 ILEmitter emit = new ILEmitter();
                 TypeDesc delegateType = context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType;
-                FieldDesc firstParameterField = delegateType.GetKnownField("m_firstParameter");
-                FieldDesc functionPointerField = delegateType.GetKnownField("m_functionPointer");
+                FieldDesc firstParameterField = delegateType.GetKnownField("_firstParameter"u8);
+                FieldDesc functionPointerField = delegateType.GetKnownField("_functionPointer"u8);
                 ILCodeStream codeStream = emit.NewCodeStream();
+
+                // Store the function pointer into local variable to avoid unnecessary register usage by JIT
+                ILLocalVariable functionPointer = emit.NewLocal(context.GetWellKnownType(WellKnownType.IntPtr));
+
+                codeStream.EmitLdArg(0);
+                codeStream.Emit(ILOpcode.ldfld, emit.NewToken(functionPointerField.InstantiateAsOpen()));
+                codeStream.EmitStLoc(functionPointer);
 
                 codeStream.EmitLdArg(0);
                 codeStream.Emit(ILOpcode.ldfld, emit.NewToken(firstParameterField.InstantiateAsOpen()));
@@ -56,8 +65,7 @@ namespace Internal.IL.Stubs
                 {
                     codeStream.EmitLdArg(i + 1);
                 }
-                codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.ldfld, emit.NewToken(functionPointerField.InstantiateAsOpen()));
+                codeStream.EmitLdLoc(functionPointer);
 
                 MethodSignature signature = method.Signature;
                 if (method.OwningType.HasInstantiation)

@@ -31,6 +31,8 @@ public:
     BYTE    m_rgbBlobData[1];
 };
 
+class LoaderAllocator;
+
 //
 // This class caches MethodDesc's for dynamically generated IL stubs, it is not
 // persisted in NGEN images.
@@ -42,17 +44,19 @@ public:
     //---------------------------------------------------------
     // Constructor
     //---------------------------------------------------------
-    ILStubCache(LoaderHeap* heap = NULL);
+    ILStubCache(LoaderAllocator* pAllocator = NULL);
 
-    void Init(LoaderHeap* pHeap);
+    void Init(LoaderAllocator* pAllocator);
 
     MethodDesc* GetStubMethodDesc(
         MethodDesc *pTargetMD,
         ILStubHashBlob* pHashBlob,
-        DWORD dwStubFlags,      // bitmask of NDirectStubFlags
+        DWORD dwStubFlags,      // bitmask of PInvokeStubFlags
         Module* pSigModule,
+        Module* pSigLoaderModule,
         PCCOR_SIGNATURE pSig,
         DWORD cbSig,
+        SigTypeContext* pTypeContext,
         AllocMemTracker* pamTracker,
         bool& bILStubCreator,
         MethodDesc* pLastMD);
@@ -64,12 +68,13 @@ public:
     static MethodDesc* CreateAndLinkNewILStubMethodDesc(
         LoaderAllocator* pAllocator,
         MethodTable* pMT,
-        DWORD dwStubFlags,      // bitmask of NDirectStubFlags
+        DWORD dwStubFlags,      // bitmask of PInvokeStubFlags
         Module* pSigModule,
         PCCOR_SIGNATURE pSig,
         DWORD cbSig,
         SigTypeContext *pTypeContext,
-        ILStubLinker* pStubLinker);
+        ILStubLinker* pStubLinker,
+        BOOL isAsync = FALSE);
 
     MethodTable * GetStubMethodTable()
     {
@@ -89,10 +94,11 @@ private: // static
     static MethodDesc* CreateNewMethodDesc(
         LoaderHeap* pCreationHeap,
         MethodTable* pMT,
-        DWORD dwStubFlags,      // bitmask of NDirectStubFlags
+        DWORD dwStubFlags,      // bitmask of PInvokeStubFlags
         Module* pSigModule,
         PCCOR_SIGNATURE pSig,
         DWORD cbSig,
+        BOOL isAsync,
         SigTypeContext *pTypeContext,
         AllocMemTracker* pamTracker);
 
@@ -118,7 +124,7 @@ private: // Inner classes
 
 private:
     Crst            m_crst;
-    LoaderHeap*     m_heap;
+    LoaderAllocator*m_pAllocator;
     MethodTable*    m_pStubMT;
     SHash<ILStubCacheTraits> m_hashMap;
 };

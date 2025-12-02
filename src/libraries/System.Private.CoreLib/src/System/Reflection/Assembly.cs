@@ -32,11 +32,7 @@ namespace System.Reflection
                 TypeInfo[] typeinfos = new TypeInfo[types.Length];
                 for (int i = 0; i < types.Length; i++)
                 {
-                    TypeInfo typeinfo = types[i].GetTypeInfo();
-                    if (typeinfo == null)
-                        throw new NotSupportedException(SR.Format(SR.NotSupported_NoTypeInfo, types[i].FullName));
-
-                    typeinfos[i] = typeinfo;
+                    typeinfos[i] = types[i].GetTypeInfo() ?? throw new NotSupportedException(SR.Format(SR.NotSupported_NoTypeInfo, types[i].FullName));
                 }
                 return typeinfos;
             }
@@ -200,7 +196,7 @@ namespace System.Reflection
                 return true;
             }
 
-            return (left is null) ? false : left.Equals(right);
+            return left is not null && left.Equals(right);
         }
 
         public static bool operator !=(Assembly? left, Assembly? right) => !(left == right);
@@ -217,13 +213,36 @@ namespace System.Reflection
             return type.Module?.Assembly;
         }
 
-        // internal test hook
-        private static bool s_forceNullEntryPoint;
+        private static object? s_overriddenEntryAssembly;
+
+        /// <summary>
+        /// Sets the application's entry assembly to the provided assembly object.
+        /// </summary>
+        /// <param name="assembly">
+        /// Assembly object that represents the application's new entry assembly.
+        /// </param>
+        /// <remarks>
+        /// The assembly passed to this function has to be a runtime defined Assembly
+        /// type object. Otherwise, an exception will be thrown.
+        /// </remarks>
+        public static void SetEntryAssembly(Assembly? assembly)
+        {
+            if (assembly is null)
+            {
+                s_overriddenEntryAssembly = string.Empty;
+                return;
+            }
+
+            if (assembly is not RuntimeAssembly)
+                throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
+
+            s_overriddenEntryAssembly = assembly;
+        }
 
         public static Assembly? GetEntryAssembly()
         {
-            if (s_forceNullEntryPoint)
-                return null;
+            if (s_overriddenEntryAssembly is not null)
+                return s_overriddenEntryAssembly as Assembly;
 
             return GetEntryAssemblyInternal();
         }
@@ -322,7 +341,7 @@ namespace System.Reflection
             // Requestor assembly was loaded using loadFrom, so look for its dependencies
             // in the same folder as it.
             // Form the name of the assembly using the path of the assembly that requested its load.
-            AssemblyName requestedAssemblyName = new AssemblyName(args.Name!);
+            AssemblyName requestedAssemblyName = new AssemblyName(args.Name);
             string requestedAssemblyPath = Path.Combine(Path.GetDirectoryName(requestorPath)!, requestedAssemblyName.Name + ".dll");
 #if CORECLR
             if (AssemblyLoadContext.IsTracingEnabled())
@@ -332,12 +351,22 @@ namespace System.Reflection
 #endif // CORECLR
             try
             {
+                // Avoid a first-chance exception by checking for file presence first.
+                // we cannot check for file presence on BROWSER. The files could be embedded and not physically present.
+#if !TARGET_BROWSER && !TARGET_WASI
+                if (!File.Exists(requestedAssemblyPath))
+                {
+                    return null;
+                }
+#endif // !TARGET_BROWSER && !TARGET_WASI
+
                 // Load the dependency via LoadFrom so that it goes through the same path of being in the LoadFrom list.
                 return LoadFrom(requestedAssemblyPath);
             }
             catch (FileNotFoundException)
             {
                 // Catch FileNotFoundException when attempting to resolve assemblies via this handler to account for missing assemblies.
+                // This is necessary even with the above exists check since a file might be removed between the check and the load.
                 return null;
             }
         }
@@ -355,7 +384,7 @@ namespace System.Reflection
                 {
                     if (!s_loadFromHandlerSet)
                     {
-                        AssemblyLoadContext.AssemblyResolve += LoadFromResolveHandler!;
+                        AssemblyLoadContext.AssemblyResolve += LoadFromResolveHandler;
                         s_loadFromHandlerSet = true;
                     }
                 }
@@ -375,6 +404,7 @@ namespace System.Reflection
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
+        [Obsolete(Obsoletions.LoadFromHashAlgorithmMessage, DiagnosticId = Obsoletions.LoadFromHashAlgorithmDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Assembly LoadFrom(string assemblyFile, byte[]? hashValue, AssemblyHashAlgorithm hashAlgorithm)
         {
             throw new NotSupportedException(SR.NotSupported_AssemblyLoadFromHash);

@@ -10,7 +10,7 @@ namespace System.Text.RegularExpressions
     /// </summary>
     public class Group : Capture
     {
-        internal static readonly Group s_emptyGroup = new Group(string.Empty, Array.Empty<int>(), 0, string.Empty);
+        internal static readonly Group s_emptyGroup = new Group(string.Empty, [], 0, string.Empty);
 
         internal readonly int[] _caps;
         internal int _capcount;

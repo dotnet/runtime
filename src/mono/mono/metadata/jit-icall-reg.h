@@ -118,15 +118,6 @@ MONO_JIT_ICALL (__emul_rconv_to_ovf_u8) \
 MONO_JIT_ICALL (__emul_rconv_to_u4)	\
 MONO_JIT_ICALL (__emul_rconv_to_u8) \
 MONO_JIT_ICALL (__emul_rrem) \
-MONO_JIT_ICALL (cominterop_get_ccw) \
-MONO_JIT_ICALL (cominterop_get_ccw_object) \
-MONO_JIT_ICALL (cominterop_get_function_pointer) \
-MONO_JIT_ICALL (cominterop_get_interface) \
-MONO_JIT_ICALL (cominterop_get_method_interface) \
-MONO_JIT_ICALL (cominterop_object_is_rcw) \
-MONO_JIT_ICALL (cominterop_restore_domain) \
-MONO_JIT_ICALL (cominterop_set_ccw_object_domain) \
-MONO_JIT_ICALL (cominterop_type_from_handle) \
 MONO_JIT_ICALL (g_free) \
 MONO_JIT_ICALL (interp_to_native_trampoline)	\
 MONO_JIT_ICALL (mini_llvm_init_method) \
@@ -171,7 +162,7 @@ MONO_JIT_ICALL (mono_break) \
 MONO_JIT_ICALL (mono_byvalarray_to_byte_array) \
 MONO_JIT_ICALL (mono_chkstk_win64) \
 MONO_JIT_ICALL (mono_ckfinite) \
-MONO_JIT_ICALL (mono_class_interface_match) \
+MONO_JIT_ICALL (mono_class_interface_match_compressed) \
 MONO_JIT_ICALL (mono_class_static_field_address) \
 MONO_JIT_ICALL (mono_compile_method_icall) \
 MONO_JIT_ICALL (mono_context_get_icall) \
@@ -242,13 +233,6 @@ MONO_JIT_ICALL (mono_marshal_free_array) \
 MONO_JIT_ICALL (mono_marshal_free_asany) \
 MONO_JIT_ICALL (mono_marshal_get_type_object) \
 MONO_JIT_ICALL (mono_marshal_isinst_with_cache) \
-MONO_JIT_ICALL (mono_marshal_safearray_begin) \
-MONO_JIT_ICALL (mono_marshal_safearray_create) \
-MONO_JIT_ICALL (mono_marshal_safearray_end) \
-MONO_JIT_ICALL (mono_marshal_safearray_free_indices) \
-MONO_JIT_ICALL (mono_marshal_safearray_get_value) \
-MONO_JIT_ICALL (mono_marshal_safearray_next) \
-MONO_JIT_ICALL (mono_marshal_safearray_set_value) \
 MONO_JIT_ICALL (mono_marshal_set_domain_by_id) \
 MONO_JIT_ICALL (mono_marshal_set_last_error) \
 MONO_JIT_ICALL (mono_marshal_set_last_error_windows) \
@@ -266,6 +250,7 @@ MONO_JIT_ICALL (mono_ppc_throw_exception)	\
 MONO_JIT_ICALL (mono_profiler_raise_exception_clause) \
 MONO_JIT_ICALL (mono_profiler_raise_gc_allocation) \
 MONO_JIT_ICALL (mono_profiler_raise_method_enter) \
+MONO_JIT_ICALL (mono_profiler_raise_method_samplepoint) \
 MONO_JIT_ICALL (mono_profiler_raise_method_leave) \
 MONO_JIT_ICALL (mono_profiler_raise_method_tail_call) \
 MONO_JIT_ICALL (mono_resolve_generic_virtual_call) \

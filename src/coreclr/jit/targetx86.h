@@ -7,8 +7,9 @@
 #endif
 
 // clang-format off
+  #define CORINFO_ARCH_TARGET      CORINFO_ARCH_X86
+
   #define CPU_LOAD_STORE_ARCH      0
-  #define ROUND_FLOAT              1       // round intermed float expression results
   #define CPU_HAS_BYTE_REGS        1
 
   #define CPOBJ_NONGC_SLOTS_LIMIT  4       // For CpObj code generation, this is the threshold of the number
@@ -24,7 +25,6 @@
   #define FEATURE_MULTIREG_STRUCT_PROMOTE  0  // True when we want to promote fields of a multireg struct into registers
   #define FEATURE_FASTTAILCALL     0       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     0       // opportunistic Tail calls (without ".tail" prefix) made as fast tail calls.
-  #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when
                                            // the flags need to be set
   #define FEATURE_IMPLICIT_BYREFS       0  // Support for struct parameters passed via pointers to shadow copies
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
@@ -48,17 +48,15 @@
                                            // ASM barriers we definitely don't have NOGC barriers).
 #endif
   #define USER_ARGS_COME_LAST      0
-  #define EMIT_TRACK_STACK_DEPTH   1
   #define TARGET_POINTER_SIZE      4       // equal to sizeof(void*) and the managed pointer size in bytes for this
                                            // target
-  #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter,
-                                           // filter-handler, fault) and directly execute 'finally' clauses.
-
-  #define FEATURE_EH_CALLFINALLY_THUNKS 0  // Generate call-to-finally code in "thunks" in the enclosing EH region,
-                                           // protected by "cloned finally" clauses.
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use EBP as a scratch register and must create EBP based
                                            // frames for most methods
+
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
+  #define LOWER_DECOMPOSE_LONGS    1       // Decompose TYP_LONG operations into (typically two) TYP_INT ones
+  #define EMIT_TRACK_STACK_DEPTH   1
+  #define EMIT_GENERATE_GCINFO     1       // Track GC ref liveness in codegen and emit and generate GCInfo based on that
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_EAX
@@ -119,8 +117,8 @@
   #define YMM_REGSIZE_BYTES        32      // YMM register size in bytes
   #define ZMM_REGSIZE_BYTES        64      // ZMM register size in bytes
 
+  #define HAS_FIXED_REGISTER_SET   1       // Has a fixed register set
   #define REGNUM_BITS              6       // number of bits in a REG_*
-
   #define REGSIZE_BYTES            4       // number of bytes in one register
   #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
@@ -144,18 +142,16 @@
   #define REG_VAR_ORDER            REG_EAX,REG_EDX,REG_ECX,REG_ESI,REG_EDI,REG_EBX
   #define MAX_VAR_ORDER_SIZE       6
 
-  // The order here is fixed: it must agree with an order assumed in eetwain...
-  #define REG_CALLEE_SAVED_ORDER   REG_EDI,REG_ESI,REG_EBX,REG_EBP
-  #define RBM_CALLEE_SAVED_ORDER   RBM_EDI,RBM_ESI,RBM_EBX,RBM_EBP
-
   #define CNT_CALLEE_SAVED        (4)
   #define CNT_CALLEE_TRASH        (3)
   #define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED-1)
 
   #define CNT_CALLEE_SAVED_FLOAT  (0)
   #define CNT_CALLEE_TRASH_FLOAT  (6)
+  #define CNT_CALLEE_ENREG_FLOAT  (CNT_CALLEE_SAVED_FLOAT)
 
-  #define CNT_CALLEE_SAVED_MASK        (0)
+  #define CNT_CALLEE_SAVED_MASK   (0)
+  #define CNT_CALLEE_ENREG_MASK   (CNT_CALLEE_SAVED_MASK)
 
   #define CNT_CALLEE_TRASH_MASK_INIT   (0)
   #define CNT_CALLEE_TRASH_MASK_EVEX   (7)
@@ -227,7 +223,6 @@
   // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
   // Note that x86 normally emits an optimized (source-register-specific) write barrier, but can emit
   // a call to a "general" write barrier.
-  CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
   #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_EAX | RBM_EDX)
@@ -300,6 +295,9 @@
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~RBM_ECX)
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_ECX
 
+  #define REG_ASYNC_CONTINUATION_RET REG_ECX
+  #define RBM_ASYNC_CONTINUATION_RET RBM_ECX
+
   #define REG_FPBASE               REG_EBP
   #define RBM_FPBASE               RBM_EBP
   #define STR_FPBASE               "ebp"
@@ -332,12 +330,6 @@
   #define RBM_PROFILER_ENTER_TRASH     RBM_NONE
   #define RBM_PROFILER_LEAVE_TRASH     RBM_NONE
   #define RBM_PROFILER_TAILCALL_TRASH  (RBM_CALLEE_TRASH & ~RBM_ARG_REGS)
-
-  // What sort of reloc do we use for [disp32] address mode
-  #define IMAGE_REL_BASED_DISP32   IMAGE_REL_BASED_HIGHLOW
-
-  // What sort of reloc to we use for 'moffset' address mode (for 'mov eax, moffset' or 'mov moffset, eax')
-  #define IMAGE_REL_BASED_MOFFSET  IMAGE_REL_BASED_HIGHLOW
 
   // Pointer-sized string move instructions
   #define INS_movsp                INS_movsd

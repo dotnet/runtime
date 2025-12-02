@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions.Tests
@@ -15,8 +14,8 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Matches_MultipleCapturingGroups(RegexEngine engine)
         {
-            string[] expectedGroupValues = { "abracadabra", "abra", "cad" };
-            string[] expectedGroupCaptureValues = { "abracad", "abra" };
+            string[] expectedGroupValues = ["abracadabra", "abra", "cad"];
+            string[] expectedGroupCaptureValues = ["abracad", "abra"];
 
             // Another example - given by Brad Merril in an article on RegularExpressions
             Regex regex = await RegexHelpers.GetRegexAsync(engine, @"(abra(cad)?)+");
@@ -436,7 +435,6 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
 #if !NETFRAMEWORK // these tests currently fail on .NET Framework, and we need to check IsDynamicCodeCompiled but that doesn't exist on .NET Framework
-                
                 yield return new object[]
                 {
                     engine, "@(a*)+?", "@", RegexOptions.None, new[]
@@ -454,21 +452,36 @@ namespace System.Text.RegularExpressions.Tests
                             new CaptureData("x", 3, 1),
                         }
                     };
-                }
 
-                if (engine != RegexEngine.Interpreter && // these tests currently fail with RegexInterpreter
-                    RuntimeFeature.IsDynamicCodeCompiled) // if dynamic code isn't compiled, RegexOptions.Compiled falls back to the interpreter, for which these tests currently fail
-                {
-                    // Fails on interpreter and .NET Framework: [ActiveIssue("https://github.com/dotnet/runtime/issues/62094")]
+                    // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/111051
                     yield return new object[]
                     {
-                        engine, @"(?:){93}", "x", RegexOptions.None, new[]
+                        engine, @"anyexpress1(?<=(.(any express|(any express)*)+?)anyexpress1)", "anystring anyexpress1", RegexOptions.None, new[]
                         {
-                            new CaptureData("", 0, 0),
-                            new CaptureData("", 1, 0)
+                            new CaptureData("anyexpress1", 10, 11),
                         }
                     };
                 }
+
+                // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/62094
+                yield return new object[]
+                {
+                    engine, @"(?:){93}", "x", RegexOptions.None, new[]
+                    {
+                        new CaptureData("", 0, 0),
+                        new CaptureData("", 1, 0)
+                    }
+                };
+
+                // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/43314
+                yield return new object[]
+                {
+                    engine, @"(?:(?:0?)+?(?:a?)+?)?", "0a", RegexOptions.None, new[]
+                    {
+                        new CaptureData("0a", 0, 2),
+                        new CaptureData("", 2, 0),
+                    }
+                };
 #endif
             }
         }

@@ -103,7 +103,7 @@ struct DispatchHolder
         LIMITED_METHOD_CONTRACT;
 
         // Check that _implTarget is aligned in the DispatchHolder for backpatching
-        static_assert_no_msg(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _implTarget)) % sizeof(void *)) == 0);
+        static_assert(((offsetof(DispatchHolder, _stub) + offsetof(DispatchStub, _implTarget)) % sizeof(void *)) == 0);
     }
 
     void  Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT)
@@ -391,7 +391,7 @@ struct ResolveHolder
          _stub._resolveWorkerTarget = resolveWorkerTarget;
 
          _ASSERTE(resolveWorkerTarget == (PCODE)ResolveWorkerChainLookupAsmStub);
-         _ASSERTE(patcherTarget == NULL);
+         _ASSERTE(patcherTarget == (PCODE)NULL);
 
 #undef DATA_OFFSET
 #undef PC_REL_OFFSET

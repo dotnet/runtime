@@ -1,12 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
-using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace System.Net.Http.Metrics
 {
@@ -19,22 +16,18 @@ namespace System.Net.Http.Metrics
     /// information exposed on the <see cref="HttpMetricsEnrichmentContext"/> instance.
     ///
     /// > [!IMPORTANT]
-    /// > The <see cref="HttpMetricsEnrichmentContext"/> intance must not be used from outside of the enrichment callbacks.
+    /// > The <see cref="HttpMetricsEnrichmentContext"/> instance must not be used from outside of the enrichment callbacks.
     /// </remarks>
     public sealed class HttpMetricsEnrichmentContext
     {
-        private static readonly HttpRequestOptionsKey<HttpMetricsEnrichmentContext> s_optionsKeyForContext = new(nameof(HttpMetricsEnrichmentContext));
-        private static readonly ConcurrentQueue<HttpMetricsEnrichmentContext> s_pool = new();
-        private static int s_poolItemCount;
-        private const int PoolCapacity = 1024;
+        private static readonly HttpRequestOptionsKey<List<Action<HttpMetricsEnrichmentContext>>> s_optionsKeyForCallbacks = new(nameof(HttpMetricsEnrichmentContext));
 
-        private readonly List<Action<HttpMetricsEnrichmentContext>> _callbacks = new();
         private HttpRequestMessage? _request;
         private HttpResponseMessage? _response;
         private Exception? _exception;
-        private List<KeyValuePair<string, object?>> _tags = new(capacity: 16);
+        private TagList _tags;
 
-        internal HttpMetricsEnrichmentContext() { } // Hide the default parameterless constructor.
+        private HttpMetricsEnrichmentContext() { } // Hide the default parameterless constructor.
 
         /// <summary>
         /// Gets the <see cref="HttpRequestMessage"/> that has been sent.
@@ -68,7 +61,7 @@ namespace System.Net.Http.Metrics
         /// <remarks>
         /// This method must not be used from outside of the enrichment callbacks.
         /// </remarks>
-        public void AddCustomTag(string name, object? value) => _tags.Add(new KeyValuePair<string, object?>(name, value));
+        public void AddCustomTag(string name, object? value) => _tags.Add(name, value);
 
         /// <summary>
         /// Adds a callback to register custom tags for request metrics `http-client-request-duration` and `http-client-failed-requests`.
@@ -77,85 +70,55 @@ namespace System.Net.Http.Metrics
         /// <param name="callback">The callback responsible to add custom tags via <see cref="AddCustomTag(string, object?)"/>.</param>
         public static void AddCallback(HttpRequestMessage request, Action<HttpMetricsEnrichmentContext> callback)
         {
+            ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(callback);
+
             HttpRequestOptions options = request.Options;
 
-            // We associate an HttpMetricsEnrichmentContext with the request on the first call to AddCallback(),
-            // and store the callbacks in the context. This allows us to cache all the enrichment objects together.
-            if (!options.TryGetValue(s_optionsKeyForContext, out HttpMetricsEnrichmentContext? context))
+            if (options.TryGetValue(s_optionsKeyForCallbacks, out List<Action<HttpMetricsEnrichmentContext>>? callbacks))
             {
-                if (s_pool.TryDequeue(out context))
-                {
-                    Debug.Assert(context._callbacks.Count == 0);
-                    Interlocked.Decrement(ref s_poolItemCount);
-                }
-                else
-                {
-                    context = new HttpMetricsEnrichmentContext();
-                }
-
-                options.Set(s_optionsKeyForContext, context);
+                callbacks.Add(callback);
             }
-            context._callbacks.Add(callback);
+            else
+            {
+                options.Set(s_optionsKeyForCallbacks, [callback]);
+            }
         }
 
-        internal static HttpMetricsEnrichmentContext? GetEnrichmentContextForRequest(HttpRequestMessage request)
+        internal static List<Action<HttpMetricsEnrichmentContext>>? GetEnrichmentCallbacksForRequest(HttpRequestMessage request)
         {
-            if (request._options is null)
+            if (request._options is HttpRequestOptions options &&
+                options.Remove(s_optionsKeyForCallbacks.Key, out object? callbacks))
             {
-                return null;
+                return (List<Action<HttpMetricsEnrichmentContext>>)callbacks!;
             }
-            request._options.TryGetValue(s_optionsKeyForContext, out HttpMetricsEnrichmentContext? context);
-            return context;
+
+            return null;
         }
 
-        internal void RecordDurationWithEnrichment(HttpRequestMessage request,
+        internal static void RecordDurationWithEnrichment(
+            List<Action<HttpMetricsEnrichmentContext>> callbacks,
+            HttpRequestMessage request,
             HttpResponseMessage? response,
             Exception? exception,
             TimeSpan durationTime,
             in TagList commonTags,
             Histogram<double> requestDuration)
         {
-            _request = request;
-            _response = response;
-            _exception = exception;
-
-            Debug.Assert(_tags.Count == 0);
-
-            // Adding the enrichment tags to the TagList would likely exceed its' on-stack capacity, leading to an allocation.
-            // To avoid this, we add all the tags to a List<T> which is cached together with HttpMetricsEnrichmentContext.
-            // Use a for loop to iterate over the TagList, since TagList.GetEnumerator() allocates, see
-            // https://github.com/dotnet/runtime/issues/87022.
-            for (int i = 0; i < commonTags.Count; i++)
+            var context = new HttpMetricsEnrichmentContext
             {
-                _tags.Add(commonTags[i]);
+                _request = request,
+                _response = response,
+                _exception = exception,
+                _tags = commonTags,
+            };
+
+            foreach (Action<HttpMetricsEnrichmentContext> callback in callbacks)
+            {
+                callback(context);
             }
 
-            try
-            {
-                foreach (Action<HttpMetricsEnrichmentContext> callback in _callbacks)
-                {
-                    callback(this);
-                }
-
-                requestDuration.Record(durationTime.TotalSeconds, CollectionsMarshal.AsSpan(_tags));
-            }
-            finally
-            {
-                _request = null;
-                _response = null;
-                _exception = null;
-                _callbacks.Clear();
-                _tags.Clear();
-
-                if (Interlocked.Increment(ref s_poolItemCount) <= PoolCapacity)
-                {
-                    s_pool.Enqueue(this);
-                }
-                else
-                {
-                    Interlocked.Decrement(ref s_poolItemCount);
-                }
-            }
+            requestDuration.Record(durationTime.TotalSeconds, context._tags);
         }
     }
 }

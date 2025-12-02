@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.IO.Compression.Tests;
 using System.Linq;
@@ -20,6 +19,7 @@ namespace System.IO.Compression
         public override Stream CreateStream(Stream stream, CompressionMode mode, bool leaveOpen) => new DeflateStream(stream, mode, leaveOpen);
         public override Stream CreateStream(Stream stream, CompressionLevel level) => new DeflateStream(stream, level);
         public override Stream CreateStream(Stream stream, CompressionLevel level, bool leaveOpen) => new DeflateStream(stream, level, leaveOpen);
+        public override Stream CreateStream(Stream stream, ZLibCompressionOptions options, bool leaveOpen) => new DeflateStream(stream, options, leaveOpen);
         public override Stream BaseStream(Stream stream) => ((DeflateStream)stream).BaseStream;
         protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("DeflateTestData", Path.GetFileName(uncompressedPath));
 
@@ -38,7 +38,7 @@ namespace System.IO.Compression
         public async Task DecompressFailsWithWrapperStream(string uncompressedPath, string newDirectory, string newSuffix)
         {
             string fileName = Path.Combine(newDirectory, Path.GetFileName(uncompressedPath) + newSuffix);
-            using (LocalMemoryStream baseStream = await LocalMemoryStream.readAppFileAsync(fileName))
+            using (LocalMemoryStream baseStream = await LocalMemoryStream.ReadAppFileAsync(fileName))
             using (Stream cs = CreateStream(baseStream, CompressionMode.Decompress))
             {
                 int _bufferSize = 2048;
@@ -156,11 +156,11 @@ namespace System.IO.Compression
                                         break;
 
                                     case TestScenario.Read:
-                                        while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0) { };
+                                        while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0) { }
                                         break;
 
                                     case TestScenario.ReadAsync:
-                                        while (await ZipFileTestBase.ReadAllBytesAsync(decompressor, buffer, 0, buffer.Length) != 0) { };
+                                        while (await ZipFileTestBase.ReadAllBytesAsync(decompressor, buffer, 0, buffer.Length) != 0) { }
                                         break;
 
                                     case TestScenario.ReadByte:
@@ -217,6 +217,38 @@ namespace System.IO.Compression
             {
                 WriteArrayInvoked = true;
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
+            }
+        }
+
+        [Fact]
+        public void EmptyDeflateStream_WritesOutput()
+        {
+            using (var ms = new MemoryStream())
+            {
+                using (var deflateStream = new DeflateStream(ms, CompressionMode.Compress, leaveOpen: true))
+                {
+                    // Write nothing
+                }
+
+                // DeflateStream should now write output even for empty streams
+                Assert.True(ms.Length > 0, "Empty DeflateStream should write finalization data");
+            }
+        }
+
+        [Fact]
+        public void EmptyStream_CanBeDecompressed()
+        {
+            // for compatibility reasons, an empty stream should be decompressible back to an empty stream
+            using (var ms = new MemoryStream())
+            {
+                ms.Position = 0;
+
+                using (var deflateStream = new DeflateStream(ms, CompressionMode.Decompress))
+                using (var reader = new StreamReader(deflateStream))
+                {
+                    string result = reader.ReadToEnd();
+                    Assert.Equal(string.Empty, result);
+                }
             }
         }
     }

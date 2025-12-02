@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// This node emits a thunk calling DelayLoad_Helper with a given instance signature
     /// to populate its indirection cell.
     /// </summary>
-    public partial class ImportThunk : AssemblyStubNode, ISymbolDefinitionNode
+    public partial class ImportThunk : AssemblyStubNode, ISymbolDefinitionNode, ISortableSymbolNode
     {
         enum Kind
         {
@@ -64,7 +64,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("DelayLoadHelper->");
+            sb.Append("DelayLoadHelper->"u8);
             _helperCell.AppendMangledName(nameMangler, sb);
             sb.Append($"(ImportSection:{_containingImportSection.Name},Kind:{_thunkKind})");
         }
@@ -98,6 +98,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             DependencyList dependencies = new DependencyList();
             dependencies.Add(factory.DelayLoadMethodCallThunks, "MethodCallThunksList");
             return dependencies;
+        }
+
+        protected override void OnMarked(NodeFactory factory)
+        {
+            factory.DelayLoadMethodCallThunks.OnNodeInRangeMarked(this);
         }
     }
 }

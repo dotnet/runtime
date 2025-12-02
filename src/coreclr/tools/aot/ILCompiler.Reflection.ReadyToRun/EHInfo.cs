@@ -114,29 +114,29 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="methodRva">Starting RVA of the runtime function is used to display the try / handler info as RVA intervals</param>
         public void WriteTo(TextWriter writer, int methodRva, bool dumpRva)
         {
-            writer.Write($@"Flags {(uint)Flags:X2} ");
-            writer.Write($@"TryOff {TryOffset:X4} ");
+            writer.Write($"Flags {(uint)Flags:X2} ");
+            writer.Write($"TryOff {TryOffset:X4} ");
             if (dumpRva)
-                writer.Write(@"(RVA {(TryOffset + methodRva):X4}) ");
-            writer.Write($@"TryEnd {TryEnd:X4} ");
+                writer.Write($"(RVA {(TryOffset + methodRva):X4}) ");
+            writer.Write($"TryEnd {TryEnd:X4} ");
             if (dumpRva)
-                writer.Write(@"(RVA {(TryEnd + methodRva):X4}) ");
-            writer.Write($@"HndOff {HandlerOffset:X4} ");
+                writer.Write($"(RVA {(TryEnd + methodRva):X4}) ");
+            writer.Write($"HndOff {HandlerOffset:X4} ");
             if (dumpRva)
-                writer.Write(@"(RVA {(HandlerOffset + methodRva):X4}) ");
-            writer.Write($@"HndEnd {HandlerEnd:X4} ");
+                writer.Write($"(RVA {(HandlerOffset + methodRva):X4}) ");
+            writer.Write($"HndEnd {HandlerEnd:X4} ");
             if (dumpRva)
-                writer.Write(@"(RVA {(HandlerEnd + methodRva):X4}) ");
-            writer.Write($@"ClsFlt {ClassTokenOrFilterOffset:X4}");
+                writer.Write($"(RVA {(HandlerEnd + methodRva):X4}) ");
+            writer.Write($"ClsFlt {ClassTokenOrFilterOffset:X4}");
 
             switch (Flags & CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_KIND_MASK)
             {
                 case CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_NONE:
-                    writer.Write($" CATCH: {0}", ClassName ?? "null");
+                    writer.Write($" CATCH: {ClassName ?? "null"}");
                     break;
 
                 case CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_FILTER:
-                    writer.Write($" FILTER (RVA {0:X4})", ClassTokenOrFilterOffset + methodRva);
+                    writer.Write($" FILTER (RVA {(ClassTokenOrFilterOffset + methodRva):X4})");
                     break;
 
                 case CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_FINALLY:

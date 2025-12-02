@@ -7,6 +7,7 @@
     <AnalyzerLanguage>cs</AnalyzerLanguage>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants Condition="'$(LaunchDebugger)' == 'true'">$(DefineConstants);LAUNCH_DEBUGGER</DefineConstants>
+    <DefineConstants Condition="'$(UpdateBaselines)' == 'true'">$(DefineConstants);UPDATE_BASELINES</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(DevBuild)' == 'true'">
@@ -15,7 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_8)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

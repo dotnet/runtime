@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)-osx</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs"
@@ -15,18 +15,14 @@
              Link="Common\Interop\Linux\Interop.ProcFsStat.TryReadStatusFile.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\os-release\Interop.OSReleaseFile.cs"
              Link="Common\Interop\Linux\os-release\Interop.OSReleaseFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcMountInfo.TryParseMountInfoLine.cs"
+             Link="Common\Interop\Linux\procfs\Interop.ProcMountInfo.TryParseMountInfoLine.cs" />
     <Compile Include="$(CommonPath)SourceGenerators\SourceWriter.cs"
              Link="Common\SourceGenerators\SourceWriter.cs" />
     <Compile Include="$(CommonPath)System\CharArrayHelpers.cs"
              Link="Common\System\CharArrayHelpers.cs" />
-    <Compile Include="$(CommonPath)System\StringExtensions.cs"
-             Link="Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs"
              Link="Common\System\Collections\Generic\ArrayBuilder.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\LargeArrayBuilder.cs"
-             Link="Common\System\Collections\Generic\LargeArrayBuilder.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs"
-             Link="Common\System\Collections\Generic\LargeArrayBuilder.SpeedOpt.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
     <Compile Include="$(CommonPath)System\IO\RowConfigReader.cs"
@@ -87,10 +83,9 @@
     <Compile Include="Tests\System\Security\IdentityHelperTests.cs" />
     <Compile Include="Tests\System\Text\SimpleRegexTests.cs" />
     <Compile Include="Tests\System\Text\ValueStringBuilderTests.cs" />
-    <Compile Include="Tests\System\StringExtensions.Tests.cs" />
     <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
-    <Compile Include="Tests\System\Collections\Generic\LargeArrayBuilderTests.cs" />
     <Compile Include="Tests\System\IO\RowConfigReaderTests.cs" />
+    <Compile Include="Tests\System\Net\ArrayBufferTests.cs" />
     <Compile Include="Tests\System\Net\HttpKnownHeaderNamesTests.cs" />
     <Compile Include="Tests\System\Net\MultiArrayBufferTests.cs" />
     <Compile Include="Tests\System\Net\aspnetcore\Http2\DynamicTableTest.cs" />
@@ -137,6 +132,12 @@
              Link="Common\Interop\Unix\Interop.PathConf.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs"
              Link="Common\Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RealPath.cs"
+             Link="Common\Interop\Unix\Interop.RealPath.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcMountInfo.cs"
+             Link="Common\Interop\Linux\procfs\Interop.ProcMountInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
+             Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Unix.cs"
@@ -158,12 +159,7 @@
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="CommonTest\System\" />
-    <Folder Include="Common\System\Security\Cryptography\" />
-    <Folder Include="System\Net\Sockets\" />
-    <Folder Include="System\Net\VirtualNetwork\" />
-  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" PrivateAssets="all" />
   </ItemGroup>

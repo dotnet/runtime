@@ -16,19 +16,21 @@ namespace System.Net.Http
     internal sealed class DiagnosticsHandler : HttpMessageHandlerStage
     {
         private static readonly DiagnosticListener s_diagnosticListener = new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
-        private static readonly ActivitySource s_activitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.Namespace);
+        internal static readonly ActivitySource s_activitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.RequestNamespace);
 
         private readonly HttpMessageHandler _innerHandler;
         private readonly DistributedContextPropagator _propagator;
         private readonly HeaderDescriptor[]? _propagatorFields;
+        private readonly IWebProxy? _proxy;
 
-        public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, bool autoRedirect = false)
+        public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, IWebProxy? proxy, bool autoRedirect = false)
         {
-            Debug.Assert(IsGloballyEnabled());
+            Debug.Assert(GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation);
             Debug.Assert(innerHandler is not null && propagator is not null);
 
             _innerHandler = innerHandler;
             _propagator = propagator;
+            _proxy = proxy;
 
             // Prepare HeaderDescriptors for fields we need to clear when following redirects
             if (autoRedirect && _propagator.Fields is IReadOnlyCollection<string> fields && fields.Count > 0)
@@ -53,26 +55,23 @@ namespace System.Net.Http
                    s_diagnosticListener.IsEnabled();
         }
 
-        private static Activity? CreateActivity(HttpRequestMessage requestMessage)
+        private static Activity? StartActivity(HttpRequestMessage request)
         {
             Activity? activity = null;
             if (s_activitySource.HasListeners())
             {
-                activity = s_activitySource.CreateActivity(DiagnosticsHandlerLoggingStrings.ActivityName, ActivityKind.Client);
+                activity = s_activitySource.StartActivity(DiagnosticsHandlerLoggingStrings.RequestActivityName, ActivityKind.Client);
             }
 
-            if (activity is null)
+            if (activity is null &&
+                (Activity.Current is not null ||
+                s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestActivityName, request)))
             {
-                if (Activity.Current is not null || s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, requestMessage))
-                {
-                    activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
-                }
+                activity = new Activity(DiagnosticsHandlerLoggingStrings.RequestActivityName).Start();
             }
 
             return activity;
         }
-
-        internal static bool IsGloballyEnabled() => GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation;
 
         internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
@@ -90,7 +89,7 @@ namespace System.Net.Http
 
         private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            // HttpClientHandler is responsible to call static DiagnosticsHandler.IsEnabled() before forwarding request here.
+            // HttpClientHandler is responsible to call static GlobalHttpSettings.DiagnosticsHandler.IsEnabled before forwarding request here.
             // It will check if propagation is on (because parent Activity exists or there is a listener) or off (forcibly disabled)
             // This code won't be called unless consumer unsubscribes from DiagnosticListener right after the check.
             // So some requests happening right after subscription starts might not be instrumented. Similarly,
@@ -98,7 +97,7 @@ namespace System.Net.Http
 
             // Since we are reusing the request message instance on redirects, clear any existing headers
             // Do so before writing DiagnosticListener events as instrumentations use those to inject headers
-            if (request.WasRedirected() && _propagatorFields is HeaderDescriptor[] fields)
+            if (request.WasPropagatorStateInjectedByDiagnosticsHandler() && _propagatorFields is HeaderDescriptor[] fields)
             {
                 foreach (HeaderDescriptor field in fields)
                 {
@@ -109,17 +108,35 @@ namespace System.Net.Http
             DiagnosticListener diagnosticListener = s_diagnosticListener;
 
             Guid loggingRequestId = Guid.Empty;
-            Activity? activity = CreateActivity(request);
+            Activity? activity = StartActivity(request);
 
-            // Start activity anyway if it was created.
             if (activity is not null)
             {
-                activity.Start();
+                // https://github.com/open-telemetry/semantic-conventions/blob/release/v1.23.x/docs/http/http-spans.md#name
+                activity.DisplayName = HttpMethod.GetKnownMethod(request.Method.Method)?.Method ?? "HTTP";
+
+                if (activity.IsAllDataRequested)
+                {
+                    // Add standard tags known before sending the request.
+                    KeyValuePair<string, object?> methodTag = DiagnosticsHelper.GetMethodTag(request.Method, out bool isUnknownMethod);
+                    activity.SetTag(methodTag.Key, methodTag.Value);
+                    if (isUnknownMethod)
+                    {
+                        activity.SetTag("http.request.method_original", request.Method.Method);
+                    }
+
+                    if (request.RequestUri is Uri requestUri && requestUri.IsAbsoluteUri)
+                    {
+                        activity.SetTag("server.address", DiagnosticsHelper.GetServerAddress(request, _proxy));
+                        activity.SetTag("server.port", requestUri.Port);
+                        activity.SetTag("url.full", UriRedactionHelper.GetRedactedUriString(requestUri));
+                    }
+                }
 
                 // Only send start event to users who subscribed for it.
-                if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStartName))
+                if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestActivityStartName))
                 {
-                    Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.ActivityStartName, new ActivityStartData(request));
+                    Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.RequestActivityStartName, new ActivityStartData(request));
                 }
             }
 
@@ -141,6 +158,7 @@ namespace System.Net.Http
             }
 
             HttpResponseMessage? response = null;
+            Exception? exception = null;
             TaskStatus taskStatus = TaskStatus.RanToCompletion;
             try
             {
@@ -149,9 +167,10 @@ namespace System.Net.Http
                     _innerHandler.Send(request, cancellationToken);
                 return response;
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
                 taskStatus = TaskStatus.Canceled;
+                exception = ex;
 
                 // we'll report task status in HttpRequestOut.Stop
                 throw;
@@ -159,6 +178,7 @@ namespace System.Net.Http
             catch (Exception ex)
             {
                 taskStatus = TaskStatus.Faulted;
+                exception = ex;
 
                 if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ExceptionEventName))
                 {
@@ -176,10 +196,37 @@ namespace System.Net.Http
                 {
                     activity.SetEndTime(DateTime.UtcNow);
 
-                    // Only send stop event to users who subscribed for it.
-                    if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStopName))
+                    if (activity.IsAllDataRequested)
                     {
-                        Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.ActivityStopName, new ActivityStopData(response, request, taskStatus));
+                        // Add standard tags known at request completion.
+                        if (response is not null)
+                        {
+                            activity.SetTag("http.response.status_code", DiagnosticsHelper.GetBoxedInt32((int)response.StatusCode));
+                            activity.SetTag("network.protocol.version", DiagnosticsHelper.GetProtocolVersionString(response.Version));
+                        }
+
+                        if (DiagnosticsHelper.TryGetErrorType(response, exception, out string? errorType))
+                        {
+                            activity.SetTag("error.type", errorType);
+
+                            // The presence of error.type indicates that the conditions for setting Error status are also met.
+                            // https://github.com/open-telemetry/semantic-conventions/blob/v1.34.0/docs/http/http-spans.md#status
+                            activity.SetStatus(ActivityStatusCode.Error);
+
+                            if (exception is not null)
+                            {
+                                // Records the exception as per https://github.com/open-telemetry/opentelemetry-specification/blob/v1.45.0/specification/trace/exceptions.md.
+                                // Add the exception event with a timestamp matching the activity's end time
+                                // to ensure it falls within the activity's duration.
+                                activity.AddException(exception, timestamp: activity.StartTimeUtc + activity.Duration);
+                            }
+                        }
+                    }
+
+                    // Only send stop event to users who subscribed for it.
+                    if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestActivityStopName))
+                    {
+                        Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.RequestActivityStopName, new ActivityStopData(response, request, taskStatus));
                     }
 
                     activity.Stop();
@@ -309,14 +356,17 @@ namespace System.Net.Http
         {
             _propagator.Inject(currentActivity, request, static (carrier, key, value) =>
             {
-                if (carrier is HttpRequestMessage request &&
-                    key is not null &&
-                    HeaderDescriptor.TryGet(key, out HeaderDescriptor descriptor) &&
-                    !request.Headers.TryGetHeaderValue(descriptor, out _))
+                if (carrier is HttpRequestMessage request && key is not null)
                 {
-                    request.Headers.TryAddWithoutValidation(descriptor, value);
+                    HeaderDescriptor descriptor = request.Headers.GetHeaderDescriptor(key);
+
+                    if (!request.Headers.Contains(descriptor))
+                    {
+                        request.Headers.Add(descriptor, value);
+                    }
                 }
             });
+            request.MarkPropagatorStateInjectedByDiagnosticsHandler();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",

@@ -31,25 +31,35 @@ namespace System
             return this.GetType().ToString();
         }
 
-        private const int UseFastHelper = -1;
         private const int GetNumFields = -1;
 
         // An override of this method will be injected by the compiler into all valuetypes that cannot be compared
-        // using a simple memory comparison.
+        // using a simple memory comparison until the last byte as reported by sizeof.
         // This API is a bit awkward because we want to avoid burning more than one vtable slot on this.
+        // The method returns the offset and type handle of the index-th field on this type.
         // When index == GetNumFields, this method is expected to return the number of fields of this
-        // valuetype. Otherwise, it returns the offset and type handle of the index-th field on this type.
+        // valuetype or a negative value. If the value is negative, the struct can be memcompared until
+        // the byte specified by the negated return value.
         internal virtual unsafe int __GetFieldHelper(int index, out MethodTable* mt)
         {
             // Value types that don't override this method will use the fast path that looks at bytes, not fields.
             Debug.Assert(index == GetNumFields);
             mt = default;
-            return UseFastHelper;
+            return -(int)this.GetMethodTable()->ValueTypeSize;
+        }
+
+        private unsafe int GetValueTypeSize(int numFields)
+        {
+            Debug.Assert(numFields < 0);
+            int valueTypeSize = -numFields;
+            Debug.Assert(valueTypeSize <= (int)this.GetMethodTable()->ValueTypeSize);
+
+            return valueTypeSize;
         }
 
         public override unsafe bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (obj == null || obj.GetEETypePtr() != this.GetEETypePtr())
+            if (obj == null || obj.GetMethodTable() != this.GetMethodTable())
                 return false;
 
             int numFields = __GetFieldHelper(GetNumFields, out _);
@@ -57,14 +67,13 @@ namespace System
             ref byte thisRawData = ref this.GetRawData();
             ref byte thatRawData = ref obj.GetRawData();
 
-            if (numFields == UseFastHelper)
+            if (numFields < 0)
             {
                 // Sanity check - if there are GC references, we should not be comparing bytes
-                Debug.Assert(!this.GetEETypePtr().ContainsGCPointers);
+                Debug.Assert(!this.GetMethodTable()->ContainsGCPointers);
 
                 // Compare the memory
-                int valueTypeSize = (int)this.GetEETypePtr().ValueTypeSize;
-                return SpanHelpers.SequenceEqual(ref thisRawData, ref thatRawData, valueTypeSize);
+                return SpanHelpers.SequenceEqual(ref thisRawData, ref thatRawData, GetValueTypeSize(numFields));
             }
             else
             {
@@ -93,45 +102,34 @@ namespace System
             return true;
         }
 
-        public override int GetHashCode()
+        public override unsafe int GetHashCode()
         {
-            int hashCode = this.GetEETypePtr().GetHashCode();
+            HashCode hashCode = default;
+            hashCode.Add((IntPtr)this.GetMethodTable());
 
-            hashCode ^= GetHashCodeImpl();
-
-            return hashCode;
-        }
-
-        private unsafe int GetHashCodeImpl()
-        {
             int numFields = __GetFieldHelper(GetNumFields, out _);
 
-            if (numFields == UseFastHelper)
-                return FastGetValueTypeHashCodeHelper(this.GetMethodTable(), ref this.GetRawData());
+            if (numFields < 0)
+            {
+                hashCode.AddBytes(new ReadOnlySpan<byte>(ref this.GetRawData(), GetValueTypeSize(numFields)));
+            }
+            else
+            {
+                RegularGetValueTypeHashCode(ref hashCode, ref this.GetRawData(), numFields);
+            }
 
-            return RegularGetValueTypeHashCode(ref this.GetRawData(), numFields);
+            return hashCode.ToHashCode();
         }
 
-        private static unsafe int FastGetValueTypeHashCodeHelper(MethodTable* type, ref byte data)
+        private static unsafe ReadOnlySpan<byte> GetSpanForField(MethodTable* type, ref byte data)
         {
             // Sanity check - if there are GC references, we should not be hashing bytes
             Debug.Assert(!type->ContainsGCPointers);
-
-            int size = (int)type->ValueTypeSize;
-            int hashCode = 0;
-
-            for (int i = 0; i < size / 4; i++)
-            {
-                hashCode ^= Unsafe.As<byte, int>(ref Unsafe.Add(ref data, i * 4));
-            }
-
-            return hashCode;
+            return new ReadOnlySpan<byte>(ref data, (int)type->ValueTypeSize);
         }
 
-        private unsafe int RegularGetValueTypeHashCode(ref byte data, int numFields)
+        private unsafe void RegularGetValueTypeHashCode(ref HashCode hashCode, ref byte data, int numFields)
         {
-            int hashCode = 0;
-
             // We only take the hashcode for the first non-null field. That's what the CLR does.
             for (int i = 0; i < numFields; i++)
             {
@@ -142,15 +140,15 @@ namespace System
 
                 if (fieldType->ElementType == EETypeElementType.Single)
                 {
-                    hashCode = Unsafe.As<byte, float>(ref fieldData).GetHashCode();
+                    hashCode.Add(Unsafe.As<byte, float>(ref fieldData));
                 }
                 else if (fieldType->ElementType == EETypeElementType.Double)
                 {
-                    hashCode = Unsafe.As<byte, double>(ref fieldData).GetHashCode();
+                    hashCode.Add(Unsafe.As<byte, double>(ref fieldData));
                 }
                 else if (fieldType->IsPrimitive)
                 {
-                    hashCode = FastGetValueTypeHashCodeHelper(fieldType, ref fieldData);
+                    hashCode.AddBytes(GetSpanForField(fieldType, ref fieldData));
                 }
                 else if (fieldType->IsValueType)
                 {
@@ -161,10 +159,10 @@ namespace System
                     // of __GetFieldHelper, decodes the unboxing stub pointed to by the slot to the real target
                     // (we already have that part), and calls the entrypoint that expects a byref `this`, and use the
                     // data to decide between calling fast or regular hashcode helper.
-                    var fieldValue = (ValueType)RuntimeImports.RhBox(fieldType, ref fieldData);
+                    var fieldValue = (ValueType)RuntimeExports.RhBox(fieldType, ref fieldData);
                     if (fieldValue != null)
                     {
-                        hashCode = fieldValue.GetHashCodeImpl();
+                        hashCode.Add(fieldValue);
                     }
                     else
                     {
@@ -177,7 +175,7 @@ namespace System
                     object fieldValue = Unsafe.As<byte, object>(ref fieldData);
                     if (fieldValue != null)
                     {
-                        hashCode = fieldValue.GetHashCode();
+                        hashCode.Add(fieldValue);
                     }
                     else
                     {
@@ -187,8 +185,6 @@ namespace System
                 }
                 break;
             }
-
-            return hashCode;
         }
     }
 }

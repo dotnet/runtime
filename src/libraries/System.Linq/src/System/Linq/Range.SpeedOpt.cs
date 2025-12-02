@@ -3,147 +3,109 @@
 
 using System.Collections.Generic;
 using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private sealed partial class RangeIterator : IPartition<int>, IList<int>, IReadOnlyList<int>
+        private sealed partial class RangeIterator<T> : IList<T>, IReadOnlyList<T> where T : INumber<T>
         {
-            public override IEnumerable<TResult> Select<TResult>(Func<int, TResult> selector)
+            public override IEnumerable<TResult> Select<TResult>(Func<T, TResult> selector)
             {
-                return new SelectRangeIterator<TResult>(_start, _end, selector);
+                return new RangeSelectIterator<T, TResult>(_start, _endExclusive, selector);
             }
 
-            public int[] ToArray()
+            public override T[] ToArray()
             {
-                int start = _start;
-                int[] array = new int[_end - start];
-                Fill(array, start);
+                T start = _start;
+                T[] array = new T[Count];
+                FillIncrementing(array, start);
                 return array;
             }
 
-            public List<int> ToList()
+            public override List<T> ToList()
             {
-                (int start, int end) = (_start, _end);
-                List<int> list = new List<int>(end - start);
-                Fill(SetCountAndGetSpan(list, end - start), start);
+                (T start, T end) = (_start, _endExclusive);
+                int count = int.CreateTruncating(end - start);
+                List<T> list = new List<T>(count);
+                FillIncrementing(SetCountAndGetSpan(list, count), start);
                 return list;
             }
 
-            public void CopyTo(int[] array, int arrayIndex) =>
-                Fill(array.AsSpan(arrayIndex, _end - _start), _start);
+            public void CopyTo(T[] array, int arrayIndex) =>
+                FillIncrementing(array.AsSpan(arrayIndex, Count), _start);
 
-            private static void Fill(Span<int> destination, int value)
+            public override int GetCount(bool onlyIfCheap) => Count;
+
+            public int Count => int.CreateTruncating(_endExclusive - _start);
+
+            public override Iterator<T>? Skip(int count) =>
+                count >= Count ? null :
+                new RangeIterator<T>(_start + T.CreateTruncating(count), _endExclusive);
+
+            public override Iterator<T> Take(int count) =>
+                count >= Count ? this :
+                new RangeIterator<T>(_start, _start + T.CreateTruncating(count));
+
+            public override T TryGetElementAt(int index, out bool found)
             {
-                ref int pos = ref MemoryMarshal.GetReference(destination);
-                ref int end = ref Unsafe.Add(ref pos, destination.Length);
-
-                if (Vector.IsHardwareAccelerated &&
-                    Vector<int>.Count <= 8 &&
-                    destination.Length >= Vector<int>.Count)
-                {
-                    Vector<int> init = new Vector<int>((ReadOnlySpan<int>)[0, 1, 2, 3, 4, 5, 6, 7]);
-                    Vector<int> current = new Vector<int>(value) + init;
-                    Vector<int> increment = new Vector<int>(Vector<int>.Count);
-
-                    ref int oneVectorFromEnd = ref Unsafe.Subtract(ref end, Vector<int>.Count);
-                    do
-                    {
-                        current.StoreUnsafe(ref pos);
-                        current += increment;
-                        pos = ref Unsafe.Add(ref pos, Vector<int>.Count);
-                    }
-                    while (!Unsafe.IsAddressGreaterThan(ref pos, ref oneVectorFromEnd));
-
-                    value = current[0];
-                }
-
-                while (Unsafe.IsAddressLessThan(ref pos, ref end))
-                {
-                    pos = value++;
-                    pos = ref Unsafe.Add(ref pos, 1);
-                }
-            }
-
-            public int GetCount(bool onlyIfCheap) => unchecked(_end - _start);
-
-            public int Count => _end - _start;
-
-            public IPartition<int> Skip(int count)
-            {
-                if (count >= _end - _start)
-                {
-                    return EmptyPartition<int>.Instance;
-                }
-
-                return new RangeIterator(_start + count, _end - _start - count);
-            }
-
-            public IPartition<int> Take(int count)
-            {
-                int curCount = _end - _start;
-                if (count >= curCount)
-                {
-                    return this;
-                }
-
-                return new RangeIterator(_start, count);
-            }
-
-            public int TryGetElementAt(int index, out bool found)
-            {
-                if (unchecked((uint)index < (uint)(_end - _start)))
+                if ((uint)index < (uint)Count)
                 {
                     found = true;
-                    return _start + index;
+                    return _start + T.CreateTruncating(index);
                 }
 
                 found = false;
-                return 0;
+                return T.Zero;
             }
 
-            public int TryGetFirst(out bool found)
+            public override T TryGetFirst(out bool found)
             {
                 found = true;
                 return _start;
             }
 
-            public int TryGetLast(out bool found)
+            public override T TryGetLast(out bool found)
             {
                 found = true;
-                return _end - 1;
+                return _endExclusive - T.One;
             }
 
-            public bool Contains(int item) =>
-                (uint)(item - _start) < (uint)(_end - _start);
+            public override bool Contains(T item) =>
+                uint.CreateTruncating(item - _start) < (uint)Count;
 
-            public int IndexOf(int item) =>
-                Contains(item) ? item - _start : -1;
+            public int IndexOf(T item)
+            {
+                uint index = uint.CreateTruncating(item - _start);
+                if (index < (uint)Count)
+                {
+                    return (int)index;
+                }
 
-            public int this[int index]
+                return -1;
+            }
+
+            public T this[int index]
             {
                 get
                 {
-                    if ((uint)index >= (uint)(_end - _start))
+                    if ((uint)index >= (uint)Count)
                     {
                         ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
                     }
 
-                    return _start + index;
+                    return _start + T.CreateTruncating(index);
                 }
                 set => ThrowHelper.ThrowNotSupportedException();
             }
 
             public bool IsReadOnly => true;
 
-            void ICollection<int>.Add(int item) => ThrowHelper.ThrowNotSupportedException();
-            void ICollection<int>.Clear() => ThrowHelper.ThrowNotSupportedException();
-            void IList<int>.Insert(int index, int item) => ThrowHelper.ThrowNotSupportedException();
-            bool ICollection<int>.Remove(int item) => ThrowHelper.ThrowNotSupportedException_Boolean();
-            void IList<int>.RemoveAt(int index) => ThrowHelper.ThrowNotSupportedException();
+            void ICollection<T>.Add(T item) => ThrowHelper.ThrowNotSupportedException();
+            void ICollection<T>.Clear() => ThrowHelper.ThrowNotSupportedException();
+            void IList<T>.Insert(int index, T item) => ThrowHelper.ThrowNotSupportedException();
+            bool ICollection<T>.Remove(T item) => ThrowHelper.ThrowNotSupportedException_Boolean();
+            void IList<T>.RemoveAt(int index) => ThrowHelper.ThrowNotSupportedException();
         }
     }
 }

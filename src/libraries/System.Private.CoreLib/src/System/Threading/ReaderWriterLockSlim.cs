@@ -230,7 +230,7 @@ namespace System.Threading
         //
         // Common timeout support
         //
-        private struct TimeoutTracker
+        private readonly struct TimeoutTracker
         {
             private readonly int _total;
             private readonly int _start;
@@ -1412,11 +1412,12 @@ namespace System.Threading
 
         public int WaitingUpgradeCount => (int)_numUpgradeWaiters;
 
-        public int WaitingWriteCount => (int)_numWriteWaiters;
+        // Include the thread that may be waiting in upgradable mode.
+        public int WaitingWriteCount => (int)_numWriteWaiters + (int)_numWriteUpgradeWaiters;
 
         private struct SpinLock
         {
-            private int _isLocked;
+            private bool _isLocked;
 
             /// <summary>
             /// Used to deprioritize threads attempting to enter the lock when they would not make progress after doing so.
@@ -1535,7 +1536,7 @@ namespace System.Threading
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private bool TryEnter()
             {
-                return Interlocked.CompareExchange(ref _isLocked, 1, 0) == 0;
+                return !Interlocked.Exchange(ref _isLocked, true);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1577,7 +1578,7 @@ namespace System.Threading
 
                     if (!IsEnterDeprioritized(reason))
                     {
-                        if (_isLocked == 0 && TryEnter())
+                        if (!_isLocked && TryEnter())
                         {
                             if (deprioritizationStateChange != 0)
                             {
@@ -1606,12 +1607,12 @@ namespace System.Threading
 
             public void Exit()
             {
-                Debug.Assert(_isLocked != 0, "Exiting spin lock that is not held");
-                Volatile.Write(ref _isLocked, 0);
+                Debug.Assert(_isLocked, "Exiting spin lock that is not held");
+                Volatile.Write(ref _isLocked, false);
             }
 
 #if DEBUG
-            public bool IsHeld => _isLocked != 0;
+            public bool IsHeld => _isLocked;
 #endif
         }
 

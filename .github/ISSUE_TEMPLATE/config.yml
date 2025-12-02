@@ -18,3 +18,6 @@ contact_links:
   - name: Issue with WPF
     url:  https://github.com/dotnet/wpf/issues/new/choose
     about: Please open issues relating to WPF in dotnet/wpf.
+  - name: CI Known Issue Report
+    url: https://helix.dot.net/BuildAnalysis/CreateKnownIssues
+    about: Use the helper to create a Known Issue in CI if failures in your runs are unrelated to your change. See [Failure Analysis](https://github.com/dotnet/runtime/blob/main/docs/workflow/ci/failure-analysis.md#what-to-do-if-you-determine-the-failure-is-unrelated) for triage instructions.

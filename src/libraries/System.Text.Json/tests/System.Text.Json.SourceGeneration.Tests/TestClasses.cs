@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Primitives;
 
@@ -87,7 +88,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public DateTimeOffset Date { get; set; }
         public int TemperatureCelsius { get; set; }
         public string Summary { get; set; }
-        public string SummaryField;
+        public string? SummaryField;
         public List<DateTimeOffset> DatesAvailable { get; set; }
         public Dictionary<string, HighLowTemps> TemperatureRanges { get; set; }
         public string[] SummaryWords { get; set; }
@@ -115,7 +116,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
     public class MyType
     {
-        public MyType Type;
+        public MyType? Type;
     }
 
     public class MyType2
@@ -304,5 +305,67 @@ namespace System.Text.Json.SourceGeneration.Tests
     public class PocoWithNumberHandlingAttr
     {
         public int Id { get; set; }
+    }
+
+    public class PocoWithMixedVisibilityMembersBase
+    {
+        public string BaseProperty { get; set; }
+        public string ShadowProperty { get; set; }
+    }
+
+    public class PocoWithMixedVisibilityMembers : PocoWithMixedVisibilityMembersBase
+    {
+        public string PublicProperty { get; set; }
+
+        [JsonInclude]
+        public string PublicField;
+
+        [JsonInclude]
+        internal int InternalProperty { get; set; }
+
+        [JsonInclude]
+        internal int InternalField;
+
+        [JsonPropertyName("customProp")]
+        public string PropertyWithCustomName { get; set; }
+
+        [JsonInclude, JsonPropertyName("customField")]
+        public string FieldWithCustomName;
+
+        public new int ShadowProperty { get; set; }
+
+#pragma warning disable EXP0001
+        [JsonIgnore]
+        public ExperimentalClass ExperimentalProperty { get; set; }
+#pragma warning restore EXP0001
+    }
+
+#if NET
+    [Experimental("EXP0001")]
+#endif
+    public class ExperimentalClass;
+
+    public sealed class ClassWithConflictingIgnoredProperties
+    {
+        [JsonIgnore]
+        public List<string>? UserList { get; set; }
+
+        [JsonPropertyName("userlist")]
+        public List<string>? SystemTextJsonUserList { get; set; }
+
+        [JsonIgnore]
+        public List<string>? UserGroupsList { get; set; }
+
+        [JsonPropertyName("usergroupslist")]
+        public List<string>? SystemTextJsonUserGroupsList { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public List<string>? SystemTextJsonIPAddresses { get; set; }
+
+        [JsonIgnore]
+        public List<object>? QueryParams { get; set; }
+
+        [JsonPropertyName("queryparams")]
+        public List<object>? SystemTextJsonQueryParams { get; set; }
     }
 }

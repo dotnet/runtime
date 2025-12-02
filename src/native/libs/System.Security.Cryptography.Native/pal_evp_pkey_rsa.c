@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "pal_evp_pkey.h"
 #include "pal_evp_pkey_rsa.h"
 #include "pal_utilities.h"
+#include "openssl.h"
 #include <assert.h>
 
 static int HasNoPrivateKey(const RSA* rsa);
@@ -103,6 +105,7 @@ static bool ConfigureEncryption(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const
 }
 
 int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
+                                void* extraHandle,
                                 const uint8_t* source,
                                 int32_t sourceLen,
                                 RsaPaddingMode padding,
@@ -116,9 +119,11 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
     assert(digest != NULL || padding == RsaPaddingPkcs1);
 
+    size_t written;
+
     ERR_clear_error();
 
-    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+    EVP_PKEY_CTX* ctx = EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
 
     int ret = -1;
 
@@ -132,7 +137,12 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
         goto done;
     }
 
-    // This check may no longer be needed on OpenSSL 3.0
+    // This check will not work with hardware keys coming from OpenSSL providers
+    // because providers don't seem to set RSA_FLAG_EXT_PKEY (the tpm2 most notably)
+    // ENGINE-s may or may not set it.
+    // This is needed only on OpenSSL < 3.0,
+    // see: https://github.com/dotnet/runtime/issues/53345
+    if (CryptoNative_OpenSslVersionNumber() < OPENSSL_VERSION_3_0_RTM)
     {
         const RSA* rsa = EVP_PKEY_get0_RSA(pkey);
 
@@ -143,7 +153,7 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
         }
     }
 
-    size_t written = Int32ToSizeT(destinationLen);
+    written = Int32ToSizeT(destinationLen);
 
     if (EVP_PKEY_decrypt(ctx, destination, &written, source, Int32ToSizeT(sourceLen)) > 0)
     {
@@ -160,6 +170,7 @@ done:
 }
 
 int32_t CryptoNative_RsaEncrypt(EVP_PKEY* pkey,
+                                void* extraHandle,
                                 const uint8_t* source,
                                 int32_t sourceLen,
                                 RsaPaddingMode padding,
@@ -172,9 +183,11 @@ int32_t CryptoNative_RsaEncrypt(EVP_PKEY* pkey,
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
     assert(digest != NULL || padding == RsaPaddingPkcs1);
 
+    size_t written;
+
     ERR_clear_error();
 
-    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+    EVP_PKEY_CTX* ctx = EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
 
     int ret = -1;
 
@@ -188,7 +201,7 @@ int32_t CryptoNative_RsaEncrypt(EVP_PKEY* pkey,
         goto done;
     }
 
-    size_t written = Int32ToSizeT(destinationLen);
+    written = Int32ToSizeT(destinationLen);
 
     if (EVP_PKEY_encrypt(ctx, destination, &written, source, Int32ToSizeT(sourceLen)) > 0)
     {
@@ -206,6 +219,15 @@ done:
 
 static bool ConfigureSignature(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const EVP_MD* digest)
 {
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+    if (EVP_PKEY_CTX_set_signature_md(ctx, digest) <= 0)
+#pragma clang diagnostic pop
+    {
+        return false;
+    }
+
     if (padding == RsaPaddingPkcs1)
     {
         if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
@@ -224,18 +246,11 @@ static bool ConfigureSignature(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const 
         }
     }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wcast-qual"
-    if (EVP_PKEY_CTX_set_signature_md(ctx, digest) <= 0)
-#pragma clang diagnostic pop
-    {
-        return false;
-    }
-
     return true;
 }
 
 int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
+                                 void* extraHandle,
                                  RsaPaddingMode padding,
                                  const EVP_MD* digest,
                                  const uint8_t* hash,
@@ -248,9 +263,11 @@ int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
     assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
     assert(digest != NULL || padding == RsaPaddingPkcs1);
 
+    size_t written;
+
     ERR_clear_error();
 
-    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+    EVP_PKEY_CTX* ctx = EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
 
     int ret = -1;
 
@@ -264,7 +281,12 @@ int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
         goto done;
     }
 
-    // This check may no longer be needed on OpenSSL 3.0
+    // This check will not work with hardware keys coming from OpenSSL providers
+    // because providers don't seem to set RSA_FLAG_EXT_PKEY (the tpm2 most notably)
+    // ENGINE-s may or may not set it.
+    // This is needed only on OpenSSL < 3.0,
+    // see: https://github.com/dotnet/runtime/issues/53345
+    if (CryptoNative_OpenSslVersionNumber() < OPENSSL_VERSION_3_0_RTM)
     {
         const RSA* rsa = EVP_PKEY_get0_RSA(pkey);
 
@@ -275,7 +297,7 @@ int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
         }
     }
 
-    size_t written = Int32ToSizeT(destinationLen);
+    written = Int32ToSizeT(destinationLen);
 
     if (EVP_PKEY_sign(ctx, destination, &written, hash, Int32ToSizeT(hashLen)) > 0)
     {
@@ -292,6 +314,7 @@ done:
 }
 
 int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
+                                   void* extraHandle,
                                    RsaPaddingMode padding,
                                    const EVP_MD* digest,
                                    const uint8_t* hash,
@@ -306,7 +329,7 @@ int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
 
     ERR_clear_error();
 
-    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+    EVP_PKEY_CTX* ctx = EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
 
     int ret = -1;
 

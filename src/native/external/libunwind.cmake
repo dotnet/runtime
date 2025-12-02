@@ -45,6 +45,7 @@ set(libunwind_la_SOURCES_generic
     mi/Gget_fpreg.c mi/Gset_fpreg.c
     mi/Gset_caching_policy.c
     mi/Gset_cache_size.c
+    mi/Gaddress_validator.c
 )
 
 set(libunwind_la_SOURCES_os_linux
@@ -81,6 +82,8 @@ if(CLR_CMAKE_TARGET_LINUX)
     set(libunwind_la_SOURCES_x86_64_os_local    x86_64/Los-linux.c)
     set(libunwind_la_SOURCES_arm_os             arm/Gos-linux.c)
     set(libunwind_la_SOURCES_arm_os_local       arm/Los-linux.c)
+    set(libunwind_la_SOURCES_aarch64_os         aarch64/Gos-linux.c)
+    set(libunwind_la_SOURCES_aarch64_os_local   aarch64/Los-linux.c)
     list(APPEND libunwind_coredump_la_SOURCES   coredump/_UCD_access_reg_linux.c)
 elseif(CLR_CMAKE_TARGET_FREEBSD)
     set(libunwind_la_SOURCES_os                 ${libunwind_la_SOURCES_os_freebsd})
@@ -92,6 +95,9 @@ elseif(CLR_CMAKE_TARGET_FREEBSD)
     set(libunwind_la_SOURCES_x86_64_os_local    x86_64/Los-freebsd.c)
     set(libunwind_la_SOURCES_arm_os             arm/Gos-freebsd.c)
     set(libunwind_la_SOURCES_arm_os_local       arm/Los-freebsd.c)
+    set(libunwind_la_SOURCES_aarch64_os         aarch64/Gos-freebsd.c)
+    set(libunwind_la_SOURCES_aarch64_os_local   aarch64/Los-freebsd.c)
+    set(libunwind_aarch64_la_SOURCES_os         aarch64/setcontext.S)
     list(APPEND libunwind_coredump_la_SOURCES   coredump/_UCD_access_reg_freebsd.c)
 elseif(CLR_CMAKE_HOST_SUNOS)
     set(libunwind_la_SOURCES_os                 ${libunwind_la_SOURCES_os_solaris})
@@ -224,6 +230,7 @@ set(libunwind_la_SOURCES_aarch64_common
 # The list of files that go into libunwind:
 set(libunwind_la_SOURCES_aarch64
     ${libunwind_la_SOURCES_aarch64_common}
+    ${libunwind_la_SOURCES_aarch64_os_local} ${libunwind_aarch64_la_SOURCES_os}
     ${libunwind_la_SOURCES_local}
     aarch64/Lapply_reg_state.c aarch64/Lreg_states_iterate.c
     aarch64/Lcreate_addr_space.c aarch64/Lget_proc_info.c
@@ -234,8 +241,10 @@ set(libunwind_la_SOURCES_aarch64
     aarch64/getcontext.S
 )
 
+# The list of files that go into libunwind-aarch64:
 set(libunwind_aarch64_la_SOURCES_aarch64
     ${libunwind_la_SOURCES_aarch64_common}
+    ${libunwind_la_SOURCES_aarch64_os}
     ${libunwind_la_SOURCES_generic}
     aarch64/Gapply_reg_state.c aarch64/Greg_states_iterate.c
     aarch64/Gcreate_addr_space.c aarch64/Gget_proc_info.c
@@ -439,7 +448,7 @@ if(CLR_CMAKE_HOST_UNIX)
         list(APPEND libunwind_setjmp_la_SOURCES     riscv/siglongjmp.S)
     endif()
 
-    if(CLR_CMAKE_HOST_OSX)
+    if(CLR_CMAKE_HOST_APPLE)
         set(LIBUNWIND_SOURCES_BASE
           remote/mac/missing-functions.c
           ${libunwind_remote_la_SOURCES}
@@ -455,7 +464,7 @@ if(CLR_CMAKE_HOST_UNIX)
           ${libunwind_dwarf_generic_la_SOURCES}
           ${libunwind_elf_la_SOURCES}
         )
-    endif(CLR_CMAKE_HOST_OSX)
+    endif(CLR_CMAKE_HOST_APPLE)
 
 else(CLR_CMAKE_HOST_UNIX)
     if(CLR_CMAKE_TARGET_ARCH_ARM64)

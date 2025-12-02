@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@sbyte;
+
 public struct VT
 {
     public sbyte[,] sbyte2darr;
@@ -35,6 +37,7 @@ public class sbyteMDArrTest
     static sbyte[][, ,] ja2_b = new sbyte[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

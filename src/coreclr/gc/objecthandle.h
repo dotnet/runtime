@@ -102,7 +102,12 @@ DhContext *Ref_GetDependentHandleContext(ScanContext* sc);
 bool Ref_ScanDependentHandlesForPromotion(DhContext *pDhContext);
 void Ref_ScanDependentHandlesForClearing(uint32_t condemned, uint32_t maxgen, ScanContext* sc);
 void Ref_ScanDependentHandlesForRelocation(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
+void Ref_ScanWeakInteriorPointersForRelocation(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
 void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_promote_func* fn);
+#ifdef FEATURE_JAVAMARSHAL
+uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext* sc, size_t* numObjs);
+void Ref_NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles);
+#endif //FEATURE_JAVAMARSHAL
 
 void Ref_CheckReachable       (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, ScanContext* sc);
 void Ref_CheckAlive           (uint32_t uCondemnedGeneration, uint32_t uMaxGeneration, ScanContext *sc);

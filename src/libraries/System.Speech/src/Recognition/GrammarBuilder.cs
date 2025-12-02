@@ -108,11 +108,11 @@ namespace System.Speech.Recognition
 
         public void Append(GrammarBuilder builder)
         {
-            Helpers.ThrowIfNull(builder, nameof(builder));
+            ArgumentNullException.ThrowIfNull(builder);
 
             // Should never happens has it is a RO value
-            Helpers.ThrowIfNull(builder.InternalBuilder, "builder.InternalBuilder");
-            Helpers.ThrowIfNull(builder.InternalBuilder.Items, "builder.InternalBuilder.Items");
+            ArgumentNullException.ThrowIfNull(builder.InternalBuilder, "builder.InternalBuilder");
+            ArgumentNullException.ThrowIfNull(builder.InternalBuilder.Items, "builder.InternalBuilder.Items");
 
             // Clone the items if we are playing with the local list.
             foreach (GrammarBuilderBase item in builder.InternalBuilder.Items)
@@ -137,32 +137,32 @@ namespace System.Speech.Recognition
 
         public void Append(Choices alternateChoices)
         {
-            Helpers.ThrowIfNull(alternateChoices, nameof(alternateChoices));
+            ArgumentNullException.ThrowIfNull(alternateChoices);
 
             AddItem(alternateChoices.OneOf);
         }
 
         public void Append(SemanticResultKey key)
         {
-            Helpers.ThrowIfNull(key, "builder");
+            ArgumentNullException.ThrowIfNull(key, "builder");
 
             AddItem(key.SemanticKeyElement);
         }
 
         public void Append(SemanticResultValue value)
         {
-            Helpers.ThrowIfNull(value, "builder");
+            ArgumentNullException.ThrowIfNull(value, "builder");
 
             AddItem(value.Tag);
         }
 
         public void Append(GrammarBuilder builder, int minRepeat, int maxRepeat)
         {
-            Helpers.ThrowIfNull(builder, nameof(builder));
+            ArgumentNullException.ThrowIfNull(builder);
             GrammarBuilder.ValidateRepeatArguments(minRepeat, maxRepeat, "minRepeat", "maxRepeat");
 
             // Should never happens has it is a RO value
-            Helpers.ThrowIfNull(builder.InternalBuilder, "builder.InternalBuilder");
+            ArgumentNullException.ThrowIfNull(builder.InternalBuilder, "builder.InternalBuilder");
 
             // Wrap the phrase in an item if min and max repeat are set
             if (minRepeat != 1 || maxRepeat != 1)
@@ -255,10 +255,7 @@ namespace System.Speech.Recognition
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 _culture = value;
             }
@@ -275,7 +272,7 @@ namespace System.Speech.Recognition
 
         public static GrammarBuilder Add(string phrase, GrammarBuilder builder)
         {
-            Helpers.ThrowIfNull(builder, nameof(builder));
+            ArgumentNullException.ThrowIfNull(builder);
 
             GrammarBuilder grammar = new(phrase);
             grammar.Append(builder);
@@ -289,7 +286,7 @@ namespace System.Speech.Recognition
 
         public static GrammarBuilder Add(GrammarBuilder builder, string phrase)
         {
-            Helpers.ThrowIfNull(builder, nameof(builder));
+            ArgumentNullException.ThrowIfNull(builder);
 
             GrammarBuilder grammar = builder.Clone();
             grammar.Append(phrase);
@@ -303,8 +300,8 @@ namespace System.Speech.Recognition
 
         public static GrammarBuilder Add(Choices choices, GrammarBuilder builder)
         {
-            Helpers.ThrowIfNull(choices, nameof(choices));
-            Helpers.ThrowIfNull(builder, nameof(builder));
+            ArgumentNullException.ThrowIfNull(choices);
+            ArgumentNullException.ThrowIfNull(builder);
 
             GrammarBuilder grammar = new(choices);
             grammar.Append(builder);
@@ -318,8 +315,8 @@ namespace System.Speech.Recognition
 
         public static GrammarBuilder Add(GrammarBuilder builder, Choices choices)
         {
-            Helpers.ThrowIfNull(builder, nameof(builder));
-            Helpers.ThrowIfNull(choices, nameof(choices));
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(choices);
 
             GrammarBuilder grammar = builder.Clone();
             grammar.Append(choices);
@@ -333,8 +330,8 @@ namespace System.Speech.Recognition
 
         public static GrammarBuilder Add(GrammarBuilder builder1, GrammarBuilder builder2)
         {
-            Helpers.ThrowIfNull(builder1, nameof(builder1));
-            Helpers.ThrowIfNull(builder2, nameof(builder2));
+            ArgumentNullException.ThrowIfNull(builder1);
+            ArgumentNullException.ThrowIfNull(builder2);
 
             GrammarBuilder grammar = builder1.Clone();
             grammar.Append(builder2);

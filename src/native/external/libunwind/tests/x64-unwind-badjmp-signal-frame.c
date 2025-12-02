@@ -26,9 +26,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
-#include <execinfo.h>
 #include <sys/types.h>
-#include <sys/ucontext.h>
+#include <ucontext.h>
 #include <unistd.h>
 
 #ifdef HAVE_SYS_PTRACE_H
@@ -37,12 +36,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
+#include "compiler.h"
 
 /*
  * unwind in the signal handler checking the backtrace is correct
  * after a bad jump.
  */
-void handle_sigsegv(int signal, siginfo_t *info, void *ucontext)
+void handle_sigsegv(int signal UNUSED, siginfo_t *info UNUSED, void *ucontext UNUSED)
 {
   /*
    * 0 = success
@@ -57,6 +57,9 @@ void handle_sigsegv(int signal, siginfo_t *info, void *ucontext)
   int found_signal_frame = 0;
   int i = 0;
   char *names[] = {
+#if defined __FreeBSD__
+    "",
+#endif
     "",
     "main",
   };
@@ -105,7 +108,7 @@ void handle_sigsegv(int signal, siginfo_t *info, void *ucontext)
 
 void (*invalid_function)() = (void*)1;
 
-int main(int argc, char *argv[])
+int main(int argc UNUSED, char *argv[] UNUSED)
 {
   struct sigaction sa;
   memset(&sa, 0, sizeof(sa));

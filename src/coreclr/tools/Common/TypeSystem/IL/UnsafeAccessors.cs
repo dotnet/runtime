@@ -2,10 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -29,12 +32,6 @@ namespace Internal.IL
                 return GenerateAccessorBadImageFailure(method);
             }
 
-            // Block generic support early
-            if (method.HasInstantiation || method.OwningType.HasInstantiation)
-            {
-                return GenerateAccessorBadImageFailure(method);
-            }
-
             if (!TryParseUnsafeAccessorAttribute(method, decodedAttribute.Value, out UnsafeAccessorKind kind, out string name))
             {
                 return GenerateAccessorBadImageFailure(method);
@@ -46,15 +43,21 @@ namespace Internal.IL
                 Declaration = method
             };
 
-            MethodSignature sig = method.Signature;
-            TypeDesc retType = sig.ReturnType;
-            TypeDesc firstArgType = null;
-            if (sig.Length > 0)
+            SetTargetResult result;
+
+            result = TrySetTargetMethodSignature(ref context);
+            if (result is not SetTargetResult.Success)
             {
-                firstArgType = sig[0];
+                return GenerateAccessorSpecificFailure(ref context, name, result);
             }
 
-            bool isAmbiguous = false;
+            TypeDesc retType = context.DeclarationSignature.ReturnType;
+
+            TypeDesc firstArgType = null;
+            if (context.DeclarationSignature.Length > 0)
+            {
+                firstArgType = context.DeclarationSignature[0];
+            }
 
             // Using the kind type, perform the following:
             //  1) Validate the basic type information from the signature.
@@ -77,9 +80,10 @@ namespace Internal.IL
                     }
 
                     const string ctorName = ".ctor";
-                    if (!TrySetTargetMethod(ref context, ctorName, out isAmbiguous))
+                    result = TrySetTargetMethod(ref context, ctorName);
+                    if (result is not SetTargetResult.Success)
                     {
-                        return GenerateAccessorSpecificFailure(ref context, ctorName, isAmbiguous);
+                        return GenerateAccessorSpecificFailure(ref context, ctorName, result);
                     }
                     break;
                 case UnsafeAccessorKind.Method:
@@ -105,16 +109,17 @@ namespace Internal.IL
                     }
 
                     context.IsTargetStatic = kind == UnsafeAccessorKind.StaticMethod;
-                    if (!TrySetTargetMethod(ref context, name, out isAmbiguous))
+                    result = TrySetTargetMethod(ref context, name);
+                    if (result is not SetTargetResult.Success)
                     {
-                        return GenerateAccessorSpecificFailure(ref context, name, isAmbiguous);
+                        return GenerateAccessorSpecificFailure(ref context, name, result);
                     }
                     break;
 
                 case UnsafeAccessorKind.Field:
                 case UnsafeAccessorKind.StaticField:
                     // Field access requires a single argument for target type and a return type.
-                    if (sig.Length != 1 || retType.IsVoid)
+                    if (context.DeclarationSignature.Length != 1 || retType.IsVoid)
                     {
                         return GenerateAccessorBadImageFailure(method);
                     }
@@ -136,9 +141,10 @@ namespace Internal.IL
                     }
 
                     context.IsTargetStatic = kind == UnsafeAccessorKind.StaticField;
-                    if (!TrySetTargetField(ref context, name, ((ParameterizedType)retType).GetParameterType()))
+                    result = TrySetTargetField(ref context, name, ((ParameterizedType)retType).GetParameterType());
+                    if (result is not SetTargetResult.Success)
                     {
-                        return GenerateAccessorSpecificFailure(ref context, name, isAmbiguous);
+                        return GenerateAccessorSpecificFailure(ref context, name, result);
                     }
                     break;
 
@@ -200,7 +206,7 @@ namespace Internal.IL
                 // as empty at the use site.
                 if (kind is not UnsafeAccessorKind.Constructor)
                 {
-                    name = method.Name;
+                    name = method.GetName();
                 }
             }
 
@@ -212,6 +218,8 @@ namespace Internal.IL
         {
             public UnsafeAccessorKind Kind;
             public EcmaMethod Declaration;
+            public MethodSignature DeclarationSignature;
+            public BitArray ReplacedSignatureElements;
             public TypeDesc TargetType;
             public bool IsTargetStatic;
             public MethodDesc TargetMethod;
@@ -232,13 +240,19 @@ namespace Internal.IL
                 targetType = null;
             }
 
+            // We do not support signature variables as a target (for example, VAR and MVAR).
+            if (targetType is SignatureVariable)
+            {
+                targetType = null;
+            }
+
             validated = targetType;
             return validated != null;
         }
 
         private static bool DoesMethodMatchUnsafeAccessorDeclaration(ref GenerationContext context, MethodDesc method, bool ignoreCustomModifiers)
         {
-            MethodSignature declSig = context.Declaration.Signature;
+            MethodSignature declSig = context.DeclarationSignature;
             MethodSignature maybeSig = method.Signature;
 
             // Check if we need to also validate custom modifiers.
@@ -246,14 +260,14 @@ namespace Internal.IL
             if (!ignoreCustomModifiers)
             {
                 // Compare any unmanaged callconv and custom modifiers on the signatures.
-                // We treat unmanaged calling conventions at the same level of precedance
+                // We treat unmanaged calling conventions at the same level of precedence
                 // as custom modifiers, eventhough they are normally bits in a signature.
-                ReadOnlySpan<EmbeddedSignatureDataKind> kinds = new EmbeddedSignatureDataKind[]
-                {
+                ReadOnlySpan<EmbeddedSignatureDataKind> kinds =
+                [
                     EmbeddedSignatureDataKind.UnmanagedCallConv,
                     EmbeddedSignatureDataKind.RequiredCustomModifier,
                     EmbeddedSignatureDataKind.OptionalCustomModifier
-                };
+                ];
 
                 var declData = declSig.GetEmbeddedSignatureData(kinds) ?? Array.Empty<EmbeddedSignatureData>();
                 var maybeData = maybeSig.GetEmbeddedSignatureData(kinds) ?? Array.Empty<EmbeddedSignatureData>();
@@ -315,6 +329,12 @@ namespace Internal.IL
                 return false;
             }
 
+            // Validate generic parameter.
+            if (declSig.GenericParameterCount != maybeSig.GenericParameterCount)
+            {
+                return false;
+            }
+
             // Validate argument count and return type
             if (context.Kind == UnsafeAccessorKind.Constructor)
             {
@@ -366,7 +386,47 @@ namespace Internal.IL
             return true;
         }
 
-        private static bool TrySetTargetMethod(ref GenerationContext context, string name, out bool isAmbiguous, bool ignoreCustomModifiers = true)
+        private static bool VerifyDeclarationSatisfiesTargetConstraints(MethodDesc declaration, TypeDesc targetType, MethodDesc targetMethod)
+        {
+            Debug.Assert(declaration != null);
+            Debug.Assert(targetType != null);
+            Debug.Assert(targetMethod != null);
+
+            if (targetType.HasInstantiation)
+            {
+                Instantiation declClassInst = declaration.OwningType.Instantiation;
+                var instType = targetType.Context.GetInstantiatedType((MetadataType)targetType.GetTypeDefinition(), declClassInst);
+                if (!instType.CheckConstraints())
+                {
+                    return false;
+                }
+
+                targetMethod = instType.FindMethodOnExactTypeWithMatchingTypicalMethod(targetMethod);
+            }
+
+            if (targetMethod.HasInstantiation)
+            {
+                Instantiation declMethodInst = declaration.Instantiation;
+                var instMethod = targetType.Context.GetInstantiatedMethod(targetMethod, declMethodInst);
+                if (!instMethod.CheckConstraints())
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private enum SetTargetResult
+        {
+            Success,
+            Missing,
+            MissingType,
+            Ambiguous,
+            Invalid,
+            NotSupported
+        }
+
+        private static SetTargetResult TrySetTargetMethod(ref GenerationContext context, string name, bool ignoreCustomModifiers = true)
         {
             TypeDesc targetType = context.TargetType;
 
@@ -380,7 +440,7 @@ namespace Internal.IL
                 }
 
                 // Check for matching name
-                if (!md.Name.Equals(name))
+                if (!md.GetName().Equals(name))
                 {
                     continue;
                 }
@@ -399,23 +459,39 @@ namespace Internal.IL
                         // We have detected ambiguity when ignoring custom modifiers.
                         // Start over, but look for a match requiring custom modifiers
                         // to match precisely.
-                        if (TrySetTargetMethod(ref context, name, out isAmbiguous, ignoreCustomModifiers: false))
-                            return true;
+                        if (SetTargetResult.Success == TrySetTargetMethod(ref context, name, ignoreCustomModifiers: false))
+                            return SetTargetResult.Success;
                     }
-
-                    isAmbiguous = true;
-                    return false;
+                    return SetTargetResult.Ambiguous;
                 }
 
                 targetMaybe = md;
             }
 
-            isAmbiguous = false;
+            if (targetMaybe != null)
+            {
+                if (!VerifyDeclarationSatisfiesTargetConstraints(context.Declaration, targetType, targetMaybe))
+                {
+                    return SetTargetResult.Invalid;
+                }
+
+                if (targetMaybe.HasInstantiation)
+                {
+                    TypeDesc[] methodInstantiation = new TypeDesc[targetMaybe.Instantiation.Length];
+                    for (int i = 0; i < methodInstantiation.Length; ++i)
+                    {
+                        methodInstantiation[i] = targetMaybe.Context.GetSignatureVariable(i, true);
+                    }
+                    targetMaybe = targetMaybe.Context.GetInstantiatedMethod(targetMaybe, new Instantiation(methodInstantiation));
+                }
+                Debug.Assert(targetMaybe is not null);
+            }
+
             context.TargetMethod = targetMaybe;
-            return context.TargetMethod != null;
+            return context.TargetMethod != null ? SetTargetResult.Success : SetTargetResult.Missing;
         }
 
-        private static bool TrySetTargetField(ref GenerationContext context, string name, TypeDesc fieldType)
+        private static SetTargetResult TrySetTargetField(ref GenerationContext context, string name, TypeDesc fieldType)
         {
             TypeDesc targetType = context.TargetType;
 
@@ -427,14 +503,210 @@ namespace Internal.IL
                 }
 
                 // Validate the name and target type match.
-                if (fd.Name.Equals(name)
+                if (fd.GetName().Equals(name)
                     && fieldType == fd.FieldType)
                 {
                     context.TargetField = fd;
-                    return true;
+                    return SetTargetResult.Success;
                 }
             }
-            return false;
+            return SetTargetResult.Missing;
+        }
+
+        private static bool IsValidInitialTypeForReplacementType(TypeDesc initialType, TypeDesc replacementType)
+        {
+            if (replacementType.IsByRef)
+            {
+                if (!initialType.IsByRef)
+                {
+                    // We can't replace a non-byref with a byref.
+                    return false;
+                }
+
+                return IsValidInitialTypeForReplacementType(((ByRefType)initialType).ParameterType, ((ByRefType)replacementType).ParameterType);
+            }
+            else if (initialType.IsByRef)
+            {
+                // We can't replace a byref with a non-byref.
+                return false;
+            }
+
+            if (replacementType.IsPointer)
+            {
+                return initialType is PointerType { ParameterType.IsVoid: true };
+            }
+
+            Debug.Assert(!replacementType.IsValueType);
+
+            return initialType.IsObject;
+        }
+
+        private static SetTargetResult TrySetTargetMethodSignature(ref GenerationContext context)
+        {
+            EcmaMethod method = context.Declaration;
+            MetadataReader reader = method.MetadataReader;
+            MethodDefinition methodDef = reader.GetMethodDefinition(method.Handle);
+            ParameterHandleCollection parameters = methodDef.GetParameters();
+
+            MethodSignature originalSignature = method.Signature;
+
+            MethodSignatureBuilder updatedSignature = new MethodSignatureBuilder(originalSignature);
+
+            foreach (ParameterHandle parameterHandle in parameters)
+            {
+                Parameter parameter = reader.GetParameter(parameterHandle);
+
+                if (parameter.SequenceNumber > originalSignature.Length)
+                {
+                    // This is invalid metadata (parameter metadata for a parameter that doesn't exist in the signature).
+                    return SetTargetResult.Invalid;
+                }
+
+                CustomAttributeHandle unsafeAccessorTypeAttributeHandle = FindUnsafeAccessorTypeAttribute(reader, parameter);
+
+                if (unsafeAccessorTypeAttributeHandle.IsNil)
+                {
+                    continue;
+                }
+
+                bool isReturnValue = parameter.SequenceNumber == 0;
+
+                TypeDesc initialType = isReturnValue ? originalSignature.ReturnType : originalSignature[parameter.SequenceNumber - 1];
+
+                if (isReturnValue && initialType.IsByRef)
+                {
+                    // We can't support UnsafeAccessorTypeAttribute on by-ref returns
+                    // today as it would create a type-safety hole.
+                    return SetTargetResult.NotSupported;
+                }
+
+                SetTargetResult decodeResult = DecodeUnsafeAccessorType(method, reader.GetCustomAttribute(unsafeAccessorTypeAttributeHandle), out TypeDesc replacementType);
+                if (decodeResult != SetTargetResult.Success)
+                {
+                    return decodeResult;
+                }
+
+                // Future versions of the runtime may support
+                // UnsafeAccessorTypeAttribute on value types.
+                if (replacementType.IsValueType)
+                {
+                    return SetTargetResult.NotSupported;
+                }
+
+                if (!IsValidInitialTypeForReplacementType(initialType, replacementType))
+                {
+                    return SetTargetResult.Invalid;
+                }
+
+                context.ReplacedSignatureElements ??= new BitArray(originalSignature.Length + 1, false);
+                context.ReplacedSignatureElements[parameter.SequenceNumber] = true;
+
+                if (isReturnValue)
+                {
+                    updatedSignature.ReturnType = replacementType;
+                }
+                else
+                {
+                    updatedSignature[parameter.SequenceNumber - 1] = replacementType;
+                }
+            }
+
+            context.DeclarationSignature = updatedSignature.ToSignature();
+            return SetTargetResult.Success;
+        }
+
+        private static SetTargetResult DecodeUnsafeAccessorType(EcmaMethod method, CustomAttribute unsafeAccessorTypeAttribute, out TypeDesc replacementType)
+        {
+            replacementType = null;
+            CustomAttributeValue<TypeDesc> decoded = unsafeAccessorTypeAttribute.DecodeValue(
+                new CustomAttributeTypeProvider(method.Module));
+
+            if (decoded.FixedArguments[0].Value is not string replacementTypeName)
+            {
+                return SetTargetResult.Invalid;
+            }
+
+            replacementType = method.Module.GetTypeByCustomAttributeTypeName(
+                replacementTypeName,
+                throwIfNotFound: false,
+                canonGenericResolver: (module, name) =>
+                {
+                    if (!name.StartsWith('!'))
+                    {
+                        return null;
+                    }
+
+                    bool isMethodParameter = name.StartsWith("!!", StringComparison.Ordinal);
+
+                    if (!int.TryParse(name.AsSpan(isMethodParameter ? 2 : 1), NumberStyles.None, CultureInfo.InvariantCulture, out int index))
+                    {
+                        return null;
+                    }
+
+                    if (isMethodParameter)
+                    {
+                        if (index >= method.Instantiation.Length)
+                        {
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        if (index >= method.OwningType.Instantiation.Length)
+                        {
+                            return null;
+                        }
+                    }
+
+                    return module.Context.GetSignatureVariable(index, isMethodParameter);
+                });
+
+            return replacementType is null
+                ? SetTargetResult.MissingType
+                : SetTargetResult.Success;
+        }
+
+        private static CustomAttributeHandle FindUnsafeAccessorTypeAttribute(MetadataReader reader, Parameter parameter)
+        {
+            foreach (CustomAttributeHandle customAttributeHandle in parameter.GetCustomAttributes())
+            {
+                reader.GetAttributeNamespaceAndName(customAttributeHandle, out StringHandle namespaceName, out StringHandle name);
+                if (reader.StringComparer.Equals(namespaceName, "System.Runtime.CompilerServices")
+                    && reader.StringComparer.Equals(name, "UnsafeAccessorTypeAttribute"))
+                {
+                    return customAttributeHandle;
+                }
+            }
+
+            return default;
+        }
+
+        private static ParameterHandle FindParameterForSequenceNumber(MetadataReader reader, ref ParameterHandleCollection.Enumerator parameterEnumerator, int sequenceNumber)
+        {
+            Parameter currentParameter = reader.GetParameter(parameterEnumerator.Current);
+            if (currentParameter.SequenceNumber == sequenceNumber)
+            {
+                return parameterEnumerator.Current;
+            }
+
+            // Scan until we are either at this parameter or at the first one after it (if there is no Parameter row in the table)
+            while (parameterEnumerator.MoveNext())
+            {
+                Parameter thisParameterMaybe = reader.GetParameter(parameterEnumerator.Current);
+                if (thisParameterMaybe.SequenceNumber > sequenceNumber)
+                {
+                    // We've passed where it should be.
+                    return default;
+                }
+
+                if (thisParameterMaybe.SequenceNumber == sequenceNumber)
+                {
+                    // We found it.
+                    return parameterEnumerator.Current;
+                }
+            }
+
+            return default;
         }
 
         private static MethodIL GenerateAccessor(ref GenerationContext context)
@@ -442,15 +714,49 @@ namespace Internal.IL
             ILEmitter emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
 
+            MetadataReader reader = context.Declaration.MetadataReader;
+            ParameterHandleCollection.Enumerator parameterEnumerator = reader.GetMethodDefinition(context.Declaration.Handle).GetParameters().GetEnumerator();
+            parameterEnumerator.MoveNext();
+
             // Load stub arguments.
             // When the target is static, the first argument is only
             // used to look up the target member to access and ignored
             // during dispatch.
             int beginIndex = context.IsTargetStatic ? 1 : 0;
-            int stubArgCount = context.Declaration.Signature.Length;
+            int stubArgCount = context.DeclarationSignature.Length;
+            Stubs.ILLocalVariable?[] localsToRestore = null;
+
             for (int i = beginIndex; i < stubArgCount; ++i)
             {
                 codeStream.EmitLdArg(i);
+                if (context.ReplacedSignatureElements?[i + 1] == true)
+                {
+                    if (context.DeclarationSignature[i] is { Category: TypeFlags.Class } classType)
+                    {
+                        codeStream.Emit(ILOpcode.unbox_any, emit.NewToken(classType));
+                    }
+                    else if (context.DeclarationSignature[i] is ByRefType { ParameterType.Category: TypeFlags.Class } byrefType)
+                    {
+                        localsToRestore ??= new Stubs.ILLocalVariable?[stubArgCount];
+
+                        TypeDesc targetType = byrefType.ParameterType;
+                        Stubs.ILLocalVariable local = emit.NewLocal(targetType);
+                        codeStream.EmitLdInd(targetType);
+                        codeStream.Emit(ILOpcode.unbox_any, emit.NewToken(targetType));
+                        codeStream.EmitStLoc(local);
+                        codeStream.EmitLdLoca(local);
+
+                        // Only mark the local to be restored after the call
+                        // if the parameter is not marked as "in".
+                        // The "sequence number" for parameters is 1-based, whereas the parameter index is 0-based.
+                        ParameterHandle paramHandle = FindParameterForSequenceNumber(reader, ref parameterEnumerator, i + 1);
+                        if (paramHandle.IsNil
+                            || !reader.GetParameter(paramHandle).Attributes.HasFlag(ParameterAttributes.In))
+                        {
+                            localsToRestore[i] = local;
+                        }
+                    }
+                }
             }
 
             // Provide access to the target member
@@ -481,12 +787,25 @@ namespace Internal.IL
                     break;
             }
 
+            if (localsToRestore is not null)
+            {
+                for (int i = beginIndex; i < stubArgCount; ++i)
+                {
+                    if (localsToRestore[i] != null)
+                    {
+                        codeStream.EmitLdArg(i);
+                        codeStream.EmitLdLoc(localsToRestore[i].Value);
+                        codeStream.EmitStInd(((ParameterizedType)context.Declaration.Signature[i]).ParameterType);
+                    }
+                }
+            }
+
             // Return from the generated stub
             codeStream.Emit(ILOpcode.ret);
             return emit.Link(context.Declaration);
         }
 
-        private static MethodIL GenerateAccessorSpecificFailure(ref GenerationContext context, string name, bool ambiguous)
+        private static MethodIL GenerateAccessorSpecificFailure(ref GenerationContext context, string name, SetTargetResult result)
         {
             ILEmitter emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
@@ -496,24 +815,37 @@ namespace Internal.IL
 
             MethodDesc thrower;
             TypeSystemContext typeSysContext = context.Declaration.Context;
-            if (ambiguous)
+            if (result is SetTargetResult.Ambiguous)
             {
                 codeStream.EmitLdc((int)ExceptionStringID.AmbiguousMatchUnsafeAccessor);
-                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowAmbiguousMatchException");
+                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowAmbiguousMatchException"u8);
+            }
+            else if (result is SetTargetResult.Invalid)
+            {
+                codeStream.EmitLdc((int)ExceptionStringID.InvalidProgramDefault);
+                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowInvalidProgramException"u8);
+            }
+            else if (result is SetTargetResult.NotSupported)
+            {
+                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowNotSupportedException"u8);
+            }
+            else if (result is SetTargetResult.MissingType)
+            {
+                thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowUnavailableType"u8);
             }
             else
             {
-
+                Debug.Assert(result is SetTargetResult.Missing);
                 ExceptionStringID id;
                 if (context.Kind == UnsafeAccessorKind.Field || context.Kind == UnsafeAccessorKind.StaticField)
                 {
                     id = ExceptionStringID.MissingField;
-                    thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingFieldException");
+                    thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowMissingFieldException"u8);
                 }
                 else
                 {
                     id = ExceptionStringID.MissingMethod;
-                    thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowMissingMethodException");
+                    thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowMissingMethodException"u8);
                 }
 
                 codeStream.EmitLdc((int)id);
@@ -534,7 +866,7 @@ namespace Internal.IL
             ILCodeLabel label = emit.NewCodeLabel();
             codeStream.EmitLabel(label);
             codeStream.EmitLdc((int)ExceptionStringID.BadImageFormatGeneric);
-            MethodDesc thrower = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowBadImageFormatException");
+            MethodDesc thrower = method.Context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowBadImageFormatException"u8);
             codeStream.Emit(ILOpcode.call, emit.NewToken(thrower));
             codeStream.Emit(ILOpcode.br, label);
 

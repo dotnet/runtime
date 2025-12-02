@@ -34,15 +34,15 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void DefaultWebProxy_SetThenGet_ValuesMatch()
+        public async Task DefaultWebProxy_SetThenGet_ValuesMatch()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 IWebProxy p = new WebProxy();
 
                 WebRequest.DefaultWebProxy = p;
                 Assert.Same(p, WebRequest.DefaultWebProxy);
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [Fact]
@@ -193,10 +193,10 @@ namespace System.Net.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(RequestCacheLevel.NoCacheNoStore, new string[] { "Pragma: no-cache", "Cache-Control: no-store, no-cache" })]
         [InlineData(RequestCacheLevel.Reload, new string[] { "Pragma: no-cache", "Cache-Control: no-cache" })]
-        public void SendGetRequest_WithGlobalCachePolicy_AddCacheHeaders(
+        public async Task SendGetRequest_WithGlobalCachePolicy_AddCacheHeaders(
             RequestCacheLevel requestCacheLevel, string[] expectedHeaders)
         {
-            RemoteExecutor.Invoke(async (reqCacheLevel, eh0, eh1) =>
+            await RemoteExecutor.Invoke(async (reqCacheLevel, eh0, eh1) =>
             {
                 await LoopbackServer.CreateServerAsync(async (server, uri) =>
                 {
@@ -216,13 +216,13 @@ namespace System.Net.Tests
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     }
                 });
-            }, requestCacheLevel.ToString(), expectedHeaders[0], expectedHeaders[1]).Dispose();
+            }, requestCacheLevel.ToString(), expectedHeaders[0], expectedHeaders[1]).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendGetRequest_WithGlobalCachePolicyBypassCache_DoNotAddCacheHeaders()
+        public async Task SendGetRequest_WithGlobalCachePolicyBypassCache_DoNotAddCacheHeaders()
         {
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async () =>
             {
                 await LoopbackServer.CreateServerAsync(async (server, uri) =>
                 {
@@ -246,7 +246,7 @@ namespace System.Net.Tests
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     }
                 });
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         private class FakeRequest : WebRequest

@@ -131,9 +131,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             get
             {
-                if (this is FieldSymbol field)
+                if (this is FieldSymbol fieldInfo)
                 {
-                    return field.isStatic;
+                    return fieldInfo.isStatic;
                 }
 
                 if (this is EventSymbol ev)

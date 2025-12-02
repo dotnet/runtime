@@ -45,6 +45,7 @@ namespace HttpStress
         public bool UseHttpSys { get; set; }
         public bool LogAspNet { get; set; }
         public bool Trace { get; set; }
+        public bool? TrackUnobservedExceptions { get; set; }
         public int? ServerMaxConcurrentStreams { get; set; }
         public int? ServerMaxFrameSize { get; set; }
         public int? ServerInitialConnectionWindowSize { get; set; }

@@ -1,4 +1,4 @@
-﻿<root>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -131,5 +131,8 @@
   </data>
   <data name="net_http_client_invalid_requesturi" xml:space="preserve">
     <value>An invalid request URI was provided. Either the request URI must be an absolute URI or BaseAddress must be set.</value>
+  </data>
+  <data name="net_http_unsupported_version" xml:space="preserve">
+    <value>Request version value must be one of 1.0, 1.1, 2.0, or 3.0.</value>
   </data>
 </root>

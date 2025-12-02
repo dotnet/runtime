@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //*****************************************************************************
-// MetaModel.h -- header file for compressed COM+ metadata.
+// MetaModel.h -- header file for compressed CLR metadata.
 //
 
 //
@@ -39,11 +39,6 @@
 
 #define METAMODEL_MAJOR_VER 2
 #define METAMODEL_MINOR_VER 0
-
-// Metadata version number up through Whidbey Beta2
-#define METAMODEL_MAJOR_VER_B1 1
-#define METAMODEL_MINOR_VER_B1 1
-
 
 typedef enum MetadataVersion
 {
@@ -259,9 +254,9 @@ public:
         HAS_DELETE      =   0x80,       // If set, this metadata can contain _Delete tokens.
     };
 
-    unsigned __int64    m_maskvalid;            // Bit mask of present table counts.
+    uint64_t    m_maskvalid;            // Bit mask of present table counts.
 
-    unsigned __int64    m_sorted;               // Bit mask of sorted tables.
+    uint64_t    m_sorted;               // Bit mask of sorted tables.
     FORCEINLINE bool IsSorted(ULONG ixTbl)
         { return m_sorted & BIT(ixTbl) ? true : false; }
     void SetSorted(ULONG ixTbl, int bVal)
@@ -283,9 +278,9 @@ public:
 #endif
 
 private:
-    FORCEINLINE unsigned __int64 BIT(ULONG ixBit)
-    {   _ASSERTE(ixBit < (sizeof(__int64)*CHAR_BIT));
-        return UI64(1) << ixBit; }
+    FORCEINLINE uint64_t BIT(ULONG ixBit)
+    {   _ASSERTE(ixBit < (sizeof(int64_t)*CHAR_BIT));
+        return 1ULL << ixBit; }
 
 };
 
@@ -528,23 +523,6 @@ public:
     BOOL IsVerified()
     {
         return m_fVerifiedByTrustedSource && CommonIsRo();
-    }
-
-    void SetVerifiedByTrustedSource(BOOL fVerifiedByTrustedSource)
-    {
-        m_fVerifiedByTrustedSource = fVerifiedByTrustedSource;
-    }
-
-    STDMETHODIMP GetRvaOffsetData(// S_OK or error
-        DWORD   *pFirstMethodRvaOffset,     // [OUT] Offset (from start of metadata) to the first RVA field in MethodDef table.
-        DWORD   *pMethodDefRecordSize,      // [OUT] Size of each record in MethodDef table.
-        DWORD   *pMethodDefCount,           // [OUT] Number of records in MethodDef table.
-        DWORD   *pFirstFieldRvaOffset,      // [OUT] Offset (from start of metadata) to the first RVA field in FieldRVA table.
-        DWORD   *pFieldRvaRecordSize,       // [OUT] Size of each record in FieldRVA table.
-        DWORD   *pFieldRvaCount)            // [OUT] Number of records in FieldRVA table.
-    {
-        _ASSERTE("Not implemented");
-        return E_NOTIMPL;
     }
 
     //*****************************************************************************
@@ -1998,9 +1976,8 @@ public:
 
     BOOL SupportsGenerics()
     {
-        // Only 2.0 of the metadata (and 1.1) support generics
-        return (m_Schema.m_major >= METAMODEL_MAJOR_VER_V2_0 ||
-                (m_Schema.m_major == METAMODEL_MAJOR_VER_B1 && m_Schema.m_minor == METAMODEL_MINOR_VER_B1));
+        // Only 2.0 of the metadata support generics
+        return (m_Schema.m_major >= METAMODEL_MAJOR_VER_V2_0);
     }// SupportGenerics
 
     protected:

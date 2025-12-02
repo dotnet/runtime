@@ -10,7 +10,7 @@ class FinalizerThread
     static BOOL fQuitFinalizer;
 
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
-    static ULONGLONG LastHeapDumpTime;
+    static int64_t LastHeapDumpTime;
 #endif
 
     static CLREvent *hEventFinalizer;
@@ -42,33 +42,24 @@ public:
         return g_pFinalizerThread;
     }
 
-    static BOOL IsCurrentThreadFinalizer();
+    static bool IsCurrentThreadFinalizer();
 
     static void EnableFinalization();
 
-    static BOOL HaveExtraWorkForFinalizer();
+    static void DelayDestroyDynamicMethodDesc(DynamicMethodDesc* pDMD);
 
-    static void RaiseShutdownEvents()
-    {
-        WRAPPER_NO_CONTRACT;
-        fQuitFinalizer = TRUE;
-        EnableFinalization();
+    // returns if there is some extra work for the finalizer thread.
+    static bool HaveExtraWorkForFinalizer();
 
-        // Do not wait for FinalizerThread if the current one is FinalizerThread.
-        if (GetThreadNULLOk() != GetFinalizerThread())
-        {
-            // This wait must be alertable to handle cases where the current
-            // thread's context is needed (i.e. RCW cleanup)
-            hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE);
-        }
-    }
+    static OBJECTREF GetNextFinalizableObject();
 
-    static void FinalizerThreadWait(DWORD timeout = INFINITE);
+    static void RaiseShutdownEvents();
 
-    // We wake up a wait for finaliation for two reasons:
-    // if fFinalizer=TRUE, we have finished finalization.
-    // if fFinalizer=FALSE, the timeout for finalization is changed, and AD unload helper thread is notified.
-    static void SignalFinalizationDone(BOOL fFinalizer);
+    static void WaitForFinalizerThreadStart();
+
+    static void FinalizerThreadWait();
+
+    static void SignalFinalizationDone(int observedFullGcCount);
 
     static VOID FinalizerThreadWorker(void *args);
     static DWORD WINAPI FinalizerThreadStart(void *args);

@@ -14,6 +14,12 @@ extern volatile uint32_t _ep_number_of_sessions;
 extern volatile uint64_t _ep_allow_write;
 
 /*
+ * Global constants
+ */
+
+extern uint64_t ep_default_rundown_keyword;
+
+/*
  * Globals and volatile access functions.
  */
 
@@ -119,8 +125,9 @@ typedef struct EventPipeSessionOptions {
 	uint32_t providers_len;
 	EventPipeSessionType session_type;
 	EventPipeSerializationFormat format;
-	bool rundown_requested;
+	uint64_t rundown_keyword;
 	bool stackwalk_requested;
+	int user_events_data_fd;
 } EventPipeSessionOptions;
 
 void
@@ -132,11 +139,12 @@ ep_session_options_init (
 	uint32_t providers_len,
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
-	bool rundown_requested,
+	uint64_t rundown_keyword,
 	bool stackwalk_requested,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
-	void *callback_additional_data);
+	void *callback_additional_data,
+	int user_events_data_fd);
 
 void
 ep_session_options_fini (EventPipeSessionOptions* options);
@@ -164,7 +172,7 @@ ep_enable (
 	uint32_t providers_len,
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
-	bool rundown_requested,
+	uint64_t rundown_keyword,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data);
@@ -176,7 +184,7 @@ ep_enable_2 (
 	const ep_char8_t *providers,
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
-	bool rundown_requested,
+	uint64_t rundown_keyword,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data);

@@ -102,7 +102,7 @@ namespace
         json_parser_t json;
         if (!json.parse_raw_data(reinterpret_cast<char*>(data), size, _X("<embedded .clsidmap>")))
         {
-            trace::error(_X("Embedded .clsidmap format is invalid"));
+            trace::error(_X("Embedded .clsidmap is invalid.\n  %s"), json.get_error_message().c_str());
             throw HResultException{ StatusCode::InvalidConfigFile };
         }
 
@@ -115,14 +115,14 @@ namespace
         GUID policy = WINTRUST_ACTION_GENERIC_VERIFY_V2;
 
         // File from disk must be used since there is no support for blob verification of a DLL
-        // https://docs.microsoft.com/windows/desktop/api/wintrust/ns-wintrust-wintrust_file_info
+        // https://learn.microsoft.com/windows/desktop/api/wintrust/ns-wintrust-wintrust_file_info
         WINTRUST_FILE_INFO fileData{};
         fileData.cbStruct = sizeof(WINTRUST_FILE_INFO);
         fileData.pcwszFilePath = path.c_str();
         fileData.hFile = nullptr;
         fileData.pgKnownSubject = nullptr;
 
-        // https://docs.microsoft.com/windows/desktop/api/wintrust/ns-wintrust-_wintrust_data
+        // https://learn.microsoft.com/windows/desktop/api/wintrust/ns-wintrust-_wintrust_data
         WINTRUST_DATA trustData{};
         trustData.cbStruct = sizeof(trustData);
         trustData.pPolicyCallbackData = nullptr;
@@ -137,7 +137,7 @@ namespace
         trustData.dwUIContext = 0;
         trustData.pFile = &fileData;
 
-        // https://docs.microsoft.com/windows/desktop/api/wintrust/nf-wintrust-winverifytrust
+        // https://learn.microsoft.com/windows/desktop/api/wintrust/nf-wintrust-winverifytrust
         LONG res = ::WinVerifyTrust(nullptr, &policy, &trustData);
         const DWORD err = ::GetLastError();
         if (trustData.hWVTStateData != nullptr)
@@ -180,7 +180,7 @@ namespace
         json_parser_t json;
         if (!json.parse_file(map_file_name))
         {
-            trace::error(_X("File .clsidmap format is invalid"));
+            trace::error(_X("File .clsidmap [%s] is invalid.\n  %s"), map_file_name.c_str(), json.get_error_message().c_str());
             throw HResultException{ StatusCode::InvalidConfigFile };
         }
 

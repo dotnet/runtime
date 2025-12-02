@@ -38,9 +38,7 @@ public abstract class WasmAppBuilderBaseTask : Task
     // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
     public string[] IcuDataFileNames { get; set; } = Array.Empty<string>();
 
-    public int DebugLevel { get; set; }
     public ITaskItem[] SatelliteAssemblies { get; set; } = Array.Empty<ITaskItem>();
-    public bool HybridGlobalization { get; set; }
     public bool InvariantGlobalization { get; set; }
     public ITaskItem[] FilesToIncludeInFileSystem { get; set; } = Array.Empty<ITaskItem>();
     public ITaskItem[] ExtraFilesToDeploy { get; set; } = Array.Empty<ITaskItem>();
@@ -107,8 +105,8 @@ public abstract class WasmAppBuilderBaseTask : Task
         if (matchingAssemblies.Length > 1)
             throw new LogAsErrorException($"Found more than one assembly matching the main assembly name {MainAssemblyName}: {string.Join(",", matchingAssemblies)}");
 
-        var rootNode = JsonNode.Parse(File.ReadAllText(RuntimeConfigJsonPath),
-                                            new JsonNodeOptions { PropertyNameCaseInsensitive = true });
+        using FileStream rcs = File.OpenRead(RuntimeConfigJsonPath);
+        var rootNode = JsonNode.Parse(rcs, new JsonNodeOptions { PropertyNameCaseInsensitive = true });
         if (rootNode == null)
             throw new LogAsErrorException($"Failed to parse {RuntimeConfigJsonPath}");
 

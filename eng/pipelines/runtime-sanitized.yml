@@ -28,8 +28,9 @@ extends:
           buildConfig: Checked
           runtimeFlavor: coreclr
           platforms:
-            - linux_x64
+            - linux_x64_sanitizer
             - osx_x64
+            - windows_x64
           variables:
             - name: _nativeSanitizersArg
               value: -fsanitize address
@@ -49,37 +50,8 @@ extends:
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
-                  testGroup: outerloop
+                  testGroup: innerloop
                   sanitizers: 'address'
-
-      #
-      # Build the whole product with CoreCLR and run libraries tests with AddressSanitizer
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-          buildConfig: Debug
-          runtimeFlavor: coreclr
-          platforms:
-            - linux_x64
-            - osx_x64
-          variables:
-            - name: _nativeSanitizersArg
-              value: -fsanitize address
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: CoreCLR_LibrariesTests
-            buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -rc Checked $(_nativeSanitizersArg) /p:ArchiveTests=true
-            timeoutInMinutes: 180
-            # extra steps, run tests
-            postBuildSteps:
-              - template: /eng/pipelines/libraries/helix.yml
-                parameters:
-                  creator: dotnet-bot
-                  testRunNamePrefixSuffix: Libraries_$(_BuildConfig)
-                  scenarios:
-                    - normal
 
       #
       # NativeAOT release build and smoke tests with AddressSanitizer
@@ -90,8 +62,9 @@ extends:
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           buildConfig: release
           platforms:
-            - linux_x64
+            - linux_x64_sanitizer
             - osx_x64
+            - windows_x64
           variables:
             - name: _nativeSanitizersArg
               value: -fsanitize address
@@ -99,7 +72,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release $(_nativeSanitizersArg)
+            buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release $(_nativeSanitizersArg)
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:

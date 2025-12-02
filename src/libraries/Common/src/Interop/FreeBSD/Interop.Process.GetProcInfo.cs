@@ -186,32 +186,19 @@ internal static partial class Interop
         /// <param name="count">The number of kinfo_proc entries returned.</param>
         public static unsafe kinfo_proc* GetProcInfo(int pid, bool threads, out int count)
         {
-            Span<int> sysctlName = stackalloc int[4];
-
-            if (pid == 0)
-            {
-                // get all processes
-                sysctlName[3] = 0;
-                sysctlName[2] = KERN_PROC_PROC;
-            }
-            else
-            {
-                // get specific process, possibly with threads
-                sysctlName[3] = pid;
-                sysctlName[2] = KERN_PROC_PID | (threads ? KERN_PROC_INC_THREAD : 0);
-            }
-            sysctlName[1] = KERN_PROC;
-            sysctlName[0] = CTL_KERN;
+            ReadOnlySpan<int> sysctlName = pid == 0 ?
+                [CTL_KERN, KERN_PROC, KERN_PROC_PROC, 0] : // get all processes
+                [CTL_KERN, KERN_PROC, KERN_PROC_PID | (threads ? KERN_PROC_INC_THREAD : 0), pid]; // get specific process, possibly with threads
 
             byte* pBuffer = null;
-            int bytesLength = 0;
+            uint bytesLength = 0;
             Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength);
 
             kinfo_proc* kinfo = (kinfo_proc*)pBuffer;
 
             Debug.Assert(kinfo->ki_structsize == sizeof(kinfo_proc));
 
-            count = (int)bytesLength / sizeof(kinfo_proc);
+            count = (int)(bytesLength / sizeof(kinfo_proc));
 
             // Buffer ownership transferred to the caller
             return kinfo;

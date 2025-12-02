@@ -5,7 +5,9 @@
       If we are stabilizing set the StableVersion property for the packages.
       Needs to happen in Directory.Build.targets to allow all the pkgproj's to set Version property first.
     -->
-    <StableVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' != 'true'">$(Version)</StableVersion>
+    <StableVersion Condition="'$(DotNetFinalVersionKind)' == 'release' and
+                              '$(SuppressFinalPackageVersion)' != 'true' and
+                              '$(IsShipping)' == 'true'">$(Version)</StableVersion>
 
     <!--
       Explicitly re-set the symbol package output path. The pkgproj files here end up importing the targets from
@@ -15,20 +17,6 @@
     -->
     <SymbolPackageOutputPath>$(PackageOutputPath)</SymbolPackageOutputPath>
   </PropertyGroup>
-
-  <Target Name="SetTargetBasedPackageVersion"
-          BeforeTargets="GenerateNuSpec"
-          DependsOnTargets="GetProductVersions">
-    <PropertyGroup>
-      <Version>$(ProductVersion)</Version>
-      <!--
-        PackageVersion is normally calculated using Version during static property evaluation, but
-        we need some info from GetProductVersions, so it's too late to rely on that. We need to set
-        both in target evaluation, here.
-      -->
-      <PackageVersion>$(ProductVersion)</PackageVersion>
-    </PropertyGroup>
-  </Target>
 
   <!--
     Remove duplicate files returned by restore. The resolve task performs extra detection to pick up

@@ -10,7 +10,7 @@ using System.Security.Permissions;
 
 namespace System.Xaml.Permissions
 {
-#if NETCOREAPP
+#if NET
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public sealed class XamlLoadPermission : CodeAccessPermission, IUnrestrictedPermission
@@ -23,7 +23,7 @@ namespace System.Xaml.Permissions
         [ComVisible(false)]
         public override int GetHashCode() { return base.GetHashCode(); }
         [SupportedOSPlatform("windows")]
-        public IList<XamlAccessLevel> AllowedAccess { get; private set; } = new ReadOnlyCollection<XamlAccessLevel>(Array.Empty<XamlAccessLevel>());
+        public IList<XamlAccessLevel> AllowedAccess { get; } = new ReadOnlyCollection<XamlAccessLevel>(Array.Empty<XamlAccessLevel>());
         public override IPermission Copy() { return new XamlLoadPermission(PermissionState.Unrestricted); }
         public override void FromXml(SecurityElement elem) { }
         public bool Includes(XamlAccessLevel requestedAccess) { return true; }

@@ -12,6 +12,7 @@ namespace System.Text.Json.Serialization.Converters
         where TValueOption : struct, IEquatable<TValueOption>
     {
         internal override Type? ElementType => typeof(TElement);
+        internal override JsonConverter? NullableElementConverter => _elementConverter;
         // 'ValueNone' is encoded using 'default' at runtime and serialized as 'null' in JSON.
         public override bool HandleNull => true;
 

@@ -7,7 +7,7 @@ using System.Transactions.Oletx;
 
 namespace System.Transactions.DtcProxyShim.DtcInterfaces;
 
-// https://docs.microsoft.com/previous-versions/windows/desktop/ms678930(v=vs.85)
+// https://learn.microsoft.com/previous-versions/windows/desktop/ms678930(v=vs.85)
 [GeneratedComInterface, Guid("5433376B-414D-11d3-B206-00C04FC2F3EF"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal partial interface ITransactionVoterNotifyAsync2
 {

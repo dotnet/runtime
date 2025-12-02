@@ -29,6 +29,11 @@ namespace Internal.Runtime.TypeLoader
             return rtth.ToEETypePtr()->IsDynamicType;
         }
 
+        public static unsafe bool IsDynamicTypeWithCctor(this RuntimeTypeHandle rtth)
+        {
+            return rtth.ToEETypePtr()->IsDynamicTypeWithCctor;
+        }
+
         public static unsafe int GetNumVtableSlots(this RuntimeTypeHandle rtth)
         {
             return rtth.ToEETypePtr()->NumVtableSlots;
@@ -104,25 +109,14 @@ namespace Internal.Runtime.TypeLoader
             return result;
         }
 
-        public static unsafe void Memset(IntPtr destination, int length, byte value)
+        public static unsafe void* AllocateMemory(int cbBytes)
         {
-            byte* pbDest = (byte*)destination.ToPointer();
-            while (length > 0)
-            {
-                *pbDest = value;
-                pbDest++;
-                length--;
-            }
+            return NativeMemory.Alloc((nuint)cbBytes);
         }
 
-        public static unsafe IntPtr AllocateMemory(int cbBytes)
+        public static unsafe void FreeMemory(void* memoryPtrToFree)
         {
-            return (IntPtr)NativeMemory.Alloc((nuint)cbBytes);
-        }
-
-        public static unsafe void FreeMemory(IntPtr memoryPtrToFree)
-        {
-            NativeMemory.Free((void*)memoryPtrToFree);
+            NativeMemory.Free(memoryPtrToFree);
         }
     }
 
@@ -132,12 +126,12 @@ namespace Internal.Runtime.TypeLoader
             int arity, TypeBuilderState state)
         {
             bool successful = false;
-            IntPtr eeTypePtrPlusGCDesc = IntPtr.Zero;
-            IntPtr writableDataPtr = IntPtr.Zero;
-            IntPtr gcStaticData = IntPtr.Zero;
-            IntPtr nonGcStaticData = IntPtr.Zero;
-            IntPtr genericComposition = IntPtr.Zero;
-            IntPtr threadStaticIndex = IntPtr.Zero;
+            void* eeTypePlusGCDesc = null;
+            void* writableData = null;
+            void* nonGcStaticData = null;
+            void* genericComposition = null;
+            void* threadStaticIndex = null;
+            nint gcStaticData = 0;
 
             try
             {
@@ -204,37 +198,24 @@ namespace Internal.Runtime.TypeLoader
                     numFunctionPointerTypeParameters = sig.Length;
                 }
 
-                // Optional fields encoding
-                int cbOptionalFieldsSize;
-                OptionalFieldsRuntimeBuilder optionalFields = new OptionalFieldsRuntimeBuilder(pTemplateEEType->OptionalFieldsPtr);
-
-                uint rareFlags = optionalFields.GetFieldValue(EETypeOptionalFieldTag.RareFlags, 0);
+                DynamicTypeFlags dynamicTypeFlags = 0;
 
                 int allocatedNonGCDataSize = state.NonGcDataSize;
                 if (state.HasStaticConstructor)
+                {
                     allocatedNonGCDataSize += -TypeBuilder.ClassConstructorOffset;
+                    dynamicTypeFlags |= DynamicTypeFlags.HasLazyCctor;
+                }
 
                 if (allocatedNonGCDataSize != 0)
-                    rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithNonGcStatics;
+                    dynamicTypeFlags |= DynamicTypeFlags.HasNonGCStatics;
 
                 if (state.GcDataSize != 0)
-                    rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithGcStatics;
+                    dynamicTypeFlags |= DynamicTypeFlags.HasGCStatics;
 
                 if (state.ThreadDataSize != 0)
-                    rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithThreadStatics;
+                    dynamicTypeFlags |= DynamicTypeFlags.HasThreadStatics;
 
-                if (rareFlags != 0)
-                    optionalFields.SetFieldValue(EETypeOptionalFieldTag.RareFlags, rareFlags);
-
-                // Compute size of optional fields encoding
-                cbOptionalFieldsSize = optionalFields.Encode();
-
-                // Clear the optional fields flag. We'll set it if we set optional fields later in this method.
-                if (cbOptionalFieldsSize == 0)
-                    flags &= ~(uint)EETypeFlags.OptionalFieldsFlag;
-
-                // Note: The number of vtable slots on the MethodTable to create is not necessary equal to the number of
-                // vtable slots on the template type for universal generics (see ComputeVTableLayout)
                 ushort numVtableSlots = state.NumVTableSlots;
 
                 // Compute the MethodTable size and allocate it
@@ -251,7 +232,6 @@ namespace Internal.Runtime.TypeLoader
                         runtimeInterfacesLength,
                         hasDispatchMap,
                         hasFinalizer,
-                        cbOptionalFieldsSize > 0,
                         hasSealedVTable,
                         isGeneric,
                         numFunctionPointerTypeParameters,
@@ -266,10 +246,10 @@ namespace Internal.Runtime.TypeLoader
                     int cbGCDescAligned = MemoryHelpers.AlignUp(cbGCDesc, IntPtr.Size);
 
                     // Allocate enough space for the MethodTable + gcDescSize
-                    eeTypePtrPlusGCDesc = MemoryHelpers.AllocateMemory(cbGCDescAligned + cbEEType + cbOptionalFieldsSize);
+                    eeTypePlusGCDesc = MemoryHelpers.AllocateMemory(cbGCDescAligned + cbEEType);
 
                     // Get the MethodTable pointer, and the template MethodTable pointer
-                    pEEType = (MethodTable*)(eeTypePtrPlusGCDesc + cbGCDescAligned);
+                    pEEType = (MethodTable*)((byte*)eeTypePlusGCDesc + cbGCDescAligned);
                     state.HalfBakedRuntimeTypeHandle = pEEType->ToRuntimeTypeHandle();
 
                     // Set basic MethodTable fields
@@ -285,13 +265,6 @@ namespace Internal.Runtime.TypeLoader
                     int arrayRank = isArray ? state.ArrayRank.Value : 0;
                     CreateInstanceGCDesc(state, pTemplateEEType, pEEType, baseSize, cbGCDesc, isValueType, isArray, isSzArray, arrayRank);
                     Debug.Assert(pEEType->ContainsGCPointers == (cbGCDesc != 0));
-
-                    // Copy the encoded optional fields buffer to the newly allocated memory, and update the OptionalFields field on the MethodTable
-                    if (cbOptionalFieldsSize > 0)
-                    {
-                        pEEType->OptionalFieldsPtr = (byte*)pEEType + cbEEType;
-                        optionalFields.WriteToEEType(pEEType, cbOptionalFieldsSize);
-                    }
 
                     // Copy VTable entries from template type
                     IntPtr* pVtable = (IntPtr*)((byte*)pEEType + sizeof(MethodTable));
@@ -319,14 +292,12 @@ namespace Internal.Runtime.TypeLoader
                     *((void**)((byte*)pEEType + cbSealedVirtualSlotsTypeOffset)) = pTemplateEEType->GetSealedVirtualTable();
                 }
 
-                if (MethodTable.SupportsWritableData)
-                {
-                    writableDataPtr = MemoryHelpers.AllocateMemory(WritableData.GetSize(IntPtr.Size));
-                    MemoryHelpers.Memset(writableDataPtr, WritableData.GetSize(IntPtr.Size), 0);
-                    pEEType->WritableData = (void*)writableDataPtr;
-                }
+                writableData = MemoryHelpers.AllocateMemory(WritableData.GetSize(IntPtr.Size));
+                NativeMemory.Clear(writableData, (nuint)WritableData.GetSize(IntPtr.Size));
+                pEEType->WritableData = writableData;
 
                 pEEType->DynamicTemplateType = pTemplateEEType;
+                pEEType->DynamicTypeFlags = dynamicTypeFlags;
 
                 int nonGCStaticDataOffset = 0;
 
@@ -343,13 +314,13 @@ namespace Internal.Runtime.TypeLoader
                     if (arity > 1)
                     {
                         genericComposition = MemoryHelpers.AllocateMemory(MethodTable.GetGenericCompositionSize(arity));
-                        pEEType->SetGenericComposition(genericComposition);
+                        pEEType->SetGenericComposition((IntPtr)genericComposition);
                     }
 
                     if (allocatedNonGCDataSize > 0)
                     {
                         nonGcStaticData = MemoryHelpers.AllocateMemory(allocatedNonGCDataSize);
-                        MemoryHelpers.Memset(nonGcStaticData, allocatedNonGCDataSize, 0);
+                        NativeMemory.Clear(nonGcStaticData, (nuint)allocatedNonGCDataSize);
                         Debug.Assert(nonGCStaticDataOffset <= allocatedNonGCDataSize);
                         pEEType->DynamicNonGcStaticsData = (IntPtr)((byte*)nonGcStaticData + nonGCStaticDataOffset);
                     }
@@ -362,7 +333,7 @@ namespace Internal.Runtime.TypeLoader
                     threadStaticIndex = MemoryHelpers.AllocateMemory(IntPtr.Size * 2);
                     *(IntPtr*)threadStaticIndex = pEEType->PointerToTypeManager;
                     *(((IntPtr*)threadStaticIndex) + 1) = (IntPtr)state.ThreadStaticOffset;
-                    pEEType->DynamicThreadStaticsIndex = threadStaticIndex;
+                    pEEType->DynamicThreadStaticsIndex = (IntPtr)threadStaticIndex;
                 }
 
                 if (state.GcDataSize != 0)
@@ -371,7 +342,7 @@ namespace Internal.Runtime.TypeLoader
                     object obj = RuntimeAugments.RawNewObject(((MethodTable*)state.GcStaticDesc)->ToRuntimeTypeHandle());
                     gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
 
-                    pEEType->DynamicGcStaticsData = gcStaticData;
+                    pEEType->DynamicGcStaticsData = (IntPtr)gcStaticData;
                 }
 
                 if (state.Dictionary != null)
@@ -386,20 +357,16 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (!successful)
                 {
-                    if (eeTypePtrPlusGCDesc != IntPtr.Zero)
-                        MemoryHelpers.FreeMemory(eeTypePtrPlusGCDesc);
-                    if (state.HalfBakedDictionary != IntPtr.Zero)
-                        MemoryHelpers.FreeMemory(state.HalfBakedDictionary);
-                    if (gcStaticData != IntPtr.Zero)
+                    if (gcStaticData != 0)
                         RuntimeAugments.RhHandleFree(gcStaticData);
-                    if (genericComposition != IntPtr.Zero)
-                        MemoryHelpers.FreeMemory(genericComposition);
-                    if (nonGcStaticData != IntPtr.Zero)
-                        MemoryHelpers.FreeMemory(nonGcStaticData);
-                    if (writableDataPtr != IntPtr.Zero)
-                        MemoryHelpers.FreeMemory(writableDataPtr);
-                    if (threadStaticIndex != IntPtr.Zero)
-                        MemoryHelpers.FreeMemory(threadStaticIndex);
+
+                    MemoryHelpers.FreeMemory((void*)state.HalfBakedDictionary);
+
+                    MemoryHelpers.FreeMemory(threadStaticIndex);
+                    MemoryHelpers.FreeMemory(nonGcStaticData);
+                    MemoryHelpers.FreeMemory(genericComposition);
+                    MemoryHelpers.FreeMemory(writableData);
+                    MemoryHelpers.FreeMemory(eeTypePlusGCDesc);
                 }
             }
         }
@@ -432,26 +399,19 @@ namespace Internal.Runtime.TypeLoader
                     pEEType->ContainsGCPointers = false;
                 }
             }
-            else if (gcBitfield != null)
+            else
             {
-                if (cbGCDesc != 0)
+                Debug.Assert(gcBitfield == null);
+
+                if (pTemplateEEType != null)
                 {
-                    pEEType->ContainsGCPointers = true;
-                    CreateGCDesc(gcBitfield, baseSize, isValueType, false, ((void**)pEEType) - 1);
+                    Buffer.MemoryCopy((byte*)pTemplateEEType - cbGCDesc, (byte*)pEEType - cbGCDesc, cbGCDesc, cbGCDesc);
+                    pEEType->ContainsGCPointers = pTemplateEEType->ContainsGCPointers;
                 }
                 else
                 {
                     pEEType->ContainsGCPointers = false;
                 }
-            }
-            else if (pTemplateEEType != null)
-            {
-                Buffer.MemoryCopy((byte*)pTemplateEEType - cbGCDesc, (byte*)pEEType - cbGCDesc, cbGCDesc, cbGCDesc);
-                pEEType->ContainsGCPointers = pTemplateEEType->ContainsGCPointers;
-            }
-            else
-            {
-                pEEType->ContainsGCPointers = false;
             }
         }
 
@@ -475,24 +435,24 @@ namespace Internal.Runtime.TypeLoader
                     return series > 0 ? (series + 2) * IntPtr.Size : 0;
                 }
             }
-            else if (gcBitfield != null)
-            {
-                int series = CreateGCDesc(gcBitfield, 0, isValueType, false, null);
-                return series > 0 ? (series * 2 + 1) * IntPtr.Size : 0;
-            }
-            else if (pTemplateEEType != null)
-            {
-                return RuntimeAugments.GetGCDescSize(pTemplateEEType->ToRuntimeTypeHandle());
-            }
             else
             {
-                return 0;
+                Debug.Assert(gcBitfield == null);
+
+                if (pTemplateEEType != null)
+                {
+                    return RuntimeAugments.GetGCDescSize(pTemplateEEType->ToRuntimeTypeHandle());
+                }
+                else
+                {
+                    return 0;
+                }
             }
         }
 
-        private static bool IsAllGCPointers(LowLevelList<bool> bitfield)
+        private static bool IsAllGCPointers(bool[] bitfield)
         {
-            int count = bitfield.Count;
+            int count = bitfield.Length;
             Debug.Assert(count > 0);
 
             for (int i = 0; i < count; i++)
@@ -504,7 +464,7 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        private static unsafe int CreateArrayGCDesc(LowLevelList<bool> bitfield, int rank, bool isSzArray, void* gcdesc)
+        private static unsafe int CreateArrayGCDesc(bool[] bitfield, int rank, bool isSzArray, void* gcdesc)
         {
             if (bitfield == null)
                 return 0;
@@ -528,7 +488,7 @@ namespace Internal.Runtime.TypeLoader
             int first = -1;
             int last = 0;
             short numPtrs = 0;
-            while (i < bitfield.Count)
+            while (i < bitfield.Length)
             {
                 if (bitfield[i])
                 {
@@ -546,7 +506,7 @@ namespace Internal.Runtime.TypeLoader
                     numSeries++;
                     numPtrs = 0;
 
-                    while ((i < bitfield.Count) && (bitfield[i]))
+                    while ((i < bitfield.Length) && (bitfield[i]))
                     {
                         numPtrs++;
                         i++;
@@ -564,75 +524,12 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (numSeries > 0)
                 {
-                    *ptr-- = (short)((first + bitfield.Count - last) * IntPtr.Size);
+                    *ptr-- = (short)((first + bitfield.Length - last) * IntPtr.Size);
                     *ptr-- = numPtrs;
 
                     *(void**)gcdesc = (void*)-numSeries;
                     *baseOffsetPtr = (void*)(baseOffset * IntPtr.Size);
                 }
-            }
-
-            return numSeries;
-        }
-
-        private static unsafe int CreateGCDesc(LowLevelList<bool> bitfield, int size, bool isValueType, bool isStatic, void* gcdesc)
-        {
-            int offs = 0;
-            // if this type is a class we have to account for the gcdesc.
-            if (isValueType)
-                offs = IntPtr.Size;
-
-            if (bitfield == null)
-                return 0;
-
-            void** ptr = (void**)gcdesc - 1;
-
-            int* staticPtr = isStatic ? ((int*)gcdesc + 1) : null;
-
-            int numSeries = 0;
-            int i = 0;
-            while (i < bitfield.Count)
-            {
-                if (bitfield[i])
-                {
-                    numSeries++;
-                    int seriesOffset = i * IntPtr.Size + offs;
-                    int seriesSize = 0;
-
-                    while ((i < bitfield.Count) && (bitfield[i]))
-                    {
-                        seriesSize += IntPtr.Size;
-                        i++;
-                    }
-
-
-                    if (gcdesc != null)
-                    {
-                        if (staticPtr != null)
-                        {
-                            *staticPtr++ = seriesSize;
-                            *staticPtr++ = seriesOffset;
-                        }
-                        else
-                        {
-                            seriesSize -= size;
-                            *ptr-- = (void*)seriesOffset;
-                            *ptr-- = (void*)seriesSize;
-                        }
-                    }
-                }
-                else
-                {
-                    i++;
-                }
-            }
-
-            if (gcdesc != null)
-            {
-                if (staticPtr != null)
-                    *(int*)gcdesc = numSeries;
-                else
-                    *(void**)gcdesc = (void*)numSeries;
             }
 
             return numSeries;
@@ -701,7 +598,7 @@ namespace Internal.Runtime.TypeLoader
             if (type is PointerType || type is ByRefType || type is FunctionPointerType)
             {
                 Debug.Assert(0 == state.NonGcDataSize);
-                Debug.Assert(false == state.HasStaticConstructor);
+                Debug.Assert(!state.HasStaticConstructor);
                 Debug.Assert(0 == state.GcDataSize);
                 Debug.Assert(0 == state.ThreadStaticOffset);
                 Debug.Assert(IntPtr.Zero == state.GcStaticDesc);

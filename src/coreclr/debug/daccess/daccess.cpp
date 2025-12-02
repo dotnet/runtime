@@ -17,18 +17,23 @@
 #include "peimagelayout.inl"
 #include "datatargetadapter.h"
 #include "readonlydatatargetfacade.h"
-#include "metadataexports.h"
 #include "excep.h"
 #include "debugger.h"
 #include "dwreport.h"
 #include "primitives.h"
 #include "dbgutil.h"
+#include "cdac.h"
+#include <clrconfignocache.h>
 
 #ifdef USE_DAC_TABLE_RVA
 #include <dactablerva.h>
 #else
 extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
+// cDAC depends on symbol lookup to find the contract descriptor
+#define CAN_USE_CDAC
 #endif
+
+extern TADDR g_ClrModuleBase;
 
 #include "dwbucketmanager.hpp"
 #include "gcinterface.dac.h"
@@ -36,14 +41,10 @@ extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddre
 // To include definition of IsThrowableThreadAbortException
 // #include <exstatecommon.h>
 
-CRITICAL_SECTION g_dacCritSec;
+minipal_mutex g_dacMutex;
 ClrDataAccess* g_dacImpl;
 
-EXTERN_C
-#ifdef TARGET_UNIX
-DLLEXPORT // For Win32 PAL LoadLibrary emulation
-#endif
-BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
+EXTERN_C BOOL WINAPI DllMain2(HANDLE instance, DWORD reason, LPVOID reserved)
 {
     static bool g_procInitialized = false;
 
@@ -70,7 +71,7 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
             return FALSE;
         }
 #endif
-        InitializeCriticalSection(&g_dacCritSec);
+        minipal_mutex_init(&g_dacMutex);
 
         g_procInitialized = true;
         break;
@@ -80,7 +81,7 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
         // It's possible for this to be called without ATTACH completing (eg. if it failed)
         if (g_procInitialized)
         {
-            DeleteCriticalSection(&g_dacCritSec);
+            minipal_mutex_destroy(&g_dacMutex);
         }
         g_procInitialized = false;
         break;
@@ -97,7 +98,7 @@ ConvertUtf8(_In_ LPCUTF8 utf8,
 {
     if (nameLen)
     {
-        *nameLen = WszMultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
+        *nameLen = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
         if (!*nameLen)
         {
             return HRESULT_FROM_GetLastError();
@@ -106,7 +107,7 @@ ConvertUtf8(_In_ LPCUTF8 utf8,
 
     if (buffer && bufLen)
     {
-        if (!WszMultiByteToWideChar(CP_UTF8, 0, utf8, -1, buffer, bufLen))
+        if (!MultiByteToWideChar(CP_UTF8, 0, utf8, -1, buffer, bufLen))
         {
             return HRESULT_FROM_GetLastError();
         }
@@ -120,7 +121,7 @@ AllocUtf8(_In_opt_ LPCWSTR wstr,
           ULONG32 srcChars,
           _Outptr_ LPUTF8* utf8)
 {
-    ULONG32 chars = WszWideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
+    ULONG32 chars = WideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
                                            NULL, 0, NULL, NULL);
     if (!chars)
     {
@@ -142,7 +143,7 @@ AllocUtf8(_In_opt_ LPCWSTR wstr,
         return E_OUTOFMEMORY;
     }
 
-    if (!WszWideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
+    if (!WideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
                                 mem, chars, NULL, NULL))
     {
         HRESULT hr = HRESULT_FROM_GetLastError();
@@ -1578,8 +1579,8 @@ DacInstanceManager::Alloc(TADDR addr, ULONG32 size, DAC_USAGE_TYPE usage)
     DAC_INSTANCE* inst;
     ULONG32 fullSize;
 
-    static_assert_no_msg(sizeof(DAC_INSTANCE_BLOCK) <= DAC_INSTANCE_ALIGN);
-    static_assert_no_msg((sizeof(DAC_INSTANCE) & (DAC_INSTANCE_ALIGN - 1)) == 0);
+    static_assert(sizeof(DAC_INSTANCE_BLOCK) <= DAC_INSTANCE_ALIGN);
+    static_assert((sizeof(DAC_INSTANCE) & (DAC_INSTANCE_ALIGN - 1)) == 0);
 
     //
     // All allocated instances must be kept alive as long
@@ -1748,7 +1749,7 @@ DacInstanceManager::Find(TADDR addr)
 {
 
 #if defined(DAC_MEASURE_PERF)
-    unsigned _int64 nStart, nEnd;
+    uint64_t nStart, nEnd;
     g_nFindCalls++;
     nStart = GetCycleCount();
 #endif // #if defined(DAC_MEASURE_PERF)
@@ -3034,6 +3035,7 @@ private:
 //----------------------------------------------------------------------------
 
 ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget/*=0*/)
+    : m_cdac{}
 {
     SUPPORTS_DAC_HOST_ONLY;     // ctor does no marshalling - don't check with DacCop
 
@@ -3101,7 +3103,6 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     m_logMessageCb = NULL;
     m_enumMemFlags = (CLRDataEnumMemoryFlags)-1;    // invalid
     m_jitNotificationTable = NULL;
-    m_gcNotificationTable  = NULL;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
     m_streams = NULL;
@@ -3123,7 +3124,6 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     // see ClrDataAccess::VerifyDlls for details.
     m_fEnableDllVerificationAsserts = false;
 #endif
-
 }
 
 ClrDataAccess::~ClrDataAccess(void)
@@ -3231,6 +3231,18 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface13*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface14)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface14*>(this);
+    }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface15)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface15*>(this);
+    }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface16)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface16*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -3312,7 +3324,7 @@ ClrDataAccess::StartEnumTasks(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3356,7 +3368,7 @@ ClrDataAccess::EnumTask(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3382,7 +3394,7 @@ ClrDataAccess::EndEnumTasks(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3414,7 +3426,7 @@ ClrDataAccess::GetTaskByOSThreadID(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3449,7 +3461,7 @@ ClrDataAccess::GetTaskByUniqueID(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3476,7 +3488,7 @@ ClrDataAccess::GetFlags(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3502,7 +3514,7 @@ ClrDataAccess::IsSameObject(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3528,7 +3540,7 @@ ClrDataAccess::GetManagedObject(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3554,7 +3566,7 @@ ClrDataAccess::GetDesiredExecutionState(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3580,7 +3592,7 @@ ClrDataAccess::SetDesiredExecutionState(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3627,7 +3639,7 @@ ClrDataAccess::GetAddressType(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3661,7 +3673,7 @@ ClrDataAccess::GetRuntimeNameByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3688,7 +3700,7 @@ ClrDataAccess::StartEnumAppDomains(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3724,7 +3736,7 @@ ClrDataAccess::EnumAppDomain(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3750,7 +3762,7 @@ ClrDataAccess::EndEnumAppDomains(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3785,7 +3797,7 @@ ClrDataAccess::GetAppDomainByUniqueID(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3819,7 +3831,7 @@ ClrDataAccess::StartEnumAssemblies(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3857,7 +3869,7 @@ ClrDataAccess::EnumAssembly(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3884,7 +3896,7 @@ ClrDataAccess::EndEnumAssemblies(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3918,7 +3930,7 @@ ClrDataAccess::StartEnumModules(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3956,7 +3968,7 @@ ClrDataAccess::EnumModule(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -3983,7 +3995,7 @@ ClrDataAccess::EndEnumModules(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4037,7 +4049,7 @@ ClrDataAccess::GetModuleByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4083,7 +4095,7 @@ ClrDataAccess::StartEnumMethodDefinitionsByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4109,7 +4121,7 @@ ClrDataAccess::EnumMethodDefinitionByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4134,7 +4146,7 @@ ClrDataAccess::EndEnumMethodDefinitionsByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4162,7 +4174,7 @@ ClrDataAccess::StartEnumMethodInstancesByAddress(
             goto Exit;
         }
 
-        if (IsPossibleCodeAddress(taddr) != S_OK)
+        if ( (status = IsPossibleCodeAddress(taddr)) != S_OK)
         {
             goto Exit;
         }
@@ -4170,6 +4182,7 @@ ClrDataAccess::StartEnumMethodInstancesByAddress(
         methodDesc = ExecutionManager::GetCodeMethodDesc(taddr);
         if (!methodDesc)
         {
+            status = S_FALSE;
             goto Exit;
         }
 
@@ -4185,7 +4198,7 @@ ClrDataAccess::StartEnumMethodInstancesByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4211,7 +4224,7 @@ ClrDataAccess::EnumMethodInstanceByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4236,7 +4249,7 @@ ClrDataAccess::EndEnumMethodInstancesByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4275,7 +4288,7 @@ ClrDataAccess::GetDataByAddress(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4302,7 +4315,7 @@ ClrDataAccess::GetExceptionStateByExceptionRecord(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4320,7 +4333,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
     GcEvtArgs pubGcEvtArgs = {};
     ULONG32 notifyType = 0;
     DWORD catcherNativeOffset = 0;
-    TADDR nativeCodeLocation = NULL;
+    TADDR nativeCodeLocation = (TADDR)NULL;
 
     DAC_ENTER();
 
@@ -4389,20 +4402,8 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
 
             if(DACNotify::ParseJITNotification(exInfo, methodDescPtr, nativeCodeLocation))
             {
-                // Try and find the right appdomain
                 MethodDesc* methodDesc = PTR_MethodDesc(methodDescPtr);
-                BaseDomain* baseDomain = methodDesc->GetDomain();
-                AppDomain* appDomain = NULL;
-
-                if (baseDomain->IsAppDomain())
-                {
-                    appDomain = PTR_AppDomain(PTR_HOST_TO_TADDR(baseDomain));
-                }
-                else
-                {
-                    // Find a likely domain, because it's the shared domain.
-                    appDomain = AppDomain::GetCurrentDomain();
-                }
+                AppDomain* appDomain = AppDomain::GetCurrentDomain();
 
                 pubMethodInst =
                     new (nothrow) ClrDataMethodInstance(this,
@@ -4453,20 +4454,8 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
             TADDR methodDescPtr;
             if (DACNotify::ParseExceptionCatcherEnterNotification(exInfo, methodDescPtr, catcherNativeOffset))
             {
-                // Try and find the right appdomain
                 MethodDesc* methodDesc = PTR_MethodDesc(methodDescPtr);
-                BaseDomain* baseDomain = methodDesc->GetDomain();
-                AppDomain* appDomain = NULL;
-
-                if (baseDomain->IsAppDomain())
-                {
-                    appDomain = PTR_AppDomain(PTR_HOST_TO_TADDR(baseDomain));
-                }
-                else
-                {
-                    // Find a likely domain, because it's the shared domain.
-                    appDomain = AppDomain::GetCurrentDomain();
-                }
+                AppDomain* appDomain = AppDomain::GetCurrentDomain();
 
                 pubMethodInst =
                     new (nothrow) ClrDataMethodInstance(this,
@@ -4496,7 +4485,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
 
@@ -4664,7 +4653,7 @@ ClrDataAccess::CreateMemoryValue(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4691,7 +4680,7 @@ ClrDataAccess::SetAllTypeNotifications(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4726,7 +4715,7 @@ ClrDataAccess::SetAllCodeNotifications(
                 BOOL changedTable;
                 TADDR modulePtr = mod ?
                     PTR_HOST_TO_TADDR(((ClrDataModule*)mod)->GetModule()) :
-                    NULL;
+                    (TADDR)NULL;
 
                 if (jn.SetAllNotifications(modulePtr, (USHORT)flags, &changedTable))
                 {
@@ -4746,7 +4735,7 @@ ClrDataAccess::SetAllCodeNotifications(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4776,7 +4765,7 @@ ClrDataAccess::GetTypeNotifications(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4807,7 +4796,7 @@ ClrDataAccess::SetTypeNotifications(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4842,7 +4831,7 @@ ClrDataAccess::GetCodeNotifications(
             }
             else
             {
-                TADDR modulePtr = NULL;
+                TADDR modulePtr = (TADDR)NULL;
                 if (singleMod)
                 {
                     modulePtr = PTR_HOST_TO_TADDR(((ClrDataModule*)singleMod)->
@@ -4872,7 +4861,7 @@ ClrDataAccess::GetCodeNotifications(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -4928,7 +4917,7 @@ ClrDataAccess::SetCodeNotifications(
                     goto Exit;
                 }
 
-                TADDR modulePtr = NULL;
+                TADDR modulePtr = (TADDR)NULL;
                 if (singleMod)
                 {
                     modulePtr =
@@ -4978,7 +4967,7 @@ Exit: ;
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -5004,7 +4993,7 @@ ClrDataAccess::GetOtherNotificationFlags(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -5038,7 +5027,7 @@ ClrDataAccess::SetOtherNotificationFlags(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -5317,7 +5306,7 @@ ClrDataAccess::FollowStub2(
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -5336,31 +5325,8 @@ ClrDataAccess::GetGcNotification(GcEvtArgs* gcEvtArgs)
 
     EX_TRY
     {
-        if (gcEvtArgs->typ >= GC_EVENT_TYPE_MAX)
-        {
-            status = E_INVALIDARG;
-        }
-        else
-        {
-            GcNotifications gn(GetHostGcNotificationTable());
-            if (!gn.IsActive())
-            {
-                status = E_OUTOFMEMORY;
-            }
-            else
-            {
-                GcEvtArgs *res = gn.GetNotification(*gcEvtArgs);
-                if (res != NULL)
-                {
-                    *gcEvtArgs = *res;
-                    status = S_OK;
-                }
-                else
-                {
-                    status = E_FAIL;
-                }
-            }
-        }
+        // XXX Microsoft.
+        status = E_NOTIMPL;
     }
     EX_CATCH
     {
@@ -5369,7 +5335,7 @@ ClrDataAccess::GetGcNotification(GcEvtArgs* gcEvtArgs)
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -5390,22 +5356,8 @@ ClrDataAccess::SetGcNotification(IN GcEvtArgs gcEvtArgs)
         }
         else
         {
-            GcNotifications gn(GetHostGcNotificationTable());
-            if (!gn.IsActive())
-            {
-                status = E_OUTOFMEMORY;
-            }
-            else
-            {
-                if (gn.SetNotification(gcEvtArgs) && gn.UpdateOutOfProcTable())
-                {
-                    status = S_OK;
-                }
-                else
-                {
-                    status = E_FAIL;
-                }
-            }
+            GcNotifications::SetNotification(gcEvtArgs);
+            status = S_OK;
         }
     }
     EX_CATCH
@@ -5415,7 +5367,7 @@ ClrDataAccess::SetGcNotification(IN GcEvtArgs gcEvtArgs)
             EX_RETHROW;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     DAC_LEAVE();
     return status;
@@ -5517,6 +5469,15 @@ ClrDataAccess::Initialize(void)
 
     // Do some validation
     IfFailRet(VerifyDlls());
+
+    // To support EH SxS, utilcode requires the base address of the runtime as part of its initialization
+    // so that functions like "WasThrownByUs" work correctly since they use the CLR base address to check
+    // if an exception was raised by a given instance of the runtime or not.
+    //
+    // Thus, when DAC is initialized, initialize utilcode with the base address of the runtime loaded in the
+    // target process. This is similar to work done in CorDB::SetTargetCLR for mscordbi.
+
+    g_ClrModuleBase = m_globalBase; // Base address of the runtime in the target process
 
     return S_OK;
 }
@@ -5621,7 +5582,7 @@ ClrDataAccess::GetJitHelperName(
 #define JITHELPER(code,fn,sig) #code,
 #include <jithelpers.h>
     };
-    static_assert_no_msg(ARRAY_SIZE(s_rgHelperNames) == CORINFO_HELP_COUNT);
+    static_assert(ARRAY_SIZE(s_rgHelperNames) == CORINFO_HELP_COUNT);
 
 #ifdef TARGET_UNIX
     if (!dynamicHelpersOnly)
@@ -5636,15 +5597,15 @@ ClrDataAccess::GetJitHelperName(
 
         for (int i = 0; i < CORINFO_HELP_COUNT; i++)
         {
-            if (address == (TADDR)(pTable[i].pfnHelper))
+            if (address == pTable[i].pfnHelper)
                 return s_rgHelperNames[i];
         }
     }
 
     // Check if its a dynamically generated JIT helper
     const static CorInfoHelpFunc s_rgDynamicHCallIds[] = {
-#define DYNAMICJITHELPER(code, fn, sig) code,
-#define JITHELPER(code, fn,sig)
+#define DYNAMICJITHELPER(code, fn, binderId) code,
+#define JITHELPER(code, fn, binderId)
 #include <jithelpers.h>
     };
 
@@ -5653,7 +5614,7 @@ ClrDataAccess::GetJitHelperName(
         PTR_READ(dac_cast<TADDR>(&hlpDynamicFuncTable), DYNAMIC_CORINFO_HELP_COUNT * sizeof(VMHELPDEF)));
     for (unsigned d = 0; d < DYNAMIC_CORINFO_HELP_COUNT; d++)
     {
-        if (address == (TADDR)(pDynamicTable[d].pfnHelper))
+        if (address == pDynamicTable[d].pfnHelper)
         {
             return s_rgHelperNames[s_rgDynamicHCallIds[d]];
         }
@@ -5813,7 +5774,7 @@ ClrDataAccess::RawGetMethodName(
             SIZE_T maxPrecodeSize = sizeof(StubPrecode);
 
 #ifdef HAS_THISPTR_RETBUF_PRECODE
-            maxPrecodeSize = max(maxPrecodeSize, sizeof(ThisPtrRetBufPrecode));
+            maxPrecodeSize = max((size_t)maxPrecodeSize, sizeof(ThisPtrRetBufPrecode));
 #endif
 
             for (SIZE_T i = 0; i < maxPrecodeSize / PRECODE_ALIGNMENT; i++)
@@ -5822,7 +5783,7 @@ ClrDataAccess::RawGetMethodName(
                 {
                     // Try to find matching precode entrypoint
                     Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(alignedAddress, TRUE);
-                    if (pPrecode != NULL)
+                    if (pPrecode != NULL && pPrecode->GetType() != PRECODE_UMENTRY_THUNK)
                     {
                         methodDesc = pPrecode->GetMethodDesc();
                         if (methodDesc != NULL)
@@ -5842,9 +5803,10 @@ ClrDataAccess::RawGetMethodName(
                 EX_CATCH
                 {
                 }
-                EX_END_CATCH(SwallowAllExceptions)
+                EX_END_CATCH
             }
         }
+#ifdef FEATURE_JIT
         else
         if (pStubManager == JumpStubStubManager::g_pManager)
         {
@@ -5866,6 +5828,7 @@ ClrDataAccess::RawGetMethodName(
                 return hr;
             }
         }
+#endif // FEATURE_JIT
 
         LPCWSTR wszStubManagerName = pStubManager->GetStubManagerName(TO_TADDR(address));
         _ASSERTE(wszStubManagerName != NULL);
@@ -5898,8 +5861,8 @@ ClrDataAccess::RawGetMethodName(
     return E_NOINTERFACE;
 
 NameFromMethodDesc:
-    if (methodDesc->GetClassification() == mcDynamic &&
-        !methodDesc->GetSig())
+    if (methodDesc->GetClassification() == mcDynamic
+        && methodDesc->GetSigParser().IsNull())
     {
         return FormatCLRStubName(
             NULL,
@@ -5970,12 +5933,12 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
 {
     SUPPORTS_DAC;
     COUNT_T countNativeVarInfo;
-    NewHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
+    NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
     TADDR nativeCodeStartAddr;
-    if (address != NULL)
+    if (address != (TADDR)NULL)
     {
         NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
-        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == (PCODE)NULL)
         {
             return E_INVALIDARG;
         }
@@ -5992,6 +5955,7 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
         DebugInfoStoreNew, NULL, // allocator
+        BoundsType::Instrumented,
         NULL, NULL,
         &countNativeVarInfo, &nativeVars);
 
@@ -6025,15 +5989,15 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
                                   CLRDATA_ADDRESS* codeStart,
                                   ULONG32* codeOffset)
 {
-    _ASSERTE((codeOffset == NULL) || (address != NULL));
+    _ASSERTE((codeOffset == NULL) || (address != (TADDR)NULL));
 
     // Use the DebugInfoStore to get IL->Native maps.
     // It doesn't matter whether we're jitted, ngenned etc.
     TADDR nativeCodeStartAddr;
-    if (address != NULL)
+    if (address != (TADDR)NULL)
     {
         NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
-        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == (PCODE)NULL)
         {
             return E_INVALIDARG;
         }
@@ -6054,6 +6018,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
         DebugInfoStoreNew, NULL, // allocator
+        BoundsType::Instrumented,
         &countMapCopy, &mapCopy,
         NULL, NULL);
 
@@ -6397,25 +6362,12 @@ ClrDataAccess::GetHostJitNotificationTable()
     return m_jitNotificationTable;
 }
 
-GcNotification*
-ClrDataAccess::GetHostGcNotificationTable()
-{
-    if (m_gcNotificationTable == NULL)
-    {
-        m_gcNotificationTable =
-            GcNotifications::InitializeNotificationTable(128);
-    }
-
-    return m_gcNotificationTable;
-}
-
 /* static */ bool
 ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
                                              DWORD &dwTimeStamp,
                                              DWORD &dwSize,
                                              DWORD &dwDataSize,
                                              DWORD &dwRvaHint,
-                                             bool  &isNGEN,
                                              _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                              const DWORD cchFilePath)
 {
@@ -6425,7 +6377,6 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
     IMAGE_DATA_DIRECTORY *pDir = NULL;
     COUNT_T uniPathChars = 0;
 
-    isNGEN = false;
     if (pDir == NULL || pDir->Size == 0)
     {
         mdImage = pPEAssembly->GetPEImage();
@@ -6476,58 +6427,15 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
     return true;
 }
 
-/* static */
-bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
-                                                 DWORD &dwTimeStamp,
-                                                 DWORD &dwSize,
-                                                 _Out_writes_(cchFilePath) LPWSTR wszFilePath,
-                                                 const DWORD cchFilePath)
-{
-    SUPPORTS_DAC_HOST_ONLY;
-    DWORD dwWritten = 0;
-
-    // use the IL File name
-    if (!pPEAssembly->GetPath().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten)))
-    {
-        // Use DAC hint to retrieve the IL name.
-        pPEAssembly->GetModuleFileNameHint().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten));
-    }
-    dwTimeStamp = 0;
-    dwSize = 0;
-
-    return true;
-}
-
 void *
-ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
-                                   bool* isAlternate)
+ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly)
 {
     DWORD imageTimestamp, imageSize, dataSize;
     void* buffer = NULL;
     WCHAR uniPath[MAX_LONGPATH] = {0};
-    bool isAlt = false;
-    bool isNGEN = false;
     DAC_INSTANCE* inst = NULL;
     HRESULT  hr = S_OK;
     DWORD ulRvaHint;
-    //
-    // We always ask for the IL image metadata,
-    // as we expect that to be more
-    // available than others.  The drawback is that
-    // there may be differences between the IL image
-    // metadata and native image metadata, so we
-    // have to mark such alternate metadata so that
-    // we can fail unsupported usage of it.
-    //
-
-    // Microsoft - above comment seems to be an unimplemented thing.
-    // The DAC_MD_IMPORT.isAlternate field gets ultimately set, but
-    // on the searching I did, I cannot find any usage of it
-    // other than in the ctor.  Should we be doing something, or should
-    // we remove this comment and the isAlternate field?
-    // It's possible that test will want us to track whether we have
-    // an IL image's metadata loaded against an NGEN'ed image
-    // so the field remains for now.
 
     if (!ClrDataAccess::GetMetaDataFileInfoFromPEFile(
             pPEAssembly,
@@ -6535,7 +6443,6 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
             imageSize,
             dataSize,
             ulRvaHint,
-            isNGEN,
             uniPath,
             ARRAY_SIZE(uniPath)))
     {
@@ -6590,72 +6497,12 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
             (BYTE*)buffer,
             NULL);
     }
-    if (FAILED(hr) && isNGEN)
-    {
-        // We failed to locate the ngen'ed image. We should try to
-        // find the matching IL image
-        //
-        isAlt = true;
-        if (!ClrDataAccess::GetILImageInfoFromNgenPEFile(
-                pPEAssembly,
-                imageTimestamp,
-                imageSize,
-                uniPath,
-                ARRAY_SIZE(uniPath)))
-        {
-            goto ErrExit;
-        }
-
-        const WCHAR* ilExtension = W("dll");
-        WCHAR ngenImageName[MAX_LONGPATH] = {0};
-        if (wcscpy_s(ngenImageName, ARRAY_SIZE(ngenImageName), uniPath) != 0)
-        {
-            goto ErrExit;
-        }
-        if (wcscpy_s(uniPath, ARRAY_SIZE(uniPath), ngenImageName) != 0)
-        {
-            goto ErrExit;
-        }
-
-        // RVA size in ngen image and IL image is the same. Because the only
-        // different is in RVA. That is 4 bytes column fixed.
-        //
-
-        // try again
-        if (m_legacyMetaDataLocator)
-        {
-            hr = m_legacyMetaDataLocator->GetMetadata(
-                uniPath,
-                imageTimestamp,
-                imageSize,
-                NULL,           // MVID - not used yet
-                0,              // pass zero hint here... important
-                0,              // flags - reserved for future.
-                dataSize,
-                (BYTE*)buffer,
-                NULL);
-        }
-        else
-        {
-            hr = m_target3->GetMetaData(
-                uniPath,
-                imageTimestamp,
-                imageSize,
-                NULL,           // MVID - not used yet
-                0,              // pass zero hint here... important
-                0,              // flags - reserved for future.
-                dataSize,
-                (BYTE*)buffer,
-                NULL);
-        }
-    }
 
     if (FAILED(hr))
     {
         goto ErrExit;
     }
 
-    *isAlternate = isAlt;
     m_instances.AddSuperseded(inst);
     return buffer;
 
@@ -6683,7 +6530,6 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
     COUNT_T     mdSize;
     IMDInternalImport* mdImport = NULL;
     PVOID       mdBaseHost = NULL;
-    bool        isAlternate = false;
 
     _ASSERTE((pPEAssembly == NULL && reflectionModule != NULL) || (pPEAssembly != NULL && reflectionModule == NULL));
     TADDR     peAssemblyAddr = (pPEAssembly != NULL) ? dac_cast<TADDR>(pPEAssembly) : dac_cast<TADDR>(reflectionModule);
@@ -6705,11 +6551,11 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
     else if (reflectionModule != NULL)
     {
         // Get the metadata
-        PTR_SBuffer metadataBuffer = reflectionModule->GetDynamicMetadataBuffer();
+        TADDR metadataBuffer = reflectionModule->GetDynamicMetadataBuffer();
         if (metadataBuffer != PTR_NULL)
         {
-            mdBaseTarget = dac_cast<PTR_CVOID>((metadataBuffer->DacGetRawBuffer()).StartAddress());
-            mdSize = metadataBuffer->GetSize();
+            mdBaseTarget = dac_cast<PTR_CVOID>(metadataBuffer + offsetof(DynamicMetadata, Data));
+            mdSize = dac_cast<DPTR(DynamicMetadata)>(metadataBuffer)->Size;
         }
         else
         {
@@ -6756,7 +6602,7 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
         // We couldn't read the metadata from memory.  Ask
         // the target for metadata as it may be able to
         // provide it from some alternate means.
-        mdBaseHost = GetMetaDataFromHost(const_cast<PEAssembly *>(pPEAssembly), &isAlternate);
+        mdBaseHost = GetMetaDataFromHost(const_cast<PEAssembly *>(pPEAssembly));
     }
 
     if (mdBaseHost == NULL)
@@ -6791,7 +6637,7 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
     // The m_mdImports list does get cleaned up by calls to ClrDataAccess::Flush,
     // i.e. every time the process changes state.
 
-    if (m_mdImports.Add(peAssemblyAddr, mdImport, isAlternate) == NULL)
+    if (m_mdImports.Add(peAssemblyAddr, mdImport) == NULL)
     {
         mdImport->Release();
         DacError(E_OUTOFMEMORY);
@@ -6874,7 +6720,7 @@ void ClrDataAccess::InitStreamsForWriting(IN CLRDataEnumMemoryFlags flags)
             m_streams = NULL;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 bool ClrDataAccess::MdCacheAddEEName(TADDR taEEStruct, const SString& name)
@@ -6889,7 +6735,7 @@ bool ClrDataAccess::MdCacheAddEEName(TADDR taEEStruct, const SString& name)
     {
         result = false;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return result;
 }
@@ -6908,7 +6754,7 @@ void ClrDataAccess::EnumStreams(IN CLRDataEnumMemoryFlags flags)
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 bool ClrDataAccess::MdCacheGetEEName(TADDR taEEStruct, SString & eeName)
@@ -6925,7 +6771,7 @@ bool ClrDataAccess::MdCacheGetEEName(TADDR taEEStruct, SString & eeName)
     {
         result = false;
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return result;
 }
@@ -6942,7 +6788,7 @@ GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG6
         return E_INVALIDARG;
     }
 #endif
-    // On MacOS, FreeBSD or NetBSD use the RVA include file
+    // On FreeBSD, NetBSD, or SunOS use the RVA include file
     *dacTableAddress = baseAddress + DAC_TABLE_RVA;
 #else
     // Otherwise, try to get the dac table address via the export symbol
@@ -6967,7 +6813,7 @@ ClrDataAccess::GetDacGlobalValues()
     {
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
-    if (m_dacGlobals.ThreadStore__s_pThreadStore == NULL)
+    if (m_dacGlobals.ThreadStore__s_pThreadStore == (TADDR)NULL)
     {
         return CORDBG_E_UNSUPPORTED;
     }
@@ -7122,9 +6968,61 @@ CLRDataCreateInstance(REFIID iid,
 #ifdef LOGGING
     InitializeLogging();
 #endif
-    hr = pClrDataAccess->QueryInterface(iid, iface);
 
-    pClrDataAccess->Release();
+    // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
+    NonVMComHolder<IUnknown> cdacInterface = nullptr;
+#ifdef CAN_USE_CDAC
+    CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
+    if (enable.IsSet())
+    {
+        DWORD val;
+        if (enable.TryAsInteger(10, val) && val == 1)
+        {
+            // TODO: [cdac] TryGetSymbol is only implemented for Linux, OSX, and Windows.
+            uint64_t contractDescriptorAddr = 0;
+            if (TryGetSymbol(pClrDataAccess->m_pTarget, pClrDataAccess->m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+            {
+                IUnknown* thisImpl;
+                HRESULT qiRes = pClrDataAccess->QueryInterface(IID_IUnknown, (void**)&thisImpl);
+                _ASSERTE(SUCCEEDED(qiRes));
+                CDAC& cdac = pClrDataAccess->m_cdac;
+                cdac = CDAC::Create(contractDescriptorAddr, pClrDataAccess->m_pMutableTarget, thisImpl);
+                if (cdac.IsValid())
+                {
+                    // Get SOS interfaces from the cDAC if available.
+                    cdac.CreateSosInterface(&cdacInterface);
+                    _ASSERTE(cdacInterface != nullptr);
+
+                    // Lifetime is now managed by cDAC implementation of SOS interfaces
+                    pClrDataAccess->Release();
+                }
+
+                // Release the AddRef from the QI.
+                pClrDataAccess->Release();
+            }
+
+            if (cdacInterface == nullptr)
+            {
+                // If we requested to use the cDAC, but failed to create the cDAC interface, return failure
+                // Release the ClrDataAccess instance we created
+                pClrDataAccess->Release();
+                return E_FAIL;
+            }
+        }
+    }
+#endif
+    if (cdacInterface != nullptr)
+    {
+        hr = cdacInterface->QueryInterface(iid, iface);
+    }
+    else
+    {
+        hr = pClrDataAccess->QueryInterface(iid, iface);
+
+        // Lifetime is now managed by caller
+        pClrDataAccess->Release();
+    }
+
     return hr;
 }
 
@@ -7765,9 +7663,18 @@ void CALLBACK DacHandleWalker::EnumCallback(PTR_UNCHECKED_OBJECTREF handle, uint
     data.Handle = TO_CDADDR(handle.GetAddr());
     data.Type = param->Type;
     if (param->Type == HNDTYPE_DEPENDENT)
+    {
         data.Secondary = GetDependentHandleSecondary(handle.GetAddr()).GetAddr();
+    }
+    else if (param->Type == HNDTYPE_WEAK_INTERIOR_POINTER
+        || param->Type == HNDTYPE_CROSSREFERENCE)
+    {
+        data.Secondary = TO_CDADDR(HndGetHandleExtraInfo(handle.GetAddr()));
+    }
     else
+    {
         data.Secondary = 0;
+    }
     data.AppDomain = param->AppDomain;
     GetRefCountedHandleInfo((OBJECTREF)*handle, param->Type, &data.RefCount, &data.JupiterRefCount, &data.IsPegged, &data.StrongReference);
     data.StrongReference |= (BOOL)IsAlwaysStrongReference(param->Type);
@@ -7903,7 +7810,7 @@ void DacStackReferenceWalker::WalkStack()
     // Setup GCCONTEXT structs for the stackwalk.
     GCCONTEXT gcctx = {0};
     DacScanContext dsc(this, &mList, mResolvePointers);
-    dsc.pEnumFunc = DacStackReferenceWalker::GCEnumCallback;
+    dsc.pEnumFunc = DacStackReferenceWalker::GCEnumCallbackFunc;
     gcctx.f = DacStackReferenceWalker::GCReportCallback;
     gcctx.sc = &dsc;
 
@@ -7950,7 +7857,7 @@ CLRDATA_ADDRESS DacStackReferenceWalker::ReadPointer(TADDR addr)
 }
 
 
-void DacStackReferenceWalker::GCEnumCallback(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
+void DacStackReferenceWalker::GCEnumCallbackFunc(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
 {
     GCCONTEXT *gcctx = (GCCONTEXT *)hCallback;
     DacScanContext *dsc = (DacScanContext*)gcctx->sc;
@@ -7978,7 +7885,7 @@ void DacStackReferenceWalker::GCEnumCallback(LPVOID hCallback, OBJECTREF *pObjec
     {
         CORDB_ADDRESS fixed_obj = 0;
         HRESULT hr = dsc->pWalker->mHeap.ListNearObjects((CORDB_ADDRESS)obj, NULL, &fixed_obj, NULL);
-        
+
         // Interior pointers need not lie on the manage heap at all.  When this happens, ListNearObjects
         // will return E_FAIL.  In this case, we need to be sure to not include this stack slot in our
         // enumeration because ICorDebug expects every location enumerated by this API to point to a
@@ -8142,7 +8049,7 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
             curr->pNext = err;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
 #if 0
     // todo
@@ -8330,6 +8237,44 @@ HRESULT DacMemoryEnumerator::Next(unsigned int count, SOSMemoryRegion regions[],
     return i < count ? S_FALSE : S_OK;
 }
 
+HRESULT DacMethodTableSlotEnumerator::Skip(unsigned int count)
+{
+    mIteratorIndex += count;
+    return S_OK;
+}
+
+HRESULT DacMethodTableSlotEnumerator::Reset()
+{
+    mIteratorIndex = 0;
+    return S_OK;
+}
+
+HRESULT DacMethodTableSlotEnumerator::GetCount(unsigned int* pCount)
+{
+    if (!pCount)
+        return E_POINTER;
+
+    *pCount = mMethods.GetCount();
+    return S_OK;
+}
+
+HRESULT DacMethodTableSlotEnumerator::Next(unsigned int count, SOSMethodData methods[], unsigned int* pFetched)
+{
+    if (!pFetched)
+        return E_POINTER;
+
+    if (!methods)
+        return E_POINTER;
+
+    unsigned int i = 0;
+    while (i < count && mIteratorIndex < mMethods.GetCount())
+    {
+        methods[i++] = mMethods.Get(mIteratorIndex++);
+    }
+
+    *pFetched = i;
+    return i < count ? S_FALSE : S_OK;
+}
 
 HRESULT DacGCBookkeepingEnumerator::Init()
 {

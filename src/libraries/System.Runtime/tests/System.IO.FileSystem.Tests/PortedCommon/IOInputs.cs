@@ -8,8 +8,8 @@ using System.Linq;
 
 internal static class IOInputs
 {
-    public static bool SupportsSettingCreationTime => PlatformDetection.IsWindows || PlatformDetection.IsOSXLike;
-    public static bool SupportsGettingCreationTime => PlatformDetection.IsWindows || PlatformDetection.IsOSXLike;
+    public static bool SupportsSettingCreationTime => PlatformDetection.IsWindows || PlatformDetection.IsApplePlatform;
+    public static bool SupportsGettingCreationTime => PlatformDetection.IsWindows || PlatformDetection.IsApplePlatform;
 
     // Max path length (minus trailing \0). Unix values vary system to system; just using really long values here likely to be more than on the average system.
     public static readonly int MaxPath = OperatingSystem.IsWindows() ? 259 : 10000;
@@ -220,7 +220,7 @@ internal static class IOInputs
     }
 
     public static IEnumerable<string> GetReservedDeviceNames()
-    {   // See: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+    {   // See: https://learn.microsoft.com/windows/win32/fileio/naming-a-file
         //
         // Note - Recent versions of Win10 relax this restriction and allow reserved
         // device names as filenames.

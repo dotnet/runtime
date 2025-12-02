@@ -3,6 +3,8 @@
     <CLRTestPriority>1</CLRTestPriority>
     <!-- This test leaves threads running at exit -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- Deep generic recursion -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="polyrec.cs" />

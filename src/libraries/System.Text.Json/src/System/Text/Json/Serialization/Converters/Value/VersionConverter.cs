@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class VersionConverter : JsonPrimitiveConverter<Version?>
     {
-#if NETCOREAPP
+#if NET
         private const int MinimumVersionLength = 3; // 0.0
 
         private const int MaximumVersionLength = 43; // 2147483647.2147483647.2147483647.2147483647
@@ -34,10 +36,10 @@ namespace System.Text.Json.Serialization.Converters
         {
             Debug.Assert(reader.TokenType is JsonTokenType.PropertyName or JsonTokenType.String);
 
-#if NETCOREAPP
+#if NET
             if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, MinimumVersionLength, MaximumEscapedVersionLength))
             {
-                ThrowHelper.ThrowFormatException(DataType.TimeSpan);
+                ThrowHelper.ThrowFormatException(DataType.Version);
             }
 
             Span<char> charBuffer = stackalloc char[MaximumEscapedVersionLength];
@@ -84,12 +86,8 @@ namespace System.Text.Json.Serialization.Converters
                 return;
             }
 
-#if NETCOREAPP
-#if NET8_0_OR_GREATER
+#if NET
             Span<byte> span = stackalloc byte[MaximumVersionLength];
-#else
-            Span<char> span = stackalloc char[MaximumVersionLength];
-#endif
             bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
             Debug.Assert(formattedSuccessfully && charsWritten >= MinimumVersionLength);
             writer.WriteStringValue(span.Slice(0, charsWritten));
@@ -105,17 +103,10 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, Version value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
-            if (value is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
-#if NETCOREAPP
-#if NET8_0_OR_GREATER
+#if NET
             Span<byte> span = stackalloc byte[MaximumVersionLength];
-#else
-            Span<char> span = stackalloc char[MaximumVersionLength];
-#endif
             bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
             Debug.Assert(formattedSuccessfully && charsWritten >= MinimumVersionLength);
             writer.WritePropertyName(span.Slice(0, charsWritten));
@@ -123,5 +114,13 @@ namespace System.Text.Json.Serialization.Converters
             writer.WritePropertyName(value.ToString());
 #endif
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) =>
+            new()
+            {
+                Type = JsonSchemaType.String,
+                Comment = "Represents a version string.",
+                Pattern = @"^\d+(\.\d+){1,3}$",
+            };
     }
 }

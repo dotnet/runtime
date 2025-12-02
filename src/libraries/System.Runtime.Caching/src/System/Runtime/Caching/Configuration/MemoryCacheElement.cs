@@ -8,7 +8,7 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching.Configuration
 {
-#if NETCOREAPP
+#if NET
     [UnsupportedOSPlatform("browser")]
 #endif
     internal sealed class MemoryCacheElement : ConfigurationElement

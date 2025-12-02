@@ -4,9 +4,8 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
-
-#pragma warning disable 8500 // taking address of managed types
 
 namespace System.Net.NetworkInformation
 {
@@ -41,7 +40,7 @@ namespace System.Net.NetworkInformation
         {
             Context* context = (Context*)pContext;
 
-            context->_interfaceSet.Add(new string((sbyte*)ifaceName));
+            context->_interfaceSet.Add(Utf8StringMarshaller.ConvertToManaged(ifaceName)!);
             context->_numIPAddresses++;
         }
 

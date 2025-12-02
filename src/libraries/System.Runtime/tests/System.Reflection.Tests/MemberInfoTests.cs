@@ -166,7 +166,8 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/830", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/linker/issues/2078", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming)),
+            /* Stripping ComVisible because descriptors tell us so */]
         public void GetCustomAttributesData()
         {
             MemberInfo[] m = typeof(MemberInfoTests).GetMember("SampleClass");

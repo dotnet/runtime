@@ -9,7 +9,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
 {
     public class LateBindingTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(LateCall_TestData))]
         public void LateCall(object obj, Type objType, string name, object[] args, string[] paramNames, bool[] copyBack, Func<object, object> getResult, object expected)
         {
@@ -17,14 +17,14 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, getResult(obj));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(LateGet_TestData))]
         public void LateGet(object obj, Type objType, string name, object[] args, string[] paramNames, bool[] copyBack, object expected)
         {
             Assert.Equal(expected, LateBinding.LateGet(obj, objType, name, args, paramNames, copyBack));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(LateSet_TestData))]
         public void LateSet(object obj, Type objType, string name, object[] args, string[] paramNames, Func<object, object> getResult, object expected)
         {
@@ -32,7 +32,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, getResult(obj));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(LateSetComplex_TestData))]
         public void LateSetComplex(object obj, Type objType, string name, object[] args, string[] paramNames, bool missing, bool valueType)
         {
@@ -81,7 +81,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Throws<MissingMemberException>(() => LateBinding.LateIndexSet(obj, args, paramNames));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(LateIndexSetComplex_TestData))]
         public void LateIndexSetComplex(object obj, object[] args, string[] paramNames, bool missing, bool valueType)
         {

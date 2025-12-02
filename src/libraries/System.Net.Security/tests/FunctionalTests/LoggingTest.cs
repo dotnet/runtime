@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics.Tracing;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -25,9 +26,13 @@ namespace System.Net.Security.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")] // Match SslStream_StreamToStream_Authentication_Success
-        public void EventSource_EventsRaisedAsExpected()
+        public async Task EventSource_EventsRaisedAsExpected()
         {
-          RemoteExecutor.Invoke(async () =>
+            if (PlatformDetection.IsNetworkFrameworkEnabled())
+            {
+                throw new SkipTestException("We'll deal with EventSources later.");
+            }
+            await RemoteExecutor.Invoke(async () =>
             {
                 try
                 {
@@ -46,7 +51,7 @@ namespace System.Net.Security.Tests
                 {
                     // Don't throw inside RemoteExecutor if SslStream_StreamToStream_Authentication_Success chose to skip the test
                 }
-            }).Dispose();
+            }).DisposeAsync();
         }
     }
 }

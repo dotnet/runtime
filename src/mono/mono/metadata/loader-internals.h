@@ -18,6 +18,7 @@
 #include <mono/utils/mono-error.h>
 #include <mono/utils/mono-forward.h>
 #include <mono/utils/mono-conc-hashtable.h>
+#include "../native/containers/dn-simdhash-specializations.h"
 
 #if defined(TARGET_OSX)
 #define MONO_LOADER_LIBRARY_NAME "libcoreclr.dylib"
@@ -74,8 +75,6 @@ typedef struct {
 	GHashTable *native_func_wrapper_indirect_cache; /* Indexed by MonoMethodSignature. Protected by the marshal lock */
 	GHashTable *synchronized_cache;
 	GHashTable *unbox_wrapper_cache;
-	GHashTable *cominterop_invoke_cache;
-	GHashTable *cominterop_wrapper_cache; /* LOCKING: marshal lock */
 	GHashTable *thunk_invoke_cache;
 	GHashTable *unsafe_accessor_cache;
 } MonoWrapperCaches;
@@ -176,7 +175,8 @@ struct _MonoMemoryManager {
 	MonoAssemblyLoadContext **alcs;
 
 	// Generic-specific caches
-	GHashTable *ginst_cache, *gmethod_cache, *gsignature_cache;
+	GHashTable *ginst_cache;
+	dn_simdhash_ght_t *gmethod_cache, *gsignature_cache;
 	MonoConcurrentHashTable *gclass_cache;
 
 	/* mirror caches of ones already on MonoImage. These ones contain generics */
@@ -264,7 +264,7 @@ static inline MonoGCHandle
 mono_alc_get_gchandle_for_resolving (MonoAssemblyLoadContext *alc)
 {
 	/* for the default ALC, pass NULL to ask for the Default ALC - see
-	 * AssemblyLoadContext.GetAssemblyLoadContext(IntPtr gchManagedAssemblyLoadContext) - which
+	 * AssemblyLoadContext.GetAssemblyLoadContext(IntPtr gchAssemblyLoadContext) - which
 	 * will create the managed ALC object if it hasn't been created yet
 	 */
 	if (alc->gchandle == mono_alc_get_default ()->gchandle)

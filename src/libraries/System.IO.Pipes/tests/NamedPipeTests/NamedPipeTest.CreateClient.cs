@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security.Principal;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -10,7 +11,7 @@ namespace System.IO.Pipes.Tests
     /// <summary>
     /// Tests for the constructors for NamedPipeClientStream
     /// </summary>
-    public class NamedPipeTest_CreateClient
+    public partial class NamedPipeTest_CreateClient
     {
         [Fact]
         public static void NullPipeName_Throws_ArgumentNullException()
@@ -65,21 +66,6 @@ namespace System.IO.Pipes.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeClientStream(serverName, reservedName, direction, PipeOptions.None, TokenImpersonationLevel.Impersonation));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Not supported pipe path throws PNSE on Unix
-        public static void NotSupportedPipePath_Throws_PlatformNotSupportedException()
-        {
-            string hostName;
-            Assert.True(InteropTest.TryGetHostName(out hostName));
-
-            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream("foobar" + hostName, "foobar"));
-            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(hostName, "foobar" + Path.GetInvalidFileNameChars()[0]));
-            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(hostName, "/tmp/foo\0bar"));
-            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(hostName, "/tmp/foobar/"));
-            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(hostName, "/"));
-            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(hostName, "\0"));
-        }
-
         [Theory]
         [InlineData((PipeDirection)123)]
         public static void InvalidPipeDirection_Throws_ArgumentOutOfRangeException(PipeDirection direction)
@@ -114,7 +100,10 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.Out)]
         public static void NullHandle_Throws_ArgumentNullException(PipeDirection direction)
         {
+#pragma warning disable SYSLIB0063 // Testing the obsolete constructor
             AssertExtensions.Throws<ArgumentNullException>("safePipeHandle", () => new NamedPipeClientStream(direction, false, true, null));
+#pragma warning restore SYSLIB0063
+            AssertExtensions.Throws<ArgumentNullException>("safePipeHandle", () => new NamedPipeClientStream(direction, false, null));
         }
 
         [Theory]
@@ -124,7 +113,10 @@ namespace System.IO.Pipes.Tests
         public static void InvalidHandle_Throws_ArgumentException(PipeDirection direction)
         {
             using SafePipeHandle pipeHandle = new SafePipeHandle(new IntPtr(-1), true);
+#pragma warning disable SYSLIB0063 // Testing the obsolete constructor
             AssertExtensions.Throws<ArgumentException>("safePipeHandle", () => new NamedPipeClientStream(direction, false, true, pipeHandle));
+#pragma warning restore SYSLIB0063
+            AssertExtensions.Throws<ArgumentException>("safePipeHandle", () => new NamedPipeClientStream(direction, false, pipeHandle));
         }
 
         [Theory]
@@ -144,7 +136,10 @@ namespace System.IO.Pipes.Tests
                     IntPtr handle = safeHandle.DangerousGetHandle();
 
                     SafePipeHandle fakePipeHandle = new SafePipeHandle(handle, ownsHandle: false);
+#pragma warning disable SYSLIB0063 // Testing the obsolete constructor
                     Assert.Throws<IOException>(() => new NamedPipeClientStream(direction, false, true, fakePipeHandle));
+#pragma warning restore SYSLIB0063
+                    Assert.Throws<IOException>(() => new NamedPipeClientStream(direction, false, fakePipeHandle));
                 }
                 finally
                 {
@@ -155,10 +150,52 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        public void NamedPipeClientStream_InvalidHandleInerhitability()
+        public static void NamedPipeClientStream_InvalidHandleInerhitability()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => new NamedPipeClientStream("a", "b", PipeDirection.Out, 0, TokenImpersonationLevel.Delegation, HandleInheritability.None - 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("inheritability", () => new NamedPipeClientStream("a", "b", PipeDirection.Out, 0, TokenImpersonationLevel.Delegation, HandleInheritability.Inheritable + 1));
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS path length exceeds character limit for domain sockets")]
+        public static async Task ConnectOnPipeFromExistingHandle_Throws_InvalidOperationException()
+        {
+            string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
+
+            using (var server1 = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 3, PipeTransmissionMode.Byte, PipeOptions.None))
+            using (var client1 = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None))
+            {
+                client1.Connect();
+                server1.WaitForConnection();
+
+                var clientFromHandle = new NamedPipeClientStream(PipeDirection.InOut, false, client1.SafePipeHandle);
+                Assert.Throws<InvalidOperationException>(clientFromHandle.Connect);
+                await Assert.ThrowsAsync<InvalidOperationException>(clientFromHandle.ConnectAsync);
+            }
+
+#pragma warning disable SYSLIB0063
+            using (var server2 = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 3, PipeTransmissionMode.Byte, PipeOptions.None))
+            using (var client2 = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None))
+            {
+                client2.Connect();
+                server2.WaitForConnection();
+
+                var clientFromHandleTrue = new NamedPipeClientStream(PipeDirection.InOut, isAsync: false, isConnected: true, client2.SafePipeHandle);
+                Assert.Throws<InvalidOperationException>(clientFromHandleTrue.Connect);
+                await Assert.ThrowsAsync<InvalidOperationException>(clientFromHandleTrue.ConnectAsync);
+            }
+
+            using (var server3 = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 3, PipeTransmissionMode.Byte, PipeOptions.None))
+            using (var client3 = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None))
+            {
+                client3.Connect();
+                server3.WaitForConnection();
+
+                var clientFromHandleFalse = new NamedPipeClientStream(PipeDirection.InOut, isAsync: false, isConnected: false, client3.SafePipeHandle);
+                Assert.Throws<InvalidOperationException>(clientFromHandleFalse.Connect);
+                await Assert.ThrowsAsync<InvalidOperationException>(clientFromHandleFalse.ConnectAsync);
+            }
+#pragma warning restore SYSLIB0063
         }
     }
 }

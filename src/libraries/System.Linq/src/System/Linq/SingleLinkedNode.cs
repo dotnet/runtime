@@ -27,7 +27,7 @@ namespace System.Linq
         /// <param name="item">The item to place in this node.</param>
         private SingleLinkedNode(SingleLinkedNode<TSource> linked, TSource item)
         {
-            Debug.Assert(linked != null);
+            Debug.Assert(linked is not null);
             Linked = linked;
             Item = item;
         }
@@ -54,7 +54,7 @@ namespace System.Linq
         public int GetCount()
         {
             int count = 0;
-            for (SingleLinkedNode<TSource>? node = this; node != null; node = node.Linked)
+            for (SingleLinkedNode<TSource>? node = this; node is not null; node = node.Linked)
             {
                 count++;
             }
@@ -77,7 +77,7 @@ namespace System.Linq
             for (; index > 0; index--)
             {
                 node = node.Linked!;
-                Debug.Assert(node != null);
+                Debug.Assert(node is not null);
             }
 
             return node;
@@ -99,11 +99,11 @@ namespace System.Linq
         /// <summary>
         /// Fills a start of a span with the items of this node's singly-linked list.
         /// </summary>
-        /// <param name="span">The span to fill. Must be the precise size required.</param>
+        /// <param name="span">The span to fill. Must be at least the size required.</param>
         public void Fill(Span<TSource> span)
         {
             int index = 0;
-            for (SingleLinkedNode<TSource>? node = this; node != null; node = node.Linked)
+            for (SingleLinkedNode<TSource>? node = this; node is not null; node = node.Linked)
             {
                 span[index] = node.Item;
                 index++;
@@ -117,7 +117,7 @@ namespace System.Linq
         public void FillReversed(Span<TSource> span)
         {
             int index = span.Length;
-            for (SingleLinkedNode<TSource>? node = this; node != null; node = node.Linked)
+            for (SingleLinkedNode<TSource>? node = this; node is not null; node = node.Linked)
             {
                 --index;
                 span[index] = node.Item;

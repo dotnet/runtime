@@ -106,7 +106,7 @@ namespace System.Formats.Cbor.Tests
             Assert.True(result);
             Assert.Equal(expectedValue.Length, charsWritten);
             Assert.Equal(expectedValue, new string(buffer.Slice(0, charsWritten)
-#if !NETCOREAPP
+#if !NET
 .ToArray()
 #endif
                 ));
@@ -136,7 +136,7 @@ namespace System.Formats.Cbor.Tests
             Assert.True(result);
             Assert.Equal(actualValue.Length, charsWritten);
             Assert.Equal(actualValue, new string(buffer.AsSpan(0, charsWritten)
-#if !NETCOREAPP
+#if !NET
 .ToArray()
 #endif
                 ));
@@ -162,7 +162,7 @@ namespace System.Formats.Cbor.Tests
             Assert.True(result);
             Assert.Equal(expectedValue.Length, charsWritten);
             Assert.Equal(expectedValue, new string(buffer.AsSpan(0, charsWritten)
-#if !NETCOREAPP
+#if !NET
 .ToArray()
 #endif
                 ));
@@ -184,7 +184,7 @@ namespace System.Formats.Cbor.Tests
 
             ReadOnlyMemory<byte> resultBytes = reader.ReadDefiniteLengthTextStringBytes();
             string result = Encoding.UTF8.GetString(resultBytes.Span
-#if !NETCOREAPP
+#if !NET
 .ToArray()
 #endif
                 );

@@ -11,12 +11,12 @@ namespace System.Linq
 
         public static IEnumerable<TSource> Intersect<TSource>(this IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource>? comparer)
         {
-            if (first == null)
+            if (first is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
             }
 
-            if (second == null)
+            if (second is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
             }

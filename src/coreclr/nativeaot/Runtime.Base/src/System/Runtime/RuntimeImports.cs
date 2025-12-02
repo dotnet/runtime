@@ -33,7 +33,7 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewObject")]
-        internal static extern object RhNewObject(EETypePtr pEEType);
+        internal static extern unsafe object RhNewObject(MethodTable* pEEType);
 
         // Move memory which may be on the heap which may have object references in it.
         // In general, a memcpy on the heap is unsafe, but this is able to perform the

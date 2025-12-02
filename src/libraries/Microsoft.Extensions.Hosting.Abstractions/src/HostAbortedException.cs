@@ -6,12 +6,12 @@ using System.Runtime.Serialization;
 namespace Microsoft.Extensions.Hosting
 {
     /// <summary>
-    /// The exception that is thrown upon <see cref="IHost"/> abortion.
+    /// The exception that is thrown when an <see cref="IHost"/> is stopped to indicate the Host is stopping gracefully.  This exception should not be thrown or handled by user code.
     /// </summary>
     [Serializable]
     public sealed class HostAbortedException : Exception
     {
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         private HostAbortedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Hosting
         /// The caller of this constructor is required to ensure that this string has been localized for the
         /// current system culture.
         /// </remarks>
-        public HostAbortedException(string? message) : base(message) { }
+        public HostAbortedException(string? message) : base(message ?? SR.HostAbortedExceptionMessage) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HostAbortedException"/> class
@@ -52,6 +52,6 @@ namespace Microsoft.Extensions.Hosting
         /// The caller of this constructor is required to ensure that this string has been localized for the
         /// current system culture.
         /// </remarks>
-        public HostAbortedException(string? message, Exception? innerException) : base(message, innerException) { }
+        public HostAbortedException(string? message, Exception? innerException) : base(message ?? SR.HostAbortedExceptionMessage, innerException) { }
     }
 }

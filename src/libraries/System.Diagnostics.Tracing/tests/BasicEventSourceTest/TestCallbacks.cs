@@ -3,16 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
-#if USE_MDT_EVENTSOURCE
-using Microsoft.Diagnostics.Tracing;
-#else
-using System.Diagnostics.Tracing;
-#endif
-using System.Reflection;
 
 namespace BasicEventSourceTests
 {

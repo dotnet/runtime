@@ -17,6 +17,30 @@
 #define USE_REDIRECT_FOR_GCSTRESS
 #endif // TARGET_UNIX
 
+#define ENUM_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(Fp) \
+    CALLEE_SAVED_REGISTER(Lr) \
+    CALLEE_SAVED_REGISTER(X19) \
+    CALLEE_SAVED_REGISTER(X20) \
+    CALLEE_SAVED_REGISTER(X21) \
+    CALLEE_SAVED_REGISTER(X22) \
+    CALLEE_SAVED_REGISTER(X23) \
+    CALLEE_SAVED_REGISTER(X24) \
+    CALLEE_SAVED_REGISTER(X25) \
+    CALLEE_SAVED_REGISTER(X26) \
+    CALLEE_SAVED_REGISTER(X27) \
+    CALLEE_SAVED_REGISTER(X28)
+
+#define ENUM_FP_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(V[8].Low) \
+    CALLEE_SAVED_REGISTER(V[9].Low) \
+    CALLEE_SAVED_REGISTER(V[10].Low) \
+    CALLEE_SAVED_REGISTER(V[11].Low) \
+    CALLEE_SAVED_REGISTER(V[12].Low) \
+    CALLEE_SAVED_REGISTER(V[13].Low) \
+    CALLEE_SAVED_REGISTER(V[14].Low) \
+    CALLEE_SAVED_REGISTER(V[15].Low)
+
 EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
 EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 
@@ -36,9 +60,7 @@ extern PCODE GetPreStubEntryPoint();
 #define JUMP_ALLOCATE_SIZE                      16  // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         16  // # bytes to allocate for a back to back jump instruction
 
-#define HAS_NDIRECT_IMPORT_PRECODE              1
-
-#define USE_INDIRECT_CODEHEADER
+#define HAS_PINVOKE_IMPORT_PRECODE              1
 
 #define HAS_FIXUP_PRECODE                       1
 
@@ -109,10 +131,8 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-#define JIT_GetSharedGCStaticBase           JIT_GetSharedGCStaticBase_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBase        JIT_GetSharedNonGCStaticBase_SingleAppDomain
-#define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
+#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
+#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 //**********************************************************************
 // Frames
@@ -241,7 +261,7 @@ inline void SetSimdReg(T_CONTEXT * context, int Regnum, NEON128 RegContent)
     context->V[Regnum] = RegContent;
 }
 
-extern "C" LPVOID __stdcall GetCurrentSP();
+extern "C" void* GetCurrentSP();
 
 inline void SetSP(T_CONTEXT *context, TADDR sp) {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -259,6 +279,29 @@ inline TADDR GetFP(const T_CONTEXT * context)
     return (TADDR)(context->Fp);
 }
 
+inline void SetFirstArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    SetReg(context, 0, value);
+}
+
+inline TADDR GetFirstArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return GetReg(context, 0);
+}
+
+inline void SetSecondArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    SetReg(context, 1, value);
+}
+
+inline TADDR GetSecondArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return GetReg(context, 1);
+}
 
 inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
 {
@@ -282,10 +325,10 @@ inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
     }
     EX_CATCH
     {
-        mem = NULL;
+        mem = 0;
         _ASSERTE(!"Memory read within jitted Code Failed, this should not happen!!!!");
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
     return mem;
 }
 
@@ -310,7 +353,7 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 }
 
 //------------------------------------------------------------------------
-inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
+inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     LIMITED_METHOD_CONTRACT;
     UINT32* pCode = (UINT32*)pBufferRW;
@@ -333,29 +376,15 @@ inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 }
 
 //------------------------------------------------------------------------
-//  Given the same pBuffer that was used by emitJump this method
+//  Given the same pBuffer that was used by emitBackToBackJump this method
 //  decodes the instructions and returns the jump target
-inline PCODE decodeJump(PCODE pCode)
+inline PCODE decodeBackToBackJump(PCODE pCode)
 {
     LIMITED_METHOD_CONTRACT;
 
     TADDR pInstr = PCODEToPINSTR(pCode);
 
     return *dac_cast<PTR_PCODE>(pInstr + 2*sizeof(DWORD));
-}
-
-//------------------------------------------------------------------------
-inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
-{
-    WRAPPER_NO_CONTRACT;
-    emitJump(pBufferRX, pBufferRW, target);
-}
-
-//------------------------------------------------------------------------
-inline PCODE decodeBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    return decodeJump(pBuffer);
 }
 
 //----------------------------------------------------------------------
@@ -428,7 +457,6 @@ class StubLinkerCPU : public StubLinker
 {
 
 private:
-    void EmitLoadStoreRegPairImm(DWORD flags, int regNum1, int regNum2, IntReg Xn, int offset, BOOL isVec);
     void EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Xn, int offset, BOOL isVec, int log2Size = 3);
 public:
 
@@ -459,75 +487,23 @@ public:
 
     void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
 
-#if defined(FEATURE_SHARE_GENERIC_CODE)
     void EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
-#endif // FEATURE_SHARE_GENERIC_CODE
 
-#ifdef _DEBUG
-    void EmitNop() { Emit32(0xD503201F); }
-#endif
-    void EmitBreakPoint() { Emit32(0xD43E0000); }
     void EmitMovConstant(IntReg target, UINT64 constant);
-    void EmitCmpImm(IntReg reg, int imm);
-    void EmitCmpReg(IntReg Xn, IntReg Xm);
-    void EmitCondFlagJump(CodeLabel * target, UINT cond);
     void EmitJumpRegister(IntReg regTarget);
     void EmitMovReg(IntReg dest, IntReg source);
 
-    void EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value);
     void EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value);
-
-    void EmitLoadStoreRegPairImm(DWORD flags, IntReg Xt1, IntReg Xt2, IntReg Xn, int offset=0);
-    void EmitLoadStoreRegPairImm(DWORD flags, VecReg Vt1, VecReg Vt2, IntReg Xn, int offset=0);
 
     void EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset=0, int log2Size = 3);
     void EmitLoadStoreRegImm(DWORD flags, VecReg Vt, IntReg Xn, int offset=0);
 
-    void EmitLoadRegReg(IntReg Xt, IntReg Xn, IntReg Xm, DWORD option);
-
-    void EmitCallRegister(IntReg reg);
-    void EmitProlog(unsigned short cIntRegArgs,
-                    unsigned short cVecRegArgs,
-                    unsigned short cCalleeSavedRegs,
-                    unsigned short cbStackSpace = 0);
-
-    void EmitEpilog();
-
     void EmitRet(IntReg reg);
-
-
 };
-
-extern "C" void SinglecastDelegateInvokeStub();
 
 
 // preferred alignment for data
 #define DATA_ALIGNMENT 8
-
-struct DECLSPEC_ALIGN(16) UMEntryThunkCode
-{
-    DWORD        m_code[4];
-
-    TADDR       m_pTargetCode;
-    TADDR       m_pvSecretParam;
-
-    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
-    void Poison();
-
-    LPCBYTE GetEntryPoint() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (LPCBYTE)this;
-    }
-
-    static int GetEntryPointOffset()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return 0;
-    }
-};
 
 struct HijackArgs
 {
@@ -548,6 +524,12 @@ struct HijackArgs
     };
     union
     {
+        DWORD64 X2;
+        size_t AsyncRet;
+    };
+    DWORD64 Pad;
+    union
+    {
         struct {
              NEON128 Q0;
              NEON128 Q1;
@@ -557,47 +539,5 @@ struct HijackArgs
         NEON128 FPReturnValue[4];
     };
 };
-
-// Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
-struct ThisPtrRetBufPrecode {
-
-    static const int Type = 0x10;
-
-    UINT32  m_rgCode[6];
-    TADDR   m_pTarget;
-    TADDR   m_pMethodDesc;
-
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
-
-    TADDR GetMethodDesc()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_pMethodDesc;
-    }
-
-    PCODE GetTarget()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pTarget;
-    }
-
-#ifndef DACCESS_COMPILE
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
-
-        ExecutableWriterHolder<ThisPtrRetBufPrecode> precodeWriterHolder(this, sizeof(ThisPtrRetBufPrecode));
-        return (TADDR)InterlockedCompareExchange64(
-            (LONGLONG*)&precodeWriterHolder.GetRW()->m_pTarget, (TADDR)target, (TADDR)expected) == expected;
-    }
-#endif // !DACCESS_COMPILE
-};
-typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
 
 #endif // __cgencpu_h__

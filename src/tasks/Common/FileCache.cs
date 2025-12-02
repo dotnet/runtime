@@ -33,9 +33,8 @@ internal sealed class FileCache
         Enabled = true;
         if (File.Exists(cacheFilePath))
         {
-            _oldCache = (CompilerCache?)JsonSerializer.Deserialize(File.ReadAllText(cacheFilePath),
-                                                                    typeof(CompilerCache),
-                                                                    s_jsonOptions);
+            using FileStream fs = File.OpenRead(cacheFilePath);
+            _oldCache = JsonSerializer.Deserialize<CompilerCache>(fs, s_jsonOptions);
         }
 
         _oldCache ??= new();

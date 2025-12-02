@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -54,10 +52,18 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void Empty()
+        {
+            AssertMatches([], [], Enumerable.Empty<int>().ToLookup(i => i));
+            Assert.False(Enumerable.Empty<int>().ToLookup(i => i).Contains(0));
+            Assert.Empty(Enumerable.Empty<int>().ToLookup(i => i)[0]);
+        }
+
+        [Fact]
         public void NullKeyIncluded()
         {
-            string[] key = { "Chris", "Bob", null, "Tim" };
-            int[] element = { 50, 95, 55, 90 };
+            string[] key = ["Chris", "Bob", null, "Tim"];
+            int[] element = [50, 95, 55, 90];
             var source = key.Zip(element, (k, e) => new { Name = k, Score = e });
 
             AssertMatches(key, source, source.ToLookup(e => e.Name));
@@ -66,8 +72,8 @@ namespace System.Linq.Tests
         [Fact]
         public void OneElementCustomComparer()
         {
-            string[] key = { "Chris" };
-            int[] element = { 50 };
+            string[] key = ["Chris"];
+            int[] element = [50];
             var source = new [] { new {Name = "risCh", Score = 50} };
 
             AssertMatches(key, source, source.ToLookup(e => e.Name, new AnagramEqualityComparer()));
@@ -76,8 +82,8 @@ namespace System.Linq.Tests
         [Fact]
         public void UniqueElementsElementSelector()
         {
-            string[] key = { "Chris", "Prakash", "Tim", "Robert", "Brian" };
-            int[] element = { 50, 100, 95, 60, 80 };
+            string[] key = ["Chris", "Prakash", "Tim", "Robert", "Brian"];
+            int[] element = [50, 100, 95, 60, 80];
             var source = new []
             {
                 new { Name = key[0], Score = element[0] },
@@ -93,8 +99,8 @@ namespace System.Linq.Tests
         [Fact]
         public void DuplicateKeys()
         {
-            string[] key = { "Chris", "Prakash", "Robert" };
-            int[] element = { 50, 80, 100, 95, 99, 56 };
+            string[] key = ["Chris", "Prakash", "Robert"];
+            int[] element = [50, 80, 100, 95, 99, 56];
             var source = new[]
             {
                 new { Name = key[0], Score = element[0] },
@@ -111,8 +117,8 @@ namespace System.Linq.Tests
         [Fact]
         public void RunOnce()
         {
-            string[] key = { "Chris", "Prakash", "Robert" };
-            int[] element = { 50, 80, 100, 95, 99, 56 };
+            string[] key = ["Chris", "Prakash", "Robert"];
+            int[] element = [50, 80, 100, 95, 99, 56];
             var source = new[]
             {
                 new { Name = key[0], Score = element[0] },
@@ -129,8 +135,8 @@ namespace System.Linq.Tests
         [Fact]
         public void Count()
         {
-            string[] key = { "Chris", "Prakash", "Robert" };
-            int[] element = { 50, 80, 100, 95, 99, 56 };
+            string[] key = ["Chris", "Prakash", "Robert"];
+            int[] element = [50, 80, 100, 95, 99, 56];
             var source = new[]
             {
                 new { Name = key[0], Score = element[0] },
@@ -147,8 +153,8 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource()
         {
-            string[] key = { };
-            int[] element = { };
+            string[] key = [];
+            int[] element = [];
             var source = key.Zip(element, (k, e) => new { Name = k, Score = e });
 
             AssertMatches(key, element, source.ToLookup(e => e.Name, e => e.Score, new AnagramEqualityComparer()));
@@ -157,9 +163,9 @@ namespace System.Linq.Tests
         [Fact]
         public void SingleNullKeyAndElement()
         {
-            string[] key = { null };
-            string[] element = { null };
-            string[] source = new string[] { null };
+            string[] key = [null];
+            string[] element = [null];
+            string[] source = [null];
 
             AssertMatches(key, element, source.ToLookup(e => e, e => e, EqualityComparer<string>.Default));
         }
@@ -289,6 +295,59 @@ namespace System.Linq.Tests
             Assert.Equal(expected, result);
         }
 
+        [Fact]
+        public void ApplyResultSelector()
+        {
+            Lookup<int, int> lookup = (Lookup<int, int>)new int[] { 1, 2, 2, 3, 3, 3 }.ToLookup(i => i);
+            IEnumerable<int> sums = lookup.ApplyResultSelector((key, elements) =>
+            {
+                Assert.Equal(key, elements.Count());
+                return elements.Sum();
+            });
+            Assert.Equal([1, 4, 9], sums);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(10)]
+        public void LookupImplementsICollection(int count)
+        {
+            Assert.IsAssignableFrom<ICollection<IGrouping<string, int>>>(Enumerable.Range(0, count).ToLookup(i => i.ToString()));
+            Assert.IsAssignableFrom<ICollection<IGrouping<string, int>>>(Enumerable.Range(0, count).ToLookup(i => i.ToString(), StringComparer.OrdinalIgnoreCase));
+            Assert.IsAssignableFrom<ICollection<IGrouping<string, int>>>(Enumerable.Range(0, count).ToLookup(i => i.ToString(), i => i));
+            Assert.IsAssignableFrom<ICollection<IGrouping<string, int>>>(Enumerable.Range(0, count).ToLookup(i => i.ToString(), i => i, StringComparer.OrdinalIgnoreCase));
+
+            var collection = (ICollection<IGrouping<string, int>>)Enumerable.Range(0, count).ToLookup(i => i.ToString());
+            Assert.Equal(count, collection.Count);
+            Assert.True(collection.IsReadOnly);
+            Assert.Throws<NotSupportedException>(() => collection.Add(null));
+            Assert.Throws<NotSupportedException>(() => collection.Remove(null));
+            Assert.Throws<NotSupportedException>(() => collection.Clear());
+
+            if (count > 0)
+            {
+                IGrouping<string, int> first = collection.First();
+                IGrouping<string, int> last = collection.Last();
+                Assert.True(collection.Contains(first));
+                Assert.True(collection.Contains(last));
+            }
+            Assert.False(collection.Contains(new NopGrouping()));
+
+            IGrouping<string, int>[] items = new IGrouping<string, int>[count];
+            collection.CopyTo(items, 0);
+            Assert.Equal(collection.Select(i => i), items);
+            Assert.Equal(items, Enumerable.Range(0, count).ToLookup(i => i.ToString()).ToArray());
+            Assert.Equal(items, Enumerable.Range(0, count).ToLookup(i => i.ToString()).ToList());
+        }
+
+        private sealed class NopGrouping : IGrouping<string, int>
+        {
+            public string Key => "";
+            public IEnumerator<int> GetEnumerator() => ((IList<int>)Array.Empty<int>()).GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
         public class Membership
         {
             public int Id { get; set; }
@@ -301,7 +360,7 @@ namespace System.Linq.Tests
         {
             public int Id { get; set; }
 
-            public bool Equals(Role other) => other != null && Id == other.Id;
+            public bool Equals(Role other) => other is not null && Id == other.Id;
 
             public override bool Equals(object obj) => Equals(obj as Role);
 
@@ -315,7 +374,7 @@ namespace System.Linq.Tests
             public int CountrB { get; set; }
 
             public bool Equals(RoleMetadata other)
-                => other != null && Role.Equals(other.Role) && CountA == other.CountA && CountrB == other.CountrB;
+                => other is not null && Role.Equals(other.Role) && CountA == other.CountA && CountrB == other.CountrB;
 
             public override bool Equals(object obj) => Equals(obj as RoleMetadata);
 

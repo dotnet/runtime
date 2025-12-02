@@ -255,43 +255,6 @@ unsigned PESection::computeOffset(_In_ char *ptr) const // virtual
     return m_blobFetcher.ComputeOffset(ptr);
 }
 
-
-/******************************************************************/
-HRESULT PESection::addBaseReloc(unsigned offset, CeeSectionRelocType reloc,
-                                CeeSectionRelocExtra *extra)
-{
-    HRESULT     hr = E_FAIL;
-
-    // Use for fixing up pointers pointing outside of the module.
-    //
-    // We only record base relocs for cross module pc-rel pointers
-    //
-
-    switch (reloc)
-    {
-#ifdef HOST_64BIT
-    case srRelocDir64Ptr:
-#endif
-    case srRelocAbsolutePtr:
-    case srRelocHighLowPtr:
-        // For non pc-rel pointers we don't need to record a section reloc
-        hr = S_OK;
-        break;
-
-#if defined (TARGET_X86) || defined (TARGET_AMD64)
-    case srRelocRelativePtr:
-    case srRelocRelative:
-        hr = addSectReloc(offset, NULL, reloc, extra);
-        break;
-#endif
-
-    default:
-        _ASSERTE(!"unhandled reloc in PESection::addBaseReloc");
-        break;
-    }
-    return hr;
-}
-
 /******************************************************************/
 // Dynamic mem allocation, but we can't move old blocks (since others
 // have pointers to them), so we need a fancy way to grow
@@ -319,7 +282,7 @@ HRESULT PESection::applyRelocs(CeeGenTokenMapper *pTokenMapper)
             unsigned * pos = (unsigned*)
                 m_blobFetcher.ComputePointer(pCurReloc->offset);
             mdToken newToken;
-            PREFIX_ASSUME(pos != NULL);
+            _ASSERTE(pos != NULL);
             if (pTokenMapper->HasTokenMoved(*pos, newToken)) {
                 // we have a mapped token
                 *pos = newToken;

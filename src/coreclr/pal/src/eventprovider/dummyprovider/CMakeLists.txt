@@ -24,7 +24,6 @@ foreach(DUMMY_PROVIDER_FILE ${DUMMY_PROVIDER_OUTPUT})
   list(APPEND DUMMY_PROVIDER_SOURCES ${DUMMY_PROVIDER_FILE})
 endforeach()
 
-add_definitions(-DPAL_STDCPP_COMPAT=1)
 include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/dummy)
 
@@ -32,9 +31,14 @@ add_custom_command(OUTPUT ${DUMMY_PROVIDER_SOURCES}
   COMMAND ${GENERATE_COMMAND}
   DEPENDS ${EVENT_MANIFEST} ${GENERATE_SCRIPT})
 
+add_library(eventprovider_objects
+    OBJECT
+    ${DUMMY_PROVIDER_SOURCES}
+)
+
 add_library(eventprovider
     STATIC
-    ${DUMMY_PROVIDER_SOURCES}
+    $<TARGET_OBJECTS:eventprovider_objects>
 )
 
 set_target_properties(eventprovider PROPERTIES LINKER_LANGUAGE CXX)

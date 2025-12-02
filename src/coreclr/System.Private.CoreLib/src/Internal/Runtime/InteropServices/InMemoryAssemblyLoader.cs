@@ -15,6 +15,7 @@ namespace Internal.Runtime.InteropServices
     [SupportedOSPlatform("windows")]
     internal static class InMemoryAssemblyLoader
     {
+        [FeatureSwitchDefinition("System.Runtime.InteropServices.EnableCppCLIHostActivation")]
         private static bool IsSupported { get; } = InitializeIsSupported();
         private static bool InitializeIsSupported() => AppContext.TryGetSwitch("System.Runtime.InteropServices.EnableCppCLIHostActivation", out bool isSupported) ? isSupported : true;
 
@@ -24,7 +25,7 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="moduleHandle">The native module handle for the assembly.</param>
         /// <param name="assemblyPath">The path to the assembly (as a pointer to a UTF-16 C string).</param>
-        public static unsafe void LoadInMemoryAssembly(IntPtr moduleHandle, IntPtr assemblyPath)
+        public static void LoadInMemoryAssembly(IntPtr moduleHandle, IntPtr assemblyPath)
         {
             if (!IsSupported)
                 throw new NotSupportedException(SR.NotSupported_CppCli);
@@ -36,7 +37,7 @@ namespace Internal.Runtime.InteropServices
         // It is intentionally left in the product, so developers get a warning when trimming an app which enabled `Internal.Runtime.InteropServices.InMemoryAssemblyLoader.IsSupported`.
         // For runtime build the warning is suppressed in the ILLink.Suppressions.LibraryBuild.xml, but we only want to suppress it if the feature is enabled (IsSupported is true).
         // The call is extracted into a separate method which is the sole target of the suppression.
-        private static unsafe void LoadInMemoryAssemblyInContextWhenSupported(IntPtr moduleHandle, IntPtr assemblyPath)
+        private static void LoadInMemoryAssemblyInContextWhenSupported(IntPtr moduleHandle, IntPtr assemblyPath)
         {
 #pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             LoadInMemoryAssemblyInContextImpl(moduleHandle, assemblyPath);
@@ -49,25 +50,27 @@ namespace Internal.Runtime.InteropServices
         /// </summary>
         /// <param name="moduleHandle">The native module handle for the assembly.</param>
         /// <param name="assemblyPath">The path to the assembly (as a pointer to a UTF-16 C string).</param>
-        /// <param name="loadContext">Load context (currently must be IntPtr.Zero)</param>
+        /// <param name="loadContext">Load context (currently must be either IntPtr.Zero for default ALC or -1 for isolated ALC)</param>
         [UnmanagedCallersOnly]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The same C++/CLI feature switch applies to LoadInMemoryAssembly and this function. We rely on the warning from LoadInMemoryAssembly.")]
-        public static unsafe void LoadInMemoryAssemblyInContext(IntPtr moduleHandle, IntPtr assemblyPath, IntPtr loadContext)
+        public static void LoadInMemoryAssemblyInContext(IntPtr moduleHandle, IntPtr assemblyPath, IntPtr loadContext)
         {
             if (!IsSupported)
                 throw new NotSupportedException(SR.NotSupported_CppCli);
 
-            ArgumentOutOfRangeException.ThrowIfNotEqual(loadContext, IntPtr.Zero);
+            if ((loadContext != IntPtr.Zero) && (loadContext != -1))
+            {
+                throw new ArgumentOutOfRangeException(nameof(loadContext));
+            }
 
-            LoadInMemoryAssemblyInContextImpl(moduleHandle, assemblyPath, AssemblyLoadContext.Default);
+            LoadInMemoryAssemblyInContextImpl(moduleHandle, assemblyPath, (loadContext == IntPtr.Zero) ? AssemblyLoadContext.Default : null);
         }
 
         [RequiresUnreferencedCode("C++/CLI is not trim-compatible", Url = "https://aka.ms/dotnet-illink/nativehost")]
         private static void LoadInMemoryAssemblyInContextImpl(IntPtr moduleHandle, IntPtr assemblyPath, AssemblyLoadContext? alc = null)
         {
-            string? assemblyPathString = Marshal.PtrToStringUni(assemblyPath);
-            if (assemblyPathString == null)
+            string assemblyPathString = Marshal.PtrToStringUni(assemblyPath) ??
                 throw new ArgumentOutOfRangeException(nameof(assemblyPath));
 
             // We don't cache the ALCs or resolvers here since each IJW assembly will call this method at most once

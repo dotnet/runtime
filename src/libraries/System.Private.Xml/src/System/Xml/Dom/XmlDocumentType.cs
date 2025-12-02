@@ -14,8 +14,6 @@ namespace System.Xml
         private readonly string? _systemId;
         private readonly string? _internalSubset;
         private bool _namespaces;
-        private XmlNamedNodeMap? _entities;
-        private XmlNamedNodeMap? _notations;
 
         // parsed DTD
         private SchemaInfo? _schemaInfo;
@@ -76,10 +74,10 @@ namespace System.Xml
         }
 
         // Gets the collection of XmlEntity nodes declared in the document type declaration.
-        public XmlNamedNodeMap Entities => _entities ??= new XmlNamedNodeMap(this);
+        public XmlNamedNodeMap Entities => field ??= new XmlNamedNodeMap(this);
 
         // Gets the collection of XmlNotation nodes present in the document type declaration.
-        public XmlNamedNodeMap Notations => _notations ??= new XmlNamedNodeMap(this);
+        public XmlNamedNodeMap Notations => field ??= new XmlNamedNodeMap(this);
 
         //
         // DOM Level 2

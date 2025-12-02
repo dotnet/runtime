@@ -8,7 +8,9 @@
 #include "alignment.h"
 #include "machine_traits.h"
 
+#if defined(TARGET_AMD64)
 #include <immintrin.h>
+#endif
 
 namespace vxsort {
 
@@ -56,7 +58,7 @@ class packer {
    public:
 
     static void pack(TFrom *mem, size_t len, TFrom base) {
-        TFrom offset = MT::template shift_n_sub<Shift>(base, (TFrom) std::numeric_limits<TTo>::Min());
+        TFrom offset = MT::template shift_n_sub<Shift>(base, (TFrom) std::numeric_limits<TTo>::min());
         auto baseVec = MT::broadcast(offset);
 
         auto pre_aligned_mem = reinterpret_cast<TFrom *>(reinterpret_cast<size_t>(mem) & ~ALIGN_MASK);
@@ -87,8 +89,8 @@ class packer {
 
         assert(AH::is_aligned(mem_read));
 
-        auto memv_read = (TV *) mem_read;
-        auto memv_write = (TV *) mem_write;
+        TV * memv_read = (TV *) mem_read;
+        TV * memv_write = (TV *) mem_write;
 
         auto lenv = len / N;
         len -= (lenv * N);
@@ -156,7 +158,7 @@ class packer {
 
 
     static void unpack(TTo *mem, size_t len, TFrom base) {
-        TFrom offset = MT::template shift_n_sub<Shift>(base, (TFrom) std::numeric_limits<TTo>::Min());
+        TFrom offset = MT::template shift_n_sub<Shift>(base, (TFrom) std::numeric_limits<TTo>::min());
         auto baseVec = MT::broadcast(offset);
 
         auto mem_read = mem + len;
@@ -184,8 +186,8 @@ class packer {
         assert(AH::is_aligned(mem_read));
 
         auto lenv = len / (N * 2);
-        auto memv_read = ((TV *) mem_read) - 1;
-        auto memv_write = ((TV *) mem_write) - 2;
+        TV * memv_read = ((TV *) mem_read) - 1;
+        TV * memv_write = ((TV *) mem_write) - 2;
         len -= lenv * N * 2;
 
         while (lenv >= Unroll) {

@@ -5,7 +5,6 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Apple;
-using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -44,24 +43,19 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (contentType == X509ContentType.Pkcs12)
             {
-                if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
+                try
                 {
-                    throw new PlatformNotSupportedException(SR.Cryptography_X509_NoEphemeralPfx);
+                    return (AppleCertificatePal)X509CertificateLoader.LoadPkcs12Pal(
+                        rawData,
+                        password.DangerousGetSpan(),
+                        keyStorageFlags,
+                        X509Certificate.GetPkcs12Limits(readingFromFile, password));
                 }
-
-                X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile, password.PasswordProvided);
-                bool exportable = (keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable;
-
-                bool persist =
-                    (keyStorageFlags & X509KeyStorageFlags.PersistKeySet) == X509KeyStorageFlags.PersistKeySet;
-
-                SafeKeychainHandle keychain = persist
-                    ? Interop.AppleCrypto.SecKeychainCopyDefault()
-                    : Interop.AppleCrypto.CreateTemporaryKeychain();
-
-                using (keychain)
+                catch (Pkcs12LoadLimitExceededException e)
                 {
-                    return ImportPkcs12(rawData, password, exportable, keychain);
+                    throw new CryptographicException(
+                        SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded,
+                        e);
                 }
             }
 
@@ -87,17 +81,17 @@ namespace System.Security.Cryptography.X509Certificates
             throw new CryptographicException();
         }
 
-        internal unsafe byte[] ExportPkcs8(ReadOnlySpan<char> password)
+        internal unsafe byte[] ExportPkcs8(PbeParameters pbeParameters, ReadOnlySpan<char> password)
         {
             Debug.Assert(_identityHandle != null);
 
             using (SafeSecKeyRefHandle key = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle))
             {
-                return ExportPkcs8(key, password);
+                return ExportPkcs8(key, pbeParameters, password);
             }
         }
 
-        internal static unsafe byte[] ExportPkcs8(SafeSecKeyRefHandle key, ReadOnlySpan<char> password)
+        internal static unsafe byte[] ExportPkcs8(SafeSecKeyRefHandle key, PbeParameters pbeParameters, ReadOnlySpan<char> password)
         {
             using (SafeCFDataHandle data = Interop.AppleCrypto.SecKeyExportData(key, exportPrivate: true, password))
             {
@@ -116,7 +110,7 @@ namespace System.Security.Cryptography.X509Certificates
                             password,
                             manager.Memory,
                             password,
-                            UnixExportProvider.s_windowsPbe);
+                            pbeParameters);
 
                         return writer.Encode();
                     }

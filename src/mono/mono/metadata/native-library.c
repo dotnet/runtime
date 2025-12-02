@@ -47,10 +47,6 @@ static GHashTable *native_library_module_map;
  */
 static GHashTable *native_library_module_blocklist;
 
-#ifndef NO_GLOBALIZATION_SHIM
-extern const void *GlobalizationResolveDllImport (const char *name);
-#endif
-
 static GHashTable *global_module_map; // should only be accessed with the global loader data lock
 
 static MonoDl *internal_module; // used when pinvoking `__Internal`
@@ -279,6 +275,22 @@ convert_dllimport_flags (int flags)
 #endif
 }
 
+static int
+add_load_with_altered_search_path_flags (int flags)
+{
+#ifdef HOST_WIN32
+	// LOAD_WITH_ALTERED_SEARCH_PATH is incompatible with LOAD_LIBRARY_SEARCH flags. Remove those flags if they are set.
+	int load_library_search_flags = LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR
+		| LOAD_LIBRARY_SEARCH_APPLICATION_DIR
+		| LOAD_LIBRARY_SEARCH_USER_DIRS
+		| LOAD_LIBRARY_SEARCH_SYSTEM32
+		| LOAD_LIBRARY_SEARCH_DEFAULT_DIRS;
+	return LOAD_WITH_ALTERED_SEARCH_PATH | (flags & ~load_library_search_flags);
+#else
+	return flags;
+#endif
+}
+
 static MonoDl *
 netcore_probe_for_module_variations (const char *mdirname, const char *file_name, int raw_flags, MonoError *error)
 {
@@ -312,7 +324,7 @@ netcore_probe_for_module_variations (const char *mdirname, const char *file_name
 }
 
 static MonoDl *
-netcore_probe_for_module (MonoImage *image, const char *file_name, int flags, MonoError *error)
+netcore_probe_for_module (MonoImage *image, const char *file_name, gboolean user_specified_flags, int flags, MonoError *error)
 {
 	MonoDl *module = NULL;
 	int lflags = convert_dllimport_flags (flags);
@@ -356,19 +368,20 @@ netcore_probe_for_module (MonoImage *image, const char *file_name, int flags, Mo
 		error_init_reuse (error);
 		char *mdirname = g_path_get_dirname (image->filename);
 		if (mdirname)
-			module = netcore_probe_for_module_variations (mdirname, file_name, lflags, error);
+			module = netcore_probe_for_module_variations (mdirname, file_name, add_load_with_altered_search_path_flags(lflags), error);
 		g_free (mdirname);
 	}
 
-	// Try without any path additions, if we didn't try it already
-	if (module == NULL && !probe_first_without_prepend)
+	// Try without any path additions, if we didn't try it already and the user did not
+	// explicitly specify to only look in the assembly directory.
+	if (module == NULL && !probe_first_without_prepend && (!user_specified_flags || flags != DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY))
 	{
 		module = netcore_probe_for_module_variations (NULL, file_name, lflags, error);
 		if (!module && !is_ok (error) && mono_error_get_error_code (error) == MONO_ERROR_BAD_IMAGE)
 			mono_error_move (bad_image_error, error);
 	}
 
-	// TODO: Pass remaining flags on to LoadLibraryEx on Windows where appropriate, see https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.dllimportsearchpath?view=netcore-3.1
+	// TODO: Pass remaining flags on to LoadLibraryEx on Windows where appropriate, see https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportsearchpath?view=netcore-3.1
 
 	if (!module && !is_ok (bad_image_error)) {
 		mono_error_cleanup (error);
@@ -381,12 +394,12 @@ netcore_probe_for_module (MonoImage *image, const char *file_name, int flags, Mo
 }
 
 static MonoDl *
-netcore_probe_for_module_nofail (MonoImage *image, const char *file_name, int flags)
+netcore_probe_for_module_nofail (MonoImage *image, const char *file_name, gboolean user_specified_flags, int flags)
 {
 	MonoDl *result = NULL;
 
 	ERROR_DECL (error);
-	result = netcore_probe_for_module (image, file_name, flags, error);
+	result = netcore_probe_for_module (image, file_name, user_specified_flags, flags, error);
 	mono_error_cleanup (error);
 
 	return result;
@@ -649,7 +662,7 @@ netcore_check_alc_cache (MonoAssemblyLoadContext *alc, const char *scope)
 }
 
 static MonoDl *
-netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, const char *scope, guint32 flags)
+netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, const char *scope, gboolean user_specified_flags, guint32 flags)
 {
 	MonoDl *module = NULL;
 	MonoDl *cached;
@@ -714,7 +727,7 @@ netcore_lookup_native_library (MonoAssemblyLoadContext *alc, MonoImage *image, c
 		goto add_to_alc_cache;
 	}
 
-	module = netcore_probe_for_module_nofail (image, scope, flags);
+	module = netcore_probe_for_module_nofail (image, scope, user_specified_flags, flags);
 	if (module) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Native library found via filesystem probing: '%s'.", scope);
 		goto add_to_global_cache;
@@ -785,26 +798,6 @@ get_dllimportsearchpath_flags (MonoCustomAttrInfo *cinfo)
 
 	return flags;
 }
-
-#ifndef NO_GLOBALIZATION_SHIM
-#ifdef HOST_WIN32
-#define GLOBALIZATION_DLL_NAME "System.Globalization.Native"
-#else
-#define GLOBALIZATION_DLL_NAME "libSystem.Globalization.Native"
-#endif
-
-static gpointer
-default_resolve_dllimport (const char *dll, const char *func)
-{
-	if (strcmp (dll, GLOBALIZATION_DLL_NAME) == 0) {
-		const void *method_impl = GlobalizationResolveDllImport (func);
-		if (method_impl)
-			return (gpointer)method_impl;
-	}
-
-	return NULL;
-}
-#endif // NO_GLOBALIZATION_SHIM
 
 gpointer
 lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_out)
@@ -881,12 +874,6 @@ lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_ou
 	}
 #endif
 
-#ifndef NO_GLOBALIZATION_SHIM
-	addr = default_resolve_dllimport (new_scope, new_import);
-	if (addr)
-		goto exit;
-#endif
-
 	if (pinvoke_override) {
 		addr = pinvoke_override (new_scope, new_import);
 		if (addr)
@@ -913,9 +900,10 @@ retry_with_libcoreclr:
 		if (cinfo && !cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 	}
-	if (flags < 0)
+	gboolean user_specified_flags = flags >= 0;
+	if (!user_specified_flags)
 		flags = DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY;
-	module = netcore_lookup_native_library (alc, image, new_scope, flags);
+	module = netcore_lookup_native_library (alc, image, new_scope, user_specified_flags, flags);
 
 	if (!module) {
 		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DLLIMPORT,
@@ -1181,7 +1169,7 @@ ves_icall_System_Runtime_InteropServices_NativeLibrary_LoadByName (MonoStringHan
 	// FIXME: implement search flag defaults properly
 	{
 		ERROR_DECL (load_error);
-		module = netcore_probe_for_module (image, lib_name, has_search_flag ? search_flag : DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY, load_error);
+		module = netcore_probe_for_module (image, lib_name, has_search_flag, has_search_flag ? search_flag : DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY, load_error);
 		if (!module) {
 			if (mono_error_get_error_code (load_error) == MONO_ERROR_BAD_IMAGE)
 				mono_error_set_generic_error (error, "System", "BadImageFormatException", "%s", lib_name);
@@ -1251,4 +1239,64 @@ void
 mono_loader_install_pinvoke_override (PInvokeOverrideFn override_fn)
 {
 	pinvoke_override = override_fn;
+}
+
+static gboolean
+is_symbol_char_verbatim (unsigned char b)
+{
+	return ((b >= '0' && b <= '9') || (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z'));
+}
+
+static gboolean
+is_symbol_char_underscore (unsigned char c)
+{
+	switch (c) {
+	case '_':
+	case '.':
+	case '-':
+	case '+':
+	case '<':
+	case '>':
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+static size_t mono_precompute_size (const char *key)
+{
+	size_t size = 1; // Null terminator
+	size_t len = (int)strlen (key);
+	for (size_t i = 0; i < len; ++i) {
+		unsigned char b = key[i];
+		if (is_symbol_char_verbatim (b) || is_symbol_char_underscore (b)) {
+			size++;
+		}
+		else {
+			size += 4;
+		}
+	}
+	return size;
+}
+
+// Keep synced with FixupSymbolName from src/tasks/Common/Utils.cs
+char* mono_fixup_symbol_name (const char *prefix, const char *key, const char *suffix) {
+	size_t size = mono_precompute_size (key) + strlen (prefix) + strlen (suffix);
+	GString *str = g_string_sized_new (size);
+	size_t len = (int)strlen (key);
+	g_string_append_printf (str, "%s", prefix);
+
+	for (size_t i = 0; i < len; ++i) {
+		unsigned char b = key[i];
+		if (is_symbol_char_verbatim (b)) {
+			g_string_append_c (str, b);
+		} else if (is_symbol_char_underscore (b)) {
+			g_string_append_c (str, '_');
+		} else {
+			// Append the hex representation of b between underscores
+			g_string_append_printf (str, "_%X_", b);
+		}
+	}
+	g_string_append_printf (str, "%s", suffix);
+	return g_string_free (str, FALSE);
 }

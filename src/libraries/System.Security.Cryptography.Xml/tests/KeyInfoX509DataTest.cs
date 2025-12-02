@@ -335,5 +335,14 @@ namespace System.Security.Cryptography.Xml.Tests
             KeyInfoX509Data data1 = new KeyInfoX509Data();
             Assert.Throws<CryptographicException>(() => data1.LoadXml(doc.DocumentElement));
         }
+
+        [Fact]
+        public void AddIssuerSerial_NegativeSerial()
+        {
+            KeyInfoX509Data data = new KeyInfoX509Data();
+            data.AddIssuerSerial("CN=Vince", "FF");
+            X509IssuerSerial serial = (X509IssuerSerial)Assert.Single(data.IssuerSerials);
+            Assert.Equal("255", serial.SerialNumber);
+        }
     }
 }

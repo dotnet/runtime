@@ -6,6 +6,7 @@ using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace System.ComponentModel
 {
@@ -59,7 +60,7 @@ namespace System.ComponentModel
     internal sealed class ReflectEventDescriptor : EventDescriptor
     {
         private Type? _type;           // the delegate type for the event
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)]
         private readonly Type _componentClass; // the class of the component this info is for
 
         private MethodInfo? _addMethod;     // the method to use when adding an event
@@ -71,7 +72,7 @@ namespace System.ComponentModel
         /// This is the main constructor for an ReflectEventDescriptor.
         /// </summary>
         public ReflectEventDescriptor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentClass,
             string name,
             Type type,
             Attribute[] attributes)
@@ -91,7 +92,7 @@ namespace System.ComponentModel
         }
 
         public ReflectEventDescriptor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentClass,
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentClass,
             EventInfo eventInfo)
             : base(eventInfo.Name, Array.Empty<Attribute>())
         {
@@ -101,12 +102,16 @@ namespace System.ComponentModel
             _realEvent = eventInfo;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "componentClass is annotated as preserve All members, so it can call ReflectEventDescriptor ctor.")]
+        internal static ReflectEventDescriptor CreateWithRegisteredType(Type componentClass, EventInfo eventInfo) => new ReflectEventDescriptor(componentClass, eventInfo);
+
         /// <summary>
         /// This constructor takes an existing ReflectEventDescriptor and modifies it by merging in the
         /// passed-in attributes.
         /// </summary>
         public ReflectEventDescriptor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
+            [DynamicallyAccessedMembers(TypeDescriptor.AllMembersAndInterfaces)] Type componentType,
             EventDescriptor oldReflectEventDescriptor,
             Attribute[] attributes)
             : base(oldReflectEventDescriptor, attributes)

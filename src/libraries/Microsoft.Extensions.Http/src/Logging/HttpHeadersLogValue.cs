@@ -64,7 +64,7 @@ namespace Microsoft.Extensions.Http.Logging
             {
                 if (index < 0 || index >= Count)
                 {
-                    throw new IndexOutOfRangeException(nameof(index));
+                    throw new IndexOutOfRangeException();
                 }
 
                 return Values[index];
@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Http.Logging
                     }
                     else
                     {
-#if NETCOREAPP
+#if NET
                         builder.AppendJoin(", ", (IEnumerable<object>)kvp.Value);
                         builder.AppendLine();
 #else

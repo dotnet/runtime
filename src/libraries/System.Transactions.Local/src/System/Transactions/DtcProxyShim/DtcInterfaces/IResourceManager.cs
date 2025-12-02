@@ -6,7 +6,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Transactions.DtcProxyShim.DtcInterfaces;
 
-// https://docs.microsoft.com/previous-versions/windows/desktop/ms681790(v=vs.85)
+// https://learn.microsoft.com/previous-versions/windows/desktop/ms681790(v=vs.85)
 [GeneratedComInterface, Guid(Guids.IID_IResourceManager), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal partial interface IResourceManager
 {

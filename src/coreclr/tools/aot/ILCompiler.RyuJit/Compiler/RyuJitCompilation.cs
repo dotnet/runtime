@@ -3,12 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.ObjectWriter;
 using ILLink.Shared;
 
 using Internal.IL;
@@ -23,6 +25,7 @@ namespace ILCompiler
         private readonly ConditionalWeakTable<Thread, CorInfoImpl> _corinfos = new ConditionalWeakTable<Thread, CorInfoImpl>();
         internal readonly RyuJitCompilationOptions _compilationOptions;
         private readonly ProfileDataManager _profileDataManager;
+        private readonly FileLayoutOptimizer _fileLayoutOptimizer;
         private readonly MethodImportationErrorProvider _methodImportationErrorProvider;
         private readonly ReadOnlyFieldPolicy _readOnlyFieldPolicy;
         private readonly int _parallelism;
@@ -36,15 +39,17 @@ namespace ILCompiler
             ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
             Logger logger,
-            DevirtualizationManager devirtualizationManager,
             IInliningPolicy inliningPolicy,
             InstructionSetSupport instructionSetSupport,
             ProfileDataManager profileDataManager,
             MethodImportationErrorProvider errorProvider,
             ReadOnlyFieldPolicy readOnlyFieldPolicy,
             RyuJitCompilationOptions options,
-            int parallelism)
-            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, inliningPolicy, logger)
+            MethodLayoutAlgorithm methodLayoutAlgorithm,
+            FileLayoutAlgorithm fileLayoutAlgorithm,
+            int parallelism,
+            string orderFile)
+            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, inliningPolicy, logger)
         {
             _compilationOptions = options;
             InstructionSetSupport = instructionSetSupport;
@@ -56,6 +61,8 @@ namespace ILCompiler
             _readOnlyFieldPolicy = readOnlyFieldPolicy;
 
             _parallelism = parallelism;
+
+            _fileLayoutOptimizer = new FileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileDataManager, nodeFactory, orderFile);
         }
 
         public ProfileDataManager ProfileData => _profileDataManager;
@@ -71,22 +78,23 @@ namespace ILCompiler
             // information proving that it isn't, give RyuJIT the constructed symbol even
             // though we just need the unconstructed one.
             // https://github.com/dotnet/runtimelab/issues/1128
-            bool canPotentiallyConstruct = _devirtualizationManager == null
-                ? true : _devirtualizationManager.CanConstructType(type);
-            if (canPotentiallyConstruct)
-                return _nodeFactory.MaximallyConstructableType(type);
-
-            return _nodeFactory.NecessaryTypeSymbol(type);
+            return GetLdTokenHelperForType(type) switch
+            {
+                ReadyToRunHelperId.MetadataTypeHandle => _nodeFactory.MetadataTypeSymbol(type),
+                ReadyToRunHelperId.TypeHandle => _nodeFactory.MaximallyConstructableType(type),
+                ReadyToRunHelperId.NecessaryTypeHandle => _nodeFactory.NecessaryTypeSymbol(type),
+                _ => throw new UnreachableException()
+            };
         }
 
         public FrozenRuntimeTypeNode NecessaryRuntimeTypeIfPossible(TypeDesc type)
         {
-            bool canPotentiallyConstruct = _devirtualizationManager == null
-                ? true : _devirtualizationManager.CanConstructType(type);
-            if (canPotentiallyConstruct)
-                return _nodeFactory.SerializedMaximallyConstructableRuntimeTypeObject(type);
-
-            return _nodeFactory.SerializedNecessaryRuntimeTypeObject(type);
+            return GetLdTokenHelperForType(type) switch
+            {
+                ReadyToRunHelperId.TypeHandle or ReadyToRunHelperId.MetadataTypeHandle => _nodeFactory.SerializedMetadataRuntimeTypeObject(type),
+                ReadyToRunHelperId.NecessaryTypeHandle => _nodeFactory.SerializedNecessaryRuntimeTypeObject(type),
+                _ => throw new UnreachableException()
+            };
         }
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
@@ -94,9 +102,11 @@ namespace ILCompiler
             _dependencyGraph.ComputeMarkedNodes();
             var nodes = _dependencyGraph.MarkedNodeList;
 
+            nodes = _fileLayoutOptimizer.ApplyProfilerGuidedMethodSort(nodes);
+
             NodeFactory.SetMarkingComplete();
 
-            ObjectWritingOptions options = default;
+            ObjectWritingOptions options = ObjectWritingOptions.GenerateUnwindInfo;
             if ((_compilationOptions & RyuJitCompilationOptions.UseDwarf5) != 0)
                 options |= ObjectWritingOptions.UseDwarf5;
 
@@ -106,7 +116,7 @@ namespace ILCompiler
             if ((_compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0)
                 options |= ObjectWritingOptions.ControlFlowGuard;
 
-            ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
+            ObjectWriter.ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
         }
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
@@ -203,10 +213,6 @@ namespace ILCompiler
 
             if (exception != null)
             {
-                // Try to compile the method again, but with a throwing method body this time.
-                MethodIL throwingIL = TypeSystemThrowingILEmitter.EmitIL(method, exception);
-                corInfo.CompileMethod(methodCodeNodeNeedingCode, throwingIL);
-
                 if (exception is TypeSystemException.InvalidProgramException
                     && method.OwningType is MetadataType mdOwningType
                     && mdOwningType.HasCustomAttribute("System.Runtime.InteropServices", "ClassInterfaceAttribute"))
@@ -217,6 +223,10 @@ namespace ILCompiler
                     Logger.LogMessage($"Method '{method}' will always throw because: {exception.Message}");
                 else
                     Logger.LogError($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
+
+                // Try to compile the method again, but with a throwing method body this time.
+                MethodIL throwingIL = TypeSystemThrowingILEmitter.EmitIL(method, exception);
+                corInfo.CompileMethod(methodCodeNodeNeedingCode, throwingIL);
             }
         }
     }
@@ -224,9 +234,8 @@ namespace ILCompiler
     [Flags]
     public enum RyuJitCompilationOptions
     {
-        MethodBodyFolding = 0x1,
-        ControlFlowGuardAnnotations = 0x2,
-        UseDwarf5 = 0x4,
-        UseResilience = 0x8,
+        ControlFlowGuardAnnotations = 0x1,
+        UseDwarf5 = 0x2,
+        UseResilience = 0x4,
     }
 }

@@ -21,6 +21,8 @@ namespace System.Net
     {
         private static readonly Lazy<bool> _hasSystemNetSecurityNative = new Lazy<bool>(CheckHasSystemNetSecurityNative);
         internal static bool HasSystemNetSecurityNative => _hasSystemNetSecurityNative.Value;
+
+        [FeatureSwitchDefinition("System.Net.Security.UseManagedNtlm")]
         private static bool UseManagedNtlm { get; } =
             AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) ?
             useManagedNtlm :
@@ -543,7 +545,7 @@ namespace System.Net
                 }
             }
 
-            private NegotiateAuthenticationStatusCode InitializeSecurityContext(
+            private unsafe NegotiateAuthenticationStatusCode InitializeSecurityContext(
                 ref SafeGssCredHandle credentialsHandle,
                 ref SafeGssContextHandle? contextHandle,
                 ref SafeGssNameHandle? targetNameHandle,
@@ -587,7 +589,7 @@ namespace System.Net
                     {
                         // If a TLS channel binding token (cbt) is available then get the pointer
                         // to the application specific data.
-                        int appDataOffset = Marshal.SizeOf<SecChannelBindings>();
+                        int appDataOffset = sizeof(SecChannelBindings);
                         Debug.Assert(appDataOffset < channelBinding.Size);
                         IntPtr cbtAppData = channelBinding.DangerousGetHandle() + appDataOffset;
                         int cbtAppDataSize = channelBinding.Size - appDataOffset;

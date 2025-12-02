@@ -7,23 +7,45 @@
     <ExtraFilesPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'extraFiles'))</ExtraFilesPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'obj'))</BaseIntermediateOutputPath>
 
-    <AppleBuildDependsOn>_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
+    <AppleBuildDependsOn>_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
+    <!-- Forced by ILLink targets -->
+    <SelfContained>true</SelfContained>
+    <PublishDir>$(OriginalPublishDir)</PublishDir>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
-    <IntermediateOutputPath>$(OriginalPublishDir)</IntermediateOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <UseArtifactsIntermediateOutput>true</UseArtifactsIntermediateOutput>
-    <NativeLib>static</NativeLib>
-    <CustomNativeMain>true</CustomNativeMain>
-    <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
+    <_UseNativeAOTLibraryModeBundling Condition="'$(NativeLib)' == 'Shared'">true</_UseNativeAOTLibraryModeBundling>
+
     <_IsApplePlatform>true</_IsApplePlatform>
     <TargetsAppleMobile>true</TargetsAppleMobile>
     <_targetOS>$(TargetOS)</_targetOS>
-
-    <!-- Forced by ILLink targets -->
-    <SelfContained>true</SelfContained>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(_UseNativeAOTLibraryModeBundling)' != 'true' and '$(UseNativeAOTRuntime)' == 'true'">
+    <!-- TODO: we probably want to recreate everything in the intermediate directory instead (see library mode bellow) -->
+    <IntermediateOutputPath>$(OriginalPublishDir)</IntermediateOutputPath>
+    <NativeLib>static</NativeLib>
+    <CustomNativeMain>true</CustomNativeMain>
+    <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
+  </PropertyGroup>
+  <!-- In library mode we depend on NativeAOT publish integration targets -->
+  <PropertyGroup Condition="'$(_UseNativeAOTLibraryModeBundling)' == 'true'">
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <OutputPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'bin'))</OutputPath>
+    <PublishDir>$(OriginalPublishDir)</PublishDir>
+    <_IlcLibraryBuildDependsOn>LinkNative;CopyNativeBinary</_IlcLibraryBuildDependsOn>
+    <!-- we should not strip symbols from the generated library as xcode build will attempt to strip already stripped symbols -->
+    <StripSymbols>false</StripSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ReferencePath is used in the _RunILLink target as the ReferenceAssemblyPaths parameter of ILLink -->
+    <ReferencePath Include="@(AppleReferenceSharedPathFiles->'$(MicrosoftNetCoreAppRuntimePackLibDir)%(FileName)%(Extension)')" />
+    <ReferencePath Include="@(AppleReferenceExtraPathFiles->'$(ExtraFilesPath)%(FileName)%(Extension)')" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
     <DirectPInvoke Include="__Internal" />
@@ -33,14 +55,14 @@
 
   <Target Name="BundleTestAppleApp" DependsOnTargets="AppleBuild" />
 
-  <Target Name="_PrepareForAppleBuildAppOnHelix" DependsOnTargets="_PublishRuntimePack">
+  <Target Name="_PrepareForAppleBuildAppOnHelix">
     <Message Text="** Building a proxy for the original test project, to AOT on helix. In order to do that, this recreates the original inputs for the *iOS/tvOS* part of the build. See $(MSBuildThisFileFullPath), and $(_PropsFile). **"
              Importance="High" />
 
     <PropertyGroup>
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IncludesTestRunner)' == 'true'">AppleTestRunner.dll</MainLibraryFileName>
-    
+
       <AppleBuildDir>$(OriginalPublishDir)</AppleBuildDir>
       <AppleBundleDir>$(TestRootDir)AppBundle\</AppleBundleDir>
     </PropertyGroup>
@@ -48,7 +70,7 @@
 
     <ItemGroup>
       <!-- Figure out if we can support JustInterp mode -->
-      <AppleAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" Exclude="$(OriginalPublishDir)\**\*.resources.dll" />
+    <AppleAssembliesToBundle Include="$(OriginalPublishDir)\*.dll" Exclude="$(OriginalPublishDir)\*.resources.dll" />
 
       <!-- Extra files are NativeLibraries and should be excluded from AppleAssembliesToBundle -->
       <_ExtraFiles Include="$(ExtraFilesPath)**\*" />
@@ -56,6 +78,13 @@
       <AppleNativeFilesToBundle Include="@(_ExtraFiles)" Exclude="$(OriginalPublishDir)\*.dll" />
       <AppleNativeFilesToBundle Include="$(OriginalPublishDir)\**\*.*" Exclude="$(OriginalPublishDir)\*.dll" />
     </ItemGroup>
+
+    <!-- For NativeAOT library mode we need to manually create the 'obj' dir and copy all assemblies in there to properly build the library -->
+    <MakeDir Condition="'$(_UseNativeAOTLibraryModeBundling)' == 'true'"
+      Directories="$(IntermediateOutputPath)" />
+    <Copy Condition="'$(_UseNativeAOTLibraryModeBundling)' == 'true'"
+      SourceFiles="@(AppleAssembliesToBundle)"
+      DestinationFolder="$(IntermediateOutputPath)" />
 
     <PropertyGroup Condition="'$(UseRuntimeComponents)' == 'true'">
       <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
@@ -65,15 +94,14 @@
       <RuntimeComponents Include="diagnostics_tracing" />
       <RuntimeComponents Include="marshal-ilgen" />
     </ItemGroup>
-
   </Target>
 
   <Target Name="_PublishRuntimePack"
           Condition="'$(UsePortableRuntimePack)' == 'true'">
 
     <ItemGroup>
-      <_RuntimePackFiles Condition="%(_AppleUsedRuntimePackFiles.Extension) == '.dll' and %(_AppleUsedRuntimePackFiles.FileName) != 'System.Private.CoreLib'" Include="@(_AppleUsedRuntimePackFiles->'$(MicrosoftNetCoreAppRuntimePackLibDir)%(FileName)%(Extension)')" />
-      <_RuntimePackFiles Condition="%(_AppleUsedRuntimePackFiles.Extension) != '.dll' or %(_AppleUsedRuntimePackFiles.FileName) == 'System.Private.CoreLib'" Include="@(_AppleUsedRuntimePackFiles->'$(MicrosoftNetCoreAppRuntimePackNativeDir)%(FileName)%(Extension)')" />
+      <_RuntimePackFiles Condition="(%(_AppleUsedRuntimePackFiles.Extension) == '.dll' or %(_AppleUsedRuntimePackFiles.Extension) == '.pdb') and %(_AppleUsedRuntimePackFiles.FileName) != 'System.Private.CoreLib'" Include="@(_AppleUsedRuntimePackFiles->'$(MicrosoftNetCoreAppRuntimePackLibDir)%(FileName)%(Extension)')" />
+      <_RuntimePackFiles Condition="(%(_AppleUsedRuntimePackFiles.Extension) != '.dll' and %(_AppleUsedRuntimePackFiles.Extension) != '.pdb') or %(_AppleUsedRuntimePackFiles.FileName) == 'System.Private.CoreLib'" Include="@(_AppleUsedRuntimePackFiles->'$(MicrosoftNetCoreAppRuntimePackNativeDir)%(FileName)%(Extension)')" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_RuntimePackFiles)"

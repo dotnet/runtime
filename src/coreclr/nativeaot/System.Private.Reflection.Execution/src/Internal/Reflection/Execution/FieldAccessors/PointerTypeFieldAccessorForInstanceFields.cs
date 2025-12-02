@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 
 using Internal.Runtime.Augments;
 
@@ -26,12 +27,14 @@ namespace Internal.Reflection.Execution.FieldAccessors
 
         protected sealed override void UncheckedSetField(object obj, object value)
         {
-            RuntimeAugments.StoreValueTypeField(obj, OffsetPlusHeader, value, typeof(IntPtr).TypeHandle);
+            Debug.Assert(value.GetType() == typeof(UIntPtr) || value.GetType() == typeof(IntPtr));
+            RuntimeAugments.StoreValueTypeField(obj, OffsetPlusHeader, value, value.GetType().TypeHandle);
         }
 
         protected sealed override void UncheckedSetFieldDirectIntoValueType(TypedReference typedReference, object value)
         {
-            RuntimeAugments.StoreValueTypeFieldValueIntoValueType(typedReference, this.Offset, value, typeof(IntPtr).TypeHandle);
+            Debug.Assert(value.GetType() == typeof(UIntPtr) || value.GetType() == typeof(IntPtr));
+            RuntimeAugments.StoreValueTypeFieldValueIntoValueType(typedReference, this.Offset, value, value.GetType().TypeHandle);
         }
     }
 }

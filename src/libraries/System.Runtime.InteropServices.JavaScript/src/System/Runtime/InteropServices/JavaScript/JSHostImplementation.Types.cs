@@ -10,37 +10,44 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal unsafe delegate void ToManagedCallback(JSMarshalerArgument* arguments_buffer);
 
-        public sealed class PromiseHolder
+        public sealed unsafe class PromiseHolder
         {
-            public nint GCHandle; // could be also virtual GCVHandle
+            public bool IsDisposed;
+            public readonly nint GCHandle; // could be also virtual GCVHandle
             public ToManagedCallback? Callback;
-#if FEATURE_WASM_THREADS
-            // the JavaScript object could only exist on the single web worker and can't migrate to other workers
-            internal JSSynchronizationContext SynchronizationContext;
+            public JSProxyContext ProxyContext;
+#if FEATURE_WASM_MANAGED_THREADS
+            public ManualResetEventSlim? CallbackReady;
+            public PromiseHolderState* State;
 #endif
 
-#if FEATURE_WASM_THREADS
-            // TODO possibly unify signature with non-MT and pass null
-            public PromiseHolder(JSSynchronizationContext targetContext)
+            public PromiseHolder(JSProxyContext targetContext)
             {
                 GCHandle = (IntPtr)InteropServices.GCHandle.Alloc(this, GCHandleType.Normal);
-                SynchronizationContext = targetContext;
-            }
-#else
-            public PromiseHolder()
-            {
-                GCHandle = (IntPtr)InteropServices.GCHandle.Alloc(this, GCHandleType.Normal);
-            }
+                ProxyContext = targetContext;
+#if FEATURE_WASM_MANAGED_THREADS
+                State = (PromiseHolderState*)NativeMemory.Alloc((nuint)sizeof(PromiseHolderState));
+                Interlocked.Exchange(ref (*State).IsResolving, 0);
 #endif
+            }
 
-            public PromiseHolder(nint gcvHandle)
+            public PromiseHolder(JSProxyContext targetContext, nint gcvHandle)
             {
                 GCHandle = gcvHandle;
-#if FEATURE_WASM_THREADS
-                JSSynchronizationContext.AssertWebWorkerContext();
-                SynchronizationContext = JSSynchronizationContext.CurrentJSSynchronizationContext!;
+                ProxyContext = targetContext;
+#if FEATURE_WASM_MANAGED_THREADS
+                State = (PromiseHolderState*)NativeMemory.Alloc((nuint)sizeof(PromiseHolderState));
+                Interlocked.Exchange(ref (*State).IsResolving, 0);
 #endif
             }
+        }
+
+        // NOTE: layout has to match PromiseHolderState in marshal-to-cs.ts
+        [StructLayout(LayoutKind.Explicit)]
+        public struct PromiseHolderState
+        {
+            [FieldOffset(0)]
+            public volatile int IsResolving;
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -54,6 +61,15 @@ namespace System.Runtime.InteropServices.JavaScript
 
             [FieldOffset(0)]
             internal RuntimeTypeHandle typeHandle;
+        }
+
+        // keep in sync with types\internal.ts
+        public enum JSThreadBlockingMode : int
+        {
+            PreventSynchronousJSExport = 0,
+            ThrowWhenBlockingWait = 1,
+            WarnWhenBlockingWait = 2,
+            DangerousAllowBlockingWait = 100,
         }
     }
 }

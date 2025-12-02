@@ -33,6 +33,6 @@ namespace MS.Internal.Xml.XPath
         public override void Reset() { }
 
         // -- Instance
-        public static XPathEmptyIterator Instance = new XPathEmptyIterator();
+        public static readonly XPathEmptyIterator Instance = new XPathEmptyIterator();
     }
 }

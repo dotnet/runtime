@@ -57,25 +57,27 @@ Since you're debugging an optimized release build, it is likely the debugger wil
 
 ## Native debugging using a local debug build of Mono
 
-Build the runtime for your android architecture: `ANDROID_NDK_ROOT=<path_to_android_ndk> ./build.sh --os android --arch x86 -c Debug`. See the instructions for [Testing Android](../../testing/libraries/testing-android.md) for details.
+Ensure the prerequisites are met for [Testing Android](../../testing/libraries/testing-android.md#prerequisites).
 
+Build the runtime for your android architecture `<ANDROID_ARCH>` and keep debug symbols in the binary:
 
-In the source code for the C# project, add the following to the .csproj (replacing `<RUNTIME_GIT_ROOT>` by the appropriate location):
+`./build.sh -s mono+libs -os android -arch <ANDROID_ARCH> -c Debug /p:KeepNativeSymbols=true`
+
+In the source code for the C# project, add the following to the .csproj (replacing `<RUNTIME_GIT_ROOT>` by the appropriate location and `<ANDROID_ARCH>` with the built android architecture):
 
 ```
   <Target Name="UpdateRuntimePack"
             AfterTargets="ResolveFrameworkReferences">
       <ItemGroup>
-        <ResolvedRuntimePack PackageDirectory="<RUNTIME_GIT_ROOT>/artifacts/bin/microsoft.netcore.app.runtime.android-x86/Debug"
+        <ResolvedRuntimePack PackageDirectory="<RUNTIME_GIT_ROOT>/artifacts/bin/microsoft.netcore.app.runtime.android-<ANDROID_ARCH>/Debug"
                              Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
       </ItemGroup>
   </Target>
 ```
 
-Then rebuild and reinstall the project, open the apk in Android Studio, and debug.  The
-runtime native libraries will be stripped, so to make use of debug symbols, you
-will need to follow the steps above (rename `*.so.dbg` in the artifacts to
-`*.so.so` and add them to the APK project in Android Studio)
+Then rebuild and reinstall the project, open the apk in Android Studio (File > Profile or Debug APK), and debug.
+
+Note: If debugging in Android Studio stops at signals `SIGPWR` and `SIGXCPU` during startup, configure LLDB to not stop the process for those signals via `process handle -p true -s false -n true SIGPWR` and `process handle -p true -s false -n true SIGXCPU` in Android Studio's LLDB tab.
 
 ## Native and managed debugging or debugging the managed debugger
 

@@ -24,7 +24,7 @@ Abstract:
 #if defined(__APPLE__) || defined(__FreeBSD__)
 #include <sys/param.h>
 #include <sys/mount.h>
-#else
+#elif !defined(__HAIKU__)
 #include <sys/vfs.h>
 #endif
 #include <errno.h>
@@ -39,7 +39,6 @@ Abstract:
 #endif
 
 #define CGROUP2_SUPER_MAGIC 0x63677270
-#define TMPFS_MAGIC 0x01021994
 
 #define PROC_MOUNTINFO_FILENAME "/proc/self/mountinfo"
 #define PROC_CGROUP_FILENAME "/proc/self/cgroup"
@@ -56,7 +55,7 @@ Abstract:
 
 extern bool ReadMemoryValueFromFile(const char* filename, uint64_t* val);
 
-namespace 
+namespace
 {
 class CGroup
 {
@@ -69,7 +68,10 @@ public:
     static void Initialize()
     {
         s_cgroup_version = FindCGroupVersion();
-        FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1MemorySubsystem : nullptr, &s_memory_cgroup_path, &s_memory_cgroup_hierarchy_mount);
+        if (s_cgroup_version != 0)
+        {
+            FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1MemorySubsystem : nullptr, &s_memory_cgroup_path, &s_memory_cgroup_hierarchy_mount);
+        }
     }
 
     static void Cleanup()
@@ -120,7 +122,7 @@ private:
         // modes because both of those involve cgroup v1 controllers managing
         // resources.
 
-#if !HAVE_NON_LEGACY_STATFS
+#if !HAVE_NON_LEGACY_STATFS || TARGET_WASM
         return 0;
 #else
 
@@ -129,12 +131,16 @@ private:
         if (result != 0)
             return 0;
 
-        switch (stats.f_type)
+        if (stats.f_type == CGROUP2_SUPER_MAGIC)
         {
-            case TMPFS_MAGIC: return 1;
-            case CGROUP2_SUPER_MAGIC: return 2;
-            default:
-                return 0;
+            return 2;
+        }
+        else
+        {
+            // Assume that if /sys/fs/cgroup exists and the file system type is not cgroup2fs,
+            // it is cgroup v1. Typically the file system type is tmpfs, but other values have
+            // been seen in the wild.
+            return 1;
         }
 #endif
     }

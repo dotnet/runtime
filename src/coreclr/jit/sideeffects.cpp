@@ -8,7 +8,10 @@
 
 #include "sideeffects.h"
 
-LclVarSet::LclVarSet() : m_bitVector(nullptr), m_hasAnyLcl(false), m_hasBitVector(false)
+LclVarSet::LclVarSet()
+    : m_bitVector(nullptr)
+    , m_hasAnyLcl(false)
+    , m_hasBitVector(false)
 {
 }
 
@@ -121,7 +124,10 @@ void LclVarSet::Clear()
 }
 
 AliasSet::AliasSet()
-    : m_lclVarReads(), m_lclVarWrites(), m_readsAddressableLocation(false), m_writesAddressableLocation(false)
+    : m_lclVarReads()
+    , m_lclVarWrites()
+    , m_readsAddressableLocation(false)
+    , m_writesAddressableLocation(false)
 {
 }
 
@@ -136,7 +142,11 @@ AliasSet::AliasSet()
 //    node - The node in question.
 //
 AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
-    : m_compiler(compiler), m_node(node), m_flags(0), m_lclNum(0), m_lclOffs(0)
+    : m_compiler(compiler)
+    , m_node(node)
+    , m_flags(0)
+    , m_lclNum(0)
+    , m_lclOffs(0)
 {
     if (node->IsCall())
     {
@@ -174,7 +184,7 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
 
     // Is the operation a write? If so, set `node` to the location that is being written to.
     bool isWrite = false;
-    if (node->OperIsStore() || node->OperIs(GT_STORE_DYN_BLK, GT_MEMORYBARRIER))
+    if (node->OperIsStore() || node->OperIs(GT_MEMORYBARRIER))
     {
         isWrite = true;
     }
@@ -444,7 +454,9 @@ void AliasSet::Clear()
     m_lclVarWrites.Clear();
 }
 
-SideEffectSet::SideEffectSet() : m_sideEffectFlags(0), m_aliasSet()
+SideEffectSet::SideEffectSet()
+    : m_sideEffectFlags(0)
+    , m_aliasSet()
 {
 }
 
@@ -460,7 +472,9 @@ SideEffectSet::SideEffectSet() : m_sideEffectFlags(0), m_aliasSet()
 //    compiler - The compiler context.
 //    node - The node to use for initialization.
 //
-SideEffectSet::SideEffectSet(Compiler* compiler, GenTree* node) : m_sideEffectFlags(0), m_aliasSet()
+SideEffectSet::SideEffectSet(Compiler* compiler, GenTree* node)
+    : m_sideEffectFlags(0)
+    , m_aliasSet()
 {
     AddNode(compiler, node);
 }
@@ -475,7 +489,10 @@ SideEffectSet::SideEffectSet(Compiler* compiler, GenTree* node) : m_sideEffectFl
 //
 void SideEffectSet::AddNode(Compiler* compiler, GenTree* node)
 {
-    m_sideEffectFlags |= node->OperEffects(compiler);
+    ExceptionSetFlags preciseExceptions;
+    GenTreeFlags      operEffects = node->OperEffects(compiler, &preciseExceptions);
+    m_sideEffectFlags |= operEffects;
+    m_preciseExceptions |= preciseExceptions;
     m_aliasSet.AddNode(compiler, node);
 }
 
@@ -484,26 +501,23 @@ void SideEffectSet::AddNode(Compiler* compiler, GenTree* node)
 //    Returns true if the side effects in this set interfere with the
 //    given side effect flags and alias information.
 //
-//    Two side effect sets interfere under any of the following
-//    conditions:
+//    Two side effect sets interfere under any of the following conditions:
 //    - If the analysis is strict, and:
-//        - One set contains a compiler barrier and the other set contains a global reference, or
+//        - One set contains a compiler barrier and the other set contains a global reference or compiler barrier, or
 //        - Both sets produce an exception
 //    - Whether or not the analysis is strict:
-//        - One set produces an exception and the other set contains a
-//          write
-//        - One set's reads and writes interfere with the other set's
-//          reads and writes
+//        - One set produces an exception and the other set contains a write
+//        - One set's reads and writes interfere with the other set's reads and writes
 //
 // Arguments:
-//    otherSideEffectFlags - The side effect flags for the other side
-//                           effect set.
-//    otherAliasInfo - The alias information for the other side effect
-//                     set.
+//    otherSideEffectFlags   - The side effect flags for the other side effect set.
+//    otherPreciseExceptions - The precise exceptions for the other side effect set.
+//    otherAliasInfo - The alias information for the other side effect set.
 //    strict - True if the analysis should be strict as described above.
 //
 template <typename TOtherAliasInfo>
 bool SideEffectSet::InterferesWith(unsigned               otherSideEffectFlags,
+                                   ExceptionSetFlags      otherPreciseExceptions,
                                    const TOtherAliasInfo& otherAliasInfo,
                                    bool                   strict) const
 {
@@ -514,20 +528,27 @@ bool SideEffectSet::InterferesWith(unsigned               otherSideEffectFlags,
     {
         // If either set contains a compiler barrier, and the other set contains a global reference,
         // the sets interfere.
-        if (((m_sideEffectFlags & GTF_ORDER_SIDEEFF) != 0) && ((otherSideEffectFlags & GTF_GLOB_REF) != 0))
+        if (((m_sideEffectFlags & GTF_ORDER_SIDEEFF) != 0) &&
+            ((otherSideEffectFlags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
         {
             return true;
         }
 
-        if (((otherSideEffectFlags & GTF_ORDER_SIDEEFF) != 0) && ((m_sideEffectFlags & GTF_GLOB_REF) != 0))
+        if (((otherSideEffectFlags & GTF_ORDER_SIDEEFF) != 0) &&
+            ((m_sideEffectFlags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
         {
             return true;
         }
 
-        // If both sets produce an exception, the sets interfere.
+        // If both sets produce non-reorderable exceptions the sets interfere
         if (thisProducesException && otherProducesException)
         {
-            return true;
+            if ((((m_preciseExceptions | otherPreciseExceptions) & ExceptionSetFlags::UnknownException) !=
+                 ExceptionSetFlags::None) ||
+                (genCountBits((uint32_t)m_preciseExceptions) > 1) || (m_preciseExceptions != otherPreciseExceptions))
+            {
+                return true;
+            }
         }
     }
 
@@ -564,7 +585,7 @@ bool SideEffectSet::InterferesWith(unsigned               otherSideEffectFlags,
 //
 bool SideEffectSet::InterferesWith(const SideEffectSet& other, bool strict) const
 {
-    return InterferesWith(other.m_sideEffectFlags, other.m_aliasSet, strict);
+    return InterferesWith(other.m_sideEffectFlags, other.m_preciseExceptions, other.m_aliasSet, strict);
 }
 
 //------------------------------------------------------------------------
@@ -582,7 +603,189 @@ bool SideEffectSet::InterferesWith(const SideEffectSet& other, bool strict) cons
 //
 bool SideEffectSet::InterferesWith(Compiler* compiler, GenTree* node, bool strict) const
 {
-    return InterferesWith(node->OperEffects(compiler), AliasSet::NodeInfo(compiler, node), strict);
+    ExceptionSetFlags preciseExceptions;
+    GenTreeFlags      operEffects = node->OperEffects(compiler, &preciseExceptions);
+    return InterferesWith(operEffects, preciseExceptions, AliasSet::NodeInfo(compiler, node), strict);
+}
+
+//------------------------------------------------------------------------
+// SideEffectSet::IsLirInvariantInRange: Check if a node is invariant in the
+//    specified range. In other words, can 'node' be moved to right before
+//    'endExclusive' without its computation changing values?
+//
+// Arguments:
+//    comp         - The compiler
+//    node         - The node.
+//    endExclusive - The exclusive end of the range to check invariance for.
+//
+// Returns:
+//    True if 'node' can be evaluated at any point between its current
+//    location and 'endExclusive' without giving a different result; otherwise
+//    false.
+//
+// Remarks:
+//    This presumes we are operating on nodes that are in LIR form
+//
+bool SideEffectSet::IsLirInvariantInRange(Compiler* comp, GenTree* node, GenTree* endExclusive)
+{
+    assert((node != nullptr) && (endExclusive != nullptr));
+
+    // Quick early-out for unary cases
+    //
+    if (node->gtNext == endExclusive)
+    {
+        return true;
+    }
+
+    if (node->OperConsumesFlags())
+    {
+        return false;
+    }
+
+    Clear();
+    AddNode(comp, node);
+
+    for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
+    {
+        assert((cur != nullptr) && "Expected first node to precede end node");
+        const bool strict = true;
+        if (InterferesWith(comp, cur, strict))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// SideEffectSet::IsLirInvariantInRange: Check if a node is invariant in the
+//    specified range, ignoring conflicts with one particular node.
+//
+// Arguments:
+//    comp         - The compiler
+//    node         - The node.
+//    endExclusive - The exclusive end of the range to check invariance for.
+//    ignoreNode   - A node to ignore interference checks with, for example
+//                   because it will retain its relative order with 'node'.
+//
+// Returns:
+//    True if 'node' can be evaluated at any point between its current location
+//    and 'endExclusive' without giving a different result; otherwise false.
+//
+// Remarks:
+//    This presumes we are operating on nodes that are in LIR form
+//
+bool SideEffectSet::IsLirInvariantInRange(Compiler* comp, GenTree* node, GenTree* endExclusive, GenTree* ignoreNode)
+{
+    assert((node != nullptr) && (endExclusive != nullptr));
+
+    if (ignoreNode == nullptr)
+    {
+        return IsLirInvariantInRange(comp, node, endExclusive);
+    }
+
+    if ((node->gtNext == endExclusive) || ((node->gtNext == ignoreNode) && (node->gtNext->gtNext == endExclusive)))
+    {
+        return true;
+    }
+
+    if (node->OperConsumesFlags())
+    {
+        return false;
+    }
+
+    Clear();
+    AddNode(comp, node);
+
+    for (GenTree* cur = node->gtNext; cur != endExclusive; cur = cur->gtNext)
+    {
+        assert((cur != nullptr) && "Expected first node to precede end node");
+        if (cur == ignoreNode)
+        {
+            continue;
+        }
+
+        const bool strict = true;
+        if (InterferesWith(comp, cur, strict))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// SideEffectSet::IsLirRangeInvariantInRange: Check if a range of nodes are
+//    invariant in the specified range.
+//
+// Arguments:
+//    comp         - The compiler
+//    rangeStart   - The first node.
+//    rangeEnd     - The last node.
+//    endExclusive - The exclusive end of the range to check invariance for.
+//    ignoreNode   - A node to ignore interference checks with, for example
+//                   because it will retain its relative order with 'node'.
+//
+// Returns:
+//    True if the range can be evaluated at any point between its current location
+//    and 'endExclusive' without giving a different result; otherwise false.
+//
+// Remarks:
+//    This presumes we are operating on nodes that are in LIR form
+//
+//    Note that the range is treated as a unit and no pairwise interference
+//    checks between nodes in the range are performed.
+//
+bool SideEffectSet::IsLirRangeInvariantInRange(
+    Compiler* comp, GenTree* rangeStart, GenTree* rangeEnd, GenTree* endExclusive, GenTree* ignoreNode)
+{
+    assert((rangeStart != nullptr) && (rangeEnd != nullptr));
+
+    if ((rangeEnd->gtNext == endExclusive) ||
+        ((ignoreNode != nullptr) && (rangeEnd->gtNext == ignoreNode) && (rangeEnd->gtNext->gtNext == endExclusive)))
+    {
+        return true;
+    }
+
+    if (rangeStart->OperConsumesFlags())
+    {
+        return false;
+    }
+
+    Clear();
+    GenTree* cur = rangeStart;
+
+    while (true)
+    {
+        AddNode(comp, cur);
+
+        if (cur == rangeEnd)
+        {
+            break;
+        }
+
+        cur = cur->gtNext;
+        assert((cur != nullptr) && "Expected rangeStart to precede rangeEnd");
+    }
+
+    for (GenTree* cur = rangeEnd->gtNext; cur != endExclusive; cur = cur->gtNext)
+    {
+        assert((cur != nullptr) && "Expected first node to precede end node");
+        if (cur == ignoreNode)
+        {
+            continue;
+        }
+
+        const bool strict = true;
+        if (InterferesWith(comp, cur, strict))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -591,6 +794,7 @@ bool SideEffectSet::InterferesWith(Compiler* compiler, GenTree* node, bool stric
 //
 void SideEffectSet::Clear()
 {
-    m_sideEffectFlags = 0;
+    m_sideEffectFlags   = 0;
+    m_preciseExceptions = ExceptionSetFlags::None;
     m_aliasSet.Clear();
 }

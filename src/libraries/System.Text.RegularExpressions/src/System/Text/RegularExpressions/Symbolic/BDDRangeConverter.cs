@@ -27,10 +27,10 @@ namespace System.Text.RegularExpressions.Symbolic
             const int MaxBit = 15; // most significant bit of a 16-bit char
 
             if (set.IsEmpty)
-                return Array.Empty<(uint, uint)>();
+                return [];
 
             if (set.IsFull)
-                return new[] { (0u, ((uint)1 << MaxBit << 1) - 1) };
+                return [(0u, ((uint)1 << MaxBit << 1) - 1)];
 
             var rc = new BDDRangeConverter();
             return LiftRanges(MaxBit + 1, MaxBit - set.Ordinal, rc.ToRangesFromOrdinal(set));
@@ -69,7 +69,7 @@ namespace System.Text.RegularExpressions.Symbolic
             uint maximal = ((uint)1 << fromBits) - 1;
             if (ranges[0].Item1 == 0 && ranges[ranges.Length - 1].Item2 == maximal)
             {
-                // merge consequtive ranges, we know that res has at least two elements here
+                // merge consecutive ranges, we know that res has at least two elements here
                 var merged = new List<(uint, uint)>();
                 uint from = result[0].Item1;
                 uint to = result[0].Item2;
@@ -107,7 +107,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     #region 0-case is empty
                     if (set.One.IsFull)
                     {
-                        ranges = new[] { (mask, (mask << 1) - 1) };
+                        ranges = [(mask, (mask << 1) - 1)];
                     }
                     else //1-case is neither full nor empty
                     {
@@ -125,7 +125,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     #region 0-case is full
                     if (set.One.IsEmpty)
                     {
-                        ranges = new[] { (0u, mask - 1) };
+                        ranges = [(0u, mask - 1)];
                     }
                     else
                     {

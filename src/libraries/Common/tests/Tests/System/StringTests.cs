@@ -150,7 +150,7 @@ namespace System.Tests
         [InlineData(new char[] { '\u041F', '\u0420', '\u0418', '\u0412', '\u0415', '\u0422' }, 0, 6, "\u041F\u0420\u0418\u0412\u0415\u0422")]
         [InlineData(new char[0], 0, 0, "")]
         [InlineData(null, 0, 0, "")]
-        public static void Ctor_CharArray(char[] value, int startIndex, int length, string expected)
+        public static void Ctor_CharArray(char[]? value, int startIndex, int length, string expected)
         {
             if (value == null)
             {
@@ -314,6 +314,7 @@ namespace System.Tests
             }
 
             Validate(string.Concat(values));
+            Validate(string.Concat((ReadOnlySpan<string?>)values));
             Validate(string.Concat((IEnumerable<string>)values));
             Validate(string.Concat<string>((IEnumerable<string>)values)); // Call the generic IEnumerable<T>-based overload
         }
@@ -418,6 +419,7 @@ namespace System.Tests
                 Assert.Equal(expected, string.Concat(values[0], values[1], values[2], values[3]));
             }
             Assert.Equal(expected, string.Concat(values));
+            Assert.Equal(expected, string.Concat((ReadOnlySpan<object?>)values));
             Assert.Equal(expected, string.Concat((IEnumerable<object>)values));
         }
 
@@ -1009,7 +1011,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
         public static void CompareToNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -1033,24 +1034,29 @@ namespace System.Tests
                     var secondSpan = new ReadOnlySpan<char>(second);
                     Assert.True(0 > firstSpan.CompareTo(secondSpan, StringComparison.Ordinal));
 
-                    // Due to differences in the implementation, the exact result of CompareTo will not necessarily match with string.Compare.
-                    // However, the sign will match, which is what defines correctness.
-                    Assert.Equal(
-                        Math.Sign(string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.OrdinalIgnoreCase)),
-                        Math.Sign(firstSpan.CompareTo(secondSpan, StringComparison.OrdinalIgnoreCase)));
+                    // On Apple platforms, string comparison is handled by native Apple functions, which apply normalization techniques
+                    // like `precomposedStringWithCanonicalMapping`. This can lead to differences in behavior compared to other platforms.
+                    if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                    {
+                        // Due to differences in the implementation, the exact result of CompareTo will not necessarily match with string.Compare.
+                        // However, the sign will match, which is what defines correctness.
+                        Assert.Equal(
+                            Math.Sign(string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.OrdinalIgnoreCase)),
+                            Math.Sign(firstSpan.CompareTo(secondSpan, StringComparison.OrdinalIgnoreCase)));
 
-                    Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCulture),
-                        firstSpan.CompareTo(secondSpan, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        firstSpan.CompareTo(secondSpan, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCulture),
-                        firstSpan.CompareTo(secondSpan, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        firstSpan.CompareTo(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                        Assert.Equal(
+                            string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCulture),
+                            firstSpan.CompareTo(secondSpan, StringComparison.CurrentCulture));
+                        Assert.Equal(
+                            string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                            firstSpan.CompareTo(secondSpan, StringComparison.CurrentCultureIgnoreCase));
+                        Assert.Equal(
+                            string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCulture),
+                            firstSpan.CompareTo(secondSpan, StringComparison.InvariantCulture));
+                        Assert.Equal(
+                            string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                            firstSpan.CompareTo(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    }
                 }
             }
         }
@@ -1284,8 +1290,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95471", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void ContainsNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -1311,19 +1315,24 @@ namespace System.Tests
 
                     Assert.False(firstSpan.Contains(secondSpan, StringComparison.OrdinalIgnoreCase));
 
-                    // Different behavior depending on OS
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
-                        firstSpan.Contains(secondSpan, StringComparison.CurrentCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
-                        firstSpan.Contains(secondSpan, StringComparison.CurrentCultureIgnoreCase));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
-                        firstSpan.Contains(secondSpan, StringComparison.InvariantCulture));
-                    Assert.Equal(
-                        firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
-                        firstSpan.Contains(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    // On Apple platforms, string comparison is handled by native Apple functions, which apply normalization techniques
+                    // like `precomposedStringWithCanonicalMapping`. This can lead to differences in behavior compared to other platforms.
+                    if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+                    {
+                        // Different behavior depending on OS
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCulture),
+                            firstSpan.Contains(secondSpan, StringComparison.CurrentCulture));
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.CurrentCultureIgnoreCase),
+                            firstSpan.Contains(secondSpan, StringComparison.CurrentCultureIgnoreCase));
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCulture),
+                            firstSpan.Contains(secondSpan, StringComparison.InvariantCulture));
+                        Assert.Equal(
+                            firstSpan.ToString().StartsWith(secondSpan.ToString(), StringComparison.InvariantCultureIgnoreCase),
+                            firstSpan.Contains(secondSpan, StringComparison.InvariantCultureIgnoreCase));
+                    }
                 }
             }
         }
@@ -1663,7 +1672,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.CurrentCulture, true };
             yield return new object[] { "", "a", StringComparison.CurrentCulture, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "Hello", "llo" + SoftHyphen, StringComparison.CurrentCulture, true };
 
             // CurrentCultureIgnoreCase
@@ -1675,7 +1684,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.CurrentCultureIgnoreCase, true };
             yield return new object[] { "", "a", StringComparison.CurrentCultureIgnoreCase, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "Hello", "llo" + SoftHyphen, StringComparison.CurrentCultureIgnoreCase, true };
 
             // InvariantCulture
@@ -1688,7 +1697,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.InvariantCulture, true };
             yield return new object[] { "", "a", StringComparison.InvariantCulture, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "Hello", "llo" + SoftHyphen, StringComparison.InvariantCulture, true };
 
             // InvariantCultureIgnoreCase
@@ -1700,7 +1709,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.InvariantCultureIgnoreCase, true };
             yield return new object[] { "", "a", StringComparison.InvariantCultureIgnoreCase, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "Hello", "llo" + SoftHyphen, StringComparison.InvariantCultureIgnoreCase, true };
 
             // Ordinal
@@ -1729,7 +1738,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(EndsWith_StringComparison_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95473", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void EndsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             if (comparisonType == StringComparison.CurrentCulture)
@@ -2113,7 +2121,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/108832", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
         public static void EndsWithNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -2548,7 +2556,7 @@ namespace System.Tests
         [InlineData("", "", StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("123", 123, StringComparison.OrdinalIgnoreCase, false)] // Not a string
         [InlineData("\0AAAAAAAAA", "\0BBBBBBBBBBBB", StringComparison.OrdinalIgnoreCase, false)]
-        public static void EqualsTest(string s1, object obj, StringComparison comparisonType, bool expected)
+        public static void EqualsTest(string? s1, object? obj, StringComparison comparisonType, bool expected)
         {
             string s2 = obj as string;
             if (s1 != null)
@@ -2730,9 +2738,11 @@ namespace System.Tests
         public static void Format_Valid(IFormatProvider provider, string format, object[] values, string expected)
         {
             Assert.Equal(expected, string.Format(provider, format, values));
+            Assert.Equal(expected, string.Format(provider, format, (ReadOnlySpan<object?>)values));
             if (provider is null)
             {
                 Assert.Equal(expected, string.Format(format, values));
+                Assert.Equal(expected, string.Format(format, (ReadOnlySpan<object?>)values));
             }
 
             switch (values.Length)
@@ -2847,7 +2857,7 @@ namespace System.Tests
         [MemberData(nameof(Format_Invalid_FormatExceptionFromArgs_MemberData))]
         [InlineData(null, "{10000000}", new object[] { null })]
         [InlineData(null, "{0,10000000}", new string[] { null })]
-        public static void Format_Invalid_FormatExceptionFromFormatOrArgs(IFormatProvider provider, string format, object[] args)
+        public static void Format_Invalid_FormatExceptionFromFormatOrArgs(IFormatProvider? provider, string format, object[] args)
         {
             if (provider is null)
             {
@@ -3199,7 +3209,7 @@ namespace System.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void IndexOf_HungarianDoubleCompression_HungarianCulture()
         {
@@ -3218,8 +3228,7 @@ namespace System.Tests
                 Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, source.IndexOf(target));
                 Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, source.IndexOf(target, StringComparison.CurrentCulture));
 
-                if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
-                    Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(0, source.IndexOf(target, StringComparison.CurrentCultureIgnoreCase));
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.Ordinal));
                 Assert.Equal(-1, source.IndexOf(target, StringComparison.OrdinalIgnoreCase));
 
@@ -3227,8 +3236,7 @@ namespace System.Tests
 
                 Assert.Equal(PlatformDetection.IsNlsGlobalization ? 0 : -1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCulture));
 
-                if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
-                    Assert.Equal(0, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
+                Assert.Equal(0, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
                 Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.Ordinal));
                 Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.OrdinalIgnoreCase));
             }
@@ -3797,7 +3805,7 @@ namespace System.Tests
         [InlineData("", true)]
         [InlineData("foo", false)]
         [InlineData("   ", false)]
-        public static void IsNullOrEmpty(string value, bool expected)
+        public static void IsNullOrEmpty(string? value, bool expected)
         {
             Assert.Equal(expected, string.IsNullOrEmpty(value));
 
@@ -3962,11 +3970,12 @@ namespace System.Tests
         [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 0, 3, "Foo$$Bar$$Baz")]
         [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 3, 0, "")]
         [InlineData("$$", new string[] { "Foo", "Bar", "Baz" }, 1, 1, "Bar")]
-        public static void Join_StringArray(string separator, string[] values, int startIndex, int count, string expected)
+        public static void Join_StringArray(string? separator, string[] values, int startIndex, int count, string expected)
         {
             if (startIndex + count == values.Length && count != 0)
             {
                 Assert.Equal(expected, string.Join(separator, values));
+                Assert.Equal(expected, string.Join(separator, (ReadOnlySpan<string>)values));
 
                 var iEnumerableStringOptimized = new List<string>(values);
                 Assert.Equal(expected, string.Join(separator, iEnumerableStringOptimized));
@@ -3984,6 +3993,44 @@ namespace System.Tests
                 {
                     var arrayOfObjects = (object[])values;
                     Assert.Equal(expected, string.Join(separator, arrayOfObjects));
+                    Assert.Equal(expected, string.Join(separator, (ReadOnlySpan<object>)arrayOfObjects));
+                }
+            }
+            Assert.Equal(expected, string.Join(separator, values, startIndex, count));
+        }
+
+        [Theory]
+        [InlineData('$', new string[] { }, 0, 0, "")]
+        [InlineData('$', new string[] { null }, 0, 1, "")]
+        [InlineData('$', new string[] { null, "Bar", null }, 0, 3, "$Bar$")]
+        [InlineData('$', new string[] { "", "", "" }, 0, 3, "$$")]
+        [InlineData('$', new string[] { "Foo", "Bar", "Baz" }, 0, 3, "Foo$Bar$Baz")]
+        [InlineData('$', new string[] { "Foo", "Bar", "Baz" }, 3, 0, "")]
+        [InlineData('$', new string[] { "Foo", "Bar", "Baz" }, 1, 1, "Bar")]
+        public static void Join_CharSeparator_StringArray(char separator, string[] values, int startIndex, int count, string expected)
+        {
+            if (startIndex + count == values.Length && count != 0)
+            {
+                Assert.Equal(expected, string.Join(separator, values));
+                Assert.Equal(expected, string.Join(separator, (ReadOnlySpan<string>)values));
+
+                var iEnumerableStringOptimized = new List<string>(values);
+                Assert.Equal(expected, string.Join(separator, iEnumerableStringOptimized));
+                Assert.Equal(expected, string.Join<string>(separator, iEnumerableStringOptimized)); // Call the generic IEnumerable<T>-based overload
+
+                var iEnumerableStringNotOptimized = new Queue<string>(values);
+                Assert.Equal(expected, string.Join(separator, iEnumerableStringNotOptimized));
+                Assert.Equal(expected, string.Join<string>(separator, iEnumerableStringNotOptimized));
+
+                var iEnumerableObject = new List<object>(values);
+                Assert.Equal(expected, string.Join(separator, iEnumerableObject));
+
+                // Bug/Documented behavior: Join(string, object[]) returns "" when the first item in the array is null
+                if (values.Length == 0 || values[0] != null)
+                {
+                    var arrayOfObjects = (object[])values;
+                    Assert.Equal(expected, string.Join(separator, arrayOfObjects));
+                    Assert.Equal(expected, string.Join(separator, (ReadOnlySpan<object>)arrayOfObjects));
                 }
             }
             Assert.Equal(expected, string.Join(separator, values, startIndex, count));
@@ -4038,6 +4085,31 @@ namespace System.Tests
         {
             Assert.Equal(expected, string.Join(separator, values));
             Assert.Equal(expected, string.Join(separator, (IEnumerable<object>)values));
+            Assert.Equal(expected, string.Join(separator, (ReadOnlySpan<object>)values));
+        }
+
+        public static IEnumerable<object[]> Join_CharSeparator_ObjectArray_TestData()
+        {
+            yield return new object[] { '$', new object[] { }, "" };
+            yield return new object[] { '$', new object[] { new ObjectWithNullToString() }, "" };
+            yield return new object[] { '$', new object[] { "Foo" }, "Foo" };
+            yield return new object[] { '$', new object[] { "Foo", "Bar", "Baz" }, "Foo$Bar$Baz" };
+            yield return new object[] { '$', new object[] { "Foo", null, "Baz" }, "Foo$$Baz" };
+
+            // Test join when first value is null
+            yield return new object[] { '$', new object[] { null, "Bar", "Baz" }, "$Bar$Baz" };
+
+            // Join should ignore objects that have a null ToString() value
+            yield return new object[] { "|", new object[] { new ObjectWithNullToString(), "Foo", new ObjectWithNullToString(), "Bar", new ObjectWithNullToString() }, "|Foo||Bar|" };
+        }
+
+        [Theory]
+        [MemberData(nameof(Join_CharSeparator_ObjectArray_TestData))]
+        public static void Join_CharSeparator_ObjectArray(char separator, object[] values, string expected)
+        {
+            Assert.Equal(expected, string.Join(separator, values));
+            Assert.Equal(expected, string.Join(separator, (IEnumerable<object>)values));
+            Assert.Equal(expected, string.Join(separator, (ReadOnlySpan<object>)values));
         }
 
         [Fact]
@@ -4820,7 +4892,7 @@ namespace System.Tests
         [InlineData("Aa1Bbb1Cccc1Ddddd1Eeeeee1Fffffff", "1", "23", "Aa23Bbb23Cccc23Ddddd23Eeeeee23Fffffff")]
         [InlineData("11111111111111111111111", "1", "11", "1111111111111111111111111111111111111111111111")] //  Checks if we handle the max # of matches
         [InlineData("11111111111111111111111", "1", "", "")] // Checks if we handle the max # of matches
-        public static void Replace_String_String(string s, string oldValue, string newValue, string expected)
+        public static void Replace_String_String(string s, string oldValue, string? newValue, string expected)
         {
             Assert.Equal(expected, s.Replace(oldValue, newValue));
         }
@@ -4856,11 +4928,9 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.CurrentCulture, true };
             yield return new object[] { "", "hello", StringComparison.CurrentCulture, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
-                // "https://github.com/dotnet/runtime/issues/95473"
-                if (PlatformDetection.IsNotHybridGlobalizationOnBrowser)
-                    yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.CurrentCulture, true };
+                yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.CurrentCulture, true };
             }
 
             // CurrentCultureIgnoreCase
@@ -4872,7 +4942,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.CurrentCultureIgnoreCase, true };
             yield return new object[] { "", "hello", StringComparison.CurrentCultureIgnoreCase, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.CurrentCultureIgnoreCase, true };
 
             // InvariantCulture
@@ -4884,7 +4954,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.InvariantCulture, true };
             yield return new object[] { "", "hello", StringComparison.InvariantCulture, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.InvariantCulture, true };
 
             // InvariantCultureIgnoreCase
@@ -4896,7 +4966,7 @@ namespace System.Tests
             yield return new object[] { "", "", StringComparison.InvariantCultureIgnoreCase, true };
             yield return new object[] { "", "hello", StringComparison.InvariantCultureIgnoreCase, false };
 
-            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 yield return new object[] { "Hello", SoftHyphen + "Hel", StringComparison.InvariantCultureIgnoreCase, true };
 
             // Ordinal
@@ -4932,7 +5002,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(StartsWith_StringComparison_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95473", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void StartsWith_StringComparison(string s, string value, StringComparison comparisonType, bool expected)
         {
             if (comparisonType == StringComparison.CurrentCulture)
@@ -5354,8 +5423,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public static void Test_ToLower_Culture()
         {
             foreach (object[] testdata in ToLower_Culture_TestData())
@@ -5871,9 +5939,8 @@ namespace System.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         [MemberData(nameof(ToUpper_Culture_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95503", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void Test_ToUpper_Culture(string actual, string expected, CultureInfo culture)
         {
             Assert.Equal(expected, actual.ToUpper(culture));
@@ -5971,9 +6038,8 @@ namespace System.Tests
                 new KeyValuePair<char, char>('\u0130', '\u0130'),
                 new KeyValuePair<char, char>('\u0131', '\u0131'));
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnOSX))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         [MemberData(nameof(ToUpper_TurkishI_InvariantCulture_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95471", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void ToUpper_TurkishI_InvariantCulture(string s, string expected)
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
@@ -6083,7 +6149,7 @@ namespace System.Tests
         [InlineData("      ", new char[] { ' ' }, "")]
         [InlineData("aaaaa", new char[] { 'a' }, "")]
         [InlineData("abaabaa", new char[] { 'b', 'a' }, "")]
-        public static void Trim(string s, char[] trimChars, string expected)
+        public static void Trim(string s, char[]? trimChars, string expected)
         {
             if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
             {
@@ -6113,7 +6179,7 @@ namespace System.Tests
         [InlineData("      ", new char[] { ' ' }, "")]
         [InlineData("aaaaa", new char[] { 'a' }, "")]
         [InlineData("abaabaa", new char[] { 'b', 'a' }, "")]
-        public static void TrimEnd(string s, char[] trimChars, string expected)
+        public static void TrimEnd(string s, char[]? trimChars, string expected)
         {
             if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
             {
@@ -6143,7 +6209,7 @@ namespace System.Tests
         [InlineData("      ", new char[] { ' ' }, "")]
         [InlineData("aaaaa", new char[] { 'a' }, "")]
         [InlineData("abaabaa", new char[] { 'b', 'a' }, "")]
-        public static void TrimStart(string s, char[] trimChars, string expected)
+        public static void TrimStart(string s, char[]? trimChars, string expected)
         {
             if (trimChars == null || trimChars.Length == 0 || (trimChars.Length == 1 && trimChars[0] == ' '))
             {
@@ -6608,13 +6674,12 @@ namespace System.Tests
             }
 
             string s2 = "ccedafffffbdaa";
-            char[] trimCharsString = "abcde".ToCharArray();
-            Assert.True(s2.Substring(5, 5).SequenceEqual(s2.Trim(trimCharsString)));
-            Assert.True(s2.Substring(5).SequenceEqual(s2.TrimStart(trimCharsString)));
-            Assert.True(s2.Substring(0, 10).SequenceEqual(s2.TrimEnd(trimCharsString)));
+            Assert.True(s2.Substring(5, 5).SequenceEqual(s2.Trim(chars)));
+            Assert.True(s2.Substring(5).SequenceEqual(s2.TrimStart(chars)));
+            Assert.True(s2.Substring(0, 10).SequenceEqual(s2.TrimEnd(chars)));
 
             ReadOnlySpan<char> stringSpan = s2.AsSpan();
-            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+            ReadOnlySpan<char> trimChars = chars.AsSpan();
             Assert.True(stringSpan.Slice(5, 5).SequenceEqual(stringSpan.Trim(trimChars)));
             Assert.True(stringSpan.Slice(5).SequenceEqual(stringSpan.TrimStart(trimChars)));
             Assert.True(stringSpan.Slice(0, 10).SequenceEqual(stringSpan.TrimEnd(trimChars)));
@@ -6645,13 +6710,12 @@ namespace System.Tests
             }
 
             string s2 = "fabbacddeeddef";
-            char[] trimCharsString = "abcde".ToCharArray();
-            Assert.True(s2.SequenceEqual(s2.Trim(trimCharsString)));
-            Assert.True(s2.SequenceEqual(s2.TrimStart(trimCharsString)));
-            Assert.True(s2.SequenceEqual(s2.TrimEnd(trimCharsString)));
+            Assert.True(s2.SequenceEqual(s2.Trim(chars)));
+            Assert.True(s2.SequenceEqual(s2.TrimStart(chars)));
+            Assert.True(s2.SequenceEqual(s2.TrimEnd(chars)));
 
             ReadOnlySpan<char> stringSpan = s2.AsSpan();
-            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+            ReadOnlySpan<char> trimChars = chars.AsSpan();
             Assert.True(stringSpan.SequenceEqual(stringSpan.Trim(trimChars)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimStart(trimChars)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimEnd(trimChars)));
@@ -6699,21 +6763,25 @@ namespace System.Tests
             }
 
             string s2 = "ccedafffffbdaa";
-            char[] trimCharsString = "abcde".ToCharArray();
-            string trimStringResultString = s2.Trim(trimCharsString);
-            string trimStartStringResultString = s2.TrimStart(trimCharsString);
-            string trimEndStringResultString = s2.TrimEnd(trimCharsString);
+            string trimStringResultString = s2.Trim(chars);
+            string trimStartStringResultString = s2.TrimStart(chars);
+            string trimEndStringResultString = s2.TrimEnd(chars);
             Assert.True(s2.Substring(5, 5).SequenceEqual(trimStringResultString));
             Assert.True(s2.Substring(5).SequenceEqual(trimStartStringResultString));
             Assert.True(s2.Substring(0, 10).SequenceEqual(trimEndStringResultString));
 
             // 2nd attempt should do nothing
-            Assert.True(trimStringResultString.SequenceEqual(trimStringResultString.Trim(trimCharsString)));
-            Assert.True(trimStartStringResultString.SequenceEqual(trimStartStringResultString.TrimStart(trimCharsString)));
-            Assert.True(trimEndStringResultString.SequenceEqual(trimEndStringResultString.TrimEnd(trimCharsString)));
+            Assert.True(trimStringResultString.SequenceEqual(trimStringResultString.Trim(chars)));
+            Assert.True(trimStartStringResultString.SequenceEqual(trimStartStringResultString.TrimStart(chars)));
+            Assert.True(trimEndStringResultString.SequenceEqual(trimEndStringResultString.TrimEnd(chars)));
+
+            s2 = "ccedafffffbdaa";
+            Assert.True(s2.Substring(5, 5).SequenceEqual(trimStringResultString));
+            Assert.True(s2.Substring(5).SequenceEqual(trimStartStringResultString));
+            Assert.True(s2.Substring(0, 10).SequenceEqual(trimEndStringResultString));
 
             ReadOnlySpan<char> stringSpan = s2.AsSpan();
-            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+            ReadOnlySpan<char> trimChars = chars.AsSpan();
 
             ReadOnlySpan<char> trimStringResult = stringSpan.Trim(trimChars);
             ReadOnlySpan<char> trimStartStringResult = stringSpan.TrimStart(trimChars);
@@ -6739,27 +6807,26 @@ namespace System.Tests
                 first[length - 1] = 'f';
                 string s1 = new string(first, 1, length - 2);
                 Assert.Equal(s1.ToArray().Length, s1.Trim(chars).ToArray().Length);
-                Assert.True(s1.SequenceEqual(s1.Trim(chars)), "A : " + s1.Length);
-                Assert.True(s1.SequenceEqual(s1.TrimStart(chars)), "B :" + s1.Length);
-                Assert.True(s1.SequenceEqual(s1.TrimEnd(chars)));
+                Assert.True(s1.SequenceEqual(s1.Trim(chars)), "A: " + s1.Length);
+                Assert.True(s1.SequenceEqual(s1.TrimStart(chars)), "B: " + s1.Length);
+                Assert.True(s1.SequenceEqual(s1.TrimEnd(chars)), "C: " + s1.Length);
 
                 ReadOnlySpan<char> span = s1.AsSpan();
                 Assert.Equal(span.ToArray().Length, span.Trim(chars).ToArray().Length);
-                Assert.True(span.SequenceEqual(span.Trim(chars)), "A : " + span.Length);
-                Assert.True(span.SequenceEqual(span.TrimStart(chars)), "B :" + span.Length);
-                Assert.True(span.SequenceEqual(span.TrimEnd(chars)));
+                Assert.True(span.SequenceEqual(span.Trim(chars)), "A: " + span.Length);
+                Assert.True(span.SequenceEqual(span.TrimStart(chars)), "B: " + span.Length);
+                Assert.True(span.SequenceEqual(span.TrimEnd(chars)), "C: " + s1.Length);
             }
 
             string testString = "afghijklmnopqrstfe";
 
             string s2 = testString.Substring(1, testString.Length - 2);
-            char[] trimCharsString = "abcde".ToCharArray();
-            Assert.True(s2.SequenceEqual(s2.Trim(trimCharsString)));
-            Assert.True(s2.SequenceEqual(s2.TrimStart(trimCharsString)));
-            Assert.True(s2.SequenceEqual(s2.TrimEnd(trimCharsString)));
+            Assert.True(s2.SequenceEqual(s2.Trim(chars)));
+            Assert.True(s2.SequenceEqual(s2.TrimStart(chars)));
+            Assert.True(s2.SequenceEqual(s2.TrimEnd(chars)));
 
             ReadOnlySpan<char> stringSpan = s2.AsSpan();
-            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+            ReadOnlySpan<char> trimChars = chars.AsSpan();
             Assert.True(stringSpan.SequenceEqual(stringSpan.Trim(trimChars)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimStart(trimChars)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimEnd(trimChars)));
@@ -7242,7 +7309,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnOSX))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/112195", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
         public static void StartsWithNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -7612,7 +7679,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void InternalTestAotSubset()
+        public static void InternTestAotSubset()
         {
 #pragma warning disable 0618 // suppress obsolete warning for String.Copy
             string emptyFromField = string.Empty;
@@ -7629,6 +7696,17 @@ namespace System.Tests
 #pragma warning restore 0618 // restore warning when accessing obsolete members
         }
 
+        [Fact]
+        public static void InternTestCanReturnNull()
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                if (string.IsInterned(Guid.NewGuid().ToString()) == null)
+                    return;
+            }
+            Assert.Fail("string.IsInterned never returns null");
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34577", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static unsafe void NormalizationTest() // basic test; more tests in globalization tests
@@ -7643,8 +7721,8 @@ namespace System.Tests
             Assert.False(s.IsNormalized(NormalizationForm.FormC), "String should be not normalized when checking with FormC");
             Assert.False(s.IsNormalized(NormalizationForm.FormD), "String should be not normalized when checking with FormD");
 
-            // Browser's, iOS's, MacCatalyst's, and tvOS's ICU do not support FormKC and FormKD
-            bool supportsKCKD = !PlatformDetection.IsBrowser && !PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst && !PlatformDetection.IstvOS;
+            // Some platforms' ICUs do not support FormKC and FormKD
+            bool supportsKCKD = !PlatformDetection.IsBrowser && !PlatformDetection.IsWasi && !PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst && !PlatformDetection.IstvOS;
 
             if (supportsKCKD)
             {

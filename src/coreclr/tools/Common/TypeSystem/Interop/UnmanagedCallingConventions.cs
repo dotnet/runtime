@@ -40,7 +40,7 @@ namespace Internal.TypeSystem
         // Unmanaged            = 0x00000009, - this one is always translated to cdecl/stdcall
 
         // The ones higher than 0xF are defined by the type system
-        // There are no such calling conventions yet.
+        Swift                   = 0x00000010
     }
 
     public static class CallingConventionExtensions
@@ -135,6 +135,25 @@ namespace Internal.TypeSystem
             return result;
         }
 
+        public static UnmanagedCallingConventions GetDelegateCallingConventions(this TypeDesc delegateType)
+        {
+            Debug.Assert(delegateType.IsDelegate);
+
+            if (delegateType is EcmaType ecmaDelegate)
+            {
+                MethodSignatureFlags unmanagedCallConv = ecmaDelegate.GetDelegatePInvokeFlags().UnmanagedCallingConvention;
+                if (unmanagedCallConv != MethodSignatureFlags.None)
+                {
+                    Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)UnmanagedCallingConventions.Cdecl
+                        && (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)UnmanagedCallingConventions.Stdcall
+                        && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)UnmanagedCallingConventions.Thiscall);
+                    return (UnmanagedCallingConventions)unmanagedCallConv;
+                }
+            }
+
+            return GetPlatformDefaultUnmanagedCallingConvention(delegateType.Context);
+        }
+
         private static UnmanagedCallingConventions GetUnmanagedCallingConventionFromAttribute(CustomAttributeValue<TypeDesc> attributeWithCallConvsArray, TypeSystemContext context)
         {
             ImmutableArray<CustomAttributeTypedArgument<TypeDesc>> callConvArray = default;
@@ -170,10 +189,10 @@ namespace Internal.TypeSystem
 
         private static UnmanagedCallingConventions AccumulateCallingConventions(UnmanagedCallingConventions existing, MetadataType newConvention)
         {
-            if (newConvention.Namespace != "System.Runtime.CompilerServices")
+            if (!newConvention.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
                 return existing;
 
-            UnmanagedCallingConventions? addedCallConv = newConvention.Name switch
+            UnmanagedCallingConventions? addedCallConv = newConvention.GetName() switch
             {
                 "CallConvCdecl" => UnmanagedCallingConventions.Cdecl,
                 "CallConvStdcall" => UnmanagedCallingConventions.Stdcall,
@@ -181,6 +200,7 @@ namespace Internal.TypeSystem
                 "CallConvThiscall" => UnmanagedCallingConventions.Thiscall,
                 "CallConvSuppressGCTransition" => UnmanagedCallingConventions.IsSuppressGcTransition,
                 "CallConvMemberFunction" => UnmanagedCallingConventions.IsMemberFunction,
+                "CallConvSwift" => UnmanagedCallingConventions.Swift,
                 _ => null
             };
 
@@ -214,30 +234,31 @@ namespace Internal.TypeSystem
             {
                 ret[index++] = CreateCallConvEmbeddedSignatureData(context, convention switch
                 {
-                    UnmanagedCallingConventions.Cdecl => "CallConvCdecl",
-                    UnmanagedCallingConventions.Stdcall => "CallConvStdcall",
-                    UnmanagedCallingConventions.Fastcall => "CallConvFastcall",
-                    UnmanagedCallingConventions.Thiscall => "CallConvThiscall",
+                    UnmanagedCallingConventions.Cdecl => "CallConvCdecl"u8,
+                    UnmanagedCallingConventions.Stdcall => "CallConvStdcall"u8,
+                    UnmanagedCallingConventions.Fastcall => "CallConvFastcall"u8,
+                    UnmanagedCallingConventions.Thiscall => "CallConvThiscall"u8,
+                    UnmanagedCallingConventions.Swift => "CallConvSwift"u8,
                     _ => throw new InvalidProgramException()
                 });
             }
 
             if ((modifiers & UnmanagedCallingConventions.IsMemberFunction) != 0)
-                ret[index++] = CreateCallConvEmbeddedSignatureData(context, "CallConvMemberFunction");
+                ret[index++] = CreateCallConvEmbeddedSignatureData(context, "CallConvMemberFunction"u8);
 
             if ((modifiers & UnmanagedCallingConventions.IsSuppressGcTransition) != 0)
-                ret[index++] = CreateCallConvEmbeddedSignatureData(context, "CallConvSuppressGCTransition");
+                ret[index++] = CreateCallConvEmbeddedSignatureData(context, "CallConvSuppressGCTransition"u8);
 
             Debug.Assert(index == count);
 
             return ret;
 
-            static EmbeddedSignatureData CreateCallConvEmbeddedSignatureData(TypeSystemContext context, string name)
+            static EmbeddedSignatureData CreateCallConvEmbeddedSignatureData(TypeSystemContext context, ReadOnlySpan<byte> name)
                 => new()
                 {
                     index = MethodSignature.IndexOfCustomModifiersOnReturnType,
                     kind = EmbeddedSignatureDataKind.OptionalCustomModifier,
-                    type = context.SystemModule.GetKnownType("System.Runtime.CompilerServices", name)
+                    type = context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, name)
                 };
         }
 

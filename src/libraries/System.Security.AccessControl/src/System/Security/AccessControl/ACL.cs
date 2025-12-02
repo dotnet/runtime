@@ -337,7 +337,7 @@ namespace System.Security.AccessControl
                     // Binary length of an ace must ALWAYS be divisible by 4.
                     //
 
-                    Debug.Assert(false, "aceLength % 4 != 0");
+                    Debug.Fail("aceLength % 4 != 0");
                     // Replacing SystemException with InvalidOperationException. This code path
                     // indicates a bad ACE, but I don't know of a great exception to represent that.
                     // InvalidOperation seems to be the closest, though it's definitely not exactly
@@ -480,7 +480,7 @@ namespace System.Security.AccessControl
                     // Binary length of an ace must ALWAYS be divisible by 4.
                     //
 
-                    Debug.Assert(false, "aceLength % 4 != 0");
+                    Debug.Fail("aceLength % 4 != 0");
                     // Replacing SystemException with InvalidOperationException. This code path
                     // indicates a bad ACE, but I don't know of a great exception to represent that.
                     // InvalidOperation seems to be the closest, though it's definitely not exactly
@@ -516,7 +516,7 @@ namespace System.Security.AccessControl
                     // Binary length of an ace must ALWAYS be divisible by 4.
                     //
 
-                    Debug.Assert(false, "aceLength % 4 != 0");
+                    Debug.Fail("aceLength % 4 != 0");
                     // Replacing SystemException with InvalidOperationException. This code path
                     // indicates a bad ACE, but I don't know of a great exception to represent that.
                     // InvalidOperation seems to be the closest, though it's definitely not exactly
@@ -1176,7 +1176,7 @@ namespace System.Security.AccessControl
             {
                 GenericAce ace = _acl[i];
 
-                if (false == InspectAce(ref ace, isDacl))
+                if (!InspectAce(ref ace, isDacl))
                 {
                     _acl.RemoveAce(i);
                 }
@@ -1684,7 +1684,7 @@ namespace System.Security.AccessControl
                             // Only allow and deny ACEs are allowed here
                             //
 
-                            Debug.Assert(false, "Audit and alarm ACEs must have been stripped by remove-meaningless logic");
+                            Debug.Fail("Audit and alarm ACEs must have been stripped by remove-meaningless logic");
                             return false;
                         }
                     }
@@ -1762,7 +1762,7 @@ namespace System.Security.AccessControl
                             // Only audit and alarm ACEs are allowed here
                             //
 
-                            Debug.Assert(false, "Allow and deny ACEs must have been stripped by remove-meaningless logic");
+                            Debug.Fail("Allow and deny ACEs must have been stripped by remove-meaningless logic");
                             return false;
                         }
                     }
@@ -1977,7 +1977,7 @@ namespace System.Security.AccessControl
             // Make sure the new ACE wouldn't be meaningless before proceeding
             //
 
-            if (false == InspectAce(ref newAce, (this is DiscretionaryAcl)))
+            if (!InspectAce(ref newAce, this is DiscretionaryAcl))
             {
                 return;
             }
@@ -2055,7 +2055,7 @@ namespace System.Security.AccessControl
             // Make sure the new ACE wouldn't be meaningless before proceeding
             //
 
-            if (false == InspectAce(ref newAce, (this is DiscretionaryAcl)))
+            if (!InspectAce(ref newAce, this is DiscretionaryAcl))
             {
                 return;
             }
@@ -2430,7 +2430,7 @@ namespace System.Security.AccessControl
                     if (!saclSemantics ||
                         ((ms_AceFlags & AceFlags.AuditFlags) != 0))
                     {
-                        if (false == RemoveInheritanceBits(ms_AceFlags, flags, IsDS, out mergeResultFlags, out mergeRemoveTotal))
+                        if (!RemoveInheritanceBits(ms_AceFlags, flags, IsDS, out mergeResultFlags, out mergeRemoveTotal))
                         {
                             removePossible = false;
                             break;

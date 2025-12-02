@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <UseAppHost>true</UseAppHost>
+    <AppHostSourcePath>$(ArtifactsDir)\bin\win-x64.Debug\corehost\apphost.exe</AppHostSourcePath>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpFuzz" Version="2.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Assert.cs" />
+    <Compile Include="Fuzzers\*.cs" />
+    <Compile Include="IFuzzer.cs" />
+    <Compile Include="PooledBoundedMemory.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="$(TestUtilities)\System\Buffers\BoundedMemory.*" Link="TestUtilities\%(Filename)%(Extension)" />
+    <Compile Include="$(TestUtilities)\System\Buffers\PoisonPagePlacement.cs" Link="TestUtilities\PoisonPagePlacement.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Dictionaries\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNetFuzzing.TestData" Version="$(MicrosoftDotNetFuzzingTestDataVersion)" />
+    <ProjectReference Include="..\..\System.Formats.Nrbf\src\System.Formats.Nrbf.csproj" />
+  </ItemGroup>
+
+</Project>

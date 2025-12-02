@@ -236,7 +236,7 @@ namespace Microsoft.NET.HostModel.ComHost
                     break;
 
                 default:
-                    Debug.Assert(false, "Unknown attribute constructor kind");
+                    Debug.Fail("Unknown attribute constructor kind");
                     return false;
             }
 

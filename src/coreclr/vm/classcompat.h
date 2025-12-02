@@ -42,7 +42,6 @@ class   EEClass;
 class   LayoutEEClass;
 class   EnCFieldDesc;
 class   FieldDesc;
-struct  LayoutRawFieldInfo;
 class   MetaSig;
 class   MethodDesc;
 class   MethodDescChunk;
@@ -312,7 +311,6 @@ private:
          // Com Interop, ComWrapper classes extend from ComObject
         BOOL fIsComObjectType;                  // whether this class is an instance of ComObject class
 
-        BOOL fIsMngStandardItf;                 // Set to true if the interface is a manages standard interface.
         BOOL fComEventItfType;                  // Set to true if the class is a special COM event interface.
 
         BOOL fIsValueClass;
@@ -350,6 +348,7 @@ private:
 
         DispatchMapBuilder *pDispatchMapBuilder;
 
+#ifndef DACCESS_COMPILE
         MethodDesc* GetMethodDescForSlot(WORD slot)
         {
             CONTRACTL
@@ -362,9 +361,10 @@ private:
             if (pVtable[slot] != NULL && pVtableMD[slot] == NULL)
                 pVtableMD[slot] = pParentMethodTable->GetMethodDescForSlot(slot);
             _ASSERTE((pVtable[slot] == NULL) ||
-                (MethodTable::GetMethodDescForSlotAddress(pVtable[slot]) == pVtableMD[slot]));
+                (NonVirtualEntry2MethodDesc(pVtable[slot]) == pVtableMD[slot]));
             return pVtableMD[slot];
         }
+#endif // DACCESS_COMPILE
 
         void SetMethodDescForSlot(WORD slot, MethodDesc* pMD)
         {

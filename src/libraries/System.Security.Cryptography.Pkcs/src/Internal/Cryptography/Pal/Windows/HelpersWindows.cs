@@ -131,7 +131,7 @@ namespace Internal.Cryptography.Pal.Windows
             for (int index = 0; index < numCertificates; index++)
             {
                 byte[] encodedCertificate = hCryptMsg.GetMsgParamAsByteArray(CryptMsgParamType.CMSG_CERT_PARAM, index);
-                X509Certificate2 cert = new X509Certificate2(encodedCertificate);
+                X509Certificate2 cert = X509CertificateLoader.LoadCertificate(encodedCertificate);
                 certs.Add(cert);
             }
             return certs;
@@ -155,7 +155,7 @@ namespace Internal.Cryptography.Pal.Windows
             return hCertContext;
         }
 
-        public static unsafe byte[] GetSubjectKeyIdentifier(this SafeCertContextHandle hCertContext)
+        public static byte[] GetSubjectKeyIdentifier(this SafeCertContextHandle hCertContext)
         {
             int cbData = 0;
             if (!Interop.Crypt32.CertGetCertificateContextProperty(hCertContext, CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, null, ref cbData))

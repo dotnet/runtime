@@ -23,7 +23,7 @@ namespace System.IO
         /// <param name="message">The error message that explains the reason for the exception.</param>
         /// <remarks>This constructor initializes the <see cref="Exception.Message" /> property of the new instance to a system-supplied message that describes the error, such as "An invalid argument was specified." This message is localized based on the current system culture.</remarks>
         public InvalidDataException(string? message)
-            : base(message)
+            : base(message ?? SR.GenericInvalidData)
         {
         }
 
@@ -33,7 +33,7 @@ namespace System.IO
         /// <remarks>This constructor initializes the <see cref="Exception.Message" /> property of the new instance using the value of the <paramref name="message" /> parameter. The content of the <paramref name="message" /> parameter is intended to be understood by humans. The caller of this constructor is required to ensure that this string has been localized for the current system culture.
         /// An exception that is thrown as a direct result of a previous exception should include a reference to the previous exception in the <see cref="Exception.InnerException" /> property. The <see cref="Exception.InnerException" /> property returns the same value that is passed into the constructor, or <see langword="null" /> if the <see cref="Exception.InnerException" /> property does not supply the inner exception value to the constructor.</remarks>
         public InvalidDataException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.GenericInvalidData, innerException)
         {
         }
 

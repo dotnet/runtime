@@ -39,7 +39,7 @@ namespace System.Threading.Channels
         public bool AllowSynchronousContinuations { get; set; }
     }
 
-    /// <summary>Provides options that control the behavior of <see cref="BoundedChannel{T}"/> instances.</summary>
+    /// <summary>Provides options that control the behavior of instances created by <see cref="M:Channel.CreateBounded"/>.</summary>
     public sealed class BoundedChannelOptions : ChannelOptions
     {
         /// <summary>The maximum number of items the bounded channel may store.</summary>
@@ -49,9 +49,10 @@ namespace System.Threading.Channels
 
         /// <summary>Initializes the options.</summary>
         /// <param name="capacity">The maximum number of items the bounded channel may store.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="capacity"/> is negative.</exception>
         public BoundedChannelOptions(int capacity)
         {
-            if (capacity < 1)
+            if (capacity < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(capacity));
             }
@@ -60,12 +61,13 @@ namespace System.Threading.Channels
         }
 
         /// <summary>Gets or sets the maximum number of items the bounded channel may store.</summary>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is negative.</exception>
         public int Capacity
         {
             get => _capacity;
             set
             {
-                if (value < 1)
+                if (value < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
@@ -74,6 +76,7 @@ namespace System.Threading.Channels
         }
 
         /// <summary>Gets or sets the behavior incurred by write operations when the channel is full.</summary>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is an invalid enum value.</exception>
         public BoundedChannelFullMode FullMode
         {
             get => _mode;
@@ -94,7 +97,7 @@ namespace System.Threading.Channels
         }
     }
 
-    /// <summary>Provides options that control the behavior of <see cref="UnboundedChannel{T}"/> instances.</summary>
+    /// <summary>Provides options that control the behavior of instances created by <see cref="M:Channel.CreateUnbounded"/>.</summary>
     public sealed class UnboundedChannelOptions : ChannelOptions
     {
     }

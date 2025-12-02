@@ -31,13 +31,13 @@ namespace System
         }
 
         public OperationCanceledException(string? message)
-            : base(message)
+            : base(message ?? SR.OperationCanceled)
         {
             HResult = HResults.COR_E_OPERATIONCANCELED;
         }
 
         public OperationCanceledException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.OperationCanceled, innerException)
         {
             HResult = HResults.COR_E_OPERATIONCANCELED;
         }

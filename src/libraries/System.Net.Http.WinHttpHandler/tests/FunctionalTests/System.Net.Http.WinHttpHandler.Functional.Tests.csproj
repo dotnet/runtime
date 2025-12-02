@@ -32,14 +32,14 @@
              Link="Common\System\Net\EventSourceTestLogging.cs" />
     <Compile Include="$(CommonTestPath)System\Net\HttpsTestServer.cs"
              Link="Common\System\Net\HttpsTestServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs"
+             Link="Common\System\Net\RemoteExecutorExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Net\RemoteServerQuery.cs"
              Link="Common\System\Net\RemoteServerQuery.cs" />
     <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs"
              Link="Common\System\Net\VerboseTestLogging.cs" />
     <Compile Include="$(CommonTestPath)System\Net\TestWebProxies.cs"
              Link="Common\System\Net\TestWebProxies.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\StreamArrayExtensions.cs"
-             Link="Common\System\Net\StreamArrayExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ByteAtATimeContent.cs"
              Link="Common\System\Net\Http\ByteAtATimeContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ChannelBindingAwareContent.cs"
@@ -130,8 +130,6 @@
              Link="Common\System\Net\Http\SyncBlockingContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ThrowingContent.cs"
              Link="Common\System\Net\Http\ThrowingContent.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
-             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\TrackingSynchronizationContext.cs"
@@ -142,6 +140,9 @@
     <Compile Include="ClientCertificateTest.cs" />
     <Compile Include="TrailingHeadersTest.cs" />
     <Compile Include="BidirectionStreamingTest.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)System\IO\StreamExtensions.netstandard.cs" Link="Common\System\IO\StreamExtensions.netstandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
@@ -154,5 +155,6 @@
     <Reference Include="System.DirectoryServices.Protocols" />
     <Reference Include="System.Net.Http" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Http.Json\src\System.Net.Http.Json.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Cryptography\src\Microsoft.Bcl.Cryptography.csproj" />
   </ItemGroup>
 </Project>

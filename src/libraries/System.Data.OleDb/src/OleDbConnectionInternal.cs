@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -12,6 +13,9 @@ using SysTx = System.Transactions;
 
 namespace System.Data.OleDb
 {
+#if NET
+    [RequiresDynamicCode(OleDbConnection.TrimWarning)]
+#endif
     internal sealed class OleDbConnectionInternal : DbConnectionInternal, IDisposable
     {
         private static volatile OleDbServicesWrapper? idataInitialize;
@@ -414,7 +418,11 @@ namespace System.Data.OleDb
                         tagDBLITERALINFO tag = new tagDBLITERALINFO();
                         for (int i = 0; i < literalCount; ++i, offset += ODB.SizeOf_tagDBLITERALINFO)
                         {
-                            Marshal.PtrToStructure((nint)offset, tag);
+                            if (offset is null)
+                            {
+                                throw new NullReferenceException();
+                            }
+                            tag = Marshal.PtrToStructure<tagDBLITERALINFO>((IntPtr)offset)!;
 
                             DataRow row = table.NewRow();
                             row[literalName] = ((OleDbLiteral)tag.it).ToString();
@@ -591,7 +599,7 @@ namespace System.Data.OleDb
                         for (int i = 0, offset = 0; i < supportedSchemas.Length; ++i, offset += ODB.SizeOf_Guid)
                         {
                             IntPtr ptr = ADP.IntPtrOffset(schemaGuids, i * ODB.SizeOf_Guid);
-                            supportedSchemas[i]._schemaRowset = (Guid)Marshal.PtrToStructure(ptr, typeof(Guid))!;
+                            supportedSchemas[i]._schemaRowset = Marshal.PtrToStructure<Guid>(ptr)!;
                         }
                     }
                     if (IntPtr.Zero != schemaRestrictions)
@@ -624,7 +632,7 @@ namespace System.Data.OleDb
 
                 UnsafeNativeMethods.IRowset? rowset = null;
                 OleDbHResult hr;
-                hr = dbSchemaRowset.GetRowset(IntPtr.Zero, ref schema, restrictions.Length, restrictions, ref ODB.IID_IRowset, 0, IntPtr.Zero, out rowset);
+                hr = dbSchemaRowset.GetRowset(IntPtr.Zero, in schema, restrictions.Length, restrictions, in ODB.IID_IRowset, 0, IntPtr.Zero, out rowset);
 
                 if (hr < 0)
                 { // ignore infomsg

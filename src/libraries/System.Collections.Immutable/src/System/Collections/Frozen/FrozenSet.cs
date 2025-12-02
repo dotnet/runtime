@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Collections.Frozen
@@ -14,6 +15,40 @@ namespace System.Collections.Frozen
     /// </summary>
     public static class FrozenSet
     {
+        /// <summary>Creates a <see cref="FrozenSet{T}"/> with the specified values.</summary>
+        /// <param name="source">The values to use to populate the set.</param>
+        /// <typeparam name="T">The type of the values in the set.</typeparam>
+        /// <returns>A frozen set.</returns>
+        public static FrozenSet<T> Create<T>(params ReadOnlySpan<T> source) => Create(null, source);
+
+        /// <summary>Creates a <see cref="FrozenSet{T}"/> with the specified values.</summary>
+        /// <param name="source">The values to use to populate the set.</param>
+        /// <param name="equalityComparer">The comparer implementation to use to compare values for equality. If null, <see cref="EqualityComparer{T}.Default"/> is used.</param>
+        /// <typeparam name="T">The type of the values in the set.</typeparam>
+        /// <returns>A frozen set.</returns>
+        public static FrozenSet<T> Create<T>(IEqualityComparer<T>? equalityComparer, params ReadOnlySpan<T> source)
+        {
+            if (source.Length == 0)
+            {
+                return equalityComparer is null || ReferenceEquals(equalityComparer, FrozenSet<T>.Empty.Comparer) ?
+                    FrozenSet<T>.Empty :
+                    new EmptyFrozenSet<T>(equalityComparer);
+            }
+
+            HashSet<T> set =
+#if NET
+                new(source.Length, equalityComparer); // we assume there are few-to-no duplicates when using this API
+#else
+                new(equalityComparer);
+#endif
+            foreach (T item in source)
+            {
+                set.Add(item);
+            }
+
+            return ToFrozenSet(set, equalityComparer);
+        }
+
         /// <summary>Creates a <see cref="FrozenSet{T}"/> with the specified values.</summary>
         /// <param name="source">The values to use to populate the set.</param>
         /// <param name="comparer">The comparer implementation to use to compare values for equality. If null, <see cref="EqualityComparer{T}.Default"/> is used.</param>
@@ -26,7 +61,7 @@ namespace System.Collections.Frozen
         /// <summary>Extracts from the source either an existing <see cref="FrozenSet{T}"/> instance or a <see cref="HashSet{T}"/> containing the values and the specified <paramref name="comparer"/>.</summary>
         private static FrozenSet<T>? GetExistingFrozenOrNewSet<T>(IEnumerable<T> source, IEqualityComparer<T>? comparer, out HashSet<T>? newSet)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
             comparer ??= EqualityComparer<T>.Default;
 
             // If the source is already frozen with the same comparer, it can simply be returned.
@@ -199,10 +234,11 @@ namespace System.Collections.Frozen
     /// the remainder of the life of the application. <see cref="FrozenSet{T}"/> should only be initialized
     /// with trusted elements, as the details of the elements impacts construction time.
     /// </remarks>
+    [CollectionBuilder(typeof(FrozenSet), nameof(FrozenSet.Create))]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
     [DebuggerDisplay("Count = {Count}")]
-    public abstract class FrozenSet<T> : ISet<T>,
-#if NET5_0_OR_GREATER
+    public abstract partial class FrozenSet<T> : ISet<T>,
+#if NET
         IReadOnlySet<T>,
 #endif
         IReadOnlyCollection<T>, ICollection
@@ -235,7 +271,7 @@ namespace System.Collections.Frozen
         /// <param name="destinationIndex">The zero-based index in <paramref name="destination"/> at which copying begins.</param>
         public void CopyTo(T[] destination, int destinationIndex)
         {
-            ThrowHelper.ThrowIfNull(destination);
+            ArgumentNullException.ThrowIfNull(destination);
             CopyTo(destination.AsSpan(destinationIndex));
         }
 
@@ -293,6 +329,57 @@ namespace System.Collections.Frozen
         /// <returns>The index of the value, or -1 if not found.</returns>
         private protected abstract int FindItemIndex(T item);
 
+        /// <summary>
+        /// Retrieves a delegate which calls a method equivalent to <see cref="FindItemIndex"/>
+        /// for the <typeparamref name="TAlternate"/>.
+        /// </summary>
+        /// <remarks>
+        /// This is virtual rather than abstract because only some implementations need to support this, e.g. implementations that
+        /// are only ever used with the default comparer won't ever hit code paths that use this, at least not
+        /// until/if we make `EqualityComparer{string}.Default` implement `IAlternateEqualityComparer{ReadOnlySpan{char}, string}`.
+        ///
+        /// Generic Virtual method invocation is slower than delegate invocation and could negate
+        /// much of the benefit of using Alternate Keys. By retrieving the delegate up-front when
+        /// the lookup is created, we only pay for generic virtual method invocation once.
+        /// </remarks>
+        private protected virtual AlternateLookupDelegate<TAlternate> GetAlternateLookupDelegate<TAlternate>()
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            // This method will only ever be used on .NET 9+. However, because of how everything is structured,
+            // and to avoid a proliferation of conditional files for many of the derived types (in particular
+            // for the OrdinalString* implementations), we still build this method into all builds, even though
+            // it'll be unused. But we can't use the allows ref struct constraint downlevel, hence the #if.
+            where TAlternate : allows ref struct
+#pragma warning restore SA1001
+#endif
+            => AlternateLookupDelegateHolder<TAlternate>.ReturnsNullRef;
+
+        /// <summary>
+        /// Invokes a method equivalent to <see cref="FindItemIndex"/>
+        /// for the <typeparamref name="TAlternate"/>.
+        /// </summary>
+        internal delegate int AlternateLookupDelegate<TAlternate>(FrozenSet<T> set, TAlternate key)
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            where TAlternate : allows ref struct
+#pragma warning restore SA1001
+#endif
+            ;
+
+        /// <summary>
+        /// Holds an implementation of <see cref="AlternateLookupDelegate{TAlternate}"/> which always returns -1.
+        /// </summary>
+        private static class AlternateLookupDelegateHolder<TAlternate>
+#if NET9_0_OR_GREATER
+#pragma warning disable SA1001 // Commas should be spaced correctly
+            where TAlternate : allows ref struct
+#pragma warning restore SA1001
+#endif
+        {
+            public static readonly AlternateLookupDelegate<TAlternate> ReturnsNullRef = (_, _) => -1;
+        }
+
+
         /// <summary>Returns an enumerator that iterates through the set.</summary>
         /// <returns>An enumerator that iterates through the set.</returns>
         public Enumerator GetEnumerator() => GetEnumeratorCore();
@@ -337,7 +424,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc cref="ISet{T}.IsProperSubsetOf(IEnumerable{T})" />
         public bool IsProperSubsetOf(IEnumerable<T> other)
         {
-            ThrowHelper.ThrowIfNull(other);
+            ArgumentNullException.ThrowIfNull(other);
             return IsProperSubsetOfCore(other);
         }
 
@@ -347,7 +434,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc cref="ISet{T}.IsProperSupersetOf(IEnumerable{T})" />
         public bool IsProperSupersetOf(IEnumerable<T> other)
         {
-            ThrowHelper.ThrowIfNull(other);
+            ArgumentNullException.ThrowIfNull(other);
             return IsProperSupersetOfCore(other);
         }
 
@@ -357,7 +444,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc cref="ISet{T}.IsSubsetOf(IEnumerable{T})" />
         public bool IsSubsetOf(IEnumerable<T> other)
         {
-            ThrowHelper.ThrowIfNull(other);
+            ArgumentNullException.ThrowIfNull(other);
             return IsSubsetOfCore(other);
         }
 
@@ -367,7 +454,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc cref="ISet{T}.IsSupersetOf(IEnumerable{T})" />
         public bool IsSupersetOf(IEnumerable<T> other)
         {
-            ThrowHelper.ThrowIfNull(other);
+            ArgumentNullException.ThrowIfNull(other);
             return IsSupersetOfCore(other);
         }
 
@@ -377,7 +464,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc cref="ISet{T}.Overlaps(IEnumerable{T})" />
         public bool Overlaps(IEnumerable<T> other)
         {
-            ThrowHelper.ThrowIfNull(other);
+            ArgumentNullException.ThrowIfNull(other);
             return OverlapsCore(other);
         }
 
@@ -387,7 +474,7 @@ namespace System.Collections.Frozen
         /// <inheritdoc cref="ISet{T}.SetEquals(IEnumerable{T})" />
         public bool SetEquals(IEnumerable<T> other)
         {
-            ThrowHelper.ThrowIfNull(other);
+            ArgumentNullException.ThrowIfNull(other);
             return SetEqualsCore(other);
         }
 

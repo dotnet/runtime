@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
+using Internal.Runtime;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -25,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__exact_method_instantiations");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__exact_method_instantiations"u8);
         }
 
         int INodeWithSize.Size => _size.Value;
@@ -50,15 +51,13 @@ namespace ILCompiler.DependencyAnalysis
             nativeSection.Place(hashtable);
 
 
-            foreach (MethodDesc method in factory.MetadataManager.GetCompiledMethods())
+            foreach (MethodDesc method in factory.MetadataManager.GetExactMethodHashtableEntries())
             {
-                if (!IsMethodEligibleForTracking(factory, method))
-                    continue;
-
                 // Get the method pointer vertex
 
                 bool getUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
-                IMethodNode methodEntryPointNode = factory.MethodEntrypoint(method, getUnboxingStub);
+                // TODO-SIZE: we need address taken entrypoint only if this was a target of a delegate
+                IMethodNode methodEntryPointNode = factory.AddressTakenMethodEntrypoint(method, getUnboxingStub);
                 Vertex methodPointer = nativeWriter.GetUnsignedConstant(_externalReferences.GetIndex(methodEntryPointNode));
 
                 // Get native layout vertices for the declaring type
@@ -75,17 +74,18 @@ namespace ILCompiler.DependencyAnalysis
                     arguments.Append(nativeWriter.GetUnsignedConstant(_externalReferences.GetIndex(argNode)));
                 }
 
-                // Get the name and sig of the method.
-                // Note: the method name and signature are stored in the NativeLayoutInfo blob, not in the hashtable we build here.
+                int flags = 0;
+                MethodDesc methodForMetadata = GetMethodForMetadata(method, out bool isAsyncVariant);
+                if (isAsyncVariant)
+                    flags |= GenericMethodsHashtableConstants.IsAsyncVariant; // Same flag as the other hashtable! Readers are shared.
 
-                NativeLayoutMethodNameAndSignatureVertexNode nameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition());
-                NativeLayoutPlacedSignatureVertexNode placedNameAndSig = factory.NativeLayout.PlacedSignatureVertex(nameAndSig);
-                Debug.Assert(placedNameAndSig.SavedVertex != null);
-                Vertex placedNameAndSigOffsetSig = nativeWriter.GetOffsetSignature(placedNameAndSig.SavedVertex);
+                int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, methodForMetadata);
+
+                int flagsAndToken = (token & MetadataManager.MetadataOffsetMask) | flags;
 
                 // Get the vertex for the completed method signature
 
-                Vertex methodSignature = nativeWriter.GetTuple(declaringType, placedNameAndSigOffsetSig, arguments);
+                Vertex methodSignature = nativeWriter.GetTuple(declaringType, nativeWriter.GetUnsignedConstant((uint)flagsAndToken), arguments);
 
                 // Make the generic method entry vertex
 
@@ -105,14 +105,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void GetExactMethodInstantiationDependenciesForMethod(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if (!IsMethodEligibleForTracking(factory, method))
-                return;
-
             dependencies ??= new DependencyList();
 
             // Method entry point dependency
             bool getUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
-            IMethodNode methodEntryPointNode = factory.MethodEntrypoint(method, getUnboxingStub);
+            // TODO-SIZE: we need address taken entrypoint only if this was a target of a delegate
+            IMethodNode methodEntryPointNode = factory.AddressTakenMethodEntrypoint(method, getUnboxingStub);
             dependencies.Add(new DependencyListEntry(methodEntryPointNode, "Exact method instantiation entry"));
 
             // Get native layout dependencies for the declaring type
@@ -122,34 +120,19 @@ namespace ILCompiler.DependencyAnalysis
             foreach (var arg in method.Instantiation)
                 dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(arg), "Exact method instantiation entry"));
 
-            // Get native layout dependencies for the method signature.
-            NativeLayoutMethodNameAndSignatureVertexNode nameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition());
-            dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(nameAndSig), "Exact method instantiation entry"));
+            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, GetMethodForMetadata(method, out _));
         }
 
-        private static bool IsMethodEligibleForTracking(NodeFactory factory, MethodDesc method)
+        private static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant)
         {
-            // Runtime determined methods should never show up here.
-            Debug.Assert(!method.IsRuntimeDeterminedExactMethod);
-
-            if (method.IsAbstract)
-                return false;
-
-            if (!method.HasInstantiation)
-                return false;
-
-            // This hashtable is only for method instantiations that don't use generic dictionaries,
-            // so check if the given method is shared before proceeding
-            if (method.IsSharedByGenericInstantiations || method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method)
-                return false;
-
-            // The hashtable is used to find implementations of generic virtual methods at runtime
-            if (method.IsVirtual)
-                return true;
-
-            // The rest of the entries are potentially only useful for the universal
-            // canonical type loader.
-            return factory.TypeSystemContext.SupportsUniversalCanon;
+            MethodDesc result = method.GetTypicalMethodDefinition();
+            if (result is AsyncMethodVariant asyncVariant)
+            {
+                isAsyncVariant = true;
+                return asyncVariant.Target;
+            }
+            isAsyncVariant = false;
+            return result;
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

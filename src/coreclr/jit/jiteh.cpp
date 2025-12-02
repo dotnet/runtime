@@ -75,27 +75,27 @@ bool EHblkDsc::InHndRegionILRange(BasicBlock* pBlk)
 }
 
 // HasCatchHandler: returns 'true' for either try/catch, or try/filter/filter-handler.
-bool EHblkDsc::HasCatchHandler()
+bool EHblkDsc::HasCatchHandler() const
 {
     return (ebdHandlerType == EH_HANDLER_CATCH) || (ebdHandlerType == EH_HANDLER_FILTER);
 }
 
-bool EHblkDsc::HasFilter()
+bool EHblkDsc::HasFilter() const
 {
     return ebdHandlerType == EH_HANDLER_FILTER;
 }
 
-bool EHblkDsc::HasFinallyHandler()
+bool EHblkDsc::HasFinallyHandler() const
 {
     return ebdHandlerType == EH_HANDLER_FINALLY;
 }
 
-bool EHblkDsc::HasFaultHandler()
+bool EHblkDsc::HasFaultHandler() const
 {
     return (ebdHandlerType == EH_HANDLER_FAULT) || (ebdHandlerType == EH_HANDLER_FAULT_WAS_FINALLY);
 }
 
-bool EHblkDsc::HasFinallyOrFaultHandler()
+bool EHblkDsc::HasFinallyOrFaultHandler() const
 {
     return HasFinallyHandler() || HasFaultHandler();
 }
@@ -241,11 +241,18 @@ bool EHblkDsc::ebdIsSameTry(BasicBlock* ebdTryBeg, BasicBlock* ebdTryLast)
 
 void EHblkDsc::DispEntry(unsigned XTnum)
 {
-    printf(" %2u  ::", XTnum);
+    printf(" %2u     %2u  ::", ebdID, XTnum);
 
-#if !defined(FEATURE_EH_FUNCLETS)
-    printf("  %2u  ", XTnum, ebdHandlerNestingLevel);
-#endif // !FEATURE_EH_FUNCLETS
+#if defined(FEATURE_EH_WINDOWS_X86)
+    if (ebdHandlerNestingLevel == 0)
+    {
+        printf("      ");
+    }
+    else
+    {
+        printf("  %2u  ", ebdHandlerNestingLevel);
+    }
+#endif // FEATURE_EH_WINDOWS_X86
 
     if (ebdEnclosingTryIndex == NO_ENCLOSING_INDEX)
     {
@@ -345,6 +352,28 @@ bool Compiler::bbInFilterILRange(BasicBlock* blk)
     }
 
     return HBtab->InFilterRegionILRange(blk);
+}
+
+//------------------------------------------------------------------------
+// bbInCatchHandlerBBRange:
+//     Check if this block is part of a catch handler.
+//
+// Arguments:
+//    blk - The block
+//
+// Return Value:
+//    True if the block is part of a catch handler clause. Otherwise false.
+//
+bool Compiler::bbInCatchHandlerBBRange(BasicBlock* blk)
+{
+    EHblkDsc* HBtab = ehGetBlockHndDsc(blk);
+
+    if (HBtab == nullptr)
+    {
+        return false;
+    }
+
+    return HBtab->HasCatchHandler() && HBtab->InHndRegionBBRange(blk);
 }
 
 //------------------------------------------------------------------------
@@ -586,6 +615,32 @@ unsigned short Compiler::bbFindInnermostCommonTryRegion(BasicBlock* bbOne, Basic
     return 0;
 }
 
+/******************************************************************************************
+ * Given a one-biased region index (which may be 0, indicating method region) and a block,
+ * return one-biased index for the inner-most enclosing try region that contains the block and the region.
+ * Return 0 if it does not find any try region (which means the inner-most region
+ * is the method itself).
+ */
+
+unsigned short Compiler::bbFindInnermostCommonTryRegion(unsigned index, BasicBlock* bbTwo)
+{
+    assert(index <= compHndBBtabCount);
+
+    if (index == 0)
+        return 0;
+
+    for (unsigned XTnum = index - 1; XTnum < compHndBBtabCount; XTnum++)
+    {
+        if (bbInTryRegions(XTnum, bbTwo))
+        {
+            noway_assert(XTnum < MAX_XCPTN_INDEX);
+            return (unsigned short)(XTnum + 1); // Return the tryIndex
+        }
+    }
+
+    return 0;
+}
+
 // bbIsTryBeg() returns true if this block is the start of any try region.
 //              This is computed by examining the current values in the
 //              EH table rather than just looking at the block's bbFlags.
@@ -594,9 +649,9 @@ unsigned short Compiler::bbFindInnermostCommonTryRegion(BasicBlock* bbOne, Basic
 // most nested try region it is a member of. Thus, we only need to check the EH
 // table entry related to the try index stored on the block.
 //
-bool Compiler::bbIsTryBeg(BasicBlock* block)
+bool Compiler::bbIsTryBeg(const BasicBlock* block)
 {
-    EHblkDsc* ehDsc = ehGetBlockTryDsc(block);
+    const EHblkDsc* ehDsc = ehGetBlockTryDsc(block);
     return (ehDsc != nullptr) && (block == ehDsc->ebdTryBeg);
 }
 
@@ -605,25 +660,41 @@ bool Compiler::bbIsTryBeg(BasicBlock* block)
 // of the most nested handler or filter region it is in. Thus, we only need to look at the EH
 // descriptor corresponding to the handler index on the block.
 //
-bool Compiler::bbIsHandlerBeg(BasicBlock* block)
+bool Compiler::bbIsHandlerBeg(const BasicBlock* block)
 {
-    EHblkDsc* ehDsc = ehGetBlockHndDsc(block);
+    const EHblkDsc* ehDsc = ehGetBlockHndDsc(block);
     return (ehDsc != nullptr) && ((block == ehDsc->ebdHndBeg) || (ehDsc->HasFilter() && (block == ehDsc->ebdFilter)));
+}
+
+// bbIsFuncletBeg() returns true if "block" is the start of a handler or filter region,
+// and if the handler/filter is a funclet.
+//
+bool Compiler::bbIsFuncletBeg(const BasicBlock* block)
+{
+    if (UsesFunclets())
+    {
+        assert(fgFuncletsCreated);
+        return bbIsHandlerBeg(block);
+    }
+
+    return false;
 }
 
 bool Compiler::ehHasCallableHandlers()
 {
-#if defined(FEATURE_EH_FUNCLETS)
-
-    // Any EH in the function?
-
-    return compHndBBtabCount > 0;
-
-#else // !FEATURE_EH_FUNCLETS
-
-    return ehNeedsShadowSPslots();
-
-#endif // !FEATURE_EH_FUNCLETS
+    if (UsesFunclets())
+    {
+        // Any EH in the function?
+        return compHndBBtabCount > 0;
+    }
+    else
+    {
+#if defined(FEATURE_EH_WINDOWS_X86)
+        return ehNeedsShadowSPslots();
+#else
+        return false;
+#endif // FEATURE_EH_WINDOWS_X86
+    }
 }
 
 /******************************************************************************************
@@ -768,14 +839,24 @@ unsigned Compiler::ehGetMostNestedRegionIndex(BasicBlock* block, bool* inTryRegi
     return mostNestedRegion;
 }
 
-/*****************************************************************************
- * Returns the try index of the enclosing try, skipping all EH regions with the
- * same try region (that is, all 'mutual protect' regions). If there is no such
- * enclosing try, returns EHblkDsc::NO_ENCLOSING_INDEX.
- */
+//-------------------------------------------------------------
+// ehTrueEnclosingTryIndexIL: find the outermost enclosing try
+//   region that is not a mutual-protect try
+//
+// Arguments:
+//   regionIndex - index of interest
+//
+// Returns:
+//   Index of enclosng non-mutual protect try region, or EHblkDsc::NO_ENCLOSING_INDEX.
+//
+// Notes:
+//   Only safe to use during importation, before we have normalize the
+//   EH in the flow graph. Post importation use, the non-IL version.
+//
 unsigned Compiler::ehTrueEnclosingTryIndexIL(unsigned regionIndex)
 {
     assert(regionIndex != EHblkDsc::NO_ENCLOSING_INDEX);
+    assert(!fgImportDone);
 
     EHblkDsc* ehDscRoot = ehGetDsc(regionIndex);
     EHblkDsc* HBtab     = ehDscRoot;
@@ -791,6 +872,49 @@ unsigned Compiler::ehTrueEnclosingTryIndexIL(unsigned regionIndex)
 
         HBtab = ehGetDsc(regionIndex);
         if (!EHblkDsc::ebdIsSameILTry(ehDscRoot, HBtab))
+        {
+            // Found an enclosing 'try' that has a different 'try' region (is not mutually-protect with the
+            // original region). Return it.
+            break;
+        }
+    }
+
+    return regionIndex;
+}
+
+//-------------------------------------------------------------
+// ehTrueEnclosingTryIndex: find the closest enclosing try
+//   region that is not a mutual-protect try
+//
+// Arguments:
+//   regionIndex - index of interest
+//
+// Returns:
+//   Index of enclosng non-mutual protect try region, or EHblkDsc::NO_ENCLOSING_INDEX.
+//
+// Notes:
+//   Only safe to use after importation, once we have normalized the
+//   EH in the flow graph. For importation,  use the IL version.
+//
+unsigned Compiler::ehTrueEnclosingTryIndex(unsigned regionIndex)
+{
+    assert(regionIndex != EHblkDsc::NO_ENCLOSING_INDEX);
+    assert(fgImportDone);
+
+    EHblkDsc* ehDscRoot = ehGetDsc(regionIndex);
+    EHblkDsc* HBtab     = ehDscRoot;
+
+    for (;;)
+    {
+        regionIndex = HBtab->ebdEnclosingTryIndex;
+        if (regionIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            // No enclosing 'try'; we're done
+            break;
+        }
+
+        HBtab = ehGetDsc(regionIndex);
+        if (!EHblkDsc::ebdIsSameTry(ehDscRoot, HBtab))
         {
             // Found an enclosing 'try' that has a different 'try' region (is not mutually-protect with the
             // original region). Return it.
@@ -897,12 +1021,15 @@ unsigned Compiler::ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTr
     assert(finallyIndex != EHblkDsc::NO_ENCLOSING_INDEX);
     assert(ehGetDsc(finallyIndex)->HasFinallyHandler());
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
-    return ehGetDsc(finallyIndex)->ebdGetEnclosingRegionIndex(inTryRegion);
-#else
-    *inTryRegion = true;
-    return finallyIndex;
-#endif
+    if (UsesCallFinallyThunks())
+    {
+        return ehGetDsc(finallyIndex)->ebdGetEnclosingRegionIndex(inTryRegion);
+    }
+    else
+    {
+        *inTryRegion = true;
+        return finallyIndex;
+    }
 }
 
 void Compiler::ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** startBlock, BasicBlock** lastBlock)
@@ -912,35 +1039,38 @@ void Compiler::ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** st
     assert(startBlock != nullptr);
     assert(lastBlock != nullptr);
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
-    bool     inTryRegion;
-    unsigned callFinallyRegionIndex = ehGetCallFinallyRegionIndex(finallyIndex, &inTryRegion);
-
-    if (callFinallyRegionIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+    if (UsesCallFinallyThunks())
     {
-        *startBlock = fgFirstBB;
-        *lastBlock  = fgLastBBInMainFunction();
-    }
-    else
-    {
-        EHblkDsc* ehDsc = ehGetDsc(callFinallyRegionIndex);
+        bool     inTryRegion;
+        unsigned callFinallyRegionIndex = ehGetCallFinallyRegionIndex(finallyIndex, &inTryRegion);
 
-        if (inTryRegion)
+        if (callFinallyRegionIndex == EHblkDsc::NO_ENCLOSING_INDEX)
         {
-            *startBlock = ehDsc->ebdTryBeg;
-            *lastBlock  = ehDsc->ebdTryLast;
+            *startBlock = fgFirstBB;
+            *lastBlock  = fgLastBBInMainFunction();
         }
         else
         {
-            *startBlock = ehDsc->ebdHndBeg;
-            *lastBlock  = ehDsc->ebdHndLast;
+            EHblkDsc* ehDsc = ehGetDsc(callFinallyRegionIndex);
+
+            if (inTryRegion)
+            {
+                *startBlock = ehDsc->ebdTryBeg;
+                *lastBlock  = ehDsc->ebdTryLast;
+            }
+            else
+            {
+                *startBlock = ehDsc->ebdHndBeg;
+                *lastBlock  = ehDsc->ebdHndLast;
+            }
         }
     }
-#else  // !FEATURE_EH_CALLFINALLY_THUNKS
-    EHblkDsc* ehDsc = ehGetDsc(finallyIndex);
-    *startBlock     = ehDsc->ebdTryBeg;
-    *lastBlock      = ehDsc->ebdTryLast;
-#endif // !FEATURE_EH_CALLFINALLY_THUNKS
+    else
+    {
+        EHblkDsc* ehDsc = ehGetDsc(finallyIndex);
+        *startBlock     = ehDsc->ebdTryBeg;
+        *lastBlock      = ehDsc->ebdTryLast;
+    }
 }
 
 #ifdef DEBUG
@@ -989,8 +1119,6 @@ bool Compiler::ehCallFinallyInCorrectRegion(BasicBlock* blockCallFinally, unsign
 
 #endif // DEBUG
 
-#if defined(FEATURE_EH_FUNCLETS)
-
 /*****************************************************************************
  *
  *  Are there (or will there be) any funclets in the function?
@@ -998,7 +1126,14 @@ bool Compiler::ehCallFinallyInCorrectRegion(BasicBlock* blockCallFinally, unsign
 
 bool Compiler::ehAnyFunclets()
 {
-    return compHndBBtabCount > 0; // if there is any EH, there will be funclets
+    if (UsesFunclets())
+    {
+        return compHndBBtabCount > 0; // if there is any EH, there will be funclets
+    }
+    else
+    {
+        return false;
+    }
 }
 
 /*****************************************************************************
@@ -1010,62 +1145,25 @@ bool Compiler::ehAnyFunclets()
 
 unsigned Compiler::ehFuncletCount()
 {
-    unsigned funcletCnt = 0;
-
-    for (EHblkDsc* const HBtab : EHClauses(this))
+    if (UsesFunclets())
     {
-        if (HBtab->HasFilter())
+        unsigned funcletCnt = 0;
+
+        for (EHblkDsc* const HBtab : EHClauses(this))
         {
+            if (HBtab->HasFilter())
+            {
+                ++funcletCnt;
+            }
             ++funcletCnt;
         }
-        ++funcletCnt;
+        return funcletCnt;
     }
-    return funcletCnt;
+    else
+    {
+        return 0;
+    }
 }
-
-/*****************************************************************************
- *
- *  Get the index to use as the cache key for sharing throw blocks.
- *  For non-funclet platforms, this is just the block's bbTryIndex, to ensure
- *  that throw is protected by the correct set of trys.  However, when we have
- *  funclets we also have to ensure that the throw blocks are *not* shared
- *  across funclets, so we use EHblkDsc index of either the funclet or
- *  the containing try region, whichever is inner-most.  We differentiate
- *  between the 3 cases by setting the high bits (0 = try, 1 = handler,
- *  2 = filter)
- *
- */
-unsigned Compiler::bbThrowIndex(BasicBlock* blk)
-{
-    if (!blk->hasTryIndex() && !blk->hasHndIndex())
-    {
-        return -1;
-    }
-
-    const unsigned tryIndex = blk->hasTryIndex() ? blk->getTryIndex() : USHRT_MAX;
-    const unsigned hndIndex = blk->hasHndIndex() ? blk->getHndIndex() : USHRT_MAX;
-    assert(tryIndex != hndIndex);
-    assert(tryIndex != USHRT_MAX || hndIndex != USHRT_MAX);
-
-    if (tryIndex < hndIndex)
-    {
-        // The most enclosing region is a try body, use it
-        assert(tryIndex <= 0x3FFFFFFF);
-        return tryIndex;
-    }
-
-    // The most enclosing region is a handler which will be a funclet
-    // Now we have to figure out if blk is in the filter or handler
-    assert(hndIndex <= 0x3FFFFFFF);
-    if (ehGetDsc(hndIndex)->InFilterRegionBBRange(blk))
-    {
-        return hndIndex | 0x40000000;
-    }
-
-    return hndIndex | 0x80000000;
-}
-
-#endif // FEATURE_EH_FUNCLETS
 
 /*****************************************************************************
  * Determine the emitter code cookie for a block, for unwind purposes.
@@ -1200,6 +1298,30 @@ EHblkDsc* Compiler::ehInitTryBlockRange(BasicBlock* blk, BasicBlock** tryBeg, Ba
     return tryTab;
 }
 
+//------------------------------------------------------------------------
+// ehFindEHblkDscById: find an eh table entry by its ID
+//
+// Argument:
+//     ID to use in search
+//
+// Returns:
+//     Pointer to the entry, or nullptr
+//
+EHblkDsc* Compiler::ehFindEHblkDscById(unsigned short id)
+{
+    EHblkDsc* result = nullptr;
+    for (EHblkDsc* const xtab : EHClauses(this))
+    {
+        if (xtab->ebdID == id)
+        {
+            result = xtab;
+            break;
+        }
+    }
+
+    return result;
+}
+
 /*****************************************************************************
  *  This method updates the value of ebdTryBeg
  */
@@ -1268,6 +1390,57 @@ void Compiler::fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast)
         }
 #endif // DEBUG
     }
+}
+
+//-------------------------------------------------------------
+// fgFindTryRegionEnds: Walk the main method body, and set each try region's end block.
+//
+void Compiler::fgFindTryRegionEnds()
+{
+    assert(compHndBBtabCount != 0);
+    unsigned unsetTryEnds = 0;
+
+    // Null out try end pointers to signify the given clause hasn't been visited yet.
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        // Ignore try regions inside funclet regions.
+        if (!UsesFunclets() || !HBtab->ebdTryLast->hasHndIndex())
+        {
+            HBtab->ebdTryLast = nullptr;
+            unsetTryEnds++;
+        }
+    }
+
+    // Updates the try region's (and all of its parent regions') end block to 'block,'
+    // if the try region's end block hasn't been updated yet.
+    auto setTryEnd = [this, &unsetTryEnds](BasicBlock* block) {
+        for (unsigned tryIndex = block->getTryIndex(); tryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
+             tryIndex          = ehGetEnclosingTryIndex(tryIndex))
+        {
+            EHblkDsc* const HBtab = ehGetDsc(tryIndex);
+            if (HBtab->ebdTryLast == nullptr)
+            {
+                assert(unsetTryEnds != 0);
+                HBtab->ebdTryLast = block;
+                unsetTryEnds--;
+            }
+            else
+            {
+                break;
+            }
+        }
+    };
+
+    // Iterate backwards through the main method body, and update each try region's end block.
+    for (BasicBlock* block = fgLastBBInMainFunction(); (unsetTryEnds != 0) && (block != nullptr); block = block->Prev())
+    {
+        if (block->hasTryIndex())
+        {
+            setTryEnd(block);
+        }
+    }
+
+    assert(unsetTryEnds == 0);
 }
 
 /*****************************************************************************
@@ -1352,30 +1525,30 @@ void Compiler::fgSkipRmvdBlocks(EHblkDsc* handlerTab)
  */
 void Compiler::fgAllocEHTable()
 {
-#if defined(FEATURE_EH_FUNCLETS)
-
-    // We need to allocate space for EH clauses that will be used by funclets
-    // as well as one for each EH clause from the IL. Nested EH clauses pulled
-    // out as funclets create one EH clause for each enclosing region. Thus,
-    // the maximum number of clauses we will need might be very large. We allocate
-    // twice the number of EH clauses in the IL, which should be good in practice.
-    // In extreme cases, we might need to abandon this and reallocate. See
-    // fgAddEHTableEntry() for more details.
-    CLANG_FORMAT_COMMENT_ANCHOR;
+    if (UsesFunclets())
+    {
+        // We need to allocate space for EH clauses that will be used by funclets
+        // as well as one for each EH clause from the IL. Nested EH clauses pulled
+        // out as funclets create one EH clause for each enclosing region. Thus,
+        // the maximum number of clauses we will need might be very large. We allocate
+        // twice the number of EH clauses in the IL, which should be good in practice.
+        // In extreme cases, we might need to abandon this and reallocate. See
+        // fgTryAddEHTableEntries() for more details.
 
 #ifdef DEBUG
-    compHndBBtabAllocCount = info.compXcptnsCount; // force the resizing code to hit more frequently in DEBUG
-#else                                              // DEBUG
-    compHndBBtabAllocCount = info.compXcptnsCount * 2;
-#endif                                             // DEBUG
-
-#else // !FEATURE_EH_FUNCLETS
-
-    compHndBBtabAllocCount = info.compXcptnsCount;
-
-#endif // !FEATURE_EH_FUNCLETS
+        compHndBBtabAllocCount = info.compXcptnsCount; // force the resizing code to hit more frequently in DEBUG
+#else                                                  // DEBUG
+        compHndBBtabAllocCount = info.compXcptnsCount * 2;
+#endif                                                 // DEBUG
+    }
+    else
+    {
+        compHndBBtabAllocCount = info.compXcptnsCount;
+    }
 
     compHndBBtab = new (this, CMK_BasicBlock) EHblkDsc[compHndBBtabAllocCount];
+
+    memset(compHndBBtab, 0, compHndBBtabAllocCount * sizeof(*compHndBBtab));
 
     compHndBBtabCount = info.compXcptnsCount;
 }
@@ -1390,6 +1563,9 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 {
     assert(compHndBBtabCount > 0);
     assert(XTnum < compHndBBtabCount);
+    assert(!ehTableFinalized);
+
+    JITDUMP("\nRemoving EH#%u\n", XTnum);
 
     EHblkDsc* HBtab;
 
@@ -1491,22 +1667,151 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
             noway_assert(XTnum == compHndBBtabCount);
         }
     }
+
+    // We also need to update any AddCodeDesc records and map entries
+    //
+    if (!fgHasAddCodeDscMap())
+    {
+        JITDUMP("No ACD entries to update");
+    }
+    else
+    {
+        JITDUMP("Updating ACD entries after EH removal\n");
+        // There are three possibilities for each ACD entry
+        //
+        // 1. remains as is (stays in same region with same indices)
+        // 2. gets merged with ACD from parent region
+        // 3. gets updated (moves to parent region with new indices)
+        //
+        // First, update each ACD, and remove any modified ones from the
+        // map (via their old key)
+        //
+        AddCodeDscMap* const    map = fgGetAddCodeDscMap();
+        ArrayStack<AddCodeDsc*> modified(getAllocator(CMK_Unknown));
+
+        for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(map))
+        {
+            bool          isModified = false;
+            AddCodeDscKey oldKey(add);
+
+            // We expect callers have already updated any ACDs that
+            // reference the EH region being removed.
+            //
+            bool inTry = add->acdTryIndex > 0;
+            bool inHnd = add->acdHndIndex > 0;
+            assert(!inTry || ((unsigned)(add->acdTryIndex - 1) != XTnum));
+            assert(!inHnd || ((unsigned)(add->acdHndIndex - 1) != XTnum));
+
+            if (add->acdTryIndex > XTnum)
+            {
+                add->acdTryIndex--;
+                inTry      = add->acdTryIndex > 0;
+                isModified = true;
+            }
+
+            if (add->acdHndIndex > XTnum)
+            {
+                add->acdHndIndex--;
+                inHnd      = add->acdHndIndex > 0;
+                isModified = true;
+            }
+
+            if (isModified)
+            {
+                add->UpdateKeyDesignator(this);
+                bool const removed = map->Remove(oldKey);
+                assert(removed);
+                modified.Push(add);
+            }
+        }
+
+        // Second, walk the modified ACDs and either "merge" them into some
+        // other ACD, or re-insert into the map.
+        //
+        // (Note this can't easily be done in the first pass, since we need to know
+        // the potential merge target won't itself get subsequently modified, and the
+        // order of ACD enumeration is unrelated to the order of EH regions).
+        //
+        while (modified.Height() > 0)
+        {
+            AddCodeDsc* const add = modified.Pop();
+            AddCodeDscKey     newKey(add);
+            AddCodeDsc*       existing = nullptr;
+            if (map->Lookup(newKey, &existing))
+            {
+                JITDUMP("ACD%u merged into ACD%u\n", add->acdNum, existing->acdNum);
+                JITDUMPEXEC(existing->Dump());
+            }
+            else
+            {
+                JITDUMP("ACD%u updated\n", add->acdNum);
+                map->Set(newKey, add);
+                JITDUMPEXEC(add->Dump());
+            }
+        }
+
+        JITDUMP("... done updating ACD entries after EH removal\n");
+    }
 }
 
-#if defined(FEATURE_EH_FUNCLETS)
-
-/*****************************************************************************
- *
- *  Add a single exception table entry at index 'XTnum', [0 <= XTnum <= compHndBBtabCount].
- *  If 'XTnum' is compHndBBtabCount, then add the entry at the end.
- *  Note that this changes the size of the exception table.
- *  All the blocks referring to the various index values are updated.
- *  The table entry itself is not filled in.
- *  Returns a pointer to the new entry.
- */
-EHblkDsc* Compiler::fgAddEHTableEntry(unsigned XTnum)
+//------------------------------------------------------------------------
+// fgTryAddEHTableEntries: try to add new EH table entries
+//
+// Arguments:
+//   XTnum  -- new entries will be added before this entry
+//             (use compHndBBtabCount to add at end)
+//   count  -- number of entries to add
+//   deferAdding -- if true, don't actually add new entries, just check
+//         if they can be added; return nullptr if not.
+//
+// Returns:
+//   A pointer to the new entry with the highest index, or
+//   nullptr if the table cannot be expanded to hold the new entries
+//
+// Notes:
+//
+//  Note that this changes the size of the exception table.
+//  All the blocks referring to the various index values are updated.
+//  The new table entries are not filled in.
+//
+//  Note mid-table insertions can be expensive as they must walk
+//  all blocks to update block EH region indices.
+//
+//  If there are active ACDs, these are updated as needed. Callers who
+//  are making room for cloned EH must take pains to find and clone these
+//  as well...
+//
+EHblkDsc* Compiler::fgTryAddEHTableEntries(unsigned XTnum, unsigned count, bool deferAdding)
 {
-    if (XTnum != compHndBBtabCount)
+    assert(!ehTableFinalized);
+
+    bool           reallocate = false;
+    bool const     insert     = (XTnum != compHndBBtabCount);
+    unsigned const newCount   = compHndBBtabCount + count;
+
+    if (newCount > MAX_XCPTN_INDEX)
+    {
+        // We have run out of indices. Fail.
+        //
+        return nullptr;
+    }
+
+    if (deferAdding)
+    {
+        // We can add count entries...
+        // (we may not have allocated a table, so return a dummy non-null entry)
+        //
+        return (EHblkDsc*)(0x1);
+    }
+
+    if (newCount > compHndBBtabAllocCount)
+    {
+        // We need to reallocate the table
+        //
+        reallocate = true;
+    }
+
+    if (insert)
     {
         // Update all enclosing links that will get invalidated by inserting an entry at 'XTnum'
 
@@ -1515,12 +1820,12 @@ EHblkDsc* Compiler::fgAddEHTableEntry(unsigned XTnum)
             if ((xtab->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX) && (xtab->ebdEnclosingTryIndex >= XTnum))
             {
                 // Update the enclosing scope link
-                xtab->ebdEnclosingTryIndex++;
+                xtab->ebdEnclosingTryIndex += (unsigned short)count;
             }
             if ((xtab->ebdEnclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX) && (xtab->ebdEnclosingHndIndex >= XTnum))
             {
                 // Update the enclosing scope link
-                xtab->ebdEnclosingHndIndex++;
+                xtab->ebdEnclosingHndIndex += (unsigned short)count;
             }
         }
 
@@ -1530,31 +1835,68 @@ EHblkDsc* Compiler::fgAddEHTableEntry(unsigned XTnum)
         {
             if (blk->hasTryIndex() && (blk->getTryIndex() >= XTnum))
             {
-                blk->setTryIndex(blk->getTryIndex() + 1);
+                blk->setTryIndex(blk->getTryIndex() + count);
             }
 
             if (blk->hasHndIndex() && (blk->getHndIndex() >= XTnum))
             {
-                blk->setHndIndex(blk->getHndIndex() + 1);
+                blk->setHndIndex(blk->getHndIndex() + count);
+            }
+        }
+
+        // Update impacted ACDs
+        //
+        if (fgHasAddCodeDscMap())
+        {
+            AddCodeDscMap* const    map = fgGetAddCodeDscMap();
+            ArrayStack<AddCodeDsc*> modified(getAllocator(CMK_Unknown));
+
+            for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(map))
+            {
+                bool          isModified = false;
+                AddCodeDscKey oldKey(add);
+
+                if (add->acdTryIndex > XTnum)
+                {
+                    add->acdTryIndex += (unsigned short)count;
+                    isModified = true;
+                }
+
+                if (add->acdHndIndex > XTnum)
+                {
+                    isModified = true;
+                    add->acdHndIndex += (unsigned short)count;
+                }
+
+                if (isModified)
+                {
+                    add->UpdateKeyDesignator(this);
+                    bool const removed = map->Remove(oldKey);
+                    assert(removed);
+                    modified.Push(add);
+                }
+            }
+
+            while (modified.Height() > 0)
+            {
+                AddCodeDsc* const add = modified.Pop();
+                AddCodeDscKey     newKey(add);
+                JITDUMP("ACD%u updated\n", add->acdNum);
+                map->Set(newKey, add);
+                JITDUMPEXEC(add->Dump());
             }
         }
     }
 
-    // Increase the number of entries in the EH table by one
-
-    if (compHndBBtabCount == compHndBBtabAllocCount)
+    // If necessary, increase the number of entries in the EH table
+    //
+    if (reallocate)
     {
-        // We need to reallocate the table
-
-        if (compHndBBtabAllocCount == MAX_XCPTN_INDEX)
-        { // We're already at the max size for indices to be unsigned short
-            IMPL_LIMITATION("too many exception clauses");
-        }
-
-        // Double the table size. For stress, we could use +1. Note that if the table isn't allocated
+        // Roughly double the table size. Note that if the table isn't allocated
         // yet, such as when we add an EH region for synchronized methods that don't already have one,
         // we start at zero, so we need to make sure the new table has at least one entry.
-        unsigned newHndBBtabAllocCount = max(1, compHndBBtabAllocCount * 2);
+        //
+        unsigned newHndBBtabAllocCount = max(1u, newCount);
         noway_assert(compHndBBtabAllocCount < newHndBBtabAllocCount); // check for overflow
 
         if (newHndBBtabAllocCount > MAX_XCPTN_INDEX)
@@ -1562,21 +1904,25 @@ EHblkDsc* Compiler::fgAddEHTableEntry(unsigned XTnum)
             newHndBBtabAllocCount = MAX_XCPTN_INDEX; // increase to the maximum size we allow
         }
 
-        JITDUMP("*********** fgAddEHTableEntry: increasing EH table size from %d to %d\n", compHndBBtabAllocCount,
+        JITDUMP("*********** fgTryAddEHTableEntries: increasing EH table size from %d to %d\n", compHndBBtabAllocCount,
                 newHndBBtabAllocCount);
 
         compHndBBtabAllocCount = newHndBBtabAllocCount;
 
         EHblkDsc* newTable = new (this, CMK_BasicBlock) EHblkDsc[compHndBBtabAllocCount];
 
-        // Move over the stuff before the new entry
+        // Zero the storage
+
+        memset(newTable, 0, compHndBBtabAllocCount * sizeof(*compHndBBtab));
+
+        // Move over the stuff before the new entries
 
         memcpy_s(newTable, compHndBBtabAllocCount * sizeof(*compHndBBtab), compHndBBtab, XTnum * sizeof(*compHndBBtab));
 
         if (XTnum != compHndBBtabCount)
         {
             // Move over the stuff after the new entry
-            memcpy_s(newTable + XTnum + 1, (compHndBBtabAllocCount - XTnum - 1) * sizeof(*compHndBBtab),
+            memcpy_s(newTable + XTnum + count, (compHndBBtabAllocCount - XTnum - 1) * sizeof(*compHndBBtab),
                      compHndBBtab + XTnum, (compHndBBtabCount - XTnum) * sizeof(*compHndBBtab));
         }
 
@@ -1587,21 +1933,19 @@ EHblkDsc* Compiler::fgAddEHTableEntry(unsigned XTnum)
     }
     else if (XTnum != compHndBBtabCount)
     {
-        // Leave the elements before the new element alone. Move the ones after it, to make space.
+        // Leave the elements before the new elements alone. Move the ones after it, to make space.
 
         EHblkDsc* HBtab = compHndBBtab + XTnum;
 
-        memmove_s(HBtab + 1, (compHndBBtabAllocCount - XTnum - 1) * sizeof(*compHndBBtab), HBtab,
+        memmove_s(HBtab + count, (compHndBBtabAllocCount - XTnum - 1) * sizeof(*compHndBBtab), HBtab,
                   (compHndBBtabCount - XTnum) * sizeof(*compHndBBtab));
     }
 
     // Now the entry is there, but not filled in
-
-    compHndBBtabCount++;
-    return compHndBBtab + XTnum;
+    //
+    compHndBBtabCount = newCount;
+    return compHndBBtab + XTnum + (count - 1);
 }
-
-#endif // FEATURE_EH_FUNCLETS
 
 /*****************************************************************************
  *
@@ -1682,7 +2026,6 @@ void Compiler::fgSortEHTable()
     // but ARM did. It turns out not sorting the table can cause the EH table to incorrectly
     // set the bbHndIndex value in some nested cases, and that can lead to a security exploit
     // that allows the execution of arbitrary code.
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     if (verbose)
@@ -1718,7 +2061,7 @@ void Compiler::fgSortEHTable()
                 (hndBegOff >= xtab1->ebdHndBegOffset && hndEndOff <= xtab1->ebdHndEndOffset) ||
                 (xtab1->HasFilter() && (hndBegOff >= xtab1->ebdFilterBegOffset && hndEndOff <= xtab1->ebdHndBegOffset))
                 // Note that end of filter is beginning of handler
-                )
+            )
             {
 #ifdef DEBUG
                 if (verbose)
@@ -1820,7 +2163,7 @@ void Compiler::fgSortEHTable()
 //
 //      The benefit of this is that adding a block to an EH region will not require examining every EH region,
 //      looking for possible shared "first" blocks to adjust. It also makes it easier to put code at the top
-//      of a particular EH region, especially for loop optimizations.
+//      of a particular EH region.
 //
 //      These empty blocks (BB08, BB09) will generate no code (unless some code is subsequently placed into them),
 //      and will have the same native code offset as BB01 after code is generated. There may be labels generated
@@ -1943,8 +2286,8 @@ void Compiler::fgNormalizeEH()
     if (modified)
     {
         JITDUMP("Added at least one basic block in fgNormalizeEH.\n");
-        fgRenumberBlocks();
-        // fgRenumberBlocks() will dump all the blocks and the handler table, so we don't need to do it here.
+        JITDUMPEXEC(fgDispBasicBlocks());
+        JITDUMPEXEC(fgDispHandlerTab());
         INDEBUG(fgVerifyHandlerTab());
     }
     else
@@ -1984,9 +2327,10 @@ bool Compiler::fgNormalizeEHCase1()
         {
             // ...then we want to insert an empty, non-removable block outside the try to be the new first block of the
             // handler.
-            BasicBlock* newHndStart = BasicBlock::New(this, BBJ_ALWAYS, handlerStart);
+            BasicBlock* newHndStart = BasicBlock::New(this);
             fgInsertBBbefore(handlerStart, newHndStart);
-            fgAddRefPred(handlerStart, newHndStart);
+            FlowEdge* newEdge = fgAddRefPred(handlerStart, newHndStart);
+            newHndStart->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
             // Handler begins have an extra implicit ref count.
             // BasicBlock::New has already handled this for newHndStart.
@@ -2024,7 +2368,7 @@ bool Compiler::fgNormalizeEHCase1()
             newHndStart->bbCodeOffs    = handlerStart->bbCodeOffs;
             newHndStart->bbCodeOffsEnd = newHndStart->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
             newHndStart->inheritWeight(handlerStart);
-            newHndStart->SetFlags(BBF_DONT_REMOVE | BBF_INTERNAL | BBF_NONE_QUIRK);
+            newHndStart->SetFlags(BBF_DONT_REMOVE | BBF_INTERNAL);
             modified = true;
 
 #ifdef DEBUG
@@ -2081,7 +2425,7 @@ bool Compiler::fgNormalizeEHCase2()
 
                     if (ehOuter->ebdIsSameTry(mutualTryBeg, mutualTryLast))
                     {
-// clang-format off
+                        // clang-format off
                         // Don't touch mutually-protect regions: their 'try' regions must remain identical!
                         // We want to continue the looping outwards, in case we have something like this:
                         //
@@ -2130,7 +2474,7 @@ bool Compiler::fgNormalizeEHCase2()
                         //
                         // In this case, all the 'try' start at the same block! Note that there are two sets of mutually-protect regions,
                         // separated by some nesting.
-// clang-format on
+                        // clang-format on
 
 #ifdef DEBUG
                         if (verbose)
@@ -2153,10 +2497,11 @@ bool Compiler::fgNormalizeEHCase2()
                         // We've got multiple 'try' blocks starting at the same place!
                         // Add a new first 'try' block for 'ehOuter' that will be outside 'eh'.
 
-                        BasicBlock* newTryStart = BasicBlock::New(this, BBJ_ALWAYS, insertBeforeBlk);
+                        BasicBlock* newTryStart = BasicBlock::New(this);
                         newTryStart->bbRefs     = 0;
                         fgInsertBBbefore(insertBeforeBlk, newTryStart);
-                        fgAddRefPred(insertBeforeBlk, newTryStart);
+                        FlowEdge* const newEdge = fgAddRefPred(insertBeforeBlk, newTryStart);
+                        newTryStart->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                         // It's possible for a try to start at the beginning of a method. If so, we need
                         // to adjust the implicit ref counts as we've just created a new first bb
@@ -2192,12 +2537,8 @@ bool Compiler::fgNormalizeEHCase2()
 
                         // Note that we don't need to clear any flags on the old try start, since it is still a 'try'
                         // start.
-                        newTryStart->SetFlags(BBF_DONT_REMOVE | BBF_INTERNAL | BBF_NONE_QUIRK);
-
-                        if (insertBeforeBlk->HasFlag(BBF_BACKWARD_JUMP_TARGET))
-                        {
-                            newTryStart->SetFlags(BBF_BACKWARD_JUMP_TARGET);
-                        }
+                        newTryStart->SetFlags(BBF_DONT_REMOVE | BBF_INTERNAL);
+                        newTryStart->CopyFlags(insertBeforeBlk, BBF_BACKWARD_JUMP_TARGET);
 
                         // Now we need to split any flow edges targeting the old try begin block between the old
                         // and new block. Note that if we are handling a multiply-nested 'try', we may have already
@@ -2254,13 +2595,7 @@ bool Compiler::fgNormalizeEHCase2()
 
                             // Change pred branches.
                             //
-                            fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
-
-                            if (predBlock->NextIs(newTryStart) && predBlock->bbFallsThrough())
-                            {
-                                fgRemoveRefPred(insertBeforeBlk, predBlock);
-                                fgAddRefPred(newTryStart, predBlock);
-                            }
+                            fgReplaceJumpTarget(predBlock, insertBeforeBlk, newTryStart);
 
                             JITDUMP("Redirect " FMT_BB " target from " FMT_BB " to " FMT_BB ".\n", predBlock->bbNum,
                                     insertBeforeBlk->bbNum, newTryStart->bbNum);
@@ -2341,7 +2676,9 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             info.compCompHnd->resolveToken(&resolvedToken);
 
             CORINFO_GENERICHANDLE_RESULT embedInfo;
-            info.compCompHnd->embedGenericHandle(&resolvedToken, true, &embedInfo);
+            // NOTE: inlining is done at this point, so we don't know which method contained this token.
+            // It's fine because currently this is never used for something that belongs to an inlinee.
+            info.compCompHnd->embedGenericHandle(&resolvedToken, true, info.compMethodHnd, &embedInfo);
             if (!embedInfo.lookup.lookupKind.needsRuntimeLookup)
             {
                 // Exception type does not need runtime lookup
@@ -2350,7 +2687,7 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
 
             // Create a new bb for the fake filter
             BasicBlock* handlerBb = eh->ebdHndBeg;
-            BasicBlock* filterBb  = BasicBlock::New(this, BBJ_EHFILTERRET, handlerBb);
+            BasicBlock* filterBb  = BasicBlock::New(this);
 
             // Now we need to spill CATCH_ARG (it should be the first thing evaluated)
             GenTree* arg = new (this, GT_CATCH_ARG) GenTree(GT_CATCH_ARG, TYP_REF);
@@ -2367,7 +2704,7 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             {
                 GenTree* ctxTree = getRuntimeContextTree(embedInfo.lookup.lookupKind.runtimeLookupKind);
                 runtimeLookup    = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
-                                                          TYP_I_IMPL, &embedInfo.lookup.lookupKind, ctxTree);
+                                                             TYP_I_IMPL, &embedInfo.lookup.lookupKind, ctxTree);
             }
             else
             {
@@ -2378,14 +2715,15 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
 
             // Insert it right before the handler (and make it a pred of the handler)
             fgInsertBBbefore(handlerBb, filterBb);
-            fgAddRefPred(handlerBb, filterBb);
+            FlowEdge* const newEdge = fgAddRefPred(handlerBb, filterBb);
+            filterBb->SetKindAndTargetEdge(BBJ_EHFILTERRET, newEdge);
             fgNewStmtAtEnd(filterBb, retFilt, handlerBb->firstStmt()->GetDebugInfo());
 
             filterBb->bbCatchTyp = BBCT_FILTER;
             filterBb->bbCodeOffs = handlerBb->bbCodeOffs;
             filterBb->bbHndIndex = handlerBb->bbHndIndex;
             filterBb->bbTryIndex = handlerBb->bbTryIndex;
-            filterBb->bbSetRunRarely();
+            filterBb->inheritWeightPercentage(handlerBb, 0);
             filterBb->SetFlags(BBF_INTERNAL | BBF_DONT_REMOVE);
 
             handlerBb->bbCatchTyp = BBCT_FILTER_HANDLER;
@@ -2547,7 +2885,6 @@ bool Compiler::fgNormalizeEHCase3()
                     if (EHblkDsc::ebdIsSameTry(ehOuter, ehInner))
                     {
                         // We can't touch this 'try', since it's mutual protect.
-                        CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef DEBUG
                         if (verbose)
                         {
@@ -2635,7 +2972,7 @@ bool Compiler::fgNormalizeEHCase3()
                     // Add a new last block for 'ehOuter' that will be outside the EH region with which it encloses and
                     // shares a 'last' pointer
 
-                    BasicBlock* newLast = BasicBlock::New(this, BBJ_ALWAYS, insertAfterBlk->Next());
+                    BasicBlock* newLast = BasicBlock::New(this);
                     newLast->bbRefs     = 0;
                     assert(insertAfterBlk != nullptr);
                     fgInsertBBafter(insertAfterBlk, newLast);
@@ -2683,8 +3020,9 @@ bool Compiler::fgNormalizeEHCase3()
                     newLast->bbCodeOffs    = insertAfterBlk->bbCodeOffsEnd;
                     newLast->bbCodeOffsEnd = newLast->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
                     newLast->inheritWeight(insertAfterBlk);
-                    newLast->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
-                    fgAddRefPred(newLast, insertAfterBlk);
+                    newLast->SetFlags(BBF_INTERNAL);
+                    FlowEdge* const newEdge = fgAddRefPred(newLast, insertAfterBlk);
+                    insertAfterBlk->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
                     // Move the insert pointer. More enclosing equivalent 'last' blocks will be inserted after this.
                     insertAfterBlk = newLast;
@@ -2733,7 +3071,6 @@ bool Compiler::fgNormalizeEHCase3()
                             if (innerIsTryRegion && ehOuter->ebdIsSameTry(mutualTryBeg, mutualTryLast))
                             {
                                 // We can't touch this 'try', since it's mutual protect.
-                                CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
                                 if (verbose)
@@ -2892,8 +3229,8 @@ void Compiler::dispOutgoingEHClause(unsigned num, const CORINFO_EH_CLAUSE& claus
 
     // Note: the flags field is kind of weird. It should be compared for equality
     // to determine the type of clause, even though it looks like a bitfield. In
-    // Particular, CORINFO_EH_CLAUSE_NONE is zero, so you can "&" to check it.
-    // You do need to mask off the bits, though, because CORINFO_EH_CLAUSE_DUPLICATE
+    // particular, CORINFO_EH_CLAUSE_NONE is zero, so you cannot "&" to check it.
+    // You do need to mask off the bits, though, because CORINFO_EH_CLAUSE_SAMETRY
     // is and'ed in.
     const DWORD CORINFO_EH_CLAUSE_TYPE_MASK = 0x7;
     switch (clause.Flags & CORINFO_EH_CLAUSE_TYPE_MASK)
@@ -2926,17 +3263,7 @@ void Compiler::dispOutgoingEHClause(unsigned num, const CORINFO_EH_CLAUSE& claus
             break;
     }
 
-    if ((clause.TryOffset == clause.TryLength) && (clause.TryOffset == clause.HandlerOffset) &&
-        ((clause.Flags & (CORINFO_EH_CLAUSE_DUPLICATE | CORINFO_EH_CLAUSE_FINALLY)) ==
-         (CORINFO_EH_CLAUSE_DUPLICATE | CORINFO_EH_CLAUSE_FINALLY)))
-    {
-        printf(" cloned finally");
-    }
-    else if (clause.Flags & CORINFO_EH_CLAUSE_DUPLICATE)
-    {
-        printf(" duplicated");
-    }
-    else if (clause.Flags & CORINFO_EH_CLAUSE_SAMETRY)
+    if (clause.Flags & CORINFO_EH_CLAUSE_SAMETRY)
     {
         printf(" same try");
     }
@@ -2947,12 +3274,6 @@ void Compiler::dispOutgoingEHClause(unsigned num, const CORINFO_EH_CLAUSE& claus
 
 void Compiler::fgVerifyHandlerTab()
 {
-    if (compIsForInlining())
-    {
-        // We don't inline functions with EH. Don't bother verifying the EH table in the inlinee Compiler.
-        return;
-    }
-
     if (compHndBBtabCount == 0)
     {
         return;
@@ -2969,6 +3290,9 @@ void Compiler::fgVerifyHandlerTab()
     // block (case 3)?
     bool multipleLastBlockNormalizationDone = false; // Currently disabled
 
+    BitVecTraits traits(impInlineRoot()->compEHID, this);
+    BitVec       ids(BitVecOps::MakeEmpty(&traits));
+
     assert(compHndBBtabCount <= compHndBBtabAllocCount);
 
     unsigned  XTnum;
@@ -2976,6 +3300,11 @@ void Compiler::fgVerifyHandlerTab()
 
     for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
+        // EH IDs should be unique and in range
+        //
+        assert(HBtab->ebdID < impInlineRoot()->compEHID);
+        assert(BitVecOps::TryAddElemD(&traits, ids, HBtab->ebdID));
+
         assert(HBtab->ebdTryBeg != nullptr);
         assert(HBtab->ebdTryLast != nullptr);
         assert(HBtab->ebdHndBeg != nullptr);
@@ -2997,17 +3326,15 @@ void Compiler::fgVerifyHandlerTab()
             assert(!HBtab->ebdFilter->HasFlag(BBF_REMOVED));
         }
 
-#if defined(FEATURE_EH_FUNCLETS)
         if (fgFuncletsCreated)
         {
-            assert(HBtab->ebdHndBeg->HasFlag(BBF_FUNCLET_BEG));
+            assert(bbIsFuncletBeg(HBtab->ebdHndBeg));
 
             if (HBtab->HasFilter())
             {
-                assert(HBtab->ebdFilter->HasFlag(BBF_FUNCLET_BEG));
+                assert(bbIsFuncletBeg(HBtab->ebdFilter));
             }
         }
-#endif // FEATURE_EH_FUNCLETS
     }
 
     // I want to assert things about the relative ordering of blocks in the block list using
@@ -3030,8 +3357,8 @@ void Compiler::fgVerifyHandlerTab()
         assert(blockNumMap[block->bbNum] == 0); // If this fails, we have two blocks with the same block number.
         blockNumMap[block->bbNum] = newBBnum++;
     }
-// Note that there may be some blockNumMap[x] == 0, for a block number 'x' that has been deleted, if the blocks
-// haven't been renumbered since the deletion.
+    // Note that there may be some blockNumMap[x] == 0, for a block number 'x' that has been deleted, if the blocks
+    // haven't been renumbered since the deletion.
 
 #if 0 // Useful for debugging, but don't want to put this in the dump all the time
     if (verbose)
@@ -3061,7 +3388,6 @@ void Compiler::fgVerifyHandlerTab()
         blockHndBegSet[i] = false;
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     bool     isLegalFirstFunclet = false;
     unsigned bbNumFirstFunclet   = 0;
 
@@ -3077,7 +3403,6 @@ void Compiler::fgVerifyHandlerTab()
     {
         assert(fgFirstFuncletBB == nullptr);
     }
-#endif // FEATURE_EH_FUNCLETS
 
     for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
@@ -3126,7 +3451,6 @@ void Compiler::fgVerifyHandlerTab()
             assert((bbNumHndLast < bbNumTryBeg) || (bbNumTryLast < bbNumHndBeg));
         }
 
-#if defined(FEATURE_EH_FUNCLETS)
         // If funclets have been created, check the first funclet block. The first funclet block must be the
         // first block of a filter or handler. All filter/handler blocks must come after it.
         // Note that 'try' blocks might come either before or after it. If after, they will be nested within
@@ -3175,7 +3499,6 @@ void Compiler::fgVerifyHandlerTab()
                 }
             }
         }
-#endif // FEATURE_EH_FUNCLETS
 
         // Check the 'try' region nesting, using ebdEnclosingTryIndex.
         // Only check one level of nesting, since we'll check the outer EH region (and its nesting) when we get to it
@@ -3199,9 +3522,7 @@ void Compiler::fgVerifyHandlerTab()
                 // blocks in the nested EH region. However, if funclets have been created, this is no longer true, since
                 // this 'try' might be in a handler that is pulled out to the funclet region, while the outer 'try'
                 // remains in the main function region.
-                CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(FEATURE_EH_FUNCLETS)
                 if (fgFuncletsCreated)
                 {
                     // If both the 'try' region and the outer 'try' region are in the main function area, then we can
@@ -3234,7 +3555,6 @@ void Compiler::fgVerifyHandlerTab()
                     assert((bbNumHndLast < bbNumOuterTryBeg) || (bbNumOuterTryLast < bbNumHndBeg));
                 }
                 else
-#endif // FEATURE_EH_FUNCLETS
                 {
                     if (multipleBegBlockNormalizationDone)
                     {
@@ -3278,11 +3598,10 @@ void Compiler::fgVerifyHandlerTab()
             assert(bbNumOuterHndLast != 0);
             assert(bbNumOuterHndBeg <= bbNumOuterHndLast);
 
-// The outer handler must completely contain all the blocks in the EH region nested within it. However, if
-// funclets have been created, it's harder to make any relationship asserts about the order of nested
-// handlers, which also have been made into funclets.
+            // The outer handler must completely contain all the blocks in the EH region nested within it. However, if
+            // funclets have been created, it's harder to make any relationship asserts about the order of nested
+            // handlers, which also have been made into funclets.
 
-#if defined(FEATURE_EH_FUNCLETS)
             if (fgFuncletsCreated)
             {
                 if (handlerBegIsTryBegNormalizationDone)
@@ -3309,7 +3628,6 @@ void Compiler::fgVerifyHandlerTab()
                 assert((bbNumHndLast < bbNumOuterHndBeg) || (bbNumOuterHndLast < bbNumHndBeg));
             }
             else
-#endif // FEATURE_EH_FUNCLETS
             {
                 if (handlerBegIsTryBegNormalizationDone)
                 {
@@ -3369,9 +3687,7 @@ void Compiler::fgVerifyHandlerTab()
         }
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     assert(!fgFuncletsCreated || isLegalFirstFunclet);
-#endif // FEATURE_EH_FUNCLETS
 
     // Figure out what 'try' and handler index each basic block should have,
     // and check the blocks against that. This depends on the more nested EH
@@ -3411,7 +3727,6 @@ void Compiler::fgVerifyHandlerTab()
         }
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     if (fgFuncletsCreated)
     {
         // Mark all the funclet 'try' indices correctly, since they do not exist in the linear 'try' region that
@@ -3420,8 +3735,8 @@ void Compiler::fgVerifyHandlerTab()
         // on the block.
         for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
         {
-            unsigned enclosingTryIndex = ehTrueEnclosingTryIndexIL(XTnum); // find the true enclosing try index,
-                                                                           // ignoring 'mutual protect' trys
+            unsigned enclosingTryIndex = ehTrueEnclosingTryIndex(XTnum); // find the true enclosing try index,
+                                                                         // ignoring 'mutual protect' trys
             if (enclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
             {
                 // The handler funclet for 'XTnum' has a try index of 'enclosingTryIndex' (at least, the parts of the
@@ -3441,7 +3756,6 @@ void Compiler::fgVerifyHandlerTab()
             }
         }
     }
-#endif // FEATURE_EH_FUNCLETS
 
     // Make sure that all blocks have the right index, including those blocks that should have zero (no EH region).
     for (BasicBlock* const block : Blocks())
@@ -3455,13 +3769,9 @@ void Compiler::fgVerifyHandlerTab()
         {
             assert(block->bbCatchTyp == BBCT_NONE);
 
-#if defined(FEATURE_EH_FUNCLETS)
-            if (fgFuncletsCreated)
-            {
-                // Make sure blocks that aren't the first block of a funclet do not have the BBF_FUNCLET_BEG flag set.
-                assert(!block->HasFlag(BBF_FUNCLET_BEG));
-            }
-#endif // FEATURE_EH_FUNCLETS
+            // If this block wasn't marked as an EH handler 'begin' block,
+            // it shouldn't be the beginning of a funclet.
+            assert(!fgFuncletsCreated || !bbIsFuncletBeg(block));
         }
 
         // Check for legal block types
@@ -3519,10 +3829,13 @@ void Compiler::fgDispHandlerTab()
         return;
     }
 
-    printf("\nindex  ");
-#if !defined(FEATURE_EH_FUNCLETS)
-    printf("nest, ");
-#endif // !FEATURE_EH_FUNCLETS
+    printf("\n  id,  index  ");
+#if defined(FEATURE_EH_WINDOWS_X86)
+    if (!UsesFunclets())
+    {
+        printf("nest, ");
+    }
+#endif // FEATURE_EH_WINDOWS_X86
     printf("eTry, eHnd\n");
 
     unsigned  XTnum;
@@ -3997,8 +4310,6 @@ void Compiler::verCheckNestingLevel(EHNodeDsc* root)
     }
 }
 
-#if defined(FEATURE_EH_FUNCLETS)
-
 /*****************************************************************************
  * Is this an intra-handler control flow edge?
  *
@@ -4022,14 +4333,14 @@ void Compiler::verCheckNestingLevel(EHNodeDsc* root)
 bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
 {
     // Some simple preconditions (as stated above)
+    assert(UsesFunclets());
     assert(!fgFuncletsCreated);
     assert(fgGetPredForBlock(block, predBlock) != nullptr);
     assert(block->hasHndIndex());
 
     EHblkDsc* xtab = ehGetDsc(block->getHndIndex());
 
-#if FEATURE_EH_CALLFINALLY_THUNKS
-    if (xtab->HasFinallyHandler())
+    if (UsesCallFinallyThunks() && xtab->HasFinallyHandler())
     {
         assert((xtab->ebdHndBeg == block) || // The normal case
                (xtab->ebdHndBeg->NextIs(block) &&
@@ -4057,7 +4368,6 @@ bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
             return false;
         }
     }
-#endif // FEATURE_EH_CALLFINALLY_THUNKS
 
     assert(predBlock->hasHndIndex() || predBlock->hasTryIndex());
 
@@ -4126,6 +4436,7 @@ bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
 
 bool Compiler::fgAnyIntraHandlerPreds(BasicBlock* block)
 {
+    assert(UsesFunclets());
     assert(block->hasHndIndex());
     assert(fgFirstBlockOfHandler(block) == block); // this block is the first block of a handler
 
@@ -4140,126 +4451,6 @@ bool Compiler::fgAnyIntraHandlerPreds(BasicBlock* block)
 
     return false;
 }
-
-#else // !FEATURE_EH_FUNCLETS
-
-/*****************************************************************************
- *
- *  Function called to relocate any and all EH regions.
- *  Only entire consecutive EH regions will be moved and they will be kept together.
- *  Except for the first block, the range can not have any blocks that jump into or out of the region.
- */
-
-bool Compiler::fgRelocateEHRegions()
-{
-    bool result = false; // Our return value
-
-#ifdef DEBUG
-    if (verbose)
-        printf("*************** In fgRelocateEHRegions()\n");
-#endif
-
-    if (fgCanRelocateEHRegions)
-    {
-        unsigned  XTnum;
-        EHblkDsc* HBtab;
-
-        for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
-        {
-            // Nested EH regions cannot be moved.
-            // Also we don't want to relocate an EH region that has a filter
-            if ((HBtab->ebdHandlerNestingLevel == 0) && !HBtab->HasFilter())
-            {
-                bool movedTry = false;
-#if DEBUG
-                bool movedHnd = false;
-#endif // DEBUG
-
-                // Only try to move the outermost try region
-                if (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-                {
-                    // Move the entire try region if it can be moved
-                    if (HBtab->ebdTryBeg->isRunRarely())
-                    {
-                        BasicBlock* bTryLastBB = fgRelocateEHRange(XTnum, FG_RELOCATE_TRY);
-                        if (bTryLastBB != NULL)
-                        {
-                            result   = true;
-                            movedTry = true;
-                        }
-                    }
-#if DEBUG
-                    if (verbose && movedTry)
-                    {
-                        printf("\nAfter relocating an EH try region");
-                        fgDispBasicBlocks();
-                        fgDispHandlerTab();
-
-                        // Make sure that the predecessor lists are accurate
-                        if (expensiveDebugCheckLevel >= 2)
-                        {
-                            fgDebugCheckBBlist();
-                        }
-                    }
-#endif // DEBUG
-                }
-
-                // Currently it is not good to move the rarely run handler regions to the end of the method
-                // because fgDetermineFirstColdBlock() must put the start of any handler region in the hot
-                // section.
-                CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if 0
-                // Now try to move the entire handler region if it can be moved.
-                // Don't try to move a finally handler unless we already moved the try region.
-                if (HBtab->ebdHndBeg->isRunRarely() &&
-                    !HBtab->ebdHndBeg->hasTryIndex() &&
-                    (movedTry || !HBtab->HasFinallyHandler()))
-                {
-                    BasicBlock* bHndLastBB = fgRelocateEHRange(XTnum, FG_RELOCATE_HANDLER);
-                    if (bHndLastBB != NULL)
-                    {
-                        result   = true;
-                        movedHnd = true;
-                    }
-                }
-#endif // 0
-
-#if DEBUG
-                if (verbose && movedHnd)
-                {
-                    printf("\nAfter relocating an EH handler region");
-                    fgDispBasicBlocks();
-                    fgDispHandlerTab();
-
-                    // Make sure that the predecessor lists are accurate
-                    if (expensiveDebugCheckLevel >= 2)
-                    {
-                        fgDebugCheckBBlist();
-                    }
-                }
-#endif // DEBUG
-            }
-        }
-    }
-
-#if DEBUG
-    fgVerifyHandlerTab();
-
-    if (verbose && result)
-    {
-        printf("\nAfter fgRelocateEHRegions()");
-        fgDispBasicBlocks();
-        fgDispHandlerTab();
-        // Make sure that the predecessor lists are accurate
-        fgDebugCheckBBlist();
-    }
-#endif // DEBUG
-
-    return result;
-}
-
-#endif // !FEATURE_EH_FUNCLETS
 
 //------------------------------------------------------------------------
 // fgExtendEHRegionBefore: Modify the EH table to account for a new block.
@@ -4317,18 +4508,9 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             block->bbRefs--;
             bPrev->bbRefs++;
 
-#if defined(FEATURE_EH_FUNCLETS)
-            if (fgFuncletsCreated)
-            {
-                assert(block->HasFlag(BBF_FUNCLET_BEG));
-                bPrev->SetFlags(BBF_FUNCLET_BEG);
-                block->RemoveFlags(BBF_FUNCLET_BEG);
-            }
-#endif // FEATURE_EH_FUNCLETS
-
             // If this is a handler for a filter, the last block of the filter will end with
-            // a BBJ_EHFILTERRET block that has a bbTarget that jumps to the first block of
-            // its handler. So we need to update it to keep things in sync.
+            // a BBJ_EHFILTERRET block that jumps to the first block of its handler.
+            // So we need to update it to keep things in sync.
             //
             if (HBtab->HasFilter())
             {
@@ -4339,14 +4521,12 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("EH#%u: Updating bbTarget for filter ret block: " FMT_BB " => " FMT_BB "\n",
-                           ehGetIndex(HBtab), bFilterLast->bbNum, bPrev->bbNum);
+                    printf("EH#%u: Updating target for filter ret block: " FMT_BB " => " FMT_BB "\n", ehGetIndex(HBtab),
+                           bFilterLast->bbNum, bPrev->bbNum);
                 }
-#endif // DEBUG
-                // Change the bbTarget for bFilterLast from the old first 'block' to the new first 'bPrev'
-                fgRemoveRefPred(bFilterLast->GetTarget(), bFilterLast);
-                bFilterLast->SetTarget(bPrev);
-                fgAddRefPred(bPrev, bFilterLast);
+#endif
+                // Change the target for bFilterLast from the old first 'block' to the new first 'bPrev'
+                fgRedirectEdge(bFilterLast->TargetEdgeRef(), bPrev);
             }
         }
 
@@ -4365,15 +4545,6 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 
             HBtab->ebdFilter = bPrev;
             bPrev->SetFlags(BBF_DONT_REMOVE);
-
-#if defined(FEATURE_EH_FUNCLETS)
-            if (fgFuncletsCreated)
-            {
-                assert(block->HasFlag(BBF_FUNCLET_BEG));
-                bPrev->SetFlags(BBF_FUNCLET_BEG);
-                block->RemoveFlags(BBF_FUNCLET_BEG);
-            }
-#endif // FEATURE_EH_FUNCLETS
 
             bPrev->bbRefs++;
         }
@@ -4512,32 +4683,4 @@ bool Compiler::fgCheckEHCanInsertAfterBlock(BasicBlock* blk, unsigned regionInde
     } // end of for(;;)
 
     return insertOK;
-}
-
-//------------------------------------------------------------------------
-// fgIsFirstBlockOfFilterOrHandler: return true if the given block is the first block of an EH handler
-// or filter.
-//
-// Arguments:
-//    block - the BasicBlock in question
-//
-// Return Value:
-//    As described above.
-//
-bool Compiler::fgIsFirstBlockOfFilterOrHandler(BasicBlock* block)
-{
-    if (!block->hasHndIndex())
-    {
-        return false;
-    }
-    EHblkDsc* ehDsc = ehGetDsc(block->getHndIndex());
-    if (ehDsc->ebdHndBeg == block)
-    {
-        return true;
-    }
-    if (ehDsc->HasFilter() && (ehDsc->ebdFilter == block))
-    {
-        return true;
-    }
-    return false;
 }

@@ -1,0 +1,266 @@
+parameters:
+  buildConfig: ''
+  name: ''
+  buildArgs: ''
+  archType: ''
+  hostedOs: ''
+  osGroup: ''
+  osSubgroup: ''
+  container: ''
+  crossBuild: false
+  variables: []
+  targetRid: ''
+  timeoutInMinutes: ''
+  dependsOn: []
+  # The following parameter is used to specify dependencies on other global build for the same platform.
+  # We provide this mechanism to allow for global builds to depend on other global builds and use the multiplexing
+  # that platform-matrix.yml enables.
+  # Each item can have the following properties:
+  # - name: The suffix of the job name to depend on.
+  # - buildConfig: The configuration of the job to depend on.
+  dependsOnGlobalBuilds: []
+  pool: ''
+  platform: ''
+  condition: true
+  useContinueOnErrorDuringBuild: false
+  shouldContinueOnError: false
+  isOfficialBuild: false
+  runtimeFlavor: 'coreclr'
+  runtimeVariant: ''
+  helixQueues: ''
+  enablePublishTestResults: false
+  testResultsFormat: ''
+  postBuildSteps: []
+  extraVariablesTemplates: []
+  preBuildSteps: []
+  templatePath: 'templates'
+  templateContext: ''
+  disableComponentGovernance: ''
+  liveRuntimeDir: ''
+  useCdac: false
+
+jobs:
+- template: /eng/common/${{ parameters.templatePath }}/job/job.yml
+  parameters:
+    name: ${{ parameters.name }}_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+    pool: ${{ parameters.pool }}
+    container: ${{ parameters.container }}
+    condition: and(succeeded(), ${{ parameters.condition }})
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
+    testResultsFormat: ${{ parameters.testResultsFormat }}
+
+    ${{ if ne(parameters.templateContext, '') }}:
+      templateContext: ${{ parameters.templateContext }}
+
+    artifacts:
+      publish:
+        logs:
+          ${{ if notin(parameters.osGroup, 'browser', 'wasi') }}:
+            name: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.name }}
+          ${{ if in(parameters.osGroup, 'browser', 'wasi') }}:
+            name: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.name }}
+
+    # Component governance does not work on musl machines
+    ${{ if eq(parameters.osSubGroup, '_musl') }}:
+      disableComponentGovernance: true
+    ${{ else }}:
+      disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
+
+    workspace:
+      clean: all
+
+    ${{ if or(ne(parameters.dependsOn,''), ne(parameters.dependsOnGlobalBuilds,'')) }}:
+      dependsOn:
+      - ${{ each build in parameters.dependsOn }}:
+        - ${{ build }}
+      - ${{ each globalBuild in parameters.dependsOnGlobalBuilds }}:
+        - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(globalBuild.buildConfig, parameters.buildConfig), globalBuild.name) }}
+
+    variables:
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - group: DotNet-HelixApi-Access
+          - group: AzureDevOps-Artifact-Feeds-Pats
+      
+      - _PhaseName: ${{ coalesce(parameters.name, parameters.osGroup) }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+      - _Pipeline_StreamDumpDir: $(Build.SourcesDirectory)/artifacts/tmp/${{ parameters.buildConfig }}/streams
+
+      - _TestArgs: '-test'
+      - _Cross: ''
+      - _CdacArgs: ''
+
+      - _buildScript: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
+
+      - ${{ if and(eq(parameters.testOnly, 'true'), eq(parameters.buildOnly, 'true')) }}:
+        'error, testOnly and buildOnly cannot be true at the same time': error
+
+      - ${{ if eq(parameters.testOnly, 'true') }}:
+        - _TestArgs: '-test -skipnative'
+
+      - ${{ if or(eq(parameters.buildOnly, 'true'), eq(parameters.isCodeQLRun, 'true')) }}:
+        - _TestArgs: ''
+
+      - ${{ if eq(parameters.useCdac, 'true') }}:
+        - _CdacArgs: '-useCdac'
+
+      # For testing msrc's and service releases. The RuntimeSourceVersion is either "default" or the service release version to test
+      - _InternalInstallArgs: ''
+      - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), eq(parameters.isCodeQLRun, 'false')) }}:
+        - _InternalInstallArgs:
+            -dotnetruntimeversion '$(DotnetRuntimeVersion)'
+            -dotnetruntimedownloadversion '$(DotnetRuntimeDownloadVersion)'
+            -runtimesourcefeed '$(RuntimeFeedUrl)'
+            -runtimesourcefeedkey '$(RuntimeFeedBase64SasToken)'
+
+      - ${{ each variableTemplate in parameters.extraVariablesTemplates }}:
+        - template: ${{ variableTemplate.template }}
+          parameters:
+            osGroup: ${{ parameters.osGroup }}
+            osSubgroup: ${{ parameters.osSubgroup }}
+            archType: ${{ parameters.archType }}
+            buildConfig: ${{ parameters.buildConfig }}
+            runtimeFlavor: ${{ parameters.runtimeFlavor }}
+            runtimeVariant: ${{ parameters.runtimeVariant }}
+            helixQueues: ${{ parameters.helixQueues }}
+            targetRid: ${{ parameters.targetRid }}
+            name: ${{ parameters.name }}
+            platform: ${{ parameters.platform }}
+            shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+            ${{ if ne(variableTemplate.forwardedParameters, '') }}:
+              ${{ each parameter in variableTemplate.forwardedParameters }}:
+                ${{ parameter }}: ${{ parameters[parameter] }}
+            ${{ if ne(variableTemplate.parameters, '') }}:
+              ${{ insert }}: ${{ variableTemplate.parameters }}
+
+      - ${{ each variable in parameters.variables }}:
+        - ${{ variable }}
+
+    steps:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - template: /eng/pipelines/common/templates/disable-vsupdate-or-failfast.yml
+
+    - checkout: diagnostics
+      clean: true
+      fetchDepth: $(checkoutFetchDepth)
+
+    - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
+      - template: /eng/pipelines/common/restore-internal-tools.yml
+
+    - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.hostedOs, 'windows')) }}:
+        - task: Bash@3
+          displayName: Setup Private Feeds Credentials
+          inputs:
+            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
+            arguments: $(Build.SourcesDirectory)/NuGet.config $Token
+          env:
+            Token: $(dn-bot-dnceng-artifact-feeds-rw)
+      - ${{ else }}:
+        - task: PowerShell@2
+          displayName: Setup Private Feeds Credentials
+          inputs:
+            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.ps1
+            arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
+          env:
+            Token: $(dn-bot-dnceng-artifact-feeds-rw)
+        # Run the NuGetAuthenticate task after the internal feeds are added to the nuget.config
+        # This ensures that creds are set appropriately for all feeds in the config, and that the
+        # credential provider is installed.
+        - task: NuGetAuthenticate@1
+
+    - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
+      - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh ${{ parameters.osGroup }}
+        displayName: Install Build Dependencies
+
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage before Build
+
+    - ${{ if in(parameters.platform, 'browser_wasm_win', 'wasi_wasm_win') }}:
+      # Update machine certs
+      - task: PowerShell@2
+        displayName: Update machine certs
+        inputs:
+          filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
+
+    - ${{ if ne(parameters.preBuildSteps,'') }}:
+      - ${{ each preBuildStep in parameters.preBuildSteps }}:
+        - ${{ if ne(preBuildStep.template, '') }}:
+          - template: ${{ preBuildStep.template }}
+            parameters:
+              osGroup: ${{ parameters.osGroup }}
+              osSubgroup: ${{ parameters.osSubgroup }}
+              archType: ${{ parameters.archType }}
+              buildConfig: ${{ parameters.buildConfig }}
+              runtimeFlavor: ${{ parameters.runtimeFlavor }}
+              runtimeVariant: ${{ parameters.runtimeVariant }}
+              helixQueues: ${{ parameters.helixQueues }}
+              targetRid: ${{ parameters.targetRid }}
+              name: ${{ parameters.name }}
+              platform: ${{ parameters.platform }}
+              shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+              ${{ if ne(preBuildStep.forwardedParameters, '') }}:
+                ${{ each parameter in preBuildStep.forwardedParameters }}:
+                  ${{ parameter }}: ${{ parameters[parameter] }}
+              ${{ if ne(preBuildStep.parameters, '') }}:
+                ${{ insert }}: ${{ preBuildStep.parameters }}
+        - ${{ else }}:
+          - ${{ preBuildStep }}
+
+    # Build
+    - script: $(_buildScript)
+          -ci
+          -configuration ${{ parameters.buildConfig }}
+          -architecture ${{ parameters.archType }}
+          -privatebuild
+          $(_CdacArgs)
+          -liveRuntimeDir ${{ parameters.liveRuntimeDir }}
+          $(_TestArgs)
+          $(_Cross)
+          $(_InternalInstallArgs)
+          /p:OfficialBuildId=$(BUILD.BUILDNUMBER)
+      ${{ if eq(parameters.testOnly, 'true') }}:
+        displayName: Test
+      ${{ elseif eq(parameters.buildOnly, 'true') }}:
+        displayName: Build
+      ${{ else }}:
+        displayName: Build / Test
+      condition: succeeded()
+
+    - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage after Build
+        condition: always()
+
+      # If intended to send extra steps after regular build add them here.
+    - ${{ if ne(parameters.postBuildSteps,'') }}:
+      - ${{ each postBuildStep in parameters.postBuildSteps }}:
+        - ${{ if ne(postBuildStep.template, '') }}:
+          - template: ${{ postBuildStep.template }}
+            parameters:
+              osGroup: ${{ parameters.osGroup }}
+              osSubgroup: ${{ parameters.osSubgroup }}
+              archType: ${{ parameters.archType }}
+              buildConfig: ${{ parameters.buildConfig }}
+              runtimeFlavor: ${{ parameters.runtimeFlavor }}
+              runtimeVariant: ${{ parameters.runtimeVariant }}
+              helixQueues: ${{ parameters.helixQueues }}
+              targetRid: ${{ parameters.targetRid }}
+              name: ${{ parameters.name }}
+              platform: ${{ parameters.platform }}
+              shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+              ${{ if ne(postBuildStep.forwardedParameters, '') }}:
+                ${{ each parameter in postBuildStep.forwardedParameters }}:
+                  ${{ parameter }}: ${{ parameters[parameter] }}
+              ${{ if ne(postBuildStep.parameters, '') }}:
+                ${{ insert }}: ${{ postBuildStep.parameters }}
+        - ${{ else }}:
+          - ${{ postBuildStep }}
+
+      - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
+        - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
+          displayName: Collect vslogs on exit
+          condition: always()

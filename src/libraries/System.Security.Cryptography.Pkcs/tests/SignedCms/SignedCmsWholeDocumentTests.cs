@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.Xml;
 using Test.Cryptography;
 using Xunit;
 
@@ -60,7 +61,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(SubjectIdentifierType.SubjectKeyIdentifier, signer.SignerIdentifier.Type);
             Assert.Equal("1063CAB14FB14C47DC211C0E0285F3EE5946BF2D", signer.SignerIdentifier.Value);
             Assert.Equal("2.16.840.1.101.3.4.2.1", signer.DigestAlgorithm.Value);
-#if NETCOREAPP
+#if NET
             Assert.Equal("1.2.840.113549.1.1.10", signer.SignatureAlgorithm.Value);
 #endif
 
@@ -91,7 +92,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 messageDigestAttr.MessageDigest.ByteArrayToHex());
 
             Assert.IsType<Pkcs9AttributeObject>(signedAttrs[3].Values[0]);
-#if !NETCOREAPP
+#if !NET
             Assert.NotSame(signedAttrs[3].Oid, signedAttrs[3].Values[0].Oid);
 #endif
             Assert.Equal(
@@ -101,7 +102,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                     "082A864886F70D0302020128",
                 signedAttrs[3].Values[0].RawData.ByteArrayToHex());
 
-#if NETCOREAPP
+#if NET
             Assert.Equal(
                 "B93E81D141B3C9F159AB0021910635DC72E8E860BE43C28E5D53243D6DC247B7" +
                     "D4F18C20195E80DEDCC75B29C43CE5047AD775B65BFC93589BD748B950C68BAD" +
@@ -170,7 +171,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(SubjectIdentifierType.IssuerAndSerialNumber, signer.SignerIdentifier.Type);
             Assert.Equal(Oids.Sha1, signer.DigestAlgorithm.Value);
 
-#if NETCOREAPP
+#if NET
             Assert.Equal(Oids.Rsa, signer.SignatureAlgorithm.Value);
 
             Assert.Equal(
@@ -237,7 +238,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(SubjectIdentifierType.IssuerAndSerialNumber, signer.SignerIdentifier.Type);
             Assert.Equal(Oids.Sha1, signer.DigestAlgorithm.Value);
 
-#if NETCOREAPP
+#if NET
             Assert.Equal(Oids.Rsa, signer.SignatureAlgorithm.Value);
 
             Assert.Equal(
@@ -311,7 +312,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Null(signer.Certificate);
             Assert.Equal(Oids.Sha1, signer.DigestAlgorithm.Value);
 
-#if NETCOREAPP
+#if NET
             Assert.Equal("1.3.6.1.5.5.7.6.2", signer.SignatureAlgorithm.Value);
 
             Assert.Equal(
@@ -370,7 +371,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 "833378066BDCCBA7047EF6919843D181A57D6479",
                 csMessageDigest.MessageDigest.ByteArrayToHex());
 
-#if NETCOREAPP
+#if NET
             Assert.Equal(Oids.Rsa, counterSigner.SignatureAlgorithm.Value);
 
             Assert.Equal(
@@ -447,7 +448,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Empty(signer.CounterSignerInfos);
             Assert.Null(signer.Certificate);
 
-#if NETCOREAPP
+#if NET
             Assert.Equal(Oids.Rsa, signer.SignatureAlgorithm.Value);
 
             Assert.Equal(
@@ -551,7 +552,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(SubjectIdentifierType.IssuerAndSerialNumber, signer.SignerIdentifier.Type);
             Assert.Equal(Oids.Sha1, signer.DigestAlgorithm.Value);
 
-#if NETCOREAPP
+#if NET
             Assert.Equal(Oids.Rsa, signer.SignatureAlgorithm.Value);
 
             Assert.Equal(
@@ -597,7 +598,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             // Assert.NotThrows
             cms.CheckSignature(true);
 
-#if NETCOREAPP
+#if NET
             Assert.Equal(
                 "1AA282DBED4D862D7CEA30F803E790BDB0C97EE852778CEEDDCD94BB9304A155" +
                     "2E60A8D36052AC8C2D28755F3B2F473824100AB3A6ABD4C15ABD77E0FFE13D0D" +
@@ -614,6 +615,226 @@ namespace System.Security.Cryptography.Pkcs.Tests
             // Since there are no NoSignature signers, CheckHash won't throw.
             // Assert.NotThrows
             cms.CheckHash();
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void ReadMLDsaDocument()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.MLDsa65_Sha256_SignedDocument);
+
+            Assert.Equal(1, cms.Version);
+
+            ContentInfo contentInfo = cms.ContentInfo;
+
+            Assert.Equal("1.2.840.113549.1.7.1", contentInfo.ContentType.Value);
+            AssertExtensions.SequenceEqual("Hello World!"u8, contentInfo.Content);
+
+            X509Certificate2Collection certs = cms.Certificates;
+            Assert.Single(certs);
+
+            X509Certificate2 topLevelCert = certs[0];
+            Assert.Equal("LAMPS WG", topLevelCert.GetNameInfo(X509NameType.SimpleName, false));
+
+            Assert.Equal(
+                new DateTimeOffset(2020, 2, 3, 4, 32, 10, TimeSpan.Zero),
+                new DateTimeOffset(topLevelCert.NotBefore));
+
+            Assert.Equal(
+                new DateTimeOffset(2040, 1, 29, 4, 32, 10, TimeSpan.Zero),
+                new DateTimeOffset(topLevelCert.NotAfter));
+
+            SignerInfoCollection signers = cms.SignerInfos;
+            Assert.Single(signers);
+
+            SignerInfo signer = signers[0];
+            Assert.Equal(1, signer.Version);
+            Assert.Equal(SubjectIdentifierType.IssuerAndSerialNumber, signer.SignerIdentifier.Type);
+
+            X509IssuerSerial issuerSerial = (X509IssuerSerial)signer.SignerIdentifier.Value;
+            Assert.Equal(topLevelCert.IssuerName.Name, issuerSerial.IssuerName);
+            Assert.Equal("159FFE6F22FD5CC42C524DF6FD5E28D0DE38F34E", issuerSerial.SerialNumber);
+            Assert.Equal("2.16.840.1.101.3.4.2.1", signer.DigestAlgorithm.Value);
+#if NET
+            Assert.Equal("2.16.840.1.101.3.4.3.18", signer.SignatureAlgorithm.Value);
+#endif
+
+            CryptographicAttributeObjectCollection signedAttrs = signer.SignedAttributes;
+            Assert.Equal(4, signedAttrs.Count);
+
+            Assert.Equal("1.2.840.113549.1.9.3", signedAttrs[0].Oid.Value);
+            Assert.Equal("1.2.840.113549.1.9.5", signedAttrs[1].Oid.Value);
+            Assert.Equal("1.2.840.113549.1.9.4", signedAttrs[2].Oid.Value);
+            Assert.Equal("1.2.840.113549.1.9.15", signedAttrs[3].Oid.Value);
+
+            Assert.Equal(1, signedAttrs[0].Values.Count);
+            Assert.Equal(1, signedAttrs[1].Values.Count);
+            Assert.Equal(1, signedAttrs[2].Values.Count);
+            Assert.Equal(1, signedAttrs[3].Values.Count);
+
+            Pkcs9ContentType contentTypeAttr = (Pkcs9ContentType)signedAttrs[0].Values[0];
+            Assert.Equal("1.2.840.113549.1.7.1", contentTypeAttr.ContentType.Value);
+
+            Pkcs9SigningTime signingTimeAttr = (Pkcs9SigningTime)signedAttrs[1].Values[0];
+            Assert.Equal(
+                new DateTimeOffset(2025, 7, 26, 21, 52, 13, TimeSpan.Zero),
+                new DateTimeOffset(signingTimeAttr.SigningTime));
+
+            Pkcs9MessageDigest messageDigestAttr = (Pkcs9MessageDigest)signedAttrs[2].Values[0];
+            Assert.Equal(
+                "7F83B1657FF1FC53B92DC18148A1D65DFC2D4B1FA3D677284ADDD200126D9069",
+                messageDigestAttr.MessageDigest.ByteArrayToHex());
+
+            Assert.IsType<Pkcs9AttributeObject>(signedAttrs[3].Values[0]);
+#if !NET
+            Assert.NotSame(signedAttrs[3].Oid, signedAttrs[3].Values[0].Oid);
+#endif
+            Assert.Equal(
+                "306A300B060960864801650304012A300B0609608648016503040116300B0609" +
+                    "608648016503040102300A06082A864886F70D0307300E06082A864886F70D03" +
+                    "0202020080300D06082A864886F70D0302020140300706052B0E030207300D06" +
+                    "082A864886F70D0302020128",
+                signedAttrs[3].Values[0].RawData.ByteArrayToHex());
+
+#if NET
+            // Long signature so just check the end
+            AssertExtensions.TrueExpression(
+                signer.GetSignature().ByteArrayToHex().EndsWith("0A134051558694BB000000000000000000000C131A20252D"));
+#endif
+
+            CryptographicAttributeObjectCollection unsignedAttrs = signer.UnsignedAttributes;
+            Assert.Empty(unsignedAttrs);
+
+            SignerInfoCollection counterSigners = signer.CounterSignerInfos;
+            Assert.Empty(counterSigners);
+
+            X509Certificate2 signerCertificate = signer.Certificate;
+            Assert.Equal(
+                "CN=LAMPS WG, O=IETF",
+                signerCertificate.SubjectName.Name);
+
+            // CheckHash always throws for certificate-based signers.
+            Assert.Throws<CryptographicException>(() => signer.CheckHash());
+
+            // Assert.NoThrows
+            signer.CheckSignature(true);
+
+            // Since there are no NoSignature signers the document CheckHash will succeed.
+            // Assert.NoThrows
+            cms.CheckHash();
+
+            // Assert.NoThrows
+            cms.CheckSignature(true);
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void ReadSlhDsaDocument()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.SlhDsa_Sha256_SignedDocument);
+
+            Assert.Equal(1, cms.Version);
+
+            ContentInfo contentInfo = cms.ContentInfo;
+
+            Assert.Equal("1.2.840.113549.1.7.1", contentInfo.ContentType.Value);
+            AssertExtensions.SequenceEqual("Hello World!"u8, contentInfo.Content);
+
+            X509Certificate2Collection certs = cms.Certificates;
+            Assert.Single(certs);
+
+            X509Certificate2 topLevelCert = certs[0];
+            Assert.Equal("Bogus SLH-DSA-SHA2-128s CA", topLevelCert.GetNameInfo(X509NameType.SimpleName, false));
+
+            Assert.Equal(
+                new DateTimeOffset(2024, 10, 16, 13, 42, 12, TimeSpan.Zero),
+                new DateTimeOffset(topLevelCert.NotBefore));
+
+            Assert.Equal(
+                new DateTimeOffset(2034, 10, 14, 13, 42, 12, TimeSpan.Zero),
+                new DateTimeOffset(topLevelCert.NotAfter));
+
+            SignerInfoCollection signers = cms.SignerInfos;
+            Assert.Single(signers);
+
+            SignerInfo signer = signers[0];
+            Assert.Equal(1, signer.Version);
+            Assert.Equal(SubjectIdentifierType.IssuerAndSerialNumber, signer.SignerIdentifier.Type);
+
+            X509IssuerSerial issuerSerial = (X509IssuerSerial)signer.SignerIdentifier.Value;
+            Assert.Equal(topLevelCert.IssuerName.Name, issuerSerial.IssuerName);
+            Assert.Equal("438563A26901992C39CFBC40571B5FA3CCC78845", issuerSerial.SerialNumber);
+            Assert.Equal("2.16.840.1.101.3.4.2.1", signer.DigestAlgorithm.Value);
+#if NET
+            Assert.Equal("2.16.840.1.101.3.4.3.20", signer.SignatureAlgorithm.Value);
+#endif
+
+            CryptographicAttributeObjectCollection signedAttrs = signer.SignedAttributes;
+            Assert.Equal(4, signedAttrs.Count);
+
+            Assert.Equal("1.2.840.113549.1.9.3", signedAttrs[0].Oid.Value);
+            Assert.Equal("1.2.840.113549.1.9.5", signedAttrs[1].Oid.Value);
+            Assert.Equal("1.2.840.113549.1.9.4", signedAttrs[2].Oid.Value);
+            Assert.Equal("1.2.840.113549.1.9.15", signedAttrs[3].Oid.Value);
+
+            Assert.Equal(1, signedAttrs[0].Values.Count);
+            Assert.Equal(1, signedAttrs[1].Values.Count);
+            Assert.Equal(1, signedAttrs[2].Values.Count);
+            Assert.Equal(1, signedAttrs[3].Values.Count);
+
+            Pkcs9ContentType contentTypeAttr = (Pkcs9ContentType)signedAttrs[0].Values[0];
+            Assert.Equal("1.2.840.113549.1.7.1", contentTypeAttr.ContentType.Value);
+
+            Pkcs9SigningTime signingTimeAttr = (Pkcs9SigningTime)signedAttrs[1].Values[0];
+            Assert.Equal(
+                new DateTimeOffset(2025, 5, 8, 7, 59, 35, TimeSpan.Zero),
+                new DateTimeOffset(signingTimeAttr.SigningTime));
+
+            Pkcs9MessageDigest messageDigestAttr = (Pkcs9MessageDigest)signedAttrs[2].Values[0];
+            Assert.Equal(
+                "7F83B1657FF1FC53B92DC18148A1D65DFC2D4B1FA3D677284ADDD200126D9069",
+                messageDigestAttr.MessageDigest.ByteArrayToHex());
+
+            Assert.IsType<Pkcs9AttributeObject>(signedAttrs[3].Values[0]);
+#if !NET
+            Assert.NotSame(signedAttrs[3].Oid, signedAttrs[3].Values[0].Oid);
+#endif
+            Assert.Equal(
+                "306A300B060960864801650304012A300B0609608648016503040116300B0609" +
+                    "608648016503040102300A06082A864886F70D0307300E06082A864886F70D03" +
+                    "0202020080300D06082A864886F70D0302020140300706052B0E030207300D06" +
+                    "082A864886F70D0302020128",
+                signedAttrs[3].Values[0].RawData.ByteArrayToHex());
+
+#if NET
+            // Long signature so just check the end
+            AssertExtensions.TrueExpression(
+                signer.GetSignature().ByteArrayToHex().EndsWith("BB18DA1D24460D6528B66A"));
+#endif
+
+            CryptographicAttributeObjectCollection unsignedAttrs = signer.UnsignedAttributes;
+            Assert.Empty(unsignedAttrs);
+
+            SignerInfoCollection counterSigners = signer.CounterSignerInfos;
+            Assert.Empty(counterSigners);
+
+            X509Certificate2 signerCertificate = signer.Certificate;
+            Assert.Equal(
+                "O=Bogus SLH-DSA-SHA2-128s CA, L=Paris, C=FR",
+                signerCertificate.SubjectName.Name);
+
+            // CheckHash always throws for certificate-based signers.
+            Assert.Throws<CryptographicException>(() => signer.CheckHash());
+
+            // Assert.NotThrows
+            signer.CheckSignature(true);
+
+            // Since there are no NoSignature signers the document CheckHash will succeed.
+            // Assert.NotThrows
+            cms.CheckHash();
+
+            // Assert.NotThrows
+            cms.CheckSignature(true);
         }
     }
 }

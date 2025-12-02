@@ -309,11 +309,9 @@ __ANNOTATION(SAL_failureDefault(enum __SAL_failureKind));
 				            __byte_readableTo((expr) ? (size) : (size) * 2)
 #define __post_invalid                      _Post_ __notvalid
 /* integer related macros */
-#ifndef PAL_STDCPP_COMPAT
 #define __allocator                         __inner_allocator
 #define __deallocate(kind)                  _Pre_ __notnull __post_invalid
 #define __deallocate_opt(kind)              _Pre_ __maybenull __post_invalid
-#endif
 #define __bound                             __inner_bound
 #define __range(lb,ub)                      __inner_range(lb,ub)
 #define __in_bound                          _Pre_ __inner_bound
@@ -466,27 +464,6 @@ __inner_analysis_assume_nullterminated_dec
 #ifdef  __cplusplus
 }
 #endif
-
-#ifdef _PREFIX_
-/**************************************************************************
-* Definition of __pfx_assume and __pfx_assert. Thse should be the only
-* definitions of these functions.
-***************************************************************************/
-#if __cplusplus
-extern "C" void __pfx_assert(bool, const char *);
-extern "C" void __pfx_assume(bool, const char *);
-#else
-void __pfx_assert(int, const char *);
-void __pfx_assume(int, const char *);
-#endif
-/**************************************************************************
-* Redefinition of __analysis_assume and __analysis_assert for PREFIX build
-**************************************************************************/
-#undef  __analysis_assume
-#undef  __analysis_assert
-#define __analysis_assume(e) (__pfx_assume(e,"pfx_assume"),__assume(e));
-#define __analysis_assert(e) (__pfx_assert(e,"pfx_assert"),__assume(e));
-#endif /* ifdef _PREFIX_ */
 
 /**************************************************************************
 * This include should always be the last thing in this file.

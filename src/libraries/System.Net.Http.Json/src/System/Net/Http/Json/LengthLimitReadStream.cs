@@ -37,7 +37,7 @@ namespace System.Net.Http.Json
         public override bool CanSeek => _innerStream.CanSeek;
         public override bool CanWrite => false;
 
-#if NETCOREAPP
+#if NET
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
 

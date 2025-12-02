@@ -154,7 +154,7 @@ typedef struct _PROFILER_STACK_WALK_DATA PROFILER_STACK_WALK_DATA;
 // from the profiler implementation.  The profiler will call back on the v-table
 // to get at EE internals as required.
 
-class ProfToEEInterfaceImpl : public ICorProfilerInfo14
+class ProfToEEInterfaceImpl : public ICorProfilerInfo15
 {
 private:
     ProfilerInfo *m_pProfilerInfo;
@@ -741,6 +741,14 @@ public:
                 EVENTPIPE_PROVIDER        *pProvider);
 
     // end ICorProfilerInfo14
+
+    // begin ICorProfilerInfo15
+
+    COM_METHOD EnumerateGCHeapObjects(
+        ObjectCallback callback,
+        void* callbackState);
+
+    // end ICorProfilerInfo15
 
 protected:
 

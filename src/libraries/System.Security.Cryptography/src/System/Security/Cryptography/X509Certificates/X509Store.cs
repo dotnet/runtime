@@ -97,9 +97,9 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public StoreLocation Location { get; private set; }
+        public StoreLocation Location { get; }
 
-        public string? Name { get; private set; }
+        public string? Name { get; }
 
 
         public void Open(OpenFlags flags)

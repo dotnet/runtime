@@ -4,6 +4,14 @@
     <!-- Requires explicit Main as it implements command-line parameters for local testing purposes. -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <!-- Test creates non-collectible AssemblyLoadContext -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- Dynamic assembly loads -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- Tracing tests routinely time out with gcstress -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- And they also time out with jitstress modes -->
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinderTracingTest.cs" />
@@ -11,7 +19,7 @@
     <Compile Include="Helpers.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
     <ProjectReference Include="AssemblyToLoad.csproj" />
   </ItemGroup>
   <ItemGroup>

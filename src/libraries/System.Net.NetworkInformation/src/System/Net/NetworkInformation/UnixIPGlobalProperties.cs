@@ -8,8 +8,6 @@ using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
-#pragma warning disable 8500 // taking address of managed types
-
 namespace System.Net.NetworkInformation
 {
     internal abstract class UnixIPGlobalProperties : IPGlobalProperties

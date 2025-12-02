@@ -22,7 +22,7 @@ namespace System.ComponentModel.Tests
         [InlineData("category", false)]
         [InlineData("Misc", true)]
         [InlineData("misc", false)]
-        public void Ctor_String(string category, bool expectedIsDefaultAttribute)
+        public void Ctor_String(string? category, bool expectedIsDefaultAttribute)
         {
             var attribute = new CategoryAttribute(category);
             Assert.Equal(category, attribute.Category);
@@ -36,20 +36,10 @@ namespace System.ComponentModel.Tests
             yield return new object[] { attribute, new CategoryAttribute("category"), true };
             yield return new object[] { attribute, new CategoryAttribute("category2"), false };
             yield return new object[] { attribute, new CategoryAttribute(string.Empty), false };
-            // .NET Framework throws a NullReferenceException.
-            if (!PlatformDetection.IsNetFramework)
-            {
-                yield return new object[] { attribute, new CategoryAttribute(null), false };
-            }
-
-            // .NET Framework throws a NullReferenceException.
-            if (!PlatformDetection.IsNetFramework)
-            {
-                yield return new object[] { new CategoryAttribute(null), new CategoryAttribute(null), true };
-                yield return new object[] { new CategoryAttribute(null), new CategoryAttribute("category"), false };
-                yield return new object[] { new CategoryAttribute(null), new CategoryAttribute(string.Empty), false };
-            }
-
+            yield return new object[] { attribute, new CategoryAttribute(null), false };
+            yield return new object[] { new CategoryAttribute(null), new CategoryAttribute(null), true };
+            yield return new object[] { new CategoryAttribute(null), new CategoryAttribute("category"), false };
+            yield return new object[] { new CategoryAttribute(null), new CategoryAttribute(string.Empty), false };
             yield return new object[] { new CategoryAttribute("category"), new object(), false };
             yield return new object[] { new CategoryAttribute("category"), null, false };
             yield return new object[] { new CategoryAttribute(null), new object(), false };
@@ -124,7 +114,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("value")]
-        public void GetLocalizedString_InvokeNoSuchValue_ReturnsNull(string value)
+        public void GetLocalizedString_InvokeNoSuchValue_ReturnsNull(string? value)
         {
             var attribute = new SubCategoryAttribute();
             Assert.Null(attribute.GetLocalizedString(value));

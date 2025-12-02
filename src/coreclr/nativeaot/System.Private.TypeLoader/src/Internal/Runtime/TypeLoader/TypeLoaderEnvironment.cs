@@ -24,7 +24,7 @@ namespace Internal.Runtime.TypeLoader
         public override bool TryGetOwningTypeForMethodDictionary(IntPtr dictionary, out RuntimeTypeHandle owningType)
         {
             // PERF: computing NameAndSignature and the instantiation (that we discard) was useless
-            return TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(dictionary, out owningType, out _, out _);
+            return TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(dictionary, out owningType, out _, out _, out _);
         }
 
         public override TypeManagerHandle GetModuleForMetadataReader(MetadataReader reader)
@@ -48,19 +48,9 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.GenericLookupFromContextAndSignature(context, signature, out auxResult);
         }
 
-        public override bool GetRuntimeMethodHandleComponents(RuntimeMethodHandle runtimeMethodHandle, out RuntimeTypeHandle declaringTypeHandle, out MethodNameAndSignature nameAndSignature, out RuntimeTypeHandle[] genericMethodArgs)
+        public override RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, MethodHandle handle, RuntimeTypeHandle[] genericMethodArgs)
         {
-            return TypeLoaderEnvironment.Instance.TryGetRuntimeMethodHandleComponents(runtimeMethodHandle, out declaringTypeHandle, out nameAndSignature, out genericMethodArgs);
-        }
-
-        public override RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, string methodName, RuntimeSignature methodSignature, RuntimeTypeHandle[] genericMethodArgs)
-        {
-            return TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(declaringTypeHandle, methodName, methodSignature, genericMethodArgs);
-        }
-
-        public override bool CompareMethodSignatures(RuntimeSignature signature1, RuntimeSignature signature2)
-        {
-            return TypeLoaderEnvironment.Instance.CompareMethodSignatures(signature1, signature2);
+            return TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(declaringTypeHandle, handle, genericMethodArgs, isAsyncVariant: false);
         }
 
         public override IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle)
@@ -73,14 +63,9 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.ResolveGenericVirtualMethodTarget(targetTypeHandle, declMethod);
         }
 
-        public override bool GetRuntimeFieldHandleComponents(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out string fieldName)
+        public override RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, FieldHandle handle)
         {
-            return TypeLoaderEnvironment.Instance.TryGetRuntimeFieldHandleComponents(runtimeFieldHandle, out declaringTypeHandle, out fieldName);
-        }
-
-        public override RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, string fieldName)
-        {
-            return TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(declaringTypeHandle, fieldName);
+            return TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(declaringTypeHandle, handle);
         }
 
         public override IntPtr ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(IntPtr unboxingFunctionPointer, RuntimeTypeHandle declaringType)
@@ -96,18 +81,6 @@ namespace Internal.Runtime.TypeLoader
         public override bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, bool isMdArray, int rank, out RuntimeTypeHandle arrayTypeHandle)
         {
             return TypeLoaderEnvironment.Instance.TryGetArrayTypeForElementType(elementTypeHandle, isMdArray, rank, out arrayTypeHandle);
-        }
-    }
-
-    public static class RuntimeSignatureExtensions
-    {
-        public static IntPtr NativeLayoutSignature(this RuntimeSignature signature)
-        {
-            if (!signature.IsNativeLayoutSignature)
-                Environment.FailFast("Not a valid native layout signature");
-
-            NativeReader reader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(signature);
-            return reader.OffsetToAddress(signature.NativeLayoutOffset);
         }
     }
 
@@ -145,20 +118,12 @@ namespace Internal.Runtime.TypeLoader
         }
 
         // To keep the synchronization simple, we execute all type loading under a global lock
-        private Lock _typeLoaderLock = new Lock();
+        private Lock _typeLoaderLock = new Lock(useTrivialWaits: true);
 
         public void VerifyTypeLoaderLockHeld()
         {
             if (!_typeLoaderLock.IsHeldByCurrentThread)
                 Environment.FailFast("TypeLoaderLock not held");
-        }
-
-        public void RunUnderTypeLoaderLock(Action action)
-        {
-            using (_typeLoaderLock.EnterScope())
-            {
-                action();
-            }
         }
 
         public IntPtr GenericLookupFromContextAndSignature(IntPtr context, IntPtr signature, out IntPtr auxResult)
@@ -218,87 +183,6 @@ namespace Internal.Runtime.TypeLoader
             return !type.RuntimeTypeHandle.IsNull();
         }
 
-        internal TypeDesc GetConstructedTypeFromParserAndNativeLayoutContext(ref NativeParser parser, NativeLayoutInfoLoadContext nativeLayoutContext)
-        {
-            TypeDesc parsedType = nativeLayoutContext.GetType(ref parser);
-            if (parsedType == null)
-                return null;
-
-            if (!EnsureTypeHandleForType(parsedType))
-                return null;
-
-            return parsedType;
-        }
-
-        //
-        // Parse a native layout signature pointed to by "signature" in the executable image, optionally using
-        // "typeArgs" and "methodArgs" for generic type parameter substitution.  The first field in "signature"
-        // must be an encoded type but any data beyond that is user-defined and returned in "remainingSignature"
-        //
-        internal bool GetTypeFromSignatureAndContext(RuntimeSignature signature, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType, out RuntimeSignature remainingSignature)
-        {
-            NativeReader reader = GetNativeLayoutInfoReader(signature);
-            NativeParser parser = new NativeParser(reader, signature.NativeLayoutOffset);
-
-            bool result = GetTypeFromSignatureAndContext(ref parser, new TypeManagerHandle(signature.ModuleHandle), typeArgs, methodArgs, out createdType);
-
-            remainingSignature = RuntimeSignature.CreateFromNativeLayoutSignature(signature, parser.Offset);
-
-            return result;
-        }
-
-        internal bool GetTypeFromSignatureAndContext(ref NativeParser parser, TypeManagerHandle moduleHandle, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeTypeHandle createdType)
-        {
-            createdType = default(RuntimeTypeHandle);
-            TypeSystemContext context = TypeSystemContextFactory.Create();
-
-            TypeDesc parsedType = TryParseNativeSignatureWorker(context, moduleHandle, ref parser, typeArgs, methodArgs, false) as TypeDesc;
-            if (parsedType == null)
-                return false;
-
-            if (!EnsureTypeHandleForType(parsedType))
-                return false;
-
-            createdType = parsedType.RuntimeTypeHandle;
-
-            TypeSystemContextFactory.Recycle(context);
-            return true;
-        }
-
-        //
-        // Parse a native layout signature pointed to by "signature" in the executable image, optionally using
-        // "typeArgs" and "methodArgs" for generic type parameter substitution.  The first field in "signature"
-        // must be an encoded method but any data beyond that is user-defined and returned in "remainingSignature"
-        //
-        public MethodDesc GetMethodFromSignatureAndContext(TypeSystemContext context, RuntimeSignature signature, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs, out RuntimeSignature remainingSignature)
-        {
-            NativeReader reader = GetNativeLayoutInfoReader(signature);
-            NativeParser parser = new NativeParser(reader, signature.NativeLayoutOffset);
-
-            MethodDesc result = TryParseNativeSignatureWorker(context, new TypeManagerHandle(signature.ModuleHandle), ref parser, typeArgs, methodArgs, true) as MethodDesc;
-
-            remainingSignature = RuntimeSignature.CreateFromNativeLayoutSignature(signature, parser.Offset);
-
-            return result;
-        }
-
-        //
-        // Returns the native layout info reader
-        //
-        internal static unsafe NativeReader GetNativeLayoutInfoReader(NativeFormatModuleInfo module)
-        {
-            return GetNativeLayoutInfoReader(module.Handle);
-        }
-
-        //
-        // Returns the native layout info reader
-        //
-        internal static unsafe NativeReader GetNativeLayoutInfoReader(RuntimeSignature signature)
-        {
-            Debug.Assert(signature.IsNativeLayoutSignature);
-            return GetNativeLayoutInfoReader(new TypeManagerHandle(signature.ModuleHandle));
-        }
-
         //
         // Returns the native layout info reader
         //
@@ -327,15 +211,6 @@ namespace Internal.Runtime.TypeLoader
             RuntimeTypeHandle[] result = new RuntimeTypeHandle[count];
             for (uint i = 0; i < count; i++)
                 result[i] = extRefs.GetRuntimeTypeHandleFromIndex(parser.GetUnsigned());
-
-            return result;
-        }
-
-        private static RuntimeTypeHandle[] TypeDescsToRuntimeHandles(Instantiation types)
-        {
-            var result = new RuntimeTypeHandle[types.Length];
-            for (int i = 0; i < types.Length; i++)
-                result[i] = types[i].RuntimeTypeHandle;
 
             return result;
         }
@@ -500,29 +375,12 @@ namespace Internal.Runtime.TypeLoader
             return hashCode;
         }
 
-        private static object TryParseNativeSignatureWorker(TypeSystemContext typeSystemContext, TypeManagerHandle moduleHandle, ref NativeParser parser, RuntimeTypeHandle[] typeGenericArgumentHandles, RuntimeTypeHandle[] methodGenericArgumentHandles, bool isMethodSignature)
-        {
-            Instantiation typeGenericArguments = typeSystemContext.ResolveRuntimeTypeHandles(typeGenericArgumentHandles ?? Array.Empty<RuntimeTypeHandle>());
-            Instantiation methodGenericArguments = typeSystemContext.ResolveRuntimeTypeHandles(methodGenericArgumentHandles ?? Array.Empty<RuntimeTypeHandle>());
-
-            NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
-            nativeLayoutContext._module = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
-            nativeLayoutContext._typeSystemContext = typeSystemContext;
-            nativeLayoutContext._typeArgumentHandles = typeGenericArguments;
-            nativeLayoutContext._methodArgumentHandles = methodGenericArguments;
-
-            if (isMethodSignature)
-                return nativeLayoutContext.GetMethod(ref parser);
-            else
-                return nativeLayoutContext.GetType(ref parser);
-        }
-
         public bool TryGetGenericMethodDictionaryForComponents(RuntimeTypeHandle declaringTypeHandle, RuntimeTypeHandle[] genericMethodArgHandles, MethodNameAndSignature nameAndSignature, out IntPtr methodDictionary)
         {
             TypeSystemContext context = TypeSystemContextFactory.Create();
 
             DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
-            InstantiatedMethod methodBeingLoaded = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, declaringType, nameAndSignature, context.ResolveRuntimeTypeHandles(genericMethodArgHandles), IntPtr.Zero, false);
+            InstantiatedMethod methodBeingLoaded = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, asyncVariant: false, declaringType, nameAndSignature, context.ResolveRuntimeTypeHandles(genericMethodArgHandles));
 
             if (TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(methodBeingLoaded), out methodDictionary))
             {
@@ -568,21 +426,6 @@ namespace Internal.Runtime.TypeLoader
             return match;
         }
 
-        public bool ConversionToCanonFormIsAChange(RuntimeTypeHandle[] genericArgHandles, CanonicalFormKind kind)
-        {
-            // Todo: support for universal canon type?
-
-            TypeSystemContext context = TypeSystemContextFactory.Create();
-
-            Instantiation genericArgs = context.ResolveRuntimeTypeHandles(genericArgHandles);
-            bool result;
-            context.ConvertInstantiationToCanonForm(genericArgs, kind, out result);
-
-            TypeSystemContextFactory.Recycle(context);
-
-            return result;
-        }
-
         // get the generics hash table and external references table for a module
         // TODO multi-file: consider whether we want to cache this info
         private static unsafe bool GetHashtableFromBlob(NativeFormatModuleInfo module, ReflectionMapBlob blobId, out NativeHashtable hashtable, out ExternalReferencesTable externalReferencesLookup)
@@ -602,28 +445,6 @@ namespace Internal.Runtime.TypeLoader
             hashtable = new NativeHashtable(parser);
 
             return externalReferencesLookup.InitializeNativeReferences(module);
-        }
-
-        public static unsafe void GetFieldAlignmentAndSize(RuntimeTypeHandle fieldType, out int alignment, out int size)
-        {
-            MethodTable* typePtr = fieldType.ToEETypePtr();
-            if (typePtr->IsValueType)
-            {
-                size = (int)typePtr->ValueTypeSize;
-            }
-            else
-            {
-                size = IntPtr.Size;
-            }
-
-            alignment = (int)typePtr->FieldAlignmentRequirement;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct UnboxingAndInstantiatingStubMapEntry
-        {
-            public uint StubMethodRva;
-            public uint MethodRva;
         }
 
         public static unsafe bool TryGetTargetOfUnboxingAndInstantiatingStub(IntPtr maybeInstantiatingAndUnboxingStub, out IntPtr targetMethod)

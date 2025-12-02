@@ -10,7 +10,7 @@
 
       - In this `wasm.helix.targets` file, add to $(HelixExtensionTargets) to run your custom target
 
-          <PropertyGroup Condition="'$(IsRunningLibraryTests)' == 'true' and '$(Scenario)' == 'WasmTestOnBrowser'">
+          <PropertyGroup Condition="'$(IsRunningLibraryTests)' == 'true' and '$(Scenario)' == 'WasmTestOnWasmtime'">
             <HelixExtensionTargets>$(HelixExtensionTargets);_AddHelixCrypoItems</HelixExtensionTargets>
 
         - Useful properties to condition on: $(Scenario), $(IsRunningLibraryTests)
@@ -31,8 +31,8 @@
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasm.targets" />
 
   <PropertyGroup>
-    <IsRunningLibraryTests Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == ''">true</IsRunningLibraryTests>
-    <WasiEngine Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == 'BuildWasmApps' or '$(Scenario)' == ''">wasmtime</WasiEngine>
+    <IsRunningLibraryTests Condition="'$(Scenario)' == 'WasmTestOnWasmtime'">true</IsRunningLibraryTests>
+    <WasiEngine Condition="'$(Scenario)' == 'WasmTestOnWasmtime' or '$(Scenario)' == 'BuildWasmApps' or '$(Scenario)' == ''">wasmtime</WasiEngine>
     <NeedsWasmtime Condition="'$(WasiEngine)' == 'wasmtime'">true</NeedsWasmtime>
 
     <_ShippingPackagesPath>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'packages', $(Configuration), 'Shipping'))</_ShippingPackagesPath>
@@ -46,12 +46,9 @@
     <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
     <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
 
-    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$(RepoRoot)src\mono\wasi\wasi-sdk\</WASI_SDK_PATH>
     <WasiBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasi', 'build'))</WasiBuildTargetsDir>
-    <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
-    <WasmSharedDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'shared'))</WasmSharedDir>
-    <WasiSdkDirForHelixPayload>$(HelixDependenciesStagingPath)\wasi-sdk</WasiSdkDirForHelixPayload>
-    <WasmtimeDirForHelixPayload>$(HelixDependenciesStagingPath)\wasmtime</WasmtimeDirForHelixPayload>
+    <WasiSdkDirForHelixPayload>$(HelixDependenciesStagingPath)$(WorkItemPrefix)wasi-sdk</WasiSdkDirForHelixPayload>
+    <WasmtimeDirForHelixPayload>$(HelixDependenciesStagingPath)$(WorkItemPrefix)wasmtime</WasmtimeDirForHelixPayload>
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsWasiSdk Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsWasiSdk>
@@ -65,24 +62,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <HelixDependenciesToStage Condition="'$(NeedsWasiSdk)' == 'true'"  SourcePath="$(WASI_SDK_PATH)" Include="$(WasiSdkDirForHelixPayload)" />
-    <HelixDependenciesToStage Condition="'$(NeedsWasmtime)' == 'true'" SourcePath="$(WasmtimeDir)"   Include="$(WasmtimeDirForHelixPayload)" />
+    <HelixPreCommand Condition="'$(Scenario)' != ''" Include="$(EnvVarCommand) SCENARIO=$(Scenario)" />
+    <HelixPreCommand Include="$(EnvVarCommand) XHARNESS_DISABLE_COLORED_OUTPUT=true" />
+    <HelixPreCommand Include="$(EnvVarCommand) XHARNESS_LOG_WITH_TIMESTAMPS=true" />
+    <HelixPreCommand Include="$(EnvVarCommand) WASMTIME_BACKTRACE_DETAILS=1" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' != 'true'">
-    <HelixPreCommand Condition="'$(Scenario)' != ''" Include="export SCENARIO=$(Scenario)" />
-    <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
-    <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
     <HelixPreCommand Condition="'$(NeedsWasmtime)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/wasmtime:$PATH" />
-    <HelixPreCommand Condition="'$(NeedsWasiSdk)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/wasi-sdk:$PATH" />
+    <HelixPreCommand Condition="'$(NeedsWasiSdk)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/build/wasi-sdk/bin:$PATH" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
-    <HelixPreCommand Condition="'$(Scenario)' != ''" Include="set SCENARIO=$(Scenario)" />
-    <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
-    <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
-    <HelixPreCommand Condition="'$(NeedsWasmtime)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\wasmtime%3B%PATH%" />
-    <HelixPreCommand Condition="'$(NeedsWasiSdk)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\wasi-sdk%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsWasmtime)' == 'true'" Include="$(EnvVarCommand) PATH=%HELIX_CORRELATION_PAYLOAD%\wasmtime%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsWasiSdk)' == 'true'" Include="$(EnvVarCommand) PATH=%HELIX_CORRELATION_PAYLOAD%\build\wasi-sdk\bin%3B%PATH%" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
@@ -92,8 +85,8 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
-    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;WASI_SDK_PATH=%HELIX_CORRELATION_PAYLOAD%\build\wasi-sdk&quot;" />
-    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;WASI_SDK_PATH=$HELIX_CORRELATION_PAYLOAD/build/wasi-sdk&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="$(EnvVarCommand) &quot;WASI_SDK_PATH=%HELIX_CORRELATION_PAYLOAD%\build\wasi-sdk&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="$(EnvVarCommand) &quot;WASI_SDK_PATH=$HELIX_CORRELATION_PAYLOAD/build/wasi-sdk&quot;" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(NeedsWasiSdk)' == 'true'">
@@ -103,9 +96,27 @@
     <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
   </PropertyGroup>
 
+  <ItemGroup>
+    <HelixDependenciesToStage Condition="'$(NeedsWasmtime)' == 'true'" SourcePath="$(WasmtimeDir)" Include="$(WasmtimeDirForHelixPayload)" />
+  </ItemGroup>
+
   <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" />
+  <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
+
+  <Target Name="IncludeWasiSdkForHelixStaging" Condition="'$(NeedsWasiSdk)' == 'true'"
+          DependsOnTargets="AcquireWasiSdk"
+          BeforeTargets="StageDependenciesForHelix">
+    <ItemGroup>
+      <HelixDependenciesToStage SourcePath="$(RuntimeBuildWasiSdkPath)" Include="$(WasiSdkDirForHelixPayload)" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="PrepareHelixCorrelationPayload_Wasi">
+    <Error Condition="'$(Scenario)' != 'WasmTestOnWasmtime' and 
+                      '$(Scenario)' != 'BuildWasmApps'"
+                      Text="Only supported scenarios are WasmTestOnWasmtime and BuildWasmApps at the moment. It was $(Scenario)." />
+
+    <Error Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal'" Text="Only supported scenario is WasmTestOnWasmtime and BuildWasmApps at the moment." />
     <Error Text="Cannot find %24(WasmtimeDir)=$(WasmtimeDir)" Condition="'$(WasmtimeDir)' == '' or !Exists($(WasmtimeDir))" />
     <ItemGroup>
       <HelixCorrelationPayload Include="$(WasmtimeDirForHelixPayload)" Destination="wasmtime" Condition="'$(NeedsWasmtime)' == 'true'" />
@@ -113,7 +124,7 @@
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.wasi-wasm" />
 
       <HelixCorrelationPayload Include="$(WasiBuildTargetsDir)"       Destination="build/wasm" />
-      <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"       Destination="build/wasm" />
+      <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"       Destination="build/wasm-shared" />
       <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"         Destination="build/WasmAppBuilder" />
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"        Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"           Destination="build/cross" />
@@ -121,7 +132,6 @@
 
       <HelixCorrelationPayload Include="$(_ShippingPackagesPath)"     Destination="built-nugets" Condition="'$(NeedsBuiltNugets)' == 'true'" />
       <HelixCorrelationPayload Include="$(WasiSdkDirForHelixPayload)" Destination="build/wasi-sdk" Condition="'$(NeedsWasiSdk)' == 'true'" />
-      <HelixCorrelationPayload Include="$(WasmSharedDir)"             Destination="build/wasm-shared" />
     </ItemGroup>
   </Target>
 
@@ -130,7 +140,7 @@
 
   <Target Name="_AddWorkItemsForLibraryTests" Condition="'$(IsRunningLibraryTests)' == 'true'">
     <ItemGroup Label="Add samples">
-      <_WasiWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
+      <_WasiWorkItem Include="$(TestArchiveRoot)wasmtimeonly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnWasmtime'" />
       <HelixWorkItem Include="@(_WasiWorkItem -> '$(WorkItemPrefix)%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
@@ -140,7 +150,7 @@
 
     <!-- Create work items for run-only WASM sample apps  -->
     <ItemGroup>
-      <_WasiSampleZipFile Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == ''" Include="$(TestArchiveRoot)runonly/**/*.Console.V8.*.Sample.zip" />
+      <_WasiSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnWasmtime'" Include="$(TestArchiveRoot)runonly/**/Wasi.*.Sample.zip" />
 
       <HelixWorkItem Include="@(_WasiSampleZipFile -> '%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>

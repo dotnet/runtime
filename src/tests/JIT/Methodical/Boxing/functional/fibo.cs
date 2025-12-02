@@ -37,6 +37,7 @@ namespace BoxTest_fibo_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static void TestEntryPoint()
         {
             new Test().Fibonacci(20, true);

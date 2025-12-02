@@ -66,7 +66,7 @@ namespace System.Xml
                 {
                     XmlAttribute newAttr = (XmlAttribute)(attr.CloneNode(true));
                     XmlUnspecifiedAttribute? unspecAttr = newAttr as XmlUnspecifiedAttribute;
-                    if (unspecAttr != null && attr.Specified == false)
+                    if (unspecAttr != null && !attr.Specified)
                     {
                         unspecAttr.SetSpecified(false);
                     }
@@ -99,6 +99,7 @@ namespace System.Xml
         }
 
         // Gets or sets the namespace prefix of this node.
+        [AllowNull]
         public override string Prefix
         {
             get { return _name.Prefix; }

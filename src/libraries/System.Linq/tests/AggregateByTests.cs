@@ -9,28 +9,42 @@ namespace System.Linq.Tests
     public class AggregateByTests : EnumerableTests
     {
         [Fact]
+        public void Empty()
+        {
+            Assert.All(CreateSources<int>([]), source =>
+            {
+                Assert.Equal([], source.AggregateBy(i => i, i => i, (a, i) => a + i));
+                Assert.Equal([], source.AggregateBy(i => i, 0, (a, i) => a + i));
+            });
+        }
+
+        [Fact]
         public void AggregateBy_SourceNull_ThrowsArgumentNullException()
         {
             string[] first = null;
 
             AssertExtensions.Throws<ArgumentNullException>("source", () => first.AggregateBy(x => x, string.Empty, (x, y) => x + y));
             AssertExtensions.Throws<ArgumentNullException>("source", () => first.AggregateBy(x => x, string.Empty, (x, y) => x + y, new AnagramEqualityComparer()));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => first.AggregateBy(x => x, x => x, (x, y) => x + y));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => first.AggregateBy(x => x, x => x, (x, y) => x + y, new AnagramEqualityComparer()));
         }
 
         [Fact]
         public void AggregateBy_KeySelectorNull_ThrowsArgumentNullException()
         {
-            string[] source = { };
+            string[] source = ["test"];
             Func<string, string> keySelector = null;
 
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.AggregateBy(keySelector, string.Empty, (x, y) => x + y));
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.AggregateBy(keySelector, string.Empty, (x, y) => x + y, new AnagramEqualityComparer()));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.AggregateBy(keySelector, x => x, (x, y) => x + y));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.AggregateBy(keySelector, x => x, (x, y) => x + y, new AnagramEqualityComparer()));
         }
 
         [Fact]
         public void AggregateBy_SeedSelectorNull_ThrowsArgumentNullException()
         {
-            string[] source = { };
+            string[] source = ["test"];
             Func<string, string> seedSelector = null;
 
             AssertExtensions.Throws<ArgumentNullException>("seedSelector", () => source.AggregateBy(x => x, seedSelector, (x, y) => x + y));
@@ -40,11 +54,13 @@ namespace System.Linq.Tests
         [Fact]
         public void AggregateBy_FuncNull_ThrowsArgumentNullException()
         {
-            string[] source = { };
+            string[] source = ["test"];
             Func<string, string, string> func = null;
 
             AssertExtensions.Throws<ArgumentNullException>("func", () => source.AggregateBy(x => x, string.Empty, func));
             AssertExtensions.Throws<ArgumentNullException>("func", () => source.AggregateBy(x => x, string.Empty, func, new AnagramEqualityComparer()));
+            AssertExtensions.Throws<ArgumentNullException>("func", () => source.AggregateBy(x => x, x => x, func));
+            AssertExtensions.Throws<ArgumentNullException>("func", () => source.AggregateBy(x => x, x => x, func, new AnagramEqualityComparer()));
         }
 
         [Fact]
@@ -52,7 +68,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = new ThrowsOnGetEnumerator();
 
-            var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
+            using var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
@@ -62,7 +78,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = new ThrowsOnMoveNext();
 
-            var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
+            using var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
@@ -72,142 +88,130 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = new ThrowsOnCurrentEnumerator();
 
-            var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
+            using var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
 
-        [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/92387", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        [MemberData(nameof(AggregateBy_TestData))]
-        public static void AggregateBy_HasExpectedOutput<TSource, TKey, TAccumulate>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, TAccumulate> seedSelector, Func<TAccumulate, TSource, TAccumulate> func, IEqualityComparer<TKey>? comparer, IEnumerable<KeyValuePair<TKey, TAccumulate>> expected)
+        [Fact]
+        public void AggregateBy_HasExpectedOutput()
         {
-            Assert.Equal(expected, source.AggregateBy(keySelector, seedSelector, func, comparer));
-        }
-
-        [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/92387", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        [MemberData(nameof(AggregateBy_TestData))]
-        public static void AggregateBy_RunOnce_HasExpectedOutput<TSource, TKey, TAccumulate>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, TAccumulate> seedSelector, Func<TAccumulate, TSource, TAccumulate> func, IEqualityComparer<TKey>? comparer, IEnumerable<KeyValuePair<TKey, TAccumulate>> expected)
-        {
-            Assert.Equal(expected, source.RunOnce().AggregateBy(keySelector, seedSelector, func, comparer));
-        }
-
-        public static IEnumerable<object[]> AggregateBy_TestData()
-        {
-            yield return WrapArgs(
+            Validate(
                 source: Enumerable.Empty<int>(),
                 keySelector: x => x,
                 seedSelector: x => 0,
                 func: (x, y) => x + y,
                 comparer: null,
-                expected: Enumerable.Empty<KeyValuePair<int,int>>());
+                expected: []);
 
-            yield return WrapArgs(
+            Validate(
                 source: Enumerable.Range(0, 10),
                 keySelector: x => x,
                 seedSelector: x => 0,
                 func: (x, y) => x + y,
                 comparer: null,
-                expected: Enumerable.Range(0, 10).ToDictionary(x => x, x => x));
+                expected: Enumerable.Range(0, 10).Select(x => new KeyValuePair<int, int>(x, x)));
 
-            yield return WrapArgs(
+            Validate(
                 source: Enumerable.Range(5, 10),
                 keySelector: x => true,
                 seedSelector: x => 0,
                 func: (x, y) => x + y,
                 comparer: null,
-                expected: Enumerable.Repeat(true, 1).ToDictionary(x => x, x => 95));
+                expected: Enumerable.Repeat(true, 1).Select(x => new KeyValuePair<bool, int>(x, 95)));
 
-            yield return WrapArgs(
+            Validate(
                 source: Enumerable.Range(0, 20),
                 keySelector: x => x % 5,
                 seedSelector: x => 0,
                 func: (x, y) => x + y,
                 comparer: null,
-                expected: Enumerable.Range(0, 5).ToDictionary(x => x, x => 30 + 4 * x));
+                expected: Enumerable.Range(0, 5).Select(x => new KeyValuePair<int, int>(x, 30 + 4 * x)));
 
-            yield return WrapArgs(
+            Validate(
                 source: Enumerable.Repeat(5, 20),
                 keySelector: x => x,
                 seedSelector: x => 0,
                 func: (x, y) => x + y,
                 comparer: null,
-                expected: Enumerable.Repeat(5, 1).ToDictionary(x => x, x => 100));
+                expected: Enumerable.Repeat(5, 1).Select(x => new KeyValuePair<int, int>(x, 100)));
 
-            yield return WrapArgs(
-                source: new string[] { "Bob", "bob", "tim", "Bob", "Tim" },
+            Validate(
+                source: ["Bob", "bob", "tim", "Bob", "Tim"],
                 keySelector: x => x,
                 seedSelector: x => string.Empty,
                 func: (x, y) => x + y,
                 null,
-                expected: new Dictionary<string, string>
-                {
-                    { "Bob", "BobBob" },
-                    { "bob", "bob" },
-                    { "tim", "tim" },
-                    { "Tim", "Tim" },
-                });
+                expected:
+                [
+                    new("Bob", "BobBob"),
+                    new("bob", "bob"),
+                    new("tim", "tim"),
+                    new("Tim", "Tim"),
+                ]);
 
-            yield return WrapArgs(
-                source: new string[] { "Bob", "bob", "tim", "Bob", "Tim" },
+            Validate(
+                source: ["Bob", "bob", "tim", "Bob", "Tim"],
                 keySelector: x => x,
                 seedSelector: x => string.Empty,
                 func: (x, y) => x + y,
                 StringComparer.OrdinalIgnoreCase,
-                expected: new Dictionary<string, string>
-                {
-                    { "Bob", "BobbobBob" },
-                    { "tim", "timTim" }
-                });
+                expected:
+                [
+                    new("Bob", "BobbobBob"),
+                    new("tim", "timTim")
+                ]);
 
-            yield return WrapArgs(
+            Validate(
                 source: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 30), ("Harry", 40) },
                 keySelector: x => x.Age,
                 seedSelector: x => $"I am {x} and my name is ",
                 func: (x, y) => x + y.Name,
                 comparer: null,
-                expected: new Dictionary<int, string>
-                {
-                    { 20, "I am 20 and my name is Tom" },
-                    { 30, "I am 30 and my name is Dick" },
-                    { 40, "I am 40 and my name is Harry" }
-                });
+                expected:
+                [
+                    new(20, "I am 20 and my name is Tom"),
+                    new(30, "I am 30 and my name is Dick"),
+                    new(40, "I am 40 and my name is Harry")
+                ]);
 
-            yield return WrapArgs(
+            Validate(
                 source: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 20), ("Harry", 40) },
                 keySelector: x => x.Age,
                 seedSelector: x => $"I am {x} and my name is",
                 func: (x, y) => $"{x} maybe {y.Name}",
                 comparer: null,
-                expected: new Dictionary<int, string>
-                {
-                    { 20, "I am 20 and my name is maybe Tom maybe Dick" },
-                    { 40, "I am 40 and my name is maybe Harry" }
-                });
+                expected:
+                [
+                    new(20, "I am 20 and my name is maybe Tom maybe Dick"),
+                    new(40, "I am 40 and my name is maybe Harry")
+                ]);
 
-            yield return WrapArgs(
+            Validate(
                 source: new (string Name, int Age)[] { ("Bob", 20), ("bob", 20), ("Harry", 20) },
                 keySelector: x => x.Name,
                 seedSelector: x => 0,
                 func: (x, y) => x + y.Age,
                 comparer: null,
-                expected: new string[] { "Bob", "bob", "Harry" }.ToDictionary(x => x, x => 20));
+                expected: new string[] { "Bob", "bob", "Harry" }.Select(x => new KeyValuePair<string, int>(x, 20)));
 
-            yield return WrapArgs(
+            Validate(
                 source: new (string Name, int Age)[] { ("Bob", 20), ("bob", 30), ("Harry", 40) },
                 keySelector: x => x.Name,
                 seedSelector: x => 0,
                 func: (x, y) => x + y.Age,
                 comparer: StringComparer.OrdinalIgnoreCase,
-                expected: new Dictionary<string, int>
-                {
-                    { "Bob", 50 },
-                    { "Harry", 40 }
-                });
+                expected:
+                [
+                    new("Bob", 50),
+                    new("Harry", 40)
+                ]);
 
-            object[] WrapArgs<TSource, TKey, TAccumulate>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, TAccumulate> seedSelector, Func<TAccumulate, TSource, TAccumulate> func, IEqualityComparer<TKey>? comparer, IEnumerable<KeyValuePair<TKey, TAccumulate>> expected)
-                => new object[] { source, keySelector, seedSelector, func, comparer, expected };
+            static void Validate<TSource, TKey, TAccumulate>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, TAccumulate> seedSelector, Func<TAccumulate, TSource, TAccumulate> func, IEqualityComparer<TKey>? comparer, IEnumerable<KeyValuePair<TKey, TAccumulate>> expected)
+            {
+                Assert.Equal(expected, source.AggregateBy(keySelector, seedSelector, func, comparer));
+                Assert.Equal(expected, source.RunOnce().AggregateBy(keySelector, seedSelector, func, comparer));
+            }
         }
 
         [Fact]
@@ -220,10 +224,10 @@ namespace System.Linq.Tests
                     (group, element) => { group.Add(element); return group; });
 
             IEnumerable<KeyValuePair<bool, List<int>>> oddsEvens = GroupBy(
-                new int[] { 1, 2, 3, 4 },
+                [1, 2, 3, 4],
                 i => i % 2 == 0);
 
-            var e = oddsEvens.GetEnumerator();
+            using var e = oddsEvens.GetEnumerator();
 
             Assert.True(e.MoveNext());
             KeyValuePair<bool, List<int>> oddsItem = e.Current;
@@ -254,10 +258,10 @@ namespace System.Linq.Tests
                     (count, _) => ++count);
 
             IEnumerable<KeyValuePair<bool, long>> oddsEvens = LongCountBy(
-                new int[] { 1, 2, 3, 4 },
+                [1, 2, 3, 4],
                 i => i % 2 == 0);
 
-            var e = oddsEvens.GetEnumerator();
+            using var e = oddsEvens.GetEnumerator();
 
             Assert.True(e.MoveNext());
             KeyValuePair<bool, long> oddsItem = e.Current;
@@ -286,11 +290,9 @@ namespace System.Linq.Tests
                 keySelector: entry => entry.id,
                 seed: 0,
                 (totalScore, curr) => totalScore + curr.score)
-                .ToDictionary();
+                .ToArray();
 
-            Assert.Equal(67, scores["0"]);
-            Assert.Equal(15, scores["1"]);
-            Assert.Equal( 4, scores["2"]);
+            Assert.Equal([new("0", 67), new("1", 15), new("2", 4)], scores);
         }
     }
 }

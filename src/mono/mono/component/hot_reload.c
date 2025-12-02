@@ -924,23 +924,74 @@ delta_info_initialize_mutants (const MonoImage *base, const BaselineInfo *base_i
 		g_assert (prev_table != NULL);
 
 		MonoTableInfo *tbl = &delta->mutants [i];
-		if (prev_table->rows_ == 0) {
-			/* table was empty in the baseline and it was empty in the prior generation, but now we have some rows. Use the format of the mutant table. */
-			g_assert (prev_table->row_size == 0);
+		if (delta->delta_image->tables [i].row_size != 0 || prev_table->rows_ == 0) {
 			tbl->row_size = delta->delta_image->tables [i].row_size;
 			tbl->size_bitfield = delta->delta_image->tables [i].size_bitfield;
 		} else {
 			tbl->row_size = prev_table->row_size;
 			tbl->size_bitfield = prev_table->size_bitfield;
 		}
+		mono_metadata_compute_column_offsets (tbl);
 		tbl->rows_ = rows;
 		g_assert (tbl->rows_ > 0 && tbl->row_size != 0);
 
 		tbl->base = mono_mempool_alloc (delta->pool, tbl->row_size * rows);
 		g_assert (table_info_get_rows (prev_table) == count->prev_gen_rows);
 
-		/* copy the old rows  and zero out the new ones */
-		memcpy ((char*)tbl->base, prev_table->base, count->prev_gen_rows * tbl->row_size);
+		/* copy the old rows and zero out the new ones */
+		/* we need to copy following the new format (uncompressed one)*/
+		for (guint32 j = 0 ; j < count->prev_gen_rows; j++)
+		{
+			guint32 src_offset = 0, dst_offset = 0;
+			guint32 dst_bitfield = tbl->size_bitfield;
+			guint32 src_bitfield = prev_table->size_bitfield;
+			const char *src_base = (char*)prev_table->base + j *  prev_table->row_size;
+			char *dst_base = (char*)tbl->base + j * tbl->row_size;
+			for (guint col = 0; col < mono_metadata_table_count (dst_bitfield); ++col) {
+				guint32 dst_col_size = mono_metadata_table_size (dst_bitfield, col);
+				guint32 src_col_size = mono_metadata_table_size (src_bitfield, col);
+				{
+					const char *src = src_base + src_offset;
+					char *dst = dst_base + dst_offset;
+		
+					/* copy src to dst, via a temporary to adjust for size differences */
+					/* FIXME: unaligned access, endianness */
+					guint32 tmp;
+		
+					switch (src_col_size) {
+					case 1:
+						tmp = *(guint8*)src;
+						break;
+					case 2:
+						tmp = *(guint16*)src;
+						break;
+					case 4:
+						tmp = *(guint32*)src;
+						break;
+					default:
+						g_assert_not_reached ();
+					}
+		
+					/* FIXME: unaligned access, endianness */
+					switch (dst_col_size) {
+					case 1:
+						*(guint8*)dst = (guint8)tmp;
+						break;
+					case 2:
+						*(guint16*)dst = (guint16)tmp;
+						break;
+					case 4:
+						*(guint32*)dst = tmp;
+						break;
+					default:
+						g_assert_not_reached ();
+					}
+				}
+				src_offset += src_col_size;
+				dst_offset += dst_col_size;
+			}
+			g_assert (dst_offset == tbl->row_size);
+		}
 		memset (((char*)tbl->base) + count->prev_gen_rows * tbl->row_size, 0, count->inserted_rows * tbl->row_size);
 	}
 }
@@ -1385,8 +1436,8 @@ delta_info_mutate_row (MonoImage *image_dmeta, DeltaInfo *cur_delta, guint32 log
 
 	/* The complication here is that we want the mutant table to look like the table in
 	 * the baseline image with respect to column widths, but the delta tables are generally coming in
-	 * uncompressed (4-byte columns).  So we have to copy one column at a time and adjust the
-	 * widths as we go.
+	 * uncompressed (4-byte columns).  And we have already adjusted the baseline image column widths 
+	 * so we can use memcpy here.
 	 */
 
 	guint32 dst_bitfield = cur_delta->mutants [token_table].size_bitfield;
@@ -1400,41 +1451,10 @@ delta_info_mutate_row (MonoImage *image_dmeta, DeltaInfo *cur_delta, guint32 log
 		guint32 dst_col_size = mono_metadata_table_size (dst_bitfield, col);
 		guint32 src_col_size = mono_metadata_table_size (src_bitfield, col);
 		if ((m_SuppressedDeltaColumns [token_table] & (1 << col)) == 0) {
+			g_assert(src_col_size <= dst_col_size);
 			const char *src = src_base + src_offset;
 			char *dst = dst_base + dst_offset;
-
-			/* copy src to dst, via a temporary to adjust for size differences */
-			/* FIXME: unaligned access, endianness */
-			guint32 tmp;
-
-			switch (src_col_size) {
-			case 1:
-				tmp = *(guint8*)src;
-				break;
-			case 2:
-				tmp = *(guint16*)src;
-				break;
-			case 4:
-				tmp = *(guint32*)src;
-				break;
-			default:
-				g_assert_not_reached ();
-			}
-
-			/* FIXME: unaligned access, endianness */
-			switch (dst_col_size) {
-			case 1:
-				*(guint8*)dst = (guint8)tmp;
-				break;
-			case 2:
-				*(guint16*)dst = (guint16)tmp;
-				break;
-			case 4:
-				*(guint32*)dst = tmp;
-				break;
-			default:
-				g_assert_not_reached ();
-			}
+			memcpy(dst, src, src_col_size);
 		}
 		src_offset += src_col_size;
 		dst_offset += dst_col_size;
@@ -1890,7 +1910,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 		gboolean is_addition = token_index-1 >= delta_info->count[token_table].prev_gen_rows ;
 
 		*should_invalidate_transformed_code |= table_should_invalidate_transformed_code (token_table);
-		
+
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "enclog i=%d: token=0x%08x (table=%s): %d:\t%s", i, log_token, mono_meta_table_name (token_table), func_code, (is_addition ? "ADD" : "UPDATE"));
 
 
@@ -2361,9 +2381,11 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 	if (!assembly_update_supported (image_base, error)) {
 		return;
 	}
-
+	if (dmeta_bytes == 0 && dil_bytes_orig == 0) // we may receive empty updates
+	{
+		return;
+	}
         static int first_origin = -1;
-
         if (first_origin < 0) {
                 first_origin = origin;
         }
@@ -2775,14 +2797,6 @@ add_param_info_for_method (BaselineInfo *base_info, uint32_t param_token, uint32
 	}
 }
 
-/* HACK - keep in sync with locator_t in metadata/metadata.c */
-typedef struct {
-	guint32 idx;			/* The index that we are trying to locate */
-	guint32 col_idx;		/* The index in the row where idx may be stored */
-	MonoTableInfo *t;	/* pointer to the table */
-	guint32 result;
-} upd_locator_t;
-
 void*
 hot_reload_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer)
 {
@@ -2803,11 +2817,10 @@ hot_reload_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_ta
 	g_assert (success);
 	uint32_t rows = table_info_get_rows (latest_mod_table);
 
-	upd_locator_t *loc = (upd_locator_t*)key;
+	mono_locator_t *loc = (mono_locator_t*)key;
 	g_assert (loc);
-	loc->result = 0;
 	/* HACK: this is so that the locator can compute the row index of the given row. but passing the mutant table to other metadata functions could backfire. */
-	loc->t = (MonoTableInfo*)latest_mod_table;
+	*loc = mono_locator_init ((MonoTableInfo*)latest_mod_table, loc->idx, loc->col_idx);
 	for (uint32_t idx = 0; idx < rows; ++idx) {
 		const char *row = latest_mod_table->base + idx * latest_mod_table->row_size;
 		if (!comparer (loc, row))
@@ -2934,7 +2947,7 @@ add_property_to_existing_class (MonoImage *image_base, BaselineInfo *base_info, 
 	parent_info->generation = generation;
 
 	return prop;
-	
+
 }
 
 MonoClassMetadataUpdateEvent *
@@ -2962,7 +2975,7 @@ add_event_to_existing_class (MonoImage *image_base, BaselineInfo *base_info, uin
 	parent_info->generation = generation;
 
 	return evt;
-	
+
 }
 
 
@@ -3017,7 +3030,7 @@ add_semantic_method_to_existing_event (MonoImage *image_base, BaselineInfo *base
 	g_assert (m_event_is_from_update (evt));
 
 	MonoMethod **dest = NULL;
-	
+
 	switch (semantics) {
 	case METHOD_SEMANTIC_ADD_ON:
 		dest = &evt->add;
@@ -3425,7 +3438,7 @@ recompute_ginst_props (MonoClass *ginst, MonoClassMetadataUpdateInfo *info,
 	for (GSList *ptr = gtd_info->added_props; ptr; ptr = ptr->next) {
 		MonoClassMetadataUpdateProperty *gtd_added_prop = (MonoClassMetadataUpdateProperty *)ptr->data;
 		MonoClassMetadataUpdateProperty *added_prop = mono_class_new0 (ginst, MonoClassMetadataUpdateProperty, 1);
-		
+
 		added_prop->prop = gtd_added_prop->prop;
 		added_prop->token = gtd_added_prop->token;
 
@@ -3453,7 +3466,7 @@ recompute_ginst_events (MonoClass *ginst, MonoClassMetadataUpdateInfo *info,
 	for (GSList *ptr = gtd_info->added_events; ptr; ptr = ptr->next) {
 		MonoClassMetadataUpdateEvent *gtd_added_event = (MonoClassMetadataUpdateEvent *)ptr->data;
 		MonoClassMetadataUpdateEvent *added_event = mono_class_new0 (ginst, MonoClassMetadataUpdateEvent, 1);
-		
+
 		added_event->evt = gtd_added_event->evt;
 
 		if (added_event->evt.add)
@@ -3466,7 +3479,7 @@ recompute_ginst_events (MonoClass *ginst, MonoClassMetadataUpdateInfo *info,
 			added_event->evt.raise = mono_class_inflate_generic_method_full_checked (
 				added_event->evt.raise, ginst, mono_class_get_context (ginst), error);
 		mono_error_assert_ok (error); /*FIXME proper error handling*/
-		
+
 		added_event->evt.parent = ginst;
 
 		info->added_events = g_slist_prepend_mem_manager (m_class_get_mem_manager (ginst), info->added_events, (gpointer)added_event);
@@ -3506,7 +3519,7 @@ recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataU
 {
 	// if ginst has a `MonoClassMetadataUpdateInfo`, use it to start with, otherwise, allocate a new one
 	MonoClassMetadataUpdateInfo *info = mono_class_get_or_add_metadata_update_info (ginst);
-  
+
 	if (!info)
 		info = mono_class_new0 (ginst, MonoClassMetadataUpdateInfo, 1);
 
@@ -3517,13 +3530,13 @@ recompute_ginst_update_info(MonoClass *ginst, MonoClass *gtd, MonoClassMetadataU
 
 	recompute_ginst_events (ginst, info, gtd, gtd_info, error);
 	mono_error_assert_ok (error);
-	
+
 	recompute_ginst_fields (ginst, info, gtd, gtd_info, error);
 	mono_error_assert_ok (error);
 
 	// finally, update the generation of the ginst info to the same one as the gtd
 	info->generation = gtd_info->generation;
-	// we're done info is now up to date    
+	// we're done info is now up to date
 }
 
 static MonoProperty *

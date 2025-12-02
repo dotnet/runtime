@@ -50,7 +50,7 @@ namespace System.Text.Json.Serialization.Metadata
         public static JsonConverter<DateTimeOffset> DateTimeOffsetConverter => s_dateTimeOffsetConverter ??= new DateTimeOffsetConverter();
         private static JsonConverter<DateTimeOffset>? s_dateTimeOffsetConverter;
 
-#if NETCOREAPP
+#if NET
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="DateOnly"/> values.
         /// </summary>
@@ -108,7 +108,7 @@ namespace System.Text.Json.Serialization.Metadata
         public static JsonConverter<long> Int64Converter => s_int64Converter ??= new Int64Converter();
         private static JsonConverter<long>? s_int64Converter;
 
-#if NET7_0_OR_GREATER
+#if NET
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="Int128"/> values.
         /// </summary>
@@ -188,7 +188,7 @@ namespace System.Text.Json.Serialization.Metadata
         public static JsonConverter<object?> ObjectConverter => s_objectConverter ??= new DefaultObjectConverter();
         private static JsonConverter<object?>? s_objectConverter;
 
-#if NETCOREAPP
+#if NET
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="Half"/> values.
         /// </summary>
@@ -282,12 +282,9 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<T> GetEnumConverter<T>(JsonSerializerOptions options) where T : struct, Enum
         {
-            if (options is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
-            return new EnumConverter<T>(EnumConverterOptions.AllowNumbers, options);
+            return EnumConverterFactory.Helpers.Create<T>(EnumConverterOptions.AllowNumbers, options);
         }
 
         /// <summary>
@@ -299,10 +296,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<T?> GetNullableConverter<T>(JsonTypeInfo<T> underlyingTypeInfo) where T : struct
         {
-            if (underlyingTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(underlyingTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(underlyingTypeInfo);
 
             JsonConverter<T> underlyingConverter = GetTypedConverter<T>(underlyingTypeInfo.Converter);
 
@@ -318,10 +312,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<T?> GetNullableConverter<T>(JsonSerializerOptions options) where T : struct
         {
-            if (options is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             JsonConverter<T> underlyingConverter = GetTypedConverter<T>(options.GetConverterInternal(typeof(T)));
 

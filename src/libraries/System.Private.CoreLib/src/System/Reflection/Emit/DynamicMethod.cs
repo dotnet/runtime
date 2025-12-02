@@ -200,7 +200,7 @@ namespace System.Reflection.Emit
                     AssemblyBuilderAccess.Run, AssemblyLoadContext.Default, null);
 
                 // this always gets the internal module.
-                s_anonymouslyHostedDynamicMethodsModule = assembly.ManifestModule!;
+                s_anonymouslyHostedDynamicMethodsModule = assembly.ManifestModule;
             }
 
             return s_anonymouslyHostedDynamicMethodsModule;
@@ -269,7 +269,7 @@ namespace System.Reflection.Emit
                     if (owner?.UnderlyingSystemType is RuntimeType rtOwner)
                     {
                         if (rtOwner.HasElementType || rtOwner.ContainsGenericParameters
-                            || rtOwner.IsGenericParameter || rtOwner.IsInterface)
+                            || rtOwner.IsGenericParameter || rtOwner.IsActualInterface)
                             throw new ArgumentException(SR.Argument_InvalidTypeForDynamicMethod);
 
                         _typeOwner = rtOwner;
@@ -362,7 +362,7 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(bool inherit)
         {
             // support for MethodImplAttribute PCA
-            return new object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
+            return [new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags())];
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)

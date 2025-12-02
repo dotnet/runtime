@@ -6,7 +6,7 @@
 
 #include <unknwn.h>
 
-// Documentation found at https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/
+// Documentation found at https://learn.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/
 
 // 64bd43f8-bfee-4ec4-b7eb-2935158dae21
 const GUID IID_IReferenceTrackerTarget = { 0x64bd43f8, 0xbfee, 0x4ec4, { 0xb7, 0xeb, 0x29, 0x35, 0x15, 0x8d, 0xae, 0x21 } };

@@ -8,7 +8,7 @@
 <!-- The key features of this package -->
 
 * Allow logging to the debugger output.
-* Provide extensions method for the [ILoggingBuilder](https://docs.microsoft.com/dotnet/api/microsoft.extensions.logging.iloggingbuilder) class to easily enable this Debug logger.
+* Provide extensions method for the [ILoggingBuilder](https://learn.microsoft.com/dotnet/api/microsoft.extensions.logging.iloggingbuilder) class to easily enable this Debug logger.
 
 ## How to Use
 

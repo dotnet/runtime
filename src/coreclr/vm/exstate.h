@@ -12,22 +12,20 @@ class DebuggerExState;
 class EHClauseInfo;
 
 #include "exceptionhandling.h"
+#include "cdacdata.h"
 
-#if !defined(FEATURE_EH_FUNCLETS)
-// ExInfo contains definitions for 32bit
+#ifndef FEATURE_EH_FUNCLETS
 #include "exinfo.h"
-#endif // !defined(FEATURE_EH_FUNCLETS)
+#else
+struct ExInfo;
+typedef DPTR(ExInfo) PTR_ExInfo;
+#endif
 
 #if !defined(DACCESS_COMPILE)
 #define PRESERVE_WATSON_ACROSS_CONTEXTS 1
 #endif
 
 extern StackWalkAction COMPlusUnwindCallback(CrawlFrame *pCf, ThrowCallbackType *pData);
-
-#ifdef FEATURE_EH_FUNCLETS
-struct ExInfo;
-typedef DPTR(ExInfo) PTR_ExInfo;
-#endif // !FEATURE_EH_FUNCLETS
 
 //
 // This class serves as a forwarding and abstraction layer for the EH subsystem.
@@ -47,27 +45,24 @@ class ThreadExceptionState
 #endif // DACCESS_COMPILE
 
     // ProfToEEInterfaceImpl::GetNotifiedExceptionClauseInfo needs access so that it can fetch the
-    // ExceptionTracker or the ExInfo as appropriate for the platform
+    // ExInfo
     friend class ProfToEEInterfaceImpl;
 
+    friend struct ::cdac_data<Thread>;
+
 #ifdef FEATURE_EH_FUNCLETS
-    friend class ExceptionTracker;
+    friend struct ExInfo;
 #else
     friend class ExInfo;
-#endif // FEATURE_EH_FUNCLETS
+#endif
 
 public:
-
-    void FreeAllStackTraces();
 
 #ifdef _DEBUG
     typedef enum
     {
         STEC_All,
         STEC_CurrentTrackerEqualNullOkHackForFatalStackOverflow,
-#ifdef FEATURE_INTERPRETER
-        STEC_CurrentTrackerEqualNullOkForInterpreter,
-#endif // FEATURE_INTERPRETER
     } SetThrowableErrorChecking;
 #endif
 
@@ -80,7 +75,6 @@ public:
     PTR_EXCEPTION_RECORD GetExceptionRecord();
     PTR_CONTEXT          GetContextRecord();
     BOOL                IsExceptionInProgress();
-    void                GetLeafFrameInfo(StackTraceElement* pStackTrace);
 
     ExceptionFlags*     GetFlags();
 
@@ -95,6 +89,7 @@ public:
 #ifdef DEBUGGING_SUPPORTED
     // DebuggerExState stores information necessary for intercepting an exception
     DebuggerExState*    GetDebuggerState();
+    void SetDebuggerIndicatedFramePointer(LPVOID indicatedFramePointer);
 
     // check to see if the current exception is interceptable
     BOOL                IsDebuggerInterceptable();
@@ -140,34 +135,26 @@ public:
         ResetThreadExceptionFlag(TEF_ForeignExceptionRaise);
     }
 
-#if defined(_DEBUG)
-    void AssertStackTraceInfo(StackTraceInfo *pSTI);
-#endif // _debug
-
 private:
     Thread* GetMyThread();
 
 #ifdef FEATURE_EH_FUNCLETS
-    PTR_ExceptionTracker    m_pCurrentTracker;
-    ExceptionTracker        m_OOMTracker;
-    PTR_ExInfo m_pExInfo;
+    PTR_ExInfo m_pCurrentTracker;
 public:
-    PTR_ExceptionTracker    GetCurrentExceptionTracker()
+    PTR_ExInfo GetCurrentExceptionTracker()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pCurrentTracker;
     }
-    PTR_ExInfo    GetCurrentExInfo()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pExInfo;
-    }
 
-    void SetCurrentExInfo(PTR_ExInfo pExInfo)
+#ifndef DACCESS_COMPILE
+    void SetCurrentExceptionTracker(PTR_ExInfo pTracker)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pExInfo = pExInfo;
+        m_pCurrentTracker = pTracker;
     }
+#endif // DACCESS_COMPILE
+
 #else
     ExInfo                  m_currentExInfo;
 public:

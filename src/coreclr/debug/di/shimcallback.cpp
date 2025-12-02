@@ -115,7 +115,7 @@ ICorDebugFrame * UpdateFrame(ICorDebugThread * pThread, ICorDebugFrame * pOldFra
         // continue with a NULL ICDFrame.  VS is able to handle this gracefully.
         pNewFrame.Assign(NULL);
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return pNewFrame;
 }
@@ -1408,7 +1408,7 @@ HRESULT ShimProxyCallback::DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugT
             this->m_pThread.Assign(pThread);
 
             _ASSERTE(contextSize == sizeof(CONTEXT));
-            this->m_contextSize = min(contextSize, sizeof(CONTEXT));
+            this->m_contextSize = min(contextSize, (ULONG32)sizeof(CONTEXT));
             memcpy(&(this->m_context), pContext, this->m_contextSize);
         }
 

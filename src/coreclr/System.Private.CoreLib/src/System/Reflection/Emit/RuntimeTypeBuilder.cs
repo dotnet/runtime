@@ -145,9 +145,9 @@ namespace System.Reflection.Emit
             Type? runtimeType2;
 
             // set up the runtimeType and TypeBuilder type corresponding to t1 and t2
-            if (t1 is RuntimeTypeBuilder)
+            if (t1 is RuntimeTypeBuilder rtb1)
             {
-                tb1 = (RuntimeTypeBuilder)t1;
+                tb1 = rtb1;
                 // This will be null if it is not baked.
                 runtimeType1 = tb1.m_bakedRuntimeType;
             }
@@ -156,9 +156,9 @@ namespace System.Reflection.Emit
                 runtimeType1 = t1;
             }
 
-            if (t2 is RuntimeTypeBuilder)
+            if (t2 is RuntimeTypeBuilder rtb2)
             {
-                tb2 = (RuntimeTypeBuilder)t2;
+                tb2 = rtb2;
                 // This will be null if it is not baked.
                 runtimeType2 = tb2.m_bakedRuntimeType;
             }
@@ -249,7 +249,7 @@ namespace System.Reflection.Emit
                         throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
                 }
 
-                CorElementType corType = RuntimeTypeHandle.GetCorElementType((RuntimeType)type);
+                CorElementType corType = ((RuntimeType)type).GetCorElementType();
 
                 switch (corType)
                 {
@@ -519,12 +519,6 @@ namespace System.Reflection.Emit
                 }
             }
 
-            // Verify that the layout mask is valid.
-            if (((attr & TypeAttributes.LayoutMask) != TypeAttributes.AutoLayout) && ((attr & TypeAttributes.LayoutMask) != TypeAttributes.SequentialLayout) && ((attr & TypeAttributes.LayoutMask) != TypeAttributes.ExplicitLayout))
-            {
-                throw new ArgumentException(SR.Argument_BadTypeAttrInvalidLayout);
-            }
-
             // Check if the user attempted to set any reserved bits.
             if ((attr & TypeAttributes.ReservedMask) != 0)
             {
@@ -636,7 +630,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
             object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
@@ -1259,13 +1253,13 @@ namespace System.Reflection.Emit
 
                 if (inst is TypeBuilderInstantiation)
                     con = GetConstructor(inst, genericTypeDefinition.GetConstructor(
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null)!);
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, [], null)!);
                 else
                     con = inst.GetConstructor(
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, [], null);
             }
 
-            con ??= m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
+            con ??= m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, [], null);
 
             if (con == null)
                 throw new NotSupportedException(SR.NotSupported_NoParentDefaultConstructor);
@@ -1388,7 +1382,7 @@ namespace System.Reflection.Emit
         #region Define Properties and Events
 
         protected override PropertyBuilder DefinePropertyCore(string name, PropertyAttributes attributes, CallingConventions callingConvention,
-            Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
+            Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             lock (SyncRoot)
@@ -1586,16 +1580,6 @@ namespace System.Reflection.Emit
                 }
 
                 MethodAttributes methodAttrs = meth.Attributes;
-
-                // Any of these flags in the implementation flags is set, we will not attach the IL method body
-                if (((meth.GetMethodImplementationFlags() & (MethodImplAttributes.CodeTypeMask | MethodImplAttributes.PreserveSig | MethodImplAttributes.Unmanaged)) != MethodImplAttributes.IL) ||
-                    ((methodAttrs & MethodAttributes.PinvokeImpl) != (MethodAttributes)0))
-                {
-                    continue;
-                }
-
-                byte[] localSig = meth.GetLocalSignature(out int sigLength);
-
                 // Check that they haven't declared an abstract method on a non-abstract class
                 if (((methodAttrs & MethodAttributes.Abstract) != 0) && ((m_iAttr & TypeAttributes.Abstract) == 0))
                 {
@@ -1603,35 +1587,31 @@ namespace System.Reflection.Emit
                 }
 
                 byte[]? body = meth.GetBody();
-
-                // If this is an abstract method or an interface, we don't need to set the IL.
-
                 if ((methodAttrs & MethodAttributes.Abstract) != 0)
                 {
                     // We won't check on Interface because we can have class static initializer on interface.
                     // We will just let EE or validator to catch the problem.
-
-                    // ((m_iAttr & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface))
-
                     if (body != null)
                         throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadMethodBody, meth.Name));
                 }
-                else if (body == null || body.Length == 0)
+                else if (body == null)
                 {
                     // If it's not an abstract or an interface, set the IL.
                     if (meth.m_ilGenerator != null)
                     {
                         // we need to bake the method here.
                         meth.CreateMethodBodyHelper(((RuntimeILGenerator)meth.GetILGenerator()));
+                        body = meth.GetBody();
                     }
 
-                    body = meth.GetBody();
-
-                    if ((body == null || body.Length == 0) && !meth.m_canBeRuntimeImpl)
-                        throw new InvalidOperationException(
-                            SR.Format(SR.InvalidOperation_BadEmptyMethodBody, meth.Name));
+                    // No IL body means we can avoid attempting to set method IL.
+                    if (body == null)
+                    {
+                        continue;
+                    }
                 }
 
+                byte[] localSig = meth.GetLocalSignature(out int sigLength);
                 int maxStack = meth.GetMaxStack();
 
                 ExceptionHandler[]? exceptions = meth.GetExceptionHandlers();

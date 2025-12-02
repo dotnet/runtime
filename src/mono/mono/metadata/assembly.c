@@ -336,6 +336,7 @@ load_in_path (const char *basename, const char** search_path, const MonoAssembly
 
 	for (i = 0; search_path [i]; ++i) {
 		fullpath = g_build_filename (search_path [i], basename, (const char*)NULL);
+		g_assert (fullpath);
 		result = mono_assembly_request_open (fullpath, req, status);
 		g_free (fullpath);
 		if (result)
@@ -1407,6 +1408,7 @@ absolute_dir (const gchar *filename)
 
 	cwd = g_get_current_dir ();
 	mixed = g_build_filename (cwd, filename, (const char*)NULL);
+	g_assert (mixed);
 	parts = g_strsplit (mixed, G_DIR_SEPARATOR_S, 0);
 	g_free (mixed);
 	g_free (cwd);

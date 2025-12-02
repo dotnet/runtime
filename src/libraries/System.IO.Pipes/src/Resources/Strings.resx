@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -119,6 +119,9 @@
   </resheader>
   <data name="ArgumentOutOfRange_NeedValidPipeAccessRights" xml:space="preserve">
     <value>Invalid PipeAccessRights value.</value>
+  </data>
+  <data name="PlatformNotSupported_PipeAccessRights" xml:space="preserve">
+    <value>Specifying PipeAccessRights is not supported on this platform.</value>
   </data>
   <data name="Argument_NonContainerInvalidAnyFlag" xml:space="preserve">
     <value>This flag may not be set on a pipe.</value>

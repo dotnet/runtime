@@ -71,3 +71,10 @@ Re-initializes a digest context to an initial state.
 Returns 1 on success, 0 on failure, any other value on invalid inputs/state.
 */
 PALEXPORT int32_t AppleCryptoNative_DigestReset(DigestCtx* ctx);
+
+/*
+Clones the current digest context.
+
+Returns a handle to the new digest context, or NULL if the clone failed.
+*/
+PALEXPORT DigestCtx* AppleCryptoNative_DigestClone(const DigestCtx* ctx);

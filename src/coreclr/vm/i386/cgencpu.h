@@ -29,14 +29,6 @@ class MethodDesc;
 class FramedMethodFrame;
 class Module;
 class ComCallMethodDesc;
-class BaseDomain;
-
-// CPU-dependent functions
-Stub * GenerateInitPInvokeFrameHelper();
-
-#ifdef FEATURE_STUBS_AS_IL
-EXTERN_C void SinglecastDelegateInvokeStub();
-#endif // FEATURE_STUBS_AS_IL
 
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
 
@@ -51,14 +43,8 @@ EXTERN_C void SinglecastDelegateInvokeStub();
 #define JUMP_ALLOCATE_SIZE                      8   // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         8   // # bytes to allocate for a back to back jump instruction
 
-#ifdef FEATURE_EH_FUNCLETS
-#define USE_INDIRECT_CODEHEADER
-#endif // FEATURE_EH_FUNCLETS
-
-#define HAS_COMPACT_ENTRYPOINTS                 1
-
 // Needed for PInvoke inlining in ngened images
-#define HAS_NDIRECT_IMPORT_PRECODE              1
+#define HAS_PINVOKE_IMPORT_PRECODE              1
 
 #define HAS_FIXUP_PRECODE                       1
 
@@ -102,6 +88,9 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType = false /* unu
     CALLEE_SAVED_REGISTER(Esi) \
     CALLEE_SAVED_REGISTER(Ebx) \
     CALLEE_SAVED_REGISTER(Ebp)
+
+// There are no FP callee saved registers on x86
+#define ENUM_FP_CALLEE_SAVED_REGISTERS()
 
 typedef DPTR(struct CalleeSavedRegisters) PTR_CalleeSavedRegisters;
 struct CalleeSavedRegisters {
@@ -221,7 +210,7 @@ inline TADDR GetSP(const CONTEXT * context) {
     return (TADDR)(context->Esp);
 }
 
-EXTERN_C LPVOID STDCALL GetCurrentSP();
+EXTERN_C void* GetCurrentSP();
 
 inline void SetSP(CONTEXT *context, TADDR esp) {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -240,6 +229,30 @@ inline TADDR GetFP(const CONTEXT * context)
     LIMITED_METHOD_DAC_CONTRACT;
 
     return (TADDR)context->Ebp;
+}
+
+inline void SetFirstArgReg(CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->Ecx = (DWORD)value;
+}
+
+inline TADDR GetFirstArgReg(CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return (TADDR)(context->Ecx);
+}
+
+inline void SetSecondArgReg(CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->Edx = (DWORD)value;
+}
+
+inline TADDR GetSecondArgReg(CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return (TADDR)(context->Edx);
 }
 
 // Get Rel32 destination, emit jumpStub if necessary
@@ -354,7 +367,7 @@ inline BOOL isCallRegisterIndirect(const BYTE *pRetAddr)
 }
 
 //------------------------------------------------------------------------
-inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
+inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -372,70 +385,21 @@ inline void emitJumpInd(LPBYTE pBuffer, LPVOID target)
 }
 
 //------------------------------------------------------------------------
-//  Given the same pBuffer that was used by emitJump this method
+//  Given the same pBuffer that was used by emitBackToBackJump this method
 //  decodes the instructions and returns the jump target
-inline PCODE decodeJump(PCODE pCode)
+inline PCODE decodeBackToBackJump(PCODE pCode)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     CONSISTENCY_CHECK(*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32);
     return rel32Decode(pCode+1);
 }
 
-//
-// On IA64 back to back jumps should be separated by a nop bundle to get
-// the best performance from the hardware's branch prediction logic.
-// For all other platforms back to back jumps don't require anything special
-// That is why we have these two wrapper functions that call emitJump and decodeJump
-//
-
-//------------------------------------------------------------------------
-inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
-{
-    WRAPPER_NO_CONTRACT;
-    emitJump(pBufferRX, pBufferRW, target);
-}
-
-//------------------------------------------------------------------------
-inline PCODE decodeBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return decodeJump(pBuffer);
-}
 
 EXTERN_C void __stdcall setFPReturn(int fpSize, INT64 retVal);
 EXTERN_C void __stdcall getFPReturn(int fpSize, INT64 *pretval);
 
 
 // SEH info forward declarations
-
-#include <pshpack1.h>
-struct DECLSPEC_ALIGN(4) UMEntryThunkCode
-{
-    BYTE            m_alignpad[2];  // used to guarantee alignment of backpactched portion
-    BYTE            m_movEAX;   //MOV EAX,imm32
-    LPVOID          m_uet;      // pointer to start of this structure
-    BYTE            m_jmp;      //JMP NEAR32
-    const BYTE *    m_execstub; // pointer to destination code  // make sure the backpatched portion is dword aligned.
-
-    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
-    void Poison();
-
-    LPCBYTE GetEntryPoint() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (LPCBYTE)&m_movEAX;
-    }
-
-    static int GetEntryPointOffset()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return 2;
-    }
-};
-#include <poppack.h>
 
 struct HijackArgs
 {
@@ -444,7 +408,11 @@ struct HijackArgs
     DWORD Esi;
     DWORD Ebx;
     DWORD Edx;
-    DWORD Ecx;
+    union
+    {
+        DWORD Ecx;
+        size_t AsyncRet;
+    };
     union
     {
         DWORD Eax;

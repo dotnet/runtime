@@ -7,8 +7,9 @@
 #endif
 
 // clang-format off
+  #define CORINFO_ARCH_TARGET      CORINFO_ARCH_ARM64
+
   #define CPU_LOAD_STORE_ARCH      1
-  #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
 #ifdef FEATURE_SIMD
@@ -21,12 +22,10 @@
   #define FEATURE_MULTIREG_STRUCT_PROMOTE 1  // True when we want to promote fields of a multireg struct into registers
   #define FEATURE_FASTTAILCALL     1       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     1       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
-  #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
   #define FEATURE_IMPLICIT_BYREFS       1  // Support for struct parameters passed via pointers to shadow copies
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
-  #define FEATURE_STRUCT_CLASSIFIER     0  // Uses a classifier function to determine is structs are passed/returned in more than one register
   #define MAX_PASS_SINGLEREG_BYTES     16  // Maximum size of a struct passed in a single register (16-byte vector).
   #define MAX_PASS_MULTIREG_BYTES      64  // Maximum size of a struct that could be passed in more than one register (max is 4 16-byte vectors using an HVA)
   #define MAX_RET_MULTIREG_BYTES       64  // Maximum size of a struct that could be returned in more than one register (Max is an HVA of 4 16-byte vectors)
@@ -38,13 +37,13 @@
 
   #define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
   #define USER_ARGS_COME_LAST      1
+  #define TARGET_POINTER_SIZE      8       // equal to sizeof(void*) and the managed pointer size in bytes for this target
+  #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
+
+  #define CSE_CONSTS               1       // Enable if we want to CSE constants
   #define EMIT_TRACK_STACK_DEPTH   1       // This is something of a workaround.  For both ARM and AMD64, the frame size is fixed, so we don't really
                                            // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
-  #define TARGET_POINTER_SIZE      8       // equal to sizeof(void*) and the managed pointer size in bytes for this target
-  #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
-  #define FEATURE_EH_CALLFINALLY_THUNKS 1  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
-  #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
-  #define CSE_CONSTS               1       // Enable if we want to CSE constants
+  #define EMIT_GENERATE_GCINFO     1       // Track GC ref liveness in codegen and emit and generate GCInfo based on that
 
   #define REG_FP_FIRST             REG_V0
   #define REG_FP_LAST              REG_V31
@@ -53,8 +52,16 @@
   #define REG_PREDICATE_FIRST      REG_P0
   #define REG_PREDICATE_LAST       REG_P15
   #define REG_PREDICATE_LOW_LAST   REG_P7  // Some instructions can only use the first half of the predicate registers.
+  #define REG_PREDICATE_HIGH_FIRST REG_P8  // Similarly, some instructions can only use the second half of the predicate registers.
+  #define REG_PREDICATE_HIGH_LAST  REG_P15
 
-  #define REGNUM_BITS              6       // number of bits in a REG_*
+  #define REG_MASK_FIRST           REG_PREDICATE_FIRST
+  #define REG_MASK_LAST            REG_PREDICATE_LAST
+
+  static_assert(REG_PREDICATE_HIGH_LAST == REG_PREDICATE_LAST);
+
+  #define HAS_FIXED_REGISTER_SET   1       // Has a fixed register set
+  #define REGNUM_BITS              7       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register
   #define FP_REGSIZE_BYTES         16      // number of bytes in one FP/SIMD register
   #define FPSAVE_REGSIZE_BYTES     8       // number of bytes in one FP/SIMD register that are saved/restored, for callee-saved registers
@@ -69,8 +76,15 @@
   #define RBM_FLT_CALLEE_SAVED    (RBM_V8|RBM_V9|RBM_V10|RBM_V11|RBM_V12|RBM_V13|RBM_V14|RBM_V15)
   #define RBM_FLT_CALLEE_TRASH    (RBM_V0|RBM_V1|RBM_V2|RBM_V3|RBM_V4|RBM_V5|RBM_V6|RBM_V7|RBM_V16|RBM_V17|RBM_V18|RBM_V19|RBM_V20|RBM_V21|RBM_V22|RBM_V23|RBM_V24|RBM_V25|RBM_V26|RBM_V27|RBM_V28|RBM_V29|RBM_V30|RBM_V31)
 
+  #define RBM_LOWMASK              (RBM_P0|RBM_P1|RBM_P2|RBM_P3|RBM_P4|RBM_P5|RBM_P6|RBM_P7)
+  #define RBM_HIGHMASK             (RBM_P8|RBM_P9|RBM_P10| RBM_P11|RBM_P12|RBM_P13|RBM_P14|RBM_P15)
+  #define RBM_ALLMASK              (RBM_LOWMASK|RBM_HIGHMASK)
+
+  #define RBM_MSK_CALLEE_SAVED    (0)
+  #define RBM_MSK_CALLEE_TRASH    RBM_ALLMASK
+
   #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
-  #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH)
+  #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH | RBM_MSK_CALLEE_TRASH)
 
   #define REG_DEFAULT_HELPER_CALL_TARGET REG_R12
   #define RBM_DEFAULT_HELPER_CALL_TARGET RBM_R12
@@ -84,7 +98,8 @@
                                    REG_R6, REG_R7, REG_R8, REG_R9, REG_R10,        \
                                    REG_R11, REG_R13, REG_R14,                      \
                                    REG_R12, REG_R15, REG_IP0, REG_IP1,             \
-                                   REG_CALLEE_SAVED_ORDER, REG_LR
+                                   REG_R19,REG_R20,REG_R21,REG_R22,REG_R23,REG_R24,REG_R25,REG_R26,REG_R27,REG_R28,\
+                                   REG_LR
 
   #define REG_VAR_ORDER_FLT        REG_V16, REG_V17, REG_V18, REG_V19, \
                                    REG_V20, REG_V21, REG_V22, REG_V23, \
@@ -95,15 +110,17 @@
                                    REG_V12, REG_V13, REG_V14, REG_V15, \
                                    REG_V3,  REG_V2, REG_V1,  REG_V0
 
-  #define REG_CALLEE_SAVED_ORDER   REG_R19,REG_R20,REG_R21,REG_R22,REG_R23,REG_R24,REG_R25,REG_R26,REG_R27,REG_R28
-  #define RBM_CALLEE_SAVED_ORDER   RBM_R19,RBM_R20,RBM_R21,RBM_R22,RBM_R23,RBM_R24,RBM_R25,RBM_R26,RBM_R27,RBM_R28
-
   #define CNT_CALLEE_SAVED        (11)
   #define CNT_CALLEE_TRASH        (17)
   #define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED-1)
 
   #define CNT_CALLEE_SAVED_FLOAT  (8)
   #define CNT_CALLEE_TRASH_FLOAT  (24)
+  #define CNT_CALLEE_ENREG_FLOAT  (CNT_CALLEE_SAVED_FLOAT)
+
+  #define CNT_CALLEE_SAVED_MASK   (4)
+  #define CNT_CALLEE_TRASH_MASK   (8)
+  #define CNT_CALLEE_ENREG_MASK   (CNT_CALLEE_SAVED_MASK)
 
   #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED * REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT * FPSAVE_REGSIZE_BYTES)
@@ -115,8 +132,7 @@
   #define RBM_ENC_CALLEE_SAVED     0
 
   // Temporary registers used for the GS cookie check.
-  #define REG_GSCOOKIE_TMP_0       REG_IP0
-  #define REG_GSCOOKIE_TMP_1       REG_IP1
+  #define RBM_GSCOOKIE_TMP         (RBM_IP0 | RBM_IP1)
 
   // register to hold shift amount; no special register is required on ARM64.
   #define REG_SHIFT                REG_NA
@@ -139,8 +155,8 @@
   // ARM64 write barrier ABI (see vm\arm64\asmhelpers.asm, vm\arm64\asmhelpers.S):
   // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
   //     On entry:
-  //       x14: the destination address (LHS of the assignment)
-  //       x15: the object reference (RHS of the assignment)
+  //       x14: the destination address of the store
+  //       x15: the object reference to be stored
   //     On exit:
   //       x12: trashed
   //       x14: incremented by 8
@@ -206,14 +222,6 @@
   // JMP Indirect call register
   #define REG_INDIRECT_CALL_TARGET_REG    REG_IP0
 
-  // Registers used by PInvoke frame setup
-  #define REG_PINVOKE_FRAME        REG_R9
-  #define RBM_PINVOKE_FRAME        RBM_R9
-  #define REG_PINVOKE_TCB          REG_R10
-  #define RBM_PINVOKE_TCB          RBM_R10
-  #define REG_PINVOKE_SCRATCH      REG_R10
-  #define RBM_PINVOKE_SCRATCH      RBM_R10
-
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_R0
   #define REG_INT_FIRST            REG_R0
@@ -258,6 +266,9 @@
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R15))
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_R15
   #define REG_DISPATCH_INDIRECT_CALL_ADDR REG_R9
+
+  #define REG_ASYNC_CONTINUATION_RET REG_R2
+  #define RBM_ASYNC_CONTINUATION_RET RBM_R2
 
   #define REG_FPBASE               REG_FP
   #define RBM_FPBASE               RBM_FP
@@ -358,12 +369,22 @@
   // For arm64, this is the maximum prolog establishment pre-indexed (that is SP pre-decrement) offset.
   #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES 512
 
-  // Some "Advanced SIMD scalar x indexed element" and "Advanced SIMD vector x indexed element" instructions (e.g. "MLA (by element)")
+  // Some "Advanced SIMD / SVE scalar x indexed element" and "Advanced SIMD / SVE vector x indexed element" instructions (e.g. "MLA (by element)")
   // have encoding that restricts what registers that can be used for the indexed element when the element size is H (i.e. 2 bytes).
   #define RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS (RBM_V0|RBM_V1|RBM_V2|RBM_V3|RBM_V4|RBM_V5|RBM_V6|RBM_V7|RBM_V8|RBM_V9|RBM_V10|RBM_V11|RBM_V12|RBM_V13|RBM_V14|RBM_V15)
+  #define RBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS (RBM_V0|RBM_V1|RBM_V2|RBM_V3|RBM_V4|RBM_V5|RBM_V6|RBM_V7)
+  #define RBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS
 
   #define REG_ZERO_INIT_FRAME_REG1 REG_R9
   #define REG_ZERO_INIT_FRAME_REG2 REG_R10
   #define REG_ZERO_INIT_FRAME_SIMD REG_V16
+
+  #define SWIFT_SUPPORT
+  #define REG_SWIFT_ERROR REG_R21
+  #define RBM_SWIFT_ERROR RBM_R21
+  #define REG_SWIFT_SELF  REG_R20
+  #define RBM_SWIFT_SELF  RBM_R20
+  #define REG_SWIFT_INTRET_ORDER REG_R0,REG_R1,REG_R2,REG_R3
+  #define REG_SWIFT_FLOATRET_ORDER REG_V0,REG_V1,REG_V2,REG_V3
 
 // clang-format on

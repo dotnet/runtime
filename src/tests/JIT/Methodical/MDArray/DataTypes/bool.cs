@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@bool;
+
 public struct VT
 {
     public bool[,] bool2darr;
@@ -27,6 +29,7 @@ public class Bool2D3DArrTest
     static bool[][, ,] ja2 = new bool[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

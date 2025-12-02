@@ -155,12 +155,6 @@ namespace System
         }
 
         [Intrinsic]
-        private static float FMod(float x, float y)
-        {
-            return RuntimeImports.fmodf(x, y);
-        }
-
-        [Intrinsic]
         private static unsafe float ModF(float x, float* intptr)
         {
             return RuntimeImports.modff(x, intptr);

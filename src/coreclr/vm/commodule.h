@@ -14,10 +14,6 @@ class Module;
 class COMModule
 {
 public:
-    // GetTypes will return an array containing all of the types
-    // that are defined within this Module.
-    static FCDECL1(Object*, GetTypes,  ReflectModuleBaseObject* pModuleUNSAFE);
-
     static FCDECL1(Object*,     GetMethods,             ReflectModuleBaseObject* refThisUNSAFE);
 };
 
@@ -73,6 +69,9 @@ extern "C" void QCALLTYPE ModuleBuilder_SetModuleName(QCall::ModuleHandle pModul
 extern "C" void QCALLTYPE RuntimeModule_GetScopeName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString);
 
 extern "C" void QCALLTYPE RuntimeModule_GetFullyQualifiedName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString);
+
+// GetTypes will return an array containing all of the types that are defined within this Module.
+extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retTypes);
 
 extern "C" HINSTANCE QCALLTYPE MarshalNative_GetHINSTANCE(QCall::ModuleHandle pModule);
 

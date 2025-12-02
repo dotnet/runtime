@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal;
 using Internal.JitInterface;
 using Internal.NativeFormat;
 using Internal.Pgo;
@@ -180,7 +181,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunInstrumentationDataTable");
+            sb.Append("__ReadyToRunInstrumentationDataTable"u8);
         }
 
         // Register some MDs that had synthesized PGO data created to be physically embedded by this node, and add
@@ -284,7 +285,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 PgoInstrumentedDataWithSignatureBlobVertex pgoDataVertex = new PgoInstrumentedDataWithSignatureBlobVertex(signatureBlob, 0, instrumentationDataBlob);
                 hashtableSection.Place(pgoDataVertex);
-                vertexHashtable.Append(unchecked((uint)ReadyToRunHashCode.MethodHashCode(method)), pgoDataVertex);
+                vertexHashtable.Append(unchecked((uint)method.GetHashCode()), pgoDataVertex);
             }
 
             MemoryStream hashtableContent = new MemoryStream();

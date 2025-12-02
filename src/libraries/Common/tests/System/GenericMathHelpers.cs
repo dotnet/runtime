@@ -151,6 +151,12 @@ namespace System
     {
         public static TSelf Ceiling(TSelf x) => TSelf.Ceiling(x);
 
+        public static TInteger ConvertToInteger<TInteger>(TSelf x)
+            where TInteger : IBinaryInteger<TInteger> => TSelf.ConvertToInteger<TInteger>(x);
+
+        public static TInteger ConvertToIntegerNative<TInteger>(TSelf x)
+            where TInteger : IBinaryInteger<TInteger> => TSelf.ConvertToIntegerNative<TInteger>(x);
+
         public static TSelf Floor(TSelf x) => TSelf.Floor(x);
 
         public static TSelf Round(TSelf x) => TSelf.Round(x);
@@ -455,6 +461,14 @@ namespace System
         public static TSelf Parse(ReadOnlySpan<char> s, IFormatProvider provider) => TSelf.Parse(s, provider);
 
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, provider, out result);
+    }
+
+    public static class Utf8SpanParsableHelper<TSelf>
+        where TSelf : IUtf8SpanParsable<TSelf>
+    {
+        public static TSelf Parse(ReadOnlySpan<byte> s, IFormatProvider provider) => TSelf.Parse(s, provider);
+
+        public static bool TryParse(ReadOnlySpan<byte> s, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, provider, out result);
     }
 
     public static class SubtractionOperatorsHelper<TSelf, TOther, TResult>

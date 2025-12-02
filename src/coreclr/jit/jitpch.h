@@ -11,7 +11,15 @@
 #include <string.h>
 #include <float.h>
 #include <cstdlib>
+#include <cmath>
 #include <intrin.h>
+#ifdef HOST_WINDOWS
+#include <malloc.h>
+#endif
+#include <algorithm>
+
+using std::max;
+using std::min;
 
 // Don't allow using the windows.h #defines for the BitScan* APIs. Using the #defines means our
 // `BitOperations::BitScan*` functions have their name mapped, which is confusing and messes up
@@ -40,7 +48,6 @@
 #include "rationalize.h"
 #include "jitstd.h"
 #include "ssaconfig.h"
-#include "blockset.h"
 #include "bitvec.h"
 #include "inline.h"
 #include "objectalloc.h"

@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Http
             _lock = new object();
         }
 
-        public LifetimeTrackingHttpMessageHandler Handler { get; private set; }
+        public LifetimeTrackingHttpMessageHandler Handler { get; }
 
         public TimeSpan Lifetime { get; }
 

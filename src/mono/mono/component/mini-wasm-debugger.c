@@ -191,6 +191,7 @@ static void
 assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 {
 	PRINT_DEBUG_MSG (2, "assembly_loaded callback called for %s\n", assembly->aname.name);
+	mono_dbg_assembly_load (prof, assembly);
 	MonoImage *assembly_image = assembly->image;
 	MonoImage *pdb_image = NULL;
 
@@ -215,11 +216,12 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 			MonoPPDBFile *ppdb = handle->ppdb;
 			if (ppdb && !mono_ppdb_is_embedded (ppdb)) { //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy.
 				pdb_image = mono_ppdb_get_image (ppdb);
-				mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
+				mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->storage->raw_data, assembly_image->storage->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
 				return;
 			}
 		}
-		mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len, NULL, 0);
+		
+		mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->storage->raw_data, assembly_image->storage->raw_data_len, NULL, 0);
 	}
 }
 
@@ -482,4 +484,4 @@ mini_wasm_debugger_add_function_pointers (MonoComponentDebugger* fn_table)
 	fn_table->mono_wasm_single_step_hit = mono_wasm_single_step_hit;
 }
 
-#endif
+#endif // !HOST_WASI

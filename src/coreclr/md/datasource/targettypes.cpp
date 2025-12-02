@@ -78,7 +78,7 @@ m_cbRec(0)
 HRESULT Target_CMiniTableDef::ReadFrom(DataTargetReader & reader)
 {
     HRESULT hr = S_OK;
-    CORDB_ADDRESS pColDefs = NULL;
+    CORDB_ADDRESS pColDefs = 0;
     IfFailRet(reader.ReadPointer(&pColDefs));
     IfFailRet(reader.Read8(&m_cCols));
     IfFailRet(reader.Read8(&m_iKey));
@@ -378,7 +378,7 @@ m_rENCRecs(0)
 {
     memset(&m_pLookUpHashes, 0, TBL_COUNT*sizeof(CORDB_ADDRESS));
     memset(&m_pVS, 0, TBL_COUNT*sizeof(CORDB_ADDRESS));
-    memset(&m_bSortable, 0, TBL_COUNT*sizeof(BOOL));
+    memset(&m_bSortable, 0, TBL_COUNT*sizeof(BYTE));
 }
 
 HRESULT Target_CMiniMdRW::ReadFrom(DataTargetReader & reader)
@@ -460,9 +460,7 @@ m_dwMachine(0),
 m_pStreamList(0),
 m_pNextStgdb(0),
 m_eFileType(0),
-m_wszFileName(0),
-m_dwDatabaseLFT(0),
-m_dwDatabaseLFS(0)
+m_wszFileName(0)
 {}
 
 HRESULT Target_CLiteWeightStgdbRW::ReadFrom(DataTargetReader & reader)
@@ -480,8 +478,6 @@ HRESULT Target_CLiteWeightStgdbRW::ReadFrom(DataTargetReader & reader)
     IfFailRet(reader.ReadPointer(&m_pNextStgdb));
     IfFailRet(reader.Read32(&m_eFileType));
     IfFailRet(reader.ReadPointer(&m_wszFileName));
-    IfFailRet(reader.Read32(&m_dwDatabaseLFT));
-    IfFailRet(reader.Read32(&m_dwDatabaseLFS));
     IfFailRet(reader.ReadPointer(&m_pStgIO));
     return S_OK;
 }

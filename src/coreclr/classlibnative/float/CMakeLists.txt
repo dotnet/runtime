@@ -1,10 +1,9 @@
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
 include_directories("../inc")
 
 set(FLOAT_SOURCES
     floatdouble.cpp
     floatsingle.cpp
+    divmodint.cpp
 )
 
 add_library_clr(comfloat_wks OBJECT ${FLOAT_SOURCES})

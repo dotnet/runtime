@@ -62,6 +62,8 @@ namespace System.Net.Mail.Tests
             yield return new object[] { "forbar" };
             yield return new object[] { "" };
             yield return new object[] { null };
+            yield return new object[] { "fo..o@example.com" };
+            yield return new object[] { "foo@exa..mple.com" };
         }
 
         [Theory]
@@ -210,7 +212,7 @@ namespace System.Net.Mail.Tests
             Assert.Equal(n, n2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void GetHashCodeTest()
         {
             var n = new MailAddress("Mr. Bar <a@example.com>");
@@ -218,7 +220,7 @@ namespace System.Net.Mail.Tests
             Assert.Equal(n.GetHashCode(), n2.GetHashCode());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void GetHashCodeTest2()
         {
             var n = new MailAddress("Mr. Bar <a@example.com>");

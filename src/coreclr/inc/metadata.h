@@ -220,19 +220,6 @@ struct HENUMInternal
 //*****************************************
 typedef struct _MDDefaultValue
 {
-#if BIGENDIAN
-    _MDDefaultValue(void)
-    {
-        m_bType = ELEMENT_TYPE_END;
-    }
-    ~_MDDefaultValue(void)
-    {
-        if (m_bType == ELEMENT_TYPE_STRING)
-        {
-            delete[] m_wzValue;
-        }
-    }
-#endif
 
     // type of default value
     BYTE            m_bType;                // CorElementType for the default value
@@ -251,7 +238,7 @@ typedef struct _MDDefaultValue
         ULONGLONG   m_ullValue;             // ELEMENT_TYPE_UI8
         FLOAT       m_fltValue;             // ELEMENT_TYPE_R4
         DOUBLE      m_dblValue;             // ELEMENT_TYPE_R8
-        LPCWSTR     m_wzValue;              // ELEMENT_TYPE_STRING
+        LPCWSTR     m_wzValue;              // ELEMENT_TYPE_STRING - Little endian
         IUnknown    *m_unkValue;            // ELEMENT_TYPE_CLASS
     };
     ULONG   m_cbSize;   // default value size (for blob)
@@ -477,7 +464,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     STDMETHOD(FindMethodDef)(
         mdTypeDef   classdef,               // [IN] given typedef
         LPCSTR      szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdMethodDef *pmd) PURE;             // [OUT] matching memberdef
 
@@ -520,7 +507,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     __checkReturn
     STDMETHOD(GetNameAndSigOfMethodDef)(
         mdMethodDef      methoddef,         // [IN] given memberdef
-        PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of CLR signature
+        PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of signature
         ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
         LPCSTR          *pszName) PURE;
 
@@ -692,7 +679,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     __checkReturn
     STDMETHOD(GetNameAndSigOfMemberRef)(    // return name here
         mdMemberRef      memberref,         // given memberref
-        PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of CLR signature
+        PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of signature
         ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
         LPCSTR          *pszName) PURE;
 
@@ -851,7 +838,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     STDMETHOD(ConvertTextSigToComSig)(      // Return hresult.
         BOOL        fCreateTrIfNotFound,    // [IN] create typeref if not found
         LPCSTR      pSignature,             // [IN] class file format signature
-        CQuickBytes *pqbNewSig,             // [OUT] place holder for CLR signature
+        CQuickBytes *pqbNewSig,             // [OUT] place holder for signature
         ULONG       *pcbCount) PURE;        // [OUT] the result size of signature
 
     //*****************************************************************************
@@ -979,7 +966,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     STDMETHOD(FindMethodDefUsingCompare)(
         mdTypeDef   classdef,               // [IN] given typedef
         LPCSTR      szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         PSIGCOMPARE pSignatureCompare,      // [IN] Routine to compare signatures
         void*       pSignatureArgs,         // [IN] Additional info to supply the compare function
@@ -1048,7 +1035,6 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
         mdToken    *tkEnclosedToken) PURE;    // [OUT] The enclosed type token
 
 #define MD_STREAM_VER_1X    0x10000
-#define MD_STREAM_VER_2_B1  0x10001
 #define MD_STREAM_VER_2     0x20000
     STDMETHOD_(DWORD, GetMetadataStreamVersion)() PURE;  //returns DWORD with major version of
                                 // MD stream in senior word and minor version--in junior word
@@ -1058,30 +1044,6 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
         mdCustomAttribute mdAttribute,      // [IN] The Custom Attribute
         LPCUTF8          *pszNamespace,     // [OUT] Namespace of Custom Attribute.
         LPCUTF8          *pszName) PURE;    // [OUT] Name of Custom Attribute.
-
-    STDMETHOD(SetOptimizeAccessForSpeed)(// S_OK or error
-        BOOL    fOptSpeed) PURE;
-
-    STDMETHOD(SetVerifiedByTrustedSource)(// S_OK or error
-        BOOL    fVerified) PURE;
-
-    STDMETHOD(GetRvaOffsetData)(
-        DWORD   *pFirstMethodRvaOffset,     // [OUT] Offset (from start of metadata) to the first RVA field in MethodDef table.
-        DWORD   *pMethodDefRecordSize,      // [OUT] Size of each record in MethodDef table.
-        DWORD   *pMethodDefCount,           // [OUT] Number of records in MethodDef table.
-        DWORD   *pFirstFieldRvaOffset,      // [OUT] Offset (from start of metadata) to the first RVA field in FieldRVA table.
-        DWORD   *pFieldRvaRecordSize,       // [OUT] Size of each record in FieldRVA table.
-        DWORD   *pFieldRvaCount             // [OUT] Number of records in FieldRVA table.
-        ) PURE;
-
-    //----------------------------------------------------------------------------------------
-    // !!! READ THIS !!!
-    //
-    // New methods have to be added at the end. The order and signatures of the existing methods
-    // have to be preserved. We need to maintain a backward compatibility for this interface to
-    // allow ildasm to work on SingleCLR.
-    //
-    //----------------------------------------------------------------------------------------
 
 };  // IMDInternalImport
 

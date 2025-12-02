@@ -166,7 +166,7 @@ unsigned int DacDbiArrayList<T>::Count() const
 inline
 TargetBuffer::TargetBuffer()
 {
-    this->pAddress = NULL;
+    this->pAddress = (CORDB_ADDRESS)NULL;
     this->cbSize = 0;
 }
 
@@ -219,7 +219,7 @@ TargetBuffer TargetBuffer::SubBuffer(ULONG byteOffset, ULONG byteLength) const
 inline
 void TargetBuffer::Clear()
 {
-    pAddress = NULL;
+    pAddress = (CORDB_ADDRESS)NULL;
     cbSize = 0;
 }
 
@@ -427,8 +427,12 @@ void SequencePoints::CopyAndSortSequencePoints(const ICorDebugInfo::OffsetMappin
     }
 
     // sort the map
-    MapSortILMap mapSorter(&m_map[0], m_map.Count());
-    mapSorter.Sort();
+    // Interpreter-TODO: This check can be removed once the interpreter generates proper maps
+    if (m_map.Count() != 0)
+    {
+        MapSortILMap mapSorter(&m_map[0], m_map.Count());
+        mapSorter.Sort();
+    }
 
 
     m_mapCount = m_map.Count();
@@ -637,14 +641,14 @@ void FieldData::ClearFields()
     m_fldSignatureCache = NULL;
     m_fldSignatureCacheSize = 0;
     m_fldInstanceOffset = 0;
-    m_pFldStaticAddress = NULL;
+    m_pFldStaticAddress = (TADDR)NULL;
 }
 
 inline
 BOOL FieldData::OkToGetOrSetInstanceOffset()
 {
     return (!m_fFldIsStatic && !m_fFldIsRVA && !m_fFldIsTLS &&
-            m_fFldStorageAvailable  && (m_pFldStaticAddress == NULL));
+            m_fFldStorageAvailable  && (m_pFldStaticAddress == (TADDR)NULL));
 }
 
 // If this is an instance field, store its offset
@@ -655,7 +659,7 @@ void FieldData::SetInstanceOffset(SIZE_T offset)
     _ASSERTE(!m_fFldIsRVA);
     _ASSERTE(!m_fFldIsTLS);
     _ASSERTE(m_fFldStorageAvailable);
-    _ASSERTE(m_pFldStaticAddress == NULL);
+    _ASSERTE(m_pFldStaticAddress == (TADDR)NULL);
     m_fldInstanceOffset = offset;
 }
 
@@ -685,7 +689,7 @@ SIZE_T FieldData::GetInstanceOffset()
     _ASSERTE(!m_fFldIsRVA);
     _ASSERTE(!m_fFldIsTLS);
     _ASSERTE(m_fFldStorageAvailable);
-    _ASSERTE(m_pFldStaticAddress == NULL);
+    _ASSERTE(m_pFldStaticAddress == (TADDR)NULL);
     return m_fldInstanceOffset;
 }
 
@@ -695,7 +699,7 @@ TADDR FieldData::GetStaticAddress()
 {
     _ASSERTE(m_fFldIsStatic);
     _ASSERTE(!m_fFldIsTLS);
-    _ASSERTE(m_fFldStorageAvailable || (m_pFldStaticAddress == NULL));
+    _ASSERTE(m_fFldStorageAvailable || (m_pFldStaticAddress == (TADDR)NULL));
     _ASSERTE(m_fldInstanceOffset == 0);
     return m_pFldStaticAddress;
 }

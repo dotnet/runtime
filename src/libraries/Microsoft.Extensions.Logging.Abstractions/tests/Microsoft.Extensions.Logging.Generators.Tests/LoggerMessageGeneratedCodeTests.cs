@@ -3,12 +3,13 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.Logging.Abstractions;
+using System.Globalization;
 using Microsoft.Extensions.Logging.Generators.Tests.TestClasses;
 using Microsoft.Extensions.Logging.Generators.Tests.TestClasses.UsesConstraintInAnotherNamespace;
 using Xunit;
 using NamespaceForABC;
 using ConstraintInAnotherNamespace;
+using System.Tests;
 
 namespace Microsoft.Extensions.Logging.Generators.Tests
 {
@@ -26,7 +27,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
-        public void FindsLoggerFieldInAnotherParialClass()
+        public void FindsLoggerFieldInAnotherPartialClass()
         {
             var logger = new MockLogger();
 
@@ -35,6 +36,52 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             new PartialClassWithLoggerField(logger).Test();
             Assert.Equal("Test.", logger.LastFormattedString);
         }
+
+#if ROSLYN4_8_OR_GREATER
+        [Fact]
+        public void FindsLoggerInPrimaryConstructorParameter()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+
+            new ClassWithPrimaryConstructor(logger).Test();
+            Assert.Equal("Test.", logger.LastFormattedString);
+        }
+
+        [Fact]
+        public void FindsLoggerInPrimaryConstructorParameterUsedInMethod()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+
+            new ClassWithPrimaryConstructorWithParameterUsedInMethod(logger).Test();
+            Assert.Equal("Test.", logger.LastFormattedString);
+        }
+
+        [Fact]
+        public void FindsLoggerInPrimaryConstructorParameterInDifferentPartialDeclaration()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+
+            new ClassWithPrimaryConstructorInDifferentPartialDeclaration(logger).Test();
+            Assert.Equal("Test.", logger.LastFormattedString);
+        }
+
+        [Fact]
+        public void FindsLoggerInFieldInitializedFromPrimaryConstructorParameter()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+
+            new ClassWithPrimaryConstructor(logger).Test();
+            Assert.Equal("Test.", logger.LastFormattedString);
+        }
+#endif
 
         [Fact]
         public void BasicTests()
@@ -667,7 +714,24 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 new KeyValuePair<string, object?>("A1", 42),
                 new KeyValuePair<string, object?>("a2", 43),
                 new KeyValuePair<string, object?>("{OriginalFormat}", "M3 {a2} {A1}"));
+        }
 
+        [Fact]
+        public void TemplateTests_UsesInvariantCulture()
+        {
+            using ThreadCultureChange _ = new("fr-FR");
+
+            var logger = new MockLogger();
+
+            logger.Reset();
+            TemplateTestExtensions.M4(logger, 1.23);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M4 1.23", logger.LastFormattedString);
+
+            logger.Reset();
+            TemplateTestExtensions.M5(logger, 1.23, 4.56, 7.89, 10.11, 12.13, 14.15, 16.17);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M5 1.23 4.56 7.89 10.11 12.13 14.15 16.17", logger.LastFormattedString);
         }
 
         [Fact]

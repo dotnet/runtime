@@ -124,19 +124,70 @@ namespace System.DirectoryServices.Protocols.Tests
 
         public static IEnumerable<object[]> Decode_TestData()
         {
+            // Content: zero-length sequence
+            // Parsed as such
             yield return new object[] { "{}", new byte[] { 48, 0, 0, 0, 0, 0 }, new object[0] };
+
+            // Content: sequence containing octet string
+            // Parsed as such
             yield return new object[] { "{a}", new byte[] { 48, 132, 0, 0, 0, 5, 4, 3, 97, 98, 99 }, new object[] { "abc" } };
+
+            // Content: sequence containing integer
+            // Parsed as such
             yield return new object[] { "{i}", new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 10 }, new object[] { 10 } };
+
+            // Content: sequence containing two booleans
+            // Parsed as a sequence containing an integer, followed by an enumerated value
             yield return new object[] { "{ie}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { -1, 0 } };
+
+            // Content: sequence containing two booleans
+            // Parsed as such
             yield return new object[] { "{bb}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { true, false } };
+
+            // Content: sequence containing two booleans
+            // Parsed as a sequence containing two octet strings
             yield return new object[] { "{OO}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { new byte[] { 255 }, new byte[] { 0 } } };
+
+            // Content: sequence containing two booleans
+            // Parsed as a sequence containing two bitstrings
             yield return new object[] { "{BB}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { new byte[] { 255 }, new byte[] { 0 } } };
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // vv and VV formats are not supported yet in Linux
             {
+                // Content: sequence containing three octet strings
+                // Parsed as a sequence containing two sequences of octet strings
                 yield return new object[] { "{vv}", new byte[] { 48, 132, 0, 0, 0, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 }, new object[] { null, null } };
+
+                // Content: sequence containing three octet strings
+                // Parsed as two sequences of octet strings
+                yield return new object[] { "vv", new byte[] { 48, 132, 0, 0, 0, 12, 4, 3, 97, 98, 99, 4, 2, 100, 101, 4, 1, 102 }, new object[] { new string[] { "abc", "de", "f" }, null } };
+
+                // Content: sequence containing two sequences of octet strings
+                // Parsed as such
+                yield return new object[] { "{vv}", new byte[] { 48, 14, 48, 5, 4, 3, 97, 98, 99, 48, 5, 4, 3, 100, 101, 102 }, new object[] { new string[] { "abc" }, new string[] { "def" } } };
+
+                // Content: sequence containing two booleans
+                // Parsed as a sequence containing two sequences of octet strings
                 yield return new object[] { "{vv}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { new string[] { "\x01" }, null } };
+
+                // Content: sequence containing two booleans. First boolean has a valid value which is also a valid UTF8 character
+                // Parsed as two sequences of octet strings
+                yield return new object[] { "vv", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 48, 1, 1, 0 }, new object[] { new string[] { "\x30", "\x00" }, null } };
+
+                // Content: sequence of octet strings
+                // Parsed as a sequence containing two sequences of octet strings (returned as bytes)
                 yield return new object[] { "{VV}", new byte[] { 48, 132, 0, 0, 0, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 }, new object[] { null, null } };
-                yield return new object[] { "{VV}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { new byte[][] { new byte[] { 1 } }, null } };
+
+                // Content: sequence of octet strings
+                // Parsed as two sequences of octet strings (returned as bytes)
+                yield return new object[] { "VV", new byte[] { 48, 132, 0, 0, 0, 12, 4, 3, 97, 98, 99, 4, 2, 100, 101, 4, 1, 102 },new object[]{ new byte[][] { [97, 98, 99], [100, 101], [102] }, null } };
+
+                // Content: sequence containing two booleans
+                // Parsed as a sequence containing two sequences of octet strings (returned as bytes)
+                yield return new object[] { "{VV}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { new byte[][] { [1] }, null } };
+
+                // Content: sequence containing two booleans
+                // Parsed as two sequences of octet strings (returned as bytes)
+                yield return new object[] { "VV", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { new byte[][] { [255], [0] }, null } };
             }
         }
 
@@ -187,6 +238,25 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Decode_Invalid_ThrowsBerConversionException(string format, byte[] values)
         {
             Assert.Throws<BerConversionException>(() => BerConverter.Decode(format, values));
+        }
+
+        public static IEnumerable<object[]> Manual_Wrapping_Required_Data()
+        {
+            // vv and VV formats are not supported yet in Linux
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                yield return new object[] { "v", new object[] { new string[] { "abc", "def" } } };
+
+                yield return new object[] { "V", new object[] { new byte[][] { [97, 98, 99], [100, 101, 102] } } };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Manual_Wrapping_Required_Data))]
+        public void Must_Manually_Wrap_Several_OctetStrings_In_Sequence(string format, object[] values)
+        {
+            Assert.Throws<BerConversionException>(() => BerConverter.Decode(format, BerConverter.Encode(format, values)));
+            Assert.Equal(values, BerConverter.Decode(format, BerConverter.Encode("{" + format + "}", values)));
         }
     }
 }

@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Runtime.InteropServices.JavaScript;
 using System.Text;
+using System.Runtime.CompilerServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System
@@ -72,8 +72,8 @@ namespace System
 
     internal static partial class ConsolePal
     {
-        [JSImport("globalThis.console.clear")]
-        public static partial void Clear();
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern void Clear();
 
         private static Encoding? s_outputEncoding;
 

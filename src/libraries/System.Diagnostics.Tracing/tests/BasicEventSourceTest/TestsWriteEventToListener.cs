@@ -3,15 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using Xunit;
-using System.Threading;
-#if USE_MDT_EVENTSOURCE
-using Microsoft.Diagnostics.Tracing;
-#else
 using System.Diagnostics.Tracing;
-#endif
+using System.Threading;
 using SdtEventSources;
+using Xunit;
 
 namespace BasicEventSourceTests
 {
@@ -339,6 +334,7 @@ namespace BasicEventSourceTests
 
                 using (var listener = new EventListenerListener())
                 {
+                    listener.Start();
                     List<EventSource> eventSourceNotificationsReceived = new List<EventSource>();
                     listener.EventSourceCreated += (s, a) =>
                     {
@@ -393,6 +389,7 @@ namespace BasicEventSourceTests
             {
                 using (var listener = new EventListenerListener())
                 {
+                    listener.Start();
                     string esName = "EventSourceName_HopefullyUnique";
                     string esName2 = "EventSourceName_HopefullyUnique2";
                     bool esNameHit = false;
@@ -453,6 +450,7 @@ namespace BasicEventSourceTests
             {
                 using (var listener = new EventListenerListener())
                 {
+                    listener.Start();
                     listener.EventSourceSynchronousEnable(log);
 
                     var thrownException = new Exception("Oops");

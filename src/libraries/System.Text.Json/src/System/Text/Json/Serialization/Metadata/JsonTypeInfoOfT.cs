@@ -97,6 +97,22 @@ namespace System.Text.Json.Serialization.Metadata
 
             _createObject = untypedCreateObject;
             _typedCreateObject = typedCreateObject;
+
+            // Clear any data related to the previously specified ctor
+            ConstructorAttributeProviderFactory = null;
+            ConstructorAttributeProvider = null;
+
+            if (CreateObjectWithArgs is not null)
+            {
+                _parameterInfoValuesIndex = null;
+                CreateObjectWithArgs = null;
+                ParameterCount = 0;
+
+                foreach (JsonPropertyInfo propertyInfo in PropertyList)
+                {
+                    propertyInfo.AssociatedParameter = null;
+                }
+            }
         }
 
         /// <summary>

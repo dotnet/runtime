@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //*****************************************************************************
-// MetaModel.cpp -- Base portion of compressed COM+ metadata.
+// MetaModel.cpp -- Base portion of compressed CLR metadata.
 //
 
 //
@@ -106,10 +106,6 @@ const CMiniTableDefEx g_Tables[TBL_COUNT] = {
 #endif
 };
 
-// Define a table descriptor for the obsolete v1.0 GenericParam table definition.
-const CMiniTableDefEx g_Table_GenericParamV1_1 = { { rGenericParamV1_1Cols, ARRAY_SIZE(rGenericParamV1_1Cols), GenericParamV1_1Rec::COL_KEY, 0 }, rGenericParamV1_1ColNames, "GenericParamV1_"};
-
-
 
 // Define the array of Ptr Tables.  This is initialized to TBL_COUNT here.
 // The correct values will be set in the constructor for MiniMdRW.
@@ -168,7 +164,7 @@ CMiniMdSchema::SaveTo(
 {
     ULONG ulData;   // Bytes stored.
     CMiniMdSchema *pDest = reinterpret_cast<CMiniMdSchema*>(pvData);
-    const unsigned __int64 one = 1;
+    const uint64_t one = 1;
 
     // Make sure the tables fit in the mask.
     _ASSERTE((sizeof(m_maskvalid) * 8) > TBL_COUNT);
@@ -187,10 +183,7 @@ CMiniMdSchema::SaveTo(
 
     // Minor version is preset when we instantiate the MiniMd.
 
-    // Make sure we're saving out a version that Beta1 version can read
-    _ASSERTE((m_major == METAMODEL_MAJOR_VER && m_minor == METAMODEL_MINOR_VER) ||
-            (m_major == METAMODEL_MAJOR_VER_B1 && m_minor == METAMODEL_MINOR_VER_B1) ||
-            (m_major == METAMODEL_MAJOR_VER_V1_0 && m_minor == METAMODEL_MINOR_VER_V1_0));
+    _ASSERTE((m_major == METAMODEL_MAJOR_VER) && (m_minor == METAMODEL_MINOR_VER));
 
     // Transfer the fixed fields.
     *static_cast<CMiniMdSchemaBase*>(pDest) = *static_cast<CMiniMdSchemaBase*>(this);
@@ -244,7 +237,7 @@ CMiniMdSchema::LoadFrom(
     memcpy((void *)this, (void *)pvData, sizeof(CMiniMdSchemaBase));
     static_cast<CMiniMdSchemaBase*>(this)->ConvertEndianness();
 
-    unsigned __int64 maskvalid = m_maskvalid;
+    uint64_t maskvalid = m_maskvalid;
 
     // Transfer the variable fields.
     memset(m_cRecs, 0, sizeof(m_cRecs));
@@ -555,13 +548,6 @@ CMiniMdBase::SchemaPopulate(
             // Older version has fewer tables.
             m_TblCount = TBL_COUNT_V1;
         }
-        else if ((m_Schema.m_major == METAMODEL_MAJOR_VER_B1) &&
-                 (m_Schema.m_minor == METAMODEL_MINOR_VER_B1))
-        {
-            // 1.1 had a different type of GenericParam table
-            m_TableDefs[TBL_GenericParam] = g_Table_GenericParamV1_1.m_Def;
-            m_TableDefs[TBL_GenericParam].m_pColDefs = BYTEARRAY_TO_COLDES(s_GenericParamCol);
-        }
         else
         {   // We don't support this version of the metadata
             Debug_ReportError("Unsupported version of MetaData.");
@@ -601,12 +587,6 @@ CMiniMdBase::SchemaPopulate(
         {   // Older version has fewer tables.
             m_TblCount = that.m_TblCount;
             _ASSERTE(m_TblCount == TBL_COUNT_V1);
-        }
-        else if (m_Schema.m_major == METAMODEL_MAJOR_VER_B1 && m_Schema.m_minor == METAMODEL_MINOR_VER_B1)
-        {
-            // 1.1 had a different type of GenericParam table
-            m_TableDefs[TBL_GenericParam] = g_Table_GenericParamV1_1.m_Def;
-            m_TableDefs[TBL_GenericParam].m_pColDefs = BYTEARRAY_TO_COLDES(s_GenericParamCol);
         }
         // Is it a supported old version?  This should never fail!
         else
@@ -689,19 +669,7 @@ const CMiniTableDef *
 CMiniMdBase::GetTableDefTemplate(
     int ixTbl)
 {
-    const CMiniTableDef *pTemplate;           // the return value.
-
-    // Return the table definition for the given table.  Account for version of schema.
-    if ((m_Schema.m_major == METAMODEL_MAJOR_VER_B1) && (m_Schema.m_minor == METAMODEL_MINOR_VER_B1) && (ixTbl == TBL_GenericParam))
-    {
-        pTemplate = &g_Table_GenericParamV1_1.m_Def;
-    }
-    else
-    {
-        pTemplate = &g_Tables[ixTbl].m_Def;
-    }
-
-    return pTemplate;
+    return &g_Tables[ixTbl].m_Def;
 } // CMiniMdBase::GetTableDefTemplate
 
 //*****************************************************************************
@@ -735,7 +703,7 @@ CMiniMdBase::InitColsForTable(
 
         pTemplate = GetTableDefTemplate(ixTbl);
 
-    PREFIX_ASSUME(pTemplate->m_pColDefs != NULL);
+    _ASSERTE(pTemplate->m_pColDefs != NULL);
 
     // For each column in the table...
     for (ULONG ixCol = 0; ixCol < pTable->m_cCols; ++ixCol)
@@ -943,18 +911,18 @@ CMiniMdBase::SwapConstant(
     case ELEMENT_TYPE_I4:
     case ELEMENT_TYPE_U4:
         _ASSERTE(ValueLength == 4);
-        *(__int32 *)pConstant = GET_UNALIGNED_VAL32(pBlobValue);
+        *(int32_t *)pConstant = GET_UNALIGNED_VAL32(pBlobValue);
         break;
     case ELEMENT_TYPE_R4:
         {
-            __int32 Value = GET_UNALIGNED_VAL32(pBlobValue);
+            int32_t Value = GET_UNALIGNED_VAL32(pBlobValue);
             *(float *)pConstant = (float &)Value;
         }
         break;
 
     case ELEMENT_TYPE_R8:
         {
-            __int64 Value = GET_UNALIGNED_VAL64(pBlobValue);
+            int64_t Value = GET_UNALIGNED_VAL64(pBlobValue);
             *(double *)pConstant = (double &) Value;
         }
         break;
@@ -962,7 +930,7 @@ CMiniMdBase::SwapConstant(
     case ELEMENT_TYPE_I8:
     case ELEMENT_TYPE_U8:
         _ASSERTE(ValueLength == 8);
-        *(__int64 *)pConstant = GET_UNALIGNED_VAL64(pBlobValue);
+        *(int64_t *)pConstant = GET_UNALIGNED_VAL64(pBlobValue);
         break;
     case ELEMENT_TYPE_STRING:
         memcpy(pConstant, pBlobValue, ValueLength);

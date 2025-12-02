@@ -8,121 +8,103 @@ namespace System.DirectoryServices.ActiveDirectory
 {
     internal static class PropertyManager
     {
-        public static string DefaultNamingContext = "defaultNamingContext";
-        public static string SchemaNamingContext = "schemaNamingContext";
-        public static string ConfigurationNamingContext = "configurationNamingContext";
-        public static string RootDomainNamingContext = "rootDomainNamingContext";
-        public static string MsDSBehaviorVersion = "msDS-Behavior-Version";
-        public static string FsmoRoleOwner = "fsmoRoleOwner";
-        public static string ForestFunctionality = "forestFunctionality";
-        public static string NTMixedDomain = "ntMixedDomain";
-        public static string DomainFunctionality = "domainFunctionality";
-        public static string ObjectCategory = "objectCategory";
-        public static string SystemFlags = "systemFlags";
-        public static string DnsRoot = "dnsRoot";
-        public static string DistinguishedName = "distinguishedName";
-        public static string TrustParent = "trustParent";
+        public const string DefaultNamingContext = "defaultNamingContext";
+        public const string SchemaNamingContext = "schemaNamingContext";
+        public const string ConfigurationNamingContext = "configurationNamingContext";
+        public const string RootDomainNamingContext = "rootDomainNamingContext";
+        public const string MsDSBehaviorVersion = "msDS-Behavior-Version";
+        public const string FsmoRoleOwner = "fsmoRoleOwner";
+        public const string ForestFunctionality = "forestFunctionality";
+        public const string NTMixedDomain = "ntMixedDomain";
+        public const string DomainFunctionality = "domainFunctionality";
+        public const string ObjectCategory = "objectCategory";
+        public const string SystemFlags = "systemFlags";
+        public const string DnsRoot = "dnsRoot";
+        public const string DistinguishedName = "distinguishedName";
+        public const string TrustParent = "trustParent";
         // disable csharp compiler warning #0414: field assigned unused value
 #pragma warning disable 0414
-        public static string FlatName = "flatName";
-        public static string Name = "name";
-        public static string Flags = "flags";
-        public static string TrustType = "trustType";
-        public static string TrustAttributes = "trustAttributes";
+        public const string FlatName = "flatName";
+        public const string Name = "name";
+        public const string Flags = "flags";
+        public const string TrustType = "trustType";
+        public const string TrustAttributes = "trustAttributes";
 #pragma warning restore 0414
-        public static string BecomeSchemaMaster = "becomeSchemaMaster";
-        public static string BecomeDomainMaster = "becomeDomainMaster";
-        public static string BecomePdc = "becomePdc";
-        public static string BecomeRidMaster = "becomeRidMaster";
-        public static string BecomeInfrastructureMaster = "becomeInfrastructureMaster";
-        public static string DnsHostName = "dnsHostName";
-        public static string Options = "options";
-        public static string CurrentTime = "currentTime";
-        public static string HighestCommittedUSN = "highestCommittedUSN";
-        public static string OperatingSystem = "operatingSystem";
-        public static string HasMasterNCs = "hasMasterNCs";
-        public static string MsDSHasMasterNCs = "msDS-HasMasterNCs";
-        public static string MsDSHasFullReplicaNCs = "msDS-hasFullReplicaNCs";
-        public static string NCName = "nCName";
-        public static string Cn = "cn";
-        // disable csharp compiler warning #0414: field assigned unused value
-#pragma warning disable 0414
-        public static string NETBIOSName = "nETBIOSName";
-#pragma warning restore 0414
-        public static string DomainDNS = "domainDNS";
-        public static string InstanceType = "instanceType";
-        public static string MsDSSDReferenceDomain = "msDS-SDReferenceDomain";
-        public static string MsDSPortLDAP = "msDS-PortLDAP";
-        public static string MsDSPortSSL = "msDS-PortSSL";
-        public static string MsDSNCReplicaLocations = "msDS-NC-Replica-Locations";
-        public static string MsDSNCROReplicaLocations = "msDS-NC-RO-Replica-Locations";
-        public static string SupportedCapabilities = "supportedCapabilities";
-        public static string ServerName = "serverName";
-        public static string Enabled = "Enabled";
-        public static string ObjectGuid = "objectGuid";
-        public static string Keywords = "keywords";
-        public static string ServiceBindingInformation = "serviceBindingInformation";
-        public static string MsDSReplAuthenticationMode = "msDS-ReplAuthenticationMode";
-        public static string HasPartialReplicaNCs = "hasPartialReplicaNCs";
-        // disable csharp compiler warning #0414: field assigned unused value
-#pragma warning disable 0414
-        public static string Container = "container";
-#pragma warning restore 0414
-        public static string LdapDisplayName = "ldapDisplayName";
-        public static string AttributeID = "attributeID";
-        public static string AttributeSyntax = "attributeSyntax";
-        public static string Description = "description";
-        public static string SearchFlags = "searchFlags";
-        public static string OMSyntax = "oMSyntax";
-        public static string OMObjectClass = "oMObjectClass";
-        public static string IsSingleValued = "isSingleValued";
-        public static string IsDefunct = "isDefunct";
-        public static string RangeUpper = "rangeUpper";
-        public static string RangeLower = "rangeLower";
-        public static string IsMemberOfPartialAttributeSet = "isMemberOfPartialAttributeSet";
-        // disable csharp compiler warning #0414: field assigned unused value
-#pragma warning disable 0414
-        public static string ObjectVersion = "objectVersion";
-#pragma warning restore 0414
-        public static string LinkID = "linkID";
-        public static string ObjectClassCategory = "objectClassCategory";
-        public static string SchemaUpdateNow = "schemaUpdateNow";
-        public static string SubClassOf = "subClassOf";
-        public static string SchemaIDGuid = "schemaIDGUID";
-        public static string PossibleSuperiors = "possSuperiors";
-        public static string PossibleInferiors = "possibleInferiors";
-        public static string MustContain = "mustContain";
-        public static string MayContain = "mayContain";
-        public static string SystemMustContain = "systemMustContain";
-        public static string SystemMayContain = "systemMayContain";
-        public static string GovernsID = "governsID";
-        public static string IsGlobalCatalogReady = "isGlobalCatalogReady";
-        // disable csharp compiler warning #0414: field assigned unused value
-#pragma warning disable 0414
-        public static string NTSecurityDescriptor = "ntSecurityDescriptor";
-#pragma warning restore 0414
-        public static string DsServiceName = "dsServiceName";
-        public static string ReplicateSingleObject = "replicateSingleObject";
-        // disable csharp compiler warning #0414: field assigned unused value
-#pragma warning disable 0414
-        public static string MsDSMasteredBy = "msDS-masteredBy";
-#pragma warning restore 0414
-        public static string DefaultSecurityDescriptor = "defaultSecurityDescriptor";
-        public static string NamingContexts = "namingContexts";
-        public static string MsDSDefaultNamingContext = "msDS-DefaultNamingContext";
-        public static string OperatingSystemVersion = "operatingSystemVersion";
-        public static string AuxiliaryClass = "auxiliaryClass";
-        public static string SystemAuxiliaryClass = "systemAuxiliaryClass";
-        public static string SystemPossibleSuperiors = "systemPossSuperiors";
-        public static string InterSiteTopologyGenerator = "interSiteTopologyGenerator";
-        public static string FromServer = "fromServer";
-        public static string RIDAvailablePool = "rIDAvailablePool";
+        public const string BecomeSchemaMaster = "becomeSchemaMaster";
+        public const string BecomeDomainMaster = "becomeDomainMaster";
+        public const string BecomePdc = "becomePdc";
+        public const string BecomeRidMaster = "becomeRidMaster";
+        public const string BecomeInfrastructureMaster = "becomeInfrastructureMaster";
+        public const string DnsHostName = "dnsHostName";
+        public const string Options = "options";
+        public const string CurrentTime = "currentTime";
+        public const string HighestCommittedUSN = "highestCommittedUSN";
+        public const string OperatingSystem = "operatingSystem";
+        public const string HasMasterNCs = "hasMasterNCs";
+        public const string MsDSHasMasterNCs = "msDS-HasMasterNCs";
+        public const string MsDSHasFullReplicaNCs = "msDS-hasFullReplicaNCs";
+        public const string NCName = "nCName";
+        public const string Cn = "cn";
+        public const string NETBIOSName = "nETBIOSName";
+        public const string DomainDNS = "domainDNS";
+        public const string InstanceType = "instanceType";
+        public const string MsDSSDReferenceDomain = "msDS-SDReferenceDomain";
+        public const string MsDSPortLDAP = "msDS-PortLDAP";
+        public const string MsDSPortSSL = "msDS-PortSSL";
+        public const string MsDSNCReplicaLocations = "msDS-NC-Replica-Locations";
+        public const string MsDSNCROReplicaLocations = "msDS-NC-RO-Replica-Locations";
+        public const string SupportedCapabilities = "supportedCapabilities";
+        public const string ServerName = "serverName";
+        public const string Enabled = "Enabled";
+        public const string ObjectGuid = "objectGuid";
+        public const string Keywords = "keywords";
+        public const string ServiceBindingInformation = "serviceBindingInformation";
+        public const string MsDSReplAuthenticationMode = "msDS-ReplAuthenticationMode";
+        public const string HasPartialReplicaNCs = "hasPartialReplicaNCs";
+        public const string Container = "container";
+        public const string LdapDisplayName = "ldapDisplayName";
+        public const string AttributeID = "attributeID";
+        public const string AttributeSyntax = "attributeSyntax";
+        public const string Description = "description";
+        public const string SearchFlags = "searchFlags";
+        public const string OMSyntax = "oMSyntax";
+        public const string OMObjectClass = "oMObjectClass";
+        public const string IsSingleValued = "isSingleValued";
+        public const string IsDefunct = "isDefunct";
+        public const string RangeUpper = "rangeUpper";
+        public const string RangeLower = "rangeLower";
+        public const string IsMemberOfPartialAttributeSet = "isMemberOfPartialAttributeSet";
+        public const string ObjectVersion = "objectVersion";
+        public const string LinkID = "linkID";
+        public const string ObjectClassCategory = "objectClassCategory";
+        public const string SchemaUpdateNow = "schemaUpdateNow";
+        public const string SubClassOf = "subClassOf";
+        public const string SchemaIDGuid = "schemaIDGUID";
+        public const string PossibleSuperiors = "possSuperiors";
+        public const string PossibleInferiors = "possibleInferiors";
+        public const string MustContain = "mustContain";
+        public const string MayContain = "mayContain";
+        public const string SystemMustContain = "systemMustContain";
+        public const string SystemMayContain = "systemMayContain";
+        public const string GovernsID = "governsID";
+        public const string IsGlobalCatalogReady = "isGlobalCatalogReady";
+        public const string NTSecurityDescriptor = "ntSecurityDescriptor";
+        public const string DsServiceName = "dsServiceName";
+        public const string ReplicateSingleObject = "replicateSingleObject";
+        public const string MsDSMasteredBy = "msDS-masteredBy";
+        public const string DefaultSecurityDescriptor = "defaultSecurityDescriptor";
+        public const string NamingContexts = "namingContexts";
+        public const string MsDSDefaultNamingContext = "msDS-DefaultNamingContext";
+        public const string OperatingSystemVersion = "operatingSystemVersion";
+        public const string AuxiliaryClass = "auxiliaryClass";
+        public const string SystemAuxiliaryClass = "systemAuxiliaryClass";
+        public const string SystemPossibleSuperiors = "systemPossSuperiors";
+        public const string InterSiteTopologyGenerator = "interSiteTopologyGenerator";
+        public const string FromServer = "fromServer";
+        public const string RIDAvailablePool = "rIDAvailablePool";
 
-        // disable csharp compiler warning #0414: field assigned unused value
-#pragma warning disable 0414
-        public static string SiteList = "siteList";
-#pragma warning restore 0414
-        public static string MsDSHasInstantiatedNCs = "msDS-HasInstantiatedNCs";
+        public const string SiteList = "siteList";
+        public const string MsDSHasInstantiatedNCs = "msDS-HasInstantiatedNCs";
 
         public static object? GetPropertyValue(DirectoryEntry directoryEntry, string propertyName)
         {

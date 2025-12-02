@@ -143,6 +143,14 @@ namespace System.Data.Odbc
             }
         }
 
+        protected override DbProviderFactory DbProviderFactory
+        {
+            get
+            {
+                return OdbcFactory.Instance;
+            }
+        }
+
         internal OdbcConnectionPoolGroupProviderInfo ProviderInfo
         {
             get

@@ -52,7 +52,7 @@ namespace System.Tests
         [InlineData(-234, 234, -1)]
         [InlineData(-234, -432, 1)]
         [InlineData(234, null, 1)]
-        public void CompareTo_Other_ReturnsExpected(int i, object value, int expected)
+        public void CompareTo_Other_ReturnsExpected(int i, object? value, int expected)
         {
             if (value is int intValue)
             {
@@ -81,7 +81,7 @@ namespace System.Tests
         [InlineData(789, null, false)]
         [InlineData(789, "789", false)]
         [InlineData(789, (long)789, false)]
-        public static void EqualsTest(int i1, object obj, bool expected)
+        public static void EqualsTest(int i1, object? obj, bool expected)
         {
             if (obj is int)
             {
@@ -663,6 +663,46 @@ namespace System.Tests
             yield return new object[] { "2147483649-", NumberStyles.AllowTrailingSign, null, typeof(OverflowException) };
             yield return new object[] { "(2147483649)", NumberStyles.AllowParentheses, null, typeof(OverflowException) };
             yield return new object[] { "2E10", NumberStyles.AllowExponent, null, typeof(OverflowException) };
+
+            // Test trailing non zeros
+
+            yield return new object[] { "-9223372036854775808.1", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "-2147483648.1", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "-32768.1", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "-128.1", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "127.1", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "255.1", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "32767.1", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "65535.1", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "2147483647.1", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "4294967295.1", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "9223372036854775807.1", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "18446744073709551615.1", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+
+            yield return new object[] { "-9223372036854775808.001", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "-2147483648.001", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "-32768.001", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "-128.001", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "127.001", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "255.001", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "32767.001", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "65535.001", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "2147483647.001", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "4294967295.001", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "9223372036854775807.001", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "18446744073709551615.001", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+
+            yield return new object[] { "3.001", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "3.000000001", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "3.0000000001", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "3.00000000001", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+
+            yield return new object[] { "3.100", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "3.100000000", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "3.1000000000", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+            yield return new object[] { "3.10000000000", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
+
+            yield return new object[] { "2147483646.1", NumberStyles.Number, CultureInfo.InvariantCulture, typeof(OverflowException) };
         }
 
         [Theory]
@@ -948,6 +988,5 @@ namespace System.Tests
                 Assert.Equal(-9670, int.Parse("-9670", NumberStyles.Integer, nfi));
             }
         }
-
     }
 }

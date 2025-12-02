@@ -1,13 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers;
 using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 #pragma warning disable IDE0060
 
@@ -19,6 +16,7 @@ namespace System.Text
     {
         public static unsafe StringBuilder Append(this StringBuilder stringBuilder, ReadOnlySpan<char> span)
         {
+            // There is no StringBuilder.Append(ReadOnlySpan<char>) overload in the NS2.0
             fixed (char* ptr = &MemoryMarshal.GetReference(span))
             {
                 return stringBuilder.Append(ptr, span.Length);
@@ -29,7 +27,7 @@ namespace System.Text
         {
             var chars = new char[stringBuilder.Length];
             stringBuilder.CopyTo(0, chars, 0, chars.Length);
-            return new[] { new ReadOnlyMemory<char>(chars) };
+            return [new ReadOnlyMemory<char>(chars)];
         }
     }
 }

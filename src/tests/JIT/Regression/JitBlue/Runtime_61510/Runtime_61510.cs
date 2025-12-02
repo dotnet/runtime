@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_61510;
+
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -12,6 +15,7 @@ public unsafe class Runtime_61510
     [Fact]
     public static int TestEntryPoint()
     {
+        // Unsafe.AsPointer is safe since static field is marked with [FixedAddressValueType]
         ref byte result = ref AddZeroByrefToNativeInt((nint)Unsafe.AsPointer(ref s_field));
 
         return Unsafe.AreSame(ref s_field, ref result) ? 100 : 101;

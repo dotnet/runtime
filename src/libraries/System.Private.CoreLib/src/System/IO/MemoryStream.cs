@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -34,7 +34,7 @@ namespace System.IO
 
         private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
 
-        private const int MemStreamMaxLength = int.MaxValue;
+        private static int MemStreamMaxLength => Array.MaxLength;
 
         public MemoryStream()
             : this(0)
@@ -44,6 +44,7 @@ namespace System.IO
         public MemoryStream(int capacity)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(capacity, MemStreamMaxLength);
 
             _buffer = capacity != 0 ? new byte[capacity] : Array.Empty<byte>();
             _capacity = capacity;
@@ -240,7 +241,7 @@ namespace System.IO
             if (n < 0)
                 n = 0;
 
-            Debug.Assert(_position + n >= 0, "_position + n >= 0");  // len is less than 2^31 -1.
+            Debug.Assert(_position + n >= 0);  // len is less than 2^31 -1.
             _position += n;
             return n;
         }
@@ -311,7 +312,7 @@ namespace System.IO
                 EnsureNotClosed();
 
                 if (value > MemStreamMaxLength - _origin)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
                 _position = _origin + (int)value;
             }
         }
@@ -327,7 +328,7 @@ namespace System.IO
             if (n <= 0)
                 return 0;
 
-            Debug.Assert(_position + n >= 0, "_position + n >= 0");  // len is less than 2^31 -1.
+            Debug.Assert(_position + n >= 0);  // len is less than 2^31 -1.
 
             if (n <= 8)
             {
@@ -493,7 +494,7 @@ namespace System.IO
                 return Task.CompletedTask;
 
             // If destination is not a memory stream, write there asynchronously:
-            if (!(destination is MemoryStream memStrDest))
+            if (destination is not MemoryStream memStrDest)
                 return destination.WriteAsync(_buffer, pos, n, cancellationToken);
 
             try
@@ -524,37 +525,37 @@ namespace System.IO
         private long SeekCore(long offset, int loc)
         {
             if (offset > MemStreamMaxLength - loc)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_StreamLength);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
             int tempPosition = unchecked(loc + (int)offset);
             if (unchecked(loc + offset) < _origin || tempPosition < _origin)
                 throw new IOException(SR.IO_SeekBeforeBegin);
             _position = tempPosition;
 
-            Debug.Assert(_position >= _origin, "_position >= _origin");
+            Debug.Assert(_position >= _origin);
             return _position - _origin;
         }
 
         // Sets the length of the stream to a given value.  The new
         // value must be nonnegative and less than the space remaining in
-        // the array, int.MaxValue - origin
+        // the array, MemStreamMaxLength - origin
         // Origin is 0 in all cases other than a MemoryStream created on
         // top of an existing array and a specific starting offset was passed
         // into the MemoryStream constructor.  The upper bounds prevents any
         // situations where a stream may be created on top of an array then
         // the stream is made longer than the maximum possible length of the
-        // array (int.MaxValue).
+        // array (MemStreamMaxLength).
         //
         public override void SetLength(long value)
         {
-            if (value < 0 || value > int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
+            if (value < 0 || value > MemStreamMaxLength)
+                throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
 
             EnsureWriteable();
 
             // Origin wasn't publicly exposed above.
-            Debug.Assert(MemStreamMaxLength == int.MaxValue);  // Check parameter validation logic in this method if this fails.
-            if (value > (int.MaxValue - _origin))
-                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
+            Debug.Assert(MemStreamMaxLength == Array.MaxLength);  // Check parameter validation logic in this method if this fails.
+            if (value > (MemStreamMaxLength - _origin))
+                throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
 
             int newLength = _origin + (int)value;
             bool allocatedNewArray = EnsureCapacity(newLength);

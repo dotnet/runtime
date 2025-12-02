@@ -30,6 +30,7 @@ namespace System.Security.Cryptography
         }
 
         public abstract void AppendHashData(ReadOnlySpan<byte> data);
+        public abstract HashProvider Clone();
 
         // Compute the hash based on the appended data and resets the HashProvider for more hashing.
         public abstract int FinalizeHashAndReset(Span<byte> destination);

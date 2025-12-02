@@ -9,6 +9,7 @@
     <GCStressIncompatible>true</GCStressIncompatible>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
     <ProjectReference Include="../common/eventpipe_common.csproj" />

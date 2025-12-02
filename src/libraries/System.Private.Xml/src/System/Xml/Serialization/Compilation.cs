@@ -21,8 +21,8 @@ namespace System.Xml.Serialization
         internal const string GeneratedAssemblyNamespace = "Microsoft.Xml.Serialization.GeneratedAssembly";
         private readonly Assembly? _assembly;
         private XmlSerializerImplementation? _contract;
-        private IDictionary? _writerMethods;
-        private IDictionary? _readerMethods;
+        private Hashtable? _writerMethods;
+        private Hashtable? _readerMethods;
         private TempMethodDictionary? _methods;
 
         internal sealed class TempMethod
@@ -47,6 +47,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GenerateRefEmitAssembly")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal TempAssembly(XmlMapping[] xmlMappings, Type?[] types, string? defaultNamespace, string? location)
         {
             bool containsSoapMapping = false;
@@ -433,6 +434,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GenerateElement")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal static Assembly GenerateRefEmitAssembly(XmlMapping[] xmlMappings, Type?[] types)
         {
             var mainType = (types.Length > 0) ? types[0] : null;

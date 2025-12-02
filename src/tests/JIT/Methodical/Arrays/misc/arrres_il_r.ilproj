@@ -7,7 +7,6 @@
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="arrres.il" />

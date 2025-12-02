@@ -16,12 +16,16 @@
         public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::HelloWorld.MyOptions options)
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET10_0_OR_GREATER
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "MyOptions", null, null);
+            #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
             var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.Val1" : $"{name}.Val1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val1" : $"{name}.Val1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1, context, validationResults, validationAttributes))
             {
@@ -29,7 +33,7 @@
             }
 
             context.MemberName = "Val2";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.Val2" : $"{name}.Val2";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val2" : $"{name}.Val2";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
@@ -82,7 +86,7 @@ namespace __OptionValidationGeneratedAttributes
         public __SourceGen__RangeAttribute(global::System.Type type, string minimum, string maximum) : base()
         {
             OperandType = type;
-            NeedToConvertMinMax = true;
+            _needToConvertMinMax = true;
             Minimum = minimum;
             Maximum = maximum;
         }
@@ -95,34 +99,41 @@ namespace __OptionValidationGeneratedAttributes
         public bool ConvertValueInInvariantCulture { get; set; }
         public override string FormatErrorMessage(string name) =>
                 string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
-        private bool NeedToConvertMinMax { get; }
-        private bool Initialized { get; set; }
-        private const string c_minMaxError = "The minimum and maximum values must be set to valid values.";
+        private readonly bool _needToConvertMinMax;
+        private volatile bool _initialized;
+        private readonly object _lock = new();
+        private const string MinMaxError = "The minimum and maximum values must be set to valid values.";
 
         public override bool IsValid(object? value)
         {
-            if (!Initialized)
+            if (!_initialized)
             {
-                if (Minimum is null || Maximum is null)
+                lock (_lock)
                 {
-                    throw new global::System.InvalidOperationException(c_minMaxError);
+                    if (!_initialized)
+                    {
+                        if (Minimum is null || Maximum is null)
+                        {
+                            throw new global::System.InvalidOperationException(MinMaxError);
+                        }
+                        if (_needToConvertMinMax)
+                        {
+                            System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
+                            Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(MinMaxError);
+                            Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(MinMaxError);
+                        }
+                        int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
+                        if (cmp > 0)
+                        {
+                            throw new global::System.InvalidOperationException("The maximum value '{Maximum}' must be greater than or equal to the minimum value '{Minimum}'.");
+                        }
+                        else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
+                        {
+                            throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
+                        }
+                        _initialized = true;
+                    }
                 }
-                if (NeedToConvertMinMax)
-                {
-                    System.Globalization.CultureInfo culture = ParseLimitsInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
-                    Minimum = ConvertValue(Minimum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
-                    Maximum = ConvertValue(Maximum, culture) ?? throw new global::System.InvalidOperationException(c_minMaxError);
-                }
-                int cmp = ((global::System.IComparable)Minimum).CompareTo((global::System.IComparable)Maximum);
-                if (cmp > 0)
-                {
-                    throw new global::System.InvalidOperationException("The maximum value '{Maximum}' must be greater than or equal to the minimum value '{Minimum}'.");
-                }
-                else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
-                {
-                    throw new global::System.InvalidOperationException("Cannot use exclusive bounds when the maximum value is equal to the minimum value.");
-                }
-                Initialized = true;
             }
 
             if (value is null or string { Length: 0 })
@@ -137,7 +148,7 @@ namespace __OptionValidationGeneratedAttributes
             {
                 convertedValue = ConvertValue(value, formatProvider);
             }
-            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException or global::System.OverflowException)
             {
                 return false;
             }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -12,7 +13,7 @@ namespace System.Security.Cryptography.Xml
         internal const string CreateFromNameUnreferencedCodeMessage = "The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.";
         internal const string XsltRequiresDynamicCodeMessage = "XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.";
 
-        private static readonly char[] _invalidChars = new char[] { ',', '`', '[', '*', '&' };
+        private static readonly SearchValues<char> s_invalidChars = SearchValues.Create(",`[*&");
 
         [RequiresDynamicCode(XsltRequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
@@ -50,7 +51,7 @@ namespace System.Security.Cryptography.Xml
         [RequiresDynamicCode(XsltRequiresDynamicCodeMessage)]
         private static XmlDsigXsltTransform CreateXmlDsigXsltTransform()
         {
-#if NETCOREAPP
+#if NET
             if (!RuntimeFeature.IsDynamicCodeSupported)
             {
                 // XSLTs are only supported when dynamic code is supported. See https://github.com/dotnet/runtime/issues/84389
@@ -65,7 +66,7 @@ namespace System.Security.Cryptography.Xml
         [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
         public static T? CreateFromName<T>(string? name) where T : class
         {
-            if (name == null || name.IndexOfAny(_invalidChars) >= 0)
+            if (name == null || name.AsSpan().ContainsAny(s_invalidChars))
             {
                 return null;
             }
@@ -73,7 +74,7 @@ namespace System.Security.Cryptography.Xml
             {
                 return (CryptoConfig.CreateFromName(name) ?? CreateFromKnownName(name)) as T;
             }
-#if NETCOREAPP
+#if NET
             catch (NotSupportedException)
             {
                 if (name == "http://www.w3.org/TR/1999/REC-xslt-19991116")

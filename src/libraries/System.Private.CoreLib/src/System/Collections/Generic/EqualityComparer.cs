@@ -262,4 +262,59 @@ namespace System.Collections.Generic
         public override int GetHashCode() =>
             GetType().GetHashCode();
     }
+
+    // This class exists to be EqualityComparer<string>.Default. It can't just use the GenericEqualityComparer<string>,
+    // as it needs to also implement IAlternateEqualityComparer<ReadOnlySpan<char>, string>, and it can't be
+    // StringComparer.Ordinal, as that doesn't derive from the required abstract EqualityComparer<T> base class.
+    [Serializable]
+    internal sealed partial class StringEqualityComparer :
+        EqualityComparer<string>,
+        IAlternateEqualityComparer<ReadOnlySpan<char>, string>,
+        ISerializable
+    {
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            // This type is added as an internal implementation detail in .NET 9. Even though as of .NET 9 BinaryFormatter has been
+            // deprecated, for back compat we still need to support serializing this type, especially when EqualityComparer<string>.Default
+            // is used as part of a collection, like Dictionary<string, TValue>.
+            //
+            // BinaryFormatter treats types in the core library as being special, in that it doesn't include the assembly as part of the
+            // serialized data, and then on deserialization it assumes the type is in mscorlib. We could make the type public and type forward
+            // it from the mscorlib shim, which would enable roundtripping on .NET 9+, but because this type doesn't exist downlevel, it would
+            // break serializing on .NET 9+ and deserializing downlevel. Therefore, we need to serialize as something that exists downlevel.
+
+            // We could serialize as OrdinalComparer, which does exist downlevel, and which has the nice property that it also implements
+            // IAlternateEqualityComparer<ReadOnlySpan<char>, string>, which means serializing an instance on .NET 9+ and deserializing it
+            // on .NET 9+ would continue to support span-based lookups. However, OrdinalComparer is not an EqualityComparer<string>, which
+            // means the type's public ancestry would not be retained, which could lead to strange casting-related errors, including downlevel.
+
+            // Instead, we can serialize as a GenericEqualityComparer<string>. This exists downlevel and also derives from EqualityComparer<string>,
+            // but doesn't implement IAlternateEqualityComparer<ReadOnlySpan<char>, string>. This means that upon deserializing on .NET 9+,
+            // the comparer loses its ability to handle span-based lookups. As BinaryFormatter is deprecated on .NET 9+, this is a readonable tradeoff.
+
+            info.SetType(typeof(GenericEqualityComparer<string>));
+        }
+
+        public override bool Equals(string? x, string? y) => string.Equals(x, y);
+
+        public override int GetHashCode([DisallowNull] string obj) => obj?.GetHashCode() ?? 0;
+
+        public bool Equals(ReadOnlySpan<char> span, string target)
+        {
+            // See explanation in OrdinalComparer.Equals.
+            if (span.IsEmpty && target is null)
+            {
+                return false;
+            }
+
+            return span.SequenceEqual(target);
+        }
+
+        public int GetHashCode(ReadOnlySpan<char> span) => string.GetHashCode(span);
+
+        public string Create(ReadOnlySpan<char> span) => span.ToString();
+
+        public override bool Equals(object? obj) => obj is StringEqualityComparer;
+        public override int GetHashCode() => GetType().GetHashCode();
+    }
 }

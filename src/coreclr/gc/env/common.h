@@ -21,10 +21,17 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <memory.h>
+#include <limits.h>
+#include <math.h>
 
 #include <new>
+#include <type_traits>
+#include <limits>
+#include <algorithm>
 
-#ifdef TARGET_UNIX
+#ifdef TARGET_WINDOWS
+#include <windows.h>
+#else
 #include <pthread.h>
 #endif
 

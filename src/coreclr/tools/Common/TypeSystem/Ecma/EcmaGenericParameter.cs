@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Threading;
@@ -113,7 +114,7 @@ namespace Internal.TypeSystem.Ecma
             {
                 Debug.Assert((int)GenericConstraints.DefaultConstructorConstraint == (int)GenericParameterAttributes.DefaultConstructorConstraint);
                 GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
-                const GenericParameterAttributes mask = GenericParameterAttributes.SpecialConstraintMask | (GenericParameterAttributes)GenericConstraints.AcceptByRefLike;
+                const GenericParameterAttributes mask = GenericParameterAttributes.SpecialConstraintMask | (GenericParameterAttributes)GenericConstraints.AllowByRefLike;
                 return (GenericConstraints)(parameter.Attributes & mask);
             }
         }

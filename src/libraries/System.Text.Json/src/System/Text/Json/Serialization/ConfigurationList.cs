@@ -23,6 +23,7 @@ namespace System.Text.Json.Serialization
 
         public abstract bool IsReadOnly { get; }
         protected abstract void OnCollectionModifying();
+        protected virtual void OnCollectionModified() { }
         protected virtual void ValidateAddedValue(TItem item) { }
 
         public TItem this[int index]
@@ -33,14 +34,12 @@ namespace System.Text.Json.Serialization
             }
             set
             {
-                if (value is null)
-                {
-                    ThrowHelper.ThrowArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
-                ValidateAddedValue(value);
                 OnCollectionModifying();
+                ValidateAddedValue(value);
                 _list[index] = value;
+                OnCollectionModified();
             }
         }
 
@@ -48,20 +47,19 @@ namespace System.Text.Json.Serialization
 
         public void Add(TItem item)
         {
-            if (item is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
-            ValidateAddedValue(item);
             OnCollectionModifying();
+            ValidateAddedValue(item);
             _list.Add(item);
+            OnCollectionModified();
         }
 
         public void Clear()
         {
             OnCollectionModifying();
             _list.Clear();
+            OnCollectionModified();
         }
 
         public bool Contains(TItem item)
@@ -86,26 +84,31 @@ namespace System.Text.Json.Serialization
 
         public void Insert(int index, TItem item)
         {
-            if (item is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
-            ValidateAddedValue(item);
             OnCollectionModifying();
+            ValidateAddedValue(item);
             _list.Insert(index, item);
+            OnCollectionModified();
         }
 
         public bool Remove(TItem item)
         {
             OnCollectionModifying();
-            return _list.Remove(item);
+            bool removed = _list.Remove(item);
+            if (removed)
+            {
+                OnCollectionModified();
+            }
+
+            return removed;
         }
 
         public void RemoveAt(int index)
         {
             OnCollectionModifying();
             _list.RemoveAt(index);
+            OnCollectionModified();
         }
 
         IEnumerator<TItem> IEnumerable<TItem>.GetEnumerator()

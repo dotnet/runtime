@@ -14,7 +14,7 @@
 //
 // Given that the data itself is touched infrequently, we can trade off space reduction against cpu-usage to
 // good effect here. A fair amount of work has gone into reducing the size of each EEClass instance (see
-// EEClassOptionalFields and EEClassPackedFields) at the expense of somewhat more convoluted runtime access.
+// EEClassOptionalFields) at the expense of somewhat more convoluted runtime access.
 //
 // Please consider this (and measure the impact of your changes against startup scenarios) before adding
 // fields to EEClass or otherwise increasing its size.
@@ -46,7 +46,6 @@
 #include "typectxt.h"
 #include "iterator_util.h"
 
-#include "packedfields.inl"
 #include "array.h"
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr);
@@ -73,7 +72,6 @@ class   EnCFieldDesc;
 class   FieldDesc;
 class   NativeFieldDescriptor;
 class   EEClassNativeLayoutInfo;
-struct  LayoutRawFieldInfo;
 class   MetaSig;
 class   MethodDesc;
 class   MethodDescChunk;
@@ -127,7 +125,7 @@ class ExplicitFieldTrust
 };
 
 //----------------------------------------------------------------------------------------------
-// This class is a helper for HandleExplicitLayout. To make it harder to introduce security holes
+// This class is a helper for ValidateExplicitLayout. To make it harder to introduce security holes
 // into this function, we will manage all updates to the class's trust level through the ExplicitClassTrust
 // class. This abstraction enforces the rule that the overall class is only as trustworthy as
 // the least trustworthy field.
@@ -176,7 +174,7 @@ class ExplicitClassTrust : private ExplicitFieldTrust
 };
 
 //----------------------------------------------------------------------------------------------
-// This class is a helper for HandleExplicitLayout. To make it harder to introduce security holes
+// This class is a helper for ValidateExplicitLayout. To make it harder to introduce security holes
 // into this function, this class will collect trust information about individual fields to be later
 // aggregated into the overall class level.
 //
@@ -335,30 +333,14 @@ private:
 //=======================================================================
 class EEClassLayoutInfo
 {
-    static VOID CollectLayoutFieldMetadataThrowing(
-       mdTypeDef cl,                // cl of the NStruct being loaded
-       BYTE packingSize,            // packing size (from @dll.struct)
-       BYTE nlType,                 // nltype (from @dll.struct)
-       BOOL fExplicitOffsets,       // explicit offsets?
-       MethodTable *pParentMT,       // the loaded superclass
-       ULONG cTotalFields,              // total number of fields (instance and static)
-       HENUMInternal *phEnumField,  // enumerator for fields
-       Module* pModule,             // Module that defines the scope, loader and heap (for allocate FieldMarshalers)
-       const SigTypeContext *pTypeContext,          // Type parameters for NStruct being loaded
-       EEClassLayoutInfo *pEEClassLayoutInfoOut,  // caller-allocated structure to fill in.
-       LayoutRawFieldInfo *pInfoArrayOut, // caller-allocated array to fill in.  Needs room for cTotalFields+1 elements
-       LoaderAllocator * pAllocator,
-       AllocMemTracker    *pamTracker
-    );
-
-    friend class ClassLoader;
-    friend class EEClass;
-    friend class MethodTableBuilder;
-        UINT32      m_cbManagedSize;
-
     public:
-        BYTE        m_ManagedLargestAlignmentRequirementOfAllMembers;
-
+        enum class LayoutType : BYTE
+        {
+            Auto = 0, // Make sure Auto is the default value as the default-constructed value represents the "auto layout" case
+            Sequential,
+            Explicit,
+            CStruct
+        };
     private:
         enum {
             // TRUE if the GC layout of the class is bit-for-bit identical
@@ -366,8 +348,8 @@ class EEClassLayoutInfo
             // (i.e. no internal reference fields, no ansi-unicode char conversions required, etc.)
             // Used to optimize marshaling.
             e_BLITTABLE                       = 0x01,
-            // Is this type also sequential in managed memory?
-            e_MANAGED_SEQUENTIAL              = 0x02,
+            // unused                         = 0x02,
+
             // When a sequential/explicit type has no fields, it is conceptually
             // zero-sized, but actually is 1 byte in length. This holds onto this
             // fact and allows us to revert the 1 byte of padding when another
@@ -381,17 +363,16 @@ class EEClassLayoutInfo
             e_IS_OR_HAS_INT128_FIELD          = 0x20,
         };
 
-        BYTE        m_bFlags;
+        LayoutType m_LayoutType;
+
+        BYTE       m_ManagedLargestAlignmentRequirementOfAllMembers;
+
+        BYTE       m_bFlags;
 
         // Packing size in bytes (1, 2, 4, 8 etc.)
-        BYTE        m_cbPackingSize;
+        BYTE       m_cbPackingSize;
 
     public:
-        UINT32 GetManagedSize() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return m_cbManagedSize;
-        }
 
         BOOL IsBlittable() const
         {
@@ -399,10 +380,10 @@ class EEClassLayoutInfo
             return (m_bFlags & e_BLITTABLE) == e_BLITTABLE;
         }
 
-        BOOL IsManagedSequential() const
+        LayoutType GetLayoutType() const
         {
             LIMITED_METHOD_CONTRACT;
-            return (m_bFlags & e_MANAGED_SEQUENTIAL) == e_MANAGED_SEQUENTIAL;
+            return m_LayoutType;
         }
 
         // If true, this says that the type was originally zero-sized
@@ -434,39 +415,23 @@ class EEClassLayoutInfo
             return (m_bFlags & e_IS_OR_HAS_INT128_FIELD) == e_IS_OR_HAS_INT128_FIELD;
         }
 
+        BYTE GetAlignmentRequirement() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return m_ManagedLargestAlignmentRequirementOfAllMembers;
+        }
+
         BYTE GetPackingSize() const
         {
             LIMITED_METHOD_CONTRACT;
             return m_cbPackingSize;
         }
 
-    private:
         void SetIsBlittable(BOOL isBlittable)
         {
             LIMITED_METHOD_CONTRACT;
             m_bFlags = isBlittable ? (m_bFlags | e_BLITTABLE)
                                    : (m_bFlags & ~e_BLITTABLE);
-        }
-
-        void SetIsManagedSequential(BOOL isManagedSequential)
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_bFlags = isManagedSequential ? (m_bFlags | e_MANAGED_SEQUENTIAL)
-                                           : (m_bFlags & ~e_MANAGED_SEQUENTIAL);
-        }
-
-        void SetIsZeroSized(BOOL isZeroSized)
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_bFlags = isZeroSized ? (m_bFlags | e_ZERO_SIZED)
-                                   : (m_bFlags & ~e_ZERO_SIZED);
-        }
-
-        void SetHasExplicitSize(BOOL hasExplicitSize)
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_bFlags = hasExplicitSize ? (m_bFlags | e_HAS_EXPLICIT_SIZE)
-                                       : (m_bFlags & ~e_HAS_EXPLICIT_SIZE);
         }
 
         void SetHasAutoLayoutField(BOOL hasAutoLayoutField)
@@ -482,6 +447,86 @@ class EEClassLayoutInfo
             m_bFlags = hasInt128Field ? (m_bFlags | e_IS_OR_HAS_INT128_FIELD)
                                        : (m_bFlags & ~e_IS_OR_HAS_INT128_FIELD);
         }
+
+        void SetHasExplicitSize(BOOL hasExplicitSize)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_bFlags = hasExplicitSize ? (m_bFlags | e_HAS_EXPLICIT_SIZE)
+                                    : (m_bFlags & ~e_HAS_EXPLICIT_SIZE);
+        }
+
+        void SetAlignmentRequirement(BYTE alignment)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_ManagedLargestAlignmentRequirementOfAllMembers = alignment;
+        }
+
+        void SetPackingSize(BYTE cbPackingSize)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_cbPackingSize = cbPackingSize;
+        }
+
+        ULONG InitializeSequentialFieldLayout(
+            FieldDesc* pFields,
+            MethodTable** pByValueClassCache,
+            ULONG cFields,
+            BYTE packingSize,
+            ULONG classSizeInMetadata,
+            MethodTable* pParentMT
+        );
+
+        ULONG InitializeExplicitFieldLayout(
+            FieldDesc* pFields,
+            MethodTable** pByValueClassCache,
+            ULONG cFields,
+            BYTE packingSize,
+            ULONG classSizeInMetadata,
+            MethodTable* pParentMT,
+            Module* pModule,
+            mdTypeDef cl
+        );
+
+        ULONG InitializeCStructFieldLayout(
+            FieldDesc* pFields,
+            MethodTable** pByValueClassCache,
+            ULONG cFields
+        );
+
+    private:
+        void SetIsZeroSized(BOOL isZeroSized)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_bFlags = isZeroSized ? (m_bFlags | e_ZERO_SIZED)
+                                : (m_bFlags & ~e_ZERO_SIZED);
+        }
+
+        UINT32 SetInstanceBytesSize(UINT32 size)
+        {
+            LIMITED_METHOD_CONTRACT;
+            // Bump the managed size of the structure up to 1.
+            SetIsZeroSized(size == 0 ? TRUE : FALSE);
+            return size == 0 ? 1 : size;
+        }
+
+        void SetLayoutType(LayoutType layoutType)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_LayoutType = layoutType;
+        }
+    public:
+        enum class NestedFieldFlags
+        {
+            support_use_as_flags = -1,
+            None = 0x0,
+            NonBlittable = 0x1,
+            GCPointer = 0x2,
+            Align8 = 0x4,
+            AutoLayout = 0x8,
+            Int128 = 0x10,
+        };
+
+        static NestedFieldFlags GetNestedFieldFlags(Module* pModule, FieldDesc *pFD, ULONG cFields, CorNativeLinkType nlType, MethodTable** pByValueClassCache);
 };
 
 //
@@ -591,9 +636,6 @@ class EEClassOptionalFields
     // MISC FIELDS
     //
 
-    #define    MODULE_NON_DYNAMIC_STATICS      ((DWORD)-1)
-    DWORD m_cbModuleDynamicID;
-
 #if defined(UNIX_AMD64_ABI)
     // Number of eightBytes in the following arrays
     int m_numberEightBytes;
@@ -617,49 +659,6 @@ class EEClassOptionalFields
     }
 };
 typedef DPTR(EEClassOptionalFields) PTR_EEClassOptionalFields;
-
-//
-// Another mechanism used to reduce the size of the average EEClass instance is the notion of packed fields.
-// This is based on the observation that EEClass has a large number of integer fields that typically contain
-// small values and that are fixed once class layout has completed. We can compact these fields by discarding
-// the leading zero bits (and for small values there'll be a lot of these) and packing the significant data
-// into compact bitfields. This is a dynamic operation (the exact packing used depends on the exact data
-// stored in the fields).
-//
-// The PackedDWORDFields<> class (defined in PackedFields.inl) encapsulates this. It takes one template
-// parameter, the number of fields to pack, and provides operations to get and set those fields until we're
-// happy with the values, at which point it will compact them for us.
-//
-// The packed fields themselves are stored at the end of the EEClass instance (or the LayoutEEClass or the
-// DelegateEEClass etc.) so we can take advantage of the variable sized nature of the fields. We gain nothing for
-// runtime allocated EEClasses (we have to allocate a maximally sized structure for the packed fields because
-// we can't tell at the beginning of EEClass layout what the field values will be). But in the ngen scenario
-// we can compact the fields just prior to saving and only store the portion of the EEClass that is relvant,
-// helping us with our goal of packing all the EEClass instances together as tightly as possible.
-//
-// Since each packed field is now accessed via an array-like index, we give each of those indices a name with
-// the enum below to make the code more readable.
-//
-
-enum EEClassFieldId
-{
-    EEClass_Field_NumInstanceFields = 0,
-    EEClass_Field_NumMethods,
-    EEClass_Field_NumStaticFields,
-    EEClass_Field_NumHandleStatics,
-    EEClass_Field_NumBoxedStatics,
-    EEClass_Field_NonGCStaticFieldBytes,
-    EEClass_Field_NumThreadStaticFields,
-    EEClass_Field_NumHandleThreadStatics,
-    EEClass_Field_NumBoxedThreadStatics,
-    EEClass_Field_NonGCThreadStaticFieldBytes,
-    EEClass_Field_NumNonVirtualSlots,
-    EEClass_Field_COUNT
-};
-
-typedef PackedDWORDFields<EEClass_Field_COUNT> EEClassPackedFields;
-typedef DPTR(EEClassPackedFields) PTR_EEClassPackedFields;
-
 //@GENERICS:
 // For most types there is a one-to-one mapping between MethodTable* and EEClass*
 // However this is not the case for instantiated types where code and representation
@@ -773,7 +772,7 @@ public:
 
 #ifndef DACCESS_COMPILE
     void *operator new(size_t size, LoaderHeap* pHeap, AllocMemTracker *pamTracker);
-    void Destruct(MethodTable * pMT);
+    void Destruct();
 
     static EEClass * CreateMinimalClass(LoaderHeap *pHeap, AllocMemTracker *pamTracker);
 #endif // !DACCESS_COMPILE
@@ -911,13 +910,13 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return (WORD)GetPackableField(EEClass_Field_NumInstanceFields);
+        return m_NumInstanceFields;
     }
 
     inline void SetNumInstanceFields (WORD wNumInstanceFields)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumInstanceFields, wNumInstanceFields);
+        m_NumInstanceFields = wNumInstanceFields;
     }
 
     /*
@@ -928,41 +927,25 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return (WORD)GetPackableField(EEClass_Field_NumStaticFields);
+        return m_NumStaticFields;
     }
     inline void SetNumStaticFields (WORD wNumStaticFields)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumStaticFields, wNumStaticFields);
+        m_NumStaticFields = wNumStaticFields;
     }
 
     inline WORD GetNumThreadStaticFields()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return (WORD)GetPackableField(EEClass_Field_NumThreadStaticFields);
+        return m_NumThreadStaticFields;
     }
 
     inline void SetNumThreadStaticFields (WORD wNumThreadStaticFields)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumThreadStaticFields, wNumThreadStaticFields);
-    }
-
-    // Statics are stored in a big chunk inside the module
-
-    inline  DWORD GetModuleDynamicID()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        return HasOptionalFields() ? GetOptionalFields()->m_cbModuleDynamicID : MODULE_NON_DYNAMIC_STATICS;
-    }
-
-    inline void SetModuleDynamicID(DWORD cbModuleDynamicID)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasOptionalFields());
-        GetOptionalFields()->m_cbModuleDynamicID = cbModuleDynamicID;
+        m_NumThreadStaticFields = wNumThreadStaticFields;
     }
 
     /*
@@ -973,34 +956,34 @@ public:
     inline DWORD GetNonGCRegularStaticFieldBytes()
     {
         LIMITED_METHOD_CONTRACT;
-        return GetPackableField(EEClass_Field_NonGCStaticFieldBytes);
+        return m_NonGCStaticFieldBytes;
     }
     inline void SetNonGCRegularStaticFieldBytes (DWORD cbNonGCStaticFieldBytes)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NonGCStaticFieldBytes, cbNonGCStaticFieldBytes);
+        m_NonGCStaticFieldBytes = cbNonGCStaticFieldBytes;
     }
 
     inline DWORD GetNonGCThreadStaticFieldBytes()
     {
         LIMITED_METHOD_CONTRACT;
-        return GetPackableField(EEClass_Field_NonGCThreadStaticFieldBytes);
+        return m_NonGCThreadStaticFieldBytes;
     }
     inline void SetNonGCThreadStaticFieldBytes (DWORD cbNonGCStaticFieldBytes)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NonGCThreadStaticFieldBytes, cbNonGCStaticFieldBytes);
+        m_NonGCThreadStaticFieldBytes = cbNonGCStaticFieldBytes;
     }
 
     inline WORD GetNumNonVirtualSlots()
     {
         LIMITED_METHOD_CONTRACT;
-        return (WORD)GetPackableField(EEClass_Field_NumNonVirtualSlots);
+        return m_NumNonVirtualSlots;
     }
     inline void SetNumNonVirtualSlots(WORD wNumNonVirtualSlots)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumNonVirtualSlots, wNumNonVirtualSlots);
+        m_NumNonVirtualSlots = wNumNonVirtualSlots;
     }
 
     inline BOOL IsEquivalentType()
@@ -1023,12 +1006,12 @@ public:
     inline WORD GetNumHandleRegularStatics ()
     {
         LIMITED_METHOD_CONTRACT;
-        return (WORD)GetPackableField(EEClass_Field_NumHandleStatics);
+        return m_NumHandleStatics;
     }
     inline void SetNumHandleRegularStatics (WORD wNumHandleRegularStatics)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumHandleStatics, wNumHandleRegularStatics);
+        m_NumHandleStatics = wNumHandleRegularStatics;
     }
 
     /*
@@ -1037,40 +1020,12 @@ public:
     inline WORD GetNumHandleThreadStatics ()
     {
         LIMITED_METHOD_CONTRACT;
-        return (WORD)GetPackableField(EEClass_Field_NumHandleThreadStatics);
+        return m_NumHandleThreadStatics;
     }
     inline void SetNumHandleThreadStatics (WORD wNumHandleThreadStatics)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumHandleThreadStatics, wNumHandleThreadStatics);
-    }
-
-    /*
-     * Number of boxed statics allocated
-     */
-    inline WORD GetNumBoxedRegularStatics ()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (WORD)GetPackableField(EEClass_Field_NumBoxedStatics);
-    }
-    inline void SetNumBoxedRegularStatics (WORD wNumBoxedRegularStatics)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumBoxedStatics, wNumBoxedRegularStatics);
-    }
-
-    /*
-     * Number of boxed statics allocated for ThreadStatics
-     */
-    inline WORD GetNumBoxedThreadStatics ()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (WORD)GetPackableField(EEClass_Field_NumBoxedThreadStatics);
-    }
-    inline void SetNumBoxedThreadStatics (WORD wNumBoxedThreadStatics)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumBoxedThreadStatics, wNumBoxedThreadStatics);
+        m_NumHandleThreadStatics = wNumHandleThreadStatics;
     }
 
     /*
@@ -1124,12 +1079,12 @@ public:
     inline WORD GetNumMethods()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (WORD)GetPackableField(EEClass_Field_NumMethods);
+        return m_NumMethods;
     }
     inline void SetNumMethods (WORD wNumMethods)
     {
         LIMITED_METHOD_CONTRACT;
-        SetPackableField(EEClass_Field_NumMethods, wNumMethods);
+        m_NumMethods = wNumMethods;
     }
 
     /*
@@ -1259,23 +1214,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD) VMFLAG_SPARSE_FOR_COMINTEROP;
     }
-    inline void SetMarshalingType(UINT32 mType)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(mType !=0);
-        _ASSERTE((m_VMFlags & VMFLAG_MARSHALINGTYPE_MASK) == 0);
-        switch(mType)
-        {
-        case 1: m_VMFlags |= VMFLAG_MARSHALINGTYPE_INHIBIT;
-            break;
-        case 2: m_VMFlags |= VMFLAG_MARSHALINGTYPE_FREETHREADED;
-            break;
-        case 3: m_VMFlags |= VMFLAG_MARSHALINGTYPE_STANDARD;
-            break;
-        default:
-            _ASSERTE(!"Invalid MarshalingBehaviorAttribute value");
-        }
-    }
 #endif // FEATURE_COMINTEROP
     inline void SetHasLayout()
     {
@@ -1350,26 +1288,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_VMFlags & VMFLAG_SPARSE_FOR_COMINTEROP;
     }
-    BOOL IsMarshalingTypeSet()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_VMFlags & VMFLAG_MARSHALINGTYPE_MASK);
-    }
-    BOOL IsMarshalingTypeFreeThreaded()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ((m_VMFlags & VMFLAG_MARSHALINGTYPE_MASK) == VMFLAG_MARSHALINGTYPE_FREETHREADED);
-    }
-    BOOL IsMarshalingTypeInhibit()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ((m_VMFlags & VMFLAG_MARSHALINGTYPE_MASK) == VMFLAG_MARSHALINGTYPE_INHIBIT);
-    }
-    BOOL IsMarshalingTypeStandard()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ((m_VMFlags & VMFLAG_MARSHALINGTYPE_MASK) == VMFLAG_MARSHALINGTYPE_STANDARD);
-    }
 #endif // FEATURE_COMINTEROP
     BOOL HasLayout()
     {
@@ -1406,15 +1324,15 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD)VMFLAG_INLINE_ARRAY;
     }
-    DWORD HasNonPublicFields()
+    DWORD HasRVAStaticFields()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_VMFlags & VMFLAG_HASNONPUBLICFIELDS);
+        return (m_VMFlags & VMFLAG_HASRVASTATICFIELDS);
     }
-    void SetHasNonPublicFields()
+    void SetHasRVAStaticFields()
     {
         LIMITED_METHOD_CONTRACT;
-        m_VMFlags |= (DWORD)VMFLAG_HASNONPUBLICFIELDS;
+        m_VMFlags |= (DWORD)VMFLAG_HASRVASTATICFIELDS;
     }
     DWORD IsNotTightlyPacked()
     {
@@ -1689,9 +1607,6 @@ public:
     //     - Any field that has a default value for the vast majority of EEClass instances
     //       should be stored in the EEClassOptionalFields (see header comment)
     //
-    //     - Any field that is nearly always a small positive integer and is infrequently
-    //       accessed should be in the EEClassPackedFields (see header comment)
-    //
     // If none of these categories apply - such as for always-meaningful pointer members or
     // sets of flags - a full field is used.  Please avoid adding such members if possible.
     //-------------------------------------------------------------
@@ -1739,7 +1654,7 @@ public:
 
         VMFLAG_INLINE_ARRAY                    = 0x00010000,
         VMFLAG_NO_GUID                         = 0x00020000,
-        VMFLAG_HASNONPUBLICFIELDS              = 0x00040000,
+        VMFLAG_HASRVASTATICFIELDS              = 0x00040000,
         VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT      = 0x00080000,
         VMFLAG_CONTAINS_STACK_PTR              = 0x00100000,
         VMFLAG_PREFER_ALIGN8                   = 0x00200000, // Would like to have 8-byte alignment
@@ -1763,14 +1678,6 @@ public:
 
         // True if methoddesc on this class have any real (non-interface) methodimpls
         VMFLAG_CONTAINS_METHODIMPLS            = 0x20000000,
-
-#ifdef FEATURE_COMINTEROP
-        VMFLAG_MARSHALINGTYPE_MASK             = 0xc0000000,
-
-        VMFLAG_MARSHALINGTYPE_INHIBIT          = 0x40000000,
-        VMFLAG_MARSHALINGTYPE_FREETHREADED     = 0x80000000,
-        VMFLAG_MARSHALINGTYPE_STANDARD         = 0xc0000000,
-#endif
     };
 
 public:
@@ -1799,7 +1706,7 @@ private:
 #ifdef FEATURE_COMINTEROP
     union
     {
-        // For COM+ wrapper objects that extend an unmanaged class, this field
+        // For CLR wrapper objects that extend an unmanaged class, this field
         // may contain a delegate to be called to allocate the aggregated
         // unmanaged class (instead of using CoCreateInstance).
         OBJECTHANDLE    m_ohDelegate;
@@ -1825,10 +1732,17 @@ private:
     // NOTE: Following BYTE fields are laid out together so they'll fit within the same DWORD for efficient
     // structure packing.
     BYTE m_NormType;
-    BYTE m_fFieldsArePacked;        // TRUE iff fields pointed to by GetPackedFields() are in packed state
-    BYTE m_cbFixedEEClassFields;    // Count of bytes of normal fields of this instance (EEClass,
-                                    // LayoutEEClass etc.). Doesn't count bytes of "packed" fields
     BYTE m_cbBaseSizePadding;       // How many bytes of padding are included in BaseSize
+
+    WORD m_NumInstanceFields;
+    WORD m_NumMethods;
+    WORD m_NumStaticFields;
+    WORD m_NumHandleStatics;
+    WORD m_NumThreadStaticFields;
+    WORD m_NumHandleThreadStatics;
+    WORD m_NumNonVirtualSlots;
+    DWORD m_NonGCStaticFieldBytes;
+    DWORD m_NonGCThreadStaticFieldBytes;
 
 public:
     // EEClass optional field support. Whether a particular EEClass instance has optional fields is determined
@@ -1857,23 +1771,6 @@ public:
         return m_rpOptionalFields;
     }
 
-private:
-    //
-    // Support for packed fields.
-    //
-
-    // Get pointer to the packed fields structure attached to this instance.
-    PTR_EEClassPackedFields GetPackedFields();
-
-    // Get the value of the given field. Works regardless of whether the field is currently in its packed or
-    // unpacked state.
-    DWORD GetPackableField(EEClassFieldId eField);
-
-    // Set the value of the given field. The field *must* be in the unpacked state for this to be legal (in
-    // practice all packable fields must be initialized during class construction and from then on remain
-    // immutable).
-    void SetPackableField(EEClassFieldId eField, DWORD dwValue);
-
     //-------------------------------------------------------------
     // END CONCRETE DATA LAYOUT
     //-------------------------------------------------------------
@@ -1888,7 +1785,10 @@ protected:
     /*
      * Constructor: prevent any other class from doing a new()
      */
-    EEClass(DWORD cbFixedEEClassFields);
+    EEClass()
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
 
     /*
      * Destructor: prevent any other class from deleting
@@ -1899,6 +1799,21 @@ protected:
     }
 #endif // !DACCESS_COMPILE
 
+    friend struct ::cdac_data<EEClass>;
+};
+
+template<> struct cdac_data<EEClass>
+{
+    static constexpr size_t InternalCorElementType = offsetof(EEClass, m_NormType);
+    static constexpr size_t MethodTable = offsetof(EEClass, m_pMethodTable);
+    static constexpr size_t FieldDescList = offsetof(EEClass, m_pFieldDescList);
+    static constexpr size_t MethodDescChunk = offsetof(EEClass, m_pChunks);
+    static constexpr size_t NumMethods = offsetof(EEClass, m_NumMethods);
+    static constexpr size_t CorTypeAttr = offsetof(EEClass, m_dwAttrClass);
+    static constexpr size_t NumInstanceFields = offsetof(EEClass, m_NumInstanceFields);
+    static constexpr size_t NumStaticFields = offsetof(EEClass, m_NumStaticFields);
+    static constexpr size_t NumThreadStaticFields = offsetof(EEClass, m_NumThreadStaticFields);
+    static constexpr size_t NumNonVirtualSlots = offsetof(EEClass, m_NumNonVirtualSlots);
 };
 
 // --------------------------------------------------------------------------------------------
@@ -1965,7 +1880,7 @@ public:
     Volatile<PTR_EEClassNativeLayoutInfo> m_nativeLayoutInfo;
 
 #ifndef DACCESS_COMPILE
-    LayoutEEClass() : EEClass(sizeof(LayoutEEClass))
+    LayoutEEClass() : EEClass()
     {
         LIMITED_METHOD_CONTRACT;
         m_nativeLayoutInfo = NULL;
@@ -1976,7 +1891,7 @@ public:
 class UMThunkMarshInfo;
 
 #ifdef FEATURE_COMINTEROP
-struct ComPlusCallInfo;
+struct CLRToCOMCallInfo;
 #endif // FEATURE_COMINTEROP
 
 class DelegateEEClass : public EEClass
@@ -1986,15 +1901,13 @@ public:
     PTR_Stub                         m_pStaticCallStub;
     PTR_Stub                         m_pInstRetBuffCallStub;
     PTR_MethodDesc                   m_pInvokeMethod;
-    PTR_Stub                         m_pMultiCastInvokeStub;
-    PTR_Stub                         m_pWrapperDelegateInvokeStub;
+    PCODE                            m_pMultiCastInvokeStub;
+    PCODE                            m_pWrapperDelegateInvokeStub;
     UMThunkMarshInfo*                m_pUMThunkMarshInfo;
-    PTR_MethodDesc                   m_pBeginInvokeMethod;
-    PTR_MethodDesc                   m_pEndInvokeMethod;
     Volatile<PCODE>                  m_pMarshalStub;
 
 #ifdef FEATURE_COMINTEROP
-    ComPlusCallInfo *m_pComPlusCallInfo;
+    CLRToCOMCallInfo *m_pCLRToCOMCallInfo;
 #endif // FEATURE_COMINTEROP
 
     PTR_MethodDesc GetInvokeMethod()
@@ -2002,18 +1915,8 @@ public:
         return m_pInvokeMethod;
     }
 
-    PTR_MethodDesc GetBeginInvokeMethod()
-    {
-        return m_pBeginInvokeMethod;
-    }
-
-    PTR_MethodDesc GetEndInvokeMethod()
-    {
-        return m_pEndInvokeMethod;
-    }
-
 #ifndef DACCESS_COMPILE
-    DelegateEEClass() : EEClass(sizeof(DelegateEEClass))
+    DelegateEEClass() : EEClass()
     {
         LIMITED_METHOD_CONTRACT;
         // Note: Memory allocated on loader heap is zero filled
@@ -2035,7 +1938,7 @@ class ArrayClass : public EEClass
     friend MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementType arrayKind, unsigned Rank, AllocMemTracker *pamTracker);
 
 #ifndef DACCESS_COMPILE
-    ArrayClass() : EEClass(sizeof(ArrayClass)) { LIMITED_METHOD_CONTRACT; }
+    ArrayClass() { LIMITED_METHOD_CONTRACT; }
 #else
     friend class NativeImageDumper;
 #endif
@@ -2044,7 +1947,6 @@ private:
 
     DAC_ALIGNAS(EEClass) // Align the first member to the alignment of the base class
     unsigned char   m_rank;
-    CorElementType  m_ElementType;// Cache of element type in m_ElementTypeHnd
 
 public:
     DWORD GetRank() {
@@ -2060,23 +1962,12 @@ public:
         m_rank = (unsigned char)Rank;
     }
 
-    CorElementType GetArrayElementType() {
-        LIMITED_METHOD_CONTRACT;
-        return m_ElementType;
-    }
-    void SetArrayElementType(CorElementType ElementType) {
-        LIMITED_METHOD_CONTRACT;
-        m_ElementType = ElementType;
-    }
-
-
     // Allocate a new MethodDesc for the methods we add to this class
     void InitArrayMethodDesc(
         ArrayMethodDesc* pNewMD,
         PCCOR_SIGNATURE pShortSig,
         DWORD   cShortSig,
         DWORD   dwVtableSlot,
-        LoaderAllocator *pLoaderAllocator,
         AllocMemTracker *pamTracker);
 
     // Generate a short sig for an array accessor
@@ -2085,13 +1976,16 @@ public:
                                       PCCOR_SIGNATURE *ppSig, // Generated signature
                                       DWORD * pcSig,      // Generated signature size
                                       LoaderAllocator *pLoaderAllocator,
-                                      AllocMemTracker *pamTracker
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-                                      ,BOOL fForStubAsIL
-#endif
+                                      AllocMemTracker *pamTracker,
+                                      BOOL fForStubAsIL
     );
 
+    friend struct ::cdac_data<ArrayClass>;
+};
 
+template<> struct cdac_data<ArrayClass>
+{
+    static constexpr size_t Rank = offsetof(ArrayClass, m_rank);
 };
 
 inline EEClassLayoutInfo *EEClass::GetLayoutInfo()
@@ -2121,7 +2015,7 @@ inline BOOL EEClass::IsBlittable()
 inline BOOL EEClass::IsManagedSequential()
 {
     LIMITED_METHOD_CONTRACT;
-    return HasLayout() && GetLayoutInfo()->IsManagedSequential();
+    return HasLayout() && GetLayoutInfo()->GetLayoutType() == EEClassLayoutInfo::LayoutType::Sequential;
 }
 
 inline BOOL EEClass::HasExplicitSize()
@@ -2159,20 +2053,9 @@ inline PCODE GetPreStubEntryPoint()
     return GetEEFuncEntryPoint(ThePreStub);
 }
 
-#if defined(HAS_COMPACT_ENTRYPOINTS) && defined(TARGET_ARM)
-
-EXTERN_C void STDCALL ThePreStubCompactARM();
-
-inline PCODE GetPreStubCompactARMEntryPoint()
-{
-    return GetEEFuncEntryPoint(ThePreStubCompactARM);
-}
-
-#endif // defined(HAS_COMPACT_ENTRYPOINTS) && defined(TARGET_ARM)
-
 PCODE TheUMThunkPreStub();
 
-PCODE TheVarargNDirectStub(BOOL hasRetBuffArg);
+PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg);
 
 
 

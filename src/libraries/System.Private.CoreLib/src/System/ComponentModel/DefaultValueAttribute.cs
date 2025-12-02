@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.ComponentModel
@@ -19,21 +20,30 @@ namespace System.ComponentModel
         /// </summary>
         private object? _value;
 
-        // Delegate ad hoc created 'TypeDescriptor.ConvertFromInvariantString' reflection object cache
-        private static object? s_convertFromInvariantString;
+        [FeatureSwitchDefinition("System.ComponentModel.DefaultValueAttribute.IsSupported")]
+        [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+#pragma warning disable IL4000
+        internal static bool IsSupported => AppContext.TryGetSwitch("System.ComponentModel.DefaultValueAttribute.IsSupported", out bool isSupported) ? isSupported : true;
+#pragma warning restore IL4000
+        private static readonly object? s_throwSentinel = IsSupported ? null : new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref='DefaultValueAttribute'/>
         /// class, converting the specified value to the specified type, and using the U.S. English
         /// culture as the translation context.
         /// </summary>
-        [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         public DefaultValueAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+            Type type,
             string? value)
         {
             // The null check and try/catch here are because attributes should never throw exceptions.
             // We would fail to load an otherwise normal class.
+
+            if (!IsSupported)
+            {
+                _value = s_throwSentinel;
+                return;
+            }
 
             if (type == null)
             {
@@ -59,7 +69,7 @@ namespace System.ComponentModel
                     _value = Convert.ChangeType(value, type, CultureInfo.InvariantCulture);
                 }
 
-                [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
+                [RequiresUnreferencedCode("DefaultValueAttribute usage of TypeConverter is not compatible with trimming.")]
                 // Looking for ad hoc created TypeDescriptor.ConvertFromInvariantString(Type, string)
                 static bool TryConvertFromInvariantString(
                     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type typeToConvert,
@@ -68,20 +78,9 @@ namespace System.ComponentModel
                 {
                     conversionResult = null;
 
-                    // lazy init reflection objects
-                    if (s_convertFromInvariantString == null)
-                    {
-                        Type? typeDescriptorType = Type.GetType("System.ComponentModel.TypeDescriptor, System.ComponentModel.TypeConverter", throwOnError: false);
-                        MethodInfo? mi = typeDescriptorType?.GetMethod("ConvertFromInvariantString", BindingFlags.NonPublic | BindingFlags.Static);
-                        Volatile.Write(ref s_convertFromInvariantString, mi == null ? new object() : mi.CreateDelegate(typeof(Func<Type, string, object>)));
-                    }
-
-                    if (!(s_convertFromInvariantString is Func<Type, string?, object> convertFromInvariantString))
-                        return false;
-
                     try
                     {
-                        conversionResult = convertFromInvariantString(typeToConvert, stringValue);
+                        conversionResult = ConvertFromInvariantString(null, typeToConvert, stringValue!);
                     }
                     catch
                     {
@@ -89,6 +88,14 @@ namespace System.ComponentModel
                     }
 
                     return true;
+
+                    [RequiresUnreferencedCode("DefaultValueAttribute usage of TypeConverter is not compatible with trimming.")]
+                    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "ConvertFromInvariantString")]
+                    static extern object ConvertFromInvariantString(
+                        [UnsafeAccessorType("System.ComponentModel.TypeDescriptor, System.ComponentModel.TypeConverter")] object? _,
+                        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+                        string stringValue
+                    );
                 }
             }
             catch
@@ -229,7 +236,18 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the default value of the property this attribute is bound to.
         /// </summary>
-        public virtual object? Value => _value;
+        public virtual object? Value
+        {
+            get
+            {
+                if (!IsSupported && ReferenceEquals(_value, s_throwSentinel))
+                {
+                    throw new ArgumentException(SR.RuntimeInstanceNotAllowed);
+                }
+
+                return _value;
+            }
+        }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
@@ -237,7 +255,8 @@ namespace System.ComponentModel
             {
                 return true;
             }
-            if (!(obj is DefaultValueAttribute other))
+
+            if (obj is not DefaultValueAttribute other)
             {
                 return false;
             }

@@ -60,13 +60,21 @@ HRESULT Transitions::Shutdown()
         printf("Test failed _failures=%d _pinvoke=%s _reversePinvoke=%s\n",
                 _failures.load(), boolFmt(successPinvoke), boolFmt(successReversePinvoke));
     }
-
+    fflush(stdout);
     return S_OK;
 }
 
 extern "C" EXPORT void STDMETHODCALLTYPE DoPInvoke(int(*callback)(int), int i)
 {
     printf("PInvoke received i=%d\n", callback(i));
+}
+
+extern "C" EXPORT void STDMETHODCALLTYPE DoPInvokeWithCallbackOnOtherThread(int(*callback)(int), int i)
+{
+    int j = 0;
+    std::thread t([&j, callback, i] { j = callback(i); });
+    t.join();
+    printf("PInvoke with callback on other thread received i=%d\n", j);
 }
 
 

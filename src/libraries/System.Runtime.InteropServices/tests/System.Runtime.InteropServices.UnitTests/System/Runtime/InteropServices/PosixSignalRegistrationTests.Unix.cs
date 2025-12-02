@@ -126,6 +126,41 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
+        public void SignalHandlersCalledInReverseOrder()
+        {
+            PosixSignal signal = PosixSignal.SIGCONT;
+            bool secondHandlerCalled = false;
+
+            using SemaphoreSlim semaphore = new(0);
+            using var first = PosixSignalRegistration.Create(signal, ctx =>
+            {
+                Assert.Equal(signal, ctx.Signal);
+
+                // Ensure signal doesn't cause the process to terminate.
+                ctx.Cancel = true;
+
+                Assert.True(secondHandlerCalled);
+
+                semaphore.Release();
+            });
+
+            using var second = PosixSignalRegistration.Create(signal, ctx =>
+            {
+                Assert.Equal(signal, ctx.Signal);
+
+                // Ensure signal doesn't cause the process to terminate.
+                ctx.Cancel = true;
+
+                Assert.False(secondHandlerCalled);
+                secondHandlerCalled = true;
+            });
+
+            kill(signal);
+            bool entered = semaphore.Wait(SuccessTimeout);
+            Assert.True(entered);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         public void SignalHandlerNotCalledWhenDisposed()
         {
             PosixSignal signal = PosixSignal.SIGCONT;

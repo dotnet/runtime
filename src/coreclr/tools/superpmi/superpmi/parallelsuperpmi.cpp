@@ -9,6 +9,7 @@
 #include "commandline.h"
 #include "errorhandling.h"
 #include "fileio.h"
+#include <minipal/random.h>
 
 // Forward declare the conversion method. Including spmiutil.h pulls in other headers
 // that cause build breaks.
@@ -308,6 +309,7 @@ struct PerWorkerData
     char* detailsPath = nullptr;
     char* stdOutputPath = nullptr;
     char* stdErrorPath = nullptr;
+    SpmiResult resultCode = SpmiResult::GeneralFailure;
 };
 
 static void MergeWorkerMCLs(char* mclFilename, PerWorkerData* workerData, int workerCount, char* PerWorkerData::*mclPath)
@@ -354,6 +356,19 @@ static void MergeWorkerCsvs(char* csvFilename, PerWorkerData* workerData, int wo
     bool hasHeader = false;
     for (int i = 0; i < workerCount; i++)
     {
+        switch (workerData[i].resultCode)
+        {
+            case SpmiResult::Success:
+            case SpmiResult::Diffs:
+            case SpmiResult::Misses:
+            case SpmiResult::Error:
+                break;
+
+            default:
+                LogWarning("Skipping merging CSV from child %d due to result code %d", i, (int)workerData[i].resultCode);
+                continue;
+        }
+
         FileLineReader reader;
         if (!FileLineReader::Open(workerData[i].*csvPath, &reader))
         {
@@ -395,10 +410,10 @@ void addJitOptionArgument(LightWeightMap<DWORD, DWORD>* jitOptions,
     {
         for (unsigned i = 0; i < jitOptions->GetCount(); i++)
         {
-            std::string key   = ConvertToUtf8((WCHAR*)jitOptions->GetBuffer(jitOptions->GetKey(i)));
-            std::string value = ConvertToUtf8((WCHAR*)jitOptions->GetBuffer(jitOptions->GetItem(i)));
+            const char* key   = (const char*)jitOptions->GetBuffer(jitOptions->GetKey(i));
+            const char* value = (const char*)jitOptions->GetBuffer(jitOptions->GetItem(i));
             bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -%s %s=%s",
-                                      optionName, key.c_str(), value.c_str());
+                                      optionName, key, value);
         }
     }
 }
@@ -543,11 +558,7 @@ int doParallelSuperPMI(CommandLine::Options& o)
 
     // Add a random number to the temporary file names to allow multiple parallel SuperPMI to happen at once.
     unsigned int randNumber = 0;
-#ifdef TARGET_UNIX
-    PAL_Random(&randNumber, sizeof(randNumber));
-#else  // !TARGET_UNIX
-    rand_s(&randNumber);
-#endif // !TARGET_UNIX
+    minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&randNumber, sizeof(randNumber));
 
     for (int i = 0; i < o.workerCount; i++)
     {
@@ -645,29 +656,58 @@ int doParallelSuperPMI(CommandLine::Options& o)
         {
             DWORD      exitCodeTmp;
             BOOL       ok          = GetExitCodeProcess(hProcesses[i], &exitCodeTmp);
-            SpmiResult childResult = (SpmiResult)exitCodeTmp;
-            if (ok && (childResult != result))
+            if (ok)
             {
-                if (result == SpmiResult::Error || childResult == SpmiResult::Error)
+                SpmiResult childResult = (SpmiResult)exitCodeTmp;
+
+                switch (childResult)
                 {
-                    result = SpmiResult::Error;
+                case SpmiResult::Success:
+                case SpmiResult::Diffs:
+                case SpmiResult::Misses:
+                case SpmiResult::Error:
+                case SpmiResult::JitFailedToInit:
+                    break;
+
+                default:
+                    // We may get here for OOM-killed, for example.
+                    LogError("Child process %d exited with code %u", i, exitCodeTmp);
+                    childResult = SpmiResult::GeneralFailure;
+                    break;
                 }
-                else if (result == SpmiResult::Diffs || childResult == SpmiResult::Diffs)
+
+                perWorkerData[i].resultCode = childResult;
+
+                if (childResult != result)
                 {
-                    result = SpmiResult::Diffs;
+                    // In priority: first failures are more important to propagate
+                    if (result == SpmiResult::GeneralFailure || childResult == SpmiResult::GeneralFailure)
+                    {
+                        result = SpmiResult::GeneralFailure;
+                    }
+                    else if (result == SpmiResult::JitFailedToInit || childResult == SpmiResult::JitFailedToInit)
+                    {
+                        result = SpmiResult::JitFailedToInit;
+                    }
+                    else if (result == SpmiResult::Error || childResult == SpmiResult::Error)
+                    {
+                        result = SpmiResult::Error;
+                    }
+                    else if (result == SpmiResult::Diffs || childResult == SpmiResult::Diffs)
+                    {
+                        result = SpmiResult::Diffs;
+                    }
+                    else if (result == SpmiResult::Misses || childResult == SpmiResult::Misses)
+                    {
+                        result = SpmiResult::Misses;
+                    }
+                    // Keep success result
                 }
-                else if (result == SpmiResult::Misses || childResult == SpmiResult::Misses)
-                {
-                    result = SpmiResult::Misses;
-                }
-                else if (result == SpmiResult::JitFailedToInit || childResult == SpmiResult::JitFailedToInit)
-                {
-                    result = SpmiResult::JitFailedToInit;
-                }
-                else
-                {
-                    result = SpmiResult::GeneralFailure;
-                }
+            }
+            else
+            {
+                LogError("Could not get exit code for child process %d\n", i);
+                result = SpmiResult::GeneralFailure;
             }
         }
 

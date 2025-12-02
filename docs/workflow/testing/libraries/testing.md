@@ -79,6 +79,8 @@ cd src\libraries\System.Collections.Immutable\tests
 dotnet build /t:Test
 ```
 
+**NOTE**: if your environment doesn't have the required SDK installed (e.g. inside [a Docker container](/docs/workflow/using-docker.md)), use `./dotnet.sh`/`.\dotnet.cmd` instead of `dotnet`.
+
 ### Running only certain tests
 
 It is possible to pass parameters to the underlying xunit runner via the `XUnitOptions` parameter, e.g., to filter to tests in just one fixture (class):
@@ -175,4 +177,4 @@ If you change code, you'd need to remove `/p:testnobuild=true` from the command 
 
 ### Viewing XUnit logs
 
-It's usually sufficient to see the test failure output in the console. There is also a test log file, which you can find in a location like `...\runtime\artifacts\bin\System.Text.RegularExpressions.Tests\Debug\net8.0\testResults.xml`. It can be helpful, for example, to grep through a series of failures, or to see how long a slow test actually took.
+It's usually sufficient to see the test failure output in the console. There is also a test log file, which you can find in a location like `...\runtime\artifacts\bin\System.Text.RegularExpressions.Tests\Debug\net10.0\testResults.xml`. It can be helpful, for example, to grep through a series of failures, or to see how long a slow test actually took.

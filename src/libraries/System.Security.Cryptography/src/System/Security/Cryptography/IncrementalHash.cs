@@ -64,7 +64,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Append <paramref name="count"/> bytes of <paramref name="data"/>, starting at <paramref name="offset"/>,
+        /// Appends <paramref name="count"/> bytes of <paramref name="data"/>, starting at <paramref name="offset"/>,
         /// to the data already processed in the hash or HMAC.
         /// </summary>
         /// <param name="data">The data to process.</param>
@@ -113,9 +113,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Retrieve the hash or HMAC for the data accumulated from prior calls to
-        /// <see cref="AppendData(byte[])"/>, and return to the state the object
-        /// was in at construction.
+        /// Retrieves the hash or HMAC for the data accumulated from prior calls to
+        /// <see cref="AppendData(byte[])"/>, and resets the object to its initial state.
         /// </summary>
         /// <returns>The computed hash or HMAC.</returns>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
@@ -239,7 +238,7 @@ namespace System.Security.Cryptography
         ///   The buffer to receive the hash or HMAC value.
         /// </param>
         /// <param name="bytesWritten">
-        ///   When this method returns, the total number of bytes written into <paramref name="destination" />.
+        ///   When this method returns, contains the total number of bytes written into <paramref name="destination" />.
         ///   This parameter is treated as uninitialized.
         /// </param>
         /// <returns>
@@ -272,6 +271,84 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// Creates a new instance of <see cref="IncrementalHash" /> with the existing appended data preserved.
+        /// </summary>
+        /// <returns>A clone of the current instance.</returns>
+        /// <exception cref="CryptographicException">An error occurred during the operation.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public IncrementalHash Clone()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            Debug.Assert((_hash != null) ^ (_hmac != null));
+
+            return _hash is not null ?
+                new IncrementalHash(_algorithmName, _hash.Clone()) :
+                new IncrementalHash(_algorithmName, _hmac!.Clone());
+        }
+
+        /// <summary>
+        ///   Verifies the hash or Hash-based Message Authentication Code (HMAC) for the data accumulated from prior
+        ///   calls to the <c>AppendData</c> methods, without resetting the object to its initial state.
+        /// </summary>
+        /// <param name="hash">The hash or HMAC to compare against.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed hash or HMAC is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hash"/> has a length not equal to <see cref="HashLengthInBytes" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error occurred during the operation.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <remarks>
+        ///   This API performs a fixed-time comparison of the derived HMAC against a known HMAC to prevent leaking
+        ///   timing information.
+        /// </remarks>
+        public bool VerifyCurrentHash(ReadOnlySpan<byte> hash) =>
+            VerifyCore(hash, this, static (IncrementalHash ih, Span<byte> buffer) => ih.GetCurrentHashCore(buffer));
+
+        /// <inheritdoc cref="VerifyCurrentHash(ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hash" /> is <see langword="null" />.
+        /// </exception>
+        public bool VerifyCurrentHash(byte[] hash)
+        {
+            ArgumentNullException.ThrowIfNull(hash);
+            return VerifyCurrentHash(new ReadOnlySpan<byte>(hash));
+        }
+
+        /// <summary>
+        ///   Verifies the hash or Hash-based Message Authentication Code (HMAC) for the data accumulated from prior
+        ///   calls to the <c>AppendData</c> methods, and resets the object to its initial state.
+        /// </summary>
+        /// <param name="hash">The hash or HMAC to compare against.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the computed hash or HMAC is equal to
+        ///   <paramref name="hash" />; otherwise <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="hash"/> has a length not equal to <see cref="HashLengthInBytes" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error occurred during the operation.</exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <remarks>
+        ///   This API performs a fixed-time comparison of the derived HMAC against a known HMAC to prevent leaking
+        ///   timing information.
+        /// </remarks>
+        public bool VerifyHashAndReset(ReadOnlySpan<byte> hash) =>
+            VerifyCore(hash, this, static (IncrementalHash ih, Span<byte> buffer) => ih.GetHashAndResetCore(buffer));
+
+        /// <inheritdoc cref="VerifyHashAndReset(ReadOnlySpan{byte})" />
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="hash" /> is <see langword="null" />.
+        /// </exception>
+        public bool VerifyHashAndReset(byte[] hash)
+        {
+            ArgumentNullException.ThrowIfNull(hash);
+            return VerifyHashAndReset(new ReadOnlySpan<byte>(hash));
+        }
+
+        /// <summary>
         /// Release all resources used by the current instance of the
         /// <see cref="IncrementalHash"/> class.
         /// </summary>
@@ -293,7 +370,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Create an <see cref="IncrementalHash"/> for the algorithm specified by <paramref name="hashAlgorithm"/>.
+        /// Creates an <see cref="IncrementalHash"/> for the algorithm specified by <paramref name="hashAlgorithm"/>.
         /// </summary>
         /// <param name="hashAlgorithm">The name of the hash algorithm to perform.</param>
         /// <returns>
@@ -314,15 +391,15 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Create an <see cref="IncrementalHash"/> for the Hash-based Message Authentication Code (HMAC)
-        /// algorithm utilizing the hash algorithm specified by <paramref name="hashAlgorithm"/>, and a
+        /// Creates an <see cref="IncrementalHash"/> for the Hash-based Message Authentication Code (HMAC)
+        /// algorithm using the hash algorithm specified by <paramref name="hashAlgorithm"/> and a
         /// key specified by <paramref name="key"/>.
         /// </summary>
         /// <param name="hashAlgorithm">The name of the hash algorithm to perform within the HMAC.</param>
         /// <param name="key">
         ///     The secret key for the HMAC. The key can be any length, but a key longer than the output size
         ///     of the hash algorithm specified by <paramref name="hashAlgorithm"/> will be hashed (using the
-        ///     algorithm specified by <paramref name="hashAlgorithm"/>) to derive a correctly-sized key. Therefore,
+        ///     algorithm specified by <paramref name="hashAlgorithm"/>) to derive a correctly sized key. Therefore,
         ///     the recommended size of the secret key is the output size of the hash specified by
         ///     <paramref name="hashAlgorithm"/>.
         /// </param>
@@ -343,15 +420,15 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Create an <see cref="IncrementalHash"/> for the Hash-based Message Authentication Code (HMAC)
-        /// algorithm utilizing the hash algorithm specified by <paramref name="hashAlgorithm"/>, and a
+        /// Creates an <see cref="IncrementalHash"/> for the Hash-based Message Authentication Code (HMAC)
+        /// algorithm using the hash algorithm specified by <paramref name="hashAlgorithm"/> and a
         /// key specified by <paramref name="key"/>.
         /// </summary>
         /// <param name="hashAlgorithm">The name of the hash algorithm to perform within the HMAC.</param>
         /// <param name="key">
         ///     The secret key for the HMAC. The key can be any length, but a key longer than the output size
         ///     of the hash algorithm specified by <paramref name="hashAlgorithm"/> will be hashed (using the
-        ///     algorithm specified by <paramref name="hashAlgorithm"/>) to derive a correctly-sized key. Therefore,
+        ///     algorithm specified by <paramref name="hashAlgorithm"/>) to derive a correctly sized key. Therefore,
         ///     the recommended size of the secret key is the output size of the hash specified by
         ///     <paramref name="hashAlgorithm"/>.
         /// </param>
@@ -388,6 +465,39 @@ namespace System.Security.Cryptography
                 default:
                     // Other unknown algorithms will be handled separately as CryptographicExceptions.
                     break;
+            }
+        }
+
+        private static bool VerifyCore(
+            ReadOnlySpan<byte> hash,
+            IncrementalHash ih,
+            Func<IncrementalHash, Span<byte>, int> getHashCallback)
+        {
+            if (hash.Length != ih.HashLengthInBytes)
+                throw new ArgumentException(SR.Format(SR.Argument_HashImprecise, ih.HashLengthInBytes), nameof(hash));
+
+            ObjectDisposedException.ThrowIf(ih._disposed, ih);
+
+            const int MaxStackAlloc = 64; // SHA3-512 / SHA2-512
+            Span<byte> computedBuffer = stackalloc byte[MaxStackAlloc];
+
+            if (ih.HashLengthInBytes > MaxStackAlloc)
+            {
+                computedBuffer = new byte[ih.HashLengthInBytes];
+            }
+
+            unsafe
+            {
+                fixed (byte* pComputedBuffer = computedBuffer) // Fixed to prevent GC moves.
+                {
+                    int written = getHashCallback(ih, computedBuffer);
+                    Debug.Assert(written == ih.HashLengthInBytes);
+                    Span<byte> computed = computedBuffer.Slice(0, written);
+
+                    bool result = CryptographicOperations.FixedTimeEquals(hash, computed);
+                    CryptographicOperations.ZeroMemory(computed);
+                    return result;
+                }
             }
         }
     }

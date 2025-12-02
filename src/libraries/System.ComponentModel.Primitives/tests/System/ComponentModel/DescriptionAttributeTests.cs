@@ -21,7 +21,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null, false)]
         [InlineData("", true)]
         [InlineData("description", false)]
-        public void Ctor_String(string description, bool expectedIsDefaultAttribute)
+        public void Ctor_String(string? description, bool expectedIsDefaultAttribute)
         {
             var attribute = new SubDescriptionAttribute(description);
             Assert.Equal(description, attribute.Description);
@@ -33,7 +33,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("descriptionValue")]
-        public void DescriptionValue_Set_GetReturnsExpected(string value)
+        public void DescriptionValue_Set_GetReturnsExpected(string? value)
         {
             var attribute = new SubDescriptionAttribute("Name")
             {
@@ -54,20 +54,10 @@ namespace System.ComponentModel.Tests
             yield return new object[] { attribute, new DescriptionAttribute("description"), true };
             yield return new object[] { attribute, new DescriptionAttribute("description2"), false };
             yield return new object[] { attribute, new DescriptionAttribute(""), false };
-            // .NET Framework throws a NullReferenceException.
-            if (!PlatformDetection.IsNetFramework)
-            {
-                yield return new object[] { attribute, new DescriptionAttribute(null), false };
-            }
-
-            // .NET Framework throws a NullReferenceException.
-            if (!PlatformDetection.IsNetFramework)
-            {
-                yield return new object[] { new DescriptionAttribute(null), new DescriptionAttribute(null), true };
-                yield return new object[] { new DescriptionAttribute(null), new DescriptionAttribute("description"), false };
-                yield return new object[] { new DescriptionAttribute(null), new DescriptionAttribute(""), false };
-            }
-
+            yield return new object[] { attribute, new DescriptionAttribute(null), false };
+            yield return new object[] { new DescriptionAttribute(null), new DescriptionAttribute(null), true };
+            yield return new object[] { new DescriptionAttribute(null), new DescriptionAttribute("description"), false };
+            yield return new object[] { new DescriptionAttribute(null), new DescriptionAttribute(""), false };
             yield return new object[] { new DescriptionAttribute("description"), new object(), false };
             yield return new object[] { new DescriptionAttribute("description"), null, false };
             yield return new object[] { new DescriptionAttribute(null), new object(), false };

@@ -371,7 +371,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP 1
 #define MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED 1
 
-#if defined(TARGET_WATCHOS) || (defined(__linux__) && !defined(TARGET_ANDROID))
+#if defined(TARGET_WATCHOS) || (defined(__linux__) && !defined(TARGET_ANDROID) && !defined(TARGET_LINUX_MUSL))
 #define MONO_ARCH_DISABLE_HW_TRAPS 1
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 1
 #endif

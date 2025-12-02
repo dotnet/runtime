@@ -16,22 +16,25 @@ void emitBegFN(bool hasFramePtr
                ,
                bool checkAlign
 #endif
-               );
+);
 
 void emitEndFN();
 
 void emitComputeCodeSizes();
 
-unsigned emitEndCodeGen(Compiler* comp,
-                        bool      contTrkPtrLcls,
-                        bool      fullyInt,
-                        bool      fullPtrMap,
-                        unsigned  xcptnsCount,
-                        unsigned* prologSize,
-                        unsigned* epilogSize,
-                        void**    codeAddr,
-                        void**    coldCodeAddr,
-                        void** consAddr DEBUGARG(unsigned* instrCount));
+unsigned emitEndCodeGen(Compiler*         comp,
+                        bool              contTrkPtrLcls,
+                        bool              fullyInt,
+                        bool              fullPtrMap,
+                        unsigned          xcptnsCount,
+                        unsigned*         prologSize,
+                        unsigned*         epilogSize,
+                        void**            codeAddr,
+                        void**            codeAddrRW,
+                        void**            coldCodeAddr,
+                        void**            coldCodeAddrRW,
+                        void**            consAddr,
+                        void** consAddrRW DEBUGARG(unsigned* instrCount));
 
 /************************************************************************/
 /*                      Method prolog and epilog                        */
@@ -40,7 +43,7 @@ unsigned emitEndCodeGen(Compiler* comp,
 unsigned emitGetEpilogCnt();
 
 template <typename Callback>
-bool emitGenNoGCLst(Callback& cb);
+bool emitGenNoGCLst(Callback& cb, bool skipMainPrologsAndEpilogs = false);
 
 void     emitBegProlog();
 unsigned emitGetPrologOffsetEstimate();
@@ -78,6 +81,8 @@ const char* emitOffsetToLabel(unsigned offs);
 
 UNATIVE_OFFSET emitDataGenBeg(unsigned size, unsigned alignment, var_types dataType);
 
+void emitEnsureDataSectionAlignment(unsigned alignment);
+
 UNATIVE_OFFSET emitBBTableDataGenBeg(unsigned numEntries, bool relativeAddr);
 
 void emitDataGenData(unsigned offs, const void* data, UNATIVE_OFFSET size);
@@ -99,34 +104,12 @@ UNATIVE_OFFSET emitDataSize();
 /************************************************************************/
 
 #ifdef TARGET_XARCH
-static bool instrIs3opImul(instruction ins);
-static bool instrIsExtendedReg3opImul(instruction ins);
-static bool instrHasImplicitRegPairDest(instruction ins);
-static void      check3opImulValues();
-static regNumber inst3opImulReg(instruction ins);
+static bool        instrIs3opImul(instruction ins);
+static bool        instrIsExtendedReg3opImul(instruction ins);
+static bool        instrHasImplicitRegPairDest(instruction ins);
+static void        check3opImulValues();
+static regNumber   inst3opImulReg(instruction ins);
 static instruction inst3opImulForReg(regNumber reg);
-#endif
-
-/************************************************************************/
-/*                   Emit PDB offset translation information            */
-/************************************************************************/
-
-#ifdef TRANSLATE_PDB
-
-static void SetILBaseOfCode(BYTE* pTextBase);
-static void SetILMethodBase(BYTE* pMethodEntry);
-static void SetILMethodStart(BYTE* pMethodCode);
-static void SetImgBaseOfCode(BYTE* pTextBase);
-
-void SetIDBaseToProlog();
-void SetIDBaseToOffset(int methodOffset);
-
-static void DisablePDBTranslation();
-static bool IsPDBEnabled();
-
-static void InitTranslationMaps(int ilCodeSize);
-static void DeleteTranslationMaps();
-static void InitTranslator(PDBRewriter* pPDB, int* rgSecMap, IMAGE_SECTION_HEADER** rgpHeader, int numSections);
 #endif
 
 /************************************************************************/

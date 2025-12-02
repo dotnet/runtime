@@ -90,6 +90,9 @@ namespace ILCompiler.PEWriter
                 case Internal.TypeSystem.TargetArchitecture.LoongArch64:
                     return Machine.LoongArch64;
 
+                case Internal.TypeSystem.TargetArchitecture.RiscV64:
+                    return Machine.RiscV64;
+
                 default:
                     throw new NotImplementedException(target.Architecture.ToString());
             }
@@ -109,6 +112,11 @@ namespace ILCompiler.PEWriter
                     return MachineOSOverride.Linux;
 
                 case TargetOS.OSX:
+                case TargetOS.MacCatalyst:
+                case TargetOS.iOS:
+                case TargetOS.iOSSimulator:
+                case TargetOS.tvOS:
+                case TargetOS.tvOSSimulator:
                     return MachineOSOverride.Apple;
 
                 case TargetOS.FreeBSD:

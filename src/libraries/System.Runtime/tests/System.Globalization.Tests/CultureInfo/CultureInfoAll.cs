@@ -652,7 +652,7 @@ namespace System.Globalization.Tests
             yield return new object[] { 0x40404, new [] { "zh-tw_radstr", "zh-tw" }, "zh-TW", "zho", "CHT", "zh-Hant-TW", "zh-TW" };
             yield return new object[] { 0x40411, new [] { "ja-jp_radstr", "ja-jp" }, "ja-JP", "jpn", "JPN", "ja-JP", "ja-JP" };
             yield return new object[] { 0x40c04, new [] { "zh-hk_radstr", "zh-hk" }, "zh-HK", "zho", "ZHH", "zh-Hant-HK", "zh-HK" };
-            if (!PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { 0x281a, new [] { "sr-cyrl-rs" }, "sr-Cyrl-RS", "srp", "SRO", "sr-Cyrl-RS", "sr-Cyrl-RS" };
                 yield return new object[] { 0x6c1a, new [] { "sr-cyrl" }, "sr-Cyrl-RS", "srp", "SRO", "sr-Cyrl", "sr-Cyrl-RS" };

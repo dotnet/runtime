@@ -6,6 +6,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.FPtrunc.convr4a;
+
 public struct VT
 {
     public float f1;
@@ -87,6 +89,7 @@ public class ConvR4test
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         bool pass = true;

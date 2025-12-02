@@ -55,7 +55,7 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-        private static TypeInfo _DelegateCache = new TypeInfo();
+        private static readonly TypeInfo _DelegateCache = new TypeInfo();
 
         private const int MaximumArity = 17;
 

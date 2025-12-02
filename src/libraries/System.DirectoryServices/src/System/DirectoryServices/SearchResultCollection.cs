@@ -47,7 +47,7 @@ namespace System.DirectoryServices
             {
                 if (_innerList == null)
                 {
-                    _innerList = new ArrayList();
+                    var eagerList = new ArrayList();
                     var enumerator = new ResultsEnumerator(
                         this,
                         _rootEntry.GetUsername(),
@@ -55,7 +55,9 @@ namespace System.DirectoryServices
                         _rootEntry.AuthenticationType);
 
                     while (enumerator.MoveNext())
-                        _innerList.Add(enumerator.Current);
+                        eagerList.Add(enumerator.Current);
+
+                    _innerList = eagerList;
                 }
 
                 return _innerList;
@@ -188,12 +190,10 @@ namespace System.DirectoryServices
 
         public IEnumerator GetEnumerator()
         {
-            // Two ResultsEnumerators can't exist at the same time over the
-            // same object. Need to get a new handle, which means re-querying.
-            return new ResultsEnumerator(this,
-                                                       _rootEntry.GetUsername(),
-                                                       _rootEntry.GetPassword(),
-                                                       _rootEntry.AuthenticationType);
+            if (_innerList != null)
+                return new AlreadyReadResultsEnumerator(_innerList);
+            else
+                return new ResultsEnumerator(this, _rootEntry.GetUsername(), _rootEntry.GetPassword(), _rootEntry.AuthenticationType);
         }
 
         public bool Contains(SearchResult result) => InnerList.Contains(result);
@@ -212,6 +212,51 @@ namespace System.DirectoryServices
         void ICollection.CopyTo(Array array, int index)
         {
             InnerList.CopyTo(array, index);
+        }
+
+        /// <summary>Provides an enumerator implementation for the array of <see cref="SearchResult"/>.</summary>
+        private sealed class AlreadyReadResultsEnumerator : IEnumerator
+        {
+            private readonly IEnumerator _innerEnumerator;
+
+            /// <summary>Initialize the enumerator.</summary>
+            /// <param name="innerList">The ArrayList to enumerate.</param>
+            internal AlreadyReadResultsEnumerator(ArrayList innerList)
+            {
+                _innerEnumerator = innerList.GetEnumerator();
+            }
+
+            /// <summary>
+            /// Current <see cref="SearchResult"/> value of the <see cref="IEnumerator"/>
+            /// </summary>
+            public SearchResult Current
+            {
+                get
+                {
+                    return (SearchResult)(_innerEnumerator.Current);
+                }
+            }
+
+            /// <summary>
+            /// Advances the enumerator to the next <see cref="SearchResult"/> element of the arrray.
+            /// </summary>
+            public bool MoveNext()
+            {
+                return _innerEnumerator.MoveNext();
+            }
+
+            /// <summary>
+            /// Resets the enumerator to the beginning of the array.
+            /// </summary>
+            public void Reset()
+            {
+                _innerEnumerator.Reset();
+            }
+
+            /// <summary>
+            /// Current <see cref="object"/> of the <see cref="IEnumerator"/>
+            /// </summary>
+            object IEnumerator.Current => Current;
         }
 
         /// <devdoc>
@@ -288,7 +333,7 @@ namespace System.DirectoryServices
                     }
                     finally
                     {
-                        SafeNativeMethods.FreeADsMem(pszColumnName);
+                        Interop.Activeds.FreeADsMem(pszColumnName);
                     }
                     hr = _results.SearchObject.GetNextColumnName(_results.Handle, (INTPTR_INTPTRCAST)(&pszColumnName));
                 }
@@ -310,6 +355,7 @@ namespace System.DirectoryServices
                     return false;
 
                 _currentResult = null;
+
                 if (!_initialized)
                 {
                     int hr = _results.SearchObject.GetFirstRow(_results.Handle);
@@ -350,7 +396,7 @@ namespace System.DirectoryServices
                         }
 
                         // not the case that server still has result, we are done here
-                        if (errorCode != SafeNativeMethods.ERROR_MORE_DATA)
+                        if (errorCode != Interop.Errors.ERROR_MORE_DATA)
                         {
                             // get the dirsync cookie as we finished all the rows
                             if (_results.srch.directorySynchronizationSpecified)
@@ -397,14 +443,15 @@ namespace System.DirectoryServices
 
             private void CleanLastError()
             {
-                SafeNativeMethods.ADsSetLastError(SafeNativeMethods.ERROR_SUCCESS, null, null);
+                Interop.Activeds.ADsSetLastError(Interop.Errors.ERROR_SUCCESS, null, null);
             }
 
-            private unsafe int GetLastError(ref int errorCode)
+            private int GetLastError(ref int errorCode)
             {
-                char c1 = '\0', c2 = '\0';
-                errorCode = SafeNativeMethods.ERROR_SUCCESS;
-                return SafeNativeMethods.ADsGetLastError(out errorCode, &c1, 0, &c2, 0);
+                char[] errorBuffer = Array.Empty<char>();
+                char[] nameBuffer = Array.Empty<char>();
+                errorCode = Interop.Errors.ERROR_SUCCESS;
+                return Interop.Activeds.ADsGetLastError(out errorCode, errorBuffer, errorBuffer.Length, nameBuffer, nameBuffer.Length);
             }
         }
     }

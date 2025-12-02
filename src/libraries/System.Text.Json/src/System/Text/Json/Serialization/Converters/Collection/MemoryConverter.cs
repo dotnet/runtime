@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Converters
             scoped ref ReadStack state,
             out Memory<T> value)
         {
-            if (reader.TokenType is JsonTokenType.Null)
+            if (reader.TokenType is JsonTokenType.Null && state.Current.ReturnValue is null)
             {
                 value = default;
                 return true;
@@ -37,6 +37,7 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.ReturnValue = new List<T>();
         }
 
+        internal sealed override bool IsConvertibleCollection => true;
         protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
             Memory<T> memory = ((List<T>)state.Current.ReturnValue!).ToArray().AsMemory();

@@ -19,7 +19,6 @@ namespace System.Formats.Tar
     {
         internal const short RecordSize = 512;
         internal const int MaxBufferLength = 4096;
-        internal const long MaxSizeLength = (1L << 33) - 1; // Max value of 11 octal digits = 2^33 - 1 or 8 Gb.
 
         internal const UnixFileMode ValidUnixFileModes =
             UnixFileMode.UserRead |
@@ -131,7 +130,7 @@ namespace System.Formats.Tar
         }
 
         // Returns true if all the bytes in the specified array are nulls, false otherwise.
-        internal static bool IsAllNullBytes(Span<byte> buffer) =>
+        internal static bool IsAllNullBytes(ReadOnlySpan<byte> buffer) =>
             !buffer.ContainsAnyExcept((byte)0);
 
         // Converts the specified number of seconds that have passed since the Unix Epoch to a DateTimeOffset.
@@ -215,11 +214,36 @@ namespace System.Formats.Tar
             return entryType;
         }
 
+        /// <summary>Parses a numeric field.</summary>
+        internal static T ParseNumeric<T>(ReadOnlySpan<byte> buffer) where T : struct, INumber<T>, IBinaryInteger<T>
+        {
+            // The tar standard specifies that numeric fields are stored using an octal representation.
+            // This limits the range of values that can be stored in the fields.
+            // To increase the supported range, a GNU extension defines that when the leading byte is
+            // '0xff'/'0x80' the remaining bytes are a negative/positive big formatted endian value.
+            // Like the 'tar' tool we are permissive when encountering this representation in non GNU formats.
+            byte leadingByte = buffer[0];
+            if (leadingByte == 0xff)
+            {
+                return T.ReadBigEndian(buffer, isUnsigned: false);
+            }
+            else if (leadingByte == 0x80)
+            {
+                return T.ReadBigEndian(buffer.Slice(1), isUnsigned: true);
+            }
+            else
+            {
+                return ParseOctal<T>(buffer);
+            }
+        }
+
         /// <summary>Parses a byte span that represents an ASCII string containing a number in octal base.</summary>
         internal static T ParseOctal<T>(ReadOnlySpan<byte> buffer) where T : struct, INumber<T>
         {
-            buffer = TrimEndingNullsAndSpaces(buffer);
-            buffer = TrimLeadingNullsAndSpaces(buffer);
+            buffer = TrimNullTerminated(buffer);
+
+            // We ignore spaces because some archives seem to have them (even though they shouldn't).
+            buffer = buffer.Trim((byte)' ');
 
             if (buffer.Length == 0)
             {
@@ -246,43 +270,22 @@ namespace System.Formats.Tar
         private static void ThrowInvalidNumber() =>
             throw new InvalidDataException(SR.Format(SR.TarInvalidNumber));
 
-        // Returns the string contained in the specified buffer of bytes,
-        // in the specified encoding, removing the trailing null or space chars.
-        private static string GetTrimmedString(ReadOnlySpan<byte> buffer, Encoding encoding)
+        // Returns the null-terminated UTF8 string contained in the specified buffer.
+        internal static string ParseUtf8String(ReadOnlySpan<byte> buffer)
         {
-            buffer = TrimEndingNullsAndSpaces(buffer);
-            return buffer.IsEmpty ? string.Empty : encoding.GetString(buffer);
+            buffer = TrimNullTerminated(buffer);
+            return Encoding.UTF8.GetString(buffer);
         }
 
-        internal static ReadOnlySpan<byte> TrimEndingNullsAndSpaces(ReadOnlySpan<byte> buffer)
+        internal static ReadOnlySpan<byte> TrimNullTerminated(ReadOnlySpan<byte> buffer)
         {
-            int trimmedLength = buffer.Length;
-            while (trimmedLength > 0 && buffer[trimmedLength - 1] is 0 or 32)
+            int i = buffer.IndexOf((byte)0);
+            if (i != -1)
             {
-                trimmedLength--;
+                buffer = buffer[0..i];
             }
-
-            return buffer.Slice(0, trimmedLength);
+            return buffer;
         }
-
-        private static ReadOnlySpan<byte> TrimLeadingNullsAndSpaces(ReadOnlySpan<byte> buffer)
-        {
-            int newStart = 0;
-            while (newStart < buffer.Length && buffer[newStart] is 0 or 32)
-            {
-                newStart++;
-            }
-
-            return buffer.Slice(newStart);
-        }
-
-        // Returns the ASCII string contained in the specified buffer of bytes,
-        // removing the trailing null or space chars.
-        internal static string GetTrimmedAsciiString(ReadOnlySpan<byte> buffer) => GetTrimmedString(buffer, Encoding.ASCII);
-
-        // Returns the UTF8 string contained in the specified buffer of bytes,
-        // removing the trailing null or space chars.
-        internal static string GetTrimmedUtf8String(ReadOnlySpan<byte> buffer) => GetTrimmedString(buffer, Encoding.UTF8);
 
         // After the file contents, there may be zero or more null characters,
         // which exist to ensure the data is aligned to the record size. Skip them and

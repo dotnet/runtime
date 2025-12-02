@@ -150,13 +150,14 @@ namespace System.Net.Http
 
         public RendezvousAwaitable<int> LifecycleAwaitable { get; set; } = new RendezvousAwaitable<int>();
         public TaskCompletionSource<bool>? TcsInternalWriteDataToRequestStream { get; set; }
-        public bool AsyncReadInProgress { get; set; }
+        public volatile int AsyncReadInProgress;
 
         // WinHttpResponseStream state.
         public long? ExpectedBytesToRead { get; set; }
         public long CurrentBytesRead { get; set; }
 
         private GCHandle _cachedReceivePinnedBuffer;
+        private GCHandle _cachedSendPinnedBuffer;
 
         public void PinReceiveBuffer(byte[] buffer)
         {
@@ -168,6 +169,19 @@ namespace System.Net.Http
                 }
 
                 _cachedReceivePinnedBuffer = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+            }
+        }
+
+        public void PinSendBuffer(byte[] buffer)
+        {
+            if (!_cachedSendPinnedBuffer.IsAllocated || _cachedSendPinnedBuffer.Target != buffer)
+            {
+                if (_cachedSendPinnedBuffer.IsAllocated)
+                {
+                    _cachedSendPinnedBuffer.Free();
+                }
+
+                _cachedSendPinnedBuffer = GCHandle.Alloc(buffer, GCHandleType.Pinned);
             }
         }
 
@@ -193,11 +207,17 @@ namespace System.Net.Http
             {
                 // This method only gets called when the WinHTTP request handle is fully closed and thus all
                 // async operations are done. So, it is safe at this point to unpin the buffers and release
-                // the strong GCHandle for this object.
+                // the strong GCHandle for the pinned buffers.
                 if (_cachedReceivePinnedBuffer.IsAllocated)
                 {
                     _cachedReceivePinnedBuffer.Free();
                     _cachedReceivePinnedBuffer = default(GCHandle);
+                }
+
+                if (_cachedSendPinnedBuffer.IsAllocated)
+                {
+                    _cachedSendPinnedBuffer.Free();
+                    _cachedSendPinnedBuffer = default(GCHandle);
                 }
 #if DEBUG
                 Interlocked.Increment(ref s_dbg_operationHandleFree);

@@ -26,7 +26,7 @@ namespace System.Text
         public override ReadOnlySpan<byte> Preamble => default;
 
         // Default fallback that we'll use.
-        internal override void SetDefaultFallbacks()
+        internal sealed override void SetDefaultFallbacks()
         {
             // We use best-fit mappings by default when encoding.
             encoderFallback = EncoderLatin1BestFitFallback.SingletonInstance;
@@ -206,12 +206,12 @@ namespace System.Text
                     resource: ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (chars!.Length - charIndex < charCount)
+            if (chars.Length - charIndex < charCount)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.chars, ExceptionResource.ArgumentOutOfRange_IndexCount);
             }
 
-            if ((uint)byteIndex > bytes!.Length)
+            if ((uint)byteIndex > bytes.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
@@ -268,12 +268,12 @@ namespace System.Text
                     resource: ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (s!.Length - charIndex < charCount)
+            if (s.Length - charIndex < charCount)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s, ExceptionResource.ArgumentOutOfRange_IndexCount);
             }
 
-            if ((uint)byteIndex > bytes!.Length)
+            if ((uint)byteIndex > bytes.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }

@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Collections.Frozen
 {
@@ -76,6 +78,8 @@ namespace System.Collections.Frozen
         // useful if the string only contains ASCII characters
         public static unsafe int GetHashCodeOrdinalIgnoreCaseAscii(ReadOnlySpan<char> s)
         {
+            Debug.Assert(Ascii.IsValid(s));
+
             // We "normalize to lowercase" every char by ORing with 0x20. This casts
             // a very wide net because it will change, e.g., '^' to '~'. But that should
             // be ok because we expect this to be very rare in practice.
@@ -136,8 +140,11 @@ namespace System.Collections.Frozen
             }
         }
 
-        public static unsafe int GetHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> s)
+        public static int GetHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> s)
         {
+#if NET
+            return string.GetHashCode(s, StringComparison.OrdinalIgnoreCase);
+#else
             int length = s.Length;
 
             char[]? rentedArray = null;
@@ -145,7 +152,7 @@ namespace System.Collections.Frozen
                 stackalloc char[256] :
                 (rentedArray = ArrayPool<char>.Shared.Rent(length));
 
-            length = s.ToUpperInvariant(scratch); // NOTE: this really should be the (non-existent) ToUpperOrdinal
+            length = s.ToUpperInvariant(scratch); // NOTE: this both allocates and really should be the (non-existent) ToUpperOrdinal
             int hash = GetHashCodeOrdinal(scratch.Slice(0, length));
 
             if (rentedArray is not null)
@@ -154,6 +161,7 @@ namespace System.Collections.Frozen
             }
 
             return hash;
+#endif
         }
     }
 }

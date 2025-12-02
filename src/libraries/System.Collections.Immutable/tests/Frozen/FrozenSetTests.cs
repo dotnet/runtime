@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Xunit;
-using System.Numerics;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 
@@ -81,6 +80,16 @@ namespace System.Collections.Frozen.Tests
 
                 Assert.NotSame(FrozenSet<T>.Empty, source.ToFrozenSet(NonDefaultEqualityComparer<T>.Instance));
             }
+
+            Assert.Same(FrozenSet<T>.Empty, FrozenSet.Create(ReadOnlySpan<T>.Empty));
+            Assert.Same(FrozenSet<T>.Empty, FrozenSet.Create<T>());
+
+            foreach (IEqualityComparer<T> comparer in new IEqualityComparer<T>[] { null, EqualityComparer<T>.Default })
+            {
+                Assert.Same(FrozenSet<T>.Empty, FrozenSet.Create(comparer));
+            }
+
+            Assert.NotSame(FrozenSet<T>.Empty, FrozenSet.Create(NonDefaultEqualityComparer<T>.Instance));
         }
 
         [Fact]
@@ -298,7 +307,7 @@ namespace System.Collections.Frozen.Tests
 
         private sealed class EmptySet :
             ISet<T>
-#if NET5_0_OR_GREATER
+#if NET
             , IReadOnlySet<T>
 #endif
         {
@@ -338,6 +347,35 @@ namespace System.Collections.Frozen.Tests
             rand.NextBytes(bytes1);
             return Convert.ToBase64String(bytes1);
         }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(25)]
+        [InlineData(50)]
+        [InlineData(75)]
+        [InlineData(100)]
+        public void Contains_WithNonAscii(int percentageWithNonAscii)
+        {
+            Random rand = new(42);
+
+            HashSet<string> expected = new(GetIEqualityComparer());
+            for (int i = 0; i < 100; i++)
+            {
+                int stringLength = rand.Next(4, 30);
+                byte[] bytes = new byte[stringLength];
+                rand.NextBytes(bytes);
+                string value = Convert.ToBase64String(bytes);
+                if (rand.Next(100) < percentageWithNonAscii)
+                {
+                    value = value.Replace(value[rand.Next(value.Length)], '\u05D0');
+                }
+                expected.Add(value);
+            }
+
+            FrozenSet<string> actual = expected.ToFrozenSet(GetIEqualityComparer());
+
+            Assert.All(expected, s => actual.Contains(s));
+        }
     }
 
     public class FrozenSet_Generic_Tests_string_Default : FrozenSet_Generic_Tests_string
@@ -359,7 +397,7 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public void TryGetValue_FindsExpectedResult()
         {
-            FrozenSet<string> frozen = new[] { "abc" }.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+            FrozenSet<string> frozen = FrozenSet.Create(StringComparer.OrdinalIgnoreCase, "abc");
 
             Assert.False(frozen.TryGetValue("ab", out string actualValue));
             Assert.Null(actualValue);
@@ -470,7 +508,7 @@ namespace System.Collections.Frozen.Tests
                 foreach (int skip in new[] { 2, 3, 5 })
                 {
                     var original = new HashSet<int>(Enumerable.Range(-3, size).Where(i => i % skip == 0));
-                    FrozenSet<int> frozen = original.ToFrozenSet();
+                    FrozenSet<int> frozen = [.. original];
 
                     for (int i = -10; i <= size + 66; i++)
                     {
@@ -511,7 +549,7 @@ namespace System.Collections.Frozen.Tests
                         original.Add(i);
                     }
 
-                    FrozenSet<long> frozen = original.ToFrozenSet();
+                    FrozenSet<long> frozen = [.. original];
 
                     min = start > long.MinValue ? start - 10 : start;
                     max = start + size - 1 < long.MaxValue ? start + size + 9 : start + size - 1;

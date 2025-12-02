@@ -2,14 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Reflection.Metadata;
-using Microsoft.DotNet.Cli.Build;
+using System.Runtime.InteropServices;
+
 using Microsoft.NET.HostModel.AppHost;
 
 namespace Microsoft.DotNet.CoreSetup.Test
@@ -21,9 +17,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public string DepsJson { get; private set; }
         public string RuntimeConfigJson { get; private set; }
         public string RuntimeDevConfigJson { get; private set; }
-        public string HostPolicyDll { get; private set; }
         public string HostFxrDll { get; private set; }
-        public string CoreClrDll { get; private set; }
 
         public string AssemblyName { get; }
 
@@ -84,13 +78,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
             builder.Build(this);
         }
 
-        public void CreateAppHost(bool isWindowsGui = false, bool copyResources = true)
-            => CreateAppHost(Binaries.AppHost.FilePath, isWindowsGui, copyResources);
+        public void CreateAppHost(bool isWindowsGui = false, bool copyResources = true, bool disableCetCompat = false, HostWriter.DotNetSearchOptions dotNetRootOptions = null, bool? macosCodesign = null)
+            => CreateAppHost(Binaries.AppHost.FilePath, isWindowsGui, copyResources, disableCetCompat, dotNetRootOptions, macosCodesign: macosCodesign);
 
-        public void CreateSingleFileHost(bool isWindowsGui = false, bool copyResources = true)
-            => CreateAppHost(Binaries.SingleFileHost.FilePath, isWindowsGui, copyResources);
+        public void CreateSingleFileHost(bool isWindowsGui = false, bool copyResources = true, bool disableCetCompat = false, HostWriter.DotNetSearchOptions dotNetRootOptions = null, bool? macosCodesign = null)
+            => CreateAppHost(Binaries.SingleFileHost.FilePath, isWindowsGui, copyResources, disableCetCompat, dotNetRootOptions, macosCodesign: macosCodesign);
 
-        public void CreateAppHost(string hostSourcePath, bool isWindowsGui = false, bool copyResources = true)
+        private void CreateAppHost(string hostSourcePath, bool isWindowsGui, bool copyResources, bool disableCetCompat, HostWriter.DotNetSearchOptions dotNetRootOptions, bool? macosCodesign)
         {
             // Use the live-built apphost and HostModel to create the apphost to run
             HostWriter.CreateAppHost(
@@ -98,7 +92,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 AppExe,
                 Path.GetFileName(AppDll),
                 windowsGraphicalUserInterface: isWindowsGui,
-                assemblyToCopyResourcesFrom: copyResources ? AppDll : null);
+                assemblyToCopyResourcesFrom: copyResources ? AppDll : null,
+                disableCetCompat: disableCetCompat,
+                dotNetSearchOptions: dotNetRootOptions,
+                enableMacOSCodeSign: macosCodesign ?? RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
         }
 
         public enum MockedComponent
@@ -110,7 +107,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public void PopulateSelfContained(MockedComponent mock, Action<NetCoreAppBuilder> customizer = null)
         {
-            var builder = NetCoreAppBuilder.ForNETCoreApp(Name, TestContext.TargetRID);
+            var builder = NetCoreAppBuilder.ForNETCoreApp(Name, TestContext.BuildRID);
 
             // Update the .runtimeconfig.json - add included framework and remove any existing NETCoreApp framework
             builder.WithRuntimeConfig(c =>
@@ -121,7 +118,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             builder.WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()));
 
             // Add runtime libraries and assets
-            builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{TestContext.TargetRID}", TestContext.MicrosoftNETCoreAppVersion, l =>
+            builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{TestContext.BuildRID}", TestContext.MicrosoftNETCoreAppVersion, l =>
             {
                 if (mock == MockedComponent.None)
                 {
@@ -190,13 +187,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             Directory.CreateDirectory(Location);
             AppDll = Path.Combine(Location, $"{AssemblyName}.dll");
-            AppExe = Path.Combine(Location, Binaries.GetExeFileNameForCurrentPlatform(AssemblyName));
+            AppExe = Path.Combine(Location, Binaries.GetExeName(AssemblyName));
             DepsJson = Path.Combine(Location, $"{AssemblyName}.deps.json");
             RuntimeConfigJson = Path.Combine(Location, $"{AssemblyName}.runtimeconfig.json");
             RuntimeDevConfigJson = Path.Combine(Location, $"{AssemblyName}.runtimeconfig.dev.json");
-            HostPolicyDll = Path.Combine(Location, Binaries.HostPolicy.FileName);
             HostFxrDll = Path.Combine(Location, Binaries.HostFxr.FileName);
-            CoreClrDll = Path.Combine(Location, Binaries.CoreClr.FileName);
         }
     }
 }

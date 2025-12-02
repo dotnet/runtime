@@ -8,6 +8,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
@@ -77,8 +78,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public void SignedXmlHasDSACertificateVerifiableSignature()
         {
             using (X509Certificate2 x509cert = TestHelpers.GetSampleDSAX509Certificate())
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 xmlDoc.PreserveWhitespace = true;
                 xmlDoc.LoadXml(ExampleXml);
 
-#if NETCOREAPP
+#if NET
                 using (DSA key = x509cert.GetDSAPrivateKey())
                 {
                     SignXml(xmlDoc, key);

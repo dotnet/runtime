@@ -1,11 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Http;
-
 namespace System.Net.Http
 {
     internal sealed class HttpEnvironmentProxyCredentials : ICredentials
@@ -115,10 +110,11 @@ namespace System.Net.Http
         }
 
         /// <summary>
-        /// This function will evaluate given string and it will try to convert
-        /// it to Uri object. The string could contain URI fragment, IP address and  port
-        /// tuple or just IP address or name. It will return null if parsing fails.
+        /// Attempt to parse a partial Uri string into a Uri object.
+        /// The string may contain the scheme, user info, host, and port. The host is the only required part.
+        /// Example expected inputs: contoso.com, contoso.com:8080, http://contoso.com/, user@contoso.com.
         /// </summary>
+        /// <returns><see langword="null"/> if parsing fails.</returns>
         private static Uri? GetUriFromString(string? value)
         {
             if (string.IsNullOrEmpty(value))
@@ -170,16 +166,9 @@ namespace System.Net.Http
             int separatorIndex = value.LastIndexOf('@');
             if (separatorIndex != -1)
             {
-                string auth = value.Substring(0, separatorIndex);
-
                 // The User and password may or may not be URL encoded.
-                // Curl seems to accept both. To match that,
-                // we do opportunistic decode and we use original string if it fails.
-                try
-                {
-                    auth = Uri.UnescapeDataString(auth);
-                }
-                catch { };
+                // Curl seems to accept both. To match that, we also decode the value.
+                string auth = Uri.UnescapeDataString(value.AsSpan(0, separatorIndex));
 
                 value = value.Substring(separatorIndex + 1);
                 separatorIndex = auth.IndexOf(':');
@@ -194,6 +183,14 @@ namespace System.Net.Http
                 }
             }
 
+            // We expect inputs to not contain the path/query/fragment, but we do handle some simple cases like a trailing slash.
+            // An arbitrary path can break this parsing logic, but we expect environment variables to be trusted and well formed.
+            int delimiterIndex = value.IndexOfAny('/', '?', '#');
+            if (delimiterIndex >= 0)
+            {
+                value = value.Substring(0, delimiterIndex);
+            }
+
             int ipV6AddressEnd = value.IndexOf(']');
             separatorIndex = value.LastIndexOf(':');
             // No ':' or it is part of IPv6 address.
@@ -204,18 +201,8 @@ namespace System.Net.Http
             else
             {
                 host = value.Substring(0, separatorIndex);
-                int endIndex = separatorIndex + 1;
-                // Strip any trailing characters after port number.
-                while (endIndex < value.Length)
-                {
-                    if (!char.IsDigit(value[endIndex]))
-                    {
-                        break;
-                    }
-                    endIndex += 1;
-                }
 
-                if (!ushort.TryParse(value.AsSpan(separatorIndex + 1, endIndex - separatorIndex - 1), out port))
+                if (!ushort.TryParse(value.AsSpan(separatorIndex + 1), out port))
                 {
                     return null;
                 }
@@ -268,8 +255,7 @@ namespace System.Net.Http
                     {
                         // This should match either domain it self or any subdomain or host
                         // .foo.com will match foo.com it self or *.foo.com
-                        if ((s.Length - 1) == input.Host.Length &&
-                            string.Compare(s, 1, input.Host, 0, input.Host.Length, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (s.AsSpan(1).Equals(input.Host, StringComparison.OrdinalIgnoreCase))
                         {
                             return true;
                         }

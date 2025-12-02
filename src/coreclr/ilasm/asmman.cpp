@@ -10,6 +10,7 @@
 #include "assembler.h"
 #include "strongnameinternal.h"
 #include <limits.h>
+#include <dn-stdio.h>
 
 extern WCHAR*   pwzInputFiles[];
 
@@ -27,7 +28,7 @@ BinStr* BinStrToUnicode(BinStr* pSource, bool Swap)
             if(wz)
             {
                 memset(wz,0,L);
-                WszMultiByteToWideChar(g_uCodePage,0,pb,-1,wz,l);
+                MultiByteToWideChar(g_uCodePage,0,pb,-1,wz,l);
                 tmp->remove(L-(DWORD)u16_strlen(wz)*sizeof(WCHAR));
 #if BIGENDIAN
                 if (Swap)
@@ -204,7 +205,7 @@ void    AsmMan::EmitFiles()
         if(!tmp->m_fNew) continue;
         tmp->m_fNew = FALSE;
 
-        WszMultiByteToWideChar(g_uCodePage,0,tmp->szName,-1,wzUniBuf,dwUniBuf);
+        MultiByteToWideChar(g_uCodePage,0,tmp->szName,-1,wzUniBuf,dwUniBuf);
         if(tmp->pHash==NULL) // if hash not explicitly specified
         {
             if(m_pAssembly      // and assembly is defined
@@ -245,7 +246,8 @@ void    AsmMan::EmitFiles()
 
 void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ char* szAlias, DWORD dwAttr, BOOL isRef)
 {
-    if(!isRef && (0==strcmp(szName, "mscorlib"))) ((Assembler*)m_pAssembler)->m_fIsMscorlib = TRUE;
+    Assembler *mPA = ((Assembler*)m_pAssembler);
+    if(!isRef && (0==strcmp(szName, "mscorlib"))) mPA->m_fIsMscorlib = TRUE;
     if(!isRef && (m_pAssembly != NULL))
     {
         if(strcmp(szName, m_pAssembly->szName))
@@ -257,11 +259,12 @@ void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ cha
     {
         if((m_pCurAsmRef = new (nothrow) AsmManAssembly()))
         {
+            bool hasOverride = (!isRef && mPA->m_pOverrideAssemblyName);
             m_pCurAsmRef->usVerMajor = (USHORT)0xFFFF;
             m_pCurAsmRef->usVerMinor = (USHORT)0xFFFF;
             m_pCurAsmRef->usBuild = (USHORT)0xFFFF;
             m_pCurAsmRef->usRevision = (USHORT)0xFFFF;
-            m_pCurAsmRef->szName = szName;
+            m_pCurAsmRef->szName = hasOverride ? mPA->m_pOverrideAssemblyName : szName;
             m_pCurAsmRef->szAlias = szAlias ? szAlias : szName;
             m_pCurAsmRef->dwAlias = (DWORD)strlen(m_pCurAsmRef->szAlias);
             m_pCurAsmRef->dwAttr = dwAttr;
@@ -273,9 +276,9 @@ void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ cha
         else
             report->error("Failed to allocate AsmManAssembly structure\n");
     }
-    ((Assembler*)m_pAssembler)->m_tkCurrentCVOwner = 0;
-    ((Assembler*)m_pAssembler)->m_CustomDescrListStack.PUSH(((Assembler*)m_pAssembler)->m_pCustomDescrList);
-    ((Assembler*)m_pAssembler)->m_pCustomDescrList = m_pCurAsmRef ? &(m_pCurAsmRef->m_CustomDescrList) : NULL;
+    mPA->m_tkCurrentCVOwner = 0;
+    mPA->m_CustomDescrListStack.PUSH(mPA->m_pCustomDescrList);
+    mPA->m_pCustomDescrList = m_pCurAsmRef ? &(m_pCurAsmRef->m_CustomDescrList) : NULL;
 
 }
 // copied from asmparse.y
@@ -402,28 +405,23 @@ void    AsmMan::EndAssembly()
                 else
                 {
                     // Read public key or key pair from file.
-                    HANDLE hFile = WszCreateFile(((Assembler*)m_pAssembler)->m_wzKeySourceName,
-                                                 GENERIC_READ,
-                                                 FILE_SHARE_READ,
-                                                 NULL,
-                                                 OPEN_EXISTING,
-                                                 FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
-                                                 NULL);
-                    if(hFile == INVALID_HANDLE_VALUE)
+                    FILE* fp;
+                    int err = fopen_lp(&fp, ((Assembler*)m_pAssembler)->m_wzKeySourceName, W("rb"));
+                    if (err != 0)
                     {
-                        hr = GetLastError();
                         MAKE_UTF8PTR_FROMWIDE(keySourceNameUtf8, ((Assembler*)m_pAssembler)->m_wzKeySourceName);
-                        report->error("Failed to open key file '%s': 0x%08X\n",keySourceNameUtf8,hr);
+                        report->error("Failed to open key file '%s': 0x%08X\n",keySourceNameUtf8,err);
                         m_pCurAsmRef = NULL;
                         return;
                     }
 
                     // Determine file size and allocate an appropriate buffer.
-                    m_sStrongName.m_cbPublicKey = SafeGetFileSize(hFile, NULL);
-                    if (m_sStrongName.m_cbPublicKey == 0xffffffff) {
+                    int64_t fSize = fgetsize(fp);
+                    m_sStrongName.m_cbPublicKey = (DWORD)fSize;
+                    if (fSize > UINT32_MAX) {
                         report->error("File size too large\n");
                         m_pCurAsmRef = NULL;
-                        CloseHandle(hFile);
+                        fclose(fp);
                         return;
                     }
 
@@ -431,23 +429,24 @@ void    AsmMan::EndAssembly()
                     if (m_sStrongName.m_pbPublicKey == NULL) {
                         report->error("Failed to allocate key buffer\n");
                         m_pCurAsmRef = NULL;
-                        CloseHandle(hFile);
+                        fclose(fp);
                         return;
                     }
                     m_sStrongName.m_dwPublicKeyAllocated = AsmManStrongName::AllocatedByNew;
 
                     // Read the file into the buffer.
-                    DWORD dwBytesRead;
-                    if (!ReadFile(hFile, m_sStrongName.m_pbPublicKey, m_sStrongName.m_cbPublicKey, &dwBytesRead, NULL)) {
-                        hr = GetLastError();
+                    size_t dwBytesRead;
+                    
+                    if ((dwBytesRead = fread(m_sStrongName.m_pbPublicKey, 1, m_sStrongName.m_cbPublicKey, fp)) <= m_sStrongName.m_cbPublicKey) {
+                        HRESULT hr = HRESULTFromErrno();
                         MAKE_UTF8PTR_FROMWIDE(keySourceNameUtf8, ((Assembler*)m_pAssembler)->m_wzKeySourceName);
-                        report->error("Failed to read key file '%s': 0x%08X\n",keySourceNameUtf8,hr);
+                        report->error("Failed to read key file '%s': 0x%d\n",keySourceNameUtf8,hr);
                         m_pCurAsmRef = NULL;
-                        CloseHandle(hFile);
+                        fclose(fp);
                         return;
                     }
 
-                    CloseHandle(hFile);
+                    fclose(fp);
 
                     // Guess whether we're full or delay signing based on
                     // whether the blob passed to us looks like a public
@@ -554,7 +553,7 @@ void    AsmMan::EmitAssemblyRefs()
             dwFlags |= afPublicKey;
         }
         // Convert name to Unicode
-        WszMultiByteToWideChar(g_uCodePage,0,m_pCurAsmRef->szName,-1,wzUniBuf,dwUniBuf);
+        MultiByteToWideChar(g_uCodePage,0,m_pCurAsmRef->szName,-1,wzUniBuf,dwUniBuf);
         hr = m_pAsmEmitter->DefineAssemblyRef(       // S_OK or error.
                     pbPublicKeyOrToken,              // [IN] Public key or token of the assembly.
                     cbPublicKeyOrToken,              // [IN] Count of bytes in the key or token.
@@ -589,7 +588,7 @@ void    AsmMan::EmitAssembly()
     FillAssemblyMetadata(m_pAssembly, &md);
 
     // Convert name to Unicode
-    WszMultiByteToWideChar(g_uCodePage,0,m_pAssembly->szName,-1,wzUniBuf,dwUniBuf);
+    MultiByteToWideChar(g_uCodePage,0,m_pAssembly->szName,-1,wzUniBuf,dwUniBuf);
 
     hr = m_pAsmEmitter->DefineAssembly(              // S_OK or error.
         (const void*)(m_sStrongName.m_pbPublicKey), // [IN] Public key of the assembly.
@@ -858,7 +857,7 @@ HRESULT AsmMan::EmitManifest()
             if(!pComType->m_fNew) continue;
             pComType->m_fNew = FALSE;
 
-            WszMultiByteToWideChar(g_uCodePage,0,pComType->szName,-1,wzUniBuf,dwUniBuf);
+            MultiByteToWideChar(g_uCodePage,0,pComType->szName,-1,wzUniBuf,dwUniBuf);
             mdToken     tkImplementation = mdTokenNil;
             if(pComType->tkImpl) tkImplementation = pComType->tkImpl;
             else if(pComType->szFileName)
@@ -931,7 +930,7 @@ HRESULT AsmMan::EmitManifest()
             if(!pManRes->m_fNew) continue;
             pManRes->m_fNew = FALSE;
 
-            WszMultiByteToWideChar(g_uCodePage,0,pManRes->szAlias,-1,wzUniBuf,dwUniBuf);
+            MultiByteToWideChar(g_uCodePage,0,pManRes->szAlias,-1,wzUniBuf,dwUniBuf);
             if(pManRes->szAsmRefName)
             {
                 tkImplementation = GetAsmRefTokByName(pManRes->szAsmRefName);
@@ -952,13 +951,13 @@ HRESULT AsmMan::EmitManifest()
             }
             else // embedded mgd.resource, go after the file
             {
-                HANDLE hFile = INVALID_HANDLE_VALUE;
+                FILE* fp = NULL;
                 int j;
                 WCHAR   wzFileName[2048];
                 WCHAR*  pwz;
 
                 pManRes->ulOffset = m_dwMResSizeTotal;
-                for(j=0; (hFile == INVALID_HANDLE_VALUE)&&(pwzInputFiles[j] != NULL); j++)
+                for(j=0; (fp == NULL)&&(pwzInputFiles[j] != NULL); j++)
                 {
                     wcscpy_s(wzFileName,2048,pwzInputFiles[j]);
                     pwz = (WCHAR*)u16_strrchr(wzFileName,DIRECTORY_SEPARATOR_CHAR_A);
@@ -968,10 +967,10 @@ HRESULT AsmMan::EmitManifest()
                     if(pwz == NULL) pwz = &wzFileName[0];
                     else pwz++;
                     wcscpy_s(pwz,2048-(pwz-wzFileName),wzUniBuf);
-                    hFile = WszCreateFile(wzFileName, GENERIC_READ, FILE_SHARE_READ,
-                             0, OPEN_EXISTING, 0, 0);
+                    if (fopen_lp(&fp, wzFileName, W("rb")) != 0)
+                        fp = NULL;
                 }
-                if (hFile == INVALID_HANDLE_VALUE)
+                if (fp == NULL)
                 {
                     report->error("Failed to open managed resource file '%s'\n",pManRes->szAlias);
                     fOK = FALSE;
@@ -985,14 +984,16 @@ HRESULT AsmMan::EmitManifest()
                     }
                     else
                     {
-                        m_dwMResSize[m_dwMResNum] = SafeGetFileSize(hFile,NULL);
-                        if(m_dwMResSize[m_dwMResNum] == 0xFFFFFFFF)
+                        uint64_t fSize = fgetsize(fp);
+                        if(fSize >= 0xFFFFFFFF)
                         {
+                            m_dwMResSize[m_dwMResNum] = 0xFFFFFFFF;
                             report->error("Failed to get size of managed resource file '%s'\n",pManRes->szAlias);
                             fOK = FALSE;
                         }
                         else
                         {
+                            m_dwMResSize[m_dwMResNum] = (DWORD)fSize;
                             m_dwMResSizeTotal += m_dwMResSize[m_dwMResNum]+sizeof(DWORD);
                             m_wzMResName[m_dwMResNum] = new WCHAR[u16_strlen(wzFileName)+1];
                             wcscpy_s(m_wzMResName[m_dwMResNum],u16_strlen(wzFileName)+1,wzFileName);
@@ -1001,12 +1002,12 @@ HRESULT AsmMan::EmitManifest()
                         }
                     }
 
-                    CloseHandle(hFile);
+                    fclose(fp);
                 }
             }
             if(fOK || ((Assembler*)m_pAssembler)->OnErrGo)
             {
-                WszMultiByteToWideChar(g_uCodePage,0,pManRes->szName,-1,wzUniBuf,dwUniBuf);
+                MultiByteToWideChar(g_uCodePage,0,pManRes->szName,-1,wzUniBuf,dwUniBuf);
                 hr = m_pAsmEmitter->DefineManifestResource(         // S_OK or error.
                         (LPCWSTR)wzUniBuf,                          // [IN] Name of the resource.
                         tkImplementation,                           // [IN] mdFile or mdAssemblyRef that provides the resource.

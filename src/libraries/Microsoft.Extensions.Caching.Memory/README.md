@@ -2,7 +2,7 @@
 
 In-memory caching provides a general purpose memory implementation of the core caching abstractions provided under `Microsoft.Extensions.Caching.Abstractions` and it is great for apps that run in a single server, where all cached data rents memory in the app's process.
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/caching.
+Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/caching.
 
 ## Example
 

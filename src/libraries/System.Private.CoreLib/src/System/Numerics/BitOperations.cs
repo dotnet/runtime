@@ -389,12 +389,8 @@ namespace System.Numerics
             value |= value >> 08;
             value |= value >> 16;
 
-            // uint.MaxValue >> 27 is always in range [0 - 31] so we use Unsafe.AddByteOffset to avoid bounds check
-            return Unsafe.AddByteOffset(
-                // Using deBruijn sequence, k=2, n=5 (2^5=32) : 0b_0000_0111_1100_0100_1010_1100_1101_1101u
-                ref MemoryMarshal.GetReference(Log2DeBruijn),
-                // uint|long -> IntPtr cast on 32-bit platforms does expensive overflow checks not needed here
-                (IntPtr)(int)((value * 0x07C4ACDDu) >> 27));
+            // Using deBruijn sequence, k=2, n=5 (2^5=32) : 0b_0000_0111_1100_0100_1010_1100_1101_1101u
+            return Log2DeBruijn[(int)((value * 0x07C4ACDDu) >> 27)];
         }
 
         /// <summary>Returns the integer (ceiling) log of the specified value, base 2.</summary>
@@ -948,7 +944,7 @@ namespace System.Numerics
         /// <summary>
         /// Flip the bit at a specific position in a given value.
         /// Similar in behavior to the x86 instruction BTC (Bit Test and Complement).
-        /// /// </summary>
+        /// </summary>
         /// <param name="value">The value.</param>
         /// <param name="index">The zero-based index of the bit to flip.
         /// Any value outside the range [0..63] is treated as congruent mod 64.</param>

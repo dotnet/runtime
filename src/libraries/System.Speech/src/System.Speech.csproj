@@ -3,12 +3,18 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
     <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)</TargetFrameworks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- CS0649: uninitialized interop type fields -->
     <!-- SA1129: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3277 -->
     <NoWarn>$(NoWarn);CS0649;SA1129;IDE0059;IDE0060;CA1822;CA1852</NoWarn>
-    <IsTrimmable>false</IsTrimmable>
-    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+
+    <!-- TODO: Document public visible types and members. https://github.com/dotnet/runtime/issues/87711
+         Set SuppressPlatformNotSupportedAssemblyDocXmlError as this library uses the PNSE infrastructure
+         which is incompatible. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <SuppressPlatformNotSupportedAssemblyDocXmlError>true</SuppressPlatformNotSupportedAssemblyDocXmlError>
+
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>

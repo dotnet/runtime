@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -68,6 +69,246 @@ namespace System.Formats.Tar.Tests
             V7TarEntry symbolicLink = new V7TarEntry(TarEntryType.SymbolicLink, InitialEntryName);
             SetSymbolicLink(symbolicLink);
             VerifySymbolicLink(symbolicLink);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void DataOffset_RegularFile(bool canSeek)
+        {
+            using MemoryStream ms = new();
+            using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry.DataOffset);
+                entry.DataStream = new MemoryStream();
+                entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
+                entry.DataStream.Position = 0;
+                writer.WriteEntry(entry);
+            }
+            ms.Position = 0;
+
+            using Stream streamToRead = new WrappedStream(ms, canWrite: true, canRead: true, canSeek: canSeek);
+            using TarReader reader = new(streamToRead);
+            TarEntry actualEntry = reader.GetNextEntry();
+            Assert.NotNull(actualEntry);
+            // V7 header length is 512, data starts in the next position
+            long expectedDataOffset = canSeek ? 512 : -1;
+            Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
+
+            if (canSeek)
+            {
+                ms.Position = actualEntry.DataOffset;
+                byte actualData = (byte)ms.ReadByte();
+                Assert.Equal(ExpectedOffsetDataSingleByte, actualData);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DataOffset_RegularFile_Async(bool canSeek)
+        {
+            await using MemoryStream ms = new();
+            await using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry.DataOffset);
+                entry.DataStream = new MemoryStream();
+                entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
+                entry.DataStream.Position = 0;
+                await writer.WriteEntryAsync(entry);
+            }
+            ms.Position = 0;
+
+            await using Stream streamToRead = new WrappedStream(ms, canWrite: true, canRead: true, canSeek: canSeek);
+            await using TarReader reader = new(streamToRead);
+            TarEntry actualEntry = await reader.GetNextEntryAsync();
+            Assert.NotNull(actualEntry);
+            // V7 header length is 512, data starts in the next position
+            long expectedDataOffset = canSeek ? 512 : -1;
+            Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
+
+            if (canSeek)
+            {
+                ms.Position = actualEntry.DataOffset;
+                byte actualData = (byte)ms.ReadByte();
+                Assert.Equal(ExpectedOffsetDataSingleByte, actualData);
+            }
+        }
+
+        [Fact]
+        public void DataOffset_BeforeAndAfterArchive()
+        {
+            V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+            Assert.Equal(-1, entry.DataOffset);
+            entry.DataStream = new MemoryStream();
+            entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
+            entry.DataStream.Position = 0; // The data stream is written to the archive from the current position
+
+            using MemoryStream ms = new();
+            using TarWriter writer = new(ms);
+            writer.WriteEntry(entry);
+            Assert.Equal(512, entry.DataOffset);
+
+            // Write it again, the offset should now point to the second written entry
+            // First entry 512 (header) + 1 (data) + 511 (padding)
+            // Second entry 512 (header)
+            // 512 + 512 + 512 = 1536
+            writer.WriteEntry(entry);
+            Assert.Equal(1536, entry.DataOffset);
+        }
+        
+        [Fact]
+        public async Task DataOffset_BeforeAndAfterArchive_Async()
+        {
+            V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+            Assert.Equal(-1, entry.DataOffset);
+            entry.DataStream = new MemoryStream();
+            entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
+            entry.DataStream.Position = 0; // The data stream is written to the archive from the current position
+
+            await using MemoryStream ms = new();
+            await using TarWriter writer = new(ms);
+            await writer.WriteEntryAsync(entry);
+            Assert.Equal(512, entry.DataOffset);
+
+            // Write it again, the offset should now point to the second written entry
+            // First entry 512 (header) + 1 (data) + 511 (padding)
+            // Second entry 512 (header)
+            // 512 + 512 + 512 = 1536
+            await writer.WriteEntryAsync(entry);
+            Assert.Equal(1536, entry.DataOffset);
+        }
+
+        [Fact]
+        public void DataOffset_UnseekableDataStream()
+        {
+            using MemoryStream ms = new();
+            using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry.DataOffset);
+
+                using MemoryStream dataStream = new();
+                dataStream.WriteByte(ExpectedOffsetDataSingleByte);
+                dataStream.Position = 0;
+                using WrappedStream wds = new(dataStream, canWrite: true, canRead: true, canSeek: false);
+                entry.DataStream = wds;
+
+                writer.WriteEntry(entry);
+            }
+            ms.Position = 0;
+
+            using TarReader reader = new(ms);
+            TarEntry actualEntry = reader.GetNextEntry();
+            Assert.NotNull(actualEntry);
+        }
+
+        [Fact]
+        public async Task DataOffset_UnseekableDataStream_Async()
+        {
+            await using MemoryStream ms = new();
+            await using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry.DataOffset);
+
+                await using MemoryStream dataStream = new();
+                dataStream.WriteByte(ExpectedOffsetDataSingleByte);
+                dataStream.Position = 0;
+                await using WrappedStream wds = new(dataStream, canWrite: true, canRead: true, canSeek: false);
+                entry.DataStream = wds;
+
+                await writer.WriteEntryAsync(entry);
+            }
+            ms.Position = 0;
+
+            await using TarReader reader = new(ms);
+            TarEntry actualEntry = await reader.GetNextEntryAsync();
+            Assert.NotNull(actualEntry);
+            // V7 header length is 512, data starts in the next position
+            Assert.Equal(512, actualEntry.DataOffset);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void DataOffset_RegularFile_SecondEntry(bool canSeek)
+        {
+            using MemoryStream ms = new();
+            using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                V7TarEntry entry1 = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry1.DataOffset);
+                entry1.DataStream = new MemoryStream();
+                entry1.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
+                entry1.DataStream.Position = 0;
+                writer.WriteEntry(entry1);
+                
+                V7TarEntry entry2 = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry2.DataOffset);
+                entry2.DataStream = new MemoryStream();
+                entry2.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
+                entry2.DataStream.Position = 0;
+                writer.WriteEntry(entry2);
+            }
+            ms.Position = 0;
+
+            using Stream streamToRead = new WrappedStream(ms, canWrite: true, canRead: true, canSeek: canSeek);
+            using TarReader reader = new(streamToRead);
+            TarEntry firstEntry = reader.GetNextEntry();
+            Assert.NotNull(firstEntry);
+            // V7 header length is 512, data starts in the next position
+            long firstExpectedDataOffset = canSeek ? 512 : -1;
+            Assert.Equal(firstExpectedDataOffset, firstEntry.DataOffset);
+            
+            TarEntry secondEntry = reader.GetNextEntry();
+            Assert.NotNull(secondEntry);
+            // First entry ends at 512 (header) + 1 (data) + 511 (padding) = 1024
+            // Second entry also has 512 header, so data starts one byte after 1536
+            long secondExpectedDataOffset = canSeek ? 1536 : -1;
+            Assert.Equal(secondExpectedDataOffset, secondEntry.DataOffset);
+        }
+        
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DataOffset_RegularFile_SecondEntryAsync(bool canSeek)
+        {
+            await using MemoryStream ms = new();
+            await using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                V7TarEntry entry1 = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry1.DataOffset);
+                entry1.DataStream = new MemoryStream();
+                entry1.DataStream.Write(ExpectedOffsetDataMultiByte);
+                entry1.DataStream.Position = 0;
+                await writer.WriteEntryAsync(entry1);
+                
+                V7TarEntry entry2 = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry2.DataOffset);
+                entry2.DataStream = new MemoryStream();
+                entry2.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
+                entry2.DataStream.Position = 0;
+                await writer.WriteEntryAsync(entry2);
+            }
+            ms.Position = 0;
+
+            await using Stream streamToRead = new WrappedStream(ms, canWrite: true, canRead: true, canSeek: canSeek);
+            await using TarReader reader = new(streamToRead);
+            TarEntry firstEntry = await reader.GetNextEntryAsync();
+            Assert.NotNull(firstEntry);
+            // V7 header length is 512, data starts in the next position
+            long firstExpectedDataOffset = canSeek ? 512 : -1;
+            Assert.Equal(firstExpectedDataOffset, firstEntry.DataOffset);
+            
+            TarEntry secondEntry = await reader.GetNextEntryAsync();
+            Assert.NotNull(secondEntry);
+            // First entry ends at 512 (header) + 1 (data) + 511 (padding) = 1024
+            // Second entry also has 512 header, so data starts one byte after 1536
+            long secondExpectedDataOffset = canSeek ? 1536 : -1;
+            Assert.Equal(secondExpectedDataOffset, secondEntry.DataOffset);
         }
     }
 }

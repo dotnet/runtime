@@ -566,7 +566,7 @@ namespace System.Net
                     bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPIAuth, _securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SIZES, ref sizes);
                     Debug.Assert(success);
 
-                    Span<byte> signatureBuffer = signature.GetSpan(sizes.cbSecurityTrailer);
+                    Span<byte> signatureBuffer = signature.GetSpan(sizes.cbMaxSignature);
 
                     fixed (byte* messagePtr = message)
                     fixed (byte* signaturePtr = signatureBuffer)
@@ -577,7 +577,7 @@ namespace System.Net
                         Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[1];
                         tokenBuffer->BufferType = SecurityBufferType.SECBUFFER_TOKEN;
                         tokenBuffer->pvBuffer = (IntPtr)signaturePtr;
-                        tokenBuffer->cbBuffer = sizes.cbSecurityTrailer;
+                        tokenBuffer->cbBuffer = sizes.cbMaxSignature;
                         dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
                         dataBuffer->pvBuffer = (IntPtr)messagePtr;
                         dataBuffer->cbBuffer = message.Length;
@@ -587,8 +587,7 @@ namespace System.Net
                             pBuffers = unmanagedBuffer
                         };
 
-                        uint qop = IsEncrypted ? 0 : Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT;
-                        int errorCode = Interop.SspiCli.MakeSignature(ref _securityContext._handle, qop, ref sdcInOut, 0);
+                        int errorCode = Interop.SspiCli.MakeSignature(ref _securityContext._handle, 0, ref sdcInOut, 0);
 
                         if (errorCode != 0)
                         {
@@ -597,7 +596,7 @@ namespace System.Net
                             throw new Win32Exception(errorCode);
                         }
 
-                        signature.Advance(signatureBuffer.Length);
+                        signature.Advance(tokenBuffer->cbBuffer);
                     }
                 }
                 finally
@@ -737,7 +736,7 @@ namespace System.Net
                     spn,
                     requestedContextFlags,
                     Interop.SspiCli.Endianness.SECURITY_NETWORK_DREP,
-                    inputBuffers,
+                    ref inputBuffers,
                     ref token,
                     ref contextFlags);
                 securityContext = sslContext;
@@ -799,7 +798,7 @@ namespace System.Net
                     ref sslContext,
                     requestedContextFlags,
                     Interop.SspiCli.Endianness.SECURITY_NETWORK_DREP,
-                    inputBuffers,
+                    ref inputBuffers,
                     ref token,
                     ref contextFlags);
 

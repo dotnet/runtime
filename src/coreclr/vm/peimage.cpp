@@ -240,9 +240,10 @@ BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
     PEImage *pImage = (PEImage *) u2;
 
     if (pLocator->m_bIsInBundle != pImage->IsInBundle())
-    {
         return FALSE;
-    }
+
+    if (pLocator->m_bIsExternalData != pImage->IsExternalData())
+        return FALSE;
 
     BOOL ret = FALSE;
     HRESULT hr;
@@ -310,11 +311,11 @@ void PEImage::OpenMDImport()
         if(pMeta==NULL)
             return;
 
-        IfFailThrow(GetMetaDataInternalInterface((void *) pMeta,
-                                                 cMeta,
-                                                 ofRead,
-                                                 IID_IMDInternalImport,
-                                                 (void **) &m_pNewImport));
+        IfFailThrow(GetMDInternalInterface((void *) pMeta,
+                                           cMeta,
+                                           ofRead,
+                                           IID_IMDInternalImport,
+                                           (void **) &m_pNewImport));
 
         if(InterlockedCompareExchangeT(&m_pMDImport, m_pNewImport, NULL))
         {
@@ -369,11 +370,11 @@ void PEImage::GetMVID(GUID *pMvid)
 
     SafeComHolder<IMDInternalImport> pMDImport;
 
-    IfFailThrow(GetMetaDataInternalInterface((void *) pMeta,
-                                             cMeta,
-                                             ofRead,
-                                             IID_IMDInternalImport,
-                                             (void **) &pMDImport));
+    IfFailThrow(GetMDInternalInterface((void *) pMeta,
+                                       cMeta,
+                                       ofRead,
+                                       IID_IMDInternalImport,
+                                       (void **) &pMDImport));
 
     pMDImport->GetScopeProps(NULL, &MvidDEBUG);
 
@@ -385,47 +386,9 @@ void PEImage::GetMVID(GUID *pMvid)
 //may outlive PEImage
 PEImage::IJWFixupData::IJWFixupData(void *pBase)
     : m_lock(CrstIJWFixupData),
-    m_base(pBase), m_flags(0), m_DllThunkHeap(NULL), m_iNextFixup(0), m_iNextMethod(0)
+    m_base(pBase), m_flags(0), m_iNextFixup(0), m_iNextMethod(0)
 {
     WRAPPER_NO_CONTRACT;
-}
-
-PEImage::IJWFixupData::~IJWFixupData()
-{
-    WRAPPER_NO_CONTRACT;
-    if (m_DllThunkHeap)
-        delete m_DllThunkHeap;
-}
-
-
-// Self-initializing accessor for m_DllThunkHeap
-LoaderHeap *PEImage::IJWFixupData::GetThunkHeap()
-{
-    CONTRACT(LoaderHeap *)
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END
-
-    if (!m_DllThunkHeap)
-    {
-        LoaderHeap *pNewHeap = new LoaderHeap(VIRTUAL_ALLOC_RESERVE_GRANULARITY, // DWORD dwReserveBlockSize
-            0,                                 // DWORD dwCommitBlockSize
-            ThunkHeapStubManager::g_pManager->GetRangeList(),
-            UnlockedLoaderHeap::HeapKind::Executable);
-
-        if (InterlockedCompareExchangeT((PVOID*)&m_DllThunkHeap, (VOID*)pNewHeap, (VOID*)0) != 0)
-        {
-            delete pNewHeap;
-        }
-    }
-
-    RETURN m_DllThunkHeap;
 }
 
 void PEImage::IJWFixupData::MarkMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod)
@@ -450,19 +413,6 @@ BOOL PEImage::IJWFixupData::IsMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod)
         return TRUE;
 
     return FALSE;
-}
-
-/*static */
-PTR_LoaderHeap PEImage::GetDllThunkHeap(void *pBase)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    return GetIJWData(pBase)->GetThunkHeap();
 }
 
 /* static */
@@ -492,29 +442,6 @@ PEImage::IJWFixupData *PEImage::GetIJWData(void *pBase)
     return (pData);
 }
 
-/* static */
-void PEImage::UnloadIJWModule(void *pBase)
-{
-    CONTRACTL{
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END
-
-    // Take the IJW hash lock
-    CrstHolder hashLockHolder(&s_ijwHashLock);
-
-    // Try to delete the hash entry
-    IJWFixupData *pData = (IJWFixupData *)s_ijwFixupDataHash->DeleteValue((UPTR)pBase, pBase);
-
-    // Now delete the data
-    if ((UPTR)pData != (UPTR)INVALIDENTRY)
-        delete pData;
-}
-
-
-
-
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
@@ -536,9 +463,10 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // these necessary fields enumerated no matter what.
     m_path.EnumMemoryRegions(flags);
 
-    // We always want this field in mini/triage/heap dumps.
+    // SString skips enumeration for triage dumps, but we always want this field, so we specify
+    // CLRDATA_ENUM_MEM_DEFAULT as the flags. This value is used in cases where we either can't
+    // use the full path (triage dumps) or don't have a path (in-memory assembly)
     m_sModuleFileNameHintUsedByDac.EnumMemoryRegions(CLRDATA_ENUM_MEM_DEFAULT);
-
 
     EX_TRY
     {
@@ -615,13 +543,12 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #endif // #ifdef DACCESS_COMPILE
 
-
-PEImage::PEImage():
-    m_path(),
+PEImage::PEImage(const WCHAR* path):
+    m_path{path},
     m_pathHash(0),
     m_refCount(1),
     m_bInHashMap(FALSE),
-    m_bundleFileLocation(),
+    m_probeExtensionResult(),
     m_hFile(INVALID_HANDLE_VALUE),
     m_dwPEKind(0),
     m_dwMachine(0),
@@ -701,7 +628,7 @@ PTR_PEImageLayout PEImage::GetOrCreateLayoutInternal(DWORD imageLayoutMask)
 
 #ifdef TARGET_WINDOWS
         // on Windows we prefer to just load the file using OS loader
-        if (!IsInBundle() && bIsLoadedLayoutSuitable)
+        if (!IsInBundle() && IsFile() && bIsLoadedLayoutSuitable)
         {
             bIsLoadedLayoutPreferred = TRUE;
         }
@@ -709,11 +636,13 @@ PTR_PEImageLayout PEImage::GetOrCreateLayoutInternal(DWORD imageLayoutMask)
 
         _ASSERTE(bIsLoadedLayoutSuitable || bIsFlatLayoutSuitable);
 
+#ifndef PEIMAGE_FLAT_LAYOUT_ONLY
         if (bIsLoadedLayoutPreferred)
         {
             _ASSERTE(bIsLoadedLayoutSuitable);
             pRetVal = PEImage::CreateLoadedLayout(!bIsFlatLayoutSuitable);
         }
+#endif
 
         if (pRetVal == NULL)
         {
@@ -788,7 +717,7 @@ PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
     }
     CONTRACT_END;
 
-    PEImageHolder pImage(new PEImage());
+    PEImageHolder pImage(new PEImage(NULL /*path*/));
     PTR_PEImageLayout pLayout = PEImageLayout::CreateFromByteArray(pImage, array, size);
     _ASSERTE(!pLayout->IsMapped());
 
@@ -831,8 +760,6 @@ PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
 }
 #endif // !TARGET_UNIX
 
-#endif //DACCESS_COMPILE
-
 HANDLE PEImage::GetFileHandle()
 {
     CONTRACTL
@@ -849,11 +776,7 @@ HANDLE PEImage::GetFileHandle()
 
     if (m_hFile == INVALID_HANDLE_VALUE)
     {
-#if !defined(DACCESS_COMPILE)
         EEFileLoadException::Throw(GetPathToLoad(), hr);
-#else // defined(DACCESS_COMPILE)
-        ThrowHR(hr);
-#endif // !defined(DACCESS_COMPILE)
     }
 
     return m_hFile;
@@ -863,13 +786,15 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(IsFile());
+
     SimpleWriteLockHolder lock(m_pLayoutLock, takeLock);
 
-    if (m_hFile!=INVALID_HANDLE_VALUE)
+    if (m_hFile != INVALID_HANDLE_VALUE)
         return S_OK;
 
     ErrorModeHolder mode{};
-    m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(),
+    m_hFile = WszCreateFile((LPCWSTR)GetPathToLoad(),
                           GENERIC_READ
 #if TARGET_WINDOWS
                           // the file may have native code sections, make sure we are allowed to execute the file
@@ -881,7 +806,6 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
                           OPEN_EXISTING,
                           FILE_ATTRIBUTE_NORMAL,
                           NULL);
-
     if (m_hFile != INVALID_HANDLE_VALUE)
             return S_OK;
 
@@ -891,6 +815,7 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
     return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
 }
 
+#endif // !DACCESS_COMPILE
 
 BOOL PEImage::IsPtrInImage(PTR_CVOID data)
 {

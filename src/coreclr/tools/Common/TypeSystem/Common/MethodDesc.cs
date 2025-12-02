@@ -22,6 +22,7 @@ namespace Internal.TypeSystem
         UnmanagedCallingConvention           = 0x0009,
 
         Static = 0x0010,
+        ExplicitThis = 0x0020,
     }
 
     public enum EmbeddedSignatureDataKind
@@ -126,6 +127,14 @@ namespace Internal.TypeSystem
             get
             {
                 return (_flags & MethodSignatureFlags.Static) != 0;
+            }
+        }
+
+        public bool IsExplicitThis
+        {
+            get
+            {
+                return (_flags & MethodSignatureFlags.ExplicitThis) != 0;
             }
         }
 
@@ -482,11 +491,12 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Compute HashCode. Should only be overridden by a MethodDesc that represents an instantiated method.
+        /// Compute HashCode. This hashcode is persisted into the image.
+        /// The algorithm to compute it must be in sync with the one used at runtime.
         /// </summary>
         protected virtual int ComputeHashCode()
         {
-            return TypeHashingAlgorithms.ComputeMethodHashCode(OwningType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(Name));
+            return OwningType.GetHashCode() ^ VersionResilientHashCode.NameHashCode(Name);
         }
 
         public override bool Equals(object o)
@@ -547,7 +557,7 @@ namespace Internal.TypeSystem
             {
                 // TODO: Precise check
                 // TODO: Cache?
-                return this.Name == ".ctor";
+                return this.Name.SequenceEqual(".ctor"u8);
             }
         }
 
@@ -577,12 +587,21 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the name of the method as specified in the metadata.
         /// </summary>
-        public virtual string Name
+        public virtual ReadOnlySpan<byte> Name
         {
             get
             {
-                return null;
+                return [];
             }
+        }
+
+        public string GetName()
+        {
+            return System.Text.Encoding.UTF8.GetString(Name
+#if NETSTANDARD
+                .ToArray()
+#endif
+                );
         }
 
         /// <summary>
@@ -632,6 +651,14 @@ namespace Internal.TypeSystem
         }
 
         public virtual bool IsPublic
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public virtual bool IsAsync
         {
             get
             {
@@ -700,7 +727,7 @@ namespace Internal.TypeSystem
             get
             {
                 TypeDesc owningType = OwningType;
-                return (owningType.IsObject && Name == "Finalize") || (owningType.HasFinalizer && owningType.GetFinalizer() == this);
+                return (owningType.IsObject && Name.SequenceEqual("Finalize"u8)) || (owningType.HasFinalizer && owningType.GetFinalizer() == this);
             }
         }
 

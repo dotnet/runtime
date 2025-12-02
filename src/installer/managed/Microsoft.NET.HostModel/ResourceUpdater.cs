@@ -13,21 +13,12 @@ namespace Microsoft.NET.HostModel
     /// <summary>
     /// Provides methods for modifying the embedded native resources in a PE image.
     /// </summary>
-    public class ResourceUpdater : IDisposable
+    public sealed class ResourceUpdater : IDisposable
     {
-        private readonly FileStream stream;
+        private readonly FileStream _stream;
         private readonly PEReader _reader;
         private ResourceData _resourceData;
-        private readonly bool leaveOpen;
-
-        ///<summary>
-        /// Determines if the ResourceUpdater is supported by the current operating system.
-        /// Some versions of Windows, such as Nano Server, do not support the needed APIs.
-        /// </summary>
-        public static bool IsSupportedOS()
-        {
-            return true;
-        }
+        private readonly bool _leaveOpen;
 
         /// <summary>
         /// Create a resource updater for the given PE file.
@@ -48,18 +39,24 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         public ResourceUpdater(FileStream stream, bool leaveOpen = false)
         {
-            this.stream = stream;
-            this.leaveOpen = leaveOpen;
+#if NET
+            ArgumentNullException.ThrowIfNull(stream);
+#endif
+
+            _stream = stream;
+            _leaveOpen = leaveOpen;
             try
             {
-                this.stream.Seek(0, SeekOrigin.Begin);
-                _reader = new PEReader(this.stream, PEStreamOptions.LeaveOpen);
+                _stream.Seek(0, SeekOrigin.Begin);
+                _reader = new PEReader(_stream, PEStreamOptions.LeaveOpen);
                 _resourceData = new ResourceData(_reader);
             }
             catch (Exception)
             {
                 if (!leaveOpen)
-                    this.stream?.Dispose();
+                {
+                    _stream.Dispose();
+                }
                 throw;
             }
         }
@@ -76,7 +73,7 @@ namespace Microsoft.NET.HostModel
             if (_resourceData == null)
                 ThrowExceptionForInvalidUpdate();
 
-            using var module = new PEReader(File.Open(peFile, FileMode.Open, FileAccess.Read, FileShare.Read));
+            using var module = new PEReader(File.OpenRead(peFile));
             var moduleResources = new ResourceData(module);
             _resourceData.CopyResourcesFrom(moduleResources);
             return this;
@@ -194,12 +191,12 @@ namespace Microsoft.NET.HostModel
 
             int trailingSectionVirtualStart = rsrcVirtualAddress + rsrcOriginalVirtualSize;
             int trailingSectionStart = rsrcPointerToRawData + rsrcOriginalRawDataSize;
-            int trailingSectionLength = (int)(stream.Length - trailingSectionStart);
+            int trailingSectionLength = (int)(_stream.Length - trailingSectionStart);
 
             bool needsMoveTrailingSections = !isRsrcIsLastSection && delta > 0;
             long finalImageSize = trailingSectionStart + Math.Max(delta, 0) + trailingSectionLength;
 
-            using (var mmap = MemoryMappedFile.CreateFromFile(stream, null, finalImageSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
+            using (var mmap = MemoryMappedFile.CreateFromFile(_stream, null, finalImageSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
             using (MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor(0, finalImageSize, MemoryMappedFileAccess.ReadWrite))
             {
                 int peSignatureOffset = ReadI32(accessor, PEOffsets.DosStub.PESignatureOffset);
@@ -336,16 +333,10 @@ namespace Microsoft.NET.HostModel
 
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        public void Dispose(bool disposing)
-        {
-            if (disposing && !leaveOpen)
+            _reader.Dispose();
+            if (!_leaveOpen)
             {
-                _reader.Dispose();
-                stream.Dispose();
+                _stream.Dispose();
             }
         }
     }

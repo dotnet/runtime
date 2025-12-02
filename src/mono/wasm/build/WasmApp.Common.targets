@@ -20,13 +20,20 @@
                                     Defaults to true.
       - $(WasmEmitSymbolMap)      - Generates a `dotnet.native.js.symbols` file with a map of wasm function number to name.
       - $(WasmEmitSourceMap)      - Generates `dotnet.runtime.js.map` and `dotnet.js.map` files with a TypeScript source map.
-      - $(WasmDedup)         - Whether to dedup generic instances when using AOT. Defaults to true.
+      - $(WasmDedup)              - Whether to dedup generic instances when using AOT. Defaults to true.
 
-      - $(WasmProfilers)     - Profilers to use
-      - $(AOTProfilePath)    - profile data file to be used for profile-guided optimization
+      - $(EnableDiagnostics)            - Enables diagnostic server tracing. Defaults to false.
+      - $(EventSourceSupport)           - Enables EventSource support. Defaults to false.
+      - $(WasmPerformanceInstrumentation) - Enables CPU sampling instrumentation for diagnostic server.Possible values:
+                                            - all - enables all instrumentation
+                                            - none - disables all instrumentation
+                                            - N:SampleNamespace - enables instrumentation for the specified namespace
+      - $(MetricsSupport)               - System.Diagnostics.Metrics support. Defaults to false.
+      - $(WasmProfilers)                - Mono Profilers to use. Defaults to empty. Could be `log` and `browser`.
+      - $(AOTProfilePath)               - profile data file to be used for profile-guided optimization
+
       - $(InvariantGlobalization)       - Whether to disable ICU. Defaults to false.
       - $(InvariantTimezone)            - Whether to disable Timezone database. Defaults to false.
-      - $(HybridGlobalization)          - Whether to enable reduced ICU + native platform functions. Defaults to false and can be set only for InvariantGlobalization=false, WasmIncludeFullIcuData=false and empty WasmIcuDataFileName.
 
       - $(WasmResolveAssembliesBeforeBuild) - Resolve the assembly dependencies. Defaults to false
       - $(WasmAssemblySearchPaths)          - used for resolving assembly dependencies
@@ -44,13 +51,15 @@
 
       - $(EmccLinkOptimizationFlag)         - Optimization flag to use for the link step
       - $(EmccCompileOptimizationFlag)      - Optimization flag to use for compiling native files
+      - $(WasmBitcodeCompileOptimizationFlag)
+                                            - Optimization flag to use for compiling bitcode files
 
       - $(EmccFlags)                        - Emcc flags used for both compiling native files, and linking
       - $(EmccExtraLDFlags)                 - Extra emcc flags for linking
       - $(EmccExtraCFlags)                  - Extra emcc flags for compiling native files
       - $(EmccEnableAssertions)             - Corresponds to `ASSERTIONS` arg for emcc. Default false.
       - $(EmccEnvironment)                  - Corresponds to `ENVIRONMENT` arg for emcc. Default is `web,webview,worker,node,shell`.
-      - $(WasmInitialHeapSize)              - Initial heap size specified with `emcc`. Default value: 16777216 or size of the DLLs, whichever is larger.
+      - $(WasmInitialHeapSize)              - Initial heap size specified with `emcc`. Default value: 33554432 or size of the DLLs, whichever is larger.
                                               Corresponds to `-s INITIAL_MEMORY=...` emcc arg.
                                               (previously named EmccTotalMemory, which is still kept as an alias)
       - $(EmccMaximumHeapSize)              - Maximum heap size specified with `emcc`. Default value: 2147483648 or size of the DLLs, whichever is larger.
@@ -68,7 +77,6 @@
       - $(RunAOTCompilationAfterBuild)      - Run AOT compilation even after Build. By default, it is run only for publish.
                                               Defaults to false.
       - $(WasmAotProfilePath)               - Path to an AOT profile file.
-      - $(WasmEnableLegacyJsInterop)        - Include support for legacy JS interop. Defaults to true.
       - $(WasmEnableExceptionHandling)      - Enable support for the WASM post MVP Exception Handling runtime extension.
       - $(WasmEnableSIMD)                   - Enable support for the WASM post MVP SIMD runtime extension.
       - $(WasmEnableWebcil)                 - Enable conversion of assembly .dlls to Webcil wrapped in .wasm (default: true)
@@ -85,6 +93,8 @@
                                               - AppBundle/_content contains web files from nuget packages (css, js, etc)
       - $(WasmStripILAfterAOT)              - Set to true to enable trimming away AOT compiled methods body (IL code)
                                               Defaults to true.
+      - $(WasmEmitTypeScriptDefinitions)    - Controls whether TypeScript definitions (dotnet.d.ts) should be copied to the project's `wwwroot`. 
+                                              Defaults to false.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -92,7 +102,8 @@
       - @(WasmFilesToIncludeInFileSystem) - Files to include in the vfs
       - @(WasmNativeAsset)        - Native files to be added to `NativeAssets` in the bundle.
 
-      - @(WasmExtraConfig)        - json elements to add to `_framework/blazor.boot.json`
+      - @(WasmEnvironmentVariable)        - adds environment variables to `_framework/dotnet.boot.js`
+      - @(WasmExtraConfig)        - json elements to add to `_framework/dotnet.boot.js`
                                     Eg. <WasmExtraConfig Include="xxx" Value="true" />
 
                                     - Value attribute can have a number, bool, quoted string, or json string
@@ -105,38 +116,37 @@
       - @(EmccExportedFunction)      - Extra function for emcc flag EXPORTED_FUNCTIONS
   -->
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmLoadAssembliesAndReferences" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmCalculateInitialHeapSize" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
-  <UsingTask TaskName="EmitBundleObjectFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmLoadAssembliesAndReferences" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmCalculateInitialHeapSize" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="EmitBundleObjectFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
     <PrepareInputsForWasmBuildDependsOn>
       $(PrepareInputsForWasmBuildDependsOn);
       _SetupToolchain;
+      _ReadWasmProps;
       _SetWasmBuildNativeDefaults;
-      _SetWasmNativeStripDefault;
       _GetDefaultWasmAssembliesToBundle;
-      _WasmGetRuntimeConfigPath;
     </PrepareInputsForWasmBuildDependsOn>
 
     <WasmGenerateAppBundleDependsOn>
       $(WasmGenerateAppBundleDependsOn);
-      _WasmGenerateRuntimeConfig;
     </WasmGenerateAppBundleDependsOn>
 
     <!-- FIXME: TMP: added _PrepareForWasmBuildNative as it used by emsdk cache as beforeTargets -->
     <_WasmBuildNativeCoreDependsOn>
       $(_WasmBuildNativeCoreDependsOn);
-      _PrepareForWasmBuildNative;
+      _WasmCommonPrepareForWasmBuildNative;
       PrepareForWasmBuildNative;
       _ScanAssembliesDecideLightweightMarshaler;
       _WasmAotCompileApp;
       _WasmStripAOTAssemblies;
       _GenerateManagedToNative;
       WasmLinkDotNet;
+      WasmAfterLinkSteps;
     </_WasmBuildNativeCoreDependsOn>
 
     <WasmLinkDotNetDependsOn>
@@ -145,7 +155,6 @@
       _WasmSelectRuntimeComponentsForLinking;
       _WasmCompileAssemblyBitCodeFilesForAOT;
       _WasmCalculateInitialHeapSizeFromBitcodeFiles;
-      _WasmGenerateRuntimeConfig;
       _WasmWriteRspForCompilingNativeSourceFiles;
       _WasmCompileNativeSourceFiles;
       _GenerateObjectFilesForSingleFileBundle;
@@ -153,8 +162,9 @@
     </WasmLinkDotNetDependsOn>
 
     <WasmDedup Condition="'$(WasmDedup)' == ''">true</WasmDedup>
-    <IsWasiProject Condition="'$(IsWasiProject)' == '' and '$(RuntimeIdentifier)' == 'wasi-wasm' and '$(OutputType)' != 'Library'">true</IsWasiProject>
-    <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(OutputType)' != 'Library'">true</IsBrowserWasmProject>
+    <_IsLibraryMode Condition="'$(OutputType)' == 'Library' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'">true</_IsLibraryMode>
+    <IsWasiProject Condition="'$(IsWasiProject)' == '' and '$(RuntimeIdentifier)' == 'wasi-wasm' and ('$(OutputType)' != 'Library' or '$(_IsLibraryMode)' == 'true')">true</IsWasiProject>
+    <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm' and ('$(OutputType)' != 'Library' or '$(_IsLibraryMode)' == 'true')">true</IsBrowserWasmProject>
     <IsWasmProject Condition="'$(IsWasmProject)' == '' and ('$(IsWasiProject)' == 'true' or '$(IsBrowserWasmProject)' == 'true')">true</IsWasmProject>
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == '' and '$(DisableAutoWasmBuildApp)' != 'true'">Build</WasmBuildAppAfterThisTarget>
 
@@ -164,7 +174,7 @@
     <EnableDefaultWasmAssembliesToBundle Condition="'$(EnableDefaultWasmAssembliesToBundle)' == ''">true</EnableDefaultWasmAssembliesToBundle>
     <!-- VS uses DeployOnBuild, and sdk sets _IsPublishing -->
     <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and ('$(DeployOnBuild)' == 'true' or '$(_IsPublishing)' == 'true')">true</WasmBuildOnlyAfterPublish>
-    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and '$(OutputType)' != 'Library'">true</WasmGenerateAppBundle>
+    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and ('$(OutputType)' != 'Library' or '$(_IsLibraryMode)' == 'true')">true</WasmGenerateAppBundle>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">false</WasmGenerateAppBundle>
 
     <!-- FIXME: can't set to true because
@@ -172,13 +182,21 @@
     -->
     <UseAppHost>false</UseAppHost>
 
-    <!-- if DebuggerSupport==true, then ensure that WasmDebugLevel isn't disabling debugging -->
-    <WasmDebugLevel Condition="('$(WasmDebugLevel)' == '' or '$(WasmDebugLevel)' == '0') and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</WasmDebugLevel>
+    <!-- Post Wasm MVP features -->
+    <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">false</WasmEnableExceptionHandling>
+    <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
 
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmStripILAfterAOT Condition="'$(WasmStripILAfterAOT)' == ''">true</WasmStripILAfterAOT>
     <WasmRuntimeAssetsLocation Condition="'$(WasmRuntimeAssetsLocation)' == ''">_framework</WasmRuntimeAssetsLocation>
+    <MetricsSupport Condition="'$(MetricsSupport)' == ''">false</MetricsSupport>
+
+    <!-- semicolon is a msbuild property separator. It is also the path separator on windows.
+         So, we need to escape it here, so the paths don't get split up when converting
+         to string[] for passing to Exec task -->
+    <_PathSeparator Condition="'$(OS)' == 'Windows_NT'">%3B</_PathSeparator>
+    <_PathSeparator Condition="'$(OS)' != 'Windows_NT'">:</_PathSeparator>
   </PropertyGroup>
 
   <ItemGroup>
@@ -224,7 +242,8 @@
     <RunCommand Condition="'$(RunCommand)' == ''">dotnet</RunCommand>
 
     <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(_AppBundleDirForRunCommand), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
-    <RunArguments Condition="'$(RunArguments)' == ''">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
+    <_RunExtraArguments Condition="'$(WasmEnableThreads)' == 'true'">--apply-cop-headers</_RunExtraArguments>
+    <RunArguments Condition="'$(RunArguments)' == ''">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(_RunExtraArguments) $(WasmHostArguments)</RunArguments>
     <RunWorkingDirectory Condition="'$(RunWorkingDirectory)' == ''">$(_AppBundleDirForRunCommand)</RunWorkingDirectory>
   </PropertyGroup>
 
@@ -238,8 +257,19 @@
     <UpToDateCheckInput Include="@(NativeFileReference)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Configuration)' == 'Debug' and '@(_MonoComponent->Count())' == 0">
-    <_MonoComponent Include="hot_reload;debugger" />
+  <PropertyGroup>
+    <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' != '0'">true</_WasmDebuggerSupport>
+    <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' == '0'">false</_WasmDebuggerSupport>
+    <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == '' and '$(WasmBuildingForNestedPublish)' == 'true'">false</_WasmDebuggerSupport> <!-- publish -->
+    <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == ''">true</_WasmDebuggerSupport>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(_WasmDebuggerSupport)' == 'true'">
+    <_MonoComponent Include="debugger" />
+    <_MonoComponent Include="hot_reload" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(EnableDiagnostics)' == 'true'">
+    <_MonoComponent Include="diagnostics_tracing" />
+    <WasmEnvironmentVariable Condition="'$(WasmPerformanceInstrumentation)' != ''" Include="DOTNET_WasmPerformanceInstrumentation" Value="eventpipe,callspec=$(WasmPerformanceInstrumentation)" />
   </ItemGroup>
   <!-- PUBLISH -->
 
@@ -274,6 +304,11 @@
       <_WasmShouldAOT Condition="'$(_WasmShouldAOT)' == ''">false</_WasmShouldAOT>
     </PropertyGroup>
 
+    <ItemGroup>
+      <_ExistingNativeLibrary Include="@(NativeLibrary->Exists())" />
+      <NativeFileReference Include="@(_ExistingNativeLibrary->'%(Identity)')" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == ''">
       <!-- find the path with the assemblies, so we don't have to hardcode the tfm.
            Cannot use System.Private.Corelib since that is in a different directory -->
@@ -296,6 +331,12 @@
       <WasmAppDir>$([MSBuild]::NormalizeDirectory($(WasmAppDir)))</WasmAppDir>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(WasmMainAssemblyFileName)' != '' and '$(_WasmOutputFileName)' == ''">
+      <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).wasm</_WasmOutputFileName>
+      <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.wasm</_WasmOutputFileName>
+      <_WasmOutputFileName Condition="'$(_WasmOutputFileName)' != ''">$([System.IO.Path]::Combine($(_WasmIntermediateOutputPath), $(_WasmOutputFileName)))</_WasmOutputFileName>
+    </PropertyGroup>
+
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
   </Target>
 
@@ -308,14 +349,6 @@
       <WasmAssembliesToBundle Remove="@(WasmAssembliesToBundle)" />
       <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll" />
     </ItemGroup>
-  </Target>
-
-  <Target Name="_WasmGetRuntimeConfigPath">
-    <PropertyGroup>
-      <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll' and $(WasmGenerateAppBundle) == 'true'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
-      <_WasmRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' == '' and $(_MainAssemblyPath) != ''">$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</_WasmRuntimeConfigFilePath>
-      <_ParsedRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' != ''">$([System.IO.Path]::GetDirectoryName($(_WasmRuntimeConfigFilePath)))\runtimeconfig.bin</_ParsedRuntimeConfigFilePath>
-    </PropertyGroup>
   </Target>
 
   <Target Name="_WasmResolveReferences" Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'" Returns="@(_WasmAssembliesInternal)">
@@ -340,8 +373,8 @@
              Text="Could not find %24(AssemblyName)=$(AssemblyName).dll in the assemblies to be bundled."
              Importance="Low" />
 
-    <Message Condition="'$(WasmGenerateAppBundle)' == 'true' and $(_WasmRuntimeConfigFilePath) != '' and !Exists($(_WasmRuntimeConfigFilePath))"
-             Text="Could not find $(_WasmRuntimeConfigFilePath) for $(_MainAssemblyPath)."
+    <Message Condition="'$(WasmGenerateAppBundle)' == 'true' and $(ProjectRuntimeConfigFilePath) != '' and !Exists($(ProjectRuntimeConfigFilePath))"
+             Text="Could not find $(ProjectRuntimeConfigFilePath) for $(_MainAssemblyPath)."
              Importance="Low" />
 
     <ItemGroup>
@@ -358,27 +391,34 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="WasmGenerateAppBundle" DependsOnTargets="$(WasmGenerateAppBundleDependsOn)" Condition="'$(WasmGenerateAppBundle)' == 'true'" />
+  <UsingTask TaskName="ReadWasmProps" AssemblyFile="$(MonoTargetsTasksAssemblyPath)"
+             TaskFactory="JsonToItemsTaskFactory.JsonToItemsTaskFactory">
+    <ParameterGroup>
+      <EmccProperties ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <WasmOptConfigurationFlags ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <EmccDefaultExportedFunctions ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <EmccDefaultExportedRuntimeMethods ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <PropertiesThatTriggerRelinking ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+    </ParameterGroup>
+  </UsingTask>
 
-  <Target Name="_WasmGenerateRuntimeConfig"
-          Inputs="$(_WasmRuntimeConfigFilePath)"
-          Outputs="$(_ParsedRuntimeConfigFilePath)"
-          Condition="Exists('$(_WasmRuntimeConfigFilePath)')">
-    <ItemGroup>
-      <_RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
-      <_RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
-    </ItemGroup>
+  <Target Name="_ReadWasmProps" Condition="'$(_IsToolchainMissing)' != 'true'">
+    <ReadWasmProps JsonFilePath="$(_WasmRuntimePackSrcDir)wasm-props.json">
+      <Output TaskParameter="EmccProperties" ItemName="_EmccPropItems" />
+      <Output TaskParameter="EmccDefaultExportedFunctions" ItemName="EmccExportedFunction" />
+      <Output TaskParameter="EmccDefaultExportedRuntimeMethods" ItemName="EmccExportedRuntimeMethod" />
 
-    <RuntimeConfigParserTask
-        RuntimeConfigFile="$(_WasmRuntimeConfigFilePath)"
-        OutputFile="$(_ParsedRuntimeConfigFilePath)"
-        RuntimeConfigReservedProperties="@(_RuntimeConfigReservedProperties)">
-    </RuntimeConfigParserTask>
+      <!-- shared by browser/wasi -->
+      <Output TaskParameter="WasmOptConfigurationFlags" ItemName="_DefaulWasmOptConfigurationFlags" />
+      <Output TaskParameter="PropertiesThatTriggerRelinking" ItemName="_PropertiesThatTriggerRelinking" />
+    </ReadWasmProps>
 
-    <ItemGroup>
-      <WasmFilesToIncludeInFileSystem Condition="'$(WasmSingleFileBundle)' != 'true'" Include="$(_ParsedRuntimeConfigFilePath)" />
-    </ItemGroup>
+    <CreateProperty Value="%(_EmccPropItems.Value)" Condition="%(_EmccPropItems.Identity) != ''">
+      <Output TaskParameter="Value" PropertyName="%(_EmccPropItems.Identity)" />
+    </CreateProperty>
   </Target>
+
+  <Target Name="WasmGenerateAppBundle" DependsOnTargets="$(WasmGenerateAppBundleDependsOn)" Condition="'$(WasmGenerateAppBundle)' == 'true'" />
 
   <Target Name="WasmTriggerPublishApp"
           AfterTargets="$(WasmTriggerPublishAppAfterThisTarget)"
@@ -387,7 +427,7 @@
     <!-- Use a unique property, so the already run wasm targets can also run -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="WasmNestedPublishApp"
-             Properties="_WasmInNestedPublish_UniqueProperty_XYZ=true;;WasmBuildingForNestedPublish=true;DeployOnBuild=;_IsPublishing=">
+             Properties="_WasmInNestedPublish_UniqueProperty_XYZ=true;;WasmBuildingForNestedPublish=true;DeployOnBuild=;_IsPublishing=;_WasmIsPublishing=$(_IsPublishing);ResolveAssemblyReferencesFindRelatedSatellites=true">
       <Output TaskParameter="TargetOutputs" ItemName="WasmNestedPublishAppResultItems" />
     </MSBuild>
 
@@ -415,20 +455,21 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_PrepareForNestedPublish" DependsOnTargets="_GetDefaultWasmAssembliesToBundle" Condition="'$(WasmBuildingForNestedPublish)' == 'true'">
-    <PropertyGroup>
-      <_WasmRuntimeConfigFilePath Condition="$([System.String]::new(%(PublishItemsOutputGroupOutputs.Identity)).EndsWith('$(AssemblyName).runtimeconfig.json'))">@(PublishItemsOutputGroupOutputs)</_WasmRuntimeConfigFilePath>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(_WasmRuntimeConfigFilePath)' == ''">
-      <_WasmRuntimeConfigFilePath Condition="$([System.String]::new(%(PublishItemsOutputGroupOutputs.Identity)).EndsWith('$(AssemblyName).runtimeconfig.json'))">@(PublishItemsOutputGroupOutputs)</_WasmRuntimeConfigFilePath>
-    </PropertyGroup>
-  </Target>
-
   <Target Name="_EmitWasmAssembliesFinal" Returns="@(WasmAssembliesFinal)">
     <ItemGroup>
       <WasmAssembliesFinal Include="@(_WasmAssembliesInternal)" LlvmBitCodeFile="" />
       <WasmAssembliesFinal Include="@(_WasmSatelliteAssemblies)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_WasmCommonPrepareForWasmBuildNative" Condition="'$(WasmBuildNative)' == 'true'">
+    <ItemGroup>
+      <WasmOptConfigurationFlags Include="--enable-simd" Condition="'$(WasmEnableSIMD)' == 'true'" />
+      <WasmOptConfigurationFlags Include="--enable-exception-handling" Condition="'$(WasmExceptionHandling)' == 'true'" />
+      <WasmOptConfigurationFlags Include="--strip-dwarf" Condition="'$(WasmNativeStrip)' == 'true'" />
+
+      <!-- WasmOptConfigurationFlags property is set by reading from wasm-props.json -->
+      <WasmOptConfigurationFlags Include="@(_DefaulWasmOptConfigurationFlags)" />
     </ItemGroup>
   </Target>
 
@@ -445,14 +486,23 @@
            Text="$(_ToolchainMissingErrorMessage) SDK is required for AOT'ing assemblies." />
 
     <ItemGroup>
-      <_BoolPropertiesThatTriggerRelinking Include="InvariantTimezone" DefaultValueInRuntimePack="false" />
-      <_BoolPropertiesThatTriggerRelinking Include="InvariantGlobalization" DefaultValueInRuntimePack="false" />
+      <_ChangedPropertiesThatTriggerRelinking Include="%(_PropertiesThatTriggerRelinking.Identity)" Condition="'$(%(_PropertiesThatTriggerRelinking.Identity))' != '' and
+                                                                                                            '$(%(_PropertiesThatTriggerRelinking.Identity))' != '%(_PropertiesThatTriggerRelinking.DefaultValueInRuntimePack)'" />
     </ItemGroup>
+    <PropertyGroup>
+      <_WasmBuildNativeRequired Condition="@(_ChangedPropertiesThatTriggerRelinking->Count()) > 0">true</_WasmBuildNativeRequired>
+    </PropertyGroup>
+
+    <Error Condition="'$(WasmBuildNative)' == 'false' and '$(_WasmBuildNativeRequired)' == 'true'"
+           Text="WasmBuildNative is required because %(_ChangedPropertiesThatTriggerRelinking.Identity)=$(%(_ChangedPropertiesThatTriggerRelinking.Identity)), but WasmBuildNative is already set to 'false'." />
+
+    <Error Condition="'$(WasmProfilers)' != '' and '$(EnableDiagnostics)' != 'false'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(EnableDiagnostics)=$(EnableDiagnostics)"/>
+    <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerformanceInstrumentation)' != ''" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation)"/>
+    <Error Condition="$(WasmProfilers.Contains('browser')) and '$(RunAOTCompilation)' == 'true'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(RunAOTCompilation)=$(RunAOTCompilation)"/>
+    <Error Condition="'$(WasmPerformanceInstrumentation)' != '' and '$(EnableDiagnostics)' != 'true'" Text="%24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation) is only supported together with %24(EnableDiagnostics)=true"/>
 
     <PropertyGroup>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and
-                          '$(%(_BoolPropertiesThatTriggerRelinking.Identity))' != '' and
-                          '$(%(_BoolPropertiesThatTriggerRelinking.Identity))' != '%(_BoolPropertiesThatTriggerRelinking.DefaultValueInRuntimePack)'">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(_WasmBuildNativeRequired)' == 'true'">true</WasmBuildNative>
     </PropertyGroup>
 
     <!-- When Building -->
@@ -461,8 +511,6 @@
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true' and '$(RunAOTCompilationAfterBuild)' == 'true'">true</WasmBuildNative>
 
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmSingleFileBundle)' == 'true'">true</WasmBuildNative>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     </PropertyGroup>
 
     <!-- When Publishing -->
@@ -470,22 +518,28 @@
       <!-- AOT==true overrides WasmBuildNative -->
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmSingleFileBundle)' == 'true'">true</WasmBuildNative>
 
       <!-- not aot, not trimmed app, no reason to relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
 
       <!-- default to relinking in Release config -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
+    </PropertyGroup>
 
+    <PropertyGroup>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     </PropertyGroup>
-  </Target>
 
-  <Target Name="_SetWasmNativeStripDefault" Condition="'$(WasmNativeStrip)' == ''">
+    <!-- Default with nothing set: Build+relink+config=debug -->
+    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' != 'false' and '$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
+      <WasmNativeStrip>false</WasmNativeStrip>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == 'false' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
+      <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+    </PropertyGroup>
+
     <PropertyGroup>
-      <!-- Build+relink+config=debug -->
-      <WasmNativeStrip Condition="'$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">false</WasmNativeStrip>
+      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
     </PropertyGroup>
   </Target>
@@ -522,13 +576,13 @@
       <Output TaskParameter="InitialHeapSize" PropertyName="_WasmCalculatedInitialHeapSize" />
     </WasmCalculateInitialHeapSize>
     <PropertyGroup>
-      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == '' and '$(_WasmCalculatedInitialHeapSize)' != '' and $(_WasmCalculatedInitialHeapSize) > 16777216">$(_WasmCalculatedInitialHeapSize)</WasmInitialHeapSize>
-      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">16777216</WasmInitialHeapSize>
+      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == '' and '$(_WasmCalculatedInitialHeapSize)' != '' and $(_WasmCalculatedInitialHeapSize) > 33554432">$(_WasmCalculatedInitialHeapSize)</WasmInitialHeapSize>
+      <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">33554432</WasmInitialHeapSize>
     </PropertyGroup>
   </Target>
 
   <Target Name="_ScanAssembliesDecideLightweightMarshaler">
-     <ItemGroup>
+    <ItemGroup>
       <_AssembliesToScan Include="@(_WasmAssembliesInternal)" />
     </ItemGroup>
 
@@ -549,6 +603,8 @@
 
     <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(PublishTrimmed)' != 'true'"
            Text="AOT is not supported without IL trimming (PublishTrimmed=true required)." />
+    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(Configuration)' == 'Debug' and '$(_WasmAllowAOTDebug)' != 'true'"
+           Text="AOT is not supported in debug configuration (Configuration=Release required)." />
     <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
     <Error Condition="'$(_IsToolchainMissing)' == 'true'"
            Text="$(_ToolchainMissingErrorMessage) SDK is required for AOT'ing assemblies." />
@@ -562,6 +618,7 @@
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
+      <MonoAOTCompilerDefaultAotArguments Include="compile-in-child" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
       <MonoAOTCompilerDefaultAotArguments Include="mattr=simd" Condition="'$(WasmEnableSIMD)' == 'true'" />
       <MonoAOTCompilerDefaultProcessArguments Include="-v" Condition="'$(WasmAOTCompilerVerbose)' == 'true'" />
       <MonoAOTCompilerDefaultProcessArguments Include="--wasm-exceptions" Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
@@ -631,7 +688,7 @@
       DisableParallelAot="$(DisableParallelAot)"
       DedupAssembly="$(_WasmDedupAssembly)"
       CacheFilePath="$(_AOTCompilerCacheFile)"
-      LLVMDebug="dwarfdebug"
+      UseDwarfDebug="$(WasmNativeDebugSymbols)"
       LLVMPath="$(_WasmLLVMPathForAOT)"
       CollectTrimmingEligibleMethods="$(WasmStripILAfterAOT)"
       TrimmingEligibleMethodsOutputDirectory="$(_WasmIntermediateOutputPath)tokens"
@@ -722,7 +779,8 @@
       PInvokeModules="@(_WasmPInvokeModules)"
       PInvokeOutputPath="$(_WasmPInvokeTablePath)"
       InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
-      CacheFilePath="$(_WasmM2NCachePath)">
+      CacheFilePath="$(_WasmM2NCachePath)"
+      IsLibraryMode="$(_IsLibraryMode)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
   </Target>
@@ -730,11 +788,11 @@
   <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(WasmIsWorkloadAvailable)' == 'true'" DependsOnTargets="_MonoSelectRuntimeComponents" />
 
   <!--
-    Inputs: @(_BitcodeLDFlags), $(_WasmCompileBitcodeRsp)
+    Inputs: @(_BitcodeCompileFlags), $(_WasmCompileBitcodeRsp)
     Outputs: file @(_WasmCompileBitcodeRsp
   -->
   <Target Name="_WasmWriteRspForCompilingBitcode">
-    <WriteLinesToFile Lines="@(_BitcodeLDFlags)" File="$(_WasmCompileBitcodeRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile Lines="@(_BitcodeCompileFlags)" File="$(_WasmCompileBitcodeRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_WasmCompileBitcodeRsp)" />
     </ItemGroup>
@@ -849,5 +907,16 @@
   </Target>
 
   <Target Name="WasmLinkDotNet" DependsOnTargets="$(WasmLinkDotNetDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
-  <Target Name="_PrepareForWasmBuildNative" />
+
+  <Target Name="WasmAfterLinkSteps" DependsOnTargets="$(WasmAfterLinkStepsDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
+
+  <Target Name="_RunWasmOptPostLink" Condition="'$(WasmRunWasmOpt)' == 'true'">
+    <Error Condition="'$(_WasmOutputFileName)' == ''" Text="Could not determine %24(_WasmOutputFileName)" />
+
+    <Message Text="Running wasm-opt with --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ')" Importance="High" />
+    <Exec Command="wasm-opt$(_ExeExt) --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ') &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot; -o &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot;"
+          IgnoreStandardErrorWarningFormat="true"
+          EnvironmentVariables="@(WasmToolchainEnvVars)" />
+  </Target>
+
 </Project>

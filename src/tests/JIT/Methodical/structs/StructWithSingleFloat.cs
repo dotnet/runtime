@@ -39,6 +39,7 @@ public class TestClass
         }
     }
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         new TestClass().Method0();

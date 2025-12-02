@@ -54,52 +54,39 @@ namespace System
         // V1ToStringUnescape = 0x7FFF
     }
 
-    // This is used to control when host names are converted to idn names and
-    // vice versa
-    internal enum UriIdnScope
-    {
-        None,                   // Never use Idn
-        AllExceptIntranet,      // Use Idn in Internet and not intranet
-        All                     // Internet and intranet
-    }
-
     internal enum ParsingError
     {
         // looks good
-        None = 0,
+        None,
 
         // These first errors indicate that the Uri cannot be absolute, but may be relative.
-        BadFormat = 1,
-        BadScheme = 2,
-        BadAuthority = 3,
-        EmptyUriString = 4,
-        LastRelativeUriOkErrIndex = 4,
+        BadFormat,
+        BadScheme,
+        BadAuthority,
+        EmptyUriString,
+        LastErrorOkayForRelativeUris,
 
         // All higher error values are fatal, indicating that neither an absolute or relative
         // Uri could be generated.
-        SchemeLimit = 5,
-        SizeLimit = 6,
-        MustRootedPath = 7,
+        SchemeLimit,
+        MustRootedPath,
 
         // derived class controlled
-        BadHostName = 8,
-        NonEmptyHost = 9, // unix only
-        BadPort = 10,
-        BadAuthorityTerminator = 11,
+        BadHostName,
+        BadPort,
+        BadAuthorityTerminator,
 
         // The user requested only a relative Uri, but an absolute Uri was parsed.
-        CannotCreateRelative = 12
+        CannotCreateRelative
     }
 
     [Flags]
     internal enum UnescapeMode
     {
-        CopyOnly = 0x0,                          // used for V1.0 ToString() compatibility mode only
+        None = 0x0,
         Escape = 0x1,                            // Only used by ImplicitFile, the string is already fully unescaped
         Unescape = 0x2,                          // Only used as V1.0 UserEscaped compatibility mode
         EscapeUnescape = Unescape | Escape,      // does both escaping control+reserved and unescaping of safe characters
         V1ToStringFlag = 0x4,                    // Only used as V1.0 ToString() compatibility mode, assumes DontEscape level also
-        UnescapeAll = 0x8,                       // just unescape everything, leave bad escaped sequences as is
-        UnescapeAllOrThrow = 0x10 | UnescapeAll, // just unescape everything plus throw on bad escaped sequences
     }
 }

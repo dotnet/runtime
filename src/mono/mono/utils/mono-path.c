@@ -44,6 +44,7 @@ mono_path_canonicalize (const char *path)
 	} else {
 		gchar *tmpdir = g_get_current_dir ();
 		abspath = g_build_filename (tmpdir, path, (const char*)NULL);
+		g_assert (abspath);
 		g_free (tmpdir);
 	}
 
@@ -128,6 +129,7 @@ resolve_symlink (const char *path)
 		if (!g_path_is_absolute (buffer)) {
 			dir = g_path_get_dirname (p);
 			concat = g_build_filename (dir, buffer, (const char*)NULL);
+			g_assert (concat);
 			g_free (dir);
 		} else {
 			concat = g_strdup (buffer);

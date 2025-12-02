@@ -246,9 +246,7 @@ namespace System.Resources
             }
             else
             {
-                object[] args = new object[2];
-                args[0] = store;
-                args[1] = assembly;
+                object[] args = [store, assembly];
                 try
                 {
                     // Add in a check for a constructor taking in an assembly first.
@@ -269,6 +267,11 @@ namespace System.Resources
             }
         }
 
+        private static Assembly? InternalGetSatelliteAssembly(Assembly mainAssembly, CultureInfo culture, Version? version)
+        {
+            return RuntimeAssembly.InternalGetSatelliteAssembly(mainAssembly, culture, version, throwOnFileNotFound: false);
+        }
+
         [RequiresUnreferencedCode("The CustomResourceTypesSupport feature switch has been enabled for this app which is being trimmed. " +
             "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
         private static ResourceSet InternalGetResourceSetFromSerializedData(Stream store, string readerTypeName, string? resSetTypeName, ResourceManager.ResourceManagerMediator mediator)
@@ -286,14 +289,11 @@ namespace System.Resources
             else
             {
                 Type readerType = Type.GetType(readerTypeName, throwOnError: true)!;
-                object[] args = new object[1];
-                args[0] = store;
+                object[] args = [store];
                 reader = (IResourceReader)Activator.CreateInstance(readerType, args)!;
             }
 
-            object[] resourceSetArgs = new object[1];
-            resourceSetArgs[0] = reader;
-
+            object[] resourceSetArgs = [reader];
             Type? resSetType = mediator.UserResourceSet;
             if (resSetType == null)
             {
