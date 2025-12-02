@@ -3018,7 +3018,6 @@ void CodeGen::genLclHeap(GenTree* tree)
     var_types            type                     = genActualType(size->gtType);
     emitAttr             easz                     = emitTypeSize(type);
     BasicBlock*          endLabel                 = nullptr;
-    BasicBlock*          loop                     = nullptr;
     unsigned             stackAdjustment          = 0;
     const target_ssize_t ILLEGAL_LAST_TOUCH_DELTA = (target_ssize_t)-1;
     target_ssize_t       lastTouchDelta =
@@ -3027,12 +3026,15 @@ void CodeGen::genLclHeap(GenTree* tree)
     noway_assert(isFramePointerUsed()); // localloc requires Frame Pointer to be established since SP changes
     noway_assert(genStackLevel == 0);   // Can't have anything on the stack
 
+    bool needsZeroing = compiler->info.compInitMem;
+
     // compute the amount of memory to allocate to properly STACK_ALIGN.
     size_t amount = 0;
-    if (size->IsCnsIntOrI())
+    if (size->isContainedIntOrIImmed())
     {
-        // If size is a constant, then it must be contained.
-        assert(size->isContained());
+        // The size node being a contained constant means that Lower has taken care of
+        // zeroing the memory if compInitMem is true.
+        needsZeroing = false;
 
         // If amount is zero then return null in targetReg
         amount = size->AsIntCon()->gtIconVal;
@@ -3056,7 +3058,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // Compute the size of the block to allocate and perform alignment.
         // If compInitMem=true, we can reuse targetReg as regcnt,
         // since we don't need any internal registers.
-        if (compiler->info.compInitMem)
+        if (needsZeroing)
         {
             assert(internalRegisters.Count(tree) == 0);
             regCnt = targetReg;
@@ -3093,7 +3095,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         stackAdjustment += compiler->lvaOutgoingArgSpaceSize;
     }
 
-    if (size->IsCnsIntOrI())
+    if (size->isContainedIntOrIImmed())
     {
         // We should reach here only for non-zero, constant size allocations.
         assert(amount > 0);
@@ -3104,39 +3106,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         static_assert(STACK_ALIGN == storePairRegsWritesBytes);
         assert(amount % storePairRegsWritesBytes == 0); // stp stores two registers at a time
 
-        if (compiler->info.compInitMem)
-        {
-            if (amount <= compiler->getUnrollThreshold(Compiler::UnrollKind::Memset))
-            {
-                // The following zeroes the last 16 bytes and probes the page containing [sp, #16] address.
-                // stp xzr, xzr, [sp, #-16]!
-                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_8BYTE, REG_ZR, REG_ZR, REG_SPBASE, -storePairRegsWritesBytes,
-                                              INS_OPTS_PRE_INDEX);
-
-                if (amount > storePairRegsWritesBytes)
-                {
-                    // The following sets SP to its final value and zeroes the first 16 bytes of the allocated space.
-                    // stp xzr, xzr, [sp, #-amount+16]!
-                    const ssize_t finalSpDelta = (ssize_t)amount - storePairRegsWritesBytes;
-                    GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_8BYTE, REG_ZR, REG_ZR, REG_SPBASE, -finalSpDelta,
-                                                  INS_OPTS_PRE_INDEX);
-
-                    // The following zeroes the remaining space in [finalSp+16, initialSp-16) interval
-                    // using a sequence of stp instruction with unsigned offset.
-                    for (ssize_t offset = storePairRegsWritesBytes; offset < finalSpDelta;
-                         offset += storePairRegsWritesBytes)
-                    {
-                        // stp xzr, xzr, [sp, #offset]
-                        GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_8BYTE, REG_ZR, REG_ZR, REG_SPBASE, offset);
-                    }
-                }
-
-                lastTouchDelta = 0;
-
-                goto ALLOC_DONE;
-            }
-        }
-        else if (amount < compiler->eeGetPageSize()) // must be < not <=
+        if (amount < compiler->eeGetPageSize()) // must be < not <=
         {
             // Since the size is less than a page, simply adjust the SP value.
             // The SP might already be in the guard page, so we must touch it BEFORE
@@ -3178,7 +3148,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // If compInitMem=true, we can reuse targetReg as regcnt.
         // Since size is a constant, regCnt is not yet initialized.
         assert(regCnt == REG_NA);
-        if (compiler->info.compInitMem)
+        if (needsZeroing)
         {
             assert(internalRegisters.Count(tree) == 0);
             regCnt = targetReg;
@@ -3190,7 +3160,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         instGen_Set_Reg_To_Imm(((unsigned int)amount == amount) ? EA_4BYTE : EA_8BYTE, regCnt, amount);
     }
 
-    if (compiler->info.compInitMem)
+    if (needsZeroing)
     {
         BasicBlock* loop = genCreateTempLabel();
 
