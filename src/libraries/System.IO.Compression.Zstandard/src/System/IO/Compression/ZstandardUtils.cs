@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO.Compression
 {
-    internal static class ZstandardUtils
+    internal static unsafe class ZstandardUtils
     {
         // Zstandard compression level constants from native library
         internal static int Quality_Min => Interop.Zstd.ZSTD_minCLevel();
@@ -15,7 +15,7 @@ namespace System.IO.Compression
 
         // Window size constraints based on Zstandard specification
         internal const int WindowLog_Min = 10;    // 1KB window
-        internal const int WindowLog_Max = 31;    // 2GB window
+        internal static int WindowLog_Max => sizeof(IntPtr) == 8 ? 31 : 30;    // 1GB or 2GB window, depending on platform
         internal const int WindowLog_Default = 23; // 8MB window
 
         internal const int TargetBlockSize_Min = 1340;
