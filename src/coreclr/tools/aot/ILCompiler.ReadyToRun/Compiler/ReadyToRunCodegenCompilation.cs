@@ -296,6 +296,7 @@ namespace ILCompiler
         private readonly ProfileDataManager _profileData;
         private readonly FileLayoutOptimizer _fileLayoutOptimizer;
         private readonly HashSet<EcmaMethod> _methodsWhichNeedMutableILBodies = new HashSet<EcmaMethod>();
+        private readonly HashSet<MethodDesc> _methodsNeededAsReferencesInMutableModule = new HashSet<MethodDesc>();
         private readonly HashSet<MethodWithGCInfo> _methodsToRecompile = new HashSet<MethodWithGCInfo>();
 
         public ProfileDataManager ProfileData => _profileData;
@@ -646,14 +647,21 @@ namespace ILCompiler
         // The _finishedFirstCompilationRunInPhase2 variable works in concert some checking to ensure that we don't violate any of this model
         private bool _finishedFirstCompilationRunInPhase2 = false;
 
-        public void PrepareForCompilationRetry(MethodWithGCInfo methodToBeRecompiled, IEnumerable<EcmaMethod> methodsThatNeedILBodies)
+        public void PrepareForCompilationRetry(MethodWithGCInfo methodToBeRecompiled, IEnumerable<EcmaMethod> methodsThatNeedILBodies, IEnumerable<MethodDesc> requiredMutableModuleReferences)
         {
             lock (_methodsToRecompile)
             {
                 _methodsToRecompile.Add(methodToBeRecompiled);
                 if (methodsThatNeedILBodies != null)
+                {
                     foreach (var method in methodsThatNeedILBodies)
                         _methodsWhichNeedMutableILBodies.Add(method);
+                }
+                if (requiredMutableModuleReferences != null)
+                {
+                    foreach (var method in requiredMutableModuleReferences)
+                        _methodsNeededAsReferencesInMutableModule.Add(method);
+                }
             }
         }
 
@@ -747,12 +755,14 @@ namespace ILCompiler
                     }
                 }
 
+                ProcessNecessaryMutableModuleReferences();
                 ProcessMutableMethodBodiesList();
                 ResetILCache();
                 CompileMethodList(obj);
 
                 while (_methodsToRecompile.Count > 0)
                 {
+                    ProcessNecessaryMutableModuleReferences();
                     ProcessMutableMethodBodiesList();
                     ResetILCache();
                     MethodWithGCInfo[] methodsToRecompile = new MethodWithGCInfo[_methodsToRecompile.Count];
@@ -791,6 +801,26 @@ namespace ILCompiler
 
                 foreach (var method in mutableMethodBodyNeedList)
                     ilProvider.CreateCrossModuleInlineableTokensForILBody(method);
+            }
+
+            void ProcessNecessaryMutableModuleReferences()
+            {
+                MethodDesc[] methods = new MethodDesc[_methodsNeededAsReferencesInMutableModule.Count];
+                _methodsNeededAsReferencesInMutableModule.CopyTo(methods);
+                _methodsNeededAsReferencesInMutableModule.Clear();
+                _nodeFactory.ManifestMetadataTable._mutableModule.AddingReferencesToR2RKnownTypesAndMethods = true;
+                try
+                {
+                    foreach(var method in methods)
+                    {
+                        Debug.Assert(_nodeFactory.Resolver.IsKnownMutableModuleMethod((EcmaMethod)method.GetTypicalMethodDefinition()));
+                        var unused = _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(method);
+                    }
+                }
+                finally
+                {
+                    _nodeFactory.ManifestMetadataTable._mutableModule.AddingReferencesToR2RKnownTypesAndMethods = false;
+                }
             }
 
             void ResetILCache()

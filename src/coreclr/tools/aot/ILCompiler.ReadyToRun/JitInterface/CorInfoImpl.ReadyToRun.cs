@@ -697,7 +697,7 @@ namespace Internal.JitInterface
             // If any il bodies need to be recomputed, force recompilation
             if ((_ilBodiesNeeded != null) || InfiniteCompileStress.Enabled || result == CompilationResult.CompilationRetryRequested)
             {
-                _compilation.PrepareForCompilationRetry(_methodCodeNode, _ilBodiesNeeded);
+                _compilation.PrepareForCompilationRetry(_methodCodeNode, _ilBodiesNeeded, null);
                 result = CompilationResult.CompilationRetryRequested;
             }
         }
@@ -776,6 +776,27 @@ namespace Internal.JitInterface
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it has a non referenceable catch clause");
                     return;
+                }
+
+                if (MethodBeingCompiled.IsAsyncThunk())
+                {
+                    // The synthetic async thunks require references to methods that may not have existing methodRef entries in the version bubble.
+                    // These references need to be added to the mutable module if they don't exist.
+                    var requiredMutableModuleReferences = MethodBeingCompiled.IsAsync ?
+                        AsyncThunkILEmitter.GetRequiredReferencesForTaskReturningThunk(MethodBeingCompiled, ((CompilerTypeSystemContext)MethodBeingCompiled.Context).GetAsyncVariantMethod(MethodBeingCompiled))
+                        : AsyncThunkILEmitter.GetRequiredReferencesForAsyncThunk(MethodBeingCompiled, ((CompilerTypeSystemContext)MethodBeingCompiled.Context).GetAsyncVariantMethod(MethodBeingCompiled));
+                    foreach (var method in requiredMutableModuleReferences)
+                    {
+                        // If we have a reference to the method already, we're okay.
+                        if (_compilation.NodeFactory.ManifestMetadataTable._mutableModule.TryGetExistingEntityHandle(method) is null)
+                        {
+                            if (logger.IsVerbose)
+                                logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` triggered recompilation.");
+                            _compilation.PrepareForCompilationRetry(_methodCodeNode, null, requiredMutableModuleReferences);
+                            codeGotPublished = true;
+                            return;
+                        }
+                    }
                 }
 
                 if (MethodBeingCompiled.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)

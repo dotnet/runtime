@@ -4551,4 +4551,20 @@ namespace Internal.JitInterface
             throw new NotImplementedException("getSpecialCopyHelper");
         }
     }
+
+    [Serializable]
+    internal class RetryCompilationException : Exception
+    {
+        public RetryCompilationException()
+        {
+        }
+
+        public RetryCompilationException(string message) : base(message)
+        {
+        }
+
+        public RetryCompilationException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+    }
 }

@@ -501,47 +501,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             KnownTypes = knownTypes;
             KnownMethods = knownMethods;
-
-            try
-            {
-                Debug.Assert(_manifestMutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences == null);
-                _manifestMutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = _manifestMutableModule.Context.SystemModule;
-                _manifestMutableModule.AddingReferencesToR2RKnownTypesAndMethods = true;
-                foreach (var type in KnownTypes)
-                {
-                    // We can skip types that are already in the version bubble
-                    if (_compilationModuleGroup.VersionsWithType(type))
-                        continue;
-
-                    EntityHandle? handle = _manifestMutableModule.TryGetEntityHandle(type);
-                    if (!handle.HasValue)
-                        throw new NotImplementedException($"Entity handle for known type ({type}) not found in manifest module");
-
-                    var token = new ModuleToken(_manifestMutableModule, handle.Value);
-                    this.AddModuleTokenForType(type, token);
-                    Debug.Assert(!default(ModuleToken).Equals(this.GetModuleTokenForType((EcmaType)type, allowDynamicallyCreatedReference: true, throwIfNotFound: true)));
-                }
-
-                foreach (var method in KnownMethods)
-                {
-                    // We can skip methods that are already in the version bubble
-                    if (_compilationModuleGroup.VersionsWithMethodBody((EcmaMethod)method))
-                        continue;
-
-                    EntityHandle? handle = _manifestMutableModule.TryGetEntityHandle(method);
-                    if (!handle.HasValue)
-                        throw new NotImplementedException($"Entity handle for known method ({method}) not found in manifest module");
-
-                    var token = new ModuleToken(_manifestMutableModule, handle.Value);
-                    this.AddModuleTokenForMethod(method, token);
-                    Debug.Assert(!default(ModuleToken).Equals(this.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true)));
-                }
-            }
-            finally
-            {
-                _manifestMutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = null;
-                _manifestMutableModule.AddingReferencesToR2RKnownTypesAndMethods = false;
-            }
         }
 
         public bool IsKnownMutableModuleMethod(EcmaMethod method)
