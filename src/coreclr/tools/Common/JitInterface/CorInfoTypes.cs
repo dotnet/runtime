@@ -497,7 +497,9 @@ namespace Internal.JitInterface
         LOONGARCH64_JIR,                       // LoongArch64: pcaddu18i+jirl
 
         // RISCV64 relocs
-        RISCV64_PC,                            // RiscV64: auipc
+        RISCV64_CALL_PLT,                      // RiscV64: auipc + jalr
+        RISCV64_PCREL_I,                       // RiscV64: auipc + I-type
+        RISCV64_PCREL_S,                       // RiscV64: auipc + S-type
     }
 
     public enum CorInfoGCType

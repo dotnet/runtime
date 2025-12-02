@@ -1608,7 +1608,7 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 /*****************************************************************************/
 
 //------------------------------------------------------------------------------
-// gtNewHelperCallNode : Helper to create a call helper node.
+// gtNewVirtualFunctionLookupHelperCallNode : Helper to create a virtual function lookup helper node.
 //
 //
 // Arguments:
