@@ -435,7 +435,7 @@ void* GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
 #ifdef DEBUGGING_SUPPORTED
 static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame)
 {
-     Thread *pThread = GetThread();
+    Thread *pThread = GetThread();
     if (pThread != NULL && g_pDebugInterface != NULL)
     {
         EXCEPTION_RECORD exceptionRecord;
@@ -453,6 +453,11 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
         SetIP(&ctx, (DWORD64)ip); 
         SetFirstArgReg(&ctx, dac_cast<TADDR>(pInterpreterFrame)); // Enable debugger to iterate over interpreter frames
 
+        // We need to add a FaultingExceptionFrame because debugger checks for it
+        // before adjusting the IP (see `AdjustIPAfterException`).
+        FaultingExceptionFrame fef;
+        fef.InitAndLink(&ctx);
+
         // Notify the debugger of the exception
         bool handled = g_pDebugInterface->FirstChanceNativeException(
             &exceptionRecord,
@@ -460,6 +465,7 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
             STATUS_BREAKPOINT,
             pThread);
 
+        fef.Pop();
     }
 }
 #endif // DEBUGGING_SUPPORTED
