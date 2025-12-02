@@ -2300,7 +2300,7 @@ LEAF_END Load_Q1_Q2_Q3_Q4_Q5_Q6_Q7
 
 // X0 - routines array
 // X1 - interpreter stack args location
-// X2 - stack arguments size (properly aligned)
+// X3 - stack arguments size (properly aligned)
 // X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32

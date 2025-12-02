@@ -22,7 +22,10 @@ struct InterpHelperData {
     uint32_t accessType : 3;
 };
 
-#ifndef INTERPRETER_COMPILER_INTERNAL
+#ifdef INTERPRETER_COMPILER_INTERNAL
+#define COMPILER_SHARED_TYPE(compilerType, vmType, fieldName) compilerType fieldName
+#else
+#define COMPILER_SHARED_TYPE(compilerType, vmType, fieldName) vmType fieldName
 class MethodDesc;
 class MethodTable;
 #endif
@@ -34,11 +37,7 @@ struct InterpMethod
 #if DEBUG
     InterpMethod *self;
 #endif
-#ifdef INTERPRETER_COMPILER_INTERNAL
-    CORINFO_METHOD_HANDLE methodHnd;
-#else
-    DPTR(MethodDesc) methodDesc;
-#endif
+    COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), methodHnd);
     int32_t argsSize;
     int32_t allocaSize;
     void** pDataItems;
@@ -201,11 +200,7 @@ struct InterpAsyncSuspendData
     void* resumeFuncPtr; // Pointer to the resume function
     void* DiagnosticIP; // IP to report in diagnostic scenarios
 
-#ifdef INTERPRETER_COMPILER_INTERNAL
-    CORINFO_CLASS_HANDLE ContinuationTypeHnd;
-#else
-    DPTR(MethodTable) ContinuationTypeHnd;
-#endif
+    COMPILER_SHARED_TYPE(CORINFO_CLASS_HANDLE, DPTR(MethodTable), continuationTypeHnd);
 
     InterpIntervalMapEntry* zeroedLocalsIntervals; // This will be used for the locals we need to keep live.
     InterpIntervalMapEntry* liveLocalsIntervals; // Following the end of this struct is the array of InterpIntervalMapEntry for live locals
@@ -213,29 +208,13 @@ struct InterpAsyncSuspendData
     int32_t offsetIntoContinuationTypeForExecutionContext;
     int32_t keepAliveOffset; // Only needed if we have a generic context to keep alive
     InterpByteCodeStart* methodStartIP;
-#ifdef INTERPRETER_COMPILER_INTERNAL
-    CORINFO_CLASS_HANDLE asyncMethodReturnType;
-#else
-    DPTR(MethodTable) asyncMethodReturnType;
-#endif
+    COMPILER_SHARED_TYPE(CORINFO_CLASS_HANDLE, DPTR(MethodTable), asyncMethodReturnType);
     int32_t asyncMethodReturnTypePrimitiveSize; // 0 if not primitive, otherwise size in bytes
     int32_t continuationArgOffset;
 
-#ifdef INTERPRETER_COMPILER_INTERNAL
-    CORINFO_METHOD_HANDLE pCaptureSyncContextMethod;
-#else
-    DPTR(MethodDesc) pCaptureSyncContextMethod;
-#endif
-#ifdef INTERPRETER_COMPILER_INTERNAL
-    CORINFO_METHOD_HANDLE pRestoreExecutionContextMethod;
-#else
-    DPTR(MethodDesc) pRestoreExecutionContextMethod;
-#endif
-#ifdef INTERPRETER_COMPILER_INTERNAL
-    CORINFO_METHOD_HANDLE pRestoreContextsMethod;
-#else
-    DPTR(MethodDesc) pRestoreContextsMethod;
-#endif
+    COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), captureSyncContextMethod);
+    COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), restoreExecutionContextMethod);
+    COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), restoreContextsMethod);
 };
 
 #endif

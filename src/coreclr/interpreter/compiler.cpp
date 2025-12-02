@@ -1557,7 +1557,7 @@ void InterpCompiler::getEHinfo(CORINFO_METHOD_INFO* methodInfo, unsigned int ind
         }
         else if (m_isAsyncMethodWithContextSaveRestore)
         {
-            // Logically we append the synchronized finally clause at the end of the EH clauses, as it holds all of the methodbody within its try region, and nested eh clauses are required to be before their containing clauses.
+            // Logically we append the async finally clause at the end of the EH clauses, as it holds all of the methodbody within its try region, and nested eh clauses are required to be before their containing clauses.
             if (index == methodInfo->EHcount)
             {
                 ehClause->Flags = CORINFO_EH_CLAUSE_FINALLY;
@@ -5197,7 +5197,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     m_compHnd->getAsyncInfo(&asyncInfo);
     
     GetDataForHelperFtn(CORINFO_HELP_ALLOC_CONTINUATION);
-    suspendData->ContinuationTypeHnd = continuationTypeHnd;
+    suspendData->continuationTypeHnd = continuationTypeHnd;
     AllocateIntervalMapData_ForVars(&suspendData->liveLocalsIntervals, liveVars);
     AllocateIntervalMapData_ForVars(&suspendData->zeroedLocalsIntervals, varsToZero);
 
@@ -5226,9 +5226,9 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
 
     suspendData->offsetIntoContinuationTypeForExecutionContext = execContextOffset + OFFSETOF__CORINFO_Continuation__data;
     suspendData->keepAliveOffset = keepAliveOffset + OFFSETOF__CORINFO_Continuation__data;
-    suspendData->pCaptureSyncContextMethod = asyncInfo.captureContinuationContextMethHnd;
-    suspendData->pRestoreExecutionContextMethod = asyncInfo.restoreExecutionContextMethHnd;
-    suspendData->pRestoreContextsMethod = asyncInfo.restoreContextsMethHnd;
+    suspendData->captureSyncContextMethod = asyncInfo.captureContinuationContextMethHnd;
+    suspendData->restoreExecutionContextMethod = asyncInfo.restoreExecutionContextMethHnd;
+    suspendData->restoreContextsMethod = asyncInfo.restoreContextsMethHnd;
     suspendData->resumeFuncPtr = m_asyncResumeFuncPtr;
     suspendData->DiagnosticIP = NULL;
     // TODO! Register methodStartIP to be filled in as needed.
@@ -7009,7 +7009,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     {
         INTERP_DUMP("Synchronized method - adding extra IL opcodes for monitor enter/exit\n");
 
-        // Synchronized methods are methods are implemented by adding a try/finally in the method
+        // Synchronized methods are methods implemented by adding a try/finally in the method
         // which takes the lock on entry and releases it on exit. To integrate this into the interpreter, we actually
         // add a set of extra "IL" opcodes at the end of the method which do the monitor finally and actual return
         // logic. We also add a variable to hold the flag indicating the lock was taken.
@@ -7051,10 +7051,10 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     {
         INTERP_DUMP("Synchronized method - adding extra IL opcodes for async save/restore\n");
 
-        // Synchronized methods are methods are implemented by adding a try/finally in the method
+        // Async methods are methods implemented by adding a try/finally in the method
         // which takes the lock on entry and releases it on exit. To integrate this into the interpreter, we actually
         // add a set of extra "IL" opcodes at the end of the method which do the monitor finally and actual return
-        // logic. We also add a variable to hold the flag indicating the lock was taken.
+        // logic.
 
         uint8_t opCodesForAsyncMethodFinally[] = { CEE_CALL,
                                                           getLittleEndianByte(INTERP_RESTORE_CONTEXTS_FOR_ASYNC_METHOD, 0),
@@ -10559,7 +10559,7 @@ void PrintLocalIntervals(InterpIntervalMapEntry* pIntervals)
 void InterpCompiler::PrintInterpAsyncSuspendData(InterpAsyncSuspendData* pSuspendInfo)
 {
     printf(" AsyncSuspendData[");
-    printf("ContinuationTypeHnd=%p", pSuspendInfo->ContinuationTypeHnd);
+    printf("continuationTypeHnd=%p", pSuspendInfo->continuationTypeHnd);
     printf(", flags=%d", pSuspendInfo->flags);
     printf(", offsetIntoContinuationTypeForExecutionContext=%d", pSuspendInfo->offsetIntoContinuationTypeForExecutionContext);
     printf(", liveLocalsIntervals=");

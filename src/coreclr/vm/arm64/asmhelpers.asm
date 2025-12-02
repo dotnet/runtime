@@ -2528,7 +2528,8 @@ CopyLoop
 
     ; X0 - routines array
     ; X1 - interpreter stack args location
-    ; X2 - stack arguments size (properly aligned)
+    ; X3 - stack arguments size (properly aligned)
+    ; X4 - address of continuation return value
     NESTED_ENTRY CallJittedMethodRetVoid
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         str x4, [fp, #16]

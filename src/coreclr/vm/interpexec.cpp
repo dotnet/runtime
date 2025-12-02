@@ -25,11 +25,11 @@
 #endif // !TARGET_WASM
 
 // Call invoker helpers provided by platform.
-void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, PTR_PTR_Object pContinuationRet);
+void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet);
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget);
-void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet, PTR_PTR_Object pContinuationRet);
+void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet, Object** pContinuationRet);
 void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet);
-void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, PTR_PTR_Object pContinuationRet);
+void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet);
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
 
 // Filter to ignore SEH exceptions representing C++ exceptions.
@@ -207,7 +207,7 @@ MethodDesc* GetTargetPInvokeMethodDesc(PCODE target)
     return NULL;
 }
 
-void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, PTR_PTR_Object pContinuationRet)
+void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
 {
     CONTRACTL
     {
@@ -245,7 +245,7 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
         }
     }
 
-    PTR_Object continuationUnused = NULL;
+    Object* continuationUnused = NULL;
     if (!pHeader->HasContinuationRet)
     {
         pContinuationRet = &continuationUnused;
@@ -259,7 +259,7 @@ void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet
     InvokeManagedMethod(targetMethod, pArgs, pRet, callTarget, NULL);
 }
 
-void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, PTR_PTR_Object pContinuationRet)
+void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
 {
     CONTRACTL
     {
@@ -285,7 +285,7 @@ void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, in
     CallStubHeader *pHeader = (CallStubHeader*)actualCallStub;
     pHeader->SetTarget(target); // The method to call
 
-    PTR_Object continuationUnused = NULL;
+    Object* continuationUnused = NULL;
     if (!pHeader->HasContinuationRet)
     {
         pContinuationRet = &continuationUnused;
@@ -313,12 +313,12 @@ void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
     memcpy(actualCallStub, stubHeaderTemplate, templateSize);
     CallStubHeader *pHeader = (CallStubHeader*)actualCallStub;
     pHeader->SetTarget(ftn); // The method to call
-    PTR_Object continuationUnused = NULL;
+    Object* continuationUnused = NULL;
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, &continuationUnused);
 }
 
-void InvokeCalliStub(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet, PTR_PTR_Object pContinuationRet)
+void InvokeCalliStub(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet, Object** pContinuationRet)
 {
     CONTRACTL
     {
@@ -338,7 +338,7 @@ void InvokeCalliStub(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet, PTR_P
     CallStubHeader *pHeader = (CallStubHeader*)actualCallStub;
     pHeader->SetTarget(ftn); // The method to call
 
-    PTR_Object continuationUnused = NULL;
+    Object* continuationUnused = NULL;
     if (!pHeader->HasContinuationRet)
     {
         pContinuationRet = &continuationUnused;
@@ -367,7 +367,7 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
     GCX_PREEMP();
 
     AllocMemTracker amTracker;
-    pHeader = callStubGenerator.GenerateCallStub(pInterpMethod->methodDesc, &amTracker, false /* interpreterToNative */);
+    pHeader = callStubGenerator.GenerateCallStub(pInterpMethod->methodHnd, &amTracker, false /* interpreterToNative */);
 
     if (InterlockedCompareExchangeT(&pInterpMethod->pCallStub, pHeader, NULL) == NULL)
     {
@@ -408,7 +408,7 @@ void DBG_PrintInterpreterStack()
         InterpMethodContextFrame* cxtFrame = pInterpFrame->GetTopInterpMethodContextFrame();
         while (cxtFrame != NULL)
         {
-            MethodDesc* currentMD = cxtFrame->startIp->Method->methodDesc;
+            MethodDesc* currentMD = cxtFrame->startIp->Method->methodHnd;
 
             size_t irOffset = ((size_t)cxtFrame->ip - (size_t)(&cxtFrame->startIp[1])) / sizeof(size_t);
             fprintf(stderr, "%4d) %s::%s, IR_%04zx\n",
@@ -790,7 +790,7 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
     // We are working with an interpreter async continuation, move things around to get the InterpAsyncSuspendData
     size_t resumeDataOffset = offsetof(InterpAsyncSuspendData, resumeFuncPtr);
     InterpAsyncSuspendData* pSuspendData = (InterpAsyncSuspendData*)(void*)(((uint8_t*)contRef->GetResumeInfo()) - resumeDataOffset);
-    assert(&pSuspendData->resumeFuncPtr == contRef->GetResumeInfo());
+    _ASSERTE(&pSuspendData->resumeFuncPtr == contRef->GetResumeInfo());
 
     // All the incoming args and locals should be zeroed out, except for the continuation argument
     InterpMethod *pMethod = pSuspendData->methodStartIP->Method;
@@ -3757,7 +3757,7 @@ do                                                                      \
                         ip += ipAdjust; // (4 for this opcode)
                         break;
                     }
-                    MethodTable *pContinuationType = pAsyncSuspendData->ContinuationTypeHnd;
+                    MethodTable *pContinuationType = pAsyncSuspendData->continuationTypeHnd;
 
                     MethodDesc *pILTargetMethod = NULL;
                     HELPER_FTN_P_PP helperFtn = NULL;
@@ -3828,7 +3828,7 @@ do                                                                      \
 
                     if (pAsyncSuspendData->flags & CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT)
                     {
-                        MethodDesc *pCaptureSyncContextMethod = pAsyncSuspendData->pCaptureSyncContextMethod;
+                        MethodDesc *captureSyncContextMethod = pAsyncSuspendData->captureSyncContextMethod;
                         int32_t *flagsAddress = continuation->GetFlagsAddress();
                         size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
                         uint8_t *pContinuationData = (uint8_t*)OBJECTREFToObject(continuation) + continuationOffset;
@@ -3843,7 +3843,7 @@ do                                                                      \
                         // Pass argument to the target method
                         LOCAL_VAR(callArgsOffset, void*) = pContinuationData;
                         LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int32_t*) = flagsAddress;
-                        targetMethod = pCaptureSyncContextMethod;
+                        targetMethod = captureSyncContextMethod;
                         ip += 4;
                         goto CALL_INTERP_METHOD;
                     }
@@ -3872,7 +3872,7 @@ do                                                                      \
                     OBJECTREF syncContext = LOCAL_VAR(ip[4] + INTERP_STACK_SLOT_SIZE, OBJECTREF);
 
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[5]];
-                    MethodDesc *pRestoreContextsMethod = pAsyncSuspendData->pRestoreContextsMethod;
+                    MethodDesc *restoreContextsMethod = pAsyncSuspendData->restoreContextsMethod;
 
                     returnOffset = ip[1];
                     callArgsOffset = pMethod->allocaSize;
@@ -3880,7 +3880,7 @@ do                                                                      \
                     LOCAL_VAR(callArgsOffset, int32_t) = resumed;
                     LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF) = executionContext;
                     LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE * 2, OBJECTREF) = syncContext;
-                    targetMethod = pRestoreContextsMethod;
+                    targetMethod = restoreContextsMethod;
                     ip += 6;
                     goto CALL_INTERP_METHOD;
                 }
@@ -3961,7 +3961,7 @@ do                                                                      \
                     }
 
                     continuation->SetState((int32_t)((uint8_t*)ip - (uint8_t*)pFrame->startIp));
-                    assert(pAsyncSuspendData->methodStartIP != 0);
+                    _ASSERTE(pAsyncSuspendData->methodStartIP != 0);
                     continuation->SetResumeInfo(&pAsyncSuspendData->resumeFuncPtr);
                     pInterpreterFrame->SetContinuation(continuation);
                     goto EXIT_FRAME;
@@ -4016,8 +4016,8 @@ do                                                                      \
                         
                         // Now we have an IP to where we should resume execution. This should be an INTOP_HANDLE_CONTINUATION_RESUME opcode
                         // And before it should be an INTOP_HANDLE_CONTINUATION_SUSPEND opcode
-                        assert(*ip == INTOP_HANDLE_CONTINUATION_RESUME);
-                        assert(*(ip-3) == INTOP_HANDLE_CONTINUATION_SUSPEND);
+                        _ASSERTE(*ip == INTOP_HANDLE_CONTINUATION_RESUME);
+                        _ASSERTE(*(ip-3) == INTOP_HANDLE_CONTINUATION_SUSPEND);
                         InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[1]];
 
                         returnOffset = pMethod->allocaSize;
@@ -4028,7 +4028,7 @@ do                                                                      \
                         // We need to call the RestoreExecutionContext helper method
                         LOCAL_VAR(callArgsOffset, OBJECTREF) = execContext;
 
-                        targetMethod = pAsyncSuspendData->pRestoreExecutionContextMethod;
+                        targetMethod = pAsyncSuspendData->restoreExecutionContextMethod;
                         goto CALL_INTERP_METHOD;
                     }
                     ip += 3;
