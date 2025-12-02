@@ -2816,11 +2816,10 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
 
     RoutineType argType = RoutineType::None;
 #ifdef TARGET_ARM
-    TypeHandle thArgTypeHandle;
-    CorElementType corType = pArgIt ? pArgIt->GetArgType(&thArgTypeHandle) : ELEMENT_TYPE_END;
-    bool splitRequired = (corType == ELEMENT_TYPE_I8 || corType == ELEMENT_TYPE_U8 || corType == ELEMENT_TYPE_R8 || (corType == ELEMENT_TYPE_VALUETYPE && thArgTypeHandle.GetSize() >= INTERP_STACK_SLOT_SIZE));
-    if (splitRequired)
-        argType = RoutineType::None;
+    if (argLocDesc.m_cGenReg == 2 || argLocDesc.m_byteStackSize >= 8)
+    {
+        /* do nothing */
+    }
     else
 #endif // TARGET_ARM
     if (argLocDesc.m_cGenReg != 0)
@@ -2857,7 +2856,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         printf("m_cGenReg=%d\n", (int)argLocDesc.m_cGenReg);
 #endif // LOG_COMPUTE_CALL_STUB
 #ifdef TARGET_ARM
-        if (splitRequired)
+        if (argLocDesc.m_cGenReg == 2)
         {
             pRoutines[m_routineIndex++] = GetRegRoutine_4B(argLocDesc.m_idxGenReg, argLocDesc.m_idxGenReg + argLocDesc.m_cGenReg - 1);
         }
@@ -2945,7 +2944,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         printf("m_byteStackSize=%d\n", (int)argLocDesc.m_byteStackSize);
 #endif // LOG_COMPUTE_CALL_STUB
 #ifdef TARGET_ARM
-        if (splitRequired)
+        if (argLocDesc.m_byteStackSize >= 8)
         {
             pRoutines[m_routineIndex++] = GetStackRoutine_4B();
             pRoutines[m_routineIndex++] = argLocDesc.m_byteStackIndex;
