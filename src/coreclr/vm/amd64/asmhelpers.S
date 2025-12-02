@@ -1790,7 +1790,6 @@ NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
         mov  rbp, rsp
         push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
@@ -1810,7 +1809,6 @@ NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
         mov  rbp, rsp
         push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
@@ -1830,7 +1828,6 @@ NESTED_ENTRY CallJittedMethodRetI8I8, _TEXT, NoHandler
         mov  rbp, rsp
         push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
@@ -1851,7 +1848,6 @@ NESTED_ENTRY CallJittedMethodRetI8Double, _TEXT, NoHandler
         mov  rbp, rsp
         push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
@@ -1872,7 +1868,6 @@ NESTED_ENTRY CallJittedMethodRetDoubleI8, _TEXT, NoHandler
         mov  rbp, rsp
         push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
@@ -1893,7 +1888,6 @@ NESTED_ENTRY CallJittedMethodRetDoubleDouble, _TEXT, NoHandler
         mov  rbp, rsp
         push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
