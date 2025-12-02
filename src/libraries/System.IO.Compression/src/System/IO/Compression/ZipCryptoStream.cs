@@ -16,7 +16,6 @@ namespace System.IO.Compression
         private bool _headerWritten;
         private readonly ushort _verifierLow2Bytes;       // (DOS time low word when streaming)
         private readonly uint? _crc32ForHeader;           // (CRC-based header when not streaming)
-        private int _position;
 
         private uint _key0;
         private uint _key1;
@@ -43,7 +42,6 @@ namespace System.IO.Compression
             InitKeysFromBytes(password.Span);
             _encrypting = false;
             ValidateHeader(expectedCheckByte); // reads & consumes 12 bytes
-            _position = 0;
         }
 
         // Encryption constructor
@@ -58,7 +56,6 @@ namespace System.IO.Compression
             _leaveOpen = leaveOpen;
             _verifierLow2Bytes = passwordVerifierLow2Bytes;
             _crc32ForHeader = crc32;
-            _position = 0;
             InitKeysFromBytes(password.Span);
         }
 
@@ -109,7 +106,6 @@ namespace System.IO.Compression
             }
 
             _headerWritten = true;
-            _position += 12;
         }
 
         private void EnsureHeader()
@@ -181,7 +177,7 @@ namespace System.IO.Compression
         public override long Length => throw new NotSupportedException();
         public override long Position
         {
-            get => _position;
+            get => throw new NotSupportedException();
             set => throw new NotSupportedException("ZipCryptoStream does not support seeking.");
         }
         public override void Flush() => _base.Flush();
@@ -199,7 +195,6 @@ namespace System.IO.Compression
                 int n = _base.Read(destination);
                 for (int i = 0; i < n; i++)
                     destination[i] = DecryptByte(destination[i]);
-                _position += n;
                 return n;
             }
             throw new NotSupportedException("Stream is in encryption (write-only) mode.");
@@ -228,7 +223,6 @@ namespace System.IO.Compression
                 UpdateKeys(p);
             }
             _base.Write(tmp, 0, tmp.Length);
-            _position += tmp.Length;
         }
 
         protected override void Dispose(bool disposing)
@@ -271,7 +265,6 @@ namespace System.IO.Compression
                 Span<byte> span = buffer.Span;
                 for (int i = 0; i < n; i++)
                     span[i] = DecryptByte(span[i]);
-                _position += n;
                 return n;
             }
             throw new NotSupportedException("Stream is in encryption (write-only) mode.");
@@ -302,7 +295,6 @@ namespace System.IO.Compression
             }
 
             await _base.WriteAsync(tmp, cancellationToken).ConfigureAwait(false);
-            _position += tmp.Length;
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)

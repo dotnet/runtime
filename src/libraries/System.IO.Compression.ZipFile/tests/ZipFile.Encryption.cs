@@ -287,7 +287,6 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Is_Async))]
-        // todo: some async methods in ziparchiveentry missing implementation for winzipaesstream
         public async Task ExtractToFile_Encrypted_Success(bool async)
         {
             string archivePath = GetTempArchivePath();

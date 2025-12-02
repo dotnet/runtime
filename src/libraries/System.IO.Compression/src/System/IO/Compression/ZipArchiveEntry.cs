@@ -474,7 +474,7 @@ namespace System.IO.Compression
 
                     if (_isEncrypted)
                     {
-                        // We don’t support edit-in-place for encrypted entries without an explicit password flow.
+                        // We donâ€™t support edit-in-place for encrypted entries without an explicit password flow.
                         // Tell the caller to do the safe pattern: read with Open(password), then delete+recreate.
                         _storedUncompressedData.Dispose();
                         _storedUncompressedData = null;
@@ -813,7 +813,7 @@ namespace System.IO.Compression
         }
 
 
-        private CheckSumAndSizeWriteStream GetDataCompressor(Stream backingStream, bool leaveBackingStreamOpen, EventHandler? onClose)
+        private CheckSumAndSizeWriteStream GetDataCompressor(Stream backingStream, bool leaveBackingStreamOpen, EventHandler? onClose, Stream? streamForPosition = null)
         {
             // stream stack: backingStream -> DeflateStream -> CheckSumWriteStream
 
@@ -851,7 +851,7 @@ namespace System.IO.Compression
             bool leaveCompressorStreamOpenOnClose = leaveBackingStreamOpen && !isIntermediateStream;
             var checkSumStream = new CheckSumAndSizeWriteStream(
                 compressorStreamFactory,
-                backingStream,
+                streamForPosition ?? backingStream,
                 leaveCompressorStreamOpenOnClose,
                 this,
                 onClose,
@@ -1039,7 +1039,8 @@ namespace System.IO.Compression
                     var entry = (ZipArchiveEntry)o!;
                     entry._archive.ReleaseArchiveStream(entry);
                     entry._outstandingWriteStream = null;
-                });
+                },
+                encryptionMethod != EncryptionMethod.None ? _archive.ArchiveStream : null);
 
             _outstandingWriteStream = new DirectToArchiveWriterStream(crcSizeStream, this, encryptionMethod);
 
@@ -1453,7 +1454,7 @@ namespace System.IO.Compression
                     //The compressor fills in CRC and sizes
                     //The DirectToArchiveWriterStream writes headers and such
                     using (DirectToArchiveWriterStream entryWriter = new(
-                                                    GetDataCompressor(_archive.ArchiveStream, true, null),
+                                                    GetDataCompressor(_archive.ArchiveStream, true, null, null),
                                                     this))
                     {
                         _storedUncompressedData.Seek(0, SeekOrigin.Begin);

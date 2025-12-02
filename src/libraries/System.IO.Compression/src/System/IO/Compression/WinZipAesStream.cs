@@ -28,7 +28,6 @@ namespace System.IO.Compression
         private byte[]? _passwordVerifier;
         private bool _headerWritten;
         private bool _headerRead;
-        private long _position;
         private bool _disposed;
         private bool _authCodeValidated;
         private readonly long _totalStreamSize;
@@ -445,8 +444,6 @@ namespace System.IO.Compression
                 byte[] temp = buffer.Slice(0, bytesRead).ToArray();
                 ProcessBlock(temp, 0, bytesRead);
                 temp.CopyTo(buffer.Span);
-
-                _position += bytesRead;
             }
             else // n == 0, meaning end of stream
             {
@@ -535,7 +532,6 @@ namespace System.IO.Compression
                     else
                         _baseStream.Write(_partialBlock, 0, BLOCK_SIZE);
 
-                    _position += BLOCK_SIZE;
                     _partialBlockBytes = 0;
                 }
             }
@@ -564,7 +560,6 @@ namespace System.IO.Compression
                     else
                         _baseStream.Write(chunkBuffer, 0, bytesToProcess);
 
-                    _position += bytesToProcess;
                     inputOffset += bytesToProcess;
                     inputCount -= bytesToProcess;
                 }
@@ -625,7 +620,6 @@ namespace System.IO.Compression
                     _baseStream.Write(_partialBlock, 0, _partialBlockBytes);
                 }
 
-                _position += _partialBlockBytes;
                 _partialBlockBytes = 0;
             }
         }
@@ -709,28 +703,7 @@ namespace System.IO.Compression
         public override long Length => throw new NotSupportedException();
         public override long Position
         {
-            get
-            {
-                // Calculate the actual position including all metadata
-                long position = _position;
-
-                // Add header size if it has been written/read
-                if (_headerWritten || _headerRead)
-                {
-                    int saltSize = _keySizeBits / 16;
-                    int headerSize = saltSize + 2; // Salt + Password Verifier
-                    position += headerSize;
-                }
-
-                // Add auth code size if it has been written/validated
-                if (_authCodeValidated)
-                {
-                    const int authCodeSize = 10;
-                    position += authCodeSize;
-                }
-
-                return position;
-            }
+            get => throw new NotSupportedException();
             set => throw new NotSupportedException();
         }
 
