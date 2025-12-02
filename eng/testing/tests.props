@@ -9,6 +9,10 @@
     <ILLinkDescriptorsPath>$(MSBuildThisFileDirectory)ILLinkDescriptors\</ILLinkDescriptorsPath>
     <TestSingleFile Condition="'$(TestNativeAot)' == 'true'">true</TestSingleFile>
     <TestSingleFile Condition="'$(TestReadyToRun)' == 'true'">true</TestSingleFile>
+    <EnvVarCommand Condition="'$(OS)' == 'Windows_NT' or '$(TargetsWindows)' == 'true' or '$(TargetPlatformIdentifier)' == 'windows'">set</EnvVarCommand>
+    <EnvVarCommand Condition="'$(OS)' != 'Windows_NT' and '$(TargetsWindows)' != 'true' and '$(TargetPlatformIdentifier)' != 'windows'">export</EnvVarCommand>
+    <DirSeparator Condition="'$(OS)' == 'Windows_NT'">\\</DirSeparator>
+    <DirSeparator Condition="'$(OS)' != 'Windows_NT'">/</DirSeparator>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
@@ -27,8 +31,7 @@
 
   <!-- Provide runtime options to Mono (interpreter, aot, debugging, etc) -->
   <ItemGroup Condition="'$(MonoEnvOptions)' != '' and '$(TargetsMobile)' != 'true'">
-    <RunScriptCommands Condition="'$(TargetsWindows)' == 'true' or '$(TargetPlatformIdentifier)' == 'windows'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
-    <RunScriptCommands Condition="'$(TargetsWindows)' != 'true' and '$(TargetPlatformIdentifier)' != 'windows'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
+    <RunScriptCommands Include="$(EnvVarCommand) MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestRunRequiresLiveRefPack)' == 'true'">
