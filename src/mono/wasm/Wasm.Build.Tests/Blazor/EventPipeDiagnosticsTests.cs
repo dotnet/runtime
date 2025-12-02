@@ -63,7 +63,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             CheckCounter: false,
             ServerEnvironment: new Dictionary<string, string>
             {
-                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath
+                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath,
+                ["DEVSERVER_UPLOAD_PATTERN"] = "^.*\\.nettrace$"
             }
         ));
 
@@ -118,7 +119,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             CheckCounter: false,
             ServerEnvironment: new Dictionary<string, string>
             {
-                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath
+                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath,
+                ["DEVSERVER_UPLOAD_PATTERN"] = "^.*\\.nettrace$"
             }
         ));
 
@@ -191,7 +193,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             CheckCounter: false,
             ServerEnvironment: new Dictionary<string, string>
             {
-                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath
+                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath,
+                ["DEVSERVER_UPLOAD_PATTERN"] = "^.*\\.nettrace$"
             }
         ));
 

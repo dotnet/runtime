@@ -119,13 +119,15 @@ internal sealed class DevServerStartup
 
             // Add general-purpose file upload endpoint when DEVSERVER_UPLOAD_PATH is set
             string? fileUploadPath = Environment.GetEnvironmentVariable("DEVSERVER_UPLOAD_PATH");
-            if (!string.IsNullOrEmpty(fileUploadPath))
+            string? fileUploadPattern = Environment.GetEnvironmentVariable("DEVSERVER_UPLOAD_PATTERN");
+            if (!string.IsNullOrEmpty(fileUploadPath) && !string.IsNullOrEmpty(fileUploadPattern))
             {
                 // Ensure the upload directory exists
                 if (!Directory.Exists(fileUploadPath))
                 {
                     Directory.CreateDirectory(fileUploadPath!);
                 }
+                Regex fileFilter = new Regex(fileUploadPattern!);
 
                 // Route with filename parameter
                 endpoints.MapPost("/upload/{filename}", async context =>
@@ -136,10 +138,10 @@ internal sealed class DevServerStartup
                         var routeValues = context.Request.RouteValues;
                         string? rawFileName = routeValues["filename"]?.ToString();
 
-                        // Generate a unique name if none provided
-                        if (string.IsNullOrEmpty(rawFileName))
+                        // skip upload if no name provided or invalid
+                        if (string.IsNullOrEmpty(rawFileName) || !fileFilter.IsMatch(rawFileName!))
                         {
-                            rawFileName = $"upload_{Guid.NewGuid():N}";
+                            return;
                         }
 
                         // Sanitize filename - IMPORTANT: Only use GetFileName to strip any path components
