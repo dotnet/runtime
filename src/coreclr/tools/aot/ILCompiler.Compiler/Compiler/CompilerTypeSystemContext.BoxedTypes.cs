@@ -38,14 +38,7 @@ using Debug = System.Diagnostics.Debug;
 // * Having the unboxing stub load the m_pEEType field (to get generic
 //   context) and a byref to the actual value (to get a 'this' expected by
 //   valuetype methods)
-// * Generating a call to a fake instance method on the valuetype that has
-//   the hidden (generic context) argument explicitly present in the
-//   signature. We need a fake method to be able to refer to the hidden parameter
-//   from IL.
-//
-// At a later stage (once codegen is done), we replace the references to the
-// fake instance method with the real instance method. Their signatures after
-// compilation is identical.
+// * Using a JIT intrinsic to set the generic context on the called method.
 //
 
 namespace ILCompiler
@@ -120,24 +113,6 @@ namespace ILCompiler
                 thunk = thunk.MakeInstantiatedMethod(targetMethod.Instantiation);
 
             return thunk;
-        }
-
-        /// <summary>
-        /// Returns true of <paramref name="method"/> is a standin method for unboxing thunk target.
-        /// </summary>
-        public bool IsSpecialUnboxingThunkTargetMethod(MethodDesc method)
-        {
-            return method.GetTypicalMethodDefinition().GetType() == typeof(ValueTypeInstanceMethodWithHiddenParameter);
-        }
-
-        /// <summary>
-        /// Returns the real target method of an unboxing stub.
-        /// </summary>
-        public MethodDesc GetRealSpecialUnboxingThunkTargetMethod(MethodDesc method)
-        {
-            MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
-            MethodDesc methodDefinitionRepresented = ((ValueTypeInstanceMethodWithHiddenParameter)typicalMethod).MethodRepresented;
-            return GetMethodForInstantiatedType(methodDefinitionRepresented, (InstantiatedType)method.OwningType);
         }
 
         private struct BoxedValuetypeHashtableKey
@@ -375,7 +350,6 @@ namespace ILCompiler
         private sealed partial class GenericUnboxingThunk : ILStubMethod
         {
             private MethodDesc _targetMethod;
-            private ValueTypeInstanceMethodWithHiddenParameter _nakedTargetMethod;
             private BoxedValueType _owningType;
 
             public GenericUnboxingThunk(BoxedValueType owningType, MethodDesc targetMethod)
@@ -385,7 +359,6 @@ namespace ILCompiler
 
                 _owningType = owningType;
                 _targetMethod = targetMethod;
-                _nakedTargetMethod = new ValueTypeInstanceMethodWithHiddenParameter(targetMethod);
             }
 
             public override TypeSystemContext Context => _targetMethod.Context;
@@ -439,39 +412,26 @@ namespace ILCompiler
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
 
-                bool isX86 = Context.Target.Architecture == TargetArchitecture.X86;
-
                 FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"u8);
 
                 // Load ByRef to the field with the value of the boxed valuetype
                 codeStream.EmitLdArg(0);
                 codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RawData"u8).GetField("Data"u8)));
 
-                if (isX86)
-                {
-                    for (int i = 0; i < _targetMethod.Signature.Length; i++)
-                    {
-                        codeStream.EmitLdArg(i + 1);
-                    }
-                }
-
                 // Load the MethodTable of the boxed valuetype (this is the hidden generic context parameter expected
                 // by the (canonical) instance method, but normally not part of the signature in IL).
                 codeStream.EmitLdArg(0);
                 codeStream.Emit(ILOpcode.ldfld, emit.NewToken(eeTypeField));
 
+                codeStream.Emit(ILOpcode.call, emit.NewToken(Context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8, "SetNextCallGenericContext"u8, null)));
+
                 // Load rest of the arguments
-                if (!isX86)
+                for (int i = 0; i < _targetMethod.Signature.Length; i++)
                 {
-                    for (int i = 0; i < _targetMethod.Signature.Length; i++)
-                    {
-                        codeStream.EmitLdArg(i + 1);
-                    }
+                    codeStream.EmitLdArg(i + 1);
                 }
 
-                // Call an instance method on the target valuetype that has a fake instantiation parameter
-                // in it's signature. This will be swapped by the actual instance method after codegen is done.
-                codeStream.Emit(ILOpcode.call, emit.NewToken(_nakedTargetMethod.InstantiateAsOpen()));
+                codeStream.Emit(ILOpcode.call, emit.NewToken(_targetMethod.InstantiateAsOpen()));
                 codeStream.Emit(ILOpcode.ret);
 
                 return emit.Link(this);
@@ -583,75 +543,6 @@ namespace ILCompiler
             }
 
             public override Instantiation Instantiation => _targetMethod.Instantiation;
-        }
-
-        /// <summary>
-        /// Represents an instance method on a generic valuetype with an explicit instantiation parameter in the
-        /// signature. This is so that we can refer to the parameter from IL. References to this method will
-        /// be replaced by the actual instance method after codegen is done.
-        /// </summary>
-        internal sealed partial class ValueTypeInstanceMethodWithHiddenParameter : MethodDesc
-        {
-            private MethodDesc _methodRepresented;
-            private MethodSignature _signature;
-
-            public ValueTypeInstanceMethodWithHiddenParameter(MethodDesc methodRepresented)
-            {
-                Debug.Assert(methodRepresented.OwningType.IsValueType);
-                Debug.Assert(!methodRepresented.Signature.IsStatic);
-
-                _methodRepresented = methodRepresented;
-            }
-
-            public MethodDesc MethodRepresented => _methodRepresented;
-
-            // We really don't want this method to be inlined.
-            public override bool IsNoInlining => true;
-
-            public override bool IsInternalCall => true;
-
-            public override bool IsIntrinsic => true;
-
-            public override TypeSystemContext Context => _methodRepresented.Context;
-            public override TypeDesc OwningType => _methodRepresented.OwningType;
-
-            public override ReadOnlySpan<byte> Name => _methodRepresented.Name;
-            public override string DiagnosticName => _methodRepresented.DiagnosticName;
-
-            public override MethodSignature Signature
-            {
-                get
-                {
-                    if (_signature == null)
-                    {
-                        TypeDesc[] parameters = new TypeDesc[_methodRepresented.Signature.Length + 1];
-
-                        // Shared instance methods on generic valuetypes have a hidden parameter with the generic context.
-                        // We add it to the signature so that we can refer to it from IL.
-                        if (Context.Target.Architecture == TargetArchitecture.X86)
-                        {
-                            for (int i = 0; i < _methodRepresented.Signature.Length; i++)
-                                parameters[i] = _methodRepresented.Signature[i];
-                            parameters[_methodRepresented.Signature.Length] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
-                        }
-                        else
-                        {
-                            parameters[0] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
-                            for (int i = 0; i < _methodRepresented.Signature.Length; i++)
-                                parameters[i + 1] = _methodRepresented.Signature[i];
-                        }
-
-                        _signature = new MethodSignature(_methodRepresented.Signature.Flags,
-                            _methodRepresented.Signature.GenericParameterCount,
-                            _methodRepresented.Signature.ReturnType,
-                            parameters);
-                    }
-
-                    return _signature;
-                }
-            }
-
-            public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => false;
         }
     }
 }

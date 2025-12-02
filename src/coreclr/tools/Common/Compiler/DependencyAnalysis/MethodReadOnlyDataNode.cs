@@ -26,7 +26,10 @@ namespace ILCompiler.DependencyAnalysis
         }
 #endif
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
+        // TODO: (async) This should stay RO everywhere: https://github.com/dotnet/runtime/issues/121871
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+            => factory.Target.IsWindows ? ObjectNodeSection.ReadOnlyDataSection : ObjectNodeSection.DataSection;
+
         public override bool StaticDependenciesAreComputed => _data != null;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

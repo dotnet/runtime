@@ -60,7 +60,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
     if [ ! -d IL-CG2 ]%3B then
       mkdir IL-CG2
       cp ./*.dll IL-CG2/
-      rm IL-CG2/composite-r2r.dll 2>/dev/null
+      rm IL-CG2/composite-r2r.* 2>/dev/null
       rm IL-CG2/Coreclr.TestWrapper.dll 2>/dev/null
       rm IL-CG2/*.XUnitWrapper.dll 2>/dev/null
 
@@ -85,6 +85,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       RunCrossgen2OnFiles() {
         date +%H:%M:%S
         __OutputFile=$1
+        __OutputFileFinal=$2
 
         __ResponseFile="$__OutputFile.rsp"
         rm "$__ResponseFile" 2>/dev/null
@@ -97,14 +98,17 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
             __R2RDumpCommand+=" dotnet"
         fi
         __R2RDumpCommand+=" $CORE_ROOT/R2RDump/R2RDump.dll"
-        __R2RDumpCommand+=" --header --sc --in $__OutputFile --out $__OutputFile.r2rdump --val"
+        __R2RDumpCommand+=" --header --sc --in $__OutputFileFinal --out $__OutputFileFinal.r2rdump --val"
 
         __Command="$_DebuggerFullPath $CORE_ROOT/crossgen2/crossgen2"
         __Command+=" @$__ResponseFile"
         __Command+=" $ExtraCrossGen2Args"
+        if [ -n "$(CrossGen2OutputFormat)" ]; then
+            __Command+=" -f $(CrossGen2OutputFormat)"
+        fi
 
         # Expand glob or multiple filenames into array
-        __InputFiles=($2)
+        __InputFiles=($3)
         for dllFile in "${__InputFiles[@]}"; do
           echo "$dllFile" >> "$__ResponseFile"
         done
@@ -148,6 +152,14 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         $__Command
         __cg2ExitCode=$?
 
+        __linkExitCode=0
+        if [ "$(CrossGen2OutputFormat)" == "macho" ]; then
+            echo "Linking: $(basename "$__OutputFile") -> $(basename "$__OutputFileFinal")"
+            echo  clang -dynamiclib -o "$__OutputFileFinal" "$__OutputFile" -install_name "@rpath/`basename "$__OutputFileFinal"`" -Wl,-dead_strip
+            clang -dynamiclib -o "$__OutputFileFinal" "$__OutputFile" -install_name "@rpath/`basename "$__OutputFileFinal"`" -Wl,-dead_strip
+            __linkExitCode=$?
+        fi
+
         echo "Running R2RDump: $__R2RDumpCommand"
         $__R2RDumpCommand
         __r2rDumpExitCode=$?
@@ -159,7 +171,13 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
           shopt -s nullglob
-          RunCrossgen2OnFiles "$PWD/composite-r2r.dll" "$PWD/IL-CG2/*.dll"
+          __CompositeExt=".dll"
+          __CompositeExtFinal=".dll"
+          if [ "$(CrossGen2OutputFormat)" == "macho" ]; then
+              __CompositeExt=".o"
+              __CompositeExtFinal=".dylib"
+          fi
+          RunCrossgen2OnFiles "$PWD/composite-r2r${__CompositeExt}" "$PWD/composite-r2r${__CompositeExtFinal}" "$PWD/IL-CG2/*.dll"
       else
           ExtraCrossGen2Args+=" -r:$PWD/IL-CG2/*.dll"
           for dllFile in "$PWD"/IL-CG2/*.dll
@@ -181,6 +199,11 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       fi
       if [ $__r2rDumpExitCode -ne 0 ]; then
         echo R2RDump failed with exitcode: $__r2rDumpExitCode
+        ReleaseLock
+        exit 1
+      fi
+      if [ $__linkExitCode -ne 0 ]; then
+        echo "Linking failed with exitcode: $__linkExitCode"
         ReleaseLock
         exit 1
       fi
@@ -230,7 +253,7 @@ if defined RunCrossGen2 (
 
     mkdir IL-CG2
     copy *.dll IL-CG2\
-    del IL-CG2\composite-r2r.dll 2>nul
+    del IL-CG2\composite-r2r.* 2>nul
     del IL-CG2\Coreclr.TestWrapper.dll 2>nul
     del IL-CG2\*.XUnitWrapper.dll 2>nul
 
