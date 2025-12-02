@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Net.WebSockets;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
