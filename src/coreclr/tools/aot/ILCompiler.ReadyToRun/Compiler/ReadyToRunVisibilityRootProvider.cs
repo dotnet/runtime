@@ -60,7 +60,7 @@ namespace ILCompiler
                 // If the method is not visible outside the assembly, then do not root the method.
                 // It will be rooted by any callers that require it and do not inline it.
                 if (!method.IsStaticConstructor
-                    && method.GetTypicalMethodDefinition() is EcmaMethod ecma
+                    && method.GetEcmaDefinition() is EcmaMethod ecma
                     && !ecma.GetEffectiveVisibility().IsExposedOutsideOfThisAssembly(anyInternalsVisibleTo))
                 {
                     // If a method itself is not visible outside the assembly, but it implements a method that is,
@@ -75,7 +75,7 @@ namespace ILCompiler
                         if (record.Body == ecma)
                         {
                             anyMethodImplRecordsForMethod = true;
-                            implementsOrOverridesVisibleMethod = record.Decl.GetTypicalMethodDefinition() is EcmaMethod decl
+                            implementsOrOverridesVisibleMethod = record.Decl.GetEcmaDefinition() is EcmaMethod decl
                                 && decl.GetEffectiveVisibility().IsExposedOutsideOfThisAssembly(anyInternalsVisibleTo);
                             if (implementsOrOverridesVisibleMethod)
                             {

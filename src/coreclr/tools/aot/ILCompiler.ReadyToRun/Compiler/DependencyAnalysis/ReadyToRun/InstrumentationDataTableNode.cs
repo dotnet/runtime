@@ -144,7 +144,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 if (handle.AsMethod != null && _compilationGroup.VersionsWithMethodBody(handle.AsMethod))
                 {
-                    EcmaMethod typicalMethod = (EcmaMethod)handle.AsMethod.GetTypicalMethodDefinition();
+                    EcmaMethod typicalMethod = handle.AsMethod.GetEcmaDefinition();
                     ModuleToken moduleToken = new ModuleToken(typicalMethod.Module, typicalMethod.Handle);
 
                     MethodWithToken tok = new MethodWithToken(handle.AsMethod, moduleToken, constrainedType: null, unboxing: false, context: null);

@@ -687,7 +687,7 @@ namespace ILCompiler
                     if (dependency is MethodWithGCInfo methodCodeNodeNeedingCode)
                     {
                         var method = methodCodeNodeNeedingCode.Method;
-                        if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+                        if (method.GetEcmaDefinition() is EcmaMethod ecmaMethod)
                         {
                             if (ilProvider.NeedsCrossModuleInlineableTokens(ecmaMethod) &&
                                 !_methodsWhichNeedMutableILBodies.Contains(ecmaMethod) &&
