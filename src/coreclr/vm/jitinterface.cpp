@@ -8869,8 +8869,40 @@ CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
         MethodTable* pMT = pMD->GetMethodTable();
         MethodDesc* pUnboxedMD = pMT->GetUnboxedEntryPointMD(pMD);
 
-        result = (CORINFO_METHOD_HANDLE)pUnboxedMD;
-        requiresInstMTArg = !!pUnboxedMD->RequiresInstMethodTableArg();
+        // Give up on methods which may potentially expose byrefs to struct's fields:
+        // * byref return types
+        // * byref-like return types
+        // * byref to byref-like types in parameters
+        //
+        // Any other attempt to expose a pointer to a field would be an UB.
+        bool ignore = false;
+        MetaSig msig(pUnboxedMD);
+        if (msig.GetReturnType() == ELEMENT_TYPE_BYREF ||
+            msig.GetRetTypeHandleThrowing().IsByRefLike())
+        {
+            ignore = true;
+        }
+        else
+        {
+            // Now check parameters
+            msig.Reset();
+            CorElementType ty;
+            while ((ty = msig.NextArg()) != ELEMENT_TYPE_END)
+            {
+                if (ty == ELEMENT_TYPE_BYREF &&
+                    msig.GetLastTypeHandleThrowing().GetTypeParam().IsByRefLike())
+                {
+                    ignore = true;
+                    break;
+                }
+            }
+        }
+
+        if (!ignore)
+        {
+            result = (CORINFO_METHOD_HANDLE)pUnboxedMD;
+            requiresInstMTArg = !!pUnboxedMD->RequiresInstMethodTableArg();
+        }
     }
 
     *requiresInstMethodTableArg = requiresInstMTArg;
