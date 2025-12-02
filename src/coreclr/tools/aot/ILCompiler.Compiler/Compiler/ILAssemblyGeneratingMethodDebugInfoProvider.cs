@@ -69,7 +69,7 @@ namespace ILCompiler
                 _tw.Write("instance ");
             _tw.Write(fmt.FormatName(owningMethod.Signature.ReturnType));
             _tw.Write(" ");
-            _tw.Write(owningMethod.Name);
+            _tw.Write(owningMethod.GetName());
             if (owningMethod.HasInstantiation)
             {
                 _tw.Write("<");

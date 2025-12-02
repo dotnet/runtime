@@ -354,7 +354,10 @@ namespace ILCompiler
             Console.WriteLine(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetarch", string.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
 
             Console.WriteLine("The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid " +
-                "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. For example 'avx,aes,apx'");
+                "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. By default other instruction sets not " +
+                "specified may light-up optimistically via dynamic checks. Individual instruction sets can be disallowed from such light-up by prefixing them with '-'. " +
+                "All such light-up can be disallowed by specifying '-optimistic'. The instruction sets supported by the machine invoking the tool can be targeted by " +
+                "specifying 'native'. For example 'native', 'avx,aes', 'avx,aes,-avx2', or 'avx,aes,-optimistic'");
 
             foreach (string arch in ValidArchitectures)
             {
@@ -459,7 +462,7 @@ namespace ILCompiler
                 var formatter = new CustomAttributeTypeNameFormatter((IAssemblyDesc)failingMethod.Context.SystemModule);
 
                 Console.Write($"--singlemethodtypename \"{formatter.FormatName(failingMethod.OwningType, true)}\"");
-                Console.Write($" --singlemethodname {failingMethod.Name}");
+                Console.Write($" --singlemethodname {failingMethod.GetName()}");
 
                 for (int i = 0; i < failingMethod.Instantiation.Length; i++)
                     Console.Write($" --singlemethodgenericarg \"{formatter.FormatName(failingMethod.Instantiation[i], true)}\"");

@@ -103,10 +103,7 @@ namespace System.Data.Odbc
         internal override void SetConnectionPoolGroup(DbConnection outerConnection, DbConnectionPoolGroup poolGroup)
         {
             OdbcConnection? c = (outerConnection as OdbcConnection);
-            if (null != c)
-            {
-                c.PoolGroup = poolGroup;
-            }
+            c?.PoolGroup = poolGroup;
         }
 
         internal override void SetInnerConnectionEvent(DbConnection owningObject, DbConnectionInternal to)

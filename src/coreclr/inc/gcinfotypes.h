@@ -851,13 +851,7 @@ struct RISCV64GcInfoEncoding {
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
 };
 
-#else // defined(TARGET_xxx)
-
-#ifndef TARGET_X86
-#ifdef PORTABILITY_WARNING
-PORTABILITY_WARNING("Please specialize these definitions for your platform!")
-#endif
-#endif
+#elif defined(TARGET_X86)
 
 #ifndef TARGET_POINTER_SIZE
 #define TARGET_POINTER_SIZE 4   // equal to sizeof(void*) and the managed pointer size in bytes for this target
@@ -911,6 +905,20 @@ struct X86GcInfoEncoding {
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
 };
+
+#elif defined(TARGET_WASM)
+
+#ifndef TARGET_POINTER_SIZE
+#define TARGET_POINTER_SIZE 4   // equal to sizeof(void*) and the managed pointer size in bytes for this target
+#endif
+
+#define TargetGcInfoEncoding InterpreterGcInfoEncoding
+
+#else // No target defined
+
+#ifdef PORTABILITY_WARNING
+PORTABILITY_WARNING("Please specialize these definitions for your platform!")
+#endif // PORTABILITY_WARNING
 
 #endif // defined(TARGET_xxx)
 

@@ -85,7 +85,7 @@ namespace Internal.TypeSystem
         {
             // TODO: Do we want check for specialname/rtspecialname? Maybe add another overload on GetMethod?
             var sig = new MethodSignature(0, 0, type.Context.GetWellKnownType(WellKnownType.Void), TypeDesc.EmptyTypes);
-            return type.GetMethod(".ctor", sig);
+            return type.GetMethod(".ctor"u8, sig);
         }
 
         public static bool HasExplicitOrImplicitDefaultConstructor(this TypeDesc type)
@@ -162,8 +162,8 @@ namespace Internal.TypeSystem
         /// </summary>
         public static string GetFullName(this DefType metadataType)
         {
-            string ns = metadataType.Namespace;
-            return ns.Length > 0 ? string.Concat(ns, ".", metadataType.Name) : metadataType.Name;
+            string ns = metadataType.GetNamespace();
+            return ns.Length > 0 ? string.Concat(ns, ".", metadataType.GetName()) : metadataType.GetName();
         }
 
         /// <summary>
@@ -438,6 +438,42 @@ namespace Internal.TypeSystem
             }
 
             return false;
+        }
+
+        public static ReadOnlySpan<T> Append<T>(this ReadOnlySpan<T> s1, ReadOnlySpan<T> s2)
+        {
+            Span<T> buffer = new T[s1.Length + s2.Length];
+
+            s1.CopyTo(buffer);
+            s2.CopyTo(buffer.Slice(s1.Length));
+
+            return buffer;
+        }
+
+        public static ReadOnlySpan<T> Append<T>(this ReadOnlySpan<T> s1, ReadOnlySpan<T> s2, ReadOnlySpan<T> s3)
+        {
+            Span<T> buffer = new T[s1.Length + s2.Length + s3.Length];
+
+            s1.CopyTo(buffer);
+            s2.CopyTo(buffer.Slice(s1.Length));
+            s3.CopyTo(buffer.Slice(s1.Length + s2.Length));
+
+            return buffer;
+        }
+
+        public static ReadOnlySpan<byte> Append(this ReadOnlySpan<byte> s1, ReadOnlySpan<byte> s2, ReadOnlySpan<byte> s3, uint i)
+        {
+            Span<byte> s4 = stackalloc byte[16];
+            System.Buffers.Text.Utf8Formatter.TryFormat(i, s4, out int s4length);
+
+            Span<byte> buffer = new byte[s1.Length + s2.Length + s3.Length + s4length];
+
+            s1.CopyTo(buffer);
+            s2.CopyTo(buffer.Slice(s1.Length));
+            s3.CopyTo(buffer.Slice(s1.Length + s2.Length));
+            s4.Slice(0, s4length).CopyTo(buffer.Slice(s1.Length + s2.Length + s3.Length));
+
+            return buffer;
         }
     }
 }

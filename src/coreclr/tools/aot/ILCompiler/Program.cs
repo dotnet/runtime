@@ -349,7 +349,7 @@ namespace ILCompiler
                 // assume invalid code is present. Scanner may not detect all invalid code that RyuJIT detect.
                 // If they disagree, we won't know how the vtable of InvalidProgramException should look like
                 // and that would be a compiler crash.
-                MethodDesc throwInvalidProgramMethod = typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowInvalidProgramException");
+                MethodDesc throwInvalidProgramMethod = typeSystemContext.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowInvalidProgramException"u8);
                 compilationRoots.Add(
                     new GenericRootProvider<MethodDesc>(throwInvalidProgramMethod,
                     (MethodDesc method, IRootingServiceProvider rooter) => rooter.AddCompilationRoot(method, "Invalid IL insurance")));
@@ -638,7 +638,9 @@ namespace ILCompiler
             if (sourceLinkFileName != null)
                 dumpers.Add(new SourceLinkWriter(sourceLinkFileName));
 
-            CompilationResults compilationResults = compilation.Compile(outputFilePath, ObjectDumper.Compose(dumpers));
+            // Write to a temporary file and rename on success to avoid leaving partial files on failure
+            string tempOutputFilePath = outputFilePath + ".tmp";
+            CompilationResults compilationResults = compilation.Compile(tempOutputFilePath, ObjectDumper.Compose(dumpers));
             string exportsFile = Get(_command.ExportsFile);
             if (exportsFile != null)
             {
@@ -683,7 +685,7 @@ namespace ILCompiler
                     // but not scanned, it's usually fine. If it wasn't fine, we would probably crash before getting here.
                     return method.OwningType is MetadataType mdType
                         && mdType.Module == method.Context.SystemModule
-                        && (mdType.Name.EndsWith("Exception") || mdType.Namespace.StartsWith("Internal.Runtime"));
+                        && (mdType.Name.EndsWith("Exception"u8) || mdType.Namespace.StartsWith("Internal.Runtime"u8));
                 }
 
                 // If optimizations are enabled, the results will for sure not match in the other direction due to inlining, etc.
@@ -712,6 +714,26 @@ namespace ILCompiler
                 ((IDisposable)debugInfoProvider).Dispose();
 
             preinitManager.LogStatistics(logger);
+
+            // If errors were produced (including warnings treated as errors), delete the temporary file
+            // and return error code to avoid misleading build systems into thinking the compilation succeeded.
+            if (logger.HasLoggedErrors)
+            {
+                try
+                {
+                    File.Delete(tempOutputFilePath);
+                }
+                catch
+                {
+                    // If we can't delete the temp file, there's not much we can do.
+                    // The compilation will still fail due to logged errors.
+                }
+
+                return 1;
+            }
+
+            // Rename the temporary file to the final output file
+            File.Move(tempOutputFilePath, outputFilePath, overwrite: true);
 
             return 0;
         }
@@ -767,7 +789,7 @@ namespace ILCompiler
             TypeDesc owningType = FindType(context, singleMethodTypeName);
 
             // TODO: allow specifying signature to distinguish overloads
-            MethodDesc method = owningType.GetMethod(singleMethodName, null);
+            MethodDesc method = owningType.GetMethod(Encoding.UTF8.GetBytes(singleMethodName), null);
             if (method == null)
                 throw new CommandLineException($"Method '{singleMethodName}' not found in '{singleMethodTypeName}'");
 

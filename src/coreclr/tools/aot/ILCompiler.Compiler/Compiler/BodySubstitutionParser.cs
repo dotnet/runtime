@@ -12,6 +12,7 @@ using System.Xml.XPath;
 using System.Globalization;
 using System.Linq;
 using ILLink.Shared;
+using ILCompiler.Dataflow;
 
 namespace ILCompiler
 {
@@ -107,7 +108,7 @@ namespace ILCompiler
             if (string.IsNullOrEmpty(name))
                 return;
 
-            var field = type.GetFields().FirstOrDefault(f => f.Name == name);
+            var field = type.GetFields().FirstOrDefault(f => f.Name.StringEquals(name));
             if (field == null)
             {
 #if !READYTORUN

@@ -207,7 +207,7 @@ namespace System.IO.Tests
             Assert.NotEqual(testDir.FullName, IOServices.RemoveTrailingSlash(result.FullName));
         }
 
-        [ConditionalFact(nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended windows path
         public void ExtendedPathSubdirectory()
         {

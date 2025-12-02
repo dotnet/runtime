@@ -742,20 +742,18 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE AssemblyNative_GetIsCollectible(QCall::AssemblyHandle pAssembly)
+FCIMPL1(FC_BOOL_RET, AssemblyNative::GetIsCollectible, Assembly* pAssembly)
 {
-    QCALL_CONTRACT;
+    CONTRACTL
+    {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pAssembly));
+    }
+    CONTRACTL_END;
 
-    BOOL retVal = FALSE;
-
-    BEGIN_QCALL;
-
-    retVal = pAssembly->IsCollectible();
-
-    END_QCALL;
-
-    return retVal;
+    FC_RETURN_BOOL(pAssembly->IsCollectible());
 }
+FCIMPLEND
 
 extern volatile uint32_t g_cAssemblies;
 

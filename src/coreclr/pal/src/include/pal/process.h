@@ -152,6 +152,7 @@ Function:
 Parameters:
   signal - POSIX signal number
   siginfo - POSIX signal info
+  context - signal context or nullptr
 
   Does not return
 --*/
@@ -159,7 +160,7 @@ Parameters:
                         // making crash dumps impossible to analyze
 PAL_NORETURN
 #endif
-VOID PROCAbort(int signal = SIGABRT, siginfo_t* siginfo = nullptr);
+VOID PROCAbort(int signal = SIGABRT, siginfo_t* siginfo = nullptr, void* context = nullptr);
 
 /*++
 Function:
@@ -182,11 +183,12 @@ Function:
 Parameters:
   signal - POSIX signal number
   siginfo - POSIX signal info or nullptr
+  context - signal context or nullptr
   serialize - allow only one thread to generate core dump
 
 (no return value)
 --*/
-VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize);
+VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize);
 
 #ifdef __cplusplus
 }
