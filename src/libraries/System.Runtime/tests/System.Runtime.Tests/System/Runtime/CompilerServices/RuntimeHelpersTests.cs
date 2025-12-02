@@ -442,10 +442,30 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), -1); });
         }
 
+
         [Fact]
         public static unsafe void AllocateTypeAssociatedMemoryValidArguments()
         {
             IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32);
+            Assert.NotEqual(memory, IntPtr.Zero);
+            // Validate that the memory is zeroed out
+            Assert.True(new Span<byte>((void*)memory, 32).SequenceEqual(new byte[32]));
+        }
+
+        [Fact]
+        public static void AlignedAllocateTypeAssociatedMemoryInvalidArguments()
+        {
+            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(null, 10, 1); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), -1, 1); });
+            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), -1, 0); });
+            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), -1, 3); });
+        }
+
+
+        [Fact]
+        public static unsafe void AlignedAllocateTypeAssociatedMemoryValidArguments()
+        {
+            IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32, 16);
             Assert.NotEqual(memory, IntPtr.Zero);
             // Validate that the memory is zeroed out
             Assert.True(new Span<byte>((void*)memory, 32).SequenceEqual(new byte[32]));
