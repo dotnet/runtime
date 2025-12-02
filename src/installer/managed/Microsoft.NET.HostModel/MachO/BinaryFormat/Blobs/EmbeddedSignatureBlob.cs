@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 
 namespace Microsoft.NET.HostModel.MachO;
@@ -175,15 +176,29 @@ internal sealed class EmbeddedSignatureBlob : IBlob
             throw new ArgumentNullException("Both EmbeddedSignatureBlobs must be non-null for comparison.");
 
         if (a.GetSpecialSlotHashCount() != b.GetSpecialSlotHashCount())
+        {
+            Debug.WriteLine($"Special slot hash counts differ: {a.GetSpecialSlotHashCount()} vs {b.GetSpecialSlotHashCount()}");
             throw new ArgumentException("Special slot hash counts are not equivalent.");
+        }
 
         if (!a.CodeDirectoryBlob.Equals(b.CodeDirectoryBlob))
+        {
+            Debug.WriteLine("CodeDirectory blobs are not equivalent:");
+            Debug.WriteLine($"Expected (codesign):\n{b.CodeDirectoryBlob.ToCodesignString()}");
+            Debug.WriteLine($"Actual (managed):\n{a.CodeDirectoryBlob.ToCodesignString()}");
             throw new ArgumentException("CodeDirectory blobs are not equivalent");
+        }
 
         if (a.RequirementsBlob?.Size != b.RequirementsBlob?.Size)
+        {
+            Debug.WriteLine($"Requirements blob sizes differ: {a.RequirementsBlob?.Size} vs {b.RequirementsBlob?.Size}");
             throw new ArgumentException("Requirements blobs are not equivalent");
+        }
 
         if (a.CmsWrapperBlob?.Size != b.CmsWrapperBlob?.Size)
+        {
+            Debug.WriteLine($"CMS Wrapper blob sizes differ: {a.CmsWrapperBlob?.Size} vs {b.CmsWrapperBlob?.Size}");
             throw new ArgumentException("CMS Wrapper blobs are not equivalent");
+        }
     }
 }
