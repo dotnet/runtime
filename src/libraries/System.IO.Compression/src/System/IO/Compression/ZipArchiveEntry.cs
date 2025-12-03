@@ -66,7 +66,7 @@ namespace System.IO.Compression
             _versionToExtract = (ZipVersionNeededValues)cd.VersionNeededToExtract;
             _generalPurposeBitFlag = (BitFlagValues)cd.GeneralPurposeBitFlag;
             _isEncrypted = (_generalPurposeBitFlag & BitFlagValues.IsEncrypted) != 0;
-            StoredCompressionMethodInternal = (ZipCompressionMethod)cd.CompressionMethod;
+            CompressionMethod = (ZipCompressionMethod)cd.CompressionMethod;
             _lastModified = new DateTimeOffset(ZipHelper.DosTimeToDateTime(cd.LastModified));
             _compressedSize = cd.CompressedSize;
             _uncompressedSize = cd.UncompressedSize;
@@ -94,7 +94,7 @@ namespace System.IO.Compression
 
             _fileComment = cd.FileComment;
 
-            _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag, StoredCompressionMethodInternal);
+            _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag, CompressionMethod);
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry with a specified compression level.
@@ -104,9 +104,9 @@ namespace System.IO.Compression
             _compressionLevel = compressionLevel;
             if (_compressionLevel == CompressionLevel.NoCompression)
             {
-                StoredCompressionMethodInternal = ZipCompressionMethod.Stored;
+                CompressionMethod = ZipCompressionMethod.Stored;
             }
-            _generalPurposeBitFlag = MapDeflateCompressionOption(_generalPurposeBitFlag, _compressionLevel, StoredCompressionMethodInternal);
+            _generalPurposeBitFlag = MapDeflateCompressionOption(_generalPurposeBitFlag, _compressionLevel, CompressionMethod);
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry.
@@ -121,8 +121,8 @@ namespace System.IO.Compression
             _versionMadeBySpecification = ZipVersionNeededValues.Default;
             _versionToExtract = ZipVersionNeededValues.Default; // this must happen before following two assignment
             _compressionLevel = CompressionLevel.Optimal;
-            StoredCompressionMethodInternal = ZipCompressionMethod.Deflate;
-            _generalPurposeBitFlag = MapDeflateCompressionOption(0, _compressionLevel, StoredCompressionMethodInternal);
+            CompressionMethod = ZipCompressionMethod.Deflate;
+            _generalPurposeBitFlag = MapDeflateCompressionOption(0, _compressionLevel, CompressionMethod);
             _lastModified = DateTimeOffset.Now;
 
             _compressedSize = 0; // we don't know these yet
@@ -176,7 +176,18 @@ namespace System.IO.Compression
         /// <summary>
         /// Gets the compression method used to compress the entry.
         /// </summary>
-        public ZipCompressionMethod CompressionMethod => _storedCompressionMethod;
+        public ZipCompressionMethod CompressionMethod
+        {
+            get => _storedCompressionMethod;
+            private set
+            {
+                if (value == ZipCompressionMethod.Deflate)
+                    VersionToExtractAtLeast(ZipVersionNeededValues.Deflate);
+                else if (value == ZipCompressionMethod.Deflate64)
+                    VersionToExtractAtLeast(ZipVersionNeededValues.Deflate64);
+                _storedCompressionMethod = value;
+            }
+        }
 
         /// <summary>
         /// The compressed size of the entry. If the archive that the entry belongs to is in Create mode, attempts to get this property will always throw an exception. If the archive that the entry belongs to is in update mode, this property will only be valid if the entry has not been opened.
@@ -444,27 +455,15 @@ namespace System.IO.Compression
                 }
 
                 // if they start modifying it and the compression method is not "store", we should make sure it will get deflated
-                if (StoredCompressionMethodInternal != ZipCompressionMethod.Stored)
+                if (CompressionMethod != ZipCompressionMethod.Stored)
                 {
-                    StoredCompressionMethodInternal = ZipCompressionMethod.Deflate;
+                    CompressionMethod = ZipCompressionMethod.Deflate;
                 }
             }
 
             return _storedUncompressedData;
         }
 
-        private ZipCompressionMethod StoredCompressionMethodInternal
-        {
-            get { return _storedCompressionMethod; }
-            set
-            {
-                if (value == ZipCompressionMethod.Deflate)
-                    VersionToExtractAtLeast(ZipVersionNeededValues.Deflate);
-                else if (value == ZipCompressionMethod.Deflate64)
-                    VersionToExtractAtLeast(ZipVersionNeededValues.Deflate64);
-                _storedCompressionMethod = value;
-            }
-        }
         // does almost everything you need to do to forget about this entry
         // writes the local header/data, gets rid of all the data,
         // closes all of the streams except for the very outermost one that
@@ -719,13 +718,13 @@ namespace System.IO.Compression
             // changed to Stored.
             //
             // Note: Deflate64 is not supported on all platforms
-            Debug.Assert(StoredCompressionMethodInternal == ZipCompressionMethod.Deflate
-                || StoredCompressionMethodInternal == ZipCompressionMethod.Stored);
+            Debug.Assert(CompressionMethod == ZipCompressionMethod.Deflate
+                || CompressionMethod == ZipCompressionMethod.Stored);
             Func<Stream> compressorStreamFactory;
 
             bool isIntermediateStream = true;
 
-            switch (StoredCompressionMethodInternal)
+            switch (CompressionMethod)
             {
                 case ZipCompressionMethod.Stored:
                     compressorStreamFactory = () => backingStream;
@@ -759,7 +758,7 @@ namespace System.IO.Compression
         private Stream GetDataDecompressor(Stream compressedStreamToRead)
         {
             Stream? uncompressedStream;
-            switch (StoredCompressionMethodInternal)
+            switch (CompressionMethod)
             {
                 case ZipCompressionMethod.Deflate:
                     uncompressedStream = new DeflateStream(compressedStreamToRead, CompressionMode.Decompress, _uncompressedSize);
@@ -771,7 +770,7 @@ namespace System.IO.Compression
                 default:
                     // we can assume that only deflate/deflate64/stored are allowed because we assume that
                     // IsOpenable is checked before this function is called
-                    Debug.Assert(StoredCompressionMethodInternal == ZipCompressionMethod.Stored);
+                    Debug.Assert(CompressionMethod == ZipCompressionMethod.Stored);
 
                     uncompressedStream = compressedStreamToRead;
                     break;
@@ -872,9 +871,9 @@ namespace System.IO.Compression
             message = null;
             if (needToUncompress)
             {
-                if (StoredCompressionMethodInternal != ZipCompressionMethod.Stored &&
-                    StoredCompressionMethodInternal != ZipCompressionMethod.Deflate &&
-                    StoredCompressionMethodInternal != ZipCompressionMethod.Deflate64)
+                if (CompressionMethod != ZipCompressionMethod.Stored &&
+                    CompressionMethod != ZipCompressionMethod.Deflate &&
+                    CompressionMethod != ZipCompressionMethod.Deflate64)
                 {
                     message = SR.UnsupportedCompression;
                     return false;
@@ -983,7 +982,7 @@ namespace System.IO.Compression
             // if we already know that we have an empty file don't worry about anything, just do a straight shot of the header
             if (isEmptyFile)
             {
-                StoredCompressionMethodInternal = ZipCompressionMethod.Stored;
+                CompressionMethod = ZipCompressionMethod.Stored;
                 compressedSizeTruncated = 0;
                 uncompressedSizeTruncated = 0;
                 Debug.Assert(_uncompressedSize == 0);

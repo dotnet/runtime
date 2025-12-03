@@ -89,9 +89,9 @@ public partial class ZipArchiveEntry
             }
 
             // if they start modifying it and the compression method is not "store", we should make sure it will get deflated
-            if (StoredCompressionMethodInternal != ZipCompressionMethod.Stored)
+            if (CompressionMethod != ZipCompressionMethod.Stored)
             {
-                StoredCompressionMethodInternal = ZipCompressionMethod.Deflate;
+                CompressionMethod = ZipCompressionMethod.Deflate;
             }
         }
 
