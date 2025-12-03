@@ -14,6 +14,10 @@
     <PublishReadyToRunContainerFormat>macho</PublishReadyToRunContainerFormat>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(PublishReadyToRun)' != 'true' and '$(UseMonoRuntime)' != 'true'">
+    <EnvironmentVariables Include="DOTNET_ReadyToRun=0" />
+  </ItemGroup>
+
   <!-- Tracking issue: https://github.com/dotnet/runtime/issues/119006
        ReadyToRun settings for CoreCLR on Apple platforms.
        This can be removed once we upstream Mach-O support in the targets to the SDK -->

@@ -13,10 +13,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EnvironmentVariables Include="DOTNET_ReadyToRun=0" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>
 </Project>
