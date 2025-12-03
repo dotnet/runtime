@@ -191,132 +191,6 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
-// genEmitEndBlock: finish up codegen in a block
-//
-// Arguments:
-//   block - block to finish up
-//
-// Returns:
-//   Updated block to process (if not block->Next()) or nullptr.
-//
-BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
-{
-    // Generate Wasm control flow instructions for block ends
-    //
-    switch (block->GetKind())
-    {
-        case BBJ_RETURN:
-            genExitCode(block);
-            break;
-
-        case BBJ_THROW:
-            // TODO-WASM-CQ: only emit this when needed.
-            instGen(INS_unreachable);
-            break;
-
-        case BBJ_CALLFINALLY:
-            // TODO-WASM: EH model
-            genCallFinally(block);
-            if (!block->isBBCallFinallyPair())
-            {
-                instGen(INS_unreachable);
-            }
-            break;
-
-        case BBJ_EHCATCHRET:
-            // TODO-WASM: EH model
-            genEHCatchRet(block);
-            FALLTHROUGH;
-
-        case BBJ_EHFINALLYRET:
-        case BBJ_EHFAULTRET:
-        case BBJ_EHFILTERRET:
-            // TODO-WASM: EH model
-            genReserveFuncletEpilog(block);
-            break;
-
-        case BBJ_SWITCH:
-        {
-            BBswtDesc* const desc      = block->GetSwitchTargets();
-            unsigned const   caseCount = desc->GetCaseCount();
-
-            assert(!desc->HasDefaultCase());
-
-            if (caseCount == 0)
-            {
-                break;
-            }
-
-            GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount);
-
-            for (unsigned caseNum = 0; caseNum < caseCount; caseNum++)
-            {
-                BasicBlock* const caseTarget = desc->GetCase(caseNum)->getDestinationBlock();
-                unsigned          depth      = findTargetDepth(caseTarget);
-
-                GetEmitter()->emitIns_I(INS_label, EA_4BYTE, depth);
-            }
-
-            JITDUMP("\n");
-            break;
-        }
-
-        case BBJ_CALLFINALLYRET:
-        case BBJ_ALWAYS:
-        {
-            BasicBlock* const target = block->GetTarget();
-
-            // If this block jumps to the next one, we might be able to skip emitting the jump
-            //
-            if (block->CanRemoveJumpToNext(compiler))
-            {
-                assert(getBlockIndex(target) == (getBlockIndex(block) + 1));
-                break;
-            }
-
-            inst_JMP(EJ_jmp, target);
-            break;
-        }
-
-        case BBJ_COND:
-        {
-            BasicBlock* const trueTarget  = block->GetTrueTarget();
-            BasicBlock* const falseTarget = block->GetFalseTarget();
-
-            // We don't expect degenerate BBJ_COND
-            //
-            assert(trueTarget != falseTarget);
-
-            // We don't expect the true target to be the next block.
-            //
-            assert(trueTarget != block->Next());
-
-            // br_if for true target
-            //
-            inst_JMP(EJ_jmpif, trueTarget);
-
-            // br for false target, if not fallthrough
-            //
-            if (falseTarget == block->Next())
-            {
-                break;
-            }
-            inst_JMP(EJ_jmp, falseTarget);
-
-            break;
-        }
-
-        default:
-            noway_assert(!"Unexpected bbKind");
-            break;
-    }
-
-    // Indicate codgen should just proceed to the next block.
-    //
-    return nullptr;
-}
-
-//------------------------------------------------------------------------
 // genCodeForTreeNode: codegen for a particular tree node
 //
 // Arguments:
@@ -360,8 +234,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_JTRUE:
-            // Codegen handled by genEmitEndBlock
-            genConsumeOperands(treeNode->AsOp());
+            genCodeForJTrue(treeNode->AsOp());
+            break;
+
+        case GT_SWITCH:
+            genTableBasedSwitch(treeNode);
             break;
 
         case GT_RETURN:
@@ -379,6 +256,78 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             NYI_WASM("Opcode not implemented");
 #endif
             break;
+    }
+}
+
+//------------------------------------------------------------------------
+// genCodeForJTrue: emit Wasm br_if
+//
+// Arguments:
+//    treeNode - predicate value
+//
+void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
+{
+    BasicBlock* const block = compiler->compCurBB;
+    assert(block->KindIs(BBJ_COND));
+
+    genConsumeOperands(jtrue);
+
+    BasicBlock* const trueTarget  = block->GetTrueTarget();
+    BasicBlock* const falseTarget = block->GetFalseTarget();
+
+    // We don't expect degenerate BBJ_COND
+    //
+    assert(trueTarget != falseTarget);
+
+    // We don't expect the true target to be the next block.
+    //
+    assert(trueTarget != block->Next());
+
+    // br_if for true target
+    //
+    inst_JMP(EJ_jmpif, trueTarget);
+
+    // br for false target, if not fallthrough
+    //
+    if (falseTarget != block->Next())
+    {
+        inst_JMP(EJ_jmp, falseTarget);
+    }
+}
+
+//------------------------------------------------------------------------
+// genTableBasedSwitch: emit Wasm br_table
+//
+// Arguments:
+//    treeNode - value to switch on
+//
+void CodeGen::genTableBasedSwitch(GenTree* treeNode)
+{
+    BasicBlock* const block = compiler->compCurBB;
+    assert(block->KindIs(BBJ_SWITCH));
+
+    genConsumeOperands(treeNode->AsOp());
+
+    BBswtDesc* const desc      = block->GetSwitchTargets();
+    unsigned const   caseCount = desc->GetCaseCount();
+
+    // TODO-WASM: update lowering not to peel off the default
+    //
+    assert(!desc->HasDefaultCase());
+
+    if (caseCount == 0)
+    {
+        return;
+    }
+
+    GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount);
+
+    for (unsigned caseNum = 0; caseNum < caseCount; caseNum++)
+    {
+        BasicBlock* const caseTarget = desc->GetCase(caseNum)->getDestinationBlock();
+        unsigned          depth      = findTargetDepth(caseTarget);
+
+        GetEmitter()->emitIns_I(INS_label, EA_4BYTE, depth);
     }
 }
 

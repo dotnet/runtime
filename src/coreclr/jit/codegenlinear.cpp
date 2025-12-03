@@ -701,23 +701,6 @@ void CodeGen::genCodeForBBlist()
 #endif
 }
 
-// TODO-WASM-Factoring: this ifdef factoring is temporary. The end factoring should look like this:
-// 1. Everything shared by all codegen backends (incl. WASM) is moved to codegencommon.cpp.
-// 2. Everything else stays here.
-// 3. codegenlinear.cpp gets renamed to codegennative.cpp.
-//
-#ifndef TARGET_WASM
-
-//------------------------------------------------------------------------
-// genEmitStartBlock: prepare for codegen in a block
-//
-// Arguments:
-//   block - block to prepare for
-//
-void CodeGen::genEmitStartBlock(BasicBlock* block)
-{
-}
-
 //------------------------------------------------------------------------
 // genEmitEndBlock: finish up codegen in a block
 //
@@ -972,6 +955,23 @@ BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
 #endif // FEATURE_LOOP_ALIGN
 
     return result;
+}
+
+// TODO-WASM-Factoring: this ifdef factoring is temporary. The end factoring should look like this:
+// 1. Everything shared by all codegen backends (incl. WASM) is moved to codegencommon.cpp.
+// 2. Everything else stays here.
+// 3. codegenlinear.cpp gets renamed to codegennative.cpp.
+//
+#ifndef TARGET_WASM
+
+//------------------------------------------------------------------------
+// genEmitStartBlock: prepare for codegen in a block
+//
+// Arguments:
+//   block - block to prepare for
+//
+void CodeGen::genEmitStartBlock(BasicBlock* block)
+{
 }
 
 //------------------------------------------------------------------------
