@@ -7,10 +7,6 @@
 
 #include <clrtypes.h>
 
-#ifndef JIT_BUILD
-#include "cdacdata.h"
-#endif // JIT_BUILD
-
 #ifndef _PATCHPOINTINFO_H_
 #define _PATCHPOINTINFO_H_
 
@@ -205,19 +201,7 @@ private:
     int32_t      m_securityCookieOffset;
     int32_t      m_monitorAcquiredOffset;
     int32_t      m_offsetAndExposureData[];
-
-#ifndef JIT_BUILD
-    friend struct ::cdac_data<PatchpointInfo>;
-#endif // JIT_BUILD
 };
-
-#ifndef JIT_BUILD
-template<>
-struct cdac_data<PatchpointInfo>
-{
-    static constexpr size_t LocalCount = offsetof(PatchpointInfo, m_numberOfLocals);
-};
-#endif // JIT_BUILD
 
 typedef DPTR(struct PatchpointInfo) PTR_PatchpointInfo;
 

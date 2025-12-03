@@ -1521,9 +1521,8 @@ namespace System.Net.Http.Headers
                 _count++;
                 entries = new HeaderEntry[InitialCapacity];
                 _headerStore = entries;
-                ref HeaderEntry firstEntry = ref MemoryMarshal.GetArrayDataReference(entries);
-                firstEntry.Key = key;
-                return ref firstEntry.Value!;
+                entries[0].Key = key;
+                return ref entries[0].Value!;
             }
             else
             {

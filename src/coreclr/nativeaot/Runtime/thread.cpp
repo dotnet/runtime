@@ -92,6 +92,9 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
         ClearState(TSF_Redirected);
 #endif //FEATURE_SUSPEND_REDIRECTION
 
+        // make sure this is cleared - in case a signal is lost or somehow we did not act on it
+        SetActivationPending(false);
+
         GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
 
         // must be in cooperative mode when checking the trap flag

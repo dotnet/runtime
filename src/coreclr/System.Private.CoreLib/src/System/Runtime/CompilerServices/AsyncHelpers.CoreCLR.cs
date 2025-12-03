@@ -171,6 +171,16 @@ namespace System.Runtime.CompilerServices
             public INotifyCompletion? Notifier;
             public IValueTaskSourceNotifier? ValueTaskSourceNotifier;
             public Task? TaskNotifier;
+
+            public ExecutionContext? ExecutionContext;
+            public SynchronizationContext? SynchronizationContext;
+
+            public void CaptureContexts()
+            {
+                Thread curThread = Thread.CurrentThreadAssumedInitialized;
+                ExecutionContext = curThread._executionContext;
+                SynchronizationContext = curThread._synchronizationContext;
+            }
         }
 
         [ThreadStatic]
@@ -240,6 +250,7 @@ namespace System.Runtime.CompilerServices
                 state.ValueTaskSourceNotifier = (IValueTaskSourceNotifier)o;
             }
 
+            state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }
 
@@ -541,6 +552,8 @@ namespace System.Runtime.CompilerServices
             {
                 ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
 
+                RestoreContextsOnSuspension(false, state.ExecutionContext, state.SynchronizationContext);
+
                 ICriticalNotifyCompletion? critNotifier = state.CriticalNotifier;
                 INotifyCompletion? notifier = state.Notifier;
                 IValueTaskSourceNotifier? vtsNotifier = state.ValueTaskSourceNotifier;
@@ -550,6 +563,8 @@ namespace System.Runtime.CompilerServices
                 state.Notifier = null;
                 state.ValueTaskSourceNotifier = null;
                 state.TaskNotifier = null;
+                state.ExecutionContext = null;
+                state.SynchronizationContext = null;
 
                 Continuation sentinelContinuation = state.SentinelContinuation!;
                 Continuation headContinuation = sentinelContinuation.Next!;
@@ -561,6 +576,7 @@ namespace System.Runtime.CompilerServices
                     ContinuationFlags.ContinueOnCapturedSynchronizationContext |
                     ContinuationFlags.ContinueOnThreadPool |
                     ContinuationFlags.ContinueOnCapturedTaskScheduler;
+
                 Debug.Assert((headContinuation.Flags & continueFlags) == 0);
 
                 TOps.SetContinuationState(task, headContinuation);
@@ -583,7 +599,7 @@ namespace System.Runtime.CompilerServices
                     }
                     else if (vtsNotifier != null)
                     {
-                        // The awaiter must inform the ValueTaskSource source on whether the continuation
+                        // The awaiter must inform the ValueTaskSource on whether the continuation
                         // wants to run on a context, although the source may decide to ignore the suggestion.
                         // Since the behavior of the source takes precedence, we clear the context flags of
                         // the awaiting continuation (so it will run transparently on what the source decides)
@@ -592,8 +608,18 @@ namespace System.Runtime.CompilerServices
                         // the continuation chain builds from the innermost frame out and at the time when the
                         // notifier is created we do not know yet if the caller wants to continue on a context.
                         ValueTaskSourceOnCompletedFlags configFlags = ValueTaskSourceOnCompletedFlags.None;
-                        ContinuationFlags continuationFlags = headContinuation.Next!.Flags;
 
+                        // Skip to a nontransparent/user continuation. Such continuaton must exist.
+                        // Since we see a VTS notifier, something was directly or indirectly
+                        // awaiting an async thunk for a ValueTask-returning method.
+                        // That can only happen in nontransparent/user code.
+                        Continuation nextUserContinuation = headContinuation.Next!;
+                        while ((nextUserContinuation.Flags & continueFlags) == 0 && nextUserContinuation.Next != null)
+                        {
+                            nextUserContinuation = nextUserContinuation.Next;
+                        }
+
+                        ContinuationFlags continuationFlags = nextUserContinuation.Flags;
                         const ContinuationFlags continueOnContextFlags =
                             ContinuationFlags.ContinueOnCapturedSynchronizationContext |
                             ContinuationFlags.ContinueOnCapturedTaskScheduler;
@@ -605,7 +631,7 @@ namespace System.Runtime.CompilerServices
                         }
 
                         // Clear continuation flags, so that continuation runs transparently
-                        headContinuation.Next!.Flags &= ~continueFlags;
+                        nextUserContinuation.Flags &= ~continueFlags;
                         TOps.ValueTaskSourceOnCompleted(task, vtsNotifier, configFlags);
                     }
                     else
@@ -790,6 +816,28 @@ namespace System.Runtime.CompilerServices
                 if (previousExecCtx != currentExecCtx)
                 {
                     ExecutionContext.RestoreChangedContextToThread(thread, previousExecCtx, currentExecCtx);
+                }
+            }
+        }
+
+        // Restore contexts onto current Thread as we unwind during suspension. We control the code that runs
+        // during suspension and we do not need to raise ExecutionContext notifications -- we know that it is
+        // not going to be accessed and that DispatchContinuations will return it back to the leaf's context
+        // before calling user code, and restore the original contexts with appropriate notifications before
+        // returning.
+        private static void RestoreContextsOnSuspension(bool resumed, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
+        {
+            if (!resumed)
+            {
+                Thread thread = Thread.CurrentThreadAssumedInitialized;
+                if (previousSyncCtx != thread._synchronizationContext)
+                {
+                    thread._synchronizationContext = previousSyncCtx;
+                }
+
+                if (previousExecCtx != thread._executionContext)
+                {
+                    thread._executionContext = previousExecCtx;
                 }
             }
         }
