@@ -79,7 +79,7 @@ namespace ILCompiler
                 {
                     Debug.Assert(!_sortedMethods);
                     MethodDesc method = methodNode.Method;
-                    EcmaModule module = (EcmaModule)method.GetEcmaDefinition().Module;
+                    EcmaModule module = method.GetEcmaDefinition().Module;
                     if (!_methodsGenerated.TryGetValue(module, out var perModuleData))
                     {
                         perModuleData = new PerModuleMethodsGenerated(module);
