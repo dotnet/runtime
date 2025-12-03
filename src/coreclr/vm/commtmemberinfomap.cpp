@@ -361,6 +361,7 @@ void ComMTMemberInfoMap::SetupPropsForIClassX(size_t sizeOfPtr)
             // Retrieve the method desc on the current class. This involves looking up the method
             // desc in the vtable if it is a virtual method.
             pMeth = pCMT->GetMethodDescForSlot(i);
+            _ASSERTE(!pMeth->IsAsyncMethod());
             if (pMeth->IsVirtual())
             {
                 WORD wSlot = InteropMethodTableData::GetSlotForMethodDesc(m_pMT, pMeth);
@@ -543,6 +544,14 @@ void ComMTMemberInfoMap::SetupPropsForInterface(size_t sizeOfPtr)
         _ASSERTE(pMD != NULL);
         ULONG tmp = pMD->GetComSlot();
 
+        if (pMD->IsAsyncMethod())
+        {
+            // Async methods introduce mismatches in the .NET and COM vtables.
+            // We will need to remap slots.
+            bSlotRemap = true;
+            continue;
+        }
+
         if (tmp < ulComSlotMin)
             ulComSlotMin = tmp;
         if (tmp > ulComSlotMax)
@@ -552,10 +561,13 @@ void ComMTMemberInfoMap::SetupPropsForInterface(size_t sizeOfPtr)
     // Used a couple of times.
     MethodTable::MethodIterator it(m_pMT);
 
-    if (ulComSlotMax-ulComSlotMin >= nSlots)
+    if (ulComSlotMax - ulComSlotMin >= nSlots)
     {
         bSlotRemap = true;
+    }
 
+    if (bSlotRemap)
+    {
         // Resize the array.
         rSlotMap.ReSizeThrows(ulComSlotMax+1);
 
@@ -566,7 +578,7 @@ void ComMTMemberInfoMap::SetupPropsForInterface(size_t sizeOfPtr)
         it.MoveToBegin();
         for (; it.IsValid(); it.Next())
         {
-            if (it.IsVirtual())
+            if (it.IsVirtual() && !it.GetMethodDesc()->IsAsyncMethod())
             {
                 MethodDesc* pMD = it.GetMethodDesc();
                 _ASSERTE(pMD != NULL);
@@ -590,7 +602,7 @@ void ComMTMemberInfoMap::SetupPropsForInterface(size_t sizeOfPtr)
         if (it.IsVirtual())
         {
             pMeth = it.GetMethodDesc();
-            if (pMeth != NULL)
+            if (pMeth != NULL && !pMeth->IsAsyncMethod())
             {
                 ULONG ixSlot = pMeth->GetComSlot();
                 if (bSlotRemap)
@@ -607,6 +619,15 @@ void ComMTMemberInfoMap::SetupPropsForInterface(size_t sizeOfPtr)
     for (iMD=0; iMD < nSlots; ++iMD)
     {
         pMeth = m_MethodProps[iMD].pMeth;
+        if (pMeth == nullptr)
+        {
+            // For async methods, we skip .NET methods when building the COM vtable.
+            // So at some point we hit the end of the .NET methods before we run
+            // through all possible vtable slots.
+            // Record when we ran out here.
+            nSlots = iMD + 1;
+            break;
+        }
         GetMethodPropsForMeth(pMeth, iMD, m_MethodProps, m_sNames);
     }
 
@@ -688,9 +709,7 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
     // Generally don't munge function into a getter.
     rProps[ix].bFunction2Getter = FALSE;
 
-    // TODO: (async) revisit and examine if this needs to be supported somehow
-    if (pMeth->IsAsyncMethod())
-        ThrowHR(COR_E_NOTSUPPORTED);
+    _ASSERTE(!pMeth->IsAsyncMethod());
 
     // See if there is property information for this member.
     hr = pMeth->GetMDImport()->GetPropertyInfoForMethodDef(pMeth->GetMemberDef(), &pd, &pPropName, &uSemantic);
@@ -1608,11 +1627,7 @@ void ComMTMemberInfoMap::PopulateMemberHashtable()
 
             // We are dealing with a method.
             MethodDesc *pMD = pProps->pMeth;
-            // TODO: (async) revisit and examine if this needs to be supported somehow
-            if (pMD->IsAsyncMethod())
-            {
-                ThrowHR(COR_E_NOTSUPPORTED); // Probably this isn't right, and instead should be a skip, but a throw makes it easier to find if this is wrong
-            }
+            _ASSERTE(!pMD->IsAsyncMethod());
             EEModuleTokenPair Key(pMD->GetMemberDef(), pMD->GetModule());
             m_TokenToComMTMethodPropsMap.InsertValue(&Key, (HashDatum)pProps);
         }

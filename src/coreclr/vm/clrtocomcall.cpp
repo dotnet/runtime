@@ -212,6 +212,7 @@ I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMD));
+        PRECONDITION(!pMD->IsAsyncMethod());
     }
     CONTRACTL_END;
 
@@ -229,13 +230,6 @@ I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
         WrapperTypeArr = (I4ARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_I4, numArgs);
 
         GCX_PREEMP();
-        
-        
-        // TODO: (async) revisit and examine if this needs to be supported somehow
-        if (pMD->IsAsyncMethod())
-        {
-            ThrowHR(COR_E_NOTSUPPORTED);
-        }
 
         // Collects ParamDef information in an indexed array where element 0 represents
         // the return type.
@@ -511,7 +505,7 @@ UINT32 CLRToCOMLateBoundWorker(
     LPCUTF8 strMemberName;
     ULONG uSemantic;
 
-    // TODO: (async) revisit and examine if this needs to be supported somehow
+    // Async methods aren't supported on IDispatch ComImport interfaces on RCWs.
     if (pItfMD->IsAsyncMethod())
     {
         ThrowHR(COR_E_NOTSUPPORTED);
@@ -533,8 +527,8 @@ UINT32 CLRToCOMLateBoundWorker(
 
         // Determine which type of accessor we are dealing with.
         switch (uSemantic)
-        {
         case msGetter:
+        {
         {
             // INVOKE_PROPERTYGET
             binderFlags |= BINDER_GetProperty;

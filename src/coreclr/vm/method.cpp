@@ -1363,6 +1363,7 @@ WORD MethodDesc::GetComSlot()
     MethodTable * pMT = GetMethodTable();
 
     _ASSERTE(pMT->IsInterface());
+    _ASSERTE(!IsAsyncMethod());
 
     // COM slots are biased from MethodTable slots depending on interface type
     WORD numExtraSlots = ComMethodTable::GetNumExtraSlots(pMT->GetComInterfaceType());
