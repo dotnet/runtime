@@ -2268,7 +2268,7 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             {
                 if ((m_isSynchronized || m_isAsyncMethodWithContextSaveRestore) && insOffset < m_ILCodeSizeFromILHeader)
                 {
-                    // This is a ret instruction coming from the initial IL of a synchronized method.
+                    // This is a ret instruction coming from the initial IL of a synchronized or async method.
                     CreateLeaveChainIslandBasicBlocks(methodInfo, insOffset, GetBB(m_synchronizedOrAsyncPostFinallyOffset));
                 }
             }
@@ -4158,7 +4158,6 @@ public:
 void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli)
 {
     uint32_t token = getU4LittleEndian(m_ip + 1);
-    InterpBasicBlock *pBB = m_ppOffsetToBB[m_ip - m_pILCode];
 
     // These are intrinsic tokens used within the interpreter to implement synchronized methods
     if (token == INTERP_CALL_SYNCHRONIZED_MONITOR_EXIT)
@@ -4948,7 +4947,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     if (callInfo.sig.isAsyncCall() && m_methodInfo->args.isAsyncCall()) // Async2 functions may need to suspend
     {
-        EmitSuspend(callInfo, continuationContextHandling, pBB);
+        EmitSuspend(callInfo, continuationContextHandling);
     }
 }
 
@@ -4966,7 +4965,7 @@ void SetSlotToTrue(TArray<bool, MemPoolAllocator> &gcRefMap, int32_t slotOffset)
     gcRefMap.Set(slotIndex, true);
 }
 
-void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, ContinuationContextHandling ContinuationContextHandling, InterpBasicBlock *pBB)
+void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, ContinuationContextHandling ContinuationContextHandling)
 {
     CORINFO_LOOKUP_KIND kindForAllocationContinuation;
     m_compHnd->getLocationOfThisType(m_methodHnd, &kindForAllocationContinuation);
@@ -4974,21 +4973,21 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     bool needsKeepAlive = kindForAllocationContinuation.needsRuntimeLookup && kindForAllocationContinuation.runtimeLookupKind != CORINFO_LOOKUP_THISOBJ;
 
     // Compute the number of EH clauses that overlap with this BB.
-    if (pBB->enclosingTryBlockCount == -1)
+    if (m_pCBB->enclosingTryBlockCount == -1)
     {
         int32_t enclosingTryBlockCount = 0;
         for (unsigned int i = 0; i < getEHcount(m_methodInfo); i++)
         {
             CORINFO_EH_CLAUSE clause;
             getEHinfo(m_methodInfo, i, &clause);
-            if (clause.TryOffset <= (uint32_t)pBB->ilOffset && (clause.TryOffset + clause.TryLength) > (uint32_t)pBB->ilOffset)
+            if (clause.TryOffset <= (uint32_t)m_pCBB->ilOffset && (clause.TryOffset + clause.TryLength) > (uint32_t)m_pCBB->ilOffset)
             {
                 enclosingTryBlockCount++;
             }
         }
-        pBB->enclosingTryBlockCount = enclosingTryBlockCount;
+        m_pCBB->enclosingTryBlockCount = enclosingTryBlockCount;
     }
-    bool needsEHHandling = pBB->enclosingTryBlockCount > (m_isAsyncMethodWithContextSaveRestore ? 1 : 0);
+    bool needsEHHandling = m_pCBB->enclosingTryBlockCount > (m_isAsyncMethodWithContextSaveRestore ? 1 : 0);
 
     bool captureContinuationContext = ContinuationContextHandling == ContinuationContextHandling::ContinueOnCapturedContext;
 
@@ -5232,8 +5231,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     suspendData->restoreContextsMethod = asyncInfo.restoreContextsMethHnd;
     suspendData->resumeInfo.Resume = (size_t)m_asyncResumeFuncPtr;
     suspendData->resumeInfo.DiagnosticIP = (size_t)NULL;
-    // TODO! Register methodStartIP to be filled in as needed.
-    suspendData->methodStartIP = 0;
+    suspendData->methodStartIP = 0; // This is filled in by logic later in emission once we know the final address of the method
     suspendData->continuationArgOffset = m_pVars[m_continuationArgIndex].offset;
     suspendData->asyncMethodReturnType = NULL;
     switch (m_methodInfo->args.retType)

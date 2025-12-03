@@ -753,6 +753,12 @@ DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT, HandleAsyncEntryPoint
 DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT_VOID, HandleAsyncEntryPoint, SM_Task_RetVoid)
 #endif // TARGET_BROWSER
 
+DEFINE_CLASS_U(CompilerServices, Continuation,          ContinuationObject)
+DEFINE_FIELD_U(Next,             ContinuationObject,    Next)
+DEFINE_FIELD_U(ResumeInfo,       ContinuationObject,    ResumeInfo)
+DEFINE_FIELD_U(Flags,            ContinuationObject,    Flags)
+DEFINE_FIELD_U(State,            ContinuationObject,    State)
+
 DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
 DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)
 DEFINE_METHOD(SPAN_HELPERS,         MEMZERO,                ClearWithoutReferences, SM_RefByte_UIntPtr_RetVoid)

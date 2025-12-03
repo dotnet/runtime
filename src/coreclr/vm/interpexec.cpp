@@ -3754,7 +3754,7 @@ do                                                                      \
                     {
                         // No continuation to handle.
                         LOCAL_VAR(ip[1], void*) = NULL; // We don't allocate a continuation here
-                        ip += ipAdjust; // (4 for this opcode)
+                        ip += ipAdjust; // (4 or 5 for this opcode)
                         break;
                     }
                     MethodTable *pContinuationType = pAsyncSuspendData->continuationTypeHnd;
