@@ -295,6 +295,10 @@ void CodeGen::genCodeForShiftOrRotate(GenTreeOp* treeNode)
 {
     genConsumeOperands(treeNode);
 
+    // TODO-WASM: Zero-extend the 2nd operand for shifts and rotates as needed when the 1st and 2nd operand are
+    // different types. The shift operand width in IR is always TYP_INT; the WASM operations have the same widths
+    // for both the shift and shiftee. So the shift may need to be extended (zero-extended) for TYP_LONG.
+
     instruction ins;
     switch (PackOperAndType(treeNode))
     {
