@@ -250,7 +250,7 @@ namespace ILCompiler
             IMethodNode methodNode = methodBodyNode;
             if (methodNode != null)
             {
-                if (AllMethodsCanBeReflectable)
+                if (AllMethodsCanBeReflectable && !IsReflectionBlocked(methodNode.Method))
                     _reflectableMethods.Add(methodNode.Method);
             }
 
@@ -821,26 +821,14 @@ namespace ILCompiler
             foreach (var method in GetReflectableMethods())
             {
                 MetadataRecord record = transformed.GetTransformedMethodDefinition(method.GetTypicalMethodDefinition());
-                if (record == null)
-                    continue;
-
-                if (method.IsGenericMethodDefinition || method.OwningType.IsGenericDefinition)
-                {
-                    // Generic definitions don't have runtime artifacts we would need to map to.
-                    continue;
-                }
-
-                if (method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method)
-                {
-                    // Methods that are not in their canonical form are not interesting
-                    continue;
-                }
-
-                if (IsReflectionBlocked(method.Instantiation) || IsReflectionBlocked(method.OwningType.Instantiation))
-                    continue;
+                Debug.Assert(record != null);
+                Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
 
                 if ((GetMetadataCategory(method) & MetadataCategory.RuntimeMapping) == 0)
                     continue;
+
+                Debug.Assert(!method.IsGenericMethodDefinition && !method.OwningType.IsGenericDefinition);
+                Debug.Assert(!IsReflectionBlocked(method));
 
                 methodMappings.Add(new MetadataMapping<MethodDesc>(method, writer.GetRecordHandle(record)));
             }
