@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-rtm.25565.2">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-rtm.25574.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>e3a37f4e3820fe5f8dd98440b128854e486d1888</Sha>
+      <Sha>e18dd5d9e047367be7486ab66636b892cbe24a67</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="9.0.0-alpha.1.24167.3">
       <Uri>https://github.com/dotnet/msquic</Uri>
@@ -320,17 +320,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>b030c4dfdfa1bf287f10f96006619a06bc2000ae</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="9.0.0-prerelease.25564.2">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="9.0.0-prerelease.25570.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>bb1cfc0c870d5b50cfd9795251e44f244e6a3f45</Sha>
+      <Sha>3e74b96870050adc82beed3934abf93d40716012</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="9.0.0-prerelease.25564.2">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="9.0.0-prerelease.25570.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>bb1cfc0c870d5b50cfd9795251e44f244e6a3f45</Sha>
+      <Sha>3e74b96870050adc82beed3934abf93d40716012</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="9.0.0-prerelease.25564.2">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="9.0.0-prerelease.25570.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>bb1cfc0c870d5b50cfd9795251e44f244e6a3f45</Sha>
+      <Sha>3e74b96870050adc82beed3934abf93d40716012</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="9.0.0-beta.25555.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -352,9 +352,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>9d7532585ce71e30ab55f0364d3cecccaf0775d1</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="9.0.0-alpha.0.25565.2">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="9.0.0-alpha.0.25574.4">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>6e573ac4b374c5a60c364396b1e94d648f1f8245</Sha>
+      <Sha>81fc6af21b4133b2a5c5be0e6dc38b58048e732d</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="9.0.0-beta.25565.2">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
