@@ -621,6 +621,12 @@ namespace System.IO
                 t.Item1.Write(t.Item2);
             }, new TupleSlim<TextWriter, string?>(this, value), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
+        /// <summary>
+        /// Writes a string to the text stream asynchronously.
+        /// </summary>
+        /// <param name="value">The string to write. If <paramref name="value"/> is <see langword="null"/>, nothing is written.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
         public Task WriteAsync(string? value, CancellationToken cancellationToken) =>
             cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
             value == null ? Task.CompletedTask :
@@ -711,6 +717,12 @@ namespace System.IO
                 t.Item1.WriteLine(t.Item2);
             }, new TupleSlim<TextWriter, string?>(this, value), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
+        /// <summary>
+        /// Writes a string followed by a line terminator to the text stream asynchronously.
+        /// </summary>
+        /// <param name="value">The string to write. If <paramref name="value"/> is <see langword="null"/>, only the line terminator is written.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
         public Task WriteLineAsync(string? value, CancellationToken cancellationToken) =>
             cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
             value == null ? WriteLineAsync(cancellationToken) :
@@ -771,6 +783,11 @@ namespace System.IO
             return WriteAsync(CoreNewLine);
         }
 
+        /// <summary>
+        /// Writes a line terminator to the text stream asynchronously.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
         public Task WriteLineAsync(CancellationToken cancellationToken) =>
             WriteAsync(CoreNewLine, cancellationToken);
 
