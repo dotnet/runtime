@@ -1437,7 +1437,7 @@ namespace Internal.JitInterface
                     Debug.Assert(resultMethod is EcmaMethod);
                     if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultMethod).OwningType))
                     {
-                        AsyncThunkILEmitter.AssertIsKnownAsyncHelper(resultMethod, "Method expected in MutableModule is not known: " + resultMethod.GetDisplayName());
+                        KnownILStubReferences.AssertIsKnownEntity(resultMethod, "Method expected in MutableModule is not known: " + resultMethod.GetDisplayName());
                         ModuleToken result = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(resultMethod, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
                         return result;
                     }
@@ -1462,7 +1462,7 @@ namespace Internal.JitInterface
                     {
                         if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(ecmaType))
                         {
-                            AsyncThunkILEmitter.AssertIsKnownAsyncHelper(ecmaType, "Type expected in MutableModule is not known: " + ecmaType.GetDisplayName());
+                            KnownILStubReferences.AssertIsKnownEntity(ecmaType, "Type expected in MutableModule is not known: " + ecmaType.GetDisplayName());
                             ModuleToken result = _compilation.NodeFactory.Resolver.GetModuleTokenForType(ecmaType, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
                             return result;
                         }
