@@ -798,15 +798,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ExecutionContext? CaptureExecutionContext()
         {
-            ExecutionContext? executionContext = Thread.CurrentThreadAssumedInitialized._executionContext;
-            if (executionContext?.m_isFlowSuppressed == true)
-            {
-                // 'null' is the internal representation of default execution
-                // context that contains no variables.
-                executionContext = null;
-            }
-
-            return executionContext;
+            return ExecutionContext.CaptureForSuspension(Thread.CurrentThreadAssumedInitialized);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
