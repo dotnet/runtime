@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -25,7 +26,7 @@ namespace ILCompiler.ObjectWriter
         Tag = 13,
     }
 
-    public static class DummyValues
+    public static class PlaceholderValues
     {
         // Wasm function signature for (func (params i32) (result i32))
         public static WasmFuncType CreateWasmFunc_i32_i32()
@@ -37,7 +38,12 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
-    public enum WasmValueType
+    // For now, we only encode Wasm numeric value types.
+    // These are encoded as a single byte. However,
+    // not all value types can be encoded this way.
+    // For example, reference types (see https://webassembly.github.io/spec/core/binary/types.html#reference-types)
+    // require a more complex encoding.
+    public enum WasmValueType : byte
     {
         I32 = 0x7F,
         I64 = 0x7E,
@@ -60,17 +66,22 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
-    public struct WasmResultType : IEquatable<WasmResultType>
+    public readonly struct WasmResultType : IEquatable<WasmResultType>
     {
         private readonly WasmValueType[] _types;
-        public readonly Span<WasmValueType> Types => _types;
+        public ReadOnlySpan<WasmValueType> Types => _types;
 
+        /// <summary>
+        /// Initializes a new instance of the WasmResultType class with the specified value types.
+        /// </summary>
+        /// <param name="types">An array of WasmValueType elements representing the types included in the result. If null, an empty array is
+        /// used.</param>
         public WasmResultType(WasmValueType[] types)
         {
-            _types = types;
+            _types = types ?? Array.Empty<WasmValueType>();
         }
 
-        public bool Equals(WasmResultType other) => Enumerable.SequenceEqual(_types, other._types);
+        public bool Equals(WasmResultType other) => Types.SequenceEqual(other.Types);
         public override bool Equals(object obj)
         {
             return obj is WasmResultType other && Equals(other);
@@ -98,11 +109,11 @@ namespace ILCompiler.ObjectWriter
 
         public int Encode(Span<byte> buffer)
         {
-            DwarfHelper.WriteULEB128(buffer, (ulong)_types.Length);
-            uint sizeLength = DwarfHelper.SizeOfULEB128((ulong)_types.Length);
+            int sizeLength = DwarfHelper.WriteULEB128(buffer, (ulong)_types.Length);
+            var rest = buffer.Slice(sizeLength);
             for (int i = 0; i < _types.Length; i++)
             {
-                buffer[(int)sizeLength + i] = (byte)_types[i];
+                rest[i] = (byte)_types[i];
             }
             return (int)(sizeLength + (uint)_types.Length);
         }
@@ -112,12 +123,7 @@ namespace ILCompiler.ObjectWriter
     {
         public static string ToTypeListString(this WasmResultType result)
         {
-            var types = result.Types.ToArray();
-
-            if (types == null || types.Length == 0)
-                return string.Empty;
-
-            return string.Join(" ", types.Select(t => WasmValueTypeExtensions.ToTypeString(t)));
+            return string.Join(" ", result.Types.ToArray().Select(t => WasmValueTypeExtensions.ToTypeString(t)));
         }
     }
 
@@ -134,7 +140,7 @@ namespace ILCompiler.ObjectWriter
 
         public readonly byte[] Encode()
         {
-            int totalSize = 1+_params.EncodeSize() + _returns.EncodeSize();
+            int totalSize = 1 + _params.EncodeSize() + _returns.EncodeSize();
             byte[] buffer = new byte[totalSize];
             buffer[0] = 0x60; // function type indicator
 

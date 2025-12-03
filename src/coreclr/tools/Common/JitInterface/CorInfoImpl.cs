@@ -317,16 +317,16 @@ namespace Internal.JitInterface
             return null;
         }
 
-
         private CorJitResult CompileWasmStub(out IntPtr exception, ref CORINFO_METHOD_INFO methodInfo, out uint codeSize)
         {
-            byte[] stub = new byte[] {
+            byte[] stub =
+            [
                 0x00, // local variable count
                 0x41, // i32.const
                 0x0,  // uleb128 0
-                0x0f, // return
-                0x0b,  // end
-            };
+                0x0F, // return
+                0x0B,  // end
+            ];
             AllocMemArgs args = new AllocMemArgs
             {
                 hotCodeSize = (uint)stub.Length,

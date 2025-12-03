@@ -18,7 +18,7 @@ namespace ILCompiler.ObjectWriter
     {
         public WasmFuncType GetSignature(MethodDesc method)
         {
-            return DummyValues.CreateWasmFunc_i32_i32();
+            return PlaceholderValues.CreateWasmFunc_i32_i32();
         }
     }
 
@@ -31,7 +31,7 @@ namespace ILCompiler.ObjectWriter
 
         private SectionData _data;
 
-        public Span<byte> Header
+        public byte[] Header
         {
             get
             {
@@ -41,9 +41,9 @@ namespace ILCompiler.ObjectWriter
                 ulong sectionSize = (ulong)_data.Length;
                 var encodeLength = DwarfHelper.SizeOfULEB128(sectionSize);
 
-                Span<byte> header = new byte[1+encodeLength];
+                byte[] header = new byte[1+encodeLength];
                 header[0] = (byte)Type;
-                DwarfHelper.WriteULEB128(header.Slice(1), sectionSize);
+                DwarfHelper.WriteULEB128(header.AsSpan(1), sectionSize);
 
                 return header;
             }
@@ -104,11 +104,6 @@ namespace ILCompiler.ObjectWriter
             ArrayBuilder<IMethodBodyNode> methodBodies = new();
             foreach (DependencyNode node in nodes)
             {
-                if (node is not ObjectNode)
-                {
-                    continue;
-                }
-
                 if (node is IMethodBodyNode methodNode)
                 {
                     methodSignatures.Add(_wasmAbiContext.GetSignature(methodNode.Method));
@@ -117,21 +112,8 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
-            Dictionary<WasmFuncType, int> signatureMap = new();
-            int signatureIndex = 0;
-            for (int i = 0; i < methodSignatures.Count; i++)
-            {
-                if (!signatureMap.ContainsKey(methodSignatures[i]))
-                {
-                    signatureMap[methodSignatures[i]] = signatureIndex++;
-                }
-            }
-
-            WasmFuncType[] uniqueSignatures = new WasmFuncType[signatureMap.Count];
-            foreach (var kvp in signatureMap)
-            {
-                uniqueSignatures[kvp.Value] = kvp.Key;
-            }
+            var uniqueSignatures = methodSignatures.ToArray().Distinct();
+            var signatureMap = uniqueSignatures.Select((sig, i) => (sig, i)).ToDictionary();
 
             EmitWasmHeader(outputFileStream);
             EmitSection(() => WriteTypeSection(uniqueSignatures, logger), outputFileStream, logger);
@@ -140,7 +122,7 @@ namespace ILCompiler.ObjectWriter
             EmitSection(() => WriteCodeSection(methodBodies.ToArray(), logger), outputFileStream, logger);
         }
 
-        private WasmSection WriteExportSection(IReadOnlyCollection<IMethodBodyNode> methodNodes, IReadOnlyCollection<WasmFuncType> methodSignatures,
+        private WasmSection WriteExportSection(IReadOnlyList<IMethodBodyNode> methodNodes, IReadOnlyList<WasmFuncType> methodSignatures,
             Dictionary<WasmFuncType, int> signatureMap, Logger logger)
         {
             WasmSection exportSection = new WasmSection(WasmSectionType.Export, new SectionData(), "export");
@@ -149,8 +131,8 @@ namespace ILCompiler.ObjectWriter
             writer.WriteULEB128((ulong)methodNodes.Count);
             for (int i = 0; i < methodNodes.Count; i++)
             {
-                var methodNode = methodNodes.ElementAt(i);
-                var methodSignature = methodSignatures.ElementAt(i);
+                var methodNode = methodNodes[i];
+                var methodSignature = methodSignatures[i];
                 string exportName = methodNode.GetMangledName(_nodeFactory.NameMangler);
 
                 var length = Encoding.UTF8.GetByteCount(exportName);
@@ -192,13 +174,13 @@ namespace ILCompiler.ObjectWriter
             return codeSection;
         }
 
-        private WasmSection WriteTypeSection(Span<WasmFuncType> functionSignatures, Logger logger)
+        private WasmSection WriteTypeSection(IEnumerable<WasmFuncType> functionSignatures, Logger logger)
         {
             WasmSection typeSection = new WasmSection(WasmSectionType.Type, new SectionData(), "type");
             SectionWriter writer = typeSection.Writer;
 
             // Write the number of types
-            writer.WriteULEB128((ulong)functionSignatures.Length);
+            writer.WriteULEB128((ulong)functionSignatures.Count());
             foreach (WasmFuncType signature in functionSignatures)
             {
                 if (logger.IsVerbose)

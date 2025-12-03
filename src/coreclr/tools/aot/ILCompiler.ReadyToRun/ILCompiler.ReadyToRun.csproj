@@ -369,6 +369,4 @@
   <ItemGroup>
     <Folder Include="tools\aot\ilcompiler.readytorun\codegen\" />
   </ItemGroup>
-
-  <!-- Removed developer-specific None Remove entry -->
 </Project>
