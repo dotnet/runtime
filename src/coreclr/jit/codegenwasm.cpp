@@ -244,6 +244,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_GE:
         case GT_GT:
             genCodeForCompare(treeNode->AsOp());
+            break;
 
         case GT_LCL_VAR:
             genCodeForLclVar(treeNode->AsLclVar());
