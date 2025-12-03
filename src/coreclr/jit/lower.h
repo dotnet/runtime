@@ -202,6 +202,7 @@ private:
     GenTree* LowerNonvirtPinvokeCall(GenTreeCall* call);
     GenTree* LowerTailCallViaJitHelper(GenTreeCall* callNode, GenTree* callTarget);
     void     LowerFastTailCall(GenTreeCall* callNode);
+    GenTree* FirstUncontainedOperand(GenTree* node);
     void     RehomeArgForFastTailCall(unsigned int lclNum,
                                       GenTree*     insertTempBefore,
                                       GenTree*     lookForUsesStart,
