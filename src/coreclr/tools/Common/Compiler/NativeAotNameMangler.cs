@@ -408,11 +408,11 @@ namespace ILCompiler
                     }
                     else if (type is IPrefixMangledMethod)
                     {
-                        mangledName = new Utf8String(GetPrefixMangledMethodName((IPrefixMangledMethod)type).ToString());
+                        mangledName = GetPrefixMangledMethodName((IPrefixMangledMethod)type);
                     }
                     else if (type is IPrefixMangledType)
                     {
-                        mangledName = new Utf8String(GetPrefixMangledTypeName((IPrefixMangledType)type).ToString());
+                        mangledName = GetPrefixMangledTypeName((IPrefixMangledType)type);
                     }
                     else
                     {
