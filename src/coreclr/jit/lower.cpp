@@ -3239,11 +3239,11 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     if (!putargs.Empty())
     {
         GenTree* firstPutargStk   = putargs.Bottom(0);
-        GenTree* firstPutargStkOp = FirstUncontainedOperand(firstPutargStk);
+        GenTree* firstPutargStkOp = FirstOperand(firstPutargStk);
         for (int i = 1; i < putargs.Height(); i++)
         {
             firstPutargStk   = LIR::FirstNode(firstPutargStk, putargs.Bottom(i));
-            firstPutargStkOp = LIR::FirstNode(firstPutargStkOp, FirstUncontainedOperand(putargs.Bottom(i)));
+            firstPutargStkOp = LIR::FirstNode(firstPutargStkOp, FirstOperand(putargs.Bottom(i)));
         }
         // Since this is a fast tailcall each PUTARG_STK will place the argument in the
         // _incoming_ arg space area. This will effectively overwrite our already existing
@@ -3363,13 +3363,16 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// FirstUncontainedOperand:
-//   Find the earliest evaluated operand of a node.
+// FirstEvaluatedOperand:
+//   Find the earliest operand of a node.
 //
 // Arguments:
 //   node - The node
 //
-GenTree* Lowering::FirstUncontainedOperand(GenTree* node)
+// Returns:
+//   The earliest evaluated operand.
+//
+GenTree* Lowering::FirstOperand(GenTree* node)
 {
     struct Helper
     {
@@ -3378,13 +3381,11 @@ GenTree* Lowering::FirstUncontainedOperand(GenTree* node)
         void Visit(GenTree* node)
         {
             node->VisitOperands([=](GenTree* op) {
+                Result = Result == nullptr ? op : LIR::FirstNode(Result, op);
+
                 if (op->isContained())
                 {
                     Visit(op);
-                }
-                else
-                {
-                    Result = Result == nullptr ? op : LIR::FirstNode(Result, op);
                 }
 
                 return GenTree::VisitResult::Continue;
