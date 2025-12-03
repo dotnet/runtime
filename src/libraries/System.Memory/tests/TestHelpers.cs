@@ -431,7 +431,7 @@ namespace System
             { new string[] { null, null, "9", null, "9", "9", null, "9"}, 3},
         };
 
-        public static TheoryData<string[], string[],  bool> SequenceEqualsNullData => new TheoryData<string[], string[], bool>()
+        public static TheoryData<string[], string[],  bool> SequenceEqualNullData => new TheoryData<string[], string[], bool>()
         {
             { new string[] { "1", null, "2" }, new string[] { "1", null, "2" } , true},
             { new string[] { "1", null, "2" }, new string[] { "1", "3", "2" } , false},

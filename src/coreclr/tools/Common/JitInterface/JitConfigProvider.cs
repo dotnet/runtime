@@ -137,13 +137,14 @@ namespace Internal.JitInterface
                 TargetArchitecture.X64 => "x64",
                 TargetArchitecture.ARM => "arm",
                 TargetArchitecture.ARM64 => "arm64",
+                TargetArchitecture.Wasm32 => "wasm",
                 TargetArchitecture.LoongArch64 => "loongarch64",
                 TargetArchitecture.RiscV64 => "riscv64",
                 _ => throw new NotImplementedException(target.Architecture.ToString())
             };
 
             string targetOSComponent;
-            if (target.Architecture is TargetArchitecture.ARM64 or TargetArchitecture.ARM)
+            if (target.Architecture is TargetArchitecture.ARM64 or TargetArchitecture.ARM || target.IsWasm)
             {
                 targetOSComponent = "universal";
             }
@@ -164,12 +165,12 @@ namespace Internal.JitInterface
 
             const int numCallbacks = 2;
 
-            void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * numCallbacks);
+            void** callbacks = (void**)NativeMemory.Alloc((nuint)(sizeof(void*) * numCallbacks));
 
             callbacks[0] = (delegate* unmanaged<IntPtr, byte*, int, int>)&getIntConfigValue;
             callbacks[1] = (delegate* unmanaged<IntPtr, byte*, byte*, int, int>)&getStringConfigValue;
 
-            IntPtr instance = Marshal.AllocCoTaskMem(sizeof(IntPtr));
+            IntPtr instance = (IntPtr)NativeMemory.Alloc((nuint)sizeof(IntPtr));
             *(IntPtr*)instance = (IntPtr)callbacks;
 
             return instance;

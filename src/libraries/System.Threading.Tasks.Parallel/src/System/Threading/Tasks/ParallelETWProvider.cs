@@ -18,16 +18,13 @@ namespace System.Threading.Tasks
 {
     /// <summary>Provides an event source for tracing TPL information.</summary>
     [EventSource(Name = "System.Threading.Tasks.Parallel.EventSource")]
-    internal sealed class ParallelEtwProvider : EventSource
+    internal sealed partial class ParallelEtwProvider : EventSource
     {
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
         /// <summary>
         /// Defines the singleton instance for the Task.Parallel ETW provider.
         /// </summary>
         public static readonly ParallelEtwProvider Log = new ParallelEtwProvider();
-
-        /// <summary>Prevent external instantiation. All logging should go through the Log instance.</summary>
-        private ParallelEtwProvider() { }
 
         /// <summary>Type of a fork/join operation.</summary>
         public enum ForkJoinOperationType

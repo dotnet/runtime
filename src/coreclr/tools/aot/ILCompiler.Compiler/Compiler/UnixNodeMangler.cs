@@ -18,12 +18,9 @@ namespace ILCompiler
 
         public sealed override string MethodTable(TypeDesc type)
         {
-            string mangledJustTypeName;
-
-            if (type.IsValueType)
-                mangledJustTypeName = MangledBoxedTypeName(type);
-            else
-                mangledJustTypeName = NameMangler.GetMangledTypeName(type);
+            string mangledJustTypeName = type.IsValueType
+                ? MangledBoxedTypeName(type)
+                : NameMangler.GetMangledTypeName(type).ToString();
 
             return "_ZTV" + mangledJustTypeName.Length.ToString(CultureInfo.InvariantCulture) + mangledJustTypeName;
         }

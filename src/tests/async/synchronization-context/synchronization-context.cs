@@ -67,8 +67,11 @@ public class Async2SynchronizationContext
 
     private class MySyncContext : SynchronizationContext
     {
+        public int NumPosts;
+
         public override void Post(SendOrPostCallback d, object state)
         {
+            NumPosts++;
             ThreadPool.UnsafeQueueUserWorkItem(_ =>
             {
                 SynchronizationContext prevContext = Current;
@@ -215,5 +218,48 @@ public class Async2SynchronizationContext
 
         if (suspend)
             await Task.Yield();
+    }
+
+    [Fact]
+    public static void TestNoSyncContextInRuntimeCallableThunk()
+    {
+        SynchronizationContext prevContext = SynchronizationContext.Current;
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(new MySyncContext());
+            TestNoSyncContextInRuntimeCallableThunkAsync().GetAwaiter().GetResult();
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(prevContext);
+        }
+    }
+
+    private static async Task TestNoSyncContextInRuntimeCallableThunkAsync()
+    {
+        MySyncContext syncCtx = (MySyncContext)SynchronizationContext.Current;
+        await Task.Delay(100).ConfigureAwait(false);
+        Assert.Equal(0, syncCtx.NumPosts);
+    }
+
+    [Fact]
+    public static void TestAsyncToSyncContextSwitch()
+    {
+        TestAsyncToSyncContextSwitchAsync().GetAwaiter().GetResult();
+    }
+
+    private static async Task TestAsyncToSyncContextSwitchAsync()
+    {
+        MySyncContext context1 = new MySyncContext();
+        MySyncContext context2 = new MySyncContext();
+        SynchronizationContext.SetSynchronizationContext(context1);
+        await SyncMethodThatSwitchesContext(context2);
+        Assert.Same(context2, SynchronizationContext.Current);
+    }
+
+    private static Task SyncMethodThatSwitchesContext(MySyncContext context)
+    {
+        SynchronizationContext.SetSynchronizationContext(context);
+        return Task.CompletedTask;
     }
 }

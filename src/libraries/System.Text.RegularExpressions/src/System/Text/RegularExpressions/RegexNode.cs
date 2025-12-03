@@ -1103,7 +1103,7 @@ namespace System.Text.RegularExpressions
                             }
                             j--;
                         }
-                        else if (at.Kind is RegexNodeKind.Set or RegexNodeKind.One or RegexNodeKind.Notone)
+                        else if (at.Kind is RegexNodeKind.Set or RegexNodeKind.One)
                         {
                             // Cannot merge sets if L or I options differ, or if either are negated.
                             optionsAt = at.Options & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase);
@@ -1126,7 +1126,7 @@ namespace System.Text.RegularExpressions
                                 break;
                             }
 
-                            // The last node was a Set/One/Notone, we're a Set/One/Notone, and our options are the same.
+                            // The last node was a Set or a One, we're a Set or One and our options are the same.
                             // Merge the two nodes.
                             j--;
                             prev = children[j];
@@ -1137,11 +1137,6 @@ namespace System.Text.RegularExpressions
                                 prevCharClass = new RegexCharClass();
                                 prevCharClass.AddChar(prev.Ch);
                             }
-                            else if (prev.Kind == RegexNodeKind.Notone)
-                            {
-                                prevCharClass = new RegexCharClass();
-                                prevCharClass.AddNotChar(prev.Ch);
-                            }
                             else
                             {
                                 prevCharClass = RegexCharClass.Parse(prev.Str!);
@@ -1150,10 +1145,6 @@ namespace System.Text.RegularExpressions
                             if (at.Kind == RegexNodeKind.One)
                             {
                                 prevCharClass.AddChar(at.Ch);
-                            }
-                            else if (at.Kind == RegexNodeKind.Notone)
-                            {
-                                prevCharClass.AddNotChar(at.Ch);
                             }
                             else
                             {
@@ -2096,8 +2087,10 @@ namespace System.Text.RegularExpressions
             Debug.Assert(ChildCount() == 1);
 
             // Captures inside of negative lookarounds are undone after the lookaround. Thus, if there's nothing
-            // inside of the negative lookaround that needs that capture group (namely a backreference), we can
-            // remove the capture.
+            // inside of the negative lookaround that relies on or impacts persisted state, we can remove the capture.
+            // This includes backreferences (because backreferences within the lookaround still need to refer to that
+            // capture group) and balancing groups (because they can impact and are impacted by capture stacks from
+            // captures outside of the lookaround).
             if (Kind is RegexNodeKind.NegativeLookaround && ContainsKind(Child(0), [RegexNodeKind.Backreference, RegexNodeKind.BackreferenceConditional]) is false)
             {
                 if (RemoveCaptures(this, 0))
@@ -2111,7 +2104,9 @@ namespace System.Text.RegularExpressions
                 {
                     RegexNode node = parent.Child(nodeIndex);
 
-                    if (node.Kind is RegexNodeKind.Capture)
+                    // Only remove captures that don't rely on or impact persisted state.
+                    // Balancing groups (N != -1) impact capture stacks and must be preserved.
+                    if (node is { Kind: RegexNodeKind.Capture, N: -1 })
                     {
                         parent.ReplaceChild(nodeIndex, node.Child(0));
                         RemoveCaptures(parent, nodeIndex);
@@ -2869,7 +2864,7 @@ namespace System.Text.RegularExpressions
                 {
                     // As with RegexNodeKind.One, the string needs to be composed solely of ASCII characters that
                     // don't participate in case conversion.
-                    if (!RegexCharClass.IsAscii(child.Str.AsSpan()) ||
+                    if (!Ascii.IsValid(child.Str) ||
                         RegexCharClass.ParticipatesInCaseConversion(child.Str.AsSpan()))
                     {
                         break;
@@ -3165,7 +3160,7 @@ namespace System.Text.RegularExpressions
                     curNode = curNode.Child(curChild);
                     curChild = 0;
 
-                    sb.Append(new string(' ', stack.Count * 2)).Append(curNode.Describe()).AppendLine();
+                    sb.Append(' ', stack.Count * 2).Append(curNode.Describe()).AppendLine();
                 }
                 else
                 {

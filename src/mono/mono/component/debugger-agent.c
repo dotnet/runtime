@@ -7185,6 +7185,10 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case CMD_VM_SET_PROTOCOL_VERSION: {
+		if (protocol_version_set) {
+			PRINT_DEBUG_MSG (1, "[dbg] Trying to reset the protocol version, ignoring it\n");
+			break;
+		}
 		major_version = decode_int (p, &p, end);
 		minor_version = decode_int (p, &p, end);
 		if (p < end)
@@ -9324,7 +9328,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		names = g_new (char *, sig->param_count);
 		mono_method_get_param_names_internal (method, (const char **) names);
 		for (guint16 i = 0; i < sig->param_count; ++i)
-			buffer_add_string (buf, names [i]);
+			buffer_add_string (buf, names [i] ? names [i] : "");
 		g_free (names);
 
 		break;

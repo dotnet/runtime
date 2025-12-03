@@ -579,7 +579,7 @@ namespace System.IO.Packaging
         //Note: This method is never be called on a deleted part
         internal void Flush()
         {
-            Debug.Assert(_deleted != true, "PackagePart.Flush should never be called on a deleted part");
+            Debug.Assert(!_deleted, "PackagePart.Flush should never be called on a deleted part");
 
             if (_requestedStreams != null)
             {
@@ -647,7 +647,7 @@ namespace System.IO.Packaging
         /// </remarks>
         internal void FlushRelationships()
         {
-            Debug.Assert(_deleted != true, "PackagePart.FlushRelationsips should never be called on a deleted part");
+            Debug.Assert(!_deleted, "PackagePart.FlushRelationsips should never be called on a deleted part");
 
             // flush relationships
             if (_relationships != null && _container.FileOpenAccess != FileAccess.Read)

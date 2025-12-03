@@ -22,9 +22,6 @@
 
 #define PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
-#define FIXED_STACK_PARAMETER_SCRATCH_AREA
-
-
 #define BITS_PER_SIZE_T ((int)sizeof(size_t)*8)
 
 inline UINT32 CeilOfLog2(size_t x)
@@ -613,6 +610,7 @@ struct AMD64GcInfoEncoding {
     static const int POINTER_SIZE_ENCBASE = 3;
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
 };
 
 #elif defined(TARGET_ARM)
@@ -670,6 +668,7 @@ struct ARM32GcInfoEncoding {
     static const int POINTER_SIZE_ENCBASE = 3;
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
 };
 
 #elif defined(TARGET_ARM64)
@@ -730,6 +729,7 @@ struct ARM64GcInfoEncoding {
     static const int POINTER_SIZE_ENCBASE = 3;
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
 };
 
 #elif defined(TARGET_LOONGARCH64)
@@ -788,6 +788,7 @@ struct LoongArch64GcInfoEncoding {
     static const int POINTER_SIZE_ENCBASE = 3;
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
 };
 
 #elif defined(TARGET_RISCV64)
@@ -847,15 +848,10 @@ struct RISCV64GcInfoEncoding {
     static const int POINTER_SIZE_ENCBASE = 3;
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
 };
 
-#else // defined(TARGET_xxx)
-
-#ifndef TARGET_X86
-#ifdef PORTABILITY_WARNING
-PORTABILITY_WARNING("Please specialize these definitions for your platform!")
-#endif
-#endif
+#elif defined(TARGET_X86)
 
 #ifndef TARGET_POINTER_SIZE
 #define TARGET_POINTER_SIZE 4   // equal to sizeof(void*) and the managed pointer size in bytes for this target
@@ -907,7 +903,22 @@ struct X86GcInfoEncoding {
     static const int POINTER_SIZE_ENCBASE = 3;
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
 };
+
+#elif defined(TARGET_WASM)
+
+#ifndef TARGET_POINTER_SIZE
+#define TARGET_POINTER_SIZE 4   // equal to sizeof(void*) and the managed pointer size in bytes for this target
+#endif
+
+#define TargetGcInfoEncoding InterpreterGcInfoEncoding
+
+#else // No target defined
+
+#ifdef PORTABILITY_WARNING
+PORTABILITY_WARNING("Please specialize these definitions for your platform!")
+#endif // PORTABILITY_WARNING
 
 #endif // defined(TARGET_xxx)
 
@@ -963,6 +974,7 @@ struct InterpreterGcInfoEncoding {
     static const int POINTER_SIZE_ENCBASE = 3;
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = false;
 };
 
 #endif // FEATURE_INTERPRETER

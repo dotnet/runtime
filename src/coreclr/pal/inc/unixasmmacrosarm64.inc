@@ -64,8 +64,13 @@ C_FUNC(\Name):
 .endm
 
 .macro LEAF_END_MARKED Name, Section
-C_FUNC(\Name\()_End):
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name\()_End)
+        .private_extern C_FUNC(\Name\()_End)
+#else
         .global C_FUNC(\Name\()_End)
+#endif
+C_FUNC(\Name\()_End):
         LEAF_END \Name, \Section
         // make sure this symbol gets its own address
         nop

@@ -33,6 +33,7 @@ internal sealed class Thread : IData<Thread>
 
         // Address of the exception tracker
         ExceptionTracker = address + (ulong)type.Fields[nameof(ExceptionTracker)].Offset;
+        UEWatsonBucketTrackerBuckets = target.ReadPointer(address + (ulong)type.Fields[nameof(UEWatsonBucketTrackerBuckets)].Offset);
         ThreadLocalDataPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(ThreadLocalDataPtr)].Offset);
     }
 
@@ -46,5 +47,6 @@ internal sealed class Thread : IData<Thread>
     public ObjectHandle LastThrownObject { get; init; }
     public TargetPointer LinkNext { get; init; }
     public TargetPointer ExceptionTracker { get; init; }
+    public TargetPointer UEWatsonBucketTrackerBuckets { get; init; }
     public TargetPointer ThreadLocalDataPtr { get; init; }
 }

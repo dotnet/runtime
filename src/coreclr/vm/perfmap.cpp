@@ -10,6 +10,7 @@
 #include <clrconfignocache.h>
 #include "perfmap.h"
 #include "pal.h"
+#include <dn-stdio.h>
 
 
 // The code addresses are actually native image offsets during crossgen. Print
@@ -147,8 +148,9 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
         }
 
         {
+#ifdef FEATURE_CODE_VERSIONING
             CodeVersionManager::LockHolder codeVersioningLockHolder;
-
+#endif // FEATURE_CODE_VERSIONING
             CodeHeapIterator heapIterator = ExecutionManager::GetEEJitManager()->GetCodeHeapIterator();
             while (heapIterator.Next())
             {
@@ -159,15 +161,10 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
                 }
 
                 PCODE codeStart = PINSTRToPCODE(heapIterator.GetMethodCode());
-                NativeCodeVersion nativeCodeVersion;
 #ifdef FEATURE_CODE_VERSIONING
-                nativeCodeVersion = pMethod->GetCodeVersionManager()->GetNativeCodeVersion(pMethod, codeStart);;
+                NativeCodeVersion nativeCodeVersion;
+                nativeCodeVersion = pMethod->GetCodeVersionManager()->GetNativeCodeVersion(pMethod, codeStart);
                 if (nativeCodeVersion.IsNull() && codeStart != pMethod->GetNativeCode())
-                {
-                    continue;
-                }
-#else // FEATURE_CODE_VERSIONING
-                if (codeStart != pMethod->GetNativeCode())
                 {
                     continue;
                 }
@@ -179,7 +176,11 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
                 _ASSERTE(methodRegionInfo.hotStartAddress == codeStart);
                 _ASSERTE(methodRegionInfo.hotSize > 0);
 
+#ifdef FEATURE_CODE_VERSIONING
                 PrepareCodeConfig config(!nativeCodeVersion.IsNull() ? nativeCodeVersion : NativeCodeVersion(pMethod), FALSE, FALSE);
+#else
+                PrepareCodeConfig config(NativeCodeVersion(pMethod), FALSE, FALSE);
+#endif // FEATURE_CODE_VERSIONING
                 PerfMap::LogJITCompiledMethod(pMethod, codeStart, methodRegionInfo.hotSize, &config);
             }
         }
@@ -221,8 +222,8 @@ PerfMap::~PerfMap()
 {
     LIMITED_METHOD_CONTRACT;
 
-    delete m_FileStream;
-    m_FileStream = nullptr;
+    fclose(m_fp);
+    m_fp = nullptr;
 }
 
 void PerfMap::OpenFileForPid(int pid, const char* basePath)
@@ -240,16 +241,8 @@ void PerfMap::OpenFile(SString& path)
     STANDARD_VM_CONTRACT;
 
     // Open the file stream.
-    m_FileStream = new (nothrow) CFileStream();
-    if(m_FileStream != nullptr)
-    {
-        HRESULT hr = m_FileStream->OpenForWrite(path.GetUnicode());
-        if(FAILED(hr))
-        {
-            delete m_FileStream;
-            m_FileStream = nullptr;
-        }
-    }
+    if (fopen_lp(&m_fp, path.GetUnicode(), W("w")) != 0)
+        m_fp = nullptr;
 }
 
 // Write a line to the map file.
@@ -260,7 +253,7 @@ void PerfMap::WriteLine(SString& line)
     _ASSERTE(s_csPerfMap.OwnedByCurrentThread());
 #endif
 
-    if (m_FileStream == nullptr || m_ErrorEncountered)
+    if (m_fp == nullptr || m_ErrorEncountered)
     {
         return;
     }
@@ -268,13 +261,8 @@ void PerfMap::WriteLine(SString& line)
     EX_TRY
     {
         // Write the line.
-        // The PAL already takes a lock when writing, so we don't need to do so here.
-        const char * strLine = line.GetUTF8();
-        ULONG inCount = line.GetCount();
-        ULONG outCount;
-        m_FileStream->Write(strLine, inCount, &outCount);
 
-        if (inCount != outCount)
+        if (fprintf(m_fp, "%s", line.GetUTF8()) != 0)
         {
             // This will cause us to stop writing to the file.
             // The file will still remain open until shutdown so that we don't have to take a lock at this level when we touch the file stream.

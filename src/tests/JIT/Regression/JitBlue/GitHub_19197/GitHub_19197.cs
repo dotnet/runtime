@@ -5,6 +5,9 @@
 // and was failing with minOpts because a SIMD12 was being spilled using
 // a 16-byte load, but only a 12-byte location had been allocated.
 
+
+namespace GitHub_19197;
+
 using System;
 using System.Numerics;
 using Xunit;
@@ -54,6 +57,7 @@ public class GitHub_19171
         }
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

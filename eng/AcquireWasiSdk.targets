@@ -37,7 +37,7 @@
     <RemoveDir Directories="$(_RuntimeLocalWasiSdkPath)" />
     <MakeDir Directories="$(_RuntimeLocalWasiSdkPath)" />
 
-    <Exec Command="curl -L -o wasi-sdk-$(_WasiSdkVersion).tar.gz $(_WasiSdkUrl) &amp;&amp; tar --strip-components=1 -xzmf wasi-sdk-$(_WasiSdkVersion).tar.gz -C $(_RuntimeLocalWasiSdkPath)"
+    <Exec Command="curl --silent -L -o wasi-sdk-$(_WasiSdkVersion).tar.gz $(_WasiSdkUrl) &amp;&amp; tar --strip-components=1 -xzmf wasi-sdk-$(_WasiSdkVersion).tar.gz -C $(_RuntimeLocalWasiSdkPath)"
           Condition="'$(HostOS)' != 'windows'"
           WorkingDirectory="$(ArtifactsObjDir)"
           IgnoreStandardErrorWarningFormat="true" />

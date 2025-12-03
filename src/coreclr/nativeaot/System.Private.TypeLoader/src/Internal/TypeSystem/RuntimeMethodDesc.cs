@@ -14,12 +14,13 @@ namespace Internal.TypeSystem.NoMetadata
     /// </summary>
     internal sealed partial class RuntimeMethodDesc : NoMetadataMethodDesc
     {
-        public RuntimeMethodDesc(bool unboxingStub, DefType owningType,
+        public RuntimeMethodDesc(bool unboxingStub, bool asyncVariant, DefType owningType,
             MethodNameAndSignature nameAndSignature, int hashcode)
         {
             _owningType = owningType;
             _nameAndSignature = nameAndSignature;
             _unboxingStub = unboxingStub;
+            _asyncVariant = asyncVariant;
             SetHashCode(hashcode);
 
 #if DEBUG
@@ -89,11 +90,11 @@ namespace Internal.TypeSystem.NoMetadata
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return NameAndSignature.GetName();
+                return NameAndSignature.Name;
             }
         }
 
@@ -103,6 +104,15 @@ namespace Internal.TypeSystem.NoMetadata
             get
             {
                 return _unboxingStub;
+            }
+        }
+
+        private bool _asyncVariant;
+        public override bool AsyncVariant
+        {
+            get
+            {
+                return _asyncVariant;
             }
         }
 
@@ -117,7 +127,7 @@ namespace Internal.TypeSystem.NoMetadata
             }
 
             // Otherwise, find its equivalent on the type definition of the owning type
-            return Context.ResolveRuntimeMethod(UnboxingStub, (DefType)owningTypeDefinition, _nameAndSignature);
+            return Context.ResolveRuntimeMethod(UnboxingStub, AsyncVariant, (DefType)owningTypeDefinition, _nameAndSignature);
         }
 
         public override MethodDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
@@ -127,7 +137,7 @@ namespace Internal.TypeSystem.NoMetadata
             TypeDesc owningType = method.OwningType;
             TypeDesc instantiatedOwningType = owningType.InstantiateSignature(typeInstantiation, methodInstantiation);
             if (owningType != instantiatedOwningType)
-                method = instantiatedOwningType.Context.ResolveRuntimeMethod(UnboxingStub, (DefType)instantiatedOwningType, _nameAndSignature);
+                method = instantiatedOwningType.Context.ResolveRuntimeMethod(UnboxingStub, AsyncVariant, (DefType)instantiatedOwningType, _nameAndSignature);
 
             Instantiation instantiation = method.Instantiation;
             TypeDesc[] clone = null;
@@ -163,7 +173,7 @@ namespace Internal.TypeSystem.NoMetadata
 
         public override string ToString()
         {
-            string result = OwningType.ToString() + ".Method(" + Name + ")";
+            string result = OwningType.ToString() + ".Method(" + GetName() + ")";
             return result;
         }
 #endif

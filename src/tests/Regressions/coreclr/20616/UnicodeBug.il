@@ -93,6 +93,54 @@
   call class [mscorlib]System.Type class [mscorlib]System.Type::GetType(string, bool, bool)
   pop
 
+  // Trimming doesn't analyze case insensitive searches, so do one more case sensitive
+  // search of everything for trimming analysis sake
+
+  ldstr "л"
+  ldc.i4.1
+  call class [mscorlib]System.Type class [mscorlib]System.Type::GetType(string, bool)
+  pop
+
+  ldstr "Общеязыковаяисполняющаясреда"
+  ldc.i4.1
+  call class [mscorlib]System.Type class [mscorlib]System.Type::GetType(string, bool)
+  pop
+
+  ldstr "ꯀ"
+  ldc.i4.1
+  call class [mscorlib]System.Type class [mscorlib]System.Type::GetType(string, bool)
+  pop
+
+  ldstr "Ａ"
+  ldc.i4.1
+  call class [mscorlib]System.Type class [mscorlib]System.Type::GetType(string, bool)
+  pop
+
+  ldstr "Ｂｕｇ"
+  ldc.i4.1
+  call class [mscorlib]System.Type class [mscorlib]System.Type::GetType(string, bool)
+  pop
+
+  ldstr "𐐨"
+  ldc.i4.1
+  call class [mscorlib]System.Type class [mscorlib]System.Type::GetType(string, bool)
+  pop
+
+  ldstr "𐐩𐐪"
+  ldc.i4.1
+  call class [mscorlib]System.Type class [mscorlib]System.Type::GetType(string, bool)
+  pop
+
+  ldstr "𐐪A𐐪"
+  ldc.i4.1
+  call class [mscorlib]System.Type class [mscorlib]System.Type::GetType(string, bool)
+  pop
+
+  ldstr "𐐪Z𐐪"
+  ldc.i4.1
+  call class [mscorlib]System.Type class [mscorlib]System.Type::GetType(string, bool)
+  pop
+
   ldc.i4 100
   ret
 }

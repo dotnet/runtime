@@ -1,0 +1,73 @@
+# This workflow generates breaking change documentation for merged pull requests.
+# It runs automatically when a PR with the 'needs-breaking-change-doc-created' label is merged,
+# or when that label is added to an already merged PR.
+# It can be manually triggered to generate documentation for any specific PR.
+# 
+# The workflow uses GitHub Models AI to analyze the PR changes and create appropriate
+# breaking change documentation that gets posted as a PR comment as a clickable link
+# to open an issue in the dotnet/docs repository.
+name: Breaking Change Documentation
+
+on:
+  pull_request_target:
+    types: [closed, labeled]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull Request Number"
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  pull-requests: write
+  models: read
+
+jobs:
+  generate-breaking-change-doc:
+    if: |
+      github.repository_owner == 'dotnet' && (
+        (github.event_name == 'pull_request_target' && github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'needs-breaking-change-doc-created')) ||
+        (github.event_name == 'pull_request_target' && github.event.action == 'labeled' && github.event.pull_request.merged == true && github.event.label.name == 'needs-breaking-change-doc-created') ||
+        github.event_name == 'workflow_dispatch'
+      )
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Need full history for version detection
+
+    - name: Verify PowerShell
+      run: |
+        pwsh --version
+
+    - name: Verify GitHub CLI
+      run: |
+        gh --version
+
+    - name: Install GitHub Models extension
+      run: |
+        gh extension install github/gh-models --force
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+    - name: Fetch latest tags
+      run: |
+        git fetch --tags --force
+
+    - name: Run breaking change documentation script
+      shell: pwsh
+      working-directory: eng/breakingChanges
+      run: ./breaking-change-doc.ps1 -PrNumber ${{ inputs.pr_number || github.event.pull_request.number }} -Comment
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GITHUB_MODELS_API_KEY: ${{ secrets.MODELS_TOKEN }}
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: breaking-change-doc-artifacts-${{ inputs.pr_number || github.event.pull_request.number }}
+        path: artifacts/docs/breakingChanges/
+        retention-days: 7
