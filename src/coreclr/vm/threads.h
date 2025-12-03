@@ -5512,9 +5512,7 @@ private:
     Thread* m_PreviousValue;
 };
 
-#ifdef TARGET_UNIX
 EXTERN_C Thread* GetThreadAsyncSafe();
-#endif
 
 #ifndef DACCESS_COMPILE
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)

@@ -4,7 +4,7 @@
 #ifndef HAVE_MINIPAL_THREAD_H
 #define HAVE_MINIPAL_THREAD_H
 
-#ifndef TARGET_WINDOWS
+#ifndef HOST_WINDOWS
 
 #include <pthread.h>
 #include <stdint.h>
@@ -143,6 +143,6 @@ static inline int minipal_set_thread_name(pthread_t thread, const char* name)
 }
 #endif // extern "C"
 
-#endif // !TARGET_WINDOWS
+#endif // !HOST_WINDOWS
 
 #endif // HAVE_MINIPAL_THREAD_H

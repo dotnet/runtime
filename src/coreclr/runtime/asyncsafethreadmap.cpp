@@ -114,7 +114,7 @@ void *FindThreadInAsyncSafeMap(size_t osThread)
         for (size_t i = 0; i < MAX_THREADS_IN_SEGMENT; i++)
         {
             size_t index = (startIndex + i) % MAX_THREADS_IN_SEGMENT;
-            // Use acquire to synchronize with release in insert_thread_to_async_safe_map
+            // Use acquire to synchronize with release in InsertThreadIntoAsyncSafeMap
             if (__atomic_load_n(&pSegment->entries[index].osThread, __ATOMIC_ACQUIRE) == osThread)
             {
                 return pSegment->entries[index].pThread;
