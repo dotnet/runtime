@@ -4,7 +4,7 @@ This directory contains **functional tests** for the .NET user_events scenario. 
 
 ## High-level Test Flow
 
-Each scenario uses the same pattern:
+Each scenario (for example, `basic`) uses the same pattern:
 
 1. **Scenario invokes the shared test runner**
 
@@ -26,4 +26,4 @@ Each scenario uses the same pattern:
   - `<scenario>.csproj` - Project file for the scenario.
   - `<scenario>.script` - `record-trace` script that configures how to collect the trace for the scenario.
 
-Each scenario reuses the common runner and shared `record-trace` deployable instead of duplicating binaries or orchestration logic.
+Each scenario reuses the common runner and shared `record-trace` deployable instead of duplicating binaries or orchestration logic. The `basic` scenario serves as a concrete example of how to add additional scenarios.
