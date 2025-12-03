@@ -213,8 +213,8 @@ protected:
     void genCodeForBBlist();
 
 #if defined(TARGET_WASM)
-    ArrayStack<WasmInterval*>* wasmControlFlowStack;
-    unsigned                   wasmCursor;
+    ArrayStack<WasmInterval*>* wasmControlFlowStack = nullptr;
+    unsigned                   wasmCursor           = 0;
     unsigned                   findTargetDepth(BasicBlock* target);
 #endif
 
