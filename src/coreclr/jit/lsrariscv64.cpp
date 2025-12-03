@@ -808,16 +808,22 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     GenTree* addr = indirTree->Addr();
     if (addr->isContained())
     {
-        bool needsReloc = addr->OperIs(GT_CNS_INT) && addr->AsIntCon()->FitsInAddrBase(compiler) &&
-                          addr->AsIntCon()->AddrNeedsReloc(compiler);
-        if (needsReloc || !emitter::isValidSimm12(indirTree->Offset()))
+        if (addr->OperIs(GT_CNS_INT))
         {
-            bool needTemp = indirTree->OperIs(GT_STOREIND, GT_NULLCHECK) || varTypeIsFloating(indirTree);
-            if (needTemp)
+            bool needsReloc = addr->AsIntCon()->FitsInAddrBase(compiler) && addr->AsIntCon()->AddrNeedsReloc(compiler);
+            if (needsReloc || !emitter::isValidSimm12(indirTree->Offset()))
             {
-                // This offset can't be contained in the ld/sd instruction, so we need an internal register
-                buildInternalIntRegisterDefForNode(indirTree);
+                bool needTemp = indirTree->OperIs(GT_STOREIND, GT_NULLCHECK) || varTypeIsFloating(indirTree);
+                if (needTemp)
+                {
+                    // This offset can't be contained in the ld/sd instruction, so we need an internal register
+                    buildInternalIntRegisterDefForNode(indirTree);
+                }
             }
+        }
+        else if (!emitter::isValidSimm12(indirTree->Offset()))
+        {
+            buildInternalIntRegisterDefForNode(indirTree);
         }
     }
 
