@@ -5167,14 +5167,13 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             {
                 GenTreeIntConCommon* con            = tree->AsIntConCommon();
                 bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
+                bool                 fitsInAddrBase = con->FitsInAddrBase(this); // PC-relative addressing
                 ssize_t              imm            = static_cast<ssize_t>(con->LngValue());
                 emitAttr             size           = EA_SIZE(emitActualTypeSize(tree));
 
-                if (iconNeedsReloc)
+                if (iconNeedsReloc || fitsInAddrBase)
                 {
-                    // TODO-RISCV64-CQ: tune the costs.
-                    // The codegen(emitIns_R_AI) is not implemented yet.
-                    // Assuming that it will require two instructions auipc + addi for relocations
+                    // auipc + addi
                     costSz = 8;
                     costEx = 2;
                 }
