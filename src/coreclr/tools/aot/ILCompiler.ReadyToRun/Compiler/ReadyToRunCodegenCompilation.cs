@@ -813,7 +813,7 @@ namespace ILCompiler
                 {
                     foreach(var entity in entities)
                     {
-                        AsyncThunkILEmitter.AssertIsKnownAsyncHelper(entity, "Tried to add unknown type system entity to mutable module: " + entity.GetDisplayName());
+                        KnownILStubReferences.AssertIsKnownEntity(entity, "Tried to add unknown type system entity to mutable module: " + entity.GetDisplayName());
                         _ = _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(entity);
                     }
                 }

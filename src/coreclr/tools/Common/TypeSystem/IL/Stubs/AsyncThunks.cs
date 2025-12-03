@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using Internal.TypeSystem;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Internal.TypeSystem.Ecma;
 using ILCompiler;
 
 #nullable enable
@@ -14,139 +12,6 @@ namespace Internal.IL.Stubs
 {
     public static class AsyncThunkILEmitter
     {
-        private enum AsyncHelper
-        {
-            ExecutionAndSyncBlockStore,
-            ExecutionAndSyncBlockStore_Push,
-            ExecutionAndSyncBlockStore_Pop,
-
-            AsyncHelpers,
-
-            AsyncHelpers_AsyncCallContinuation,
-            AsyncHelpers_TransparentAwait,
-            AsyncHelpers_CompletedTask,
-            AsyncHelpers_CompletedTaskResult,
-
-            AsyncHelpers_TaskFromException,
-            AsyncHelpers_TaskFromException_1,
-            AsyncHelpers_ValueTaskFromException,
-            AsyncHelpers_ValueTaskFromException_1,
-
-            AsyncHelpers_FinalizeTaskReturningThunk,
-            AsyncHelpers_FinalizeTaskReturningThunk_1,
-            AsyncHelpers_FinalizeValueTaskReturningThunk,
-            AsyncHelpers_FinalizeValueTaskReturningThunk_1,
-
-            Task,
-            Task_1,
-            ValueTask,
-            ValueTask_1,
-
-            Task_FromResult,
-            ValueTask_FromResult_1,
-
-            Task_get_CompletedTask,
-            ValueTask_get_CompletedTask,
-
-            Task_get_IsCompleted,
-            Task_1_get_IsCompleted,
-            ValueTask_get_IsCompleted,
-            ValueTask_1_get_IsCompleted,
-
-            ValueTask_get_Result,
-            ValueTask_1_get_Result,
-
-            ValueTask_AsTaskOrNotifier,
-            ValueTask_1_AsTaskOrNotifier,
-
-            AsyncHelperCount,
-        }
-
-        [Conditional("DEBUG")]
-        public static void AssertIsKnownAsyncHelper(TypeSystemEntity entity, string message)
-        {
-            TypeSystemContext context = entity.Context;
-            entity = entity switch
-            {
-                MethodDesc m => m.GetTypicalMethodDefinition(),
-                TypeDesc t => t.GetTypeDefinition(),
-                _ => throw new ArgumentException("entity must be MethodDesc or TypeDesc")
-            };
-            for (AsyncHelper helper = 0; helper < AsyncHelper.AsyncHelperCount; helper++)
-            {
-                MethodDesc knownHelperMethod = GetHelperMethod(context, helper);
-                if (entity == knownHelperMethod)
-                {
-                    return;
-                }
-            }
-            throw new InvalidOperationException(message);
-        }
-
-        private static EcmaMethod GetHelperMethod(TypeSystemContext context, AsyncHelper helper)
-        {
-            return (EcmaMethod)(helper switch
-            {
-                AsyncHelper.ExecutionAndSyncBlockStore => throw new ArgumentException("Use a more specific enum value"),
-                AsyncHelper.ExecutionAndSyncBlockStore_Push => GetHelperType(context, AsyncHelper.ExecutionAndSyncBlockStore).GetKnownMethod("Push"u8, null),
-                AsyncHelper.ExecutionAndSyncBlockStore_Pop => GetHelperType(context, AsyncHelper.ExecutionAndSyncBlockStore).GetKnownMethod("Pop"u8, null),
-
-                AsyncHelper.AsyncHelpers_AsyncCallContinuation => GetHelperType(context, AsyncHelper.AsyncHelpers).GetKnownMethod("AsyncCallContinuation"u8, null),
-                AsyncHelper.AsyncHelpers_TransparentAwait => GetHelperType(context, AsyncHelper.AsyncHelpers).GetKnownMethod("TransparentAwait"u8, null),
-                AsyncHelper.AsyncHelpers_CompletedTask => GetHelperType(context, AsyncHelper.AsyncHelpers).GetKnownMethod("CompletedTask"u8, null),
-                AsyncHelper.AsyncHelpers_CompletedTaskResult => GetHelperType(context, AsyncHelper.AsyncHelpers).GetKnownMethod("CompletedTaskResult"u8, null),
-
-                AsyncHelper.AsyncHelpers_TaskFromException => GetHelperType(context, AsyncHelper.AsyncHelpers).GetKnownMethod("TaskFromException"u8, new MethodSignature(MethodSignatureFlags.Static, 0, Task(), [Exception()])),
-                AsyncHelper.AsyncHelpers_TaskFromException_1 => GetHelperType(context, AsyncHelper.AsyncHelpers).GetKnownMethod("TaskFromException"u8, new MethodSignature(MethodSignatureFlags.Static, 1, Task_T(), [Exception()])),
-                AsyncHelper.AsyncHelpers_ValueTaskFromException => GetHelperType(context, AsyncHelper.AsyncHelpers).GetKnownMethod("ValueTaskFromException"u8, new MethodSignature(MethodSignatureFlags.Static, 0, ValueTask(), [Exception()])),
-                AsyncHelper.AsyncHelpers_ValueTaskFromException_1 => GetHelperType(context, AsyncHelper.AsyncHelpers).GetKnownMethod("ValueTaskFromException"u8, new MethodSignature(MethodSignatureFlags.Static, 1, ValueTask_T(), [Exception()])),
-
-                AsyncHelper.AsyncHelpers_FinalizeTaskReturningThunk => GetHelperType(context, AsyncHelper.AsyncHelpers).GetKnownMethod("FinalizeTaskReturningThunk"u8, new MethodSignature(MethodSignatureFlags.Static, 0, Task(), [])),
-                AsyncHelper.AsyncHelpers_FinalizeTaskReturningThunk_1 => GetHelperType(context, AsyncHelper.AsyncHelpers).GetKnownMethod("FinalizeTaskReturningThunk"u8, new MethodSignature(MethodSignatureFlags.Static, 1, Task_T(), [])),
-                AsyncHelper.AsyncHelpers_FinalizeValueTaskReturningThunk => GetHelperType(context, AsyncHelper.AsyncHelpers).GetKnownMethod("FinalizeValueTaskReturningThunk"u8, new MethodSignature(MethodSignatureFlags.Static, 0, ValueTask(), [])),
-                AsyncHelper.AsyncHelpers_FinalizeValueTaskReturningThunk_1 => GetHelperType(context, AsyncHelper.AsyncHelpers).GetKnownMethod("FinalizeValueTaskReturningThunk"u8, new MethodSignature(MethodSignatureFlags.Static, 1, ValueTask_T(), [])),
-
-                AsyncHelper.Task_FromResult => GetHelperType(context, AsyncHelper.Task).GetKnownMethod("FromResult"u8, null),
-                AsyncHelper.ValueTask_FromResult_1 => GetHelperType(context, AsyncHelper.ValueTask_1).GetKnownMethod("FromResult"u8, null),
-
-                AsyncHelper.Task_get_CompletedTask => GetHelperType(context, AsyncHelper.Task).GetKnownMethod("get_CompletedTask"u8, null),
-                AsyncHelper.ValueTask_get_CompletedTask => GetHelperType(context, AsyncHelper.ValueTask).GetKnownMethod("get_CompletedTask"u8, null),
-
-                AsyncHelper.Task_get_IsCompleted => GetHelperType(context, AsyncHelper.Task).GetKnownMethod("get_IsCompleted"u8, null),
-                AsyncHelper.Task_1_get_IsCompleted => GetHelperType(context, AsyncHelper.Task_1).GetKnownMethod("get_IsCompleted"u8, null),
-                AsyncHelper.ValueTask_get_IsCompleted => GetHelperType(context, AsyncHelper.ValueTask).GetKnownMethod("get_IsCompleted"u8, null),
-                AsyncHelper.ValueTask_1_get_IsCompleted => GetHelperType(context, AsyncHelper.ValueTask_1).GetKnownMethod("get_IsCompleted"u8, null),
-
-                AsyncHelper.ValueTask_get_Result => GetHelperType(context, AsyncHelper.ValueTask).GetKnownMethod("get_Result"u8, null),
-                AsyncHelper.ValueTask_1_get_Result => GetHelperType(context, AsyncHelper.ValueTask_1).GetKnownMethod("get_Result"u8, null),
-
-                AsyncHelper.ValueTask_AsTaskOrNotifier => GetHelperType(context, AsyncHelper.ValueTask).GetKnownMethod("AsTaskOrNotifier"u8, null),
-                AsyncHelper.ValueTask_1_AsTaskOrNotifier => GetHelperType(context, AsyncHelper.ValueTask_1).GetKnownMethod("AsTaskOrNotifier"u8, null),
-
-                _ => throw new ArgumentOutOfRangeException(nameof(helper))
-            });
-
-            TypeDesc Task() => GetHelperType(context, AsyncHelper.Task);
-            TypeDesc Task_T() => GetHelperType(context, AsyncHelper.Task_1).MakeInstantiatedType(context.GetSignatureVariable(0, true));
-            TypeDesc ValueTask() => GetHelperType(context, AsyncHelper.ValueTask);
-            TypeDesc ValueTask_T() => GetHelperType(context, AsyncHelper.ValueTask_1).MakeInstantiatedType(context.GetSignatureVariable(0, true));
-            TypeDesc Exception() => context.GetWellKnownType(WellKnownType.Exception);
-        }
-
-        private static EcmaType GetHelperType(TypeSystemContext context, AsyncHelper helper)
-        {
-            return (EcmaType)(helper switch
-            {
-                AsyncHelper.ExecutionAndSyncBlockStore => context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "ExecutionAndSyncBlockStore"u8),
-                AsyncHelper.AsyncHelpers => context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8),
-                AsyncHelper.Task => context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8),
-                AsyncHelper.Task_1 => context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8),
-                AsyncHelper.ValueTask => context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8),
-                AsyncHelper.ValueTask_1 => context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8),
-                _ => throw new ArgumentOutOfRangeException(nameof(helper))
-            });
-        }
-
         public struct TaskReturningThunkReferences
         {
             public required MethodDesc ExecutionAndSyncBlockStore_Push { get; init; }
@@ -189,20 +54,20 @@ namespace Internal.IL.Stubs
             {
                 if (isValueTask)
                 {
-                    getResultOrCompletedTask = GetHelperMethod(context, AsyncHelper.ValueTask_FromResult_1)
+                    getResultOrCompletedTask = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.ValueTask_FromResult_1)
                         .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
-                    taskFromException = GetHelperMethod(context, AsyncHelper.AsyncHelpers_ValueTaskFromException_1)
+                    taskFromException = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.AsyncHelpers_ValueTaskFromException_1)
                         .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
-                    finalizeTask = GetHelperMethod(context, AsyncHelper.AsyncHelpers_FinalizeValueTaskReturningThunk_1)
+                    finalizeTask = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.AsyncHelpers_FinalizeValueTaskReturningThunk_1)
                         .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
                 }
                 else
                 {
-                    getResultOrCompletedTask = GetHelperMethod(context, AsyncHelper.Task_FromResult)
+                    getResultOrCompletedTask = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.Task_FromResult)
                         .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
-                    taskFromException = GetHelperMethod(context, AsyncHelper.AsyncHelpers_TaskFromException_1)
+                    taskFromException = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.AsyncHelpers_TaskFromException_1)
                         .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
-                    finalizeTask = GetHelperMethod(context, AsyncHelper.AsyncHelpers_FinalizeTaskReturningThunk_1)
+                    finalizeTask = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.AsyncHelpers_FinalizeTaskReturningThunk_1)
                         .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
                 }
             }
@@ -210,28 +75,28 @@ namespace Internal.IL.Stubs
             {
                 if (isValueTask)
                 {
-                    getResultOrCompletedTask = GetHelperMethod(context, AsyncHelper.ValueTask_get_CompletedTask);
-                    taskFromException = GetHelperMethod(context, AsyncHelper.AsyncHelpers_ValueTaskFromException);
-                    finalizeTask = GetHelperMethod(context, AsyncHelper.AsyncHelpers_FinalizeValueTaskReturningThunk);
+                    getResultOrCompletedTask = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.ValueTask_get_CompletedTask);
+                    taskFromException = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.AsyncHelpers_ValueTaskFromException);
+                    finalizeTask = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.AsyncHelpers_FinalizeValueTaskReturningThunk);
                 }
                 else
                 {
-                    getResultOrCompletedTask = GetHelperMethod(context, AsyncHelper.Task_get_CompletedTask);
-                    taskFromException = GetHelperMethod(context, AsyncHelper.AsyncHelpers_TaskFromException);
-                    finalizeTask = GetHelperMethod(context, AsyncHelper.AsyncHelpers_FinalizeTaskReturningThunk);
+                    getResultOrCompletedTask = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.Task_get_CompletedTask);
+                    taskFromException = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.AsyncHelpers_TaskFromException);
+                    finalizeTask = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.AsyncHelpers_FinalizeTaskReturningThunk);
                 }
             }
 
             return new()
             {
-                ExecutionAndSyncBlockStore_Pop = GetHelperMethod(context, AsyncHelper.ExecutionAndSyncBlockStore_Pop),
-                ExecutionAndSyncBlockStore_Push = GetHelperMethod(context, AsyncHelper.ExecutionAndSyncBlockStore_Push),
-                AsyncCallContinuation = GetHelperMethod(context, AsyncHelper.AsyncHelpers_AsyncCallContinuation),
+                ExecutionAndSyncBlockStore_Pop = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.ExecutionAndSyncBlockStore_Pop),
+                ExecutionAndSyncBlockStore_Push = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.ExecutionAndSyncBlockStore_Push),
+                AsyncCallContinuation = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.AsyncHelpers_AsyncCallContinuation),
                 GetResultOrCompletedTask = getResultOrCompletedTask,
                 TaskFromException = taskFromException,
                 FinalizeTaskReturningThunk = finalizeTask,
                 LogicalReturnType = logicalReturnType,
-                ExecutionAndSyncBlockStore = GetHelperType(context, AsyncHelper.ExecutionAndSyncBlockStore),
+                ExecutionAndSyncBlockStore = KnownILStubReferences.GetKnownType(context, KnownILStubReference.ExecutionAndSyncBlockStore),
                 Exception = context.GetWellKnownType(WellKnownType.Exception)
             };
         }
@@ -270,16 +135,16 @@ namespace Internal.IL.Stubs
                 if (!taskReturningMethodReturnType.HasInstantiation)
                 {
                     // ValueTask (non-generic)
-                    isCompleted = GetHelperMethod(context, AsyncHelper.ValueTask_get_IsCompleted);
-                    completionResultMethod = GetHelperMethod(context, AsyncHelper.ValueTask_get_Result);
-                    asTaskOrNotifierMethod = GetHelperMethod(context, AsyncHelper.ValueTask_AsTaskOrNotifier);
+                    isCompleted = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.ValueTask_get_IsCompleted);
+                    completionResultMethod = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.ValueTask_get_Result);
+                    asTaskOrNotifierMethod = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.ValueTask_AsTaskOrNotifier);
                 }
                 else
                 {
                     // ValueTask<T> (generic)
-                    isCompleted = GetHelperMethod(context, AsyncHelper.ValueTask_1_get_IsCompleted);
-                    completionResultMethod = GetHelperMethod(context, AsyncHelper.ValueTask_1_get_Result);
-                    asTaskOrNotifierMethod = GetHelperMethod(context, AsyncHelper.ValueTask_1_AsTaskOrNotifier);
+                    isCompleted = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.ValueTask_1_get_IsCompleted);
+                    completionResultMethod = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.ValueTask_1_get_Result);
+                    asTaskOrNotifierMethod = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.ValueTask_1_AsTaskOrNotifier);
                 }
             }
             else
@@ -289,15 +154,15 @@ namespace Internal.IL.Stubs
                 if (!taskReturningMethodReturnType.HasInstantiation)
                 {
                     // Task (non-generic)
-                    isCompleted = GetHelperMethod(context, AsyncHelper.Task_get_IsCompleted);
-                    completionResultMethod = GetHelperMethod(context, AsyncHelper.AsyncHelpers_CompletedTask);
+                    isCompleted = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.Task_get_IsCompleted);
+                    completionResultMethod = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.AsyncHelpers_CompletedTask);
                 }
                 else
                 {
                     // Task<T> (generic)
-                    isCompleted = GetHelperMethod(context, AsyncHelper.Task_1_get_IsCompleted);
+                    isCompleted = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.Task_1_get_IsCompleted);
                     TypeDesc logicalReturnType = taskReturningMethodReturnType.Instantiation[0];
-                    MethodDesc completedTaskResultMethodOpen = GetHelperMethod(context, AsyncHelper.AsyncHelpers_CompletedTaskResult);
+                    MethodDesc completedTaskResultMethodOpen = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.AsyncHelpers_CompletedTaskResult);
                     completionResultMethod = completedTaskResultMethodOpen.MakeInstantiatedMethod(new Instantiation(logicalReturnType));
                 }
             }
@@ -307,7 +172,7 @@ namespace Internal.IL.Stubs
                 IsCompletedMethod = isCompleted,
                 AsTaskOrNotifierMethod = asTaskOrNotifierMethod,
                 CompletionResultMethod = completionResultMethod,
-                TransparentAwaitMethod = GetHelperMethod(context, AsyncHelper.AsyncHelpers_TransparentAwait)
+                TransparentAwaitMethod = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.AsyncHelpers_TransparentAwait)
             };
         }
 
@@ -435,7 +300,7 @@ namespace Internal.IL.Stubs
             {
                 codestream.BeginHandler(tryFinallyRegion);
                 codestream.EmitLdLoca(executionAndSyncBlockStoreLocal);
-                codestream.Emit(ILOpcode.call, emitter.NewToken(GetHelperMethod(context, AsyncHelper.ExecutionAndSyncBlockStore_Pop)));
+                codestream.Emit(ILOpcode.call, emitter.NewToken(KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.ExecutionAndSyncBlockStore_Pop)));
                 codestream.Emit(ILOpcode.endfinally);
                 codestream.EndHandler(tryFinallyRegion);
             }
