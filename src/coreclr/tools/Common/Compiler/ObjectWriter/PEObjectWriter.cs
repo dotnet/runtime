@@ -12,7 +12,9 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using System.Text;
+
 using ILCompiler.DependencyAnalysis;
+
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -551,7 +553,7 @@ namespace ILCompiler.ObjectWriter
             List<string> exports = [.._exportedSymbolNames];
 
             exports.Sort(StringComparer.Ordinal);
-            string moduleName = Path.GetFileName(_outputPath);
+            Utf8String moduleName = new Utf8String(Path.GetFileName(_outputPath));
             const int minOrdinal = 1;
 
             StringTableBuilder exportsStringTable = new();
@@ -559,7 +561,7 @@ namespace ILCompiler.ObjectWriter
             exportsStringTable.ReserveString(moduleName);
             foreach (var exportName in exports)
             {
-                exportsStringTable.ReserveString(exportName);
+                exportsStringTable.ReserveString(new Utf8String(exportName));
             }
 
             string exportsStringTableSymbol = GenerateSymbolNameForReloc("exportsStringTable");
@@ -578,7 +580,7 @@ namespace ILCompiler.ObjectWriter
             // +0x0A: minor version
             sectionWriter.WriteLittleEndian<ushort>(0);
             // +0x0C: DLL name RVA
-            sectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, exportsStringTableSymbol, exportsStringTable.GetStringOffset(moduleName));
+            sectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, new Utf8String(exportsStringTableSymbol), exportsStringTable.GetStringOffset(moduleName));
             // +0x10: ordinal base
             sectionWriter.WriteLittleEndian(minOrdinal);
             // +0x14: number of entries in the address table
@@ -586,36 +588,36 @@ namespace ILCompiler.ObjectWriter
             // +0x18: number of name pointers
             sectionWriter.WriteLittleEndian(exports.Count);
             // +0x1C: export address table RVA
-            sectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, addressTableSymbol);
+            sectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, new Utf8String(addressTableSymbol));
             // +0x20: name pointer RVA
-            sectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, namePointerTableSymbol);
+            sectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, new Utf8String(namePointerTableSymbol));
             // +0x24: ordinal table RVA
-            sectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, ordinalPointerTableSymbol);
+            sectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, new Utf8String(ordinalPointerTableSymbol));
 
 
             sectionWriter.EmitAlignment(4);
-            sectionWriter.EmitSymbolDefinition(addressTableSymbol);
+            sectionWriter.EmitSymbolDefinition(new Utf8String(addressTableSymbol));
             foreach (var exportName in exports)
             {
-                sectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, exportName);
+                sectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, new Utf8String(exportName));
             }
 
             sectionWriter.EmitAlignment(4);
-            sectionWriter.EmitSymbolDefinition(namePointerTableSymbol);
+            sectionWriter.EmitSymbolDefinition(new Utf8String(namePointerTableSymbol));
 
             foreach (var exportName in exports)
             {
-                sectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, exportsStringTableSymbol, exportsStringTable.GetStringOffset(exportName));
+                sectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_ADDR32NB, new Utf8String(exportsStringTableSymbol), exportsStringTable.GetStringOffset(new Utf8String(exportName)));
             }
 
             sectionWriter.EmitAlignment(4);
-            sectionWriter.EmitSymbolDefinition(ordinalPointerTableSymbol);
+            sectionWriter.EmitSymbolDefinition(new Utf8String(ordinalPointerTableSymbol));
             for (int i = 0; i < exports.Count; i++)
             {
                 sectionWriter.WriteLittleEndian(checked((ushort)i));
             }
 
-            sectionWriter.EmitSymbolDefinition(exportsStringTableSymbol);
+            sectionWriter.EmitSymbolDefinition(new Utf8String(exportsStringTableSymbol));
             MemoryStream ms = new();
             exportsStringTable.Write(ms);
             sectionWriter.Write(ms.ToArray());
