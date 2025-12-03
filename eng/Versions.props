@@ -156,9 +156,10 @@
 
     <!-- workloads -->
     <!-- sdk version, for testing workloads -->
-    <SdkVersionForWorkloadTesting>$(MicrosoftDotNetApiCompatTaskPackageVersion)</SdkVersionForWorkloadTesting>
+    <SdkVersionForWorkloadTesting Condition="'$(_applyWorkloadVersionSuffix)' != 'true'">$(SdkBandVersion)</SdkVersionForWorkloadTesting>
+    <SdkVersionForWorkloadTesting Condition="'$(_applyWorkloadVersionSuffix)' == 'true'">$(MicrosoftDotNetApiCompatTaskPackageVersion)</SdkVersionForWorkloadTesting>
     <!-- emscripten / Node -->
-    <MicrosoftNETRuntimeEmscriptenVersion>$(SdkVersionForWorkloadTesting)</MicrosoftNETRuntimeEmscriptenVersion>
+    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftDotNetApiCompatTaskPackageVersion)</MicrosoftNETRuntimeEmscriptenVersion>
     <EmsdkPackageVersion>10.0.0</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
