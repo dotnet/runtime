@@ -141,7 +141,7 @@ namespace System.Globalization.Tests
                 // Arrange
 
                 string forwardActual = string.Concat(clusters.SelectMany(cluster => cluster).Select(rune => rune.ToString()));
-                string reverseExpected = string.Concat(Enumerable.Reverse(clusters).SelectMany(cluster => cluster).Select(rune => rune.ToString()));
+                string reverseExpected = string.Concat(clusters.Reverse().SelectMany(cluster => cluster).Select(rune => rune.ToString()));
 
                 // Act
 

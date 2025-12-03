@@ -416,7 +416,7 @@ namespace System.ComponentModel.Composition
         private static CompositionError CreateCompositionError(params string[] messages)
         {
             CompositionError error = null;
-            foreach (string message in Enumerable.Reverse(messages))
+            foreach (string message in messages.Reverse())
             {
                 CompositionException exception = null;
                 if (error != null)

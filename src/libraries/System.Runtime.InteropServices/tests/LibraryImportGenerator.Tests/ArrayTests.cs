@@ -271,7 +271,7 @@ namespace LibraryImportGenerator.IntegrationTests
             char[] array = CharacterTests.CharacterMappings().Select(o => (char)o[0]).ToArray();
             var newArray = array;
             NativeExportsNE.Arrays.ReverseChars(ref newArray, array.Length);
-            Assert.Equal(Enumerable.Reverse(array), newArray);
+            Assert.Equal(array.Reverse(), newArray);
         }
 
         [Fact]
