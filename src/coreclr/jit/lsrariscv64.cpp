@@ -805,10 +805,20 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     // but in this case they must be contained.
     assert(!indirTree->TypeIs(TYP_STRUCT));
 
-    if (indirTree->Addr()->isContained() && !emitter::isValidSimm12(indirTree->Offset()))
+    GenTree* addr = indirTree->Addr();
+    if (addr->isContained())
     {
-        // This offset can't be contained in the ld/sd instruction, so we need an internal register
-        buildInternalIntRegisterDefForNode(indirTree);
+        bool needsReloc = addr->OperIs(GT_CNS_INT) && addr->AsIntCon()->FitsInAddrBase(compiler) &&
+                          addr->AsIntCon()->AddrNeedsReloc(compiler);
+        if (needsReloc || !emitter::isValidSimm12(indirTree->Offset()))
+        {
+            bool needTemp = indirTree->OperIs(GT_STOREIND, GT_NULLCHECK) || varTypeIsFloating(indirTree);
+            if (needTemp)
+            {
+                // This offset can't be contained in the ld/sd instruction, so we need an internal register
+                buildInternalIntRegisterDefForNode(indirTree);
+            }
+        }
     }
 
 #ifdef FEATURE_SIMD

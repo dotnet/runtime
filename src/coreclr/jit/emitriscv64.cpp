@@ -4500,34 +4500,46 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         {
             GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
             unsigned             lclNum  = varNode->GetLclNum();
-            unsigned             offset  = varNode->GetLclOffs();
+            unsigned             lclOffs = varNode->GetLclOffs();
             if (emitInsIsStore(ins))
             {
-                emitIns_S_R(ins, attr, dataReg, lclNum, offset);
+                emitIns_S_R(ins, attr, dataReg, lclNum, lclOffs);
             }
             else
             {
-                emitIns_R_S(ins, attr, dataReg, lclNum, offset);
+                emitIns_R_S(ins, attr, dataReg, lclNum, lclOffs);
             }
         }
         else if (addr->OperIs(GT_CNS_INT))
         {
             assert(memBase == addr);
-            ssize_t   cns      = addr->AsIntCon()->IconValue();
-            bool      needTemp = emitInsIsStore(ins) || isFloatReg(dataReg) || (dataReg == REG_ZERO);
-            regNumber addrReg  = needTemp ? codeGen->internalRegisters.GetSingle(indir) : dataReg;
-            if (addr->AsIntCon()->FitsInAddrBase(emitComp) && addr->AsIntCon()->AddrNeedsReloc(emitComp))
+            assert(offset == addr->AsIntCon()->IconValue());
+            if (!addr->AsIntCon()->AddrNeedsReloc(emitComp) && isValidSimm12(offset))
             {
-                attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
-                emitIns_R_AI(ins, attr, dataReg, addrReg, (size_t)cns, cns, addr->GetIconHandleFlag());
+                emitIns_R_R_I(ins, attr, dataReg, REG_ZERO, offset);
             }
             else
             {
-                ssize_t off = (cns << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
-                cns -= off;
+                bool needTemp = indir->OperIs(GT_STOREIND, GT_NULLCHECK) || varTypeIsFloating(indir);
+                if (addr->AsIntCon()->FitsInAddrBase(emitComp) && addr->AsIntCon()->AddrNeedsReloc(emitComp))
+                {
+                    regNumber addrReg = needTemp ? codeGen->internalRegisters.GetSingle(indir) : dataReg;
+                    attr              = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
+                    emitIns_R_AI(ins, attr, dataReg, addrReg, (size_t)offset, offset, addr->GetIconHandleFlag());
+                }
+                else
+                {
+                    ssize_t lo12 = (offset << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
+                    offset -= lo12;
 
-                emitLoadImmediate(EA_PTRSIZE, addrReg, cns);
-                emitIns_R_R_I(ins, attr, dataReg, addrReg, off);
+                    regNumber addrReg = REG_ZERO;
+                    if (offset != 0)
+                    {
+                        addrReg = needTemp ? codeGen->internalRegisters.GetSingle(indir) : dataReg;
+                        emitLoadImmediate(EA_PTRSIZE, addrReg, offset);
+                    }
+                    emitIns_R_R_I(ins, attr, dataReg, addrReg, lo12);
+                }
             }
         }
         else if (isValidSimm12(offset))

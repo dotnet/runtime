@@ -5024,7 +5024,6 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     var_types   type      = tree->TypeGet();
     instruction ins       = ins_Load(type);
-    instruction ins2      = INS_none;
     regNumber   targetReg = tree->GetRegNum();
     regNumber   tmpReg    = targetReg;
     emitAttr    attr      = emitActualTypeSize(type);
