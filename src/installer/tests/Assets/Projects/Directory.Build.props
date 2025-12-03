@@ -7,7 +7,9 @@
 
   <!-- Calculate necessary paths manually without depending on repo-level properties -->
   <PropertyGroup>
-    <!-- Determine the repo root by walking up from this directory -->
+    <!-- Determine the repo root by walking up from this directory.
+         Hard-coded path traversal is intentional to avoid automatic discovery of parent Directory.Build.props.
+         Path: src/installer/tests/Assets/Projects -> repo root requires 5 levels up. -->
     <RepoRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..', '..', '..', '..'))</RepoRoot>
     <RepositoryEngineeringDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'eng'))</RepositoryEngineeringDir>
     <ArtifactsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</ArtifactsDir>
