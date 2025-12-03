@@ -6,4 +6,9 @@
     <Nullable>disable</Nullable>
     <LinkerTestDir>$(MSBuildThisFileDirectory)</LinkerTestDir>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="$(MicrosoftNetCompilersToolsetVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
 </Project>
