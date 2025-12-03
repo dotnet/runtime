@@ -1466,7 +1466,7 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm, bool d
 {
     assert(!EA_IS_RELOC(size));
     assert(!doEmit || isGeneralRegister(reg));
-    
+
     if (isValidSimm12(imm))
     {
         if (doEmit)

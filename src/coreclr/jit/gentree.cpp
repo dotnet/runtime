@@ -5167,7 +5167,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             {
                 GenTreeIntConCommon* con            = tree->AsIntConCommon();
                 bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
-                bool                 fitsInAddrBase = con->FitsInAddrBase(this); // PC-relative addressing
                 ssize_t              imm            = static_cast<ssize_t>(con->LngValue());
                 emitAttr             size           = EA_SIZE(emitActualTypeSize(tree));
 
@@ -5176,11 +5175,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     // auipc + addi
                     costSz = 8;
                     costEx = 2;
-                }
-                else if (emitter::isValidSimm12(imm))
-                {
-                    costSz = 4;
-                    costEx = 1;
                 }
                 else
                 {
@@ -5200,7 +5194,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costSz = 4 * instructionCount;
                         costEx = instructionCount;
                     }
-
                 }
                 goto COMMON_CNS;
             }
