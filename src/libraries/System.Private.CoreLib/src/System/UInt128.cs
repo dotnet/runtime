@@ -285,7 +285,47 @@ namespace System
         /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="Half" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a <see cref="Half" />.</returns>
-        public static explicit operator Half(UInt128 value) => (Half)(double)(value);
+        public static explicit operator Half(UInt128 value)
+        {
+            var lo = value._lower;
+            var hi = value._upper;
+
+            return 0 != hi || 65520 <= lo ? Half.PositiveInfinity : BitConverter.Int16BitsToHalf((short)ToHalfPartial((uint)lo));
+
+            static int ToHalfPartial(uint value)
+            {
+                Debug.Assert(value <= 65519);
+
+                const int exponentBias = 15;
+                const int mantissaBits = 10;
+
+                if (value == 0)
+                {
+                    return 0;
+                }
+
+                // Count leading zeros to find the position of the highest set bit
+                var leadingZeros = BitOperations.LeadingZeroCount(value);
+
+                int exponent = 32 - 1 + exponentBias - leadingZeros;
+
+                uint shifted = value << (1 + leadingZeros);
+
+                uint mantissa = shifted >>> (32 - mantissaBits);
+
+                // Remaining bits for rounding (bits 21-0)
+                uint remaining = shifted & 0x3FFFFF;
+
+                // Apply rounding (round to nearest, ties to even)
+                if (remaining > 0x200000 || (remaining == 0x200000 && 0 != (1 & mantissa)))
+                {
+                    ++mantissa;
+                }
+
+                // Combine into half-precision format (sign bit is 0 for unsigned input)
+                return (exponent << mantissaBits) + (int)mantissa;
+            }
+        }
 
         /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="short" /> value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -402,7 +442,56 @@ namespace System
         /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="float" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a <see cref="float" />.</returns>
-        public static explicit operator float(UInt128 value) => (float)(double)(value);
+        public static explicit operator float(UInt128 value)
+        {
+            return ToSingle(value._lower, value._upper);
+
+            static float ToSingle(ulong value_lo, ulong value_hi)
+            {
+                return 0 == value_hi ? (float)value_lo : BitConverter.Int32BitsToSingle(ToSinglePartial(value_lo, value_hi));
+            }
+
+            static int ToSinglePartial(ulong value_lo, ulong value_hi)
+            {
+                Debug.Assert(value_hi != 0);
+
+                const int exponentBias = 127;
+                const int mantissaBitCount = 23;
+                const int nonMantissaBitCount = 32 - mantissaBitCount;
+                const int positiveInfinityBits = 0X7f800000;
+
+                if ((ulong)0Xffffff8000000000 <= value_hi)
+                {
+                    return positiveInfinityBits;
+                }
+
+                // Count leading zeros to find the position of the highest set bit
+                int shiftCount = 1 + BitOperations.LeadingZeroCount(value_hi);
+
+                int exponent = 128 + exponentBias - shiftCount;
+
+                ulong shifted = 1 == value_hi ? value_lo : (value_lo >>> (64 - shiftCount)) | (value_hi << shiftCount);
+
+                int mantissa = (int)(shifted >>> (32 + nonMantissaBitCount));
+
+                // Remaining bits for rounding (bits 40-0)
+                ulong remaining = shifted & 0X1ffffffffff;
+
+                if (!(1 == value_hi) && 0 != value_lo << shiftCount)
+                {
+                    remaining |= 1;
+                }
+
+                // Apply rounding (round to nearest, ties to even)
+                if (remaining > 0X10000000000 || (remaining == 0X10000000000 && 0 != (1 & mantissa)))
+                {
+                    ++mantissa;
+                }
+
+                // Combine into single-precision format (sign bit is 0 for unsigned input)
+                return (exponent << mantissaBitCount) + mantissa;
+            }
+        }
 
         /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="ushort" /> value.</summary>
         /// <param name="value">The value to convert.</param>
