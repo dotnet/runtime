@@ -1457,11 +1457,20 @@ void emitter::emitIns_Jump(instruction ins, BasicBlock* dst, regNumber reg1, reg
 
 static inline constexpr unsigned WordMask(uint8_t bits);
 
-/*****************************************************************************
- *
- *  Emits load of 64-bit constant to register.
- *
- */
+//------------------------------------------------------------------------
+// emitLoadImmediate: Emits load of 64-bit constant to register.
+//
+// Arguments:
+//    size   - Attribute
+//    reg    - Destination register for addi/load, source for stores
+//    imm    - An immediate value to be loaded
+//    doEmit - If true, emit the instruction. if false, just calculate the number of instructions.
+//
+// Returns:
+//    Returns a positive integer which is the required number of instructions to synthesize a constant.
+//    But if the value cannot be synthesized using maximum 5 insturctions, returns -1 to indicate that
+//    the constant should be loaded from the memory.
+//
 int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm, bool doEmit /* = true */)
 {
     assert(!EA_IS_RELOC(size));
