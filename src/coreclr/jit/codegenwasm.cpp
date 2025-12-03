@@ -82,14 +82,17 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_ADD:
         case GT_SUB:
         case GT_MUL:
-        case GT_DIV:
-        case GT_MOD:
-        case GT_UDIV:
-        case GT_UMOD:
         case GT_OR:
         case GT_XOR:
         case GT_AND:
             genCodeForBinary(treeNode->AsOp());
+            break;
+
+        case GT_DIV:
+        case GT_MOD:
+        case GT_UDIV:
+        case GT_UMOD:
+            genCodeForDivMod(treeNode->AsOp());
             break;
 
         case GT_LSH:
@@ -97,7 +100,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_RSZ:
         case GT_ROL:
         case GT_ROR:
-            genCodeForShiftOrRotate(treeNode->AsOp());
+            genCodeForShift(treeNode);
             break;
 
         case GT_LCL_VAR:
@@ -220,6 +223,50 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             ins = INS_f64_mul;
             break;
 
+        case PackOperAndType(GT_AND, TYP_INT):
+            ins = INS_i32_and;
+            break;
+        case PackOperAndType(GT_AND, TYP_LONG):
+            ins = INS_i64_and;
+            break;
+
+        case PackOperAndType(GT_OR, TYP_INT):
+            ins = INS_i32_or;
+            break;
+        case PackOperAndType(GT_OR, TYP_LONG):
+            ins = INS_i64_or;
+            break;
+
+        case PackOperAndType(GT_XOR, TYP_INT):
+            ins = INS_i32_xor;
+            break;
+        case PackOperAndType(GT_XOR, TYP_LONG):
+            ins = INS_i64_xor;
+            break;
+
+        default:
+            ins = INS_none;
+            NYI_WASM("genCodeForBinary");
+            break;
+    }
+
+    GetEmitter()->emitIns(ins);
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genCodeForDivMod: Generate code for a division or modulus operator
+//
+// Arguments:
+//    treeNode - The division or modulus operation for which we are generating code.
+//
+void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
+{
+    genConsumeOperands(treeNode);
+
+    instruction ins;
+    switch (PackOperAndType(treeNode))
+    {
         case PackOperAndType(GT_DIV, TYP_INT):
             ins = INS_i32_div_s;
             break;
@@ -254,30 +301,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             ins = INS_i64_rem_u;
             break;
 
-        case PackOperAndType(GT_AND, TYP_INT):
-            ins = INS_i32_and;
-            break;
-        case PackOperAndType(GT_AND, TYP_LONG):
-            ins = INS_i64_and;
-            break;
-
-        case PackOperAndType(GT_OR, TYP_INT):
-            ins = INS_i32_or;
-            break;
-        case PackOperAndType(GT_OR, TYP_LONG):
-            ins = INS_i64_or;
-            break;
-
-        case PackOperAndType(GT_XOR, TYP_INT):
-            ins = INS_i32_xor;
-            break;
-        case PackOperAndType(GT_XOR, TYP_LONG):
-            ins = INS_i64_xor;
-            break;
-
         default:
             ins = INS_none;
-            NYI_WASM("genCodeForBinary");
+            NYI_WASM("genCodeForDivMod");
             break;
     }
 
@@ -286,13 +312,14 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genCodeForShiftOrRotate: Generate code for a shift or rotate operator
+// genCodeForShift: Generate code for a shift or rotate operator
 //
 // Arguments:
 //    treeNode - The shift or rotate operation for which we are generating code.
 //
-void CodeGen::genCodeForShiftOrRotate(GenTreeOp* treeNode)
+void CodeGen::genCodeForShift(GenTree* tree)
 {
+    GenTreeOp* treeNode = tree->AsOp();
     genConsumeOperands(treeNode);
 
     // TODO-WASM: Zero-extend the 2nd operand for shifts and rotates as needed when the 1st and 2nd operand are
