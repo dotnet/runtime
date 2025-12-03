@@ -911,8 +911,10 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     exceptionFlags = comp->gtCollectExceptions(argx);
                 }
 
-                bool exactlyOne       = isPow2(static_cast<unsigned>(exceptionFlags));
-                bool throwsSameAsPrev = exactlyOne && (exceptionFlags == prevExceptionFlags);
+                bool exactlyOneKnown =
+                    isPow2(static_cast<unsigned>(exceptionFlags)) &&
+                    ((exceptionFlags & ExceptionSetFlags::UnknownException) == ExceptionSetFlags::None);
+                bool throwsSameAsPrev = exactlyOneKnown && (exceptionFlags == prevExceptionFlags);
                 if (!throwsSameAsPrev)
                 {
                     JITDUMP("Exception set for arg [%06u] interferes with previous tree [%06u]; must evaluate previous "
@@ -5664,10 +5666,11 @@ GenTree* Compiler::getVirtMethodPointerTree(GenTree*                thisPtr,
                                             CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                             CORINFO_CALL_INFO*      pCallInfo)
 {
-    GenTree* exactTypeDesc   = getTokenHandleTree(pResolvedToken, true);
     GenTree* exactMethodDesc = getTokenHandleTree(pResolvedToken, false);
+    GenTree* exactTypeDesc   = getTokenHandleTree(pResolvedToken, true);
 
-    return gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr, exactTypeDesc, exactMethodDesc);
+    return gtNewVirtualFunctionLookupHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr, exactMethodDesc,
+                                                    exactTypeDesc);
 }
 
 //------------------------------------------------------------------------
@@ -9308,11 +9311,10 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         }
     }
 
-    NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
-    var_types      retType         = node->TypeGet();
-    CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
-    var_types      simdBaseType    = node->GetSimdBaseType();
-    unsigned       simdSize        = node->GetSimdSize();
+    NamedIntrinsic intrinsicId  = node->GetHWIntrinsicId();
+    var_types      retType      = node->TypeGet();
+    var_types      simdBaseType = node->GetSimdBaseType();
+    unsigned       simdSize     = node->GetSimdSize();
 
     switch (intrinsicId)
     {
@@ -9418,7 +9420,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 var_types simdType = getSIMDTypeForSize(simdSize);
 
-                node = gtNewSimdSqrtNode(simdType, hwop1, simdBaseJitType, simdSize)->AsHWIntrinsic();
+                node = gtNewSimdSqrtNode(simdType, hwop1, simdBaseType, simdSize)->AsHWIntrinsic();
                 DEBUG_DESTROY_NODE(sqrt);
             }
             else
@@ -9593,7 +9595,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     DEBUG_DESTROY_NODE(op2);
                     DEBUG_DESTROY_NODE(node);
 
-                    node = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseJitType, simdSize)->AsHWIntrinsic();
+                    node = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseType, simdSize)->AsHWIntrinsic();
 
 #if defined(TARGET_XARCH)
                     if (varTypeIsFloating(simdBaseType))
@@ -9854,10 +9856,9 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             genTreeOps op1Oper     = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar, /* getEffectiveOp */ true);
             var_types  op1RetType  = op1Intrin->TypeGet();
 
-            NamedIntrinsic op1Intrinsic       = op1Intrin->GetHWIntrinsicId();
-            CorInfoType    op1SimdBaseJitType = op1Intrin->GetSimdBaseJitType();
-            var_types      op1SimdBaseType    = op1Intrin->GetSimdBaseType();
-            unsigned       op1SimdSize        = op1Intrin->GetSimdSize();
+            NamedIntrinsic op1Intrinsic    = op1Intrin->GetHWIntrinsicId();
+            var_types      op1SimdBaseType = op1Intrin->GetSimdBaseType();
+            unsigned       op1SimdSize     = op1Intrin->GetSimdSize();
 
             if (op1Oper == GT_NOT)
             {
@@ -9897,7 +9898,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                         assert(varTypeIsMask(lookupType));
 
                         op1Intrin->gtType = lookupType;
-                        op1Intrin = gtNewSimdCvtMaskToVectorNode(retType, op1Intrin, op1SimdBaseJitType, op1SimdSize)
+                        op1Intrin = gtNewSimdCvtMaskToVectorNode(retType, op1Intrin, op1SimdBaseType, op1SimdSize)
                                         ->AsHWIntrinsic();
                     }
                     else if (cvtIntrin != nullptr)
@@ -10080,11 +10081,10 @@ GenTree* Compiler::fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* tree)
     // so that we can fold it down to `v1 op c3`
     assert(opts.OptimizationEnabled());
 
-    NamedIntrinsic intrinsicId     = tree->GetHWIntrinsicId();
-    var_types      retType         = tree->TypeGet();
-    CorInfoType    simdBaseJitType = tree->GetSimdBaseJitType();
-    var_types      simdBaseType    = tree->GetSimdBaseType();
-    unsigned       simdSize        = tree->GetSimdSize();
+    NamedIntrinsic intrinsicId  = tree->GetHWIntrinsicId();
+    var_types      retType      = tree->TypeGet();
+    var_types      simdBaseType = tree->GetSimdBaseType();
+    unsigned       simdSize     = tree->GetSimdSize();
 
     if (!varTypeIsSIMD(retType) && !varTypeIsMask(retType))
     {
@@ -10166,7 +10166,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* tree)
     assert(cns1->TypeIs(retType));
     assert(cns2->TypeIs(retType));
 
-    GenTree* res = gtNewSimdHWIntrinsicNode(retType, cns1, cns2, intrinsicId, simdBaseJitType, simdSize);
+    GenTree* res = gtNewSimdHWIntrinsicNode(retType, cns1, cns2, intrinsicId, simdBaseType, simdSize);
     res          = gtFoldExprHWIntrinsic(res->AsHWIntrinsic());
 
     assert(res == cns1);
@@ -11261,10 +11261,9 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
     // Now do POST-ORDER processing
     //
 
-    var_types   retType         = tree->TypeGet();
-    CorInfoType simdBaseJitType = tree->GetSimdBaseJitType();
-    var_types   simdBaseType    = tree->GetSimdBaseType();
-    unsigned    simdSize        = tree->GetSimdSize();
+    var_types retType      = tree->TypeGet();
+    var_types simdBaseType = tree->GetSimdBaseType();
+    unsigned  simdSize     = tree->GetSimdSize();
 
     // Try to fold it, maybe we get lucky,
     GenTree* morphedTree = gtFoldExpr(tree);
@@ -11355,11 +11354,10 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
 //
 GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 {
-    NamedIntrinsic intrinsic       = tree->GetHWIntrinsicId();
-    var_types      retType         = tree->TypeGet();
-    CorInfoType    simdBaseJitType = tree->GetSimdBaseJitType();
-    var_types      simdBaseType    = tree->GetSimdBaseType();
-    unsigned       simdSize        = tree->GetSimdSize();
+    NamedIntrinsic intrinsic    = tree->GetHWIntrinsicId();
+    var_types      retType      = tree->TypeGet();
+    var_types      simdBaseType = tree->GetSimdBaseType();
+    unsigned       simdSize     = tree->GetSimdSize();
 
     bool       isScalar = false;
     genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
@@ -11431,12 +11429,12 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                     if (op1Type == TYP_MASK)
                     {
 #if defined(TARGET_XARCH)
-                        newNode = gtNewSimdHWIntrinsicNode(op1Type, op1, NI_AVX512_NotMask, simdBaseJitType, simdSize);
+                        newNode = gtNewSimdHWIntrinsicNode(op1Type, op1, NI_AVX512_NotMask, simdBaseType, simdSize);
 #endif // TARGET_XARCH
                     }
                     else
                     {
-                        newNode = gtNewSimdUnOpNode(GT_NOT, op1Type, op1, simdBaseJitType, simdSize);
+                        newNode = gtNewSimdUnOpNode(GT_NOT, op1Type, op1, simdBaseType, simdSize);
 
 #if defined(TARGET_XARCH)
                         newNode->AsHWIntrinsic()->Op(2)->SetMorphed(this);
@@ -11454,11 +11452,11 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 
                             if (retType == TYP_MASK)
                             {
-                                newNode = gtNewSimdCvtVectorToMaskNode(retType, newNode, simdBaseJitType, simdSize);
+                                newNode = gtNewSimdCvtVectorToMaskNode(retType, newNode, simdBaseType, simdSize);
                             }
                             else
                             {
-                                newNode = gtNewSimdCvtMaskToVectorNode(retType, newNode, simdBaseJitType, simdSize);
+                                newNode = gtNewSimdCvtMaskToVectorNode(retType, newNode, simdBaseType, simdSize);
                             }
                         }
 
@@ -11496,7 +11494,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                     assert(varTypeIsMask(lookupType));
 
                     tree->gtType = lookupType;
-                    tree = gtNewSimdCvtMaskToVectorNode(retType, tree, simdBaseJitType, simdSize)->AsHWIntrinsic();
+                    tree         = gtNewSimdCvtMaskToVectorNode(retType, tree, simdBaseType, simdSize)->AsHWIntrinsic();
                     return fgMorphHWIntrinsicRequired(tree);
                 }
             }
@@ -11595,7 +11593,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                 {
 #if defined(TARGET_ARM64)
                     // xarch doesn't have a native GT_NEG representation for integers and itself uses (Zero - v1)
-                    op2 = gtNewSimdUnOpNode(GT_NEG, retType, op2, simdBaseJitType, simdSize);
+                    op2 = gtNewSimdUnOpNode(GT_NEG, retType, op2, simdBaseType, simdSize);
 
                     DEBUG_DESTROY_NODE(op1);
                     DEBUG_DESTROY_NODE(tree);
@@ -11605,7 +11603,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                 }
                 else
                 {
-                    op2 = gtNewSimdUnOpNode(GT_NEG, retType, op2, simdBaseJitType, simdSize);
+                    op2 = gtNewSimdUnOpNode(GT_NEG, retType, op2, simdBaseType, simdSize);
 
 #if defined(TARGET_XARCH)
                     if (varTypeIsFloating(simdBaseType))
@@ -11646,7 +11644,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
             if (op2->IsVectorAllBitsSet())
             {
                 // xarch doesn't have a native GT_NOT representation and itself uses (v1 ^ AllBitsSet)
-                op1 = gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize);
+                op1 = gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseType, simdSize);
 
                 DEBUG_DESTROY_NODE(op2);
                 DEBUG_DESTROY_NODE(tree);
@@ -11657,7 +11655,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
             if (varTypeIsFloating(simdBaseType) && op2->IsVectorNegativeZero(simdBaseType))
             {
                 // xarch doesn't have a native GT_NEG representation for floating-point and itself uses (v1 ^ -0.0)
-                op1 = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseJitType, simdSize);
+                op1 = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseType, simdSize);
 
                 DEBUG_DESTROY_NODE(op2);
                 DEBUG_DESTROY_NODE(tree);

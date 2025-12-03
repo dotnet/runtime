@@ -19,7 +19,6 @@ namespace System.Runtime.InteropServices
         R4 = 0xb,           // 4 byte floating point
         R8 = 0xc,           // 8 byte floating point
         [EditorBrowsable(EditorBrowsableState.Never)]
-        [Obsolete("Marshalling as Currency may be unavailable in future releases.")]
         Currency = 0xf,     // A currency
         BStr = 0x13,        // OLE Unicode BSTR
         LPStr = 0x14,       // Ptr to SBCS string

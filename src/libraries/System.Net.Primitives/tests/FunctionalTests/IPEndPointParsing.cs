@@ -301,7 +301,6 @@ namespace System.Net.Primitives.Functional.Tests
             new object[] { "::FFFF:0:192.168.0.1", "::ffff:0:192.168.0.1" }, // SIIT
             new object[] { "::5EFE:192.168.0.1", "::5efe:192.168.0.1" }, // ISATAP
             new object[] { "1::5EFE:192.168.0.1", "1::5efe:192.168.0.1" }, // ISATAP
-            new object[] { "::192.168.0.010", "::192.168.0.10" }, // Embedded IPv4 octal, read as decimal
         };
 
         public static readonly object[][] ValidIpv4Andv6AddressesWithAndWithoutPort =
