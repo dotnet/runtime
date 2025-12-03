@@ -42,8 +42,16 @@
           Condition="'$(BuildTestsOn)' == 'local'" />
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props"
           Condition="'$(BuildTestsOn)' == 'local'" />
-  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets"
-          Condition="'$(BuildTestsOn)' == 'local'" />
+
+  <!-- Use the repo's CrossGen props/targets.
+       This can be removed once we upstream Mach-O support in the targets to the SDK
+       and the runtime repo moves to an SDK with that change -->
+  <Import Project="$(Crossgen2SdkOverridePropsPath)" Condition="'$(PublishReadyToRun)' == 'true' and '$(Crossgen2SdkOverridePropsPath)' != ''" />
+  <PropertyGroup>
+    <!-- Import after SDK targets in order to override R2R-related targets in the SDK -->
+    <AfterMicrosoftNETSdkTargets Condition="'$(PublishReadyToRun)' == 'true' and '$(Crossgen2SdkOverrideTargetsPath)' != ''">$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
+    <AfterMicrosoftNETSdkTargets Condition="'$(BuildTestsOn)' == 'local'">$(AfterMicrosoftNETSdkTargets);$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets</AfterMicrosoftNETSdkTargets>
+  </PropertyGroup>
 
   <PropertyGroup>
     <AppleBuildDependsOn>PrepareForAppleBuildApp;$(AppleBuildDependsOn);_CopyTestArchive</AppleBuildDependsOn>

@@ -286,6 +286,9 @@
   <Target Name="_AppleNativeAotCompile"
           DependsOnTargets="SetupProperties;ComputeIlcCompileInputs;IlcCompile;$(_IlcLibraryBuildDependsOn)" />
 
+  <Target Name="_AppleR2RCompile"
+          DependsOnTargets="CreateReadyToRunImages" />
+
   <Target Name="_AppleGenerateAppBundle"
           Condition="'$(AppleGenerateAppBundle)' == 'true'"
           DependsOnTargets="_AppleGenerateRuntimeConfig">
