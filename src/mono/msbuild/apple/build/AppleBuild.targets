@@ -296,6 +296,8 @@
 
     <ItemGroup>
       <ExtraAppLinkerArgs Include="@(_CommonLinkerArgs)" />
+      <ExtraAppLinkerArgs Include="-Xlinker" />
+      <ExtraAppLinkerArgs Include="-O0" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">
