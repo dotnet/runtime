@@ -4349,6 +4349,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         return;
     }
 
+    DoPhase(this, PHASE_PATCHPOINTS, &Compiler::fgEarlyExpandQmarkNodes);
+
     // If instrumenting, add block and class probes.
     //
     if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))

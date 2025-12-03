@@ -14642,6 +14642,13 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         }
         else
         {
+            while (trueExpr->OperIs(GT_COMMA))
+            {
+                Statement* trueStmt = fgNewStmtFromTree(trueExpr->gtGetOp1(), stmt->GetDebugInfo());
+                trueExpr            = trueExpr->gtGetOp2();
+                fgInsertStmtAtEnd(thenBlock, trueStmt);
+            }
+
             if (dst != nullptr)
             {
                 trueExpr = dst->OperIs(GT_STORE_LCL_FLD) ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(),
@@ -14665,6 +14672,13 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         }
         else
         {
+            while (falseExpr->OperIs(GT_COMMA))
+            {
+                Statement* falseStmt = fgNewStmtFromTree(falseExpr->gtGetOp1(), stmt->GetDebugInfo());
+                falseExpr            = falseExpr->gtGetOp2();
+                fgInsertStmtAtEnd(elseBlock, falseStmt);
+            }
+
             if (dst != nullptr)
             {
                 falseExpr =
@@ -14688,13 +14702,25 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     return introducedThrow;
 }
 
+PhaseStatus Compiler::fgEarlyExpandQmarkNodes()
+{
+    if ((optMethodFlags & OMF_HAS_EARLY_EXPAND_QMARKS) == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    fgExpandQmarkNodes(true);
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
 /*****************************************************************************
  *
  *  Expand GT_QMARK nodes from the flow graph into basic blocks.
  *
  */
 
-void Compiler::fgExpandQmarkNodes()
+void Compiler::fgExpandQmarkNodes(bool early)
 {
     bool introducedThrows = false;
 
@@ -14715,7 +14741,11 @@ void Compiler::fgExpandQmarkNodes()
         fgPostExpandQmarkChecks();
 #endif
     }
-    compQmarkRationalized = true;
+
+    if (!early)
+    {
+        compQmarkRationalized = true;
+    }
 
     // TODO: if qmark expansion created throw blocks, try and merge them
     //
