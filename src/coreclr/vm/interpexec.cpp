@@ -2564,10 +2564,10 @@ MAIN_LOOP:
                     int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
 
                     // Used only for INTOP_CALLDELEGATE to allow removal of the delegate object from the argument list
-                    size_t firstTargetArgOffset = 0;
+                    size_t sizeOfArgsUpto16ByteAlignment = 0;
                     if (*ip == INTOP_CALLDELEGATE)
                     {
-                        firstTargetArgOffset = (size_t)ip[4];
+                        sizeOfArgsUpto16ByteAlignment = (size_t)ip[4];
                         ip += 5;
                     }
                     else
@@ -2633,8 +2633,23 @@ MAIN_LOOP:
                             }
                             else
                             {
-                                // Shift args down by one slot to remove the delegate obj pointer
-                                memmove(LOCAL_VAR_ADDR(callArgsOffset, int8_t), LOCAL_VAR_ADDR(callArgsOffset + firstTargetArgOffset, int8_t), pTargetMethod->argsSize);
+                                // Shift args down by one slot to remove the delegate obj pointer.
+                                // We need to preserve alignment of arguments that require 16-byte alignment.
+                                // The sizeOfArgsUpto16ByteAlignment is the size of all the target method args starting at the first argument upto the last
+                                // argument that doesn't require 16-byte alignment.
+                                if (sizeOfArgsUpto16ByteAlignment != 0)
+                                {
+                                    memmove(LOCAL_VAR_ADDR(callArgsOffset, int8_t), LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int8_t), sizeOfArgsUpto16ByteAlignment);
+                                }
+
+                                if (sizeOfArgsUpto16ByteAlignment != pTargetMethod->argsSize)
+                                {
+                                    // There are arguments that require 16-byte alignment
+                                    size_t firstAlignedTargetArgDstOffset = ALIGN_UP(sizeOfArgsUpto16ByteAlignment, INTERP_STACK_ALIGNMENT);
+                                    size_t firstAlignedTargetArgSrcOffset = ALIGN_UP(INTERP_STACK_SLOT_SIZE + sizeOfArgsUpto16ByteAlignment, INTERP_STACK_ALIGNMENT);
+                                    memmove(LOCAL_VAR_ADDR(callArgsOffset + firstAlignedTargetArgDstOffset, int8_t), LOCAL_VAR_ADDR(callArgsOffset + firstAlignedTargetArgSrcOffset, int8_t), pTargetMethod->argsSize - sizeOfArgsUpto16ByteAlignment);
+                                }
+
                                 // Allocate child frame.
                                 InterpMethodContextFrame *pChildFrame = pFrame->pNext;
                                 if (!pChildFrame)
