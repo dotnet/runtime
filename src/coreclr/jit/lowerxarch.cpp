@@ -1137,7 +1137,7 @@ void Lowering::LowerCast(GenTree* tree)
                             GenTree* resultClone = comp->gtClone(result);
                             castRange.InsertAtEnd(resultClone);
 
-                            // If the conversion of the fixed-up value overflowed, the result wil be
+                            // If the conversion of the fixed-up value overflowed, the result will be
                             // int.MinValue. Since `blendvps` uses only the MSB for result selection,
                             // this is adequate to force selection of the negated result.
                             //
