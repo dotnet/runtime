@@ -4031,6 +4031,41 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
 }
 
 //------------------------------------------------------------------------
+// optAssertionProp_Shift: Optimizes RSH/RSZ/LSH via assertions
+//    1) Convert RSH to RZH if op1 is proven to be never negative
+//
+// Arguments:
+//    assertions - set of live assertions
+//    tree       - the shift node to optimize
+//    stmt       - statement containing the shift
+//    block      - the block containing the statement
+//
+// Returns:
+//    Updated shift node, or nullptr
+//
+GenTree* Compiler::optAssertionProp_Shift(ASSERT_VALARG_TP assertions,
+                                          GenTreeOp*       tree,
+                                          Statement*       stmt,
+                                          BasicBlock*      block)
+{
+    GenTree* op1 = tree->gtGetOp1();
+
+    bool op1IsNotZero;
+    bool op1IsNotNegative;
+    optAssertionProp_RangeProperties(assertions, op1, stmt, block, &op1IsNotZero, &op1IsNotNegative);
+
+    bool changed = false;
+    if (op1IsNotNegative && tree->OperIs(GT_RSH))
+    {
+        JITDUMP("Converting RSH to unsigned RSZ since op1 operand is never negative...\n");
+        tree->SetOper(GT_RSZ, GenTree::PRESERVE_VN);
+        changed = true;
+    }
+
+    return changed ? optAssertionProp_Update(tree, tree, stmt) : nullptr;
+}
+
+//------------------------------------------------------------------------
 // optAssertionProp_ModDiv: Optimizes DIV/UDIV/MOD/UMOD via assertions
 //    1) Convert DIV/MOD to UDIV/UMOD if both operands are proven to be never negative
 //    2) Marks DIV/UDIV/MOD/UMOD with GTF_DIV_MOD_NO_BY_ZERO if divisor is proven to be never zero
@@ -5636,6 +5671,9 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_UMOD:
         case GT_UDIV:
             return optAssertionProp_ModDiv(assertions, tree->AsOp(), stmt, block);
+
+        case GT_RSH:
+            return optAssertionProp_Shift(assertions, tree->AsOp(), stmt, block);
 
         case GT_BLK:
         case GT_IND:
