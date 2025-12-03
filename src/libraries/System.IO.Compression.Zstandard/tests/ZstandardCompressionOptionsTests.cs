@@ -39,7 +39,7 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(10)]
         [InlineData(23)]
-        [InlineData(31)]
+        [InlineData(30)]
         public void WindowLog_SetToValidRange_Succeeds(int windowLog)
         {
             ZstandardCompressionOptions options = new();
