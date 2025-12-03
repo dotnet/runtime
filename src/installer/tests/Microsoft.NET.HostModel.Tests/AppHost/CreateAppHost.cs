@@ -262,9 +262,9 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         }
 
         [Theory]
+        [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData("")]
         [InlineData("dir with spaces")]
-        [PlatformSpecific(TestPlatforms.OSX)]
         public void CodeSignMachOAppHost(string subdir)
         {
             using (TestArtifact artifact = CreateTestDirectory())
@@ -287,9 +287,9 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         }
 
         [Theory]
+        [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData("")]
         [InlineData("dir with spaces")]
-        [PlatformSpecific(TestPlatforms.OSX)]
         public void SigningExistingAppHostCreatesNewInode(string subdir)
         {
             using (TestArtifact artifact = CreateTestDirectory())
