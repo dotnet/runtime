@@ -1403,18 +1403,15 @@ namespace Internal.JitInterface
 
                 if (resultDef is MethodDesc resultMethod)
                 {
-                    if (resultMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
-                        resultMethod = rawPinvoke.Target;
-
                     // It's okay to strip the instantiation away because we don't need a MethodSpec
                     // token - SignatureBuilder will generate the generic method signature
                     // using instantiation parameters from the MethodDesc entity.
-                    resultMethod = resultMethod.GetTypicalMethodDefinition();
+                    EcmaMethod ecmaMethod = resultMethod.GetEcmaDefinition();
 
-                    Debug.Assert(resultMethod is EcmaMethod);
-                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultMethod).OwningType));
-                    token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultMethod).Handle);
-                    module = ((EcmaMethod)resultMethod).Module;
+                    Debug.Assert(ecmaMethod is not null);
+                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(ecmaMethod.OwningType));
+                    token = (mdToken)MetadataTokens.GetToken(ecmaMethod.Handle);
+                    module = ecmaMethod.Module;
                 }
                 else if (resultDef is FieldDesc resultField)
                 {
