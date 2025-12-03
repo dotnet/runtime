@@ -366,7 +366,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
         default:
             ins = INS_none;
-            NYI_WASM("genCodeForShiftOrRotate");
+            NYI_WASM("genCodeForShift");
             break;
     }
 
