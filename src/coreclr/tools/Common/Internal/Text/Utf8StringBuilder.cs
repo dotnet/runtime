@@ -16,6 +16,11 @@ namespace Internal.Text
         {
         }
 
+        public Utf8StringBuilder(int capacity)
+        {
+            _buffer = new byte[capacity];
+        }
+
         public int Length => _length;
 
         public ReadOnlySpan<byte> AsSpan() => _buffer.AsSpan(0, _length);

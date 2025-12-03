@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using Xunit;
 
@@ -26,6 +27,7 @@ namespace System.Tests
         [Fact]
         public static void ValueArgumentNull()
         {
+            AssertExtensions.Throws<ArgumentNullException>("value", () => BitConverter.ToBFloat16(null, 0));
             AssertExtensions.Throws<ArgumentNullException>("value", () => BitConverter.ToBoolean(null, 0));
             AssertExtensions.Throws<ArgumentNullException>("value", () => BitConverter.ToChar(null, 0));
             AssertExtensions.Throws<ArgumentNullException>("value", () => BitConverter.ToDouble(null, 0));
@@ -47,6 +49,10 @@ namespace System.Tests
         [Fact]
         public static void StartIndexBeyondLength()
         {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => BitConverter.ToBFloat16(new byte[2], -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => BitConverter.ToBFloat16(new byte[2], 2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => BitConverter.ToBFloat16(new byte[2], 3));
+
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => BitConverter.ToBoolean(new byte[1], -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => BitConverter.ToBoolean(new byte[1], 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => BitConverter.ToBoolean(new byte[1], 2));
@@ -113,6 +119,7 @@ namespace System.Tests
         [Fact]
         public static void StartIndexPlusNeededLengthTooLong()
         {
+            AssertExtensions.Throws<ArgumentException>("value", null, () => BitConverter.ToBFloat16(new byte[2], 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => BitConverter.ToBoolean(new byte[0], 0));
             AssertExtensions.Throws<ArgumentException>("value", null, () => BitConverter.ToChar(new byte[2], 1));
             AssertExtensions.Throws<ArgumentException>("value", null, () => BitConverter.ToDouble(new byte[8], 1));
@@ -183,6 +190,14 @@ namespace System.Tests
             Half input = (Half)123.44;
             byte[] expected = { 0xb7, 0x57 };
             VerifyRoundtrip(BitConverter.GetBytes, BitConverter.ToHalf, input, expected);
+        }
+
+        [Fact]
+        public static void RoundtripBFloat16()
+        {
+            BFloat16 input = (BFloat16)123.456f;
+            byte[] expected = { 0xf7, 0x42 };
+            VerifyRoundtrip(BitConverter.GetBytes, BitConverter.ToBFloat16, input, expected);
         }
 
         [Fact]
@@ -332,6 +347,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void BFloat16ToInt16Bits()
+        {
+            BFloat16 input = (BFloat16)123.456f;
+            short result = BitConverter.BFloat16ToInt16Bits(input);
+            Assert.Equal((short)17143, result);
+            BFloat16 roundtripped = BitConverter.Int16BitsToBFloat16(result);
+            Assert.Equal(input, roundtripped);
+        }
+
+        [Fact]
         public static void DoubleToUInt64Bits()
         {
             double input = 123456.3234;
@@ -358,6 +383,16 @@ namespace System.Tests
             ushort result = BitConverter.HalfToUInt16Bits(input);
             Assert.Equal((ushort)18988, result);
             Half roundtripped = BitConverter.UInt16BitsToHalf(result);
+            Assert.Equal(input, roundtripped);
+        }
+
+        [Fact]
+        public static void BFloat16ToUInt16Bits()
+        {
+            BFloat16 input = (BFloat16)123.456f;
+            ushort result = BitConverter.BFloat16ToUInt16Bits(input);
+            Assert.Equal((ushort)17143, result);
+            BFloat16 roundtripped = BitConverter.UInt16BitsToBFloat16(result);
             Assert.Equal(input, roundtripped);
         }
     }

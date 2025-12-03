@@ -97,6 +97,7 @@ set( JIT_SOURCES
   block.cpp
   buildstring.cpp
   codegencommon.cpp
+  codegenlinear.cpp
   compiler.cpp
   copyprop.cpp
   debuginfo.cpp
@@ -184,7 +185,6 @@ set ( JIT_NATIVE_TARGET_SOURCES
   lsrabuild.cpp
   regalloc.cpp
   regMaskTPOps.cpp
-  codegenlinear.cpp
   gcdecode.cpp
   gcencode.cpp
   unwind.cpp
@@ -297,6 +297,7 @@ set( JIT_WASM_SOURCES
   regallocwasm.cpp
   registeropswasm.cpp
   targetwasm.cpp
+  unwindwasm.cpp
 )
 
 # We include the headers here for better experience in IDEs.
@@ -399,6 +400,7 @@ set( JIT_HEADERS
   ssarenamestate.h
   stacklevelsetter.h
   target.h
+  targetcommon.h
   targetx86.h
   targetamd64.h
   targetarm.h
