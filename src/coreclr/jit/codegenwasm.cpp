@@ -89,12 +89,15 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_OR:
         case GT_XOR:
         case GT_AND:
+            genCodeForBinary(treeNode->AsOp());
+            break;
+
         case GT_LSH:
         case GT_RSH:
         case GT_RSZ:
         case GT_ROL:
         case GT_ROR:
-            genCodeForBinary(treeNode->AsOp());
+            genCodeForShiftOrRotate(treeNode->AsOp());
             break;
 
         case GT_LCL_VAR:
@@ -272,6 +275,29 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             ins = INS_i64_xor;
             break;
 
+        default:
+            ins = INS_none;
+            NYI_WASM("genCodeForBinary");
+            break;
+    }
+
+    GetEmitter()->emitIns(ins);
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genCodeForShiftOrRotate: Generate code for a shift or rotate operator
+//
+// Arguments:
+//    treeNode - The shift or rotate operation for which we are generating code.
+//
+void CodeGen::genCodeForShiftOrRotate(GenTreeOp* treeNode)
+{
+    genConsumeOperands(treeNode);
+
+    instruction ins;
+    switch (PackOperAndType(treeNode))
+    {
         case PackOperAndType(GT_LSH, TYP_INT):
             ins = INS_i32_shl;
             break;
@@ -309,7 +335,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 
         default:
             ins = INS_none;
-            NYI_WASM("genCodeForBinary");
+            NYI_WASM("genCodeForShiftOrRotate");
             break;
     }
 
