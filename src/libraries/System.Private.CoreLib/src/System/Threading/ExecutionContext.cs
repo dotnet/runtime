@@ -24,7 +24,7 @@ namespace System.Threading
 
         private readonly IAsyncLocalValueMap? m_localValues;
         private readonly IAsyncLocal[]? m_localChangeNotifications;
-        internal readonly bool m_isFlowSuppressed;
+        private readonly bool m_isFlowSuppressed;
         private readonly bool m_isDefault;
 
         private ExecutionContext()
@@ -77,6 +77,21 @@ namespace System.Threading
             // ExecutionContext.SuppressFlow();
 
             return Thread.CurrentThread._executionContext;
+        }
+
+        // Capture for flowing/restoring across suspension points.
+        // Respects m_isFlowSuppressed, but avoids 'null' -> 'Default' -> 'null' reinterpretation.
+        internal static ExecutionContext? CaptureForSuspension(Thread currentThread)
+        {
+            Debug.Assert(Thread.CurrentThread == currentThread);
+
+            ExecutionContext? executionContext = currentThread._executionContext;
+            if (executionContext?.m_isFlowSuppressed == true)
+            {
+                executionContext = null;
+            }
+
+            return executionContext;
         }
 
         private ExecutionContext? ShallowClone(bool isFlowSuppressed)
