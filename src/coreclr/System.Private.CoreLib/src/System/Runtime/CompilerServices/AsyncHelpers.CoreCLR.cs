@@ -32,6 +32,9 @@ namespace System.Runtime.CompilerServices
         public void Push()
         {
             _thread = Thread.CurrentThread;
+            // Here we get the execution context for synchronous restoring,
+            // not for flowing across suspension to potentially another thread.
+            // Therefore we do not need to worry about IsFlowSuppressed
             _previousExecutionCtx = _thread._executionContext;
             _previousSyncCtx = _thread._synchronizationContext;
         }
@@ -191,6 +194,9 @@ namespace System.Runtime.CompilerServices
             public void CaptureContexts()
             {
                 Thread curThread = Thread.CurrentThreadAssumedInitialized;
+                // Here we get the execution context for presenting to the notifier,
+                // not for flowing across suspension to potentially another thread.
+                // Therefore we do not need to worry about IsFlowSuppressed
                 ExecutionContext = curThread._executionContext;
                 SynchronizationContext = curThread._synchronizationContext;
             }
@@ -788,10 +794,19 @@ namespace System.Runtime.CompilerServices
             return new ValueTask<T?>(TaskFromException<T>(ex));
         }
 
+        // Called when capturing execution context for suspension.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ExecutionContext? CaptureExecutionContext()
         {
-            return Thread.CurrentThreadAssumedInitialized._executionContext;
+            ExecutionContext? executionContext = Thread.CurrentThreadAssumedInitialized._executionContext;
+            if (executionContext?.m_isFlowSuppressed == true)
+            {
+                // 'null' is the internal representation of default execution
+                // context that contains no variables.
+                executionContext = null;
+            }
+
+            return executionContext;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -809,6 +824,9 @@ namespace System.Runtime.CompilerServices
         private static void CaptureContexts(out ExecutionContext? execCtx, out SynchronizationContext? syncCtx)
         {
             Thread thread = Thread.CurrentThreadAssumedInitialized;
+            // Here we get the execution context for synchronous restoring,
+            // not for flowing across suspension to potentially another thread.
+            // Therefore we do not need to worry about IsFlowSuppressed
             execCtx = thread._executionContext;
             syncCtx = thread._synchronizationContext;
         }
