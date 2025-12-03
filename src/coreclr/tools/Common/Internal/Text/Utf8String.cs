@@ -23,13 +23,6 @@ namespace Internal.Text
 
         public int Length => _value.Length;
 
-        // For now, define implicit conversions between string and Utf8String to aid the transition
-        // These conversions will be removed eventually
-        public static implicit operator Utf8String(string s)
-        {
-            return new Utf8String(s);
-        }
-
         public ReadOnlySpan<byte> AsSpan() => _value;
 
         public override string ToString()

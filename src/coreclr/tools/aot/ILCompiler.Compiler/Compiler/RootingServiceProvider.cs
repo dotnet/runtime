@@ -4,6 +4,7 @@
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -142,7 +143,7 @@ namespace ILCompiler
 
         public void RootReadOnlyDataBlob(byte[] data, int alignment, string reason, string exportName, bool exportHidden)
         {
-            var blob = _factory.ReadOnlyDataBlob("__readonlydata_" + exportName, data, alignment);
+            var blob = _factory.ReadOnlyDataBlob(new Utf8String($"__readonlydata_{exportName}"), data, alignment);
             _rootAdder(blob, reason);
             exportName = _factory.NameMangler.NodeMangler.ExternVariable(exportName);
             _factory.NodeAliases.Add(blob, (exportName, exportHidden));
