@@ -66,6 +66,7 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
+    #nullable enable
     public readonly struct WasmResultType : IEquatable<WasmResultType>
     {
         private readonly WasmValueType[] _types;
@@ -76,13 +77,13 @@ namespace ILCompiler.ObjectWriter
         /// </summary>
         /// <param name="types">An array of WasmValueType elements representing the types included in the result. If null, an empty array is
         /// used.</param>
-        public WasmResultType(WasmValueType[] types)
+        public WasmResultType(WasmValueType[]? types)
         {
             _types = types ?? Array.Empty<WasmValueType>();
         }
 
         public bool Equals(WasmResultType other) => Types.SequenceEqual(other.Types);
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is WasmResultType other && Equals(other);
         }
@@ -157,7 +158,7 @@ namespace ILCompiler.ObjectWriter
            return _params.Equals(other._params) && _returns.Equals(other._returns);   
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is WasmFuncType other && Equals(other);
         }
