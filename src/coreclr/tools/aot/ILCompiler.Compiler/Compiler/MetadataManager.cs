@@ -731,19 +731,24 @@ namespace ILCompiler
             var writer = new MetadataWriter();
             writer.ScopeDefinitions.AddRange(transformed.Scopes);
 
+            var methodsWithMappings = new HashSet<MethodDesc>();
+            foreach (var method in GetReflectableMethods())
+            {
+                if ((GetMetadataCategory(method) & MetadataCategory.RuntimeMapping) == 0)
+                    continue;
+
+                methodsWithMappings.Add(method);
+            }
+
             // Generate entries in the blob for methods that will be necessary for stack trace purposes.
             var stackTraceRecords = new List<StackTraceRecordData>();
             foreach (var methodBody in GetCompiledMethodBodies())
             {
                 MethodDesc method = methodBody.Method;
 
-                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
-
                 // Methods that will end up in the reflection invoke table should not have an entry in stack trace table
                 // We'll try looking them up in reflection data at runtime.
-                if (transformed.GetTransformedMethodDefinition(typicalMethod) != null &&
-                    ShouldMethodBeInInvokeMap(method) &&
-                    (GetMetadataCategory(method) & MetadataCategory.RuntimeMapping) != 0)
+                if (methodsWithMappings.Contains(method))
                     continue;
 
                 // If the method will be folded, no need to emit stack trace info for this one
