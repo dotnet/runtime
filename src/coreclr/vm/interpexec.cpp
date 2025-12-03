@@ -811,7 +811,7 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
             returnValueSize = sizeof(OBJECTREF);
     }
     
-    void* returnValueLocation = alloca(returnValueSize < sizeof(StackVal) ? sizeof(StackVal) : returnValueSize);
+    void* returnValueLocation = alloca(returnValueSize < (int32_t)sizeof(StackVal) ? (int32_t)sizeof(StackVal) : returnValueSize);
     memset(returnValueLocation, 0, returnValueSize);
 
     frames.interpMethodContextFrame.pRetVal = (int8_t*)returnValueLocation;
