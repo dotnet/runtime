@@ -64,6 +64,7 @@
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER
 
+#ifndef DACCESS_COMPILE
 Thread* GetThreadAsyncSafe()
 {
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
@@ -72,6 +73,7 @@ Thread* GetThreadAsyncSafe()
     return GetThreadNULLOk();
 #endif
 }
+#endif // DACCESS_COMPILE
 
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
