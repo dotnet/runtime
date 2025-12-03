@@ -4,7 +4,8 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsTestProject Condition="'$(IsTestProject)' == ''">true</IsTestProject>
+    <IsFunctionalTest>true</IsFunctionalTest>
   </PropertyGroup>
 
-  <Import Project="..\..\..\..\libraries\Directory.Build.props" />
+  <Import Project="..\..\Directory.Build.props" />
 </Project>
