@@ -631,7 +631,7 @@
 
   <ItemGroup Condition="('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst') and '$(RuntimeFlavor)' == 'CoreCLR' and '$(UseNativeAOTRuntime)' != 'true'">
     <SmokeTestProject Remove="@(SmokeTestProject)" />
-    <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\CoreCLR\*.Test.csproj"/>
+    <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR\*.Test.csproj"/>
   </ItemGroup>
 
   <!--
