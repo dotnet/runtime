@@ -1,4 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>T:System.Runtime.CompilerServices.AsyncHelpers:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
+    <Left>net10.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
 </Suppressions>
