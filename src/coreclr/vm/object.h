@@ -1156,8 +1156,26 @@ public:
 };
 
 
+class ExecutionContextObject: public Object
+{
+    friend class CoreLibBinder;
 
+private:
+    // These field are also defined in the managed representation.  (SecurityContext.cs)If you
+    // add or change these field you must also change the managed code so that
+    // it matches these.  This is necessary so that the object is the proper
+    // size.
+    OBJECTREF m_localValues;
+    OBJECTREF m_localChangeNotifications;
+    CLR_BOOL m_isFlowSuppressed;
 
+public:
+    bool IsFlowSuppressed() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_isFlowSuppressed;
+    }
+};
 
 typedef DPTR(class CultureInfoBaseObject) PTR_CultureInfoBaseObject;
 
@@ -1170,6 +1188,7 @@ typedef REF<ArrayBase> ARRAYBASEREF;
 #else
 typedef SynchronizationContextObject*     SYNCHRONIZATIONCONTEXTREF;
 typedef CultureInfoBaseObject*     CULTUREINFOBASEREF;
+typedef ExecutionContextObject* EXECUTIONCONTEXTREF;
 typedef PTR_ArrayBase ARRAYBASEREF;
 #endif
 

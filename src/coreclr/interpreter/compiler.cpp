@@ -3090,7 +3090,7 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             }
             if (m_methodInfo->args.retType != CORINFO_TYPE_VOID)
             {
-                BADCODE("AsyncSuspend should only be used in async methods with void return type");
+                BADCODE("AsyncSuspend can only be used in async methods with void return type with today's implementation, it would need to emit the correct INTOP_RET* instruction..");
             }
             AddIns(INTOP_SET_CONTINUATION);
             m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
@@ -3936,6 +3936,11 @@ static bool DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* call
     }
     else if (callerSig->retType == CORINFO_TYPE_VALUECLASS && callerSig->retTypeClass != calleeSig->retTypeClass)
     {
+        return true;
+    }
+    if (callerSig->isAsyncCall())
+    {
+        // Disallow tail calls from async methods for now
         return true;
     }
     return false;
@@ -4941,14 +4946,16 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         }
     }
 
-    if (callInfo.sig.isAsyncCall() && !tailcall && m_methodInfo->args.isAsyncCall()) // Async2 functions may need to suspend
+    if (callInfo.sig.isAsyncCall() && m_methodInfo->args.isAsyncCall()) // Async2 functions may need to suspend
     {
         EmitSuspend(callInfo, continuationContextHandling, pBB);
     }
 }
 
-void SetSlotToTrue(TArray<bool, MemPoolAllocator> &gcRefMap, int32_t slotIndex)
+void SetSlotToTrue(TArray<bool, MemPoolAllocator> &gcRefMap, int32_t slotOffset)
 {
+    assert(slotOffset % sizeof(void*) == 0);
+    int32_t slotIndex = slotOffset / sizeof(void*);
     while (gcRefMap.GetSize() <= slotIndex)
     {
         int32_t growSize = gcRefMap.GetSize();
@@ -4964,7 +4971,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     CORINFO_LOOKUP_KIND kindForAllocationContinuation;
     m_compHnd->getLocationOfThisType(m_methodHnd, &kindForAllocationContinuation);
 
-    bool needsKeepAlive = kindForAllocationContinuation.needsRuntimeLookup;
+    bool needsKeepAlive = kindForAllocationContinuation.needsRuntimeLookup && kindForAllocationContinuation.runtimeLookupKind != CORINFO_LOOKUP_THISOBJ;
 
     // Compute the number of EH clauses that overlap with this BB.
     if (pBB->enclosingTryBlockCount == -1)
@@ -5090,8 +5097,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
             if (!needsEHHandling)
                 continue;
             INTERP_DUMP("Allocate EH at offset %d\n", currentOffset);
-            int32_t slotIndex = currentOffset / sizeof(void*);
-            SetSlotToTrue(objRefSlots, slotIndex);
+            SetSlotToTrue(objRefSlots, currentOffset);
             currentOffset += sizeof(void*); // Align to pointer size to match the expected layout
             continue;
         }
@@ -5100,8 +5106,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
             if (!captureContinuationContext)
                 continue;
             INTERP_DUMP("Allocate ContinuationContext at offset %d\n", currentOffset);
-            int32_t slotIndex = currentOffset / sizeof(void*);
-            SetSlotToTrue(objRefSlots, slotIndex);
+            SetSlotToTrue(objRefSlots, currentOffset);
             currentOffset += sizeof(void*); // Align to pointer size to match the expected layout
             continue;
         }
@@ -5136,8 +5141,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
         if (interpType == InterpTypeO)
         {
             // Mark as GC reference
-            int32_t slotIndex = currentOffset / sizeof(void*);
-            SetSlotToTrue(objRefSlots, slotIndex);
+            SetSlotToTrue(objRefSlots, currentOffset);
         }
         else if (interpType == InterpTypeVT)
         {
@@ -5147,8 +5151,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
             for (unsigned j = 0; j < stackMap->m_slotCount; j++)
             {
                 InterpreterStackMapSlot slotInfo = stackMap->m_slots[j];
-                int32_t slotIndex = (currentOffset + slotInfo.m_offsetBytes) / sizeof(void*);
-                SetSlotToTrue(objRefSlots, slotIndex);
+                SetSlotToTrue(objRefSlots, currentOffset + slotInfo.m_offsetBytes);
             }
         }
         
@@ -5160,8 +5163,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
         // Mark ExecContext pointer as a GC reference
         execContextOffset = currentOffset;
         INTERP_DUMP("Allocate ExecutableContext at offset %d\n", currentOffset);
-        int32_t slotIndex = currentOffset / sizeof(void*);
-        SetSlotToTrue(objRefSlots, slotIndex);
+        SetSlotToTrue(objRefSlots, currentOffset);
         currentOffset += sizeof(void*);
     }
 
@@ -5171,13 +5173,12 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
         // Mark keep-alive pointer as a GC reference
         keepAliveOffset = currentOffset;
         INTERP_DUMP("Allocate KeepAlive at offset %d\n", currentOffset);
-        int32_t slotIndex = currentOffset / sizeof(void*);
-        SetSlotToTrue(objRefSlots, slotIndex);
+        SetSlotToTrue(objRefSlots, currentOffset);
         currentOffset += sizeof(void*);
     }
 
     // Step 5: Get continuation type handle
-    assert(currentOffset / sizeof(void*) <= objRefSlots.GetSize());
+    assert((int32_t)(currentOffset / sizeof(void*)) <= objRefSlots.GetSize());
     CORINFO_CLASS_HANDLE continuationTypeHnd = m_compHnd->getContinuationType(
         currentOffset,
         objRefSlots.GetUnderlyingArray(),
@@ -5230,7 +5231,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     suspendData->restoreExecutionContextMethod = asyncInfo.restoreExecutionContextMethHnd;
     suspendData->restoreContextsMethod = asyncInfo.restoreContextsMethHnd;
     suspendData->resumeInfo.Resume = (size_t)m_asyncResumeFuncPtr;
-    suspendData->resumeInfo.DiagnosticIP = NULL;
+    suspendData->resumeInfo.DiagnosticIP = (size_t)NULL;
     // TODO! Register methodStartIP to be filled in as needed.
     suspendData->methodStartIP = 0;
     suspendData->continuationArgOffset = m_pVars[m_continuationArgIndex].offset;
@@ -5308,7 +5309,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     int handleContinuationOpcode = INTOP_HANDLE_CONTINUATION;
     int32_t varGenericContext = -1;
 
-    if (kindForAllocationContinuation.needsRuntimeLookup)
+    if (needsKeepAlive)
     {
         handleContinuationOpcode = INTOP_HANDLE_CONTINUATION_GENERIC;
         switch (kindForAllocationContinuation.runtimeLookupKind)
@@ -5317,18 +5318,6 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
             helperFuncForAllocatingContinuation = CORINFO_HELP_ALLOC_CONTINUATION_CLASS;
             varGenericContext = getParamArgIndex();
             break;
-        case CORINFO_LOOKUP_THISOBJ:
-        {
-            helperFuncForAllocatingContinuation = CORINFO_HELP_ALLOC_CONTINUATION_CLASS;
-            AddIns(INTOP_LDIND_I);
-            m_pLastNewIns->data[0] = 0; // The offset is 0 for the this pointer
-            m_pLastNewIns->SetSVar(getParamArgIndex());
-            PushInterpType(InterpTypeI, NULL);
-            varGenericContext = m_pStackPointer[-1].var;
-            m_pLastNewIns->SetDVar(varGenericContext);
-            m_pStackPointer--;
-            break;
-        }
         case CORINFO_LOOKUP_METHODPARAM:
         {
             helperFuncForAllocatingContinuation = CORINFO_HELP_ALLOC_CONTINUATION_METHOD;

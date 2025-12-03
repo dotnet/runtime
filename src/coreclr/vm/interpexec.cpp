@@ -3823,7 +3823,12 @@ do                                                                      \
 
                     THREADBASEREF threadBase = ((THREADBASEREF)GetThread()->GetExposedObject());
                     continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
-                    SetObjectReference((OBJECTREF *)((uint8_t*)(OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext), threadBase->GetExecutionContext());
+                    OBJECTREF executionContext = threadBase->GetExecutionContext();
+                    if (executionContext != NULL && ((EXECUTIONCONTEXTREF)executionContext)->IsFlowSuppressed())
+                    {
+                        executionContext = NULL;
+                    }
+                    SetObjectReference((OBJECTREF *)((uint8_t*)(OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext), executionContext);
                     continuation->SetFlags(pAsyncSuspendData->flags);
 
                     if (pAsyncSuspendData->flags & CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT)

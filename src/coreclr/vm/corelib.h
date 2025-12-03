@@ -978,6 +978,11 @@ DEFINE_FIELD_U(_DONT_USE_InternalThread,  ThreadBaseObject,   m_InternalThread)
 DEFINE_FIELD_U(_priority,                 ThreadBaseObject,   m_Priority)
 DEFINE_FIELD_U(_isDead,                   ThreadBaseObject,   m_IsDead)
 DEFINE_FIELD_U(_isThreadPool,             ThreadBaseObject,   m_IsThreadPool)
+DEFINE_FIELD_U(_executionContext,         ThreadBaseObject,   m_ExecutionContext)
+
+
+DEFINE_CLASS_U(Threading,             ExecutionContext,            ExecutionContextObject)
+DEFINE_FIELD_U(m_isFlowSuppressed,    ExecutionContextObject,      m_isFlowSuppressed)
 
 DEFINE_CLASS(DIRECTONTHREADLOCALDATA, Threading, Thread+DirectOnThreadLocalData)
 

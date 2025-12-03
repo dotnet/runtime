@@ -713,7 +713,7 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
 void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
 {
     MetaSig sig(pMD);
-    void* cookie = GetCookieForCalliSig(sig, false);
+    void* cookie = GetCookieForCalliSig(sig);
 
     _ASSERTE(cookie != NULL);
 
