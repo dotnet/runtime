@@ -315,10 +315,12 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 // genCodeForShift: Generate code for a shift or rotate operator
 //
 // Arguments:
-//    treeNode - The shift or rotate operation for which we are generating code.
+//    tree - The shift or rotate operation for which we are generating code.
 //
 void CodeGen::genCodeForShift(GenTree* tree)
 {
+    assert(tree->OperIsShiftOrRotate());
+
     GenTreeOp* treeNode = tree->AsOp();
     genConsumeOperands(treeNode);
 
