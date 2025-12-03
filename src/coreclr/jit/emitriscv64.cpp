@@ -1463,7 +1463,7 @@ static inline constexpr unsigned WordMask(uint8_t bits);
 // Arguments:
 //    size   - Attribute
 //    reg    - Destination register for addi/load, source for stores
-//    imm    - An immediate value to be loaded
+//    imm    - An immediate value to be synthesized
 //    doEmit - If true, emit the instruction. if false, just calculate the number of instructions.
 //
 // Returns:
