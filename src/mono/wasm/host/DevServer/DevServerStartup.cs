@@ -128,7 +128,15 @@ internal sealed class DevServerStartup
                 {
                     Directory.CreateDirectory(fileUploadPath!);
                 }
-                Regex fileFilter = new Regex(fileUploadPattern!, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+                Regex fileFilter;
+                try
+                {
+                    fileFilter = new Regex(fileUploadPattern!, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException($"DEVSERVER_UPLOAD_PATTERN value '{fileUploadPattern}' is not a valid regular expression: {ex.Message}", ex);
+                }
 
                 // Route with filename parameter
                 endpoints.MapPost("/upload/{filename}", async context =>
@@ -142,7 +150,7 @@ internal sealed class DevServerStartup
                         // skip upload if no name provided or invalid
                         if (string.IsNullOrEmpty(rawFileName) || !fileFilter.IsMatch(rawFileName!))
                         {
-                            context.Response.StatusCode = 400;
+                            context.Response.StatusCode = 403; // Forbidden
                             await context.Response.WriteAsync("Invalid or missing filename for upload.");
                             return;
                         }
