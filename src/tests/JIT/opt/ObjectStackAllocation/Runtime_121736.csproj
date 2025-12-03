@@ -2,6 +2,10 @@
   <PropertyGroup>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- This test takes very long time under gcstress and causes timeouts -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
