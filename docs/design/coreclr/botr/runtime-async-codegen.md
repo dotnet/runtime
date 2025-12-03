@@ -37,9 +37,7 @@ call       <Await> One of the functions which matches NI_System_Runtime_Compiler
 
 A search for this sequence is done if Method is known to be async.
 
-If the pattern is recognized, this is a PREFIX_IS_TASK_AWAIT async call, and if the flag passed to ConfigureAwait is 1, or there is no call to ConfigureAwait, it is also a PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT call. Calls to these functions will save/restore the execution context.
-
-The dispatch to these functions will save and restore the execution context only on async dispatch.
+The dispatch to async functions save the `ExecutionContext` on suspension and restore it on resumption via `AsyncHelpers.CaptureExecutionContext` and `AsyncHelpers.RestoreExecutionContext` respectively
 
 If PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT, then continuation mode shall be ContinuationContextHandling::ContinueOnCapturedContext otherwise ContinuationContextHandling::ContinueOnThreadPool.
 
@@ -47,13 +45,11 @@ If PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT, then continuation mode shall 
 
 # Non-optimized pattern
 
-It is also legal for code to have a simple direct usage of NI\_System\_Runtime\_CompilerServices\_AsyncHelpers\_Await or NI\_System\_Runtime\_CompilerServices\_AsyncHelpers\_AwaitAwaiter. To support this, the Await and AwaitAwaiter functions are marked as async even though they do not return a Task/ValueTask.
+It is also legal for code to have a simple direct usage of `AsyncHelpers.Await`, `AsyncHelpers.AwaitAwaiter`, `AsyncHelpers.UnsafeAwaitAwaiter` or `AsyncHelpers.TransparentAwait`. To support this these functions are marked as async even though they do not return a Task/ValueTask.
 
-The dispatch to these functions will save and restore the execution context only on async dispatch.
+Like other async calls the dispatch to these functions will save and restore the execution context on suspension/resumption.
 
 The dispatch to these functions will set continuation mode to ContinuationContextHandling::None
-
-SaveAndRestoreSynchronizationContextField is disabled
 
 # Calli of an async function
 
@@ -65,7 +61,7 @@ When encountered, triggers the function to suspend immediately, and return the p
 
 # Saving and restoring of contexts
 
-Capture the execution context before the suspension, and when the function resumes, call `AsyncHelpers.RestoreExecutionContext`. The context should be stored into the Continuation. The context may be captured by calling `AsyncHelpers.CaptureExecutionContext` or it may be captured directly off of the Thread object.
+Capture the execution context before the suspension, and when the function resumes, call `AsyncHelpers.RestoreExecutionContext`. The context should be stored into the Continuation. The context may be captured by calling `AsyncHelpers.CaptureExecutionContext`.
 
 # ABI for async function handling
 
@@ -115,7 +111,7 @@ If set to ContinuationContextHandling::ContinueOnCapturedContext
 
 - The Continuation shall have an allocated data member for the captured context, and the CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT flag shall be set on the continuation.
 
-- The Continuation will store the captured synchronization context. This is done by calling `AsyncHelpers.CaptureContinuationContext(syncContextFromBeforeCall, ref newContinuation.ContinuationContext, ref newContinuation.Flags)` while filling in the `Continuation`.
+- The Continuation will store the captured synchronization context. This is done by calling `AsyncHelpers.CaptureContinuationContext(ref newContinuation.ContinuationContext, ref newContinuation.Flags)` while filling in the `Continuation`.
 
 If set to ContinuationContextHandling::ContinueOnThreadPool
 - The Continuation shall have the CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL flag set
@@ -130,4 +126,4 @@ ByRef locals must not be captured. In fact, we should NULL out any locals which 
 
 # Saving and restoring the synchronization and execution contexts
 
-The code generator must save/restore the sync and execution contexts around the body of all Task/ValueTask methods when directly called with a null continuation context.
+The code generator must save/restore the sync and execution contexts around the body of all Task/ValueTask methods when directly called with a null continuation context. The EE communicates when this is necessary with the `CORINFO_ASYNC_SAVE_CONTEXTS` flag returned through `getMethodInfo`.
