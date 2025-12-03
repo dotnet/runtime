@@ -765,7 +765,7 @@ namespace ILCompiler
                 ClassTypeDescriptor classTypeDescriptor = new ClassTypeDescriptor
                 {
                     IsStruct = !staticDataInObject ? 1 : 0,
-                    Name =  new Utf8String($"__type{staticFieldForm}{_objectWriter.GetMangledName(defType)}"),
+                    Name = new Utf8String($"__type{staticFieldForm}{_objectWriter.GetMangledName(defType)}"),
                     BaseClassId = 0
                 };
 
