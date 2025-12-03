@@ -2861,6 +2861,34 @@ void SparseVTableMap::RecordGap(WORD StartMTSlot, WORD NumSkipSlots)
 }
 
 //*******************************************************************************
+// While building mapping list, record an exluded MT slot.
+void SparseVTableMap::RecordExcludedMethod(WORD MTSlot)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE_MSG(MTSlot > 0, "Shouldn't ever need to skip the first slot.");
+
+    // We need an entry, allocate or expand the list as necessary.
+    AllocOrExpand();
+
+    // Update the list with an entry describing the last non-gap in vtable
+    // entries.
+    m_MapList[m_MapEntries].m_Start = m_MTSlot;
+    m_MapList[m_MapEntries].m_Span = MTSlot - m_MTSlot;
+    m_MapList[m_MapEntries].m_MapTo = m_VTSlot;
+
+    // Bias the VT slots back one to account for the excluded method.
+    // We want MTSlot + 1 to map to where MTSlot would have mapped if it
+    // had not been excluded.
+    m_VTSlot += (MTSlot - m_MTSlot) - 1;
+    m_MTSlot = MTSlot;
+
+    m_MapEntries++;
+}
+
+
+
+//*******************************************************************************
 // Finish creation of mapping list.
 void SparseVTableMap::FinalizeMapping(WORD TotalMTSlots)
 {

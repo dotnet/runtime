@@ -542,7 +542,6 @@ void ComMTMemberInfoMap::SetupPropsForInterface(size_t sizeOfPtr)
     {
         MethodDesc* pMD = m_pMT->GetMethodDescForSlot(iMD);
         _ASSERTE(pMD != NULL);
-        ULONG tmp = pMD->GetComSlot();
 
         if (pMD->IsAsyncMethod())
         {
@@ -551,6 +550,8 @@ void ComMTMemberInfoMap::SetupPropsForInterface(size_t sizeOfPtr)
             bSlotRemap = true;
             continue;
         }
+
+        ULONG tmp = pMD->GetComSlot();
 
         if (tmp < ulComSlotMin)
             ulComSlotMin = tmp;

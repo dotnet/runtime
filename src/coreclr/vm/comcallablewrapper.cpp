@@ -3634,14 +3634,23 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
 
         // Method descs are at the end of the vtable
         // numVtableSlots interfaces methods + IUnk methods
-        _ASSERTE(numVtableSlots == m_cbSlots);
-        pMethodDescMemory = (BYTE *)&pComVtable[numVtableSlots];
-        for (i = 0; i < numVtableSlots; i++)
+        unsigned cbEmittedSlots = 0;
+        pMethodDescMemory = (BYTE *)&pComVtable[m_cbSlots];
+        _ASSERTE(numVtableSlots <= m_cbSlots);
+        for (i = 0; i < cbSlots; i++)
         {
             ComCallMethodDesc* pNewMD = (ComCallMethodDesc *) (pMethodDescMemory + COMMETHOD_PREPAD);
             ComCallMethodDesc* pNewMDRW = (ComCallMethodDesc *) (pMethodDescMemory + writeableOffset + COMMETHOD_PREPAD);
 
             MethodDesc* pIntfMD  = m_pMT->GetMethodDescForSlot(i);
+
+            if (pIntfMD->IsAsyncMethod())
+            {
+                // Async methods are not supported on COM interfaces
+                // We skip them above in the vtable calculation
+                // so don't fill in the COM vtable slot here.
+                continue;
+            }
 
             emitCOMStubCall(pNewMD, pNewMDRW, GetEEFuncEntryPoint(ComCallPreStub));
 
@@ -3649,7 +3658,10 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
             FillInComVtableSlot(pComVtableRW, slotIndex, pNewMD);
 
             pMethodDescMemory += (COMMETHOD_PREPAD + sizeof(ComCallMethodDesc));
+            cbEmittedSlots++;
         }
+
+        _ASSERTE(numVtableSlots == cbEmittedSlots);
 
         // Set the layout complete flag and release the lock.
         comMTWriterHolder.GetRW()->m_Flags |= enum_LayoutComplete;
@@ -4938,7 +4950,7 @@ MethodDesc * ComCallWrapperTemplate::GetICustomQueryInterfaceGetInterfaceMD()
 //--------------------------------------------------------------------------
 //  Module* ComCallMethodDesc::GetModule()
 //  Get Module
-//--------------------------------------------------------------------------
+//-------------------------------z-------------------------------------------
 Module* ComCallMethodDesc::GetModule()
 {
     CONTRACT (Module*)

@@ -289,6 +289,9 @@ public:
     // occurs.
     void RecordGap(WORD StartMTSlot, WORD NumSkipSlots);
 
+    // Record that the method table slot at MTSlot is excluded from the VT slots.
+    void RecordExcludedMethod(WORD MTSlot);
+
     // Then call FinalizeMapping to create the actual mapping list.
     void FinalizeMapping(WORD TotalMTSlots);
 
