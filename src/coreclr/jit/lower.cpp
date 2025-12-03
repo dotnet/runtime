@@ -2611,11 +2611,9 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
                         if (GenTree::OperIsCmpCompare(oper))
                         {
                             assert(type == TYP_INT);
-                            return comp->gtNewSimdCmpOpAllNode(oper, TYP_INT, op1, op2, CORINFO_TYPE_NATIVEUINT,
-                                                               genTypeSize(op1));
+                            return comp->gtNewSimdCmpOpAllNode(oper, TYP_INT, op1, op2, TYP_U_IMPL, genTypeSize(op1));
                         }
-                        return comp->gtNewSimdBinOpNode(oper, op1->TypeGet(), op1, op2, CORINFO_TYPE_NATIVEUINT,
-                                                        genTypeSize(op1));
+                        return comp->gtNewSimdBinOpNode(oper, op1->TypeGet(), op1, op2, TYP_U_IMPL, genTypeSize(op1));
                     }
 #endif
                     return comp->gtNewOperNode(oper, type, op1, op2);
@@ -2833,6 +2831,14 @@ GenTree* Lowering::LowerCall(GenTree* node)
 #endif
 
     call->ClearOtherRegs();
+
+#if HAS_FIXED_REGISTER_SET
+    if ((call->gtCallType == CT_INDIRECT) && comp->opts.Tier0OptimizationEnabled())
+    {
+        OptimizeCallIndirectTargetEvaluation(call);
+    }
+#endif
+
     LowerArgsForCall(call);
 
     // note that everything generated from this point might run AFTER the outgoing args are placed
@@ -4560,11 +4566,26 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         else if (cond->OperIs(GT_LT, GT_GE) && !cond->IsUnsigned() && relopOp2->IsIntegralConst(0))
         {
             // Codegen will use tbnz or tbz in codegen which do not affect the flag register
+            var_types op1Type = genActualType(relopOp1);
+
+            // Remove cast to sbyte or short and instead check negative bit for those types.
+            if (relopOp1->OperIs(GT_CAST))
+            {
+                GenTreeCast* cast = relopOp1->AsCast();
+                if ((cast->CastToType() == TYP_BYTE || cast->CastToType() == TYP_SHORT) && !cast->gtOverflow())
+                {
+                    op1Type             = cast->CastToType();
+                    GenTree* castOp     = cast->CastOp();
+                    cond->AsOp()->gtOp1 = castOp;
+                    castOp->ClearContained();
+                    BlockRange().Remove(cast);
+                    relopOp1 = castOp;
+                }
+            }
             newOper = GT_JTEST;
             cc      = cond->OperIs(GT_LT) ? GenCondition(GenCondition::NE) : GenCondition(GenCondition::EQ);
             // x < 0 => (x & signBit) != 0. Update the constant to be the sign bit.
-            relopOp2->AsIntConCommon()->SetIntegralValue(
-                (static_cast<INT64>(1) << (8 * genTypeSize(genActualType(relopOp1)) - 1)));
+            relopOp2->AsIntConCommon()->SetIntegralValue((static_cast<INT64>(1) << (8 * genTypeSize(op1Type) - 1)));
         }
         else if (cond->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
         {
@@ -5840,19 +5861,14 @@ GenTree* Lowering::LowerAsyncContinuation(GenTree* asyncCont)
     //
     // ASYNC_CONTINUATION is created from two sources:
     //
-    // 1. The async resumption stubs are IL stubs created by the VM. These call
-    // runtime async functions via "calli", passing the continuation manually.
-    // They use the AsyncHelpers.AsyncCallContinuation intrinsic after the
-    // calli, which turns into the ASYNC_CONTINUATION node during import.
+    // 1. The async resumption stubs created by the VM or NativeAOT. These call
+    // runtime async functions via calli or a call to a fake target method,
+    // passing the continuation manually. They use the
+    // AsyncHelpers.AsyncCallContinuation intrinsic after the calli, which
+    // turns into the ASYNC_CONTINUATION node during import.
     //
     // 2. In the async transformation, ASYNC_CONTINUATION nodes are inserted
     // after calls to async calls.
-    //
-    // In the former case nothing has marked the previous call as an "async"
-    // method. We need to do that here to ensure that the backend knows that
-    // the call has a non-standard calling convention that returns an
-    // additional GC ref. This requires additional GC tracking that we would
-    // otherwise not get.
     //
     GenTree* node = asyncCont;
     while (true)
@@ -5862,13 +5878,7 @@ GenTree* Lowering::LowerAsyncContinuation(GenTree* asyncCont)
 
         if (node->IsCall())
         {
-            if (!node->AsCall()->IsAsync())
-            {
-                JITDUMP("Marking the call [%06u] before async continuation [%06u] as an async call\n",
-                        Compiler::dspTreeID(node), Compiler::dspTreeID(asyncCont));
-                node->AsCall()->SetIsAsync(new (comp, CMK_Async) AsyncCallInfo);
-            }
-
+            assert(node->AsCall()->IsAsync());
             BlockRange().Remove(asyncCont);
             BlockRange().InsertAfter(node, asyncCont);
             break;
@@ -6280,6 +6290,105 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     // don't need to sequence and insert this tree, caller will do it
 
     return callTarget;
+}
+
+//------------------------------------------------------------------------
+// OptimizeCallIndirectTargetEvaluation:
+//   Try to optimize the evaluation of the indirect call target to happen
+//   before arguments, if possible.
+//
+// Parameters:
+//   call - Call node
+//
+void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
+{
+    assert((call->gtCallType == CT_INDIRECT) && (call->gtCallAddr != nullptr));
+
+    if (!call->gtCallAddr->IsCall())
+    {
+        return;
+    }
+
+    JITDUMP("Indirect call target is itself a call; trying to reorder its evaluation with arguments\n");
+
+    m_scratchSideEffects.Clear();
+
+    // We start at the call and move backwards from it. When we see a node that
+    // is part of the call's data flow we leave it in place. For nodes that are
+    // not part of the data flow, or that are part of the target's data flow,
+    // we move them before the call's data flow if legal. We stop when we run
+    // out of the call's data flow.
+    //
+    // The end result is that all nodes outside the call's data flow or inside
+    // the target's data flow are computed before call arguments, allowing LSRA
+    // to resolve the ABI constraints without interfering with the target
+    // computation.
+    unsigned numMarked = 1;
+    call->gtLIRFlags |= LIR::Flags::Mark;
+
+    LIR::ReadOnlyRange movingRange;
+
+    GenTree* prev;
+    for (GenTree* cur = call; numMarked > 0; cur = prev)
+    {
+        prev = cur->gtPrev;
+
+        if ((cur->gtLIRFlags & LIR::Flags::Mark) == 0)
+        {
+            // If we are still moving nodes then extend the range so that we
+            // also move this node outside the data flow of the call.
+            if (!movingRange.IsEmpty())
+            {
+                assert(cur->gtNext == movingRange.FirstNode());
+                movingRange = LIR::ReadOnlyRange(cur, movingRange.LastNode());
+                m_scratchSideEffects.AddNode(comp, cur);
+            }
+
+            continue;
+        }
+
+        cur->gtLIRFlags &= ~LIR::Flags::Mark;
+        numMarked--;
+
+        if (cur == call->gtCallAddr)
+        {
+            // Start moving this range.
+            movingRange = LIR::ReadOnlyRange(cur, cur);
+            m_scratchSideEffects.AddNode(comp, cur);
+            continue;
+        }
+
+        cur->VisitOperands([&](GenTree* op) {
+            assert((op->gtLIRFlags & LIR::Flags::Mark) == 0);
+            op->gtLIRFlags |= LIR::Flags::Mark;
+            numMarked++;
+            return GenTree::VisitResult::Continue;
+        });
+
+        if (!movingRange.IsEmpty())
+        {
+            // This node is in the dataflow. See if we can move it ahead of the
+            // range we are moving.
+            if (m_scratchSideEffects.InterferesWith(comp, cur, /* strict */ true))
+            {
+                // Stop moving the range, but keep going through the rest
+                // of the nodes to unmark them
+                JITDUMP("  Stopping at [%06u]; it interferes with the current range we are moving\n",
+                        Compiler::dspTreeID(cur));
+                movingRange = LIR::ReadOnlyRange();
+            }
+            else
+            {
+                // Move 'cur' ahead of 'movingRange'
+                assert(cur->gtNext == movingRange.FirstNode());
+                BlockRange().Remove(cur);
+                BlockRange().InsertAfter(movingRange.LastNode(), cur);
+            }
+        }
+    }
+
+    JITDUMP("Result of moved target evaluation:\n");
+    DISPTREERANGE(BlockRange(), call);
 }
 
 GenTree* Lowering::LowerIndirectNonvirtCall(GenTreeCall* call)
@@ -11307,7 +11416,7 @@ void Lowering::LowerLclHeap(GenTree* node)
 {
     assert(node->OperIs(GT_LCLHEAP));
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     if (node->gtGetOp1()->IsCnsIntOrI())
     {
         GenTreeIntCon* sizeNode = node->gtGetOp1()->AsIntCon();
@@ -11790,14 +11899,14 @@ void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
 // Remarks:
 //    If the created node is a vector constant, op1 will be removed from the block range
 //
-GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types   simdType,
-                                                       GenTree*    op1,
-                                                       CorInfoType simdBaseJitType,
-                                                       unsigned    simdSize)
+GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types simdType,
+                                                       GenTree*  op1,
+                                                       var_types simdBaseType,
+                                                       unsigned  simdSize)
 {
     assert(varTypeIsSIMD(simdType));
 
-    GenTree* result = comp->gtNewSimdCreateScalarUnsafeNode(simdType, op1, simdBaseJitType, simdSize);
+    GenTree* result = comp->gtNewSimdCreateScalarUnsafeNode(simdType, op1, simdBaseType, simdSize);
     BlockRange().InsertAfter(op1, result);
 
     if (result->IsCnsVec())
