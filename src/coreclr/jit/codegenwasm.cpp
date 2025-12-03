@@ -167,9 +167,13 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     switch (PackOperAndType(treeNode))
     {
         case PackOperAndType(GT_ADD, TYP_INT):
+            if (treeNode->gtOverflow())
+                NYI_WASM("Overflow checks");
             ins = INS_i32_add;
             break;
         case PackOperAndType(GT_ADD, TYP_LONG):
+            if (treeNode->gtOverflow())
+                NYI_WASM("Overflow checks");
             ins = INS_i64_add;
             break;
         case PackOperAndType(GT_ADD, TYP_FLOAT):
@@ -180,9 +184,13 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             break;
 
         case PackOperAndType(GT_SUB, TYP_INT):
+            if (treeNode->gtOverflow())
+                NYI_WASM("Overflow checks");
             ins = INS_i32_sub;
             break;
         case PackOperAndType(GT_SUB, TYP_LONG):
+            if (treeNode->gtOverflow())
+                NYI_WASM("Overflow checks");
             ins = INS_i64_sub;
             break;
         case PackOperAndType(GT_SUB, TYP_FLOAT):
@@ -193,9 +201,13 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             break;
 
         case PackOperAndType(GT_MUL, TYP_INT):
+            if (treeNode->gtOverflow())
+                NYI_WASM("Overflow checks");
             ins = INS_i32_mul;
             break;
         case PackOperAndType(GT_MUL, TYP_LONG):
+            if (treeNode->gtOverflow())
+                NYI_WASM("Overflow checks");
             ins = INS_i64_mul;
             break;
         case PackOperAndType(GT_MUL, TYP_FLOAT):
@@ -206,9 +218,13 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             break;
 
         case PackOperAndType(GT_DIV, TYP_INT):
+            if (treeNode->gtOverflow())
+                NYI_WASM("Overflow checks");
             ins = INS_i32_div_s;
             break;
         case PackOperAndType(GT_DIV, TYP_LONG):
+            if (treeNode->gtOverflow())
+                NYI_WASM("Overflow checks");
             ins = INS_i64_div_s;
             break;
         case PackOperAndType(GT_DIV, TYP_FLOAT):
@@ -226,9 +242,13 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             break;
 
         case PackOperAndType(GT_MOD, TYP_INT):
+            if (treeNode->gtOverflow())
+                NYI_WASM("Overflow checks");
             ins = INS_i32_rem_s;
             break;
         case PackOperAndType(GT_MOD, TYP_LONG):
+            if (treeNode->gtOverflow())
+                NYI_WASM("Overflow checks");
             ins = INS_i64_rem_s;
             break;
 
