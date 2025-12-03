@@ -239,7 +239,7 @@ internal sealed class PInvokeTableGenerator
 
     // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
     // https://github.com/dotnet/runtime/issues/43791
-    private static bool TryIsMethodGetParametersUnsupported(MethodInfo method, [NotNullWhen(true)] out string? reason)
+    public static bool TryIsMethodGetParametersUnsupported(MethodInfo method, [NotNullWhen(true)] out string? reason)
     {
         try
         {
@@ -267,7 +267,7 @@ internal sealed class PInvokeTableGenerator
         {
             // Don't use method.ToString() or any of it's parameters, or return type
             // because at least one of those are unsupported, and will throw
-            Log.Warning("WASM0001", $"Skipping pinvoke '{pinvoke.Method.DeclaringType!.FullName}::{pinvoke.Method.Name}' because '{reason}'.");
+            Log.Warning("WASM0001", $"Skipping pinvoke '{pinvoke.Method.DeclaringType!.FullName}.{pinvoke.Method.Name}' because '{reason}'.");
 
             pinvoke.Skip = true;
             return null;
