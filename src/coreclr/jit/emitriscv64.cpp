@@ -1457,8 +1457,25 @@ void emitter::emitIns_Jump(instruction ins, BasicBlock* dst, regNumber reg1, reg
 
 static inline constexpr unsigned WordMask(uint8_t bits);
 
-int emitter::emitLoadImmediateLarge(emitAttr size, regNumber reg, ssize_t imm, bool doEmit = true)
+/*****************************************************************************
+ *
+ *  Emits load of 64-bit constant to register.
+ *
+ */
+int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm, bool doEmit /* = true */)
 {
+    assert(!EA_IS_RELOC(size));
+    assert(!doEmit || isGeneralRegister(reg));
+    
+    if (isValidSimm12(imm))
+    {
+        if (doEmit)
+        {
+            emitIns_R_R_I(INS_addi, size, reg, REG_R0, imm & 0xFFF);
+        }
+        return 1;
+    }
+
     /* The following algorithm works based on the following equation:
      * `imm = high32 + offset1` OR `imm = high32 - offset2`
      *
@@ -1761,32 +1778,13 @@ int emitter::emitLoadImmediateLarge(emitAttr size, regNumber reg, ssize_t imm, b
             auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
             emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr));
         }
-        return 2;
+        return -1;
     }
     else
     {
         assert(false && "If number of instruction exceeds MAX_NUM_OF_LOAD_IMM_INS, imm must be 8 bytes");
     }
     return 0;
-}
-
-/*****************************************************************************
- *
- *  Emits load of 64-bit constant to register.
- *
- */
-void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
-{
-    assert(!EA_IS_RELOC(size));
-    assert(isGeneralRegister(reg));
-
-    if (isValidSimm12(imm))
-    {
-        emitIns_R_R_I(INS_addi, size, reg, REG_R0, imm & 0xFFF);
-        return;
-    }
-
-    emitLoadImmediateLarge(size, reg, imm, /* doEmit */ true);
 }
 
 /*****************************************************************************

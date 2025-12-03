@@ -5171,7 +5171,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 ssize_t              imm            = static_cast<ssize_t>(con->LngValue());
                 emitAttr             size           = EA_SIZE(emitActualTypeSize(tree));
 
-                if (iconNeedsReloc || fitsInAddrBase)
+                if (iconNeedsReloc)
                 {
                     // auipc + addi
                     costSz = 8;
@@ -5184,10 +5184,23 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
                 else
                 {
-                    int instructionCount = GetEmitter()->emitLoadImmediateLarge(size, REG_NA, imm, /* doEmit */ false);
-                    assert(instructionCount > 0);
-                    costSz = 4 * instructionCount;
-                    costEx = instructionCount;
+                    int instructionCount = GetEmitter()->emitLoadImmediate(size, REG_NA, imm, /* doEmit */ false);
+
+                    assert(instructionCount != 0);
+
+                    if (instructionCount == -1)
+                    {
+                        // Cannot emit code in a 5 instruction sequence
+                        // Create a 8-byte constant(8) and load it with auipc(4) + ld(4)
+                        costSz = 16;
+                        costEx = 1 + IND_COST_EX;
+                    }
+                    else
+                    {
+                        costSz = 4 * instructionCount;
+                        costEx = instructionCount;
+                    }
+
                 }
                 goto COMMON_CNS;
             }

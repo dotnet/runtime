@@ -32,8 +32,7 @@ const char* emitVectorRegName(regNumber reg);
 void emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1 = REG_R0, regNumber reg2 = REG_R0);
 void emitIns_J(instruction ins, BasicBlock* dst);
 
-int  emitLoadImmediateLarge(emitAttr size, regNumber reg, ssize_t imm, bool doEmit);
-void emitLoadImmediate(emitAttr attr, regNumber reg, ssize_t imm);
+int emitLoadImmediate(emitAttr attr, regNumber reg, ssize_t imm, bool doEmit = true);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
