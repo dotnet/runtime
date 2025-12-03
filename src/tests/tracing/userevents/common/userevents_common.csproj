@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.OneCollect.RecordTrace" Version="$(MicrosoftOneCollectRecordTraceVersion)" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="UserEventsTestRunner.cs" />
+    <Compile Include="UserEventsRequirements.cs" />
+  </ItemGroup>
+
+  <Target Name="CopyRecordTrace" BeforeTargets="Build" Condition="'$(TargetOS)' == 'linux' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">
+    <PropertyGroup>
+      <_DestDir>$(TargetDir)</_DestDir>
+      <_DestDir Condition="'$(_DestDir)' == ''">$(OutputPath)</_DestDir>
+      <_RecordTraceSource>$(NuGetPackageRoot)microsoft.onecollect.recordtrace/$(MicrosoftOneCollectRecordTraceVersion)/runtimes/linux-$(TargetArchitecture)/native/record-trace</_RecordTraceSource>
+    </PropertyGroup>
+
+    <Copy SourceFiles="$(_RecordTraceSource)" DestinationFiles="$(_DestDir)record-trace" SkipUnchangedFiles="true" />
+
+    <!-- For local testing, ensure it has execute permissions -->
+    <Exec Command="chmod +x '$(_DestDir)record-trace'" Condition="Exists('$(_DestDir)record-trace')" />
+  </Target>
+</Project>
