@@ -1985,7 +1985,7 @@ void InterpreterFrame::ExceptionUnwind_Impl()
 
     Thread *pThread = GetThread();
     InterpThreadContext *pThreadContext = pThread->GetInterpThreadContext();
-    InterpMethodContextFrame *pInterpMethodContextFrame = m_pTopInterpMethodContextFrame;
+    InterpMethodContextFrame *pInterpMethodContextFrame = GetTopInterpMethodContextFrame();
 
     // Unwind the interpreter frames belonging to the current InterpreterFrame.
     while (pInterpMethodContextFrame != NULL)
