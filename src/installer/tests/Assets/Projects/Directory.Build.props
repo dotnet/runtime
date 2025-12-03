@@ -1,6 +1,26 @@
 <Project>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+  <PropertyGroup>
+    <!-- Prevent automatic import of parent Directory.Build.props to avoid pulling in repo defaults.
+         These are test assets and should use SDK defaults instead. -->
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+  </PropertyGroup>
 
+  <!-- Calculate necessary paths manually without depending on repo-level properties -->
+  <PropertyGroup>
+    <!-- Determine the repo root by walking up from this directory -->
+    <RepoRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..', '..', '..', '..'))</RepoRoot>
+    <RepositoryEngineeringDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'eng'))</RepositoryEngineeringDir>
+    <ArtifactsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</ArtifactsDir>
+  </PropertyGroup>
+
+  <!-- Define the target framework version these test assets should build against -->
+  <PropertyGroup>
+    <!-- This should match NetCoreAppCurrentVersion in the repo root Directory.Build.props -->
+    <NetCoreAppCurrentVersion>10.0</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
+  </PropertyGroup>
+
+  <!-- Test asset build configuration -->
   <PropertyGroup>
     <EnableDefaultItems>true</EnableDefaultItems>
     <UseLocalTargetingRuntimePack>true</UseLocalTargetingRuntimePack>
