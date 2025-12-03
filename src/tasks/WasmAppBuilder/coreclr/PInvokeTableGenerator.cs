@@ -290,10 +290,10 @@ internal sealed class PInvokeTableGenerator
             """;
     }
 
-    private static string? EscapeLiteral(string? input)
+    private static string EscapeLiteral(string? input)
     {
         if (input == null)
-            return null;
+            return string.Empty;
 
         StringBuilder sb = new StringBuilder();
 
