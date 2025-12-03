@@ -128,7 +128,7 @@ internal sealed class DevServerStartup
                 {
                     Directory.CreateDirectory(fileUploadPath!);
                 }
-                Regex fileFilter = new Regex(fileUploadPattern!);
+                Regex fileFilter = new Regex(fileUploadPattern!, RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
                 // Route with filename parameter
                 endpoints.MapPost("/upload/{filename}", async context =>
@@ -142,6 +142,8 @@ internal sealed class DevServerStartup
                         // skip upload if no name provided or invalid
                         if (string.IsNullOrEmpty(rawFileName) || !fileFilter.IsMatch(rawFileName!))
                         {
+                            context.Response.StatusCode = 400;
+                            await context.Response.WriteAsync("Invalid or missing filename for upload.");
                             return;
                         }
 
