@@ -2564,10 +2564,10 @@ MAIN_LOOP:
                     int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
 
                     // Used only for INTOP_CALLDELEGATE to allow removal of the delegate object from the argument list
-                    size_t sizeOfArgsUpto16ByteAlignment = 0;
+                    int32_t sizeOfArgsUpto16ByteAlignment = 0;
                     if (*ip == INTOP_CALLDELEGATE)
                     {
-                        sizeOfArgsUpto16ByteAlignment = (size_t)ip[4];
+                        sizeOfArgsUpto16ByteAlignment = ip[4];
                         ip += 5;
                     }
                     else
