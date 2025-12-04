@@ -17,8 +17,6 @@ using JoinedString;
 
 internal sealed class PInvokeTableGenerator
 {
-    private readonly Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new();
-
     private LogAdapter Log { get; set; }
     private readonly Func<string, string> _fixupSymbolName;
     private readonly HashSet<string> signatures = new();
@@ -50,7 +48,7 @@ internal sealed class PInvokeTableGenerator
         using TempFileName tmpFileName = new();
         using (var w = new JoinedStringStreamWriter(tmpFileName.Path, false))
         {
-            // WASM-TODO:
+            // WASM-TODO: the generator is WIP, so we disable pinvoke table generation
             // EmitPInvokeTable(w, modules, pinvokes);
             EmitNativeToInterp(w, callbacks);
         }
@@ -85,18 +83,15 @@ internal sealed class PInvokeTableGenerator
                 modules.Add(pinvoke.Module, pinvoke.Module);
                 Log.LogMessage(MessageImportance.Low, $"Adding module {pinvoke.Module} for static linking");
             }
+            else
+            {
+                Log.Warning("WASM0066", $"PInvoke module '{pinvoke.Module}' for method '{pinvoke.Method.DeclaringType}::{pinvoke.Method.Name}' is not in the list of allowed modules. It is also not special treated module.");
+            }
         }
 
         w.WriteLine(
             $"""
             // GENERATED FILE, DO NOT MODIFY (PInvokeTableGenerator.cs)
-            #include <mono/utils/details/mono-error-types.h>
-            #include <mono/metadata/assembly.h>
-            #include <mono/utils/mono-error.h>
-            #include <mono/metadata/object.h>
-            #include <mono/utils/details/mono-logger-types.h>
-            #include "runtime.h"
-            #include "pinvoke.h"
             """);
 
         var pinvokesGroupedByEntryPoint = pinvokes
@@ -141,6 +136,7 @@ internal sealed class PInvokeTableGenerator
             static string ListRefs(IGrouping<string, PInvoke> l) =>
                 string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n));
 
+            // the order here is not important, because we use hash tables, we want it to be stable though
             var imports = pinvokes
                 .Where(l => l.Module == module && !l.Skip)
                 .OrderBy(l => l.EntryPoint, StringComparer.Ordinal)
@@ -174,13 +170,16 @@ internal sealed class PInvokeTableGenerator
                 return false;
 
             PInvoke first = candidates[0];
-            if (TryIsMethodGetParametersUnsupported(first.Method, out _))
+            if (!TryIsMethodGetParametersSupported(first.Method, out _))
                 return false;
 
             int firstNumArgs = first.Method.GetParameters().Length;
             return candidates
                         .Skip(1)
-                        .Any(c => !TryIsMethodGetParametersUnsupported(c.Method, out _) &&
+                        // detect possible vararg entrypoint usage
+                        // where the same entrypoint is used with different
+                        // number of arguments
+                        .Any(c => TryIsMethodGetParametersSupported(c.Method, out _) &&
                                     c.Method.GetParameters().Length != firstNumArgs);
         }
     }
@@ -222,7 +221,7 @@ internal sealed class PInvokeTableGenerator
         if (!t.IsValueType)
             return "void *";
         // Pass pointers and function pointers by-value
-        else if (t.IsPointer || IsFunctionPointer(t))
+        else if (t.IsPointer || t.IsFunctionPointer)
             return "void *";
         else if (t.IsPrimitive)
             throw new NotImplementedException("No native type mapping for type " + t);
@@ -240,7 +239,7 @@ internal sealed class PInvokeTableGenerator
 
     // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
     // https://github.com/dotnet/runtime/issues/43791
-    private static bool TryIsMethodGetParametersUnsupported(MethodInfo method, [NotNullWhen(true)] out string? reason)
+    private static bool TryIsMethodGetParametersSupported(MethodInfo method, [NotNullWhen(false)] out string? reason)
     {
         try
         {
@@ -249,7 +248,7 @@ internal sealed class PInvokeTableGenerator
         catch (NotSupportedException nse)
         {
             reason = nse.Message;
-            return true;
+            return false;
         }
         catch
         {
@@ -257,14 +256,14 @@ internal sealed class PInvokeTableGenerator
         }
 
         reason = null;
-        return false;
+        return true;
     }
 
     private string? GenPInvokeDecl(PInvoke pinvoke)
     {
         var method = pinvoke.Method;
 
-        if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
+        if (!TryIsMethodGetParametersSupported(pinvoke.Method, out string? reason))
         {
             // Don't use method.ToString() or any of it's parameters, or return type
             // because at least one of those are unsupported, and will throw
@@ -321,7 +320,7 @@ internal sealed class PInvokeTableGenerator
         return sb.ToString();
     }
 
-    // this is eqivalent to `ULONG HashString(LPCWSTR szStr)` in CoreCLR runtime
+    // this is eqivalent to `ULONG HashString(LPCWSTR szStr)` in CoreCLR runtime, src/coreclr/inc/utilcode.h
     private static uint HashString(string str)
     {
         uint hash = 5381;
@@ -456,25 +455,7 @@ internal sealed class PInvokeTableGenerator
         return $"    {{ {cb.Token ^ HashString(cb.AssemblyFQName)}, {HashString(cb.Key)}, {{ &MD_{fsName}, (void*)&Call_{cb.EntrySymbol} }} }} /* alternate key source: {cb.Key} */";
     }
 
-    private bool HasAssemblyDisableRuntimeMarshallingAttribute(Assembly assembly)
-    {
-        if (!_assemblyDisableRuntimeMarshallingAttributeCache.TryGetValue(assembly, out var value))
-        {
-            _assemblyDisableRuntimeMarshallingAttributeCache[assembly] = value = assembly
-                .GetCustomAttributesData()
-                .Any(d => d.AttributeType.Name == "DisableRuntimeMarshallingAttribute");
-        }
-
-        return value;
-    }
-
     private static readonly Dictionary<Type, bool> _blittableCache = new();
-
-    public static bool IsFunctionPointer(Type type)
-    {
-        object? bIsFunctionPointer = type.GetType().GetProperty("IsFunctionPointer")?.GetValue(type);
-        return (bIsFunctionPointer is bool b) && b;
-    }
 
     public static bool IsBlittable(Type type, LogAdapter log)
     {
@@ -495,7 +476,7 @@ internal sealed class PInvokeTableGenerator
             if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum)
                 return true;
 
-            if (IsFunctionPointer(type))
+            if (type.IsFunctionPointer)
                 return true;
 
             // HACK: SkiaSharp has pinvokes that rely on this
