@@ -3431,6 +3431,15 @@ MethodTableBuilder::EnumerateClassMethods()
                     pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_CMOD_REQD;
                 }
 
+                MethodClassification asyncVariantType = type;
+                if (type == mcComInterop)
+                {
+                    // For COM interop methods,
+                    // we don't want to treat the async variant as a COM Interop method
+                    // (as it isn't, it's a transient IL method).
+                    asyncVariantType = mcIL;
+                }
+
                 Signature newMemberSig(pNewMemberSignature, cAsyncThunkMemberSignature);
                 pNewMethod = new (GetStackingAllocator()) bmtMDMethod(
                     bmtInternal->pType,
@@ -3440,7 +3449,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     dwMethodRVA,
                     newMemberSig,
                     asyncFlags,
-                    type,
+                    asyncVariantType,
                     implType);
 
                 pNewMethod->SetAsyncOtherVariant(pDeclaredMethod);
