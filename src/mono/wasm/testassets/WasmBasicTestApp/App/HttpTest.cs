@@ -15,7 +15,7 @@ public partial class HttpTest
     [JSExport]
     public static async Task GoodUpload()
     {
-        var uri = GetOriginUrl() + "/good.log";
+        var uri = GetOriginUrl() + "/upload/good.log";
         using var client = new HttpClient();
         using var response = await client.PostAsync(uri, new StringContent("This is a test log file."));
         Console.WriteLine($"TestOutput -> GoodUpload to returned status code {response.StatusCode}");
@@ -24,7 +24,7 @@ public partial class HttpTest
     [JSExport]
     public static async Task BadUpload()
     {
-        var uri = GetOriginUrl() + "/evil.exe";
+        var uri = GetOriginUrl() + "/upload/evil.exe";
         using var client = new HttpClient();
         using var response = await client.PostAsync(uri, new StringContent("This is a dummy exe file."));
         Console.WriteLine($"TestOutput -> BadUpload to returned status code {response.StatusCode}");
