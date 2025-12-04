@@ -2635,8 +2635,7 @@ MAIN_LOOP:
                             {
                                 // Shift args down by one slot to remove the delegate obj pointer.
                                 // We need to preserve alignment of arguments that require 16-byte alignment.
-                                // The sizeOfArgsUpto16ByteAlignment is the size of all the target method args starting at the first argument upto the last
-                                // argument that doesn't require 16-byte alignment.
+                                // The sizeOfArgsUpto16ByteAlignment is the size of all the target method args starting at the first argument up to (but not including) the first argument that requires 16-byte alignment.
                                 if (sizeOfArgsUpto16ByteAlignment != 0)
                                 {
                                     memmove(LOCAL_VAR_ADDR(callArgsOffset, int8_t), LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int8_t), sizeOfArgsUpto16ByteAlignment);
