@@ -155,7 +155,7 @@ LEAF_END RhNewString, _TEXT
 
 ;; Allocate one dimensional, zero based array (SZARRAY).
 ;;  RCX == MethodTable
-;;  EDX == element count
+;;  RDX == element count
 LEAF_ENTRY RhpNewArrayFast, _TEXT
 
         ; we want to limit the element count to the non-negative 32-bit int range
@@ -170,7 +170,7 @@ LEAF_ENTRY RhpNewArrayFast, _TEXT
 
         NEW_ARRAY_FAST
 
-ArraySizeOverflow:
+ArraySizeOverflow::
         ; We get here if the size of the final array object can't be represented as an unsigned
         ; 32-bit value. We're going to tail-call to a managed helper that will throw
         ; an overflow exception that the caller of this allocator understands.
@@ -184,13 +184,12 @@ LEAF_END RhpNewArrayFast, _TEXT
 
 ;; Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements.
 ;;  RCX == MethodTable
-;;  EDX == element count
+;;  RDX == element count
 LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
 
-        ; Delegate overflow handling to the generic helper conservatively
-
-        cmp         rdx, (40000000h / 8) ; sizeof(void*)
-        jae         RhpNewArrayFast
+        ; we want to limit the element count to the non-negative 32-bit int range
+        cmp         rdx, 07fffffffh
+        ja          ArraySizeOverflow
 
         ; In this case we know the element size is sizeof(void *), or 8 for x64
         ; This helps us in two ways - we can shift instead of multiplying, and
