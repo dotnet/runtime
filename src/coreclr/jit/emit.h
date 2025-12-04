@@ -2346,6 +2346,15 @@ protected:
     };
 #endif // TARGET_RISCV64
 
+#ifdef TARGET_WASM
+    struct instrDescConstant : instrDescCns
+    {
+        instrDescConstant() = delete;
+
+        uint64_t bits;
+    }
+#endif
+
     struct instrDescCGCA : instrDesc // call with ...
     {
         instrDescCGCA() = delete;
