@@ -1508,7 +1508,11 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
         {
             IJitManager* pJitManager = codeInfo.GetJitManager();
             if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
-                return pJitManager->GetExecutionControl()->ApplyPatch(patch);
+            {
+                IExecutionControl* pExecControl = pJitManager->GetExecutionControl();
+                _ASSERTE(pExecControl != NULL);
+                return pExecControl->ApplyPatch(patch);
+            }
         }
 #endif // FEATURE_INTERPRETER
 
@@ -1631,7 +1635,11 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
         {
             IJitManager* pJitManager = codeInfo.GetJitManager();
             if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
-                return pJitManager->GetExecutionControl()->UnapplyPatch(patch);
+            {
+                IExecutionControl* pExecControl = pJitManager->GetExecutionControl();
+                _ASSERTE(pExecControl != NULL);
+                return pExecControl->UnapplyPatch(patch);
+            }
         }
 #endif // FEATURE_INTERPRETER
 
