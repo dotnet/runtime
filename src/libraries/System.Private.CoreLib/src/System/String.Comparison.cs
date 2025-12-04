@@ -59,16 +59,8 @@ namespace System
             Debug.Assert(strA != null);
             Debug.Assert(strB != null);
 
-            // NOTE: This may be subject to change if eliminating the check
-            // in the callers makes them small enough to be inlined
-            Debug.Assert(strA._firstChar == strB._firstChar,
-                "For performance reasons, callers of this method should " +
-                "check/short-circuit beforehand if the first char is the same.");
+            if (strA._firstChar != strB._firstChar) goto DiffOffset0;
 
-            // Check if the second chars are different here
-            // The reason we check if _firstChar is different is because
-            // it's the most common case and allows us to avoid a method call
-            // to here.
             // The reason we check if the second char is different is because
             // if the first two chars the same we can increment by 4 bytes,
             // leaving us word-aligned on both 32-bit (12 bytes into the string)
@@ -99,6 +91,9 @@ namespace System
             // The first two chars are the same, and the shorter string is not longer
             // than two chars, then the two strings can only differ by length.
             return strA.Length - strB.Length;
+
+        DiffOffset0:
+            return strA._firstChar - strB._firstChar;
 
         DiffOffset1:
             return Unsafe.Add(ref strA._firstChar, 1) - Unsafe.Add(ref strB._firstChar, 1);
@@ -157,13 +152,6 @@ namespace System
                     return CompareInfo.Invariant.Compare(strA, strB, GetCaseCompareOfComparisonCulture(comparisonType));
 
                 case StringComparison.Ordinal:
-                    // Most common case: first character is different.
-                    // Returns false for empty strings.
-                    if (strA._firstChar != strB._firstChar)
-                    {
-                        return strA._firstChar - strB._firstChar;
-                    }
-
                     return CompareOrdinalHelper(strA, strB);
 
                 case StringComparison.OrdinalIgnoreCase:
@@ -351,13 +339,6 @@ namespace System
             if (strB == null)
             {
                 return 1;
-            }
-
-            // Most common case, first character is different.
-            // This will return false for empty strings.
-            if (strA._firstChar != strB._firstChar)
-            {
-                return strA._firstChar - strB._firstChar;
             }
 
             return CompareOrdinalHelper(strA, strB);
