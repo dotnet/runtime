@@ -112,8 +112,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			// The instance reference operation represents a 'this' or 'base' reference to the containing type,
 			// so we get the annotation from the containing method.
-			if (instanceRef.Type != null && instanceRef.Type.IsTypeInterestingForDataflow ())
-				return new MethodParameterValue (Method, (ParameterIndex) 0, Method.GetDynamicallyAccessedMemberTypes ());
+			// It can also happen that we see this for a static method - for example a delegate creation
+			// over a local function does this, even thought the "this" makes no sense inside a static scope.
+			if (instanceRef.Type != null && instanceRef.Type.IsTypeInterestingForDataflow () && !Method.IsStatic)
+				return new MethodParameterValue (new ParameterProxy (new (Method), (ParameterIndex) 0));
 
 			return TopValue;
 		}
@@ -187,7 +189,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public override MultiValue GetParameterTargetValue (IParameterSymbol parameter)
 		{
-			return parameter.Type.IsTypeInterestingForDataflow () ? new MethodParameterValue (parameter) : TopValue;
+			// Skip analysis for extension members (we have no way to represent a parameter on an extension type).
+			if (parameter.ContainingSymbol is not IMethodSymbol method)
+				return TopValue;
+
+			return parameter.Type.IsTypeInterestingForDataflow () ? new MethodParameterValue (new ParameterProxy (parameter, method)) : TopValue;
 		}
 
 		public override void HandleAssignment (MultiValue source, MultiValue target, IOperation operation)

@@ -62,4 +62,9 @@
     <Compile Remove="TopLevelStatements/**/*" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- This test is disabled until we can use C# 14 in tests. -->
+    <Compile Remove="DataFlow\ExtensionMembersDataFlow.cs" />
+  </ItemGroup>
+
 </Project>

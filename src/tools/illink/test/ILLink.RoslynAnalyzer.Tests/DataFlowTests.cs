@@ -131,6 +131,19 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest ();
 		}
 
+		// Disabled until we can use C# 14 in tests.
+		// [Fact]
+		// public Task ExtensionMembersDataFlow ()
+		// {
+		// 	return RunTest ();
+		// }
+
+		[Fact]
+		public Task ExtensionsDataFlow ()
+		{
+			return RunTest ();
+		}
+
 		[Fact]
 		public Task FieldDataFlow ()
 		{
