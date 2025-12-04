@@ -327,7 +327,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             uint64_t bits = emitGetInsBits(id);
             double value;
             memcpy(&value, &bits, sizeof(double));
-            float truncated = value;
+            float truncated = (float)value;
             memcpy(dst, &truncated, sizeof(float));
             dst += sizeof(float);
             break;
@@ -477,7 +477,7 @@ void emitter::emitDispIns(
         case IF_I64:
         {
             uint64_t bits = emitGetInsBits(id);
-            printf(" " PRUx64, bits);
+            printf(" %llu", bits);
         }
         break;
 
