@@ -17,12 +17,22 @@
     <!-- Enable to remove prerelease label. -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
-    <_applyWorkloadVersionSuffix Condition="'$(DotNetFinalVersionKind)' != 'release'
-        and '$(PreReleaseVersionLabel)' != 'rtm'
-        and '$(PreReleaseVersionLabel)' != 'servicing'">true</_applyWorkloadVersionSuffix>
-    <WorkloadVersionSuffix Condition="'$(_applyWorkloadVersionSuffix)' == 'true' and '$(PreReleaseVersionIteration)' == ''">-$(PreReleaseVersionLabel)</WorkloadVersionSuffix>
-    <WorkloadVersionSuffix Condition="'$(_applyWorkloadVersionSuffix)' == 'true' and '$(PreReleaseVersionIteration)' != ''">-$(PreReleaseVersionLabel).$(PreReleaseVersionIteration)</WorkloadVersionSuffix>
-    <SdkBandVersionForWorkload_FromRuntimeVersions>$(SdkBandVersion)$(WorkloadVersionSuffix)</SdkBandVersionForWorkload_FromRuntimeVersions>
+    <!-- SdkVersionForWorkloadTesting is used to compute the sdk band and version for workload testing.
+         The published manifests are built in dotnet/sdk so these values are for testing purposes only.
+         We use $(MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion) unless it is lower
+         than the sdk version specified in global.json
+      -->
+    <!-- NETCoreSdkVersion is normally set by the SDK, but for non-SDK projects we need extract from global.json -->
+    <_GlobalJsonContent>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)../global.json'))</_GlobalJsonContent>
+    <_GlobalJsonSdkVersion Condition="'$(_GlobalJsonContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(_GlobalJsonContent), '"sdk"\s*:\s*\{[^\}]*"version"\s*:\s*"([^"]+)"', System.Text.RegularExpressions.RegexOptions.Singleline).Groups[1].Value)</_GlobalJsonSdkVersion>
+    <_DotnetSdkVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion)</_DotnetSdkVersion>
+    <SdkVersionForWorkloadTesting Condition="$([System.String]::Compare('$(_GlobalJsonSdkVersion)', '$(_DotnetSdkVersion)')) &lt;= 0">$(_DotnetSdkVersion)</SdkVersionForWorkloadTesting>
+    <SdkVersionForWorkloadTesting Condition="'$(SdkVersionForWorkloadTesting)' == ''">$(_GlobalJsonSdkVersion)</SdkVersionForWorkloadTesting>
+    <SdkMajorVersion>$([System.String]::Copy('$(SdkVersionForWorkloadTesting)').Split('.')[0])</SdkMajorVersion>
+    <SdkBandVersion>$(SdkMajorVersion).0.100</SdkBandVersion>
+    <SdkPreReleaseLabel>$([System.Text.RegularExpressions.Regex]::Match($(SdkVersionForWorkloadTesting), '-(?!rtm|servicing)(.+)\.[^.]+\.[^.]+$').Groups[1].Value)</SdkPreReleaseLabel>
+    <SdkBandVersionForWorkload_FromRuntimeVersions Condition="'$(SdkPreReleaseLabel)' == ''">$(SdkBandVersion)</SdkBandVersionForWorkload_FromRuntimeVersions>
+    <SdkBandVersionForWorkload_FromRuntimeVersions Condition="'$(SdkPreReleaseLabel)' != ''">$(SdkBandVersion)-$(SdkPreReleaseLabel)</SdkBandVersionForWorkload_FromRuntimeVersions>
     <!-- Set assembly version to align with major and minor version,
          as for the patches and revisions should be manually updated per assembly if it is serviced. -->
     <AssemblyVersion>$(MajorVersion).$(MinorVersion).0.0</AssemblyVersion>
@@ -153,18 +163,12 @@
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.16</MicrosoftNativeQuicMsQuicSchannelVersion>
     <SystemNetMsQuicTransportVersion>9.0.0-alpha.1.24167.3</SystemNetMsQuicTransportVersion>
-
-    <!-- workloads -->
-    <!-- sdk version, for testing workloads -->
-    <SdkVersionForWorkloadTesting Condition="'$(_applyWorkloadVersionSuffix)' != 'true'">$(SdkBandVersion)</SdkVersionForWorkloadTesting>
-    <SdkVersionForWorkloadTesting Condition="'$(_applyWorkloadVersionSuffix)' == 'true'">$(MicrosoftDotNetApiCompatTaskPackageVersion)</SdkVersionForWorkloadTesting>
-    <!-- emscripten / Node -->
+    <!-- emscripten workload package when testing workloads -->
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftDotNetApiCompatTaskPackageVersion)</MicrosoftNETRuntimeEmscriptenVersion>
     <EmsdkPackageVersion>10.0.0</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
     <EmsdkVersion>3.1.56</EmsdkVersion>
-
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
     <!-- BrowserDebugProxy libs -->
