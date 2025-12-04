@@ -410,7 +410,7 @@ void    AsmMan::EndAssembly()
                     if (err != 0)
                     {
                         MAKE_UTF8PTR_FROMWIDE(keySourceNameUtf8, ((Assembler*)m_pAssembler)->m_wzKeySourceName);
-                        report->error("Failed to open key file '%s': 0x%08X\n",keySourceNameUtf8,err);
+                        report->error("Failed to open key file '%s': 0x%08X\n",keySourceNameUtf8,HRESULTFromErr(err));
                         m_pCurAsmRef = NULL;
                         return;
                     }
@@ -438,9 +438,9 @@ void    AsmMan::EndAssembly()
                     size_t dwBytesRead;
                     
                     if ((dwBytesRead = fread(m_sStrongName.m_pbPublicKey, 1, m_sStrongName.m_cbPublicKey, fp)) < m_sStrongName.m_cbPublicKey) {
-                        HRESULT hr = HRESULTFromErrno();
+                        HRESULT hr = HRESULTFromErr(ferror(fp));
                         MAKE_UTF8PTR_FROMWIDE(keySourceNameUtf8, ((Assembler*)m_pAssembler)->m_wzKeySourceName);
-                        report->error("Failed to read key file '%s': 0x%d\n",keySourceNameUtf8,hr);
+                        report->error("Failed to read key file '%s': 0x%08X\n",keySourceNameUtf8,hr);
                         m_pCurAsmRef = NULL;
                         fclose(fp);
                         return;
