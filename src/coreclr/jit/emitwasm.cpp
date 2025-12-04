@@ -293,6 +293,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     switch (insFmt)
     {
+        case IF_NONE:
+            break;
         case IF_OPCODE:
             dst += emitOutputByte(dst, opcode);
             break;
