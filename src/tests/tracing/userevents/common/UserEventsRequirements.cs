@@ -12,6 +12,7 @@ namespace Tracing.UserEvents.Tests.Common
         private static readonly Version s_minKernelVersion = new(6, 4);
         private const string TracefsPath = "/sys/kernel/tracing";
         private const string UserEventsDataPath = "/sys/kernel/tracing/user_events_data";
+        // https://github.com/microsoft/one-collect/issues/225
         private static readonly Version s_minGlibcVersion = new(2, 35);
 
         internal static bool IsSupported()
