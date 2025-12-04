@@ -154,21 +154,18 @@
     <MicrosoftPrivateIntellisenseVersion>10.0.0-preview-20251006.1</MicrosoftPrivateIntellisenseVersion>
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.16</MicrosoftNativeQuicMsQuicSchannelVersion>
-
     <!-- emscripten workload package when testing workloads -->
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftDotNetApiCompatTaskPackageVersion)</MicrosoftNETRuntimeEmscriptenVersion>
     <EmsdkPackageVersion>10.0.0</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
     <EmsdkVersion>3.1.56</EmsdkVersion>
-
     <!-- WiX 5+ dependencies for MSI generation -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
     <!-- BrowserDebugProxy libs -->
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
-
     <!-- WiX 5+ dependencies for MSI generation -->
     <MicrosoftWixVersion>5.0.2-dotnet.2811440</MicrosoftWixVersion>
     <MicrosoftWixToolsetUIWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetUIWixextVersion>
