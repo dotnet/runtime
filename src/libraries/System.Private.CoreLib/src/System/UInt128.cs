@@ -457,7 +457,7 @@ namespace System
                 const int exponentBias = float.ExponentBias;
                 const int mantissaBitCount = float.TrailingSignificandLength;
                 const int nonMantissaBitCount = 32 - mantissaBitCount;
-                const int positiveInfinityBits = float.PositiveInfinityBits;
+                const int positiveInfinityBits = (int)float.PositiveInfinityBits;
 
                 if (value_hi >= 0xFFFFFF8000000000UL)
                 {
