@@ -52,5 +52,3 @@ private:
 bool emitInsIsStore(instruction ins);
 
 insFormat emitInsFormat(instruction ins);
-
-size_t emitEncodeLEB64(uint8_t* destination, const void* source, bool valueIsSigned);
