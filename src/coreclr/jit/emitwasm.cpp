@@ -348,7 +348,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             dst += emitOutputByte(dst, opcode);
             uint64_t align = 0;          // FIXME
-            uint64_t offset = 0 /* id->idAddr()->iiaAddr */; // FIXME
+            uint64_t offset = emitGetInsSC(id);
             assert(align <= UINT32_MAX); // spec says memarg alignment is u32
             assert(align < 64);          // spec says align > 2^6 produces a memidx for multiple memories.
             dst += EncodeLEB64(dst + writeableOffset, &align, false);
