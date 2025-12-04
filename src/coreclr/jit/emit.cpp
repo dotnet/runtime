@@ -1516,11 +1516,8 @@ void emitter::dispIns(instrDesc* id)
 #if EMIT_TRACK_STACK_DEPTH
     assert((int)emitCurStackLvl >= 0);
 #endif
-// FIXME: This is broken for Wasm and I can't figure out why.
-#ifndef TARGET_WASM
     size_t sz = emitSizeOfInsDsc(id);
     assert(id->idDebugOnlyInfo()->idSize == sz);
-#endif // TARGET_WASM
 #endif // DEBUG
 
 #if EMITTER_STATS

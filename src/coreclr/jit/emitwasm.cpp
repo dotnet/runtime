@@ -200,6 +200,15 @@ static unsigned GetInsOpcode(instruction ins)
 
 size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
+    switch (id->idInsFmt())
+    {
+        case IF_I32:
+        case IF_I64:
+        case IF_F32:
+        case IF_F64:
+            return sizeof(instrDescWasmConstant);
+    }
+
     if (emitIsSmallInsDsc(id))
         return SMALL_IDSC_SIZE;
 
