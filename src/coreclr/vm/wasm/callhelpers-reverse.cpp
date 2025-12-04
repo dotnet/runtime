@@ -229,20 +229,6 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComA
     return result;
 }
 
-static MethodDesc* MD_CalendarData_EnumCalendarInfoCallback = nullptr;
-extern "C" void Call_CalendarData_EnumCalendarInfoCallback(void* arg0, void* arg1)
-{
-    // Lazy lookup of MethodDesc for the function export scenario.
-    if (!MD_CalendarData_EnumCalendarInfoCallback)
-    {
-        LookupMethodByName("System.Globalization.CalendarData, System.Private.CoreLib", "EnumCalendarInfoCallback", &MD_CalendarData_EnumCalendarInfoCallback);
-    }
-
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
-    ExecuteInterpretedMethodFromUnmanaged(MD_CalendarData_EnumCalendarInfoCallback, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_CalendarData_EnumCalendarInfoCallback);
-}
-
 extern const ReverseThunkMapEntry g_ReverseThunks[] =
 {
     { 2638833082, 3863938719, { &MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid } } /* alternate key source: <RegisterNoGCRegionCallback>g__Callback|72_0#1:System.Private.CoreLib:System:GC */,
