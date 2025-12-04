@@ -3432,6 +3432,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 }
 
                 MethodClassification asyncVariantType = type;
+#ifdef FEATURE_COMINTEROP
                 if (type == mcComInterop)
                 {
                     // For COM interop methods,
@@ -3439,6 +3440,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     // (as it isn't, it's a transient IL method).
                     asyncVariantType = mcIL;
                 }
+#endif // FEATURE_COMINTEROP
 
                 Signature newMemberSig(pNewMemberSignature, cAsyncThunkMemberSignature);
                 pNewMethod = new (GetStackingAllocator()) bmtMDMethod(
