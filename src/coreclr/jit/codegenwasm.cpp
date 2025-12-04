@@ -552,7 +552,6 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 void CodeGen::genCodeForConstant(GenTree *treeNode)
 {
     instruction ins;
-    insFormat fmt;
     uint64_t bits;
 
     switch (treeNode->TypeGet())
@@ -560,32 +559,28 @@ void CodeGen::genCodeForConstant(GenTree *treeNode)
         case TYP_INT:
         {
             ins = INS_i32_const;
-            fmt = IF_LEB128;
-            GenTreeIntConCommon* con = tree->AsIntConCommon();
+            GenTreeIntConCommon* con = treeNode->AsIntConCommon();
             bits = reinterpret_cast<uint64_t>(con->IconValue());
             break;
         }
         case TYP_LONG:
         {
             ins = INS_i64_const;
-            fmt = IF_LEB128;
-            GenTreeIntConCommon* con = tree->AsIntConCommon();
+            GenTreeIntConCommon* con = treeNode->AsIntConCommon();
             bits = reinterpret_cast<uint64_t>(con->IconValue());
             break;
         }
         case TYP_FLOAT:
         {
             ins = INS_f32_const;
-            fmt = IF_F32;
-            GenTreeDblCon* con = tree->AsDblCon();
+            GenTreeDblCon* con = treeNode->AsDblCon();
             bits = reinterpret_cast<uint32_t>((float)con->DconValue());
             break;
         }
         case TYP_DOUBLE:
         {
             ins = INS_f64_const;
-            fmt = IF_F64;
-            GenTreeDblCon* con = tree->AsDblCon();
+            GenTreeDblCon* con = treeNode->AsDblCon();
             bits = reinterpret_cast<uint64_t>(con->DconValue());
             break;
         }
@@ -596,7 +591,6 @@ void CodeGen::genCodeForConstant(GenTree *treeNode)
 
     instrDesc* id = emitNewInstrWasmConstant(bits);
     id->idIns(ins);
-    id->idInsFmt(fmt);
 
     dispIns(id);
     appendToCurIG(id);
