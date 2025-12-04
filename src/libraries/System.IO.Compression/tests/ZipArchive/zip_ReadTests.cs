@@ -878,5 +878,16 @@ namespace System.IO.Compression.Tests
             Assert.Equal(ZipCompressionMethod.Stored, readEntry.CompressionMethod);
             await DisposeZipArchive(async, readArchive);
         }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task CompressionMethod_Deflate64_ReturnsDeflate64(bool async)
+        {
+            MemoryStream ms = await StreamHelpers.CreateTempCopyStream(compat("deflate64.zip"));
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            ZipArchiveEntry readEntry = readArchive.Entries[0];
+            Assert.Equal(ZipCompressionMethod.Deflate64, readEntry.CompressionMethod);
+            await DisposeZipArchive(async, readArchive);
+        }
     }
 }
