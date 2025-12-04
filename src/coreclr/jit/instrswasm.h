@@ -23,10 +23,23 @@
 // TODO-WASM: fill out with more instructions (and everything else needed).
 //
 // clang-format off
+
+// control flow
+//
 INST(invalid,     "INVALID",     0, IF_NONE,    BAD_CODE)
 INST(unreachable, "unreachable", 0, IF_OPCODE,  0x00)
+INST(label,       "label",       0, IF_LABEL,   0x00)
 INST(nop,         "nop",         0, IF_OPCODE,  0x01)
+INST(block,       "block",       0, IF_BLOCK,   0x02)
+INST(loop,        "loop",        0, IF_BLOCK,   0x03)
+INST(if,          "if",          0, IF_BLOCK,   0x04)
+INST(else,        "else",        0, IF_OPCODE,  0x05)
+INST(end,         "end",         0, IF_OPCODE,  0x0B)
 INST(br,          "br",          0, IF_ULEB128, 0x0C)
+INST(br_if,       "br_if",       0, IF_ULEB128, 0x0D)
+INST(br_table,    "br_table",    0, IF_ULEB128, 0x0E)
+INST(return,      "return",      0, IF_OPCODE,  0x0F)
+
 INST(local_get,   "local.get",   0, IF_ULEB128, 0x20)
 INST(i32_load,    "i32.load",    0, IF_MEMARG,  0x28)
 INST(i64_load,    "i64.load",    0, IF_MEMARG,  0x29)
