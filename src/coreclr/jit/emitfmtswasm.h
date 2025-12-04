@@ -28,6 +28,8 @@ enum ID_OPS
 
 IF_DEF(NONE,    IS_NONE, NONE)
 IF_DEF(OPCODE,  IS_NONE, NONE) // <opcode>
+IF_DEF(BLOCK,   IS_NONE, NONE) // <opcode> <0x40>
+IF_DEF(LABEL,   IS_NONE, NONE) // <ULEB128 immediate>
 IF_DEF(ULEB128, IS_NONE, NONE) // <opcode> <ULEB128 immediate>
 IF_DEF(MEMARG,  IS_NONE, NONE) // <opcode> <memarg> (<align> <offset>)
 

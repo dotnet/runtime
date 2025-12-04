@@ -11,6 +11,7 @@ using System.Text;
 
 using ILCompiler.DependencyAnalysis;
 using Internal.JitInterface;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
 
@@ -275,7 +276,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public void WriteUserDefinedTypes(IList<(string, uint)> userDefinedTypes)
+        public void WriteUserDefinedTypes(IList<(Utf8String, uint)> userDefinedTypes)
         {
             using var symbolSubsection = GetSubsection(DebugSymbolsSubsectionType.Symbols);
             foreach (var (name, typeIndex) in userDefinedTypes)
@@ -397,6 +398,13 @@ namespace ILCompiler.ObjectWriter
             {
                 BinaryPrimitives.WriteUInt64LittleEndian(_bufferWriter.GetSpan(sizeof(ulong)), value);
                 _bufferWriter.Advance(sizeof(ulong));
+            }
+
+            public void Write(Utf8String value)
+            {
+                int byteCount = value.Length + 1;
+                value.AsSpan().CopyTo(_bufferWriter.GetSpan(byteCount));
+                _bufferWriter.Advance(byteCount);
             }
 
             public void Write(string value)
