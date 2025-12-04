@@ -51,7 +51,7 @@ public class LinkContentToWwwroot : Task
             }
 
             // Case 1: use TargetPath when present
-            if (copyPreserveOrAlways && !string.IsNullOrEmpty(targetPath))
+            if (!string.IsNullOrEmpty(targetPath))
             {
                 // Add TargetPath to WasmFilesToIncludeInFileSystem
                 wasmFiles.Add(new TaskItem(targetPath));
@@ -69,7 +69,7 @@ public class LinkContentToWwwroot : Task
             }
 
             // Case 2: use Identity when Link is empty
-            if (copyPreserveOrAlways && string.IsNullOrEmpty(link))
+            if (string.IsNullOrEmpty(link))
             {
                 var isRooted = Path.IsPathRooted(identity);
                 targetPath = isRooted ? Path.GetFileName(identity) : identity;
@@ -95,7 +95,7 @@ public class LinkContentToWwwroot : Task
             }
 
             // Case 3: update Link to point to wwwroot
-            if (copyPreserveOrAlways && !string.IsNullOrEmpty(link) && !link.StartsWith("wwwroot"))
+            if (!string.IsNullOrEmpty(link) && !link.StartsWith("wwwroot"))
             {
                 var isRooted = Path.IsPathRooted(identity);
                 var contentRoot = isRooted ? Path.GetDirectoryName(identity) : Path.GetDirectoryName(Path.GetFullPath(identity, MSBuildProjectDirectory));
