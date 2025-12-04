@@ -112,9 +112,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			// The instance reference operation represents a 'this' or 'base' reference to the containing type,
 			// so we get the annotation from the containing method.
-			// It can also happen that we see this for a static method - for example a delegate creation
-			// over a local function does this, even thought the "this" makes no sense inside a static scope.
-			if (instanceRef.Type != null && instanceRef.Type.IsTypeInterestingForDataflow () && !Method.IsStatic)
+			if (instanceRef.Type != null && instanceRef.Type.IsTypeInterestingForDataflow ())
 				return new MethodParameterValue (new ParameterProxy (new (Method), (ParameterIndex) 0));
 
 			return TopValue;
