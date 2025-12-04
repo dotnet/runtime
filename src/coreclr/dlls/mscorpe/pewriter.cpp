@@ -1337,7 +1337,7 @@ HRESULT PEWriter::Open(_In_ LPCWSTR fileName)
     int err = fopen_lp(&m_file, fileName, W("wb"));
 
     if (err != 0)
-        hr = HRESULTFromErr(errno);
+        hr = HRESULTFromErr(err);
 
     return hr;
 }
@@ -1401,7 +1401,7 @@ HRESULT PEWriter::Close()
     if (err == 0)
         hr = S_OK;
     else
-        hr = HRESULTFromErr(errno);
+        hr = HRESULTFromErr(err);
 
     m_file = NULL;
 
