@@ -14,7 +14,7 @@ public static class ComActivationHelpers
             typeof(T).GUID,
             factory,
             1, // CLSCTX_INPROC_SERVER
-            2, // REGCLS_MULTIPLEUSE
+            1, // REGCLS_MULTIPLEUSE
             out uint cookie);
         return new RegistrationToken(cookie);
     }
@@ -79,6 +79,4 @@ public static class ComActivationHelpers
             // No-op
         }
     }
-
 }
-

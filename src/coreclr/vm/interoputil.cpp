@@ -3110,7 +3110,7 @@ void IUInvokeDispMethod(
         //   - The user incorrectly marks ICallback as "implements IDispatch and not dual".
         // - The user tries to call a method on ICallback.
         //
-        // In this case, pInvokedMT wil represent the managed ICallback definition.
+        // In this case, pInvokedMT will represent the managed ICallback definition.
         // The underlying COM object will not implement IDispatch.
         //
         // We cannot verify that the vtable of the COM object returned by pInvokedMT will have the IDispatch methods,
