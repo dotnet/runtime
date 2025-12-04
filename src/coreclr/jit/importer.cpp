@@ -3425,32 +3425,33 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
             GenTree* obj                     = gtNewAllocObjNode(&tokenCopy, info.compMethodHnd, false);
             if (obj != nullptr)
             {
-                // TODO-CQ: consider expanding this for all types including structs.
-                GenTree* hasValue;
-                GenTree* value;
-                impLoadNullableFields(exprToBox, pResolvedToken->hClass, &hasValue, &value);
-    
-                unsigned   objLclNum  = lvaGrabTemp(true DEBUGARG("obj nullable box"));
-                GenTree*   storeAlloc = gtNewTempStore(objLclNum, obj);
-                GenTree*   objLcl     = gtNewLclvNode(objLclNum, genActualType(obj));
-                GenTree*   pOffset    = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-                GenTreeOp* dataPtr    = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(objLcl), pOffset);
-                GenTree*   storeData  = gtNewStoreIndNode(JITtype2varType(valueType), dataPtr, value, GTF_IND_NONFAULTING);
-                GenTreeOp* copyData   = gtNewOperNode(GT_COMMA, TYP_REF, storeData, gtCloneExpr(objLcl));
-                GenTreeOp* allocRoot  = gtNewOperNode(GT_COMMA, TYP_REF, storeAlloc, copyData);
-    
-                compCurBB->SetFlags(BBF_HAS_NEWOBJ);
-                optMethodFlags |= OMF_HAS_NEWOBJ | OMF_HAS_EARLY_EXPAND_QMARKS;
-    
-                GenTree*      cond  = gtNewOperNode(GT_NE, TYP_INT, hasValue, gtNewIconNode(0));
-                GenTreeColon* colon = gtNewColonNode(TYP_REF, allocRoot, gtNewNull());
-                GenTree*      qmark = gtNewQmarkNode(TYP_REF, cond, colon);
-    
-                const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNullableBox"));
-                impStoreToTemp(result, qmark, CHECK_SPILL_ALL);
-                lvaSetClass(result, typeToBox);
-                impPushOnStack(gtNewLclvNode(result, TYP_REF), typeInfo(typeToBox));
-                return;
+                //// TODO-CQ: consider expanding this for all types including structs.
+                // GenTree* hasValue;
+                // GenTree* value;
+                // impLoadNullableFields(exprToBox, pResolvedToken->hClass, &hasValue, &value);
+
+                // unsigned   objLclNum  = lvaGrabTemp(true DEBUGARG("obj nullable box"));
+                // GenTree*   storeAlloc = gtNewTempStore(objLclNum, obj);
+                // GenTree*   objLcl     = gtNewLclvNode(objLclNum, genActualType(obj));
+                // GenTree*   pOffset    = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+                // GenTreeOp* dataPtr    = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(objLcl), pOffset);
+                // GenTree*   storeData  = gtNewStoreIndNode(JITtype2varType(valueType), dataPtr, value,
+                // GTF_IND_NONFAULTING); GenTreeOp* copyData   = gtNewOperNode(GT_COMMA, TYP_REF, storeData,
+                // gtCloneExpr(objLcl)); GenTreeOp* allocRoot  = gtNewOperNode(GT_COMMA, TYP_REF, storeAlloc, copyData);
+
+                // compCurBB->SetFlags(BBF_HAS_NEWOBJ);
+                // optMethodFlags |= OMF_HAS_NEWOBJ | OMF_HAS_EARLY_EXPAND_QMARKS;
+
+                // GenTree*      cond  = gtNewOperNode(GT_NE, TYP_INT, hasValue, gtNewIconNode(0));
+                // GenTreeColon* colon = gtNewColonNode(TYP_REF, allocRoot, gtNewNull());
+                // GenTree*      qmark = gtNewQmarkNode(TYP_REF, cond, colon);
+
+                // const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNullableBox"));
+                // impStoreToTemp(result, qmark, CHECK_SPILL_ALL);
+                // lvaSetClass(result, typeToBox);
+                // impPushOnStack(gtNewLclvNode(result, TYP_REF), typeInfo(typeToBox));
+                // return;
+                optMethodFlags |= OMF_HAS_EARLY_EXPAND_QMARKS;
             }
         }
     }
