@@ -25,9 +25,9 @@ namespace ILCompiler
 
         public abstract string CompilationUnitPrefix { get; set; }
 
-        public abstract string SanitizeName(string s, bool typeName = false);
+        public abstract Utf8String SanitizeName(Utf8String s);
 
-        public abstract string GetMangledTypeName(TypeDesc type);
+        public abstract Utf8String GetMangledTypeName(TypeDesc type);
 
         public abstract Utf8String GetMangledMethodName(MethodDesc method);
 

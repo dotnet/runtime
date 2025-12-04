@@ -199,6 +199,30 @@ steps:
         workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
         displayName: Clean bindir
 
+      # CoreCLR R2R build
+      - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 USE_MONO_RUNTIME=false BUILD_CONFIG=Release AOT=false R2R=true DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true
+        env:
+          DevTeamProvisioning: '-'
+        workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
+        displayName: Build HelloiOS CoreCLR R2R sample app STRIP_SYMBOLS=True
+      - task: PublishBuildArtifacts@1
+        condition: succeededOrFailed()
+        displayName: 'Publish binlog'
+        inputs:
+          pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
+          artifactName:  iOSCoreCLRR2RArm64StripSymbolsBuildLog
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
+          includeRootFolder: true
+          displayName: iOS Sample App CoreCLR R2R NoSymbols
+          artifactName: iOSSampleAppCoreCLRR2RNoSymbols
+          archiveExtension: '.zip'
+          archiveType: zip
+      - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
+        workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
+        displayName: Clean bindir
+
     - ${{ if eq(parameters.nameSuffix, 'iOSNativeAOT') }}:
       # CoreCLR NativeAOT build
       - script: make hello-app TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true

@@ -557,7 +557,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <PropertyGroup>
       <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_AppleTargetOS)' == 'osx'">12.0</AppleMinOSVersion>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_AppleTargetOS)' == 'maccatalyst'">15.0</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_AppleTargetOS)' == 'maccatalyst'">15.2</AppleMinOSVersion>
       <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(_AppleTargetOS.StartsWith('ios')) or $(_AppleTargetOS.StartsWith('tvos')))">12.2</AppleMinOSVersion>
 
       <_AppleSdkName Condition="'$(_AppleTargetOS)' == 'ios'">iphoneos</_AppleSdkName>

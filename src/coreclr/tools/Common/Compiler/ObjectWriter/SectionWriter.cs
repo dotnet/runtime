@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Numerics;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
+using Internal.Text;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -113,6 +114,16 @@ namespace ILCompiler.ObjectWriter
             IBufferWriter<byte> bufferWriter = _sectionData.BufferWriter;
             Span<byte> buffer = bufferWriter.GetSpan(value.GetByteCount());
             bufferWriter.Advance(value.WriteLittleEndian(buffer));
+        }
+
+        public readonly void WriteUtf8String(Utf8String value)
+        {
+            IBufferWriter<byte> bufferWriter = _sectionData.BufferWriter;
+            int size = value.Length + 1;
+            Span<byte> buffer = bufferWriter.GetSpan(size);
+            value.AsSpan().CopyTo(buffer);
+            buffer[size - 1] = 0;
+            bufferWriter.Advance(size);
         }
 
         public readonly void WriteUtf8String(string value)

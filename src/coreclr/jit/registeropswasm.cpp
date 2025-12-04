@@ -102,6 +102,40 @@ bool genIsValidReg(regNumber reg)
     return (WasmValueType::Invalid < wasmType) && (wasmType < WasmValueType::Count);
 }
 
+// TODO-WASM: implement the following functions in terms of a "locals registry" that would hold information
+// about the registers.
+
+bool genIsValidIntReg(regNumber reg)
+{
+    WasmValueType type;
+    UnpackWasmReg(reg, &type);
+    return (type == WasmValueType::I32) || (type == WasmValueType::I64);
+}
+
+bool genIsValidIntOrFakeReg(regNumber reg)
+{
+    return genIsValidIntReg(reg);
+}
+
+bool genIsValidFloatReg(regNumber reg)
+{
+    WasmValueType type;
+    UnpackWasmReg(reg, &type);
+    return (type == WasmValueType::F32) || (type == WasmValueType::F64);
+}
+
+bool isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv)
+{
+    NYI_WASM("isValidIntArgReg");
+    return false;
+}
+
+bool isValidFloatArgReg(regNumber reg)
+{
+    NYI_WASM("isValidFloatArgReg");
+    return false;
+}
+
 const char* getRegName(regNumber reg)
 {
     if (reg == REG_NA)

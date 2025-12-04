@@ -133,7 +133,6 @@ namespace System.Net
             int dots = 0;
             long number = 0;
             bool haveNumber = false;
-            bool firstCharIsZero = false;
             int start = 0;
 
             while (start < name.Length)
@@ -161,16 +160,11 @@ namespace System.Net
 
                 if (parsedCharacter < IPv4AddressHelper.Decimal)
                 {
-                    // A number starting with zero should be interpreted in base 8 / octal
-                    if (!haveNumber && parsedCharacter == 0)
+                    if (!haveNumber && parsedCharacter == 0 &&
+                        (uint)(start + 1) < (uint)name.Length && char.IsAsciiDigit((char)ToUShort(name[start + 1])))
                     {
-                        if ((start + 1 < name.Length) && name[start + 1] == TChar.CreateTruncating('0'))
-                        {
-                            // 00 is not allowed as a prefix.
-                            return false;
-                        }
-
-                        firstCharIsZero = true;
+                        // Octal is not allowed in canonical format.
+                        return false;
                     }
 
                     haveNumber = true;
@@ -184,15 +178,14 @@ namespace System.Net
                 {
                     // If the current character is not an integer, it may be the IPv4 component separator ('.')
 
-                    if (!haveNumber || (number > 0 && firstCharIsZero))
+                    if (!haveNumber)
                     {
-                        // 0 is not allowed to prefix a number.
                         return false;
                     }
+
                     ++dots;
                     haveNumber = false;
                     number = 0;
-                    firstCharIsZero = false;
                 }
                 else
                 {

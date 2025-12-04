@@ -296,6 +296,10 @@
 
     <ItemGroup>
       <ExtraAppLinkerArgs Include="@(_CommonLinkerArgs)" />
+      <!-- Disable linker optimization to prevent AOT PLT resolution failures on macOS 14+. This is only visible in CI and isn't reproducible locally.
+           Tracking issue: https://github.com/dotnet/runtime/issues/117159 -->
+      <ExtraAppLinkerArgs Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'" Include="-Xlinker" />
+      <ExtraAppLinkerArgs Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'" Include="-O0" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">

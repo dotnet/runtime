@@ -239,7 +239,7 @@ namespace ILCompiler
             public override PInvokeStringFormat PInvokeStringFormat => PInvokeStringFormat.AutoClass;
             public override bool IsExplicitLayout => false;
             public override bool IsSequentialLayout => true;
-            public override bool IsExtendedLayout => true;
+            public override bool IsExtendedLayout => false;
             public override bool IsAutoLayout => false;
             public override bool IsBeforeFieldInit => false;
             public override MetadataType BaseType => (MetadataType)Context.GetWellKnownType(WellKnownType.Object);

@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- https://github.com/dotnet/runtime/issues/121878 -->
+    <!-- https://github.com/dotnet/runtime/issues/121871 -->
     <DisableProjectBuild Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetArchitecture)' == 'arm64'">true</DisableProjectBuild>
   </PropertyGroup>
 

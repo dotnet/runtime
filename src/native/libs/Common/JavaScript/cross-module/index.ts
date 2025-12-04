@@ -129,6 +129,7 @@ export function dotnetUpdateInternalsSubscriber() {
         const nativeLocal: BrowserHostExports = {
             registerDllBytes: table[0],
             installVfsFile: table[1],
+            loadIcuData: table[2],
         };
         Object.assign(native, nativeLocal);
     }

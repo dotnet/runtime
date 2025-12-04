@@ -952,9 +952,10 @@ Dictionary::PopulateEntry(
                         _ASSERTE(pZapSigContext->pInfoModule->IsFullModule());
                         pMethod = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pZapSigContext->pInfoModule), TokenFromRid(rid, mdtMethodDef), FALSE);
                     }
+
                     if (isAsyncVariant)
                     {
-                        pMethod = pMethod->GetAsyncOtherVariant();
+                        pMethod = pMethod->GetAsyncVariant();
                     }
                 }
 
@@ -1044,7 +1045,7 @@ Dictionary::PopulateEntry(
 
                     if (isAsyncVariant)
                     {
-                        pMethod = pMethod->GetAsyncOtherVariant();
+                        pMethod = pMethod->GetAsyncVariant();
                     }
 
                     _ASSERTE(pMethod != NULL);

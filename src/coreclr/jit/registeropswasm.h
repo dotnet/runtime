@@ -21,3 +21,8 @@ regNumber MakeWasmReg(unsigned index, var_types type);
 unsigned  UnpackWasmReg(regNumber reg, WasmValueType* pType = nullptr);
 unsigned  WasmRegToIndex(regNumber reg);
 bool      genIsValidReg(regNumber reg);
+bool      genIsValidIntReg(regNumber reg);
+bool      genIsValidIntOrFakeReg(regNumber reg);
+bool      genIsValidFloatReg(regNumber reg);
+bool      isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv);
+bool      isValidFloatArgReg(regNumber reg);

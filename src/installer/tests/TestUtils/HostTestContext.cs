@@ -6,7 +6,7 @@ using Microsoft.DotNet.TestUtils;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
-    public sealed class TestContext
+    public sealed class HostTestContext
     {
         public static string BuildArchitecture { get; }
         public static string BuildRID { get; }
@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         private static string _testContextVariableFilePath { get; }
         private static ImmutableDictionary<string, string> _testContextVariables { get; }
 
-        static TestContext()
+        static HostTestContext()
         {
             _testContextVariableFilePath = Path.Combine(
                 Directory.GetCurrentDirectory(),

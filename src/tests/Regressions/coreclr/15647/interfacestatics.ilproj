@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
+    <!-- Needed for TrimMode -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Partial trimming works around https://github.com/dotnet/runtime/issues/122013 -->
+    <TrimMode>partial</TrimMode>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="interfacestatics.il" />

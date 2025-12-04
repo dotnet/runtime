@@ -2240,6 +2240,15 @@
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot' and '$(TargetArchitecture)' == 'x64'">
     </ItemGroup>
 
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minijit' and '$(TargetArchitecture)' == 'x64'">
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftRetAbiStress/**">
+            <Issue>https://github.com/dotnet/runtime/issues/121983</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftCallbackAbiStress/**">
+            <Issue>https://github.com/dotnet/runtime/issues/121983</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minijit' and '$(TargetArchitecture)' == 'arm64'">
         <ExcludeList Include="$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>

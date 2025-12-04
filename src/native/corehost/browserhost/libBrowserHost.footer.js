@@ -19,7 +19,7 @@
         const exports = {};
         libBrowserHost(exports);
 
-        let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP", "$ENV", "$FS", "$NODEFS"];
+        let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP", "$ENV", "$FS", "$NODEFS", "wasm_load_icu_data"];
         const lib = {
             $BROWSER_HOST: {
                 selfInitialize: () => {
@@ -51,9 +51,6 @@
                         ENV[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.environmentVariables[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.virtualWorkingDirectory;
                         ENV[HOST_PROPERTY_APP_PATHS] = config.environmentVariables[HOST_PROPERTY_APP_PATHS] = config.virtualWorkingDirectory;
                         ENV[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.environmentVariables[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.mainAssemblyName;
-
-                        // WASM-TODO: remove once globalization is loaded via ICU
-                        ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
 
                         if (ENVIRONMENT_IS_NODE) {
                             Module.preInit = [() => {

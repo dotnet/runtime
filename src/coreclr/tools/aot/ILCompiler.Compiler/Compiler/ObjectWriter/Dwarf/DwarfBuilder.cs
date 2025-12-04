@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using ILCompiler.DependencyAnalysis;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
 using static ILCompiler.ObjectWriter.DwarfNative;
@@ -422,7 +423,7 @@ namespace ILCompiler.ObjectWriter
             return (uint)_memberFunctions.Count;
         }
 
-        public string GetMangledName(TypeDesc type)
+        public Utf8String GetMangledName(TypeDesc type)
         {
             return _nameMangler.GetMangledTypeName(type);
         }

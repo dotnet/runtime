@@ -171,7 +171,7 @@ export class WasmRootBufferImpl implements WasmRootBuffer {
     constructor (offset: VoidPtr, capacity: number, ownsAllocation: boolean, name?: string) {
         const capacityBytes = capacity * 4;
 
-        this.__offset = offset;
+        this.__offset = offset as any >>> 0 as any;
         this.__offset32 = <number><any>offset >>> 2;
         this.__count = capacity;
         this.length = capacity;
@@ -351,7 +351,7 @@ class WasmExternalRoot<T extends MonoObject> implements WasmRoot<T> {
     }
 
     _set_address (address: NativePointer | ManagedPointer): void {
-        this.__external_address = <MonoObjectRef><any>address;
+        this.__external_address = address as any >>> 0 as any;
         this.__external_address_32 = <number><any>address >>> 2;
     }
 

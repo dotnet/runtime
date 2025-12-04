@@ -46,10 +46,25 @@ extern "C" void SystemJS_ExecuteTimerCallback()
     Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler();
 }
 
+static MethodDesc* MD_CalendarData_EnumCalendarInfoCallback = nullptr;
+extern "C" void Call_CalendarData_EnumCalendarInfoCallback(void* arg0, void* arg1)
+{
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_CalendarData_EnumCalendarInfoCallback)
+    {
+        LookupMethodByName("System.Globalization.CalendarData, System.Private.CoreLib", "EnumCalendarInfoCallback", &MD_CalendarData_EnumCalendarInfoCallback);
+    }
+
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
+    ExecuteInterpretedMethodFromUnmanaged(MD_CalendarData_EnumCalendarInfoCallback, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_CalendarData_EnumCalendarInfoCallback);
+}
+
 extern const ReverseThunkMapEntry g_ReverseThunks[] =
 {
     { 100678287, { &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler } },
     { 100678363, { &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler } },
+    { 2638826848, { &MD_CalendarData_EnumCalendarInfoCallback, (void*)&Call_CalendarData_EnumCalendarInfoCallback } },
 };
 
 const size_t g_ReverseThunksCount = sizeof(g_ReverseThunks) / sizeof(g_ReverseThunks[0]);
