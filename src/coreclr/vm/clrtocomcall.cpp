@@ -527,8 +527,8 @@ UINT32 CLRToCOMLateBoundWorker(
 
         // Determine which type of accessor we are dealing with.
         switch (uSemantic)
-        case msGetter:
         {
+        case msGetter:
         {
             // INVOKE_PROPERTYGET
             binderFlags |= BINDER_GetProperty;

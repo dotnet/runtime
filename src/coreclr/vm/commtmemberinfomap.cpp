@@ -626,6 +626,13 @@ void ComMTMemberInfoMap::SetupPropsForInterface(size_t sizeOfPtr)
             // So at some point we hit the end of the .NET methods before we run
             // through all possible vtable slots.
             // Record when we ran out here.
+#ifdef _DEBUG
+            // In debug, validate that all remaining slots are null.
+            for (unsigned j = iMD; j < nSlots; ++j)
+            {
+                _ASSERTE(m_MethodProps[j].pMeth == nullptr);
+            }
+#endif
             nSlots = iMD + 1;
             break;
         }

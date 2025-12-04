@@ -3313,10 +3313,10 @@ void ComMethodTable::LayOutClassMethodTable()
                 pCurrParentInteropMD = &pCurrParentInteropMT->pVTable[i];
                 pParentMD = pCurrParentInteropMD->pMD;
 
-                if (pMD &&
-                        !(pCurrInteropMD ? IsDuplicateClassItfMD(pCurrInteropMD, i) : IsDuplicateClassItfMD(pMD, i)) &&
-                    IsOverloadedComVisibleMember(pMD, pParentMD) &&
-                    !pMD->IsAsyncMethod())
+                if (pMD
+                    && !(pCurrInteropMD ? IsDuplicateClassItfMD(pCurrInteropMD, i) : IsDuplicateClassItfMD(pMD, i))
+                    && IsOverloadedComVisibleMember(pMD, pParentMD)
+                    && !pMD->IsAsyncMethod())
                 {
                     // some bytes are reserved for CALL xxx before the method desc
                     ComCallMethodDesc* pNewMD = (ComCallMethodDesc *) (pMethodDescMemory + COMMETHOD_PREPAD);
@@ -3347,10 +3347,10 @@ void ComMethodTable::LayOutClassMethodTable()
                 pCurrInteropMD = &pCurrInteropMT->pVTable[i];
                 pMD = pCurrInteropMD->pMD;
 
-                if (pMD &&
-                        !(pCurrInteropMD ? IsDuplicateClassItfMD(pCurrInteropMD, i) : IsDuplicateClassItfMD(pMD, i)) &&
-                    IsNewComVisibleMember(pMD) &&
-                    !pMD->IsAsyncMethod())
+                if (pMD
+                    && !(pCurrInteropMD ? IsDuplicateClassItfMD(pCurrInteropMD, i) : IsDuplicateClassItfMD(pMD, i))
+                    && IsNewComVisibleMember(pMD)
+                    && !pMD->IsAsyncMethod())
                 {
                     // some bytes are reserved for CALL xxx before the method desc
                     ComCallMethodDesc* pNewMD = (ComCallMethodDesc *) (pMethodDescMemory + COMMETHOD_PREPAD);
@@ -3378,9 +3378,9 @@ void ComMethodTable::LayOutClassMethodTable()
                 if (!it.IsVirtual()) {
                     MethodDesc* pMD = it.GetMethodDesc();
 
-                    if (pMD != NULL &&
-                        !IsDuplicateClassItfMD(pMD, it.GetSlotNumber()) &&
-                        IsNewComVisibleMember(pMD)
+                    if (pMD != NULL
+                        && !IsDuplicateClassItfMD(pMD, it.GetSlotNumber())
+                        && IsNewComVisibleMember(pMD)
                         && !pMD->IsStatic()
                         && !pMD->IsCtor()
                         && !pMD->IsAsyncMethod()
@@ -4278,10 +4278,10 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable
                 pCurrParentInteropMD = &pCurrParentInteropMT->pVTable[i];
                 pParentMD = pCurrParentInteropMD->pMD;
 
-                if (pMD &&
-                    !(pCurrInteropMD ? IsDuplicateClassItfMD(pCurrInteropMD, i) : IsDuplicateClassItfMD(pMD, i)) &&
-                    IsOverloadedComVisibleMember(pMD, pParentMD) &&
-                    !pMD->IsAsyncMethod())
+                if (pMD
+                    && !(pCurrInteropMD ? IsDuplicateClassItfMD(pCurrInteropMD, i) : IsDuplicateClassItfMD(pMD, i))
+                    && IsOverloadedComVisibleMember(pMD, pParentMD)
+                    && !pMD->IsAsyncMethod())
                 {
                     cbNewPublicMethods++;
                 }
@@ -4298,10 +4298,10 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable
                 pCurrInteropMD = &pCurrInteropMT->pVTable[i];
                 pMD = pCurrInteropMD->pMD;
 
-                if (pMD &&
-                        !(pCurrInteropMD ? IsDuplicateClassItfMD(pCurrInteropMD, i) : IsDuplicateClassItfMD(pMD, i)) &&
-                    IsNewComVisibleMember(pMD) &&
-                    !pMD->IsAsyncMethod())
+                if (pMD
+                    && !(pCurrInteropMD ? IsDuplicateClassItfMD(pCurrInteropMD, i) : IsDuplicateClassItfMD(pMD, i))
+                    && IsNewComVisibleMember(pMD)
+                    && !pMD->IsAsyncMethod())
                 {
                     cbNewPublicMethods++;
                 }
@@ -4314,14 +4314,13 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable
                 if (!it.IsVirtual())
                 {
                     MethodDesc* pMD = it.GetMethodDesc();
-                        if (
-                            pMD &&
-                            !IsDuplicateClassItfMD(pMD, it.GetSlotNumber()) &&
-                            IsNewComVisibleMember(pMD) &&
-                            !pMD->IsStatic() &&
-                            !pMD->IsCtor() &&
-                            !pMD->IsAsyncMethod() &&
-                            (!pCurrMT->IsValueType() || (ClassItfType != clsIfAutoDual && IsStrictlyUnboxed(pMD))))
+                        if (pMD
+                            && !IsDuplicateClassItfMD(pMD, it.GetSlotNumber())
+                            && IsNewComVisibleMember(pMD)
+                            && !pMD->IsStatic()
+                            && !pMD->IsCtor()
+                            && !pMD->IsAsyncMethod()
+                            && (!pCurrMT->IsValueType() || (ClassItfType != clsIfAutoDual && IsStrictlyUnboxed(pMD))))
                     {
                         cbNewPublicMethods++;
                     }

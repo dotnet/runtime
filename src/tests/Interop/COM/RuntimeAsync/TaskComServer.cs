@@ -43,7 +43,7 @@ public class TaskComServer : ITaskComServer
             ref clsid,
             factory,
             1, // CLSCTX_INPROC_SERVER
-            2, // REGCLS_MULTIPLEUSE
+            1, // REGCLS_MULTIPLEUSE
             out uint cookie);
         return new Token(cookie);
     }
@@ -116,7 +116,7 @@ internal sealed class Factory : IClassFactory
     }
 }
 
-internal class Ole32
+internal static class Ole32
 {
     [DllImport(nameof(Ole32))]
     public static extern int CoRegisterClassObject(
