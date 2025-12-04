@@ -259,33 +259,50 @@ namespace System.Tests
             Assert.Equal(new Decimal32(123456, -101), number);
         }
 
-        [Fact]
-        public static void CompareTo_Other_ReturnsExpected()
+        [Theory]
+        [MemberData(nameof(CompareTo_Other_ReturnsExpected_TestData))]
+        public static void CompareTo_Other_ReturnsExpected(Decimal32 d1, Decimal32 d2, int expected)
         {
+            Assert.Equal(expected, d1.CompareTo(d2));
+            if (expected == 0)
+            {
+                Assert.Equal(d1, d2);
+                Assert.Equal(d2, d1);
+            }
+            else
+            {
+                Assert.Equal(-expected, d2.CompareTo(d1));
+                Assert.NotEqual(d1, d2);
+                Assert.NotEqual(d2, d1);
+            }
+        }
+
+        public static IEnumerable<object[]> CompareTo_Other_ReturnsExpected_TestData()
+        {
+            yield return new object[] { new Decimal32(-1, 1), new Decimal32(-10, 0), 0 };
+            yield return new object[] { new Decimal32(1, 90), new Decimal32(10, 89), 0 };
+            yield return new object[] { new Decimal32(999999, 90), new Decimal32(9999990, 89), 0 };
+            yield return new object[] { new Decimal32(1, 1), new Decimal32(-1, 0), 1 };
+            yield return new object[] { new Decimal32(10, 0), new Decimal32(-1, 1), 1 };
+            yield return new object[] { new Decimal32(10, 0), Decimal32.NaN, 1 };
+            yield return new object[] { new Decimal32(10, 0), Decimal32.NegativeInfinity, 1 };
+            yield return new object[] { new Decimal32(10, 0), Decimal32.NegativeZero, 1 };
+            yield return new object[] { Decimal32.PositiveInfinity, new Decimal32(10, 20), 1 };
+            yield return new object[] { Decimal32.PositiveInfinity, new Decimal32(10, 150), 0 };
+            yield return new object[] { Decimal32.PositiveInfinity, Decimal32.NegativeInfinity, 1 };
+            yield return new object[] { Decimal32.PositiveInfinity, Decimal32.PositiveInfinity, 0 };
+            yield return new object[] { Decimal32.PositiveInfinity, Decimal32.NegativeZero, 1 };
+            yield return new object[] { Decimal32.NegativeInfinity, Decimal32.NegativeInfinity, 0 };
+            yield return new object[] { Decimal32.NaN, Decimal32.NaN, 0 };
+            yield return new object[] { Decimal32.NegativeZero, Decimal32.NegativeInfinity, 1 };
+            yield return new object[] { Decimal32.NegativeZero, new Decimal32(0, 20), 0 };
+            yield return new object[] { Decimal32.NegativeZero, Decimal32.NaN, 1 };
             for (int i = 1; i < 7; i++)
             {
                 var d1 = new Decimal32(1, i);
                 var d2 = new Decimal32(int.Parse("1" + new string('0', i)), 0);
-                Assert.Equal(d1, d2);
+                yield return new object[] { d1, d2, 0 };
             }
-            Assert.Equal(new Decimal32(-1, 1), new Decimal32(-10, 0));
-            Assert.Equal(new Decimal32(1, 90), new Decimal32(10, 89));
-            Assert.Equal(new Decimal32(999999, 90), new Decimal32(9999990, 89));
-            Assert.NotEqual(new Decimal32(1, 1), new Decimal32(-10, 0));
-            Assert.NotEqual(new Decimal32(-1, 1), new Decimal32(10, 0));
-        }
-
-        [Fact]
-        public static void CompareToTest()
-        {
-            var d1 = new Decimal32(-1, 1);
-            var d2 = new Decimal32(-10, 0);
-            Assert.Equal(0, d1.CompareTo(d2));
-
-            d1 = new Decimal32(1, 1);
-            d2 = new Decimal32(-1, 0);
-            Assert.Equal(1, d1.CompareTo(d2));
-            Assert.Equal(-1, d2.CompareTo(d1));
         }
 
         [Fact]

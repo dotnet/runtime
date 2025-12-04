@@ -168,6 +168,7 @@ namespace System
         static abstract TValue GwPlus2ToGwPlus4SignificandMask { get; } //G(w+2) to G(w+4)
         static abstract TValue GwPlus4SignificandMask { get; } //G(w+4)
         static abstract TValue MostSignificantBitOfSignificandMask { get; }
+        static abstract bool IsNaN(TValue decimalBits);
     }
 
     internal static partial class Number

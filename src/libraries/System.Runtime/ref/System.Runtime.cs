@@ -11239,6 +11239,7 @@ namespace System.Numerics
         public static Decimal32 NegativeInfinity { get { throw null; } }
         public static Decimal32 PositiveInfinity { get { throw null; } }
         public static Decimal32 NegativeZero { get { throw null; } }
+        public static Decimal32 Zero { get { throw null; } }
 
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
@@ -11276,6 +11277,7 @@ namespace System.Numerics
         public static Decimal64 NegativeInfinity { get { throw null; } }
         public static Decimal64 PositiveInfinity { get { throw null; } }
         public static Decimal64 NegativeZero { get { throw null; } }
+        public static Decimal64 Zero { get { throw null; } }
 
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
@@ -11288,7 +11290,6 @@ namespace System.Numerics
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal64 result) { throw null; }
         public static bool TryParse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal64 result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? s, System.Globalization.NumberStyles style, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Decimal64 result) { throw null; }
-
     }
 
     public readonly struct Decimal128
@@ -11314,6 +11315,7 @@ namespace System.Numerics
         public static Decimal128 NegativeInfinity { get { throw null; } }
         public static Decimal128 PositiveInfinity { get { throw null; } }
         public static Decimal128 NegativeZero { get { throw null; } }
+        public static Decimal128 Zero { get { throw null; } }
 
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }

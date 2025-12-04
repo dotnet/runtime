@@ -177,6 +177,22 @@ namespace System
             {
                 return 0;
             }
+
+            bool isCurrentNaN = TDecimal.IsNaN(currentDecimalBits);
+            bool isOtherNaN = TDecimal.IsNaN(otherDecimalBits);
+
+            if (isCurrentNaN || isOtherNaN)
+            {
+                if (isCurrentNaN && isOtherNaN)
+                {
+                    return 0;
+                }
+                else
+                {
+                    return isCurrentNaN ? -1 : 1;
+                }
+            }
+
             bool isCurrentNegative = (currentDecimalBits & TDecimal.SignMask) != TValue.Zero;
             bool isOtherNegative = (otherDecimalBits & TDecimal.SignMask) != TValue.Zero;
             DecodedDecimalIeee754<TValue> current;

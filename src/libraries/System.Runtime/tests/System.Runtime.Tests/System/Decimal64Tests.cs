@@ -260,33 +260,50 @@ namespace System.Tests
             Assert.Equal(new Decimal64(1234567777777777, -398), number);
         }
 
-        [Fact]
-        public static void CompareTo_Other_ReturnsExpected()
+        [Theory]
+        [MemberData(nameof(CompareTo_Other_ReturnsExpected_TestData))]
+        public static void CompareTo_Other_ReturnsExpected(Decimal64 d1, Decimal64 d2, int expected)
         {
+            Assert.Equal(expected, d1.CompareTo(d2));
+            if (expected == 0)
+            {
+                Assert.Equal(d1, d2);
+                Assert.Equal(d2, d1);
+            }
+            else
+            {
+                Assert.Equal(-expected, d2.CompareTo(d1));
+                Assert.NotEqual(d1, d2);
+                Assert.NotEqual(d2, d1);
+            }
+        }
+
+        public static IEnumerable<object[]> CompareTo_Other_ReturnsExpected_TestData()
+        {
+            yield return new object[] { new Decimal64(-1, 1), new Decimal64(-10, 0), 0 };
+            yield return new object[] { new Decimal64(1, 369), new Decimal64(10, 368), 0 };
+            yield return new object[] { new Decimal64(long.Parse(new string('9', 15)), 369), new Decimal64(long.Parse(new string('9', 15) + "0"), 368), 0 };
+            yield return new object[] { new Decimal64(1, 1), new Decimal64(-1, 0), 1 };
+            yield return new object[] { new Decimal64(10, 0), new Decimal64(-1, 1), 1 };
+            yield return new object[] { new Decimal64(10, 0), Decimal64.NaN, 1 };
+            yield return new object[] { new Decimal64(10, 0), Decimal64.NegativeInfinity, 1 };
+            yield return new object[] { new Decimal64(10, 0), Decimal64.NegativeZero, 1 };
+            yield return new object[] { Decimal64.PositiveInfinity, new Decimal64(10, 20), 1 };
+            yield return new object[] { Decimal64.PositiveInfinity, new Decimal64(10, 1500), 0 };
+            yield return new object[] { Decimal64.PositiveInfinity, Decimal64.NegativeInfinity, 1 };
+            yield return new object[] { Decimal64.PositiveInfinity, Decimal64.PositiveInfinity, 0 };
+            yield return new object[] { Decimal64.PositiveInfinity, Decimal64.NegativeZero, 1 };
+            yield return new object[] { Decimal64.NegativeInfinity, Decimal64.NegativeInfinity, 0 };
+            yield return new object[] { Decimal64.NaN, Decimal64.NaN, 0 };
+            yield return new object[] { Decimal64.NegativeZero, Decimal64.NegativeInfinity, 1 };
+            yield return new object[] { Decimal64.NegativeZero, new Decimal64(0, 20), 0 };
+            yield return new object[] { Decimal64.NegativeZero, Decimal64.NaN, 1 };
             for (int i = 1; i < 16; i++)
             {
                 var d1 = new Decimal64(1, i);
                 var d2 = new Decimal64(long.Parse("1" + new string('0', i)), 0);
-                Assert.Equal(d1, d2);
+                yield return new object[] { d1, d2, 0 };
             }
-            Assert.Equal(new Decimal64(-1, 1), new Decimal64(-10, 0));
-            Assert.Equal(new Decimal64(1, 369), new Decimal64(10, 368));
-            Assert.Equal(new Decimal64(long.Parse(new string('9', 15)), 369), new Decimal64(long.Parse(new string('9', 15) + "0"), 368));
-            Assert.NotEqual(new Decimal64(1, 1), new Decimal64(-10, 0));
-            Assert.NotEqual(new Decimal64(-1, 1), new Decimal64(10, 0));
-        }
-
-        [Fact]
-        public static void CompareToTest()
-        {
-            var d1 = new Decimal64(-1, 1);
-            var d2 = new Decimal64(-10, 0);
-            Assert.Equal(0, d1.CompareTo(d2));
-
-            d1 = new Decimal64(1, 1);
-            d2 = new Decimal64(-1, 0);
-            Assert.Equal(1, d1.CompareTo(d2));
-            Assert.Equal(-1, d2.CompareTo(d1));
         }
 
         [Fact]

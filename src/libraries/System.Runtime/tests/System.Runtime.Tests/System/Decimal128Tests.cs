@@ -259,20 +259,50 @@ namespace System.Tests
             Assert.Equal(new Decimal128(Int128.Parse("1234567777777777123456777777777777"), -6176), number);
         }
 
-        [Fact]
-        public static void CompareTo_Other_ReturnsExpected()
+        [Theory]
+        [MemberData(nameof(CompareTo_Other_ReturnsExpected_TestData))]
+        public static void CompareTo_Other_ReturnsExpected(Decimal128 d1, Decimal128 d2, int expected)
         {
+            Assert.Equal(expected, d1.CompareTo(d2));
+            if (expected == 0)
+            {
+                Assert.Equal(d1, d2);
+                Assert.Equal(d2, d1);
+            }
+            else
+            {
+                Assert.Equal(-expected, d2.CompareTo(d1));
+                Assert.NotEqual(d1, d2);
+                Assert.NotEqual(d2, d1);
+            }
+        }
+
+        public static IEnumerable<object[]> CompareTo_Other_ReturnsExpected_TestData()
+        {
+            yield return new object[] { new Decimal128(-1, 1), new Decimal128(-10, 0), 0 };
+            yield return new object[] { new Decimal128(1, 6144), new Decimal128(10, 6143), 0 };
+            yield return new object[] { new Decimal128(Int128.Parse(new string('9', 33)), 6111), new Decimal128(Int128.Parse(new string('9', 33) + "0"), 6110), 0 };
+            yield return new object[] { new Decimal128(1, 1), new Decimal128(-1, 0), 1 };
+            yield return new object[] { new Decimal128(10, 0), new Decimal128(-1, 1), 1 };
+            yield return new object[] { new Decimal128(10, 0), Decimal128.NaN, 1 };
+            yield return new object[] { new Decimal128(10, 0), Decimal128.NegativeInfinity, 1 };
+            yield return new object[] { new Decimal128(10, 0), Decimal128.NegativeZero, 1 };
+            yield return new object[] { Decimal128.PositiveInfinity, new Decimal128(10, 20), 1 };
+            yield return new object[] { Decimal128.PositiveInfinity, new Decimal128(10, 7500), 0 };
+            yield return new object[] { Decimal128.PositiveInfinity, Decimal128.NegativeInfinity, 1 };
+            yield return new object[] { Decimal128.PositiveInfinity, Decimal128.PositiveInfinity, 0 };
+            yield return new object[] { Decimal128.PositiveInfinity, Decimal128.NegativeZero, 1 };
+            yield return new object[] { Decimal128.NegativeInfinity, Decimal128.NegativeInfinity, 0 };
+            yield return new object[] { Decimal128.NaN, Decimal128.NaN, 0 };
+            yield return new object[] { Decimal128.NegativeZero, Decimal128.NegativeInfinity, 1 };
+            yield return new object[] { Decimal128.NegativeZero, new Decimal128(0, 20), 0 };
+            yield return new object[] { Decimal128.NegativeZero, Decimal128.NaN, 1 };
             for (int i = 1; i < 30; i++)
             {
                 var d1 = new Decimal128(1, i);
                 var d2 = new Decimal128(Int128.Parse("1" + new string('0', i)), 0);
-                Assert.Equal(d1, d2);
+                yield return new object[] { d1, d2, 0 };
             }
-            Assert.Equal(new Decimal128(-1, 1), new Decimal128(-10, 0));
-            Assert.Equal(new Decimal128(1, 6144), new Decimal128(10, 6143));
-            Assert.Equal(new Decimal128(Int128.Parse(new string('9', 33)), 6111), new Decimal128(Int128.Parse(new string('9', 33) + "0"), 6110));
-            Assert.NotEqual(new Decimal128(1, 1), new Decimal128(-10, 0));
-            Assert.NotEqual(new Decimal128(-1, 1), new Decimal128(10, 0));
         }
 
         [Fact]
