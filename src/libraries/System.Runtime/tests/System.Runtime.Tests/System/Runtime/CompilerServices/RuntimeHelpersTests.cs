@@ -467,10 +467,16 @@ namespace System.Runtime.CompilerServices.Tests
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(4)]
-        [InlineData(8)]
-        [InlineData(16)]
-        [InlineData(32)]
-        [InlineData(64)]
+        [InlineData(8)]      // .NET largest natural alignment
+        [InlineData(16)]     // V128, typical max_align_t
+        [InlineData(32)]     // V256
+        [InlineData(64)]     // V512, typical cache line size
+        [InlineData(128)]    // less typical cache line size
+        [InlineData(512)]    // historical disk sector size
+        [InlineData(4096)]   // typical disk sector and page size
+        [InlineData(16384)]  // less typical disk sector and page size
+        [InlineData(65536)]  // typical texture and buffer alignment for GPU
+        [InlineData(262144)] // typical non-temporal chunk alignment
         public static unsafe void AllocateTypeAssociatedMemoryAlignedValidArguments(int alignment)
         {
             IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32, alignment);
