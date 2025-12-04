@@ -143,7 +143,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       GenerateBuildRuntimeConfigurationFiles;
       ComputeWasmVfs;
       ResolveWasmOutputs;
+      _AddWasmDiagnosticPortsEnvironmentVariable;
     </GenerateBuildWasmBootJsonDependsOn>
+    <GeneratePublishWasmBootJsonDependsOn>
+      $(GeneratePublishWasmBootJsonDependsOn);
+      _AddWasmDiagnosticPortsEnvironmentVariable;
+    </GeneratePublishWasmBootJsonDependsOn>
   </PropertyGroup>
 
   <Target Name="_WasmNativeForBuild" DependsOnTargets="_GatherWasmFilesToBuild;WasmBuildApp" Condition="'$(UsingBrowserRuntimeWorkload)' == 'true'" />
@@ -393,6 +398,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       <StaticWebAsset Include="@(_WasmBuildBootConfigStaticWebAsset)" />
       <StaticWebAssetEndpoint Include="@(WasmStaticWebAssetEndpoint)" />
       <StaticWebAssetEndpoint Include="@(_WasmBuildBootConfigStaticWebAssetEndpoint)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_AddWasmDiagnosticPortsEnvironmentVariable">
+    <ItemGroup>
+      <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != ''"/>
     </ItemGroup>
   </Target>
 

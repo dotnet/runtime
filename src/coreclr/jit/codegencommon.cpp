@@ -4782,7 +4782,6 @@ void CodeGen::genFinalizeFrame()
 #endif
 }
 
-#ifndef TARGET_WASM
 /*****************************************************************************
  *
  *  Generates code for a function prolog.
@@ -4823,7 +4822,10 @@ void CodeGen::genFnProlog()
     /* Ready to start on the prolog proper */
 
     GetEmitter()->emitBegProlog();
+
+#if !defined(TARGET_WASM)
     compiler->unwindBegProlog();
+#endif // !defined(TARGET_WASM)
 
     // Do this so we can put the prolog instruction group ahead of
     // other instruction groups
@@ -4841,6 +4843,8 @@ void CodeGen::genFnProlog()
         // Create new scopes for the method-parameters for the prolog-block.
         psiBegProlog();
     }
+
+#if !defined(TARGET_WASM)
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // For arm64 OSR, emit a "phantom prolog" to account for the actions taken
@@ -5640,8 +5644,15 @@ void CodeGen::genFnProlog()
     }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
+#else  // defined(TARGET_WASM)
+    // TODO-WASM: prolog zeroing, shadow stack maintenance
+    GetEmitter()->emitMarkPrologEnd();
+#endif // !defined(TARGET_WASM)
+
     GetEmitter()->emitEndProlog();
 }
+
+#if !defined(TARGET_WASM)
 
 //----------------------------------------------------------------------------------
 // genEmitJumpTable: emit jump table and return its base offset
@@ -5727,7 +5738,7 @@ CORINFO_FIELD_HANDLE CodeGen::genEmitAsyncResumeInfo(unsigned stateNum)
 
     emitter::dataSection* dataSection;
     UNATIVE_OFFSET        baseOffs = genEmitAsyncResumeInfoTable(&dataSection);
-    return compiler->eeFindJitDataOffs(baseOffs + stateNum * sizeof(emitter::dataAsyncResumeInfo));
+    return compiler->eeFindJitDataOffs(baseOffs + stateNum * sizeof(CORINFO_AsyncResumeInfo));
 }
 
 //------------------------------------------------------------------------
@@ -5844,7 +5855,7 @@ void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
     genDefineInlineTempLabel(genPendingCallLabel);
     genPendingCallLabel = nullptr;
 }
-#endif // !TARGET_WASM
+#endif // !defined(TARGET_WASM)
 
 /*****************************************************************************
  *
@@ -6949,6 +6960,7 @@ void CodeGen::genLongReturn(GenTree* treeNode)
     inst_Mov(targetType, REG_LNGRET_HI, hiRetVal->GetRegNum(), /* canSkip */ true, emitActualTypeSize(TYP_INT));
 }
 #endif // TARGET_X86 || TARGET_ARM
+#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // genReturn: Generates code for return statement.
@@ -6995,7 +7007,7 @@ void CodeGen::genReturn(GenTree* treeNode)
         else if (targetType != TYP_VOID)
         {
             assert(op1 != nullptr);
-            noway_assert(op1->GetRegNum() != REG_NA);
+            noway_assert(!HAS_FIXED_REGISTER_SET || (op1->GetRegNum() != REG_NA));
 
             // !! NOTE !! genConsumeReg will clear op1 as GC ref after it has
             // consumed a reg for the operand. This is because the variable
@@ -7005,6 +7017,7 @@ void CodeGen::genReturn(GenTree* treeNode)
             // instructions until emitted then should not rely on the outdated GC info.
             genConsumeReg(op1);
 
+#if HAS_FIXED_REGISTER_SET
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             genSimpleReturn(treeNode);
 #else // !TARGET_ARM64 || !TARGET_LOONGARCH64 || !TARGET_RISCV64
@@ -7047,6 +7060,7 @@ void CodeGen::genReturn(GenTree* treeNode)
                 inst_Mov_Extend(targetType, /* srcInReg */ true, retReg, op1->GetRegNum(), /* canSkip */ true);
             }
 #endif // !TARGET_ARM64 || !TARGET_LOONGARCH64 || !TARGET_RISCV64
+#endif // HAS_FIXED_REGISTER_SET
         }
     }
 
@@ -7055,10 +7069,12 @@ void CodeGen::genReturn(GenTree* treeNode)
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_ASYNC_CONTINUATION_RET);
     }
 
+#if EMIT_GENERATE_GCINFO
     if (treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
     {
         genMarkReturnGCInfo();
     }
+#endif // EMIT_GENERATE_GCINFO
 
 #ifdef PROFILING_SUPPORTED
 
@@ -7103,6 +7119,7 @@ void CodeGen::genReturn(GenTree* treeNode)
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 }
 
+#ifndef TARGET_WASM
 #ifdef SWIFT_SUPPORT
 //------------------------------------------------------------------------
 // genSwiftErrorReturn: Generates code for returning the normal return value,
@@ -7200,6 +7217,7 @@ void CodeGen::genCodeForAsyncContinuation(GenTree* tree)
 
     genProduceReg(tree);
 }
+#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // isStructReturn: Returns whether the 'treeNode' is returning a struct.
@@ -7234,6 +7252,7 @@ bool CodeGen::isStructReturn(GenTree* treeNode)
 #endif
 }
 
+#ifndef TARGET_WASM
 //------------------------------------------------------------------------
 // genStructReturn: Generates code for returning a struct.
 //

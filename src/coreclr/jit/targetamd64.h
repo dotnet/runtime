@@ -548,12 +548,6 @@
   #define REG_ASYNC_CONTINUATION_RET REG_RCX
   #define RBM_ASYNC_CONTINUATION_RET RBM_RCX
 
-  // What sort of reloc do we use for [disp32] address mode
-  #define IMAGE_REL_BASED_DISP32   IMAGE_REL_BASED_REL32
-
-  // What sort of reloc to we use for 'moffset' address mode (for 'mov eax, moffset' or 'mov moffset, eax')
-  #define IMAGE_REL_BASED_MOFFSET  IMAGE_REL_BASED_DIR64
-
   // Pointer-sized string move instructions
   #define INS_movsp                INS_movsq
   #define INS_r_movsp              INS_r_movsq
