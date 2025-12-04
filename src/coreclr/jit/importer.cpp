@@ -3420,51 +3420,44 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         CorInfoType          valueType = info.compCompHnd->asCorInfoType(typeToBox);
         if (impIsPrimitive(valueType))
         {
-            CORINFO_RESOLVED_TOKEN tokenCopy = *pResolvedToken;
-            tokenCopy.hClass                 = typeToBox;
-            GenTree* obj                     = gtNewAllocObjNode(&tokenCopy, info.compMethodHnd, false);
-            if (obj != nullptr)
-            {
-                // TODO-CQ: consider expanding this for all types including structs.
-                GenTree* hasValue;
-                GenTree* value;
-                impLoadNullableFields(exprToBox, pResolvedToken->hClass, &hasValue, &value);
+            bool             helperHasSideEffects;
+            CorInfoHelpFunc  helper = info.compCompHnd->getNewHelper(typeToBox, &helperHasSideEffects);
+            GenTreeAllocObj* obj =
+                gtNewAllocObjNode(helper, true, typeToBox, TYP_REF, gtNewIconEmbClsHndNode(typeToBox));
 
-                var_types dstTyp = JITtype2varType(valueType);
-                var_types srcTyp = value->TypeGet();
+            GenTreeFlags indirFlags          = GTF_EMPTY;
+            exprToBox                        = impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, &indirFlags);
+            CORINFO_FIELD_HANDLE valueFldHnd = info.compCompHnd->getFieldInClass(pResolvedToken->hClass, 1);
+            static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+            GenTree* hasValue    = gtNewLoadValueNode(TYP_UBYTE, nullptr, gtCloneExpr(exprToBox));
+            GenTree* valueOffset = gtNewIconNode(info.compCompHnd->getFieldOffset(valueFldHnd), TYP_I_IMPL);
+            GenTree* valueAddr   = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(exprToBox), valueOffset);
+            GenTree* value       = gtNewLoadValueNode(JITtype2varType(valueType), nullptr, valueAddr);
 
-                // We allow float <-> double mismatches and implicit truncation for small types.
-                assert((genActualType(srcTyp) == genActualType(dstTyp)) ||
-                       (varTypeIsFloating(srcTyp) == varTypeIsFloating(dstTyp)));
+            unsigned   objLclNum  = lvaGrabTemp(true DEBUGARG("obj nullable box"));
+            GenTree*   storeAlloc = gtNewTempStore(objLclNum, obj);
+            GenTree*   objLcl     = gtNewLclvNode(objLclNum, genActualType(obj));
+            GenTree*   pOffset    = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+            GenTreeOp* dataPtr    = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(objLcl), pOffset);
+            GenTree*   storeData =
+                gtNewStoreIndNode(JITtype2varType(valueType), dataPtr, gtCloneExpr(value), GTF_IND_NONFAULTING);
+            GenTreeOp* copyData  = gtNewOperNode(GT_COMMA, TYP_REF, storeData, gtCloneExpr(objLcl));
+            GenTreeOp* allocRoot = gtNewOperNode(GT_COMMA, TYP_REF, storeAlloc, copyData);
 
-                if (srcTyp != dstTyp)
-                {
-                    value = gtNewCastNode(genActualType(dstTyp), value, false, dstTyp);
-                }
+            compCurBB->SetFlags(BBF_HAS_NEWOBJ);
+            optMethodFlags |= OMF_HAS_NEWOBJ | OMF_HAS_EARLY_EXPAND_QMARKS;
 
-                unsigned   objLclNum  = lvaGrabTemp(true DEBUGARG("obj nullable box"));
-                GenTree*   storeAlloc = gtNewTempStore(objLclNum, obj);
-                GenTree*   objLcl     = gtNewLclvNode(objLclNum, genActualType(obj));
-                GenTree*   pOffset    = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-                GenTreeOp* dataPtr    = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(objLcl), pOffset);
-                GenTree* storeData = gtNewStoreIndNode(JITtype2varType(valueType), dataPtr, value, GTF_IND_NONFAULTING);
-                GenTreeOp* copyData  = gtNewOperNode(GT_COMMA, TYP_REF, storeData, gtCloneExpr(objLcl));
-                GenTreeOp* allocRoot = gtNewOperNode(GT_COMMA, TYP_REF, storeAlloc, copyData);
+            GenTree*      cond  = gtNewOperNode(GT_EQ, TYP_INT, hasValue, gtNewIconNode(0));
+            GenTreeColon* colon = gtNewColonNode(TYP_REF, gtNewNull(), allocRoot);
+            GenTree*      qmark = gtNewQmarkNode(TYP_REF, cond, colon);
 
-                compCurBB->SetFlags(BBF_HAS_NEWOBJ);
-                optMethodFlags |= OMF_HAS_NEWOBJ | OMF_HAS_EARLY_EXPAND_QMARKS;
+            const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNullableBox"));
+            impStoreToTemp(result, qmark, CHECK_SPILL_ALL);
+            lvaSetClass(result, typeToBox, true);
 
-                GenTree*      cond  = gtNewOperNode(GT_NE, TYP_INT, hasValue, gtNewIconNode(0));
-                GenTreeColon* colon = gtNewColonNode(TYP_REF, allocRoot, gtNewNull());
-                GenTree*      qmark = gtNewQmarkNode(TYP_REF, cond, colon);
-
-                const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNullableBox"));
-                impStoreToTemp(result, qmark, CHECK_SPILL_ALL);
-                lvaSetClass(result, typeToBox, true);
-                lvaSetClass(objLclNum, typeToBox, true);
-                impPushOnStack(gtNewLclvNode(result, TYP_REF), typeInfo(typeToBox));
-                return;
-            }
+            lvaSetClass(objLclNum, typeToBox, true);
+            impPushOnStack(gtNewLclvNode(result, TYP_REF), typeInfo(typeToBox));
+            return;
         }
     }
 
