@@ -1002,6 +1002,10 @@ void ValidateEmittedSequenceTermination(InterpInst *lastIns)
 
     if (InterpOpIsUncondBranch(lastIns->opcode) ||
         (lastIns->opcode == INTOP_RET) ||
+        (lastIns->opcode == INTOP_RET_I1) ||
+        (lastIns->opcode == INTOP_RET_U1) ||
+        (lastIns->opcode == INTOP_RET_I2) ||
+        (lastIns->opcode == INTOP_RET_U2) ||
         (lastIns->opcode == INTOP_RET_VOID) ||
         (lastIns->opcode == INTOP_RET_VT) ||
         (lastIns->opcode == INTOP_THROW) ||
@@ -1733,6 +1737,8 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     : m_stackmapsByClass(FreeInterpreterStackMap)
     , m_pInitLocalsIns(nullptr)
     , m_hiddenArgumentVar(-1)
+    , m_nextCallGenericContextVar(-1)
+    , m_nextCallAsyncContinuationVar(-1)
     , m_leavesTable(this)
     , m_dataItems(this)
     , m_globalVarsWithRefsStackTop(0)
@@ -2654,7 +2660,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
             }
         }
     }
-    else if (opBase == INTOP_SUB_I4 && type1 == StackTypeByRef)
+    else if (opBase == INTOP_SUB_I4 && ((type1 == StackTypeByRef) || (type2 == StackTypeByRef)))
     {
         if (type2 == StackTypeI4)
         {
@@ -2864,23 +2870,27 @@ static int32_t GetLdindForType(InterpType interpType)
     return -1;
 }
 
+static int32_t GetRetForType(InterpType interpType)
+{
+    switch (interpType)
+    {
+        case InterpTypeI1: return INTOP_RET_I1;
+        case InterpTypeU1: return INTOP_RET_U1;
+        case InterpTypeI2: return INTOP_RET_I2;
+        case InterpTypeU2: return INTOP_RET_U2;
+        default: return INTOP_RET;
+    }
+}
+
 static bool DoesValueTypeContainGCRefs(COMP_HANDLE compHnd, CORINFO_CLASS_HANDLE clsHnd)
 {
     unsigned size = compHnd->getClassSize(clsHnd);
     // getClassGClayout assumes it's given a buffer of exactly this size
     unsigned maxGcPtrs = (size + sizeof(void *) - 1) / sizeof(void *);
     BYTE *gcLayout = (BYTE *)alloca(maxGcPtrs + 1);
-    uint32_t numSlots = compHnd->getClassGClayout(clsHnd, gcLayout);
+    uint32_t numGCRefs = compHnd->getClassGClayout(clsHnd, gcLayout);
 
-    for (uint32_t i = 0; i < numSlots; ++i)
-    {
-        if (gcLayout[i] != TYPE_GC_NONE)
-        {
-            return true;
-        }
-    }
-
-    return false;
+    return numGCRefs > 0;
 }
 
 void InterpCompiler::ConvertFloatingPointStackEntryToStackType(StackInfo* entry, StackType type)
@@ -3247,6 +3257,22 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
             PushStackType(StackTypeI, NULL);
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return true;
+        }
+
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext:
+        {
+            CHECK_STACK(1);
+            m_pStackPointer--;
+            m_nextCallGenericContextVar = m_pStackPointer[0].var;
+            return true;
+        }
+
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation:
+        {
+            CHECK_STACK(1);
+            m_pStackPointer--;
+            m_nextCallAsyncContinuationVar = m_pStackPointer[0].var;
             return true;
         }
 
@@ -4045,7 +4071,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             //  intrinsics for the recursive call. Otherwise we will just recurse infinitely and overflow stack.
             //  This expansion can produce value that is inconsistent with the value seen by JIT/R2R code that can
             //  cause user code to misbehave. This is by design. One-off method Interpretation is for internal use only.
-            bool isMustExpand = (callInfo.hMethod == m_methodHnd) || (ni == NI_System_StubHelpers_GetStubContext);
+            bool isMustExpand = (callInfo.hMethod == m_methodHnd) || (
+                    ni == NI_System_StubHelpers_GetStubContext ||
+                    ni == NI_System_StubHelpers_NextCallReturnAddress ||
+                    ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext ||
+                    ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation);
             if ((InterpConfig.InterpMode() == 3) || isMustExpand)
             {
                 if (EmitNamedIntrinsicCall(ni, callInfo.kind == CORINFO_CALL, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
@@ -4260,62 +4290,69 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     {
         int contextParamVar = -1;
 
-        // Instantiated generic method
-        CORINFO_CONTEXT_HANDLE exactContextHnd = callInfo.contextHandle;
-        if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+        if (m_nextCallGenericContextVar >= 0)
         {
-            assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
-
-            CORINFO_METHOD_HANDLE exactMethodHandle =
-            (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
-            DeclarePointerIsMethod(exactMethodHandle);
-
-            if (!callInfo.exactContextNeedsRuntimeLookup)
-            {
-                PushStackType(StackTypeI, NULL);
-                m_pStackPointer--;
-                contextParamVar = m_pStackPointer[0].var;
-                AddIns(INTOP_LDPTR);
-                m_pLastNewIns->SetDVar(contextParamVar);
-                m_pLastNewIns->data[0] = GetDataItemIndex((void*)exactMethodHandle);
-            }
-            else
-            {
-                contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly).var;
-            }
+            contextParamVar = m_nextCallGenericContextVar;
+            m_nextCallGenericContextVar = -1;
         }
-
-        // otherwise must be an instance method in a generic struct,
-        // a static method in a generic type, or a runtime-generated array method
         else
         {
-            assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
-            CORINFO_CLASS_HANDLE exactClassHandle = getClassFromContext(exactContextHnd);
-            DeclarePointerIsClass(exactClassHandle);
+            // Instantiated generic method
+            CORINFO_CONTEXT_HANDLE exactContextHnd = callInfo.contextHandle;
+            if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+            {
+                assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
 
-            if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && readonly)
-            {
-                PushStackType(StackTypeI, NULL);
-                m_pStackPointer--;
-                contextParamVar = m_pStackPointer[0].var;
-                // We indicate "readonly" to the Address operation by using a null
-                // instParam.
-                AddIns(INTOP_LDPTR);
-                m_pLastNewIns->SetDVar(contextParamVar);
-                m_pLastNewIns->data[0] = GetDataItemIndex(NULL);
+                CORINFO_METHOD_HANDLE exactMethodHandle =
+                    (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
+                DeclarePointerIsMethod(exactMethodHandle);
+
+                if (!callInfo.exactContextNeedsRuntimeLookup)
+                {
+                    PushStackType(StackTypeI, NULL);
+                    m_pStackPointer--;
+                    contextParamVar = m_pStackPointer[0].var;
+                    AddIns(INTOP_LDPTR);
+                    m_pLastNewIns->SetDVar(contextParamVar);
+                    m_pLastNewIns->data[0] = GetDataItemIndex((void*)exactMethodHandle);
+                }
+                else
+                {
+                    contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly).var;
+                }
             }
-            else if (!callInfo.exactContextNeedsRuntimeLookup)
-            {
-                PushStackType(StackTypeI, NULL);
-                m_pStackPointer--;
-                contextParamVar = m_pStackPointer[0].var;
-                AddIns(INTOP_LDPTR);
-                m_pLastNewIns->SetDVar(contextParamVar);
-                m_pLastNewIns->data[0] = GetDataItemIndex((void*)exactClassHandle);
-            }
+            // otherwise must be an instance method in a generic struct,
+            // a static method in a generic type, or a runtime-generated array method
             else
             {
-                contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly | GenericHandleEmbedOptions::EmbedParent).var;
+                assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+                CORINFO_CLASS_HANDLE exactClassHandle = getClassFromContext(exactContextHnd);
+                DeclarePointerIsClass(exactClassHandle);
+
+                if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && readonly)
+                {
+                    PushStackType(StackTypeI, NULL);
+                    m_pStackPointer--;
+                    contextParamVar = m_pStackPointer[0].var;
+                    // We indicate "readonly" to the Address operation by using a null
+                    // instParam.
+                    AddIns(INTOP_LDPTR);
+                    m_pLastNewIns->SetDVar(contextParamVar);
+                    m_pLastNewIns->data[0] = GetDataItemIndex(NULL);
+                }
+                else if (!callInfo.exactContextNeedsRuntimeLookup)
+                {
+                    PushStackType(StackTypeI, NULL);
+                    m_pStackPointer--;
+                    contextParamVar = m_pStackPointer[0].var;
+                    AddIns(INTOP_LDPTR);
+                    m_pLastNewIns->SetDVar(contextParamVar);
+                    m_pLastNewIns->data[0] = GetDataItemIndex((void*)exactClassHandle);
+                }
+                else
+                {
+                    contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly | GenericHandleEmbedOptions::EmbedParent).var;
+                }
             }
         }
         callArgs[extraParamArgLocation] = contextParamVar;
@@ -4493,6 +4530,18 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                         ((lookup.accessType == IAT_PVALUE) ? (int32_t)PInvokeCallFlags::Indirect : 0) |
                         (suppressGCTransition ? (int32_t)PInvokeCallFlags::SuppressGCTransition : 0);
                 }
+                else if (opcode == INTOP_CALLDELEGATE)
+                {
+                    int32_t firstTargetArgOffset = INTERP_STACK_SLOT_SIZE;
+                    if (numArgs > 1)
+                    {
+                        // The first argument is the delegate obj, the second is the first target arg
+                        // The offset of the first target arg relative to the start of delegate call args is equal to the alignment of the
+                        // first target arg.
+                        GetInterpTypeStackSize(m_pVars[callArgs[1]].clsHnd, m_pVars[callArgs[1]].interpType, &firstTargetArgOffset);
+                    }
+                    m_pLastNewIns->data[1] = firstTargetArgOffset;
+                }
             }
             break;
 
@@ -4573,7 +4622,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     if (injectRet)
     {
         // Jmp to PInvoke was converted to normal pinvoke, so we need to inject a ret after the call
-        switch (GetInterpType(callInfo.sig.retType))
+        InterpType retType = GetInterpType(m_methodInfo->args.retType);
+        switch (retType)
         {
             case InterpTypeVT:
             {
@@ -4586,7 +4636,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 AddIns(INTOP_RET_VOID);
                 break;
             default:
-                AddIns(INTOP_RET);
+                AddIns(GetRetForType(retType));
                 m_pLastNewIns->SetSVar(dVar);
                 break;
         }
@@ -4710,8 +4760,24 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
     m_pStackPointer -= 2;
 }
 
+void InterpCompiler::EmitNintIndexCheck(StackInfo *spArray, StackInfo *spIndex)
+{
+    // In the rare case when array is indexed by nint instead of int, we emit an extra check
+    // to ensure the nint value fits in int32_t
+    AddIns(INTOP_CONV_NI);
+    m_pLastNewIns->SetSVars2(spArray->var, spIndex->var);
+    int32_t var = CreateVarExplicit(g_interpTypeFromStackType[StackTypeI4], NULL, INTERP_STACK_SLOT_SIZE);
+    new (spIndex) StackInfo(StackTypeI4, NULL, var);
+    m_pLastNewIns->SetDVar(var);
+}
+
 void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
 {
+    // handle nint index case
+    if (m_pStackPointer[-1].GetStackType() == StackTypeI8)
+    {
+        EmitNintIndexCheck(m_pStackPointer - 2, m_pStackPointer - 1);
+    }
     m_pStackPointer -= 2;
     AddIns(opcode);
     m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
@@ -4721,6 +4787,12 @@ void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
 
 void InterpCompiler::EmitStelem(InterpType interpType)
 {
+    // handle nint index case
+    if (m_pStackPointer[-2].GetStackType() == StackTypeI8)
+    {
+        EmitNintIndexCheck(m_pStackPointer - 3, m_pStackPointer - 2);
+    }
+
     m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
 #ifdef TARGET_64BIT
     // nint and int32 can be used interchangeably. Add implicit conversions.
@@ -5000,7 +5072,80 @@ static OpcodePeepElement peepBoxUnboxOpcodes[] = {
     { 10, CEE_ILLEGAL } // End marker
 };
 
-OpcodePeepElement peepTypeValueTypeOpcodes[] = {
+static OpcodePeepElement peepBoxBrFalseOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_BRFALSE },
+    { 10, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxBrFalseSOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_BRFALSE_S },
+    { 7, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxBrTrueOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_BRTRUE },
+    { 10, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxBrTrueSOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_BRTRUE_S },
+    { 7, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxIsInstOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_ISINST },
+    { 10, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxIsInstBrFalseOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_ISINST },
+    { 10, CEE_BRFALSE },
+    { 15, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxIsInstBrFalseSOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_ISINST },
+    { 10, CEE_BRFALSE_S },
+    { 12, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxIsInstBrTrueOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_ISINST },
+    { 10, CEE_BRTRUE },
+    { 15, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxIsInstBrTrueSOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_ISINST },
+    { 10, CEE_BRTRUE_S },
+    { 12, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxIsInstLdNullCgtUnOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_ISINST },
+    { 10, CEE_LDNULL },
+    { 11, CEE_CGT_UN },
+    { 13, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxIsInstUnboxAnyOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_ISINST },
+    { 10, CEE_UNBOX_ANY },
+    { 15, CEE_ILLEGAL } // End marker
+};
+
+OpcodePeepElement peepTypeValueTypeOpcodesOpcodes[] =  {
     { 0, CEE_LDTOKEN },
     { 5, CEE_CALL },
     { 10, CEE_CALL },
@@ -5018,10 +5163,21 @@ public:
     OpcodePeep peepStoreLoadS = { peepStLdLoc_S, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoadS" };
     OpcodePeep peepStoreLoad = { peepStLdLoc, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad" };
     OpcodePeep peepBoxUnbox = { peepBoxUnboxOpcodes, &InterpCompiler::IsBoxUnboxPeep, &InterpCompiler::ApplyBoxUnboxPeep, "BoxUnbox" };
-    OpcodePeep peepTypeValueType = { peepTypeValueTypeOpcodes, &InterpCompiler::IsTypeValueTypePeep, &InterpCompiler::ApplyTypeValueTypePeep, "TypeValueType" };
+    OpcodePeep peepBoxBrFalse = { peepBoxBrFalseOpcodes, &InterpCompiler::IsBoxBrTrueFalsePeep, &InterpCompiler::ApplyBoxBrTrueFalsePeep, "BoxBrFalse" };
+    OpcodePeep peepBoxBrFalseS = { peepBoxBrFalseSOpcodes, &InterpCompiler::IsBoxBrTrueFalsePeep, &InterpCompiler::ApplyBoxBrTrueFalsePeep, "BoxBrFalseS" };
+    OpcodePeep peepBoxBrTrue = { peepBoxBrTrueOpcodes, &InterpCompiler::IsBoxBrTrueFalsePeep, &InterpCompiler::ApplyBoxBrTrueFalsePeep, "BoxBrTrue" };
+    OpcodePeep peepBoxBrTrueS = { peepBoxBrTrueSOpcodes, &InterpCompiler::IsBoxBrTrueFalsePeep, &InterpCompiler::ApplyBoxBrTrueFalsePeep, "BoxBrTrueS" };
+    OpcodePeep peepBoxIsInst = { peepBoxIsInstOpcodes, &InterpCompiler::IsBoxIsInstPeep, &InterpCompiler::ApplyBoxIsInstPeep, "BoxIsInst" };
+    OpcodePeep peepBoxIsInstBrFalse = { peepBoxIsInstBrFalseSOpcodes, &InterpCompiler::IsBoxIsInstBrTrueFalsePeep, &InterpCompiler::ApplyBoxIsInstBrTrueFalsePeep, "BoxIsInstBrFalse" };
+    OpcodePeep peepBoxIsInstBrFalseS = { peepBoxIsInstBrFalseSOpcodes, &InterpCompiler::IsBoxIsInstBrTrueFalsePeep, &InterpCompiler::ApplyBoxIsInstBrTrueFalsePeep, "BoxIsInstBrFalseS" };
+    OpcodePeep peepBoxIsInstBrTrue = { peepBoxIsInstBrTrueOpcodes, &InterpCompiler::IsBoxIsInstBrTrueFalsePeep, &InterpCompiler::ApplyBoxIsInstBrTrueFalsePeep, "BoxIsInstBrTrue" };
+    OpcodePeep peepBoxIsInstBrTrueS = { peepBoxIsInstBrTrueSOpcodes, &InterpCompiler::IsBoxIsInstBrTrueFalsePeep, &InterpCompiler::ApplyBoxIsInstBrTrueFalsePeep, "BoxIsInstBrTrueS" };
+    OpcodePeep peepBoxIsInstLdNullCgtUn = { peepBoxIsInstLdNullCgtUnOpcodes, &InterpCompiler::IsBoxIsInstLdNullCgtUnPeep, &InterpCompiler::ApplyBoxIsInstLdNullCgtUnPeep, "BoxIsInstLdNullCgtUn" };
+    OpcodePeep peepBoxIsInstUnboxAny = { peepBoxIsInstUnboxAnyOpcodes, &InterpCompiler::IsBoxIsInstUnboxAnyPeep, &InterpCompiler::ApplyBoxIsInstUnboxAnyPeep, "BoxIsInstUnboxAny" };
+    OpcodePeep peepTypeValueType = { peepTypeValueTypeOpcodesOpcodes, &InterpCompiler::IsTypeValueTypePeep, &InterpCompiler::ApplyTypeValueTypePeep, "TypeValueType" };
 
 public:
-    OpcodePeep* Peeps[10] = {
+    OpcodePeep* Peeps[21] = {
         &peepTypeEqualityCheck,
         &peepStoreLoad,
         &peepStoreLoad1,
@@ -5030,6 +5186,19 @@ public:
         &peepStoreLoadS,
         &peepStoreLoad0,
         &peepBoxUnbox,
+        &peepBoxBrFalse,
+        &peepBoxBrFalseS,
+        &peepBoxBrTrue,
+        &peepBoxBrTrueS,
+        // The BoxIsInst peep must be before the other peeps that start with BoxIsInst
+        // It applies only to Box used on non-ByRefLike types
+        &peepBoxIsInst,
+        &peepBoxIsInstBrFalse,
+        &peepBoxIsInstBrFalseS,
+        &peepBoxIsInstBrTrue,
+        &peepBoxIsInstBrTrueS,
+        &peepBoxIsInstLdNullCgtUn,
+        &peepBoxIsInstUnboxAny,
         &peepTypeValueType,
         NULL };
 
@@ -5079,8 +5248,12 @@ public:
             {
                 INTERP_DUMP("Applying peep: %s\n", peep->Name);
                 // The peep applies, so apply it
-                (compiler->*(peep->ApplyPeepFunc))(ip, peep->pattern, computedInfo);
-                compiler->m_ip = ip + peep->GetPeepSize();
+                int skip = (compiler->*(peep->ApplyPeepFunc))(ip, peep->pattern, computedInfo);
+                if (skip == -1)
+                {
+                    skip = (int)peep->GetPeepSize();
+                }
+                compiler->m_ip = ip + skip;
                 return true;
             }
         }
@@ -5171,7 +5344,7 @@ bool InterpCompiler::IsTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElemen
     }
 }
 
-void InterpCompiler::ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+int InterpCompiler::ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
 {
     int resultValue = (int)(size_t)computedInfo;
 
@@ -5181,6 +5354,8 @@ void InterpCompiler::ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepEle
     m_pLastNewIns->data[0] = resultValue;
     PushInterpType(InterpTypeI4, NULL);
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+    return -1;
 }
 
 bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -5284,7 +5459,7 @@ bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* patte
     return localVar == secondLocalVar;
 }
 
-void InterpCompiler::ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+int InterpCompiler::ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
 {
     // We are going to replace the entire peep with just storing to the local variable, and possibly coercing the type if needed.
     int localVar = (int)(size_t)computedInfo;
@@ -5355,6 +5530,8 @@ void InterpCompiler::ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pa
     EnsureStack(1);
     *m_pStackPointer = topOfStackInfo;
     m_pStackPointer++;
+
+    return -1;
 }
 
 bool InterpCompiler::IsBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -5408,9 +5585,228 @@ bool InterpCompiler::IsBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* patter
     return false;
 }
 
-void InterpCompiler::ApplyBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+int InterpCompiler::ApplyBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
 {
     AddIns(INTOP_NOP);
+    return -1;
+}
+
+bool InterpCompiler::IsBoxBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    const uint8_t* ipForBox = ip + pattern[0].offsetIntoPeep;
+
+    CORINFO_RESOLVED_TOKEN boxResolvedToken;
+    assert(pattern[0].opcode == CEE_BOX);
+    ResolveToken(getU4LittleEndian(ipForBox + 1), CORINFO_TOKENKIND_Box, &boxResolvedToken);
+
+    if (!m_compHnd->isValueClass(boxResolvedToken.hClass))
+    {
+        return false;
+    }
+
+    return ((m_compHnd->getClassAttribs(boxResolvedToken.hClass) & CORINFO_FLG_BYREF_LIKE) != 0 ||
+            (m_compHnd->getBoxHelper(boxResolvedToken.hClass) == CORINFO_HELP_BOX));
+}
+
+int InterpCompiler::ApplyBoxBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    // Replace BOX BRTRUE/BRFALSE; by ldc.i4 1; BRTRUE/BRFALSE
+    m_pStackPointer--;
+    AddIns(INTOP_LDC_I4);
+    m_pLastNewIns->data[0] = 1;
+    PushInterpType(InterpTypeI4, NULL);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+    // Skip the CEE_BOX, keep the branch
+    return pattern[1].offsetIntoPeep;
+}
+
+bool InterpCompiler::IsBoxIsInstPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    const uint8_t* ipForBox = ip + pattern[0].offsetIntoPeep;
+
+    CORINFO_RESOLVED_TOKEN boxResolvedToken;
+    assert(pattern[0].opcode == CEE_BOX);
+    ResolveToken(getU4LittleEndian(ipForBox + 1), CORINFO_TOKENKIND_Box, &boxResolvedToken);
+
+    if (!m_compHnd->isValueClass(boxResolvedToken.hClass))
+    {
+        return false;
+    }
+
+    if ((m_compHnd->getClassAttribs(boxResolvedToken.hClass) & CORINFO_FLG_BYREF_LIKE) != 0)
+    {
+        return false;
+    }
+
+    if (m_compHnd->getBoxHelper(boxResolvedToken.hClass) == CORINFO_HELP_BOX)
+    {
+        const uint8_t* ipForIsInst = ip + pattern[1].offsetIntoPeep;
+        CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+
+        assert(pattern[1].opcode == CEE_ISINST);
+        ResolveToken(getU4LittleEndian(ipForIsInst + 1), CORINFO_TOKENKIND_Casting, &isInstResolvedToken);
+        return m_compHnd->compareTypesForCast(boxResolvedToken.hClass, isInstResolvedToken.hClass) == TypeCompareState::MustNot;
+    }
+
+    return false;
+}
+
+int InterpCompiler::ApplyBoxIsInstPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    // Replace BOX; ISINST; by null
+    m_pStackPointer--;
+    AddIns(INTOP_LDNULL);
+    PushStackType(StackTypeO, NULL);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+    return -1;
+}
+
+bool InterpCompiler::IsBoxIsInstBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    const uint8_t* ipForBox = ip + pattern[0].offsetIntoPeep;
+
+    CORINFO_RESOLVED_TOKEN boxResolvedToken;
+    assert(pattern[0].opcode == CEE_BOX);
+    ResolveToken(getU4LittleEndian(ipForBox + 1), CORINFO_TOKENKIND_Box, &boxResolvedToken);
+
+    if (!m_compHnd->isValueClass(boxResolvedToken.hClass))
+    {
+        return false;
+    }
+
+    CorInfoHelpFunc foldAsHelper;
+    if ((m_compHnd->getClassAttribs(boxResolvedToken.hClass) & CORINFO_FLG_BYREF_LIKE) != 0)
+    {
+        // Treat ByRefLike types as if they were regular boxing operations
+        // so they can be elided.
+        foldAsHelper = CORINFO_HELP_BOX;
+    }
+    else
+    {
+        foldAsHelper = m_compHnd->getBoxHelper(boxResolvedToken.hClass);
+    }
+
+    if (foldAsHelper == CORINFO_HELP_BOX)
+    {
+        const uint8_t* ipForIsInst = ip + pattern[1].offsetIntoPeep;
+        CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+
+        assert(pattern[1].opcode == CEE_ISINST);
+        ResolveToken(getU4LittleEndian(ipForIsInst + 1), CORINFO_TOKENKIND_Casting, &isInstResolvedToken);
+        TypeCompareState castResult = m_compHnd->compareTypesForCast(boxResolvedToken.hClass, isInstResolvedToken.hClass);
+
+        if (castResult != TypeCompareState::May)
+        {
+            *ppComputedInfo = (void*)(size_t)((castResult == TypeCompareState::Must) ? 1 : 0);
+            return true;
+        }
+    }
+    // TODO: consider handling the case when foldAsHelper == CORINFO_HELP_BOX_NULLABLE like Compiler::impBoxPatternMatch
+
+    return false;
+}
+
+int InterpCompiler::ApplyBoxIsInstBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    // Replace BOX; ISINST; BRTRUE/BRFALSE; by ldc.i4 0/1; BRTRUE/BRFALSE
+    m_pStackPointer--;
+    AddIns(INTOP_LDC_I4);
+    PushStackType(StackTypeI4, NULL);
+    m_pLastNewIns->data[0] = (int)(size_t)computedInfo;
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+    // Skip the CEE_BOX, CEE_ISINST, keep the branch
+    return pattern[2].offsetIntoPeep;
+}
+
+bool InterpCompiler::IsBoxIsInstLdNullCgtUnPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    const uint8_t* ipForBox = ip + pattern[0].offsetIntoPeep;
+
+    CORINFO_RESOLVED_TOKEN boxResolvedToken;
+    assert(pattern[0].opcode == CEE_BOX);
+    ResolveToken(getU4LittleEndian(ipForBox + 1), CORINFO_TOKENKIND_Box, &boxResolvedToken);
+
+    if (!m_compHnd->isValueClass(boxResolvedToken.hClass))
+    {
+        return false;
+    }
+
+    if ((m_compHnd->getClassAttribs(boxResolvedToken.hClass) & CORINFO_FLG_BYREF_LIKE) != 0)
+    {
+        return false;
+    }
+
+    CorInfoHelpFunc foldAsHelper = m_compHnd->getBoxHelper(boxResolvedToken.hClass);
+
+    if (foldAsHelper == CORINFO_HELP_BOX)
+    {
+        const uint8_t* ipForIsInst = ip + pattern[1].offsetIntoPeep;
+        CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+
+        assert(pattern[1].opcode == CEE_ISINST);
+        ResolveToken(getU4LittleEndian(ipForIsInst + 1), CORINFO_TOKENKIND_Casting, &isInstResolvedToken);
+        TypeCompareState castResult = m_compHnd->compareTypesForCast(boxResolvedToken.hClass, isInstResolvedToken.hClass);
+
+        if (castResult != TypeCompareState::May)
+        {
+            *ppComputedInfo = (void*)(size_t)((castResult == TypeCompareState::Must) ? 1 : 0);
+            return true;
+        }
+    }
+    // TODO: consider handling the case when foldAsHelper == CORINFO_HELP_BOX_NULLABLE like Compiler::impBoxPatternMatch
+
+    return false;
+}
+
+int InterpCompiler::ApplyBoxIsInstLdNullCgtUnPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    // Replace the whole BOX; ISINST; LDNULL; CGT_UN sequence
+    m_pStackPointer--;
+    AddIns(INTOP_LDC_I4);
+    PushStackType(StackTypeI4, NULL);
+    m_pLastNewIns->data[0] = (int)(size_t)computedInfo;
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+    return -1;
+}
+
+bool InterpCompiler::IsBoxIsInstUnboxAnyPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    const uint8_t* ipForBox = ip + pattern[0].offsetIntoPeep;
+    const uint8_t* ipForIsInst = ip + pattern[1].offsetIntoPeep;
+
+    CORINFO_RESOLVED_TOKEN boxResolvedToken;
+    assert(pattern[0].opcode == CEE_BOX);
+    ResolveToken(getU4LittleEndian(ipForBox + 1), CORINFO_TOKENKIND_Box, &boxResolvedToken);
+
+    CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+    assert(pattern[1].opcode == CEE_ISINST);
+    ResolveToken(getU4LittleEndian(ipForIsInst + 1), CORINFO_TOKENKIND_Casting, &isInstResolvedToken);
+
+    if (m_compHnd->compareTypesForEquality(isInstResolvedToken.hClass, boxResolvedToken.hClass) == TypeCompareState::Must)
+    {
+        const uint8_t* ipForUnbox = ip + pattern[2].offsetIntoPeep;
+        CORINFO_RESOLVED_TOKEN unboxResolvedToken = {};
+        ResolveToken(getU4LittleEndian(ipForUnbox + 1), CORINFO_TOKENKIND_Class, &unboxResolvedToken);
+
+        // If so, box + isinst + unbox.any is a nop.
+        if (m_compHnd->compareTypesForEquality(unboxResolvedToken.hClass, boxResolvedToken.hClass) == TypeCompareState::Must)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+int InterpCompiler::ApplyBoxIsInstUnboxAnyPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    // Replace the whole BOX; ISINST; UNBOX.ANY sequence by NOP
+    AddIns(INTOP_NOP);
+    return -1;
 }
 
 bool InterpCompiler::IsTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -5469,7 +5865,7 @@ bool InterpCompiler::IsTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* p
     return true;
 }
 
-void InterpCompiler::ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+int InterpCompiler::ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
 {
     int resultValue = (int)(size_t)computedInfo;
 
@@ -5480,6 +5876,8 @@ void InterpCompiler::ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement
     m_pLastNewIns->data[0] = resultValue;
     PushInterpType(InterpTypeI4, NULL);
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+    return -1;
 }
 
 void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
@@ -6121,7 +6519,7 @@ retry_emit:
                         }
                     }
 
-                    AddIns(INTOP_RET);
+                    AddIns(GetRetForType(retType));
                     m_pStackPointer--;
                     m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
                 }
@@ -7409,7 +7807,7 @@ retry_emit:
                 CORINFO_FIELD_INFO fieldInfo;
                 uint32_t token = getU4LittleEndian(m_ip + 1);
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
-                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_SET, &fieldInfo);
 
                 // Inject call to callsite callout helper
                 EmitCallsiteCallout(fieldInfo.accessAllowed, &fieldInfo.accessCalloutHelper);
@@ -7488,7 +7886,7 @@ retry_emit:
                 CORINFO_FIELD_INFO fieldInfo;
                 uint32_t token = getU4LittleEndian(m_ip + 1);
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
-                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_SET, &fieldInfo);
 
                 // Inject call to callsite callout helper
                 EmitCallsiteCallout(fieldInfo.accessAllowed, &fieldInfo.accessCalloutHelper);
@@ -8079,7 +8477,7 @@ DO_LDFTN:
                     CorInfoHelpFunc helpFunc = m_compHnd->getUnBoxHelper((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
                     if (helpFunc == CORINFO_HELP_UNBOX)
                     {
-                        EmitPushHelperCall_2(helpFunc, embedInfo, m_pStackPointer[0].var, StackTypeO, (CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
+                        EmitPushHelperCall_2(helpFunc, embedInfo, m_pStackPointer[0].var, StackTypeByRef, (CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
                     }
                     else
                     {
@@ -8346,6 +8744,13 @@ DO_LDFTN:
                 CorInfoType elemCorType = m_compHnd->asCorInfoType(elemClsHnd);
 
                 m_pStackPointer -= 2;
+
+                // handle nint index
+                if (m_pStackPointer[1].GetStackType() == StackTypeI8)
+                {
+                    EmitNintIndexCheck(m_pStackPointer, m_pStackPointer + 1);
+                }
+
                 if ((elemCorType == CORINFO_TYPE_CLASS) && !readonly)
                 {
                     CORINFO_GENERICHANDLE_RESULT embedInfo;

@@ -30,7 +30,7 @@ struct ContinuationLayout
     unsigned                             ReturnAlignment           = 0;
     unsigned                             ReturnSize                = 0;
     unsigned                             ReturnValOffset           = UINT_MAX;
-    unsigned                             ExecContextOffset         = UINT_MAX;
+    unsigned                             ExecutionContextOffset    = UINT_MAX;
     const jitstd::vector<LiveLocalInfo>& Locals;
     CORINFO_CLASS_HANDLE                 ClassHnd = NO_CLASS_HANDLE;
 
@@ -85,6 +85,8 @@ class AsyncTransformation
                                     AsyncLiveness&                  life,
                                     jitstd::vector<LiveLocalInfo>&  liveLocals);
 
+    bool HasNonContextRestoreExceptionalFlow(BasicBlock* block);
+
     void LiftLIREdges(BasicBlock*                     block,
                       const jitstd::vector<GenTree*>& defs,
                       jitstd::vector<LiveLocalInfo>&  liveLocals);
@@ -96,8 +98,6 @@ class AsyncTransformation
                                           bool                           needsKeepAlive,
                                           jitstd::vector<LiveLocalInfo>& liveLocals);
 
-    void ClearSuspendedIndicator(BasicBlock* block, GenTreeCall* call);
-
     CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness& life);
 
     BasicBlock* CreateSuspension(
@@ -106,6 +106,7 @@ class AsyncTransformation
                                              GenTree*                  prevContinuation,
                                              const ContinuationLayout& layout);
     void         FillInDataOnSuspension(GenTreeCall* call, const ContinuationLayout& layout, BasicBlock* suspendBB);
+    void         RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* suspendBB);
     void         CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                 GenTreeCall*              call,
                                                 const CallDefinitionInfo& callDefInfo,

@@ -215,6 +215,8 @@ public:
 
     static FCDECL1(FC_BOOL_RET, IsConstructor, MethodDesc *pMethod);
 
+    static FCDECL1(FC_BOOL_RET, IsAsyncMethod, MethodDesc *pMethod);
+
     static FCDECL1(Object*, GetLoaderAllocatorInternal, MethodDesc *pMethod);
 };
 

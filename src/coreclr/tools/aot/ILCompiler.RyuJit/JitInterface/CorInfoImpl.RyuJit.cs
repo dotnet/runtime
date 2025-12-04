@@ -466,6 +466,7 @@ namespace Internal.JitInterface
             switch (ftnNum)
             {
                 case CorInfoHelpFunc.CORINFO_HELP_THROW:
+                case CorInfoHelpFunc.CORINFO_HELP_THROWEXACT: // TODO: (async): THROWEXACT
                     id = ReadyToRunHelper.Throw;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_RETHROW:
@@ -1739,7 +1740,7 @@ namespace Internal.JitInterface
                     helperId = ReadyToRunHelperId.MethodHandle;
                 else
                 {
-                    Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Method);
+                    Debug.Assert((pResolvedToken.tokenType & CorInfoTokenKind.CORINFO_TOKENKIND_Method) != 0);
                     helperId = ReadyToRunHelperId.MethodDictionary;
                 }
 

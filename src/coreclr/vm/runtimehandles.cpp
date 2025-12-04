@@ -2120,8 +2120,19 @@ FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsConstructor, MethodDesc *pMethod)
     }
     CONTRACTL_END;
 
-    BOOL ret = (BOOL)pMethod->IsClassConstructorOrCtor();
-    FC_RETURN_BOOL(ret);
+    FC_RETURN_BOOL(pMethod->IsClassConstructorOrCtor());
+}
+FCIMPLEND
+
+FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsAsyncMethod, MethodDesc *pMethod)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pMethod));
+    }
+    CONTRACTL_END;
+
+    FC_RETURN_BOOL(pMethod->IsAsyncMethod());
 }
 FCIMPLEND
 

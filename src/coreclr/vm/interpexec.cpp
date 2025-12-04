@@ -862,6 +862,22 @@ MAIN_LOOP:
                     // Return stack slot sized value
                     *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
                     goto EXIT_FRAME;
+                case INTOP_RET_I1:
+                    // Return int8 value
+                    *(int64_t*)pFrame->pRetVal = (int8_t)LOCAL_VAR(ip[1], int32_t);
+                    goto EXIT_FRAME;
+                case INTOP_RET_U1:
+                    // Return uint8 value
+                    *(int64_t*)pFrame->pRetVal = (uint8_t)LOCAL_VAR(ip[1], int32_t);
+                    goto EXIT_FRAME;
+                case INTOP_RET_I2:
+                    // Return int16 value
+                    *(int64_t*)pFrame->pRetVal = (int16_t)LOCAL_VAR(ip[1], int32_t);
+                    goto EXIT_FRAME;
+                case INTOP_RET_U2:
+                    // Return uint16 value
+                    *(int64_t*)pFrame->pRetVal = (uint16_t)LOCAL_VAR(ip[1], int32_t);
+                    goto EXIT_FRAME;
                 case INTOP_RET_VT:
                     memmove(pFrame->pRetVal, LOCAL_VAR_ADDR(ip[1], void), ip[2]);
                     goto EXIT_FRAME;
@@ -1247,6 +1263,15 @@ MAIN_LOOP:
                 case INTOP_SAFEPOINT:
                     if (g_TrapReturningThreads)
                     {
+                        Thread *pThread = GetThread();
+                        if (pThread->IsAbortRequested())
+                        {
+                            CallWithSEHWrapper(
+                            [&pThread]() {
+                                pThread->HandleThreadAbort();
+                                return 0;
+                            });
+                        }
                         // Transition into preemptive mode to allow the GC to suspend us
                         GCX_PREEMP();
                     }
@@ -2538,7 +2563,17 @@ MAIN_LOOP:
 
                     int8_t* returnValueAddress = LOCAL_VAR_ADDR(returnOffset, int8_t);
 
-                    ip += 4;
+                    // Used only for INTOP_CALLDELEGATE to allow removal of the delegate object from the argument list
+                    size_t firstTargetArgOffset = 0;
+                    if (*ip == INTOP_CALLDELEGATE)
+                    {
+                        firstTargetArgOffset = (size_t)ip[4];
+                        ip += 5;
+                    }
+                    else
+                    {
+                        ip += 4;
+                    }
 
                     DELEGATEREF* delegateObj = LOCAL_VAR_ADDR(callArgsOffset, DELEGATEREF);
                     NULL_CHECK(*delegateObj);
@@ -2599,7 +2634,7 @@ MAIN_LOOP:
                             else
                             {
                                 // Shift args down by one slot to remove the delegate obj pointer
-                                memmove(LOCAL_VAR_ADDR(callArgsOffset, int8_t), LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int8_t), pTargetMethod->argsSize);
+                                memmove(LOCAL_VAR_ADDR(callArgsOffset, int8_t), LOCAL_VAR_ADDR(callArgsOffset + firstTargetArgOffset, int8_t), pTargetMethod->argsSize);
                                 // Allocate child frame.
                                 InterpMethodContextFrame *pChildFrame = pFrame->pNext;
                                 if (!pChildFrame)
@@ -2807,6 +2842,8 @@ CALL_INTERP_METHOD:
 
                     int32_t vtSize = ip[4];
                     void *vtThis = LOCAL_VAR_ADDR(returnOffset, void);
+
+                    memset(vtThis, 0, vtSize);
 
                     // pass the address of the valuetype
                     LOCAL_VAR(callArgsOffset, void*) = vtThis;
@@ -3316,6 +3353,19 @@ do {                                                                           \
                     break;
                 }
 
+                case INTOP_CONV_NI:
+                {
+                    NULL_CHECK(LOCAL_VAR(ip[2], void*));
+                    int64_t index = LOCAL_VAR(ip[3], int64_t);
+                    if ((index < 0) || (index > UINT_MAX))
+                    {
+                        COMPlusThrow(kIndexOutOfRangeException);
+                    }
+                    LOCAL_VAR(ip[1], int64_t) = index;
+                    ip += 4;
+                    break;
+                }
+
                 case INTOP_GENERICLOOKUP:
                 {
                     int dreg = ip[1];
@@ -3609,6 +3659,15 @@ do                                                                      \
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
 
         pInterpreterFrame->SetIsFaulting(false);
+
+        Thread *pThread = GetThread();
+        if (pThread->IsAbortRequested())
+        {
+            // Record the resume IP in the pFrame so that the exception handling unwinds from there
+            pFrame->ip = ip;
+            DispatchManagedException(kThreadAbortException);
+        }
+
         goto MAIN_LOOP;
     }
 

@@ -137,13 +137,14 @@ namespace Internal.JitInterface
                 TargetArchitecture.X64 => "x64",
                 TargetArchitecture.ARM => "arm",
                 TargetArchitecture.ARM64 => "arm64",
+                TargetArchitecture.Wasm32 => "wasm",
                 TargetArchitecture.LoongArch64 => "loongarch64",
                 TargetArchitecture.RiscV64 => "riscv64",
                 _ => throw new NotImplementedException(target.Architecture.ToString())
             };
 
             string targetOSComponent;
-            if (target.Architecture is TargetArchitecture.ARM64 or TargetArchitecture.ARM)
+            if (target.Architecture is TargetArchitecture.ARM64 or TargetArchitecture.ARM || target.IsWasm)
             {
                 targetOSComponent = "universal";
             }

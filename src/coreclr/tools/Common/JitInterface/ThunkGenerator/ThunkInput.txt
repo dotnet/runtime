@@ -127,6 +127,7 @@ CorInfoTypeWithMod
 CorInfoCallConvExtension
 InfoAccessType
 InfoAccessType*, ref InfoAccessType
+CorInfoReloc
 CORINFO_LOOKUP_KIND
 CORINFO_ACCESS_FLAGS
 CORINFO_CALLINFO_FLAGS
@@ -342,8 +343,8 @@ FUNCTIONS
     JITINTERFACE_HRESULT getPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, uint32_t* pCountSchemaItems, uint8_t**pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource, bool* pDynamicPgo)
     JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, uint32_t countSchemaItems, uint8_t** pInstrumentationData)
     void recordCallSite(uint32_t instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
-    void recordRelocation(void* location, void* locationRW, void* target, uint16_t fRelocType, int32_t addlDelta)
-    uint16_t getRelocTypeHint(void* target)
+    void recordRelocation(void* location, void* locationRW, void* target, CorInfoReloc fRelocType, int32_t addlDelta)
+    CorInfoReloc getRelocTypeHint(void* target)
     uint32_t getExpectedTargetArchitecture()
     uint32_t getJitFlags(CORJIT_FLAGS* flags, uint32_t  sizeInBytes)
     CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;

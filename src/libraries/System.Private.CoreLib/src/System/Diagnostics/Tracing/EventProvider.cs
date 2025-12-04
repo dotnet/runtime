@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -478,8 +479,8 @@ namespace System.Diagnostics.Tracing
                 int index;
                 int refObjIndex = 0;
 
-                Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(EightObjects)}");
-                EightObjects eightObjectStack = default;
+                Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(InlineArray8<>)}");
+                InlineArray8<object?> eightObjectStack = default;
                 Span<int> refObjPosition = stackalloc int[EtwAPIMaxRefObjCount];
                 Span<object?> dataRefObj = eightObjectStack;
 

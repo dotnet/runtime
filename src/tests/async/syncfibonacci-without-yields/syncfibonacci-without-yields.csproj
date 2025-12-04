@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Optimize>True</Optimize>
     <!-- This is a manual test/benchmark -->
     <CLRTestKind>BuildOnly</CLRTestKind>
   </PropertyGroup>

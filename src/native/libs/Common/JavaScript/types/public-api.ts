@@ -724,7 +724,7 @@ export interface IMemoryView extends IDisposable {
     get byteLength(): number;
 }
 
-export declare function exit(exit_code: number, reason?: any): void;
+export declare function exit(exitCode: number, reason?: any): void;
 
 export declare const dotnet: DotnetHostBuilder;
 

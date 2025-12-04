@@ -5,12 +5,13 @@
     package's targets into the build.
   -->
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
-  <Import Project="$(RepositoryEngineeringDir)native.props" />
+  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" />
 
   <PropertyGroup>
     <IncrementalNativeBuild Condition="'$(IncrementalNativeBuild)' == ''">true</IncrementalNativeBuild>
     <BuildCoreHostDependsOn>GenerateRuntimeVersionFile</BuildCoreHostDependsOn>
     <BuildCoreHostDependsOn Condition="'$(EnableSourceControlManagerQueries)' == 'true'">$(BuildCoreHostDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
+    <BuildCoreHostDependsOn Condition="'$(TargetsBrowser)' == 'true'">$(BuildCoreHostDependsOn);GenerateEmccExports;ResolveRuntimeFilesFromLocalBuild</BuildCoreHostDependsOn>
     <IntermediateOutputRootPath>$(ArtifactsObjDir)$(TargetRid).$(Configuration)\</IntermediateOutputRootPath>
     <!-- Global location for version files -->
     <NativeVersionFile Condition="$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.h</NativeVersionFile>

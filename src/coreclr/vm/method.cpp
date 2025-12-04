@@ -2315,10 +2315,12 @@ bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk)
         mdToken tkTypeDef;
         Module* pModuleOfTypeDef;
 
-        ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModuleOfTypeDef, &tkTypeDef);
-        if (pModuleOfTypeDef->IsSystem())
+        if (ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModuleOfTypeDef, &tkTypeDef))
         {
-            return true;
+            if (pModuleOfTypeDef->IsSystem())
+            {
+                return true;
+            }
         }
     }
 
@@ -3268,11 +3270,11 @@ void MethodDesc::ResetCodeEntryPointForEnC()
     _ASSERTE(!MayHaveEntryPointSlotsToBackpatch());
 
     // Updates are expressed via metadata diff and a methoddef of a runtime async method
-    // would be resolved to the thunk.
-    // If we see a thunk here, fetch the other variant that owns the IL and reset that.
+    // would be resolved to the task-returning thunk.
+    // If we see a thunk here, fetch the async variant that owns the IL and reset that.
     if (IsAsyncThunkMethod())
     {
-        MethodDesc *otherVariant = GetAsyncOtherVariantNoCreate();
+        MethodDesc *otherVariant = GetAsyncVariantNoCreate();
         _ASSERTE(otherVariant != NULL);
         otherVariant->ResetCodeEntryPointForEnC();
         return;

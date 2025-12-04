@@ -22,6 +22,44 @@ Mach‑O support will only be supported for composite ReadyToRun when the target
 
 `crossgen2` does not produce the final shared library. A separate SDK / build linking step must preserve the `RTR_HEADER` export in the final `dylib`.
 
+### Mach-O Emitter Decisions
+
+There's a few cases in the R2R format that are not natively represented in the Mach-O format that have to be emulated. This section will describe some of the design decisions for the Mach-O R2R format.
+
+#### Sections
+
+Sections folded into `__TEXT,__text` that is in other sections in the PE envelope:
+
+- CLR metadata: In the PE format, put in .cormeta, corresponds to the PE Header's "COR Header directory"
+- Win32 Resources: In the PE format, put in .rsrc, corresponds to the PE Header's "Win32 Resources Header directory"
+- Managed Unwind Info: In the Mach-O format, this section is expected to be in the Mach-O unwind format. The unwind info used by the runtime must be in the Windows unwind format.
+- GC Info: Entries correspond to the unwind info.
+
+Data moved out of `__TEXT,__text`:
+
+- Precompiled managed code has been moved into `__TEXT,__managedcode`. `__TEXT,__text` gets special treatment by the linker and `__TEXT,__managedcode` matches NativeAOT.
+
+Data that stays in the corresponding locations as the PE envelope:
+
+- Read-only data such as jump tables and the R2R headers: `__TEXT,__const`
+- Read-write data, such as fixup tables: `__DATA,__data`
+- Import thunks: `__TEXT,__text`
+
+#### Relocations
+
+Symbol ranges are represented differently in Mach-O than other platforms. Apple linkers have issues when multiple symbols are defined at the same location. Additionally, the Mach format natively supports a "subtractor" reloc to represent the distance between two symbols. As a result, we can represent the start of the symbol range as the start symbol of the range. We can represent the size of the range we can represent as "end symbol location - start symbol location + end symbol size".
+
+#### Base Symbol and RVAs
+
+The R2R format, like the PE format, is heavily based around having RVAs emitted into the image that can be added to the base symbol of the image. The COFF object file format natively supports such a concept, and the PE format uses such a concept in the PE header. However, other formats do not natively support such a concept.
+
+The Apple linker does provide a base symbol for the Mach format, but the base symbol depends on the output type, generally in the form `__mh_<output>_header`. For dylibs, the symbol is `__mh_dylib_header`. This symbol is located at the address returned by `dlinfo` and `dladdr` for the base address. It also points to the Mach header, which can be used to find the size of the image to bound reads of the R2R data.
+
+As a result, we can emulate this support in the Mach format with ease:
+
+1. The base symbol that we use in the object writer will be `__mh_dylib_header`.
+2. To emit the distance from the base symbol, we will use a subtractor relocation to represent "symbol location - `__mh_dylib_header` location".
+
 ## Runtime: consuming a platform-native R2R image
 
 The runtime will be updated to handle platform-native R2R images during assembly load.

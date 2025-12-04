@@ -7,6 +7,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using ILCompiler.DependencyAnalysis;
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.ObjectWriter
@@ -93,6 +94,15 @@ namespace ILCompiler.ObjectWriter
                 case 8: WriteUInt64(value); break;
                 default: throw new NotSupportedException();
             }
+        }
+
+        public void WriteStringReference(Utf8String value)
+        {
+            long stringsOffset = _stringTableWriter.Position;
+            _stringTableWriter.WriteUtf8String(value);
+
+            Debug.Assert(stringsOffset < uint.MaxValue);
+            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_str", stringsOffset);
         }
 
         public void WriteStringReference(string value)
