@@ -2069,7 +2069,7 @@ SveMaskPattern EvaluateSimdMaskToPattern(var_types baseType, simdmask_t arg0)
 template <typename TSimd, typename TBase>
 void NarrowSimdLong(TSimd* result, const TSimd& arg0)
 {
-    uint32_t count = sizeof(TSimd) / sizeof(TBase);
+    uint32_t count = sizeof(TSimd) / sizeof(uint64_t);
 
     for (uint32_t i = 0; i < count; i++)
     {
