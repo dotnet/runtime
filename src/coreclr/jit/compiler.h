@@ -5565,8 +5565,7 @@ public:
 
     GenTreeQmark* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
     bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
-    PhaseStatus fgEarlyExpandQmarkNodes();
-    void fgExpandQmarkNodes(bool early = false);
+    PhaseStatus fgExpandQmarkNodes(bool early);
 
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
     bool fgSimpleLowerBswap16(LIR::Range& range, GenTree* op);
@@ -7427,7 +7426,7 @@ public:
 #define OMF_HAS_EXPANDABLE_CAST                0x00080000 // Method contains casts eligible for late expansion
 #define OMF_HAS_STACK_ARRAY                    0x00100000 // Method contains stack allocated arrays
 #define OMF_HAS_BOUNDS_CHECKS                  0x00200000 // Method contains bounds checks
-#define OMF_HAS_EARLY_EXPAND_QMARKS            0x00400000 // Method contains bounds checks
+#define OMF_HAS_EARLY_QMARKS                   0x00400000 // Method contains early expandable QMARKs
 
     // clang-format on
 

@@ -3414,47 +3414,69 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     // Look at what helper we should use.
     CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
 
+    // Expand nullable boxes inline in optimized code in hot paths, it's slightly different from
+    // other expansions since we have to use QMARK to return null for nullables with no value.
+    //
+    //  obj = nullable._hasValue == 0 ? null : (boxed underlying value)
+    //
     if ((boxHelper == CORINFO_HELP_BOX_NULLABLE) && opts.OptimizationEnabled() && !compCurBB->isRunRarely())
     {
         CORINFO_CLASS_HANDLE typeToBox = info.compCompHnd->getTypeForBox(pResolvedToken->hClass);
-        CorInfoType          valueType = info.compCompHnd->asCorInfoType(typeToBox);
-        if (impIsPrimitive(valueType))
+
+        // We need to compose a new CORINFO_RESOLVED_TOKEN for the underlying (typeToBox) type
+        CORINFO_RESOLVED_TOKEN tk = *pResolvedToken;
+        tk.hClass                 = typeToBox;
+        tk.tokenType              = CORINFO_TOKENKIND_Casting;
+        GenTree* obj              = gtNewAllocObjNode(&tk, info.compMethodHnd, false);
+
+        if (obj != nullptr)
         {
-            bool             helperHasSideEffects;
-            CorInfoHelpFunc  helper = info.compCompHnd->getNewHelper(typeToBox, &helperHasSideEffects);
-            GenTreeAllocObj* obj =
-                gtNewAllocObjNode(helper, true, typeToBox, TYP_REF, gtNewIconEmbClsHndNode(typeToBox));
-
-            GenTreeFlags indirFlags          = GTF_EMPTY;
-            exprToBox                        = impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, &indirFlags);
-            CORINFO_FIELD_HANDLE valueFldHnd = info.compCompHnd->getFieldInClass(pResolvedToken->hClass, 1);
+            // First, decompose the Nullable<> into _hasValue and _value fields.
+            //
+            GenTreeFlags indirFlags             = GTF_EMPTY;
+            exprToBox                           = impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, &indirFlags);
+            CORINFO_FIELD_HANDLE valueFldHnd    = info.compCompHnd->getFieldInClass(pResolvedToken->hClass, 1);
+            CORINFO_CLASS_HANDLE valueStructCls = NO_CLASS_HANDLE;
             static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
-            GenTree* hasValue    = gtNewLoadValueNode(TYP_UBYTE, nullptr, gtCloneExpr(exprToBox));
-            GenTree* valueOffset = gtNewIconNode(info.compCompHnd->getFieldOffset(valueFldHnd), TYP_I_IMPL);
-            GenTree* valueAddr   = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(exprToBox), valueOffset);
-            GenTree* value       = gtNewLoadValueNode(JITtype2varType(valueType), nullptr, valueAddr);
+            unsigned     cnsValueOffset = info.compCompHnd->getFieldOffset(valueFldHnd);
+            ClassLayout* layout         = nullptr;
+            CorInfoType  corFldType     = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+            var_types    valueType      = TypeHandleToVarType(corFldType, valueStructCls, &layout);
+            GenTree*     valueOffset    = gtNewIconNode(cnsValueOffset, TYP_I_IMPL);
+            GenTree*     valueAddr      = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(exprToBox), valueOffset);
+            GenTree*     value          = gtNewLoadValueNode(valueType, layout, valueAddr);
+            GenTree*     hasValue       = gtNewLoadValueNode(TYP_UBYTE, nullptr, gtCloneExpr(exprToBox));
 
+            // Now we need to copy value into the allocated box
+            //
             unsigned   objLclNum  = lvaGrabTemp(true DEBUGARG("obj nullable box"));
             GenTree*   storeAlloc = gtNewTempStore(objLclNum, obj);
             GenTree*   objLcl     = gtNewLclvNode(objLclNum, genActualType(obj));
             GenTree*   pOffset    = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
             GenTreeOp* dataPtr    = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(objLcl), pOffset);
             GenTree*   storeData =
-                gtNewStoreIndNode(JITtype2varType(valueType), dataPtr, gtCloneExpr(value), GTF_IND_NONFAULTING);
+                gtNewStoreValueNode(valueType, layout, dataPtr, gtCloneExpr(value), GTF_IND_NONFAULTING);
+
+            // Wrap it all in two commas, it will look like:
+            //   lcl = allocobj
+            //   *(lcl + sizeof(void*)) = value
+            //   lcl
+            //
             GenTreeOp* copyData  = gtNewOperNode(GT_COMMA, TYP_REF, storeData, gtCloneExpr(objLcl));
             GenTreeOp* allocRoot = gtNewOperNode(GT_COMMA, TYP_REF, storeAlloc, copyData);
 
+            // QMARK expansion will propagate block flags properly.
             compCurBB->SetFlags(BBF_HAS_NEWOBJ);
-            optMethodFlags |= OMF_HAS_NEWOBJ | OMF_HAS_EARLY_EXPAND_QMARKS;
+            optMethodFlags |= OMF_HAS_NEWOBJ | OMF_HAS_EARLY_QMARKS;
 
             GenTree*      cond  = gtNewOperNode(GT_EQ, TYP_INT, hasValue, gtNewIconNode(0));
             GenTreeColon* colon = gtNewColonNode(TYP_REF, gtNewNull(), allocRoot);
             GenTree*      qmark = gtNewQmarkNode(TYP_REF, cond, colon);
 
+            // QMARK has to be a top-level statement
             const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNullableBox"));
             impStoreToTemp(result, qmark, CHECK_SPILL_ALL);
             lvaSetClass(result, typeToBox, true);
-
             lvaSetClass(objLclNum, typeToBox, true);
             impPushOnStack(gtNewLclvNode(result, TYP_REF), typeInfo(typeToBox));
             return;

@@ -14702,26 +14702,31 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     return introducedThrow;
 }
 
-PhaseStatus Compiler::fgEarlyExpandQmarkNodes()
+//------------------------------------------------------------------------
+// fgExpandQmarkNodes: expand all QMARK nodes into control flow.
+//
+// Arguments:
+//    early - whether this is the early expansion phase.
+//
+// Returns:
+//    Suitable phase status.
+//
+PhaseStatus Compiler::fgExpandQmarkNodes(bool early)
 {
-    if ((optMethodFlags & OMF_HAS_EARLY_EXPAND_QMARKS) == 0)
+    if (early && ((optMethodFlags & OMF_HAS_EARLY_QMARKS) == 0))
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    fgExpandQmarkNodes(true);
+    // We don't spawn more QMARKs after the early expansion phase,
+    // Eventually we might want to get rid of the late expansion phase, but currently
+    // it produces too many regressions (mostly because of ForwardSub).
+    if (compQmarkRationalized)
+    {
+        assert(!early);
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
 
-    return PhaseStatus::MODIFIED_EVERYTHING;
-}
-
-/*****************************************************************************
- *
- *  Expand GT_QMARK nodes from the flow graph into basic blocks.
- *
- */
-
-void Compiler::fgExpandQmarkNodes(bool early)
-{
     bool introducedThrows = false;
 
     if (compQmarkUsed)
@@ -14742,10 +14747,7 @@ void Compiler::fgExpandQmarkNodes(bool early)
 #endif
     }
 
-    if (!early)
-    {
-        compQmarkRationalized = true;
-    }
+    compQmarkRationalized = true;
 
     // TODO: if qmark expansion created throw blocks, try and merge them
     //
@@ -14753,6 +14755,8 @@ void Compiler::fgExpandQmarkNodes(bool early)
     {
         JITDUMP("Qmark expansion created new throw blocks\n");
     }
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------
