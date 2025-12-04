@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { LoadBootResourceCallback, JsModuleExports, JsAsset, AssemblyAsset, PdbAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, LoaderConfig, DotnetHostBuilder } from "./types";
-
 import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateInternals } from "./cross-module";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
+import { getIcuResourceName } from "./icu";
 import { getLoaderConfig } from "./config";
 import { BrowserHost_InitializeCoreCLR } from "./run";
 import { createPromiseCompletionSource } from "./promise-completion-source";
@@ -22,7 +22,6 @@ const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenMo
 
 // WASM-TODO: retry logic
 // WASM-TODO: throttling logic
-// WASM-TODO: load icu data
 // WASM-TODO: invokeLibraryInitializers
 // WASM-TODO: webCIL
 // WASM-TODO: downloadOnly - blazor render mode auto pre-download. Really no start.
@@ -37,6 +36,8 @@ export async function createRuntime(downloadOnly: boolean, loadBootResource?: Lo
     const coreVfsPromise = Promise.all((config.resources.coreVfs || []).map(fetchVfs));
     const assembliesPromise = Promise.all(config.resources.assembly.map(fetchDll));
     const vfsPromise = Promise.all((config.resources.vfs || []).map(fetchVfs));
+    const icuResourceName = getIcuResourceName(config);
+    const icuDataPromise = icuResourceName ? Promise.all((config.resources.icu || []).filter(asset => asset.name === icuResourceName).map(fetchIcu)) : Promise.resolve([]);
     // WASM-TODO fetchWasm(config.resources.wasmNative[0]);// start loading early, no await
 
     const nativeModule = await nativeModulePromise;
@@ -50,7 +51,7 @@ export async function createRuntime(downloadOnly: boolean, loadBootResource?: Lo
     await coreAssembliesPromise;
     await coreVfsPromise;
     await vfsPromise;
-
+    await icuDataPromise;
     if (!downloadOnly) {
         BrowserHost_InitializeCoreCLR();
     }
@@ -66,6 +67,15 @@ async function loadJSModule(asset: JsAsset, loadBootResource?: LoadBootResourceC
     }
     if (!asset.resolvedUrl) throw new Error("Invalid config, resources is not set");
     return await import(/* webpackIgnore: true */ asset.resolvedUrl);
+}
+
+async function fetchIcu(asset: IcuAsset): Promise<void> {
+    if (asset.name && !asset.resolvedUrl) {
+        asset.resolvedUrl = locateFile(asset.name);
+    }
+    const bytes = await fetchBytes(asset);
+    await nativeModulePromiseController.promise;
+    dotnetBrowserHostExports.loadIcuData(bytes);
 }
 
 async function fetchDll(asset: AssemblyAsset): Promise<void> {
