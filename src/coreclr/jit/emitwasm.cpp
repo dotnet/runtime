@@ -306,12 +306,38 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += EncodeLEB64(dst, &constant, (insFmt == IF_LEB128));
             break;
         }
+        case IF_I32:
+        {
+            dst += emitOutputByte(dst, opcode);
+            uint64_t bits = emitGetInsBits(id);
+            dst += emitOutputLong(dst, (int)bits);
+            break;
+        }
+        case IF_I64:
+        {
+            dst += emitOutputByte(dst, opcode);
+            uint64_t bits = emitGetInsBits(id);
+            memcpy(dst, &bits, sizeof(uint64_t));
+            dst += sizeof(uint64_t);
+            break;
+        }
         case IF_F32:
+        {
+            dst += emitOutputByte(dst, opcode);
+            uint64_t bits = emitGetInsBits(id);
+            double value;
+            memcpy(&value, &bits, sizeof(double));
+            float truncated = value;
+            memcpy(dst, &truncated, sizeof(float));
+            dst += sizeof(float);
+            break;
+        }
         case IF_F64:
         {
             dst += emitOutputByte(dst, opcode);
-            /* FIXME: How do I get the constant from inside the emitter? */
-            NYI_WASM("emitOutputInstr get double constant value");
+            uint64_t bits = emitGetInsBits(id);
+            memcpy(dst, &bits, sizeof(double));
+            dst += sizeof(double);
             break;
         }
         case IF_LABEL:
