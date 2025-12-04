@@ -4410,6 +4410,12 @@ inline BYTE* emitter::emitCodeWithInstructionSize(BYTE* codePtrBefore, BYTE* new
     return newCodePointer;
 }
 
+#ifdef TARGET_WASM
+// Defined in emitwasm.cpp
+size_t SizeOfULEB128(uint64_t value);
+size_t SizeOfLEB128(int64_t value);
+#endif // TARGET_WASM
+
 /*****************************************************************************/
 #endif // _EMIT_H_
 /*****************************************************************************/

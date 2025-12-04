@@ -200,14 +200,14 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
     return sizeof(instrDesc);
 }
 
-static size_t SizeOfULEB128(uint64_t value)
+size_t SizeOfULEB128(uint64_t value)
 {
     // Reuses the encoder for consistency and simplicity.
     // TODO: If this becomes a bottleneck, do a more direct size estimation.
     return EncodeLEB64(nullptr, &value, false);
 }
 
-static size_t SizeOfLEB128(int64_t value)
+size_t SizeOfLEB128(int64_t value)
 {
     // Reuses the encoder for consistency and simplicity.
     // TODO: If this becomes a bottleneck, do a more direct size estimation.
@@ -253,7 +253,7 @@ unsigned emitter::instrDesc::idCodeSize() const
             uint64_t align = 0;          // FIXME
             assert(align < 64);          // spec says align > 2^6 produces a memidx for multiple memories.
             size += (unsigned int)SizeOfULEB128(align);
-            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
+            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : (unsigned int)SizeOfULEB128(emitGetInsSC(this));
             break;
         }
         default:
