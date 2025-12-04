@@ -100,21 +100,20 @@ size_t emitter::emitEncodeLEB64(uint8_t* destination, const void* source, bool v
 {
     assert(source);
 
-    unsigned char b;
-    unsigned char * originalDestination = destination;
-    if (valueIsSigned) {
+    uint8_t b;
+    uint8_t * originalDestination = destination;
+    if (valueIsSigned)
+    {
         int64_t value = *((int64_t*)source);
         int more = 1, signBit;
 
-        while (more) {
-            b = (unsigned char)(value & 0x7FL);
+        while (more)
+        {
+            b = (uint8_t)(value & 0x7Fl);
             value >>= 7;
 
             signBit = (b & 0x40u) != 0;
-            if (
-                ((value == 0) && !signBit) ||
-                ((value == -1) && signBit)
-            )
+            if (((value == 0) && !signBit) || ((value == -1) && signBit))
                 more = 0;
             else
                 b |= 0x80;
@@ -123,11 +122,14 @@ size_t emitter::emitEncodeLEB64(uint8_t* destination, const void* source, bool v
                 *destination = b;
             destination++;
         }
-    } else {
+    }
+    else
+    {
         uint64_t value = *((uint64_t*)source);
 
-        do {
-            b = (unsigned char)(value & 0x7Ful);
+        do
+        {
+            b = (uint8_t)(value & 0x7Ful);
             value >>= 7;
 
             if (value != 0)
@@ -266,7 +268,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MEMARG:
         {
             dst += emitOutputByte(dst, opcode);
-            size_t align = 0; // FIXME
+            size_t align = 0;            // FIXME
             assert(align <= UINT32_MAX); // spec says memarg alignment is u32
             dst += emitEncodeLEB64(dst, &align, false);
             size_t offset = 0 /* id->idAddr()->iiaAddr */; // FIXME
