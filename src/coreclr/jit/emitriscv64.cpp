@@ -103,6 +103,18 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
     }
 }
 
+#ifdef DEBUG
+/*****************************************************************************
+ *
+ *  The following is called for each recorded instruction -- use for debugging.
+ */
+
+void emitter::emitInsSanityCheck(instrDesc* id)
+{
+    // This function is left empty since riscv InstrDesc has no `idInsFmt` field.
+}
+#endif // DEBUG
+
 bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 {
     if (!id->idIsLclVar())
@@ -288,6 +300,7 @@ void emitter::emitIns(instruction ins)
     id->idAddr()->iiaSetInstrEncode(emitInsCode(ins));
     id->idCodeSize(4);
 
+    dispIns(id);
     appendToCurIG(id);
 }
 
@@ -384,6 +397,7 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
     id->idSetIsLclVar();
     id->idCodeSize(4);
 
+    dispIns(id);
     appendToCurIG(id);
 }
 
@@ -490,6 +504,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     id->idSetIsLclVar();
     id->idCodeSize(4);
 
+    dispIns(id);
     appendToCurIG(id);
 }
 
@@ -524,6 +539,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
     id->idAddr()->iiaSetInstrEncode(code);
     id->idCodeSize(4);
 
+    dispIns(id);
     appendToCurIG(id);
 }
 
@@ -574,6 +590,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     id->idAddr()->iiaSetInstrEncode(code);
     id->idCodeSize(4);
 
+    dispIns(id);
     appendToCurIG(id);
 }
 
@@ -718,6 +735,7 @@ void emitter::emitIns_R_R(
     id->idAddr()->iiaSetInstrEncode(code);
     id->idCodeSize(4);
 
+    dispIns(id);
     appendToCurIG(id);
 }
 
@@ -781,9 +799,11 @@ void emitter::emitIns_R_R_I(
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
+    id->idSmallCns(imm);
     id->idAddr()->iiaSetInstrEncode(code);
     id->idCodeSize(4);
 
+    dispIns(id);
     appendToCurIG(id);
 }
 
@@ -817,6 +837,7 @@ void emitter::emitIns_R_I_I(
     id->idAddr()->iiaSetInstrEncode(code);
     id->idCodeSize(4);
 
+    dispIns(id);
     appendToCurIG(id);
 }
 
@@ -986,6 +1007,7 @@ void emitter::emitIns_R_R_R(
     id->idAddr()->iiaSetInstrEncode(code);
     id->idCodeSize(4);
 
+    dispIns(id);
     appendToCurIG(id);
 }
 
@@ -1039,6 +1061,7 @@ bool emitter::tryEmitCompressedIns_R_R_R(
     id->idAddr()->iiaSetInstrEncode(code);
     id->idCodeSize(2);
 
+    dispIns(id);
     appendToCurIG(id);
 
     return true;
@@ -1232,6 +1255,7 @@ void emitter::emitIns_R_C(
 
     id->idAddr()->iiaFieldHnd = fldHnd;
 
+    dispIns(id);
     appendToCurIG(id);
 }
 
@@ -1281,6 +1305,7 @@ void emitter::emitIns_R_AI(instruction  ins,
     id->idAddr()->iiaAddr = (BYTE*)addr;
     id->idCodeSize(8);
 
+    dispIns(id);
     appendToCurIG(id);
 }
 
@@ -1374,6 +1399,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     }
 #endif // DEBUG
 
+    dispIns(id);
     appendToCurIG(id);
 }
 
@@ -1456,6 +1482,7 @@ void emitter::emitIns_Jump(instruction ins, BasicBlock* dst, regNumber reg1, reg
         }
     }
 
+    dispIns(id);
     appendToCurIG(id);
 }
 
@@ -1746,7 +1773,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         }
         id->idCodeSize(numberOfInstructions * 4);
         id->idIns(id->ins[numberOfInstructions - 1]);
-
+    
+        dispIns(id);
         appendToCurIG(id);
     }
     else if (size == EA_PTRSIZE)
@@ -1951,6 +1979,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     }
 #endif // LATE_DISASM
 
+    dispIns(id);
     appendToCurIG(id);
 }
 
@@ -3348,7 +3377,8 @@ void emitter::emitDispInsName(
 
     printf("      ");
 
-    bool willPrintLoadImmValue = (id->idInsOpt() == INS_OPTS_I) && !emitComp->opts.disDiffable;
+    bool idNotNullptr = id != nullptr;
+    bool willPrintLoadImmValue = idNotNullptr && (id->idInsOpt() == INS_OPTS_I) && !emitComp->opts.disDiffable;
 
     switch (GetMajorOpcode(code))
     {
@@ -4412,7 +4442,11 @@ void emitter::emitDispInsName(
             return;
         }
         default:
+        {
+            printf("CODE: %#x\n", code);
+            printf("MajorOpcode: %d\n", GetMajorOpcode(code));
             NO_WAY("illegal ins within emitDisInsName!");
+        }
     }
 
     NO_WAY("illegal ins within emitDisInsName!");
@@ -4431,45 +4465,135 @@ void emitter::emitDispInsInstrNum(const instrDesc* id) const
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
+    // TODO: Handle when pCode is nullptr
     if (pCode == nullptr)
-        return;
-
-    emitDispInsInstrNum(id);
-
-    bool willPrintLoadImmValue = (id->idInsOpt() == INS_OPTS_I) && !emitComp->opts.disDiffable;
-
-    const BYTE* instr = pCode + writeableOffset;
-    unsigned    instrSize;
-    for (size_t i = 0; i < sz; instr += instrSize, i += instrSize, offset += instrSize)
     {
-        WORD word;
-        memcpy(&word, instr, sizeof(word));
-        code_t instruction = word;
-        instrSize          = sizeof(word);
-        if (Is32BitInstruction(word))
-        {
-            memcpy(&word, instr + sizeof(word), sizeof(word));
-            instruction |= word << 16;
-            instrSize = 4;
-        }
-#ifdef DEBUG
-        if (emitComp->verbose && i != 0)
-        {
-            printf("        ");
-        }
-#endif
-        emitDispInsName(instruction, instr, doffs, offset, id, ig);
+        instruction ins = id->idIns();
+        insOpts insOpt = id->idInsOpt();        
 
-        if (willPrintLoadImmValue && ((i + instrSize) < sz))
+        // TODO-RISCV64: Support 16-bit wise instructions
+
+        switch (insOpt)
         {
-            printf("\n");
+            case INS_OPTS_JUMP:  // `id` points to `instrDescJmp`
+            {
+                printf("instrDescJmp\n");
+                break;
+            }
+
+            case INS_OPTS_C: // `id` points to `instrDescCGCA`
+            {
+                printf("instrDescCGCA\n");
+                break;
+            }
+
+            case INS_OPTS_I:  // `id` points to `instrDescLoadImm`
+            {
+                instrDescLoadImm* idli = static_cast<instrDescLoadImm*>(id);
+                instruction* ins = idli->ins;
+                int32_t* values = idli->values;
+                regNumber reg = idli->idReg1();
+
+                int numberOfInstructions = idli->idCodeSize() / sizeof(code_t);
+                for (int i = 0; i < numberOfInstructions; ++i)
+                {
+                    // Note: Instructions created by emitLoadImmediate should be one of
+                    // `lui`, `addiw`, `addi`, `slli`, `srli`.
+                    // Also, the instrDesc made by emitter::emitLoadImmediate only uses a single register.
+                    instruction ithIns = ins[i];
+                    code_t ithCode = emitInsCode(ithIns);
+                    int32_t ithVal = values[i];
+                    instrDesc* ithInsid = (i < numberOfInstructions) ? nullptr : id;
+
+                    switch (ithIns)
+                    {
+                        case INS_addi:
+                        case INS_addiw:
+                        case INS_slli:
+                        case INS_srli:
+                        {
+                            // I-type
+                            unsigned opcode = ithCode & kInstructionOpcodeMask;
+                            unsigned rs = castFloatOrIntegralReg(reg);
+                            unsigned funct3 = (ithCode & kInstructionFunct3Mask) >> 12;
+                            unsigned funct7 = (ithCode & kInstructionFunct7Mask) >> 20;
+                            unsigned imm12 = TrimSignedToImm12((ithVal << 20) >> 20);
+
+                            code_t subInsCode = insEncodeITypeInstr(opcode, rs, funct3, rs, imm12);
+                            emitDispInsName(subInsCode, nullptr, false, 0, ithInsid, nullptr);
+                            break;
+                        }
+
+                        case INS_lui:
+                        {
+                            // U-type
+                            unsigned imm20 = TrimSignedToImm20((ithVal << 12) >> 12);
+                            code_t subInsCode = insEncodeUTypeInstr(ithCode, reg, imm20);
+                            emitDispInsName(subInsCode, nullptr, false, 0, ithInsid, nullptr);
+                            break;
+                        }
+
+                        default:
+                        {
+                            NYI_RISCV64("Unknown instruction inside `instrDescLoadImm`\n");
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+
+            case INS_OPTS_RC:
+            case INS_OPTS_RL:
+            case INS_OPTS_RELOC:
+            case INS_OPTS_NONE:
+            default:  // `id` points to the `instrDesc`
+            {
+                code_t insCode = id->idAddr()->iiaGetInstrEncode();
+                emitDispInsName(insCode, nullptr, false, 0, id, nullptr);
+                break;
+            }
         }
     }
-
-    if (willPrintLoadImmValue)
+    else // pCode is not null, instructions can be disassembled
     {
-        instrDescLoadImm* liid = static_cast<instrDescLoadImm*>(id);
-        printf("\t\t;; load imm: hex=0x%016lX dec=%ld\n", liid->idcCnsVal, liid->idcCnsVal);
+        emitDispInsInstrNum(id);
+
+        bool willPrintLoadImmValue = (id->idInsOpt() == INS_OPTS_I) && !emitComp->opts.disDiffable;
+
+        const BYTE* instr = pCode + writeableOffset;
+        unsigned    instrSize;
+        for (size_t i = 0; i < sz; instr += instrSize, i += instrSize, offset += instrSize)
+        {
+            WORD word;
+            memcpy(&word, instr, sizeof(word));
+            code_t instruction = word;
+            instrSize          = sizeof(word);
+            if (Is32BitInstruction(word))
+            {
+                memcpy(&word, instr + sizeof(word), sizeof(word));
+                instruction |= word << 16;
+                instrSize = 4;
+            }
+#ifdef DEBUG
+            if (emitComp->verbose && i != 0)
+            {
+                printf("        ");
+            }
+#endif
+            emitDispInsName(instruction, instr, doffs, offset, id, ig);
+
+            if (willPrintLoadImmValue && ((i + instrSize) < sz))
+            {
+                printf("\n");
+            }
+        }
+
+        if (willPrintLoadImmValue)
+        {
+            instrDescLoadImm* liid = static_cast<instrDescLoadImm*>(id);
+            printf("\t\t;; load imm: hex=0x%016lX dec=%ld\n", liid->idcCnsVal, liid->idcCnsVal);
+        }
     }
 }
 

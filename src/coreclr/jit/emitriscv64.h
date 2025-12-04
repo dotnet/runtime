@@ -76,7 +76,6 @@ unsigned    tryGetRvcRegisterNumber(regNumber reg);
 instruction getCompressedArithmeticIns(instruction ins);
 regNumber   getRegNumberFromRvcReg(unsigned rvcReg);
 
-void emitDispInsName(const instrDesc *id);
 void emitDispInsName(
     code_t code, const BYTE* addr, bool doffs, unsigned insOffset, const instrDesc* id, const insGroup* ig);
 void emitDispInsInstrNum(const instrDesc* id) const;
