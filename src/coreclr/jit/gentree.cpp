@@ -31902,7 +31902,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
 #ifdef FEATURE_MASKED_HW_INTRINSICS
 #ifdef TARGET_XARCH
-
     if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
     {
         // Comparisons that produce masks lead to more verbose trees than
