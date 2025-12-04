@@ -4835,15 +4835,20 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 }
                 else if (opcode == INTOP_CALLDELEGATE)
                 {
-                    int32_t firstTargetArgOffset = INTERP_STACK_SLOT_SIZE;
-                    if (numArgs > 1)
+                    int32_t sizeOfArgsUpto16ByteAlignment = 0;
+                    for (int argIndex = 1; argIndex < numArgs; argIndex++)
                     {
-                        // The first argument is the delegate obj, the second is the first target arg
-                        // The offset of the first target arg relative to the start of delegate call args is equal to the alignment of the
-                        // first target arg.
-                        GetInterpTypeStackSize(m_pVars[callArgs[1]].clsHnd, m_pVars[callArgs[1]].interpType, &firstTargetArgOffset);
+                        int32_t argAlignment = INTERP_STACK_SLOT_SIZE;
+                        int32_t size = GetInterpTypeStackSize(m_pVars[callArgs[argIndex]].clsHnd, m_pVars[callArgs[argIndex]].interpType, &argAlignment);
+                        size = ALIGN_UP_TO(size, INTERP_STACK_SLOT_SIZE);
+                        if (argAlignment == INTERP_STACK_ALIGNMENT)
+                        {
+                            break;
+                        }
+                        sizeOfArgsUpto16ByteAlignment += size;
                     }
-                    m_pLastNewIns->data[1] = firstTargetArgOffset;
+
+                    m_pLastNewIns->data[1] = sizeOfArgsUpto16ByteAlignment;
                 }
             }
             break;
