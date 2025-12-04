@@ -1,7 +1,5 @@
 include_directories("../../pal/prebuilt/corerror")
 
-add_definitions(-DFX_VER_INTERNALNAME_STR=mscorrc.dll)
-
 if(CLR_CMAKE_HOST_WIN32)
     add_library_clr(mscorrc OBJECT
         include.rc
