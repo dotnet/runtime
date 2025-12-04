@@ -98,8 +98,48 @@ bool emitter::emitInsIsStore(instruction ins)
 
 size_t emitter::emitEncodeLEB64(uint8_t* destination, const void* source, bool valueIsSigned)
 {
-    NYI_WASM("emitEncodeLEB64");
-    return 0;
+    assert(source);
+
+    unsigned char b;
+    unsigned char * originalDestination = destination;
+    if (valueIsSigned) {
+        int64_t value = *((int64_t*)source);
+        int more = 1, signBit;
+
+        while (more) {
+            b = (unsigned char)(value & 0x7FL);
+            value >>= 7;
+
+            signBit = (b & 0x40u) != 0;
+            if (
+                ((value == 0) && !signBit) ||
+                ((value == -1) && signBit)
+            )
+                more = 0;
+            else
+                b |= 0x80;
+
+            if (originalDestination)
+                *destination = b;
+            destination++;
+        }
+    } else {
+        uint64_t value = *((uint64_t*)source);
+
+        do {
+            b = (unsigned char)(value & 0x7Ful);
+            value >>= 7;
+
+            if (value != 0)
+                b |= 0x80;
+
+            if (originalDestination)
+                *destination = b;
+            destination++;
+        } while (value != 0);
+    }
+
+    return (size_t)(destination - originalDestination);
 }
 
 emitter::insFormat emitter::emitInsFormat(instruction ins)
@@ -202,16 +242,40 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
         case IF_BLOCK:
             dst += emitOutputByte(dst, opcode);
-            dst += emitOutputByte(dst, 0x40);
+            dst += emitOutputByte(dst, 0x40 /* block type of void */);
             break;
         case IF_ULEB128:
+        case IF_LEB128:
+        {
             dst += emitOutputByte(dst, opcode);
-            // TODO-WASM: emit uleb128
+            cnsval_ssize_t constant = emitGetInsSC(id);
+            dst += emitEncodeLEB64(dst, &constant, (insFmt == IF_LEB128));
             break;
+        }
+        case IF_F32:
+        case IF_F64:
+        {
+            dst += emitOutputByte(dst, opcode);
+            /* FIXME: How do I get the constant from inside the emitter? */
+            NYI_WASM("emitOutputInstr get double constant value");
+            break;
+        }
         case IF_LABEL:
-            // TODO-WASM: emit uleb128
+            NYI_WASM("emitOutputInstr IF_LABEL");
+            break;
+        case IF_MEMARG:
+        {
+            dst += emitOutputByte(dst, opcode);
+            size_t align = 0; // FIXME
+            assert(align <= UINT32_MAX); // spec says memarg alignment is u32
+            dst += emitEncodeLEB64(dst, &align, false);
+            size_t offset = 0 /* id->idAddr()->iiaAddr */; // FIXME
+            dst += emitEncodeLEB64(dst, &offset, false);
+            break;
+        }
         default:
             NYI_WASM("emitOutputInstr");
+            break;
     }
 
 #ifdef DEBUG
