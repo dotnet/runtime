@@ -311,7 +311,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // while cnsval_ssize_t is appropriately sized, we want to make sure
             //  that constant is as big as EncodeLEB64 expects it to be
             int64_t constant = (cnsval_ssize_t)emitGetInsSC(id);
-            dst += EncodeLEB64(dst, &constant, (insFmt == IF_LEB128));
+            dst += EncodeLEB64(dst + writeableOffset, &constant, (insFmt == IF_LEB128));
             break;
         }
         case IF_I32:
@@ -319,7 +319,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             dst += emitOutputByte(dst, opcode);
             uint64_t bits = emitGetInsBits(id);
-            dst += EncodeLEB64(dst, &bits, true);
+            dst += EncodeLEB64(dst + writeableOffset, &bits, true);
             break;
         }
         case IF_F32:
@@ -329,7 +329,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             double value;
             memcpy(&value, &bits, sizeof(double));
             float truncated = (float)value;
-            memcpy(dst, &truncated, sizeof(float));
+            memcpy(dst + writeableOffset, &truncated, sizeof(float));
             dst += sizeof(float);
             break;
         }
@@ -337,7 +337,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             dst += emitOutputByte(dst, opcode);
             uint64_t bits = emitGetInsBits(id);
-            memcpy(dst, &bits, sizeof(double));
+            memcpy(dst + writeableOffset, &bits, sizeof(double));
             dst += sizeof(double);
             break;
         }
@@ -351,8 +351,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             uint64_t offset = 0 /* id->idAddr()->iiaAddr */; // FIXME
             assert(align <= UINT32_MAX); // spec says memarg alignment is u32
             assert(align < 64);          // spec says align > 2^6 produces a memidx for multiple memories.
-            dst += EncodeLEB64(dst, &align, false);
-            dst += EncodeLEB64(dst, &offset, false);
+            dst += EncodeLEB64(dst + writeableOffset, &align, false);
+            dst += EncodeLEB64(dst + writeableOffset, &offset, false);
             break;
         }
         default:
@@ -472,13 +472,21 @@ void emitter::emitDispIns(
         }
         break;
 
-        case IF_F32:
-        case IF_F64:
         case IF_I32:
         case IF_I64:
         {
             uint64_t bits = emitGetInsBits(id);
-            printf(" %llu", bits);
+            printf(" %llx", bits);
+        }
+        break;
+
+        case IF_F32:
+        case IF_F64:
+        {
+            uint64_t bits = emitGetInsBits(id);
+            double value;
+            memcpy(&value, &bits, sizeof(double));
+            printf(" %f", value);
         }
         break;
 
