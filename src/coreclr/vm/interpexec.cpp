@@ -832,7 +832,6 @@ MAIN_LOOP:
 #ifdef DEBUGGING_SUPPORTED
                 case INTOP_BREAKPOINT:
                 {
-                    // TODO: Fix that debugger is not showing the stop on System.Diagnostics.Debugger.Break();
                     InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
                     break;
                 }
