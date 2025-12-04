@@ -88,6 +88,11 @@ then
   echo SKIPPING EXECUTION BECAUSE the test is incompatible with the interpreter
   exit $(IncompatibleTestBashScriptExitCode)
 fi
+if [ ! -z "$DOTNET_InterpMode" ]
+then
+  echo SKIPPING EXECUTION BECAUSE the test is incompatible with the interpreter
+  exit $(IncompatibleTestBashScriptExitCode)
+fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(TieringTestIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
@@ -407,8 +412,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
 fi
 
 if [ ! -z "$RunInterpreter" ]; then
-# $(InputAssemblyName)
-  export DOTNET_Interpreter='$(AssemblyName)!*'
+  if [ -z "$DOTNET_InterpMode" ]; then
+    export DOTNET_Interpreter='$(AssemblyName)!*'
+  fi
 fi
 
 echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")

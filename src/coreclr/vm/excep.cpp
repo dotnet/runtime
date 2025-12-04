@@ -3018,7 +3018,7 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
 
     LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
 
-    if (pFunc != NULL && pFunc->IsILStub())
+    if ((pFunc != NULL && pFunc->IsDiagnosticsHidden()))
         return;
 
     // Do not save stacktrace to preallocated exception.  These are shared.

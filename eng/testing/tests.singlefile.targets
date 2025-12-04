@@ -32,7 +32,7 @@
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
-  <PropertyGroup Condition="('$(PublishSingleFile)' == 'true' or '$(TestNativeAot)' == 'true') and '$(IsFunctionalTest)' != 'true'">
+  <PropertyGroup Condition="('$(PublishSingleFile)' == 'true' or '$(TestNativeAot)' == 'true') and '$(CLRTestKind)' == '' and '$(IsFunctionalTest)' != 'true'">
     <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
   </PropertyGroup>
 
@@ -44,13 +44,13 @@
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
     <RdXmlFile Include="$(MSBuildThisFileDirectory)default.rd.xml" />
-    <TrimmerRootAssembly Include="TestUtilities" />
+    <TrimmerRootAssembly Include="TestUtilities" Condition="'$(SkipTestUtilitiesReference)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)SingleFileTestRunner\SingleFileTestRunner.cs"
              Link="Common\SingleFileTestRunner\SingleFileTestRunner.cs"
-             Condition="'$(IsFunctionalTest)' != 'true'" />
+             Condition="'$(CLRTestKind)' == '' and '$(IsFunctionalTest)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup>

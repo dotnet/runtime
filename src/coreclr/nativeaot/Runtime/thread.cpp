@@ -92,6 +92,9 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
         ClearState(TSF_Redirected);
 #endif //FEATURE_SUSPEND_REDIRECTION
 
+        // make sure this is cleared - in case a signal is lost or somehow we did not act on it
+        SetActivationPending(false);
+
         GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
 
         // must be in cooperative mode when checking the trap flag
@@ -345,7 +348,7 @@ bool Thread::IsGCSpecial()
     return IsStateSet(TSF_IsGcSpecialThread);
 }
 
-uint64_t Thread::GetPalThreadIdForLogging()
+uint64_t Thread::GetOSThreadId()
 {
     return m_threadId;
 }
@@ -817,7 +820,7 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         *ppvRetAddrLocation = (void*)pfnHijackFunction;
 
         STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
-            GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
+            GetOSThreadId(), frameIterator->GetRegisterSet()->GetIP());
     }
 }
 #endif // FEATURE_HIJACK
@@ -871,7 +874,7 @@ bool Thread::Redirect()
     redirectionContext->SetIp(origIP);
 
     STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalRedirect: TgtThread = %llx, IP = %p\n",
-        GetPalThreadIdForLogging(), origIP);
+        GetOSThreadId(), origIP);
 
     return true;
 }

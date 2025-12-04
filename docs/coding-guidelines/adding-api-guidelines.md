@@ -44,12 +44,27 @@ should be added to `net10.0`. [More Information on TargetFrameworks](https://lea
 
 New public APIs must be documented with triple-slash comments on top of them. Visual Studio automatically generates the structure for you when you type `///`.
 
+[API writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki) has information about language and proper style for writing API documentation.
 If your new API or the APIs it calls throw any exceptions, those need to be manually documented by adding the `<exception></exception>` elements.
 
-After your change is merged, we will eventually port them to the dotnet-api-docs repo, where we will review them for language and proper style (For more information, see the [API writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki)).
+After your change is merged, we will eventually port them to the [dotnet-api-docs](https://github.com/dotnet/dotnet-api-docs) repo. The tools used for this port live in [api-docs-sync](https://github.com/dotnet/api-docs-sync) repo. Once the dotnet-api-docs change
+is merged, your comments will start showing up in the official API documentation at https://learn.microsoft.com, and later they'll appear in IntelliSense
+in Visual Studio and Visual Studio Code.
 
-Once the dotnet-api-docs change is merged, your comments will start showing up in the official API documentation at https://learn.microsoft.com, and later they'll appear in IntelliSense in Visual Studio and Visual Studio Code.
-Once the documentation is official, any subsequent updates to it must be made directly in https://github.com/dotnet/dotnet-api-docs/. It's fine to make updates to the triple slash comments later, they just won't automatically flow into the official docs.
+The rest of the documentation workflow depends on whether the assembly has the `UseCompilerGeneratedDocXmlFile` property set in its project file:
+
+**For libraries without this property (or with it set to `true`, which is the default):**
+- Source comments in this repo are the source of truth for documentation.
+- Triple-slash comments in source code are synced to dotnet-api-docs periodically (every preview).
+- More recently introduced libraries typically follow this workflow.
+
+**For libraries with `<UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>`:**
+- The [dotnet-api-docs](https://github.com/dotnet/dotnet-api-docs) repo is the source of truth for documentation.
+- Triple-slash comments in source code are synced to dotnet-api-docs **only once** for newly introduced APIs. After the initial sync, all subsequent documentation
+updates must be made directly in the dotnet-api-docs repo.
+- It's fine to make updates to the triple-slash comments later to aid local development, they just won't automatically flow into the official docs. Copilot can help with porting small changes
+in triple-slash comments to dotnet-api-docs. [PortToDocs](https://github.com/dotnet/api-docs-sync/blob/main/docs/PortToDocs.md) tool works better for ports of large changes.
+- Older libraries typically follow this workflow. Libraries in this mode can work towards a better workflow in the future by using api-docs-sync tools to port back docs to source, then removing the `UseCompilerGeneratedDocXmlFile` property.
 
 ## FAQ
 

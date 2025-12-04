@@ -311,10 +311,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.MonitorEnter:
-                    methodDesc = context.GetHelperEntryPoint("SynchronizedMethodHelpers"u8, "MonitorEnter"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System.Threading"u8, "Monitor"u8, "SynchronizedMethodEnter"u8, null);
                     break;
                 case ReadyToRunHelper.MonitorExit:
-                    methodDesc = context.GetHelperEntryPoint("SynchronizedMethodHelpers"u8, "MonitorExit"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System.Threading"u8, "Monitor"u8, "SynchronizedMethodExit"u8, null);
                     break;
 
                 case ReadyToRunHelper.GVMLookupForSlot:

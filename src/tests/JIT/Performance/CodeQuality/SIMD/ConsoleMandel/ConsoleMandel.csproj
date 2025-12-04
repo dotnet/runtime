@@ -19,7 +19,7 @@
     <Compile Include="VectorHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <PropertyGroup>
     <ProjectAssetsFile>$(JitPackagesConfigFileDirectory)benchmark\obj\project.assets.json</ProjectAssetsFile>

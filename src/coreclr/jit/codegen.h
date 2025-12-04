@@ -186,6 +186,9 @@ protected:
     // the current (pending) label ref, a label which has been referenced but not yet seen
     BasicBlock* genPendingCallLabel;
 
+    emitter::dataSection* genAsyncResumeInfoTable       = nullptr;
+    UNATIVE_OFFSET        genAsyncResumeInfoTableOffset = UINT_MAX;
+
     void**    codePtr;
     void*     codePtrRW;
     uint32_t* nativeSizeOfCode;
@@ -209,6 +212,15 @@ protected:
 
     void genCodeForBBlist();
 
+#if defined(TARGET_WASM)
+    ArrayStack<WasmInterval*>* wasmControlFlowStack = nullptr;
+    unsigned                   wasmCursor           = 0;
+    unsigned                   findTargetDepth(BasicBlock* target);
+#endif
+
+    void        genEmitStartBlock(BasicBlock* block);
+    BasicBlock* genEmitEndBlock(BasicBlock* block);
+
 public:
     void genSpillVar(GenTree* tree);
 
@@ -220,6 +232,8 @@ protected:
     void genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm wbf);
 
     BasicBlock* genCreateTempLabel();
+
+    void genRecordAsyncResume(GenTreeVal* asyncResume);
 
 private:
     void genLogLabel(BasicBlock* bb);
@@ -646,13 +660,14 @@ protected:
     void genAddRichIPMappingHere(const DebugInfo& di);
 
     void genReportRichDebugInfo();
-
     void genRecordRichDebugInfoInlineTree(InlineContext* context, ICorDebugInfo::InlineTreeNode* tree);
 
 #ifdef DEBUG
     void genReportRichDebugInfoToFile();
     void genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* context, bool* first);
 #endif
+
+    void genReportAsyncDebugInfo();
 
     void genEnsureCodeEmitted(const DebugInfo& di);
 
@@ -884,8 +899,8 @@ protected:
 
     unsigned getFirstArgWithStackSlot();
 
-    void genCompareFloat(GenTree* treeNode);
-    void genCompareInt(GenTree* treeNode);
+    void genCompareFloat(GenTreeOp* treeNode);
+    void genCompareInt(GenTreeOp* treeNode);
 #ifdef TARGET_XARCH
     bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
     GenTree* genTryFindFlagsConsumer(GenTree* flagsProducer, GenCondition** condition);
@@ -1198,13 +1213,16 @@ protected:
     void genStructPutArgPartialRepMovs(GenTreePutArgStk* putArgStkNode);
 #endif
 
-    void     genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
-    void     genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
-    void     genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
-    void     genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
-    unsigned genEmitJumpTable(GenTree* treeNode, bool relativeAddr);
-    void     genJumpTable(GenTree* tree);
-    void     genTableBasedSwitch(GenTree* tree);
+    void                 genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
+    void                 genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
+    void                 genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
+    void                 genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
+    unsigned             genEmitJumpTable(GenTree* treeNode, bool relativeAddr);
+    void                 genJumpTable(GenTree* tree);
+    void                 genTableBasedSwitch(GenTree* tree);
+    void                 genAsyncResumeInfo(GenTreeVal* tree);
+    UNATIVE_OFFSET       genEmitAsyncResumeInfoTable(emitter::dataSection** dataSec);
+    CORINFO_FIELD_HANDLE genEmitAsyncResumeInfo(unsigned stateNum);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     instruction genGetInsForOper(GenTree* treeNode);
 #else

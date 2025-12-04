@@ -109,7 +109,9 @@ class Instantiation;
 class CordbType;
 class CordbNativeCode;
 class CordbILCode;
+#ifdef FEATURE_CODE_VERSIONING
 class CordbReJitILCode;
+#endif // FEATURE_CODE_VERSIONING
 class CordbEval;
 
 class CordbMDA;
@@ -1639,11 +1641,6 @@ typedef CordbEnumerator<RSSmartPtr<CordbThread>,
                         ICorDebugThread*,
                         ICorDebugThreadEnum, IID_ICorDebugThreadEnum,
                         QueryInterfaceConvert<RSSmartPtr<CordbThread>, ICorDebugThread, IID_ICorDebugThread> > CordbThreadEnumerator;
-
-typedef CordbEnumerator<CorDebugBlockingObject,
-                        CorDebugBlockingObject,
-                        ICorDebugBlockingObjectEnum, IID_ICorDebugBlockingObjectEnum,
-                        IdentityConvert<CorDebugBlockingObject> > CordbBlockingObjectEnumerator;
 
 // Template classes must be fully defined rather than just declared in the header
 #include "rsenumerator.hpp"
@@ -5496,9 +5493,11 @@ public:
     // Get the existing IL code object
     HRESULT GetILCode(CordbILCode ** ppCode);
 
+#ifdef FEATURE_CODE_VERSIONING
     // Finds or creates an ILCode for a given rejit request
     HRESULT LookupOrCreateReJitILCode(VMPTR_ILCodeVersionNode vmILCodeVersionNode,
                                       CordbReJitILCode** ppILCode);
+#endif // FEATURE_CODE_VERSIONING
 
 
 #ifdef FEATURE_METADATA_UPDATER
@@ -5613,9 +5612,11 @@ private:
     // Only valid if m_fCachedMethodValuesValid is set.
     BOOL                     m_fIsStaticCached;
 
+#ifdef FEATURE_CODE_VERSIONING
     // A collection, indexed by VMPTR_SharedReJitInfo, of IL code for rejit requests
     // The collection is filled lazily by LookupOrCreateReJitILCode
     CordbSafeHashTable<CordbReJitILCode> m_reJitILCodes;
+#endif // FEATURE_CODE_VERSIONING
 };
 
 //-----------------------------------------------------------------------------
@@ -5833,6 +5834,7 @@ protected:
 
 }; // class CordbILCode
 
+#ifdef FEATURE_CODE_VERSIONING
 /* ------------------------------------------------------------------------- *
 * CordbReJitILCode class
 * This class represents an IL code blob for a particular EnC version and
@@ -5878,6 +5880,7 @@ private:
     ULONG32 m_cILMap;
     NewArrayHolder<COR_IL_MAP> m_pILMap;
 };
+#endif // FEATURE_CODE_VERSIONING
 
 /* ------------------------------------------------------------------------- *
  * CordbNativeCode class. These correspond to MethodDesc's on the left-side.
@@ -7368,7 +7371,11 @@ public:
                     GENERICS_TYPE_TOKEN   exactGenericArgsToken,
                     DWORD                 dwExactGenericArgsTokenIndex,
                     bool                  fVarArgFnx,
+#ifdef FEATURE_CODE_VERSIONING
                     CordbReJitILCode *    pReJitCode,
+#else
+                    void *                pReJitCode,
+#endif // FEATURE_CODE_VERSIONING
                     bool                  fAdjustedIP);
     HRESULT Init();
     virtual ~CordbJITILFrame();
@@ -7479,7 +7486,9 @@ public:
     static HRESULT BuildInstantiationForCallsite(CordbModule *pModule, NewArrayHolder<CordbType*> &types, Instantiation &inst, Instantiation *currentInstantiation, mdToken targetClass, SigParser funcGenerics);
 
     CordbILCode* GetOriginalILCode();
+#ifdef FEATURE_CODE_VERSIONING
     CordbReJitILCode* GetReJitILCode();
+#endif // FEATURE_CODE_VERSIONING
     void AdjustIPAfterException();
 
 private:
@@ -7546,8 +7555,10 @@ public:
     // IL Variable index of the Generics Arg Token.
     DWORD               m_dwFrameParamsTokenIndex;
 
+#ifdef FEATURE_CODE_VERSIONING
     // if this frame is instrumented with rejit, this will point to the instrumented IL code
     RSSmartPtr<CordbReJitILCode> m_pReJitCode;
+#endif // FEATURE_CODE_VERSIONING
     BOOL m_adjustedIP;
 };
 

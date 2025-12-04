@@ -154,10 +154,11 @@ enum StackType {
     StackTypeVT,
     StackTypeByRef,
     StackTypeF,
+    StackTypeLocalVariableAddress, // LocalVariableAddress, The result of ldloca or ldarga is a byref per spec, but is also permitted to be treated as a nint in some cases. Keep track of that here.
 #ifdef TARGET_64BIT
-    StackTypeI = StackTypeI8
+    StackTypeI = StackTypeI8,
 #else
-    StackTypeI = StackTypeI4
+    StackTypeI = StackTypeI4,
 #endif
 };
 
@@ -293,7 +294,6 @@ enum InterpBBState
 enum InterpBBClauseType
 {
     BBClauseNone,
-    BBClauseTry,
     BBClauseCatch,
     BBClauseFinally,
     BBClauseFilter,
@@ -414,8 +414,54 @@ struct InterpVar
 
 struct StackInfo
 {
+private:
     StackType type;
+public:
+
     CORINFO_CLASS_HANDLE clsHnd;
+
+    StackType GetStackType()
+    {
+        if (type == StackTypeLocalVariableAddress)
+        {
+            // Transient pointers are treated as byrefs for stack type purposes
+            return StackTypeByRef;
+        }
+        return type;
+    }
+
+    void SetAsLocalVariableAddress()
+    {
+        assert(type == StackTypeByRef);
+        type = StackTypeLocalVariableAddress;
+    }
+
+    bool IsLocalVariableAddress()
+    {
+        return type == StackTypeLocalVariableAddress;
+    }
+
+    // Used before a use of a value where the value on the stack would be correctly handled if the type on the stack
+    // was of type I. This is done to allow the use of the address of a local variable as a pointer which is common
+    // in older IL testing.
+    void BashStackTypeToI_ForLocalVariableAddress()
+    {
+        if (type == StackTypeLocalVariableAddress)
+        {
+            type = StackTypeI;
+        }
+    }
+
+    // Used before a conversion operation to ensure that transient pointers, byrefs, and object references are
+    // treated as integers for the purpose of the conversion. The Byref/O behavior here does not seem to have
+    // justification in the ECMA-335 spec, but it is needed to match the behavior of the JIT.
+    void BashStackTypeToI_ForConvert()
+    {
+        if ((type == StackTypeLocalVariableAddress) || (type == StackTypeByRef) || (type == StackTypeO))
+        {
+            type = StackTypeI;
+        }
+    }
 
     // The var associated with the value of this stack entry. Every time we push on
     // the stack a new var is created.
@@ -474,7 +520,7 @@ struct OpcodePeepElement
 };
 
 typedef bool (InterpCompiler::*CheckIfTokensAllowPeepToBeUsedFunc_t)(const uint8_t* ip, OpcodePeepElement*, void** outComputedInfo);
-typedef void (InterpCompiler::*ApplyPeepFunc_t)(const uint8_t* ip, OpcodePeepElement*, void* computedInfo);
+typedef int (InterpCompiler::*ApplyPeepFunc_t)(const uint8_t* ip, OpcodePeepElement*, void* computedInfo);
 struct OpcodePeep
 {
     OpcodePeepElement* const pattern;
@@ -552,6 +598,11 @@ private:
     // If the method has a hidden argument, GenerateCode allocates a var to store it and
     //  populates the var at method entry
     int32_t m_hiddenArgumentVar;
+
+    // If RuntimeHelpers.SetNextCallGenericContext or SetNextCallAsyncContinuation were used
+    // then these contain the value that should be passed as those arguments.
+    int32_t m_nextCallGenericContextVar;
+    int32_t m_nextCallAsyncContinuationVar;
 
     // Table of mappings of leave instructions to the first finally call island the leave
     // needs to execute.
@@ -710,7 +761,7 @@ private:
     int32_t m_varsSize = 0;
     int32_t m_varsCapacity = 0;
     int32_t m_numILVars = 0;
-    int32_t m_paramArgIndex = 0; // Index of the type parameter argument in the m_pVars array.
+    int32_t m_paramArgIndex = -1; // Index of the type parameter argument in the m_pVars array.
     // For each catch or filter clause, we create a variable that holds the exception object.
     // This is the index of the first such variable.
     int32_t m_clauseVarsIndex = 0;
@@ -757,16 +808,31 @@ private:
 
     // Opcode peeps
     bool    IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
-    void    ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     bool    IsTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
-    void    ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     bool    IsBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
-    void    ApplyBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxIsInstPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxIsInstPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxIsInstBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxIsInstBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxIsInstLdNullCgtUnPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxIsInstLdNullCgtUnPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxIsInstUnboxAnyPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxIsInstUnboxAnyPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     bool    IsTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
-    void    ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     // Code emit
     void    EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp);
@@ -781,6 +847,7 @@ private:
     bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder, bool enableImplicitArgConversionRules);
+    void    EmitNintIndexCheck(StackInfo *spArray, StackInfo *spIndex);
     void    EmitLdelem(int32_t opcode, InterpType type);
     void    EmitStelem(InterpType type);
     void    EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken);

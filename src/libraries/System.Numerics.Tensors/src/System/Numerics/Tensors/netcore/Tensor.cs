@@ -1382,7 +1382,7 @@ namespace System.Numerics.Tensors
             else
                 strides = [];
 
-            return new Tensor<T>(tensor._values, tensor._start, lengths, strides);
+            return new Tensor<T>(tensor._values, tensor._start, newLengths, strides);
         }
 
         /// <summary>

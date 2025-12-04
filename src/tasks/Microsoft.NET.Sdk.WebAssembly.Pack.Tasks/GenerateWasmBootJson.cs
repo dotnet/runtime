@@ -214,7 +214,8 @@ public class GenerateWasmBootJson : Task
                 var assetTraitName = resource.GetMetadata("AssetTraitName");
                 var assetTraitValue = resource.GetMetadata("AssetTraitValue");
                 var resourceName = Path.GetFileName(resource.GetMetadata("OriginalItemSpec"));
-                var resourceRoute = Path.GetFileName(endpointByAsset[resource.ItemSpec].ItemSpec);
+                var resourceEndpoint = endpointByAsset[resource.ItemSpec].ItemSpec;
+                var resourceRoute = Path.GetFileName(resourceEndpoint);
 
                 if (TryGetLazyLoadedAssembly(lazyLoadAssembliesWithoutExtension, resourceName, out var lazyLoad))
                 {
@@ -354,6 +355,16 @@ public class GenerateWasmBootJson : Task
                     AddResourceToList(resource, resourceList, targetPath);
                     continue;
                 }
+                else if (string.Equals("WasmResource", assetTraitName, StringComparison.OrdinalIgnoreCase) && assetTraitValue.StartsWith("vfs:", StringComparison.OrdinalIgnoreCase))
+                {
+                    Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as VFS resource '{1}'.", resource.ItemSpec, assetTraitValue);
+
+                    var targetPath = assetTraitValue.Substring("vfs:".Length);
+
+                    resourceData.vfs ??= [];
+                    resourceData.vfs[targetPath] = [];
+                    AddResourceToList(resource, resourceData.vfs[targetPath], resourceEndpoint);
+                }
                 else
                 {
                     Log.LogMessage(MessageImportance.Low, "Skipping resource '{0}' since it doesn't belong to a defined category.", resource.ItemSpec);
@@ -418,7 +429,6 @@ public class GenerateWasmBootJson : Task
             }
         }
 
-
         if (EnvVariables != null && EnvVariables.Length > 0)
         {
             result.environmentVariables = new Dictionary<string, string>();
@@ -428,6 +438,7 @@ public class GenerateWasmBootJson : Task
                 result.environmentVariables[name] = env.GetMetadata("Value");
             }
         }
+
         if (Extensions != null && Extensions.Length > 0)
         {
             result.extensions = new Dictionary<string, Dictionary<string, object>>();

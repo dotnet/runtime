@@ -490,12 +490,14 @@
       <_MergedPayloadGroups Include="$(_MergedWrapperName)">
         <ApkPackageName>$(_MergedApkName)</ApkPackageName>
       </_MergedPayloadGroups>
-      <_MergedPayloadFiles Include="@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/bin/%(ApkPackageName).apk')" />
+      <_MergedPayloadApkFiles Include="@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/bin/%(ApkPackageName).apk')" />
+      <_MergedPayloadFiles Include="@(_MergedPayloadApkFiles)" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)ExpectedExitCode.txt" Condition="Exists('$(_MergedWrapperDirectory)ExpectedExitCode.txt')" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')" />
     <PatchExclusionListInApks
-      ApkPaths="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')"
+      ApkPaths="@(_MergedPayloadApkFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')"
       ExcludedTests="@(FilteredTestExclusionList)" />
   </Target>
 
@@ -1005,6 +1007,10 @@
       <AndroidPackageName>net.dot.%(ApkFileName)</AndroidPackageName>
       <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
+    </XHarnessApkToTest>
+
+    <XHarnessApkToTest Update="@(XHarnessApkToTest)" Condition="'$(TargetsAndroid)' == 'true'">
+      <ExpectedExitCode Condition="Exists('%(PayloadDirectory)/ExpectedExitCode.txt')">$([System.IO.File]::ReadAllText('%(PayloadDirectory)/ExpectedExitCode.txt').Trim())</ExpectedExitCode>
     </XHarnessApkToTest>
 
     <XHarnessAppBundleToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAppleMobile)' == 'true'">

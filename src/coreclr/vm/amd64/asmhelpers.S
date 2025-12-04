@@ -574,7 +574,7 @@ END_PROLOGUE
         ret
 NESTED_END InterpreterStubRetDoubleI8, _TEXT
 
-NESTED_ENTRY InterpreterStubRetBuff, _TEXT, NoHandler
+NESTED_ENTRY InterpreterStubRetBuffRDI, _TEXT, NoHandler
         push_register   rax // stack alignment
 END_PROLOGUE
         mov             rdi, rax // pTransitionBlock*
@@ -586,7 +586,21 @@ END_PROLOGUE
         mov             rax, qword ptr [rsp + 8 + 8 + __InterpreterStubArgumentRegistersOffset]
         pop_register    rcx
         ret
-NESTED_END InterpreterStubRetBuff, _TEXT
+NESTED_END InterpreterStubRetBuffRDI, _TEXT
+
+NESTED_ENTRY InterpreterStubRetBuffRSI, _TEXT, NoHandler
+        push_register   rax // stack alignment
+END_PROLOGUE
+        mov             rdi, rax // pTransitionBlock*
+        mov             rsi, rbx // the IR bytecode pointer
+        // Load the return buffer address
+        // The 8 + 8 is for the push and the return address slot
+        mov             rdx, qword ptr [rsp + 8 + 8 + __InterpreterStubArgumentRegistersOffset + 8]
+        call            C_FUNC(ExecuteInterpretedMethod)
+        mov             rax, qword ptr [rsp + 8 + 8 + __InterpreterStubArgumentRegistersOffset + 8]
+        pop_register    rcx
+        ret
+NESTED_END InterpreterStubRetBuffRSI, _TEXT
 
 // Routines for passing value type arguments by reference in general purpose registers RDI, RSI, RDX, RCX, R8, R9
 // from native code to the interpreter
@@ -1732,7 +1746,7 @@ END_PROLOGUE
         ret
 NESTED_END CallJittedMethodRetVoid, _TEXT
 
-NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
+NESTED_ENTRY CallJittedMethodRetBuffRDI, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
         alloc_stack 0x10
@@ -1747,7 +1761,24 @@ END_PROLOGUE
         mov rsp, rbp
         pop rbp
         ret
-NESTED_END CallJittedMethodRetBuff, _TEXT
+NESTED_END CallJittedMethodRetBuffRDI, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetBuffRSI, _TEXT, NoHandler
+        push_nonvol_reg rbp
+        mov  rbp, rsp
+        alloc_stack 0x10
+        save_reg_postrsp r10, 0
+END_PROLOGUE
+        sub rsp, rcx // total stack space
+        mov r11, rdi // The routines list
+        mov r10, rsi // interpreter stack args
+        mov rsi, rdx // return buffer
+        call qword ptr [r11]
+        mov r10, [rsp]
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetBuffRSI, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
         push_nonvol_reg rbp
