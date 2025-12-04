@@ -21,10 +21,8 @@ namespace System.Runtime.Caching
         private PhysicalMemoryMode _physicalMemoryMode;
 
 #if NETCOREAPP
-        // Track heap size before trimming to measure effectiveness
-        private GCMemoryInfo? _initialMemInfo;
-        private int _cumulativeTrimPercent;
-        private float _targetBelowLimit = 0.95f;
+        // Track heap size after trimming to measure effectiveness in GCThresholds mode
+        private GCMemoryInfo? _lastTrimMemInfo;
 
         private static long GetGCThresholdsLimit(GCMemoryInfo memInfo) => Math.Min(memInfo.TotalAvailableMemoryBytes, memInfo.HighMemoryLoadThresholdBytes);
 #endif
@@ -71,20 +69,6 @@ namespace System.Runtime.Caching
                 _pressureLow = Math.Max(1, _pressureHigh - 9);
             }
 
-#if NETCOREAPP
-            // This is only used in GCThresholds mode, but setting it here is harmless for other modes.
-            // We want to target being below the GC's high memory load threshold after trimming, but how
-            // far below depends on total physical memory - large memory machines can handle being closer
-            // to the threshold, while smaller machines need to be further away.
-            // For RAM greater than 48GB, we target .99f
-            // For RAM less than 12GB, we target .95f
-            // In between, we scale linearly.
-            // This is just a made up empirical heuristic to help avoid excessive trimming on large memory machines.
-            long memory = TotalPhysical;
-            float scale = (float)(memory - 0x300000000) / (float)(0xC00000000 - 0x300000000);
-            _targetBelowLimit = Math.Max(0.95f, Math.Min(0.99f, scale * (0.99f - 0.95f)));
-#endif
-
             Dbg.Trace("MemoryCacheStats", $"PhysicalMemoryMonitor.SetLimit: _pressureHigh={_pressureHigh}, _pressureLow={_pressureLow}, mode={_physicalMemoryMode}");
         }
 
@@ -105,17 +89,6 @@ namespace System.Runtime.Caching
               8192    81.92   245.76  819.2
 
             */
-
-
-#if NETCOREAPP
-            // The GC.GetGCMemoryInfo API is available only in .NET Core
-            if (_physicalMemoryMode == PhysicalMemoryMode.GCThresholds)
-            {
-                _pressureHigh = 100; // 100%, because we will check against the GC's high memory load threshold instead of total physical memory
-                _pressureLow = _pressureHigh - 9;
-                return;
-            }
-#endif
 
             long memory = TotalPhysical;
             if (memory >= 0x100000000)
@@ -138,8 +111,19 @@ namespace System.Runtime.Caching
             {
                 _pressureHigh = 95;
             }
-
             _pressureLow = _pressureHigh - 9;
+
+#if NETCOREAPP
+            // The GC.GetGCMemoryInfo API is available only in .NET Core
+            if (_physicalMemoryMode == PhysicalMemoryMode.GCThresholds)
+            {
+                // Set "high" to 100% because we want to use the GC's high memory load threshold exactly.
+                // But set "low" based on the previous size-adjusted "high" to maintain a comfortable - but not too large - buffer below
+                // the limit, allowing the cache to operate efficiently within a safe memory range.
+                _pressureLow = 200 - (2 * _pressureHigh);
+                _pressureHigh = 100;
+            }
+#endif
         }
 
         protected override int GetCurrentPressure()
@@ -150,8 +134,7 @@ namespace System.Runtime.Caching
             if (currentPressure < PressureHigh) // Reset in any mode. No ill effects in Legacy/Standard modes.
             {
                 // Not above high pressure - reset tracking
-                _initialMemInfo = null;
-                _cumulativeTrimPercent = 0;
+                _lastTrimMemInfo = null;
             }
 #endif
 
@@ -190,70 +173,72 @@ namespace System.Runtime.Caching
         }
 #pragma warning restore CA1822 // Mark members as static
 
+#if NETCOREAPP
+        // In GCThresholds mode, we want to try and account for heap reductions that may not yet
+        // be reflected in `MemoryLoadBytes` when determining if we're above high pressure. (The GC
+        // may use optimizations that delay uncommitting memory back to the OS even after a trim.)
+        // It's ok to use a possibly lagging `MemoryLoadBytes` outside of this class - it's only used
+        // to determine the monitor/timer interval... which probably should still speed up if the
+        // official `MemoryLoadBytes` is high, even if we think we know better.
+        internal bool IsReallyAboveHighPressure(GCMemoryInfo currentMemInfo)
+        {
+            var baseIsAboveHighPressure = base.IsAboveHighPressure();
+
+            // Use base implementation for non-GCThresholds modes, or when
+            // even the official metric says there's no pressure, or when
+            // we haven't had a previous trim to compare `HeapSizeBytes` against.
+            if ((_physicalMemoryMode != PhysicalMemoryMode.GCThresholds)
+                || !baseIsAboveHighPressure
+                || _lastTrimMemInfo is not GCMemoryInfo lastTrimInfo)
+            {
+                return baseIsAboveHighPressure;
+            }
+
+            // Trim has already happened since entering high pressure - check for adequate heap reduction
+            long heapReduction = lastTrimInfo.HeapSizeBytes - currentMemInfo.HeapSizeBytes;
+
+            // If heap hasn't reduced, we're still under pressure
+            if (heapReduction <= 0)
+            {
+                return true;
+            }
+
+            // If heap hasn't reduced enough to drop below target, we're still under pressure
+            long estimatedMemoryLoad = currentMemInfo.MemoryLoadBytes - heapReduction;
+            long targetMemoryLoad = (long)(((float)_pressureLow / 100.0) * GetGCThresholdsLimit(currentMemInfo));
+
+            // If the estimated load is below target, we're likely not under real pressure anymore
+            return estimatedMemoryLoad >= targetMemoryLoad;
+        }
+#endif // NETCOREAPP
+
         internal override int GetPercentToTrim(DateTime lastTrimTime, int lastTrimPercent)
         {
             int percent = 0;
             long ticksSinceTrim = DateTime.UtcNow.Subtract(lastTrimTime).Ticks;
 
+#if NETCOREAPP
+            // For GCThresholds mode, track when we trim to help IsAboveHighPressure make better decisions
+            if (_physicalMemoryMode == PhysicalMemoryMode.GCThresholds)
+            {
+                var memInfo = GC.GetGCMemoryInfo();
+
+                if (IsReallyAboveHighPressure(memInfo))
+                {
+                    // Use the standard time-based calculation
+                    percent = GetPercentToTrimInternal(ticksSinceTrim, lastTrimPercent);
+
+                    // Record that we trimmed so IsAboveHighPressure can use heap size changes
+                    _lastTrimMemInfo = memInfo;
+                }
+            }
+
+            // For other modes, use original time-based calculation
+            else
+#endif // NETCOREAPP
             if (IsAboveHighPressure())
             {
-#if NETCOREAPP
-                // For GCThresholds mode, use heap size tracking to help determine trim effectiveness
-                if (_physicalMemoryMode == PhysicalMemoryMode.GCThresholds)
-                {
-                    GCMemoryInfo currentMemInfo = GC.GetGCMemoryInfo();
-
-                    if (_initialMemInfo is GCMemoryInfo initialInfo)
-                    {
-                        // Update cumulative trim percent: if this is the first trim, use lastTrimPercent directly.
-                        // Otherwise, apply the new trim percent to the remaining untrimmed portion (100 - cumulative).
-                        // This prevents over-counting when multiple trims happen in succession without a Gen2 GC.
-                        _cumulativeTrimPercent += (_cumulativeTrimPercent == 0) ? lastTrimPercent : (int)((100 - _cumulativeTrimPercent) * (lastTrimPercent/100.0));
-                        _cumulativeTrimPercent = Math.Min(100, _cumulativeTrimPercent);
-
-                        long heapReduction = initialInfo.HeapSizeBytes - currentMemInfo.HeapSizeBytes;
-                        long targetMemoryLoad = (long)(_targetBelowLimit * GetGCThresholdsLimit(initialInfo));
-
-                        // Our previous trims might not be reflected in MemoryLoadBytes yet, so let's estimate the effect
-                        // of our previous trims using HeapSizeBytes instead
-                        long additionalReduction = initialInfo.MemoryLoadBytes - targetMemoryLoad - heapReduction;
-                        if (additionalReduction <= 0)
-                        {
-                            // It looks like we've probably dropped below our target load after previous trims,
-                            // but let's return a token 1% until we finally do see MemoryLoadBytes drop below target.
-                            percent = 1;
-                        }
-
-                        // We haven't seen any reduction in HeapSizeBytes after trimming - throw our hands up and ajust
-                        // trimming the old fashioned way
-                        else if (heapReduction <= 0)
-                        {
-                            percent = GetPercentToTrimStandard(ticksSinceTrim, lastTrimPercent);
-                        }
-
-                        // We haven't seen enough reduction in HeapSizeBytes to be confident we've dropped below target load yet
-                        else
-                        {
-                            // Estimate the percent reduction needed to reach target load
-                            float estimatedPercent = ((float)additionalReduction / (float)heapReduction) * _cumulativeTrimPercent;
-                            percent = Math.Min(50, (int)Math.Ceiling(estimatedPercent));
-                            percent = Math.Max(MinTotalMemoryTrimPercent, percent);
-                        }
-                    }
-                    else
-                    {
-                        // This is our first trim under high pressure - use standard calculation, but track initial state
-                        percent = GetPercentToTrimStandard(ticksSinceTrim, lastTrimPercent);
-                        _initialMemInfo = currentMemInfo;
-                    }
-                }
-
-                // For other modes, use original time-based calculation
-                else
-#endif // NETCOREAPP
-                {
-                    percent = GetPercentToTrimStandard(ticksSinceTrim, lastTrimPercent);
-                }
+                percent = GetPercentToTrimInternal(ticksSinceTrim, lastTrimPercent);
             }
 
 #if PERF
@@ -262,7 +247,7 @@ namespace System.Runtime.Caching
             return percent;
         }
 
-        private static int GetPercentToTrimStandard(long ticksSinceTrim, int lastTrimPercent)
+        private static int GetPercentToTrimInternal(long ticksSinceTrim, int lastTrimPercent)
         {
             int percent = 0;
 
