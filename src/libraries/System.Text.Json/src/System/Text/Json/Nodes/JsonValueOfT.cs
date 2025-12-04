@@ -35,7 +35,8 @@ namespace System.Text.Json.Nodes
             return default!;
         }
 
-        public override bool TryGetValue<T>([NotNullWhen(true)] out T value)
+        public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
+            where T : default
         {
             // If no conversion is needed, just return the raw value.
             if (Value is T returnValue)
@@ -47,7 +48,7 @@ namespace System.Text.Json.Nodes
             // Currently we do not support other conversions.
             // Generics (and also boxing) do not support standard cast operators say from 'long' to 'int',
             //  so attempting to cast here would throw InvalidCastException.
-            value = default!;
+            value = default;
             return false;
         }
 
