@@ -14642,6 +14642,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         }
         else
         {
+            // There is no good reason to keep root COMMAs when we can split them into separate statements.
             while (trueExpr->OperIs(GT_COMMA))
             {
                 Statement* trueStmt = fgNewStmtFromTree(trueExpr->gtGetOp1(), stmt->GetDebugInfo());
@@ -14672,6 +14673,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         }
         else
         {
+            // There is no good reason to keep root COMMAs when we can split them into separate statements.
             while (falseExpr->OperIs(GT_COMMA))
             {
                 Statement* falseStmt = fgNewStmtFromTree(falseExpr->gtGetOp1(), stmt->GetDebugInfo());
@@ -14706,7 +14708,8 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 // fgExpandQmarkNodes: expand all QMARK nodes into control flow.
 //
 // Arguments:
-//    early - whether this is the early expansion phase.
+//    early - whether this is the early expansion phase. Late expansion
+//            happens too late for some optimizations, e.g. object stack-alloc.
 //
 // Returns:
 //    Suitable phase status.
