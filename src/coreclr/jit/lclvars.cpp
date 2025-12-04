@@ -1126,18 +1126,21 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
         return (unsigned)ICorDebugInfo::UNKNOWN_ILNUM;
     }
 
+    unsigned originalVarNum = varNum;
+
     // Now mutate varNum to remove extra parameters from the count.
-    if (((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0) && (varNum > info.compTypeCtxtArg))
+    if (((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0) &&
+        (originalVarNum > info.compTypeCtxtArg))
     {
         varNum--;
     }
 
-    if (info.compIsVarArgs && (varNum > lvaVarargsHandleArg))
+    if (info.compIsVarArgs && (originalVarNum > lvaVarargsHandleArg))
     {
         varNum--;
     }
 
-    if ((lvaAsyncContinuationArg != BAD_VAR_NUM) && (varNum > lvaAsyncContinuationArg))
+    if ((lvaAsyncContinuationArg != BAD_VAR_NUM) && (originalVarNum > lvaAsyncContinuationArg))
     {
         varNum--;
     }
@@ -1145,7 +1148,7 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
     // Is there a hidden argument for the return buffer. Note that this code
     // works because if the RetBuffArg is not present, compRetBuffArg will be
     // BAD_VAR_NUM
-    if ((info.compRetBuffArg != BAD_VAR_NUM) && (varNum > info.compRetBuffArg))
+    if ((info.compRetBuffArg != BAD_VAR_NUM) && (originalVarNum > info.compRetBuffArg))
     {
         varNum--;
     }
@@ -1438,10 +1441,10 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
 #ifdef FEATURE_SIMD
         if (compiler->isRuntimeIntrinsicsNamespace(namespaceName) || compiler->isNumericsNamespace(namespaceName))
         {
-            unsigned    simdSize;
-            CorInfoType simdBaseJitType = compiler->getBaseJitTypeAndSizeOfSIMDType(node.simdTypeHnd, &simdSize);
+            unsigned  simdSize;
+            var_types simdBaseType = compiler->getBaseTypeAndSizeOfSIMDType(node.simdTypeHnd, &simdSize);
             // We will only promote fields of SIMD types that fit into a SIMD register.
-            if (simdBaseJitType != CORINFO_TYPE_UNDEF)
+            if (simdBaseType != TYP_UNDEF)
             {
                 if (compiler->structSizeMightRepresentSIMDType(simdSize))
                 {

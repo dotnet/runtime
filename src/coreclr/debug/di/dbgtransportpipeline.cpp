@@ -209,7 +209,7 @@ HRESULT DbgTransportPipeline::CreateProcessUnderDebugger(
     // Connect to the debugger proxy on the remote machine and ask it to create a process for us.
     HRESULT hr  = E_FAIL;
 
-    m_pProxy = g_pDbgTransportTarget;
+    m_pProxy = &g_DbgTransportTarget;
     hr = m_pProxy->CreateProcess(lpApplicationName,
                                  lpCommandLine,
                                  lpProcessAttributes,
@@ -291,7 +291,7 @@ HRESULT DbgTransportPipeline::DebugActiveProcess(MachineInfo machineInfo, const 
 
     HRESULT hr = E_FAIL;
 
-    m_pProxy = g_pDbgTransportTarget;
+    m_pProxy = &g_DbgTransportTarget;
 
     // Establish a connection to the actual runtime to be debugged.
     hr = m_pProxy->GetTransportForProcess(&processDescriptor, &m_pTransport, &m_hProcess);

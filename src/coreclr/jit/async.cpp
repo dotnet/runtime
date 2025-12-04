@@ -1708,7 +1708,8 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
     GenTree*     resumedPlaceholder     = m_comp->gtNewIconNode(0);
     GenTree*     execContextPlaceholder = m_comp->gtNewNull();
     GenTree*     syncContextPlaceholder = m_comp->gtNewNull();
-    GenTreeCall* restoreCall = m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreContextsMethHnd, TYP_VOID);
+    GenTreeCall* restoreCall =
+        m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreContextsOnSuspensionMethHnd, TYP_VOID);
 
     restoreCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(syncContextPlaceholder));
     restoreCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(execContextPlaceholder));
@@ -1970,6 +1971,14 @@ void AsyncTransformation::RestoreFromDataOnResumption(const ContinuationLayout& 
         }
 
         LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
+    }
+
+    if (layout.KeepAliveOffset != UINT_MAX)
+    {
+        // Ensure that the continuation remains alive until we finished loading the generic context
+        GenTree* continuation = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
+        GenTree* keepAlive    = m_comp->gtNewKeepAliveNode(continuation);
+        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, keepAlive));
     }
 }
 

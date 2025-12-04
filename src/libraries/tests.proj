@@ -192,8 +192,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\System.IO.FileSystem.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Ports\tests\System.IO.Ports.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\FunctionalTests\System.Net.Security.Tests.csproj" />
-    <!-- gRPC tests should be run only manually -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' == 'android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'arm' and '$(RunDisabledAndroidTests)' != 'true'">
@@ -533,7 +531,6 @@
 
   <ItemGroup>
     <SmokeTestProject Condition="'$(UseNativeAOTRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
-    <GrpcTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />
   </ItemGroup>
 
   <!-- browser smoke tests -->
@@ -659,12 +656,9 @@
     <ProjectReference Condition="'$(RunHighAOTResourceRequiringTestsOnly)' == 'true'"
                       Include="@(HighAOTResourceRequiringProject)"
                       BuildInParallel="false" />
-    <ProjectReference Condition="'$(RunGrpcTestsOnly)' == 'true'"
-                      Include="@(GrpcTestProject)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true'
-                        and '$(RunGrpcTestsOnly)' != 'true'
                         and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true'
                         and '$(RunLimitedSetOfTests)' != 'true'">
 
@@ -719,25 +713,25 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.IO.Hashing\tests\System.IO.Hashing.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'iossimulator' and '$(RuntimeFlavor)' == 'Mono'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'iossimulator' and '$(RuntimeFlavor)' == 'Mono'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'tvos'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'tvos'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Device\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'maccatalyst'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'maccatalyst'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'tvossimulator'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'tvossimulator'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\tvOS\Simulator\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
