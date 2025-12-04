@@ -32,6 +32,18 @@ void emitter::emitIns(instruction ins)
     appendToCurIG(id);
 }
 
+void emitter::emitInsConstant(instruction ins, uint64_t bits)
+{
+    instrDesc* id = emitNewInstrWasmConstant(bits);
+    insFormat  fmt = emitInsFormat(ins);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
 //------------------------------------------------------------------------
 // emitIns_I: Emit an instruction with an immediate operand.
 //

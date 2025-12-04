@@ -560,28 +560,30 @@ void CodeGen::genCodeForConstant(GenTree *treeNode)
         {
             ins = INS_i32_const;
             GenTreeIntConCommon* con = treeNode->AsIntConCommon();
-            bits = reinterpret_cast<uint64_t>(con->IconValue());
+            bits = static_cast<uint64_t>(con->IconValue());
             break;
         }
         case TYP_LONG:
         {
             ins = INS_i64_const;
             GenTreeIntConCommon* con = treeNode->AsIntConCommon();
-            bits = reinterpret_cast<uint64_t>(con->IconValue());
+            bits = static_cast<uint64_t>(con->IconValue());
             break;
         }
         case TYP_FLOAT:
         {
             ins = INS_f32_const;
             GenTreeDblCon* con = treeNode->AsDblCon();
-            bits = reinterpret_cast<uint32_t>((float)con->DconValue());
+            double value = con->DconValue();
+            memcpy(&bits, &value, sizeof(double));
             break;
         }
         case TYP_DOUBLE:
         {
             ins = INS_f64_const;
             GenTreeDblCon* con = treeNode->AsDblCon();
-            bits = reinterpret_cast<uint64_t>(con->DconValue());
+            double value = con->DconValue();
+            memcpy(&bits, &value, sizeof(double));
             break;
         }
         default:
@@ -589,11 +591,8 @@ void CodeGen::genCodeForConstant(GenTree *treeNode)
             return;
     }
 
-    instrDesc* id = emitNewInstrWasmConstant(bits);
-    id->idIns(ins);
-
-    dispIns(id);
-    appendToCurIG(id);
+    GetEmitter()->emitInsConstant(ins, bits);
+    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------

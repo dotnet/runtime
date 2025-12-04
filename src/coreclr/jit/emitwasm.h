@@ -17,6 +17,7 @@ void emitDispInst(instruction ins);
 
 public:
 void emitIns(instruction ins);
+void emitInsConstant(instruction ins, uint64_t bits);
 void emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm);
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
