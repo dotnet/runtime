@@ -254,6 +254,10 @@ unsigned emitter::instrDesc::idCodeSize() const
         case IF_LEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : (unsigned int)SizeOfLEB128(emitGetInsSC(this));
             break;
+        case IF_I32:
+        case IF_I64:
+            size += (unsigned int)SizeOfLEB128((int64_t)emitGetInsBits(this));
+            break;
         case IF_F32:
             size += 4;
             break;
