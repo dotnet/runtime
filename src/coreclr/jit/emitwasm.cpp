@@ -70,6 +70,11 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     NYI_WASM("emitIns_R_I");
 }
 
+void emitter::emitIns_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl)
+{
+    NYI_WASM("emitIns_R_F");
+}
+
 void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
 {
     NYI_WASM("emitIns_Mov");
@@ -89,6 +94,12 @@ bool emitter::emitInsIsStore(instruction ins)
 {
     NYI_WASM("emitInsIsStore");
     return false;
+}
+
+size_t emitter::emitEncodeLEB64(uint8_t* destination, const void* source, bool valueIsSigned)
+{
+    NYI_WASM("emitEncodeLEB64");
+    return 0;
 }
 
 emitter::insFormat emitter::emitInsFormat(instruction ins)

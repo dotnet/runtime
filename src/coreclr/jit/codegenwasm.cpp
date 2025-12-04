@@ -261,6 +261,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genTableBasedSwitch(treeNode);
             break;
 
+        case GT_CNS_INT:
+        case GT_CNS_DBL:
+        {
+            regNumber targetReg  = treeNode->GetRegNum();
+            var_types targetType = treeNode->TypeGet();
+            genSetRegToConst(targetReg, targetType, treeNode);
+            genProduceReg(treeNode);
+        }
+        break;
+
         case GT_RETURN:
             genReturn(treeNode);
             break;
@@ -600,6 +610,41 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
     GetEmitter()->emitIns(ins);
     genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genSetRegToConst: Generate code to set a register to a constant value.
+//
+// Arguments:
+//    targetReg  - The target register
+//    targetType - The type of the target register
+//    tree       - The constant tree node
+//
+void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree)
+{
+    switch (tree->gtOper)
+    {
+        case GT_CNS_INT:
+        {
+            ssize_t constant = tree->AsIntCon()->IconValue();
+            emitAttr encodedSize = (emitAttr)GetEmitter()->emitEncodeLEB64(nullptr, &constant, true);
+            GetEmitter()->emitIns_R_I((targetType == TYP_INT) ? INS_i32_const : INS_i64_const,
+                                      encodedSize, targetReg, constant);
+        }
+        break;
+
+        case GT_CNS_DBL:
+        {
+            double constant = tree->AsDblCon()->DconValue();
+            emitAttr encodedSize = (targetType == TYP_FLOAT) ? EA_4BYTE : EA_8BYTE;
+            GetEmitter()->emitIns_R_F((targetType == TYP_FLOAT) ? INS_f32_const : INS_f64_const,
+                                      encodedSize, targetReg, constant);
+        }
+        break;
+
+        default:
+            unreached();
+    }
 }
 
 //------------------------------------------------------------------------

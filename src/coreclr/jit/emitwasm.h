@@ -22,6 +22,7 @@ void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 
 void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t imm);
+void emitIns_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl);
 void emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip);
 void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2);
 
@@ -51,3 +52,5 @@ private:
 bool emitInsIsStore(instruction ins);
 
 insFormat emitInsFormat(instruction ins);
+
+size_t emitEncodeLEB64(uint8_t* destination, const void* source, bool valueIsSigned);
