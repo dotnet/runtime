@@ -62,35 +62,24 @@ namespace Microsoft.Interop.JavaScript
             };
 
             var fullName = $"{method.ContainingType.ToDisplayString()}.{method.Name}";
-            string qualifiedName = GetFullyQualifiedMethodName(env, method);
 
             return new JSSignatureContext()
             {
                 SignatureContext = sigContext,
                 TypesHash = typesHash,
                 StubTypeFullName = stubTypeFullName,
+                MethodShortName = method.Name,
                 MethodName = fullName,
-                QualifiedMethodName = qualifiedName,
                 BindingName = "__signature_" + method.Name + "_" + typesHash,
                 AssemblyName = env.Compilation.AssemblyName,
             };
         }
 
-        private static string GetFullyQualifiedMethodName(StubEnvironment env, IMethodSymbol method)
-        {
-            // Mono style nested class name format.
-            string typeName = method.ContainingType.ToDisplayString(TypeAndContainingTypesStyle).Replace(".", "/");
-
-            if (!method.ContainingType.ContainingNamespace.IsGlobalNamespace)
-                typeName = $"{method.ContainingType.ContainingNamespace.ToDisplayString()}.{typeName}";
-
-            return $"[{env.Compilation.AssemblyName}]{typeName}:{method.Name}";
-        }
         public string? StubTypeFullName { get; init; }
         public int TypesHash { get; init; }
 
+        public string MethodShortName { get; init; }
         public string MethodName { get; init; }
-        public string QualifiedMethodName { get; init; }
         public string BindingName { get; init; }
         public string AssemblyName { get; init; }
 

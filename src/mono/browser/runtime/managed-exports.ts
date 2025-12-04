@@ -3,7 +3,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { GCHandle, GCHandleNull, JSMarshalerArguments, JSThreadBlockingMode, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod, PThreadPtr } from "./types/internal";
+import { CSFnHandle, GCHandle, GCHandleNull, JSMarshalerArguments, JSThreadBlockingMode, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod, PThreadPtr } from "./types/internal";
 import cwraps, { threads_c_functions as twraps } from "./cwraps";
 import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
 import { JavaScriptMarshalerArgSize, alloc_stack_frame, get_arg, get_arg_gc_handle, is_args_exception, set_arg_i32, set_arg_intptr, set_arg_type, set_gc_handle, set_receiver_should_free } from "./marshal";
@@ -41,6 +41,7 @@ export function init_managed_exports (): void {
     managedExports.GetManagedStackTrace = get_method("GetManagedStackTrace");
     managedExports.LoadSatelliteAssembly = get_method("LoadSatelliteAssembly");
     managedExports.LoadLazyAssembly = get_method("LoadLazyAssembly");
+    managedExports.CallJSExport = get_method("CallJSExport");
 }
 
 // the marshaled signature is: Task<int>? CallEntrypoint(char* mainAssemblyName, string[] args)
@@ -324,6 +325,18 @@ export function invoke_sync_jsexport (method: MonoMethod, args: JSMarshalerArgum
     }
 }
 
+export function invoke_async_jsexport2 (managedTID: PThreadPtr, method: CSFnHandle, args: JSMarshalerArguments, size: number): void {
+    const res = get_arg(args, 1);
+    set_arg_i32(res, method as any);
+    invoke_async_jsexport(managedTID, managedExports.CallJSExport, args, size);
+}
+
+export function invoke_sync_jsexport2 (method: CSFnHandle, args: JSMarshalerArguments): void {
+    const res = get_arg(args, 1);
+    set_arg_i32(res, method as any);
+    invoke_sync_jsexport(managedExports.CallJSExport, args);
+}
+
 // the marshaled signature is: Task BindAssemblyExports(string assemblyName)
 export function bind_assembly_exports (assemblyName: string): Promise<void> {
     loaderHelpers.assert_runtime_running();
@@ -373,4 +386,5 @@ type ManagedExports = {
     GetManagedStackTrace: MonoMethod,
     LoadSatelliteAssembly: MonoMethod,
     LoadLazyAssembly: MonoMethod,
+    CallJSExport: MonoMethod,
 }

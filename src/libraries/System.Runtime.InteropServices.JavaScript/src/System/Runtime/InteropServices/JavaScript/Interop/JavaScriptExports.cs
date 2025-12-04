@@ -365,6 +365,27 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        public static void CallJSExport(JSMarshalerArgument* arguments_buffer)
+        {
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0];
+            ref JSMarshalerArgument arg_res = ref arguments_buffer[1];
+            var ctx = arg_exc.AssertCurrentThreadContext();
+            if (!ctx.s_JSExportByHandle.TryGetValue(arg_res.slot.Int32Value, out var jsExport))
+            {
+                arg_exc.ToJS(new InvalidOperationException("Unable to resolve JSExport by handle"));
+                return;
+            }
+            arg_res.slot.Int32Value = 0;
+            try
+            {
+                jsExport(new IntPtr(arguments_buffer));
+            }
+            catch (Exception ex)
+            {
+                arg_exc.ToJS(ex);
+            }
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)] // profiler needs to find it executed under this name
         public static void StopProfile()
         {
