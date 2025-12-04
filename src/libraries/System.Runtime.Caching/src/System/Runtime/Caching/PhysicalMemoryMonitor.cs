@@ -64,9 +64,21 @@ namespace System.Runtime.Caching
             }
             else
             {
-                // Legacy and Standard modes: Use specified percentage with appropriate monitoring
-                _pressureHigh = Math.Max(3, physicalMemoryLimitPercentage);
-                _pressureLow = Math.Max(1, _pressureHigh - 9);
+#if NETCOREAPP
+                // The GC.GetGCMemoryInfo API is available only in .NET Core
+                if (_physicalMemoryMode == PhysicalMemoryMode.GCThresholds)
+                {
+                    // GCThresholds mode always targets HighMemoryLoadThresholdBytes, but we can still adjust the low threshold.
+                    _pressureHigh = 100;
+                    _pressureLow = Math.Max(3, physicalMemoryLimitPercentage);
+                }
+                else
+#endif
+                {
+                    // Legacy and Standard modes: Use specified percentage with appropriate monitoring
+                    _pressureHigh = Math.Max(3, physicalMemoryLimitPercentage);
+                    _pressureLow = Math.Max(1, _pressureHigh - 9);
+                }
             }
 
             Dbg.Trace("MemoryCacheStats", $"PhysicalMemoryMonitor.SetLimit: _pressureHigh={_pressureHigh}, _pressureLow={_pressureLow}, mode={_physicalMemoryMode}");
