@@ -28,11 +28,11 @@ public sealed class DocumentCompiler
         {
             var includedDocument = includedDocumentLoader(path);
 
-            var includedSource = new AntlrInputStream(document.Text)
+            var includedSource = new AntlrInputStream(includedDocument.Text)
             {
-                name = document.Path
+                name = includedDocument.Path
             };
-            loadedDocuments.Add(document.Path, document);
+            loadedDocuments.Add(includedDocument.Path, includedDocument);
             return new CILLexer(includedSource);
         });
 

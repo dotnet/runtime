@@ -253,26 +253,13 @@ namespace ILAssembler
             return stringBuilder.ToString();
         }
 
-        private static string GetErrorDisplay(int c)
+        private static string GetErrorDisplay(int c) => c switch
         {
-            string result = ((char)c).ToString();
-            switch (c)
-            {
-                case -1:
-                    result = "<EOF>";
-                    break;
-                case 10:
-                    result = "\\n";
-                    break;
-                case 9:
-                    result = "\\t";
-                    break;
-                case 13:
-                    result = "\\r";
-                    break;
-            }
-
-            return result;
-        }
+            -1 => "<EOF>",
+            10 => "\\n",
+            9  => "\\t",
+            13 => "\\r",
+            _  => ((char)c).ToString()
+        };
     }
 }

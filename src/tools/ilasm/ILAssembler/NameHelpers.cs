@@ -14,6 +14,12 @@ namespace ILAssembler
         {
             int lastDotIndex = dottedName.LastIndexOf('.');
 
+            if (lastDotIndex > 0 && dottedName[lastDotIndex - 1] == '.')
+            {
+                // Handle cases like "a.b..ctor".
+                lastDotIndex -= 1;
+            }
+
             return (
                 lastDotIndex != -1
                     ? dottedName.Substring(0, lastDotIndex)

@@ -2,22 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Reflection.Metadata.Ecma335;
 
 namespace ILAssembler;
 
 internal static class InstructionEncoderExtensions
 {
-    // There is no public API to label an instruction at a specific offset,
-    // so use reflection for now to get access to the internal method until I bring this up for API review.
-    private static readonly Action<ControlFlowBuilder, int, LabelHandle> _markLabelAtOffset =
-        (Action<ControlFlowBuilder, int, LabelHandle>)
-            typeof(ControlFlowBuilder)
-            .GetMethod(nameof(MarkLabel), BindingFlags.NonPublic | BindingFlags.Instance)!
-            .CreateDelegate(typeof(Action<ControlFlowBuilder, int, LabelHandle>));
     public static void MarkLabel(this InstructionEncoder encoder, LabelHandle label, int ilOffset)
     {
-        _markLabelAtOffset(encoder.ControlFlowBuilder!, ilOffset, label);
+        MarkLabel(encoder.ControlFlowBuilder!, ilOffset, label);
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method)]
+    private static extern void MarkLabel(ControlFlowBuilder builder, int ilOffset, LabelHandle label);
 }
