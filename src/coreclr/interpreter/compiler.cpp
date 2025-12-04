@@ -586,7 +586,7 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
                 }
 #ifdef TARGET_64BIT
                 // nint and int32 can be used interchangeably. Add implicit conversions.
-                else if (interpType == InterpTypeI4 && interpDestType == InterpTypeI8)
+                else if (interpType == InterpTypeI4 && ((interpDestType == InterpTypeI8) || (interpDestType == InterpTypeByRef)))
                 {
                     movOp = INTOP_CONV_I8_I4;
                 }
