@@ -215,11 +215,10 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
 #endif
 
     // create our datafile
-    pJitInstance->hFile = CreateFileA(g_dataFileName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL,
-                                      CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if (pJitInstance->hFile == INVALID_HANDLE_VALUE)
+    pJitInstance->fp = fopen(g_dataFileName.c_str(), "wb+");
+    if (pJitInstance->fp == NULL)
     {
-        LogError("Couldn't open file '%s': error %d", g_dataFileName.c_str(), GetLastError());
+        LogError("Couldn't open file '%s': error %d", g_dataFileName.c_str(), errno);
     }
 
     return pJitInstance;
