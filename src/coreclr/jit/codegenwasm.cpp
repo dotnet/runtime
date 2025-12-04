@@ -578,7 +578,7 @@ void CodeGen::genCodeForConstant(GenTree *treeNode)
             ins = INS_f32_const;
             fmt = IF_F32;
             GenTreeDblCon* con = tree->AsDblCon();
-            bits = reinterpret_cast<uint32_t>((float)con->DblValue());
+            bits = reinterpret_cast<uint32_t>((float)con->DconValue());
             break;
         }
         case TYP_DOUBLE:
@@ -586,7 +586,7 @@ void CodeGen::genCodeForConstant(GenTree *treeNode)
             ins = INS_f64_const;
             fmt = IF_F64;
             GenTreeDblCon* con = tree->AsDblCon();
-            bits = reinterpret_cast<uint64_t>(con->DblValue());
+            bits = reinterpret_cast<uint64_t>(con->DconValue());
             break;
         }
         default:
@@ -594,7 +594,7 @@ void CodeGen::genCodeForConstant(GenTree *treeNode)
             return;
     }
 
-    instrDesc* id = emitNewInstrWasmConstant();
+    instrDesc* id = emitNewInstrWasmConstant(bits);
     id->idIns(ins);
     id->idInsFmt(fmt);
 
