@@ -24,7 +24,7 @@
       that are not yet public. -->
     <!-- NETCoreSdkVersion is normally set by the SDK, but for non-SDK projects we need to set it from global.json -->
     <_GlobalJsonContent Condition="'$(NETCoreSdkVersion)' == ''">$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)../global.json'))</_GlobalJsonContent>
-    <_GlobalJsonSdkVersion Condition="'$(NETCoreSdkVersion)' == '' and '$(_GlobalJsonContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(_GlobalJsonContent), '"version"\s*:\s*"([^"]+)"').Groups[1].Value)</_GlobalJsonSdkVersion>
+    <_GlobalJsonSdkVersion Condition="'$(NETCoreSdkVersion)' == '' and '$(_GlobalJsonContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(_GlobalJsonContent), '"sdk"\s*:\s*\{[^\}]*"version"\s*:\s*"([^"]+)"', System.Text.RegularExpressions.RegexOptions.Singleline).Groups[1].Value)</_GlobalJsonSdkVersion>
     <NETCoreSdkVersion Condition="'$(NETCoreSdkVersion)' == '' and '$(_GlobalJsonSdkVersion)' != ''">$(_GlobalJsonSdkVersion)</NETCoreSdkVersion>
     <SdkVersionForWorkloadTesting Condition="($([System.String]::Copy('$(NETCoreSdkVersion)').Split('.')[0]) == '$(MajorVersion)')
           and $([System.String]::Copy('$(MicrosoftDotNetApiCompatTaskPackageVersion)').Contains('-'))
