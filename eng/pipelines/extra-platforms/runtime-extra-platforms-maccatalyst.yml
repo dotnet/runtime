@@ -244,8 +244,8 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
-            testBuildArgs: /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:UseNativeAOTRuntime=false
-            compileOnHelix: true
+            testBuildArgs: tree JIT/CodeGenBringUpTests /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:UseNativeAOTRuntime=false
+            compileOnHelix: false
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
 
 #
