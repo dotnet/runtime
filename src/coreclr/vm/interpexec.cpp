@@ -432,6 +432,14 @@ void* GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
     return GenericHandleWorkerCore(pMD, pMT, signature, 0xFFFFFFFF, NULL);
 }
 
+#ifdef DEBUG
+static void InterpHalt()
+{
+    // Native debugging aid: INTOP_HALT is injected as the first instruction in methods matching
+    // DOTNET_InterpHalt. Set a native breakpoint here to break when the targeted method executes.
+}
+#endif // DEBUG
+
 #ifdef DEBUGGING_SUPPORTED
 static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame)
 {
@@ -829,6 +837,12 @@ MAIN_LOOP:
 
             switch (*ip)
             {
+#ifdef DEBUG
+                case INTOP_HALT:
+                    InterpHalt();
+                    ip++;
+                    break;
+#endif // DEBUG
 #ifdef DEBUGGING_SUPPORTED
                 case INTOP_BREAKPOINT:
                 {
