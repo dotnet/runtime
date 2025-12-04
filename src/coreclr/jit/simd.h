@@ -2087,7 +2087,7 @@ void NarrowSimdLong(TSimd* result, const TSimd& arg0)
 }
 
 template <typename TSimd>
-void NarrowSimdLong(var_types baseType, TSimd* result, TSimd arg0)
+void NarrowSimdLong(var_types baseType, TSimd* result, const TSimd& arg0)
 {
     switch (baseType)
     {
