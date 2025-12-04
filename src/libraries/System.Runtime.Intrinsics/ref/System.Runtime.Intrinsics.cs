@@ -6626,18 +6626,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> ShiftLeftLogicalSaturateUnsigned(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<uint> ShiftLeftLogicalSaturateUnsigned(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<ulong> ShiftLeftLogicalSaturateUnsigned(System.Numerics.Vector<long> value, [ConstantExpected] byte count) { throw null; }
-        public static System.Numerics.Vector<short> ShiftLeftLogicalWideningEven(System.Numerics.Vector<sbyte> value, [ConstantExpected] byte shiftAmount) { throw null; }
-        public static System.Numerics.Vector<int> ShiftLeftLogicalWideningEven(System.Numerics.Vector<short> value, [ConstantExpected] byte shiftAmount) { throw null; }
-        public static System.Numerics.Vector<long> ShiftLeftLogicalWideningEven(System.Numerics.Vector<int> value, [ConstantExpected] byte shiftAmount) { throw null; }
-        public static System.Numerics.Vector<ushort> ShiftLeftLogicalWideningEven(System.Numerics.Vector<byte> value, [ConstantExpected] byte shiftAmount) { throw null; }
-        public static System.Numerics.Vector<uint> ShiftLeftLogicalWideningEven(System.Numerics.Vector<ushort> value, [ConstantExpected] byte shiftAmount) { throw null; }
-        public static System.Numerics.Vector<ulong> ShiftLeftLogicalWideningEven(System.Numerics.Vector<uint> value, [ConstantExpected] byte shiftAmount) { throw null; }
-        public static System.Numerics.Vector<short> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<sbyte> value, [ConstantExpected] byte shiftAmount) { throw null; }
-        public static System.Numerics.Vector<int> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<short> value, [ConstantExpected] byte shiftAmount) { throw null; }
-        public static System.Numerics.Vector<long> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<int> value, [ConstantExpected] byte shiftAmount) { throw null; }
-        public static System.Numerics.Vector<ushort> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<byte> value, [ConstantExpected] byte shiftAmount) { throw null; }
-        public static System.Numerics.Vector<uint> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<ushort> value, [ConstantExpected] byte shiftAmount) { throw null; }
-        public static System.Numerics.Vector<ulong> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<uint> value, [ConstantExpected] byte shiftAmount) { throw null; }
+        public static System.Numerics.Vector<short> ShiftLeftLogicalWideningEven(System.Numerics.Vector<sbyte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftLeftLogicalWideningEven(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftLeftLogicalWideningEven(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLeftLogicalWideningEven(System.Numerics.Vector<byte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLeftLogicalWideningEven(System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLeftLogicalWideningEven(System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<sbyte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<short> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<int> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<byte> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<ushort> value, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLeftLogicalWideningOdd(System.Numerics.Vector<uint> value, [ConstantExpected] byte count) { throw null; }
         public static System.Numerics.Vector<byte> ShiftLogicalRounded(System.Numerics.Vector<byte> value, System.Numerics.Vector<sbyte> count) { throw null; }
         public static System.Numerics.Vector<ushort> ShiftLogicalRounded(System.Numerics.Vector<ushort> value, System.Numerics.Vector<short> count) { throw null; }
         public static System.Numerics.Vector<uint> ShiftLogicalRounded(System.Numerics.Vector<uint> value, System.Numerics.Vector<int> count) { throw null; }

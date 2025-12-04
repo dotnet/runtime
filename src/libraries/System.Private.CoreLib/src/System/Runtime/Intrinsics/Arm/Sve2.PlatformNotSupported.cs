@@ -3129,37 +3129,37 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svshllb[_n_s16](svint8_t op1, uint64_t imm2)
         ///   SSHLLB Zresult.H, Zop1.B, #imm2
         /// </summary>
-        public static Vector<short> ShiftLeftLogicalWideningEven(Vector<sbyte> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> ShiftLeftLogicalWideningEven(Vector<sbyte> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svshllb[_n_s32](svint16_t op1, uint64_t imm2)
         ///   SSHLLB Zresult.S, Zop1.H, #imm2
         /// </summary>
-        public static Vector<int> ShiftLeftLogicalWideningEven(Vector<short> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> ShiftLeftLogicalWideningEven(Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t svshllb[_n_s64](svint32_t op1, uint64_t imm2)
         ///   SSHLLB Zresult.D, Zop1.S, #imm2
         /// </summary>
-        public static Vector<long> ShiftLeftLogicalWideningEven(Vector<int> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> ShiftLeftLogicalWideningEven(Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint16_t svshllb[_n_u16](svuint8_t op1, uint64_t imm2)
         ///   USHLLB Zresult.H, Zop1.B, #imm2
         /// </summary>
-        public static Vector<ushort> ShiftLeftLogicalWideningEven(Vector<byte> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> ShiftLeftLogicalWideningEven(Vector<byte> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32_t svshllb[_n_u32](svuint16_t op1, uint64_t imm2)
         ///   USHLLB Zresult.S, Zop1.H, #imm2
         /// </summary>
-        public static Vector<uint> ShiftLeftLogicalWideningEven(Vector<ushort> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> ShiftLeftLogicalWideningEven(Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svshllb[_n_u64](svuint32_t op1, uint64_t imm2)
         ///   USHLLB Zresult.D, Zop1.S, #imm2
         /// </summary>
-        public static Vector<ulong> ShiftLeftLogicalWideningEven(Vector<uint> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> ShiftLeftLogicalWideningEven(Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
 
         // Shift left long (top)
@@ -3168,37 +3168,37 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svshllt[_n_s16](svint8_t op1, uint64_t imm2)
         ///   SSHLLT Zresult.H, Zop1.B, #imm2
         /// </summary>
-        public static Vector<short> ShiftLeftLogicalWideningOdd(Vector<sbyte> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> ShiftLeftLogicalWideningOdd(Vector<sbyte> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svshllt[_n_s32](svint16_t op1, uint64_t imm2)
         ///   SSHLLT Zresult.S, Zop1.H, #imm2
         /// </summary>
-        public static Vector<int> ShiftLeftLogicalWideningOdd(Vector<short> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> ShiftLeftLogicalWideningOdd(Vector<short> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t svshllt[_n_s64](svint32_t op1, uint64_t imm2)
         ///   SSHLLT Zresult.D, Zop1.S, #imm2
         /// </summary>
-        public static Vector<long> ShiftLeftLogicalWideningOdd(Vector<int> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> ShiftLeftLogicalWideningOdd(Vector<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint16_t svshllt[_n_u16](svuint8_t op1, uint64_t imm2)
         ///   USHLLT Zresult.H, Zop1.B, #imm2
         /// </summary>
-        public static Vector<ushort> ShiftLeftLogicalWideningOdd(Vector<byte> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> ShiftLeftLogicalWideningOdd(Vector<byte> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32_t svshllt[_n_u32](svuint16_t op1, uint64_t imm2)
         ///   USHLLT Zresult.S, Zop1.H, #imm2
         /// </summary>
-        public static Vector<uint> ShiftLeftLogicalWideningOdd(Vector<ushort> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> ShiftLeftLogicalWideningOdd(Vector<ushort> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svshllt[_n_u64](svuint32_t op1, uint64_t imm2)
         ///   USHLLT Zresult.D, Zop1.S, #imm2
         /// </summary>
-        public static Vector<ulong> ShiftLeftLogicalWideningOdd(Vector<uint> value, [ConstantExpected] byte shiftAmount) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> ShiftLeftLogicalWideningOdd(Vector<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
 
 
         // Rounding shift left
