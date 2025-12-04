@@ -4,7 +4,6 @@
 // File: executioncontrol.cpp
 //
 // Implementation of execution control for interpreter breakpoints.
-// WIP
 //
 //*****************************************************************************
 

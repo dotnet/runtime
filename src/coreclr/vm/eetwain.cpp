@@ -2684,7 +2684,7 @@ size_t InterpreterCodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
 
     UINT32 codeLength = gcInfoDecoder.GetCodeLength();
     _ASSERTE( codeLength > 0 );
-    
+
     return codeLength;
 }
 

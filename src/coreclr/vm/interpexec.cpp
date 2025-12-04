@@ -459,7 +459,7 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
         fef.InitAndLink(&ctx);
 
         // Notify the debugger of the exception
-        bool handled = g_pDebugInterface->FirstChanceNativeException(
+        g_pDebugInterface->FirstChanceNativeException(
             &exceptionRecord,
             &ctx,
             STATUS_BREAKPOINT,

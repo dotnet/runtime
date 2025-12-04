@@ -5,7 +5,7 @@
 //
 // Abstraction for breakpoint and single-step operations across different
 // code execution strategies (JIT, interpreter, R2R).
-// TODO: WIP - currently only supports interpreter breakpoint handling.
+// TODO: Currently only interpreter is supported. https://github.com/dotnet/runtime/issues/120842
 //
 //*****************************************************************************
 
