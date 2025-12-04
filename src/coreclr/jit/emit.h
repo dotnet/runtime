@@ -2352,7 +2352,7 @@ protected:
         instrDescWasmConstant() = delete;
 
         uint64_t bits;
-    }
+    };
 #endif
 
     struct instrDescCGCA : instrDesc // call with ...
@@ -3305,7 +3305,7 @@ private:
     instrDesc* emitNewInstrReloc(emitAttr attr, BYTE* addr);
 #endif // TARGET_ARM
 #ifdef TARGET_WASM
-    instrDesc* emitNewInstrWasmConstant(emitAttr attr, uint64_t bits);
+    instrDesc* emitNewInstrWasmConstant(uint64_t bits);
 #endif
     instrDescJmp* emitNewInstrJmp();
 
@@ -4073,18 +4073,20 @@ inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, cnsval_ssize_
     }
 }
 
+#ifdef TARGET_WASM
 /*****************************************************************************
  *
  *  Allocate an instruction descriptor for an instruction with a constant operand.
  *  The constant is stored as a fixed-size 64 unsigned bits and can hold an integral
  *  or floating-point constant that will be emitted later with the right format.
  */
-inline emitter::instrDesc* emitter::emitNewInstrWasmConstant(emitAttr attr, uint64_t bits)
+inline emitter::instrDesc* emitter::emitNewInstrWasmConstant(uint64_t bits)
 {
-    instrDescWasmConstant* id = (instrDescWasmConstant*)emitAllocAnyInstr(sizeof(instrDescWasmConstant), attr);
+    instrDescWasmConstant* id = (instrDescWasmConstant*)emitAllocAnyInstr(sizeof(instrDescWasmConstant), EA_8BYTE);
     id->bits = bits;
     return id;
 }
+#endif // TARGET_WASM
 
 /*****************************************************************************
  *

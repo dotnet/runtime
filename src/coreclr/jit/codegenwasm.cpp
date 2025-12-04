@@ -551,33 +551,50 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 //
 void CodeGen::genCodeForConstant(GenTree *treeNode)
 {
-    instrDesc* id = emitNewInstrSmall(EA_8BYTE);
     instruction ins;
     insFormat fmt;
+    uint64_t bits;
 
     switch (treeNode->TypeGet())
     {
         case TYP_INT:
+        {
             ins = INS_i32_const;
             fmt = IF_LEB128;
+            GenTreeIntConCommon* con = tree->AsIntConCommon();
+            bits = reinterpret_cast<uint64_t>(con->IconValue());
             break;
+        }
         case TYP_LONG:
+        {
             ins = INS_i64_const;
             fmt = IF_LEB128;
+            GenTreeIntConCommon* con = tree->AsIntConCommon();
+            bits = reinterpret_cast<uint64_t>(con->IconValue());
             break;
+        }
         case TYP_FLOAT:
+        {
             ins = INS_f32_const;
             fmt = IF_F32;
+            GenTreeDblCon* con = tree->AsDblCon();
+            bits = reinterpret_cast<uint32_t>((float)con->DblValue());
             break;
+        }
         case TYP_DOUBLE:
+        {
             ins = INS_f64_const;
             fmt = IF_F64;
+            GenTreeDblCon* con = tree->AsDblCon();
+            bits = reinterpret_cast<uint64_t>(con->DblValue());
             break;
+        }
         default:
             NYI_WASM("genCodeForConstant");
-            break;
+            return;
     }
 
+    instrDesc* id = emitNewInstrWasmConstant();
     id->idIns(ins);
     id->idInsFmt(fmt);
 
