@@ -13,7 +13,7 @@ public partial class HttpTest
     private static bool FeatureEnableStreamingResponse { get; } = AppContext.TryGetSwitch("System.Net.Http.WasmEnableStreamingResponse", out bool value) ? value : true;
 
     [JSExport]
-    public static async Task<void> GoodUpload()
+    public static async Task GoodUpload()
     {
         var uri = GetOriginUrl() + "/good.log";
         using var client = new HttpClient();
@@ -22,7 +22,7 @@ public partial class HttpTest
     }
 
     [JSExport]
-    public static async Task<void> BadUpload()
+    public static async Task BadUpload()
     {
         var uri = GetOriginUrl() + "/evil.exe";
         using var client = new HttpClient();
