@@ -509,7 +509,7 @@ namespace System.Runtime.CompilerServices
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_AlignmentMustBePow2);
             }
 
-            return AlignedAllocateTypeAssociatedMemory(new QCallTypeHandle(ref rt), (uint)size, (uint)alignment);
+            return AllocateTypeAssociatedMemoryAligned(new QCallTypeHandle(ref rt), (uint)size, (uint)alignment);
         }
 
         [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
