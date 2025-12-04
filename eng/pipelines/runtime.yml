@@ -1041,6 +1041,7 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
+            # TODO: Re-enable build on helix https://github.com/dotnet/runtime/issues/121967
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
