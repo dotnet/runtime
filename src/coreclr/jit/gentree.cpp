@@ -5175,13 +5175,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             case GT_CNS_LNG:
             case GT_CNS_INT:
-            {
-                GenTreeIntConCommon* con            = tree->AsIntConCommon();
-                ssize_t              imm            = con->IconValue();
-                costEx = 1;
-                costSz = (int)(tree->IsUnsigned() ? SizeOfULEB128(imm) : SizeOfLEB128(imm));
+                // TODO-WASM: needs tuning based on the [S]LEB128 encoding size.
+                NYI_WASM("GT_CNS_LNG/GT_CNS_INT costing");
+                costEx = 0;
+                costSz = 0;
                 goto COMMON_CNS;
-            }
 #else
             case GT_CNS_STR:
             case GT_CNS_LNG:

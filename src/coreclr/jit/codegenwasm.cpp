@@ -269,6 +269,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // Do nothing; this node is a marker for debug info.
             break;
 
+        case GT_CNS_INT:
+        case GT_CNS_LNG:
+        case GT_CNS_DBL:
+            genCodeForConstant(treeNode);
+            break;
+
         default:
 #ifdef DEBUG
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
@@ -535,6 +541,17 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 
     GetEmitter()->emitIns(ins);
     genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genCodeForConstant: Generate code for an integer or floating point constant
+//
+// Arguments:
+//    tree - The constant.
+//
+void CodeGen::genCodeForConstant(GenTree *treeNode)
+{
+    NYI_WASM("genCodeForConstant");
 }
 
 //------------------------------------------------------------------------
