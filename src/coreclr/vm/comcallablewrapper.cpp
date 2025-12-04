@@ -4950,7 +4950,7 @@ MethodDesc * ComCallWrapperTemplate::GetICustomQueryInterfaceGetInterfaceMD()
 //--------------------------------------------------------------------------
 //  Module* ComCallMethodDesc::GetModule()
 //  Get Module
-//-------------------------------z-------------------------------------------
+//--------------------------------------------------------------------------
 Module* ComCallMethodDesc::GetModule()
 {
     CONTRACT (Module*)
