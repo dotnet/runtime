@@ -1686,7 +1686,7 @@ extends:
       # | linux-arm64      | Debug   | Release |
       # | windows-x86      | Debug   | Release |
       # | linux-musl-x64   | Debug   | Release |
-      # | OSX-arm64        | Debug   | Release |
+      # | osx-arm64        | Debug   | Release |
       # | linux-musl-arm   | Release | Release |
       # | linux-musl-arm64 | Release | Release |
       # | linux-x64        | Release | Release |
