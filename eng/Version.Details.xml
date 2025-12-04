@@ -49,6 +49,10 @@
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>e545239117919cda700be149a2e9a032374fc284</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport" Version="10.0.100-rc.2.25528.108">
+      <Uri>https://github.com/dotnet/dotnet</Uri>
+      <Sha>e545239117919cda700be149a2e9a032374fc284</Sha>
+    </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="11.0.0-beta.25528.108">
