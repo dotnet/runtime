@@ -549,40 +549,40 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 // Arguments:
 //    tree - The constant.
 //
-void CodeGen::genCodeForConstant(GenTree *treeNode)
+void CodeGen::genCodeForConstant(GenTree* treeNode)
 {
     instruction ins;
-    uint64_t bits;
+    uint64_t    bits;
 
     switch (treeNode->TypeGet())
     {
         case TYP_INT:
         {
-            ins = INS_i32_const;
+            ins                      = INS_i32_const;
             GenTreeIntConCommon* con = treeNode->AsIntConCommon();
-            bits = static_cast<uint64_t>(con->IconValue());
+            bits                     = static_cast<uint64_t>(con->IconValue());
             break;
         }
         case TYP_LONG:
         {
-            ins = INS_i64_const;
+            ins                      = INS_i64_const;
             GenTreeIntConCommon* con = treeNode->AsIntConCommon();
-            bits = static_cast<uint64_t>(con->IconValue());
+            bits                     = static_cast<uint64_t>(con->IconValue());
             break;
         }
         case TYP_FLOAT:
         {
-            ins = INS_f32_const;
-            GenTreeDblCon* con = treeNode->AsDblCon();
-            double value = con->DconValue();
+            ins                  = INS_f32_const;
+            GenTreeDblCon* con   = treeNode->AsDblCon();
+            double         value = con->DconValue();
             memcpy(&bits, &value, sizeof(double));
             break;
         }
         case TYP_DOUBLE:
         {
-            ins = INS_f64_const;
-            GenTreeDblCon* con = treeNode->AsDblCon();
-            double value = con->DconValue();
+            ins                  = INS_f64_const;
+            GenTreeDblCon* con   = treeNode->AsDblCon();
+            double         value = con->DconValue();
             memcpy(&bits, &value, sizeof(double));
             break;
         }

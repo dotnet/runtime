@@ -10151,7 +10151,7 @@ uint64_t emitter::emitGetInsBits(const instrDesc* id)
         case IF_F32:
         case IF_F64:
         {
-            const instrDescWasmConstant *idWC = reinterpret_cast<const instrDescWasmConstant *>(id);
+            const instrDescWasmConstant* idWC = reinterpret_cast<const instrDescWasmConstant*>(id);
             return idWC->bits;
         }
         default:

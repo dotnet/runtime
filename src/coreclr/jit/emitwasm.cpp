@@ -34,7 +34,7 @@ void emitter::emitIns(instruction ins)
 
 void emitter::emitInsConstant(instruction ins, uint64_t bits)
 {
-    instrDesc* id = emitNewInstrWasmConstant(bits);
+    instrDesc* id  = emitNewInstrWasmConstant(bits);
     insFormat  fmt = emitInsFormat(ins);
 
     id->idIns(ins);
@@ -123,12 +123,12 @@ static size_t EncodeLEB64(uint8_t* destination, const void* source, bool valueIs
 {
     assert(source);
 
-    uint8_t b;
-    uint8_t * originalDestination = destination;
+    uint8_t  b;
+    uint8_t* originalDestination = destination;
     if (valueIsSigned)
     {
         int64_t value = *((int64_t*)source);
-        int more = 1, signBit;
+        int     more  = 1, signBit;
 
         while (more)
         {
@@ -277,8 +277,8 @@ unsigned emitter::instrDesc::idCodeSize() const
             break;
         case IF_MEMARG:
         {
-            uint64_t align = 0;          // FIXME
-            assert(align < 64);          // spec says align > 2^6 produces a memidx for multiple memories.
+            uint64_t align = 0; // FIXME
+            assert(align < 64); // spec says align > 2^6 produces a memidx for multiple memories.
             size += (unsigned int)SizeOfULEB128(align);
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : (unsigned int)SizeOfULEB128(emitGetInsSC(this));
             break;
@@ -335,7 +335,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             dst += emitOutputByte(dst, opcode);
             uint64_t bits = emitGetInsBits(id);
-            double value;
+            double   value;
             memcpy(&value, &bits, sizeof(double));
             float truncated = (float)value;
             memcpy(dst + writeableOffset, &truncated, sizeof(float));
@@ -356,7 +356,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MEMARG:
         {
             dst += emitOutputByte(dst, opcode);
-            uint64_t align = 0;          // FIXME
+            uint64_t align  = 0; // FIXME
             uint64_t offset = emitGetInsSC(id);
             assert(align <= UINT32_MAX); // spec says memarg alignment is u32
             assert(align < 64);          // spec says align > 2^6 produces a memidx for multiple memories.
@@ -493,7 +493,7 @@ void emitter::emitDispIns(
         case IF_F64:
         {
             uint64_t bits = emitGetInsBits(id);
-            double value;
+            double   value;
             memcpy(&value, &bits, sizeof(double));
             printf(" %f", value);
         }

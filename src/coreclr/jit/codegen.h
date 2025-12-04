@@ -760,7 +760,7 @@ protected:
     bool genIsSameLocalVar(GenTree* tree1, GenTree* tree2);
 
 #if defined(TARGET_WASM)
-    void genCodeForConstant(GenTree *treeNode);
+    void genCodeForConstant(GenTree* treeNode);
 #endif
 
 #if defined(TARGET_X86)

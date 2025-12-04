@@ -4088,7 +4088,7 @@ inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, cnsval_ssize_
 inline emitter::instrDesc* emitter::emitNewInstrWasmConstant(uint64_t bits)
 {
     instrDescWasmConstant* id = (instrDescWasmConstant*)emitAllocAnyInstr(sizeof(instrDescWasmConstant), EA_8BYTE);
-    id->bits = bits;
+    id->bits                  = bits;
     return id;
 }
 #endif // TARGET_WASM
