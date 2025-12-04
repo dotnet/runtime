@@ -38,8 +38,8 @@
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
     <SelfContained>true</SelfContained>
-    <WasmNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true' and '$(WasmNativeWorkload11)' == 'true'">true</WasmNativeWorkloadAvailable>
-    <WasmNativeWorkloadAvailable Condition="'$(TargetsNet10)' == 'true' and '$(WasmNativeWorkload10)' == 'true'">true</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true'">$(WasmNativeWorkload11)</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkloadAvailable Condition="'$(TargetsNet10)' == 'true'">$(WasmNativeWorkload10)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet9)' == 'true'">$(WasmNativeWorkload9)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet8)' == 'true'">$(WasmNativeWorkload8)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet7)' == 'true'">$(WasmNativeWorkload7)</WasmNativeWorkloadAvailable>
