@@ -287,25 +287,24 @@ namespace System
         /// <returns><paramref name="value" /> converted to a <see cref="Half" />.</returns>
         public static explicit operator Half(UInt128 value)
         {
-            var lo = value._lower;
-            var hi = value._upper;
-
-            return 0 != hi || 65520 <= lo ? Half.PositiveInfinity : BitConverter.Int16BitsToHalf((short)ToHalfPartial((uint)lo));
+            return value._upper != 0 || value._lower >= 65520u
+                ? Half.PositiveInfinity
+                : BitConverter.Int16BitsToHalf((short)ToHalfPartial((uint)value._lower));
 
             static int ToHalfPartial(uint value)
             {
-                Debug.Assert(value <= 65519);
+                Debug.Assert(value <= 65519u);
 
-                const int exponentBias = 15;
-                const int mantissaBits = 10;
+                const int exponentBias = Half.ExponentBias;
+                const int mantissaBits = Half.TrailingSignificandLength;
 
-                if (value == 0)
+                if (value == 0u)
                 {
                     return 0;
                 }
 
                 // Count leading zeros to find the position of the highest set bit
-                var leadingZeros = BitOperations.LeadingZeroCount(value);
+                int leadingZeros = BitOperations.LeadingZeroCount(value);
 
                 int exponent = 32 - 1 + exponentBias - leadingZeros;
 
@@ -314,10 +313,10 @@ namespace System
                 uint mantissa = shifted >>> (32 - mantissaBits);
 
                 // Remaining bits for rounding (bits 21-0)
-                uint remaining = shifted & 0x3FFFFF;
+                uint remaining = shifted & 0x3FFFFFu;
 
                 // Apply rounding (round to nearest, ties to even)
-                if (remaining > 0x200000 || (remaining == 0x200000 && 0 != (1 & mantissa)))
+                if (remaining > 0x200000u || (remaining == 0x200000u && (mantissa & 1u) != 0u))
                 {
                     ++mantissa;
                 }
@@ -448,19 +447,19 @@ namespace System
 
             static float ToSingle(ulong value_lo, ulong value_hi)
             {
-                return 0 == value_hi ? (float)value_lo : BitConverter.Int32BitsToSingle(ToSinglePartial(value_lo, value_hi));
+                return value_hi == 0UL ? (float)value_lo : BitConverter.Int32BitsToSingle(ToSinglePartial(value_lo, value_hi));
             }
 
             static int ToSinglePartial(ulong value_lo, ulong value_hi)
             {
-                Debug.Assert(value_hi != 0);
+                Debug.Assert(value_hi != 0UL);
 
-                const int exponentBias = 127;
-                const int mantissaBitCount = 23;
+                const int exponentBias = float.ExponentBias;
+                const int mantissaBitCount = float.TrailingSignificandLength;
                 const int nonMantissaBitCount = 32 - mantissaBitCount;
-                const int positiveInfinityBits = 0X7f800000;
+                const int positiveInfinityBits = float.PositiveInfinityBits;
 
-                if ((ulong)0Xffffff8000000000 <= value_hi)
+                if (value_hi >= 0xFFFFFF8000000000UL)
                 {
                     return positiveInfinityBits;
                 }
@@ -470,20 +469,20 @@ namespace System
 
                 int exponent = 128 + exponentBias - shiftCount;
 
-                ulong shifted = 1 == value_hi ? value_lo : (value_lo >>> (64 - shiftCount)) | (value_hi << shiftCount);
+                ulong shifted = value_hi == 1UL ? value_lo : (value_lo >>> (64 - shiftCount)) | (value_hi << shiftCount);
 
-                int mantissa = (int)(shifted >>> (32 + nonMantissaBitCount));
+                int mantissa = (int)(shifted >> (32 + nonMantissaBitCount));
 
                 // Remaining bits for rounding (bits 40-0)
-                ulong remaining = shifted & 0X1ffffffffff;
+                ulong remaining = shifted & 0x1FFFFFFFFFFUL;
 
-                if (!(1 == value_hi) && 0 != value_lo << shiftCount)
+                if (value_hi != 1UL && (value_lo << shiftCount) != 0UL)
                 {
-                    remaining |= 1;
+                    remaining |= 1UL;
                 }
 
                 // Apply rounding (round to nearest, ties to even)
-                if (remaining > 0X10000000000 || (remaining == 0X10000000000 && 0 != (1 & mantissa)))
+                if (remaining > 0x10000000000UL || (remaining == 0x10000000000UL && (mantissa & 1) != 0))
                 {
                     ++mantissa;
                 }
