@@ -20,7 +20,9 @@ namespace System.Threading
     public sealed class ExecutionContext : IDisposable, ISerializable
     {
         internal static readonly ExecutionContext Default = new ExecutionContext();
-        private static ExecutionContext? s_defaultFlowSuppressed;
+#pragma warning disable CA1825, IDE0300 // Avoid unnecessary zero-length array allocations
+        internal static readonly ExecutionContext DefaultFlowSuppressed = new ExecutionContext(AsyncLocalValueMap.Empty, new IAsyncLocal[0], isFlowSuppressed: true);
+#pragma warning restore CA1825, IDE0300
 
         private readonly IAsyncLocalValueMap? m_localValues;
         private readonly IAsyncLocal[]? m_localChangeNotifications;
@@ -88,7 +90,7 @@ namespace System.Threading
             ExecutionContext? executionContext = currentThread._executionContext;
             if (executionContext?.m_isFlowSuppressed == true)
             {
-                executionContext = null;
+                executionContext = DefaultFlowSuppressed;
             }
 
             return executionContext;
@@ -100,11 +102,9 @@ namespace System.Threading
 
             if (m_localValues == null || AsyncLocalValueMap.IsEmpty(m_localValues))
             {
-#pragma warning disable CA1825, IDE0300 // Avoid unnecessary zero-length array allocations
                 return isFlowSuppressed ?
-                    (s_defaultFlowSuppressed ??= new ExecutionContext(AsyncLocalValueMap.Empty, new IAsyncLocal[0], isFlowSuppressed: true)) :
+                    DefaultFlowSuppressed :
                     null; // implies the default context
-#pragma warning restore CA1825, IDE0300
             }
 
             return new ExecutionContext(m_localValues, m_localChangeNotifications, isFlowSuppressed);
@@ -260,7 +260,7 @@ namespace System.Threading
             }
         }
 
-        internal static void RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, object state)
+        internal static void RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext? executionContext, ContextCallback callback, object state)
         {
             Debug.Assert(threadPoolThread == Thread.CurrentThread);
             CheckThreadPoolAndContextsAreDefault();
