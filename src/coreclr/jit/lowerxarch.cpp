@@ -932,79 +932,58 @@ void Lowering::LowerCast(GenTree* tree)
 
                 NamedIntrinsic convertIntrinsic = NI_Illegal;
                 GenTree*       maxIntegralValue = nullptr;
-                GenTree*       maxFloatingValue = comp->gtNewVconNode(TYP_SIMD16);
-                simd_t*        maxFloatSimdVal  = &maxFloatingValue->AsVecCon()->gtSimdVal;
+                double         minFloatOverflow = 0;
 
                 switch (dstType)
                 {
                     case TYP_INT:
                     {
+                        convertIntrinsic = NI_X86Base_ConvertToInt32WithTruncation;
                         maxIntegralValue = comp->gtNewIconNode(INT32_MAX);
-                        if (srcType == TYP_FLOAT)
-                        {
-                            maxFloatSimdVal->f32[0] = 2147483648.0f;
-                            convertIntrinsic        = NI_X86Base_ConvertToInt32WithTruncation;
-                        }
-                        else
-                        {
-                            maxFloatSimdVal->f64[0] = 2147483648.0;
-                            convertIntrinsic        = NI_X86Base_ConvertToInt32WithTruncation;
-                        }
+                        minFloatOverflow = 2147483648.0; // 2^31
                         break;
                     }
+
                     case TYP_UINT:
                     {
+                        convertIntrinsic = TargetArchitecture::Is64Bit
+                                               ? NI_X86Base_X64_ConvertToInt64WithTruncation
+                                               : NI_X86Base_ConvertToVector128Int32WithTruncation;
                         maxIntegralValue = comp->gtNewIconNode(static_cast<ssize_t>(UINT32_MAX));
-                        if (srcType == TYP_FLOAT)
-                        {
-                            maxFloatSimdVal->f32[0] = 4294967296.0f;
-                            convertIntrinsic        = TargetArchitecture::Is64Bit
-                                                          ? NI_X86Base_X64_ConvertToInt64WithTruncation
-                                                          : NI_X86Base_ConvertToVector128Int32WithTruncation;
-                        }
-                        else
-                        {
-                            maxFloatSimdVal->f64[0] = 4294967296.0;
-                            convertIntrinsic        = TargetArchitecture::Is64Bit
-                                                          ? NI_X86Base_X64_ConvertToInt64WithTruncation
-                                                          : NI_X86Base_ConvertToVector128Int32WithTruncation;
-                        }
+                        minFloatOverflow = 4294967296.0; // 2^32;
                         break;
                     }
+
                     case TYP_LONG:
                     {
+                        convertIntrinsic = NI_X86Base_X64_ConvertToInt64WithTruncation;
                         maxIntegralValue = comp->gtNewLconNode(INT64_MAX);
-                        if (srcType == TYP_FLOAT)
-                        {
-                            maxFloatSimdVal->f32[0] = 9223372036854775808.0f;
-                            convertIntrinsic        = NI_X86Base_X64_ConvertToInt64WithTruncation;
-                        }
-                        else
-                        {
-                            maxFloatSimdVal->f64[0] = 9223372036854775808.0;
-                            convertIntrinsic        = NI_X86Base_X64_ConvertToInt64WithTruncation;
-                        }
+                        minFloatOverflow = 9223372036854775808.0; // 2^63
                         break;
                     }
+
                     case TYP_ULONG:
                     {
+                        convertIntrinsic = NI_X86Base_X64_ConvertToInt64WithTruncation;
                         maxIntegralValue = comp->gtNewLconNode(static_cast<int64_t>(UINT64_MAX));
-                        if (srcType == TYP_FLOAT)
-                        {
-                            maxFloatSimdVal->f32[0] = 18446744073709551616.0f;
-                            convertIntrinsic        = NI_X86Base_X64_ConvertToInt64WithTruncation;
-                        }
-                        else
-                        {
-                            maxFloatSimdVal->f64[0] = 18446744073709551616.0;
-                            convertIntrinsic        = NI_X86Base_X64_ConvertToInt64WithTruncation;
-                        }
+                        minFloatOverflow = 18446744073709551616.0; // 2^64
                         break;
                     }
+
                     default:
                     {
                         unreached();
                     }
+                }
+
+                GenTree* ovfFloatingValue = comp->gtNewVconNode(TYP_SIMD16);
+                if (srcType == TYP_FLOAT)
+                {
+                    ovfFloatingValue->AsVecCon()->gtSimdVal.f32[0] = static_cast<float>(minFloatOverflow);
+                }
+                else
+                {
+                    ovfFloatingValue->AsVecCon()->gtSimdVal.f64[0] = minFloatOverflow;
                 }
 
                 // We will use the input value at least twice, so we preemptively replace it with a lclVar.
@@ -1071,17 +1050,17 @@ void Lowering::LowerCast(GenTree* tree)
                         // result is selected.
                         //
                         // This creates the equivalent of the following C# code:
-                        //   var wrapVal = Sse.SubtractScalar(srcVec, maxFloatingValue);
+                        //   var wrapVal = Sse.SubtractScalar(srcVec, ovfFloatingValue);
 
                         NamedIntrinsic subtractIntrinsic = NI_X86Base_SubtractScalar;
 
-                        // We're going to use maxFloatingValue twice, so replace the constant with a lclVar.
-                        castRange.InsertAtEnd(maxFloatingValue);
+                        // We're going to use ovfFloatingValue twice, so replace the constant with a lclVar.
+                        castRange.InsertAtEnd(ovfFloatingValue);
 
                         LIR::Use maxFloatUse;
-                        LIR::Use::MakeDummyUse(castRange, maxFloatingValue, &maxFloatUse);
+                        LIR::Use::MakeDummyUse(castRange, ovfFloatingValue, &maxFloatUse);
                         maxFloatUse.ReplaceWithLclVar(comp);
-                        maxFloatingValue = maxFloatUse.Def();
+                        ovfFloatingValue = maxFloatUse.Def();
 
                         GenTree* floorVal = comp->gtClone(srcVector);
                         castRange.InsertAtEnd(floorVal);
@@ -1105,11 +1084,11 @@ void Lowering::LowerCast(GenTree* tree)
                             castRange.InsertAtEnd(floorVal);
                         }
 
-                        GenTree* wrapVal = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, floorVal, maxFloatingValue,
+                        GenTree* wrapVal = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, floorVal, ovfFloatingValue,
                                                                           subtractIntrinsic, srcType, 16);
                         castRange.InsertAtEnd(wrapVal);
 
-                        maxFloatingValue = comp->gtClone(maxFloatingValue);
+                        ovfFloatingValue = comp->gtClone(ovfFloatingValue);
 
                         if (dstType == TYP_UINT)
                         {
@@ -1196,17 +1175,17 @@ void Lowering::LowerCast(GenTree* tree)
                 // Now we handle saturation of the result for positive overflow.
                 //
                 // This creates the equivalent of the following C# code:
-                //   bool isOverflow = Sse.CompareScalarUnorderedGreaterThanOrEqual(srcVec, maxFloatingValue);
+                //   bool isOverflow = Sse.CompareScalarUnorderedGreaterThanOrEqual(srcVec, ovfFloatingValue);
                 //   return isOverflow ? maxIntegralValue : convertResult;
 
                 // These nodes were all created above but not used until now.
-                castRange.InsertAtEnd(maxFloatingValue);
+                castRange.InsertAtEnd(ovfFloatingValue);
                 castRange.InsertAtEnd(maxIntegralValue);
                 castRange.InsertAtEnd(convertResult);
 
                 srcClone = comp->gtClone(srcVector);
                 GenTree* compareMax =
-                    comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcClone, maxFloatingValue,
+                    comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcClone, ovfFloatingValue,
                                                    NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual, srcType, 16);
                 castResult = comp->gtNewConditionalNode(GT_SELECT, compareMax, maxIntegralValue, convertResult,
                                                         genActualType(dstType));
