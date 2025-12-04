@@ -63,7 +63,6 @@ internal sealed class PInvokeTableGenerator
 
     private void EmitPInvokeTable(StreamWriter w, SortedDictionary<string, string> modules, List<PInvoke> pinvokes)
     {
-
         foreach (var pinvoke in pinvokes)
         {
             if (modules.ContainsKey(pinvoke.Module))
@@ -133,9 +132,6 @@ internal sealed class PInvokeTableGenerator
         var moduleImports = new Dictionary<string, List<string>>();
         foreach (var module in modules.Keys)
         {
-            static string ListRefs(IGrouping<string, PInvoke> l) =>
-                string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n));
-
             // the order here is not important, because we use hash tables, we want it to be stable though
             var imports = pinvokes
                 .Where(l => l.Module == module && !l.Skip)
@@ -182,6 +178,9 @@ internal sealed class PInvokeTableGenerator
                         .Any(c => TryIsMethodGetParametersSupported(c.Method, out _) &&
                                     c.Method.GetParameters().Length != firstNumArgs);
         }
+
+        static string ListRefs(IGrouping<string, PInvoke> l) =>
+            string.Join(", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName()!.Name!).Distinct().OrderBy(n => n));
     }
 
     private string CEntryPoint(PInvoke pinvoke)
