@@ -111,7 +111,7 @@ namespace ILCompiler.ObjectWriter
         public int Encode(Span<byte> buffer)
         {
             int sizeLength = DwarfHelper.WriteULEB128(buffer, (ulong)_types.Length);
-            var rest = buffer.Slice(sizeLength);
+            Span<byte> rest = buffer.Slice(sizeLength);
             for (int i = 0; i < _types.Length; i++)
             {
                 rest[i] = (byte)_types[i];
@@ -124,7 +124,7 @@ namespace ILCompiler.ObjectWriter
     {
         public static string ToTypeListString(this WasmResultType result)
         {
-            return string.Join(" ", result.Types.ToArray().Select(t => WasmValueTypeExtensions.ToTypeString(t)));
+            return string.Join(" ", result.Types.ToArray().Select(t => t.ToTypeString()));
         }
     }
 
@@ -139,18 +139,21 @@ namespace ILCompiler.ObjectWriter
             _returns = returnTypes;
         }
 
-        public readonly byte[] Encode()
+        public readonly int EncodeSize()
         {
-            int totalSize = 1 + _params.EncodeSize() + _returns.EncodeSize();
-            byte[] buffer = new byte[totalSize];
+            return 1 + _params.EncodeSize() + _returns.EncodeSize();
+        }
+
+        public readonly int Encode(Span<byte> buffer)
+        {
+            int totalSize = EncodeSize();
             buffer[0] = 0x60; // function type indicator
 
-            var span = buffer.AsSpan();
-
-            int paramSize = _params.Encode(span.Slice(1));
-            int returnSize = _returns.Encode(span.Slice(1+paramSize));
+            int paramSize = _params.Encode(buffer.Slice(1));
+            int returnSize = _returns.Encode(buffer.Slice(1+paramSize));
             Debug.Assert(totalSize == 1 + paramSize + returnSize);
-            return buffer;
+
+            return totalSize;
         }
 
         public bool Equals(WasmFuncType other)

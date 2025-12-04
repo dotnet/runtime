@@ -2,21 +2,188 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
 
+using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
+
 namespace ILCompiler.ObjectWriter
 {
-    // This is a placeholder for now. It will need to be filled in with ABI-specific signatures
-    // for any method we want to emit into the Wasm module.
-    public class WasmAbiContext
+    /// <summary>
+    /// Wasm object file format writer.
+    /// </summary>
+    internal sealed class WasmObjectWriter : ObjectWriter
     {
-        public WasmFuncType GetSignature(MethodDesc method)
+        public WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
+            : base(factory, options, outputInfoBuilder)
+        {
+        }
+
+        private void EmitWasmHeader(Stream outputFileStream)
+        {
+            SectionData data = new();
+            SectionWriter headerWriter = new(this, 0, data);
+            headerWriter.Write("\0asm"u8);
+            headerWriter.Write([0x1, 0x0, 0x0, 0x0]);
+
+            data.GetReadStream().CopyTo(outputFileStream);
+        }
+
+        // TODO: for now, we are fully overriding EmitObject. As we support more features, we should
+        // see if we can re-use the base, or refactor the base method to allow for code sharing.
+        public override void EmitObject(Stream outputFileStream, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
+        {
+            ArrayBuilder<WasmFuncType> methodSignatures = new();
+            ArrayBuilder<string> methodNames = new();
+            ArrayBuilder<ObjectData> methodBodies = new();
+            foreach (DependencyNode node in nodes)
+            {
+                if (node is not ObjectNode)
+                {
+                    continue;
+                }
+
+                if (node is IMethodBodyNode methodNode)
+                {
+                    ObjectNode methodObject = (ObjectNode)node;
+                    methodSignatures.Add(WasmAbiContext.GetSignature(methodNode.Method));
+                    methodNames.Add(methodNode.GetMangledName(_nodeFactory.NameMangler));
+                    methodBodies.Add(methodObject.GetData(_nodeFactory));
+                    // TODO: record relocations and attached data
+                }
+            }
+
+            IEnumerable<WasmFuncType> uniqueSignatures = methodSignatures.ToArray().Distinct();
+            Dictionary<WasmFuncType, int> signatureMap = uniqueSignatures.Select((sig, i) => (sig, i)).ToDictionary();
+
+            EmitWasmHeader(outputFileStream);
+            EmitSection(() => WriteTypeSection(uniqueSignatures, logger), outputFileStream, logger);
+            EmitSection(() => WriteFunctionSection(methodSignatures.ToArray(), signatureMap, logger), outputFileStream, logger);
+            EmitSection(() => WriteExportSection(methodBodies, methodSignatures, methodNames, signatureMap, logger), outputFileStream, logger);
+            EmitSection(() => WriteCodeSection(methodBodies, logger), outputFileStream, logger);
+        }
+
+        private WasmSection WriteExportSection(ArrayBuilder<ObjectData> methodNodes, ArrayBuilder<WasmFuncType> methodSignatures,
+            ArrayBuilder<string> methodNames, Dictionary<WasmFuncType, int> signatureMap, Logger logger)
+        {
+            WasmSection exportSection = new WasmSection(WasmSectionType.Export, new SectionData(), "export");
+            SectionWriter writer = exportSection.Writer;
+            // Write the number of exports
+            writer.WriteULEB128((ulong)methodNodes.Count);
+            for (int i = 0; i < methodNodes.Count; i++)
+            {
+                ObjectData methodNode = methodNodes[i];
+                WasmFuncType methodSignature = methodSignatures[i];
+                string exportName = methodNames[i];
+
+                int length = Encoding.UTF8.GetByteCount(exportName);
+                writer.WriteULEB128((ulong)length);
+                writer.WriteUtf8StringNoNull(exportName);
+                writer.WriteByte(0x00); // export kind: function
+                writer.WriteULEB128((ulong)i);
+                if (logger.IsVerbose)
+                {
+                    logger.LogMessage($"Emitting export: {exportName} for function index {i}");
+                }
+            }
+
+            return exportSection;
+        }
+
+        private WasmSection WriteCodeSection(ArrayBuilder<ObjectData> methodBodies, Logger logger)
+        {
+            WasmSection codeSection = new WasmSection(WasmSectionType.Code, new SectionData(), "code");
+            SectionWriter writer = codeSection.Writer;
+
+            // Write the number of functions
+            writer.WriteULEB128((ulong)methodBodies.Count);
+            for ( int i = 0; i < methodBodies.Count; i++)
+            {
+                ObjectData methodBody = methodBodies[i];
+                writer.WriteULEB128((ulong)methodBody.Data.Length);
+                writer.EmitData(methodBody.Data);
+            }
+
+            return codeSection;
+        }
+
+        private WasmSection WriteTypeSection(IEnumerable<WasmFuncType> functionSignatures, Logger logger)
+        {
+            SectionData sectionData = new();
+            WasmSection typeSection = new WasmSection(WasmSectionType.Type, sectionData, "type");
+            SectionWriter writer = typeSection.Writer;
+
+            // Write the number of types
+            writer.WriteULEB128((ulong)functionSignatures.Count());
+
+            IBufferWriter<byte> buffer = sectionData.BufferWriter;
+            foreach (WasmFuncType signature in functionSignatures)
+            {
+                if (logger.IsVerbose)
+                {
+                    logger.LogMessage($"Emitting function signature: {signature}");
+                }
+
+                int signatureSize = signature.EncodeSize();
+                signature.Encode(buffer.GetSpan(signatureSize));
+                buffer.Advance(signatureSize);
+            }
+
+            return typeSection;
+        }
+
+        private WasmSection WriteFunctionSection(IReadOnlyCollection<WasmFuncType> allFunctionSignatures, IDictionary<WasmFuncType, int> signatureMap, Logger logger)
+        {
+            WasmSection functionSection = new WasmSection(WasmSectionType.Function, new SectionData(), "function");
+            SectionWriter writer = functionSection.Writer;
+            // Write the number of functions
+            writer.WriteULEB128((ulong)allFunctionSignatures.Count);
+            for (int i = 0; i < allFunctionSignatures.Count; i++)
+            {
+                WasmFuncType signature = allFunctionSignatures.ElementAt(i);
+                writer.WriteULEB128((ulong)signatureMap[signature]);
+            }
+            return functionSection;
+        }
+
+        private void EmitSection(Func<WasmSection> writeFunc, Stream outputFileStream, Logger logger)
+        {
+            WasmSection section = writeFunc();
+
+            outputFileStream.Write(section.Header);
+            if (logger.IsVerbose)
+            {
+                logger.LogMessage($"Wrote section header of size {section.Header.Length} bytes.");
+            }
+
+            section.Data.GetReadStream().CopyTo(outputFileStream);
+            if (logger.IsVerbose)
+            {
+                logger.LogMessage($"Emitted section: {section.Name} of type `{section.Type}` with size {section.Data.Length} bytes.");
+            }
+        }
+
+        protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment) => throw new NotImplementedException();
+        private WasmSection CreateSection(WasmSectionType sectionType, string symbolName, int sectionIndex) => throw new NotImplementedException();
+        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream) => throw new NotImplementedException();
+        private protected override void EmitObjectFile(Stream outputFileStream) => throw new NotImplementedException();
+        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList) => throw new NotImplementedException();
+        private protected override void EmitSymbolTable(IDictionary<string, SymbolDefinition> definedSymbols, SortedSet<string> undefinedSymbols) => throw new NotImplementedException();
+    }
+
+    // TODO: This is a placeholder implementation. The real implementation will derive the Wasm function signature
+    // from the MethodDesc's signature and type system information.
+    public static class WasmAbiContext
+    {
+        public static WasmFuncType GetSignature(MethodDesc method)
         {
             return PlaceholderValues.CreateWasmFunc_i32_i32();
         }
@@ -39,7 +206,7 @@ namespace ILCompiler.ObjectWriter
                 // 1 byte: section type
                 // ULEB128: size of section
                 ulong sectionSize = (ulong)_data.Length;
-                var encodeLength = DwarfHelper.SizeOfULEB128(sectionSize);
+                uint encodeLength = DwarfHelper.SizeOfULEB128(sectionSize);
 
                 byte[] header = new byte[1+encodeLength];
                 header[0] = (byte)Type;
@@ -67,167 +234,5 @@ namespace ILCompiler.ObjectWriter
             Name = name;
             _data = data;
         }
-    }
-
-    /// <summary>
-    /// Wasm object file format writer.
-    /// </summary>
-    internal sealed class WasmObjectWriter : ObjectWriter
-    {
-        // must be stored in little-endian order
-        private const uint WasmMagicNumber = 0x6d736100;
-
-        // must be stored in little-endian order
-        private const uint WasmVersion = 0x1;
-
-        private WasmAbiContext _wasmAbiContext;
-
-        public WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, WasmAbiContext ctx, OutputInfoBuilder outputInfoBuilder)
-            : base(factory, options, outputInfoBuilder)
-        {
-            _wasmAbiContext = ctx;
-        }
-
-        private void EmitWasmHeader(Stream outputFileStream)
-        {
-            SectionData data = new();
-            SectionWriter headerWriter = new(this, 0, data);
-            headerWriter.WriteLittleEndian(WasmMagicNumber);
-            headerWriter.WriteLittleEndian(WasmVersion);
-
-            data.GetReadStream().CopyTo(outputFileStream);
-        }
-
-        public override void EmitObject(Stream outputFileStream, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
-        {
-            ArrayBuilder<WasmFuncType> methodSignatures = new();
-            ArrayBuilder<IMethodBodyNode> methodBodies = new();
-            foreach (DependencyNode node in nodes)
-            {
-                if (node is IMethodBodyNode methodNode)
-                {
-                    methodSignatures.Add(_wasmAbiContext.GetSignature(methodNode.Method));
-                    methodBodies.Add(methodNode);
-                    // TODO: record relocations and attached data
-                }
-            }
-
-            var uniqueSignatures = methodSignatures.ToArray().Distinct();
-            var signatureMap = uniqueSignatures.Select((sig, i) => (sig, i)).ToDictionary();
-
-            EmitWasmHeader(outputFileStream);
-            EmitSection(() => WriteTypeSection(uniqueSignatures, logger), outputFileStream, logger);
-            EmitSection(() => WriteFunctionSection(methodSignatures.ToArray(), signatureMap, logger), outputFileStream, logger);
-            EmitSection(() => WriteExportSection(methodBodies.ToArray(), methodSignatures.ToArray(), signatureMap, logger), outputFileStream, logger);
-            EmitSection(() => WriteCodeSection(methodBodies.ToArray(), logger), outputFileStream, logger);
-        }
-
-        private WasmSection WriteExportSection(IReadOnlyList<IMethodBodyNode> methodNodes, IReadOnlyList<WasmFuncType> methodSignatures,
-            Dictionary<WasmFuncType, int> signatureMap, Logger logger)
-        {
-            WasmSection exportSection = new WasmSection(WasmSectionType.Export, new SectionData(), "export");
-            SectionWriter writer = exportSection.Writer;
-            // Write the number of exports
-            writer.WriteULEB128((ulong)methodNodes.Count);
-            for (int i = 0; i < methodNodes.Count; i++)
-            {
-                var methodNode = methodNodes[i];
-                var methodSignature = methodSignatures[i];
-                string exportName = methodNode.GetMangledName(_nodeFactory.NameMangler);
-
-                var length = Encoding.UTF8.GetByteCount(exportName);
-                writer.WriteULEB128((ulong)length);
-                writer.WriteUtf8StringNoNull(exportName);
-                writer.WriteByte(0x00); // export kind: function
-                writer.WriteULEB128((ulong)i);
-                if (logger.IsVerbose)
-                {
-                    logger.LogMessage($"Emitting export: {exportName} for function index {i}");
-                }
-            }
-
-            return exportSection;
-        }
-
-        private WasmSection WriteCodeSection(IReadOnlyCollection<IMethodBodyNode> methodBodies, Logger logger)
-        {
-            WasmSection codeSection = new WasmSection(WasmSectionType.Code, new SectionData(), "code");
-
-            SectionWriter writer = codeSection.Writer;
-            // Write the number of functions
-            writer.WriteULEB128((ulong)methodBodies.Count);
-            foreach (IMethodBodyNode methodBody in methodBodies)
-            {
-                if (methodBody is ObjectNode objectNode)
-                {
-                    ObjectNode.ObjectData body = objectNode.GetData(_nodeFactory);
-
-                    writer.WriteULEB128((ulong)body.Data.Length);
-                    writer.EmitData(body.Data);
-                }
-                else
-                {
-                    throw new InvalidOperationException($"Expected method body node to be an ObjectNode, but got {methodBody.GetType()}");
-                }
-            }
-
-            return codeSection;
-        }
-
-        private WasmSection WriteTypeSection(IEnumerable<WasmFuncType> functionSignatures, Logger logger)
-        {
-            WasmSection typeSection = new WasmSection(WasmSectionType.Type, new SectionData(), "type");
-            SectionWriter writer = typeSection.Writer;
-
-            // Write the number of types
-            writer.WriteULEB128((ulong)functionSignatures.Count());
-            foreach (WasmFuncType signature in functionSignatures)
-            {
-                if (logger.IsVerbose)
-                {
-                    logger.LogMessage($"Emitting function signature: {signature}");
-                }
-                writer.EmitData(signature.Encode());
-            }
-            return typeSection;
-        }
-
-        private WasmSection WriteFunctionSection(IReadOnlyCollection<WasmFuncType> allFunctionSignatures, IDictionary<WasmFuncType, int> signatureMap, Logger logger)
-        {
-            WasmSection functionSection = new WasmSection(WasmSectionType.Function, new SectionData(), "function");
-            SectionWriter writer = functionSection.Writer;
-            // Write the number of functions
-            writer.WriteULEB128((ulong)allFunctionSignatures.Count);
-            for (int i = 0; i < allFunctionSignatures.Count; i++)
-            {
-                var signature = allFunctionSignatures.ElementAt(i);
-                writer.WriteULEB128((ulong)signatureMap[signature]);
-            }
-            return functionSection;
-        }
-
-        private void EmitSection(Func<WasmSection> writeFunc, Stream outputFileStream, Logger logger)
-        {
-            var section = writeFunc();
-
-            outputFileStream.Write(section.Header);
-            if (logger.IsVerbose)
-            {
-                logger.LogMessage($"Wrote section header of size {section.Header.Length} bytes.");
-            }
-
-            section.Data.GetReadStream().CopyTo(outputFileStream);
-            if (logger.IsVerbose)
-            {
-                logger.LogMessage($"Emitted section: {section.Name} of type `{section.Type}` with size {section.Data.Length} bytes.");
-            }
-        }
-
-        protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment) => throw new NotImplementedException();
-        private WasmSection CreateSection(WasmSectionType sectionType, string symbolName, int sectionIndex) => throw new NotImplementedException();
-        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream) => throw new NotImplementedException();
-        private protected override void EmitObjectFile(Stream outputFileStream) => throw new NotImplementedException();
-        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList) => throw new NotImplementedException();
-        private protected override void EmitSymbolTable(IDictionary<string, SymbolDefinition> definedSymbols, SortedSet<string> undefinedSymbols) => throw new NotImplementedException();
     }
 }
