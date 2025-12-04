@@ -117,7 +117,7 @@ namespace System.IO
             // The name buffer in struct inotify_event is 0-256 bytes making the total inotify_event size 16-272 bytes.
             // The below buffer fits at 60+ events of the largest events.
             // For a typical file name size of <32 bytes, we can receive 300+ events in a single read.
-            // This buffer size is assumed to be be plenty because the read loop dispatches the work for user event handling to the ThreadPool and then performs a new read.
+            // This buffer size is assumed to be plenty because the read loop dispatches the work for user event handling to the ThreadPool and then performs a new read.
             private const int BufferSize = 16384;
 
             // Guards the watchers of the inotify instance and starting the inotify thread.
@@ -212,7 +212,7 @@ namespace System.IO
 
             private WatchedDirectory? AddOrUpdateWatchedDirectory(Watcher watcher, WatchedDirectory? parent, string directoryPath, Interop.Sys.NotifyEvents watchFilters, bool followLinks = false, bool ignoreMissing = true)
             {
-                Debug.Assert(!Monitor.IsEntered(watcher)); // We musn't hold the watcher lock prior to taking the _addLock.
+                Debug.Assert(!Monitor.IsEntered(watcher)); // We mustn't hold the watcher lock prior to taking the _addLock.
 
                 WatchedDirectory? inotifyWatchesToRemove = null;
                 WatchedDirectory dir;
@@ -223,7 +223,7 @@ namespace System.IO
                 try
                 {
                     // Serialize adding watches to the same watcher.
-                    // Concurrently adding watches may happen during the initial reursive iteration of the directory.
+                    // Concurrently adding watches may happen during the initial recursive iteration of the directory.
                     // This ensures the WatchedDirectory matches with the most recent INotifyAddWatch directory.
                     lock (watcher)
                     {
@@ -237,8 +237,7 @@ namespace System.IO
                         Interop.Sys.NotifyEvents mask = watchFilters |
                             Interop.Sys.NotifyEvents.IN_ONLYDIR |     // we only allow watches on directories
                             Interop.Sys.NotifyEvents.IN_EXCL_UNLINK | // we want to stop monitoring unlinked files
-                            (followLinks ? 0 : Interop.Sys.NotifyEvents.IN_DONT_FOLLOW |
-                            Interop.Sys.NotifyEvents.IN_MASK_ADD);
+                            (followLinks ? 0 : Interop.Sys.NotifyEvents.IN_DONT_FOLLOW);
 
                         // To support multiple FileSystemWatchers on the same inotify instance, we need to use IN_MASK_ADD
                         // so we don't remove events another watcher is interested in.
@@ -548,7 +547,7 @@ namespace System.IO
                 ReadOnlySpan<WatchedDirectory> movedFromDirs = _dirBuffer.AsSpan(0, movedFromWatchCount);
 
                 // Look up the Watch in _wdToWatch.
-                // We take a writer lock to synchronize with AddOrUpdateWatchedDirectory and make sure newly added watch descriptors can be found in _wdToWatch.
+                // Synchronize with AddOrUpdateWatchedDirectory to make sure newly added watch descriptors can be found in _wdToWatch.
                 _addLock.EnterWriteLock();
                 _addLock.ExitWriteLock();
                 _wdToWatch.TryGetValue(nextEvent.wd, out Watch? watch);
@@ -1053,10 +1052,7 @@ namespace System.IO
 
                     if (rootDirectory is not null && IncludeSubdirectories)
                     {
-                        if (IncludeSubdirectories)
-                        {
-                            WatchChildDirectories(rootDirectory, BasePath, includeBasePath: false);
-                        }
+                        WatchChildDirectories(rootDirectory, BasePath, includeBasePath: false);
                     }
 
                     _emitEvents = true;
