@@ -328,13 +328,10 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     BBswtDesc* const desc      = block->GetSwitchTargets();
     unsigned const   caseCount = desc->GetCaseCount();
 
+    // We don't expect degenerate or default-less switches
+    //
+    assert(caseCount > 0);
     assert(desc->HasDefaultCase());
-
-    if (caseCount == 0)
-    {
-        assert(desc->GetDefaultCase()->getDestinationBlock() == block->Next());
-        return;
-    }
 
     GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount);
 
