@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(TestTfm)</TargetFramework>
   </PropertyGroup>
 
   <!-- Copy the preloaded base type to the startup hook's output

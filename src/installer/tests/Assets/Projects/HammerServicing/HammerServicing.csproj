@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(TestTfm)</TargetFramework>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
 

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AssemblyName>SharedLibrary</AssemblyName>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(TestTfm)</TargetFramework>
     <OutputType>Library</OutputType>
   </PropertyGroup>
 

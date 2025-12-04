@@ -20,6 +20,8 @@
     <!-- This should match NetCoreAppCurrentVersion in the repo root Directory.Build.props -->
     <NetCoreAppCurrentVersion>10.0</NetCoreAppCurrentVersion>
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
+    <!-- TestTfm is used by test projects that need to reference a specific target framework -->
+    <TestTfm>$(NetCoreAppCurrent)</TestTfm>
   </PropertyGroup>
 
   <!-- Test asset build configuration -->
