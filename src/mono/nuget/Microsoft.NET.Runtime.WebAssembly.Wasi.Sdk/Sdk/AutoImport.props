@@ -2,6 +2,6 @@
 <Project>
   <PropertyGroup>
     <WasiNativeWorkload Condition="'$(WasiNativeWorkload)' == ''">net11.0</WasiNativeWorkload>
-    <WasiNativeWorkload10>true</WasiNativeWorkload10>
+    <WasiNativeWorkload11>true</WasiNativeWorkload11>
   </PropertyGroup>
 </Project>
