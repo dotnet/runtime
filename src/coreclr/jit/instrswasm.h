@@ -47,8 +47,8 @@ INST(f32_load,    "f32.load",    0, IF_MEMARG,  0x2A)
 INST(f64_load,    "f64.load",    0, IF_MEMARG,  0x2B)
 // 5.4.7 Numeric Instructions
 // Constants
-INST(i32_const,   "i32.const",   0, IF_LEB128,  0x41)
-INST(i64_const,   "i64.const",   0, IF_LEB128,  0x42)
+INST(i32_const,   "i32.const",   0, IF_I32,     0x41)
+INST(i64_const,   "i64.const",   0, IF_I64,     0x42)
 INST(f32_const,   "f32.const",   0, IF_F32,     0x43)
 INST(f64_const,   "f64.const",   0, IF_F64,     0x44)
 // Integer comparisons

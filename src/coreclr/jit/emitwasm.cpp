@@ -438,6 +438,23 @@ void emitter::emitDispIns(
         }
         break;
 
+        case IF_LEB128:
+        {
+            target_ssize_t imm = emitGetInsSC(id);
+            printf(" %i", imm);
+        }
+        break;
+
+        case IF_F32:
+        case IF_F64:
+        case IF_I32:
+        case IF_I64:
+        {
+            uint64_t bits = emitGetInsBits(id);
+            printf(" " PRUx64, bits);
+        }
+        break;
+
         case IF_MEMARG:
         {
             // TODO-WASM: decide what our strategy for alignment hints is and display these accordingly.

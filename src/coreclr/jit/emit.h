@@ -2465,6 +2465,11 @@ protected:
 #endif // TARGET_XARCH
 
     NOT_ARM(static) cnsval_ssize_t emitGetInsSC(const instrDesc* id);
+
+#ifdef TARGET_WASM
+    uint64_t emitGetInsBits(const instrDesc* id);
+#endif // TARGET_WASM
+
     unsigned emitInsCount;
 
     /************************************************************************/

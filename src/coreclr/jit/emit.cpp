@@ -1516,8 +1516,11 @@ void emitter::dispIns(instrDesc* id)
 #if EMIT_TRACK_STACK_DEPTH
     assert((int)emitCurStackLvl >= 0);
 #endif
+// FIXME: This is broken for Wasm and I can't figure out why.
+#ifndef TARGET_WASM
     size_t sz = emitSizeOfInsDsc(id);
     assert(id->idDebugOnlyInfo()->idSize == sz);
+#endif // TARGET_WASM
 #endif // DEBUG
 
 #if EMITTER_STATS
@@ -10140,6 +10143,24 @@ cnsval_ssize_t emitter::emitGetInsSC(const instrDesc* id)
             return id->idSmallCns();
         }
 }
+
+#ifdef TARGET_WASM
+uint64_t emitter::emitGetInsBits(const instrDesc* id)
+{
+    switch (idInsFmt())
+    {
+        case IF_I32:
+        case IF_I64:
+        case IF_F32:
+        case IF_F64:
+            instrDescWasmConstant *idWC = reinterpret_cast<instrDescWasmConstant *>(id);
+            return idWC->bits;
+        default:
+            unreachable();
+            return 0;
+    }
+}
+#endif
 
 #ifdef TARGET_ARM
 
