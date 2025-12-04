@@ -31897,10 +31897,11 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     bool       isScalar = false;
     genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
-#ifdef FEATURE_MASKED_HW_INTRINSICS
-#ifdef TARGET_XARCH
     // We shouldn't find AND_NOT nodes since it should only be produced in lowering
     assert(oper != GT_AND_NOT);
+
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+#ifdef TARGET_XARCH
 
     if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
     {
