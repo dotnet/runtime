@@ -3291,11 +3291,9 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 // ahead. It is possible that this PUTARG_STK is the only use,
                 // in which case we will need to introduce a temp, so look for
                 // uses starting from it. Note that we assume that in-place
-                // copies are ok provided the source is a scalar value (below
-                // checked via isContained(), but which primarily targets
-                // GT_FIELD_LIST).
+                // copies are ok provided the source is a scalar value.
                 GenTree* lookForUsesFrom = put->gtNext;
-                if ((overwrittenStart != argStart) || put->gtGetOp1()->isContained())
+                if ((overwrittenStart != argStart) || put->gtGetOp1()->OperIsFieldList())
                 {
                     JITDUMP("Non-atomic copy may be self-interfering. Expanding search...\n");
                     lookForUsesFrom = firstPutargStkOp;
@@ -3363,7 +3361,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// FirstEvaluatedOperand:
+// FirstOperand:
 //   Find the earliest operand of a node.
 //
 // Arguments:
