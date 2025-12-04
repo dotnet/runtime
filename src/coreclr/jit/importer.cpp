@@ -3419,7 +3419,8 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     //
     //  obj = nullable._hasValue == 0 ? null : (boxed underlying value)
     //
-    if ((boxHelper == CORINFO_HELP_BOX_NULLABLE) && opts.OptimizationEnabled() && !compCurBB->isRunRarely())
+    if ((boxHelper == CORINFO_HELP_BOX_NULLABLE) && opts.OptimizationEnabled() && !compCurBB->isRunRarely() &&
+        !eeIsSharedInst(pResolvedToken->hClass))
     {
         CORINFO_CLASS_HANDLE typeToBox = info.compCompHnd->getTypeForBox(pResolvedToken->hClass);
 
