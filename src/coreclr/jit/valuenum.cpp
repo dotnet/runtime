@@ -8386,7 +8386,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 if (auxJitType != CORINFO_TYPE_UNDEF &&
                     genTypeSize(JITtype2varType(auxJitType)) != genTypeSize(baseType))
                 {
-                    // Handle the "wide elements" variant of shift, where otherNode is a vector of ulongs,
+                    // Handle the "wide elements" variant of shift, where arg1 is a vector of ulongs,
                     // which is looped over to read the shift values. The values can safely be narrowed
                     // to the result type.
                     assert(auxJitType == CORINFO_TYPE_ULONG);
