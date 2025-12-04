@@ -109,6 +109,7 @@
         <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
         <ExpectedExitCode>42</ExpectedExitCode>
         <TestTarget>$(AppleTestTarget)</TestTarget>
+        <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
       </XHarnessAppBundleToTest>
 
       <!-- To save on overall size, we compress each app after building. -->
@@ -120,6 +121,7 @@
         <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
         <ExpectedExitCode>42</ExpectedExitCode>
         <TestTarget>$(AppleTestTarget)</TestTarget>
+        <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
       </XHarnessAppBundleToTest>
     </ItemGroup>
 
