@@ -2347,9 +2347,9 @@ protected:
 #endif // TARGET_RISCV64
 
 #ifdef TARGET_WASM
-    struct instrDescConstant : instrDescCns
+    struct instrDescWasmConstant : instrDescCns
     {
-        instrDescConstant() = delete;
+        instrDescWasmConstant() = delete;
 
         uint64_t bits;
     }
@@ -3304,6 +3304,9 @@ private:
 #ifdef TARGET_ARM
     instrDesc* emitNewInstrReloc(emitAttr attr, BYTE* addr);
 #endif // TARGET_ARM
+#ifdef TARGET_WASM
+    instrDesc* emitNewInstrWasmConstant(emitAttr attr, uint64_t bits);
+#endif
     instrDescJmp* emitNewInstrJmp();
 
 #if !defined(TARGET_ARM64)
@@ -4068,6 +4071,19 @@ inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, cnsval_ssize_
 
         return id;
     }
+}
+
+/*****************************************************************************
+ *
+ *  Allocate an instruction descriptor for an instruction with a constant operand.
+ *  The constant is stored as a fixed-size 64 unsigned bits and can hold an integral
+ *  or floating-point constant that will be emitted later with the right format.
+ */
+inline emitter::instrDesc* emitter::emitNewInstrWasmConstant(emitAttr attr, uint64_t bits)
+{
+    instrDescWasmConstant* id = (instrDescWasmConstant*)emitAllocAnyInstr(sizeof(instrDescWasmConstant), attr);
+    id->bits = bits;
+    return id;
 }
 
 /*****************************************************************************
