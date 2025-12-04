@@ -494,6 +494,10 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="ArgumentException"><paramref name="type" /> must be a type provided by the runtime.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="size" /> is negative.</exception>
         /// <exception cref="ArgumentException"><paramref name="alignment" /> is not a power of <c>2</c>.</exception>
+        /// <remarks>
+        ///    <para>This method is guaranteed to support any natural alignment, that is any alignment that is less than or equal to the size of a pointer.</para>
+        ///    <para>Support for greater alignments is implementation dependent, but will always result in an <see cref="OutOfMemoryException" /> if unsupported.</para>
+        /// </remarks>
         public static IntPtr AllocateTypeAssociatedMemory(Type type, int size, int alignment)
         {
             if (type is not RuntimeType rt)
@@ -515,8 +519,8 @@ namespace System.Runtime.CompilerServices
         [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
         private static partial IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
 
-        [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AlignedAllocateTypeAssociatedMemory")]
-        private static partial IntPtr AlignedAllocateTypeAssociatedMemory(QCallTypeHandle type, uint size, uint alignment);
+        [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned")]
+        private static partial IntPtr AllocateTypeAssociatedMemoryAligned(QCallTypeHandle type, uint size, uint alignment);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe TailCallArgBuffer* GetTailCallArgBuffer();

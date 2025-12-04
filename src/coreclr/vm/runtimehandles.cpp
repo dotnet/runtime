@@ -1210,7 +1210,30 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::ContainsGenericVariables, PTR_ReflectCla
 }
 FCIMPLEND
 
-extern "C" void* QCALLTYPE RuntimeTypeHandle_AlignedAllocateTypeAssociatedMemory(QCall::TypeHandle type, uint32_t size, uint32_t alignment)
+extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemory(QCall::TypeHandle type, uint32_t size)
+{
+    QCALL_CONTRACT;
+
+    void *allocatedMemory = nullptr;
+
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = type.AsTypeHandle();
+    _ASSERTE(!typeHandle.IsNull());
+
+    // Get the loader allocator for the associated type.
+    // Allocating using the type's associated loader allocator means
+    // that the memory will be freed when the type is unloaded.
+    PTR_LoaderAllocator loaderAllocator = typeHandle.GetMethodTable()->GetLoaderAllocator();
+    LoaderHeap* loaderHeap = loaderAllocator->GetHighFrequencyHeap();
+    allocatedMemory = loaderHeap->AllocMem(S_SIZE_T(size));
+
+    END_QCALL;
+
+    return allocatedMemory;
+}
+
+extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned(QCall::TypeHandle type, uint32_t size, uint32_t alignment)
 {
     QCALL_CONTRACT;
 
@@ -1230,29 +1253,6 @@ extern "C" void* QCALLTYPE RuntimeTypeHandle_AlignedAllocateTypeAssociatedMemory
     PTR_LoaderAllocator loaderAllocator = typeHandle.GetMethodTable()->GetLoaderAllocator();
     LoaderHeap* loaderHeap = loaderAllocator->GetHighFrequencyHeap();
     allocatedMemory = loaderHeap->AllocAlignedMem(size, alignment);
-
-    END_QCALL;
-
-    return allocatedMemory;
-}
-
-extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemory(QCall::TypeHandle type, uint32_t size)
-{
-    QCALL_CONTRACT;
-
-    void *allocatedMemory = nullptr;
-
-    BEGIN_QCALL;
-
-    TypeHandle typeHandle = type.AsTypeHandle();
-    _ASSERTE(!typeHandle.IsNull());
-
-    // Get the loader allocator for the associated type.
-    // Allocating using the type's associated loader allocator means
-    // that the memory will be freed when the type is unloaded.
-    PTR_LoaderAllocator loaderAllocator = typeHandle.GetMethodTable()->GetLoaderAllocator();
-    LoaderHeap* loaderHeap = loaderAllocator->GetHighFrequencyHeap();
-    allocatedMemory = loaderHeap->AllocMem(S_SIZE_T(size));
 
     END_QCALL;
 

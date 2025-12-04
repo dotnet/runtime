@@ -442,18 +442,20 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), -1); });
         }
 
-
         [Fact]
         public static unsafe void AllocateTypeAssociatedMemoryValidArguments()
         {
             IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32);
+
+            // Validate that the allocation succeeded
             Assert.NotEqual(memory, IntPtr.Zero);
+
             // Validate that the memory is zeroed out
             Assert.True(new Span<byte>((void*)memory, 32).SequenceEqual(new byte[32]));
         }
 
         [Fact]
-        public static void AlignedAllocateTypeAssociatedMemoryInvalidArguments()
+        public static void AllocateTypeAssociatedMemoryAlignedInvalidArguments()
         {
             Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(null, 10, 1); });
             Assert.Throws<ArgumentOutOfRangeException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), -1, 1); });
@@ -461,15 +463,26 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 10, 3); });
         }
 
-
-        [Fact]
-        public static unsafe void AlignedAllocateTypeAssociatedMemoryValidArguments()
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(4)]
+        [InlineData(8)]
+        [InlineData(16)]
+        [InlineData(32)]
+        [InlineData(64)]
+        public static unsafe void AllocateTypeAssociatedMemoryAlignedValidArguments(int alignment)
         {
-            IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32, 16);
+            IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32, alignment);
+
+            // Validate that the allocation succeeded
             Assert.NotEqual(memory, IntPtr.Zero);
+
             // Validate that the memory is zeroed out
             Assert.True(new Span<byte>((void*)memory, 32).SequenceEqual(new byte[32]));
-            Assert.True((memory % 16) == 0);
+
+            // Validate that the memory is aligned
+            Assert.True((memory % alignment) == 0);
         }
 
 #pragma warning disable CS0649
