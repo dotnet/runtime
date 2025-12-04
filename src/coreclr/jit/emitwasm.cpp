@@ -311,18 +311,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
         }
         case IF_I32:
-        {
-            dst += emitOutputByte(dst, opcode);
-            uint64_t bits = emitGetInsBits(id);
-            dst += emitOutputLong(dst, (int)bits);
-            break;
-        }
         case IF_I64:
         {
             dst += emitOutputByte(dst, opcode);
             uint64_t bits = emitGetInsBits(id);
-            memcpy(dst, &bits, sizeof(uint64_t));
-            dst += sizeof(uint64_t);
+            dst += EncodeLEB64(dst, &bits, true);
             break;
         }
         case IF_F32:
