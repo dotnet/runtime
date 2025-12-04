@@ -333,7 +333,10 @@ namespace Microsoft.Win32.SafeHandles
                     // and for regular files (most common case)
                     // avoid one extra sys call for determining whether file can be seeked
                     _canSeek = NullableBool.True;
-                    Debug.Assert(Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
+
+                    // we exclude 0-length files from the assert because those may may be pseudofiles
+                    // (e.g. /proc/net/route) and these are not seekable on all systems
+                    Debug.Assert(status.Size == 0 || Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
                 }
 
                 fileLength = status.Size;
