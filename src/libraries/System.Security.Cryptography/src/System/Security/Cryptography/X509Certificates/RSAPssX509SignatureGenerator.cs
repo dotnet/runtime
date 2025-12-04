@@ -18,7 +18,6 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(padding != null);
             Debug.Assert(padding.Mode == RSASignaturePaddingMode.Pss);
 
-            // Currently we don't accept options in PSS mode, but we could, so store the padding here.
             _key = key;
             _padding = padding;
         }
@@ -26,8 +25,7 @@ namespace System.Security.Cryptography.X509Certificates
         public override byte[] GetSignatureAlgorithmIdentifier(HashAlgorithmName hashAlgorithm)
         {
             // If we ever support options in PSS (like MGF-2, if such an MGF is ever invented)
-            // Or, more reasonably, supporting a custom value for the salt size.
-            if (_padding != RSASignaturePadding.Pss)
+            if (_padding.Mode != RSASignaturePaddingMode.Pss)
             {
                 throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
             }
@@ -37,17 +35,14 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (hashAlgorithm == HashAlgorithmName.SHA256)
             {
-                cbSalt = SHA256.HashSizeInBytes;
                 digestOid = Oids.Sha256;
             }
             else if (hashAlgorithm == HashAlgorithmName.SHA384)
             {
-                cbSalt = SHA384.HashSizeInBytes;
                 digestOid = Oids.Sha384;
             }
             else if (hashAlgorithm == HashAlgorithmName.SHA512)
             {
-                cbSalt = SHA512.HashSizeInBytes;
                 digestOid = Oids.Sha512;
             }
             else
@@ -58,17 +53,11 @@ namespace System.Security.Cryptography.X509Certificates
                     SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
             }
 
+            cbSalt = RsaPaddingProcessor.CalculatePssSaltLength(_padding.PssSaltLength, _key.KeySize, hashAlgorithm);
+
             // RFC 5754 says that the NULL for SHA2 (256/384/512) MUST be omitted
             // (https://tools.ietf.org/html/rfc5754#section-2) (and that you MUST
             // be able to read it even if someone wrote it down)
-            //
-            // Since we
-            //  * don't support SHA-1 in this class
-            //  * only support MGF-1
-            //  * don't support the MGF PRF being different than hashAlgorithm
-            //  * use saltLength==hashLength
-            //  * don't allow custom trailer
-            // we don't have to worry about any of the DEFAULTs. (specify, specify, specify, omit).
 
             PssParamsAsn parameters = new PssParamsAsn
             {
