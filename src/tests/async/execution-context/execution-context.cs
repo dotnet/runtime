@@ -10,9 +10,14 @@ using Xunit;
 public class Async2ExecutionContext
 {
     [Fact]
-    public static void TestEntryPoint()
+    public static void TestDefaultFlow()
     {
         Test().GetAwaiter().GetResult();
+    }
+
+    [Fact]
+    public static void TestSuppressedFlow()
+    {
         TestNoFlowOuter().GetAwaiter().GetResult();
     }
 
@@ -70,8 +75,10 @@ public class Async2ExecutionContext
         Assert.Equal(42, s_local.Value);
 
         // returns asynchronously, context should not flow.
+        // the value is technically nondeterministic,
+        // but in our current implementation it will be 12345
         await ChangeYieldThenReturn();
-        Assert.Null(s_local.Value);
+        Assert.Equal(12345, s_local.Value);
 
         // NB: no need to restore flow here as we will
         //     be popping to the parent context anyways.
@@ -93,11 +100,11 @@ public class Async2ExecutionContext
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static async Task ChangeYieldThenReturn()
     {
-        s_local.Value = 123;
+        s_local.Value = 12345;
         // restore flow so that state is not cleared by Yield
         ExecutionContext.RestoreFlow();
         await Task.Yield();
-        Assert.Equal(123, s_local.Value);
+        Assert.Equal(12345, s_local.Value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

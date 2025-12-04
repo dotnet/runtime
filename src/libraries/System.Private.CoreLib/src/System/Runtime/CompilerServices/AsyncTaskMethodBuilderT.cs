@@ -360,7 +360,7 @@ namespace System.Runtime.CompilerServices
                 }
 
                 ExecutionContext? context = Context;
-                if (context == null)
+                if (context == ExecutionContext.DefaultFlowSuppressed)
                 {
                     Debug.Assert(StateMachine != null);
                     StateMachine.MoveNext();

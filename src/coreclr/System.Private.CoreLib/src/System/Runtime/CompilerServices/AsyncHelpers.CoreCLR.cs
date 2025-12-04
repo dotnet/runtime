@@ -804,6 +804,11 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void RestoreExecutionContext(ExecutionContext? previousExecCtx)
         {
+            if (previousExecCtx == ExecutionContext.DefaultFlowSuppressed)
+            {
+                return;
+            }
+
             Thread thread = Thread.CurrentThreadAssumedInitialized;
             ExecutionContext? currentExecCtx = thread._executionContext;
             if (previousExecCtx != currentExecCtx)

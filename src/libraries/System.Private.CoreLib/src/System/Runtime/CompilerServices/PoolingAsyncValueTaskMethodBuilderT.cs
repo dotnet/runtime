@@ -403,7 +403,7 @@ namespace System.Runtime.CompilerServices
             {
                 ExecutionContext? context = Context;
 
-                if (context is null)
+                if (context == ExecutionContext.DefaultFlowSuppressed)
                 {
                     Debug.Assert(StateMachine is not null, $"Null {nameof(StateMachine)}");
                     StateMachine.MoveNext();
