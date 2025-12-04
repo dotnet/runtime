@@ -400,9 +400,21 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>67613417f5e1af250e6ddfba79f8f2885d8e90fb</Sha>
     </Dependency>
-    <!-- Necessary for source-build. This allows the package to be retrieved from previously-source-built artifacts
+    <!-- NuGet dependencies are necessary for source-build. This allows the packages to be retrieved from previously-source-built artifacts
          and flow in as dependencies of the packages produced by runtime. -->
-    <Dependency Name="Nuget.ProjectModel" Version="6.2.4">
+    <Dependency Name="NuGet.Frameworks" Version="6.2.4">
+      <Uri>https://github.com/NuGet/NuGet.Client</Uri>
+      <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
+    </Dependency>
+    <Dependency Name="NuGet.ProjectModel" Version="6.2.4">
+      <Uri>https://github.com/NuGet/NuGet.Client</Uri>
+      <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
+    </Dependency>
+    <Dependency Name="NuGet.Versioning" Version="6.2.4">
+      <Uri>https://github.com/NuGet/NuGet.Client</Uri>
+      <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
+    </Dependency>
+    <Dependency Name="NuGet.Packaging" Version="6.2.4">
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
     </Dependency>
