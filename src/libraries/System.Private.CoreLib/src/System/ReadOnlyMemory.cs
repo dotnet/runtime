@@ -247,22 +247,15 @@ namespace System
                     // AV the process.
 
                     // We use 'nuint' because it gives us a free early zero-extension to 64 bits when running on a 64-bit platform.
-                    nuint desiredStartIndex = (uint)_index & (uint)RemoveFlagsBitMask;
+                    nuint desiredStartIndex = (uint)(_index & RemoveFlagsBitMask);
 
                     int desiredLength = _length;
 
-#if TARGET_64BIT
-                    // See comment in Span<T>.Slice for how this works.
-                    if ((ulong)desiredStartIndex + (ulong)(uint)desiredLength > (ulong)(uint)lengthOfUnderlyingSpan)
+                    Debug.Assert((int)desiredStartIndex >= 0 && lengthOfUnderlyingSpan >= 0);
+                    if ((uint)desiredStartIndex + (uint)desiredLength > (uint)lengthOfUnderlyingSpan)
                     {
                         ThrowHelper.ThrowArgumentOutOfRangeException();
                     }
-#else
-                    if ((uint)desiredStartIndex > (uint)lengthOfUnderlyingSpan || (uint)desiredLength > (uint)lengthOfUnderlyingSpan - (uint)desiredStartIndex)
-                    {
-                        ThrowHelper.ThrowArgumentOutOfRangeException();
-                    }
-#endif
 
                     refToReturn = ref Unsafe.Add(ref refToReturn, desiredStartIndex);
                     lengthOfUnderlyingSpan = desiredLength;
