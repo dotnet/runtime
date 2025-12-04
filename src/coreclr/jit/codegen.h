@@ -757,9 +757,6 @@ protected:
 #endif
     void genCodeForTreeNode(GenTree* treeNode);
     void genCodeForBinary(GenTreeOp* treeNode);
-#ifdef TARGET_WASM
-    void genCodeForShiftOrRotate(GenTreeOp* treeNode);
-#endif
     bool genIsSameLocalVar(GenTree* tree1, GenTree* tree2);
 
 #if defined(TARGET_X86)
