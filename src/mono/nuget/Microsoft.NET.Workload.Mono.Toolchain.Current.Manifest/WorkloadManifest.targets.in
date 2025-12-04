@@ -7,7 +7,7 @@
     <_RuntimePackInWorkloadVersion7>${PackageVersionNet7}</_RuntimePackInWorkloadVersion7>
     <_RuntimePackInWorkloadVersion6>${PackageVersionNet6}</_RuntimePackInWorkloadVersion6>
 
-    <TargetsCurrent Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '10.0'))">true</TargetsCurrent>
+    <TargetsCurrent Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '${FrameworkVersionCurrent}'))">true</TargetsCurrent>
 
     <!-- Disabled until next release: force net10.0 to use the current targets until the SDK can target net11.0 -->
     <!--
