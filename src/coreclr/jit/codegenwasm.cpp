@@ -328,12 +328,11 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     BBswtDesc* const desc      = block->GetSwitchTargets();
     unsigned const   caseCount = desc->GetCaseCount();
 
-    // TODO-WASM: update lowering not to peel off the default
-    //
-    assert(!desc->HasDefaultCase());
+    assert(desc->HasDefaultCase());
 
     if (caseCount == 0)
     {
+        assert(desc->GetDefaultCase()->getDestinationBlock() == block->Next());
         return;
     }
 
