@@ -126,7 +126,7 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
     return sizeof(instrDesc);
 }
 
-unsigned SizeOfULEB128(uint64_t value)
+unsigned emitter::SizeOfULEB128(uint64_t value)
 {
     // bits_to_encode = (data != 0) ? 64 - CLZ(x) : 1 = 64 - CLZ(data | 1)
     // bytes = ceil(bits_to_encode / 7.0);            = (6 + bits_to_encode) / 7
@@ -136,7 +136,7 @@ unsigned SizeOfULEB128(uint64_t value)
     return (x * 37) >> 8;
 }
 
-unsigned SizeOfSLEB128(int64_t value)
+unsigned emitter::SizeOfSLEB128(int64_t value)
 {
     // The same as SizeOfULEB128 calculation but we have to account for the sign bit.
     unsigned x = 1 + 6 + 64 - (unsigned)BitOperations::LeadingZeroCount((uint64_t)(value ^ (value >> 63)) | 1UL);

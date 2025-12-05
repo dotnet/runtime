@@ -5179,7 +5179,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 GenTreeIntConCommon* con = tree->AsIntConCommon();
                 int64_t              imm = con->IntegralValue();
                 costEx                   = 1;
-                costSz                   = 1 + (int)SizeOfSLEB128(imm);
+                costSz                   = 1 + (int)emitter::SizeOfSLEB128(imm);
                 goto COMMON_CNS;
             }
 #else
