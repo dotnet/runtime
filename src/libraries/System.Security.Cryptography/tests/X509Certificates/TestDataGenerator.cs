@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -33,7 +34,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     keys,
                     certs,
                     endEntityExtensions,
-                    intermediateExtensions,
+                    intermediateExtensions is null ? null : [intermediateExtensions],
                     rootExtensions,
                     testName);
 
@@ -71,7 +72,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     keys,
                     certs,
                     endEntityExtensions,
-                    intermediateExtensions,
+                    intermediateExtensions is null ? null : [intermediateExtensions, intermediateExtensions],
                     rootExtensions,
                     testName);
 
@@ -82,11 +83,51 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        internal static void MakeTestChain(
+        internal static void MakeTestChain4(
+            out X509Certificate2 endEntityCert,
+            out X509Certificate2 intermediateCert1,
+            out X509Certificate2 intermediateCert2,
+            out X509Certificate2 rootCert,
+            IEnumerable<X509Extension> endEntityExtensions,
+            IEnumerable<X509Extension> intermediate1Extensions,
+            IEnumerable<X509Extension> intermediate2Extensions,
+            IEnumerable<X509Extension> rootExtensions,
+            [CallerMemberName] string testName = null)
+        {
+            using (RSA rootKey = RSA.Create())
+            using (RSA intermediateKey1 = RSA.Create())
+            using (RSA intermediateKey2 = RSA.Create())
+            using (RSA endEntityKey = RSA.Create())
+            {
+                ReadOnlySpan<RSA> keys =
+                [
+                    rootKey,
+                    intermediateKey1,
+                    intermediateKey2,
+                    endEntityKey,
+                ];
+
+                Span<X509Certificate2> certs = new X509Certificate2[keys.Length];
+                MakeTestChain(
+                    keys,
+                    certs,
+                    endEntityExtensions,
+                    [intermediate1Extensions, intermediate1Extensions],
+                    rootExtensions,
+                    testName);
+
+                endEntityCert = certs[0];
+                intermediateCert1 = certs[1];
+                intermediateCert2 = certs[2];
+                rootCert = certs[3];
+            }
+        }
+
+        private static void MakeTestChain(
             ReadOnlySpan<RSA> keys,
             Span<X509Certificate2> certs,
             IEnumerable<X509Extension> endEntityExtensions,
-            IEnumerable<X509Extension> intermediateExtensions,
+            IEnumerable<X509Extension>[] intermediateExtensions,
             IEnumerable<X509Extension> rootExtensions,
             string testName)
         {
@@ -94,6 +135,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 throw new ArgumentException(nameof(keys));
             if (keys.Length != certs.Length)
                 throw new ArgumentException(nameof(certs));
+            if (intermediateExtensions is not null && keys.Length - 2 != intermediateExtensions.Length)
+                throw new ArgumentException(nameof(intermediateExtensions));
 
             rootExtensions ??= new X509Extension[] {
                 new X509BasicConstraintsExtension(true, false, 0, true),
@@ -104,14 +147,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     false)
             };
 
-            intermediateExtensions ??= new X509Extension[] {
-                new X509BasicConstraintsExtension(true, false, 0, true),
-                new X509KeyUsageExtension(
-                    X509KeyUsageFlags.CrlSign |
-                        X509KeyUsageFlags.KeyCertSign |
-                        X509KeyUsageFlags.DigitalSignature,
-                    false)
-            };
+            intermediateExtensions ??= Enumerable.Repeat(
+                new X509Extension[]
+                {
+                    new X509BasicConstraintsExtension(true, false, 0, true),
+                    new X509KeyUsageExtension(
+                        X509KeyUsageFlags.CrlSign |
+                            X509KeyUsageFlags.KeyCertSign |
+                            X509KeyUsageFlags.DigitalSignature,
+                        false)
+                }, certs.Length - 2).ToArray();
 
             endEntityExtensions ??= new X509Extension[] {
                 new X509BasicConstraintsExtension(false, false, 0, true),
@@ -166,7 +211,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     hashAlgorithm,
                     signaturePadding);
 
-                foreach (X509Extension extension in intermediateExtensions)
+                foreach (X509Extension extension in intermediateExtensions[i - 1])
                 {
                     intermediateReq.CertificateExtensions.Add(extension);
                 }
