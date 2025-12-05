@@ -13,9 +13,7 @@
   <PropertyGroup>
     <!-- This should match NetCoreAppCurrentVersion in the repo root Directory.Build.props -->
     <NetCoreAppCurrentVersion>10.0</NetCoreAppCurrentVersion>
-    <TestTfm>net$(NetCoreAppCurrentVersion)</TestTfm>
-    <!-- NetCoreAppCurrent is an alias for TestTfm for compatibility -->
-    <NetCoreAppCurrent>$(TestTfm)</NetCoreAppCurrent>
+    <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
   </PropertyGroup>
 
   <!-- Test asset build configuration -->
