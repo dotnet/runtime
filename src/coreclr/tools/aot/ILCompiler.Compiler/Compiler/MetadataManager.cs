@@ -24,6 +24,7 @@ using MethodSignature = Internal.TypeSystem.MethodSignature;
 using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
 
 using MetadataRecord = Internal.Metadata.NativeFormat.Writer.MetadataRecord;
+using Method = Internal.Metadata.NativeFormat.Writer.Method;
 using MetadataWriter = Internal.Metadata.NativeFormat.Writer.MetadataWriter;
 using TypeReference = Internal.Metadata.NativeFormat.Writer.TypeReference;
 using Field = Internal.Metadata.NativeFormat.Writer.Field;
@@ -52,6 +53,7 @@ namespace ILCompiler
         private List<MetadataMapping<MethodDesc>> _methodMappings;
         private Dictionary<MethodDesc, int> _methodHandleMap;
         private List<StackTraceMapping> _stackTraceMappings;
+        private List<ReflectionStackTraceMapping> _reflectionStackTraceMappings;
         protected readonly string _metadataLogFile;
         protected readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
 
@@ -214,6 +216,12 @@ namespace ILCompiler
 
             var stackTraceMethodMappingNode = new StackTraceMethodMappingNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceMethodRvaToTokenMapping), stackTraceMethodMappingNode);
+
+            var stackTraceDocumentsNode = new StackTraceDocumentsNode();
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceDocuments), stackTraceDocumentsNode);
+
+            var stackTraceLineNumbersNode = new StackTraceLineNumbersNode(commonFixupsTableNode, stackTraceDocumentsNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceLineNumbers), stackTraceLineNumbersNode);
 
             // The external references tables should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), nativeReferencesTableNode);
@@ -695,7 +703,7 @@ namespace ILCompiler
             if (_metadataBlob != null)
                 return;
 
-            ComputeMetadata(factory, out _metadataBlob, out _typeMappings, out _methodMappings, out _methodHandleMap, out _fieldMappings, out _fieldHandleMap, out _stackTraceMappings);
+            ComputeMetadata(factory, out _metadataBlob, out _typeMappings, out _methodMappings, out _methodHandleMap, out _fieldMappings, out _fieldHandleMap, out _stackTraceMappings, out _reflectionStackTraceMappings);
         }
 
         void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider)
@@ -711,7 +719,8 @@ namespace ILCompiler
                                                 out Dictionary<MethodDesc, int> methodMetadataMappings,
                                                 out List<MetadataMapping<FieldDesc>> fieldMappings,
                                                 out Dictionary<FieldDesc, int> fieldMetadataMappings,
-                                                out List<StackTraceMapping> stackTraceMapping);
+                                                out List<StackTraceMapping> stackTraceMapping,
+                                                out List<ReflectionStackTraceMapping> reflectionStackTraceMapping);
 
         protected void ComputeMetadata<TPolicy>(
             TPolicy policy,
@@ -722,7 +731,8 @@ namespace ILCompiler
             out Dictionary<MethodDesc, int> methodMetadataMappings,
             out List<MetadataMapping<FieldDesc>> fieldMappings,
             out Dictionary<FieldDesc, int> fieldMetadataMappings,
-            out List<StackTraceMapping> stackTraceMapping) where TPolicy : struct, IMetadataPolicy
+            out List<StackTraceMapping> stackTraceMapping,
+            out List<ReflectionStackTraceMapping> reflectionBasedStackTraceMapping) where TPolicy : struct, IMetadataPolicy
         {
             var transformed = MetadataTransform.Run(policy, GetCompilationModulesWithMetadata());
             MetadataTransform transform = transformed.Transform;
@@ -757,11 +767,16 @@ namespace ILCompiler
                     continue;
 
                 MethodStackTraceVisibilityFlags stackVisibility = _stackTraceEmissionPolicy.GetMethodVisibility(method);
-                bool isHidden = (stackVisibility & MethodStackTraceVisibilityFlags.IsHidden) != 0;
+
+                StackTraceRecordFlags flags = 0;
+                if ((stackVisibility & MethodStackTraceVisibilityFlags.IsHidden) != 0)
+                    flags |= StackTraceRecordFlags.IsHidden;
+                if ((stackVisibility & MethodStackTraceVisibilityFlags.HasLineNumbers) != 0)
+                    flags |= StackTraceRecordFlags.HasLineNumbers;
 
                 if ((stackVisibility & MethodStackTraceVisibilityFlags.HasMetadata) != 0)
                 {
-                    StackTraceRecordData record = CreateStackTraceRecord(transform, method, isHidden);
+                    StackTraceRecordData record = CreateStackTraceRecord(transform, method, flags);
 
                     stackTraceRecords.Add(record);
 
@@ -770,9 +785,9 @@ namespace ILCompiler
                     writer.AdditionalRootRecords.Add(record.MethodSignature);
                     writer.AdditionalRootRecords.Add(record.MethodInstantiationArgumentCollection);
                 }
-                else if (isHidden)
+                else if ((stackVisibility & MethodStackTraceVisibilityFlags.IsHidden) != 0)
                 {
-                    stackTraceRecords.Add(new StackTraceRecordData(method, null, null, null, null, isHidden));
+                    stackTraceRecords.Add(new StackTraceRecordData(method, null, null, null, null, flags));
                 }
             }
 
@@ -802,6 +817,7 @@ namespace ILCompiler
             fieldMappings = new List<MetadataMapping<FieldDesc>>();
             fieldMetadataMappings = new Dictionary<FieldDesc, int>();
             stackTraceMapping = new List<StackTraceMapping>();
+            reflectionBasedStackTraceMapping = new List<ReflectionStackTraceMapping>();
 
             // Generate type definition mappings
             foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
@@ -825,7 +841,7 @@ namespace ILCompiler
 
             foreach (var method in GetReflectableMethods())
             {
-                MetadataRecord record = transformed.GetTransformedMethodDefinition(method.GetTypicalMethodDefinition());
+                Method record = transformed.GetTransformedMethodDefinition(method.GetTypicalMethodDefinition());
                 Debug.Assert(record != null);
                 Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
 
@@ -834,6 +850,23 @@ namespace ILCompiler
 
                 Debug.Assert(!method.IsGenericMethodDefinition && !method.OwningType.IsGenericDefinition);
                 Debug.Assert(!IsReflectionBlocked(method));
+
+                if ((_stackTraceEmissionPolicy.GetMethodVisibility(method) & (MethodStackTraceVisibilityFlags.HasMetadata | MethodStackTraceVisibilityFlags.HasLineNumbers))
+                    == (MethodStackTraceVisibilityFlags.HasMetadata | MethodStackTraceVisibilityFlags.HasLineNumbers))
+                {
+                    // We should generate line numbers for this. Only generate line numbers if the method body
+                    // is actually generated (and we didn't avoid emitting the body through deduplication).
+                    IMethodNode methodBody = factory.MethodEntrypoint(method);
+                    ISymbolNode internedBody = factory.ObjectInterner.GetDeduplicatedSymbol(factory, methodBody);
+                    if (internedBody == methodBody)
+                    {
+                        ReflectionStackTraceMapping mapping = new ReflectionStackTraceMapping(
+                            method,
+                            writer.GetRecordHandle(transformed.GetTransformedTypeDefinition((MetadataType)method.OwningType.GetTypeDefinition())),
+                            writer.GetRecordHandle(record));
+                        reflectionBasedStackTraceMapping.Add(mapping);
+                    }
+                }
 
                 methodMappings.Add(new MetadataMapping<MethodDesc>(method, writer.GetRecordHandle(record)));
             }
@@ -874,18 +907,18 @@ namespace ILCompiler
                         writer.GetRecordHandle(stackTraceRecord.MethodSignature),
                         writer.GetRecordHandle(stackTraceRecord.MethodName),
                         stackTraceRecord.MethodInstantiationArgumentCollection != null ? writer.GetRecordHandle(stackTraceRecord.MethodInstantiationArgumentCollection) : 0,
-                        stackTraceRecord.IsHidden);
+                        stackTraceRecord.Flags);
                     stackTraceMapping.Add(mapping);
                 }
                 else
                 {
-                    Debug.Assert(stackTraceRecord.IsHidden);
-                    stackTraceMapping.Add(new StackTraceMapping(stackTraceRecord.Method, 0, 0, 0, 0, stackTraceRecord.IsHidden));
+                    Debug.Assert((stackTraceRecord.Flags & StackTraceRecordFlags.IsHidden) != 0);
+                    stackTraceMapping.Add(new StackTraceMapping(stackTraceRecord.Method, 0, 0, 0, 0, stackTraceRecord.Flags));
                 }
             }
         }
 
-        protected StackTraceRecordData CreateStackTraceRecord(Metadata.MetadataTransform transform, MethodDesc method, bool isHidden)
+        protected StackTraceRecordData CreateStackTraceRecord(Metadata.MetadataTransform transform, MethodDesc method, StackTraceRecordFlags flags)
         {
             // In the metadata, we only represent the generic definition
             MethodDesc methodToGenerateMetadataFor = method.GetTypicalMethodDefinition();
@@ -934,7 +967,7 @@ namespace ILCompiler
                 methodInst = null;
             }
 
-            return new StackTraceRecordData(method, owningType, signature, name, methodInst, isHidden);
+            return new StackTraceRecordData(method, owningType, signature, name, methodInst, flags);
         }
 
         /// <summary>
@@ -998,6 +1031,12 @@ namespace ILCompiler
         {
             EnsureMetadataGenerated(factory);
             return _stackTraceMappings;
+        }
+
+        public IEnumerable<ReflectionStackTraceMapping> GetReflectionStackTraceMappings(NodeFactory factor)
+        {
+            EnsureMetadataGenerated(factor);
+            return _reflectionStackTraceMappings;
         }
 
         internal IEnumerable<InterfaceDispatchCellNode> GetInterfaceDispatchCells()
@@ -1278,11 +1317,29 @@ namespace ILCompiler
         public readonly int MethodSignatureHandle;
         public readonly int MethodNameHandle;
         public readonly int MethodInstantiationArgumentCollectionHandle;
-        public readonly bool IsHidden;
+        public readonly StackTraceRecordFlags Flags;
 
-        public StackTraceMapping(MethodDesc method, int owningTypeHandle, int methodSignatureHandle, int methodNameHandle, int methodInstantiationArgumentCollectionHandle, bool isHidden)
-            => (Method, OwningTypeHandle, MethodSignatureHandle, MethodNameHandle, MethodInstantiationArgumentCollectionHandle, IsHidden)
-            = (method, owningTypeHandle, methodSignatureHandle, methodNameHandle, methodInstantiationArgumentCollectionHandle, isHidden);
+        public StackTraceMapping(MethodDesc method, int owningTypeHandle, int methodSignatureHandle, int methodNameHandle, int methodInstantiationArgumentCollectionHandle, StackTraceRecordFlags flags)
+            => (Method, OwningTypeHandle, MethodSignatureHandle, MethodNameHandle, MethodInstantiationArgumentCollectionHandle, Flags)
+            = (method, owningTypeHandle, methodSignatureHandle, methodNameHandle, methodInstantiationArgumentCollectionHandle, flags);
+    }
+
+    public readonly struct ReflectionStackTraceMapping
+    {
+        public readonly MethodDesc Method;
+        public readonly int OwningTypeHandle;
+        public readonly int MethodHandle;
+
+        public ReflectionStackTraceMapping(MethodDesc method, int owningTypeHandle, int methodHandle)
+            => (Method, OwningTypeHandle, MethodHandle) = (method, owningTypeHandle, methodHandle);
+    }
+
+    [Flags]
+    public enum StackTraceRecordFlags
+    {
+        None = 0,
+        IsHidden = 1,
+        HasLineNumbers = 2,
     }
 
     public readonly struct StackTraceRecordData
@@ -1292,11 +1349,11 @@ namespace ILCompiler
         public readonly MetadataRecord MethodSignature;
         public readonly MetadataRecord MethodName;
         public readonly MetadataRecord MethodInstantiationArgumentCollection;
-        public readonly bool IsHidden;
+        public readonly StackTraceRecordFlags Flags;
 
-        public StackTraceRecordData(MethodDesc method, MetadataRecord owningType, MetadataRecord methodSignature, MetadataRecord methodName, MetadataRecord methodInstantiationArgumentCollection, bool isHidden)
-            => (Method, OwningType, MethodSignature, MethodName, MethodInstantiationArgumentCollection, IsHidden)
-            = (method, owningType, methodSignature, methodName, methodInstantiationArgumentCollection, isHidden);
+        public StackTraceRecordData(MethodDesc method, MetadataRecord owningType, MetadataRecord methodSignature, MetadataRecord methodName, MetadataRecord methodInstantiationArgumentCollection, StackTraceRecordFlags flags)
+            => (Method, OwningType, MethodSignature, MethodName, MethodInstantiationArgumentCollection, Flags)
+            = (method, owningType, methodSignature, methodName, methodInstantiationArgumentCollection, flags);
     }
 
     [Flags]
