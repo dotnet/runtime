@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 using Internal.TypeSystem;
 using Internal.JitInterface;
+using System.Diagnostics;
 
 namespace ILCompiler
 {
@@ -35,6 +36,11 @@ namespace ILCompiler
                     {
                         rootProvider.AddCompilationRoot(method, rootMinimalDependencies: false, "Hardware intrinsic method fallback implementation");
                     }
+                }
+                else
+                {
+                    MethodDesc isSupportedMethod = type.GetMethod("get_IsSupported"u8, new MethodSignature(MethodSignatureFlags.Static, 0, context.GetWellKnownType(WellKnownType.Boolean), []));
+                    rootProvider.AddCompilationRoot(isSupportedMethod, rootMinimalDependencies: false, "IsSupported getter for unsupported hardware intrinsic");
                 }
             }
         }
