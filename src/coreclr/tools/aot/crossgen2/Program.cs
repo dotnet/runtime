@@ -572,6 +572,16 @@ namespace ILCompiler
                             }
                         }
                     }
+
+                    if (!typeSystemContext.TargetAllowsRuntimeCodeGeneration && typeSystemContext.BubbleIncludesCoreModule)
+                    {
+                        // For some platforms, we cannot JIT.
+                        // As a result, we need to ensure that we have a fallback implementation for all hardware intrinsics
+                        // that are marked as supported.
+                        // Otherwise, the interpreter won't have an implementation it can call for any non-ReadyToRun code.
+                        compilationRoots.Add(new ReadyToRunHardwareIntrinsicRootProvider(typeSystemContext));
+                    }
+
                     // In single-file compilation mode, use the assembly's DebuggableAttribute to determine whether to optimize
                     // or produce debuggable code if an explicit optimization level was not specified on the command line
                     OptimizationMode optimizationMode = _command.OptimizationMode;
