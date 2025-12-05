@@ -71,7 +71,8 @@ namespace ILLink.RoslynAnalyzer.Tests
                         // Suppress assembly reference version mismatch warnings. The linker test assemblies are built against
                         // NetCoreAppToolCurrent, but during test execution we recompile individual test files against the live
                         // libraries along with a reference to one of the already-built linker test assemblies.
-                        { "CS1701", ReportDiagnostic.Suppress }
+                        { "CS1701", ReportDiagnostic.Suppress },
+                        { "CS1702", ReportDiagnostic.Suppress }
                     }));
             var analyzerOptions = new AnalyzerOptions(
                 additionalFiles: additionalFiles?.ToImmutableArray() ?? ImmutableArray<AdditionalText>.Empty,
