@@ -242,9 +242,10 @@ size_t emitter::emitOutputSLEB128(uint8_t* destination, int64_t value)
     return pos;
 }
 
-size_t emitter::emitRawBytes(uint8_t* destination, const uint8_t* source, size_t count)
+size_t emitter::emitRawBytes(uint8_t* destination, const void* source, size_t count)
 {
     memcpy(destination + writeableOffset, source, count);
+    return count;
 }
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)

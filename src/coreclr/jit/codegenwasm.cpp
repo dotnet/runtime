@@ -557,6 +557,10 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
 
     switch (treeNode->TypeGet())
     {
+#ifdef TARGET_32BIT
+        case TYP_BYREF:
+        case TYP_REF:
+#endif
         case TYP_INT:
         {
             ins                      = INS_i32_const;
@@ -564,6 +568,10 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
             bits                     = con->IconValue();
             break;
         }
+#ifndef TARGET_32BIT
+        case TYP_BYREF:
+        case TYP_REF:
+#endif
         case TYP_LONG:
         {
             ins                      = INS_i64_const;
