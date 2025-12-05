@@ -1098,7 +1098,7 @@ export function mono_wasm_free_method_data (
     mono_jiterp_free_method_data_jit_call(method);
 }
 
-export function jiterpreterDumpStats (concise?: boolean): void {
+export function jiterpreter_dump_stats (concise?: boolean): void {
     if (!runtimeHelpers.runtimeReady) {
         return;
     }

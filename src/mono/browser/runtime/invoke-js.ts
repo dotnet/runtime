@@ -417,34 +417,34 @@ function mono_wasm_lookup_js_import (function_name: string, js_module_name: stri
     return fn.bind(scope);
 }
 
-export function setProperty (self: any, name: string, value: any): void {
+export function set_property (self: any, name: string, value: any): void {
     mono_check(self, "Null reference");
     self[name] = value;
 }
 
-export function getProperty (self: any, name: string): any {
+export function get_property (self: any, name: string): any {
     mono_check(self, "Null reference");
     return self[name];
 }
 
-export function hasProperty (self: any, name: string): boolean {
+export function has_property (self: any, name: string): boolean {
     mono_check(self, "Null reference");
     return name in self;
 }
 
-export function getTypeofProperty (self: any, name: string): string {
+export function get_typeof_property (self: any, name: string): string {
     mono_check(self, "Null reference");
     return typeof self[name];
 }
 
-export function getGlobalThis (): any {
+export function get_global_this (): any {
     return globalThis;
 }
 
 export const importedModulesPromises: Map<string, Promise<any>> = new Map();
 export const importedModules: Map<string, Promise<any>> = new Map();
 
-export function dynamicImport (module_name: string, module_url: string): Promise<any> {
+export function dynamic_import (module_name: string, module_url: string): Promise<any> {
     assert_js_interop();
     mono_assert(module_name && typeof module_name === "string", "module_name must be string");
     mono_assert(module_url && typeof module_url === "string", "module_url must be string");

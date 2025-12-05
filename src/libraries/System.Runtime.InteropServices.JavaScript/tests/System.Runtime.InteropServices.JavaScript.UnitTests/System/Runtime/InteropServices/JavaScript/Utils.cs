@@ -15,11 +15,11 @@ namespace System.Runtime.InteropServices.JavaScript
         [JSImport("globalThis.App.invoke_js")]
         public static partial string InvokeJS(string code);
 
-        [JSImport("INTERNAL.setProperty")]
+        [JSImport("INTERNAL.set_property")]
         public static partial void SetProperty(JSObject self, string propertyName,
             [JSMarshalAs<JSType.Function<JSType.Object>>] Action<JSObject> value);
 
-        [JSImport("INTERNAL.getProperty")]
+        [JSImport("INTERNAL.get_property")]
         [return: JSMarshalAs<JSType.Function<JSType.Object>>]
         public static partial Action<JSObject> GetActionOfJSObjectProperty(JSObject self, string propertyName);
 
