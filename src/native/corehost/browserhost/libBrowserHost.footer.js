@@ -19,7 +19,7 @@
         const exports = {};
         libBrowserHost(exports);
 
-        let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP", "$ENV"];
+        let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP", "$ENV", "$FS", "$NODEFS", "wasm_load_icu_data"];
         const lib = {
             $BROWSER_HOST: {
                 selfInitialize: () => {
@@ -52,8 +52,13 @@
                         ENV[HOST_PROPERTY_APP_PATHS] = config.environmentVariables[HOST_PROPERTY_APP_PATHS] = config.virtualWorkingDirectory;
                         ENV[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.environmentVariables[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.mainAssemblyName;
 
-                        // WASM-TODO: remove once globalization is loaded via ICU
-                        ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
+                        if (ENVIRONMENT_IS_NODE) {
+                            Module.preInit = [() => {
+                                FS.mkdir("/managed");
+                                FS.mount(NODEFS, { root: "." }, "/managed");
+                                FS.chdir("/managed");
+                            }];
+                        }
                     }
                 },
             },
@@ -68,6 +73,10 @@
             if (name === "dotnetInitializeModule") continue;
             lib[name] = () => "dummy";
             assignExportsBuilder += `_${String(name)} = exports.${String(name)};\n`;
+            const fn = exports[name];
+            if (fn.__deps) {
+                lib[name + "__deps"] = fn.__deps;
+            }
         }
         lib.$BROWSER_HOST.assignExports = new Function("exports", assignExportsBuilder);
 

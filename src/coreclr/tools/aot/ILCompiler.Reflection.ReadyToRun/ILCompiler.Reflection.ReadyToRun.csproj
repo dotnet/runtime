@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>ILCompiler.Reflection.ReadyToRun</AssemblyName>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
@@ -31,6 +31,8 @@
     <Compile Include="..\..\Common\Internal\Runtime\ModuleHeaders.cs" Link="Common\ModuleHeaders.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunConstants.cs" Link="Common\ReadyToRunConstants.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunInstructionSet.cs" Link="Common\ReadyToRunInstructionSet.cs" />
+    <Compile Include="..\..\Common\MachO\**\*.cs" Link="MachO\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Include="..\..\Common\Pgo\PgoFormat.cs" Link="Common\PgoFormat.cs" />
   </ItemGroup>
+
 </Project>

@@ -415,6 +415,7 @@ namespace ILCompiler
             return result.Tokens[0].Value.ToLowerInvariant() switch
             {
                 "pe" => ReadyToRunContainerFormat.PE,
+                "macho" => ReadyToRunContainerFormat.MachO,
                 _ => throw new CommandLineException(SR.InvalidOutputFormat)
             };
         }

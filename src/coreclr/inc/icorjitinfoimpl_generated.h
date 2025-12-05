@@ -453,6 +453,12 @@ void reportRichMappings(
           ICorDebugInfo::RichOffsetMapping* mappings,
           uint32_t numMappings) override;
 
+void reportAsyncDebugInfo(
+          ICorDebugInfo::AsyncInfo* asyncInfo,
+          ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints,
+          ICorDebugInfo::AsyncContinuationVarInfo* vars,
+          uint32_t numVars) override;
+
 void reportMetadata(
           const char* key,
           const void* value,
@@ -660,7 +666,8 @@ CORINFO_CLASS_HANDLE getContinuationType(
           bool* objRefs,
           size_t objRefsSize) override;
 
-CORINFO_METHOD_HANDLE getAsyncResumptionStub() override;
+CORINFO_METHOD_HANDLE getAsyncResumptionStub(
+          void** entryPoint) override;
 
 bool convertPInvokeCalliToCall(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -736,10 +743,10 @@ void recordRelocation(
           void* location,
           void* locationRW,
           void* target,
-          uint16_t fRelocType,
+          CorInfoReloc fRelocType,
           int32_t addlDelta) override;
 
-uint16_t getRelocTypeHint(
+CorInfoReloc getRelocTypeHint(
           void* target) override;
 
 uint32_t getExpectedTargetArchitecture() override;

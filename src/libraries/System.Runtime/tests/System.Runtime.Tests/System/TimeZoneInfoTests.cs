@@ -2808,6 +2808,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/90269", TestPlatforms.Android)]
         public static void TestGetSystemTimeZones()
         {
             TimeZoneInfo.ClearCachedData(); // Start clean

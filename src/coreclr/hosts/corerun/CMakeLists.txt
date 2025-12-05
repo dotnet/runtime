@@ -62,24 +62,32 @@ else()
                 "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.js")
             set(JS_SYSTEM_BROWSER_UTILS
                 "${STATIC_LIB_DESTINATION}/libSystem.Browser.Utils.js")
-            set(JS_CORE_RUN_PRE
-                "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.pre.js")
+            set(JS_CORE_RUN
+                "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.extpost.js")
             set_target_properties(corerun PROPERTIES
-                LINK_DEPENDS "${JS_CORE_RUN_PRE};${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};"
-                LINK_FLAGS "--pre-js ${JS_CORE_RUN_PRE} --js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS}"
+                LINK_DEPENDS "${JS_CORE_RUN};${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};"
+                LINK_FLAGS "--js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS} --extern-post-js ${JS_CORE_RUN}"
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
             target_link_options(corerun PRIVATE
-                -sEXIT_RUNTIME=1
+                -sEXIT_RUNTIME=0
                 -sINITIAL_MEMORY=134217728
                 -sMAXIMUM_MEMORY=2147483648
                 -sALLOW_MEMORY_GROWTH=1
                 -sSTACK_SIZE=5MB
-                -sWASM_BIGINT=1
-                -sEXPORTED_FUNCTIONS=_main,_GetDotNetRuntimeContractDescriptor
+                -sMODULARIZE=1
+                -sEXPORT_ES6=1
+                -sEXPORTED_RUNTIME_METHODS=ENV,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
+                -sEXPORTED_FUNCTIONS=_main,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
+                -sEXPORT_NAME=createDotnetRuntime
                 -sENVIRONMENT=node,shell,web
                 -Wl,-error-limit=0)
 
             if (CORERUN_IN_BROWSER)
+                # Node.js doesn't have good support for WASM_BIGINT
+                # so it only is added when running in the browser.
+                target_link_options(corerun PRIVATE
+                    -sWASM_BIGINT=1)
+
                 # Include the virtual file system data for the
                 # browser scenario.
                 set(WASM_PRELOAD_DIR "${CMAKE_INSTALL_PREFIX}/IL")
@@ -91,7 +99,7 @@ else()
                 # If not running in the browser, add
                 # Node.js file system support.
                 target_link_options(corerun PRIVATE
-                    -lnoderawfs.js
+                    -sNODERAWFS=1
                     -lnodefs.js)
             endif()
         endif()

@@ -2704,6 +2704,15 @@ PAL_GenerateCoreDump(
     return result;
 }
 
+// Helper function to prevent compiler from optimizing away a variable
+__attribute__((noinline,NOOPT_ATTRIBUTE))
+static void DoNotOptimize(const void* p)
+{
+    // This function takes the address of a variable to ensure
+    // it's preserved and available in crash dumps
+    (void)p;
+}
+
 /*++
 Function:
   PROCCreateCrashDumpIfEnabled
@@ -2714,6 +2723,7 @@ Function:
 Parameters:
   signal - POSIX signal number
   siginfo - POSIX signal info or nullptr
+  context - signal context or nullptr
   serialize - allow only one thread to generate core dump
 
 (no return value)
@@ -2721,16 +2731,22 @@ Parameters:
 #ifdef HOST_ANDROID
 #include <minipal/log.h>
 VOID
-PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
+    // Preserve context pointer to prevent optimization
+    DoNotOptimize(&context);
+
     // TODO: Dump all managed threads callstacks into logcat and/or file?
     // TODO: Dump stress log into logcat and/or file when enabled?
     minipal_log_write_fatal("Aborting process.\n");
 }
 #else
 VOID
-PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
+    // Preserve context pointer to prevent optimization
+    DoNotOptimize(&context);
+
     // If enabled, launch the create minidump utility and wait until it completes
     if (!g_argvCreateDump.empty())
     {
@@ -2807,6 +2823,7 @@ Function:
 
 Parameters:
   signal - POSIX signal number
+  context - signal context or nullptr
 
   Does not return
 --*/
@@ -2814,12 +2831,12 @@ Parameters:
 PAL_NORETURN
 #endif
 VOID
-PROCAbort(int signal, siginfo_t* siginfo)
+PROCAbort(int signal, siginfo_t* siginfo, void* context)
 {
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-    PROCCreateCrashDumpIfEnabled(signal, siginfo, true);
+    PROCCreateCrashDumpIfEnabled(signal, siginfo, context, true);
 
     // Restore all signals; the SIGABORT handler to prevent recursion and
     // the others to prevent multiple core dumps from being generated.

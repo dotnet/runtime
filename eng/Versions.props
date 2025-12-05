@@ -110,6 +110,7 @@
     <MicrosoftDiaSymReaderVersion>2.0.0</MicrosoftDiaSymReaderVersion>
     <MicrosoftDiaSymReaderNativeVersion>17.10.0-beta1.24272.1</MicrosoftDiaSymReaderNativeVersion>
     <TraceEventVersion>3.1.16</TraceEventVersion>
+    <MicrosoftDiagnosticsNetCoreClientVersion>0.2.621003</MicrosoftDiagnosticsNetCoreClientVersion>
     <NETStandardLibraryRefVersion>2.1.0</NETStandardLibraryRefVersion>
     <NetStandardLibraryVersion>2.0.3</NetStandardLibraryVersion>
     <MicrosoftDiagnosticsToolsRuntimeClientVersion>1.0.4-preview6.19326.1</MicrosoftDiagnosticsToolsRuntimeClientVersion>
@@ -134,14 +135,6 @@
     <AwesomeAssertionsVersion>8.0.2</AwesomeAssertionsVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>
     <CommandLineParserVersion>2.9.1</CommandLineParserVersion>
-    <!-- Android gRPC client tests -->
-    <GoogleProtobufVersion>3.19.4</GoogleProtobufVersion>
-    <GrpcAspNetCoreVersion>2.46.0</GrpcAspNetCoreVersion>
-    <GrpcAspNetCoreWebVersion>2.46.0</GrpcAspNetCoreWebVersion>
-    <GrpcAuthVersion>2.46.3</GrpcAuthVersion>
-    <GrpcCoreVersion>2.46.3</GrpcCoreVersion>
-    <GrpcDotnetClientVersion>2.45.0</GrpcDotnetClientVersion>
-    <GrpcToolsVersion>2.45.0</GrpcToolsVersion>
     <CompilerPlatformTestingVersion>1.1.3-beta1.24423.1</CompilerPlatformTestingVersion>
     <CompilerPlatformTestingDiffPlexVersion>1.7.2</CompilerPlatformTestingDiffPlexVersion>
     <CompilerPlatformTestingMicrosoftVisualBasicVersion>10.2.0</CompilerPlatformTestingMicrosoftVisualBasicVersion>
@@ -162,7 +155,9 @@
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
     <!-- sdk version, for testing workloads -->
-    <SdkVersionForWorkloadTesting>$(MicrosoftDotNetApiCompatTaskVersion)</SdkVersionForWorkloadTesting>
+    <!-- TODO: reenable this once .NET 11 channel builds have 11.0 build version -->
+    <!--<SdkVersionForWorkloadTesting>$(MicrosoftDotNetApiCompatTaskVersion)</SdkVersionForWorkloadTesting>-->
+    <SdkVersionForWorkloadTesting>10.0.100-rc.2.25502.107</SdkVersionForWorkloadTesting>
     <EmsdkPackageVersion>10.0.0-preview.7.25359.101</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->

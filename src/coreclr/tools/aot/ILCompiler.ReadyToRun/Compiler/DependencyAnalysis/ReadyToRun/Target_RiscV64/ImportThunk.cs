@@ -21,17 +21,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return;
             }
 
-            instructionEncoder.Builder.RequireInitialPointerAlignment();
-            Debug.Assert(instructionEncoder.Builder.CountBytes == 0);
-
-            instructionEncoder.Builder.EmitReloc(factory.ModuleImport, RelocType.IMAGE_REL_BASED_DIR64);
-
-            Debug.Assert(instructionEncoder.Builder.CountBytes == ((ISymbolNode)this).Offset);
-
             if (relocsOnly)
             {
                 // When doing relocs only, we don't need to generate the actual instructions
-                // as they will be ignored. Just emit the jump so we record the dependency.
+                // as they will be ignored. Just emit the module import load and jump so we record the dependencies.
+                instructionEncoder.EmitLD(Register.X11, factory.ModuleImport);
                 instructionEncoder.EmitJMP(_helperCell);
                 return;
             }
@@ -51,31 +45,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     int index = _containingImportSection.IndexFromBeginningOfArray;
                     instructionEncoder.EmitLI(Register.X5, index);
 
-                    int offset = -instructionEncoder.Builder.CountBytes;
+                    // Move Module* -> t1
+                    instructionEncoder.EmitLD(Register.X6, factory.ModuleImport);
 
-                    // get pc
-                    // auipc t1, 0
-                    instructionEncoder.EmitPC(Register.X6);
-
-                    // load Module* -> t1
-                    instructionEncoder.EmitLD(Register.X6, Register.X6, offset);
-
-                    // ld t1, t1, 0
-                    instructionEncoder.EmitLD(Register.X6, Register.X6, 0);
                     break;
                 }
                 case Kind.Lazy:
                 {
-                    int offset = -instructionEncoder.Builder.CountBytes;
-
-                    // get pc
-                    instructionEncoder.EmitPC(Register.X11);
-
-                    // load Module* -> a1
-                    instructionEncoder.EmitLD(Register.X11, Register.X11, offset);
-
-                    // ld a1, a1, 0
-                    instructionEncoder.EmitLD(Register.X11, Register.X11, 0);
+                    // Load Module* -> a1
+                    instructionEncoder.EmitLD(Register.X11, factory.ModuleImport);
                     break;
                 }
                 default:

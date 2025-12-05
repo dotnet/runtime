@@ -231,7 +231,7 @@ void  Thread::SetFrame(Frame *pFrame)
     if (g_pConfig->fAssertOnFailFast() == false)
         return;
 
-    Frame* espVal = (Frame*)GetCurrentSP();
+    void* espVal = GetCurrentSP();
 
     while (pFrame != (Frame*) -1)
     {
@@ -6311,7 +6311,7 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     while (pFrame < pvLimitSP)
     {
         CONSISTENCY_CHECK(pFrame != PTR_NULL);
-        CONSISTENCY_CHECK((pFrame) > static_cast<Frame *>((LPVOID)GetCurrentSP()));
+        CONSISTENCY_CHECK((pFrame) > static_cast<Frame *>(GetCurrentSP()));
         pFrame->ExceptionUnwind();
         pFrame = pFrame->Next();
     }
@@ -6371,6 +6371,12 @@ BOOL ThreadStore::HoldingThreadStore(Thread *pThread)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
+
+    // This can be called early during startup from HandleFatalError
+    if (s_pThreadStore == NULL)
+    {
+        return FALSE;
+    }
 
     if (pThread)
     {
@@ -6811,7 +6817,7 @@ static InterpThreadContext* GetInterpThreadContextWithPossiblyMissingThreadOrCal
     Thread* currentThread,
     InterpByteCodeStart* pByteCodeStart)
 {
-    _ASSERTE(pByteCodeStart->Method->methodDesc->HasUnmanagedCallersOnlyAttribute());
+    _ASSERTE(pByteCodeStart->Method->methodHnd->HasUnmanagedCallersOnlyAttribute());
 
     InterpThreadContext *pThreadContext = NULL;
 
@@ -6880,7 +6886,7 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
         Thread::ObjectRefFlush(CURRENT_THREAD);
 #endif
 
-        PrestubMethodFrame frame(pTransitionBlock, pByteCodeStart->Method->methodDesc);
+        PrestubMethodFrame frame(pTransitionBlock, pByteCodeStart->Method->methodHnd);
         PrestubMethodFrame* pPFrame = &frame;
 
         pPFrame->Push(CURRENT_THREAD);
@@ -6901,7 +6907,7 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
         {
             OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
             _ASSERTE(ohThrowable);
-            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodDesc, NULL);
+            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
             EX_RETHROW;
         }
         EX_END_CATCH

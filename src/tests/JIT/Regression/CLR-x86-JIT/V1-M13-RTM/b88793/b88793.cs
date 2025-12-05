@@ -4,6 +4,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 public class CC
 {
@@ -21,7 +22,7 @@ public class CC
             } while (a);
         }
     }
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsVarArgSupported))]
     public static void TestEntryPoint()
     {
         ulong ul = 0;

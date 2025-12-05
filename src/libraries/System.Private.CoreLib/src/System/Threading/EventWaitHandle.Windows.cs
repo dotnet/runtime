@@ -49,7 +49,7 @@ namespace System.Threading
 
             void* securityAttributesPtr = null;
             SafeWaitHandle handle;
-            int errorCode
+            int errorCode;
             Thread.CurrentUserSecurityDescriptorInfo securityDescriptorInfo = default;
             Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
             if (!string.IsNullOrEmpty(name) && options.WasSpecified)

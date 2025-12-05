@@ -10,6 +10,9 @@
 // 
 //     File: /__w/1/s/src/coreclr/jit/emitarm.cpp Line: 3919
 // 
+
+namespace Runtime_105620;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

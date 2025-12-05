@@ -673,7 +673,8 @@ enum CorInfoCallConv
     CORINFO_CALLCONV_HASTHIS    = 0x20,
     CORINFO_CALLCONV_EXPLICITTHIS=0x40,
     CORINFO_CALLCONV_PARAMTYPE  = 0x80,     // Passed last. Same as CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
-    CORINFO_CALLCONV_ASYNCCALL  = 0x100,    // Is this a call to an async function?
+    CORINFO_CALLCONV_ASYNCCALL  = 0x100,    // Is this a call with async calling convention?
+
 };
 
 // Represents the calling conventions supported with the extensible calling convention syntax
@@ -721,6 +722,7 @@ enum CorInfoOptions
                                                CORINFO_GENERICS_CTXT_FROM_METHODDESC |
                                                CORINFO_GENERICS_CTXT_FROM_METHODTABLE),
     CORINFO_GENERICS_CTXT_KEEP_ALIVE        = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
+    CORINFO_ASYNC_SAVE_CONTEXTS             = 0x00000200, // Runtime async method must save and restore contexts
 };
 
 //
@@ -807,6 +809,7 @@ enum CORINFO_ACCESS_FLAGS
     CORINFO_ACCESS_NONNULL    = 0x0004, // Instance is guaranteed non-null
 
     CORINFO_ACCESS_LDFTN      = 0x0010, // Accessed via ldftn
+    CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE = 0x0020, // Method might be attributed with UnmanagedCallersOnlyAttribute.
 
     // Field access flags
     CORINFO_ACCESS_GET        = 0x0100, // Field get (ldfld)
@@ -847,6 +850,61 @@ enum InfoAccessType
     IAT_PVALUE,     // The value needs to be accessed via an         indirection
     IAT_PPVALUE,    // The value needs to be accessed via a double   indirection
     IAT_RELPVALUE   // The value needs to be accessed via a relative indirection
+};
+
+enum class CorInfoReloc
+{
+    NONE,
+
+    // General relocation types
+    DIRECT,                                // Direct/absolute pointer sized address
+    RELATIVE32,                            // 32-bit relative address from byte following reloc
+
+    // Arm64 relocs
+    ARM64_BRANCH26,                        // Arm64: B, BL
+    ARM64_PAGEBASE_REL21,                  // ADRP
+    ARM64_PAGEOFFSET_12A,                  // ADD/ADDS (immediate) with zero shift, for page offset
+    // Linux arm64
+    ARM64_LIN_TLSDESC_ADR_PAGE21,
+    ARM64_LIN_TLSDESC_LD64_LO12,
+    ARM64_LIN_TLSDESC_ADD_LO12,
+    ARM64_LIN_TLSDESC_CALL,
+    // Windows arm64
+    ARM64_WIN_TLS_SECREL_HIGH12A,          // ADD high 12-bit offset for tls
+    ARM64_WIN_TLS_SECREL_LOW12A,           // ADD low 12-bit offset for tls
+
+    // Windows x64
+    AMD64_WIN_SECREL,
+
+    // Linux x64
+    // GD model
+    AMD64_LIN_TLSGD,
+
+    // Arm32 relocs
+    ARM32_THUMB_BRANCH24,                  // Thumb2: B, BL
+    ARM32_THUMB_MOV32,                     // Thumb2: MOVW/MOVT
+    // The identifier for ARM32-specific PC-relative address
+    // computation corresponds to the following instruction
+    // sequence:
+    //  l0: movw rX, #imm_lo  // 4 byte
+    //  l4: movt rX, #imm_hi  // 4 byte
+    //  l8: add  rX, pc <- after this instruction rX = relocTarget
+    //
+    // Program counter at l8 is address of l8 + 4
+    // Address of relocated movw/movt is l0
+    // So, imm should be calculated as the following:
+    //  imm = relocTarget - (l8 + 4) = relocTarget - (l0 + 8 + 4) = relocTarget - (l_0 + 12)
+    // So, the value of offset correction is 12
+    ARM32_THUMB_MOV32_PCREL,               // Thumb2: MOVW/MOVT
+
+    // LoongArch64 relocs
+    LOONGARCH64_PC,                        // LoongArch64: pcalau12i+imm12
+    LOONGARCH64_JIR,                       // LoongArch64: pcaddu18i+jirl
+
+    // RISCV64 relocs
+    RISCV64_CALL_PLT,                      // RiscV64: auipc + jalr
+    RISCV64_PCREL_I,                       // RiscV64: auipc + I-type
+    RISCV64_PCREL_S,                       // RiscV64: auipc + S-type
 };
 
 enum CorInfoGCType
@@ -1633,6 +1691,17 @@ struct CORINFO_EH_CLAUSE
     };
 };
 
+enum CorInfoArch
+{
+    CORINFO_ARCH_X86,
+    CORINFO_ARCH_X64,
+    CORINFO_ARCH_ARM,
+    CORINFO_ARCH_ARM64,
+    CORINFO_ARCH_LOONGARCH64,
+    CORINFO_ARCH_RISCV64,
+    CORINFO_ARCH_WASM32,
+};
+
 enum CORINFO_OS
 {
     CORINFO_WINNT,
@@ -1734,19 +1803,24 @@ struct CORINFO_ASYNC_INFO
     CORINFO_CLASS_HANDLE continuationClsHnd;
     // 'Next' field
     CORINFO_FIELD_HANDLE continuationNextFldHnd;
-    // 'Resume' field
-    CORINFO_FIELD_HANDLE continuationResumeFldHnd;
+    // 'ResumeInfo' field
+    CORINFO_FIELD_HANDLE continuationResumeInfoFldHnd;
     // 'State' field
     CORINFO_FIELD_HANDLE continuationStateFldHnd;
     // 'Flags' field
     CORINFO_FIELD_HANDLE continuationFlagsFldHnd;
-    // Method handle for AsyncHelpers.CaptureExecutionContext
+    // Method handle for AsyncHelpers.CaptureExecutionContext, used during suspension
     CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
-    // Method handle for AsyncHelpers.RestoreExecutionContext
+    // Method handle for AsyncHelpers.RestoreExecutionContext, used during resumption
     CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
+    // Method handle for AsyncHelpers.CaptureContinuationContext, used during suspension
     CORINFO_METHOD_HANDLE captureContinuationContextMethHnd;
+    // Method handle for AsyncHelpers.CaptureContexts, used at the beginning of async methods
     CORINFO_METHOD_HANDLE captureContextsMethHnd;
+    // Method handle for AsyncHelpers.RestoreContexts, used before normal returns from async methods
     CORINFO_METHOD_HANDLE restoreContextsMethHnd;
+    // Method handle for AsyncHelpers.RestoreContextsOnSuspension, used before suspending in async methods
+    CORINFO_METHOD_HANDLE restoreContextsOnSuspensionMethHnd;
 };
 
 // Flags passed from JIT to runtime.
@@ -1782,7 +1856,13 @@ enum { LCL_FINALLY_MARK = 0xFC }; // FC = "Finally Call"
  * when it generates code
  **********************************************************************************/
 
-typedef void* CORINFO_MethodPtr;            // a generic method pointer
+#ifdef TARGET_64BIT
+typedef uint64_t TARGET_SIZE_T;
+#else
+typedef uint32_t TARGET_SIZE_T;
+#endif
+
+typedef TARGET_SIZE_T CORINFO_MethodPtr;            // a generic method pointer
 
 struct CORINFO_Object
 {
@@ -1855,17 +1935,23 @@ struct CORINFO_RefArray : public CORINFO_Object
     CORINFO_Object*         refElems[1];    // actually of variable size;
 };
 
-struct CORINFO_RefAny
-{
-    void                      * dataPtr;
-    CORINFO_CLASS_HANDLE        type;
-};
-
 // The jit assumes the CORINFO_VARARGS_HANDLE is a pointer to a subclass of this
 struct CORINFO_VarArgInfo
 {
     unsigned                argBytes;       // number of bytes the arguments take up.
                                             // (The CORINFO_VARARGS_HANDLE counts as an arg)
+};
+
+// Note: Keep synchronized with AsyncHelpers.ResumeInfo
+// Any changes to this are an R2R breaking change. Update the R2R verion as needed
+struct CORINFO_AsyncResumeInfo
+{
+    // delegate*<Continuation, ref byte, Continuation>
+    TARGET_SIZE_T Resume;
+    // Pointer in main code for diagnostics. See comments on
+    // ICorDebugInfo::AsyncSuspensionPoint::DiagnosticNativeOffset and
+    // ResumeInfo.DiagnosticIP in SPC.
+    TARGET_SIZE_T DiagnosticIP;
 };
 
 struct CORINFO_TYPE_LAYOUT_NODE
@@ -2912,6 +2998,16 @@ public:
             uint32_t                          numMappings         // [IN] Number of rich mappings
             ) = 0;
 
+    // Report async debug information to EE.
+    // The arrays are expected to be allocated with allocateArray
+    // and ownership is transferred to the EE with this call.
+    virtual void reportAsyncDebugInfo(
+            ICorDebugInfo::AsyncInfo*             asyncInfo,         // [IN] Async method information
+            ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,  // [IN] Array of async suspension points, indexed by state number
+            ICorDebugInfo::AsyncContinuationVarInfo* vars,           // [IN] Array of async continuation variable info
+            uint32_t                              numVars            // [IN] Number of entries in the async vars array
+            ) = 0;
+
     // Report back some metadata about the compilation to the EE -- for
     // example, metrics about the compilation.
     virtual void reportMetadata(
@@ -3340,7 +3436,7 @@ public:
             CORINFO_TAILCALL_HELPERS* pResult
             ) = 0;
 
-    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub() = 0;
+    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) = 0;
 
     virtual CORINFO_CLASS_HANDLE getContinuationType(
         size_t dataSize,
@@ -3369,50 +3465,6 @@ public:
 
     virtual CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;
 };
-
-/**********************************************************************************/
-
-// It would be nicer to use existing IMAGE_REL_XXX constants instead of defining our own here...
-#define IMAGE_REL_BASED_REL32           0x10
-#define IMAGE_REL_BASED_THUMB_BRANCH24  0x13
-#define IMAGE_REL_SECREL                0x104
-
-// Linux x64
-// GD model
-#define IMAGE_REL_TLSGD                 0x105
-
-// Linux arm64
-//    TLSDESC  (dynamic)
-#define IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21   0x107
-#define IMAGE_REL_AARCH64_TLSDESC_LD64_LO12    0x108
-#define IMAGE_REL_AARCH64_TLSDESC_ADD_LO12     0x109
-#define IMAGE_REL_AARCH64_TLSDESC_CALL         0x10A
-
-// The identifier for ARM32-specific PC-relative address
-// computation corresponds to the following instruction
-// sequence:
-//  l0: movw rX, #imm_lo  // 4 byte
-//  l4: movt rX, #imm_hi  // 4 byte
-//  l8: add  rX, pc <- after this instruction rX = relocTarget
-//
-// Program counter at l8 is address of l8 + 4
-// Address of relocated movw/movt is l0
-// So, imm should be calculated as the following:
-//  imm = relocTarget - (l8 + 4) = relocTarget - (l0 + 8 + 4) = relocTarget - (l_0 + 12)
-// So, the value of offset correction is 12
-//
-#define IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL   0x14
-
-//
-// LOONGARCH64 relocation types
-//
-#define IMAGE_REL_LOONGARCH64_PC        0x0003
-#define IMAGE_REL_LOONGARCH64_JIR       0x0004
-
-//
-// RISCV64 relocation types
-//
-#define IMAGE_REL_RISCV64_PC            0x0003
 
 /**********************************************************************************/
 #ifdef TARGET_64BIT

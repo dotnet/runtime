@@ -154,8 +154,6 @@ DEFINE_METHOD(CLASS,                GET_PROPERTIES,         GetProperties,      
 DEFINE_METHOD(CLASS,                GET_FIELDS,             GetFields,                  IM_BindingFlags_RetArrFieldInfo)
 DEFINE_METHOD(CLASS,                GET_METHODS,            GetMethods,                 IM_BindingFlags_RetArrMethodInfo)
 DEFINE_METHOD(CLASS,                INVOKE_MEMBER,          InvokeMember,               IM_Str_BindingFlags_Binder_Obj_ArrObj_ArrParameterModifier_CultureInfo_ArrStr_RetObj)
-DEFINE_METHOD(CLASS,                GET_METHOD_BASE,        GetMethodBase,              SM_RuntimeType_RuntimeMethodHandleInternal_RetMethodBase)
-DEFINE_METHOD(CLASS,                GET_FIELD_INFO,         GetFieldInfo,               SM_RuntimeType_IRuntimeFieldInfo_RetFieldInfo)
 #ifdef FOR_ILLINK
 DEFINE_METHOD(CLASS,                CTOR,                   .ctor,                      IM_RetVoid)
 #endif // FOR_ILLINK
@@ -196,10 +194,6 @@ END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(CRITICAL_HANDLE,       Interop,                CriticalHandle)
 DEFINE_FIELD(CRITICAL_HANDLE,       HANDLE,                 handle)
-DEFINE_METHOD(CRITICAL_HANDLE,      RELEASE_HANDLE,         ReleaseHandle,              IM_RetBool)
-DEFINE_METHOD(CRITICAL_HANDLE,      GET_IS_INVALID,         get_IsInvalid,              IM_RetBool)
-DEFINE_METHOD(CRITICAL_HANDLE,      DISPOSE,                Dispose,                    IM_RetVoid)
-DEFINE_METHOD(CRITICAL_HANDLE,      DISPOSE_BOOL,           Dispose,                    IM_Bool_RetVoid)
 
 DEFINE_CLASS(HANDLE_REF,            Interop,                HandleRef)
 DEFINE_FIELD(HANDLE_REF,            WRAPPER,                _wrapper)
@@ -346,7 +340,7 @@ DEFINE_METHOD(THREAD_START_EXCEPTION,EX_CTOR,               .ctor,              
 DEFINE_CLASS(VALUETASK_1, Tasks, ValueTask`1)
 DEFINE_METHOD(VALUETASK_1, GET_ISCOMPLETED, get_IsCompleted, NoSig)
 DEFINE_METHOD(VALUETASK_1, GET_RESULT, get_Result, NoSig)
-DEFINE_METHOD(VALUETASK_1, AS_TASK, AsTask, IM_RetTaskOfT)
+DEFINE_METHOD(VALUETASK_1, AS_TASK_OR_NOTIFIER, AsTaskOrNotifier, IM_RetObj)
 
 DEFINE_CLASS(VALUETASK, Tasks, ValueTask)
 DEFINE_METHOD(VALUETASK, FROM_EXCEPTION, FromException, SM_Exception_RetValueTask)
@@ -355,10 +349,9 @@ DEFINE_METHOD(VALUETASK, FROM_RESULT_T, FromResult, GM_T_RetValueTaskOfT)
 DEFINE_METHOD(VALUETASK, GET_COMPLETED_TASK, get_CompletedTask, SM_RetValueTask)
 DEFINE_METHOD(VALUETASK, GET_ISCOMPLETED, get_IsCompleted, NoSig)
 DEFINE_METHOD(VALUETASK, THROW_IF_COMPLETED_UNSUCCESSFULLY, ThrowIfCompletedUnsuccessfully, NoSig)
-DEFINE_METHOD(VALUETASK, AS_TASK, AsTask, IM_RetTask)
+DEFINE_METHOD(VALUETASK, AS_TASK_OR_NOTIFIER, AsTaskOrNotifier, IM_RetObj)
 
 DEFINE_CLASS(TASK_1, Tasks, Task`1)
-DEFINE_METHOD(TASK_1, GET_RESULTONSUCCESS, get_ResultOnSuccess, NoSig)
 
 DEFINE_CLASS(TASK, Tasks, Task)
 DEFINE_METHOD(TASK, FROM_EXCEPTION, FromException, SM_Exception_RetTask)
@@ -369,7 +362,6 @@ DEFINE_METHOD(TASK, GET_ISCOMPLETED, get_IsCompleted, NoSig)
 
 DEFINE_CLASS(TYPE_HANDLE,           System,                 RuntimeTypeHandle)
 DEFINE_CLASS(RT_TYPE_HANDLE,        System,                 RuntimeTypeHandle)
-DEFINE_METHOD(RT_TYPE_HANDLE,       PVOID_CTOR,             .ctor,                      IM_RuntimeType_RetVoid)
 DEFINE_METHOD(RT_TYPE_HANDLE,       GETRUNTIMETYPEFROMHANDLE,GetRuntimeTypeFromHandle,  SM_IntPtr_RetRuntimeType)
 DEFINE_METHOD(RT_TYPE_HANDLE,       GETRUNTIMETYPEFROMHANDLEMAYBENULL,GetRuntimeTypeFromHandleMaybeNull,  SM_IntPtr_RetRuntimeType)
 DEFINE_METHOD(RT_TYPE_HANDLE,       TO_INTPTR,              ToIntPtr,                   SM_RuntimeTypeHandle_RetIntPtr)
@@ -719,11 +711,12 @@ DEFINE_METHOD(RUNTIME_HELPERS,      GET_UNINITIALIZED_OBJECT, GetUninitializedOb
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_EQUALS,            EnumEquals, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_COMPARE_TO,        EnumCompareTo, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgBuffer,  NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      GET_TAILCALL_INFO,      GetTailCallInfo, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls,          NoSig)
 #ifdef FEATURE_IJW
 DEFINE_METHOD(RUNTIME_HELPERS,      COPY_CONSTRUCT,         CopyConstruct, NoSig)
 #endif // FEATURE_IJW
+DEFINE_METHOD(RUNTIME_HELPERS,      SET_NEXT_CALL_GENERIC_CONTEXT, SetNextCallGenericContext, NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      SET_NEXT_CALL_ASYNC_CONTINUATION, SetNextCallAsyncContinuation, NoSig)
 
 DEFINE_CLASS(ASYNC_HELPERS,       CompilerServices,          AsyncHelpers)
 DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION,        AllocContinuation, NoSig)
@@ -740,15 +733,31 @@ DEFINE_METHOD(ASYNC_HELPERS,      TASK_FROM_EXCEPTION_1, TaskFromException, GM_E
 DEFINE_METHOD(ASYNC_HELPERS,      VALUETASK_FROM_EXCEPTION, ValueTaskFromException, SM_Exception_RetValueTask)
 DEFINE_METHOD(ASYNC_HELPERS,      VALUETASK_FROM_EXCEPTION_1, ValueTaskFromException, GM_Exception_RetValueTaskOfT)
 
-DEFINE_METHOD(ASYNC_HELPERS,      UNSAFE_AWAIT_AWAITER_1,    UnsafeAwaitAwaiter, GM_T_RetVoid)
-DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_TASK,    TransparentAwaitTask, NoSig)
-DEFINE_METHOD(ASYNC_HELPERS,      COMPLETED_TASK_RESULT,    CompletedTaskResult, NoSig)
-DEFINE_METHOD(ASYNC_HELPERS,      COMPLETED_TASK,           CompletedTask, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT,         TransparentAwait, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      COMPLETED_TASK_RESULT,     CompletedTaskResult, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      COMPLETED_TASK,            CompletedTask, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_EXECUTION_CONTEXT, CaptureExecutionContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_EXECUTION_CONTEXT, RestoreExecutionContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTINUATION_CONTEXT, CaptureContinuationContext, NoSig)
-DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTEXTS, CaptureContexts, NoSig)
-DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS, RestoreContexts, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTEXTS,          CaptureContexts, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS,          RestoreContexts, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS_ON_SUSPENSION, RestoreContextsOnSuspension, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      ASYNC_CALL_CONTINUATION,   AsyncCallContinuation, NoSig)
+
+#ifdef FEATURE_INTERPRETER
+DEFINE_METHOD(ASYNC_HELPERS,      RESUME_INTERPRETER_CONTINUATION, ResumeInterpreterContinuation, NoSig)
+#endif
+
+#ifdef TARGET_BROWSER
+DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT, HandleAsyncEntryPoint, SM_TaskOfInt_RetInt)
+DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT_VOID, HandleAsyncEntryPoint, SM_Task_RetVoid)
+#endif // TARGET_BROWSER
+
+DEFINE_CLASS_U(CompilerServices, Continuation,          ContinuationObject)
+DEFINE_FIELD_U(Next,             ContinuationObject,    Next)
+DEFINE_FIELD_U(ResumeInfo,       ContinuationObject,    ResumeInfo)
+DEFINE_FIELD_U(Flags,            ContinuationObject,    Flags)
+DEFINE_FIELD_U(State,            ContinuationObject,    State)
 
 DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
 DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)
@@ -867,7 +876,7 @@ DEFINE_FIELD_U(ArgBuffer,                  TailCallTls,           m_argBuffer)
 
 DEFINE_CLASS(CONTINUATION,              CompilerServices,   Continuation)
 DEFINE_FIELD(CONTINUATION,              NEXT,               Next)
-DEFINE_FIELD(CONTINUATION,              RESUME,             Resume)
+DEFINE_FIELD(CONTINUATION,              RESUME_INFO,        ResumeInfo)
 DEFINE_FIELD(CONTINUATION,              STATE,              State)
 DEFINE_FIELD(CONTINUATION,              FLAGS,              Flags)
 
@@ -885,10 +894,6 @@ DEFINE_CLASS(CALLCONV_SWIFT,                 CompilerServices,       CallConvSwi
 
 DEFINE_CLASS(SAFE_HANDLE,         Interop,                SafeHandle)
 DEFINE_FIELD(SAFE_HANDLE,           HANDLE,                 handle)
-DEFINE_METHOD(SAFE_HANDLE,          GET_IS_INVALID,         get_IsInvalid,              IM_RetBool)
-DEFINE_METHOD(SAFE_HANDLE,          RELEASE_HANDLE,         ReleaseHandle,              IM_RetBool)
-DEFINE_METHOD(SAFE_HANDLE,          DISPOSE,                Dispose,                    IM_RetVoid)
-DEFINE_METHOD(SAFE_HANDLE,          DISPOSE_BOOL,           Dispose,                    IM_Bool_RetVoid)
 
 DEFINE_CLASS(SECURITY_EXCEPTION,    Security,               SecurityException)
 
@@ -974,6 +979,11 @@ DEFINE_FIELD_U(_DONT_USE_InternalThread,  ThreadBaseObject,   m_InternalThread)
 DEFINE_FIELD_U(_priority,                 ThreadBaseObject,   m_Priority)
 DEFINE_FIELD_U(_isDead,                   ThreadBaseObject,   m_IsDead)
 DEFINE_FIELD_U(_isThreadPool,             ThreadBaseObject,   m_IsThreadPool)
+DEFINE_FIELD_U(_executionContext,         ThreadBaseObject,   m_ExecutionContext)
+
+
+DEFINE_CLASS_U(Threading,             ExecutionContext,            ExecutionContextObject)
+DEFINE_FIELD_U(m_isFlowSuppressed,    ExecutionContextObject,      m_isFlowSuppressed)
 
 DEFINE_CLASS(DIRECTONTHREADLOCALDATA, Threading, Thread+DirectOnThreadLocalData)
 
@@ -1061,7 +1071,6 @@ DEFINE_METHOD(STUBHELPERS,          CLEAR_LAST_ERROR,       ClearLastError,     
 
 DEFINE_METHOD(STUBHELPERS,          THROW_INTEROP_PARAM_EXCEPTION, ThrowInteropParamException,   SM_Int_Int_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          ADD_TO_CLEANUP_LIST_SAFEHANDLE,    AddToCleanupList,           SM_RefCleanupWorkListElement_SafeHandle_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          KEEP_ALIVE_VIA_CLEANUP_LIST,    KeepAliveViaCleanupList,       SM_RefCleanupWorkListElement_Obj_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          DESTROY_CLEANUP_LIST,   DestroyCleanupList,         SM_RefCleanupWorkListElement_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          GET_HR_EXCEPTION_OBJECT, GetHRExceptionObject,      SM_Int_RetException)
 DEFINE_METHOD(STUBHELPERS,          GET_PENDING_EXCEPTION_OBJECT, GetPendingExceptionObject,      SM_RetException)
@@ -1072,9 +1081,6 @@ DEFINE_METHOD(STUBHELPERS,          GET_IENUMERATOR_TO_ENUM_VARIANT_MARSHALER, G
 
 DEFINE_METHOD(STUBHELPERS,          CHECK_STRING_LENGTH,    CheckStringLength,          SM_Int_RetVoid)
 
-DEFINE_METHOD(STUBHELPERS,          FMT_CLASS_UPDATE_NATIVE_INTERNAL,   FmtClassUpdateNativeInternal,   SM_Obj_PtrByte_RefCleanupWorkListElement_RetVoid)
-DEFINE_METHOD(STUBHELPERS,          FMT_CLASS_UPDATE_CLR_INTERNAL,      FmtClassUpdateCLRInternal,      SM_Obj_PtrByte_RetVoid)
-DEFINE_METHOD(STUBHELPERS,          LAYOUT_DESTROY_NATIVE_INTERNAL,     LayoutDestroyNativeInternal,    SM_Obj_PtrByte_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          MARSHAL_TO_MANAGED_VA_LIST,         MarshalToManagedVaList,         SM_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          MARSHAL_TO_UNMANAGED_VA_LIST,       MarshalToUnmanagedVaList,       SM_IntPtr_UInt_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          CALC_VA_LIST_SIZE,                  CalcVaListSize,                 SM_IntPtr_RetUInt)
@@ -1083,7 +1089,6 @@ DEFINE_METHOD(STUBHELPERS,          VALIDATE_BYREF,                     Validate
 DEFINE_METHOD(STUBHELPERS,          GET_STUB_CONTEXT,                   GetStubContext,                 SM_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          LOG_PINNED_ARGUMENT,                LogPinnedArgument,              SM_IntPtr_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          NEXT_CALL_RETURN_ADDRESS,           NextCallReturnAddress,          SM_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          ASYNC_CALL_CONTINUATION,            AsyncCallContinuation,          SM_RetContinuation)
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_ADD_REF,    SafeHandleAddRef,           SM_SafeHandle_RefBool_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_RELEASE,    SafeHandleRelease,          SM_SafeHandle_RetVoid)
 

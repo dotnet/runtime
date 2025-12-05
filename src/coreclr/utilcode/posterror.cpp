@@ -23,32 +23,6 @@
 // Local prototypes.
 HRESULT FillErrorInfo(LPCWSTR szMsg, DWORD dwHelpContext);
 
-void GetResourceCultureCallbacks(
-        FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
-        FPGETTHREADUICULTUREID* fpGetThreadUICultureId)
-{
-    WRAPPER_NO_CONTRACT;
-    CCompRC::GetDefaultCallbacks(
-        fpGetThreadUICultureNames,
-        fpGetThreadUICultureId
-    );
-}
-//*****************************************************************************
-// Set callbacks to get culture info
-//*****************************************************************************
-void SetResourceCultureCallbacks(
-    FPGETTHREADUICULTURENAMES fpGetThreadUICultureNames,
-    FPGETTHREADUICULTUREID fpGetThreadUICultureId       // TODO: Don't rely on the LCID, only the name
-)
-{
-    WRAPPER_NO_CONTRACT;
-    CCompRC::SetDefaultCallbacks(
-        fpGetThreadUICultureNames,
-        fpGetThreadUICultureId
-    );
-
-}
-
 //*****************************************************************************
 // Public function to load a resource string
 //*****************************************************************************

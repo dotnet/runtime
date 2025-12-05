@@ -93,6 +93,8 @@
                                               - AppBundle/_content contains web files from nuget packages (css, js, etc)
       - $(WasmStripILAfterAOT)              - Set to true to enable trimming away AOT compiled methods body (IL code)
                                               Defaults to true.
+      - $(WasmEmitTypeScriptDefinitions)    - Controls whether TypeScript definitions (dotnet.d.ts) should be copied to the project's `wwwroot`. 
+                                              Defaults to false.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).

@@ -168,6 +168,8 @@ switch (testCase) {
         break;
     case "HttpNoStreamingTest":
         break;
+    case "DevServer_UploadPattern":
+        break;
     case "BrowserProfilerTest":
         break;
     case "OverrideBootConfigName":
@@ -231,6 +233,10 @@ try {
             exports.AppSettingsTest.Run();
             exit(0);
             break;
+        case "FilesToIncludeInFileSystemTest":
+            exports.FilesToIncludeInFileSystemTest.Run();
+            exit(0);
+            break;
         case "DownloadResourceProgressTest":
             exit(0);
             break;
@@ -267,6 +273,15 @@ try {
                 countChars
             });
             exports.MemoryTest.Run();
+            exit(0);
+            break;
+        case "DevServer_UploadPattern":
+            console.log("not ready yet");
+            const dsExportsHttp = await getAssemblyExports(config.mainAssemblyName);
+            console.log("ready");
+            await dsExportsHttp.HttpTest.GoodUpload();
+            await dsExportsHttp.HttpTest.BadUpload();
+            console.log("done");
             exit(0);
             break;
         case "HttpNoStreamingTest":

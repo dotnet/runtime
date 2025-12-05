@@ -50,6 +50,7 @@ namespace System
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         public static bool IsWasi => RuntimeInformation.IsOSPlatform(OSPlatform.Create("WASI"));
+        public static bool IsWasm => IsBrowser || IsWasi;
         public static bool IsNotBrowser => !IsBrowser;
         public static bool IsNotWasi => !IsWasi;
         public static bool IsMobile => IsBrowser || IsWasi || IsAppleMobile || IsAndroid;
@@ -297,7 +298,6 @@ namespace System
         // Changed to `true` when trimming
         public static bool IsBuiltWithAggressiveTrimming => IsNativeAot || IsAppleMobile;
         public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
-        public static bool IsBrowserAndIsBuiltWithAggressiveTrimming => IsBuiltWithAggressiveTrimming && IsBrowser;
         public static bool IsTrimmedWithILLink => IsBuiltWithAggressiveTrimming && !IsNativeAot;
 
 #if NET

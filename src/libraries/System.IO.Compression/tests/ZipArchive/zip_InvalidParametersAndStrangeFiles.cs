@@ -644,9 +644,20 @@ namespace System.IO.Compression.Tests
         public static async Task ZipArchive_InvalidEntryTable(string zipname, bool async)
         {
             string filename = bad(zipname);
-            await using (ZipArchive archive = await CreateZipArchive(async, await StreamHelpers.CreateTempCopyStream(filename), ZipArchiveMode.Read))
+            using (var stream = await StreamHelpers.CreateTempCopyStream(filename))
             {
-                Assert.Throws<InvalidDataException>(() => archive.Entries[0]);
+                if (async)
+                {
+                    // as CreateAsync reads the entry table immediately, it throws immediately instead of on accessing .Entries
+                    await Assert.ThrowsAsync<InvalidDataException>(() => CreateZipArchive(async, stream, ZipArchiveMode.Read));
+                }
+                else
+                {
+                    await using (ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Read))
+                    {
+                        Assert.Throws<InvalidDataException>(() => archive.Entries[0]);
+                    }
+                }
             }
         }
 
@@ -1484,24 +1495,24 @@ namespace System.IO.Compression.Tests
             // Create mode
             using (ZipArchive archive = new ZipArchive(s, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: Encoding.UTF8))
             {
-                using MemoryStream normalZipStream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
-                normalZipStream.Position = 0;
+                using MemoryStream asyncZipStream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+                asyncZipStream.Position = 0;
 
                 // Note this is not using NoAsyncCallsStream, so it can be opened in async mode
-                await using (ZipArchive normalZipArchive = await ZipArchive.CreateAsync(normalZipStream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null))
+                await using (ZipArchive asyncZipArchive = await ZipArchive.CreateAsync(asyncZipStream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null))
                 {
-                    var normalZipEntries = normalZipArchive.Entries;
+                    var asyncZipEntries = asyncZipArchive.Entries;
 
-                    foreach (ZipArchiveEntry normalEntry in normalZipEntries)
+                    foreach (ZipArchiveEntry asyncEntry in asyncZipEntries)
                     {
-                        ZipArchiveEntry newEntry = archive.CreateEntry(normalEntry.FullName);
+                        ZipArchiveEntry newEntry = archive.CreateEntry(asyncEntry.FullName);
                         using (Stream newEntryStream = newEntry.Open())
                         {
                             // Note the parent archive is not using NoAsyncCallsStream, so it can be opened in async mode
-                            await using (Stream normalEntryStream = await normalEntry.OpenAsync())
+                            await using (Stream asyncEntryStream = await asyncEntry.OpenAsync())
                             {
-                                // Note the parent archive is not using NoAsyncCallsStream, so it can be copied in async mode
-                                await normalEntryStream.CopyToAsync(newEntryStream);
+                                // The entry needs to be copied in sync mode as the destination archive does not support async writes
+                                asyncEntryStream.CopyTo(newEntryStream);
                             }
                         }
                     }
@@ -1515,11 +1526,7 @@ namespace System.IO.Compression.Tests
             {
                 _ = archive.Comment;
 
-                // Entries is sync only
-                s.IsRestrictionEnabled = false;
                 var entries = archive.Entries;
-                s.IsRestrictionEnabled = true;
-
                 foreach (var entry in entries)
                 {
                     _ = archive.GetEntry(entry.Name);
@@ -1550,11 +1557,7 @@ namespace System.IO.Compression.Tests
             // Update mode
             using (ZipArchive archive = new ZipArchive(s, ZipArchiveMode.Update, leaveOpen: false, entryNameEncoding: Encoding.UTF8))
             {
-                // Entries is sync only
-                s.IsRestrictionEnabled = false;
                 ZipArchiveEntry entryToDelete = archive.Entries[0];
-                s.IsRestrictionEnabled = true;
-
                 entryToDelete.Delete();
 
                 ZipArchiveEntry entry = archive.CreateEntry("mynewentry.txt");
@@ -1593,8 +1596,8 @@ namespace System.IO.Compression.Tests
                             // Note the parent archive is not using NoSyncCallsStream, so it can be opened in sync mode
                             using (Stream normalEntryStream = normalEntry.Open())
                             {
-                                // Note the parent archive is not using NoSyncCallsStream, so it can be copied in sync mode
-                                normalEntryStream.CopyTo(newEntryStream);
+                                // The entry needs to be copied in async mode as the destination archive does not support sync writes
+                                await normalEntryStream.CopyToAsync(newEntryStream);
                             }
                         }
                     }
@@ -1608,11 +1611,7 @@ namespace System.IO.Compression.Tests
             {
                 _ = archive.Comment;
 
-                // Entries is sync only
-                s.IsRestrictionEnabled = false;
                 var entries = archive.Entries;
-                s.IsRestrictionEnabled = true;
-
                 foreach (var entry in entries)
                 {
                     _ = archive.GetEntry(entry.Name);
@@ -1642,11 +1641,7 @@ namespace System.IO.Compression.Tests
 
             await using (ZipArchive archive = await ZipArchive.CreateAsync(s, ZipArchiveMode.Update, leaveOpen: false, entryNameEncoding: Encoding.UTF8))
             {
-                // Entries is sync only
-                s.IsRestrictionEnabled = false;
                 ZipArchiveEntry entryToDelete = archive.Entries[0];
-                s.IsRestrictionEnabled = true;
-
                 entryToDelete.Delete(); // Delete is async only
 
                 ZipArchiveEntry entry = archive.CreateEntry("mynewentry.txt");

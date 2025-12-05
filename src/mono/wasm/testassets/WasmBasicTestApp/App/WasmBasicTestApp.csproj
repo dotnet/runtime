@@ -29,4 +29,10 @@
     <BlazorWebAssemblyLazyLoad Include="LazyLibrary$(WasmAssemblyExtension)" />
     <WasmExtraFilesToDeploy Include="profiler.js" />
   </ItemGroup>
+
+  <ItemGroup>
+    <WasmFilesToIncludeInFileSystem Include="Vfs1.txt" TargetPath="/myfiles/Vfs1.txt" />
+    <WasmFilesToIncludeInFileSystem Include="subdir/Vfs2.txt" TargetPath="/myfiles/Vfs2.txt" />
+    <WasmFilesToIncludeInFileSystem Include="subdir/subsubdir/Vfs3.txt" />
+  </ItemGroup>
 </Project>
