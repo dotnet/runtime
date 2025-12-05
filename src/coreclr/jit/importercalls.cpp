@@ -8618,7 +8618,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                                                                      &rootCompiler->info.compMethodInfo->args);
 #endif // DEBUG
 
-    if (JitConfig.JitEnableGenericVirtualDevirtualization() == 0 && call->IsGenericVirtual(this))
+    if ((JitConfig.JitEnableGenericVirtualDevirtualization() == 0) && call->IsGenericVirtual(this))
     {
         JITDUMP("\nimpDevirtualizeCall: generic virtual devirtualization disabled\n");
         return;
@@ -8667,7 +8667,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // In non-R2R modes CALLVIRT <nonvirtual> will be turned into a
     // regular call+nullcheck by normal call importation.
     //
-    if (!isGenericVirtual && (baseMethodAttribs & CORINFO_FLG_VIRTUAL) == 0)
+    if (!isGenericVirtual && ((baseMethodAttribs & CORINFO_FLG_VIRTUAL) == 0))
     {
         assert(call->IsVirtualStub());
         assert(IsAot());
