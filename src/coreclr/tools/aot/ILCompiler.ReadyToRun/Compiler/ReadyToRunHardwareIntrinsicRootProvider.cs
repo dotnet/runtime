@@ -3,10 +3,8 @@
 
 using System.Collections.Generic;
 
-using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
 using Internal.JitInterface;
-using System.Reflection.Metadata;
 
 namespace ILCompiler
 {
