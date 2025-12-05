@@ -109,7 +109,7 @@ namespace Internal.Text
         {
             var result = new byte[s1.Length + s2.Length];
             s1.CopyTo(result);
-            s2.CopyTo(new Span<byte>(result).Slice(s1.Length));
+            s2.CopyTo(result.AsSpan(s1.Length));
             return new Utf8String(result);
         }
 
@@ -117,8 +117,8 @@ namespace Internal.Text
         {
             var result = new byte[s1.Length + s2.Length + s3.Length];
             s1.CopyTo(result);
-            s2.CopyTo(new Span<byte>(result).Slice(s1.Length));
-            s3.CopyTo(new Span<byte>(result).Slice(s1.Length + s2.Length));
+            s2.CopyTo(result.AsSpan(s1.Length));
+            s3.CopyTo(result.AsSpan(s1.Length + s2.Length));
             return new Utf8String(result);
         }
 
@@ -126,9 +126,9 @@ namespace Internal.Text
         {
             var result = new byte[s1.Length + s2.Length + s3.Length + s4.Length];
             s1.CopyTo(result);
-            s2.CopyTo(new Span<byte>(result).Slice(s1.Length));
-            s3.CopyTo(new Span<byte>(result).Slice(s1.Length + s2.Length));
-            s4.CopyTo(new Span<byte>(result).Slice(s1.Length + s2.Length + s3.Length));
+            s2.CopyTo(result.AsSpan(s1.Length));
+            s3.CopyTo(result.AsSpan(s1.Length + s2.Length));
+            s4.CopyTo(result.AsSpan(s1.Length + s2.Length + s3.Length));
             return new Utf8String(result);
         }
 
@@ -136,10 +136,10 @@ namespace Internal.Text
         {
             var result = new byte[s1.Length + s2.Length + s3.Length + s4.Length + s5.Length];
             s1.CopyTo(result);
-            s2.CopyTo(new Span<byte>(result).Slice(s1.Length));
-            s3.CopyTo(new Span<byte>(result).Slice(s1.Length + s2.Length));
-            s4.CopyTo(new Span<byte>(result).Slice(s1.Length + s2.Length + s3.Length));
-            s5.CopyTo(new Span<byte>(result).Slice(s1.Length + s2.Length + s3.Length + s4.Length));
+            s2.CopyTo(result.AsSpan(s1.Length));
+            s3.CopyTo(result.AsSpan(s1.Length + s2.Length));
+            s4.CopyTo(result.AsSpan(s1.Length + s2.Length + s3.Length));
+            s5.CopyTo(result.AsSpan(s1.Length + s2.Length + s3.Length + s4.Length));
             return new Utf8String(result);
         }
     }
