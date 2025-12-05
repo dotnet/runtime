@@ -22,11 +22,13 @@ void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 
 void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, cnsval_ssize_t imm);
-void emitIns_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl);
 void emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip);
 void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2);
 
 void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
+
+size_t emitOutputULEB128(uint8_t* destination, uint64_t value);
+size_t emitOutputSLEB128(uint8_t* destination, int64_t value);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */

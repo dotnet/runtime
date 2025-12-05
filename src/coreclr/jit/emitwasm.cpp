@@ -32,22 +32,10 @@ void emitter::emitIns(instruction ins)
     appendToCurIG(id);
 }
 
-void emitter::emitInsConstant(instruction ins, uint64_t bits)
-{
-    instrDesc* id  = emitNewInstrWasmConstant(bits);
-    insFormat  fmt = emitInsFormat(ins);
-
-    id->idIns(ins);
-    id->idInsFmt(fmt);
-
-    dispIns(id);
-    appendToCurIG(id);
-}
-
 //------------------------------------------------------------------------
 // emitIns_I: Emit an instruction with an immediate operand.
 //
-void emitter::emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm)
+void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 {
     instrDesc* id  = emitNewInstrSC(attr, imm);
     insFormat  fmt = emitInsFormat(ins);
@@ -80,11 +68,6 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
 void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t imm)
 {
     NYI_WASM("emitIns_R_I");
-}
-
-void emitter::emitIns_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl)
-{
-    NYI_WASM("emitIns_R_F");
 }
 
 void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
@@ -153,6 +136,13 @@ unsigned SizeOfULEB128(uint64_t value)
     return (x * 37) >> 8;
 }
 
+unsigned SizeOfSLEB128(int64_t value)
+{
+    // The same as SizeOfULEB128 calculation but we have to account for the sign bit.
+    unsigned x = 1 + 6 + 64 - (unsigned)BitOperations::LeadingZeroCount((uint64_t)(value ^ (value >> 63)) | 1UL);
+    return (x * 37) >> 8;
+}
+
 unsigned emitter::instrDesc::idCodeSize() const
 {
 #ifdef TARGET_WASM32
@@ -180,8 +170,8 @@ unsigned emitter::instrDesc::idCodeSize() const
         case IF_ULEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             break;
-        case IF_LEB128:
-            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfLEB128(emitGetInsSC(this));
+        case IF_SLEB128:
+            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfSLEB128(emitGetInsSC(this));
             break;
         case IF_F32:
             size += 4;
@@ -196,6 +186,7 @@ unsigned emitter::instrDesc::idCodeSize() const
             size += SizeOfULEB128(align);
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             break;
+        }
         default:
             unreached();
     }
@@ -205,6 +196,18 @@ unsigned emitter::instrDesc::idCodeSize() const
 void emitter::emitSetShortJump(instrDescJmp* id)
 {
     NYI_WASM("emitSetShortJump");
+}
+
+size_t emitter::emitOutputULEB128(uint8_t* destination, uint64_t value)
+{
+    NYI_WASM("emitOutputULEB128");
+    return 0;
+}
+
+size_t emitter::emitOutputSLEB128(uint8_t* destination, int64_t value)
+{
+    NYI_WASM("emitOutputULEB128");
+    return 0;
 }
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
@@ -232,16 +235,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // while cnsval_ssize_t is appropriately sized, we want to make sure
             //  that constant is as big as EncodeLEB64 expects it to be
             cnsval_ssize_t constant = emitGetInsSC(id);
-            dst += emitOutputULEB128(dst, &constant);
+            dst += emitOutputULEB128(dst, constant);
             break;
         }
-        case IF_LEB128:
+        case IF_SLEB128:
         {
             dst += emitOutputByte(dst, opcode);
             // while cnsval_ssize_t is appropriately sized, we want to make sure
             //  that constant is as big as EncodeLEB64 expects it to be
             cnsval_ssize_t constant = emitGetInsSC(id);
-            dst += emitOutputLEB128(dst, &constant);
+            dst += emitOutputSLEB128(dst, constant);
             break;
         }
         case IF_F32:
@@ -249,7 +252,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputByte(dst, opcode);
             cnsval_ssize_t bits = emitGetInsSC(id);
             double         value;
-            float truncated;
+            float          truncated;
             memcpy(&value, &bits, sizeof(double));
             truncated = (float)value;
             memcpy(dst + writeableOffset, &truncated, sizeof(float));
@@ -263,6 +266,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             memcpy(dst + writeableOffset, &bits, sizeof(double));
             dst += sizeof(double);
             break;
+        }
         case IF_LABEL:
             NYI_WASM("emitOutputInstr IF_LABEL");
             break;
@@ -273,8 +277,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             uint64_t offset = emitGetInsSC(id);
             assert(align <= UINT32_MAX); // spec says memarg alignment is u32
             assert(align < 64);          // spec says align > 2^6 produces a memidx for multiple memories.
-            dst += emitOutputLEB128(dst, &align);
-            dst += emitOutputLEB128(dst, &offset);
+            dst += emitOutputULEB128(dst, align);
+            dst += emitOutputULEB128(dst, offset);
             break;
         }
         default:
@@ -387,7 +391,7 @@ void emitter::emitDispIns(
         }
         break;
 
-        case IF_LEB128:
+        case IF_SLEB128:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %i", imm);
@@ -408,7 +412,7 @@ void emitter::emitDispIns(
         {
             // TODO-WASM: decide what our strategy for alignment hints is and display these accordingly.
             unsigned      log2align = 1;
-            target_size_t offset    = emitGetInsSC(id);
+            cnsval_ssize_t offset   = emitGetInsSC(id);
             printf(" %u %u", log2align, offset);
         }
         break;

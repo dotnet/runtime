@@ -551,8 +551,9 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 //
 void CodeGen::genCodeForConstant(GenTree* treeNode)
 {
-    instruction ins;
-    uint64_t    bits;
+    instruction    ins;
+    cnsval_ssize_t bits;
+    static_assert(sizeof(cnsval_ssize_t) >= sizeof(double));
 
     switch (treeNode->TypeGet())
     {
@@ -560,14 +561,14 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
         {
             ins                      = INS_i32_const;
             GenTreeIntConCommon* con = treeNode->AsIntConCommon();
-            bits                     = static_cast<uint64_t>(con->IconValue());
+            bits                     = con->IconValue();
             break;
         }
         case TYP_LONG:
         {
             ins                      = INS_i64_const;
             GenTreeIntConCommon* con = treeNode->AsIntConCommon();
-            bits                     = static_cast<uint64_t>(con->IconValue());
+            bits                     = con->IconValue();
             break;
         }
         case TYP_FLOAT:
@@ -591,7 +592,8 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
             return;
     }
 
-    GetEmitter()->emitInsConstant(ins, bits);
+    // The IF_ for the selected instruction, i.e. IF_F64, determines how these bits are emitted
+    GetEmitter()->emitIns_I(ins, EA_8BYTE, bits);
     genProduceReg(treeNode);
 }
 
