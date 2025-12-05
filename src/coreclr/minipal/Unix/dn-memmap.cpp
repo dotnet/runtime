@@ -38,7 +38,7 @@ MemoryMappedFile* MemoryMappedFile::Open(const WCHAR* path)
         goto Fail;
 #endif
 
-    address = mmap(nullptr, (size_t)st.st_size, PROT_READ, 0, fd, 0);
+    address = mmap(nullptr, (size_t)st.st_size, PROT_READ, MAP_SHARED, fd, 0);
     if (address == MAP_FAILED)
         goto Fail;
     
