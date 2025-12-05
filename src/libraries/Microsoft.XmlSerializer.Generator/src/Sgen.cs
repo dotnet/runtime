@@ -318,11 +318,8 @@ namespace Microsoft.XmlSerializer.Generator
                 var serializableTypes = importedTypes.ToArray();
                 var allMappings = mappings.ToArray();
 
-                outputDirectory ??=
-#if !NET
-                    assembly.GlobalAssemblyCache ? Environment.CurrentDirectory :
-#endif
-                    Path.GetDirectoryName(assembly.Location);
+                bool gac = assembly.GlobalAssemblyCache;
+                outputDirectory ??= (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location));
 
                 if (!Directory.Exists(outputDirectory))
                 {

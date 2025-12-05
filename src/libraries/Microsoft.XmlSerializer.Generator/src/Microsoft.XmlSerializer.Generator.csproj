@@ -1,15 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>dotnet-Microsoft.XmlSerializer.Generator</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>..\..\System.Private.Xml\src\Resources\Strings.resx</StringResourcesPath>
     <StringResourcesName>FxResources.$(AssemblyName.Replace('-', '_')).SR</StringResourcesName>
     <OutputType>Exe</OutputType>
     <Nullable>disable</Nullable>
-    <NoWarn>$(NoWarn);CS8632</NoWarn>
-    <NoWarn>$(NoWarn);CA1850;CA1865</NoWarn> <!-- Suppressed due to multitargeting -->
     <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
     <IsPackable>true</IsPackable>
     <PackageId>$(MSBuildProjectName)</PackageId>
@@ -19,6 +17,7 @@
     <!-- this assembly doesn't need to be binplaced -->
     <EnableBinPlacing>false</EnableBinPlacing>
     <IsTrimmable>false</IsTrimmable>
+    <IsAotCompatible>false</IsAotCompatible>
     <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
     <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
