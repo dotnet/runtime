@@ -26,7 +26,7 @@ function commonAsserts (controller: HttpController) {
     mono_assert(controller, "expected controller");
 }
 
-export function http_wasm_supports_streaming_request (): boolean {
+export function httpWasmSupportsStreamingRequest (): boolean {
     // Detecting streaming request support works like this:
     // If the browser doesn't support a particular body type, it calls toString() on the object and uses the result as the body.
     // So, if the browser doesn't support request streams, the request body becomes the string "[object ReadableStream]".
@@ -49,11 +49,11 @@ export function http_wasm_supports_streaming_request (): boolean {
     return false;
 }
 
-export function http_wasm_supports_streaming_response (): boolean {
+export function httpWasmSupportsStreamingResponse (): boolean {
     return typeof Response !== "undefined" && "body" in Response.prototype && typeof ReadableStream === "function";
 }
 
-export function http_wasm_create_controller (): HttpController {
+export function httpWasmCreateController (): HttpController {
     verifyEnvironment();
     assert_js_interop();
     const controller: HttpController = {
@@ -70,7 +70,7 @@ function mute_unhandledrejection (promise:Promise<any>) {
     });
 }
 
-export function http_wasm_abort (controller: HttpController): void {
+export function httpWasmAbort (controller: HttpController): void {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     try {
         if (!controller.isAborted) {
@@ -91,7 +91,7 @@ export function http_wasm_abort (controller: HttpController): void {
     }
 }
 
-export function http_wasm_transform_stream_write (controller: HttpController, bufferPtr: VoidPtr, bufferLength: number): ControllablePromise<void> {
+export function httpWasmTransformStreamWrite (controller: HttpController, bufferPtr: VoidPtr, bufferLength: number): ControllablePromise<void> {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     mono_assert(bufferLength > 0, "expected bufferLength > 0");
     // the bufferPtr is pinned by the caller
@@ -109,7 +109,7 @@ export function http_wasm_transform_stream_write (controller: HttpController, bu
     });
 }
 
-export function http_wasm_transform_stream_close (controller: HttpController): ControllablePromise<void> {
+export function httpWasmTransformStreamClose (controller: HttpController): ControllablePromise<void> {
     mono_assert(controller, "expected controller");
     return wrap_as_cancelable_promise(async () => {
         mono_assert(controller.streamWriter, "expected streamWriter");
@@ -123,25 +123,25 @@ export function http_wasm_transform_stream_close (controller: HttpController): C
     });
 }
 
-export function http_wasm_fetch_stream (controller: HttpController, url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[]): ControllablePromise<void> {
+export function httpWasmFetchStream (controller: HttpController, url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[]): ControllablePromise<void> {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     const transformStream = new TransformStream<Uint8Array, Uint8Array>();
     controller.streamWriter = transformStream.writable.getWriter();
     mute_unhandledrejection(controller.streamWriter.closed);
     mute_unhandledrejection(controller.streamWriter.ready);
-    const fetch_promise = http_wasm_fetch(controller, url, header_names, header_values, option_names, option_values, transformStream.readable);
+    const fetch_promise = httpWasmFetch(controller, url, header_names, header_values, option_names, option_values, transformStream.readable);
     return fetch_promise;
 }
 
-export function http_wasm_fetch_bytes (controller: HttpController, url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], bodyPtr: VoidPtr, bodyLength: number): ControllablePromise<void> {
+export function httpWasmFetchBytes (controller: HttpController, url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], bodyPtr: VoidPtr, bodyLength: number): ControllablePromise<void> {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     // the bodyPtr is pinned by the caller
     const view = new Span(bodyPtr, bodyLength, MemoryViewType.Byte);
     const copy = view.slice() as Uint8Array;
-    return http_wasm_fetch(controller, url, header_names, header_values, option_names, option_values, copy);
+    return httpWasmFetch(controller, url, header_names, header_values, option_names, option_values, copy);
 }
 
-export function http_wasm_fetch (controller: HttpController, url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], body: Uint8Array | ReadableStream | null): ControllablePromise<void> {
+export function httpWasmFetch (controller: HttpController, url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], body: Uint8Array | ReadableStream | null): ControllablePromise<void> {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     verifyEnvironment();
     assert_js_interop();
@@ -189,30 +189,30 @@ export function http_wasm_fetch (controller: HttpController, url: string, header
     return controller.responsePromise;
 }
 
-export function http_wasm_get_response_type (controller: HttpController): string | undefined {
+export function httpWasmGetResponseType (controller: HttpController): string | undefined {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     return controller.response?.type;
 }
 
-export function http_wasm_get_response_status (controller: HttpController): number {
+export function httpWasmGetResponseStatus (controller: HttpController): number {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     return controller.response?.status ?? 0;
 }
 
 
-export function http_wasm_get_response_header_names (controller: HttpController): string[] {
+export function httpWasmGetResponseHeaderNames (controller: HttpController): string[] {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     mono_assert(controller.responseHeaderNames, "expected responseHeaderNames");
     return controller.responseHeaderNames;
 }
 
-export function http_wasm_get_response_header_values (controller: HttpController): string[] {
+export function httpWasmGetResponseHeaderValues (controller: HttpController): string[] {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     mono_assert(controller.responseHeaderValues, "expected responseHeaderValues");
     return controller.responseHeaderValues;
 }
 
-export function http_wasm_get_response_length (controller: HttpController): ControllablePromise<number> {
+export function httpWasmGetResponseLength (controller: HttpController): ControllablePromise<number> {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     return wrap_as_cancelable_promise(async () => {
         const buffer = await controller.response!.arrayBuffer();
@@ -222,7 +222,7 @@ export function http_wasm_get_response_length (controller: HttpController): Cont
     });
 }
 
-export function http_wasm_get_response_bytes (controller: HttpController, view: Span): number {
+export function httpWasmGetResponseBytes (controller: HttpController, view: Span): number {
     mono_assert(controller, "expected controller");
     mono_assert(controller.responseBuffer, "expected resoved arrayBuffer");
     mono_assert(controller.currentBufferOffset != undefined, "expected currentBufferOffset");
@@ -236,7 +236,7 @@ export function http_wasm_get_response_bytes (controller: HttpController, view: 
     return bytes_read;
 }
 
-export function http_wasm_get_streamed_response_bytes (controller: HttpController, bufferPtr: VoidPtr, bufferLength: number): ControllablePromise<number> {
+export function httpWasmGetStreamedResponseBytes (controller: HttpController, bufferPtr: VoidPtr, bufferLength: number): ControllablePromise<number> {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     // the bufferPtr is pinned by the caller
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);

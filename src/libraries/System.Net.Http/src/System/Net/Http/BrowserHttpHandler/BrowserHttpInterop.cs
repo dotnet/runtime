@@ -26,19 +26,19 @@ namespace System.Net.Http
             return _SupportsStreamingResponse.Value;
         }
 
-        [JSImport("INTERNAL.http_wasm_supports_streaming_request")]
+        [JSImport("INTERNAL.httpWasmSupportsStreamingRequest")]
         public static partial bool SupportsStreamingRequestImpl();
 
-        [JSImport("INTERNAL.http_wasm_supports_streaming_response")]
+        [JSImport("INTERNAL.httpWasmSupportsStreamingResponse")]
         public static partial bool SupportsStreamingResponseImpl();
 
-        [JSImport("INTERNAL.http_wasm_create_controller")]
+        [JSImport("INTERNAL.httpWasmCreateController")]
         public static partial JSObject CreateController();
 
-        [JSImport("INTERNAL.http_wasm_abort")]
+        [JSImport("INTERNAL.httpWasmAbort")]
         public static partial void Abort(JSObject httpController);
 
-        [JSImport("INTERNAL.http_wasm_transform_stream_write")]
+        [JSImport("INTERNAL.httpWasmTransformStreamWrite")]
         public static partial Task TransformStreamWrite(
             JSObject httpController,
             IntPtr bufferPtr,
@@ -47,23 +47,23 @@ namespace System.Net.Http
         public static unsafe Task TransformStreamWriteUnsafe(JSObject httpController, ReadOnlyMemory<byte> buffer, Buffers.MemoryHandle handle)
             => TransformStreamWrite(httpController, (nint)handle.Pointer, buffer.Length);
 
-        [JSImport("INTERNAL.http_wasm_transform_stream_close")]
+        [JSImport("INTERNAL.httpWasmTransformStreamClose")]
         public static partial Task TransformStreamClose(
             JSObject httpController);
 
-        [JSImport("INTERNAL.http_wasm_get_response_header_names")]
+        [JSImport("INTERNAL.httpWasmGetResponseHeaderNames")]
         private static partial string[] _GetResponseHeaderNames(
             JSObject httpController);
 
-        [JSImport("INTERNAL.http_wasm_get_response_header_values")]
+        [JSImport("INTERNAL.httpWasmGetResponseHeaderValues")]
         private static partial string[] _GetResponseHeaderValues(
             JSObject httpController);
 
-        [JSImport("INTERNAL.http_wasm_get_response_status")]
+        [JSImport("INTERNAL.httpWasmGetResponseStatus")]
         public static partial int GetResponseStatus(
             JSObject httpController);
 
-        [JSImport("INTERNAL.http_wasm_get_response_type")]
+        [JSImport("INTERNAL.httpWasmGetResponseType")]
         public static partial string GetResponseType(
             JSObject httpController);
 
@@ -83,7 +83,7 @@ namespace System.Net.Http
             }
         }
 
-        [JSImport("INTERNAL.http_wasm_fetch")]
+        [JSImport("INTERNAL.httpWasmFetch")]
         public static partial Task Fetch(
             JSObject httpController,
             string uri,
@@ -92,7 +92,7 @@ namespace System.Net.Http
             string[] optionNames,
             [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues);
 
-        [JSImport("INTERNAL.http_wasm_fetch_stream")]
+        [JSImport("INTERNAL.httpWasmFetchStream")]
         public static partial Task FetchStream(
             JSObject httpController,
             string uri,
@@ -101,7 +101,7 @@ namespace System.Net.Http
             string[] optionNames,
             [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues);
 
-        [JSImport("INTERNAL.http_wasm_fetch_bytes")]
+        [JSImport("INTERNAL.httpWasmFetchBytes")]
         private static partial Task FetchBytes(
             JSObject httpController,
             string uri,
@@ -117,7 +117,7 @@ namespace System.Net.Http
             return FetchBytes(httpController, uri, headerNames, headerValues, optionNames, optionValues, (IntPtr)pinBuffer.Pointer, bodyLength);
         }
 
-        [JSImport("INTERNAL.http_wasm_get_streamed_response_bytes")]
+        [JSImport("INTERNAL.httpWasmGetStreamedResponseBytes")]
         public static partial Task<int> GetStreamedResponseBytes(
             JSObject fetchResponse,
             IntPtr bufferPtr,
@@ -127,11 +127,11 @@ namespace System.Net.Http
             => GetStreamedResponseBytes(jsController, (IntPtr)handle.Pointer, buffer.Length);
 
 
-        [JSImport("INTERNAL.http_wasm_get_response_length")]
+        [JSImport("INTERNAL.httpWasmGetResponseLength")]
         public static partial Task<int> GetResponseLength(
             JSObject fetchResponse);
 
-        [JSImport("INTERNAL.http_wasm_get_response_bytes")]
+        [JSImport("INTERNAL.httpWasmGetResponseBytes")]
         public static partial int GetResponseBytes(
             JSObject fetchResponse,
             [JSMarshalAs<JSType.MemoryView>] Span<byte> buffer);
