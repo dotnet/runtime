@@ -156,8 +156,6 @@ unsigned emitter::instrDesc::idCodeSize() const
     assert(FitsIn<uint8_t>(GetInsOpcode(idIns())));
     switch (idInsFmt())
     {
-        case IF_NONE:
-            return 0;
         case IF_OPCODE:
             break;
         case IF_BLOCK:
@@ -258,8 +256,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     switch (insFmt)
     {
-        case IF_NONE:
-            break;
         case IF_OPCODE:
             dst += emitOutputByte(dst, opcode);
             break;
