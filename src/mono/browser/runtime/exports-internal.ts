@@ -8,7 +8,7 @@ import cwraps, { profiler_c_functions, threads_c_functions as twraps } from "./c
 import { mono_wasm_send_dbg_command_with_parms, mono_wasm_send_dbg_command, mono_wasm_get_dbg_command_info, mono_wasm_get_details, mono_wasm_release_object, mono_wasm_call_function_on, mono_wasm_debugger_resume, mono_wasm_detach_debugger, mono_wasm_raise_debug_event, mono_wasm_change_debugger_log_level, mono_wasm_debugger_attached } from "./debug";
 import { httpWasmSupportsStreamingRequest, httpWasmSupportsStreamingResponse, httpWasmCreateController, httpWasmAbort, httpWasmTransformStreamWrite, httpWasmTransformStreamClose, httpWasmFetch, httpWasmFetchStream, httpWasmFetchBytes, httpWasmGetResponseHeaderNames, httpWasmGetResponseHeaderValues, httpWasmGetResponseBytes, httpWasmGetResponseLength, httpWasmGetStreamedResponseBytes, httpWasmGetResponseType, httpWasmGetResponseStatus } from "./http";
 import { exportedRuntimeAPI, Module, runtimeHelpers } from "./globals";
-import { get_property, set_property, has_property, get_typeof_property, get_global_this, dynamic_import } from "./invoke-js";
+import { getProperty, setProperty, hasProperty, getTypeofProperty, getGlobalThis, dynamicImport } from "./invoke-js";
 import { mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { wsWasmCreate, wsWasmOpen, wsWasmSend, wsWasmReceive, wsWasmClose, wsWasmAbort, wsGetState } from "./web-socket";
 import { mono_wasm_get_loaded_files } from "./assets";
@@ -21,7 +21,7 @@ import { loadSatelliteAssemblies } from "./satelliteAssemblies";
 import { forceDisposeProxies } from "./gc-handles";
 import { mono_wasm_get_func_id_to_name_mappings } from "./logging";
 import { monoStringToStringUnsafe } from "./strings";
-import { mono_wasm_bind_cs_function } from "./invoke-cs";
+import { monoWasmBindCsFunction } from "./invoke-cs";
 
 import { mono_wasm_dump_threads } from "./pthreads";
 
@@ -56,14 +56,14 @@ export function export_internal (): any {
         mono_wasm_get_func_id_to_name_mappings,
 
         // interop
-        get_property,
-        set_property,
-        has_property,
-        get_typeof_property,
-        get_global_this,
-        get_dotnet_instance: () => exportedRuntimeAPI,
-        dynamic_import,
-        mono_wasm_bind_cs_function,
+        getProperty,
+        setProperty,
+        hasProperty,
+        getTypeofProperty,
+        getGlobalThis,
+        getDotnetInstance: () => exportedRuntimeAPI,
+        dynamicImport,
+        monoWasmBindCsFunction,
 
         // BrowserWebSocket
         wsWasmCreate,
