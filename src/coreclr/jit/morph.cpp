@@ -14750,7 +14750,7 @@ PhaseStatus Compiler::fgExpandQmarkNodes(bool early)
         JITDUMP("Qmark expansion created new throw blocks\n");
     }
 
-    return PhaseStatus::MODIFIED_EVERYTHING;
+    return compQmarkUsed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------

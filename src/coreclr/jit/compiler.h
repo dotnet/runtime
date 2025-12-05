@@ -4597,6 +4597,7 @@ protected:
                            const BYTE*             codeEndp,
                            BoxPatterns             opts);
     void impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken);
+    bool impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     void impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
