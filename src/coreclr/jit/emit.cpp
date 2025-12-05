@@ -10141,26 +10141,6 @@ cnsval_ssize_t emitter::emitGetInsSC(const instrDesc* id)
         }
 }
 
-#ifdef TARGET_WASM
-uint64_t emitter::emitGetInsBits(const instrDesc* id)
-{
-    switch (id->idInsFmt())
-    {
-        case IF_I32:
-        case IF_I64:
-        case IF_F32:
-        case IF_F64:
-        {
-            const instrDescWasmConstant* idWC = reinterpret_cast<const instrDescWasmConstant*>(id);
-            return idWC->bits;
-        }
-        default:
-            assert(!"Invalid idInsFmt for emitGetInsBits");
-            return 0;
-    }
-}
-#endif
-
 #ifdef TARGET_ARM
 
 BYTE* emitter::emitGetInsRelocValue(instrDesc* id)

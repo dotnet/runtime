@@ -2346,15 +2346,6 @@ protected:
     };
 #endif // TARGET_RISCV64
 
-#ifdef TARGET_WASM
-    struct instrDescWasmConstant : instrDescCns
-    {
-        instrDescWasmConstant() = delete;
-
-        uint64_t bits;
-    };
-#endif
-
     struct instrDescCGCA : instrDesc // call with ...
     {
         instrDescCGCA() = delete;
@@ -2465,11 +2456,6 @@ protected:
 #endif // TARGET_XARCH
 
     NOT_ARM(static) cnsval_ssize_t emitGetInsSC(const instrDesc* id);
-
-#ifdef TARGET_WASM
-    static uint64_t emitGetInsBits(const instrDesc* id);
-#endif // TARGET_WASM
-
     unsigned emitInsCount;
 
     /************************************************************************/
@@ -3309,9 +3295,6 @@ private:
 #ifdef TARGET_ARM
     instrDesc* emitNewInstrReloc(emitAttr attr, BYTE* addr);
 #endif // TARGET_ARM
-#ifdef TARGET_WASM
-    instrDesc* emitNewInstrWasmConstant(uint64_t bits);
-#endif
     instrDescJmp* emitNewInstrJmp();
 
 #if !defined(TARGET_ARM64)
@@ -4078,21 +4061,6 @@ inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, cnsval_ssize_
     }
 }
 
-#ifdef TARGET_WASM
-/*****************************************************************************
- *
- *  Allocate an instruction descriptor for an instruction with a constant operand.
- *  The constant is stored as a fixed-size 64 unsigned bits and can hold an integral
- *  or floating-point constant that will be emitted later with the right format.
- */
-inline emitter::instrDesc* emitter::emitNewInstrWasmConstant(uint64_t bits)
-{
-    instrDescWasmConstant* id = (instrDescWasmConstant*)emitAllocAnyInstr(sizeof(instrDescWasmConstant), EA_8BYTE);
-    id->bits                  = bits;
-    return id;
-}
-#endif // TARGET_WASM
-
 /*****************************************************************************
  *
  *  Get the instrDesc size, general purpose version
@@ -4444,8 +4412,8 @@ inline BYTE* emitter::emitCodeWithInstructionSize(BYTE* codePtrBefore, BYTE* new
 
 #ifdef TARGET_WASM
 // Defined in emitwasm.cpp
-size_t SizeOfULEB128(uint64_t value);
-size_t SizeOfLEB128(int64_t value);
+unsigned SizeOfULEB128(uint64_t value);
+unsigned SizeOfSLEB128(int64_t value);
 #endif // TARGET_WASM
 
 /*****************************************************************************/
