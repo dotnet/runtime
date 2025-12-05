@@ -78,9 +78,28 @@ namespace System.Collections.Generic
         {
             Debug.Assert(items != null);
 
-            foreach (T item in items)
+            if (items is ICollection<T> collection)
             {
-                Add(item);
+                int count = collection.Count;
+                if (count > 0)
+                {
+                    if (_count + count > Capacity)
+                    {
+                        EnsureCapacity(_count + count);
+                    }
+
+                    foreach (T item in collection)
+                    {
+                        UncheckedAdd(item);
+                    }
+                }
+            }
+            else
+            {
+                foreach (T item in items)
+                {
+                    Add(item);
+                }
             }
         }
 
