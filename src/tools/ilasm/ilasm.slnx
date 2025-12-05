@@ -1,4 +1,4 @@
 <Solution>
-  <Project Path="ILAssembler.Tests/ILAssembler.Tests.csproj" />
-  <Project Path="ILAssembler/ILAssembler.csproj" />
+  <Project Path="src/ILAssembler/ILAssembler.csproj" />
+  <Project Path="tests/ILAssembler.Tests/ILAssembler.Tests.csproj" />
 </Solution>

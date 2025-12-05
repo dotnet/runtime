@@ -11,6 +11,7 @@ internal static class InstructionEncoderExtensions
 {
     public static void MarkLabel(this InstructionEncoder encoder, LabelHandle label, int ilOffset)
     {
+        // TODO: Propose a public API for this so we don't need to use UnsafeAccessor into the BCL.
         MarkLabel(encoder.ControlFlowBuilder!, ilOffset, label);
     }
 
