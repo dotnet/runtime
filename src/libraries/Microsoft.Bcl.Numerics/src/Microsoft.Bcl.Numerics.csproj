@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum);netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);netstandard2.1</TargetFrameworks>
+    <!-- Use live ILLink for all TFMs instead of multitargeting. -->
+    <_RequiresLiveILLink>true</_RequiresLiveILLink>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
     <!-- This assembly should never be placed inbox as it is only for downlevel compatibility. -->

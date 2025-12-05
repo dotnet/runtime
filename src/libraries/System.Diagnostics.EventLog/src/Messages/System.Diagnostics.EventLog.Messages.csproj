@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- Use live ILLink for all TFMs instead of multitargeting. -->
+    <_RequiresLiveILLink>true</_RequiresLiveILLink>
     <Nullable>disable</Nullable>
     <Win32Resource>EventLogMessages.res</Win32Resource>
     <!-- Override the parent Directory.Build.props -->
