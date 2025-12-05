@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <!-- Use live ILLink for all TFMs instead of multitargeting. -->
+    <!-- Use live ILLink so that the assembly gets IsAotCompatible and IsTrimmable metadata despite
+         not targeting a TFM supported by the shipping trimming tooling. -->
     <UseLiveILLink>true</UseLiveILLink>
     <Nullable>disable</Nullable>
     <Win32Resource>EventLogMessages.res</Win32Resource>
