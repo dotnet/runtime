@@ -55,6 +55,11 @@ namespace ILCompiler.DependencyAnalysis
                 MethodDesc canonMethod = _targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 dependencies.Add(factory.GVMDependencies(canonMethod), "GVM dependencies for runtime method handle");
 
+                if (_targetMethod != canonMethod)
+                {
+                    dependencies.Add(factory.ShadowConcreteMethod(_targetMethod), "GVM concrete method dependencies");
+                }
+
                 // GVM analysis happens on canonical forms, but this is potentially injecting new genericness
                 // into the system. Ensure reflection analysis can still see this.
                 if (_targetMethod.IsAbstract)
