@@ -4419,7 +4419,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     bool isMarshaledPInvoke = isPInvoke && m_compHnd->pInvokeMarshalingRequired(callInfo.hMethod, &callInfo.sig);
 
     // Process sVars
-    int numArgsFromStack = callInfo.sig.numArgs + (newObj ? 0 : callInfo.sig.hasThis());
+    int numArgsFromStack = callInfo.sig.numArgs + (newObj ? 0 : callInfo.sig.hasImplicitThis());
     int newObjThisArgLocation = newObj && !doCallInsteadOfNew ? 0 : INT_MAX;
     int numArgs = numArgsFromStack + (newObjThisArgLocation == 0);
 
@@ -4427,7 +4427,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     int continuationArgLocation = INT_MAX;
     if (callInfo.sig.hasTypeArg())
     {
-        extraParamArgLocation = callInfo.sig.hasThis() ? 1 : 0;
+        extraParamArgLocation = callInfo.sig.hasImplicitThis() ? 1 : 0;
         numArgs++;
     }
 
@@ -4471,7 +4471,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         else
         {
             int iCurrentStackArg = iLogicalArg - numArgsFromStack;
-            if (iLogicalArg != 0 || !callInfo.sig.hasThis() || newObj)
+            if (iLogicalArg != 0 || !callInfo.sig.hasImplicitThis() || newObj)
             {
                 CORINFO_CLASS_HANDLE classHandle;
 
@@ -6992,6 +6992,10 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     CORINFO_RESOLVED_TOKEN constrainedToken;
     CORINFO_CALL_INFO callInfo;
     const uint8_t *codeEnd;
+    if (m_methodInfo->args.hasExplicitThis())
+    {
+        BADCODE("Explicit this is only supported for calls");
+    }
     int numArgs = m_methodInfo->args.hasThis() + m_methodInfo->args.numArgs;
     bool emittedBBlocks, linkBBlocks, needsRetryEmit;
     m_pILCode = methodInfo->ILCode;
