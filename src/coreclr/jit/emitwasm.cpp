@@ -284,7 +284,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             double         value;
             float          truncated;
             memcpy(&value, &bits, sizeof(double));
-            truncated = (float)value;
+            truncated = FloatingPointUtils::convertToSingle(value);
             memcpy(dst + writeableOffset, &truncated, sizeof(float));
             dst += sizeof(float);
             break;
