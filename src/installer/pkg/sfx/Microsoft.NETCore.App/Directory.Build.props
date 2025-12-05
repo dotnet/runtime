@@ -129,7 +129,6 @@
     <PlatformManifestFileEntry Include="mscordbi.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordbi.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordbi.dylib" IsNative="true" />
-    <PlatformManifestFileEntry Include="mscorrc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="ucrtbase.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="msquic.dll" IsNative="true" FallbackFileVersion="$(MsQuicFileVersion)" />
     <PlatformManifestFileEntry Include="libmsquic.dylib" IsNative="true" FallbackFileVersion="$(MsQuicFileVersion)" Condition="'$(Configuration)' == 'Debug' or '$(LibrariesConfiguration)' == 'Debug'"/>

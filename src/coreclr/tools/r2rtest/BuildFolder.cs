@@ -24,11 +24,6 @@ namespace R2RTest
             "mscordbi",
         };
 
-        private static string[] s_runtimeWindowsOnlyLibraries =
-        {
-            "mscorrc",
-        };
-
         private List<string> _compilationInputFiles;
 
         private List<string> _mainExecutables;
@@ -171,13 +166,6 @@ namespace R2RTest
                 foreach (string lib in s_runtimeLibraries)
                 {
                     passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, (libraryPrefix + lib).AppendOSDllSuffix()));
-                }
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    foreach (string lib in s_runtimeWindowsOnlyLibraries)
-                    {
-                        passThroughFiles.Add(Path.Combine(options.CoreRootDirectory.FullName, lib.AppendOSDllSuffix()));
-                    }
                 }
                 else
                 {

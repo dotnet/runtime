@@ -166,7 +166,6 @@ native_binaries_to_ignore = [
     "Microsoft.DiaSymReader.Native.x86.dll",
     "mscordaccore.dll",
     "mscordbi.dll",
-    "mscorrc.dll",
     "msdia140.dll",
     "msquic.dll",
     "msvcp140.dll",
