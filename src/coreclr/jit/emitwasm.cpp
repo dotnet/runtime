@@ -14,12 +14,6 @@
     #define INST(id, nm, info, fmt, opcode) info,
     #include "instrs.h"
 };
-
-static const uint8_t insOpcodes[]
-{
-    #define INST(id, nm, info, fmt, opcode) static_cast<uint8_t>(opcode),
-    #include "instrs.h"
-};
 // clang-format on
 
 void emitter::emitIns(instruction ins)
@@ -93,21 +87,25 @@ bool emitter::emitInsIsStore(instruction ins)
 
 emitter::insFormat emitter::emitInsFormat(instruction ins)
 {
-    // clang-format off
-    const static insFormat insFormats[] =
-    {
-        #define INST(id, nm, info, fmt, opcode) fmt,
-        #include "instrs.h"
+    static_assert(IF_COUNT < 255);
+
+    const static uint8_t insFormats[] = {
+#define INST(id, nm, info, fmt, opcode) fmt,
+#include "instrs.h"
     };
-    // clang-format on
 
     assert(ins < ArrLen(insFormats));
     assert((insFormats[ins] != IF_NONE));
-    return insFormats[ins];
+    return static_cast<insFormat>(insFormats[ins]);
 }
 
 static unsigned GetInsOpcode(instruction ins)
 {
+    static const uint8_t insOpcodes[] = {
+#define INST(id, nm, info, fmt, opcode) static_cast<uint8_t>(opcode),
+#include "instrs.h"
+    };
+
     assert(ins < ArrLen(insOpcodes));
     return insOpcodes[ins];
 }
