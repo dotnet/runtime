@@ -40,7 +40,10 @@ namespace ILCompiler
                 else
                 {
                     MethodDesc isSupportedMethod = type.GetMethod("get_IsSupported"u8, new MethodSignature(MethodSignatureFlags.Static, 0, context.GetWellKnownType(WellKnownType.Boolean), []));
-                    rootProvider.AddCompilationRoot(isSupportedMethod, rootMinimalDependencies: false, "IsSupported getter for unsupported hardware intrinsic");
+                    if (isSupportedMethod is not null)
+                    {
+                        rootProvider.AddCompilationRoot(isSupportedMethod, rootMinimalDependencies: false, "IsSupported getter for unsupported hardware intrinsic");
+                    }
                 }
             }
         }
