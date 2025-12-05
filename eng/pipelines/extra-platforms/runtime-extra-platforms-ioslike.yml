@@ -119,7 +119,7 @@ jobs:
         value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_NativeAOT
+      nameSuffix: AllSubsets_NativeAOT_Smoke
       buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
       timeoutInMinutes: 180
       # extra steps, run tests
@@ -190,7 +190,7 @@ jobs:
         value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_CoreCLR
+      nameSuffix: AllSubsets_CoreCLR_Smoke
       buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:BuildTestsOnHelix=false /p:UseNativeAOTRuntime=false /p:RunSmokeTestsOnly=true
       timeoutInMinutes: 120
       # extra steps, run tests
