@@ -295,8 +295,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // The int64 bits are actually a double constant we can copy directly
             //  to the output stream.
             cnsval_ssize_t bits = emitGetInsSC(id);
-            memcpy(dst + writeableOffset, &bits, sizeof(double));
-            dst += sizeof(double);
+            memcpy(dst + writeableOffset, &bits, sizeof(cnsval_ssize_t));
+            dst += sizeof(cnsval_ssize_t);
             break;
         }
         case IF_LABEL:
