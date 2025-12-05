@@ -4950,14 +4950,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // call and register argument info, flowgraph and loop info, etc.
     compJitStats();
 
-#ifdef TARGET_ARM
-    if (compLocallocUsed)
-    {
-        // We reserve REG_SAVED_LOCALLOC_SP to store SP on entry for stack unwinding
-        codeGen->regSet.rsMaskResvd |= RBM_SAVED_LOCALLOC_SP;
-    }
-#endif // TARGET_ARM
-
     if (compIsAsync())
     {
         DoPhase(this, PHASE_ASYNC, &Compiler::TransformAsync);
