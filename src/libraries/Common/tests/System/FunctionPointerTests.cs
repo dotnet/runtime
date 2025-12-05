@@ -296,6 +296,8 @@ namespace System.Tests.Types
 
         private unsafe class FunctionPointerHolder
         {
+            // CS0649: Field is never assigned to (fields are used via reflection)
+            // CS0169: Field is never used (private fields are accessed via reflection)
 #pragma warning disable 0649, 0169
             public delegate*<void> ToString_1;
             public delegate*unmanaged<void> ToString_2;
