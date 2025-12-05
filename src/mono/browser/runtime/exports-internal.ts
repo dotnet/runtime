@@ -25,7 +25,7 @@ import { mono_wasm_bind_cs_function } from "./invoke-cs";
 
 import { mono_wasm_dump_threads } from "./pthreads";
 
-export function export_internal (): any {
+export function export_internal(): any {
     return {
         // tests
         mono_wasm_exit: (exit_code: number) => {
@@ -56,14 +56,14 @@ export function export_internal (): any {
         mono_wasm_get_func_id_to_name_mappings,
 
         // interop
-        get_property,
-        set_property,
-        has_property,
-        get_typeof_property,
-        get_global_this,
-        get_dotnet_instance: () => exportedRuntimeAPI,
-        dynamic_import,
-        mono_wasm_bind_cs_function,
+        getProperty: get_property,
+        setProperty: set_property,
+        hasProperty: has_property,
+        getTypeOfProperty: get_typeof_property,
+        getGlobalThis: get_global_this,
+        getDotnetInstance: () => exportedRuntimeAPI,
+        dynamicImport: dynamic_import,
+        bindCsFunction: mono_wasm_bind_cs_function,
 
         // BrowserWebSocket
         ws_wasm_create,
