@@ -697,7 +697,7 @@ namespace Internal.JitInterface
             // If any il bodies need to be recomputed, force recompilation
             if ((_ilBodiesNeeded != null) || InfiniteCompileStress.Enabled || result == CompilationResult.CompilationRetryRequested)
             {
-                _compilation.PrepareForCompilationRetry(_methodCodeNode, _ilBodiesNeeded, null);
+                _compilation.PrepareForCompilationRetry(_methodCodeNode, _ilBodiesNeeded);
                 result = CompilationResult.CompilationRetryRequested;
             }
         }
@@ -778,26 +778,6 @@ namespace Internal.JitInterface
                     return;
                 }
 
-                if (MethodBeingCompiled.IsAsyncThunk())
-                {
-                    // The synthetic async thunks require references to methods/types that may not have existing methodRef entries in the version bubble.
-                    // These references need to be added to the mutable module if they don't exist.
-                    var requiredMutableModuleReferences = MethodBeingCompiled.IsAsyncVariant() ?
-                        AsyncThunkILEmitter.GetRequiredReferencesForAsyncThunk(((AsyncMethodVariant)MethodBeingCompiled).Target)
-                        : AsyncThunkILEmitter.GetRequiredReferencesForTaskReturningThunk(MethodBeingCompiled);
-                    foreach (var entity in requiredMutableModuleReferences)
-                    {
-                        // If we have a reference to the method/type already, we're okay.
-                        if (_compilation.NodeFactory.ManifestMetadataTable._mutableModule.TryGetExistingEntityHandle(entity) is null)
-                        {
-                            if (logger.IsVerbose)
-                                logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` triggered recompilation.");
-                            _compilation.PrepareForCompilationRetry(_methodCodeNode, null, requiredMutableModuleReferences);
-                            codeGotPublished = true;
-                            return;
-                        }
-                    }
-                }
 
                 if (MethodBeingCompiled.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
                 {

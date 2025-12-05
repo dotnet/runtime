@@ -63,7 +63,7 @@ namespace Internal.IL.Stubs
                 }
                 else
                 {
-                    getResultOrCompletedTask = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.Task_FromResult)
+                    getResultOrCompletedTask = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.Task_FromResult_1)
                         .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
                     taskFromException = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.AsyncHelpers_TaskFromException_1)
                         .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
@@ -136,7 +136,7 @@ namespace Internal.IL.Stubs
                 {
                     // ValueTask (non-generic)
                     isCompleted = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.ValueTask_get_IsCompleted);
-                    completionResultMethod = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.ValueTask_get_Result);
+                    completionResultMethod = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.ValueTask_ThrowIfCompletedUnsuccessfully);
                     asTaskOrNotifierMethod = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.ValueTask_AsTaskOrNotifier);
                 }
                 else
@@ -151,16 +151,15 @@ namespace Internal.IL.Stubs
             {
                 asTaskOrNotifierMethod = null;
                 // Task path
+                isCompleted = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.Task_get_IsCompleted);
                 if (!taskReturningMethodReturnType.HasInstantiation)
                 {
                     // Task (non-generic)
-                    isCompleted = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.Task_get_IsCompleted);
                     completionResultMethod = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.AsyncHelpers_CompletedTask);
                 }
                 else
                 {
                     // Task<T> (generic)
-                    isCompleted = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.Task_1_get_IsCompleted);
                     TypeDesc logicalReturnType = taskReturningMethodReturnType.Instantiation[0];
                     MethodDesc completedTaskResultMethodOpen = KnownILStubReferences.GetKnownMethod(context, KnownILStubReference.AsyncHelpers_CompletedTaskResult);
                     completionResultMethod = completedTaskResultMethodOpen.MakeInstantiatedMethod(new Instantiation(logicalReturnType));

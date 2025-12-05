@@ -11,6 +11,8 @@ namespace Internal.IL
 {
     public enum KnownILStubReference
     {
+        Exception,
+
         ExecutionAndSyncBlockStore,
         ExecutionAndSyncBlockStore_Push,
         ExecutionAndSyncBlockStore_Pop,
@@ -37,18 +39,17 @@ namespace Internal.IL
         ValueTask,
         ValueTask_1,
 
-        Task_FromResult,
+        Task_FromResult_1,
         ValueTask_FromResult_1,
 
         Task_get_CompletedTask,
         ValueTask_get_CompletedTask,
 
         Task_get_IsCompleted,
-        Task_1_get_IsCompleted,
         ValueTask_get_IsCompleted,
         ValueTask_1_get_IsCompleted,
 
-        ValueTask_get_Result,
+        ValueTask_ThrowIfCompletedUnsuccessfully,
         ValueTask_1_get_Result,
 
         ValueTask_AsTaskOrNotifier,
@@ -59,6 +60,21 @@ namespace Internal.IL
 
     public class KnownILStubReferences
     {
+        public static bool IsKnownMethod(MethodDesc method)
+        {
+            for (KnownILStubReference helper = 0; helper < KnownILStubReference.AsyncHelperCount; helper++)
+            {
+                TypeSystemEntity knownHelper = GetKnownEntity(method.Context, helper);
+                if (knownHelper is not MethodDesc knownMethod)
+                {     continue; }
+                if (knownMethod.GetTypicalMethodDefinition() == method)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         [Conditional("DEBUG")]
         public static void AssertIsKnownEntity(TypeSystemEntity entity, string message)
         {
@@ -71,8 +87,8 @@ namespace Internal.IL
             };
             for (KnownILStubReference helper = 0; helper < KnownILStubReference.AsyncHelperCount; helper++)
             {
-                MethodDesc knownHelperMethod = GetKnownMethod(context, helper);
-                if (entity == knownHelperMethod)
+                TypeSystemEntity knownHelper = GetKnownEntity(context, helper);
+                if (entity == knownHelper)
                 {
                     return;
                 }
@@ -82,12 +98,31 @@ namespace Internal.IL
 
         public static EcmaMethod GetKnownMethod(TypeSystemContext context, KnownILStubReference helper)
         {
-            return (EcmaMethod)(helper switch
+            TypeSystemEntity entity = GetKnownEntity(context, helper);
+            if (entity is EcmaMethod method)
+                return method;
+            throw new ArgumentException($"'{helper}' does not refer to a method", nameof(helper));
+        }
+
+        public static EcmaType GetKnownType(TypeSystemContext context, KnownILStubReference helper)
+        {
+            TypeSystemEntity entity = GetKnownEntity(context, helper);
+            if (entity is EcmaType type)
+                return type;
+            throw new ArgumentException($"'{helper}' does not refer to a type", nameof(helper));
+        }
+
+        public static TypeSystemEntity GetKnownEntity(TypeSystemContext context, KnownILStubReference helper)
+        {
+            return helper switch
             {
-                KnownILStubReference.ExecutionAndSyncBlockStore => throw new ArgumentException("Use a more specific enum value"),
+                KnownILStubReference.Exception => context.GetWellKnownType(WellKnownType.Exception),
+
+                KnownILStubReference.ExecutionAndSyncBlockStore => context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "ExecutionAndSyncBlockStore"u8),
                 KnownILStubReference.ExecutionAndSyncBlockStore_Push => GetKnownType(context, KnownILStubReference.ExecutionAndSyncBlockStore).GetKnownMethod("Push"u8, null),
                 KnownILStubReference.ExecutionAndSyncBlockStore_Pop => GetKnownType(context, KnownILStubReference.ExecutionAndSyncBlockStore).GetKnownMethod("Pop"u8, null),
 
+                KnownILStubReference.AsyncHelpers => context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8),
                 KnownILStubReference.AsyncHelpers_AsyncCallContinuation => GetKnownType(context, KnownILStubReference.AsyncHelpers).GetKnownMethod("AsyncCallContinuation"u8, null),
                 KnownILStubReference.AsyncHelpers_TransparentAwait => GetKnownType(context, KnownILStubReference.AsyncHelpers).GetKnownMethod("TransparentAwait"u8, null),
                 KnownILStubReference.AsyncHelpers_CompletedTask => GetKnownType(context, KnownILStubReference.AsyncHelpers).GetKnownMethod("CompletedTask"u8, null),
@@ -103,45 +138,35 @@ namespace Internal.IL
                 KnownILStubReference.AsyncHelpers_FinalizeValueTaskReturningThunk => GetKnownType(context, KnownILStubReference.AsyncHelpers).GetKnownMethod("FinalizeValueTaskReturningThunk"u8, new MethodSignature(MethodSignatureFlags.Static, 0, ValueTask(), [])),
                 KnownILStubReference.AsyncHelpers_FinalizeValueTaskReturningThunk_1 => GetKnownType(context, KnownILStubReference.AsyncHelpers).GetKnownMethod("FinalizeValueTaskReturningThunk"u8, new MethodSignature(MethodSignatureFlags.Static, 1, ValueTask_T(), [])),
 
-                KnownILStubReference.Task_FromResult => GetKnownType(context, KnownILStubReference.Task).GetKnownMethod("FromResult"u8, null),
-                KnownILStubReference.ValueTask_FromResult_1 => GetKnownType(context, KnownILStubReference.ValueTask_1).GetKnownMethod("FromResult"u8, null),
+                KnownILStubReference.Task => context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8),
+                KnownILStubReference.Task_1 => context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8),
+                KnownILStubReference.ValueTask => context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8),
+                KnownILStubReference.ValueTask_1 => context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8),
+
+                KnownILStubReference.Task_FromResult_1 => GetKnownType(context, KnownILStubReference.Task).GetKnownMethod("FromResult"u8, null),
+                KnownILStubReference.ValueTask_FromResult_1 => GetKnownType(context, KnownILStubReference.ValueTask).GetKnownMethod("FromResult"u8, null),
 
                 KnownILStubReference.Task_get_CompletedTask => GetKnownType(context, KnownILStubReference.Task).GetKnownMethod("get_CompletedTask"u8, null),
                 KnownILStubReference.ValueTask_get_CompletedTask => GetKnownType(context, KnownILStubReference.ValueTask).GetKnownMethod("get_CompletedTask"u8, null),
 
                 KnownILStubReference.Task_get_IsCompleted => GetKnownType(context, KnownILStubReference.Task).GetKnownMethod("get_IsCompleted"u8, null),
-                KnownILStubReference.Task_1_get_IsCompleted => GetKnownType(context, KnownILStubReference.Task_1).GetKnownMethod("get_IsCompleted"u8, null),
                 KnownILStubReference.ValueTask_get_IsCompleted => GetKnownType(context, KnownILStubReference.ValueTask).GetKnownMethod("get_IsCompleted"u8, null),
                 KnownILStubReference.ValueTask_1_get_IsCompleted => GetKnownType(context, KnownILStubReference.ValueTask_1).GetKnownMethod("get_IsCompleted"u8, null),
 
-                KnownILStubReference.ValueTask_get_Result => GetKnownType(context, KnownILStubReference.ValueTask).GetKnownMethod("get_Result"u8, null),
+                KnownILStubReference.ValueTask_ThrowIfCompletedUnsuccessfully => GetKnownType(context, KnownILStubReference.ValueTask).GetKnownMethod("ThrowIfCompletedUnsuccessfully"u8, null),
                 KnownILStubReference.ValueTask_1_get_Result => GetKnownType(context, KnownILStubReference.ValueTask_1).GetKnownMethod("get_Result"u8, null),
 
                 KnownILStubReference.ValueTask_AsTaskOrNotifier => GetKnownType(context, KnownILStubReference.ValueTask).GetKnownMethod("AsTaskOrNotifier"u8, null),
                 KnownILStubReference.ValueTask_1_AsTaskOrNotifier => GetKnownType(context, KnownILStubReference.ValueTask_1).GetKnownMethod("AsTaskOrNotifier"u8, null),
 
                 _ => throw new ArgumentOutOfRangeException(nameof(helper))
-            });
+            };
 
             TypeDesc Task() => GetKnownType(context, KnownILStubReference.Task);
             TypeDesc Task_T() => GetKnownType(context, KnownILStubReference.Task_1).MakeInstantiatedType(context.GetSignatureVariable(0, true));
             TypeDesc ValueTask() => GetKnownType(context, KnownILStubReference.ValueTask);
             TypeDesc ValueTask_T() => GetKnownType(context, KnownILStubReference.ValueTask_1).MakeInstantiatedType(context.GetSignatureVariable(0, true));
             TypeDesc Exception() => context.GetWellKnownType(WellKnownType.Exception);
-        }
-
-        public static EcmaType GetKnownType(TypeSystemContext context, KnownILStubReference helper)
-        {
-            return (EcmaType)(helper switch
-            {
-                KnownILStubReference.ExecutionAndSyncBlockStore => context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "ExecutionAndSyncBlockStore"u8),
-                KnownILStubReference.AsyncHelpers => context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8),
-                KnownILStubReference.Task => context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8),
-                KnownILStubReference.Task_1 => context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8),
-                KnownILStubReference.ValueTask => context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8),
-                KnownILStubReference.ValueTask_1 => context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8),
-                _ => throw new ArgumentOutOfRangeException(nameof(helper))
-            });
         }
     }
 }

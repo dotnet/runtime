@@ -108,6 +108,12 @@ namespace ILCompiler
                 }
             }
 
+            if (callee.IsAsyncThunk())
+            {
+                // Async thunks require special handling in the compiler and should not be inlined
+                return false;
+            }
+
             _nodeFactory.DetectGenericCycles(caller, callee);
 
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
@@ -296,7 +302,6 @@ namespace ILCompiler
         private readonly ProfileDataManager _profileData;
         private readonly FileLayoutOptimizer _fileLayoutOptimizer;
         private readonly HashSet<EcmaMethod> _methodsWhichNeedMutableILBodies = new HashSet<EcmaMethod>();
-        private readonly HashSet<TypeSystemEntity> _methodsNeededAsReferencesInMutableModule = new HashSet<TypeSystemEntity>();
         private readonly HashSet<MethodWithGCInfo> _methodsToRecompile = new HashSet<MethodWithGCInfo>();
 
         public ProfileDataManager ProfileData => _profileData;
@@ -647,7 +652,7 @@ namespace ILCompiler
         // The _finishedFirstCompilationRunInPhase2 variable works in concert some checking to ensure that we don't violate any of this model
         private bool _finishedFirstCompilationRunInPhase2 = false;
 
-        public void PrepareForCompilationRetry(MethodWithGCInfo methodToBeRecompiled, IEnumerable<EcmaMethod> methodsThatNeedILBodies, IEnumerable<TypeSystemEntity> requiredMutableModuleReferences)
+        public void PrepareForCompilationRetry(MethodWithGCInfo methodToBeRecompiled, IEnumerable<EcmaMethod> methodsThatNeedILBodies)
         {
             lock (_methodsToRecompile)
             {
@@ -656,11 +661,6 @@ namespace ILCompiler
                 {
                     foreach (var method in methodsThatNeedILBodies)
                         _methodsWhichNeedMutableILBodies.Add(method);
-                }
-                if (requiredMutableModuleReferences != null)
-                {
-                    foreach (var method in requiredMutableModuleReferences)
-                        _methodsNeededAsReferencesInMutableModule.Add(method);
                 }
             }
         }
@@ -702,6 +702,46 @@ namespace ILCompiler
                                 CorInfoImpl.IsMethodCompilable(this, methodCodeNodeNeedingCode.Method))
                                 _methodsWhichNeedMutableILBodies.Add(ecmaMethod);
                         }
+                        if (method.IsAsyncThunk())
+                        {
+                            // The synthetic async thunks require references to methods/types that may not have existing methodRef entries in the version bubble.
+                            // These references need to be added to the mutable module if they don't exist.
+                            var requiredMutableModuleReferences = method.IsAsyncVariant() ?
+                                AsyncThunkILEmitter.GetRequiredReferencesForAsyncThunk(((AsyncMethodVariant)method).Target)
+                                : AsyncThunkILEmitter.GetRequiredReferencesForTaskReturningThunk(method);
+                            _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
+                            try
+                            {
+                                foreach (var entity in requiredMutableModuleReferences)
+                                {
+                                    switch (entity)
+                                    {
+                                        case MethodDesc md:
+                                            if (_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull)
+                                            {
+                                                _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(md);
+                                                Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
+                                            }
+                                            break;
+                                        case EcmaType td:
+                                            if (_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull)
+                                            {
+                                                _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(td);
+                                                Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
+                                            }
+                                            break;
+                                        default:
+                                            Logger.LogMessage("Didn't handle entity: " + entity.GetDisplayName());
+                                            break;
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = null;
+                            }
+                        }
+
                         if (!_nodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
                         {
                             // Validate that the typedef tokens for all of the instantiation parameters of the method
@@ -755,14 +795,12 @@ namespace ILCompiler
                     }
                 }
 
-                ProcessNecessaryMutableModuleReferences();
                 ProcessMutableMethodBodiesList();
                 ResetILCache();
                 CompileMethodList(obj);
 
                 while (_methodsToRecompile.Count > 0)
                 {
-                    ProcessNecessaryMutableModuleReferences();
                     ProcessMutableMethodBodiesList();
                     ResetILCache();
                     MethodWithGCInfo[] methodsToRecompile = new MethodWithGCInfo[_methodsToRecompile.Count];
@@ -803,25 +841,6 @@ namespace ILCompiler
                     ilProvider.CreateCrossModuleInlineableTokensForILBody(method);
             }
 
-            void ProcessNecessaryMutableModuleReferences()
-            {
-                TypeSystemEntity[] entities = new TypeSystemEntity[_methodsNeededAsReferencesInMutableModule.Count];
-                _methodsNeededAsReferencesInMutableModule.CopyTo(entities);
-                _methodsNeededAsReferencesInMutableModule.Clear();
-                _nodeFactory.ManifestMetadataTable._mutableModule.AddingReferencesToR2RKnownTypesAndMethods = true;
-                try
-                {
-                    foreach(var entity in entities)
-                    {
-                        KnownILStubReferences.AssertIsKnownEntity(entity, "Tried to add unknown type system entity to mutable module: " + entity.GetDisplayName());
-                        _ = _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(entity);
-                    }
-                }
-                finally
-                {
-                    _nodeFactory.ManifestMetadataTable._mutableModule.AddingReferencesToR2RKnownTypesAndMethods = false;
-                }
-            }
 
             void ResetILCache()
             {
