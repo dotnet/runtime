@@ -92,9 +92,6 @@ namespace System.CommandLine
                 }
             }
 
-            // Whether to allow optimistically expanding the instruction sets beyond what was specified.
-            // This value is provided by the caller.
-
             bool throttleAvx512 = false;
 
             if (instructionSet == "native")
