@@ -265,14 +265,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             dst += emitOutputByte(dst, opcode);
             cnsval_ssize_t constant = emitGetInsSC(id);
-            dst += emitOutputULEB128(dst, constant);
+            dst += emitOutputULEB128(dst, (uint64_t)constant);
             break;
         }
         case IF_SLEB128:
         {
             dst += emitOutputByte(dst, opcode);
             cnsval_ssize_t constant = emitGetInsSC(id);
-            dst += emitOutputSLEB128(dst, constant);
+            dst += emitOutputSLEB128(dst, (int64_t)constant);
             break;
         }
         case IF_F32:
@@ -419,14 +419,14 @@ void emitter::emitDispIns(
         case IF_ULEB128:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %llu", imm);
+            printf(" %llu", (uint64_t)imm);
         }
         break;
 
         case IF_SLEB128:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %lli", imm);
+            printf(" %lli", (int64_t)imm);
         }
         break;
 
@@ -445,7 +445,7 @@ void emitter::emitDispIns(
             // TODO-WASM: decide what our strategy for alignment hints is and display these accordingly.
             unsigned       log2align = 1;
             cnsval_ssize_t offset    = emitGetInsSC(id);
-            printf(" %u %llu", log2align, offset);
+            printf(" %u %llu", log2align, (uint64_t)offset);
         }
         break;
 

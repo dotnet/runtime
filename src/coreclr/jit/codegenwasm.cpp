@@ -547,7 +547,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 // genCodeForConstant: Generate code for an integer or floating point constant
 //
 // Arguments:
-//    tree - The constant.
+//    treeNode - The constant.
 //
 void CodeGen::genCodeForConstant(GenTree* treeNode)
 {
