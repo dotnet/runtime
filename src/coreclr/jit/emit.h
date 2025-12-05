@@ -3501,17 +3501,6 @@ public:
     /*      The following logic keeps track of initialized data sections    */
     /************************************************************************/
 
-    // Note: Keep synchronized with AsyncHelpers.ResumeInfo
-    struct dataAsyncResumeInfo
-    {
-        // delegate*<Continuation, ref byte, Continuation>
-        target_size_t Resume;
-        // Pointer in main code for diagnostics. See comments on
-        // ICorDebugInfo::AsyncSuspensionPoint::DiagnosticNativeOffset and
-        // ResumeInfo.DiagnosticIP in SPC.
-        target_size_t DiagnosticIP;
-    };
-
     /* One of these is allocated for every blob of initialized data */
 
     struct dataSection
