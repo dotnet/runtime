@@ -223,7 +223,7 @@ HRESULT StgIO::Open(                    // Return code.
             (fFlags & DBPROP_TMODEF_FAILIFTHERE) ? O_TRUNC : O_EXCL,
             O_RDWR)) == -1)
         {
-            return HRESULTFromErrno();
+            return HRESULTFromErr(errno);
         }
 #endif
 
@@ -322,7 +322,7 @@ HRESULT StgIO::Open(                    // Return code.
         MAKE_UTF8PTR_FROMWIDE_NOTHROW(u8Name, szName);
         int fd = open(u8Name, O_RDONLY);
         if (fd == -1)
-            return HRESULTFromErrno();
+            return HRESULTFromErr(errno);
 
         // Get size of file.
         struct stat st;
@@ -955,7 +955,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
             _ASSERTE(!m_mmap);
             if ((m_pBaseData = m_pData = mmap(nullptr, m_cbData, PROT_READ, 0, m_fd, 0)) == MAP_FAILED)
             {
-                hr = HRESULTFromErrno();
+                hr = HRESULTFromErr(errno);
                 m_pBaseData = m_pData = NULL;
                 goto ErrExit;
             }
@@ -1249,7 +1249,7 @@ HRESULT StgIO::FlushFileBuffers()
         if (fsync(m_fd) == 0)
             return (S_OK);
         else
-            return HRESULTFromErrno();
+            return HRESULTFromErr(errno);
     }
 #endif
     return (S_OK);
@@ -1316,7 +1316,7 @@ HRESULT StgIO::WriteToDisk(             // Return code.
 #else
             _ASSERTE(m_fd != -1);
             if ((cbWritten = write(m_fd, pbBuff, cbWrite)) != cbWrite)
-                hr = HRESULTFromErrno();
+                hr = HRESULTFromErr(errno);
 #endif
         }
         break;
@@ -1373,7 +1373,7 @@ HRESULT StgIO::ReadFromDisk(            // Return code.
 #else
         if ((cbRead = read(m_fd, pbBuff, cbBuff)) >= 0)
             return (S_OK);
-        return HRESULTFromErrno();
+        return HRESULTFromErr(errno);
 #endif
     }
     // Read directly from stream.
