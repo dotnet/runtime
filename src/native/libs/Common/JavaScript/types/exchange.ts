@@ -7,11 +7,27 @@ import type { createPromiseCompletionSource, getPromiseCompletionSource, isContr
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise } from "../../../../corehost/browserhost/loader/run";
 import type { isSharedArrayBuffer, zeroRegion } from "../../../System.Native.Browser/utils/memory";
 import type { stringToUTF16, stringToUTF16Ptr, stringToUTF8Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
+import type { bindJSImportST, invokeJSFunction, invokeJSImportST } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/invoke-js";
+import type { releaseCSOwnedObject } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/gc-handles";
+import type { resolveOrRejectPromise } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/marshal-to-js";
+import type { cancelPromise } from "../../../System.Runtime.InteropServices.JavaScript.Native/interop/cancelable-promise";
 
 export type RuntimeExports = {
+    bindJSImportST: typeof bindJSImportST,
+    invokeJSImportST: typeof invokeJSImportST,
+    releaseCSOwnedObject: typeof releaseCSOwnedObject,
+    resolveOrRejectPromise: typeof resolveOrRejectPromise,
+    cancelPromise: typeof cancelPromise,
+    invokeJSFunction: typeof invokeJSFunction,
 }
 
 export type RuntimeExportsTable = [
+    typeof bindJSImportST,
+    typeof invokeJSImportST,
+    typeof releaseCSOwnedObject,
+    typeof resolveOrRejectPromise,
+    typeof cancelPromise,
+    typeof invokeJSFunction,
 ]
 
 export type LoggerType = {
@@ -61,9 +77,21 @@ export type BrowserHostExportsTable = [
 ]
 
 export type InteropJavaScriptExports = {
+    SystemInteropJS_GetManagedStackTrace: typeof _SystemInteropJS_GetManagedStackTrace,
+    SystemInteropJS_CallDelegate: typeof _SystemInteropJS_CallDelegate,
+    SystemInteropJS_CompleteTask: typeof _SystemInteropJS_CompleteTask,
+    SystemInteropJS_ReleaseJSOwnedObjectByGCHandle: typeof _SystemInteropJS_ReleaseJSOwnedObjectByGCHandle,
+    SystemInteropJS_BindAssemblyExports: typeof _SystemInteropJS_BindAssemblyExports,
+    SystemInteropJS_CallJSExport: typeof _SystemInteropJS_CallJSExport,
 }
 
 export type InteropJavaScriptExportsTable = [
+    typeof _SystemInteropJS_GetManagedStackTrace,
+    typeof _SystemInteropJS_CallDelegate,
+    typeof _SystemInteropJS_CompleteTask,
+    typeof _SystemInteropJS_ReleaseJSOwnedObjectByGCHandle,
+    typeof _SystemInteropJS_BindAssemblyExports,
+    typeof _SystemInteropJS_CallJSExport,
 ]
 
 export type NativeBrowserExports = {
