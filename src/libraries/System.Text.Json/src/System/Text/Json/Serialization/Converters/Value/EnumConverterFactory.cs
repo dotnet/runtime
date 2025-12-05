@@ -28,6 +28,11 @@ namespace System.Text.Json.Serialization.Converters
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2071:UnrecognizedReflectionPattern",
             Justification = "'EnumConverter<T> where T : struct' implies 'T : new()', so the trimmer is warning calling MakeGenericType here because enumType's constructors are not annotated. " +
             "But EnumConverter doesn't call new T(), so this is safe.")]
+#if !NET9_0_OR_GREATER
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "'EnumConverter<T> where T : struct' implies 'T : new()', so the trimmer is warning calling MakeGenericType here because enumType's constructors are not annotated. " +
+            "But EnumConverter doesn't call new T(), so this is safe.")]
+#endif
         public static JsonConverter Create(Type enumType, EnumConverterOptions converterOptions, JsonNamingPolicy? namingPolicy, JsonSerializerOptions options)
         {
             if (!Helpers.IsSupportedTypeCode(Type.GetTypeCode(enumType)))
