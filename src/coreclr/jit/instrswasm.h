@@ -20,8 +20,6 @@
 #error INST must be defined before including this file.
 #endif
 
-// TODO-WASM: fill out with more instructions (and everything else needed).
-//
 // clang-format off
 
 // control flow

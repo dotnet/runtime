@@ -3239,11 +3239,11 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     if (!putargs.Empty())
     {
         GenTree* firstPutargStk   = putargs.Bottom(0);
-        GenTree* firstPutargStkOp = firstPutargStk->gtGetOp1();
+        GenTree* firstPutargStkOp = FirstOperand(firstPutargStk);
         for (int i = 1; i < putargs.Height(); i++)
         {
             firstPutargStk   = LIR::FirstNode(firstPutargStk, putargs.Bottom(i));
-            firstPutargStkOp = LIR::FirstNode(firstPutargStkOp, putargs.Bottom(i)->gtGetOp1());
+            firstPutargStkOp = LIR::FirstNode(firstPutargStkOp, FirstOperand(putargs.Bottom(i)));
         }
         // Since this is a fast tailcall each PUTARG_STK will place the argument in the
         // _incoming_ arg space area. This will effectively overwrite our already existing
@@ -3279,6 +3279,10 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                     continue;
                 }
 
+                JITDUMP(
+                    "PUTARG_STK [%06u] overwrites [%06u..%06u); parameter V%03u lives in [%06u..%06u); may need defensive copies\n",
+                    Compiler::dspTreeID(put), overwrittenStart, overwrittenEnd, callerArgLclNum, argStart, argEnd);
+
                 // Codegen cannot handle a partially overlapping copy. For
                 // example, if we have
                 // bar(S16 stack, S32 stack2)
@@ -3287,10 +3291,11 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 // ahead. It is possible that this PUTARG_STK is the only use,
                 // in which case we will need to introduce a temp, so look for
                 // uses starting from it. Note that we assume that in-place
-                // copies are OK.
+                // copies are ok provided the source is a scalar value.
                 GenTree* lookForUsesFrom = put->gtNext;
-                if (overwrittenStart != argStart)
+                if ((overwrittenStart != argStart) || put->gtGetOp1()->OperIsFieldList())
                 {
+                    JITDUMP("Non-atomic copy may be self-interfering. Expanding search...\n");
                     lookForUsesFrom = firstPutargStkOp;
                 }
 
@@ -3354,7 +3359,43 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     unreached();
 #endif
 }
+
+//------------------------------------------------------------------------
+// FirstOperand:
+//   Find the earliest operand of a node.
 //
+// Arguments:
+//   node - The node
+//
+// Returns:
+//   The earliest evaluated operand.
+//
+GenTree* Lowering::FirstOperand(GenTree* node)
+{
+    struct Helper
+    {
+        GenTree* Result = nullptr;
+
+        void Visit(GenTree* node)
+        {
+            node->VisitOperands([=](GenTree* op) {
+                Result = Result == nullptr ? op : LIR::FirstNode(Result, op);
+
+                if (op->isContained())
+                {
+                    Visit(op);
+                }
+
+                return GenTree::VisitResult::Continue;
+            });
+        }
+    };
+
+    Helper helper;
+    helper.Visit(node);
+    return helper.Result;
+}
+
 //------------------------------------------------------------------------
 // RehomeArgForFastTailCall: Introduce temps for args that may be overwritten
 // during fast tailcall sequence.
