@@ -471,10 +471,10 @@ private:
     bool     TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
     void     StoreFFRValue(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
-    GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types   type,
-                                                 GenTree*    op1,
-                                                 CorInfoType simdBaseJitType,
-                                                 unsigned    simdSize);
+    GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types type,
+                                                 GenTree*  op1,
+                                                 var_types simdBaseType,
+                                                 unsigned  simdSize);
     GenTree* NormalizeIndexToNativeSized(GenTree* index);
 #endif // FEATURE_HW_INTRINSICS
 
