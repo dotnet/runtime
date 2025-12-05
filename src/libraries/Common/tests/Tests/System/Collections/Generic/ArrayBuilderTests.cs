@@ -153,6 +153,99 @@ namespace System.Collections.Generic.Tests
             Assert.Equal(seed, array.Skip(1));
         }
 
+        [Theory]
+        [MemberData(nameof(CountData))]
+        public void AddRange_ICollection_PreallocatesCapacity(int count)
+        {
+            // Use a List<T> which implements ICollection<T>
+            List<T> collection = s_generator.GenerateEnumerable(count).ToList();
+
+            var builder = new ArrayBuilder<T>();
+            builder.AddRange(collection);
+
+            Assert.Equal(count, builder.Count);
+
+            // When adding an ICollection<T>, capacity should be at least
+            // enough for the collection (0 if empty)
+            if (count > 0)
+            {
+                Assert.True(builder.Capacity >= count);
+            }
+            else
+            {
+                Assert.Equal(0, builder.Capacity);
+            }
+
+            Assert.Equal(collection, builder.ToArray());
+        }
+
+        [Fact]
+        public void AddRange_ICollection_EmptyCollection()
+        {
+            // Use an empty List<T> which implements ICollection<T>
+            List<T> emptyCollection = new List<T>();
+
+            var builder = new ArrayBuilder<T>();
+            builder.AddRange(emptyCollection);
+
+            Assert.Equal(0, builder.Count);
+            Assert.Equal(0, builder.Capacity);
+            Assert.Same(Array.Empty<T>(), builder.ToArray());
+        }
+
+        [Theory]
+        [MemberData(nameof(CountData))]
+        public void AddRange_ICollection_AfterExistingItems(int count)
+        {
+            // Add some initial items
+            var builder = new ArrayBuilder<T>();
+            builder.Add(default(T));
+            builder.Add(default(T));
+            int initialCount = 2;
+            int initialCapacity = builder.Capacity;
+
+            // Use a List<T> which implements ICollection<T>
+            List<T> collection = s_generator.GenerateEnumerable(count).ToList();
+            builder.AddRange(collection);
+
+            int expectedCount = initialCount + count;
+            Assert.Equal(expectedCount, builder.Count);
+
+            // When adding ICollection<T> after existing items, capacity should be
+            // at least enough for all items
+            Assert.True(builder.Capacity >= expectedCount);
+
+            T[] array = builder.ToArray();
+            Assert.Equal(expectedCount, array.Length);
+            Assert.Equal(default(T), array[0]);
+            Assert.Equal(default(T), array[1]);
+            Assert.Equal(collection, array.Skip(2));
+        }
+
+        [Theory]
+        [MemberData(nameof(CountData))]
+        public void AddRange_NonICollection_GrowsIncrementally(int count)
+        {
+            // Use a generator method to create a pure IEnumerable<T> that is NOT an ICollection<T>
+            IEnumerable<T> NonCollectionEnumerable()
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    yield return default(T);
+                }
+            }
+
+            var builder = new ArrayBuilder<T>();
+            builder.AddRange(NonCollectionEnumerable());
+
+            Assert.Equal(count, builder.Count);
+
+            // Non-ICollection path should grow incrementally (powers of 2)
+            Assert.Equal(CalculateExpectedCapacity(count), builder.Capacity);
+
+            Assert.Equal(NonCollectionEnumerable(), builder.ToArray());
+        }
+
         public static TheoryData<int> CapacityData()
         {
             var data = new TheoryData<int>();
