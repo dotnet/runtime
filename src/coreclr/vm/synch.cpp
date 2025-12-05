@@ -22,8 +22,6 @@ void CLREventBase::CreateAutoEvent (BOOL bInitialState  // If TRUE, initial stat
     }
     CONTRACTL_END;
 
-    SetAutoEvent();
-
     {
         HANDLE h = CreateEvent(NULL,FALSE,bInitialState,NULL);
         if (h == NULL) {
@@ -124,7 +122,6 @@ void CLREventBase::CloseEvent()
 
         m_handle = INVALID_HANDLE_VALUE;
     }
-    m_isAutoEvent = FALSE;
 }
 
 

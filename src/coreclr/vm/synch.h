@@ -21,7 +21,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_handle = INVALID_HANDLE_VALUE;
-        m_isAutoEvent = FALSE;
     }
 
     void CreateAutoEvent(BOOL bInitialState);
@@ -53,16 +52,6 @@ public:
 
 protected:
     HANDLE m_handle;
-
-private:
-    Volatile<BOOL> m_isAutoEvent;
-
-    BOOL IsAutoEvent() { LIMITED_METHOD_CONTRACT; return m_isAutoEvent; }
-    void SetAutoEvent ()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_isAutoEvent = TRUE;
-    }
 };
 
 
