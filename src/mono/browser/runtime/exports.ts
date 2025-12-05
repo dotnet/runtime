@@ -36,7 +36,7 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
 
     Object.assign(globals.internal, export_internal());
     const rh: Partial<RuntimeHelpers> = {
-        stringify_as_error_with_stack: mono_wasm_stringify_as_error_with_stack,
+        stringify_as_error_with_stack: monoWasmStringifyAsErrorWithStack,
         instantiate_symbols_asset,
         instantiate_asset,
         jiterpreter_dump_stats,

@@ -90,7 +90,7 @@ export function mono_wasm_symbolicate_string (message: string): string {
     }
 }
 
-export function mono_wasm_stringify_as_error_with_stack (reason: any): string {
+export function monoWasmStringifyAsErrorWithStack (reason: any): string {
     let stack: string;
     if (typeof reason === "string") {
         stack = reason;
@@ -207,7 +207,7 @@ function performDeferredSymbolMapParsing () {
     }
 }
 
-export function mono_wasm_get_func_id_to_name_mappings () {
+export function monoWasmGetFuncIdToNameMappings () {
     performDeferredSymbolMapParsing();
     return [...wasm_func_map.values()];
 }

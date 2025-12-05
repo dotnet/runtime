@@ -5,55 +5,55 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { MonoObjectNull, type MonoObject } from "./types/internal";
 import cwraps, { profiler_c_functions, threads_c_functions as twraps } from "./cwraps";
-import { mono_wasm_send_dbg_command_with_parms, mono_wasm_send_dbg_command, mono_wasm_get_dbg_command_info, mono_wasm_get_details, mono_wasm_release_object, mono_wasm_call_function_on, mono_wasm_debugger_resume, mono_wasm_detach_debugger, mono_wasm_raise_debug_event, mono_wasm_change_debugger_log_level, mono_wasm_debugger_attached } from "./debug";
+import { monoWasmSendDbgCommandWithParms, monoWasmSendDbgCommand, monoWasmGetDbgCommandInfo, monoWasmGetDetails, monoWasmReleaseObject, monoWasmCallFunctionOn, monoWasmDebuggerResume, monoWasmDetachDebugger, monoWasmRaiseDebugEvent, monoWasmChangeDebuggerLogLevel, monoWasmDebuggerAttached } from "./debug";
 import { httpWasmSupportsStreamingRequest, httpWasmSupportsStreamingResponse, httpWasmCreateController, httpWasmAbort, httpWasmTransformStreamWrite, httpWasmTransformStreamClose, httpWasmFetch, httpWasmFetchStream, httpWasmFetchBytes, httpWasmGetResponseHeaderNames, httpWasmGetResponseHeaderValues, httpWasmGetResponseBytes, httpWasmGetResponseLength, httpWasmGetStreamedResponseBytes, httpWasmGetResponseType, httpWasmGetResponseStatus } from "./http";
 import { exportedRuntimeAPI, Module, runtimeHelpers } from "./globals";
 import { getProperty, setProperty, hasProperty, getTypeofProperty, getGlobalThis, dynamicImport } from "./invoke-js";
-import { mono_wasm_stringify_as_error_with_stack } from "./logging";
+import { monoWasmStringifyAsErrorWithStack } from "./logging";
 import { wsWasmCreate, wsWasmOpen, wsWasmSend, wsWasmReceive, wsWasmClose, wsWasmAbort, wsGetState } from "./web-socket";
-import { mono_wasm_get_loaded_files } from "./assets";
-import { jiterpreter_dump_stats } from "./jiterpreter";
-import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
+import { monoWasmGetLoadedFiles } from "./assets";
+import { jiterpreterDumpStats } from "./jiterpreter";
+import { interpPgoLoadData, interpPgoSaveData } from "./interp-pgo";
 import { getOptions, applyOptions } from "./jiterpreter-support";
-import { mono_wasm_gc_lock, mono_wasm_gc_unlock } from "./gc-lock";
+import { monoWasmGcLock, monoWasmGcUnlock } from "./gc-lock";
 import { loadLazyAssembly } from "./lazyLoading";
 import { loadSatelliteAssemblies } from "./satelliteAssemblies";
 import { forceDisposeProxies } from "./gc-handles";
-import { mono_wasm_get_func_id_to_name_mappings } from "./logging";
+import { monoWasmGetFuncIdToNameMappings } from "./logging";
 import { monoStringToStringUnsafe } from "./strings";
 import { monoWasmBindCsFunction } from "./invoke-cs";
 
-import { mono_wasm_dump_threads } from "./pthreads";
+import { monoWasmDumpThreads } from "./pthreads";
 
 export function export_internal (): any {
     return {
         // tests
-        mono_wasm_exit: (exit_code: number) => {
+        monoWasmExit: (exit_code: number) => {
             Module.err("early exit " + exit_code);
         },
         forceDisposeProxies,
-        mono_wasm_dump_threads: WasmEnableThreads ? mono_wasm_dump_threads : undefined,
+        monoWasmDumpThreads: WasmEnableThreads ? monoWasmDumpThreads : undefined,
 
         // with mono_wasm_debugger_log and mono_wasm_trace_logger
         logging: undefined,
 
-        mono_wasm_stringify_as_error_with_stack,
+        monoWasmStringifyAsErrorWithStack,
 
         // used in debugger DevToolsHelper.cs
-        mono_wasm_get_loaded_files,
-        mono_wasm_send_dbg_command_with_parms,
-        mono_wasm_send_dbg_command,
-        mono_wasm_get_dbg_command_info,
-        mono_wasm_get_details,
-        mono_wasm_release_object,
-        mono_wasm_call_function_on,
-        mono_wasm_debugger_resume,
-        mono_wasm_detach_debugger,
-        mono_wasm_raise_debug_event,
-        mono_wasm_change_debugger_log_level,
-        mono_wasm_debugger_attached,
-        mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
-        mono_wasm_get_func_id_to_name_mappings,
+        monoWasmGetLoadedFiles,
+        monoWasmSendDbgCommandWithParms,
+        monoWasmSendDbgCommand,
+        monoWasmGetDbgCommandInfo,
+        monoWasmGetDetails,
+        monoWasmReleaseObject,
+        monoWasmCallFunctionOn,
+        monoWasmDebuggerResume,
+        monoWasmDetachDebugger,
+        monoWasmRaiseDebugEvent,
+        monoWasmChangeDebuggerLogLevel,
+        monoWasmDebuggerAttached,
+        monoWasmRuntimeIsReady: runtimeHelpers.monoWasmRuntimeIsReady,
+        monoWasmGetFuncIdToNameMappings,
 
         // interop
         getProperty,
@@ -93,17 +93,17 @@ export function export_internal (): any {
         httpWasmGetStreamedResponseBytes,
 
         // jiterpreter
-        jiterpreter_dump_stats,
+        jiterpreterDumpStats,
         jiterpreter_apply_options: applyOptions,
         jiterpreter_get_options: getOptions,
 
         // interpreter pgo
-        interp_pgo_load_data,
-        interp_pgo_save_data,
+        interpPgoLoadData,
+        interpPgoSaveData,
 
         // Blazor GC Lock support
-        mono_wasm_gc_lock,
-        mono_wasm_gc_unlock,
+        monoWasmGcLock,
+        monoWasmGcUnlock,
 
         // Blazor legacy replacement
         monoObjectAsBoolOrNullUnsafe,
@@ -116,7 +116,7 @@ export function export_internal (): any {
 
 export function cwraps_internal (internal: any): void {
     Object.assign(internal, {
-        mono_wasm_exit: cwraps.mono_wasm_exit,
+        monoWasmExit: cwraps.monoWasmExit,
         mono_wasm_profiler_init_aot: profiler_c_functions.mono_wasm_profiler_init_aot,
         mono_wasm_profiler_init_browser_devtools: profiler_c_functions.mono_wasm_profiler_init_browser_devtools,
         mono_wasm_exec_regression: cwraps.mono_wasm_exec_regression,

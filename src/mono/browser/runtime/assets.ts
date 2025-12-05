@@ -117,6 +117,6 @@ export async function wait_for_all_assets () {
 }
 
 // Used by the debugger to enumerate loaded dlls and pdbs
-export function mono_wasm_get_loaded_files (): string[] {
+export function monoWasmGetLoadedFiles (): string[] {
     return loaderHelpers.loadedFiles;
 }

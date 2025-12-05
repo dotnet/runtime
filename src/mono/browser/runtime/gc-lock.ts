@@ -10,7 +10,7 @@ export let gc_locked = false;
 // TODO https://github.com/dotnet/runtime/issues/100411
 // after Blazor stops using mono_wasm_gc_lock, mono_wasm_gc_unlock
 
-export function mono_wasm_gc_lock (): void {
+export function monoWasmGcLock (): void {
     if (gc_locked) {
         throw new Error("GC is already locked");
     }
@@ -23,7 +23,7 @@ export function mono_wasm_gc_lock (): void {
     gc_locked = true;
 }
 
-export function mono_wasm_gc_unlock (): void {
+export function monoWasmGcUnlock (): void {
     if (!gc_locked) {
         throw new Error("GC is not locked");
     }

@@ -154,7 +154,7 @@ export function wsWasmCreate (uri: string, sub_protocols: string[] | null, recei
         ws.removeEventListener("open", local_on_open);
         ws.removeEventListener("close", local_on_close);
         ws.removeEventListener("error", local_on_error);
-        ws_wasm_abort(ws);
+        wsWasmAbort(ws);
     };
 
     return ws;
@@ -283,7 +283,7 @@ export function wsWasmAbort (ws: WebSocketExtension): void {
         // this is different from Managed implementation
         ws.close(1000, "Connection was aborted.");
     } catch (error: any) {
-        mono_log_warn("WebSocket error in ws_wasm_abort: " + error.toString());
+        mono_log_warn("WebSocket error in wsWasmAbort: " + error.toString());
     }
 }
 

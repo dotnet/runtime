@@ -75,7 +75,7 @@ function mono_wasm_malloc_and_set_debug_buffer (command_parameters: string) {
     }
 }
 
-export function mono_wasm_send_dbg_command_with_parms (id: number, command_set: number, command: number, command_parameters: string, length: number, valtype: number, newvalue: number): CommandResponseResult {
+export function monoWasmSendDbgCommandWithParms (id: number, command_set: number, command: number, command_parameters: string, length: number, valtype: number, newvalue: number): CommandResponseResult {
     forceThreadMemoryViewRefresh();
 
     mono_wasm_malloc_and_set_debug_buffer(command_parameters);
@@ -87,7 +87,7 @@ export function mono_wasm_send_dbg_command_with_parms (id: number, command_set: 
     return res;
 }
 
-export function mono_wasm_send_dbg_command (id: number, command_set: number, command: number, command_parameters: string): CommandResponseResult {
+export function monoWasmSendDbgCommand (id: number, command_set: number, command: number, command_parameters: string): CommandResponseResult {
     forceThreadMemoryViewRefresh();
 
     mono_wasm_malloc_and_set_debug_buffer(command_parameters);
@@ -101,7 +101,7 @@ export function mono_wasm_send_dbg_command (id: number, command_set: number, com
 
 }
 
-export function mono_wasm_get_dbg_command_info (): CommandResponseResult {
+export function monoWasmGetDbgCommandInfo (): CommandResponseResult {
     const { res_ok, res } = commands_received.remove(0);
 
     if (!res_ok)
@@ -109,16 +109,16 @@ export function mono_wasm_get_dbg_command_info (): CommandResponseResult {
     return res;
 }
 
-export function mono_wasm_debugger_resume (): void {
+export function monoWasmDebuggerResume (): void {
     forceThreadMemoryViewRefresh();
 }
 
-export function mono_wasm_detach_debugger (): void {
+export function monoWasmDetachDebugger (): void {
     forceThreadMemoryViewRefresh();
     cwraps.mono_wasm_set_is_debugger_attached(false);
 }
 
-export function mono_wasm_change_debugger_log_level (level: number): void {
+export function monoWasmChangeDebuggerLogLevel (level: number): void {
     forceThreadMemoryViewRefresh();
     cwraps.mono_wasm_change_debugger_log_level(level);
 }
@@ -126,7 +126,7 @@ export function mono_wasm_change_debugger_log_level (level: number): void {
 /**
  * Raises an event for the debug proxy
  */
-export function mono_wasm_raise_debug_event (event: WasmEvent, args = {}): void {
+export function monoWasmRaiseDebugEvent (event: WasmEvent, args = {}): void {
     if (typeof event !== "object")
         throw new Error(`event must be an object, but got ${JSON.stringify(event)}`);
 
@@ -152,7 +152,7 @@ export function mono_wasm_wait_for_debugger (): Promise<void> {
     });
 }
 
-export function mono_wasm_debugger_attached (): void {
+export function monoWasmDebuggerAttached (): void {
     if (runtimeHelpers.waitForDebugger == -1)
         runtimeHelpers.waitForDebugger = 1;
     forceThreadMemoryViewRefresh();
@@ -219,7 +219,7 @@ function _create_proxy_from_object_id (objectId: string, details: any) {
     return proxy;
 }
 
-export function mono_wasm_call_function_on (request: CallRequest): CFOResponse {
+export function monoWasmCallFunctionOn (request: CallRequest): CFOResponse {
     forceThreadMemoryViewRefresh();
 
     if (request.arguments != undefined && !Array.isArray(request.arguments))
@@ -340,7 +340,7 @@ type ValueAsJsonString = {
     __value_as_json_string__: string;
 }
 
-export function mono_wasm_get_details (objectId: string, args = {}): ValueAsJsonString {
+export function monoWasmGetDetails (objectId: string, args = {}): ValueAsJsonString {
     forceThreadMemoryViewRefresh();
     return _get_cfo_res_details(`dotnet:cfo_res:${objectId}`, args);
 }
@@ -351,7 +351,7 @@ function _cache_call_function_res (obj: any) {
     return id;
 }
 
-export function mono_wasm_release_object (objectId: string): void {
+export function monoWasmReleaseObject (objectId: string): void {
     if (objectId in _call_function_res_cache)
         delete _call_function_res_cache[objectId];
 }
