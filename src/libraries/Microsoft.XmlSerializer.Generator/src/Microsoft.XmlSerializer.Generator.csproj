@@ -8,8 +8,6 @@
     <StringResourcesName>FxResources.$(AssemblyName.Replace('-', '_')).SR</StringResourcesName>
     <OutputType>Exe</OutputType>
     <Nullable>disable</Nullable>
-    <NoWarn>$(NoWarn);CS8632</NoWarn>
-    <NoWarn>$(NoWarn);CA1850;CA1865</NoWarn> <!-- Suppressed due to multitargeting -->
     <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
     <IsPackable>true</IsPackable>
     <PackageId>$(MSBuildProjectName)</PackageId>
