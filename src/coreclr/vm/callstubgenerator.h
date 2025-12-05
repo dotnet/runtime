@@ -43,7 +43,6 @@ struct CallStubHeader
     {
         LIMITED_METHOD_CONTRACT;
 
-        _ASSERTE(target != 0);
         VolatileStore(&Routines[NumRoutines - 1], target);
     }
 
