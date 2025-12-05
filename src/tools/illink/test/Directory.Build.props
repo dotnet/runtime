@@ -6,4 +6,10 @@
     <Nullable>disable</Nullable>
     <LinkerTestDir>$(MSBuildThisFileDirectory)</LinkerTestDir>
   </PropertyGroup>
+
+  <!-- Add this PackageReference when the toolset version supports C# 14. -->
+  <!-- <ItemGroup>
+    <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="$(MicrosoftNetCompilersToolsetVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup> -->
+
 </Project>

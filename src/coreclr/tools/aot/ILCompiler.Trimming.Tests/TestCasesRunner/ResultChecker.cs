@@ -190,8 +190,24 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
 			List<(ICustomAttributeProvider, CustomAttribute)> expectedNoWarningsAttributes = new ();
 			foreach (var attrProvider in GetAttributeProviders (original)) {
-				foreach (var attr in attrProvider.CustomAttributes) {
-					if (!IsProducedByNativeAOT (attr))
+
+				if (attrProvider is IMemberDefinition attrMember &&
+					attrMember is not TypeDefinition &&
+					attrMember.DeclaringType is TypeDefinition declaringType &&
+					declaringType.Name.StartsWith("<>E__"))
+				{
+					// Workaround: C# 14 extension members result in a compiler-generated type
+					// that has a member for each extension member (this is in addition to the type
+					// which contains the actual extension member implementation).
+					// The generated members inherit attributes from the extension members, but
+					// have empty implementations. We don't want to check inherited ExpectedWarningAttributes
+					// for these members.
+					continue;
+				}
+
+				foreach (var attr in attrProvider.CustomAttributes)
+				{
+					if (!IsProducedByNativeAOT(attr))
 						continue;
 
 					switch (attr.AttributeType.Name) {
