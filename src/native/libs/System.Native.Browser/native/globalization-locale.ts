@@ -13,7 +13,7 @@ export function SystemJS_GetLocaleInfo(culture: number, cultureLength: number, l
         if (!localeName && localeNameOriginal) {
             // handle non-standard or malformed locales by forwarding the locale code
             dotnetBrowserUtilsExports.stringToUTF16(dst, dst + 2 * localeNameOriginal.length, localeNameOriginal);
-            dotnetApi.setHeapI32( dstLength, localeNameOriginal.length);
+            dotnetApi.setHeapI32(dstLength, localeNameOriginal.length);
             return VoidPtrNull;
         }
         const cultureNameOriginal = dotnetBrowserUtilsExports.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
@@ -79,8 +79,8 @@ export function SystemJS_GetLocaleInfo(culture: number, cultureLength: number, l
         try {
             locale = locale.toLocaleLowerCase().replace("_", "-");
             if (locale.startsWith("zh-")) {
-            // browser does not recognize "zh-chs" and "zh-cht" as equivalents of "zh-Hans" "zh-Hant", we are helping, otherwise
-            // it would throw on getCanonicalLocales with "RangeError: Incorrect locale information provided"
+                // browser does not recognize "zh-chs" and "zh-cht" as equivalents of "zh-Hans" "zh-Hant", we are helping, otherwise
+                // it would throw on getCanonicalLocales with "RangeError: Incorrect locale information provided"
                 locale = locale.replace("-chs", "-Hans").replace("-cht", "-Hant");
             }
             const canonicalLocales = (Intl as any).getCanonicalLocales(locale);
