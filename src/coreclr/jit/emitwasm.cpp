@@ -242,6 +242,11 @@ size_t emitter::emitOutputSLEB128(uint8_t* destination, int64_t value)
     return pos;
 }
 
+size_t emitter::emitRawBytes(uint8_t* destination, const uint8_t* source, size_t count)
+{
+    memcpy(destination + writeableOffset, source, count);
+}
+
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE*       dst    = *dp;
@@ -285,8 +290,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             float          truncated;
             memcpy(&value, &bits, sizeof(double));
             truncated = FloatingPointUtils::convertToSingle(value);
-            memcpy(dst + writeableOffset, &truncated, sizeof(float));
-            dst += sizeof(float);
+            dst += emitRawBytes(dst, &truncated, sizeof(float));
             break;
         }
         case IF_F64:
@@ -295,8 +299,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // The int64 bits are actually a double constant we can copy directly
             //  to the output stream.
             cnsval_ssize_t bits = emitGetInsSC(id);
-            memcpy(dst + writeableOffset, &bits, sizeof(cnsval_ssize_t));
-            dst += sizeof(cnsval_ssize_t);
+            dst += emitRawBytes(dst, &bits, sizeof(cnsval_ssize_t));
             break;
         }
         case IF_LABEL:

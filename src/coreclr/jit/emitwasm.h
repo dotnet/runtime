@@ -27,9 +27,6 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
 
 void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
-size_t emitOutputULEB128(uint8_t* destination, uint64_t value);
-size_t emitOutputSLEB128(uint8_t* destination, int64_t value);
-
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
 /************************************************************************/
@@ -54,3 +51,7 @@ private:
 bool emitInsIsStore(instruction ins);
 
 insFormat emitInsFormat(instruction ins);
+
+size_t emitOutputULEB128(uint8_t* destination, uint64_t value);
+size_t emitOutputSLEB128(uint8_t* destination, int64_t value);
+size_t emitRawBytes(uint8_t* destination, const uint8_t* source, size_t count);

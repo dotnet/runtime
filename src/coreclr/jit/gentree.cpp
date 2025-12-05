@@ -5177,9 +5177,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_CNS_INT:
             {
                 GenTreeIntConCommon* con = tree->AsIntConCommon();
-                ssize_t              imm = con->IconValue();
+                int64_t              imm = con->IntegralValue();
                 costEx                   = 1;
-                costSz                   = 1 + (int)(tree->IsUnsigned() ? SizeOfULEB128(imm) : SizeOfSLEB128(imm));
+                costSz                   = 1 + (int)SizeOfSLEB128(imm);
                 goto COMMON_CNS;
             }
 #else

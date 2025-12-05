@@ -593,7 +593,7 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
     }
 
     // The IF_ for the selected instruction, i.e. IF_F64, determines how these bits are emitted
-    GetEmitter()->emitIns_I(ins, EA_8BYTE, bits);
+    GetEmitter()->emitIns_I(ins, emitTypeSize(treeNode), bits);
     genProduceReg(treeNode);
 }
 
