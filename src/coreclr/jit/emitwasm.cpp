@@ -200,14 +200,47 @@ void emitter::emitSetShortJump(instrDescJmp* id)
 
 size_t emitter::emitOutputULEB128(uint8_t* destination, uint64_t value)
 {
-    NYI_WASM("emitOutputULEB128");
-    return 0;
+    uint8_t* buffer = destination + writeableOffset;
+    if (value >= 0x80)
+    {
+        int pos = 0;
+        do
+        {
+            buffer[pos++] = (uint8_t)((value & 0x7F) | ((value >= 0x80) ? 0x80u : 0));
+            value >>= 7;
+        }
+        while (value > 0);
+
+        return pos;
+    }
+    else
+    {
+        buffer[0] = (uint8_t)value;
+        return 1;
+    }
 }
 
 size_t emitter::emitOutputSLEB128(uint8_t* destination, int64_t value)
 {
-    NYI_WASM("emitOutputULEB128");
-    return 0;
+    uint8_t* buffer = destination + writeableOffset;
+    bool cont = true;
+    int pos = 0;
+    while (cont)
+    {
+        uint8_t b = ((uint8_t)value & 0x7F);
+        value >>= 7;
+        bool isSignBitSet = (b & 0x40) != 0;
+        if ((value == 0 && !isSignBitSet) || (value == -1 && isSignBitSet))
+        {
+            cont = false;
+        }
+        else
+        {
+            b |= 0x80;
+        }
+        buffer[pos++] = b;
+    }
+    return pos;
 }
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
