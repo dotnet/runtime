@@ -3392,19 +3392,22 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
 
     GenTree* exprToBox = impPopStack().val;
 
-    // Decompose the Nullable<> arg into _hasValue and _value fields.
+    // Decompose the Nullable<> arg into _hasValue and _value fields
+    // and calculate the type and layout of the 'value' field
     //
-    GenTree* value;
-    GenTree* hasValue;
-    impLoadNullableFields(exprToBox, pResolvedToken->hClass, &hasValue, &value);
-
-    // Calculate the type and layout of the 'value' field
-    //
-    CORINFO_CLASS_HANDLE valueStructCls = NO_CLASS_HANDLE;
+    GenTreeFlags indirFlags             = GTF_EMPTY;
+    exprToBox                           = impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, &indirFlags);
     CORINFO_FIELD_HANDLE valueFldHnd    = info.compCompHnd->getFieldInClass(pResolvedToken->hClass, 1);
-    CorInfoType          corFldType     = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
-    ClassLayout*         layout         = nullptr;
-    var_types            valueType      = TypeHandleToVarType(corFldType, valueStructCls, &layout);
+    CORINFO_CLASS_HANDLE valueStructCls = NO_CLASS_HANDLE;
+    static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+    unsigned     cnsValueOffset = info.compCompHnd->getFieldOffset(valueFldHnd);
+    ClassLayout* layout         = nullptr;
+    CorInfoType  corFldType     = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+    var_types    valueType      = TypeHandleToVarType(corFldType, valueStructCls, &layout);
+    GenTree*     valueOffset    = gtNewIconNode(cnsValueOffset, TYP_I_IMPL);
+    GenTree*     valueAddr      = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(exprToBox), valueOffset);
+    GenTree*     value          = gtNewLoadValueNode(valueType, layout, valueAddr);
+    GenTree*     hasValue       = gtNewLoadValueNode(TYP_UBYTE, nullptr, gtCloneExpr(exprToBox));
 
     // Now we need to copy value into the allocated box
     //
@@ -3427,9 +3430,12 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
     compCurBB->SetFlags(BBF_HAS_NEWOBJ);
     optMethodFlags |= OMF_HAS_NEWOBJ | OMF_HAS_EARLY_QMARKS;
 
-    GenTree*      cond  = gtNewOperNode(GT_EQ, TYP_INT, hasValue, gtNewIconNode(0));
+    GenTreeOp*    cond  = gtNewOperNode(GT_EQ, TYP_INT, hasValue, gtNewIconNode(0));
     GenTreeColon* colon = gtNewColonNode(TYP_REF, gtNewNull(), allocRoot);
-    GenTree*      qmark = gtNewQmarkNode(TYP_REF, cond, colon);
+    GenTreeQmark* qmark = gtNewQmarkNode(TYP_REF, cond, colon);
+
+    // We have to expand early since GT_ALLOCOBJ must be a top-level statement
+    qmark->SetEarlyExpandableQmark();
 
     // QMARK has to be a top-level statement
     const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNullableBox"));
