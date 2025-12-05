@@ -29,12 +29,8 @@ namespace ILCompiler.ObjectWriter
 
         private void EmitWasmHeader(Stream outputFileStream)
         {
-            SectionData data = new();
-            SectionWriter headerWriter = new(this, 0, data);
-            headerWriter.Write("\0asm"u8);
-            headerWriter.Write([0x1, 0x0, 0x0, 0x0]);
-
-            data.GetReadStream().CopyTo(outputFileStream);
+            outputFileStream.Write("\0asm"u8);
+            outputFileStream.Write([0x1, 0x0, 0x0, 0x0]);
         }
 
         // TODO: for now, we are fully overriding EmitObject. As we support more features, we should
@@ -64,9 +60,11 @@ namespace ILCompiler.ObjectWriter
             IEnumerable<WasmFuncType> uniqueSignatures = methodSignatures.ToArray().Distinct();
             Dictionary<WasmFuncType, int> signatureMap = uniqueSignatures.Select((sig, i) => (sig, i)).ToDictionary();
 
+            // TODO: The EmitSection calls here can be moved to this class'  `EmitObjectFile` implementation
+            // when we can share more code with the base class.
             EmitWasmHeader(outputFileStream);
             EmitSection(() => WriteTypeSection(uniqueSignatures, logger), outputFileStream, logger);
-            EmitSection(() => WriteFunctionSection(methodSignatures.ToArray(), signatureMap, logger), outputFileStream, logger);
+            EmitSection(() => WriteFunctionSection(methodSignatures, signatureMap, logger), outputFileStream, logger);
             EmitSection(() => WriteExportSection(methodBodies, methodSignatures, methodNames, signatureMap, logger), outputFileStream, logger);
             EmitSection(() => WriteCodeSection(methodBodies, logger), outputFileStream, logger);
         }
@@ -105,7 +103,7 @@ namespace ILCompiler.ObjectWriter
 
             // Write the number of functions
             writer.WriteULEB128((ulong)methodBodies.Count);
-            for ( int i = 0; i < methodBodies.Count; i++)
+            for (int i = 0; i < methodBodies.Count; i++)
             {
                 ObjectData methodBody = methodBodies[i];
                 writer.WriteULEB128((ulong)methodBody.Data.Length);
@@ -140,7 +138,7 @@ namespace ILCompiler.ObjectWriter
             return typeSection;
         }
 
-        private WasmSection WriteFunctionSection(IReadOnlyCollection<WasmFuncType> allFunctionSignatures, IDictionary<WasmFuncType, int> signatureMap, Logger logger)
+        private WasmSection WriteFunctionSection(ArrayBuilder<WasmFuncType> allFunctionSignatures, Dictionary<WasmFuncType, int> signatureMap, Logger logger)
         {
             WasmSection functionSection = new WasmSection(WasmSectionType.Function, new SectionData(), "function");
             SectionWriter writer = functionSection.Writer;
@@ -148,7 +146,7 @@ namespace ILCompiler.ObjectWriter
             writer.WriteULEB128((ulong)allFunctionSignatures.Count);
             for (int i = 0; i < allFunctionSignatures.Count; i++)
             {
-                WasmFuncType signature = allFunctionSignatures.ElementAt(i);
+                WasmFuncType signature = allFunctionSignatures[i];
                 writer.WriteULEB128((ulong)signatureMap[signature]);
             }
             return functionSection;
@@ -157,11 +155,13 @@ namespace ILCompiler.ObjectWriter
         private void EmitSection(Func<WasmSection> writeFunc, Stream outputFileStream, Logger logger)
         {
             WasmSection section = writeFunc();
+            Span<byte> headerBuffer = stackalloc byte[section.HeaderSize];
 
-            outputFileStream.Write(section.Header);
+            section.EncodeHeader(headerBuffer);
+            outputFileStream.Write(headerBuffer);
             if (logger.IsVerbose)
             {
-                logger.LogMessage($"Wrote section header of size {section.Header.Length} bytes.");
+                logger.LogMessage($"Wrote section header of size {headerBuffer.Length} bytes.");
             }
 
             section.Data.GetReadStream().CopyTo(outputFileStream);
@@ -198,22 +198,28 @@ namespace ILCompiler.ObjectWriter
 
         private SectionData _data;
 
-        public byte[] Header
+        public int HeaderSize
         {
             get
             {
-                // Section header consists of:
-                // 1 byte: section type
-                // ULEB128: size of section
                 ulong sectionSize = (ulong)_data.Length;
-                uint encodeLength = DwarfHelper.SizeOfULEB128(sectionSize);
-
-                byte[] header = new byte[1+encodeLength];
-                header[0] = (byte)Type;
-                DwarfHelper.WriteULEB128(header.AsSpan(1), sectionSize);
-
-                return header;
+                uint sizeEncodeLength = DwarfHelper.SizeOfULEB128(sectionSize);
+                return 1 + (int)sizeEncodeLength;
             }
+        }
+
+        public int EncodeHeader(Span<byte> headerBuffer)
+        {
+            ulong sectionSize = (ulong)_data.Length;
+            uint encodeLength = DwarfHelper.SizeOfULEB128(sectionSize);
+
+            // Section header consists of:
+            // 1 byte: section type
+            // ULEB128: size of section
+            headerBuffer[0] = (byte)Type;
+            DwarfHelper.WriteULEB128(headerBuffer.Slice(1), sectionSize);
+
+            return 1 + (int)encodeLength;
         }
 
         public SectionWriter Writer
