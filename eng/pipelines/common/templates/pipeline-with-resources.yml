@@ -66,6 +66,7 @@ extends:
       linux_x64_dev_innerloop:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04
 
+      # This branch cannot go past Alpine 3.21 due to clang compat
       linux_musl_x64_dev_innerloop:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-amd64
 
