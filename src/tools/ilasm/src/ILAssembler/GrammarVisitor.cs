@@ -2298,7 +2298,7 @@ namespace ILAssembler
                                 byteCount++;
                             }
 
-                            ReadOnlySpan<byte> utf8Bytes = new byte[byteCount];
+                            Span<byte> utf8Bytes = new byte[byteCount];
                             Encoding.UTF8.GetBytes(str, utf8Bytes);
 
                             str = new string(MemoryMarshal.Cast<byte, char>(utf8Bytes));
@@ -2385,7 +2385,7 @@ namespace ILAssembler
 
                                     if (_currentMethod.Definition.SignatureHeader.IsInstance)
                                     {
-                                        argIndex++;
+                                        index++;
                                     }
                                 }
                                 else
