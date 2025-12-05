@@ -420,14 +420,14 @@ void emitter::emitDispIns(
         case IF_ULEB128:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %u", imm);
+            printf(" %llu", imm);
         }
         break;
 
         case IF_SLEB128:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
-            printf(" %i", imm);
+            printf(" %lli", imm);
         }
         break;
 
@@ -446,7 +446,7 @@ void emitter::emitDispIns(
             // TODO-WASM: decide what our strategy for alignment hints is and display these accordingly.
             unsigned      log2align = 1;
             cnsval_ssize_t offset   = emitGetInsSC(id);
-            printf(" %u %u", log2align, offset);
+            printf(" %u %llu", log2align, offset);
         }
         break;
 
