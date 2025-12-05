@@ -13,7 +13,6 @@ class MemoryMappedFile
     void* m_address;
     
 #ifdef TARGET_WINDOWS
-    HANDLE m_hFile;
     HANDLE m_hFileMapping;
 #endif
     
@@ -21,7 +20,6 @@ class MemoryMappedFile
         : m_size(0)
         , m_address(nullptr)
     #ifdef TARGET_WINDOWS
-        , m_hFile(NULL)
         , m_hFileMapping(NULL)
     #endif
     {

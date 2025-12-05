@@ -9,12 +9,12 @@ MemoryMappedFile* MemoryMappedFile::Open(const WCHAR* path)
 {
     MemoryMappedFile* result = new MemoryMappedFile();
 
-    result->m_hFile = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if (result->m_hFile == NULL)
+    HANDLE hFile = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
         goto Fail;
 
     LARGE_INTEGER size;
-    if (!GetFileSizeEx(result->m_hFile, &size))
+    if (!GetFileSizeEx(hFile, &size))
         goto Fail;
 
     if (size.QuadPart > SIZE_MAX)
@@ -22,7 +22,7 @@ MemoryMappedFile* MemoryMappedFile::Open(const WCHAR* path)
 
     result->m_size = (size_t)size.QuadPart;
 
-    result->m_hFileMapping = CreateFileMappingW(result->m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+    result->m_hFileMapping = CreateFileMappingW(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
     if (result->m_hFileMapping == NULL)
         goto Fail;
 
@@ -33,6 +33,8 @@ MemoryMappedFile* MemoryMappedFile::Open(const WCHAR* path)
     return result;
 
 Fail:
+    if (hFile != INVALID_HANDLE_VALUE)
+        CloseHandle(hFile);
     delete result;
     return nullptr;
 }
@@ -43,6 +45,4 @@ MemoryMappedFile::~MemoryMappedFile()
         UnmapViewOfFile(m_address);
     if (m_hFileMapping != NULL)
         CloseHandle(m_hFileMapping);
-    if (m_hFile != NULL)
-        CloseHandle(m_hFile);
 }
