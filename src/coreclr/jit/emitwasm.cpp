@@ -265,8 +265,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_ULEB128:
         {
             dst += emitOutputByte(dst, opcode);
-            // while cnsval_ssize_t is appropriately sized, we want to make sure
-            //  that constant is as big as EncodeLEB64 expects it to be
             cnsval_ssize_t constant = emitGetInsSC(id);
             dst += emitOutputULEB128(dst, constant);
             break;
@@ -274,8 +272,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SLEB128:
         {
             dst += emitOutputByte(dst, opcode);
-            // while cnsval_ssize_t is appropriately sized, we want to make sure
-            //  that constant is as big as EncodeLEB64 expects it to be
             cnsval_ssize_t constant = emitGetInsSC(id);
             dst += emitOutputSLEB128(dst, constant);
             break;
@@ -283,6 +279,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_F32:
         {
             dst += emitOutputByte(dst, opcode);
+            // Reinterpret the bits as a double constant and then truncate it to f32,
+            //  then finally copy the raw truncated f32 bits to the output.
             cnsval_ssize_t bits = emitGetInsSC(id);
             double         value;
             float          truncated;
@@ -295,6 +293,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_F64:
         {
             dst += emitOutputByte(dst, opcode);
+            // The int64 bits are actually a double constant we can copy directly
+            //  to the output stream.
             cnsval_ssize_t bits = emitGetInsSC(id);
             memcpy(dst + writeableOffset, &bits, sizeof(double));
             dst += sizeof(double);
