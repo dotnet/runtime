@@ -203,6 +203,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEnableWebcil>$(WasmEnableWebcil)</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_TargetingNET80OrLater)' != 'true'">false</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_WasmEnableWebcil)' == ''">true</_WasmEnableWebcil>
+      <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120248 -->
+      <_WasmEnableWebcil Condition="'$(RuntimeFlavor)' == 'CoreCLR'">false</_WasmEnableWebcil>
+
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
       <_WasmInlineBootConfig>$(WasmInlineBootConfig)</_WasmInlineBootConfig>
