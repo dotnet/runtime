@@ -7,14 +7,10 @@
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
-    <MainLibraryFileName>iOS.Simulator.CoreCLR.Interpreter.Test.dll</MainLibraryFileName>
+    <MainLibraryFileName>iOS.CoreCLR.Interpreter.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
   </PropertyGroup>
-
-  <ItemGroup>
-    <EnvironmentVariables Include="DOTNET_InterpMode=3" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Program.cs" />
