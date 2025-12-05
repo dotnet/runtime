@@ -752,18 +752,21 @@ namespace ILCompiler
 
             // Generate entries in the blob for methods that will be necessary for stack trace purposes.
             var stackTraceRecords = new List<StackTraceRecordData>();
+            var methodBodies = new HashSet<MethodDesc>();
             foreach (var methodBody in GetCompiledMethodBodies())
             {
                 MethodDesc method = methodBody.Method;
 
-                // Methods that will end up in the reflection invoke table should not have an entry in stack trace table
-                // We'll try looking them up in reflection data at runtime.
-                if (methodsWithMappings.Contains(method))
-                    continue;
-
                 // If the method will be folded, no need to emit stack trace info for this one
                 ISymbolNode internedBody = factory.ObjectInterner.GetDeduplicatedSymbol(factory, methodBody);
                 if (internedBody != methodBody)
+                    continue;
+
+                methodBodies.Add(method);
+
+                // Methods that will end up in the reflection invoke table should not have an entry in stack trace table
+                // We'll try looking them up in reflection data at runtime.
+                if (methodsWithMappings.Contains(method))
                     continue;
 
                 MethodStackTraceVisibilityFlags stackVisibility = _stackTraceEmissionPolicy.GetMethodVisibility(method);
@@ -851,21 +854,15 @@ namespace ILCompiler
                 Debug.Assert(!method.IsGenericMethodDefinition && !method.OwningType.IsGenericDefinition);
                 Debug.Assert(!IsReflectionBlocked(method));
 
-                if ((_stackTraceEmissionPolicy.GetMethodVisibility(method) & (MethodStackTraceVisibilityFlags.HasMetadata | MethodStackTraceVisibilityFlags.HasLineNumbers))
+                if (methodBodies.Contains(method)
+                    && (_stackTraceEmissionPolicy.GetMethodVisibility(method) & (MethodStackTraceVisibilityFlags.HasMetadata | MethodStackTraceVisibilityFlags.HasLineNumbers))
                     == (MethodStackTraceVisibilityFlags.HasMetadata | MethodStackTraceVisibilityFlags.HasLineNumbers))
                 {
-                    // We should generate line numbers for this. Only generate line numbers if the method body
-                    // is actually generated (and we didn't avoid emitting the body through deduplication).
-                    IMethodNode methodBody = factory.MethodEntrypoint(method);
-                    ISymbolNode internedBody = factory.ObjectInterner.GetDeduplicatedSymbol(factory, methodBody);
-                    if (internedBody == methodBody)
-                    {
-                        ReflectionStackTraceMapping mapping = new ReflectionStackTraceMapping(
-                            method,
-                            writer.GetRecordHandle(transformed.GetTransformedTypeDefinition((MetadataType)method.OwningType.GetTypeDefinition())),
-                            writer.GetRecordHandle(record));
-                        reflectionBasedStackTraceMapping.Add(mapping);
-                    }
+                    ReflectionStackTraceMapping mapping = new ReflectionStackTraceMapping(
+                        method,
+                        writer.GetRecordHandle(transformed.GetTransformedTypeDefinition((MetadataType)method.OwningType.GetTypeDefinition())),
+                        writer.GetRecordHandle(record));
+                    reflectionBasedStackTraceMapping.Add(mapping);
                 }
 
                 methodMappings.Add(new MetadataMapping<MethodDesc>(method, writer.GetRecordHandle(record)));
