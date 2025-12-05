@@ -1857,7 +1857,7 @@ namespace ILAssembler
                         if (context.int32() is CILParser.Int32Context int32)
                         {
                             int value = VisitInt32(int32).Value;
-                            builder.WriteSingle(Unsafe.As<int, float>(ref value));
+                            builder.WriteSingle(BitConverter.Int32BitsToSingle(value));
                         }
                         break;
                     }
@@ -1870,7 +1870,7 @@ namespace ILAssembler
                         if (context.int64() is CILParser.Int64Context int64)
                         {
                             long value = VisitInt64(int64).Value;
-                            builder.WriteDouble(Unsafe.As<long, double>(ref value));
+                            builder.WriteDouble(BitConverter.Int64BitsToDouble(value));
                         }
                         break;
                     }
@@ -1945,7 +1945,7 @@ namespace ILAssembler
             else if (context.int32() is CILParser.Int32Context int32)
             {
                 int value = VisitInt32(int32).Value;
-                return new(Unsafe.As<int, float>(ref value));
+                return new(BitConverter.Int32BitsToSingle(value));
             }
             else if (context.int64() is CILParser.Int64Context int64)
             {
@@ -2288,14 +2288,20 @@ namespace ILAssembler
                         str = VisitCompQstring(userString!).Value;
                         if (context.ANSI() is not null)
                         {
-                            unsafe
+                            // Emit the string not as a UTF-16 string (as per the spec), but directly as an ANSI string.
+                            // Although the string is marked as ANSI, this always used the UTF-8 code page
+                            // so we can emit this as UTF-8 bytes.
+                            int byteCount = Encoding.UTF8.GetByteCount(str);
+                            // Ensure we have an even number of bytes.
+                            if ((byteCount % 1) != 0)
                             {
-                                byte* ansiStrMemory = (byte*)Marshal.StringToCoTaskMemAnsi(str);
-                                int strlen = 0;
-                                for (; ansiStrMemory[strlen] != 0; strlen++) ;
-                                str = new string((char*)ansiStrMemory, 0, (strlen + 1) / 2);
-                                Marshal.FreeCoTaskMem((nint)ansiStrMemory);
+                                byteCount++;
                             }
+
+                            ReadOnlySpan<byte> utf8Bytes = new byte[byteCount];
+                            Encoding.UTF8.GetBytes(str, utf8Bytes);
+
+                            str = new string(MemoryMarshal.Cast<byte, char>(utf8Bytes));
                         }
                     }
                     _currentMethod!.Definition.MethodBody.LoadString(_metadataBuilder.GetOrAddUserString(str));
