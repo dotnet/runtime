@@ -208,8 +208,7 @@ size_t emitter::emitOutputULEB128(uint8_t* destination, uint64_t value)
         {
             buffer[pos++] = (uint8_t)((value & 0x7F) | ((value >= 0x80) ? 0x80u : 0));
             value >>= 7;
-        }
-        while (value > 0);
+        } while (value > 0);
 
         return pos;
     }
@@ -223,8 +222,8 @@ size_t emitter::emitOutputULEB128(uint8_t* destination, uint64_t value)
 size_t emitter::emitOutputSLEB128(uint8_t* destination, int64_t value)
 {
     uint8_t* buffer = destination + writeableOffset;
-    bool cont = true;
-    int pos = 0;
+    bool     cont   = true;
+    int      pos    = 0;
     while (cont)
     {
         uint8_t b = ((uint8_t)value & 0x7F);
@@ -444,8 +443,8 @@ void emitter::emitDispIns(
         case IF_MEMARG:
         {
             // TODO-WASM: decide what our strategy for alignment hints is and display these accordingly.
-            unsigned      log2align = 1;
-            cnsval_ssize_t offset   = emitGetInsSC(id);
+            unsigned       log2align = 1;
+            cnsval_ssize_t offset    = emitGetInsSC(id);
             printf(" %u %llu", log2align, offset);
         }
         break;
