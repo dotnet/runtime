@@ -130,10 +130,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.NewMultiDimArr:
-                    methodDesc = context.GetHelperEntryPoint("ArrayHelpers"u8, "NewObjArray"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Array"u8, "Ctor"u8, null);
                     break;
                 case ReadyToRunHelper.NewMultiDimArrRare:
-                    methodDesc = context.GetHelperEntryPoint("ArrayHelpers"u8, "NewObjArrayRare"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Array"u8, "CtorRare"u8, null);
                     break;
 
                 case ReadyToRunHelper.NewArray:
@@ -164,10 +164,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.GetRuntimeTypeHandle:
-                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers"u8, "GetRuntimeTypeHandle"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "RuntimeTypeHandle"u8, "GetRuntimeTypeHandleFromMethodTable"u8, null);
                     break;
                 case ReadyToRunHelper.GetRuntimeType:
-                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers"u8, "GetRuntimeType"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Type"u8, "GetTypeFromMethodTable"u8, null);
                     break;
                 case ReadyToRunHelper.GetRuntimeMethodHandle:
                     methodDesc = context.GetHelperEntryPoint("LdTokenHelpers"u8, "GetRuntimeMethodHandle"u8);
@@ -322,13 +322,13 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.TypeHandleToRuntimeType:
-                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers"u8, "TypeHandleToRuntimeTypeMaybeNull"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Type"u8, "GetTypeFromMethodTableMaybeNull"u8, null);
                     break;
                 case ReadyToRunHelper.GetRefAny:
-                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers"u8, "GetRefAny"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "TypedReference"u8, "GetRefAny"u8, null);
                     break;
                 case ReadyToRunHelper.TypeHandleToRuntimeTypeHandle:
-                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers"u8, "TypeHandleToRuntimeTypeHandleMaybeNull"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "RuntimeTypeHandle"u8, "GetRuntimeTypeHandleFromMethodTable"u8, null);
                     break;
 
                 case ReadyToRunHelper.GetCurrentManagedThreadId:
