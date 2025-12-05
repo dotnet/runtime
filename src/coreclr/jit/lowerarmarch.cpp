@@ -1590,7 +1590,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             //
             // We want to similarly handle (~op1 | op2) and (op1 | ~op2)
 
-            //TODO-SVE: Add scalable length support
+            // TODO-SVE: Add scalable length support
             assert(node->gtType == TYP_SIMD16 || node->gtType == TYP_SIMD8);
 
             bool transform = false;

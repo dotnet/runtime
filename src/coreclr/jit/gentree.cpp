@@ -29545,7 +29545,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForUnOp(
     {
 #if defined(TARGET_ARM64)
         assert(!isScalar || (simdSize == 8));
-        //TODO-SVE: Add scalable length support
+        // TODO-SVE: Add scalable length support
         assert((simdSize == 8) || (simdSize == 16));
 #endif // TARGET_ARM64
 
@@ -29645,7 +29645,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
     {
 #if defined(TARGET_ARM64)
         assert(!isScalar || (simdSize == 8));
-        //TODO-SVE: Add scalable length support
+        // TODO-SVE: Add scalable length support
         assert((simdSize == 8) || (simdSize == 16));
 #endif // TARGET_ARM64
 
@@ -29765,7 +29765,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
                 id = NI_X86Base_AndNot;
             }
 #elif defined(TARGET_ARM64)
-            //TODO-SVE: Add scalable length support
+            // TODO-SVE: Add scalable length support
             assert(simdSize == 16 || simdSize == 8);
 
             id = NI_AdvSimd_BitwiseClear;
