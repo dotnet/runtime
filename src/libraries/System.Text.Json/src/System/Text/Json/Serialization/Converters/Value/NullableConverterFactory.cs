@@ -43,7 +43,6 @@ namespace System.Text.Json.Serialization.Converters
                 culture: null)!;
         }
 
-
         [UnconditionalSuppressMessage(
             "ReflectionAnalysis",
 #if NET9_0_OR_GREATER
