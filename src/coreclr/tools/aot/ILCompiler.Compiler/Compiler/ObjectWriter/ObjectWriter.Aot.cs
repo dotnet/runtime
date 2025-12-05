@@ -9,11 +9,11 @@ using System.IO;
 using System.Linq;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 using static ILCompiler.DependencyAnalysis.RelocType;
-using Internal.Text;
 
 namespace ILCompiler.ObjectWriter
 {

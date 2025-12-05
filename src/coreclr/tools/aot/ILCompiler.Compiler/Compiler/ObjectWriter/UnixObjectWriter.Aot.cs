@@ -7,11 +7,11 @@ using System.IO;
 using System.Linq;
 using System.Buffers.Binary;
 using ILCompiler.DependencyAnalysis;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
 
 using Debug = System.Diagnostics.Debug;
-using Internal.Text;
 
 namespace ILCompiler.ObjectWriter
 {
