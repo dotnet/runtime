@@ -2867,7 +2867,7 @@ void SparseVTableMap::RecordGap(WORD StartMTSlot, WORD NumSkipSlots)
 void SparseVTableMap::RecordExcludedMethod(WORD MTSlot)
 {
     LIMITED_METHOD_CONTRACT;
-    return RecordGap(MTSlot, -11);
+    return RecordGap(MTSlot, -1);
 }
 
 
