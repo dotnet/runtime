@@ -108,7 +108,6 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
     {
         InterpreterRetryData retryData;
 
-        InterpMethod *pMethod = NULL;
         while (true)
         {
             retryData.StartCompilationAttempt();

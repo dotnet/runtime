@@ -42,7 +42,7 @@ public:
         if (Value == nullptr)
             NOMEM();
 
-            return Value;
+        return Value;
     }
 
     bool HasValue()
@@ -55,7 +55,9 @@ public:
     dn_simdhash_ptr_ptr_holder(dn_simdhash_ptr_ptr_holder&& other)
     {
         Value = other.Value;
+        ValueDestroyCallback = other.ValueDestroyCallback;
         other.Value = nullptr;
+        other.ValueDestroyCallback = nullptr;
     }
     dn_simdhash_ptr_ptr_holder& operator=(dn_simdhash_ptr_ptr_holder&& other)
     {
@@ -63,7 +65,9 @@ public:
         {
             free_hash_and_values();
             Value = other.Value;
+            ValueDestroyCallback = other.ValueDestroyCallback;
             other.Value = nullptr;
+            other.ValueDestroyCallback = nullptr;
         }
         return *this;
     }
@@ -120,7 +124,9 @@ public:
     dn_simdhash_u64_ptr_holder(dn_simdhash_u64_ptr_holder&& other)
     {
         Value = other.Value;
+        ValueDestroyCallback = other.ValueDestroyCallback;
         other.Value = nullptr;
+        other.ValueDestroyCallback = nullptr;
     }
     dn_simdhash_u64_ptr_holder& operator=(dn_simdhash_u64_ptr_holder&& other)
     {
@@ -128,7 +134,9 @@ public:
         {
             free_hash_and_values();
             Value = other.Value;
+            ValueDestroyCallback = other.ValueDestroyCallback;
             other.Value = nullptr;
+            other.ValueDestroyCallback = nullptr;
         }
         return *this;
     }
