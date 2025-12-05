@@ -394,22 +394,23 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
     // grab a snapshot
     Thread::ThreadState state = thread->GetSnapshotState();
 
+    // If the thread is dead, just report that its dead.
+    // It's possible that the thread may still be in the final bits of shutting down,
+    // but for the purposes of the managed API surface, it should be reported
+    // as stopped.
+    if (state & Thread::TS_Dead)
+    {
+        return ThreadNative::ThreadStopped;
+    }
+
     if (state & Thread::TS_Background)
         res |= ThreadNative::ThreadBackground;
 
     if (state & Thread::TS_Unstarted)
         res |= ThreadNative::ThreadUnstarted;
 
-    // Don't report a StopRequested if the thread has actually stopped.
-    if (state & Thread::TS_Dead)
-    {
-        res |= ThreadNative::ThreadStopped;
-    }
-    else
-    {
-        if (state & Thread::TS_AbortRequested)
-            res |= ThreadNative::ThreadAbortRequested;
-    }
+    if (state & Thread::TS_AbortRequested)
+        res |= ThreadNative::ThreadAbortRequested;
 
     if (state & Thread::TS_Interruptible)
         res |= ThreadNative::ThreadWaitSleepJoin;
