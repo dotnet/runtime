@@ -2828,13 +2828,15 @@ void SparseVTableMap::AllocOrExpand()
 }
 
 //*******************************************************************************
-// While building mapping list, record a gap in VTable slot numbers.
+// While building mapping list, record a gap in VTable slot numbers or MT slots.
+// A positive number indicates a gap in the VTable slot numbers.
+// A negative number indicates a gap in the MT slots.
 void SparseVTableMap::RecordGap(WORD StartMTSlot, WORD NumSkipSlots)
 {
     STANDARD_VM_CONTRACT;
 
     _ASSERTE((StartMTSlot == 0) || (StartMTSlot > m_MTSlot));
-    _ASSERTE(NumSkipSlots > 0);
+    _ASSERTE(NumSkipSlots != 0);
 
     // We use the information about the current gap to complete a map entry for
     // the last non-gap. There is a special case where the vtable begins with a
@@ -2864,28 +2866,9 @@ void SparseVTableMap::RecordGap(WORD StartMTSlot, WORD NumSkipSlots)
 // While building mapping list, record an excluded MT slot.
 void SparseVTableMap::RecordExcludedMethod(WORD MTSlot)
 {
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE_MSG(MTSlot > 0, "Shouldn't ever need to skip the first slot.");
-
-    // We need an entry, allocate or expand the list as necessary.
-    AllocOrExpand();
-
-    // Update the list with an entry describing the last non-gap in vtable
-    // entries.
-    m_MapList[m_MapEntries].m_Start = m_MTSlot;
-    m_MapList[m_MapEntries].m_Span = MTSlot - m_MTSlot;
-    m_MapList[m_MapEntries].m_MapTo = m_VTSlot;
-
-    // Bias the VT slots back one to account for the excluded method.
-    // We want MTSlot + 1 to map to where MTSlot would have mapped if it
-    // had not been excluded.
-    m_VTSlot += (MTSlot - m_MTSlot) - 1;
-    m_MTSlot = MTSlot;
-
-    m_MapEntries++;
+    LIMITED_METHOD_CONTRACT;
+    return RecordGap(MTSlot, -11);
 }
-
 
 
 //*******************************************************************************
