@@ -7,35 +7,43 @@
 
 MemoryMappedFile* MemoryMappedFile::Open(const WCHAR* path)
 {
-    MemoryMappedFile* result = new MemoryMappedFile();
+    HANDLE hFile = INVALID_HANDLE_VALUE;
+    HANDLE hFileMapping = NULL;
 
-    HANDLE hFile = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    hFile = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
     if (hFile == INVALID_HANDLE_VALUE)
         goto Fail;
 
-    LARGE_INTEGER size;
-    if (!GetFileSizeEx(hFile, &size))
+    LARGE_INTEGER li;
+    if (!GetFileSizeEx(hFile, &li))
         goto Fail;
 
-    if (size.QuadPart > SIZE_MAX)
+    if (li.QuadPart > SIZE_MAX)
         goto Fail;
 
-    result->m_size = (size_t)size.QuadPart;
+    size_t size = (size_t)li.QuadPart;
 
-    result->m_hFileMapping = CreateFileMappingW(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-    if (result->m_hFileMapping == NULL)
+    hFileMapping = CreateFileMappingW(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+    if (hFileMapping == NULL)
         goto Fail;
 
-    result->m_address = MapViewOfFile(result->m_hFileMapping, FILE_MAP_READ, 0, 0, 0);
-    if (result->m_address == nullptr)
+    void* address = MapViewOfFile(hFileMapping, FILE_MAP_READ, 0, 0, 0);
+    if (address == nullptr)
         goto Fail;
+    
+    CloseHandle(hFile);
+    CloseHandle(hFileMapping);
 
+    MemoryMappedFile* result = new MemoryMappedFile();
+    result->m_address = address;
+    result->m_size = size;
     return result;
 
 Fail:
     if (hFile != INVALID_HANDLE_VALUE)
         CloseHandle(hFile);
-    delete result;
+    if (hFileMapping != NULL)
+        CloseHandle(hFileMapping);
     return nullptr;
 }
 
@@ -43,6 +51,4 @@ MemoryMappedFile::~MemoryMappedFile()
 {
     if (m_address != nullptr)
         UnmapViewOfFile(m_address);
-    if (m_hFileMapping != NULL)
-        CloseHandle(m_hFileMapping);
 }
