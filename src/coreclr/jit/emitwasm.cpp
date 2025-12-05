@@ -65,7 +65,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     NYI_WASM("emitIns_R");
 }
 
-void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t imm)
+void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, cnsval_ssize_t imm)
 {
     NYI_WASM("emitIns_R_I");
 }
