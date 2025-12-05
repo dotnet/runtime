@@ -4477,13 +4477,67 @@ void emitter::emitDispIns(
         {
             case INS_OPTS_JUMP:  // `id` points to `instrDescJmp`
             {
-                printf("instrDescJmp\n");
+                instrDescJmp* idJmp = static_cast<instrDescJmp*>(id);
+
+                if (idJmp->idjShort) // Short jump
+                {
+
+                }
+                else // Far jump
+                {
+
+                }
+
                 break;
             }
 
             case INS_OPTS_C: // `id` points to `instrDescCGCA`
             {
-                printf("instrDescCGCA\n");
+                // Note: Refer to the generation logic in `emitOutputCall`.
+
+                instrDescCGCA* idCall = static_cast<instrDescCGCA*>(id);
+                
+                if (idCall->idIsCallRegPtr()) // Indirect call (jalr)
+                {
+                    code_t insCode = emitInsCode(ins);
+
+                    unsigned opcode = insCode & kInstructionOpcodeMask;
+                    unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
+                    unsigned rd = castFloatOrIntegralReg(idCall->idReg4());
+                    unsigned rs = castFloatOrIntegralReg(idCall->idReg3());
+                    unsigned offset = TrimSignedToImm12((idCall->idSmallCns() << 20) >> 20);
+
+                    code_t subInsCode = insEncodeITypeInstr(opcode, rd, funct3, rs, offset);
+                    emitDispInsName(subInsCode, nullptr, false, 0, id, nullptr);
+                }
+                else // Direct call (auipc + jalr)
+                {
+                    size_t addr = (size_t)(id->idAddr()->iiaAddr);
+
+                    regNumber linkReg = (regNumber)(addr & 1);
+                    assert(linkReg == REG_ZERO || linkReg == REG_RA);
+
+                    regNumber tempReg = (linkReg == REG_ZERO) ? REG_DEFAULT_HELPER_CALL_TARGET : REG_RA;
+
+                    code_t auipcCode = emitInsCode(INS_auipc);
+
+                    unsigned auipcOpcode = auipcCode & kInstructionOpcodeMask;
+                    unsigned auipcRD = castFloatOrIntegralReg(tempReg);
+
+                    code_t subInsCode = insEncodeUTypeInstr(auipcOpcode, auipcRD, 0);
+                    emitDispInsName(subInsCode, nullptr, false, 0, id, nullptr);
+
+                    code_t jalrCode = emitInsCode(ins);
+
+                    unsigned jalrOpcode = jalrCode & kInstructionOpcodeMask;
+                    unsigned jalrFunct3 = (jalrCode & kInstructionFunct3Mask) >> 12;
+                    unsigned jalrRD = castFloatOrIntegralReg(linkReg);
+                    unsigned jalrRS = castFloatOrIntegralReg(tempReg);
+
+                    code_t subInsCode2 = insEncodeITypeInstr(jalrOpcode, jalrRD, jalrFunct3, jalrRS, 0);
+                    emitDispInsName(subInsCode2, nullptr, false, 0, id, nullptr);
+                }
+
                 break;
             }
 
@@ -4516,7 +4570,6 @@ void emitter::emitDispIns(
                             unsigned opcode = ithCode & kInstructionOpcodeMask;
                             unsigned rs = castFloatOrIntegralReg(reg);
                             unsigned funct3 = (ithCode & kInstructionFunct3Mask) >> 12;
-                            unsigned funct7 = (ithCode & kInstructionFunct7Mask) >> 20;
                             unsigned imm12 = TrimSignedToImm12((ithVal << 20) >> 20);
 
                             code_t subInsCode = insEncodeITypeInstr(opcode, rs, funct3, rs, imm12);
