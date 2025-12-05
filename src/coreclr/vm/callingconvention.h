@@ -2017,6 +2017,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     int gRegs = 0;
     int cFPRegs = 0;
+    const bool isFloatHfa = thValueType.IsFloatHfa();
 
     switch (argType)
     {
@@ -2035,14 +2036,12 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 	    // the argument is passed by reference.
 	    if (argSize > 0 && argSize <= ENREGISTERED_PARAMTYPE_MAXSIZE)
 	    {
+		if (isFloatHfa)
+		{
+			_ASSERTE("FLOAT REGISTER DETECTED in GetNextOffset()");
+		}
 		gRegs = argSize/sizeof(TADDR);
 		if(argSize % sizeof(TADDR) != 0) gRegs++;
-	    }
-	    // Single-element aggregates with float/double element are passed in FPRs.
-	    else if ((argSize == 4 && thValueType.GetHFAType() == CORINFO_HFA_ELEM_FLOAT)
-	        || (argSize == 8 && thValueType.GetHFAType() == CORINFO_HFA_ELEM_DOUBLE))
-	    {
-                _ASSERTE("FLOAT REGISTER DETECTED in GetNextOffset()");
 	    }
 	    break;
 

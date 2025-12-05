@@ -10,50 +10,71 @@ NESTED_ENTRY CallDescrWorkerInternal, _TEXT, NoHandler
     mflr %r0
     std %r0, 16(%r1)
     std %r2, 24(%r1)
-	
-	// Save pCallDescrData in %r11
+    std %r31, -8(%r1)
+
+    // Save pCallDescrData in %r11
     mr %r11, %r3 
     lwa %r0, CallDescrData__numStackSlots(%r11)
-	li %r4, 2
-	divd %r4, %r0, %r4
-	mulli %r4, %r4, 2
-	sub %r4, %r0, %r4
-	cmpdi %r4, 0
-	beq LOCAL_LABEL(NO_STACK_PADDING)
-	addic %r0, %r0, 1
+    cmpdi %r0, 0
+    beq LOCAL_LABEL(DefaultStackAllocation)
+
+LOCAL_LABEL(CheckStackAlignment):
+    li %r4, 2
+    divd %r4, %r0, %r4
+    mulli %r4, %r4, 2
+    sub %r4, %r0, %r4
+    cmpdi %r4, 0
+    beq LOCAL_LABEL(StackAllocationLoop)
+    addic %r0, %r0, 1
 
 
-LOCAL_LABEL(NO_STACK_PADDING):
-	li %r4, 0
-	sub %r4, %r4, %r0
-	mulli %r4, %r4, 8
-	
-	// minimum stack frame 32 + default paramaters 64
-	addic %r4, %r4, -96 
-        stdux %r1, %r1, %r4
-	std %r3, 32(%r1)
+LOCAL_LABEL(StackAllocationLoop):
+    .cfi_def_cfa_offset 0
+    addic %r1, %r1, -8
+    .cfi_adjust_cfa_offset 8
+    addic %r0, %r0, -1
+    cmpdi %r0, 0
+    bne LOCAL_LABEL(StackAllocationLoop)
 
-	// If there are stack arguments, copy the arguments in.
+    addic %r1, %r1, -104
+    std %r31, 0(%r1)
+    .cfi_adjust_cfa_offset 104
+    .cfi_offset 65, 16
+    .cfi_offset 31, -8
+    mr %r31, %r1
+    .cfi_def_cfa_register 31
+    std %r3, 32(%r1)
+
+    // If there are stack arguments, copy the arguments in.
     ld %r4, CallDescrData__pSrc(%r11)  // Source address
     li %r5, 0                          // Source offset
-	li %r6, 96                        // Destination offset on stack
-	cmpdi %r0, 0
-    beq LOCAL_LABEL(NoStackArguments)
+    li %r6, 96                        // Destination offset on stack
     
 LOCAL_LABEL(StackCopyLoop):
     
-	add %r7, %r4, %r5
-	ld %r8, 0(%r7)
-	add %r9, %r1, %r6
+    lwa %r0, CallDescrData__numStackSlots(%r11)
+    add %r7, %r4, %r5
+    ld %r8, 0(%r7)
+    add %r9, %r1, %r6
     std %r8, 0(%r9)
     addic %r5, %r5, 8
     addic %r6, %r6, 8
     addic %r0, %r0, -1
     cmpdi %r0, 0
     bne LOCAL_LABEL(StackCopyLoop)
+    beq LOCAL_LABEL(LoadArguments)
 
-LOCAL_LABEL(NoStackArguments):
+LOCAL_LABEL(DefaultStackAllocation):
 
+    stdu %r1, -104(%r1)
+    .cfi_def_cfa_offset 104
+    .cfi_offset 65, 16
+    .cfi_offset 31, -8
+    mr %r31, %r1
+    .cfi_def_cfa_register 31
+    std %r3, 32(%r1)
+
+LOCAL_LABEL(LoadArguments):
     // All argument registers are loaded regardless of the actual number
     // of arguments.
     ld %r12, CallDescrData__pArgumentRegisters(%r11)
@@ -132,13 +153,15 @@ LOCAL_LABEL(Epilog):
 
 LOCAL_LABEL(NO_STACK_PADDING_EPILOG):
 	mulli %r5, %r5, 8
-	addic %r6, %r5, 96
+	addic %r6, %r5, 104
 	
 	add   %r1, %r1, %r6
-	
+
+	.cfi_def_cfa %r1, 0	
 	ld      %r2, 24(%r1)
 	ld      %r0, 16(%r1)
 	mtlr    %r0
+	ld %r31, -8(%r1)
         blr
 
 PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
