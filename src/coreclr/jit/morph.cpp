@@ -14721,15 +14721,6 @@ PhaseStatus Compiler::fgExpandQmarkNodes(bool early)
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // We don't spawn more QMARKs after the early expansion phase,
-    // Eventually we might want to get rid of the late expansion phase, but currently
-    // it produces too many regressions (mostly because of ForwardSub).
-    if (compQmarkRationalized)
-    {
-        assert(!early);
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
     bool introducedThrows = false;
 
     if (compQmarkUsed)
