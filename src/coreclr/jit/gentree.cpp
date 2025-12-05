@@ -19919,6 +19919,11 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 //
 bool GenTree::SupportsSettingZeroFlag()
 {
+    if (SupportsSettingFlagsAsCompareToZero())
+    {
+        return true;
+    }
+
 #if defined(TARGET_XARCH)
     if (OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR))
     {
@@ -19938,11 +19943,6 @@ bool GenTree::SupportsSettingZeroFlag()
     }
 #endif
 #elif defined(TARGET_ARM64)
-    if (OperIs(GT_AND, GT_AND_NOT))
-    {
-        return true;
-    }
-
     // We do not support setting zero flag for madd/msub.
     if (OperIs(GT_NEG) && (!gtGetOp1()->OperIs(GT_MUL) || !gtGetOp1()->isContained()))
     {
@@ -19959,12 +19959,13 @@ bool GenTree::SupportsSettingZeroFlag()
 }
 
 //------------------------------------------------------------------------
-// SupportsSettingFlagsAsCompareToZero: Returns true if we support setting
-// flags for compare to zero operations.
+// SupportsSettingFlagsAsCompareToZero:
+//   Returns true if this operation supports setting the flags as if the result
+//   was a compare to zero.
 //
 bool GenTree::SupportsSettingFlagsAsCompareToZero()
 {
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARM64)
     return OperIs(GT_AND, GT_AND_NOT);
 #else
     return false;
