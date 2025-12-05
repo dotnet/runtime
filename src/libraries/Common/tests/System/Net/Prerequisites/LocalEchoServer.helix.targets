@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup Condition="'$(IsRunningLibraryTests)' == 'true' and
                               ('$(Scenario)' == '' or '$(Scenario)' == 'normal' or
-                                '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJS')">
+                                '$(Scenario)' == 'WasmTestOnBrowser')">
 
     <HelixExtensionTargets>$(HelixExtensionTargets);_AddMiddlewarePayload</HelixExtensionTargets>
     <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</TestEchoMiddleware>

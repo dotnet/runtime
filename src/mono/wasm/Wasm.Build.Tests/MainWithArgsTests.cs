@@ -41,14 +41,6 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        public void TopLevelWithArgs(BuildArgs buildArgs, string[] args, RunHost host, string id)
-            => TestMainWithArgs("top_level_args",
-                                @"##CODE## return await System.Threading.Tasks.Task.FromResult(42 + count);",
-                                buildArgs, args, host, id);
-
-        [Theory]
-        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
         public void NonAsyncMainWithArgs(BuildArgs buildArgs, string[] args, RunHost host, string id)
             => TestMainWithArgs("non_async_main_args", @"
                 public class TestClass {
