@@ -166,7 +166,7 @@
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
     <!-- sdk version, for testing workloads -->
-    <EmsdkPackageVersion>$(MicrosoftDotNetApiCompatTaskPackageVersion)</EmsdkPackageVersion>
+    <EmsdkPackageVersion>10.0.0</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
     <EmsdkVersion>3.1.56</EmsdkVersion>
