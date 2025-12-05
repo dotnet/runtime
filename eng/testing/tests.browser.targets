@@ -7,6 +7,19 @@
   <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
   <PropertyGroup>
     <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == ''">true</IsBrowserWasmProject>
+    <WasmEnableHotReload>false</WasmEnableHotReload>
+    <CompressionEnabled>false</CompressionEnabled>
+    <DisableBuildCompression>true</DisableBuildCompression>
+    <PublishTrimmed>false</PublishTrimmed>
+    <PublishTrimmed Condition="'$(RunAOTCompilation)' == 'true' or '$(TestTrimming)' == 'true'">true</PublishTrimmed>
+    <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
+
+    <ResolveWasmOutputsDependsOn>
+      $(ResolveWasmOutputsDependsOn);
+      WasmTriggerPublishApp;
+      ReadWasmNativeAssetsFromFileSystem;
+      UpdateWasmNativeAssetOriginalItemSpec
+    </ResolveWasmOutputsDependsOn>
 
     <!-- set this when provisioning emsdk on CI -->
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(BrowserProjectRoot), 'emsdk'))</EMSDK_PATH>
@@ -36,12 +49,22 @@
     <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">true</NullabilityInfoContextSupport>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Content Include="$(MonoProjectRoot)browser\test-main.js" Link="wwwroot\test-main.js" CopyToOutputDirectory="PreserveNewest" Condition="'$(IsFunctionalTest)' != 'true'" />
+    <Content Include="$(MonoProjectRoot)browser\test-index.html" Link="wwwroot\index.html" CopyToOutputDirectory="PreserveNewest" Condition="'$(IsFunctionalTest)' != 'true'" />
+  </ItemGroup>
+
   <!-- We expect WASM users to indicate they would like to have bigger download size by adding WasmIncludeFullIcuData, -->
   <!-- by default we make their icu small by sharding. -->
   <!-- Trimming test InvariantGlobalizationFalse requires full ICU data. -->
   <!-- ToDo: edit after https://github.com/dotnet/runtime/issues/82819 is merged -->
   <PropertyGroup Condition="'$(TestTrimming)' == 'true'">
     <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+    <BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' == 'false' and '$(WasmIncludeFullIcuData)' == 'true'">true</BlazorWebAssemblyLoadAllGlobalizationData>
   </PropertyGroup>
 
   <!-- On CI this is installed as part of pretest, but it should still be installed
@@ -127,11 +150,10 @@
     <RunScriptCommand Condition="'$(RunScriptCommand)' != ''">$(_AOTBuildCommand) $(_ShellCommandSeparator) $(RunScriptCommand)</RunScriptCommand>
   </PropertyGroup>
 
-  <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
-  <Import Project="$(BrowserProjectRoot)build\BrowserWasmApp.props"
-          Condition="'$(BuildAOTTestsOn)' == 'local'" />
+  <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.props"
+          Condition="'$(BuildAOTTestsOn)' == 'local' and '$(IsWasmProject)' != 'false'" />
   <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets"
-          Condition="'$(BuildAOTTestsOn)' == 'local'" />
+          Condition="'$(BuildAOTTestsOn)' == 'local' and '$(IsWasmProject)' != 'false'" />
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
     <!-- wasm targets are not imported at all, in this case, because we run the wasm build on helix -->
@@ -145,9 +167,126 @@
     <WasmNestedPublishAppDependsOn>PrepareForWasmBuildApp;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
   </PropertyGroup>
 
-  <Target Name="IncludeTestAssemblyInVFS" BeforeTargets="PrepareForWasmBuildApp">
+  <Target Name="UpdateWasmNativeAssetOriginalItemSpec">
     <ItemGroup>
-      <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" Exclude="@(WasmFilesToIncludeFromPublishDir)" />
+      <!-- WasmNativeAsset OriginalItemSpec points to the .csproj it was built for, whereas we expect it to point to the file itself later in WasmSDK -->
+      <WasmNativeAsset Update="@(WasmNativeAsset)">
+        <OriginalItemSpec>%(Identity)</OriginalItemSpec>
+      </WasmNativeAsset>
+    </ItemGroup>
+  </Target>
+
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.LinkContentToWwwroot" AssemblyFile="$(WasmBuildTasksAssemblyPath)" Condition="'$(TestTrimming)' != 'true'" />
+
+  <Target Name="LinkContentToWwwroot" BeforeTargets="ResolveProjectStaticWebAssets" Condition="'$(TargetOS)' == 'browser' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(TestTrimming)' != 'true'">
+    <!-- StaticWebAssetsSDK expects all "files accessible from web" to be in wwwroot folder -->
+    <!-- Here we are adding Link/TargetPath for all Content items and adding them to WasmFilesToIncludeInFileSystem -->
+    <LinkContentToWwwroot Content="@(Content)" MSBuildProjectDirectory="$(MSBuildProjectDirectory)">
+      <Output TaskParameter="WasmFilesToIncludeInFileSystem" ItemName="WasmFilesToIncludeInFileSystem" />
+      <Output TaskParameter="ContentOut" ItemName="_LinkedContent" />
+    </LinkContentToWwwroot>
+    <ItemGroup>
+      <Content Remove="@(_LinkedContent)" />
+      <Content Include="@(_LinkedContent)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="LinkPublishContentToWwwroot" BeforeTargets="ComputeWasmVfs" DependsOnTargets="GetCopyToOutputDirectoryItems" Condition="'$(TargetOS)' == 'browser' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(TestTrimming)' != 'true'">
+    <!-- StaticWebAssetsSDK doesn't have support for adding generated files during publish as "files accessible from web" -->
+    <!-- Here we are adding Link/TargetPath for various files generated during publish, adding them to WasmFilesToIncludeInFileSystem and defining them as StaticWebAsset with StaticWebAssetEndpoint -->
+    <ItemGroup>
+      <_WasmFilesForVfs Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)"
+        TargetPath="%(WasmFilesToIncludeFromPublishDir.TargetDir)/%(WasmFilesToIncludeFromPublishDir.Identity)"
+        CopyToOutputDirectory="PreserveNewest"
+        Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != '' and '%(WasmFilesToIncludeFromPublishDir.TargetDir)' != ''" />
+      <_WasmFilesForVfs Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)"
+        TargetPath="%(WasmFilesToIncludeFromPublishDir.Identity)"
+        CopyToOutputDirectory="PreserveNewest"
+        Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != '' and '%(WasmFilesToIncludeFromPublishDir.TargetDir)' == ''" />
+
+      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dmeta'))" />
+      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dil'))" />
+      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dpdb'))" />
+      <_WasmFilesForVfs Include="@(_WasmBuildAssetCandidates)" Condition="'%(_WasmBuildAssetCandidates.BuildReference)' == 'true' and $([System.String]::new('%(_WasmBuildAssetCandidates.Identity)').EndsWith('.dll')) and !$([System.String]::new('%(_WasmBuildAssetCandidates.Identity)').EndsWith('.resources.dll'))" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
+      <_SatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
+      <_SatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
+      <_SatelliteAssemblies TargetPath="%(CultureName)\%(FileName)%(Extension)" />
+
+      <_WasmFilesForVfs Include="@(_SatelliteAssemblies)" />
+    </ItemGroup>
+    <ItemGroup>
+      <_WasmFilesForVfs CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+    <LinkContentToWwwroot Content="@(_WasmFilesForVfs->Distinct())" MSBuildProjectDirectory="$(MSBuildProjectDirectory)">
+      <Output TaskParameter="WasmFilesToIncludeInFileSystem" ItemName="WasmFilesToIncludeInFileSystem" />
+      <Output TaskParameter="ContentOut" ItemName="_WasmFilesForVfsLinked" />
+    </LinkContentToWwwroot>
+
+    <DefineStaticWebAssets
+      CandidateAssets="@(_WasmFilesForVfsLinked->Distinct())"
+      FingerprintCandidates="$(StaticWebAssetsFingerprintContent)"
+      FingerprintPatterns="@(StaticWebAssetFingerprintPattern)"
+      RelativePathPattern="wwwroot/**"
+      SourceType="Discovered"
+      SourceId="$(PackageId)"
+      ContentRoot="$(MSBuildProjectDirectory)\wwwroot\"
+      BasePath="$(StaticWebAssetBasePath)"
+      AssetMergeSource="$(StaticWebAssetMergeTarget)"
+      CacheManifestPath="$(_ResolveProjectStaticWebAssetsCachePath)">
+        <Output TaskParameter="Assets" ItemName="StaticWebAsset" />
+        <Output TaskParameter="Assets" ItemName="_CurrentProjectStaticWebAsset" />
+    </DefineStaticWebAssets>
+
+    <DefineStaticWebAssetEndpoints
+      CandidateAssets="@(_CurrentProjectStaticWebAsset)"
+      ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
+    >
+      <Output TaskParameter="Endpoints" ItemName="StaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
+  </Target>
+
+  <!-- In RuntimeTests we don't have RuntimePack, instead search for files on disk -->
+  <Target Name="ReadWasmNativeAssetsFromFileSystem" DependsOnTargets="_InitializeCommonProperties" Condition="'$(WasmBuildingForNestedPublish)' == 'true' and '@(ResolvedRuntimePack->Count())' == '0'">
+    <PropertyGroup>
+      <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'">true</_HasDotnetWasm>
+      <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.worker.mjs'">true</_HasDotnetJsWorker>
+      <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js.symbols'">true</_HasDotnetJsSymbols>
+      <_HasDotnetNativeJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js'">true</_HasDotnetNativeJs>
+      <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and Exists('$(WasmIcuDataFileName)')">$(WasmIcuDataFileName)</_WasmIcuDataFileName>
+      <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and !Exists('$(WasmIcuDataFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)</_WasmIcuDataFileName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
+      <!-- A similar logic is in ComputeWasmBuildAssets and ComputeWasmPublishAssets -->
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js" Condition="'$(EnableDiagnostics)' == 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js" Condition="'$(_HasDotnetNativeJs)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs')" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js.symbols"
+                       Condition="'$(WasmEmitSymbolMap)' == 'true' and
+                                  '$(_HasDotnetJsSymbols)' != 'true' and
+                                  Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js.symbols')" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.map"
+                       Condition="'$(WasmEmitSourceMap)' != 'false'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js.map"
+                       Condition="'$(WasmEmitSourceMap)' != 'false'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js.map"
+                       Condition="'$(WasmEmitSourceMap)' != 'false' and '$(EnableDiagnostics)' == 'true'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
+      <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*" Exclude="$(_WasmIcuDataFileName)"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' == ''" Include="@(_IcuAvailableDataFiles)"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' != ''" Include="$(_WasmIcuDataFileName)"/>
+      <WasmNativeAsset Include="@(WasmIcuDataFileNames)"/>
     </ItemGroup>
   </Target>
 
@@ -157,43 +296,13 @@
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
       <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\browser\test-main.js</WasmMainJSPath>
       <WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</WasmMainJSFileName>
-      <WasmMainHtmlPath>$(PublishDir)index.html</WasmMainHtmlPath>
-      <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
-      <_SatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
-      <_SatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
-      <_SatelliteAssemblies TargetPath="%(CultureName)\%(FileName)%(Extension)" />
-
-      <WasmFilesToIncludeInFileSystem Include="@(_SatelliteAssemblies)" />
-    </ItemGroup>
-
     <ItemGroup>
-      <WasmExtraFilesToDeploy Include="$(WasmMainJSPath)" />
-      <WasmExtraFilesToDeploy Include="$(WasmMainHtmlPath)" />
-
       <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll" Condition="'$(BuildAOTTestsOnHelix)' == 'true'" />
-      <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
-
-      <_CopyLocalPaths
-              Include="@(PublishItemsOutputGroupOutputs)"
-              Condition="'%(PublishItemsOutputGroupOutputs.BuildReference)' == 'true' and
-                         !$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.resources.dll'))" />
-
-      <_CopyLocalPaths TargetPath="%(_CopyLocalPaths.RelativePath)" Condition="'%(_CopyLocalPaths.RelativePath)' != ''" />
-      <_CopyLocalPaths TargetPath="%(FileName)%(Extension)"         Condition="'%(_CopyLocalPaths.RelativePath)' == ''" />
-      <WasmFilesToIncludeInFileSystem Include="@(_CopyLocalPaths)" />
-
-      <!-- Include files specified by test projects from publish dir -->
-      <WasmFilesToIncludeInFileSystem
-              Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)"
-              TargetPath="%(WasmFilesToIncludeFromPublishDir.TargetDir)/%(WasmFilesToIncludeFromPublishDir.Identity)"
-              Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
+      <WasmAssembliesToBundle Condition="'%(WasmAssembliesToBundle.FileName)' == 'WasmSymbolicator'" AOT_InternalForceToInterpret="true" />
     </ItemGroup>
-
-    <WriteLinesToFile File="$(WasmMainHtmlPath)" Lines="&lt;html&gt;&lt;body&gt;&lt;script type='module' src='$(WasmMainJSFileName)'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" Overwrite="True" Condition="!Exists('$(WasmMainHtmlPath)')"/>
 
     <ForceMSBuildGC />
   </Target>

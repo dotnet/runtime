@@ -913,8 +913,13 @@
   <Target Name="_RunWasmOptPostLink" Condition="'$(WasmRunWasmOpt)' == 'true'">
     <Error Condition="'$(_WasmOutputFileName)' == ''" Text="Could not determine %24(_WasmOutputFileName)" />
 
+    <PropertyGroup>
+      <_WasmOptPostLinkFileName>$(_WasmOutputFileName)</_WasmOptPostLinkFileName>
+      <_WasmOptPostLinkFileName Condition="'$([System.IO.Path]::IsPathRooted($(_WasmOptPostLinkFileName)))' != 'true'">$([System.IO.Path]::Combine($(_WasmIntermediateOutputPath), $(_WasmOptPostLinkFileName)))</_WasmOptPostLinkFileName>
+    </PropertyGroup>
+
     <Message Text="Running wasm-opt with --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ')" Importance="High" />
-    <Exec Command="wasm-opt$(_ExeExt) --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ') &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot; -o &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot;"
+    <Exec Command="wasm-opt$(_ExeExt) --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ') &quot;$(_WasmOptPostLinkFileName)&quot; -o &quot;$(_WasmOptPostLinkFileName)&quot;"
           IgnoreStandardErrorWarningFormat="true"
           EnvironmentVariables="@(WasmToolchainEnvVars)" />
   </Target>
