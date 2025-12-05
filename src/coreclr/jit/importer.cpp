@@ -3357,8 +3357,8 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
 //------------------------------------------------------------------------
 // impImportAndPushBoxForNullable: import a "box Nullable<>" as an inlined sequence:
-//    arg._hasValue == 0 ? 
-//      null : 
+//    arg._hasValue == 0 ?
+//      null :
 //      (lcl = allocobj; *(lcl + sizeof(void*)) = arg._value; lcl)
 //
 // Arguments:
