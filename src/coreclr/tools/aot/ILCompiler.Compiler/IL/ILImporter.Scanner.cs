@@ -746,13 +746,6 @@ namespace Internal.IL
                 else
                 {
                     _dependencies.Add(_factory.RuntimeMethodHandle(methodToLookup), reason);
-
-                    MethodDesc concreteMethod = targetMethod;
-                    targetMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                    if (targetMethod.RequiresInstMethodDescArg())
-                    {
-                        _dependencies.Add(_factory.MethodGenericDictionary(concreteMethod), reason);
-                    }
                 }
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GVMLookupForSlot), reason);
