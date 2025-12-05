@@ -112,6 +112,47 @@ namespace System.Collections.Generic.Tests
             VerifyBuilderContents(Enumerable.Repeat(default(T), capacity), builder);
         }
 
+        [Theory]
+        [MemberData(nameof(EnumerableData))]
+        public void AddRange(IEnumerable<T> seed)
+        {
+            var builder = new ArrayBuilder<T>();
+            builder.AddRange(seed);
+
+            int count = builder.Count;
+            T[] array = builder.ToArray();
+
+            Assert.Equal(count, array.Length);
+            Assert.Equal(seed, array);
+        }
+
+        [Fact]
+        public void AddRange_EmptyEnumerable()
+        {
+            var builder = new ArrayBuilder<T>();
+            builder.AddRange(Enumerable.Empty<T>());
+
+            Assert.Equal(0, builder.Count);
+            Assert.Same(Array.Empty<T>(), builder.ToArray());
+        }
+
+        [Theory]
+        [MemberData(nameof(EnumerableData))]
+        public void AddRange_AfterAdd(IEnumerable<T> seed)
+        {
+            var builder = new ArrayBuilder<T>();
+            builder.Add(default(T));
+            builder.AddRange(seed);
+
+            int expectedCount = 1 + seed.Count();
+            Assert.Equal(expectedCount, builder.Count);
+
+            T[] array = builder.ToArray();
+            Assert.Equal(expectedCount, array.Length);
+            Assert.Equal(default(T), array[0]);
+            Assert.Equal(seed, array.Skip(1));
+        }
+
         public static TheoryData<int> CapacityData()
         {
             var data = new TheoryData<int>();

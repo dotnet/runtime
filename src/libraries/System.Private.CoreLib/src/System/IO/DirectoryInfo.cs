@@ -115,7 +115,11 @@ namespace System.IO
             => GetFiles(searchPattern, EnumerationOptions.FromSearchOption(searchOption));
 
         public FileInfo[] GetFiles(string searchPattern, EnumerationOptions enumerationOptions)
-            => new List<FileInfo>((IEnumerable<FileInfo>)InternalEnumerateInfos(FullPath, searchPattern, SearchTarget.Files, enumerationOptions)).ToArray();
+        {
+            ArrayBuilder<FileInfo> builder = default;
+            builder.AddRange((IEnumerable<FileInfo>)InternalEnumerateInfos(FullPath, searchPattern, SearchTarget.Files, enumerationOptions));
+            return builder.ToArray();
+        }
 
         // Returns an array of strongly typed FileSystemInfo entries which will contain a listing
         // of all the files and directories.
@@ -130,7 +134,11 @@ namespace System.IO
             => GetFileSystemInfos(searchPattern, EnumerationOptions.FromSearchOption(searchOption));
 
         public FileSystemInfo[] GetFileSystemInfos(string searchPattern, EnumerationOptions enumerationOptions)
-            => new List<FileSystemInfo>(InternalEnumerateInfos(FullPath, searchPattern, SearchTarget.Both, enumerationOptions)).ToArray();
+        {
+            ArrayBuilder<FileSystemInfo> builder = default;
+            builder.AddRange(InternalEnumerateInfos(FullPath, searchPattern, SearchTarget.Both, enumerationOptions));
+            return builder.ToArray();
+        }
 
         // Returns an array of Directories in the current directory.
         public DirectoryInfo[] GetDirectories() => GetDirectories("*", enumerationOptions: EnumerationOptions.Compatible);
@@ -143,7 +151,11 @@ namespace System.IO
             => GetDirectories(searchPattern, EnumerationOptions.FromSearchOption(searchOption));
 
         public DirectoryInfo[] GetDirectories(string searchPattern, EnumerationOptions enumerationOptions)
-            => new List<DirectoryInfo>((IEnumerable<DirectoryInfo>)InternalEnumerateInfos(FullPath, searchPattern, SearchTarget.Directories, enumerationOptions)).ToArray();
+        {
+            ArrayBuilder<DirectoryInfo> builder = default;
+            builder.AddRange((IEnumerable<DirectoryInfo>)InternalEnumerateInfos(FullPath, searchPattern, SearchTarget.Directories, enumerationOptions));
+            return builder.ToArray();
+        }
 
         public IEnumerable<DirectoryInfo> EnumerateDirectories()
             => EnumerateDirectories("*", enumerationOptions: EnumerationOptions.Compatible);

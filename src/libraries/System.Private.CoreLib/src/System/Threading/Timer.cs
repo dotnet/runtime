@@ -103,7 +103,15 @@ namespace System.Threading
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public TimerQueueTimer[] Items => new List<TimerQueueTimer>(_queue.GetTimersForDebugger()).ToArray();
+            public TimerQueueTimer[] Items
+            {
+                get
+                {
+                    ArrayBuilder<TimerQueueTimer> builder = default;
+                    builder.AddRange(_queue.GetTimersForDebugger());
+                    return builder.ToArray();
+                }
+            }
         }
 
         #endregion
