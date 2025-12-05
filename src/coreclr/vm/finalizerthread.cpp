@@ -295,7 +295,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
     case (WAIT_TIMEOUT):
         break;
     }
-    MHandles[kFinalizer] = event->GetHandleUNHOSTED();
+    MHandles[kFinalizer] = event->GetOSEvent();
     while (1)
     {
         // WaitForMultipleObjects will wait on the event handles in MHandles

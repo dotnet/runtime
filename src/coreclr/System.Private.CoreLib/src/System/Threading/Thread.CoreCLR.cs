@@ -317,12 +317,15 @@ namespace System.Threading
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetWaitSleepJoinState")]
+        [SuppressGCTransition]
         private static partial void SetWaitSleepJoinState(ThreadHandle t);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ClearWaitSleepJoinState")]
+        [SuppressGCTransition]
         private static partial void ClearWaitSleepJoinState(ThreadHandle t);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ReportDead")]
+        [SuppressGCTransition]
         private static partial void ReportDead(ThreadHandle t);
 
         internal void NotifyThreadDeath()

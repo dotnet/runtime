@@ -124,7 +124,7 @@ void CLREventBase::CloseEvent()
 
         m_handle = INVALID_HANDLE_VALUE;
     }
-    m_dwFlags = 0;
+    m_isAutoEvent = FALSE;
 }
 
 

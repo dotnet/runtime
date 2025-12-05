@@ -21,7 +21,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_handle = INVALID_HANDLE_VALUE;
-        m_dwFlags = 0;
+        m_isAutoEvent = FALSE;
     }
 
     void CreateAutoEvent(BOOL bInitialState);
@@ -40,7 +40,7 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    HANDLE GetHandleUNHOSTED() {
+    HANDLE GetOSEvent() {
         LIMITED_METHOD_CONTRACT;
         return m_handle;
     }
@@ -55,23 +55,13 @@ protected:
     HANDLE m_handle;
 
 private:
-    enum
-    {
-        CLREVENT_FLAGS_AUTO_EVENT = 0x0001,
+    Volatile<BOOL> m_isAutoEvent;
 
-        CLREVENT_FLAGS_STATIC = 0x0020,
-
-        // Several bits unused;
-    };
-
-    Volatile<DWORD> m_dwFlags;
-
-    BOOL IsAutoEvent() { LIMITED_METHOD_CONTRACT; return m_dwFlags & CLREVENT_FLAGS_AUTO_EVENT; }
+    BOOL IsAutoEvent() { LIMITED_METHOD_CONTRACT; return m_isAutoEvent; }
     void SetAutoEvent ()
     {
         LIMITED_METHOD_CONTRACT;
-        // cannot use `|=' operator on `Volatile<DWORD>'
-        m_dwFlags = m_dwFlags | CLREVENT_FLAGS_AUTO_EVENT;
+        m_isAutoEvent = TRUE;
     }
 };
 

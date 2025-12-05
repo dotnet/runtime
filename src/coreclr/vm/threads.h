@@ -598,7 +598,7 @@ public:
         // unused                       = 0x00000200,
         TSNC_OwnsSpinLock               = 0x00000400, // The thread owns a spinlock.
         TSNC_PreparingAbort             = 0x00000800, // Preparing abort.  This avoids recursive HandleThreadAbort call.
-        // unused                       = 0x00001000, // Preparing abort.  This avoids recursive HandleThreadAbort call.
+        // unused                       = 0x00001000,
         // unused                       = 0x00002000,
         TSNC_CreatingTypeInitException  = 0x00004000, // Thread is trying to create a TypeInitException
         // unused                       = 0x00008000,

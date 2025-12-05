@@ -1769,11 +1769,17 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CancelSynchronousIo.cs">
       <Link>Interop\Windows\Kernel32\Interop.CancelSynchronousIo.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CompletionPort.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CompletionPort.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ConditionVariable.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.ConditionVariable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.Constants.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CopyFile.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CopyFile.cs</Link>
@@ -1885,6 +1891,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs</Link>
@@ -2252,6 +2261,12 @@
     <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs">
       <Link>Common\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
+      <Link>Common\System\IO\Win32Marshal.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Memory\FixedBufferExtensions.cs">
+      <Link>Common\System\Memory\FixedBufferExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Threading\AsyncOverSyncWithIoCancellation.cs">
       <Link>Common\System\Threading\AsyncOverSyncWithIoCancellation.cs</Link>
     </Compile>
@@ -2331,12 +2346,6 @@
   </ItemGroup>
   <!-- CoreCLR uses PAL layer that emulates Windows API on Unix. This is bridge for that PAL layer. See issue dotnet/runtime/#31721. -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(FeatureCoreCLR)'=='true'">
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.Constants.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetEnvironmentVariable.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetEnvironmentVariable.cs</Link>
     </Compile>
@@ -2346,17 +2355,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeEnvironmentStrings.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.FreeEnvironmentStrings.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetEnvironmentVariable.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SetEnvironmentVariable.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
-      <Link>Common\System\IO\Win32Marshal.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Memory\FixedBufferExtensions.cs">
-      <Link>Common\System\Memory\FixedBufferExtensions.cs</Link>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Variables.Windows.cs" />
   </ItemGroup>

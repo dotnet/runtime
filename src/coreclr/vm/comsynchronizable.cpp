@@ -420,39 +420,42 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
 
 extern "C" void QCALLTYPE ThreadNative_SetWaitSleepJoinState(QCall::ThreadHandle thread)
 {
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
+    CONTRACTL
+    {
+        QCALL_CHECK_NO_GC_TRANSITION;
+        PRECONDITION(thread != NULL);
+    }
+    CONTRACTL_END;
 
     // Set the state bits.
     thread->SetThreadState(Thread::TS_Interruptible);
     thread->SetThreadStateNC(Thread::TSNC_DebuggerSleepWaitJoin);
-
-    END_QCALL;
 }
 
 extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState(QCall::ThreadHandle thread)
 {
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
+    CONTRACTL
+    {
+        QCALL_CHECK_NO_GC_TRANSITION;
+        PRECONDITION(thread != NULL);
+    }
+    CONTRACTL_END;
 
     // Clear the state bits.
     thread->ResetThreadState(Thread::TS_Interruptible);
     thread->ResetThreadStateNC(Thread::TSNC_DebuggerSleepWaitJoin);
-
-    END_QCALL;
 }
 
 extern "C" void QCALLTYPE ThreadNative_ReportDead(QCall::ThreadHandle thread)
 {
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
+    CONTRACTL
+    {
+        QCALL_CHECK_NO_GC_TRANSITION;
+        PRECONDITION(thread != NULL);
+    }
+    CONTRACTL_END;
 
     thread->SetThreadState(Thread::TS_ReportDead);
-
-    END_QCALL;
 }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
