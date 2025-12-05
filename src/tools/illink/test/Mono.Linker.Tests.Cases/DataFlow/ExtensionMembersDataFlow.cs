@@ -18,6 +18,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	{
 		public static void Main ()
 		{
+// This test is disabled until we can use C# 14 in tests.
+#if SUPPORTS_EXTENSION_MEMBERS
 			TestExtensionMethod ();
 			TestExtensionMethodMismatch ();
 			TestExtensionMethodRequires ();
@@ -277,6 +279,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			// 	right.RequiresPublicMethods ();
 			// 	return ExtensionMembersDataFlow.GetWithMethods ();
 			// }
+#endif
 		}
 	}
 }
