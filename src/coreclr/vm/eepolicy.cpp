@@ -183,7 +183,7 @@ class CallStackLogger
             return SWA_ABORT;
         }
 
-        *itemPtr = pCF->GetFunction();;
+        *itemPtr = pCF->GetFunction();
 
         return SWA_CONTINUE;
     }
@@ -264,7 +264,7 @@ public:
                 {
                     if ((i != largestCommonStartOffset) && (pMD == m_frames[largestCommonStartOffset]))
                     {
-                        // We have found a frame with the same MethodDesc as the frame at the top of the stack,
+                        // We have found a frame with the same MethodDesc as the frame at the start of the repetition search (index largestCommonStartOffset),
                         // possibly a new repeated sequence is starting.
                         commonStartIndex = i;
                     }
