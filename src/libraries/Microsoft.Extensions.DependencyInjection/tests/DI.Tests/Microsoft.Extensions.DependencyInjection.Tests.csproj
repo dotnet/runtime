@@ -25,7 +25,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj" />
     <ProjectReference Include="..\..\src\Microsoft.Extensions.DependencyInjection.csproj" SkipUseReferenceAssembly="true" />
-    <ProjectReference Include="..\CollectibleAssembly\CollectibleAssembly.csproj" />  
+    <ProjectReference Include="..\CollectibleAssembly\CollectibleAssembly.csproj" />
   </ItemGroup>
 
 </Project>
