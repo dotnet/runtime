@@ -3356,7 +3356,10 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 }
 
 //------------------------------------------------------------------------
-// impImportAndPushBoxForNullable: import a "box Nullable<>" as an inlined sequence
+// impImportAndPushBoxForNullable: import a "box Nullable<>" as an inlined sequence:
+//    arg._hasValue == 0 ? 
+//      null : 
+//      (lcl = allocobj; *(lcl + sizeof(void*)) = arg._value; lcl)
 //
 // Arguments:
 //   pResolvedToken - resolved token from the box operation
@@ -3389,21 +3392,19 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
 
     GenTree* exprToBox = impPopStack().val;
 
-    // First, decompose the Nullable<> into _hasValue and _value fields.
+    // Decompose the Nullable<> arg into _hasValue and _value fields.
     //
-    GenTreeFlags indirFlags             = GTF_EMPTY;
-    exprToBox                           = impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, &indirFlags);
-    CORINFO_FIELD_HANDLE valueFldHnd    = info.compCompHnd->getFieldInClass(pResolvedToken->hClass, 1);
+    GenTree* value;
+    GenTree* hasValue;
+    impLoadNullableFields(exprToBox, pResolvedToken->hClass, &hasValue, &value);
+
+    // Calculate the type and layout of the 'value' field
+    //
     CORINFO_CLASS_HANDLE valueStructCls = NO_CLASS_HANDLE;
-    static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
-    unsigned     cnsValueOffset = info.compCompHnd->getFieldOffset(valueFldHnd);
-    ClassLayout* layout         = nullptr;
-    CorInfoType  corFldType     = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
-    var_types    valueType      = TypeHandleToVarType(corFldType, valueStructCls, &layout);
-    GenTree*     valueOffset    = gtNewIconNode(cnsValueOffset, TYP_I_IMPL);
-    GenTree*     valueAddr      = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(exprToBox), valueOffset);
-    GenTree*     value          = gtNewLoadValueNode(valueType, layout, valueAddr);
-    GenTree*     hasValue       = gtNewLoadValueNode(TYP_UBYTE, nullptr, gtCloneExpr(exprToBox));
+    CORINFO_FIELD_HANDLE valueFldHnd    = info.compCompHnd->getFieldInClass(pResolvedToken->hClass, 1);
+    CorInfoType          corFldType     = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
+    ClassLayout*         layout         = nullptr;
+    var_types            valueType      = TypeHandleToVarType(corFldType, valueStructCls, &layout);
 
     // Now we need to copy value into the allocated box
     //
