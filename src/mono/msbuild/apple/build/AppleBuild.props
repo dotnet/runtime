@@ -9,6 +9,10 @@
     <MonoForceInterpreter Condition="'$(MonoForceInterpreter)' == ''">true</MonoForceInterpreter>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(PublishReadyToRun)' != 'true' and '$(UseMonoRuntime)' != 'true'">
+    <EnvironmentVariables Include="DOTNET_ReadyToRun=0" />
+  </ItemGroup>
+
   <PropertyGroup>
     <iOSLikeDedup Condition="'$(iOSLikeDedup)' == '' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</iOSLikeDedup>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>

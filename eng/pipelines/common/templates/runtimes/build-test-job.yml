@@ -14,6 +14,7 @@ parameters:
   dependsOn: []
   crossBuild: false
   isOfficialBuild: false
+  useNativeAOTRuntime: false
 
 ### Build managed test components (native components are getting built as part
 ### of the product build job).
@@ -74,7 +75,7 @@ jobs:
         - name: runtimeFlavorArgs
           value: '-mono'
 
-      - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'iossimulator', 'tvos', 'tvossimulator', 'maccatalyst')) }}:
+      - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.useNativeAOTRuntime, true), in(parameters.osGroup, 'ios', 'iossimulator', 'tvos', 'tvossimulator', 'maccatalyst')) }}:
         - name: runtimeFlavorArgs
           value: '-nativeaot'
 
