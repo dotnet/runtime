@@ -553,30 +553,23 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
 {
     instruction    ins;
     cnsval_ssize_t bits;
+    var_types      type = treeNode->TypeIs(TYP_REF, TYP_BYREF) ? TYP_I_IMPL : treeNode->TypeGet();
     static_assert(sizeof(cnsval_ssize_t) >= sizeof(double));
 
-    switch (treeNode->TypeGet())
+    switch (type)
     {
-#ifdef TARGET_32BIT
-        case TYP_BYREF:
-        case TYP_REF:
-#endif
         case TYP_INT:
         {
             ins                      = INS_i32_const;
             GenTreeIntConCommon* con = treeNode->AsIntConCommon();
-            bits                     = con->IconValue();
+            bits                     = con->IntegralValue();
             break;
         }
-#ifndef TARGET_32BIT
-        case TYP_BYREF:
-        case TYP_REF:
-#endif
         case TYP_LONG:
         {
             ins                      = INS_i64_const;
             GenTreeIntConCommon* con = treeNode->AsIntConCommon();
-            bits                     = con->IconValue();
+            bits                     = con->IntegralValue();
             break;
         }
         case TYP_FLOAT:
