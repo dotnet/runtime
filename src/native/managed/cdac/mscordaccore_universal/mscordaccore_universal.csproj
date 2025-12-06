@@ -4,7 +4,6 @@
     <AssemblyName>$(LibPrefix)$(MSBuildProjectName)</AssemblyName>
 
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <TargetFramework Condition="'$(UseBootstrapLayout)' == 'true'">$(NetCoreAppCurrent)</TargetFramework>
     <RootNamespace>Microsoft.Diagnostics.DataContractReader</RootNamespace>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -12,9 +11,6 @@
     <IsShippingPackage>false</IsShippingPackage>
     <InvariantGlobalization>true</InvariantGlobalization>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
-    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
   <PropertyGroup>
