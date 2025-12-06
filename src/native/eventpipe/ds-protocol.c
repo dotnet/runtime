@@ -330,6 +330,8 @@ ipc_message_try_parse_string_utf16_t_byte_array (
 
 	bool result = false;
 
+	ep_raise_error_if_nok (((uintptr_t)*buffer & 0x1u) == 0);
+
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, string_byte_array_len));
 	*string_byte_array_len *= sizeof (ep_char16_t);
 
@@ -396,7 +398,10 @@ ds_ipc_message_try_parse_value (
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
 	EP_ASSERT (value != NULL);
-	EP_ASSERT ((buffer_len - value_len) <= buffer_len);
+	EP_ASSERT (*buffer_len >= value_len);
+
+	if (*buffer_len < value_len)
+		return false;
 
 	memcpy (value, *buffer, value_len);
 	*buffer = *buffer + value_len;
