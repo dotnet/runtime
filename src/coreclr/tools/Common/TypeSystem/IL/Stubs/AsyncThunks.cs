@@ -97,7 +97,7 @@ namespace Internal.IL.Stubs
                 FinalizeTaskReturningThunk = finalizeTask,
                 LogicalReturnType = logicalReturnType,
                 ExecutionAndSyncBlockStore = KnownILStubReferences.GetKnownType(context, KnownILStubReference.ExecutionAndSyncBlockStore),
-                Exception = KnownILStubReferences.GetKnownType(context, KnownILStubReference.Exception.Exception)
+                Exception = KnownILStubReferences.GetKnownType(context, KnownILStubReference.Exception)
             };
         }
 
@@ -107,6 +107,19 @@ namespace Internal.IL.Stubs
             public required MethodDesc CompletionResultMethod { get; init; }
             public required MethodDesc? AsTaskOrNotifierMethod { get; init; }
             public required MethodDesc TransparentAwaitMethod { get; init; }
+
+            public void EmitLoadTaskLocal(ILCodeStream stream, ILLocalVariable taskLocal)
+            {
+                bool isValueTask = AsTaskOrNotifierMethod is not null;
+                if (isValueTask)
+                {
+                    stream.EmitLdLoca(taskLocal);
+                }
+                else
+                {
+                    stream.EmitLdLoc(taskLocal);
+                }
+            }
 
             public IEnumerable<MethodDesc> GetAllReferences()
             {
@@ -131,7 +144,6 @@ namespace Internal.IL.Stubs
 
             if (taskReturningMethodReturnType.IsValueType)
             {
-
                 if (!taskReturningMethodReturnType.HasInstantiation)
                 {
                     // ValueTask (non-generic)
@@ -231,7 +243,7 @@ namespace Internal.IL.Stubs
             ILCodeLabel finishedLabel = emitter.NewCodeLabel();
 
             codestream.EmitLdLoca(executionAndSyncBlockStoreLocal);
-            codestream.Emit(ILOpcode.call, emitter.NewToken(thunkHelpers.ExecutionAndSyncBlockStore_Pop));
+            codestream.Emit(ILOpcode.call, emitter.NewToken(thunkHelpers.ExecutionAndSyncBlockStore_Push));
 
             ILExceptionRegionBuilder tryFinallyRegion = emitter.NewFinallyRegion();
             {
@@ -340,18 +352,18 @@ namespace Internal.IL.Stubs
             ILCodeLabel taskCompletedLabel = emitter.NewCodeLabel();
 
             codestream.EmitStLoc(taskLocal);
-            codestream.EmitLdLoca(taskLocal);
+            thunkHelpers.EmitLoadTaskLocal(codestream, taskLocal);
             codestream.Emit(ILOpcode.call, emitter.NewToken(thunkHelpers.IsCompletedMethod));
             codestream.Emit(ILOpcode.brtrue, taskCompletedLabel);
 
-            codestream.EmitLdLoca(taskLocal);
+            thunkHelpers.EmitLoadTaskLocal(codestream, taskLocal);
             if (thunkHelpers.AsTaskOrNotifierMethod is not null)
             {
                 codestream.Emit(ILOpcode.call, emitter.NewToken(thunkHelpers.AsTaskOrNotifierMethod));
             }
             codestream.Emit(ILOpcode.call, emitter.NewToken(thunkHelpers.TransparentAwaitMethod));
             codestream.EmitLabel(taskCompletedLabel);
-            codestream.EmitLdLoca(taskLocal);
+            thunkHelpers.EmitLoadTaskLocal(codestream, taskLocal);
             codestream.Emit(ILOpcode.call, emitter.NewToken(thunkHelpers.CompletionResultMethod));
             codestream.Emit(ILOpcode.ret);
 
