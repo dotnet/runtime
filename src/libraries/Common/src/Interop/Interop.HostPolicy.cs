@@ -4,17 +4,12 @@
 using System;
 using System.Runtime.InteropServices;
 
+using unsafe ErrorWriterCallback = delegate* unmanaged[Cdecl]<nint, void>;
+
 internal static partial class Interop
 {
-    internal static partial class HostPolicy
+    internal static unsafe partial class HostPolicy
     {
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate void corehost_resolve_component_dependencies_result_fn(IntPtr assemblyPaths,
-            IntPtr nativeSearchPaths, IntPtr resourceSearchPaths);
-
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate void corehost_error_writer_fn(IntPtr message);
-
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
 #if TARGET_WINDOWS
         [LibraryImport(Libraries.HostPolicy, StringMarshalling = StringMarshalling.Utf16)]
@@ -23,11 +18,11 @@ internal static partial class Interop
 #endif
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
         internal static partial int corehost_resolve_component_dependencies(string componentMainAssemblyPath,
-            corehost_resolve_component_dependencies_result_fn result);
+            delegate* unmanaged[Cdecl]<nint, nint, nint, void> result);
 
         [LibraryImport(Libraries.HostPolicy)]
         [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
-        internal static partial IntPtr corehost_set_error_writer(IntPtr errorWriter);
+        internal static partial ErrorWriterCallback corehost_set_error_writer(ErrorWriterCallback errorWriter);
 #pragma warning restore CS3016 // Arrays as attribute arguments is not CLS-compliant
     }
 }
