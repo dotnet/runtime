@@ -37,7 +37,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        private static TaskReturningThunkReferences  GetTaskReturningThunkMethods(MethodDesc taskReturningMethod)
+        private static TaskReturningThunkReferences GetTaskReturningThunkMethods(MethodDesc taskReturningMethod)
         {
             TypeSystemContext context = taskReturningMethod.Context;
 
@@ -97,7 +97,7 @@ namespace Internal.IL.Stubs
                 FinalizeTaskReturningThunk = finalizeTask,
                 LogicalReturnType = logicalReturnType,
                 ExecutionAndSyncBlockStore = KnownILStubReferences.GetKnownType(context, KnownILStubReference.ExecutionAndSyncBlockStore),
-                Exception = context.GetWellKnownType(WellKnownType.Exception)
+                Exception = KnownILStubReferences.GetKnownType(context, KnownILStubReference.Exception.Exception)
             };
         }
 
