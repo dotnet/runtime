@@ -45,12 +45,15 @@
                             !config.environmentVariables) {
                             throw new Error("Invalid runtime config, cannot initialize the runtime.");
                         }
-                        const assemblyPaths = config.resources.assembly.map(a => a.virtualPath);
-                        const coreAssemblyPaths = config.resources.coreAssembly.map(a => a.virtualPath);
-                        ENV[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = config.environmentVariables[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = [...coreAssemblyPaths, ...assemblyPaths].join(":");
-                        ENV[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.environmentVariables[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.virtualWorkingDirectory;
-                        ENV[HOST_PROPERTY_APP_PATHS] = config.environmentVariables[HOST_PROPERTY_APP_PATHS] = config.virtualWorkingDirectory;
-                        ENV[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.environmentVariables[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.mainAssemblyName;
+                        const assemblyPaths = config.resources.assembly.map(a => "/" + a.virtualPath);
+                        const coreAssemblyPaths = config.resources.coreAssembly.map(a => "/" + a.virtualPath);
+                        config.environmentVariables[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = [...coreAssemblyPaths, ...assemblyPaths].join(":");
+                        config.environmentVariables[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.virtualWorkingDirectory;
+                        config.environmentVariables[HOST_PROPERTY_APP_PATHS] = config.virtualWorkingDirectory;
+                        config.environmentVariables[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.mainAssemblyName;
+                        for (const key in config.environmentVariables) {
+                            ENV[key] = config.environmentVariables[key];
+                        }
 
                         if (ENVIRONMENT_IS_NODE) {
                             Module.preInit = [() => {

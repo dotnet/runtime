@@ -5,7 +5,7 @@ import type { DotnetHostBuilder, LoaderConfig, RuntimeAPI, LoadBootResourceCallb
 
 import { Module, dotnetApi } from "./cross-module";
 import { getLoaderConfig, mergeLoaderConfig, validateLoaderConfig } from "./config";
-import { createRuntime } from "./bootstrap";
+import { createRuntime } from "./assets";
 import { exit } from "./exit";
 
 let applicationArguments: string[] | undefined = [];
@@ -96,6 +96,42 @@ export class HostBuilder implements DotnetHostBuilder {
     // internal
     withModuleConfig(moduleConfig: DotnetModuleConfig): DotnetHostBuilder {
         Object.assign(Module, moduleConfig);
+        return this;
+    }
+    withExitOnUnhandledError(): DotnetHostBuilder {
+        mergeLoaderConfig({
+            exitOnUnhandledError: true
+        });
+        return this;
+    }
+    withExitCodeLogging(): DotnetHostBuilder {
+        mergeLoaderConfig({
+            logExitCode: true
+        });
+        return this;
+    }
+    withElementOnExit(): DotnetHostBuilder {
+        mergeLoaderConfig({
+            appendElementOnExit: true
+        });
+        return this;
+    }
+    withInteropCleanupOnExit(): DotnetHostBuilder {
+        mergeLoaderConfig({
+            //TODO
+        });
+        return this;
+    }
+    withDumpThreadsOnNonZeroExit(): DotnetHostBuilder {
+        mergeLoaderConfig({
+            //TODO
+        });
+        return this;
+    }
+    withConsoleForwarding(): DotnetHostBuilder {
+        mergeLoaderConfig({
+            //TODO
+        });
         return this;
     }
 

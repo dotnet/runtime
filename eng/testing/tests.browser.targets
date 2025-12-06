@@ -25,6 +25,7 @@
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(BrowserProjectRoot), 'emsdk'))</EMSDK_PATH>
 
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == ''">true</WasmEmitSymbolMap>
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
 
     <_WasmMainJSFileName Condition="'$(WasmMainJSPath)' != ''">$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
     <_WasmStrictVersionMatch Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</_WasmStrictVersionMatch>
@@ -47,6 +48,11 @@
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
     <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">true</EventSourceSupport>
     <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">true</NullabilityInfoContextSupport>
+
+    <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120248 -->
+    <WasmEnableWebcil Condition="'$(RuntimeFlavor)' == 'CoreCLR'">false</WasmEnableWebcil>
+    <EnableAggressiveTrimming Condition="'$(RuntimeFlavor)' == 'CoreCLR'">false</EnableAggressiveTrimming>
+    <PublishTrimmed Condition="'$(RuntimeFlavor)' == 'CoreCLR'">false</PublishTrimmed>
   </PropertyGroup>
 
   <ItemGroup>

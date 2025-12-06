@@ -229,6 +229,9 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+#if CORECLR
+        [UnmanagedCallersOnly(EntryPoint = "SystemInteropJS_GetManagedStackTrace")]
+#endif
         // the marshaled signature is: string GetManagedStackTrace(GCHandle exception)
         public static void GetManagedStackTrace(JSMarshalerArgument* arguments_buffer)
         {
@@ -363,6 +366,20 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 Environment.FailFast($"BindAssemblyExports: Unexpected synchronous failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
             }
+        }
+
+        public static void CallJSExport(JSMarshalerArgument* arguments_buffer)
+        {
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0];
+            ref JSMarshalerArgument arg_res = ref arguments_buffer[1];
+            var ctx = arg_exc.AssertCurrentThreadContext();
+            if (!ctx.s_JSExportByHandle.TryGetValue(arg_res.slot.Int32Value, out var jsExport))
+            {
+                arg_exc.ToJS(new InvalidOperationException("Unable to resolve JSExport by handle"));
+                return;
+            }
+            arg_res.slot.Int32Value = 0;
+            jsExport(new IntPtr(arguments_buffer));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // profiler needs to find it executed under this name
