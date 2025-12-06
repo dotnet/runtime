@@ -500,9 +500,21 @@ if (CLR_CMAKE_HOST_UNIX)
   #-fms-compatibility      Enable full Microsoft Visual C++ compatibility
   #-fms-extensions         Accept some non-standard constructs supported by the Microsoft compiler
 
-  # Make signed arithmetic overflow of addition, subtraction, and multiplication wrap around
-  # using twos-complement representation (this is normally undefined according to the C++ spec).
-  add_compile_options(-fwrapv)
+  if((CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 20.0) OR
+      (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 20.0))
+    # Make signed overflow well-defined. Implies the following flags in clang-20 and above.
+    # -fwrapv - Make signed arithmetic overflow of addition, subtraction, and multiplication wrap around
+    # using twos-complement representation (this is normally undefined according to the C++ spec).
+    # -fwrapv-pointer - The same as -fwrapv but for pointers.
+    add_compile_options(-fno-strict-overflow)
+
+    # Suppress C++ strict aliasing rules. This matches our use of MSVC.
+    add_compile_options(-fno-strict-aliasing)
+  else()
+    # Make signed arithmetic overflow of addition, subtraction, and multiplication wrap around
+    # using twos-complement representation (this is normally undefined according to the C++ spec).
+    add_compile_options(-fwrapv)
+  endif()
 
   if(CLR_CMAKE_HOST_APPLE)
     # Clang will by default emit objc_msgSend stubs in Xcode 14, which ld from earlier Xcodes doesn't understand.
