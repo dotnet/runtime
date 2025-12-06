@@ -589,8 +589,7 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
             break;
         }
         default:
-            NYI_WASM("genCodeForConstant");
-            return;
+            unreached();
     }
 
     // The IF_ for the selected instruction, i.e. IF_F64, determines how these bits are emitted
