@@ -5,7 +5,7 @@ import type { installVfsFile, registerDllBytes, loadIcuData } from "../../../../
 import type { check, error, info, warn, debug } from "../../../../corehost/browserhost/loader/logging";
 import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../../../../corehost/browserhost/loader/promise-completion-source";
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise } from "../../../../corehost/browserhost/loader/run";
-import type { zeroRegion } from "../../../System.Native.Browser/utils/memory";
+import type { isSharedArrayBuffer, zeroRegion } from "../../../System.Native.Browser/utils/memory";
 import type { stringToUTF16, stringToUTF16Ptr, stringToUTF8Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
 
 export type RuntimeExports = {
@@ -78,6 +78,7 @@ export type BrowserUtilsExports = {
     stringToUTF16Ptr: typeof stringToUTF16Ptr,
     stringToUTF8Ptr: typeof stringToUTF8Ptr,
     zeroRegion: typeof zeroRegion,
+    isSharedArrayBuffer: typeof isSharedArrayBuffer
 }
 
 export type BrowserUtilsExportsTable = [
@@ -86,4 +87,5 @@ export type BrowserUtilsExportsTable = [
     typeof stringToUTF16Ptr,
     typeof stringToUTF8Ptr,
     typeof zeroRegion,
+    typeof isSharedArrayBuffer,
 ]

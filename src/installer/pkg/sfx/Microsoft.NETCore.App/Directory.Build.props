@@ -271,8 +271,8 @@
     <PlatformManifestFileEntry Include="libnativeresourcestring.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libBrowserHost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="libBrowserHost.js.map" IsNative="true" />
-    <PlatformManifestFileEntry Include="libSystem.Browser.Utils.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="libSystem.Browser.Utils.js.map" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Native.Browser.Utils.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Native.Browser.Utils.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Native.Browser.js" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Native.Browser.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Runtime.InteropServices.JavaScript.Native.js" IsNative="true" />

@@ -139,12 +139,12 @@ export function getHeapU16_local(localView: Uint16Array, offset: MemOffset): num
 }
 
 export function getHeapU32(offset: MemOffset): number {
-    return Module.HEAPU32[<any>offset >>> 2];
+    return Module.HEAPU32[<any>offset >>> 2] >>> 0;
 }
 
 // does not check for growable heap
 export function getHeapU32_local(localView: Uint32Array, offset: MemOffset): number {
-    return localView[<any>offset >>> 2];
+    return localView[<any>offset >>> 2] >>> 0;
 }
 
 export function getHeapI8(offset: MemOffset): number {

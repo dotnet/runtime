@@ -74,8 +74,8 @@ const libBrowserUtils = configure({
     output: [{
         name: "libBrowserUtils",
         format: "iife",
-        file: staticLibDestination + "/libSystem.Browser.Utils.js",
-        footer: await fs.readFile("./libs/System.Native.Browser/libSystem.Browser.Utils.footer.js"),
+        file: staticLibDestination + "/libSystem.Native.Browser.Utils.js",
+        footer: await fs.readFile("./libs/System.Native.Browser/libSystem.Native.Browser.Utils.footer.js"),
     }],
     terser: {
         compress: {
