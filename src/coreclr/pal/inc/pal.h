@@ -889,8 +889,6 @@ PALAPI
 ResumeThread(
          IN HANDLE hThread);
 
-typedef VOID (PALAPI_NOEXPORT *PAPCFUNC)(ULONG_PTR dwParam);
-
 #ifdef HOST_X86
 
 //
