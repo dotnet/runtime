@@ -2271,6 +2271,9 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
                     // This is a ret instruction coming from the initial IL of a synchronized or async method.
                     CreateLeaveChainIslandBasicBlocks(methodInfo, insOffset, GetBB(m_synchronizedOrAsyncPostFinallyOffset));
                 }
+
+                // The instruction AFTER a ret is always a different basic block if it exists.
+                GetBB((int32_t)(ip - codeStart));
             }
             break;
         case InlineString:
