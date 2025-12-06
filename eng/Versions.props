@@ -20,7 +20,7 @@
 
     <!-- SdkVersionForWorkloadTesting is used to compute the sdk band and version for workload testing. -->
     <!-- NETCoreSdkVersion is normally set by the SDK, but for non-SDK projects we need extract from global.json -->
-    <SdkVersionForWorkloadTesting>$(MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportPackageVersion)</SdkVersionForWorkloadTesting>
+    <SdkVersionForWorkloadTesting>$(MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportPackageVersion)</SdkVersionForWorkloadTesting>
     <SdkMajorVersion>$([System.String]::Copy('$(SdkVersionForWorkloadTesting)').Split('.')[0])</SdkMajorVersion>
     <SdkBandVersion>$(SdkMajorVersion).0.100</SdkBandVersion>
     <SdkPreReleaseLabel>$([System.Text.RegularExpressions.Regex]::Match($(SdkVersionForWorkloadTesting), '-(?!rtm|servicing)(.+)\.[^.]+\.[^.]+$').Groups[1].Value)</SdkPreReleaseLabel>
