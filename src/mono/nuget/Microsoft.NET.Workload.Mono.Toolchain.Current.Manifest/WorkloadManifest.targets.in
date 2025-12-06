@@ -2,12 +2,13 @@
 <Project>
   <PropertyGroup>
     <_RuntimePackInWorkloadVersionCurrent>${PackageVersion}</_RuntimePackInWorkloadVersionCurrent>
+    <_RuntimePackInWorkloadVersion10>${PackageVersionNet10}</_RuntimePackInWorkloadVersion10>
     <_RuntimePackInWorkloadVersion9>${PackageVersionNet9}</_RuntimePackInWorkloadVersion9>
     <_RuntimePackInWorkloadVersion8>${PackageVersionNet8}</_RuntimePackInWorkloadVersion8>
     <_RuntimePackInWorkloadVersion7>${PackageVersionNet7}</_RuntimePackInWorkloadVersion7>
     <_RuntimePackInWorkloadVersion6>${PackageVersionNet6}</_RuntimePackInWorkloadVersion6>
 
-    <TargetsCurrent Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '10.0'))">true</TargetsCurrent>
+    <TargetsCurrent Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '${FrameworkVersionCurrent}'))">true</TargetsCurrent>
 
     <!-- Disabled until next release: force net10.0 to use the current targets until the SDK can target net11.0 -->
     <!--
@@ -16,6 +17,7 @@
     -->
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsCurrent)' != 'true'">
+    <TargetsNet10   Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '10.0'))">true</TargetsNet10>
     <TargetsNet9    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '9.0'))">true</TargetsNet9>
     <TargetsNet8    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '8.0'))">true</TargetsNet8>
     <TargetsNet7    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '7.0'))">true</TargetsNet7>
@@ -36,7 +38,8 @@
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
     <SelfContained>true</SelfContained>
-    <WasmNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true'">$(WasmNativeWorkload10)</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true'">$(WasmNativeWorkload11)</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkloadAvailable Condition="'$(TargetsNet10)' == 'true'">$(WasmNativeWorkload10)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet9)' == 'true'">$(WasmNativeWorkload9)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet8)' == 'true'">$(WasmNativeWorkload8)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet7)' == 'true'">$(WasmNativeWorkload7)</WasmNativeWorkloadAvailable>
