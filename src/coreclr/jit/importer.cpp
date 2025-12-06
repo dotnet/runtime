@@ -3371,24 +3371,25 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
 {
     assert(info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX_NULLABLE);
 
-    if (opts.OptimizationDisabled() || compCurBB->isRunRarely() || eeIsSharedInst(pResolvedToken->hClass))
+    if (opts.OptimizationDisabled() || compCurBB->isRunRarely())
     {
         return false;
+    }
+
+    if (eeIsSharedInst(pResolvedToken->hClass) || IsReadyToRun())
+    {
+        // TODO-CQ: Enable the optimization for shared generics and R2R scenarios.
+        // The current machinery requires a ResolvedToken (basically, 'newobj underlyingType'
+        // that we don't have).
+        return true;
     }
 
     CORINFO_CLASS_HANDLE typeToBox = info.compCompHnd->getTypeForBox(pResolvedToken->hClass);
 
-    // We need to compose a new CORINFO_RESOLVED_TOKEN for the underlying (typeToBox) type
-    // E.g. if we are boxing Nullable<System.Int32>, typeToBox is System.Int32.
-    CORINFO_RESOLVED_TOKEN tk = *pResolvedToken;
-    tk.hClass                 = typeToBox;
-    tk.tokenType              = CORINFO_TOKENKIND_Casting;
-    GenTree* obj              = gtNewAllocObjNode(&tk, info.compMethodHnd, false);
-
-    if (obj == nullptr)
-    {
-        return false;
-    }
+    bool             hasSideEffects;
+    CorInfoHelpFunc  helperTemp = info.compCompHnd->getNewHelper(typeToBox, &hasSideEffects);
+    GenTreeAllocObj* allocObj =
+        gtNewAllocObjNode(helperTemp, hasSideEffects, typeToBox, TYP_REF, gtNewIconEmbClsHndNode(typeToBox));
 
     GenTree* exprToBox = impPopStack().val;
 
@@ -3412,8 +3413,8 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
     // Now we need to copy value into the allocated box
     //
     unsigned   objLclNum  = lvaGrabTemp(true DEBUGARG("obj nullable box"));
-    GenTree*   storeAlloc = gtNewTempStore(objLclNum, obj);
-    GenTree*   objLcl     = gtNewLclvNode(objLclNum, genActualType(obj));
+    GenTree*   storeAlloc = gtNewTempStore(objLclNum, allocObj);
+    GenTree*   objLcl     = gtNewLclvNode(objLclNum, TYP_REF);
     GenTree*   pOffset    = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
     GenTreeOp* dataPtr    = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(objLcl), pOffset);
     GenTree*   storeData  = gtNewStoreValueNode(valueType, layout, dataPtr, gtCloneExpr(value), GTF_IND_NONFAULTING);
