@@ -1558,6 +1558,7 @@ enum CORINFO_DEVIRTUALIZATION_DETAIL
     CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE,           // crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate interface implementations
     CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE,        // Decl method cannot be represented in R2R image
     CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE,              // Support for type equivalence in devirtualization is not yet implemented in crossgen2
+    CORINFO_DEVIRTUALIZATION_FAILED_GENERIC_VIRTUAL,               // Devirtualization of generic virtual methods is not yet implemented in crossgen2
     CORINFO_DEVIRTUALIZATION_COUNT,                                // sentinel for maximum value
 };
 
@@ -1580,7 +1581,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targeting an R2R image
     //   use it as the parameter to getCallInfo
     // - isInstantiatingStub is set to TRUE if the devirtualized method is a generic method instantiating stub
-    // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
+    // - mayNeedMethodContext is set TRUE if the devirtualized method may require a method context
     //     (in which case the method handle and context will be a generic method)
     //
     CORINFO_METHOD_HANDLE           devirtualizedMethod;
@@ -1589,7 +1590,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedMethod;
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedUnboxedMethod;
     bool                            isInstantiatingStub;
-    bool                            wasArrayInterfaceDevirt;
+    bool                            mayNeedMethodContext;
 };
 
 //----------------------------------------------------------------------------
