@@ -269,6 +269,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // Do nothing; this node is a marker for debug info.
             break;
 
+        case GT_CNS_INT:
+        case GT_CNS_LNG:
+        case GT_CNS_DBL:
+            genCodeForConstant(treeNode);
+            break;
+
         default:
 #ifdef DEBUG
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
@@ -534,6 +540,60 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     }
 
     GetEmitter()->emitIns(ins);
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genCodeForConstant: Generate code for an integer or floating point constant
+//
+// Arguments:
+//    treeNode - The constant.
+//
+void CodeGen::genCodeForConstant(GenTree* treeNode)
+{
+    instruction    ins;
+    cnsval_ssize_t bits;
+    var_types      type = treeNode->TypeIs(TYP_REF, TYP_BYREF) ? TYP_I_IMPL : treeNode->TypeGet();
+    static_assert(sizeof(cnsval_ssize_t) >= sizeof(double));
+
+    switch (type)
+    {
+        case TYP_INT:
+        {
+            ins                      = INS_i32_const;
+            GenTreeIntConCommon* con = treeNode->AsIntConCommon();
+            bits                     = con->IntegralValue();
+            break;
+        }
+        case TYP_LONG:
+        {
+            ins                      = INS_i64_const;
+            GenTreeIntConCommon* con = treeNode->AsIntConCommon();
+            bits                     = con->IntegralValue();
+            break;
+        }
+        case TYP_FLOAT:
+        {
+            ins                  = INS_f32_const;
+            GenTreeDblCon* con   = treeNode->AsDblCon();
+            double         value = con->DconValue();
+            memcpy(&bits, &value, sizeof(double));
+            break;
+        }
+        case TYP_DOUBLE:
+        {
+            ins                  = INS_f64_const;
+            GenTreeDblCon* con   = treeNode->AsDblCon();
+            double         value = con->DconValue();
+            memcpy(&bits, &value, sizeof(double));
+            break;
+        }
+        default:
+            unreached();
+    }
+
+    // The IF_ for the selected instruction, i.e. IF_F64, determines how these bits are emitted
+    GetEmitter()->emitIns_I(ins, emitTypeSize(treeNode), bits);
     genProduceReg(treeNode);
 }
 

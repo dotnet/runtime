@@ -44,11 +44,11 @@ INST(i64_load,    "i64.load",    0, IF_MEMARG,  0x29)
 INST(f32_load,    "f32.load",    0, IF_MEMARG,  0x2A)
 INST(f64_load,    "f64.load",    0, IF_MEMARG,  0x2B)
 // 5.4.7 Numeric Instructions
-// TODO-WASM: Constants
-// INST(i32_const,   "i32.const",   0, IF_LEB128, 0x41)
-// INST(i64_const,   "i64.const",   0, IF_LEB128, 0x42)
-// INST(f32_const,   "f32.const",   0, IF_F32, 0x43)
-// INST(f64_const,   "f64.const",   0, IF_F64, 0x44)
+// Constants
+INST(i32_const,   "i32.const",   0, IF_SLEB128, 0x41)
+INST(i64_const,   "i64.const",   0, IF_SLEB128, 0x42)
+INST(f32_const,   "f32.const",   0, IF_F32,     0x43)
+INST(f64_const,   "f64.const",   0, IF_F64,     0x44)
 // Integer comparisons
 INST(i32_eqz,     "i32.eqz",     0, IF_OPCODE,  0x45)
 INST(i32_eq,      "i32.eq",      0, IF_OPCODE,  0x46)
