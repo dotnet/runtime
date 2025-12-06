@@ -29,6 +29,9 @@
 #include "strsafe.h"
 
 #include "configuration.h"
+#if !defined(DACCESS_COMPILE)
+#include "../debug/ee/executioncontrol.h"
+#endif // !DACCESS_COMPILE
 
 #include <minipal/cpufeatures.h>
 #include <minipal/cpuid.h>
@@ -4566,6 +4569,14 @@ void InterpreterJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& Method
     methodRegionInfo->coldStartAddress = 0;
     methodRegionInfo->coldSize         = 0;
 }
+
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_BROWSER)
+IExecutionControl* InterpreterJitManager::GetExecutionControl()
+{
+    LIMITED_METHOD_CONTRACT;
+    return InterpreterExecutionControl::GetInstance();
+}
+#endif // !DACCESS_COMPILE
 
 #endif // FEATURE_INTERPRETER
 
