@@ -71,6 +71,39 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
+        /// Adds a range of items to the backing array, resizing it as necessary.
+        /// </summary>
+        /// <param name="items">The items to add.</param>
+        public void AddRange(IEnumerable<T> items)
+        {
+            Debug.Assert(items != null);
+
+            if (items is ICollection<T> collection)
+            {
+                int count = collection.Count;
+                if (count > 0)
+                {
+                    if (_count + count > Capacity)
+                    {
+                        EnsureCapacity(_count + count);
+                    }
+
+                    foreach (T item in collection)
+                    {
+                        UncheckedAdd(item);
+                    }
+                }
+            }
+            else
+            {
+                foreach (T item in items)
+                {
+                    Add(item);
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets the first item in this builder.
         /// </summary>
         public T First()

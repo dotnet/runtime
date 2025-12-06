@@ -87,6 +87,32 @@ namespace System.Collections.Generic
             _count += newItems.Count;
         }
 
+        public void AddRange(IEnumerable<T> items)
+        {
+            Debug.Assert(items != null);
+
+            if (items is ICollection<T> collection)
+            {
+                int count = collection.Count;
+                if (count > 0)
+                {
+                    EnsureCapacity(_count + count);
+
+                    foreach (T item in collection)
+                    {
+                        _items[_count++] = item;
+                    }
+                }
+            }
+            else
+            {
+                foreach (T item in items)
+                {
+                    Add(item);
+                }
+            }
+        }
+
         public void ZeroExtend(int numItems)
         {
             Debug.Assert(numItems >= 0);
