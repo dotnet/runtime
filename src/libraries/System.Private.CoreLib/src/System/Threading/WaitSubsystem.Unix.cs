@@ -44,9 +44,6 @@ namespace System.Threading
     /// ## Design goals
     ///
     /// Behave similarly to wait operations on Windows
-    ///   - The design is similar to the one used by CoreCLR's PAL, but much simpler due to there being no need for supporting
-    ///     process/thread waits, or cross-process multi-waits (which CoreCLR also does not support but there are many design
-    ///     elements specific to it)
     ///   - Waiting
     ///     - A waiter keeps an array of objects on which it is waiting (see <see cref="ThreadWaitInfo._waitedObjects"/>).
     ///     - The waiter registers a <see cref="ThreadWaitInfo.WaitedListNode"/> with each <see cref="WaitableObject"/>
@@ -394,6 +391,7 @@ namespace System.Threading
 
             WaitableObject?[] waitableObjects = waitInfo.GetWaitedObjectArray(waitHandles.Length);
             bool success = false;
+            bool requiresDetachedThreadCleanup = false;
 
             try
             {
@@ -406,6 +404,8 @@ namespace System.Threading
                     {
                         throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSyncObjectWaitAnyWaitAll);
                     }
+
+                    requiresDetachedThreadCleanup |= waitableObject.RequiresDetachedThreadCleanupBeforeWait;
 
                     if (waitForAll)
                     {
@@ -435,6 +435,11 @@ namespace System.Threading
                         waitableObjects[i] = null;
                     }
                 }
+            }
+
+            if (requiresDetachedThreadCleanup && Thread.CurrentThreadIsFinalizerThread())
+            {
+                Thread.EnsureDetachedThreadCleanupThreadExists();
             }
 
             if (waitHandles.Length == 1)
@@ -480,6 +485,11 @@ namespace System.Threading
             Debug.Assert(waitableObjectToSignal != null);
             Debug.Assert(waitableObjectToWaitOn != null);
             Debug.Assert(timeoutMilliseconds >= -1);
+
+            if (waitableObjectToWaitOn.RequiresDetachedThreadCleanupBeforeWait && Thread.CurrentThreadIsFinalizerThread())
+            {
+                Thread.EnsureDetachedThreadCleanupThreadExists();
+            }
 
             ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
             LockHolder lockHolder = new LockHolder(s_lock);
