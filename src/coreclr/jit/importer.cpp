@@ -3385,13 +3385,16 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
         return true;
     }
 
-    GenTree* exprToBox = impPopStack().val;
+    GenTree* nullableObj = impPopStack().val;
 
     // Decompose the Nullable<> arg into _hasValue and _value fields
     // and calculate the type and layout of the 'value' field
     //
-    GenTreeFlags indirFlags             = GTF_EMPTY;
-    exprToBox                           = impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, &indirFlags);
+    GenTreeFlags indirFlags = GTF_EMPTY;
+    nullableObj             = impGetNodeAddr(nullableObj, CHECK_SPILL_ALL, &indirFlags);
+    GenTree* nullableObjClone;
+    nullableObj = impCloneExpr(nullableObj, &nullableObjClone, CHECK_SPILL_ALL, nullptr DEBUGARG("nullable obj clone"));
+
     CORINFO_FIELD_HANDLE valueFldHnd    = info.compCompHnd->getFieldInClass(nullableCls, 1);
     CORINFO_CLASS_HANDLE valueStructCls = NO_CLASS_HANDLE;
     static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
@@ -3400,9 +3403,9 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
     CorInfoType  corFldType     = info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls);
     var_types    valueType      = TypeHandleToVarType(corFldType, valueStructCls, &layout);
     GenTree*     valueOffset    = gtNewIconNode(cnsValueOffset, TYP_I_IMPL);
-    GenTree*     valueAddr      = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(exprToBox), valueOffset);
+    GenTree*     valueAddr      = gtNewOperNode(GT_ADD, TYP_BYREF, nullableObjClone, valueOffset);
     GenTree*     value          = gtNewLoadValueNode(valueType, layout, valueAddr);
-    GenTree*     hasValue       = gtNewLoadValueNode(TYP_UBYTE, nullptr, gtCloneExpr(exprToBox));
+    GenTree*     hasValue       = gtNewLoadValueNode(TYP_UBYTE, nullptr, nullableObj);
 
     // Create the allocation node for the box
     //
