@@ -126,7 +126,7 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
     return sizeof(instrDesc);
 }
 
-unsigned emitter::emitGetAlignHintLog2(const instrDesc *id)
+unsigned emitter::emitGetAlignHintLog2(const instrDesc* id)
 {
     // FIXME
     return 0;
