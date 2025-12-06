@@ -35,8 +35,7 @@ class PELoader {
   protected:
 
     HMODULE m_hMod;
-    HANDLE m_hFile;
-    HANDLE m_hMapFile;
+    MemoryMappedFile* m_File;
     BOOL   m_bIsPE32;
     size_t m_FileSize;
     size_t m_FileSizeAligned;
@@ -54,7 +53,6 @@ class PELoader {
 
     PELoader();
     ~PELoader();
-    BOOL open(const char* moduleNameIn);
     BOOL open(const WCHAR* moduleNameIn);
     BOOL open(HMODULE hMod);
     BOOL getCOMHeader(IMAGE_COR20_HEADER **ppCorHeader);
@@ -69,7 +67,7 @@ class PELoader {
     inline DWORD Signature() { return m_pNT32->Signature; };
     inline BYTE*  base() { return (BYTE*) m_hMod; };
     inline HMODULE getHModule() { return  m_hMod; };
-    inline HANDLE getHFile()	{ return  m_hFile; } ;
+    inline size_t getFileSize() { return m_FileSize; };
 };
 
 #endif // CEELoad_H
