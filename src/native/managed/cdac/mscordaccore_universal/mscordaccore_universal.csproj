@@ -2,7 +2,9 @@
 
   <PropertyGroup>
     <AssemblyName>$(LibPrefix)$(MSBuildProjectName)</AssemblyName>
+
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFramework Condition="'$(UseBootstrapLayout)' == 'true'">$(NetCoreAppCurrent)</TargetFramework>
     <RootNamespace>Microsoft.Diagnostics.DataContractReader</RootNamespace>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
