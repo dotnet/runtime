@@ -126,6 +126,12 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
     return sizeof(instrDesc);
 }
 
+unsigned emitter::emitGetAlignHintLog2(const instrDesc *id)
+{
+    // FIXME
+    return 0;
+}
+
 unsigned emitter::SizeOfULEB128(uint64_t value)
 {
     // bits_to_encode = (data != 0) ? 64 - CLZ(x) : 1 = 64 - CLZ(data | 1)
@@ -179,7 +185,7 @@ unsigned emitter::instrDesc::idCodeSize() const
             break;
         case IF_MEMARG:
         {
-            uint64_t align = 0; // FIXME
+            uint64_t align = emitGetAlignHintLog2(this);
             assert(align < 64); // spec says align > 2^6 produces a memidx for multiple memories.
             size += SizeOfULEB128(align);
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
@@ -305,7 +311,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MEMARG:
         {
             dst += emitOutputByte(dst, opcode);
-            uint64_t align  = 0; // FIXME
+            uint64_t align  = emitGetAlignHintLog2(id);
             uint64_t offset = emitGetInsSC(id);
             assert(align <= UINT32_MAX); // spec says memarg alignment is u32
             assert(align < 64);          // spec says align > 2^6 produces a memidx for multiple memories.
@@ -443,7 +449,7 @@ void emitter::emitDispIns(
         case IF_MEMARG:
         {
             // TODO-WASM: decide what our strategy for alignment hints is and display these accordingly.
-            unsigned       log2align = 1;
+            unsigned       log2align = emitGetAlignHintLog2(id) + 1;
             cnsval_ssize_t offset    = emitGetInsSC(id);
             printf(" %u %llu", log2align, (uint64_t)offset);
         }
