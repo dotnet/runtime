@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.TypesDebugInfo;
@@ -61,7 +62,7 @@ namespace ILCompiler
                     ClassTypeDescriptor classTypeDescriptor = new ClassTypeDescriptor
                     {
                         IsStruct = 1,
-                        Name = $"StateMachineLocals_{System.Reflection.Metadata.Ecma335.MetadataTokens.GetToken(((EcmaType)defType.GetTypeDefinition()).Handle):X}",
+                        Name = new Utf8String($"StateMachineLocals_{System.Reflection.Metadata.Ecma335.MetadataTokens.GetToken(((EcmaType)defType.GetTypeDefinition()).Handle):X}"),
                         InstanceSize = defType.InstanceByteCount.IsIndeterminate ? 0 : (ulong)defType.InstanceByteCount.AsInt,
                     };
 
@@ -764,7 +765,7 @@ namespace ILCompiler
                 ClassTypeDescriptor classTypeDescriptor = new ClassTypeDescriptor
                 {
                     IsStruct = !staticDataInObject ? 1 : 0,
-                    Name = $"__type{staticFieldForm}{_objectWriter.GetMangledName(defType)}",
+                    Name = new Utf8String($"__type{staticFieldForm}{_objectWriter.GetMangledName(defType)}"),
                     BaseClassId = 0
                 };
 
@@ -788,7 +789,7 @@ namespace ILCompiler
                     ClassTypeDescriptor helperClassTypeDescriptor = new ClassTypeDescriptor
                     {
                         IsStruct = 1,
-                        Name = $"__ThreadStaticHelper<{classTypeDescriptor.Name}>",
+                        Name = new Utf8String($"__ThreadStaticHelper<{classTypeDescriptor.Name}>"),
                         BaseClassId = 0
                     };
                     var pointerTypeDescriptor = new PointerTypeDescriptor

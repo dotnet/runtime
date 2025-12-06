@@ -268,7 +268,7 @@ namespace ILCompiler
                         // This problem needs a better fix.
                         if (isSystemPrivate)
                             assemblyName = string.Concat("S.P.", assemblyName.AsSpan(15));
-                        Utf8String prependAssemblyName = SanitizeName(assemblyName);
+                        Utf8String prependAssemblyName = new Utf8String(SanitizeName(assemblyName));
 
                         var deduplicator = new HashSet<Utf8String>();
 
@@ -358,12 +358,12 @@ namespace ILCompiler
                 case TypeFlags.ByRef:
                     mangledName = new Utf8StringBuilder()
                         .Append(GetMangledTypeName(((ByRefType)type).ParameterType))
-                        .Append(NestMangledName("ByRef")).ToUtf8String();
+                        .Append(NestMangledName(new Utf8String("ByRef"u8.ToArray()))).ToUtf8String();
                     break;
                 case TypeFlags.Pointer:
                     mangledName = new Utf8StringBuilder()
                         .Append(GetMangledTypeName(((PointerType)type).ParameterType))
-                        .Append(NestMangledName("Pointer")).ToUtf8String();
+                        .Append(NestMangledName(new Utf8String("Pointer"u8.ToArray()))).ToUtf8String();
                     break;
                 case TypeFlags.FunctionPointer:
                 {
@@ -408,17 +408,17 @@ namespace ILCompiler
                     }
                     else if (type is IPrefixMangledMethod)
                     {
-                        mangledName = GetPrefixMangledMethodName((IPrefixMangledMethod)type).ToString();
+                        mangledName = GetPrefixMangledMethodName((IPrefixMangledMethod)type);
                     }
                     else if (type is IPrefixMangledType)
                     {
-                        mangledName = GetPrefixMangledTypeName((IPrefixMangledType)type).ToString();
+                        mangledName = GetPrefixMangledTypeName((IPrefixMangledType)type);
                     }
                     else
                     {
                         // This is a type definition. Since we didn't fall in the `is EcmaType` case above,
                         // it's likely a compiler-generated type.
-                        mangledName = SanitizeName(((DefType)type).GetFullName());
+                        mangledName = new Utf8String(SanitizeName(((DefType)type).GetFullName()));
                     }
                     break;
             }

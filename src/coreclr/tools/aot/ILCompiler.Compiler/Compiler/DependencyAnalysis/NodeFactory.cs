@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _target = context.Target;
 
-            InitialInterfaceDispatchStub = new AddressTakenExternFunctionSymbolNode("RhpInitialDynamicInterfaceDispatch");
+            InitialInterfaceDispatchStub = new AddressTakenExternFunctionSymbolNode(new Utf8String("RhpInitialDynamicInterfaceDispatch"u8.ToArray()));
 
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
@@ -275,15 +275,15 @@ namespace ILCompiler.DependencyAnalysis
 
             _externFunctionSymbols = new NodeCache<string, ExternFunctionSymbolNode>((string name) =>
             {
-                return new ExternFunctionSymbolNode(name);
+                return new ExternFunctionSymbolNode(new Utf8String(name));
             });
             _externIndirectFunctionSymbols = new NodeCache<string, ExternFunctionSymbolNode>((string name) =>
             {
-                return new ExternFunctionSymbolNode(name, isIndirection: true);
+                return new ExternFunctionSymbolNode(new Utf8String(name), isIndirection: true);
             });
             _externDataSymbols = new NodeCache<string, ExternDataSymbolNode>((string name) =>
             {
-                return new ExternDataSymbolNode(name);
+                return new ExternDataSymbolNode(new Utf8String(name));
             });
 
             _pInvokeModuleFixups = new NodeCache<PInvokeModuleData, PInvokeModuleFixupNode>((PInvokeModuleData moduleData) =>
@@ -1520,7 +1520,7 @@ namespace ILCompiler.DependencyAnalysis
             byte[] stringBytes = new byte[stringBytesCount + 1];
             Encoding.UTF8.GetBytes(str, 0, str.Length, stringBytes, 0);
 
-            string symbolName = "__utf8str_" + NameMangler.GetMangledStringName(str);
+            Utf8String symbolName = new Utf8String("__utf8str_" + NameMangler.GetMangledStringName(str));
 
             return ReadOnlyDataBlob(symbolName, stringBytes, 1);
         }
