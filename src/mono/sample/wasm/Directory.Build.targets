@@ -37,6 +37,11 @@
     <NestedBuildProperty Include="EnableDiagnostics" />
     <NestedBuildProperty Include="DiagnosticPorts" />
     <NestedBuildProperty Include="WasmPerformanceInstrumentation" />
+    <NestedBuildProperty Include="RuntimeFlavor" />
+    <NestedBuildProperty Include="WasmEnableWebcil" />
+    <NestedBuildProperty Include="EnableAggressiveTrimming" />
+    <NestedBuildProperty Include="PublishTrimmed" />
+    <NestedBuildProperty Include="TrimMode" />
   </ItemGroup>
 
   <Target Name="BuildSampleInTree"
