@@ -3369,27 +3369,21 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 //
 bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 {
-    assert(info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX_NULLABLE);
+    CORINFO_CLASS_HANDLE nullableCls = pResolvedToken->hClass;
+    assert(info.compCompHnd->getBoxHelper(nullableCls) == CORINFO_HELP_BOX_NULLABLE);
 
     if (opts.OptimizationDisabled() || compCurBB->isRunRarely())
     {
         return false;
     }
 
-    if (eeIsSharedInst(pResolvedToken->hClass) || IsReadyToRun())
+    if (eeIsSharedInst(nullableCls) || IsReadyToRun())
     {
         // TODO-CQ: Enable the optimization for shared generics and R2R scenarios.
         // The current machinery requires a ResolvedToken (basically, 'newobj underlyingType'
         // that we don't have).
         return true;
     }
-
-    CORINFO_CLASS_HANDLE typeToBox = info.compCompHnd->getTypeForBox(pResolvedToken->hClass);
-
-    bool             hasSideEffects;
-    CorInfoHelpFunc  helperTemp = info.compCompHnd->getNewHelper(typeToBox, &hasSideEffects);
-    GenTreeAllocObj* allocObj =
-        gtNewAllocObjNode(helperTemp, hasSideEffects, typeToBox, TYP_REF, gtNewIconEmbClsHndNode(typeToBox));
 
     GenTree* exprToBox = impPopStack().val;
 
@@ -3398,7 +3392,7 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
     //
     GenTreeFlags indirFlags             = GTF_EMPTY;
     exprToBox                           = impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, &indirFlags);
-    CORINFO_FIELD_HANDLE valueFldHnd    = info.compCompHnd->getFieldInClass(pResolvedToken->hClass, 1);
+    CORINFO_FIELD_HANDLE valueFldHnd    = info.compCompHnd->getFieldInClass(nullableCls, 1);
     CORINFO_CLASS_HANDLE valueStructCls = NO_CLASS_HANDLE;
     static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
     unsigned     cnsValueOffset = info.compCompHnd->getFieldOffset(valueFldHnd);
@@ -3409,6 +3403,14 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
     GenTree*     valueAddr      = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(exprToBox), valueOffset);
     GenTree*     value          = gtNewLoadValueNode(valueType, layout, valueAddr);
     GenTree*     hasValue       = gtNewLoadValueNode(TYP_UBYTE, nullptr, gtCloneExpr(exprToBox));
+
+    // Create the allocation node for the box
+    //
+    CORINFO_CLASS_HANDLE typeToBox = info.compCompHnd->getTypeForBox(nullableCls);
+    bool                 hasSideEffects;
+    CorInfoHelpFunc      helperTemp   = info.compCompHnd->getNewHelper(typeToBox, &hasSideEffects);
+    GenTree*             typeToBoxHnd = gtNewIconEmbClsHndNode(typeToBox);
+    GenTreeAllocObj*     allocObj     = gtNewAllocObjNode(helperTemp, hasSideEffects, typeToBox, TYP_REF, typeToBoxHnd);
 
     // Now we need to copy value into the allocated box
     //
@@ -3444,6 +3446,10 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
     lvaSetClass(result, typeToBox, true);
     lvaSetClass(objLclNum, typeToBox, true);
     impPushOnStack(gtNewLclvNode(result, TYP_REF), typeInfo(typeToBox));
+
+    JITDUMP(" inlined BOX(%s) as QMARK allocating box and copying fields:\n", eeGetClassName(nullableCls));
+    DISPTREE(qmark);
+    JITDUMP("\n");
     return true;
 }
 
