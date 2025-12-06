@@ -108,6 +108,12 @@ namespace ILCompiler
                 }
             }
 
+            if (callee.IsAsyncThunk())
+            {
+                // Async thunks require special handling in the compiler and should not be inlined
+                return false;
+            }
+
             _nodeFactory.DetectGenericCycles(caller, callee);
 
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
@@ -694,6 +700,46 @@ namespace ILCompiler
                                 CorInfoImpl.IsMethodCompilable(this, methodCodeNodeNeedingCode.Method))
                                 _methodsWhichNeedMutableILBodies.Add(ecmaMethod);
                         }
+                        if (method.IsAsyncThunk())
+                        {
+                            // The synthetic async thunks require references to methods/types that may not have existing methodRef entries in the version bubble.
+                            // These references need to be added to the mutable module if they don't exist.
+                            var requiredMutableModuleReferences = method.IsAsyncVariant() ?
+                                AsyncThunkILEmitter.GetRequiredReferencesForAsyncThunk(((AsyncMethodVariant)method).Target)
+                                : AsyncThunkILEmitter.GetRequiredReferencesForTaskReturningThunk(method);
+                            _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
+                            try
+                            {
+                                foreach (var entity in requiredMutableModuleReferences)
+                                {
+                                    switch (entity)
+                                    {
+                                        case MethodDesc md:
+                                            if (_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull)
+                                            {
+                                                _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(md);
+                                                Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
+                                            }
+                                            break;
+                                        case EcmaType td:
+                                            if (_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull)
+                                            {
+                                                _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(td);
+                                                Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
+                                            }
+                                            break;
+                                        default:
+                                            Logger.LogMessage("Didn't handle entity: " + entity.GetDisplayName());
+                                            break;
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = null;
+                            }
+                        }
+
                         if (!_nodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
                         {
                             // Validate that the typedef tokens for all of the instantiation parameters of the method
