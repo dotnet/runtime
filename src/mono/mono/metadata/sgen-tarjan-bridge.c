@@ -976,9 +976,9 @@ dump_color_table (const char *why, gboolean do_index)
 	int i = 0, j;
 	printf ("colors%s:\n", why);
 
-	for (cur = root_color_bucket; cur; cur = cur->next, ++i) {
+	for (cur = root_color_bucket; cur; cur = cur->next) {
 		ColorData *cd;
-		for (cd = &cur->data [0]; cd < cur->next_data; ++cd) {
+		for (cd = &cur->data [0]; cd < cur->next_data; ++cd, ++i) {
 			if (do_index)
 				printf ("\t%d(%d):", i, cd->api_index);
 			else
