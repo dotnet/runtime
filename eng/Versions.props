@@ -20,7 +20,7 @@
 
     <!-- SdkVersionForWorkloadTesting is used to compute the sdk band and version for workload testing. -->
     <!-- NETCoreSdkVersion is normally set by the SDK, but for non-SDK projects we need extract from global.json -->
-    <SdkVersionForWorkloadTesting>$(MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportPackageVersion)</SdkVersionForWorkloadTesting>
+    <SdkVersionForWorkloadTesting>$(MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportPackageVersion)</SdkVersionForWorkloadTesting>
     <SdkMajorVersion>$([System.String]::Copy('$(SdkVersionForWorkloadTesting)').Split('.')[0])</SdkMajorVersion>
     <SdkBandVersion>$(SdkMajorVersion).0.100</SdkBandVersion>
     <SdkPreReleaseLabel>$([System.Text.RegularExpressions.Regex]::Match($(SdkVersionForWorkloadTesting), '-(?!rtm|servicing)(.+)\.[^.]+\.[^.]+$').Groups[1].Value)</SdkPreReleaseLabel>
@@ -156,9 +156,8 @@
     <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.16</MicrosoftNativeQuicMsQuicSchannelVersion>
     <!-- emscripten / Node
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
-               like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-10_0_100_Transport
-    -->
-    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion)</MicrosoftNETRuntimeEmscriptenVersion>
+               like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-10_0_100_Transport -->
+    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportVersion)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
