@@ -658,10 +658,8 @@ namespace ILCompiler
             {
                 _methodsToRecompile.Add(methodToBeRecompiled);
                 if (methodsThatNeedILBodies != null)
-                {
                     foreach (var method in methodsThatNeedILBodies)
                         _methodsWhichNeedMutableILBodies.Add(method);
-                }
             }
         }
 
@@ -840,7 +838,6 @@ namespace ILCompiler
                 foreach (var method in mutableMethodBodyNeedList)
                     ilProvider.CreateCrossModuleInlineableTokensForILBody(method);
             }
-
 
             void ResetILCache()
             {

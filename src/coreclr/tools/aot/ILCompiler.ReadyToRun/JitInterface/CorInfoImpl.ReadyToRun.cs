@@ -778,7 +778,6 @@ namespace Internal.JitInterface
                     return;
                 }
 
-
                 if (MethodBeingCompiled.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
                 {
                     if ((methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL && _compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && ecmaMethod.Module == ecmaMethod.Context.SystemModule) ||

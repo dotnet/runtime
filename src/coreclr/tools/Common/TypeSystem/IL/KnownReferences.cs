@@ -60,21 +60,6 @@ namespace Internal.IL
 
     public class KnownILStubReferences
     {
-        public static bool IsKnownMethod(MethodDesc method)
-        {
-            for (KnownILStubReference helper = 0; helper < KnownILStubReference.AsyncHelperCount; helper++)
-            {
-                TypeSystemEntity knownHelper = GetKnownEntity(method.Context, helper);
-                if (knownHelper is not MethodDesc knownMethod)
-                {     continue; }
-                if (knownMethod.GetTypicalMethodDefinition() == method)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         [Conditional("DEBUG")]
         public static void AssertIsKnownEntity(TypeSystemEntity entity, string message)
         {
