@@ -26,9 +26,11 @@ jobs:
       platforms:
         - browser_wasm
         - browser_wasm_win
-      nameSuffix: _AOT
+      nameSuffix: _Smoke_AOT
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       runAOT: true
+      buildAOTOnHelix: false
+      shouldRunSmokeOnly: true
       alwaysRun: true
 
   # AOT Library tests - wasi_wasm
@@ -99,6 +101,7 @@ jobs:
       nameSuffix: _EAT
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /maxcpucount:1
       runAOT: false
+      buildAOTOnHelix: false
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
@@ -108,9 +111,11 @@ jobs:
       platforms:
         - browser_wasm
         - browser_wasm_win
-      nameSuffix: _AOT
+      nameSuffix: _Smoke_AOT
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       runAOT: true
+      buildAOTOnHelix: false
+      shouldRunSmokeOnly: true
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
