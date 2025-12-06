@@ -1315,14 +1315,6 @@ void MyICJI::getFunctionFixedEntryPoint(
 // the code to be passed to a JIT helper function. (as opposed to just
 // being passed back into the ICorInfo interface.)
 
-// get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*).
-// Returns CORINFO_HELP_UNDEF if lazy string literal helper cannot be used.
-CorInfoHelpFunc MyICJI::getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle)
-{
-    jitInstance->mc->cr->AddCall("getLazyStringLiteralHelper");
-    return jitInstance->mc->repGetLazyStringLiteralHelper(handle);
-}
-
 CORINFO_MODULE_HANDLE MyICJI::embedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection)
 {
     jitInstance->mc->cr->AddCall("embedModuleHandle");
