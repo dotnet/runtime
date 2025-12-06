@@ -26,7 +26,8 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        public static readonly string DefaultTargetFramework = $"net{Environment.Version.Major}.0";
+        private const int TargetMajorVersion = 11;
+        public static readonly string DefaultTargetFramework = $"net{TargetMajorVersion}.0";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -36,7 +37,7 @@ namespace Wasm.Build.Tests
         protected SharedBuildPerTestClassFixture _buildContext;
         protected string _nugetPackagesDir = string.Empty;
 
-        /* This will trigger importing WasmOverridePacks.targets for the tests,
+        /* This will trigger  importing WasmOverridePacks.targets for the tests,
          * which will override the runtime pack with with the locally built one.
          * But note that this only partially helps with "switching workloads" because
          * the tasks/targets, aot compiler, etc would still be from the old version
@@ -760,7 +761,7 @@ namespace Wasm.Build.Tests
         string? TargetFramework           = null,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
-    
+
     public record AssertBundleOptions(
         BuildProjectOptions BuildOptions,
         bool ExpectSymbolsFile = true,

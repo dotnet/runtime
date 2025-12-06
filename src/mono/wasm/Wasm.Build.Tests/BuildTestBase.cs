@@ -26,11 +26,12 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        public static readonly string DefaultTargetFramework = $"net{Environment.Version.Major}.0";
-        public static readonly string PreviousTargetFramework = $"net{Environment.Version.Major - 1}.0";
-        public static readonly string Previous2TargetFramework = $"net{Environment.Version.Major - 2}.0";
-        public static readonly string DefaultTargetFrameworkForBlazor = $"net{Environment.Version.Major}.0";
-        public static readonly string TargetFrameworkForTasks = $"net{Environment.Version.Major}.0";
+        private const int TargetMajorVersion = 11; /* net11 */
+        public static readonly string DefaultTargetFramework = $"net{TargetMajorVersion}.0";
+        public static readonly string PreviousTargetFramework = $"net{TargetMajorVersion - 1}.0";
+        public static readonly string Previous2TargetFramework = $"net{TargetMajorVersion - 2}.0";
+        public static readonly string DefaultTargetFrameworkForBlazor = $"net{TargetMajorVersion}.0";
+        public static readonly string TargetFrameworkForTasks = $"net{TargetMajorVersion}.0";
         private const string DefaultEnvironmentLocale = "en-US";
         protected static readonly string s_unicodeChars = "\u9FC0\u8712\u679B\u906B\u486B\u7149";
         protected static readonly bool s_skipProjectCleanup;
