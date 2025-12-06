@@ -189,7 +189,7 @@ namespace Profiler.Tests
         [DllImport("Profiler")]
         public static extern int SwitchInlining(bool disable);
 
-        // this retrieves the number of inlining operations that occured
+        // this retrieves the number of inlining operations that occurred
         [DllImport("Profiler")]
         public static extern int GetInlineCount();
     }

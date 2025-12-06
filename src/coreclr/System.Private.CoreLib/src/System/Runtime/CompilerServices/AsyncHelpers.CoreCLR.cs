@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
@@ -83,7 +84,7 @@ namespace System.Runtime.CompilerServices
         ContinueOnCapturedTaskScheduler = 64,
     }
 
-    // Keep in sync with dataAsyncResumeInfo in the JIT
+    // Keep in sync with CORINFO_AsyncResumeInfo in corinfo.h
     internal unsafe struct ResumeInfo
     {
         public delegate*<Continuation, ref byte, Continuation?> Resume;
@@ -144,6 +145,18 @@ namespace System.Runtime.CompilerServices
 
     public static partial class AsyncHelpers
     {
+#if FEATURE_INTERPRETER
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AsyncHelpers_ResumeInterpreterContinuation")]
+        private static partial void AsyncHelpers_ResumeInterpreterContinuation(ObjectHandleOnStack cont, ref byte resultStorage);
+
+        internal static Continuation? ResumeInterpreterContinuation(Continuation cont, ref byte resultStorage)
+        {
+            ObjectHandleOnStack contHandle = ObjectHandleOnStack.Create(ref cont);
+            AsyncHelpers_ResumeInterpreterContinuation(contHandle, ref resultStorage);
+            return cont;
+        }
+#endif
+
         // This is the "magic" method on which other "Await" methods are built.
         // Calling this from an Async method returns the continuation to the caller thus
         // explicitly initiates suspension.

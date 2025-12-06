@@ -8023,7 +8023,7 @@ void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecO
     emitEnsureDataSectionAlignment(TARGET_POINTER_SIZE);
 
     UNATIVE_OFFSET secOffs     = emitConsDsc.dsdOffs;
-    unsigned       emittedSize = sizeof(emitter::dataAsyncResumeInfo) * numEntries;
+    unsigned       emittedSize = sizeof(CORINFO_AsyncResumeInfo) * numEntries;
     emitConsDsc.dsdOffs += emittedSize;
 
     dataSection* secDesc = (dataSection*)emitGetMem(roundUp(sizeof(dataSection) + numEntries * sizeof(emitLocation)));
@@ -8560,9 +8560,9 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
         {
             JITDUMP("  section %u, size %u, async resume info\n", secNum++, dscSize);
 
-            size_t numElems = dscSize / sizeof(emitter::dataAsyncResumeInfo);
+            size_t numElems = dscSize / sizeof(CORINFO_AsyncResumeInfo);
 
-            emitter::dataAsyncResumeInfo* aDstRW = (emitter::dataAsyncResumeInfo*)dstRW;
+            CORINFO_AsyncResumeInfo* aDstRW = (CORINFO_AsyncResumeInfo*)dstRW;
             for (size_t i = 0; i < numElems; i++)
             {
                 emitLocation* emitLoc = &((emitLocation*)dsc->dsCont)[i];
@@ -8735,7 +8735,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
             {
                 if (i > 0)
                 {
-                    sprintf_s(label, ArrLen(label), "RWD%02zu", i * sizeof(dataAsyncResumeInfo));
+                    sprintf_s(label, ArrLen(label), "RWD%02zu", i * sizeof(CORINFO_AsyncResumeInfo));
                     printf(labelFormat, label);
                 }
 

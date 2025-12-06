@@ -84,5 +84,23 @@ namespace Internal.Text
         {
             return Compare(this, other);
         }
+
+        public static Utf8String Concat(params ReadOnlySpan<Utf8String> strings)
+        {
+            int length = 0;
+            foreach (Utf8String s in strings)
+                length += s.Length;
+
+            var result = new byte[length];
+            Span<byte> resultSpan = result;
+
+            foreach (Utf8String s in strings)
+            {
+                s.AsSpan().CopyTo(resultSpan);
+                resultSpan = resultSpan.Slice(s.Length);
+            }
+
+            return new Utf8String(result);
+        }
     }
 }

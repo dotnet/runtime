@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- Needed for CLRTestTargetUnsupported, JitOptimizationSensitive -->
+    <!-- Needed for CLRTestTargetUnsupported, JitOptimizationSensitive, TrimMode=partial -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Test unsupported outside of windows -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <TrimMode>partial</TrimMode>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>

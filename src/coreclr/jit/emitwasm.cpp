@@ -14,12 +14,6 @@
     #define INST(id, nm, info, fmt, opcode) info,
     #include "instrs.h"
 };
-
-static const uint8_t insOpcodes[]
-{
-    #define INST(id, nm, info, fmt, opcode) static_cast<uint8_t>(opcode),
-    #include "instrs.h"
-};
 // clang-format on
 
 void emitter::emitIns(instruction ins)
@@ -93,21 +87,25 @@ bool emitter::emitInsIsStore(instruction ins)
 
 emitter::insFormat emitter::emitInsFormat(instruction ins)
 {
-    // clang-format off
-    const static insFormat insFormats[] =
-    {
-        #define INST(id, nm, info, fmt, opcode) fmt,
-        #include "instrs.h"
+    static_assert(IF_COUNT < 255);
+
+    const static uint8_t insFormats[] = {
+#define INST(id, nm, info, fmt, opcode) fmt,
+#include "instrs.h"
     };
-    // clang-format on
 
     assert(ins < ArrLen(insFormats));
     assert((insFormats[ins] != IF_NONE));
-    return insFormats[ins];
+    return static_cast<insFormat>(insFormats[ins]);
 }
 
 static unsigned GetInsOpcode(instruction ins)
 {
+    static const uint8_t insOpcodes[] = {
+#define INST(id, nm, info, fmt, opcode) static_cast<uint8_t>(opcode),
+#include "instrs.h"
+    };
+
     assert(ins < ArrLen(insOpcodes));
     return insOpcodes[ins];
 }
@@ -151,6 +149,13 @@ unsigned emitter::instrDesc::idCodeSize() const
     {
         case IF_OPCODE:
             break;
+        case IF_BLOCK:
+            size += 1;
+            break;
+        case IF_LABEL:
+            assert(!idIsCnsReloc());
+            size = SizeOfULEB128(static_cast<target_size_t>(emitGetInsSC(this)));
+            break;
         case IF_ULEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(static_cast<target_size_t>(emitGetInsSC(this)));
             break;
@@ -171,8 +176,58 @@ void emitter::emitSetShortJump(instrDescJmp* id)
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
-    NYI_WASM("emitOutputInstr");
-    return 0;
+    BYTE*       dst    = *dp;
+    size_t      sz     = emitSizeOfInsDsc(id);
+    instruction ins    = id->idIns();
+    insFormat   insFmt = id->idInsFmt();
+    unsigned    opcode = GetInsOpcode(ins);
+
+    switch (insFmt)
+    {
+        case IF_OPCODE:
+            dst += emitOutputByte(dst, opcode);
+            break;
+        case IF_BLOCK:
+            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputByte(dst, 0x40);
+            break;
+        case IF_ULEB128:
+            dst += emitOutputByte(dst, opcode);
+            // TODO-WASM: emit uleb128
+            break;
+        case IF_LABEL:
+            // TODO-WASM: emit uleb128
+        default:
+            NYI_WASM("emitOutputInstr");
+    }
+
+#ifdef DEBUG
+    bool dspOffs = emitComp->opts.dspGCtbls;
+    if (emitComp->opts.disAsm || emitComp->verbose)
+    {
+        emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp), ig);
+    }
+#else
+    if (emitComp->opts.disAsm)
+    {
+        emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp), ig);
+    }
+#endif
+
+    *dp = dst;
+    return sz;
+}
+
+/*static*/ instruction emitter::emitJumpKindToIns(emitJumpKind jumpKind)
+{
+    const instruction emitJumpKindInstructions[] = {
+        INS_nop,
+#define JMP_SMALL(en, rev, ins) INS_##ins,
+#include "emitjmps.h"
+    };
+
+    assert((unsigned)jumpKind < ArrLen(emitJumpKindInstructions));
+    return emitJumpKindInstructions[jumpKind];
 }
 
 //--------------------------------------------------------------------
@@ -240,8 +295,10 @@ void emitter::emitDispIns(
     switch (fmt)
     {
         case IF_OPCODE:
+        case IF_BLOCK:
             break;
 
+        case IF_LABEL:
         case IF_ULEB128:
         {
             target_size_t imm = emitGetInsSC(id);
@@ -305,8 +362,11 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 #if defined(DEBUG) || defined(LATE_DISASM)
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
-    NYI_WASM("getInsSveExecutionCharacteristics");
-    return {};
+    // TODO-WASM: for real...
+    insExecutionCharacteristics result;
+    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+    result.insLatency    = PERFSCORE_LATENCY_1C;
+    return result;
 }
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 

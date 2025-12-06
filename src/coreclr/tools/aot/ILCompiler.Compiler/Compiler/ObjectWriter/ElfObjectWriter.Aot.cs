@@ -29,7 +29,7 @@ namespace ILCompiler.ObjectWriter
     /// (> 65279). Some of the fields in the ELF file header are moved to the
     /// first (NULL) section header. The symbol table that is normally a single
     /// section in the file is extended with a second .symtab_shndx section
-    /// to accomodate the section indexes that don't fit within the regular
+    /// to accommodate the section indexes that don't fit within the regular
     /// section number field.
     /// </remarks>
     internal sealed partial class ElfObjectWriter : UnixObjectWriter

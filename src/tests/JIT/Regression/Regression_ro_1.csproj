@@ -74,7 +74,9 @@
     <Compile Include="JitBlue\Runtime_120270\Runtime_120270.cs" />
     <Compile Include="JitBlue\Runtime_120414\Runtime_120414.cs" />
     <Compile Include="JitBlue\Runtime_120522\Runtime_120522.cs" />
+    <Compile Include="JitBlue\Runtime_120903\Runtime_120903.cs" />
     <Compile Include="JitBlue\Runtime_121711\Runtime_121711.cs" />
+    <Compile Include="JitBlue\Runtime_122138\Runtime_122138.cs" />
     <Compile Include="JitBlue\Runtime_31615\Runtime_31615.cs" />
     <Compile Include="JitBlue\Runtime_33884\Runtime_33884.cs" />
     <Compile Include="JitBlue\Runtime_38920\Runtime_38920.cs" />

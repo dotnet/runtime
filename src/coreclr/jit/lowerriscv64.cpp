@@ -714,7 +714,7 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
         return false;
     }
 
-    if (tree->isContained() || ((tree->gtFlags & GTF_ALL_EFFECT) != 0) || !tree->OperIs(GT_ADD) ||
+    if (tree->isContained() || !tree->OperIs(GT_ADD) || tree->gtOverflow() ||
         ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF)))
     {
         return false;
@@ -831,7 +831,7 @@ bool Lowering::TryLowerZextAddToAddUw(GenTreeOp* tree, GenTree** next)
         return false;
     }
 
-    if (tree->isContained() || ((tree->gtFlags & GTF_ALL_EFFECT) != 0) || !tree->OperIs(GT_ADD) ||
+    if (tree->isContained() || !tree->OperIs(GT_ADD) || tree->gtOverflow() ||
         ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF)))
     {
         return false;
@@ -912,8 +912,8 @@ bool Lowering::TryLowerZextLeftShiftToSlliUw(GenTreeOp* tree, GenTree** next)
         return false;
     }
 
-    if (tree->isContained() || ((tree->gtFlags & GTF_ALL_EFFECT) != 0) || !tree->OperIs(GT_LSH) ||
-        !tree->gtOp1->OperIs(GT_CAST) || !tree->gtOp2->IsCnsIntOrI() ||
+    if (tree->isContained() || !tree->OperIs(GT_LSH) || !tree->gtOp1->OperIs(GT_CAST) || tree->gtOp1->gtOverflow() ||
+        !tree->gtOp2->IsCnsIntOrI() ||
         ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF)))
     {
         return false;

@@ -3,7 +3,6 @@
 
 using System.Runtime.InteropServices;
 
-#pragma warning disable 0618
 static class DecimalTestNative
 {
     public struct DecimalWrapper

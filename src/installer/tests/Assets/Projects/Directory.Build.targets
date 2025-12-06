@@ -1,10 +1,9 @@
 <Project>
+  <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
 
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
-
   <PropertyGroup>
-    <UseAppHost Condition="'$(UseAppHost)' == '' and '$(SelfContained)' != 'true'">false</UseAppHost>
+    <UseAppHost Condition="'$(SelfContained)' != 'true'">false</UseAppHost>
   </PropertyGroup>
 
   <!-- Override target from targetingpacks.targets. Use Version instead of ProductVersion (written into runtimeconfig.json).

@@ -386,6 +386,7 @@ public:
     // And some types (like ByRef or generic type parameters) have no
     // method table and this function returns NULL for them.
     inline PTR_MethodTable GetMethodTable() const;
+    inline TypeHandle UpCastTypeIfNeeded() const;
 
     // Returns the type which should be used for visibility checking.
     inline MethodTable* GetMethodTableOfRootTypeParam() const;

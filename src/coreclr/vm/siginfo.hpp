@@ -746,7 +746,7 @@ class MetaSig
         //----------------------------------------------------------
         // Is it an async call?
         //----------------------------------------------------------
-        BOOL IsAsyncCall()
+        bool IsAsyncCall()
         {
             LIMITED_METHOD_CONTRACT;
             return m_CallConv & CORINFO_CALLCONV_ASYNCCALL;

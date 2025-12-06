@@ -17,6 +17,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "codegen.h"
 
+#if defined(TARGET_WASM)
+class WasmInterval;
+#endif
+
 //------------------------------------------------------------------------
 // genInitializeRegisterState: Initialize the register state contained in 'regSet'.
 //
@@ -106,6 +110,20 @@ void CodeGen::genInitialize()
     // We initialize the stack level before first "BasicBlock" code is generated in case we need to report stack
     // variable needs home and so its stack offset.
     SetStackLevel(0);
+
+#if defined(TARGET_WASM)
+    // Wasm control flow is stack based.
+    //
+    // We have pre computed the set of intervals that require control flow
+    // stack transitions in compiler->fgWasmIntervals, ordered by starting block index.
+    //
+    // As we walk the blocks we'll push and pop onto this stack. As we emit control
+    // flow instructions, we'll consult this stack to figure out the depth of the target labels.
+    //
+    wasmControlFlowStack =
+        new (compiler, CMK_WasmCfgLowering) ArrayStack<WasmInterval*>(compiler->getAllocator(CMK_WasmCfgLowering));
+    wasmCursor = 0;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -353,6 +371,8 @@ void CodeGen::genCodeForBBlist()
             noway_assert(block->bbEmitCookie);
             GetEmitter()->emitSetFirstColdIGCookie(block->bbEmitCookie);
         }
+
+        genEmitStartBlock(block);
 
         // Both stacks are always empty on entry to a basic block.
         assert(genStackLevel == 0);
@@ -620,245 +640,14 @@ void CodeGen::genCodeForBBlist()
         /* Both stacks should always be empty on exit from a basic block */
         noway_assert(genStackLevel == 0);
 
-#ifdef TARGET_AMD64
-        bool emitNopBeforeEHRegion = false;
-        // On AMD64, we need to generate a NOP after a call that is the last instruction of the block, in several
-        // situations, to support proper exception handling semantics. This is mostly to ensure that when the stack
-        // walker computes an instruction pointer for a frame, that instruction pointer is in the correct EH region.
-        // The document "clr-abi.md" has more details. The situations:
-        // 1. If the call instruction is in a different EH region as the instruction that follows it.
-        // 2. If the call immediately precedes an OS epilog. (Note that what the JIT or VM consider an epilog might
-        //    be slightly different from what the OS considers an epilog, and it is the OS-reported epilog that matters
-        //    here.)
-        // We handle case #1 here, and case #2 in the emitter.
-        if (GetEmitter()->emitIsLastInsCall())
+        BasicBlock* const nextBlock = genEmitEndBlock(block);
+
+        // Sometimes we might skip ahead in the block list
+        //
+        if (nextBlock != nullptr)
         {
-            // Ok, the last instruction generated is a call instruction. Do any of the other conditions hold?
-            // Note: we may be generating a few too many NOPs for the case of call preceding an epilog. Technically,
-            // if the next block is a BBJ_RETURN, an epilog will be generated, but there may be some instructions
-            // generated before the OS epilog starts, such as a GS cookie check.
-            if (block->IsLast() || !BasicBlock::sameEHRegion(block, block->Next()))
-            {
-                // We only need the NOP if we're not going to generate any more code as part of the block end.
-
-                switch (block->GetKind())
-                {
-                    case BBJ_ALWAYS:
-                        // We might skip generating the jump via a peephole optimization.
-                        // If that happens, make sure a NOP is emitted as the last instruction in the block.
-                        emitNopBeforeEHRegion = true;
-                        break;
-
-                    case BBJ_THROW:
-                    case BBJ_CALLFINALLY:
-                    case BBJ_EHCATCHRET:
-                        // We're going to generate more code below anyway, so no need for the NOP.
-
-                    case BBJ_RETURN:
-                    case BBJ_EHFINALLYRET:
-                    case BBJ_EHFAULTRET:
-                    case BBJ_EHFILTERRET:
-                        // These are the "epilog follows" case, handled in the emitter.
-                        break;
-
-                    case BBJ_COND:
-                    case BBJ_SWITCH:
-                        // These can't have a call as the last instruction!
-
-                    default:
-                        noway_assert(!"Unexpected bbKind");
-                        break;
-                }
-            }
+            block = nextBlock;
         }
-#endif // TARGET_AMD64
-
-#if FEATURE_LOOP_ALIGN
-        auto SetLoopAlignBackEdge = [=](const BasicBlock* block, const BasicBlock* target) {
-            // This is the last place where we operate on blocks and after this, we operate
-            // on IG. Hence, if we know that the destination of "block" is the first block
-            // of a loop and that loop needs alignment (it has BBF_LOOP_ALIGN), then "block"
-            // might represent the lexical end of the loop. Propagate that information on the
-            // IG through "igLoopBackEdge".
-            //
-            // During emitter, this information will be used to calculate the loop size.
-            // Depending on the loop size, the decision of whether to align a loop or not will be taken.
-            // (Loop size is calculated by walking the instruction groups; see emitter::getLoopSize()).
-            // If `igLoopBackEdge` is set, then mark the next BasicBlock as a label. This will cause
-            // the emitter to create a new IG for the next block. Otherwise, if the next block
-            // did not have a label, additional instructions might be added to the current IG. This
-            // would make the "back edge" IG larger, possibly causing the size of the loop computed
-            // by `getLoopSize()` to be larger than actual, which could push the loop size over the
-            // threshold of loop size that can be aligned.
-
-            if (target->isLoopAlign())
-            {
-                if (GetEmitter()->emitSetLoopBackEdge(target))
-                {
-                    if (!block->IsLast())
-                    {
-                        JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->Next()->bbNum);
-                        block->Next()->SetFlags(BBF_HAS_LABEL);
-                    }
-                }
-            }
-        };
-#endif // FEATURE_LOOP_ALIGN
-
-        /* Do we need to generate a jump or return? */
-
-        bool removedJmp = false;
-        switch (block->GetKind())
-        {
-            case BBJ_RETURN:
-                genExitCode(block);
-                break;
-
-            case BBJ_THROW:
-                // If we have a throw at the end of a function or funclet, we need to emit another instruction
-                // afterwards to help the OS unwinder determine the correct context during unwind.
-                // We insert an unexecuted breakpoint instruction in several situations
-                // following a throw instruction:
-                // 1. If the throw is the last instruction of the function or funclet. This helps
-                //    the OS unwinder determine the correct context during an unwind from the
-                //    thrown exception.
-                // 2. If this is this is the last block of the hot section.
-                // 3. If the subsequent block is a special throw block.
-                // 4. On AMD64, if the next block is in a different EH region.
-                if (block->IsLast() || !BasicBlock::sameEHRegion(block, block->Next()) ||
-                    (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->Next())) ||
-                    compiler->bbIsFuncletBeg(block->Next()) || block->IsLastHotBlock(compiler))
-                {
-                    instGen(INS_BREAKPOINT); // This should never get executed
-                }
-                // Do likewise for blocks that end in DOES_NOT_RETURN calls
-                // that were not caught by the above rules. This ensures that
-                // gc register liveness doesn't change to some random state after call instructions
-                else
-                {
-                    GenTree* call = block->lastNode();
-
-                    if ((call != nullptr) && call->OperIs(GT_CALL))
-                    {
-                        if (call->AsCall()->IsNoReturn())
-                        {
-                            instGen(INS_BREAKPOINT); // This should never get executed
-                        }
-                    }
-                }
-
-                break;
-
-            case BBJ_CALLFINALLY:
-                block = genCallFinally(block);
-                break;
-
-            case BBJ_EHCATCHRET:
-                assert(compiler->UsesFunclets());
-                genEHCatchRet(block);
-                FALLTHROUGH;
-
-            case BBJ_EHFINALLYRET:
-            case BBJ_EHFAULTRET:
-            case BBJ_EHFILTERRET:
-                if (compiler->UsesFunclets())
-                {
-                    genReserveFuncletEpilog(block);
-                }
-#if defined(FEATURE_EH_WINDOWS_X86)
-                else
-                {
-                    genEHFinallyOrFilterRet(block);
-                }
-#endif // FEATURE_EH_WINDOWS_X86
-                break;
-
-            case BBJ_SWITCH:
-                break;
-
-            case BBJ_ALWAYS:
-            {
-#ifdef DEBUG
-                GenTree* call = block->lastNode();
-                if ((call != nullptr) && call->OperIs(GT_CALL))
-                {
-                    // At this point, BBJ_ALWAYS should never end with a call that doesn't return.
-                    assert(!call->AsCall()->IsNoReturn());
-                }
-#endif // DEBUG
-
-                // If this block jumps to the next one, we might be able to skip emitting the jump
-                if (block->CanRemoveJumpToNext(compiler))
-                {
-#ifdef TARGET_AMD64
-                    if (emitNopBeforeEHRegion)
-                    {
-                        instGen(INS_nop);
-                    }
-#endif // TARGET_AMD64
-
-                    removedJmp = true;
-                    break;
-                }
-#ifdef TARGET_XARCH
-                // Do not remove a jump between hot and cold regions.
-                bool isRemovableJmpCandidate = !compiler->fgInDifferentRegions(block, block->GetTarget());
-
-                inst_JMP(EJ_jmp, block->GetTarget(), isRemovableJmpCandidate);
-#else  // !TARGET_XARCH
-                inst_JMP(EJ_jmp, block->GetTarget());
-#endif // !TARGET_XARCH
-            }
-
-#if FEATURE_LOOP_ALIGN
-                SetLoopAlignBackEdge(block, block->GetTarget());
-#endif // FEATURE_LOOP_ALIGN
-                break;
-
-            case BBJ_COND:
-
-#if FEATURE_LOOP_ALIGN
-                // Either true or false target of BBJ_COND can induce a loop.
-                SetLoopAlignBackEdge(block, block->GetTrueTarget());
-                SetLoopAlignBackEdge(block, block->GetFalseTarget());
-#endif // FEATURE_LOOP_ALIGN
-
-                break;
-
-            default:
-                noway_assert(!"Unexpected bbKind");
-                break;
-        }
-
-#if FEATURE_LOOP_ALIGN
-        if (block->hasAlign())
-        {
-            // If this block has 'align' instruction in the end (identified by BBF_HAS_ALIGN),
-            // then need to add align instruction in the current "block".
-            //
-            // For non-adaptive alignment, add alignment instruction of size depending on the
-            // compJitAlignLoopBoundary.
-            // For adaptive alignment, alignment instruction will always be of 15 bytes for xarch
-            // and 16 bytes for arm64.
-
-            assert(ShouldAlignLoops());
-            assert(!block->isBBCallFinallyPairTail());
-            assert(!block->KindIs(BBJ_CALLFINALLY));
-
-            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS) && !removedJmp));
-        }
-
-        if (!block->IsLast() && block->Next()->isLoopAlign())
-        {
-            if (compiler->opts.compJitHideAlignBehindJmp)
-            {
-                // The current IG is the one that is just before the IG having loop start.
-                // Establish a connection of recent align instruction emitted to the loop
-                // it actually is aligning using 'idaLoopHeadPredIG'.
-                GetEmitter()->emitConnectAlignInstrWithCurIG();
-            }
-        }
-#endif // FEATURE_LOOP_ALIGN
 
 #ifdef DEBUG
         if (compiler->verbose)
@@ -912,12 +701,279 @@ void CodeGen::genCodeForBBlist()
 #endif
 }
 
+//------------------------------------------------------------------------
+// genEmitEndBlock: finish up codegen in a block
+//
+// Arguments:
+//   block - block to finish up
+//
+// Returns:
+//   Updated block to process (if not block->Next()) or nullptr.
+//
+BasicBlock* CodeGen::genEmitEndBlock(BasicBlock* block)
+{
+    BasicBlock* result = nullptr;
+
+#ifdef TARGET_AMD64
+    bool emitNopBeforeEHRegion = false;
+    // On AMD64, we need to generate a NOP after a call that is the last instruction of the block, in several
+    // situations, to support proper exception handling semantics. This is mostly to ensure that when the stack
+    // walker computes an instruction pointer for a frame, that instruction pointer is in the correct EH region.
+    // The document "clr-abi.md" has more details. The situations:
+    // 1. If the call instruction is in a different EH region as the instruction that follows it.
+    // 2. If the call immediately precedes an OS epilog. (Note that what the JIT or VM consider an epilog might
+    //    be slightly different from what the OS considers an epilog, and it is the OS-reported epilog that matters
+    //    here.)
+    // We handle case #1 here, and case #2 in the emitter.
+    if (GetEmitter()->emitIsLastInsCall())
+    {
+        // Ok, the last instruction generated is a call instruction. Do any of the other conditions hold?
+        // Note: we may be generating a few too many NOPs for the case of call preceding an epilog. Technically,
+        // if the next block is a BBJ_RETURN, an epilog will be generated, but there may be some instructions
+        // generated before the OS epilog starts, such as a GS cookie check.
+        if (block->IsLast() || !BasicBlock::sameEHRegion(block, block->Next()))
+        {
+            // We only need the NOP if we're not going to generate any more code as part of the block end.
+
+            switch (block->GetKind())
+            {
+                case BBJ_ALWAYS:
+                    // We might skip generating the jump via a peephole optimization.
+                    // If that happens, make sure a NOP is emitted as the last instruction in the block.
+                    emitNopBeforeEHRegion = true;
+                    break;
+
+                case BBJ_THROW:
+                case BBJ_CALLFINALLY:
+                case BBJ_EHCATCHRET:
+                    // We're going to generate more code below anyway, so no need for the NOP.
+
+                case BBJ_RETURN:
+                case BBJ_EHFINALLYRET:
+                case BBJ_EHFAULTRET:
+                case BBJ_EHFILTERRET:
+                    // These are the "epilog follows" case, handled in the emitter.
+                    break;
+
+                case BBJ_COND:
+                case BBJ_SWITCH:
+                    // These can't have a call as the last instruction!
+
+                default:
+                    noway_assert(!"Unexpected bbKind");
+                    break;
+            }
+        }
+    }
+#endif // TARGET_AMD64
+
+#if FEATURE_LOOP_ALIGN
+    auto SetLoopAlignBackEdge = [=](const BasicBlock* block, const BasicBlock* target) {
+        // This is the last place where we operate on blocks and after this, we operate
+        // on IG. Hence, if we know that the destination of "block" is the first block
+        // of a loop and that loop needs alignment (it has BBF_LOOP_ALIGN), then "block"
+        // might represent the lexical end of the loop. Propagate that information on the
+        // IG through "igLoopBackEdge".
+        //
+        // During emitter, this information will be used to calculate the loop size.
+        // Depending on the loop size, the decision of whether to align a loop or not will be taken.
+        // (Loop size is calculated by walking the instruction groups; see emitter::getLoopSize()).
+        // If `igLoopBackEdge` is set, then mark the next BasicBlock as a label. This will cause
+        // the emitter to create a new IG for the next block. Otherwise, if the next block
+        // did not have a label, additional instructions might be added to the current IG. This
+        // would make the "back edge" IG larger, possibly causing the size of the loop computed
+        // by `getLoopSize()` to be larger than actual, which could push the loop size over the
+        // threshold of loop size that can be aligned.
+
+        if (target->isLoopAlign())
+        {
+            if (GetEmitter()->emitSetLoopBackEdge(target))
+            {
+                if (!block->IsLast())
+                {
+                    JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->Next()->bbNum);
+                    block->Next()->SetFlags(BBF_HAS_LABEL);
+                }
+            }
+        }
+    };
+#endif // FEATURE_LOOP_ALIGN
+
+    /* Do we need to generate a jump or return? */
+
+    bool removedJmp = false;
+    switch (block->GetKind())
+    {
+        case BBJ_RETURN:
+            genExitCode(block);
+            break;
+
+        case BBJ_THROW:
+            // If we have a throw at the end of a function or funclet, we need to emit another instruction
+            // afterwards to help the OS unwinder determine the correct context during unwind.
+            // We insert an unexecuted breakpoint instruction in several situations
+            // following a throw instruction:
+            // 1. If the throw is the last instruction of the function or funclet. This helps
+            //    the OS unwinder determine the correct context during an unwind from the
+            //    thrown exception.
+            // 2. If this is this is the last block of the hot section.
+            // 3. If the subsequent block is a special throw block.
+            // 4. On AMD64, if the next block is in a different EH region.
+            if (block->IsLast() || !BasicBlock::sameEHRegion(block, block->Next()) ||
+                (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->Next())) ||
+                compiler->bbIsFuncletBeg(block->Next()) || block->IsLastHotBlock(compiler))
+            {
+                instGen(INS_BREAKPOINT); // This should never get executed
+            }
+            // Do likewise for blocks that end in DOES_NOT_RETURN calls
+            // that were not caught by the above rules. This ensures that
+            // gc register liveness doesn't change to some random state after call instructions
+            else
+            {
+                GenTree* call = block->lastNode();
+
+                if ((call != nullptr) && call->OperIs(GT_CALL))
+                {
+                    if (call->AsCall()->IsNoReturn())
+                    {
+                        instGen(INS_BREAKPOINT); // This should never get executed
+                    }
+                }
+            }
+
+            break;
+
+        case BBJ_CALLFINALLY:
+            result = genCallFinally(block);
+            break;
+
+        case BBJ_EHCATCHRET:
+            assert(compiler->UsesFunclets());
+            genEHCatchRet(block);
+            FALLTHROUGH;
+
+        case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
+        case BBJ_EHFILTERRET:
+            if (compiler->UsesFunclets())
+            {
+                genReserveFuncletEpilog(block);
+            }
+#if defined(FEATURE_EH_WINDOWS_X86)
+            else
+            {
+                genEHFinallyOrFilterRet(block);
+            }
+#endif // FEATURE_EH_WINDOWS_X86
+            break;
+
+        case BBJ_SWITCH:
+            break;
+
+        case BBJ_ALWAYS:
+        {
+#ifdef DEBUG
+            GenTree* call = block->lastNode();
+            if ((call != nullptr) && call->OperIs(GT_CALL))
+            {
+                // At this point, BBJ_ALWAYS should never end with a call that doesn't return.
+                assert(!call->AsCall()->IsNoReturn());
+            }
+#endif // DEBUG
+
+            // If this block jumps to the next one, we might be able to skip emitting the jump
+            if (block->CanRemoveJumpToNext(compiler))
+            {
+#ifdef TARGET_AMD64
+                if (emitNopBeforeEHRegion)
+                {
+                    instGen(INS_nop);
+                }
+#endif // TARGET_AMD64
+
+                removedJmp = true;
+                break;
+            }
+#ifdef TARGET_XARCH
+            // Do not remove a jump between hot and cold regions.
+            bool isRemovableJmpCandidate = !compiler->fgInDifferentRegions(block, block->GetTarget());
+
+            inst_JMP(EJ_jmp, block->GetTarget(), isRemovableJmpCandidate);
+#else  // !TARGET_XARCH
+            inst_JMP(EJ_jmp, block->GetTarget());
+#endif // !TARGET_XARCH
+        }
+
+#if FEATURE_LOOP_ALIGN
+            SetLoopAlignBackEdge(block, block->GetTarget());
+#endif // FEATURE_LOOP_ALIGN
+            break;
+
+        case BBJ_COND:
+
+#if FEATURE_LOOP_ALIGN
+            // Either true or false target of BBJ_COND can induce a loop.
+            SetLoopAlignBackEdge(block, block->GetTrueTarget());
+            SetLoopAlignBackEdge(block, block->GetFalseTarget());
+#endif // FEATURE_LOOP_ALIGN
+
+            break;
+
+        default:
+            noway_assert(!"Unexpected bbKind");
+            break;
+    }
+
+#if FEATURE_LOOP_ALIGN
+    if (block->hasAlign())
+    {
+        // If this block has 'align' instruction in the end (identified by BBF_HAS_ALIGN),
+        // then need to add align instruction in the current "block".
+        //
+        // For non-adaptive alignment, add alignment instruction of size depending on the
+        // compJitAlignLoopBoundary.
+        // For adaptive alignment, alignment instruction will always be of 15 bytes for xarch
+        // and 16 bytes for arm64.
+
+        assert(ShouldAlignLoops());
+        assert(!block->isBBCallFinallyPairTail());
+        assert(!block->KindIs(BBJ_CALLFINALLY));
+
+        GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS) && !removedJmp));
+    }
+
+    if (!block->IsLast() && block->Next()->isLoopAlign())
+    {
+        if (compiler->opts.compJitHideAlignBehindJmp)
+        {
+            // The current IG is the one that is just before the IG having loop start.
+            // Establish a connection of recent align instruction emitted to the loop
+            // it actually is aligning using 'idaLoopHeadPredIG'.
+            GetEmitter()->emitConnectAlignInstrWithCurIG();
+        }
+    }
+#endif // FEATURE_LOOP_ALIGN
+
+    return result;
+}
+
 // TODO-WASM-Factoring: this ifdef factoring is temporary. The end factoring should look like this:
 // 1. Everything shared by all codegen backends (incl. WASM) is moved to codegencommon.cpp.
 // 2. Everything else stays here.
 // 3. codegenlinear.cpp gets renamed to codegennative.cpp.
 //
 #ifndef TARGET_WASM
+
+//------------------------------------------------------------------------
+// genEmitStartBlock: prepare for codegen in a block
+//
+// Arguments:
+//   block - block to prepare for
+//
+void CodeGen::genEmitStartBlock(BasicBlock* block)
+{
+}
+
 //------------------------------------------------------------------------
 // genRecordAsyncResume:
 //   Record information about an async resume point in the async resume info tabl.e

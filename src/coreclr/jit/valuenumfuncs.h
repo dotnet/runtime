@@ -151,6 +151,10 @@ ValueNumFuncDef(ReadyToRunGenericHandle, 2, false, true, false)
 
 ValueNumFuncDef(GetStaticAddrTLS, 1, false, true, false)
 
+ValueNumFuncDef(VirtualFuncPtr, 3, false, true, false)
+ValueNumFuncDef(GVMLookupForSlot, 2, false, true, false)
+ValueNumFuncDef(ReadyToRunVirtualFuncPtr, 2, false, true, false)
+
 ValueNumFuncDef(JitNew, 2, false, true, false)
 ValueNumFuncDef(JitNewArr, 3, false, true, false)
 ValueNumFuncDef(JitNewLclArr, 3, false, true, false)

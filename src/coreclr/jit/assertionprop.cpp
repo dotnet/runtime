@@ -4461,6 +4461,36 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                 return optAssertionProp_Update(newTree, tree, stmt);
             }
         }
+
+        // If op1VN is actually ADD(X, CNS), we can try peeling the constant offset and adjusting op2Cns accordingly.
+        // It's a bit more complicated for unsigned comparisons, so only do it for signed ones for now.
+        //
+        if (!tree->IsUnsigned())
+        {
+            ValueNum peeledOp1VN  = op1VN;
+            int      peeledOffset = 0;
+            vnStore->PeelOffsetsI32(&peeledOp1VN, &peeledOffset);
+
+            if (peeledOffset != 0)
+            {
+                Range peeledOffsetRng = Range(Limit(Limit::keConstant, peeledOffset));
+                Range peeledOp1Rng    = Range(Limit(Limit::keUnknown));
+                if (RangeCheck::TryGetRangeFromAssertions(this, peeledOp1VN, assertions, &peeledOp1Rng))
+                {
+                    // Subtract handles overflow internally.
+                    rng2 = RangeOps::Subtract(rng2, peeledOffsetRng);
+
+                    RangeOps::RelationKind kind =
+                        RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), peeledOp1Rng, rng2);
+                    if ((kind != RangeOps::RelationKind::Unknown))
+                    {
+                        newTree = kind == RangeOps::RelationKind::AlwaysTrue ? gtNewTrue() : gtNewFalse();
+                        newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+                        return optAssertionProp_Update(newTree, tree, stmt);
+                    }
+                }
+            }
+        }
     }
 
     // Else check if we have an equality check involving a local or an indir

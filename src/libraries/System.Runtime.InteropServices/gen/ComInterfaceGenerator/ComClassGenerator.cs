@@ -55,7 +55,9 @@ namespace Microsoft.Interop
                 writer.WriteLine(classInfoType.ToFullString());
                 writer.WriteLine();
                 writer.WriteLine(attribute);
-                context.AddSource(className, writer.ToString());
+                // Replace < and > with { and } to make valid hint names for generic types
+                string hintName = className.Replace('<', '{').Replace('>', '}');
+                context.AddSource(hintName, writer.ToString());
             });
         }
 
