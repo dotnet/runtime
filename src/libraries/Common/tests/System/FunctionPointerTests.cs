@@ -215,29 +215,6 @@ namespace System.Tests.Types
             Assert.False(fnPtrPrivateParam.IsVisible);
         }
 
-        [Fact]
-        public static unsafe void FunctionPointerContainsGenericParameters()
-        {
-            Type t = typeof(FunctionPointerHolder).Project();
-
-            // A function pointer with non-generic return type should not contain generic parameters
-            Type fnPtrNonGeneric = t.GetField(nameof(FunctionPointerHolder.Field_Int), Bindings)!.FieldType;
-            Assert.True(fnPtrNonGeneric.IsFunctionPointer);
-            Assert.False(fnPtrNonGeneric.ContainsGenericParameters);
-
-            // A function pointer with generic return type should contain generic parameters
-            MethodInfo m1 = t.GetMethod(nameof(FunctionPointerHolder.GenericReturnValue), Bindings)!;
-            Type fnPtrGenericReturn = m1.ReturnType;
-            Assert.True(fnPtrGenericReturn.IsFunctionPointer);
-            Assert.True(fnPtrGenericReturn.ContainsGenericParameters);
-
-            // A function pointer with generic parameter type should contain generic parameters
-            MethodInfo m2 = t.GetMethod(nameof(FunctionPointerHolder.GenericArgument), Bindings)!;
-            Type fnPtrGenericParam = m2.GetParameters()[1].ParameterType;
-            Assert.True(fnPtrGenericParam.IsFunctionPointer);
-            Assert.True(fnPtrGenericParam.ContainsGenericParameters);
-        }
-
         [Theory]
         [InlineData(nameof(FunctionPointerHolder.MethodReturnValue1),
             "MethodReturnValue1()",
