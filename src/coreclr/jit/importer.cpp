@@ -3382,7 +3382,7 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
         // TODO-CQ: Enable the optimization for shared generics and R2R scenarios.
         // The current machinery requires a ResolvedToken (basically, 'newobj underlyingType'
         // that we don't have).
-        return true;
+        return false;
     }
 
     GenTree* nullableObj = impPopStack().val;
