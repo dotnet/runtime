@@ -78,7 +78,7 @@ namespace ILCompiler.ObjectWriter
         /// For associated sections, such as exception or debugging information, the <paramref name="symbolName"/>
         /// will be different.
         /// </remarks>
-        private protected SectionWriter GetOrCreateSection(ObjectNodeSection section, string comdatName = null, string symbolName = null)
+        internal virtual SectionWriter GetOrCreateSection(ObjectNodeSection section, string comdatName = null, string symbolName = null)
         {
             int sectionIndex;
             SectionData sectionData;
@@ -304,7 +304,7 @@ namespace ILCompiler.ObjectWriter
             return undefinedSymbolSet;
         }
 
-        public void EmitObject(Stream outputFileStream, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
+        public virtual void EmitObject(Stream outputFileStream, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
         {
             // Pre-create some of the sections
             GetOrCreateSection(ObjectNodeSection.TextSection);

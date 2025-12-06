@@ -317,6 +317,36 @@ namespace Internal.JitInterface
             return null;
         }
 
+        private CorJitResult CompileWasmStub(out IntPtr exception, ref CORINFO_METHOD_INFO methodInfo, out uint codeSize)
+        {
+            byte[] stub =
+            [
+                0x00, // local variable count
+                0x41, // i32.const
+                0x0,  // uleb128 0
+                0x0F, // return
+                0x0B,  // end
+            ];
+            AllocMemArgs args = new AllocMemArgs
+            {
+                hotCodeSize = (uint)stub.Length,
+                coldCodeSize = (uint)0,
+                roDataSize = (uint)0,
+                xcptnsCount = _ehClauses != null ? (uint)_ehClauses.Length : 0,
+                flag = CorJitAllocMemFlag.CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN,
+            };
+            allocMem(ref args);
+
+            _code = stub;
+
+            codeSize = (uint)stub.Length;
+            exception = IntPtr.Zero;
+
+            _codeRelocs = new();
+
+            return CorJitResult.CORJIT_OK;
+        }
+
         private CompilationResult CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL)
         {
             // methodIL must not be null
@@ -339,9 +369,17 @@ namespace Internal.JitInterface
             IntPtr exception;
             IntPtr nativeEntry;
             uint codeSize;
-            var result = JitCompileMethod(out exception,
+
+            TargetArchitecture architecture = _compilation.TypeSystemContext.Target.Architecture;
+            var result = architecture switch
+            {
+                // We currently do not have WASM codegen support, but for testing, we will return a stub
+                TargetArchitecture.Wasm32 => CompileWasmStub(out exception, ref methodInfo, out codeSize),
+                _ => JitCompileMethod(out exception,
                     _jit, (IntPtr)(&_this), _unmanagedCallbacks,
-                    ref methodInfo, (uint)CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
+                    ref methodInfo, (uint)CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS, out nativeEntry, out codeSize)
+            };
+
             if (exception != IntPtr.Zero)
             {
                 if (_lastException != null)
