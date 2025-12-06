@@ -466,6 +466,7 @@ static void InterpBreakpoint()
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 #define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
+#define NULL_CHECK_PTR(o) do { if ((TADDR)(o) < NULL_AREA_SIZE) { COMPlusThrow(kNullReferenceException); } } while (0)
 
 
 static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int32_t dimsOffset, int numArgs)
@@ -2121,7 +2122,7 @@ MAIN_LOOP:
 #define LDIND(dtype, ftype)                                 \
     do {                                                    \
         char *src = LOCAL_VAR(ip[2], char*);                \
-        NULL_CHECK(src);                                    \
+        NULL_CHECK_PTR(src);                                \
         LOCAL_VAR(ip[1], dtype) = *(ftype*)(src + ip[3]);   \
         ip += 4;                                            \
     } while (0)
@@ -2154,7 +2155,7 @@ MAIN_LOOP:
                 case INTOP_LDIND_VT:
                 {
                     char *src = LOCAL_VAR(ip[2], char*);
-                    NULL_CHECK(src);
+                    NULL_CHECK_PTR(src);
                     memcpy(LOCAL_VAR_ADDR(ip[1], void), (char*)src + ip[3], ip[4]);
                     ip += 5;
                     break;
@@ -2164,7 +2165,7 @@ MAIN_LOOP:
     do                                                              \
     {                                                               \
         char *dst = LOCAL_VAR(ip[1], char*);                        \
-        NULL_CHECK(dst);                                            \
+        NULL_CHECK_PTR(dst);                                        \
         *(ftype*)(dst + ip[3]) = (ftype)(LOCAL_VAR(ip[2], dtype));  \
         ip += 4;                                                    \
     } while (0)
@@ -2198,7 +2199,7 @@ MAIN_LOOP:
                 {
                     char *dst = LOCAL_VAR(ip[1], char*);
                     OBJECTREF storeObj = LOCAL_VAR(ip[2], OBJECTREF);
-                    NULL_CHECK(dst);
+                    NULL_CHECK_PTR(dst);
                     SetObjectReferenceUnchecked((OBJECTREF*)(dst + ip[3]), storeObj);
                     ip += 4;
                     break;
@@ -2206,7 +2207,7 @@ MAIN_LOOP:
                 case INTOP_STIND_VT_NOREF:
                 {
                     char *dest = LOCAL_VAR(ip[1], char*);
-                    NULL_CHECK(dest);
+                    NULL_CHECK_PTR(dest);
                     memcpyNoGCRefs(dest + ip[3], LOCAL_VAR_ADDR(ip[2], void), ip[4]);
                     ip += 5;
                     break;
@@ -2215,7 +2216,7 @@ MAIN_LOOP:
                 {
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[4]];
                     char *dest = LOCAL_VAR(ip[1], char*);
-                    NULL_CHECK(dest);
+                    NULL_CHECK_PTR(dest);
                     CopyValueClassUnchecked(dest + ip[3], LOCAL_VAR_ADDR(ip[2], void), pMT);
                     ip += 5;
                     break;
@@ -2223,7 +2224,7 @@ MAIN_LOOP:
                 case INTOP_LDFLDA:
                 {
                     char *src = LOCAL_VAR(ip[2], char*);
-                    NULL_CHECK(src);
+                    NULL_CHECK_PTR(src);
                     LOCAL_VAR(ip[1], char*) = src + ip[3];
                     ip += 4;
                     break;
@@ -3022,7 +3023,7 @@ CALL_INTERP_METHOD:
                 case INTOP_ZEROBLK_IMM:
                 {
                     void* dst = LOCAL_VAR(ip[1], void*);
-                    NULL_CHECK(dst);
+                    NULL_CHECK_PTR(dst);
                     memset(dst, 0, ip[2]);
                     ip += 3;
                     break;
@@ -3140,7 +3141,7 @@ CALL_INTERP_METHOD:
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
                     void *dest = LOCAL_VAR_ADDR(ip[1], void);
                     void *src = LOCAL_VAR(ip[2], void*);
-                    NULL_CHECK(dest);
+                    NULL_CHECK_PTR(dest);
                     CopyValueClassUnchecked(dest, src, pMT);
 
                     ip += 4;
@@ -3185,7 +3186,7 @@ CALL_INTERP_METHOD:
                     MethodTable *pMT = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
                     void *dest = LOCAL_VAR_ADDR(ip[1], void);
                     void *src = LOCAL_VAR(ip[3], void*);
-                    NULL_CHECK(dest);
+                    NULL_CHECK_PTR(dest);
                     CopyValueClassUnchecked(dest, src, pMT->IsNullable() ? pMT->GetInstantiation()[0].AsMethodTable() : pMT);
 
                     ip += 5;
@@ -3547,7 +3548,7 @@ do {                                                                           \
                 case INTOP_COMPARE_EXCHANGE_U1:
                 {
                     uint8_t* dst = LOCAL_VAR(ip[2], uint8_t*);
-                    NULL_CHECK(dst);
+                    NULL_CHECK_PTR(dst);
                     uint8_t newValue = LOCAL_VAR(ip[3], uint8_t);
                     uint8_t comparand = LOCAL_VAR(ip[4], uint8_t);
                     // Since our Interlocked API doesn't support 8-bit exchange, we implement this via a loop and CompareExchange
@@ -3616,7 +3617,7 @@ do {                                                                           \
 do                                                                      \
 {                                                                       \
     type* dst = (type*)LOCAL_VAR(ip[2], void*);                         \
-    NULL_CHECK(dst);                                                    \
+    NULL_CHECK_PTR(dst);                                                    \
     type newValue = LOCAL_VAR(ip[3], type);                             \
     type comparand = LOCAL_VAR(ip[4], type);                            \
     type old = InterlockedCompareExchangeT(dst, newValue, comparand);   \
@@ -3640,7 +3641,7 @@ do                                                                      \
 do                                                                      \
 {                                                                       \
     type* dst = LOCAL_VAR(ip[2], type*);                                \
-    NULL_CHECK(dst);                                                    \
+    NULL_CHECK_PTR(dst);                                                    \
     type newValue = LOCAL_VAR(ip[3], type);                             \
     type old = InterlockedExchangeT(dst, newValue);                     \
     LOCAL_VAR(ip[1], type) = old;                                       \
@@ -3650,7 +3651,7 @@ do                                                                      \
                 case INTOP_EXCHANGE_U1:
                 {
                     uint8_t* dst = LOCAL_VAR(ip[2], uint8_t*);
-                    NULL_CHECK(dst);
+                    NULL_CHECK_PTR(dst);
                     uint8_t newValue = LOCAL_VAR(ip[3], uint8_t);
                     // Since our Interlocked API doesn't support 8-bit exchange, we implement this via a loop and CompareExchange
                     // This is not optimal, but 8-bit exchange is not a common operation.
@@ -3674,7 +3675,7 @@ do                                                                      \
                 case INTOP_EXCHANGE_U2:
                 {
                     uint16_t* dst = LOCAL_VAR(ip[2], uint16_t*);
-                    NULL_CHECK(dst);
+                    NULL_CHECK_PTR(dst);
                     uint16_t newValue = LOCAL_VAR(ip[3], uint16_t);
                     // Since our Interlocked API doesn't support 16-bit exchange, we implement this via a loop and CompareExchange
                     // This is not optimal, but 16-bit exchange is not a common operation.
@@ -3716,7 +3717,7 @@ do                                                                      \
                 case INTOP_EXCHANGEADD_I4:
                 {
                     LONG* dst = LOCAL_VAR(ip[2], LONG*);
-                    NULL_CHECK(dst);
+                    NULL_CHECK_PTR(dst);
                     LONG newValue = LOCAL_VAR(ip[3], LONG);
                     LONG old = InterlockedExchangeAdd(dst, newValue);
                     LOCAL_VAR(ip[1], LONG) = old;
@@ -3727,7 +3728,7 @@ do                                                                      \
                 case INTOP_EXCHANGEADD_I8:
                 {
                     LONG64* dst = LOCAL_VAR(ip[2], LONG64*);
-                    NULL_CHECK(dst);
+                    NULL_CHECK_PTR(dst);
                     LONG64 newValue = LOCAL_VAR(ip[3], LONG64);
                     LONG64 old = InterlockedExchangeAdd64(dst, newValue);
                     LOCAL_VAR(ip[1], LONG64) = old;
