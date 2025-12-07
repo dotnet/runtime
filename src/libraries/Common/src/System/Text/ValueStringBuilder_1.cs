@@ -94,6 +94,7 @@ namespace System.Text
         }
 
         // ToString() clears the builder, so we need a side-effect free debugger display.
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private readonly string DebuggerDisplay => GetString();
 
         private readonly string GetString()

@@ -85,6 +85,7 @@ namespace System.Text
         }
 
         // ToString() clears the builder, so we need a side-effect free debugger display.
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay => AsSpan().ToString();
 
         public override string ToString()
