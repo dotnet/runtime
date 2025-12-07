@@ -79,6 +79,15 @@ internal static partial class Interop
         }
 
         /// <summary>
+        ///     Peel off the next "count" bytes in blob and copy them into the destination.
+        /// </summary>
+        internal static void Consume(ReadOnlySpan<byte> blob, ref int offset, int count, Span<byte> destination)
+        {
+            blob.Slice(offset, count).CopyTo(destination);
+            offset += count;
+        }
+
+        /// <summary>
         ///     Magic numbers identifying blob types
         /// </summary>
         internal enum KeyBlobMagicNumber : int
@@ -293,6 +302,7 @@ internal static partial class Interop
             KDF_CONTEXT = 14,
             KDF_SALT = 15,
             KDF_ITERATION_COUNT = 16,
+            KDF_HKDF_INFO = 20,
             NCRYPTBUFFER_ECC_CURVE_NAME = 60,
         }
 

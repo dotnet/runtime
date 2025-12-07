@@ -15,6 +15,7 @@ namespace ArrayWithThread
         public static AutoResetEvent myResetEvent1 = new AutoResetEvent(false);
         public static ManualResetEvent myResetEvent2 = new ManualResetEvent(false);
         [Fact]
+        [SkipOnCoreClr("", RuntimeTestModes.AnyGCStress)]
         public static int TestEntryPoint()
         {
             int retVal = 100;

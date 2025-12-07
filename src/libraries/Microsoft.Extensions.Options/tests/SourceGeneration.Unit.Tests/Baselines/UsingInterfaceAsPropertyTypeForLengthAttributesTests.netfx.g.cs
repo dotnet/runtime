@@ -17,8 +17,7 @@
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
             #if NET10_0_OR_GREATER
-            string displayName = string.IsNullOrEmpty(name) ? "MyOptions.Validate" : $"{name}.Validate";
-            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, displayName, null, null);
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "MyOptions", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             #endif
@@ -26,7 +25,7 @@
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "P2";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.P2" : $"{name}.P2";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P2" : $"{name}.P2";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P2, context, validationResults, validationAttributes))
             {
@@ -34,7 +33,7 @@
             }
 
             context.MemberName = "P3";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.P3" : $"{name}.P3";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P3" : $"{name}.P3";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
@@ -44,7 +43,7 @@
             }
 
             context.MemberName = "P5";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.P5" : $"{name}.P5";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P5" : $"{name}.P5";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
@@ -54,7 +53,7 @@
             }
 
             context.MemberName = "P6";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.P6" : $"{name}.P6";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P6" : $"{name}.P6";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);

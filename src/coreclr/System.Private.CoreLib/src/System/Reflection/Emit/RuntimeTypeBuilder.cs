@@ -519,12 +519,6 @@ namespace System.Reflection.Emit
                 }
             }
 
-            // Verify that the layout mask is valid.
-            if (((attr & TypeAttributes.LayoutMask) != TypeAttributes.AutoLayout) && ((attr & TypeAttributes.LayoutMask) != TypeAttributes.SequentialLayout) && ((attr & TypeAttributes.LayoutMask) != TypeAttributes.ExplicitLayout))
-            {
-                throw new ArgumentException(SR.Argument_BadTypeAttrInvalidLayout);
-            }
-
             // Check if the user attempted to set any reserved bits.
             if ((attr & TypeAttributes.ReservedMask) != 0)
             {
@@ -1259,13 +1253,13 @@ namespace System.Reflection.Emit
 
                 if (inst is TypeBuilderInstantiation)
                     con = GetConstructor(inst, genericTypeDefinition.GetConstructor(
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null)!);
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, [], null)!);
                 else
                     con = inst.GetConstructor(
-                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, [], null);
             }
 
-            con ??= m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
+            con ??= m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, [], null);
 
             if (con == null)
                 throw new NotSupportedException(SR.NotSupported_NoParentDefaultConstructor);

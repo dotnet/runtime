@@ -30,7 +30,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             IEnumerable<MetadataReference>? additionalReferences = null,
             IEnumerable<SyntaxTree>? additionalSources = null,
             IEnumerable<AdditionalText>? additionalFiles = null)
-            => CreateCompilation(CSharpSyntaxTree.ParseText(src), consoleApplication, globalAnalyzerOptions, additionalReferences, additionalSources, additionalFiles);
+            => CreateCompilation(CSharpSyntaxTree.ParseText(src, new CSharpParseOptions(LanguageVersion.Preview)), consoleApplication, globalAnalyzerOptions, additionalReferences, additionalSources, additionalFiles);
 
         public static (CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics) CreateCompilation(
             SyntaxTree src,
@@ -45,13 +45,22 @@ namespace ILLink.RoslynAnalyzer.Tests
             var sources = new List<SyntaxTree>() { src };
             sources.AddRange(additionalSources ?? Array.Empty<SyntaxTree>());
             TestCaseUtils.GetDirectoryPaths(out string rootSourceDirectory);
-            var commonSourcePath = Path.Combine(Path.GetDirectoryName(rootSourceDirectory)!,
-                "Mono.Linker.Tests.Cases.Expectations",
-                "Support",
-                "DynamicallyAccessedMembersAttribute.cs");
-            sources.Add(CSharpSyntaxTree.ParseText(File.ReadAllText(commonSourcePath), path: commonSourcePath));
+            var testDir = Path.GetDirectoryName(rootSourceDirectory)!;
+            var srcDir = Path.Combine(Path.GetDirectoryName(testDir)!, "src");
+            var sharedDir = Path.Combine(srcDir, "ILLink.Shared");
+            var commonSourcePaths = new List<string>()
+            {
+                Path.Combine(testDir,
+                    "Mono.Linker.Tests.Cases.Expectations",
+                    "Support",
+                    "DynamicallyAccessedMembersAttribute.cs"),
+                Path.Combine(sharedDir, "RequiresUnreferencedCodeAttribute.cs"),
+                Path.Combine(sharedDir, "RequiresDynamicCodeAttribute.cs"),
+            };
+
+            sources.AddRange(commonSourcePaths.Select(p => CSharpSyntaxTree.ParseText(File.ReadAllText(p), new CSharpParseOptions(languageVersion: LanguageVersion.Preview), path: p)));
             var comp = CSharpCompilation.Create(
-                assemblyName: Guid.NewGuid().ToString("N"),
+                assemblyName: "test",
                 syntaxTrees: sources,
                 references: SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences().Add(mdRef).AddRange(additionalReferences),
                 new CSharpCompilationOptions(consoleApplication ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary,

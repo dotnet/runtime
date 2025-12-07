@@ -424,13 +424,25 @@ namespace
             return false;
         }
 
-        // Handle generic param count
-        DWORD declGenericCount = 0;
-        DWORD methodGenericCount = 0;
+        // Handle generic signature
         if (callConvDecl & IMAGE_CEE_CS_CALLCONV_GENERIC)
+        {
+            if (!(callConvMethod & IMAGE_CEE_CS_CALLCONV_GENERIC))
+                return false;
+
+            DWORD declGenericCount = 0;
+            DWORD methodGenericCount = 0;
             IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &declGenericCount));
-        if (callConvMethod & IMAGE_CEE_CS_CALLCONV_GENERIC)
             IfFailThrow(CorSigUncompressData_EndPtr(pSig2, pEndSig2, &methodGenericCount));
+
+            if (declGenericCount != methodGenericCount)
+                return false;
+        }
+        else if (callConvMethod & IMAGE_CEE_CS_CALLCONV_GENERIC)
+        {
+            // Method is generic but declaration is not
+            return false;
+        }
 
         DWORD declArgCount;
         DWORD methodArgCount;
@@ -941,7 +953,7 @@ namespace
                 {
                     // Use the method declaration Instantiation to find the instantiated MethodDesc target.
                     Instantiation methodInst = cxt.Declaration->GetMethodInstantiation();
-                    MethodDesc* instantiatedTarget = MethodDesc::FindOrCreateAssociatedMethodDesc(cxt.TargetMethod, cxt.TargetType.GetMethodTable(), FALSE, methodInst, TRUE);
+                    MethodDesc* instantiatedTarget = MethodDesc::FindOrCreateAssociatedMethodDesc(cxt.TargetMethod, cxt.TargetType.GetMethodTable(), FALSE, methodInst, FALSE);
 
                     // Create a MethodSpec
                     target = pDispatchCode->GetToken(instantiatedTarget, targetTypeSigToken, methodSpecSigToken);
@@ -1019,7 +1031,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     _ASSERTE(methodILDecoder != NULL);
     _ASSERTE(*resolver == NULL && *methodILDecoder == NULL);
     _ASSERTE(IsIL());
-    _ASSERTE(GetRVA() == 0);
+    _ASSERTE(!HasILHeader());
 
     // The UnsafeAccessorAttribute is applied to methods with an
     // RVA of 0 (for example, C#'s extern keyword).

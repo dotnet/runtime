@@ -245,7 +245,6 @@ namespace System.Runtime.InteropServices.Marshalling
 #endif
         }
 
-#pragma warning disable CS0618 // We support the obsolete CurrencyWrapper type
         /// <summary>
         /// Create an <see cref="ComVariant"/> instance from the specified value.
         /// </summary>
@@ -367,7 +366,6 @@ namespace System.Runtime.InteropServices.Marshalling
             // We do not map VT_BYREF automatically, nor do we map any of the array types.
             return variant;
         }
-#pragma warning restore CS0618
 
         /// <summary>
         /// Create a <see cref="ComVariant"/> with the given type and provided value.
@@ -428,13 +426,12 @@ namespace System.Runtime.InteropServices.Marshalling
 
         private readonly void ThrowIfNotVarType(params VarEnum[] requiredType)
         {
-            if (Array.IndexOf(requiredType, VarType) == -1)
+            if (Array.IndexOf(requiredType, VarType) < 0)
             {
                 throw new InvalidOperationException(SR.Format(SR.ComVariant_TypeIsNotSupportedType, VarType, string.Join(", ", requiredType)));
             }
         }
 
-#pragma warning disable CS0618 // Type or member is obsolete
         /// <summary>
         /// Create a managed value based on the value in the <see cref="ComVariant"/> instance.
         /// </summary>
@@ -552,7 +549,6 @@ namespace System.Runtime.InteropServices.Marshalling
             }
             throw new ArgumentException(SR.UnsupportedType, nameof(T));
         }
-#pragma warning restore CS0618 // Type or member is obsolete
 
         /// <summary>
         /// The type of the data stored in this <see cref="ComVariant"/>.

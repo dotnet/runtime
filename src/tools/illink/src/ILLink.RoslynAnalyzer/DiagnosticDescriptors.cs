@@ -52,8 +52,8 @@ namespace ILLink.RoslynAnalyzer
             }
 
             return new DiagnosticDescriptor(diagnosticId.AsString(),
-                lrsTitle!,
-                lrsMessage!,
+                lrsTitle,
+                lrsMessage,
                 diagnosticCategory ?? diagnosticId.GetDiagnosticCategory(),
                 diagnosticSeverity,
                 isEnabledByDefault,

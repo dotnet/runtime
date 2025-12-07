@@ -103,7 +103,6 @@ HRESULT EEConfig::Init()
     dwSpinLimitProcFactor = 0x4E20;
     dwSpinLimitConstant = 0x0;
     dwSpinRetryCount = 0xA;
-    dwMonitorSpinCount = 0;
 
     dwJitHostMaxSlabCache = 0;
 
@@ -236,6 +235,8 @@ HRESULT EEConfig::Init()
 #if defined(FEATURE_GDBJIT_FRAME)
     fGDBJitEmitDebugFrame = false;
 #endif
+
+    runtimeAsync = false;
 
     return S_OK;
 }
@@ -452,8 +453,45 @@ HRESULT EEConfig::sync()
 
     pReadyToRunExcludeList = NULL;
 
+#ifdef FEATURE_INTERPRETER
+#ifdef FEATURE_JIT
+    LPWSTR interpreterConfig;
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &interpreterConfig));
+    if (interpreterConfig == NULL)
+    {
+        if ((CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) != 0))
+        {
+            enableInterpreter = true;
+        }
+    }
+    else
+    {
+        enableInterpreter = true;
+    }
+#else
+    enableInterpreter = true;
+#endif // FEATURE_JIT
+#endif // FEATURE_INTERPRETER
+
+    enableHWIntrinsic = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic) != 0);
+#ifdef FEATURE_INTERPRETER
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3)
+    {
+        // InterpMode 3 disables all hw intrinsics
+        enableHWIntrinsic = false;
+    }
+#endif // FEATURE_INTERPRETER
+
 #if defined(FEATURE_READYTORUN)
     fReadyToRun = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRun);
+#if defined(FEATURE_INTERPRETER)
+    if (fReadyToRun && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) >= 2)
+    {
+        // ReadyToRun and Interpreter modes 2 and 3 are mutually exclusive.
+        // If both are set, Interpreter wins.
+        fReadyToRun = false;
+    }
+#endif // defined(FEATURE_INTERPRETER)
 
     if (fReadyToRun)
     {
@@ -483,7 +521,6 @@ HRESULT EEConfig::sync()
     dwSpinLimitProcFactor = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_SpinLimitProcFactor);
     dwSpinLimitConstant = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_SpinLimitConstant);
     dwSpinRetryCount = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_SpinRetryCount);
-    dwMonitorSpinCount = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Monitor_SpinCount);
 
     dwJitHostMaxSlabCache = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitHostMaxSlabCache);
 
@@ -633,6 +670,25 @@ HRESULT EEConfig::sync()
 
 #if defined(FEATURE_TIERED_COMPILATION)
     fTieredCompilation = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredCompilation"), CLRConfig::EXTERNAL_TieredCompilation);
+
+#if defined(FEATURE_INTERPRETER)
+    if (fTieredCompilation)
+    {
+        // Disable tiered compilation for interpreter testing. Tiered compilation and interpreter
+        // do not work well together currently.
+        LPWSTR pwzInterpreterMaybe;
+        IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &pwzInterpreterMaybe));
+        if (pwzInterpreterMaybe && pwzInterpreterMaybe[0] != 0)
+        {
+            fTieredCompilation = false;
+        }
+        else if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) != 0)
+        {
+            fTieredCompilation = false;
+        }
+    }
+#endif
+
     if (fTieredCompilation)
     {
         fTieredCompilation_QuickJit =
@@ -762,6 +818,8 @@ HRESULT EEConfig::sync()
 #if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
     fUseCachedInterfaceDispatch = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseCachedInterfaceDispatch) != 0;
 #endif // defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+
+    runtimeAsync = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_RuntimeAsync) != 0;
 
     return hr;
 }

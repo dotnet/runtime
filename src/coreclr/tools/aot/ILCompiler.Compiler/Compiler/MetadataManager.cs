@@ -396,6 +396,13 @@ namespace ILCompiler
             if (method.IsStaticConstructor)
                 return false;
 
+            // Non-task returning async methods have special calling convention
+            if (method.IsAsync && !method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask())
+                return false;
+
+            // And so do async variants but we shouldn't even see them here
+            Debug.Assert(!method.IsAsyncVariant());
+
             if (method.IsConstructor)
             {
                 // Delegate construction is only allowed through specific IL sequences
@@ -565,7 +572,7 @@ namespace ILCompiler
             // and property setters)
         }
 
-        public virtual void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public virtual void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type, bool allocated)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the presence of
             // an MethodTable.
@@ -890,7 +897,7 @@ namespace ILCompiler
             // In the metadata, we only represent the generic definition
             MethodDesc methodToGenerateMetadataFor = method.GetTypicalMethodDefinition();
 
-            ConstantStringValue name = (ConstantStringValue)methodToGenerateMetadataFor.Name;
+            ConstantStringValue name = (ConstantStringValue)methodToGenerateMetadataFor.GetName();
             MetadataRecord signature = transform.HandleMethodSignature(methodToGenerateMetadataFor.Signature);
             MetadataRecord owningType = transform.HandleType(methodToGenerateMetadataFor.OwningType);
 
@@ -1239,6 +1246,10 @@ namespace ILCompiler
         /// </summary>
         protected abstract MetadataCategory GetMetadataCategory(TypeDesc type);
         protected abstract MetadataCategory GetMetadataCategory(FieldDesc field);
+
+        public virtual void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, TypeDesc accessedType)
+        {
+        }
 
         public virtual void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, MethodDesc calledMethod)
         {

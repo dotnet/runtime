@@ -97,7 +97,7 @@ namespace System.Linq
                     current += increment;
                     pos = ref Unsafe.Add(ref pos, Vector<T>.Count);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref pos, ref oneVectorFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref pos, ref oneVectorFromEnd));
 
                 value = current[0];
             }

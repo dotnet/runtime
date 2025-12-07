@@ -28,6 +28,9 @@ extern "C"
     // the containing algorithm could handle cases when busy-waiting time is too high.
     void minipal_microdelay(uint32_t usecs, uint32_t* usecsSinceYield);
 
+    // Return system time in Windows FILETIME precision (100ns since 01 January 1601).
+    uint64_t minipal_get_system_time(void);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

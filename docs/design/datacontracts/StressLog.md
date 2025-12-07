@@ -53,6 +53,7 @@ Data descriptors used:
 | StressLog | TickFrequency | Number of ticks per second for stresslog timestamps |
 | StressLog | StartTimestamp | Timestamp when the stress log was started |
 | StressLog | ModuleOffset | Offset of the module in the stress log |
+| StressLog | Modules | Offset of the stress log's module table (if StressLogHasModuleTable is `1`) |
 | StressLog | Logs | Pointer to the thread-specific logs |
 | StressLogModuleDesc | BaseAddress | Base address of the module |
 | StressLogModuleDesc | Size | Size of the module |
@@ -80,7 +81,6 @@ Global variables used:
 | StressLogChunkSize | uint | Size of a stress log chunk |
 | StressLogMaxMessageSize | ulong | Maximum size of a stress log message |
 | StressLogHasModuleTable | byte | Whether the stress log module table is present |
-| StressLogModuleTable | pointer | Pointer to the stress log's module table (if StressLogHasModuleTable is `1`) |
 
 ```csharp
 bool HasStressLog()
@@ -95,7 +95,7 @@ StressLogData GetStressLogData()
         return default;
     }
 
-    StressLog stressLog = new StressLog(Target, Target.ReadGlobalPointer(Constants.Globals.StressLog));
+    StressLog stressLog = new StressLog(Target, Target.ReadGlobalPointer("StressLog"));
     return new StressLogData(
         stressLog.LoggedFacilities,
         stressLog.Level,
@@ -210,18 +210,27 @@ bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer)
 // This method is a helper for the various specific versions.
 protected TargetPointer GetFormatPointer(ulong formatOffset)
 {
-    if (Target.ReadGlobal<byte>(Constants.Globals.StressLogHasModuleTable) == 0)
+    if (Target.ReadGlobal<byte>("StressLogHasModuleTable") == 0)
     {
-        StressLog stressLog = new(Target, target.ReadGlobalPointer(Constants.Globals.StressLog));
+        StressLog stressLog = new(Target, target.ReadGlobalPointer("StressLog"));
         return new TargetPointer(stressLog.ModuleOffset + formatOffset);
     }
 
-    TargetPointer moduleTable = target.ReadGlobalPointer(Constants.Globals.StressLogModuleTable);
+    TargetPointer? moduleTable;
+    if (!target.TryReadGlobalPointer(Constants.Globals.StressLogModuleTable, out moduleTable))
+    {
+        if (!target.TryReadGlobalPointer(Constants.Globals.StressLog, out TargetPointer? pStressLog))
+        {
+            throw new InvalidOperationException("StressLogModuleTable is not set and StressLog is not available, but StressLogHasModuleTable is set to 1.");
+        }
+        Data.StressLog stressLog = target.ProcessedData.GetOrAdd<Data.StressLog>(pStressLog.Value);
+        moduleTable = stressLog.Modules ?? throw new InvalidOperationException("StressLogModuleTable is not set and StressLog does not contain a ModuleTable offset, but StressLogHasModuleTable is set to 1.");
+    }
     uint moduleEntrySize = target.GetTypeInfo(DataType.StressLogModuleDesc).Size!.Value;
-    uint maxModules = target.ReadGlobal<uint>(Constants.Globals.StressLogMaxModules);
+    uint maxModules = target.ReadGlobal<uint>("StressLogMaxModules");
     for (uint i = 0; i < maxModules; ++i)
     {
-        StressLogModuleDesc module = new(Target, moduleTable + i * moduleEntrySize);
+        StressLogModuleDesc module = new(Target, moduleTable.Value + i * moduleEntrySize);
         ulong relativeOffset = formatOffset - cumulativeOffset;
         if (relativeOffset < module.Size.Value)
         {
@@ -313,7 +322,7 @@ The format offset refers to the cummulative offset into a module referred to in 
 ```csharp
 StressMsgData GetStressMsgData(StressMsg msg)
 {
-    StressLog stressLog = new(Target, target.ReadGlobalPointer(Constants.Globals.StressLog));
+    StressLog stressLog = new(Target, target.ReadGlobalPointer("StressLog"));
     uint pointerSize = Target.GetTypeInfo(DataType.pointer).Size!.Value;
 
     ulong payload1 = target.Read<ulong>(msg.Header);

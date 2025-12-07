@@ -57,6 +57,8 @@ TargetPointer GetMethodTableAddress(TargetPointer address)
 string GetStringValue(TargetPointer address)
 {
     TargetPointer mt = GetMethodTableAddress(address);
+    if (mt == TargetPointer.Null)
+        throw new ArgumentException("Address represents a set-free object");
     TargetPointer stringMethodTable = target.ReadPointer(target.ReadGlobalPointer("StringMethodTable"));
     if (mt != stringMethodTable)
         throw new ArgumentException("Address does not represent a string object", nameof(address));
@@ -70,6 +72,8 @@ string GetStringValue(TargetPointer address)
 TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds)
 {
     TargetPointer mt = GetMethodTableAddress(address);
+    if (mt == TargetPointer.Null)
+        throw new ArgumentException("Address represents a set-free object");
     Contracts.IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
     TypeHandle typeHandle = rts.GetTypeHandle(mt);
     uint rank;

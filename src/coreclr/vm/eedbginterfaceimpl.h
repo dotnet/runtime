@@ -156,8 +156,6 @@ public:
 
     COR_ILMETHOD* MethodDescGetILHeader(MethodDesc *pFD);
 
-    ULONG MethodDescGetRVA(MethodDesc *pFD);
-
     MethodDesc *FindLoadedMethodRefOrDef(Module* pModule,
                                           mdToken memberRef);
 

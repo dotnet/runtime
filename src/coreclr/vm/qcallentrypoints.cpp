@@ -9,6 +9,7 @@
 //
 #include "arraynative.h"
 #include "objectnative.h"
+#include "dllimport.h"
 #include "comdelegate.h"
 #include "customattribute.h"
 #include "comdynamic.h"
@@ -74,6 +75,14 @@
 
 #include "versionresilienthashcode.h"
 
+#ifdef TARGET_BROWSER
+#include "entrypoints.h"
+#endif // TARGET_BROWSER
+
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
 static const Entry s_QCall[] =
 {
     DllImportEntry(ArgIterator_Init)
@@ -122,7 +131,6 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_MakeByRef)
     DllImportEntry(RuntimeTypeHandle_MakeSZArray)
     DllImportEntry(RuntimeTypeHandle_MakeArray)
-    DllImportEntry(RuntimeTypeHandle_IsCollectible)
     DllImportEntry(RuntimeTypeHandle_GetConstraints)
     DllImportEntry(RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer)
     DllImportEntry(RuntimeTypeHandle_GetAssemblySlow)
@@ -154,12 +162,12 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_InternalAlloc)
     DllImportEntry(RuntimeTypeHandle_InternalAllocNoChecks)
     DllImportEntry(RuntimeTypeHandle_AllocateTypeAssociatedMemory)
+    DllImportEntry(RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned)
     DllImportEntry(RuntimeTypeHandle_RegisterCollectibleTypeDependency)
     DllImportEntry(MethodBase_GetCurrentMethod)
     DllImportEntry(RuntimeMethodHandle_InvokeMethod)
     DllImportEntry(RuntimeMethodHandle_ConstructInstantiation)
     DllImportEntry(RuntimeMethodHandle_GetFunctionPointer)
-    DllImportEntry(RuntimeMethodHandle_GetIsCollectible)
     DllImportEntry(RuntimeMethodHandle_GetMethodInstantiation)
     DllImportEntry(RuntimeMethodHandle_GetTypicalMethodDefinition)
     DllImportEntry(RuntimeMethodHandle_StripMethodInstantiation)
@@ -249,7 +257,6 @@ static const Entry s_QCall[] =
     DllImportEntry(AssemblyNative_GetExportedTypes)
     DllImportEntry(AssemblyNative_GetEntryPoint)
     DllImportEntry(AssemblyNative_GetImageRuntimeVersion)
-    DllImportEntry(AssemblyNative_GetIsCollectible)
     DllImportEntry(AssemblyNative_InternalTryGetRawMetadata)
     DllImportEntry(AssemblyNative_ApplyUpdate)
     DllImportEntry(AssemblyNative_IsApplyUpdateSupported)
@@ -275,7 +282,6 @@ static const Entry s_QCall[] =
     DllImportEntry(MultiCoreJIT_InternalStartProfile)
 #endif
     DllImportEntry(LoaderAllocator_Destroy)
-    DllImportEntry(String_StrCns)
     DllImportEntry(String_Intern)
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
@@ -303,6 +309,7 @@ static const Entry s_QCall[] =
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
 #endif // FEATURE_COMINTEROP
+    DllImportEntry(Monitor_GetOrCreateLockObject)
     DllImportEntry(WaitHandle_WaitOneCore)
     DllImportEntry(WaitHandle_WaitMultipleIgnoringSyncContext)
     DllImportEntry(WaitHandle_SignalAndWait)
@@ -395,23 +402,13 @@ static const Entry s_QCall[] =
     DllImportEntry(MngdSafeArrayMarshaler_ClearNative)
     DllImportEntry(Variant_ConvertValueTypeToRecord)
 #endif // FEATURE_COMINTEROP
-    DllImportEntry(NativeLibrary_LoadFromPath)
     DllImportEntry(NativeLibrary_LoadByName)
-    DllImportEntry(NativeLibrary_FreeLib)
-    DllImportEntry(NativeLibrary_GetSymbol)
     DllImportEntry(GetTypeLoadExceptionMessage)
     DllImportEntry(GetFileLoadExceptionMessage)
     DllImportEntry(FileLoadException_GetMessageForHR)
     DllImportEntry(Interlocked_MemoryBarrierProcessWide)
     DllImportEntry(ObjectNative_GetHashCodeSlow)
     DllImportEntry(ObjectNative_AllocateUninitializedClone)
-    DllImportEntry(Monitor_Wait)
-    DllImportEntry(Monitor_Pulse)
-    DllImportEntry(Monitor_PulseAll)
-    DllImportEntry(Monitor_GetLockContentionCount)
-    DllImportEntry(Monitor_Enter_Slowpath)
-    DllImportEntry(Monitor_TryEnter_Slowpath)
-    DllImportEntry(Monitor_Exit_Slowpath)
     DllImportEntry(MetadataImport_Enum)
     DllImportEntry(ReflectionInvocation_RunClassConstructor)
     DllImportEntry(ReflectionInvocation_RunModuleConstructor)
@@ -469,6 +466,8 @@ static const Entry s_QCall[] =
     DllImportEntry(NativeRuntimeEventSource_LogContentionLockCreated)
     DllImportEntry(NativeRuntimeEventSource_LogContentionStart)
     DllImportEntry(NativeRuntimeEventSource_LogContentionStop)
+    DllImportEntry(NativeRuntimeEventSource_LogWaitHandleWaitStart)
+    DllImportEntry(NativeRuntimeEventSource_LogWaitHandleWaitStop)
     DllImportEntry(EventPipeInternal_Enable)
     DllImportEntry(EventPipeInternal_Disable)
     DllImportEntry(EventPipeInternal_GetSessionInfo)
@@ -481,7 +480,7 @@ static const Entry s_QCall[] =
     DllImportEntry(EventPipeInternal_GetNextEvent)
     DllImportEntry(EventPipeInternal_SignalSession)
     DllImportEntry(EventPipeInternal_WaitForSessionSignal)
-#endif
+#endif // FEATURE_PERFTRACING
 #if defined(TARGET_UNIX)
     DllImportEntry(CloseHandle)
     DllImportEntry(CreateEventExW)
@@ -507,7 +506,6 @@ static const Entry s_QCall[] =
     DllImportEntry(X86BaseCpuId)
 #endif
     DllImportEntry(StubHelpers_CreateCustomMarshaler)
-    DllImportEntry(StubHelpers_SetStringTrailByte)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
     DllImportEntry(StubHelpers_MarshalToManagedVaList)
     DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)
@@ -518,9 +516,7 @@ static const Entry s_QCall[] =
     DllImportEntry(StubHelpers_ProfilerBeginTransitionCallback)
     DllImportEntry(StubHelpers_ProfilerEndTransitionCallback)
 #endif
-    DllImportEntry(StubHelpers_GetHRExceptionObject)
 #if defined(FEATURE_COMINTEROP)
-    DllImportEntry(StubHelpers_GetCOMHRExceptionObject)
     DllImportEntry(StubHelpers_GetCOMIPFromRCWSlow)
     DllImportEntry(ObjectMarshaler_ConvertToNative)
     DllImportEntry(ObjectMarshaler_ConvertToManaged)
@@ -534,10 +530,7 @@ static const Entry s_QCall[] =
 #ifdef FEATURE_EH_FUNCLETS
     DllImportEntry(SfiInit)
     DllImportEntry(SfiNext)
-    DllImportEntry(CallCatchFunclet)
-    DllImportEntry(ResumeAtInterceptionLocation)
     DllImportEntry(CallFilterFunclet)
-    DllImportEntry(CallFinallyFunclet)
     DllImportEntry(EHEnumInitFromStackFrameIterator)
     DllImportEntry(EHEnumNext)
     DllImportEntry(AppendExceptionStackFrame)
@@ -550,6 +543,16 @@ static const Entry s_QCall[] =
     DllImportEntry(ThrowInvalidCastException)
     DllImportEntry(IsInstanceOf_NoCacheLookup)
     DllImportEntry(VersionResilientHashCode_TypeHashCode)
+    DllImportEntry(TailCallHelp_AllocTailCallArgBufferInternal)
+#ifdef TARGET_BROWSER
+    DllImportEntry(SystemJS_ResolveMainPromise)
+    DllImportEntry(SystemJS_RejectMainPromise)
+    DllImportEntry(SystemJS_ScheduleTimer)
+    DllImportEntry(SystemJS_ScheduleBackgroundJob)
+#endif // TARGET_BROWSER
+#ifdef FEATURE_INTERPRETER
+    DllImportEntry(AsyncHelpers_ResumeInterpreterContinuation)
+#endif // FEATURE_INTERPRETER
 };
 
 const void* QCallResolveDllImport(const char* name)

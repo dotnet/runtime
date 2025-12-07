@@ -24,7 +24,7 @@
                       Version="$(MicrosoftDiaSymReaderNativeVersion)" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsWasm)' != 'true'">
     <HostFxrFile Include="$(DotNetHostBinDir)$(LibPrefix)hostfxr$(LibSuffix)" />
     <HostPolicyFile Include="$(DotNetHostBinDir)$(LibPrefix)hostpolicy$(LibSuffix)" />
     <_HostSymbols Include="$(DotNetHostBinDir)$(LibPrefix)hostfxr$(LibSuffix)$(SymbolsSuffix)" />

@@ -19,19 +19,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "jitgcinfo.h"
 
-#ifdef TARGET_AMD64
-#include "gcinfoencoder.h" //this includes a LOT of other files too
-#endif
-
-/*****************************************************************************/
-/*****************************************************************************/
-
-/*****************************************************************************/
-
-extern int JITGcBarrierCall;
-
-/*****************************************************************************/
-
 #if MEASURE_PTRTAB_SIZE
 /* static */ size_t GCInfo::s_gcRegPtrDscSize   = 0;
 /* static */ size_t GCInfo::s_gcTotalPtrTabSize = 0;
@@ -57,12 +44,15 @@ GCInfo::GCInfo(Compiler* theCompiler)
     gcPtrArgCnt    = 0;
     gcCallDescList = nullptr;
     gcCallDescLast = nullptr;
+#if EMIT_GENERATE_GCINFO
 #ifdef JIT32_GCENCODER
+    // TODO-WASM-Factoring: exclude this whole file from the wasm build by factoring out write barrier selection.
     gcEpilogTable = nullptr;
 #else  // !JIT32_GCENCODER
     m_regSlotMap   = nullptr;
     m_stackSlotMap = nullptr;
 #endif // JIT32_GCENCODER
+#endif // EMIT_GENERATE_GC_INFO
 }
 
 /*****************************************************************************/
@@ -206,6 +196,7 @@ void GCInfo::gcMarkRegSetNpt(regMaskTP regMask DEBUGARG(bool forceOutput))
 
 void GCInfo::gcMarkRegPtrVal(regNumber reg, var_types type)
 {
+#if EMIT_GENERATE_GCINFO
     regMaskTP regMask = genRegMask(reg);
 
     switch (type)
@@ -220,6 +211,7 @@ void GCInfo::gcMarkRegPtrVal(regNumber reg, var_types type)
             gcMarkRegSetNpt(regMask);
             break;
     }
+#endif // EMIT_GENERATE_GCINFO
 }
 
 //------------------------------------------------------------------------
@@ -733,73 +725,3 @@ void GCInfo::gcRegPtrSetInit()
 }
 
 #endif // JIT32_GCENCODER
-
-//------------------------------------------------------------------------
-// gcUpdateForRegVarMove: Update the masks when a variable is moved
-//
-// Arguments:
-//    srcMask - The register mask for the register(s) from which it is being moved
-//    dstMask - The register mask for the register(s) to which it is being moved
-//    type    - The type of the variable
-//
-// Return Value:
-//    None
-//
-// Notes:
-//    This is called during codegen when a var is moved due to an LSRA_ASG.
-//    It is also called by LinearScan::recordVarLocationAtStartOfBB() which is in turn called by
-//    CodeGen::genCodeForBBList() at the block boundary.
-
-void GCInfo::gcUpdateForRegVarMove(regMaskTP srcMask, regMaskTP dstMask, LclVarDsc* varDsc)
-{
-    var_types type    = varDsc->TypeGet();
-    bool      isGCRef = (type == TYP_REF);
-    bool      isByRef = (type == TYP_BYREF);
-
-    if (srcMask != RBM_NONE)
-    {
-        regSet->RemoveMaskVars(srcMask);
-        if (isGCRef)
-        {
-            assert((gcRegByrefSetCur & srcMask) == 0);
-            gcRegGCrefSetCur &= ~srcMask;
-            gcRegGCrefSetCur |= dstMask; // safe if no dst, i.e. RBM_NONE
-        }
-        else if (isByRef)
-        {
-            assert((gcRegGCrefSetCur & srcMask) == 0);
-            gcRegByrefSetCur &= ~srcMask;
-            gcRegByrefSetCur |= dstMask; // safe if no dst, i.e. RBM_NONE
-        }
-    }
-    else if (isGCRef || isByRef)
-    {
-        // In this case, we are moving it from the stack to a register,
-        // so remove it from the set of live stack gc refs
-        VarSetOps::RemoveElemD(compiler, gcVarPtrSetCur, varDsc->lvVarIndex);
-    }
-    if (dstMask != RBM_NONE)
-    {
-        regSet->AddMaskVars(dstMask);
-        // If the source is a reg, then the gc sets have been set appropriately
-        // Otherwise, we have to determine whether to set them
-        if (srcMask == RBM_NONE)
-        {
-            if (isGCRef)
-            {
-                gcRegGCrefSetCur |= dstMask;
-            }
-            else if (isByRef)
-            {
-                gcRegByrefSetCur |= dstMask;
-            }
-        }
-    }
-    else if (isGCRef || isByRef)
-    {
-        VarSetOps::AddElemD(compiler, gcVarPtrSetCur, varDsc->lvVarIndex);
-    }
-}
-
-/*****************************************************************************/
-/*****************************************************************************/

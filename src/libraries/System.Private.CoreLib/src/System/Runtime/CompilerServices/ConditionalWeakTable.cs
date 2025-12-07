@@ -683,7 +683,7 @@ namespace System.Runtime.CompilerServices
                     if (oKey != null)
                     {
                         key = Unsafe.As<TKey>(oKey);
-                        value = Unsafe.As<TValue>(oValue);
+                        value = Unsafe.As<TValue>(oValue!);
                         return true;
                     }
                 }
@@ -711,7 +711,7 @@ namespace System.Runtime.CompilerServices
                 if (entryIndex != -1)
                 {
                     RemoveIndex(entryIndex);
-                    value = Unsafe.As<TValue>(valueObject);
+                    value = Unsafe.As<TValue>(valueObject!);
                     return true;
                 }
 

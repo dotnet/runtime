@@ -168,6 +168,8 @@ switch (testCase) {
         break;
     case "HttpNoStreamingTest":
         break;
+    case "DevServer_UploadPattern":
+        break;
     case "BrowserProfilerTest":
         break;
     case "OverrideBootConfigName":
@@ -209,15 +211,30 @@ try {
                 }
 
                 await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
+                exports.LazyLoadingTest.Run();
+                await INTERNAL.loadLazyAssembly(`LazyLibrary${lazyAssemblyExtension}`);
+                const { LazyLibrary } = await getAssemblyExports("LazyLibrary");
+                const resLazy = LazyLibrary.Foo.Bar();
+                exit(resLazy == 42 ? 0 : 1);
             }
-            exports.LazyLoadingTest.Run();
-            exit(0);
+            else {
+                exports.LazyLoadingTest.Run();
+                exit(0);
+            }
             break;
         case "LibraryInitializerTest":
             exit(0);
             break;
+        case "ZipArchiveInteropTest":
+            exports.ZipArchiveInteropTest.Run();
+            exit(0);
+            break;
         case "AppSettingsTest":
             exports.AppSettingsTest.Run();
+            exit(0);
+            break;
+        case "FilesToIncludeInFileSystemTest":
+            exports.FilesToIncludeInFileSystemTest.Run();
             exit(0);
             break;
         case "DownloadResourceProgressTest":
@@ -256,6 +273,15 @@ try {
                 countChars
             });
             exports.MemoryTest.Run();
+            exit(0);
+            break;
+        case "DevServer_UploadPattern":
+            console.log("not ready yet");
+            const dsExportsHttp = await getAssemblyExports(config.mainAssemblyName);
+            console.log("ready");
+            await dsExportsHttp.HttpTest.GoodUpload();
+            await dsExportsHttp.HttpTest.BadUpload();
+            console.log("done");
             exit(0);
             break;
         case "HttpNoStreamingTest":

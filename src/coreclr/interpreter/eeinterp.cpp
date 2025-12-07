@@ -70,12 +70,12 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                 break;
             }
 
-            // 2: use interpreter for everything except intrinsics. All intrinsics fallback to JIT. Implies DOTNET_ReadyToRun=0.
+            // 2: use interpreter for everything except intrinsics. All intrinsics fallback to JIT. Implies DOTNET_ReadyToRun=0
             case 2:
                 doInterpret = !(compHnd->getMethodAttribs(methodInfo->ftn) & CORINFO_FLG_INTRINSIC);
                 break;
 
-            // 3: use interpreter for everything, the full interpreter-only mode, no fallbacks to R2R or JIT whatsoever. Implies DOTNET_ReadyToRun=0, DOTNET_EnableHWIntrinsic=0
+            // 3: use interpreter for everything, the full interpreter-only mode, no fallbacks to R2R or JIT whatsoever. Implies DOTNET_ReadyToRun=0, DOTNET_EnableHWIntrinsic=0, DOTNET_MaxVectorTBitWidth=128, DOTNET_PreferredVectorBitWidth=128
             case 3:
                 doInterpret = true;
                 break;
@@ -85,8 +85,8 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                 break;
         }
 
-#ifdef TARGET_WASM
-        // interpret everything on wasm
+#if !defined(FEATURE_JIT)
+        // interpret everything when we do not have a JIT
         doInterpret = true;
 #else
         // NOTE: We do this check even if doInterpret==true in order to populate g_interpModule
@@ -126,6 +126,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
         *(InterpMethod**)args.hotCodeBlockRW = pMethod;
         memcpy ((uint8_t*)args.hotCodeBlockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
 
+        compiler.UpdateWithFinalMethodByteCodeAddress((InterpByteCodeStart*)args.hotCodeBlock);
         *entryAddress = (uint8_t*)args.hotCodeBlock;
         *nativeSizeOfCode = sizeOfCode;
 
@@ -158,11 +159,15 @@ void CILInterp::setTargetOS(CORINFO_OS os)
 
 INTERPRETER_NORETURN void NO_WAY(const char* message)
 {
+    if (IsInterpDumpActive())
+        printf("Error during interpreter method compilation: %s\n", message ? message : "unknown error");
     throw InterpException(message, CORJIT_INTERNALERROR);
 }
 
 INTERPRETER_NORETURN void BADCODE(const char* message)
 {
+    if (IsInterpDumpActive())
+        printf("Error during interpreter method compilation: %s\n", message ? message : "unknown error");
     throw InterpException(message, CORJIT_BADCODE);
 }
 

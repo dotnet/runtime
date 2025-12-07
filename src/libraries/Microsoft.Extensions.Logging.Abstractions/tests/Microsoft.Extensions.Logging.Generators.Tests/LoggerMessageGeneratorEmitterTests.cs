@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using SourceGenerators.Tests;
@@ -20,7 +21,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             string[] sources = Directory.GetFiles("TestClasses");
             foreach (var src in sources)
             {
-                var testSourceCode = await File.ReadAllTextAsync(src).ConfigureAwait(false);
+                var testSourceCode = File.ReadAllText(src);
 
                 var (d, r) = await RoslynTestUtils.RunGenerator(
                     new LoggerMessageGenerator(),
@@ -253,9 +254,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 
         private async Task VerifyAgainstBaselineUsingFile(string filename, string testSourceCode)
         {
-            string baseline = LineEndingsHelper.Normalize(await File.ReadAllTextAsync(Path.Combine("Baselines", filename)).ConfigureAwait(false));
+            string baseline = LineEndingsHelper.Normalize(File.ReadAllText(Path.Combine("Baselines", filename)));
             string[] expectedLines = baseline.Replace("%VERSION%", typeof(LoggerMessageGenerator).Assembly.GetName().Version?.ToString())
-                                             .Split(Environment.NewLine);
+                                             .Split([Environment.NewLine], StringSplitOptions.None);
 
             var (d, r) = await RoslynTestUtils.RunGenerator(
                 new LoggerMessageGenerator(),
@@ -264,6 +265,13 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 
             Assert.Empty(d);
             Assert.Single(r);
+
+            if (PlatformDetection.IsNetFramework)
+            {
+                expectedLines = expectedLines.Select(line => line.Replace(
+                    "string.Create(global::System.Globalization.CultureInfo.InvariantCulture, ",
+                    "global::System.FormattableString.Invariant(")).ToArray();
+            }
 
             Assert.True(RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText,
                 out string errorMessage), errorMessage);

@@ -1383,7 +1383,7 @@ namespace System
 
                     currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector512<T>.Count);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector512<T>.Count != 0)
@@ -1414,7 +1414,7 @@ namespace System
 
                     return true;
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector256<T>.Count != 0)
@@ -1444,7 +1444,7 @@ namespace System
 
                     return true;
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector128<T>.Count != 0)
@@ -1463,6 +1463,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int IndexOfChar(ref char searchSpace, char value, int length)
             => IndexOfValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LastIndexOfChar(ref char searchSpace, char value, int length)
+            => LastIndexOfValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int NonPackedIndexOfChar(ref char searchSpace, char value, int length) =>
@@ -1574,7 +1578,7 @@ namespace System
 
                     currentSearchSpace = ref Unsafe.Add(ref currentSearchSpace, Vector512<TValue>.Count);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector512<TValue>.Count != 0)
@@ -1605,7 +1609,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector256<TValue>.Count != 0)
@@ -1635,7 +1639,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector128<TValue>.Count != 0)
@@ -1654,6 +1658,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int IndexOfAnyChar(ref char searchSpace, char value0, char value1, int length)
             => IndexOfAnyValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int LastIndexOfAnyChar(ref char searchSpace, char value0, char value1, int length)
+            => LastIndexOfAnyValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int IndexOfAnyValueType<T>(ref T searchSpace, T value0, T value1, int length) where T : struct, INumber<T>
@@ -1800,7 +1808,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector512<TValue>.Count != 0)
@@ -1832,7 +1840,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector256<TValue>.Count != 0)
@@ -1864,7 +1872,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector128<TValue>.Count != 0)
@@ -2007,7 +2015,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector512<TValue>.Count != 0)
@@ -2039,7 +2047,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector256<TValue>.Count != 0)
@@ -2071,7 +2079,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector128<TValue>.Count != 0)
@@ -2164,7 +2172,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector512<TValue>.Count != 0)
@@ -2198,7 +2206,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector256<TValue>.Count != 0)
@@ -2232,7 +2240,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector128<TValue>.Count != 0)
@@ -2328,7 +2336,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector512<TValue>.Count != 0)
@@ -2363,7 +2371,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the last vector in the search space.
                 if ((uint)length % Vector256<TValue>.Count != 0)
@@ -2398,7 +2406,7 @@ namespace System
 
                     return ComputeFirstIndex(ref searchSpace, ref currentSearchSpace, equals);
                 }
-                while (!Unsafe.IsAddressGreaterThan(ref currentSearchSpace, ref oneVectorAwayFromEnd));
+                while (Unsafe.IsAddressLessThanOrEqualTo(ref currentSearchSpace, ref oneVectorAwayFromEnd));
 
                 // If any elements remain, process the first vector in the search space.
                 if ((uint)length % Vector128<TValue>.Count != 0)

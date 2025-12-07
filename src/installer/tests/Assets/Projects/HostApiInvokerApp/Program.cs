@@ -35,30 +35,7 @@ namespace HostApiInvokerApp
             foreach (string arg in args)
                 Console.WriteLine($"  {arg}");
 
-            // If requested, test multilevel lookup using fake Global SDK directories:
-            //     1. using a fake ProgramFiles location
-            //     2. using a fake SDK Self-Registered location
-            // Note that this has to be set here and not in the calling test process because
-            // %ProgramFiles% gets reset on process creation.
-            string testMultilevelLookupProgramFiles = Environment.GetEnvironmentVariable("TEST_MULTILEVEL_LOOKUP_PROGRAM_FILES");
-            string testMultilevelLookupSelfRegistered = Environment.GetEnvironmentVariable("TEST_MULTILEVEL_LOOKUP_SELF_REGISTERED");
-
-            string hostfxrPath;
-            if (testMultilevelLookupProgramFiles != null && testMultilevelLookupSelfRegistered != null)
-            {
-                Environment.SetEnvironmentVariable("_DOTNET_TEST_GLOBALLY_REGISTERED_PATH", testMultilevelLookupSelfRegistered);
-                Environment.SetEnvironmentVariable("ProgramFiles", testMultilevelLookupProgramFiles);
-                Environment.SetEnvironmentVariable("ProgramFiles(x86)", testMultilevelLookupProgramFiles);
-                Environment.SetEnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "1");
-                hostfxrPath = AppContext.GetData("HOSTFXR_PATH_TEST_BEHAVIOR") as string;
-            }
-            else
-            {
-                // never rely on machine state in test if we're not faking the multi-level lookup
-                Environment.SetEnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0");
-                hostfxrPath = AppContext.GetData("HOSTFXR_PATH") as string;
-            }
-
+            string hostfxrPath = AppContext.GetData("HOSTFXR_PATH") as string;
             if (hostfxrPath is not null)
             {
                 Console.WriteLine($"Registering DLLImportResolver for {nameof(HostFXR.hostfxr)} -> {hostfxrPath}");

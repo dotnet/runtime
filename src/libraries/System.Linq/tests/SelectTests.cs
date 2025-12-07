@@ -13,6 +13,32 @@ namespace System.Linq.Tests
     public class SelectTests : EnumerableTests
     {
         [Fact]
+        public void SelectSideEffectsExecutedOnCount()
+        {
+            int i = 0;
+            // If we made no promises about side effects, i could be 0, but in practice users have
+            // taken a dependency on side effects executing on Count.
+            var count = Enumerable.Range(1, 10).Select(x => i++).Count();
+            Assert.Equal(10, count);
+            Assert.Equal(10, i);
+
+            i = 0;
+            count = Enumerable.Range(1, 10).Skip(5).Select(x => i++).Count();
+            Assert.Equal(5, count);
+            Assert.Equal(5, i);
+
+            i = 0;
+            count = Enumerable.Range(1, 10).Take(5).Select(x => i++).Count();
+            Assert.Equal(5, count);
+            Assert.Equal(5, i);
+
+            i = 0;
+            count = Enumerable.Range(1, 10).Skip(2).Take(3).Select(x => i++).Count();
+            Assert.Equal(3, count);
+            Assert.Equal(3, i);
+        }
+
+        [Fact]
         public void SameResultsRepeatCallsStringQuery()
         {
             var q1 = from x1 in new string[] { "Alen", "Felix", null, null, "X", "Have Space", "Clinton", "" }

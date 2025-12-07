@@ -622,7 +622,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // to the next RefPosition in code order
 // THIS IS THE OPTION CURRENTLY BEING PURSUED
 
-class LinearScan : public LinearScanInterface
+class LinearScan : public RegAllocInterface
 {
     friend class RefPosition;
     friend class Interval;
@@ -634,7 +634,7 @@ public:
     LinearScan(Compiler* theCompiler);
 
     // This is the main driver
-    virtual PhaseStatus doLinearScan();
+    virtual PhaseStatus doRegisterAllocation();
 
     static bool isSingleRegister(SingleTypeRegSet regMask)
     {
@@ -1142,7 +1142,8 @@ private:
         return getIntervalForLocalVar(varDsc->lvVarIndex);
     }
 
-    RegRecord* getRegisterRecord(regNumber regNum);
+    RegRecord*       getRegisterRecord(regNumber regNum);
+    SingleTypeRegSet getAvailableGPRsForType(SingleTypeRegSet candidates, var_types regType);
 
     RefPosition* newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType);
 
@@ -2197,6 +2198,8 @@ private:
         return varTypeCalleeTrashRegs[rt].GetRegSetForType(rt);
     }
 };
+
+using RegAllocImpl = LinearScan;
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

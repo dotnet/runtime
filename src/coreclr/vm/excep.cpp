@@ -3018,7 +3018,7 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
 
     LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
 
-    if (pFunc != NULL && pFunc->IsILStub())
+    if ((pFunc != NULL && pFunc->IsDiagnosticsHidden()))
         return;
 
     // Do not save stacktrace to preallocated exception.  These are shared.
@@ -3553,9 +3553,9 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
                 CreateCrashDumpIfEnabled(fSOException);
 #endif
                 // RaiseFailFastException validates that the context matches a valid return address on the stack as part of CET.
-                // If the return address is not valid, it rejects the context, flags it as a potential attack and asserts in 
-                // checked builds of Windows OS. 
-                // Avoid reporting thread context captured by EEPolicy::HandleFatalError since it has IP that does not 
+                // If the return address is not valid, it rejects the context, flags it as a potential attack and asserts in
+                // checked builds of Windows OS.
+                // Avoid reporting thread context captured by EEPolicy::HandleFatalError since it has IP that does not
                 // match a valid return address on the stack.
                 bool fAvoidReportContextToRaiseFailFast = tore.IsFatalError();
                 RaiseFailFastException(pExceptionInfo == NULL                                       ? NULL : pExceptionInfo->ExceptionRecord,
@@ -4766,7 +4766,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
     GCPROTECT_BEGIN(throwable);
     if (throwable != NULL)
     {
-        if (FAILED(UtilLoadResourceString(CCompRC::Error, IDS_EE_UNHANDLED_EXCEPTION, buf, buf_size)))
+        if (FAILED(CCompRC::LoadString(IDS_EE_UNHANDLED_EXCEPTION, buf, buf_size)))
         {
             wcsncpy_s(buf, buf_size, SZ_UNHANDLED_EXCEPTION, SZ_UNHANDLED_EXCEPTION_CHARLEN);
         }
@@ -4925,8 +4925,6 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 #endif
 
     GCPROTECT_BEGIN(throwable);
-    //BOOL IsStackOverflow = (throwable->GetMethodTable() == g_pStackOverflowExceptionClass);
-    BOOL IsOutOfMemory = (throwable->GetMethodTable() == g_pOutOfMemoryExceptionClass);
 
     const int buf_size = 128;
     WCHAR buf[buf_size] = {0};
@@ -4936,31 +4934,14 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
         {
             EX_TRY
             {
-                // If this isn't ThreadAbortException, we want to print a stack trace to indicate why this thread abruptly
-                // terminated. Exceptions kill threads rarely enough that an uncached name check is reasonable.
-                BOOL        dump = TRUE;
-
-                if (/*IsStackOverflow ||*/
-                    !pThread->DetermineIfGuardPagePresent() ||
-                    IsOutOfMemory)
+                if (!pThread->DetermineIfGuardPagePresent())
                 {
                     // We have to be very careful.  If we walk off the end of the stack, the process will just
                     // die. e.g. Exception.ToString both consume too much stack -- and can't
                     // be called here.
-                    dump = FALSE;
-
-                    if (IsOutOfMemory)
-                    {
-                        PrintToStdErrA("Out of memory.\n");
-                    }
-                    else
-                    {
-                        PrintToStdErrA("Stack overflow.\n");
-                    }
+                    PrintToStdErrA("Stack overflow.\n");
                 }
-
-                // Finally, should we print the message?
-                if (dump)
+                else
                 {
                     // this is stack heavy because of the CQuickWSTRBase, so we break it out
                     // and don't have to carry the weight through our other code paths.
@@ -4969,14 +4950,22 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
             }
             EX_CATCH
             {
-                LOG((LF_EH, LL_INFO10, "Exception occurred while processing uncaught exception\n"));
+                if (throwable->GetMethodTable() == g_pOutOfMemoryExceptionClass)
+                {
+                    // Try to print a short message at least.
+                    PrintToStdErrA("Out of memory.\n");
+                }
+                else
+                {
+                    LOG((LF_EH, LL_INFO10, "Exception occurred while processing uncaught exception\n"));
 
-                _ASSERTE(buf_size > 6);
-                wcscpy_s(buf, buf_size, W("\n   "));
-                UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf + 4, buf_size - 6);
-                wcscat_s(buf, buf_size, W("\n"));
+                    _ASSERTE(buf_size > 6);
+                    wcscpy_s(buf, buf_size, W("\n   "));
+                    CCompRC::LoadString(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf + 4, buf_size - 6);
+                    wcscat_s(buf, buf_size, W("\n"));
 
-                PrintToStdErrW(buf);
+                    PrintToStdErrW(buf);
+                }
             }
             EX_END_CATCH
         }
@@ -5200,12 +5189,12 @@ LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
 // Note: This is not general purpose routine. It handles only cases found
 // in TypeLoadException and FileLoadException.
 //==========================================================================
-static BOOL GetManagedFormatStringForResourceID(CCompRC::ResourceCategory eCategory, UINT32 resId, SString & converted)
+static BOOL GetManagedFormatStringForResourceID(UINT32 resId, SString & converted)
 {
     STANDARD_VM_CONTRACT;
 
     StackSString temp;
-    if (!temp.LoadResource(eCategory, resId))
+    if (!temp.LoadResource(resId))
         return FALSE;
 
     SString::Iterator itr = temp.Begin();
@@ -5254,7 +5243,7 @@ extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::Strin
     BEGIN_QCALL;
 
     StackSString format;
-    GetManagedFormatStringForResourceID(CCompRC::Error, resId ? resId : IDS_CLASSLOAD_GENERAL,  format);
+    GetManagedFormatStringForResourceID(resId ? resId : IDS_CLASSLOAD_GENERAL,  format);
     retString.Set(format);
 
     END_QCALL;
@@ -5273,7 +5262,7 @@ extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHa
     BEGIN_QCALL;
 
     StackSString format;
-    GetManagedFormatStringForResourceID(CCompRC::Error, GetResourceIDForFileLoadExceptionHR(hr), format);
+    GetManagedFormatStringForResourceID(GetResourceIDForFileLoadExceptionHR(hr), format);
     retString.Set(format);
 
     END_QCALL;
@@ -5937,6 +5926,7 @@ bool IsIPInMarkedJitHelper(PCODE uControlPc)
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifndef FEATURE_PORTABLE_HELPERS
     // compare the IP against the list of known possible AV locations in the write barrier helpers
     for (size_t i = 0; i < sizeof(writeBarrierAVLocations)/sizeof(writeBarrierAVLocations[0]); i++)
     {
@@ -5968,6 +5958,7 @@ bool IsIPInMarkedJitHelper(PCODE uControlPc)
 #if defined(TARGET_AMD64) && defined(_DEBUG)
     CHECK_RANGE(JIT_WriteBarrier_Debug)
 #endif
+#endif // !FEATURE_PORTABLE_HELPERS
 
     return false;
 }
@@ -6191,7 +6182,10 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
     //Ex.RhThrowHwEx(exceptionCode, &exInfo)
     CALL_MANAGED_METHOD_NORET(args)
 
+    DispatchExSecondPass(&exInfo);
+
     GCPROTECT_END();
+    UNREACHABLE();
 }
 
 #endif // USE_FEF && !TARGET_UNIX
@@ -7275,42 +7269,6 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
     }
 #endif
 }
-
-#ifdef FEATURE_EH_FUNCLETS
-//
-// This function continues exception interception unwind after it crossed native frames using
-// standard EH / SEH.
-//
-VOID DECLSPEC_NORETURN ContinueExceptionInterceptionUnwind()
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    GCX_COOP();
-
-    Thread *pThread = GetThread();
-    ThreadExceptionState* pExState = pThread->GetExceptionState();
-    UINT_PTR uInterceptStackFrame  = 0;
-
-    pExState->GetDebuggerState()->GetDebuggerInterceptInfo(NULL, NULL,
-                                                        (PBYTE*)&uInterceptStackFrame,
-                                                        NULL, NULL);
-
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__UNWIND_AND_INTERCEPT);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER((ExInfo*)pExState->GetCurrentExceptionTracker());
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(uInterceptStackFrame);
-    pThread->IncPreventAbort();
-
-    //Ex.RhUnwindAndIntercept(throwable, &exInfo)
-    CRITICAL_CALLSITE;
-    CALL_MANAGED_METHOD_NORET(args)
-
-    UNREACHABLE();
-}
-
-#endif // FEATURE_EH_FUNCLETS
 
 //
 // This does the work of the Unwind and Continue Hanlder after the catch clause of that handler. The stack has been
@@ -10574,16 +10532,16 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
     SString msgStr;
 
     SString resStr;
-    if (resID == 0 || !resStr.LoadResource(CCompRC::Optional, resID))
+    if (resID == 0 || !resStr.LoadResource(resID))
     {
-        resStr.LoadResource(CCompRC::Error, BFA_BAD_IL); // "Bad IL format."
+        resStr.LoadResource(BFA_BAD_IL); // "Bad IL format."
     }
     msgStr.Append(resStr);
 
     if ((imageName != NULL) && (imageName[0] != 0))
     {
         SString suffixResStr;
-        if (suffixResStr.LoadResource(CCompRC::Optional, COR_E_BADIMAGEFORMAT)) // "The format of the file '%1' is invalid."
+        if (suffixResStr.LoadResource(COR_E_BADIMAGEFORMAT)) // "The format of the file '%1' is invalid."
         {
             SString suffixMsgStr;
             suffixMsgStr.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)suffixResStr, 0, 0, SString{ SString::Literal, imageName });
@@ -10824,7 +10782,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -10837,7 +10795,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
     // !
     // ! COMPlusThrowHR(hr, kGetErrorInfo)
 
-    RealCOMPlusThrowHR(hr, (IErrorInfo*)NULL);
+    EX_THROW(EEMessageException, (hr));
 }
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
@@ -10883,7 +10841,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg
     CONTRACTL
     {
         THROWS;
-        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;

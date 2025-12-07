@@ -144,13 +144,6 @@ add_executable_clr(paltests
   c_runtime/_wcsicmp/test1/test1.cpp
   c_runtime/_wcslwr_s/test1/test1.cpp
   c_runtime/_wcsnicmp/test1/test1.cpp
-  c_runtime/_wfopen/test1/test1.cpp
-  c_runtime/_wfopen/test2/test2.cpp
-  c_runtime/_wfopen/test3/test3.cpp
-  c_runtime/_wfopen/test4/test4.cpp
-  c_runtime/_wfopen/test5/test5.cpp
-  c_runtime/_wfopen/test6/test6.cpp
-  c_runtime/_wfopen/test7/test7.cpp
   c_runtime/_wtoi/test1/test1.cpp
   #debug_api/DebugBreak/test1/test1.cpp
   debug_api/OutputDebugStringA/test1/helper.cpp
@@ -265,8 +258,6 @@ add_executable_clr(paltests
   file_io/GetFullPathNameW/test4/test4.cpp
   file_io/GetStdHandle/test1/GetStdHandle.cpp
   file_io/GetStdHandle/test2/GetStdHandle.cpp
-  file_io/GetSystemTime/test1/test.cpp
-  file_io/GetSystemTimeAsFileTime/test1/GetSystemTimeAsFileTime.cpp
   file_io/gettemppatha/test1/gettemppatha.cpp
   file_io/GetTempPathW/test1/GetTempPathW.cpp
   file_io/ReadFile/test1/ReadFile.cpp

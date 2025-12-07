@@ -85,8 +85,8 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrD
 #define FpStruct__BothFloat           0b10
 ASMCONSTANTS_C_ASSERT(FpStruct__BothFloat == (int)FpStruct::BothFloat)
 
-#define VASigCookie__pNDirectILStub 0x8
-ASMCONSTANTS_C_ASSERT(VASigCookie__pNDirectILStub == offsetof(VASigCookie, pNDirectILStub))
+#define VASigCookie__pPInvokeILStub 0x8
+ASMCONSTANTS_C_ASSERT(VASigCookie__pPInvokeILStub == offsetof(VASigCookie, pPInvokeILStub))
 
 #define SIZEOF__Frame                 0x10
 ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
@@ -220,6 +220,7 @@ ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target            == offsetof(StubPrecode
 #define StubPrecodeData__SecretParam 0x00
 ASMCONSTANTS_C_ASSERT(StubPrecodeData__SecretParam        == offsetof(StubPrecodeData, SecretParam))
 
+#ifdef FEATURE_TIERED_COMPILATION
 #define CallCountingStubData__RemainingCallCountCell 0x00
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__RemainingCallCountCell == offsetof(CallCountingStubData, RemainingCallCountCell))
 
@@ -228,6 +229,32 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForMethod == offsetof(CallCoun
 
 #define CallCountingStubData__TargetForThresholdReached 0x10
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offsetof(CallCountingStubData, TargetForThresholdReached))
+#endif // FEATURE_TIERED_COMPILATION
+
+#define OFFSETOF__ThreadLocalInfo__m_pThread 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadLocalInfo__m_pThread == offsetof(ThreadLocalInfo, m_pThread))
+
+#ifdef FEATURE_INTERPRETER
+#ifdef _DEBUG
+#define OFFSETOF__InterpMethod__pCallStub 0x20
+#else
+#define OFFSETOF__InterpMethod__pCallStub 0x20
+#endif
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpMethod__pCallStub == offsetof(InterpMethod, pCallStub))
+
+#define OFFSETOF__Thread__m_pInterpThreadContext 0xB30
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pInterpThreadContext == offsetof(Thread, m_pInterpThreadContext))
+
+#define OFFSETOF__InterpThreadContext__pStackPointer 0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpThreadContext__pStackPointer == offsetof(InterpThreadContext, pStackPointer))
+
+#define OFFSETOF__CallStubHeader__Routines 0x18
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CallStubHeader__Routines == offsetof(CallStubHeader, Routines))
+
+#define SIZEOF__TransitionBlock 0xC0
+ASMCONSTANTS_C_ASSERT(SIZEOF__TransitionBlock == sizeof(TransitionBlock))
+
+#endif // FEATURE_INTERPRETER
 
 #ifdef PROFILING_SUPPORTED
 #define PROFILE_ENTER    1

@@ -31,7 +31,7 @@
 // warning C4061: enumerator '{blah}' in switch of enum '{blarg}' is not explicitly handled by a case label
 #pragma warning(disable:4061)
 
-#if !defined(USE_PORTABLE_HELPERS) // @TODO: these are (currently) only implemented in assembly helpers
+#if !defined(FEATURE_PORTABLE_HELPERS) // @TODO: these are (currently) only implemented in assembly helpers
 
 #if defined(FEATURE_DYNAMIC_CODE)
 EXTERN_C CODE_LOCATION ReturnFromUniversalTransition;
@@ -44,7 +44,7 @@ EXTERN_C CODE_LOCATION RhpCallFilterFunclet2;
 EXTERN_C CODE_LOCATION RhpThrowEx2;
 EXTERN_C CODE_LOCATION RhpThrowHwEx2;
 EXTERN_C CODE_LOCATION RhpRethrow2;
-#endif // !defined(USE_PORTABLE_HELPERS)
+#endif // !defined(FEATURE_PORTABLE_HELPERS)
 
 // Addresses of functions in the DAC won't match their runtime counterparts so we
 // assign them to globals. However it is more performant in the runtime to compare
@@ -162,7 +162,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     // properly walk it in parallel.
     ResetNextExInfoForSP((uintptr_t)dac_cast<TADDR>(pFrame));
 
-#if !defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of regdisplay
+#if !defined(FEATURE_PORTABLE_HELPERS) // @TODO: no portable version of regdisplay
     memset(&m_RegDisplay, 0, sizeof(m_RegDisplay));
     m_RegDisplay.SetIP((PCODE)PCODEToPINSTR((PCODE)pFrame->m_RIP));
     SetControlPC(dac_cast<PTR_VOID>(m_RegDisplay.GetIP()));
@@ -349,7 +349,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
     // adjust for thunks, if needed
     EnsureInitializedToManagedFrame();
-#endif // !defined(USE_PORTABLE_HELPERS)
+#endif // !defined(FEATURE_PORTABLE_HELPERS)
 
     STRESS_LOG1(LF_STACKWALK, LL_INFO10000, "   %p\n", m_ControlPC);
 }
@@ -1034,9 +1034,9 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(USE_PORTABLE_HELPERS) // @TODO: Currently no funclet invoke defined in a portable way
+#if defined(FEATURE_PORTABLE_HELPERS) // @TODO: Currently no funclet invoke defined in a portable way
     return;
-#else // defined(USE_PORTABLE_HELPERS)
+#else // defined(FEATURE_PORTABLE_HELPERS)
     ASSERT((CategorizeUnadjustedReturnAddress(m_ControlPC) == InFuncletInvokeThunk) ||
            (CategorizeUnadjustedReturnAddress(m_ControlPC) == InFilterFuncletInvokeThunk));
 
@@ -1107,7 +1107,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
         if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
         {
-            SP += 3; // 3 locals
+            SP += 2 + 1; // 2 locals and stack alignment
         }
         else
         {
@@ -1143,14 +1143,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
         m_funcletPtrs.pRbx = m_RegDisplay.pRbx;
     }
 
-    if (EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2))
-    {
-        SP += 2; // 2 locals
-    }
-    else
-    {
-        SP++; // 1 local
-    }
+    SP++; // local / stack alignment
     m_RegDisplay.pRdi = SP++;
     m_RegDisplay.pRsi = SP++;
     m_RegDisplay.pRbx = SP++;
@@ -1342,7 +1335,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     // We expect to be called by the runtime's C# EH implementation, and since this function's notion of how
     // to unwind through the stub is brittle relative to the stub itself, we want to check as soon as we can.
     ASSERT(m_pInstance->IsManaged(m_ControlPC) && "unwind from funclet invoke stub failed");
-#endif // defined(USE_PORTABLE_HELPERS)
+#endif // defined(FEATURE_PORTABLE_HELPERS)
 }
 
 // For a given target architecture, the layout of this structure must precisely match the
@@ -1549,9 +1542,9 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(USE_PORTABLE_HELPERS) // @TODO: Corresponding helper code is only defined in assembly code
+#if defined(FEATURE_PORTABLE_HELPERS) // @TODO: Corresponding helper code is only defined in assembly code
     return;
-#else // defined(USE_PORTABLE_HELPERS)
+#else // defined(FEATURE_PORTABLE_HELPERS)
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InUniversalTransitionThunk);
 
     // The current PC is within RhpUniversalTransition, so establish a view of the surrounding stack frame.
@@ -1578,7 +1571,7 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
     ASSERT(pLowerBound != NULL);
     ASSERT(m_pConservativeStackRangeLowerBound == NULL);
     m_pConservativeStackRangeLowerBound = pLowerBound;
-#endif // defined(USE_PORTABLE_HELPERS)
+#endif // defined(FEATURE_PORTABLE_HELPERS)
 }
 
 #ifdef TARGET_AMD64
@@ -1599,9 +1592,9 @@ void StackFrameIterator::UnwindThrowSiteThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of throw helpers
+#if defined(FEATURE_PORTABLE_HELPERS) // @TODO: no portable version of throw helpers
     return;
-#else // defined(USE_PORTABLE_HELPERS)
+#else // defined(FEATURE_PORTABLE_HELPERS)
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InThrowSiteThunk);
 
     const uintptr_t STACKSIZEOF_ExInfo = ((sizeof(ExInfo) + (STACK_ALIGN_SIZE-1)) & ~(STACK_ALIGN_SIZE-1));
@@ -1699,7 +1692,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     // We expect the throw site to be in managed code, and since this function's notion of how to unwind
     // through the stub is brittle relative to the stub itself, we want to check as soon as we can.
     ASSERT(m_pInstance->IsManaged(m_ControlPC) && "unwind from throw site stub failed");
-#endif // defined(USE_PORTABLE_HELPERS)
+#endif // defined(FEATURE_PORTABLE_HELPERS)
 }
 
 bool StackFrameIterator::IsValid()
@@ -2232,11 +2225,11 @@ PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)
 // static
 StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjustedReturnAddress(PTR_VOID returnAddress)
 {
-#if defined(USE_PORTABLE_HELPERS) // @TODO: no portable thunks are defined
+#if defined(FEATURE_PORTABLE_HELPERS) // @TODO: no portable thunks are defined
 
     return InManagedCode;
 
-#else // defined(USE_PORTABLE_HELPERS)
+#else // defined(FEATURE_PORTABLE_HELPERS)
 
 #if defined(FEATURE_DYNAMIC_CODE)
     if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransition) ||
@@ -2264,7 +2257,7 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
         return InFilterFuncletInvokeThunk;
     }
     return InManagedCode;
-#endif // defined(USE_PORTABLE_HELPERS)
+#endif // defined(FEATURE_PORTABLE_HELPERS)
 }
 
 #ifndef DACCESS_COMPILE

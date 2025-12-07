@@ -891,7 +891,7 @@ namespace System.Net.Http
         {
             lock (SyncObj)
             {
-                if (_http3Authority != null && _persistAuthority == false)
+                if (_http3Authority != null && !_persistAuthority)
                 {
                     ExpireAltSvcAuthority();
                     Debug.Assert(_authorityExpireTimer != null || _disposed);

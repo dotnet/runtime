@@ -12,7 +12,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("text")]
-        public void Ctor_String(string text)
+        public void Ctor_String(string? text)
         {
             var content = new TextSyndicationContent(text);
             Assert.Empty(content.AttributeExtensions);
@@ -24,7 +24,7 @@ namespace System.ServiceModel.Syndication.Tests
         [InlineData(null, TextSyndicationContentKind.Html, "html")]
         [InlineData("", TextSyndicationContentKind.Plaintext, "text")]
         [InlineData("text", TextSyndicationContentKind.XHtml, "xhtml")]
-        public void Ctor_String_TextSyndicationContentKind(string text, TextSyndicationContentKind textKind, string type)
+        public void Ctor_String_TextSyndicationContentKind(string? text, TextSyndicationContentKind textKind, string type)
         {
             var content = new TextSyndicationContent(text, textKind);
             Assert.Empty(content.AttributeExtensions);

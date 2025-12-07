@@ -1816,10 +1816,6 @@ HRESULT RegMeta::_DefineTypeDef(        // S_OK or error.
     ULONG       ulStringLen;            // Length of the TypeDef string.
     int         bSuccess;               // Return value for SplitPath().
 
-
-
-    _ASSERTE(IsTdAutoLayout(dwTypeDefFlags) || IsTdSequentialLayout(dwTypeDefFlags) || IsTdExplicitLayout(dwTypeDefFlags));
-
     _ASSERTE(ptd);
     _ASSERTE(TypeFromToken(tkExtends) == mdtTypeRef || TypeFromToken(tkExtends) == mdtTypeDef || TypeFromToken(tkExtends) == mdtTypeSpec
               || IsNilToken(tkExtends));

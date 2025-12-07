@@ -17,6 +17,7 @@
     <StaticLinkedRuntime Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(StaticLinkedRuntime)' == ''">false</StaticLinkedRuntime>
 
     <AndroidBuildAfterThisTarget Condition="'$(AndroidBuildAfterThisTarget)' == ''">Publish</AndroidBuildAfterThisTarget>
+
     <AndroidBuildDependsOn Condition="'$(UseMonoRuntime)' == 'true'">
         $(_ReadRuntimeComponentsManifestTargetName);
         _InitializeCommonProperties;
@@ -35,20 +36,16 @@
         _AndroidGenerateAppBundle;
         _AfterAndroidBuild
     </AndroidBuildDependsOn>
+    <AndroidBuildDependsOn Condition="'$(UseNativeAOTRuntime)' == 'true'">
+      CopyNativeBinary;
+      _CopyAotSymbols;
+      $(AndroidBuildDependsOn)
+    </AndroidBuildDependsOn>
 
     <!-- When building on Helix $(_CommonTargetsDir) will be properly set, otherwise we have to set it to a in-tree location -->
     <_CommonTargetsDir Condition="'$(_CommonTargetsDir)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', 'common'))</_CommonTargetsDir>
   </PropertyGroup>
-
-  <!-- This ItemGroup defines Android environment variables that are used for .NET feature switches. -->
-  <ItemGroup>
-    <AndroidEnv Condition="'$(InvariantGlobalization)' == 'true'" Include="DOTNET_SYSTEM_GLOBALIZATION_INVARIANT">
-      <Value>true</Value>
-    </AndroidEnv>
-    <AndroidEnv Condition="'$(PredefinedCulturesOnly)' == 'false'" Include="DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY">
-      <Value>false</Value>
-    </AndroidEnv>
-  </ItemGroup>
+  <Import Project="$(RepoRoot)/eng/testing/Android/AndroidNdkCompiler.props" />
 
   <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' == 'true'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />
   <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' == 'true'" Project="$(_CommonTargetsDir)RuntimeComponentManifest.targets" />

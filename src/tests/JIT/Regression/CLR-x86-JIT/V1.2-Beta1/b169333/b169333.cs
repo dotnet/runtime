@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b169333;
+
 using Xunit;
 class A { }
 class B { }
@@ -22,6 +25,7 @@ public class C : IFoo<A>, IFoo<B>
         System.Console.WriteLine("B");
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -49,7 +49,7 @@
 #endif // FEATURE_JAVAMARSHAL
 
 // Prelink
-// Does advance loading of an N/Direct library
+// Does advance loading of an PInvoke library
 extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD)
 {
     QCALL_CONTRACT;
@@ -59,11 +59,11 @@ extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD)
 
     // If the code is already ready, we are done. Else, we need to execute the prestub
     // This is a perf thing since it's always safe to execute the prestub twice.
-    if (!pMD->IsPointingToPrestub())
+    if (!pMD->ShouldCallPrestub())
         return;
 
-    // Silently ignore if not N/Direct and not runtime generated.
-    if (!(pMD->IsNDirect()) && !(pMD->IsRuntimeSupplied()))
+    // Silently ignore if not PInvoke and not runtime generated.
+    if (!(pMD->IsPInvoke()) && !(pMD->IsRuntimeSupplied()))
         return;
 
     BEGIN_QCALL;
@@ -126,7 +126,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregister
 
         if (structMarshalStub == NULL)
         {
-            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
+            structMarshalStub = PInvoke::CreateStructMarshalILStub(pMT);
         }
 
         *pStructMarshalStub = structMarshalStub->GetSingleCallableAddrOfCode();

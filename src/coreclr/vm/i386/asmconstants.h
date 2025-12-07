@@ -105,7 +105,7 @@ ASMCONSTANTS_C_ASSERT(EHContext_Eip == offsetof(EHContext,Eip))
 #endif // FEATURE_EH_FUNCLETS
 
 #define VASigCookie__StubOffset 4
-ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pNDirectILStub))
+ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pPInvokeILStub))
 
 #ifndef UNIX_X86_ABI
 #define SIZEOF_TailCallFrame 32
@@ -301,6 +301,7 @@ ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target            == offsetof(StubPrecode
 #define StubPrecodeData__SecretParam 0x00
 ASMCONSTANTS_C_ASSERT(StubPrecodeData__SecretParam        == offsetof(StubPrecodeData, SecretParam))
 
+#ifdef FEATURE_TIERED_COMPILATION
 #define CallCountingStubData__RemainingCallCountCell 0x00
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__RemainingCallCountCell == offsetof(CallCountingStubData, RemainingCallCountCell))
 
@@ -309,6 +310,7 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForMethod == offsetof(CallCoun
 
 #define CallCountingStubData__TargetForThresholdReached 0x08
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offsetof(CallCountingStubData, TargetForThresholdReached))
+#endif // FEATURE_TIERED_COMPILATION
 
 #undef ASMCONSTANTS_C_ASSERT
 #undef ASMCONSTANTS_RUNTIME_ASSERT

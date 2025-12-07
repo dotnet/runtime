@@ -253,7 +253,7 @@ public:
                                          BOOL dropGenericArgumentLevel = FALSE,
                                          const Substitution *pSubst = NULL,
                                          const ZapSig::Context *pZapSigContext = NULL,
-                                         MethodTable *pMTInterfaceMapOwner = NULL,
+                                         MethodTable* pMTInterfaceMapOwner = NULL,
                                          HandleRecursiveGenericsForFieldLayoutLoad *pRecursiveFieldGenericHandling = NULL
                                          ) const;
 
@@ -746,7 +746,7 @@ class MetaSig
         //----------------------------------------------------------
         // Is it an async call?
         //----------------------------------------------------------
-        BOOL IsAsyncCall()
+        bool IsAsyncCall()
         {
             LIMITED_METHOD_CONTRACT;
             return m_CallConv & CORINFO_CALLCONV_ASYNCCALL;

@@ -6,11 +6,13 @@ using System.Configuration;
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Versioning;
 
 namespace System.Data.OleDb
 {
+    [RequiresDynamicCode("XML deserialization requires dynamic code")]
     internal sealed class OleDbConnectionFactory : DbConnectionFactory
     {
         private OleDbConnectionFactory() : base() { }
@@ -131,10 +133,7 @@ namespace System.Data.OleDb
         internal override void SetConnectionPoolGroup(DbConnection outerConnection, DbConnectionPoolGroup poolGroup)
         {
             OleDbConnection? c = (outerConnection as OleDbConnection);
-            if (null != c)
-            {
-                c.PoolGroup = poolGroup;
-            }
+            c?.PoolGroup = poolGroup;
         }
 
         internal override void SetInnerConnectionEvent(DbConnection owningObject, DbConnectionInternal to)

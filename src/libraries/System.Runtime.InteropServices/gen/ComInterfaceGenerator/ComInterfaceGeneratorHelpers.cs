@@ -5,6 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -32,5 +35,18 @@ namespace Microsoft.Interop
                 (false, MarshalDirection.UnmanagedToManaged) => s_unmanagedToManagedEnabledMarshallingGeneratorResolver,
                 _ => throw new UnreachableException(),
             };
+
+        public static ExpressionSyntax CreateEmbeddedDataBlobCreationStatement(ReadOnlySpan<byte> bytes)
+        {
+            var literals = new CollectionElementSyntax[bytes.Length];
+
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                literals[i] = ExpressionElement(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(bytes[i])));
+            }
+
+            // [ <byte literals> ]
+            return CollectionExpression(SeparatedList(literals));
+        }
     }
 }

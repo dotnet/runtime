@@ -2540,7 +2540,7 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.True(options.AllowRenegotiation);
                 Assert.Null(options.ApplicationProtocols);
-                Assert.Equal(X509RevocationMode.Online, options.CertificateRevocationCheckMode);
+                Assert.Equal(X509RevocationMode.NoCheck, options.CertificateRevocationCheckMode);
                 Assert.Null(options.ClientCertificates);
                 Assert.Equal(SslProtocols.None, options.EnabledSslProtocols);
                 Assert.Equal(EncryptionPolicy.RequireEncryption, options.EncryptionPolicy);

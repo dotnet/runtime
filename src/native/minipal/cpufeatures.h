@@ -8,28 +8,28 @@
 // Should match the constants defined in the compiler in HardwareIntrinsicHelpers.cs
 //
 
+// Reserve the last bit to indicate an invalid query, such as if a baseline ISA isn't supported
+#define IntrinsicConstants_Invalid (1 << 31)
+
 #if defined(HOST_X86) || defined(HOST_AMD64)
-#define XArchIntrinsicConstants_Sse42 (1 << 0)
-#define XArchIntrinsicConstants_Avx (1 << 1)
-#define XArchIntrinsicConstants_Avx2 (1 << 2)
-#define XArchIntrinsicConstants_Avx512 (1 << 3)
-
-#define XArchIntrinsicConstants_Avx512v2 (1 << 4)
-#define XArchIntrinsicConstants_Avx512v3 (1 << 5)
-#define XArchIntrinsicConstants_Avx10v1 (1 << 6)
-#define XArchIntrinsicConstants_Avx10v2 (1 << 7)
-#define XArchIntrinsicConstants_Apx (1 << 8)
-
-#define XArchIntrinsicConstants_Aes (1 << 9)
-#define XArchIntrinsicConstants_Avx512Vp2intersect (1 << 10)
-#define XArchIntrinsicConstants_AvxIfma (1 << 11)
-#define XArchIntrinsicConstants_AvxVnni (1 << 12)
+#define XArchIntrinsicConstants_Avx (1 << 0)
+#define XArchIntrinsicConstants_Avx2 (1 << 1)
+#define XArchIntrinsicConstants_Avx512 (1 << 2)
+#define XArchIntrinsicConstants_Avx512v2 (1 << 3)
+#define XArchIntrinsicConstants_Avx512v3 (1 << 4)
+#define XArchIntrinsicConstants_Avx10v1 (1 << 5)
+#define XArchIntrinsicConstants_Avx10v2 (1 << 6)
+#define XArchIntrinsicConstants_Apx (1 << 7)
+#define XArchIntrinsicConstants_Aes (1 << 8)
+#define XArchIntrinsicConstants_Avx512Vp2intersect (1 << 9)
+#define XArchIntrinsicConstants_AvxIfma (1 << 10)
+#define XArchIntrinsicConstants_AvxVnni (1 << 11)
+#define XArchIntrinsicConstants_AvxVnniInt (1 << 12)
 #define XArchIntrinsicConstants_Gfni (1 << 13)
 #define XArchIntrinsicConstants_Sha (1 << 14)
 #define XArchIntrinsicConstants_Vaes (1 << 15)
 #define XArchIntrinsicConstants_WaitPkg (1 << 16)
 #define XArchIntrinsicConstants_X86Serialize (1 << 17)
-#define XArchIntrinsicConstants_AvxVnniInt (1 << 18)
 #endif // HOST_X86 || HOST_AMD64
 
 #if defined(HOST_ARM64)
@@ -50,7 +50,6 @@
 // Bit position for the ARM64IntrinsicConstants_Atomics flags, to be used with tbz / tbnz instructions
 #define ARM64_ATOMICS_FEATURE_FLAG_BIT 6
 static_assert((1 << ARM64_ATOMICS_FEATURE_FLAG_BIT) == ARM64IntrinsicConstants_Atomics, "ARM64_ATOMICS_FEATURE_FLAG_BIT must match with ARM64IntrinsicConstants_Atomics");
-
 #endif // HOST_ARM64
 
 #if defined(HOST_RISCV64)

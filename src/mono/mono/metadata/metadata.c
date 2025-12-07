@@ -1975,6 +1975,15 @@ mono_metadata_init (void)
 		g_hash_table_insert (type_cache, (gpointer) &builtin_types [i], (gpointer) &builtin_types [i]);
 
 	mono_metadata_update_init ();
+
+	char *compressed_bmap = g_getenv ("MONO_COMPRESSED_INTERFACE_BITMAP");
+	if (compressed_bmap) {
+		if (compressed_bmap [0] == '1')
+			mono_opt_compressed_interface_bitmap = TRUE;
+		else if (compressed_bmap [0] == '0')
+			mono_opt_compressed_interface_bitmap = FALSE;
+		g_free (compressed_bmap);
+	}
 }
 
 /*
@@ -5596,29 +5605,6 @@ gboolean
 mono_metadata_generic_context_equal (const MonoGenericContext *g1, const MonoGenericContext *g2)
 {
 	return g1->class_inst == g2->class_inst && g1->method_inst == g2->method_inst;
-}
-
-/*
- * mono_metadata_str_hash:
- *
- *   This should be used instead of g_str_hash for computing hash codes visible
- * outside this module, since g_str_hash () is not guaranteed to be stable
- * (its not the same in eglib for example).
- */
-guint
-mono_metadata_str_hash (gconstpointer v1)
-{
-	/* Same as g_str_hash () in glib */
-	/* note: signed/unsigned char matters - we feed UTF-8 to this function, so the high bit will give diferent results if we don't match. */
-	unsigned char *p = (unsigned char *) v1;
-	guint hash = *p;
-
-	while (*p++) {
-		if (*p)
-			hash = (hash << 5) - hash + *p;
-	}
-
-	return hash;
 }
 
 /**

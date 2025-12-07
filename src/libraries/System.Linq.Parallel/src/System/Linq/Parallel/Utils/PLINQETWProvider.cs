@@ -22,15 +22,12 @@ namespace System.Linq.Parallel
     [EventSource(
         Name = "System.Linq.Parallel.PlinqEventSource",
         Guid = "159eeeec-4a14-4418-a8fe-faabcd987887")]
-    internal sealed class PlinqEtwProvider : EventSource
+    internal sealed partial class PlinqEtwProvider : EventSource
     {
         /// <summary>
         /// Defines the singleton instance for the PLINQ ETW provider.
-        /// The PLINQ Event provider GUID is {159eeeec-4a14-4418-a8fe-faabcd987887}.
         /// </summary>
         internal static readonly PlinqEtwProvider Log = new PlinqEtwProvider();
-        /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
-        private PlinqEtwProvider() { }
 
         /// <summary>Cached id for the default scheduler.</summary>
         /// <remarks>If PLINQ ever supports other schedulers, that information will need to be passed into the query events.</remarks>

@@ -89,6 +89,12 @@ struct CloneInfo : public GuardInfo
     unsigned                  m_appearanceCount = 0;
     jitstd::vector<unsigned>* m_allocTemps      = nullptr;
 
+    // The initial GDV guard block, if any.
+    BasicBlock* m_guardBlock = nullptr;
+
+    // The block where the enumerator var is assigned.
+    BasicBlock* m_defBlock = nullptr;
+
     // Where the enumerator allocation happens
     GenTree*    m_allocTree  = nullptr;
     Statement*  m_allocStmt  = nullptr;
@@ -189,6 +195,9 @@ class ObjectAllocator final : public Phase
     bool           m_trackFields;
     NodeToIndexMap m_StoreAddressToIndexMap;
 
+    // Info to distinguish cloned blocks
+    unsigned m_initialMaxBlockID;
+
     //===============================================================================
     // Methods
 public:
@@ -278,6 +287,8 @@ private:
     bool ShouldClone(CloneInfo* info);
     void CloneAndSpecialize(CloneInfo* info);
     void CloneAndSpecialize();
+
+    bool BlockIsCloneOrWasCloned(BasicBlock* block);
 
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
 

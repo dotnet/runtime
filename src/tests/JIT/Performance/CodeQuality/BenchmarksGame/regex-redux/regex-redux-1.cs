@@ -8,8 +8,8 @@
 
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
- * 
- * regex-dna program contributed by Isaac Gouy 
+ *
+ * regex-dna program contributed by Isaac Gouy
  * converted from regex-dna program
  *
 */

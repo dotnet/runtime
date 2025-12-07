@@ -42,7 +42,7 @@ public class DacStreamsTests
             builder = configure(builder);
         }
 
-        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget, DacStreamsTypes, DacStreamsGlobals);
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, DacStreamsTypes, DacStreamsGlobals);
         target.SetContracts(Mock.Of<ContractRegistry>(
             c => c.DacStreams == ((IContractFactory<IDacStreams>)new DacStreamsFactory()).CreateContract(target, 1)));
 

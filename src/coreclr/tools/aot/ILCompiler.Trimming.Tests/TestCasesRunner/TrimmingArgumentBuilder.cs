@@ -271,6 +271,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
             foreach (var additionalArgument in options.AdditionalArguments)
                 AddAdditionalArgument(additionalArgument.Key, additionalArgument.Value);
 
+            if (options.RootEntireAssemblies?.Count > 0)
+            {
+                foreach (var asm in options.RootEntireAssemblies)
+                    Options.RootEntireAssemblies.Add(asm);
+            }
+
             if (options.IlcFrameworkCompilation)
                 Options.FrameworkCompilation = true;
         }

@@ -17,6 +17,9 @@ namespace System.Threading
     {
         // Extra bits used in _threadState
         private const ThreadState ThreadPoolThread = (ThreadState)0x1000;
+#if TARGET_WINDOWS
+        private const ThreadState Interrupted = (ThreadState)0x2000;
+#endif
 
         // Bits of _threadState that are returned by the ThreadState property
         private const ThreadState PublicThreadStateMask = (ThreadState)0x1FF;
