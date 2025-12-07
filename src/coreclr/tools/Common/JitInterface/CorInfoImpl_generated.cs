@@ -195,7 +195,6 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, uint> GetExpectedTargetArchitecture;
             public delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint> GetJitFlags;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*> GetSpecialCopyHelper;
-
         }
 
         static CorInfoImpl()
@@ -377,7 +376,6 @@ namespace Internal.JitInterface
             s_corJitInfoVtbl.GetExpectedTargetArchitecture = &_getExpectedTargetArchitecture;
             s_corJitInfoVtbl.GetJitFlags = &_getJitFlags;
             s_corJitInfoVtbl.GetSpecialCopyHelper = &_getSpecialCopyHelper;
-
         }
 
         private static IntPtr GetUnmanagedCallbacks()
@@ -2989,7 +2987,6 @@ namespace Internal.JitInterface
                 return default;
             }
         }
-
 
     }
 }

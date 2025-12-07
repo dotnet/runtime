@@ -301,8 +301,7 @@ namespace Internal.JitInterface
                 tw.Write($", {decl.ReturnType.UnmanagedTypeName}> {char.ToUpperInvariant(decl.FunctionName[0])}");
                 tw.WriteLine($"{decl.FunctionName.Substring(1)};");
             }
-            tw.Write(@"
-        }
+            tw.Write(@"        }
 
         static CorInfoImpl()
         {
@@ -312,8 +311,7 @@ namespace Internal.JitInterface
                 tw.Write($"            s_corJitInfoVtbl.{char.ToUpperInvariant(decl.FunctionName[0])}");
                 tw.WriteLine($"{decl.FunctionName.Substring(1)} = &_{decl.FunctionName};");
             }
-            tw.Write(@"
-        }
+            tw.Write(@"        }
 
         private static IntPtr GetUnmanagedCallbacks()
         {
@@ -381,8 +379,7 @@ namespace Internal.JitInterface
                 tw.WriteLine();
             }
 
-            tw.WriteLine(@"
-    }
+            tw.WriteLine(@"    }
 }");
         }
 
