@@ -1514,13 +1514,13 @@ namespace System.Tests
         /// A mock function pointer type used to test the abstract ContainsGenericParameters implementation in Type.Helpers.cs.
         /// This inherits from Type directly (not MockType) so that it uses the base ContainsGenericParameters implementation.
         /// </summary>
-        private sealed class MockFunctionPointerType : Type
+        private sealed class MockFunctionPointerType_ContainsGenericParameters : Type
         {
             private readonly Type _returnType;
             private readonly Type[] _parameterTypes;
             private static readonly Exception s_unexpected = new Exception("Did not expect to be called.");
 
-            public MockFunctionPointerType(Type returnType, Type[] parameterTypes)
+            public MockFunctionPointerType_ContainsGenericParameters(Type returnType, Type[] parameterTypes)
             {
                 _returnType = returnType;
                 _parameterTypes = parameterTypes ?? Type.EmptyTypes;
@@ -1575,19 +1575,19 @@ namespace System.Tests
         public static void FunctionPointerContainsGenericParameters()
         {
             // Function pointer with non-generic return type and no parameters should not contain generic parameters
-            var fnPtrNonGeneric = new MockFunctionPointerType(typeof(string), Type.EmptyTypes);
+            var fnPtrNonGeneric = new MockFunctionPointerType_ContainsGenericParameters(typeof(string), Type.EmptyTypes);
             Assert.False(fnPtrNonGeneric.ContainsGenericParameters);
 
             // Function pointer with generic return type should contain generic parameters
-            var fnPtrGenericReturn = new MockFunctionPointerType(typeof(List<>), Type.EmptyTypes);
+            var fnPtrGenericReturn = new MockFunctionPointerType_ContainsGenericParameters(typeof(List<>), Type.EmptyTypes);
             Assert.True(fnPtrGenericReturn.ContainsGenericParameters);
 
             // Function pointer with non-generic return type but generic parameter type should contain generic parameters
-            var fnPtrGenericParam = new MockFunctionPointerType(typeof(string), new Type[] { typeof(List<>) });
+            var fnPtrGenericParam = new MockFunctionPointerType_ContainsGenericParameters(typeof(string), new Type[] { typeof(List<>) });
             Assert.True(fnPtrGenericParam.ContainsGenericParameters);
 
             // Function pointer with non-generic return type and non-generic parameter type should not contain generic parameters
-            var fnPtrAllNonGeneric = new MockFunctionPointerType(typeof(string), new Type[] { typeof(int) });
+            var fnPtrAllNonGeneric = new MockFunctionPointerType_ContainsGenericParameters(typeof(string), new Type[] { typeof(int) });
             Assert.False(fnPtrAllNonGeneric.ContainsGenericParameters);
         }
     }
