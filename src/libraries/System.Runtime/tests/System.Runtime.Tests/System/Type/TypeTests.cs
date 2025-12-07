@@ -1532,7 +1532,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void FunctionPointerContainsGenericParameters_MockType()
+        public static void FunctionPointerContainsGenericParameters()
         {
             // Function pointer with non-generic return type and no parameters should not contain generic parameters
             var fnPtrNonGeneric = new MockFunctionPointerType(typeof(string), Type.EmptyTypes);
