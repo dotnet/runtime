@@ -36,7 +36,7 @@ namespace Internal.JitInterface
         {
             s_JitConfigProviderVtbl.GetIntConfigValue = &getIntConfigValue;
             s_JitConfigProviderVtbl.GetStringConfigValue = &getStringConfigValue;
-            s_JitConfigProvider.Vtbl = (JitConfigProviderVtbl*)Unsafe.AsPointer(ref Unsafe.AsRef(in s_JitConfigProviderVtbl));
+            s_JitConfigProvider.Vtbl = (JitConfigProviderVtbl*)Unsafe.AsPointer(ref s_JitConfigProviderVtbl);
         }
 
         public unsafe static IntPtr UnmanagedInstance => (IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in s_JitConfigProvider));
