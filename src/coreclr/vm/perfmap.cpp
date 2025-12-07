@@ -431,7 +431,7 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
                 s_Current->WriteLine(line);
             }
 
-            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
+            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr, stubAllocationType != PerfMapStubType::Block);
         }
     }
     EX_CATCH{} EX_END_CATCH
