@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <AssemblyName>$(LibPrefix)$(MSBuildProjectName)</AssemblyName>
-
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <RootNamespace>Microsoft.Diagnostics.DataContractReader</RootNamespace>
     <Nullable>enable</Nullable>
