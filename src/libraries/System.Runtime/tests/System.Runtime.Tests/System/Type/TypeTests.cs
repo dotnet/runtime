@@ -1511,12 +1511,14 @@ namespace System.Tests
         }
 
         /// <summary>
-        /// A mock function pointer type used to test the abstract ContainsGenericParameters implementation.
+        /// A mock function pointer type used to test the abstract ContainsGenericParameters implementation in Type.Helpers.cs.
+        /// This inherits from Type directly (not MockType) so that it uses the base ContainsGenericParameters implementation.
         /// </summary>
-        private sealed class MockFunctionPointerType : MockType
+        private sealed class MockFunctionPointerType : Type
         {
             private readonly Type _returnType;
             private readonly Type[] _parameterTypes;
+            private static readonly Exception s_unexpected = new Exception("Did not expect to be called.");
 
             public MockFunctionPointerType(Type returnType, Type[] parameterTypes)
             {
@@ -1524,11 +1526,49 @@ namespace System.Tests
                 _parameterTypes = parameterTypes ?? Type.EmptyTypes;
             }
 
+            // Required for ContainsGenericParameters to work correctly
             protected override bool HasElementTypeImpl() => false;
             public override bool IsGenericParameter => false;
             public override bool IsFunctionPointer => true;
             public override Type GetFunctionPointerReturnType() => _returnType;
             public override Type[] GetFunctionPointerParameterTypes() => _parameterTypes;
+
+            // Required abstract members
+            public override Assembly Assembly => throw s_unexpected;
+            public override string AssemblyQualifiedName => throw s_unexpected;
+            public override Type BaseType => throw s_unexpected;
+            public override string FullName => throw s_unexpected;
+            public override Guid GUID => throw s_unexpected;
+            public override Module Module => throw s_unexpected;
+            public override string Namespace => throw s_unexpected;
+            public override Type UnderlyingSystemType => throw s_unexpected;
+            public override string Name => throw s_unexpected;
+            public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => throw s_unexpected;
+            public override object[] GetCustomAttributes(bool inherit) => throw s_unexpected;
+            public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw s_unexpected;
+            public override Type GetElementType() => throw s_unexpected;
+            public override EventInfo GetEvent(string name, BindingFlags bindingAttr) => throw s_unexpected;
+            public override EventInfo[] GetEvents(BindingFlags bindingAttr) => throw s_unexpected;
+            public override FieldInfo GetField(string name, BindingFlags bindingAttr) => throw s_unexpected;
+            public override FieldInfo[] GetFields(BindingFlags bindingAttr) => throw s_unexpected;
+            public override Type GetInterface(string name, bool ignoreCase) => throw s_unexpected;
+            public override Type[] GetInterfaces() => throw s_unexpected;
+            public override MemberInfo[] GetMembers(BindingFlags bindingAttr) => throw s_unexpected;
+            public override MethodInfo[] GetMethods(BindingFlags bindingAttr) => throw s_unexpected;
+            public override Type GetNestedType(string name, BindingFlags bindingAttr) => throw s_unexpected;
+            public override Type[] GetNestedTypes(BindingFlags bindingAttr) => throw s_unexpected;
+            public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => throw s_unexpected;
+            public override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, System.Globalization.CultureInfo culture, string[] namedParameters) => throw s_unexpected;
+            public override bool IsDefined(Type attributeType, bool inherit) => throw s_unexpected;
+            protected override TypeAttributes GetAttributeFlagsImpl() => throw s_unexpected;
+            protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) => throw s_unexpected;
+            protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) => throw s_unexpected;
+            protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers) => throw s_unexpected;
+            protected override bool IsArrayImpl() => throw s_unexpected;
+            protected override bool IsByRefImpl() => throw s_unexpected;
+            protected override bool IsCOMObjectImpl() => throw s_unexpected;
+            protected override bool IsPointerImpl() => throw s_unexpected;
+            protected override bool IsPrimitiveImpl() => throw s_unexpected;
         }
 
         [Fact]
@@ -1536,22 +1576,18 @@ namespace System.Tests
         {
             // Function pointer with non-generic return type and no parameters should not contain generic parameters
             var fnPtrNonGeneric = new MockFunctionPointerType(typeof(string), Type.EmptyTypes);
-            Assert.True(fnPtrNonGeneric.IsFunctionPointer);
             Assert.False(fnPtrNonGeneric.ContainsGenericParameters);
 
             // Function pointer with generic return type should contain generic parameters
             var fnPtrGenericReturn = new MockFunctionPointerType(typeof(List<>), Type.EmptyTypes);
-            Assert.True(fnPtrGenericReturn.IsFunctionPointer);
             Assert.True(fnPtrGenericReturn.ContainsGenericParameters);
 
             // Function pointer with non-generic return type but generic parameter type should contain generic parameters
             var fnPtrGenericParam = new MockFunctionPointerType(typeof(string), new Type[] { typeof(List<>) });
-            Assert.True(fnPtrGenericParam.IsFunctionPointer);
             Assert.True(fnPtrGenericParam.ContainsGenericParameters);
 
             // Function pointer with non-generic return type and non-generic parameter type should not contain generic parameters
             var fnPtrAllNonGeneric = new MockFunctionPointerType(typeof(string), new Type[] { typeof(int) });
-            Assert.True(fnPtrAllNonGeneric.IsFunctionPointer);
             Assert.False(fnPtrAllNonGeneric.ContainsGenericParameters);
         }
     }
