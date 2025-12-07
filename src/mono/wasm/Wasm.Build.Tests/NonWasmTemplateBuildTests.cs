@@ -26,7 +26,7 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
     //
     // This is useful for the case when we are on latest TFM, but sdk, and packages
     // are really the previous version.
-    private static readonly int TargetMajorVersion = 11; /* net11 */
+    private const int TargetMajorVersion = 11; /* net11 */
     private static readonly string s_latestTargetFramework = $"net{TargetMajorVersion}.0";
     private static readonly string s_previousTargetFramework = $"net{TargetMajorVersion - 1}.0";
     private static string s_directoryBuildTargetsForPreviousTFM =

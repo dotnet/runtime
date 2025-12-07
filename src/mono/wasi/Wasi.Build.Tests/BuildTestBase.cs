@@ -37,7 +37,7 @@ namespace Wasm.Build.Tests
         protected SharedBuildPerTestClassFixture _buildContext;
         protected string _nugetPackagesDir = string.Empty;
 
-        /* This will trigger  importing WasmOverridePacks.targets for the tests,
+        /* This will trigger importing WasmOverridePacks.targets for the tests,
          * which will override the runtime pack with with the locally built one.
          * But note that this only partially helps with "switching workloads" because
          * the tasks/targets, aot compiler, etc would still be from the old version
