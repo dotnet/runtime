@@ -1079,13 +1079,6 @@ void interceptor_ICJI::getFunctionFixedEntryPoint(
     original_ICorJitInfo->getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
 }
 
-CorInfoHelpFunc interceptor_ICJI::getLazyStringLiteralHelper(
-          CORINFO_MODULE_HANDLE handle)
-{
-    mcs->AddCall("getLazyStringLiteralHelper");
-    return original_ICorJitInfo->getLazyStringLiteralHelper(handle);
-}
-
 CORINFO_MODULE_HANDLE interceptor_ICJI::embedModuleHandle(
           CORINFO_MODULE_HANDLE handle,
           void** ppIndirection)
