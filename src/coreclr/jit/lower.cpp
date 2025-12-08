@@ -6409,7 +6409,7 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
         {
             // This node is in the dataflow. See if we can move it ahead of the
             // range we are moving.
-            if (m_scratchSideEffects.InterferesWith(comp, cur, /* strict */ true))
+            if (cur->OperConsumesFlags() || m_scratchSideEffects.InterferesWith(comp, cur, /* strict */ true))
             {
                 // Stop moving the range, but keep going through the rest
                 // of the nodes to unmark them
