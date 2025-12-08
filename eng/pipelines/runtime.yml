@@ -854,6 +854,7 @@ extends:
           platforms:
             - browser_wasm
           nameSuffix: _EAT
+          buildAOTOnHelix: false
           runAOT: false
           shouldRunSmokeOnly: false
           alwaysRun: ${{ variables.isRollingBuild }}
@@ -867,6 +868,7 @@ extends:
             - browser_wasm_win
           nameSuffix: _Smoke_AOT
           runAOT: true
+          buildAOTOnHelix: false
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)

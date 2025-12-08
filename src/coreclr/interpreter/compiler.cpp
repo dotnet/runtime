@@ -586,7 +586,7 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
                 }
 #ifdef TARGET_64BIT
                 // nint and int32 can be used interchangeably. Add implicit conversions.
-                else if (interpType == InterpTypeI4 && interpDestType == InterpTypeI8)
+                else if (interpType == InterpTypeI4 && ((interpDestType == InterpTypeI8) || (interpDestType == InterpTypeByRef)))
                 {
                     movOp = INTOP_CONV_I8_I4;
                 }
@@ -2271,6 +2271,9 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
                     // This is a ret instruction coming from the initial IL of a synchronized or async method.
                     CreateLeaveChainIslandBasicBlocks(methodInfo, insOffset, GetBB(m_synchronizedOrAsyncPostFinallyOffset));
                 }
+
+                // The instruction AFTER a ret is always a different basic block if it exists.
+                GetBB((int32_t)(ip - codeStart));
             }
             break;
         case InlineString:
@@ -4419,7 +4422,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     bool isMarshaledPInvoke = isPInvoke && m_compHnd->pInvokeMarshalingRequired(callInfo.hMethod, &callInfo.sig);
 
     // Process sVars
-    int numArgsFromStack = callInfo.sig.numArgs + (newObj ? 0 : callInfo.sig.hasThis());
+    int numArgsFromStack = callInfo.sig.numArgs + (newObj ? 0 : callInfo.sig.hasImplicitThis());
     int newObjThisArgLocation = newObj && !doCallInsteadOfNew ? 0 : INT_MAX;
     int numArgs = numArgsFromStack + (newObjThisArgLocation == 0);
 
@@ -4427,7 +4430,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     int continuationArgLocation = INT_MAX;
     if (callInfo.sig.hasTypeArg())
     {
-        extraParamArgLocation = callInfo.sig.hasThis() ? 1 : 0;
+        extraParamArgLocation = callInfo.sig.hasImplicitThis() ? 1 : 0;
         numArgs++;
     }
 
@@ -4471,7 +4474,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         else
         {
             int iCurrentStackArg = iLogicalArg - numArgsFromStack;
-            if (iLogicalArg != 0 || !callInfo.sig.hasThis() || newObj)
+            if (iLogicalArg != 0 || !callInfo.sig.hasImplicitThis() || newObj)
             {
                 CORINFO_CLASS_HANDLE classHandle;
 
@@ -4542,6 +4545,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     int32_t vtsize = 0;
     bool injectRet = false;
 
+    bool resultIsNewObjToVTWithCopy = false;
+
     if (newObjThisArgLocation != INT_MAX)
     {
         ctorType = GetInterpType(m_compHnd->asCorInfoType(resolvedCallToken.hClass));
@@ -4574,6 +4579,14 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         // Consider this arg as being defined, although newobj defines it
         AddIns(INTOP_DEF);
         m_pLastNewIns->SetDVar(newObjThisVar);
+
+        if (ctorType == InterpTypeVT)
+        {
+            resultIsNewObjToVTWithCopy = true;
+            AllocGlobalVarOffset(newObjDVar);
+            m_pVars[newObjDVar].global = true;
+            INTERP_DUMP("alloc global var %d to offset %d of size %d\n", newObjDVar, m_pVars[newObjDVar].offset, m_pVars[newObjDVar].size);
+        }
 
         callArgs[newObjThisArgLocation] = newObjThisVar;
     }
@@ -4835,15 +4848,20 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 }
                 else if (opcode == INTOP_CALLDELEGATE)
                 {
-                    int32_t firstTargetArgOffset = INTERP_STACK_SLOT_SIZE;
-                    if (numArgs > 1)
+                    int32_t sizeOfArgsUpto16ByteAlignment = 0;
+                    for (int argIndex = 1; argIndex < numArgs; argIndex++)
                     {
-                        // The first argument is the delegate obj, the second is the first target arg
-                        // The offset of the first target arg relative to the start of delegate call args is equal to the alignment of the
-                        // first target arg.
-                        GetInterpTypeStackSize(m_pVars[callArgs[1]].clsHnd, m_pVars[callArgs[1]].interpType, &firstTargetArgOffset);
+                        int32_t argAlignment = INTERP_STACK_SLOT_SIZE;
+                        int32_t size = GetInterpTypeStackSize(m_pVars[callArgs[argIndex]].clsHnd, m_pVars[callArgs[argIndex]].interpType, &argAlignment);
+                        size = ALIGN_UP_TO(size, INTERP_STACK_SLOT_SIZE);
+                        if (argAlignment == INTERP_STACK_ALIGNMENT)
+                        {
+                            break;
+                        }
+                        sizeOfArgsUpto16ByteAlignment += size;
                     }
-                    m_pLastNewIns->data[1] = firstTargetArgOffset;
+
+                    m_pLastNewIns->data[1] = sizeOfArgsUpto16ByteAlignment;
                 }
             }
             break;
@@ -4943,6 +4961,30 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 m_pLastNewIns->SetSVar(dVar);
                 break;
         }
+    }
+
+    if (resultIsNewObjToVTWithCopy)
+    {
+        // For compliance with the exact letter of the ECMA spec, the result of a newobj to a valuetype must be computed
+        // by creating an instance of the valuetype, calling the constructor on that instance, and then copying the initialized
+        // value to the logical IL stack. This is done in case the constructor for the valuetype exposes the `this` pointer, and
+        // then something else captures that this pointer, and mutates the valuetype after the constructor returns. To prevent this
+        // from being generally unsafe, we need to make the temporary initial copy of the valuetype to be in a variable which has
+        // memory which will always be an instance of the newobj type, and to match RyuJit behavior that it is never possible to modify
+        // a valuetype on the IL evaluation stack we need to copy from there to the evaluation stack after running the constructor.
+
+        assert(m_pStackPointer[-1].var == newObjDVar);
+        assert(m_pVars[newObjDVar].global);
+
+        // For newobj to VT with copy, we need to copy the value type from the global var to the stack
+        m_pStackPointer--;
+
+        assert(m_pVars[newObjDVar].interpType == InterpTypeVT);
+        PushTypeVT(m_pVars[newObjDVar].clsHnd, m_pVars[newObjDVar].size);
+        AddIns(InterpGetMovForType(InterpTypeVT, true));
+        m_pLastNewIns->SetSVar(newObjDVar);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        m_pLastNewIns->data[0] = m_pVars[newObjDVar].size;
     }
 
     if (callInfo.sig.isAsyncCall() && m_methodInfo->args.isAsyncCall()) // Async2 functions may need to suspend
@@ -6987,6 +7029,10 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     CORINFO_RESOLVED_TOKEN constrainedToken;
     CORINFO_CALL_INFO callInfo;
     const uint8_t *codeEnd;
+    if (m_methodInfo->args.hasExplicitThis())
+    {
+        BADCODE("Explicit this is only supported for calls");
+    }
     int numArgs = m_methodInfo->args.hasThis() + m_methodInfo->args.numArgs;
     bool emittedBBlocks, linkBBlocks, needsRetryEmit;
     m_pILCode = methodInfo->ILCode;
