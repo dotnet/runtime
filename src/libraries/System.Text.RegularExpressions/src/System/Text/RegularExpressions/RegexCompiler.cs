@@ -5216,7 +5216,7 @@ namespace System.Text.RegularExpressions
                     }
 
                     // IndexOfAny{Except}(ch1, ...)
-                    Span<char> setChars = stackalloc char[128]; // arbitrary cut-off that accomodates all of ASCII and doesn't take too long to compute
+                    Span<char> setChars = stackalloc char[128]; // arbitrary cut-off that accommodates all of ASCII and doesn't take too long to compute
                     int setCharsCount = RegexCharClass.GetSetChars(node.Str, setChars);
                     if (setCharsCount > 0)
                     {

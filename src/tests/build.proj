@@ -13,6 +13,8 @@
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
     <Language>C#</Language>
     <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
+    <MobileAppBundleDirName Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">AppBundle</MobileAppBundleDirName>
+    <MobileAppBundleDirName Condition="'$(TargetsBrowser)' == 'true'">wwwroot</MobileAppBundleDirName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -232,7 +234,7 @@
     <MakeDir Directories="$(BuildDir)"/>
 
     <ItemGroup>
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.$(TestScriptExtension)" Exclude="$(_CMDDIR)\**\AppBundle\*.$(TestScriptExtension)" />
+      <AllCMDsPresent Include="$(_CMDDIR)\**\*.$(TestScriptExtension)" Exclude="$(_CMDDIR)\**\$(MobileAppBundleDirName)\*.$(TestScriptExtension)" />
       <TestAssemblies Include="@(AllCMDsPresent->'%(RelativeDir)%(Filename).dll')" />
       <TestAssemblyDirs Include="@(AllCMDsPresent->'%(RelativeDir)')" />
       <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
@@ -390,7 +392,7 @@
     </ItemGroup>
     <!-- Remove the cmd/sh scripts for merged test runner app bundles from our list. -->
     <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
-      <MergedRunnableTestAppBundleScriptPathsPattern>@(MergedAssemblyMarkerPaths->'%(RootDir)%(Directory)AppBundle/**/*.$(TestScriptExtension)')</MergedRunnableTestAppBundleScriptPathsPattern>
+      <MergedRunnableTestAppBundleScriptPathsPattern>@(MergedAssemblyMarkerPaths->'%(RootDir)%(Directory)$(MobileAppBundleDirName)/**/*.$(TestScriptExtension)')</MergedRunnableTestAppBundleScriptPathsPattern>
     </PropertyGroup>
     <ItemGroup>
       <LegacyRunnableTestPaths Include="@(AllRunnableTestPaths)" Exclude="@(MergedRunnableTestPaths);@(OutOfProcessTestPaths);$(MergedRunnableTestAppBundleScriptPathsPattern)" />

@@ -9,6 +9,24 @@
     <MonoForceInterpreter Condition="'$(MonoForceInterpreter)' == ''">true</MonoForceInterpreter>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true'">
+    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
+    <PublishReadyToRunContainerFormat>macho</PublishReadyToRunContainerFormat>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(PublishReadyToRun)' != 'true' and '$(UseMonoRuntime)' != 'true'">
+    <EnvironmentVariables Include="DOTNET_ReadyToRun=0" />
+  </ItemGroup>
+
+  <!-- Tracking issue: https://github.com/dotnet/runtime/issues/119006
+       ReadyToRun settings for CoreCLR on Apple platforms.
+       This can be removed once we upstream Mach-O support in the targets to the SDK -->
+  <Import Project="$(Crossgen2SdkOverridePropsPath)" Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(Crossgen2SdkOverridePropsPath)' != ''" />
+  <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true'">
+    <AfterMicrosoftNETSdkTargets Condition="'$(Crossgen2SdkOverrideTargetsPath)' != ''">$(AfterMicrosoftNETSdkTargets);$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
+    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.ReadyToRun.targets</AfterMicrosoftNETSdkTargets>
+  </PropertyGroup>
+
   <PropertyGroup>
     <iOSLikeDedup Condition="'$(iOSLikeDedup)' == '' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</iOSLikeDedup>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
