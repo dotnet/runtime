@@ -480,10 +480,10 @@ void InitGSCookie()
     void * pf = &__security_check_cookie;
     pf = NULL;
 
-    GSCookie val = (GSCookie)(__security_cookie ^ minipal_lowres_ticks());
+    GSCookie val = (GSCookie)(__security_cookie ^ minipal_hires_ticks());
 #else // !TARGET_UNIX
-    // REVIEW: Need something better for PAL...
-    GSCookie val = (GSCookie)minipal_lowres_ticks();
+    GSCookie val;
+    minipal_get_non_cryptographically_secure_random_bytes(&val, sizeof(val));
 #endif // !TARGET_UNIX
 
 #ifdef _DEBUG

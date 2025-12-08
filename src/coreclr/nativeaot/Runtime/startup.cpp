@@ -224,8 +224,9 @@ bool InitGSCookie()
     }
 #endif
 
-    // REVIEW: Need something better for PAL...
-    GSCookie val = (GSCookie)minipal_lowres_ticks();
+    GSCookie val;
+
+    minipal_get_non_cryptographically_secure_random_bytes(&val, sizeof(val));
 
 #ifdef _DEBUG
     // In _DEBUG, always use the same value to make it easier to search for the cookie
