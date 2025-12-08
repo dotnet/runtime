@@ -203,7 +203,7 @@ void YieldProcessorNormalization::PerformMeasurement()
 
     GCHeapUtilities::GetGCHeap()->SetYieldProcessorScalingFactor((float)yieldsPerNormalizedYield);
 
-    s_previousNormalizationTimeMs = (unsigned int)minipal_lowres_ticks();
+    s_previousNormalizationTimeMs = minipal_lowres_ticks();
     s_normalizationState = NormalizationState::Initialized;
     s_isMeasurementScheduled = false;
 }
