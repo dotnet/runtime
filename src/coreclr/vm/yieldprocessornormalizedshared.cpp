@@ -118,7 +118,7 @@ void YieldProcessorNormalization::PerformMeasurement()
     double latestNsPerYield;
     if (s_normalizationState == NormalizationState::Initialized)
     {
-        if (minipal_lowres_ticks() - s_previousNormalizationTimeMs < MeasurementPeriodMs)
+        if ((minipal_lowres_ticks() - s_previousNormalizationTimeMs) < MeasurementPeriodMs)
         {
             return;
         }
@@ -222,7 +222,7 @@ void YieldProcessorNormalization::ScheduleMeasurementIfNecessary()
     NormalizationState normalizationState = VolatileLoadWithoutBarrier(&s_normalizationState);
     if (normalizationState == NormalizationState::Initialized)
     {
-        if (minipal_lowres_ticks() - s_previousNormalizationTimeMs < MeasurementPeriodMs)
+        if ((minipal_lowres_ticks() - s_previousNormalizationTimeMs) < MeasurementPeriodMs)
         {
             return;
         }
