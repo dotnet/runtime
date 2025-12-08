@@ -331,7 +331,7 @@ VOID ThrowInteropParamException(UINT resID, UINT paramIdx)
         paramString.Printf("parameter #%u", paramIdx);
 
     SString errorString(W("Unknown error."));
-    errorString.LoadResource(CCompRC::Error, resID);
+    errorString.LoadResource(resID);
 
     COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHAL_ERROR_MSG, paramString.GetUnicode(), errorString.GetUnicode());
 }
@@ -2107,7 +2107,7 @@ void MarshalInfo::ThrowTypeLoadExceptionForInvalidFieldMarshal(FieldDesc* pField
     StackSString ssFieldName(SString::Utf8, pFieldDesc->GetName());
 
     StackSString errorString(W("Unknown error."));
-    errorString.LoadResource(CCompRC::Error, resID);
+    errorString.LoadResource(resID);
 
     COMPlusThrow(kTypeLoadException, IDS_EE_BADMARSHALFIELD_ERROR_MSG,
         GetFullyQualifiedNameForClassW(pFieldDesc->GetEnclosingMethodTable()),

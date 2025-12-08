@@ -9,7 +9,6 @@
 #include <utilcode.h>                   // Utility helpers.
 #include <corerror.h>
 #include <clrversion.h>
-#include "../../dlls/mscorrc/resource.h"
 
 // Output printf-style formatted text to the debugger if it's present or stdout otherwise.
 static void DbgPrintf(const LPCSTR szFormat, ...)
