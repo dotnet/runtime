@@ -98,10 +98,8 @@ namespace System.Collections.Generic
                 {
                     EnsureCapacity(_count + count);
 
-                    foreach (T item in collection)
-                    {
-                        _items[_count++] = item;
-                    }
+                    collection.CopyTo(_items, _count);
+                    _count += count;
                 }
             }
             else

@@ -88,10 +88,8 @@ namespace System.Collections.Generic
                         EnsureCapacity(_count + count);
                     }
 
-                    foreach (T item in collection)
-                    {
-                        UncheckedAdd(item);
-                    }
+                    collection.CopyTo(_array!, _count);
+                    _count += count;
                 }
             }
             else
