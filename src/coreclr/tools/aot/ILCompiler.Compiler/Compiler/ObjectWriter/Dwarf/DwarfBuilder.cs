@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using ILCompiler.DependencyAnalysis;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
 using static ILCompiler.ObjectWriter.DwarfNative;
@@ -16,9 +17,9 @@ namespace ILCompiler.ObjectWriter
 {
     internal sealed class DwarfBuilder : ITypesDebugInfoWriter
     {
-        private record struct SectionInfo(string SectionSymbolName, ulong Size);
+        private record struct SectionInfo(Utf8String SectionSymbolName, ulong Size);
         private record struct MemberFunctionTypeInfo(MemberFunctionTypeDescriptor MemberDescriptor, uint[] ArgumentTypes, bool IsStatic);
-        public delegate (string SectionSymbolName, long Address) ResolveStaticVariable(string name);
+        public delegate (Utf8String SectionSymbolName, long Address) ResolveStaticVariable(Utf8String name);
 
         private readonly NameMangler _nameMangler;
         private readonly TargetArchitecture _architecture;
@@ -200,8 +201,8 @@ namespace ILCompiler.ObjectWriter
 
                 foreach (DwarfStaticVariableInfo staticField in _staticFields)
                 {
-                    (string sectionSymbolName, long address) = resolveStaticVariable(staticField.Name);
-                    if (sectionSymbolName is not null)
+                    (Utf8String sectionSymbolName, long address) = resolveStaticVariable(staticField.Name);
+                    if (!sectionSymbolName.IsNull)
                     {
                         staticField.Dump(dwarfInfoWriter, sectionSymbolName, address);
                     }
@@ -422,14 +423,14 @@ namespace ILCompiler.ObjectWriter
             return (uint)_memberFunctions.Count;
         }
 
-        public string GetMangledName(TypeDesc type)
+        public Utf8String GetMangledName(TypeDesc type)
         {
             return _nameMangler.GetMangledTypeName(type);
         }
 
         public void EmitSubprogramInfo(
-            string methodName,
-            string sectionSymbolName,
+            Utf8String methodName,
+            Utf8String sectionSymbolName,
             long methodAddress,
             int methodPCLength,
             uint methodTypeIndex,
@@ -455,7 +456,7 @@ namespace ILCompiler.ObjectWriter
 
         public void EmitLineInfo(
             int sectionIndex,
-            string sectionSymbolName,
+            Utf8String sectionSymbolName,
             long methodAddress,
             IEnumerable<NativeSequencePoint> sequencePoints)
         {
@@ -492,7 +493,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public void EmitSectionInfo(string sectionSymbolName, ulong size)
+        public void EmitSectionInfo(Utf8String sectionSymbolName, ulong size)
         {
             _sections.Add(new SectionInfo(sectionSymbolName, size));
         }

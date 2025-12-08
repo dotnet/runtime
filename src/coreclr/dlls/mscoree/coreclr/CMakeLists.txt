@@ -73,6 +73,7 @@ endif (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 # order dependent and changing the order can result in undefined symbols in the shared
 # library.
 set(CORECLR_LIBRARIES
+    mscorrc
     utilcode
     ${LIB_CORDBEE}
     debug-pal
@@ -122,10 +123,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         bcrypt.lib
         RuntimeObject.lib
         delayimp.lib
-    )
-else()
-    list(APPEND CORECLR_LIBRARIES
-        mscorrc
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 

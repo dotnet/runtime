@@ -65,7 +65,6 @@ void emitFinishPrologEpilogGeneration();
 /*           Record a code position and later convert it to offset      */
 /************************************************************************/
 
-void*    emitCurBlock();
 unsigned emitCurOffset();
 unsigned emitSpecifiedOffset(unsigned insCount, unsigned igSize);
 
