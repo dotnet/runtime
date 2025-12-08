@@ -107,6 +107,122 @@ public:
     }
 };
 
+//------------------------------------------------------------------------
+// WasmInterval
+//
+// Represents a Wasm BLOCK/END or LOOP/END span in the linearized
+// basic block list.
+//
+class WasmInterval
+{
+private:
+
+    // m_chain refers to the conflict set member with the lowest m_start.
+    // (for "trivial" singleton conflict sets m_chain will be `this`)
+    WasmInterval* m_chain;
+
+    // True index of start
+    unsigned m_start;
+
+    // True index of end; interval ends just before this block
+    unsigned m_end;
+
+    // Largest end index of any chained interval
+    unsigned m_chainEnd;
+
+    // true if this is a loop interval (extents cannot change)
+    bool m_isLoop;
+
+public:
+
+    WasmInterval(unsigned start, unsigned end, bool isLoop)
+        : m_chain(nullptr)
+        , m_start(start)
+        , m_end(end)
+        , m_chainEnd(end)
+        , m_isLoop(isLoop)
+    {
+        m_chain = this;
+    }
+
+    unsigned Start() const
+    {
+        return m_start;
+    }
+
+    unsigned End() const
+    {
+        return m_end;
+    }
+
+    unsigned ChainEnd() const
+    {
+        return m_chainEnd;
+    }
+
+    // Call while resolving intervals when building chains.
+    WasmInterval* FetchAndUpdateChain()
+    {
+        if (m_chain == this)
+        {
+            return this;
+        }
+
+        WasmInterval* chain = m_chain->FetchAndUpdateChain();
+        m_chain             = chain;
+        return chain;
+    }
+
+    // Call after intervals are resolved and chains are fixed.
+    WasmInterval* Chain() const
+    {
+        assert((m_chain == this) || (m_chain == m_chain->Chain()));
+        return m_chain;
+    }
+
+    bool IsLoop() const
+    {
+        return m_isLoop;
+    }
+
+    void SetChain(WasmInterval* c)
+    {
+        m_chain       = c;
+        c->m_chainEnd = max(c->m_chainEnd, m_chainEnd);
+    }
+
+    static WasmInterval* NewBlock(Compiler* comp, BasicBlock* start, BasicBlock* end)
+    {
+        WasmInterval* result =
+            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, /* isLoop */ false);
+        return result;
+    }
+
+    static WasmInterval* NewLoop(Compiler* comp, BasicBlock* start, BasicBlock* end)
+    {
+        WasmInterval* result =
+            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, /* isLoop */ true);
+        return result;
+    }
+
+#ifdef DEBUG
+    void Dump(bool chainExtent = false)
+    {
+        printf("[%03u,%03u]%s", m_start, chainExtent ? m_chainEnd : m_end, m_isLoop && !chainExtent ? " L" : "");
+
+        if (m_chain != this)
+        {
+            printf(" --> ");
+            m_chain->Dump(true);
+        }
+        else
+        {
+            printf("\n");
+        }
+    }
+#endif
+};
+
 //------------------------------------------------------------------------------
 // FgWasm: Wasm-specific flow graph methods
 //

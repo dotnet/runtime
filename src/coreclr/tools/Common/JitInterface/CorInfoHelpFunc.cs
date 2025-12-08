@@ -59,7 +59,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
         CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
 
-        CORINFO_HELP_STRCNS,            // create a new string literal
         /* Object model */
 
         CORINFO_HELP_INITCLASS,         // Initialize class if not already initialized

@@ -854,9 +854,6 @@ CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 // Allow to enregister locals with struct type.
 RELEASE_CONFIG_INTEGER(JitEnregStructLocals, "JitEnregStructLocals", 1)
 
-// Simulate generation of Wasm control flow, even if not targeting wasm
-CONFIG_INTEGER(JitWasmControlFlow, "JitWasmControlFlow", 0)
-
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING
 #undef CONFIG_METHODSET

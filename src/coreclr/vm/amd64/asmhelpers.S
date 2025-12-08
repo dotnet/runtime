@@ -482,6 +482,8 @@ LOCAL_LABEL(HaveInterpThreadContext):
         // rbx contains IR bytecode address
         // Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
         call            qword ptr [r11]
+        // Fill in the ContinuationContext register
+        mov             rcx, [rsp + __PWTB_ArgumentRegisters + 3*8]
 
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
@@ -1733,14 +1735,15 @@ LEAF_END Load_XMM7, _TEXT
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
-        alloc_stack 0x10
-        save_reg_postrsp r10, 0
+        push_register r8
+        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         call qword ptr [r11]
-        mov r10, [rsp]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
         mov rsp, rbp
         pop rbp
         ret
@@ -1749,15 +1752,16 @@ NESTED_END CallJittedMethodRetVoid, _TEXT
 NESTED_ENTRY CallJittedMethodRetBuffRDI, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
-        alloc_stack 0x10
-        save_reg_postrsp r10, 0
+        push_register r8
+        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         mov rdi, rdx // return buffer
         call qword ptr [r11]
-        mov r10, [rsp]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
         mov rsp, rbp
         pop rbp
         ret
@@ -1766,15 +1770,16 @@ NESTED_END CallJittedMethodRetBuffRDI, _TEXT
 NESTED_ENTRY CallJittedMethodRetBuffRSI, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
-        alloc_stack 0x10
-        save_reg_postrsp r10, 0
+        push_register r8
+        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         mov rsi, rdx // return buffer
         call qword ptr [r11]
-        mov r10, [rsp]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
         mov rsp, rbp
         pop rbp
         ret
@@ -1783,15 +1788,16 @@ NESTED_END CallJittedMethodRetBuffRSI, _TEXT
 NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         call qword ptr [r11]
-        //pop rdx
-        mov rdx, [rbp - 8]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rdx, [rbp - 16]
         movsd real8 ptr [rdx], xmm0
         mov rsp, rbp
         pop rbp
@@ -1801,14 +1807,16 @@ NESTED_END CallJittedMethodRetDouble, _TEXT
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         call qword ptr [r11]
-        mov rdx, [rbp - 8]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rdx, [rbp - 16]
         mov qword ptr [rdx], rax
         mov rsp, rbp
         pop rbp
@@ -1818,14 +1826,16 @@ NESTED_END CallJittedMethodRetI8, _TEXT
 NESTED_ENTRY CallJittedMethodRetI8I8, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         call qword ptr [r11]
-        mov rcx, [rbp - 8]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rcx, [rbp - 16]
         mov qword ptr [rcx], rax
         mov qword ptr [rcx + 8], rdx
         mov rsp, rbp
@@ -1836,14 +1846,16 @@ NESTED_END CallJittedMethodRetI8I8, _TEXT
 NESTED_ENTRY CallJittedMethodRetI8Double, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         call qword ptr [r11]
-        mov rcx, [rbp - 8]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rcx, [rbp - 16]
         mov qword ptr [rcx], rax
         movsd real8 ptr [rcx + 8], xmm0
         mov rsp, rbp
@@ -1854,14 +1866,16 @@ NESTED_END CallJittedMethodRetI8Double, _TEXT
 NESTED_ENTRY CallJittedMethodRetDoubleI8, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         call qword ptr [r11]
-        mov rcx, [rbp - 8]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rcx, [rbp - 16]
         movsd real8 ptr [rcx], xmm0
         mov qword ptr [rcx + 8], rax
         mov rsp, rbp
@@ -1872,14 +1886,16 @@ NESTED_END CallJittedMethodRetDoubleI8, _TEXT
 NESTED_ENTRY CallJittedMethodRetDoubleDouble, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        push_register r8
         push_register rdx
-        push_register rax // align
 END_PROLOGUE
         sub rsp, rcx // total stack space
         mov r11, rdi // The routines list
         mov r10, rsi // interpreter stack args
         call qword ptr [r11]
-        mov rcx, [rbp - 8]
+        mov r8, [rbp - 8]
+        mov [r8], rcx
+        mov rcx, [rbp - 16]
         movsd real8 ptr [rcx], xmm0
         movsd real8 ptr [rcx + 8], xmm1
         mov rsp, rbp
