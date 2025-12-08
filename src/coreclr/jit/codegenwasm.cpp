@@ -382,13 +382,13 @@ static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types type)
 //
 // Arguments:
 //    oper - a genTreeOps to pack
-//    fromType - a var_types to pack
 //    toType - a var_types to pack
+//    fromType - a var_types to pack
 //
 // Return Value:
 //    oper and the types packed into an integer that can be used as a switch value/case
 //
-static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types fromType, var_types toType)
+static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types toType, var_types fromType)
 {
     if (fromType == TYP_BYREF)
     {
@@ -404,93 +404,43 @@ static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types fromType, v
 }
 
 //------------------------------------------------------------------------
-// genCodeForBinary: Generate code for a binary arithmetic operator
+// genCodeForCastr: Generate code for a binary arithmetic operator
 //
 // Arguments:
-//    treeNode - The binary operation for which we are generating code.
+//    tree - The binary operation for which we are generating code.
 //
-void CodeGen::genCodeForUnary(GenTreeUnOp* treeNode)
+void CodeGen::genCodeForCast(GenTreeOp* tree)
 {
-    genConsumeOperands(treeNode);
+    genConsumeOperands(tree);
 
     instruction ins;
-    switch (PackOperAndType(treeNode->OperGet(), /* fromType */ treeNode->gtOp1->TypeGet(), /* toType */ treeNode->TypeGet()))
+    switch (PackOperAndType(tree->OperGet(), /* toType */ tree->TypeGet(), /* fromType */ tree->gtOp1->TypeGet()))
     {
-        case PackOperAndType(GT_ADD, TYP_INT):
+        case PackOperAndType(GT_CAST, TYP_INT, TYP_LONG):
             if (treeNode->gtOverflow())
                 NYI_WASM("Overflow checks");
-            ins = INS_i32_add;
-            break;
-        case PackOperAndType(GT_ADD, TYP_LONG):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
-            ins = INS_i64_add;
-            break;
-        case PackOperAndType(GT_ADD, TYP_FLOAT):
-            ins = INS_f32_add;
-            break;
-        case PackOperAndType(GT_ADD, TYP_DOUBLE):
-            ins = INS_f64_add;
+            ins = INS_i32_wrap_i64;
             break;
 
-        case PackOperAndType(GT_SUB, TYP_INT):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
-            ins = INS_i32_sub;
-            break;
-        case PackOperAndType(GT_SUB, TYP_LONG):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
-            ins = INS_i64_sub;
-            break;
-        case PackOperAndType(GT_SUB, TYP_FLOAT):
-            ins = INS_f32_sub;
-            break;
-        case PackOperAndType(GT_SUB, TYP_DOUBLE):
-            ins = INS_f64_sub;
+        case PackOperAndType(GT_CAST, TYP_LONG, TYP_INT):
+            // FIXME: Use extend8/extend16 as appropriate
+            ins = tree->IsUnsigned() ? INS_i64_extend_u_i32 : INS_i64_extend_s_i32;
             break;
 
-        case PackOperAndType(GT_MUL, TYP_INT):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
-            ins = INS_i32_mul;
-            break;
-        case PackOperAndType(GT_MUL, TYP_LONG):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
-            ins = INS_i64_mul;
-            break;
-        case PackOperAndType(GT_MUL, TYP_FLOAT):
-            ins = INS_f32_mul;
-            break;
-        case PackOperAndType(GT_MUL, TYP_DOUBLE):
-            ins = INS_f64_mul;
+        case PackOperAndType(GT_CAST, TYP_DOUBLE, TYP_FLOAT):
+            // FIXME: This name looks wrong in the spec?
+            ins = INS_f32_promote_f64;
             break;
 
-        case PackOperAndType(GT_AND, TYP_INT):
-            ins = INS_i32_and;
-            break;
-        case PackOperAndType(GT_AND, TYP_LONG):
-            ins = INS_i64_and;
+        case PackOperAndType(GT_CAST, TYP_FLOAT, TYP_DOUBLE):
+            ins = INS_f32_demote_f64;
             break;
 
-        case PackOperAndType(GT_OR, TYP_INT):
-            ins = INS_i32_or;
-            break;
-        case PackOperAndType(GT_OR, TYP_LONG):
-            ins = INS_i64_or;
-            break;
-
-        case PackOperAndType(GT_XOR, TYP_INT):
-            ins = INS_i32_xor;
-            break;
-        case PackOperAndType(GT_XOR, TYP_LONG):
-            ins = INS_i64_xor;
-            break;
+        // TODO: Floating point conversions - we need to figure out where semantics require a helper and where they don't.
 
         default:
             ins = INS_none;
-            NYI_WASM("genCodeForBinary");
+            NYI_WASM("genCodeForCast");
             break;
     }
 
