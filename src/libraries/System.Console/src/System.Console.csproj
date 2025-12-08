@@ -77,7 +77,7 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
     <Compile Include="System\ConsolePal.Wasi.cs" />
     <Compile Include="System\ConsolePal.Unix.ConsoleStream.cs" />
-    <!-- 
+    <!--
     <Compile Include="System\IO\SyncTextReader.Unix.cs" />
      -->
 
