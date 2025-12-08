@@ -76,7 +76,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (addFrameworkArg) {
             var defaultTarget = template switch
             {
-                Template.BlazorWasm => DefaultTargetFrameworkForBlazor,
+                Template.BlazorWasm => DefaultTargetFrameworkForBlazorTemplate,
                 _ => DefaultTargetFramework,
             };
 
