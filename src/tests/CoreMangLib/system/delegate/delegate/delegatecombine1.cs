@@ -27,6 +27,7 @@ namespace DelegateTest
         booldelegate starkWork;
         booldelegate working;
         voiddelegate completeWork;
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

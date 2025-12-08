@@ -21,6 +21,7 @@ public class TestClass
 		return a;
 	}
 
+	[OuterLoop]
 	[Fact]
 	public static int TestEntryPoint() {
 		int iErrorCount = 0;

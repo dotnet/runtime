@@ -9,6 +9,7 @@ using Xunit;
 
 public static class Program
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

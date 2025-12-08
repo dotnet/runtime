@@ -69,6 +69,7 @@ public class My
 
     public static int[][] g = new int[10000][];
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

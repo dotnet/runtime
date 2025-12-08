@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLRTestPriority>1</CLRTestPriority>
     <!-- Direct invocation of delegate constructors -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>

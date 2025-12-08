@@ -500,6 +500,7 @@ public class MarshalSizeOf1
     #endregion
     #endregion
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

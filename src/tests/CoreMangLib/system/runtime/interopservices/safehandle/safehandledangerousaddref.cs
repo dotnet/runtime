@@ -207,6 +207,7 @@ public class SafeHandleDangerousAddRef
 
 
     [SecuritySafeCritical]
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -30,6 +30,7 @@ public class Program
         }
         return result;
     }
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

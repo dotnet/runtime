@@ -7,6 +7,7 @@ using Xunit;
 
 [SecuritySafeCritical]
 public class Program {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint() {
         Console.WriteLine("Attempting delegate construction with null method pointer.");

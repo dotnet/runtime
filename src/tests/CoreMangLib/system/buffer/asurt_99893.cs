@@ -11,6 +11,7 @@ namespace System
 {
     public class ASURT_99893
     {
+	[OuterLoop]
 	[Fact]
 	public static int TestEntryPoint()
 	{

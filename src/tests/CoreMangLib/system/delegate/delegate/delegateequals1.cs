@@ -13,6 +13,7 @@ namespace DelegateTest
 
         object starkWork;
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

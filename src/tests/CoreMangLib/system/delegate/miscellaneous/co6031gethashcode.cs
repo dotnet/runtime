@@ -6,6 +6,7 @@ using Xunit;
 delegate int Int32_VoidDelegate();
 public class TestClass
 {
+	[OuterLoop]
 	[Fact]
 	public static int TestEntryPoint() 
 	{

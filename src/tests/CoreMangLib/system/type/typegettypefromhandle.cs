@@ -10,6 +10,7 @@ using Xunit;
 /// </summary>
 public class TypeGetTypeFromHandle
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

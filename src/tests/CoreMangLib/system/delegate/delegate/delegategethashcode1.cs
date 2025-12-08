@@ -15,6 +15,7 @@ namespace DelegateTest
     {
 
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

@@ -376,6 +376,7 @@ public class SafeHandleDangerousRelease
 
 
     [SecuritySafeCritical]
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

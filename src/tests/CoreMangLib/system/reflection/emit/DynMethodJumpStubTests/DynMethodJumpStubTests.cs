@@ -10,6 +10,7 @@ using Xunit;
 
 public static class DynamicMethodJumpStubTests
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -12,6 +12,7 @@ public class Program
         value += num;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

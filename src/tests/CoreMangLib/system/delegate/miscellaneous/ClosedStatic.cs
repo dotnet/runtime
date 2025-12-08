@@ -17,6 +17,7 @@ public class Program
         return new decimal(constituent/prog.scale);
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {
