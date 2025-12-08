@@ -52,7 +52,6 @@ class AliasSet final
 
     bool m_readsAddressableLocation;
     bool m_writesAddressableLocation;
-    bool m_readsCpuFlags;
 
 public:
     //------------------------------------------------------------------------
@@ -67,8 +66,7 @@ public:
             ALIAS_READS_ADDRESSABLE_LOCATION  = 0x1,
             ALIAS_WRITES_ADDRESSABLE_LOCATION = 0x2,
             ALIAS_READS_LCL_VAR               = 0x4,
-            ALIAS_WRITES_LCL_VAR              = 0x8,
-            ALIAS_READS_CPU_FLAGS             = 0x10,
+            ALIAS_WRITES_LCL_VAR              = 0x8
         };
 
         Compiler* m_compiler;
@@ -141,11 +139,6 @@ public:
 
             return false;
         }
-
-        inline bool ReadsCpuFlags() const
-        {
-            return (m_flags & ALIAS_READS_CPU_FLAGS) != 0;
-        }
     };
 
     AliasSet();
@@ -153,11 +146,6 @@ public:
     inline bool WritesAnyLocation() const
     {
         return m_writesAddressableLocation || !m_lclVarWrites.IsEmpty();
-    }
-
-    inline bool ReadsCpuFlags() const
-    {
-        return m_readsCpuFlags;
     }
 
     void AddNode(Compiler* compiler, GenTree* node);

@@ -148,11 +148,6 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
     , m_lclNum(0)
     , m_lclOffs(0)
 {
-    if (node->OperConsumesFlags())
-    {
-        m_flags |= ALIAS_READS_CPU_FLAGS;
-    }
-
     if (node->IsCall())
     {
         // For calls having return buffer, update the local number that is written after this call.
@@ -170,16 +165,20 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         }
 
         // Calls are treated as reads and writes of addressable locations unless they are known to be pure.
-        if (!node->AsCall()->IsPure(compiler))
+        if (node->AsCall()->IsPure(compiler))
         {
-            m_flags |= ALIAS_READS_ADDRESSABLE_LOCATION | ALIAS_WRITES_ADDRESSABLE_LOCATION;
+            m_flags = ALIAS_NONE;
+        }
+        else
+        {
+            m_flags = ALIAS_READS_ADDRESSABLE_LOCATION | ALIAS_WRITES_ADDRESSABLE_LOCATION;
         }
         return;
     }
     else if (node->OperIsAtomicOp())
     {
         // Atomic operations both read and write addressable locations.
-        m_flags |= ALIAS_READS_ADDRESSABLE_LOCATION | ALIAS_WRITES_ADDRESSABLE_LOCATION;
+        m_flags = ALIAS_READS_ADDRESSABLE_LOCATION | ALIAS_WRITES_ADDRESSABLE_LOCATION;
         return;
     }
 
@@ -233,6 +232,7 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
     else
     {
         // This is neither a memory nor a local var access.
+        m_flags = ALIAS_NONE;
         return;
     }
 
@@ -319,10 +319,6 @@ void AliasSet::AddNode(Compiler* compiler, GenTree* node)
     {
         m_lclVarWrites.Add(compiler, nodeInfo.LclNum());
     }
-    if (nodeInfo.ReadsCpuFlags())
-    {
-        m_readsCpuFlags = true;
-    }
 }
 
 //------------------------------------------------------------------------
@@ -359,11 +355,6 @@ bool AliasSet::InterferesWith(const AliasSet& other) const
     // If the set of lclVars written by this alias set intersects with the set of lclVars accessed by the other alias
     // set, the alias sets interfere.
     if (m_lclVarWrites.Intersects(other.m_lclVarReads) || m_lclVarWrites.Intersects(other.m_lclVarWrites))
-    {
-        return true;
-    }
-
-    if (m_readsCpuFlags || other.m_readsCpuFlags)
     {
         return true;
     }
@@ -431,11 +422,6 @@ bool AliasSet::InterferesWith(const NodeInfo& other) const
         return true;
     }
 
-    if (m_readsCpuFlags || other.ReadsCpuFlags())
-    {
-        return true;
-    }
-
     // If the set reads a local var written by the node, they interfere.
     return other.IsLclVarWrite() && m_lclVarReads.Contains(other.LclNum());
 }
@@ -463,7 +449,6 @@ void AliasSet::Clear()
 {
     m_readsAddressableLocation  = false;
     m_writesAddressableLocation = false;
-    m_readsCpuFlags             = false;
 
     m_lclVarReads.Clear();
     m_lclVarWrites.Clear();
@@ -565,11 +550,6 @@ bool SideEffectSet::InterferesWith(unsigned               otherSideEffectFlags,
                 return true;
             }
         }
-    }
-
-    if (m_aliasSet.ReadsCpuFlags() || otherAliasInfo.ReadsCpuFlags())
-    {
-        return true;
     }
 
     // If one set produces an exception and the other set writes to any location, the sets interfere.
