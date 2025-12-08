@@ -511,6 +511,306 @@
       ret
     } // end of method 'Test::clt_un_i32_I'
 
+    .method public hidebysig static native int 
+            beq_I_i32(native int a,
+                     int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      beq TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::beq_I_i32'
+
+    .method public hidebysig static native int 
+            beq_i32_I(int32 a,
+                    native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      beq TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::beq_i32_I'
+
+    .method public hidebysig static native int 
+            bne_un_I_i32(native int a,
+                        int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      bne.un TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::bne_un_I_i32'
+
+    .method public hidebysig static native int 
+            bne_un_i32_I(int32 a,
+                       native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      bne.un TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::bne_un_i32_I'
+
+    .method public hidebysig static native int 
+            blt_I_i32(native int a,
+                     int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      blt TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::blt_I_i32'
+
+    .method public hidebysig static native int 
+            blt_i32_I(int32 a,
+                    native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      blt TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::blt_i32_I'
+
+    .method public hidebysig static native int 
+            blt_un_I_i32(native int a,
+                        int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      blt.un TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::blt_un_I_i32'
+
+    .method public hidebysig static native int 
+            blt_un_i32_I(int32 a,
+                       native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      blt.un TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::blt_un_i32_I'
+
+    .method public hidebysig static native int 
+            ble_I_i32(native int a,
+                     int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      ble TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::ble_I_i32'
+
+    .method public hidebysig static native int 
+            ble_i32_I(int32 a,
+                    native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      ble TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::ble_i32_I'
+
+    .method public hidebysig static native int 
+            ble_un_I_i32(native int a,
+                        int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      ble.un TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::ble_un_I_i32'
+
+    .method public hidebysig static native int 
+            ble_un_i32_I(int32 a,
+                       native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      ble.un TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::ble_un_i32_I'
+
+    .method public hidebysig static native int 
+            bgt_I_i32(native int a,
+                     int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      bgt TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::bgt_I_i32'
+
+    .method public hidebysig static native int 
+            bgt_i32_I(int32 a,
+                    native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      bgt TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::bgt_i32_I'
+
+    .method public hidebysig static native int 
+            bgt_un_I_i32(native int a,
+                        int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      bgt.un TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::bgt_un_I_i32'
+
+    .method public hidebysig static native int 
+            bgt_un_i32_I(int32 a,
+                       native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      bgt.un TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::bgt_un_i32_I'
+
+    .method public hidebysig static native int 
+            bge_I_i32(native int a,
+                     int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      bge TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::bge_I_i32'
+
+    .method public hidebysig static native int 
+            bge_i32_I(int32 a,
+                    native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      bge TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::bge_i32_I'
+
+    .method public hidebysig static native int 
+            bge_un_I_i32(native int a,
+                        int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      bge.un TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::bge_un_I_i32'
+
+    .method public hidebysig static native int 
+            bge_un_i32_I(int32 a,
+                       native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      bge.un TAKEN
+      ldc.i4.0
+      ret
+      TAKEN:
+      ldc.i4.1
+      ret
+    } // end of method 'Test::bge_un_i32_I'
+
     .method public hidebysig specialname rtspecialname 
             instance void .ctor() il managed
     {

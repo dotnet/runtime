@@ -32,10 +32,25 @@ namespace JitTest_implicit_promotion
         [InlineData("cgt.un", -2, -1, 0, 0)]
         [InlineData("clt", -1, -2, 0, 0)]
         [InlineData("clt.un", -2, -1, 1, 1)]
+        [InlineData("beq", -1, -1, 1, 1)]
+        [InlineData("bne.un", -1, -1, 0, 1)]
+        [InlineData("blt", -1, -1, 0, 0)]
+        [InlineData("blt.un", -2, -1, 1, 0)]
+        [InlineData("ble", -1, -1, 1, 1)]
+        [InlineData("ble.un", -1, -1, 1, 0)]
+        [InlineData("bgt", -1, -1, 0, 0)]
+        [InlineData("bgt.un", -1, -1, 0, 1)]
+        [InlineData("bge", -1, -1, 1, 1)]
+        [InlineData("bge.un", -1, -2, 1, 1)] // Special case this one.
         public static void testI_i32_opcode(string opcode, int a, int b, int resultI_i32_32Bit_expected, long resultI_i32_64Bit_expected)
         {
             nint a_nint = (nint)a;
             nint result = 0;
+
+            if (opcode == "bge.un")
+            {
+                a_nint = unchecked((nint)(nuint)0xFFFFFFFF);
+            }
 
             switch(opcode)
             {
@@ -102,6 +117,36 @@ namespace JitTest_implicit_promotion
                 case "clt.un":
                     result = Operator.clt_un_I_i32(a_nint, b);
                     break;
+                case "beq":
+                    result = Operator.beq_I_i32(a_nint, b);
+                    break;
+                case "bne.un":
+                    result = Operator.bne_un_I_i32(a_nint, b);
+                    break;
+                case "blt":
+                    result = Operator.blt_I_i32(a_nint, b);
+                    break;
+                case "blt.un":
+                    result = Operator.blt_un_I_i32(a_nint, b);
+                    break;
+                case "ble":
+                    result = Operator.ble_I_i32(a_nint, b);
+                    break;
+                case "ble.un":
+                    result = Operator.ble_un_I_i32(a_nint, b);
+                    break;
+                case "bgt":
+                    result = Operator.bgt_I_i32(a_nint, b);
+                    break;
+                case "bgt.un":
+                    result = Operator.bgt_un_I_i32(a_nint, b);
+                    break;
+                case "bge":
+                    result = Operator.bge_I_i32(a_nint, b);
+                    break;
+                case "bge.un":
+                    result = Operator.bge_un_I_i32(a_nint, b);
+                    break;
                 default:
                     throw new ArgumentException("Invalid opcode");
             }
@@ -131,6 +176,16 @@ namespace JitTest_implicit_promotion
         [InlineData("cgt.un", -1, -2, 1, 1)]
         [InlineData("clt", -1, -2, 0, 0)]
         [InlineData("clt.un", -2, -1, 1, 1)]
+        [InlineData("beq", -1, -1, 1, 1)]
+        [InlineData("bne.un", -1, -1, 0, 1)]
+        [InlineData("blt", -2, -1, 1, 1)]
+        [InlineData("blt.un", -1, -2, 0, 1)]
+        [InlineData("ble", -1, -1, 1, 1)]
+        [InlineData("ble.un", -1, -2, 0, 1)]
+        [InlineData("bgt", -1, -2, 1, 1)]
+        [InlineData("bgt.un", -1, -2, 1, 0)]
+        [InlineData("bge", -1, -2, 1, 1)]
+        [InlineData("bge.un", -1, -2, 1, 0)]
         public static void testi32_I_opcode(string opcode, int a, int b, int resultI_i32_32Bit_expected, long resultI_i32_64Bit_expected)
         {
             nint b_nint = (nint)b;
@@ -200,6 +255,36 @@ namespace JitTest_implicit_promotion
                     break;
                 case "clt.un":
                     result = Operator.clt_un_i32_I(a, b_nint);
+                    break;
+                case "beq":
+                    result = Operator.beq_i32_I(a, b_nint);
+                    break;
+                case "bne.un":
+                    result = Operator.bne_un_i32_I(a, b_nint);
+                    break;
+                case "blt":
+                    result = Operator.blt_i32_I(a, b_nint);
+                    break;
+                case "blt.un":
+                    result = Operator.blt_un_i32_I(a, b_nint);
+                    break;
+                case "ble":
+                    result = Operator.ble_i32_I(a, b_nint);
+                    break;
+                case "ble.un":
+                    result = Operator.ble_un_i32_I(a, b_nint);
+                    break;
+                case "bgt":
+                    result = Operator.bgt_i32_I(a, b_nint);
+                    break;
+                case "bgt.un":
+                    result = Operator.bgt_un_i32_I(a, b_nint);
+                    break;
+                case "bge":
+                    result = Operator.bge_i32_I(a, b_nint);
+                    break;
+                case "bge.un":
+                    result = Operator.bge_un_i32_I(a, b_nint);
                     break;
                 default:
                     throw new ArgumentException("Invalid opcode");
