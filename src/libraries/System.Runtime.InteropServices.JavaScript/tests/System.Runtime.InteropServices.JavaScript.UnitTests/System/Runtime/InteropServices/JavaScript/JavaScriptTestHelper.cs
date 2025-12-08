@@ -441,7 +441,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("invoke1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Promise<JSType.Number>>]
         internal static partial Task<int> invoke1_TaskOfInt([JSMarshalAs<JSType.Promise<JSType.Number>>] Task<int> value, [JSMarshalAs<JSType.String>] string name);
-    
+
         [JSImport("returnResolvedPromise", "JavaScriptTestHelper")]
         internal static partial Task ReturnResolvedPromise();
 
@@ -1031,7 +1031,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return arg1;
         }
-        
+
         [JSImport("beforeYield", "JavaScriptTestHelper")]
         public static partial void BeforeYield();
 
@@ -1093,12 +1093,12 @@ namespace JavaScriptTestHelperNamespace
             return message + "11";
         }
 
-        private partial class NestedClass
+        internal partial class NestedClass
         {
             [System.Runtime.InteropServices.JavaScript.JSExport]
             public static string EchoString(string message) => message + "12";
 
-            private partial class DoubleNestedClass
+            internal partial class DoubleNestedClass
             {
                 [System.Runtime.InteropServices.JavaScript.JSExport]
                 public static string EchoString(string message) => message + "13";
