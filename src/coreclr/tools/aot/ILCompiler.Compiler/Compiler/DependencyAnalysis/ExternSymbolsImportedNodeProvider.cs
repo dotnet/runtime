@@ -17,12 +17,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISortableSymbolNode ImportedGCStaticNode(NodeFactory factory, MetadataType type)
         {
-            return new ExternDataSymbolNode(new Utf8String(GCStaticsNode.GetMangledName(type, factory.NameMangler)));
+            return new ExternDataSymbolNode(GCStaticsNode.GetMangledName(type, factory.NameMangler));
         }
 
         public override ISortableSymbolNode ImportedNonGCStaticNode(NodeFactory factory, MetadataType type)
         {
-            return new ExternDataSymbolNode(new Utf8String(NonGCStaticsNode.GetMangledName(type, factory.NameMangler)));
+            return new ExternDataSymbolNode(NonGCStaticsNode.GetMangledName(type, factory.NameMangler));
         }
 
         public override ISortableSymbolNode ImportedMethodDictionaryNode(NodeFactory factory, MethodDesc method)

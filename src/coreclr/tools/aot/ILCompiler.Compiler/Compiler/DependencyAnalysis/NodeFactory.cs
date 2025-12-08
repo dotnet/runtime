@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _target = context.Target;
 
-            InitialInterfaceDispatchStub = new AddressTakenExternFunctionSymbolNode(new Utf8String("RhpInitialDynamicInterfaceDispatch"u8.ToArray()));
+            InitialInterfaceDispatchStub = new AddressTakenExternFunctionSymbolNode(new Utf8String("RhpInitialDynamicInterfaceDispatch"u8));
 
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
@@ -275,15 +275,15 @@ namespace ILCompiler.DependencyAnalysis
 
             _externFunctionSymbols = new NodeCache<Utf8String, ExternFunctionSymbolNode>((Utf8String name) =>
             {
-                return new ExternFunctionSymbolNode(new Utf8String(name));
+                return new ExternFunctionSymbolNode(name);
             });
             _externIndirectFunctionSymbols = new NodeCache<Utf8String, ExternFunctionSymbolNode>((Utf8String name) =>
             {
-                return new ExternFunctionSymbolNode(new Utf8String(name), isIndirection: true);
+                return new ExternFunctionSymbolNode(name, isIndirection: true);
             });
             _externDataSymbols = new NodeCache<Utf8String, ExternDataSymbolNode>((Utf8String name) =>
             {
-                return new ExternDataSymbolNode(new Utf8String(name));
+                return new ExternDataSymbolNode(name);
             });
 
             _pInvokeModuleFixups = new NodeCache<PInvokeModuleData, PInvokeModuleFixupNode>((PInvokeModuleData moduleData) =>

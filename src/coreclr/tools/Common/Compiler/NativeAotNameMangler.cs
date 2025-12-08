@@ -189,7 +189,7 @@ namespace ILCompiler
                     hash = SHA256.HashData(literal.AsSpan());
                 }
 
-                mangledName += "_" + Convert.ToHexString(hash);
+                mangledName = Utf8String.Concat(mangledName, new Utf8String("_" + Convert.ToHexString(hash)));
             }
 
             return mangledName;
@@ -383,12 +383,12 @@ namespace ILCompiler
                 case TypeFlags.ByRef:
                     mangledName = new Utf8StringBuilder()
                         .Append(GetMangledTypeName(((ByRefType)type).ParameterType))
-                        .Append(NestMangledName(new Utf8String("ByRef"u8.ToArray()))).ToUtf8String();
+                        .Append(NestMangledName(new Utf8String("ByRef"u8))).ToUtf8String();
                     break;
                 case TypeFlags.Pointer:
                     mangledName = new Utf8StringBuilder()
                         .Append(GetMangledTypeName(((PointerType)type).ParameterType))
-                        .Append(NestMangledName(new Utf8String("Pointer"u8.ToArray()))).ToUtf8String();
+                        .Append(NestMangledName(new Utf8String("Pointer"u8))).ToUtf8String();
                     break;
                 case TypeFlags.FunctionPointer:
                 {

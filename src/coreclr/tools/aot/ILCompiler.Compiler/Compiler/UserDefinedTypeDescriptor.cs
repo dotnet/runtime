@@ -123,7 +123,7 @@ namespace ILCompiler
                         {
                             FieldTypeIndex = fieldTypeIndex,
                             Offset = (ulong)fieldOffsetEmit,
-                            Name = fieldNameEmit
+                            Name = new Utf8String(fieldNameEmit)
                         };
 
                         fieldsDescs.Add(field);
@@ -805,13 +805,13 @@ namespace ILCompiler
                         {
                             FieldTypeIndex = _objectWriter.GetPointerTypeIndex(pointerTypeDescriptor),
                             Offset = 0,
-                            Name = "TypeManagerSlot"
+                            Name = new Utf8String("TypeManagerSlot"u8)
                         },
                         new DataFieldDescriptor
                         {
                             FieldTypeIndex = GetVariableTypeIndex(defType.Context.GetWellKnownType(Is64Bit? WellKnownType.Int64 : WellKnownType.Int32), true),
                             Offset = (ulong)NodeFactory.Target.PointerSize,
-                            Name = "ClassIndex"
+                            Name = new Utf8String("ClassIndex"u8)
                         }
                     };
 

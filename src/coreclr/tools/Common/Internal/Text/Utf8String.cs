@@ -18,6 +18,11 @@ namespace Internal.Text
             _value = underlyingArray;
         }
 
+        public Utf8String(ReadOnlySpan<byte> underlyingSpan)
+        {
+            _value = underlyingSpan.ToArray();
+        }
+
         public Utf8String(string s)
         {
             _value = Encoding.UTF8.GetBytes(s);
