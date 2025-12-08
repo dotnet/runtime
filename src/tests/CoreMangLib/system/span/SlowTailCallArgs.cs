@@ -9,8 +9,9 @@ using Xunit;
 
 public static class SlowTailCallArgs
 {
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNotNativeAot))]
     [OuterLoop]
-    [Fact]
+    [SkipOnCoreClr("Incompatible with GC stress", RuntimeTestModes.AnyGCStress)]
     public static int TestEntryPoint()
     {
         bool allPassed = true;

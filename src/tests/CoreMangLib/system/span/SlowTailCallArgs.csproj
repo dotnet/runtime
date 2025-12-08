@@ -1,11 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <GCStressIncompatible>true</GCStressIncompatible>
-    <!-- Test uses Reflection.Emit -->
-    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="SlowTailCallArgs.cs" />

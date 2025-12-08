@@ -6,12 +6,16 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Threading;
+using TestLibrary;
 using Xunit;
 
+[ConditionalClass(typeof(Utilities), nameof(Utilities.IsNotNativeAot))]
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
 public static class DynamicMethodJumpStubTests
 {
-    [OuterLoop]
     [Fact]
+    [OuterLoop]
+    [PlatformSpecific(TestPlatforms.Windows, "Test uses Win32 APIs to reserve memory to force jump stubs.")]
     public static void TestEntryPoint()
     {
         DynamicMethodJumpStubTest();

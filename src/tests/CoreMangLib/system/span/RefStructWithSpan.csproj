@@ -1,11 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <GCStressIncompatible>true</GCStressIncompatible>
-    <!-- Secondary threads with infinite loop prevent unloading -->
-    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="RefStructWithSpan.cs" />
