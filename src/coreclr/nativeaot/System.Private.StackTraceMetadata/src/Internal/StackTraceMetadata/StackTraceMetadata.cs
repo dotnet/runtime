@@ -49,7 +49,7 @@ namespace Internal.StackTraceMetadata
         /// <summary>
         /// Locate the containing module for a method and try to resolve its name based on start address.
         /// </summary>
-        public static unsafe string GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress, out bool isStackTraceHidden)
+        public static unsafe string GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress, out string owningTypeName, out string genericArgs, out string methodSignature, out bool isStackTraceHidden, out int hashCodeForLineInfo)
         {
             IntPtr moduleStartAddress = RuntimeAugments.GetOSModuleFromPointer(methodStartAddress);
             int rva = (int)((byte*)methodStartAddress - (byte*)moduleStartAddress);
@@ -65,9 +65,15 @@ namespace Internal.StackTraceMetadata
                         {
                             Debug.Assert(data.Name.IsNil && data.Signature.IsNil);
                             Debug.Assert(isStackTraceHidden);
+                            owningTypeName = null;
+                            genericArgs = null;
+                            methodSignature = null;
+                            hashCodeForLineInfo = 0;
                             return null;
                         }
-                        return MethodNameFormatter.FormatMethodName(resolver.Reader, data.OwningType, data.Name, data.Signature, data.GenericArguments);
+                        (owningTypeName, genericArgs, string methodName, methodSignature) = MethodNameFormatter.FormatMethodName(resolver.Reader, data.OwningType, data.Name, data.Signature, data.GenericArguments);
+                        hashCodeForLineInfo = (int)VersionResilientHashCode.CombineThreeValuesIntoHash((uint)data.OwningType.ToIntToken(), (uint)((Handle)data.Name).ToIntToken(), (uint)((Handle)data.Signature).ToIntToken());
+                        return methodName;
                     }
                 }
             }
@@ -101,9 +107,15 @@ namespace Internal.StackTraceMetadata
                     }
                 }
 
-                return MethodNameFormatter.FormatMethodName(reader, typeHandle, methodHandle);
+                (owningTypeName, genericArgs, string methodName, methodSignature) = MethodNameFormatter.FormatMethodName(reader, typeHandle, methodHandle);
+                hashCodeForLineInfo = (int)VersionResilientHashCode.CombineTwoValuesIntoHash((uint)((Handle)typeHandle).ToIntToken(), (uint)((Handle)methodHandle).ToIntToken());
+                return methodName;
             }
 
+            owningTypeName = null;
+            genericArgs = null;
+            methodSignature = null;
+            hashCodeForLineInfo = 0;
             return null;
         }
 
@@ -257,7 +269,20 @@ namespace Internal.StackTraceMetadata
 
             public override string TryGetMethodNameFromStartAddress(IntPtr methodStartAddress, out bool isStackTraceHidden)
             {
-                return GetMethodNameFromStartAddressIfAvailable(methodStartAddress, out isStackTraceHidden);
+                string methodName = GetMethodNameFromStartAddressIfAvailable(methodStartAddress, out string owningTypeName, out string genericArgs, out string methodSignature, out isStackTraceHidden, out _);
+                return string.Concat(owningTypeName, ".", methodName, genericArgs != null ? string.Concat("[", genericArgs, "]") : "", "(", methodSignature, ")");
+            }
+
+            public override string TryGetMethodStackFrameInfo(IntPtr methodStartAddress, int offset, bool needsFileInfo, out string owningType, out string genericArgs, out string methodSignature, out bool isStackTraceHidden, out string fileName, out int lineNumber)
+            {
+                string methodName = GetMethodNameFromStartAddressIfAvailable(methodStartAddress, out owningType, out genericArgs, out methodSignature, out isStackTraceHidden, out int hashCode);
+
+                // TODO: find line number
+                _ = hashCode;
+                fileName = null;
+                lineNumber = 0;
+
+                return methodName;
             }
         }
 

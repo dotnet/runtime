@@ -712,6 +712,11 @@ namespace Internal.Runtime.Augments
             return callbacks.TryGetMethodNameFromStartAddress(ip, out _);
         }
 
+        public static IntPtr GetMethodStartAddress(IntPtr ip)
+        {
+            return RuntimeImports.RhFindMethodStartAddress(ip);
+        }
+
         private static TypeLoaderCallbacks s_typeLoaderCallbacks;
 
         public static object CreateThunksHeap(IntPtr commonStubAddress)
