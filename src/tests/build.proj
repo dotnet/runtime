@@ -495,7 +495,7 @@
       <GroupBuildCmd Condition="'$(TargetOS)' == 'browser' and '$(ContinuousIntegrationBuild)' == 'true'">$(GroupBuildCmd) /m:1</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TargetOS)' == 'wasi'">$(GroupBuildCmd) /m:1</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">$(GroupBuildCmd) "/p:DevTeamProvisioning=-"</GroupBuildCmd>
-      <GroupBuildCmd Condition="'$(RuntimeFlavor)' != ''">$(GroupBuildCmd) "/p:UseMonoRuntime=$(RuntimeFlavor)"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(UseMonoRuntime)' != ''">$(GroupBuildCmd) "/p:UseMonoRuntime=$(UseMonoRuntime)"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(UseNativeAOTRuntime)' != ''">$(GroupBuildCmd) "/p:UseNativeAOTRuntime=$(UseNativeAOTRuntime)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /bl:$(ArtifactsDir)/log/$(Configuration)/InnerManagedTestBuild.$(__TestGroupToBuild).binlog</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(CrossBuild)' == 'true'">$(GroupBuildCmd) "/p:CrossBuild=true"</GroupBuildCmd>
