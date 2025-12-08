@@ -28,7 +28,12 @@ enum ID_OPS
 
 IF_DEF(NONE,    IS_NONE, NONE)
 IF_DEF(OPCODE,  IS_NONE, NONE) // <opcode>
+IF_DEF(BLOCK,   IS_NONE, NONE) // <opcode> <0x40>
+IF_DEF(LABEL,   IS_NONE, NONE) // <ULEB128 immediate>
 IF_DEF(ULEB128, IS_NONE, NONE) // <opcode> <ULEB128 immediate>
+IF_DEF(SLEB128, IS_NONE, NONE) // <opcode> <LEB128 immediate (signed)>
+IF_DEF(F32,     IS_NONE, NONE) // <opcode> <f32 immediate (stored as 64-bit integer constant)>
+IF_DEF(F64,     IS_NONE, NONE) // <opcode> <f64 immediate (stored as 64-bit integer constant)>
 IF_DEF(MEMARG,  IS_NONE, NONE) // <opcode> <memarg> (<align> <offset>)
 
 #undef IF_DEF

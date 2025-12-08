@@ -164,8 +164,7 @@ namespace Wasm.Build.Tests
                 UseShellExecute = false
             };
 
-            psi.Environment["DOTNET_MULTILEVEL_LOOKUP"] = "0";
-            psi.Environment["DOTNET_NOLOGO"] = "1";
+            psi.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
 
             // runtime repo sets this, which interferes with the tests
             psi.RemoveEnvironmentVariables("MSBuildSDKsPath");

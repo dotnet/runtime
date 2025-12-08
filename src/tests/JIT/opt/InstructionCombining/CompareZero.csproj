@@ -13,5 +13,6 @@
     </Compile>
     <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
     <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitStressProcedureSplitting" Value="0" />
   </ItemGroup>
 </Project>

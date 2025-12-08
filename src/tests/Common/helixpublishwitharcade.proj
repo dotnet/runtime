@@ -74,6 +74,8 @@
     <LegacyPayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(LegacyPayloadsRootDirectory)))</LegacyPayloadsRootDirectory>
     <MergedPayloadsRootDirectory>$(TestBinDir)MergedPayloads\</MergedPayloadsRootDirectory>
     <MergedPayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(MergedPayloadsRootDirectory)))</MergedPayloadsRootDirectory>
+    <MobileAppBundleDirName Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">AppBundle</MobileAppBundleDirName>
+    <MobileAppBundleDirName Condition="'$(TargetsBrowser)' == 'true'">wwwroot</MobileAppBundleDirName>
   </PropertyGroup>
 
   <!-- This target runs once and creates several instances of this project (one for each scenario)
@@ -258,7 +260,7 @@
     <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
       <!-- When targeting mobile or browser runs, we publish self-contained builds and build mobile/wasm apps, so we want to exclude these files from the legacy payloads as well -->
       <PublishedMergedPayloadsToExclude>@(_MergedWrapperRunScript->'%(RootDir)%(Directory)publish/*')</PublishedMergedPayloadsToExclude>
-      <PublishedMergedPayloadsToExclude>$(PublishedMergedPayloadsToExclude);@(_MergedWrapperRunScript->'%(RootDir)%(Directory)AppBundle/**')</PublishedMergedPayloadsToExclude>
+      <PublishedMergedPayloadsToExclude>$(PublishedMergedPayloadsToExclude);@(_MergedWrapperRunScript->'%(RootDir)%(Directory)$(MobileAppBundleDirName)/**')</PublishedMergedPayloadsToExclude>
     </PropertyGroup>
 
     <ItemGroup>
@@ -345,7 +347,7 @@
 
       <_MergedWrapperMarker Update="@(_MergedWrapperMarker)">
         <TestExecutionScriptPath Condition="'$(TargetsMobile)' != 'true'">$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
-        <TestExecutionScriptPath Condition="'$(TargetsMobile)' == 'true'">%(RootDir)%(Directory)AppBundle/$(_AppBundleRunScriptName).$(TestScriptExtension)</TestExecutionScriptPath>
+        <TestExecutionScriptPath Condition="'$(TargetsMobile)' == 'true'">%(RootDir)%(Directory)$(MobileAppBundleDirName)/$(_AppBundleRunScriptName).$(TestScriptExtension)</TestExecutionScriptPath>
       </_MergedWrapperMarker>
 
       <!-- Exclude merged test wrappers without the test execution script for this target (skipped due to CLRTestTargetUnsupported et al) -->
@@ -490,7 +492,7 @@
       <_MergedPayloadGroups Include="$(_MergedWrapperName)">
         <ApkPackageName>$(_MergedApkName)</ApkPackageName>
       </_MergedPayloadGroups>
-      <_MergedPayloadApkFiles Include="@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/bin/%(ApkPackageName).apk')" />
+      <_MergedPayloadApkFiles Include="@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/bin/%(ApkPackageName).apk')" />
       <_MergedPayloadFiles Include="@(_MergedPayloadApkFiles)" />
       <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)ExpectedExitCode.txt" Condition="Exists('$(_MergedWrapperDirectory)ExpectedExitCode.txt')" />
     </ItemGroup>
@@ -506,24 +508,24 @@
       Outputs="%(_MergedWrapperMarker.FileName)"
       DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
     <ItemGroup>
-      <_MergedWrapperRunScript Include="@(_MergedWrapperMarker->'%(RootDir)%(Directory)AppBundle/RunTests.$(TestScriptExtension)')" />
+      <_MergedWrapperRunScript Include="@(_MergedWrapperMarker->'%(RootDir)%(Directory)$(MobileAppBundleDirName)/RunTests.$(TestScriptExtension)')" />
     </ItemGroup>
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
 
-      <_MergedWrapperRunScriptRelative Condition="'%(_MergedWrapperRunScript.Identity)' != ''">$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle', %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
+      <_MergedWrapperRunScriptRelative Condition="'%(_MergedWrapperRunScript.Identity)' != ''">$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)$(MobileAppBundleDirName)', %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
       <_MergedWrapperRunScriptRelative Condition="'$(TestWrapperTargetsWindows)' != 'true'">./$(_MergedWrapperRunScriptRelative)</_MergedWrapperRunScriptRelative>
       <_MergedWrapperRunScriptDirectoryRelative Condition="'$(_MergedWrapperRunScriptRelative)' != ''">$([System.IO.Path]::GetDirectoryName($(_MergedWrapperRunScriptRelative)))</_MergedWrapperRunScriptDirectoryRelative>
     </PropertyGroup>
 
     <ItemGroup>
       <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
-      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)AppBundle/**" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/**" />
       <_MergedPayloadFiles Update="@(_MergedPayloadFiles)">
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
-        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)$(MobileAppBundleDirName)', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
       </_MergedPayloadFiles>
       <!-- Remove the placeholder test exclusion list here -->
       <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />
@@ -568,11 +570,11 @@
       <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
     </ItemGroup>
     <ItemGroup>
-      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)AppBundle/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)/$(_MergedWrapperName).app/**" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)/$(_MergedWrapperName).app/**" />
       <_MergedPayloadFiles Update="@(_MergedPayloadFiles)">
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
-        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
       </_MergedPayloadFiles>
       <!-- Remove the placeholder test exclusion list here -->
       <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />
@@ -598,11 +600,11 @@
 
     <ItemGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
-      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)AppBundle/**" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/**" />
       <_MergedPayloadFiles Update="@(_MergedPayloadFiles)" Condition="'@(_MergedPayloadFiles)' != ''" >
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
-        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle/', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)$(MobileAppBundleDirName)/', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
       </_MergedPayloadFiles>
       <!-- Remove the placeholder test exclusion list here -->
       <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />

@@ -4892,7 +4892,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
         emit->emitIns_R_R_R_COND(ins, attr, targetReg, srcReg1, srcReg2, JumpKindToInsCond(prevDesc.jumpKind1));
     }
 
-    // Some floating point comparision conditions require an additional condition check.
+    // Some floating point comparison conditions require an additional condition check.
     // These checks are emitted as a subsequent check using GT_AND or GT_OR nodes.
     // e.g., using  GT_OR   => `dest = (cond1 || cond2) ? src1 : src2`
     //              GT_AND  => `dest = (cond1 && cond2) ? src1 : src2`

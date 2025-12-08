@@ -116,6 +116,7 @@ namespace System.IO.Compression
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Comment { get { throw null; } set { } }
         public long CompressedLength { get { throw null; } }
+        public System.IO.Compression.ZipCompressionMethod CompressionMethod { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public uint Crc32 { get { throw null; } }
         public int ExternalAttributes { get { throw null; } set { } }
@@ -134,6 +135,12 @@ namespace System.IO.Compression
         Read = 0,
         Create = 1,
         Update = 2,
+    }
+    public enum ZipCompressionMethod
+    {
+        Stored = 0,
+        Deflate = 8,
+        Deflate64 = 9,
     }
     public sealed partial class ZLibCompressionOptions
     {

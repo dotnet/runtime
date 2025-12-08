@@ -130,7 +130,7 @@ namespace System.Diagnostics.Tracing
         {
             //
             // explicit cleanup is done by calling Dispose with true from
-            // Dispose() or Close(). The disposing arguement is ignored because there
+            // Dispose() or Close(). The disposing argument is ignored because there
             // are no unmanaged resources.
             // The finalizer calls Dispose with false.
             //

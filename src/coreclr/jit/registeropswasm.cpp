@@ -124,18 +124,6 @@ bool genIsValidFloatReg(regNumber reg)
     return (type == WasmValueType::F32) || (type == WasmValueType::F64);
 }
 
-bool isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv)
-{
-    NYI_WASM("isValidIntArgReg");
-    return false;
-}
-
-bool isValidFloatArgReg(regNumber reg)
-{
-    NYI_WASM("isValidFloatArgReg");
-    return false;
-}
-
 const char* getRegName(regNumber reg)
 {
     if (reg == REG_NA)

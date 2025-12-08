@@ -217,7 +217,7 @@ PCCOR_SIGNATURE PrettyPrintSignature(
     if (name != 0)
     {
         // get the calling convention out
-        unsigned callConv = CorSigUncompressData(typePtr);
+        unsigned callConv = CorSigUncompressCallingConv(typePtr);
 
         // should not be a local var sig
         _ASSERTE(!isCallConv(callConv, IMAGE_CEE_CS_CALLCONV_LOCAL_SIG));
@@ -321,7 +321,7 @@ PCCOR_SIGNATURE PrettyPrintSignature(
 #ifdef _DEBUG
         unsigned callConv =
 #endif
-            CorSigUncompressData(typePtr);
+            CorSigUncompressCallingConv(typePtr);
 #ifdef _DEBUG
         (void)callConv; //prevent "unused variable" warning from GCC
         // should be a local var sig

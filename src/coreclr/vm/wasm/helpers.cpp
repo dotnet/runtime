@@ -417,7 +417,7 @@ void _DacGlobals::Initialize()
 // Incorrectly typed temporary symbol to satisfy the linker.
 int g_pDebugger;
 
-void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet)
+void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet, Object** pContinuationRet)
 {
     _ASSERTE(ftn != (PCODE)NULL);
     _ASSERTE(cookie != NULL);
@@ -434,7 +434,7 @@ void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
     ((void(*)(PCODE, int8_t*, int8_t*))cookie)(ftn, pArgs, pRet);
 }
 
-void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target)
+void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
 {
     PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
 }
@@ -623,10 +623,33 @@ namespace
         if (!GetSignatureKey(sig, keyBuffer, keyBufferLen))
             return NULL;
 
-        return LookupThunk(keyBuffer);
+        void* thunk = LookupThunk(keyBuffer);
+#ifdef _DEBUG
+        if (thunk == NULL)
+            printf("WASM calli missing for key: %s\n", keyBuffer);
+#endif
+        return thunk;
     }
 
-    // TODO: This hashing function should be replaced.
+    ULONG CreateFallbackKey(MethodDesc* pMD)
+    {
+        _ASSERTE(pMD != nullptr);
+
+        // the fallback key is in the form $"{MethodName}#{Method.GetParameters().Length}:{AssemblyName}:{Namespace}:{TypeName}";
+        LPCUTF8 pszNamespace = nullptr;
+        LPCUTF8 pszName = pMD->GetMethodTable()->GetFullyQualifiedNameInfo(&pszNamespace);
+        MetaSig sig(pMD);
+        SString strFullName;
+        strFullName.Printf("%s#%d:%s:%s:%s",
+            pMD->GetName(),
+            sig.NumFixedArgs(),
+            pMD->GetAssembly()->GetSimpleName(),
+            pszNamespace != nullptr ? pszNamespace : "",
+            pszName);
+
+        return strFullName.Hash();
+    }
+
     ULONG CreateKey(MethodDesc* pMD)
     {
         _ASSERTE(pMD != nullptr);
@@ -645,30 +668,54 @@ namespace
 
     typedef MapSHash<ULONG, const ReverseThunkMapValue*> HashToReverseThunkHash;
     HashToReverseThunkHash* reverseThunkCache = nullptr;
+    HashToReverseThunkHash* reverseThunkFallbackCache = nullptr;
+
+    HashToReverseThunkHash* CreateReverseThunkHashTable(bool fallback)
+    {
+        HashToReverseThunkHash* newTable = new HashToReverseThunkHash();
+        newTable->Reallocate(g_ReverseThunksCount * HashToReverseThunkHash::s_density_factor_denominator / HashToReverseThunkHash::s_density_factor_numerator + 1);
+        for (size_t i = 0; i < g_ReverseThunksCount; i++)
+        {
+            newTable->Add(fallback ? g_ReverseThunks[i].fallbackKey : g_ReverseThunks[i].key, &g_ReverseThunks[i].value);
+        }
+
+        HashToReverseThunkHash **ppCache = fallback ? &reverseThunkFallbackCache : &reverseThunkCache;
+        if (InterlockedCompareExchangeT(ppCache, newTable, nullptr) != nullptr)
+        {
+            // Another thread won the race, discard ours
+            delete newTable;
+        }
+        return *ppCache;
+    }
 
     const ReverseThunkMapValue* LookupThunk(MethodDesc* pMD)
     {
         HashToReverseThunkHash* table = VolatileLoad(&reverseThunkCache);
         if (table == nullptr)
         {
-            HashToReverseThunkHash* newTable = new HashToReverseThunkHash();
-            newTable->Reallocate(g_ReverseThunksCount * HashToReverseThunkHash::s_density_factor_denominator / HashToReverseThunkHash::s_density_factor_numerator + 1);
-            for (size_t i = 0; i < g_ReverseThunksCount; i++)
-            {
-                newTable->Add(g_ReverseThunks[i].key, &g_ReverseThunks[i].value);
-            }
-
-            if (InterlockedCompareExchangeT(&reverseThunkCache, newTable, nullptr) != nullptr)
-            {
-                // Another thread won the race, discard ours
-                delete newTable;
-            }
-            table = reverseThunkCache;
+            table = CreateReverseThunkHashTable(false /* fallback */);
         }
 
         ULONG key = CreateKey(pMD);
 
+        // Try primary key, it is based on Assembly fully qualified name and method token
         const ReverseThunkMapValue* thunk;
+        if (table->Lookup(key, &thunk))
+        {
+            return thunk;
+        }
+
+        // Try fallback key, that is based on method properties and assembly name
+        // The fallback is used when the assembly is trimmed and the token and assembly fully qualified name
+        // may change.
+        table = VolatileLoad(&reverseThunkFallbackCache);
+        if (table == nullptr)
+        {
+            table = CreateReverseThunkHashTable(true /* fallback */);
+        }
+
+        key = CreateFallbackKey(pMD);
+
         bool success = table->Lookup(key, &thunk);
         return success ? thunk : nullptr;
     }
@@ -710,14 +757,14 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
     return value->EntryPoint;
 }
 
-void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
+void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
 {
     MetaSig sig(pMD);
     void* cookie = GetCookieForCalliSig(sig);
 
     _ASSERTE(cookie != NULL);
 
-    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet);
+    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet, pContinuationRet);
 }
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)

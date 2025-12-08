@@ -446,9 +446,49 @@ namespace System.Runtime.CompilerServices.Tests
         public static unsafe void AllocateTypeAssociatedMemoryValidArguments()
         {
             IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32);
+
+            // Validate that the allocation succeeded
             Assert.NotEqual(memory, IntPtr.Zero);
+
             // Validate that the memory is zeroed out
             Assert.True(new Span<byte>((void*)memory, 32).SequenceEqual(new byte[32]));
+        }
+
+        [Fact]
+        public static void AllocateTypeAssociatedMemoryAlignedInvalidArguments()
+        {
+            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(null, 10, 1); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), -1, 1); });
+            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 10, 0); });
+            Assert.Throws<ArgumentException>(() => { RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 10, 3); });
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(4)]
+        [InlineData(8)]      // .NET largest natural alignment
+        [InlineData(16)]     // V128, typical max_align_t
+        [InlineData(32)]     // V256
+        [InlineData(64)]     // V512, typical cache line size
+        [InlineData(128)]    // less typical cache line size
+        [InlineData(512)]    // historical disk sector size
+        [InlineData(4096)]   // typical disk sector and page size
+        [InlineData(16384)]  // less typical disk sector and page size
+        [InlineData(65536)]  // typical texture and buffer alignment for GPU
+        [InlineData(262144)] // typical non-temporal chunk alignment
+        public static unsafe void AllocateTypeAssociatedMemoryAlignedValidArguments(int alignment)
+        {
+            IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32, alignment);
+
+            // Validate that the allocation succeeded
+            Assert.NotEqual(memory, IntPtr.Zero);
+
+            // Validate that the memory is zeroed out
+            Assert.True(new Span<byte>((void*)memory, 32).SequenceEqual(new byte[32]));
+
+            // Validate that the memory is aligned
+            Assert.True((memory % alignment) == 0);
         }
 
 #pragma warning disable CS0649

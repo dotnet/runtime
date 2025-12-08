@@ -2213,6 +2213,11 @@ void CodeGen::genEmitMachineCode()
 //
 void CodeGen::genEmitUnwindDebugGCandEH()
 {
+#ifdef TARGET_WASM
+    // TODO-WASM: Fix this phase causing an assertion failure even for methods with no GC locals or EH clauses
+    return;
+#endif
+
     /* Now that the code is issued, we can finalize and emit the unwind data */
 
     compiler->unwindEmit(*codePtr, coldCodePtr);
@@ -4782,7 +4787,6 @@ void CodeGen::genFinalizeFrame()
 #endif
 }
 
-#ifndef TARGET_WASM
 /*****************************************************************************
  *
  *  Generates code for a function prolog.
@@ -4823,7 +4827,10 @@ void CodeGen::genFnProlog()
     /* Ready to start on the prolog proper */
 
     GetEmitter()->emitBegProlog();
+
+#if !defined(TARGET_WASM)
     compiler->unwindBegProlog();
+#endif // !defined(TARGET_WASM)
 
     // Do this so we can put the prolog instruction group ahead of
     // other instruction groups
@@ -4841,6 +4848,8 @@ void CodeGen::genFnProlog()
         // Create new scopes for the method-parameters for the prolog-block.
         psiBegProlog();
     }
+
+#if !defined(TARGET_WASM)
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // For arm64 OSR, emit a "phantom prolog" to account for the actions taken
@@ -5640,8 +5649,15 @@ void CodeGen::genFnProlog()
     }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
+#else  // defined(TARGET_WASM)
+    // TODO-WASM: prolog zeroing, shadow stack maintenance
+    GetEmitter()->emitMarkPrologEnd();
+#endif // !defined(TARGET_WASM)
+
     GetEmitter()->emitEndProlog();
 }
+
+#if !defined(TARGET_WASM)
 
 //----------------------------------------------------------------------------------
 // genEmitJumpTable: emit jump table and return its base offset
@@ -5727,7 +5743,7 @@ CORINFO_FIELD_HANDLE CodeGen::genEmitAsyncResumeInfo(unsigned stateNum)
 
     emitter::dataSection* dataSection;
     UNATIVE_OFFSET        baseOffs = genEmitAsyncResumeInfoTable(&dataSection);
-    return compiler->eeFindJitDataOffs(baseOffs + stateNum * sizeof(emitter::dataAsyncResumeInfo));
+    return compiler->eeFindJitDataOffs(baseOffs + stateNum * sizeof(CORINFO_AsyncResumeInfo));
 }
 
 //------------------------------------------------------------------------
@@ -5844,7 +5860,7 @@ void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
     genDefineInlineTempLabel(genPendingCallLabel);
     genPendingCallLabel = nullptr;
 }
-#endif // !TARGET_WASM
+#endif // !defined(TARGET_WASM)
 
 /*****************************************************************************
  *

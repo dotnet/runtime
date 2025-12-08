@@ -18,7 +18,6 @@
 
 #include "corpriv.h"
 #include "corexcep.h"
-#include "../../dlls/mscorrc/resource.h"
 #include <limits.h>
 
 #include <sstring.h>

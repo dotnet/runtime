@@ -19,6 +19,8 @@
 #endif // !TARGET_UNIX
 #include "pgo.h"
 
+class ILCodeStream;
+
 enum StompWriteBarrierCompletionAction
 {
     SWB_PASS = 0x0,
@@ -980,6 +982,8 @@ public:
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
 
     LPVOID GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) override;
+    
+    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) override final;
 };
 #endif // FEATURE_INTERPRETER
 

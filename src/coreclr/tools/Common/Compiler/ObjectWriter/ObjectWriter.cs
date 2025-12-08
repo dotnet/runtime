@@ -21,7 +21,7 @@ namespace ILCompiler.ObjectWriter
     public abstract partial class ObjectWriter
     {
         private protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
-        protected sealed record SymbolicRelocation(long Offset, RelocType Type, string SymbolName, long Addend = 0);
+        protected sealed record SymbolicRelocation(long Offset, RelocType Type, Utf8String SymbolName, long Addend = 0);
         private sealed record BlockToRelocate(int SectionIndex, long Offset, byte[] Data, Relocation[] Relocations);
         private protected sealed record ChecksumsToCalculate(int SectionIndex, long Offset, Relocation[] ChecksumRelocations);
 
@@ -29,8 +29,9 @@ namespace ILCompiler.ObjectWriter
         private protected readonly ObjectWritingOptions _options;
         private protected readonly OutputInfoBuilder _outputInfoBuilder;
         private readonly bool _isSingleFileCompilation;
+        protected readonly Utf8StringBuilder _utf8StringBuilder = new();
 
-        private readonly Dictionary<ISymbolNode, string> _mangledNameMap = new();
+        private readonly Dictionary<ISymbolNode, Utf8String> _mangledNameMap = new();
 
         private readonly byte _insPaddingByte;
 
@@ -41,7 +42,7 @@ namespace ILCompiler.ObjectWriter
         private protected readonly List<OutputSection> _outputSectionLayout = [];
 
         // Symbol table
-        private readonly Dictionary<string, SymbolDefinition> _definedSymbols = new(StringComparer.Ordinal);
+        private readonly Dictionary<Utf8String, SymbolDefinition> _definedSymbols = new();
 
         private protected ObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null)
         {
@@ -60,9 +61,12 @@ namespace ILCompiler.ObjectWriter
         }
         private protected virtual bool UsesSubsectionsViaSymbols => false;
 
-        private protected abstract void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream);
+        private protected abstract void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream);
 
         protected internal abstract void UpdateSectionAlignment(int sectionIndex, int alignment);
+
+        private protected SectionWriter GetOrCreateSection(ObjectNodeSection section)
+            => GetOrCreateSection(section, default, default);
 
         /// <summary>
         /// Get or creates an object file section.
@@ -78,19 +82,19 @@ namespace ILCompiler.ObjectWriter
         /// For associated sections, such as exception or debugging information, the <paramref name="symbolName"/>
         /// will be different.
         /// </remarks>
-        private protected SectionWriter GetOrCreateSection(ObjectNodeSection section, string comdatName = null, string symbolName = null)
+        private protected SectionWriter GetOrCreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName)
         {
             int sectionIndex;
             SectionData sectionData;
 
-            if (comdatName is not null || !_sectionNameToSectionIndex.TryGetValue(section.Name, out sectionIndex))
+            if (!comdatName.IsNull || !_sectionNameToSectionIndex.TryGetValue(section.Name, out sectionIndex))
             {
                 sectionData = new SectionData(section.Type == SectionType.Executable ? _insPaddingByte : (byte)0);
                 sectionIndex = _sectionIndexToData.Count;
                 CreateSection(section, comdatName, symbolName, sectionIndex, sectionData.GetReadStream());
                 _sectionIndexToData.Add(sectionData);
                 _sectionIndexToRelocations.Add(new());
-                if (comdatName is null)
+                if (comdatName.IsNull)
                 {
                     _sectionNameToSectionIndex.Add(section.Name, sectionIndex);
                 }
@@ -140,7 +144,7 @@ namespace ILCompiler.ObjectWriter
             long offset,
             Span<byte> data,
             RelocType relocType,
-            string symbolName,
+            Utf8String symbolName,
             long addend)
         {
             if (!UsesSubsectionsViaSymbols &&
@@ -217,7 +221,7 @@ namespace ILCompiler.ObjectWriter
             long offset,
             Span<byte> data,
             RelocType relocType,
-            string symbolName,
+            Utf8String symbolName,
             long addend)
         {
             _sectionIndexToRelocations[sectionIndex].Add(new SymbolicRelocation(offset, relocType, symbolName, addend));
@@ -228,7 +232,7 @@ namespace ILCompiler.ObjectWriter
             return _sectionIndexToRelocations[sectionIndex].Count > 0;
         }
 
-        private protected virtual void EmitReferencedMethod(string symbolName) { }
+        private protected virtual void EmitReferencedMethod(Utf8String symbolName) { }
 
         /// <summary>
         /// Emit symbolic relocations into object file as format specific
@@ -250,7 +254,7 @@ namespace ILCompiler.ObjectWriter
         /// </remarks>
         protected internal void EmitSymbolDefinition(
             int sectionIndex,
-            string symbolName,
+            Utf8String symbolName,
             long offset = 0,
             int size = 0,
             bool global = false)
@@ -264,18 +268,19 @@ namespace ILCompiler.ObjectWriter
         /// Emit symbolic definitions into object file symbols.
         /// </summary>
         private protected abstract void EmitSymbolTable(
-            IDictionary<string, SymbolDefinition> definedSymbols,
-            SortedSet<string> undefinedSymbols);
+            IDictionary<Utf8String, SymbolDefinition> definedSymbols,
+            SortedSet<Utf8String> undefinedSymbols);
 
-        private protected virtual string ExternCName(string name) => name;
+        private protected virtual Utf8String ExternCName(Utf8String name) => name;
 
-        private protected string GetMangledName(ISymbolNode symbolNode)
+        private protected Utf8String GetMangledName(ISymbolNode symbolNode)
         {
-            string symbolName;
+            Utf8String symbolName;
 
             if (!_mangledNameMap.TryGetValue(symbolNode, out symbolName))
             {
-                symbolName = ExternCName(symbolNode.GetMangledName(_nodeFactory.NameMangler));
+                symbolNode.AppendMangledName(_nodeFactory.NameMangler, _utf8StringBuilder.Clear());
+                symbolName = ExternCName(_utf8StringBuilder.ToUtf8String());
                 _mangledNameMap.Add(symbolNode, symbolName);
             }
 
@@ -290,9 +295,9 @@ namespace ILCompiler.ObjectWriter
 
         partial void EmitDebugInfo(IReadOnlyCollection<DependencyNode> nodes, Logger logger);
 
-        private SortedSet<string> GetUndefinedSymbols()
+        private SortedSet<Utf8String> GetUndefinedSymbols()
         {
-            SortedSet<string> undefinedSymbolSet = new SortedSet<string>(StringComparer.Ordinal);
+            SortedSet<Utf8String> undefinedSymbolSet = new SortedSet<Utf8String>();
             foreach (var relocationList in _sectionIndexToRelocations)
             foreach (var symbolicRelocation in relocationList)
             {
@@ -371,7 +376,7 @@ namespace ILCompiler.ObjectWriter
 
                 dumper?.DumpObjectNode(_nodeFactory, node, nodeContents);
 
-                string currentSymbolName = null;
+                Utf8String currentSymbolName = default;
                 if (symbolNode != null)
                 {
                     currentSymbolName = GetMangledName(symbolNode);
@@ -395,7 +400,7 @@ namespace ILCompiler.ObjectWriter
 #endif
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
-                    string mangledName = n == node ? currentSymbolName : GetMangledName(n);
+                    Utf8String mangledName = n == node ? currentSymbolName : GetMangledName(n);
                     sectionWriter.EmitSymbolDefinition(
                         mangledName,
                         n.Offset + thumbBit,
@@ -403,9 +408,10 @@ namespace ILCompiler.ObjectWriter
 
                     _outputInfoBuilder?.AddSymbol(new OutputSymbol(sectionWriter.SectionIndex, (ulong)(sectionWriter.Position + n.Offset), mangledName));
 
-                    if (_nodeFactory.GetSymbolAlternateName(n, out bool isHidden) is string alternateName)
+                    Utf8String alternateName = _nodeFactory.GetSymbolAlternateName(n, out bool isHidden);
+                    if (!alternateName.IsNull)
                     {
-                        string alternateCName = ExternCName(alternateName);
+                        Utf8String alternateCName = ExternCName(alternateName);
                         sectionWriter.EmitSymbolDefinition(
                             alternateCName,
                             n.Offset + thumbBit,
@@ -501,10 +507,10 @@ namespace ILCompiler.ObjectWriter
                 startNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, startNode);
                 endNode = _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, endNode);
 #endif
-                string startNodeName = GetMangledName(startNode);
-                string endNodeName = GetMangledName(endNode);
+                Utf8String startNodeName = GetMangledName(startNode);
+                Utf8String endNodeName = GetMangledName(endNode);
 
-                string rangeNodeName = GetMangledName(range);
+                Utf8String rangeNodeName = GetMangledName(range);
 
                 if (!_definedSymbols.TryGetValue(endNodeName, out SymbolDefinition endSymbol))
                 {
@@ -533,7 +539,7 @@ namespace ILCompiler.ObjectWriter
                         continue;
                     }
 
-                    string relocSymbolName = GetMangledName(relocTarget);
+                    Utf8String relocSymbolName = GetMangledName(relocTarget);
 
                     EmitOrResolveRelocation(
                         blockToRelocate.SectionIndex,
@@ -584,7 +590,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected virtual void EmitSymbolRangeDefinition(string rangeNodeName, string startNodeName, string endNodeName, SymbolDefinition endSymbol)
+        private protected virtual void EmitSymbolRangeDefinition(Utf8String rangeNodeName, Utf8String startNodeName, Utf8String endNodeName, SymbolDefinition endSymbol)
         {
             if (!_definedSymbols.TryGetValue(startNodeName, out var startSymbol))
             {
@@ -646,11 +652,11 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        partial void HandleControlFlowForRelocation(ISymbolNode relocTarget, string relocSymbolName);
+        partial void HandleControlFlowForRelocation(ISymbolNode relocTarget, Utf8String relocSymbolName);
 
         partial void PrepareForUnwindInfo();
 
-        partial void EmitUnwindInfoForNode(ObjectNode node, string currentSymbolName, SectionWriter sectionWriter);
+        partial void EmitUnwindInfoForNode(ObjectNode node, Utf8String currentSymbolName, SectionWriter sectionWriter);
 
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
         {
@@ -667,6 +673,13 @@ namespace ILCompiler.ObjectWriter
             stopwatch.Stop();
             if (logger.IsVerbose)
                 logger.LogMessage($"Done writing object file in {stopwatch.Elapsed}");
+        }
+
+        protected static ReadOnlySpan<byte> FormatUtf8Int(Span<byte> buffer, int number)
+        {
+            bool b = number.TryFormat(buffer, out int bytesWritten);
+            Debug.Assert(b);
+            return buffer.Slice(0, bytesWritten);
         }
 
         private struct ProgressReporter

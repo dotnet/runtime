@@ -4940,17 +4940,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif
 
-#ifdef DEBUG
-    // If we are going to simulate generating wasm control flow,
-    // transform any strongly connected components into reducible flow.
-    //
-    if (JitConfig.JitWasmControlFlow() > 0)
-    {
-        DoPhase(this, PHASE_DFS_BLOCKS_WASM, &Compiler::fgDfsBlocksAndRemove);
-        DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, &Compiler::fgWasmTransformSccs);
-    }
-#endif
-
     // rationalize trees
     Rationalizer rat(this); // PHASE_RATIONALIZE
     rat.Run();
@@ -4974,6 +4963,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         DoPhase(this, PHASE_ASYNC, &Compiler::TransformAsync);
     }
 
+#ifdef TARGET_WASM
+    // Transform any strongly connected components into reducible flow.
+    //
+    DoPhase(this, PHASE_DFS_BLOCKS_WASM, &Compiler::fgDfsBlocksAndRemove);
+    DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, &Compiler::fgWasmTransformSccs);
+#endif
+
     // Assign registers to variables, etc.
 
     // Create the RA before Lowering, so that Lowering can call RA methods for
@@ -4993,16 +4989,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     FinalizeEH();
 
-#ifdef DEBUG
-    // Optionally, simulate generating wasm control flow
-    // (eventually this will become part of the wasm target)
-    //
-    if (JitConfig.JitWasmControlFlow() > 0)
-    {
-        DoPhase(this, PHASE_WASM_CONTROL_FLOW, &Compiler::fgWasmControlFlow);
-    }
-#endif
-
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
 
@@ -5016,6 +5002,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Copied from rpPredictRegUse()
     SetFullPtrRegMapRequired(codeGen->GetInterruptible() || !codeGen->isFramePointerUsed());
 
+#ifdef TARGET_WASM
+    // Reorder blocks for wasm and figure out wasm control flow nesting
+    //
+    DoPhase(this, PHASE_WASM_CONTROL_FLOW, &Compiler::fgWasmControlFlow);
+#else
     if (opts.OptimizationEnabled())
     {
         // We won't introduce new blocks from here on out,
@@ -5031,6 +5022,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);
     }
+#endif // TARGET_WASM
 
 #if FEATURE_LOOP_ALIGN
     // Place loop alignment instructions

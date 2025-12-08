@@ -716,11 +716,35 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
     CONTRACTL_END;
 
     PCODE uControlPc = GetIP(pContext);
+    Thread *pThread = GetThread();
+
+#ifdef FEATURE_INTERPRETER
+    Frame *pFrame = pThread->GetFrame();
+    while (pFrame != FRAME_TOP && (pFrame->GetFrameIdentifier() != FrameIdentifier::InterpreterFrame))
+    {
+        pFrame = pFrame->PtrNextFrame();
+    }
+    InterpreterFrame *pInterpreterFrame = (pFrame != FRAME_TOP) ? (InterpreterFrame *)pFrame : NULL;
+#endif // FEATURE_INTERPRETER
 
     // unwind out of this function and out of our caller to
     // get our caller's PSP, or our caller's caller's SP.
     while (!ExecutionManager::IsManagedCode(uControlPc))
     {
+#ifdef FEATURE_INTERPRETER
+        // Check if we are past the topmost interpreter frame
+        if ((pInterpreterFrame != NULL) && (GetSP(pContext) > (TADDR)pFrame))
+        {
+            InterpMethodContextFrame *pInterpMethodContextFrame = pInterpreterFrame->GetTopInterpMethodContextFrame();
+            if (pInterpMethodContextFrame != NULL)
+            {
+                pInterpreterFrame->SetContextToInterpMethodContextFrame(pContext);
+                uControlPc = GetIP(pContext);
+                break;
+            }
+        }
+#endif // FEATURE_INTERPRETER
+
         if (IsIPInWriteBarrierCodeCopy(uControlPc))
         {
             // Pretend we were executing the barrier function at its original location so that the unwinder can unwind the frame

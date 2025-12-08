@@ -19,7 +19,6 @@
 #endif
 
 #include "corpriv.h"
-#include "../../dlls/mscorrc/resource.h"
 #include <limits.h>
 
 
