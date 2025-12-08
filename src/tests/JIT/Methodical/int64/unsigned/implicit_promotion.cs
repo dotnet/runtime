@@ -27,6 +27,11 @@ namespace JitTest_implicit_promotion
         [InlineData("and", -1, -1, -1, -1)]
         [InlineData("or", 0, -1, -1, -1)]
         [InlineData("xor", -1, -1, 0, 0)]
+        [InlineData("ceq", -1, -1, 1, 1)]
+        [InlineData("cgt", -2, -3, 1, 1)]
+        [InlineData("cgt.un", -2, -1, 0, 0)]
+        [InlineData("clt", -1, -2, 0, 0)]
+        [InlineData("clt.un", -2, -1, 1, 1)]
         public static void testI_i32_opcode(string opcode, int a, int b, int resultI_i32_32Bit_expected, long resultI_i32_64Bit_expected)
         {
             nint a_nint = (nint)a;
@@ -82,6 +87,21 @@ namespace JitTest_implicit_promotion
                 case "xor":
                     result = Operator.xor_I_i32(a_nint, b);
                     break;
+                case "ceq":
+                    result = Operator.ceq_I_i32(a_nint, b);
+                    break;
+                case "cgt":
+                    result = Operator.cgt_I_i32(a_nint, b);
+                    break;
+                case "cgt.un":
+                    result = Operator.cgt_un_I_i32(a_nint, b);
+                    break;
+                case "clt":
+                    result = Operator.clt_I_i32(a_nint, b);
+                    break;
+                case "clt.un":
+                    result = Operator.clt_un_I_i32(a_nint, b);
+                    break;
                 default:
                     throw new ArgumentException("Invalid opcode");
             }
@@ -106,6 +126,11 @@ namespace JitTest_implicit_promotion
         [InlineData("and", -1, -1, -1, -1)]
         [InlineData("or", -1, 0, -1, -1)]
         [InlineData("xor", -1, -1, 0, 0)]
+        [InlineData("ceq", -1, -1, 1, 1)]
+        [InlineData("cgt", -2, -1, 0, 0)]
+        [InlineData("cgt.un", -1, -2, 1, 1)]
+        [InlineData("clt", -1, -2, 0, 0)]
+        [InlineData("clt.un", -2, -1, 1, 1)]
         public static void testi32_I_opcode(string opcode, int a, int b, int resultI_i32_32Bit_expected, long resultI_i32_64Bit_expected)
         {
             nint b_nint = (nint)b;
@@ -160,6 +185,21 @@ namespace JitTest_implicit_promotion
                     break;
                 case "xor":
                     result = Operator.xor_i32_I(a, b_nint);
+                    break;
+                case "ceq":
+                    result = Operator.ceq_i32_I(a, b_nint);
+                    break;
+                case "cgt":
+                    result = Operator.cgt_i32_I(a, b_nint);
+                    break;
+                case "cgt.un":
+                    result = Operator.cgt_un_i32_I(a, b_nint);
+                    break;
+                case "clt":
+                    result = Operator.clt_i32_I(a, b_nint);
+                    break;
+                case "clt.un":
+                    result = Operator.clt_un_i32_I(a, b_nint);
                     break;
                 default:
                     throw new ArgumentException("Invalid opcode");

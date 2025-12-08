@@ -401,6 +401,116 @@
       ret
     } // end of method 'Test::xor_i32_I'
 
+    .method public hidebysig static native int 
+            ceq_I_i32(native int a,
+                     int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      ceq
+      ret
+    } // end of method 'Test::ceq_I_i32'
+
+    .method public hidebysig static native int 
+            ceq_i32_I(int32 a,
+                    native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      ceq
+      ret
+    } // end of method 'Test::ceq_i32_I'
+
+    .method public hidebysig static native int 
+            cgt_I_i32(native int a,
+                     int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      cgt
+      ret
+    } // end of method 'Test::cgt_I_i32'
+
+    .method public hidebysig static native int 
+            cgt_i32_I(int32 a,
+                    native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      cgt
+      ret
+    } // end of method 'Test::cgt_i32_I'
+
+    .method public hidebysig static native int 
+            cgt_un_I_i32(native int a,
+                        int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      cgt.un
+      ret
+    } // end of method 'Test::cgt_un_I_i32'
+
+    .method public hidebysig static native int 
+            cgt_un_i32_I(int32 a,
+                       native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      cgt.un
+      ret
+    } // end of method 'Test::cgt_un_i32_I'
+
+    .method public hidebysig static native int 
+            clt_I_i32(native int a,
+                     int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      clt
+      ret
+    } // end of method 'Test::clt_I_i32'
+
+    .method public hidebysig static native int 
+            clt_i32_I(int32 a,
+                    native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      clt
+      ret
+    } // end of method 'Test::clt_i32_I'
+
+    .method public hidebysig static native int 
+            clt_un_I_i32(native int a,
+                        int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      clt.un
+      ret
+    } // end of method 'Test::clt_un_I_i32'
+
+    .method public hidebysig static native int 
+            clt_un_i32_I(int32 a,
+                       native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      clt.un
+      ret
+    } // end of method 'Test::clt_un_i32_I'
+
     .method public hidebysig specialname rtspecialname 
             instance void .ctor() il managed
     {
