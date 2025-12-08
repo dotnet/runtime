@@ -98,5 +98,9 @@
     <ProjectReference Include="TargetFrameworkNameTestApp\TargetFrameworkNameTestApp.csproj" />
 
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+
+    <RuntimeHostConfigurationOption Include="System.Runtime.Extensions.Tests.EnvironmentTests.ExpectedVersion">
+      <Value>$(Version)</Value>
+    </RuntimeHostConfigurationOption>
   </ItemGroup>
 </Project>
