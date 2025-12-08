@@ -5,7 +5,7 @@ import type { InternalExchange, BrowserHostExports, RuntimeAPI, BrowserHostExpor
 import { InternalExchangeIndex } from "./types";
 import { } from "./cross-linked"; // ensure ambient symbols are declared
 
-import { runMain, runMainAndExit, registerDllBytes, installVfsFile } from "./host";
+import { runMain, runMainAndExit, registerDllBytes, installVfsFile, loadIcuData } from "./host";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
@@ -20,6 +20,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     internals[InternalExchangeIndex.BrowserHostExportsTable] = browserHostExportsToTable({
         registerDllBytes,
         installVfsFile,
+        loadIcuData
     });
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
     function browserHostExportsToTable(map: BrowserHostExports): BrowserHostExportsTable {
@@ -27,6 +28,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         return [
             map.registerDllBytes,
             map.installVfsFile,
+            map.loadIcuData,
         ];
     }
 }
