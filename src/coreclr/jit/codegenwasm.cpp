@@ -420,6 +420,8 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
     instruction ins;
     switch (PackOperAndType(tree->OperGet(), /* toType */ tree->TypeGet(), /* fromType */ tree->gtOp1->TypeGet()))
     {
+        // NOTE: For this, RyuJIT seems to just generate an i32 load of the i64 operand instead of a GT_CAST.
+        // I suspect once we implement use of wasm locals instead of the linear stack, GT_CAST will appear.
         case PackOperAndType(GT_CAST, TYP_INT, TYP_LONG):
             if (tree->gtOverflow())
                 NYI_WASM("Overflow checks");
