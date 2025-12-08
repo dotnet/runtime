@@ -408,10 +408,10 @@ static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types toType, var
 }
 
 //------------------------------------------------------------------------
-// genCodeForCastr: Generate code for a binary arithmetic operator
+// genCodeForCast: Generate code for a cast operation
 //
 // Arguments:
-//    tree - The binary operation for which we are generating code.
+//    tree - The cast operation for which we are generating code.
 //
 void CodeGen::genCodeForCast(GenTreeOp* tree)
 {
