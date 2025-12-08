@@ -2866,10 +2866,9 @@ void SparseVTableMap::RecordGap(WORD StartMTSlot, WORD NumSkipSlots)
 // While building mapping list, record an excluded MT slot.
 void SparseVTableMap::RecordExcludedMethod(WORD MTSlot)
 {
-    LIMITED_METHOD_CONTRACT;
+    WRAPPER_NO_CONTRACT;
     return RecordGap(MTSlot, -1);
 }
-
 
 //*******************************************************************************
 // Finish creation of mapping list.
