@@ -33,6 +33,8 @@
 #include "vmholder.h"
 #include "exceptmacros.h"
 #include "minipal/time.h"
+#include "minipal/thread.h"
+#include "asyncsafethreadmap.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -61,6 +63,17 @@
 #ifdef FEATURE_INTERPRETER
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER
+
+#ifndef DACCESS_COMPILE
+Thread* GetThreadAsyncSafe()
+{
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+    return (Thread*)FindThreadInAsyncSafeMap(minipal_get_current_thread_id_no_cache());
+#else
+    return GetThreadNULLOk();
+#endif
+}
+#endif // DACCESS_COMPILE
 
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
@@ -370,7 +383,26 @@ void SetThread(Thread* t)
 #endif
 
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
-    t_CurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
+    if (t != NULL)
+    {
+        t_CurrentThreadInfo.m_pAppDomain = AppDomain::GetCurrentDomain();
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+        if (!InsertThreadIntoAsyncSafeMap(t->GetOSThreadId64(), t))
+        {
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to insert thread into async-safe map due to out of memory."));
+        }
+#endif // TARGET_UNIX && !TARGET_WASM
+    }
+    else
+    {
+        t_CurrentThreadInfo.m_pAppDomain = NULL;
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+        if (origThread != NULL)
+        {
+            RemoveThreadFromAsyncSafeMap(origThread->GetOSThreadId64(), origThread);
+        }
+#endif // TARGET_UNIX && !TARGET_WASM
+    }
 }
 
 BOOL Thread::Alert ()
