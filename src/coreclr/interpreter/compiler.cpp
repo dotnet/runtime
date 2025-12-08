@@ -2751,14 +2751,24 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
     else
     {
 #if TARGET_64BIT
+        // For arithmetic operations, when we do this conversion if it is an UNSIGNED operation
+        // convert to I8 from U4 not from I4.
+
+        InterpOpcode convOpForI4ToIConversions = INTOP_CONV_I8_I4;
+        if ((opBase == INTOP_ADD_OVF_UN_I4) ||
+            (opBase == INTOP_SUB_OVF_UN_I4) ||
+            (opBase == INTOP_MUL_OVF_UN_I4))
+        {
+            convOpForI4ToIConversions = INTOP_CONV_U8_U4;
+        }
         if (type1 == StackTypeI8 && type2 == StackTypeI4)
         {
-            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+            EmitConv(m_pStackPointer - 1, StackTypeI8, convOpForI4ToIConversions);
             type2 = StackTypeI8;
         }
         else if (type1 == StackTypeI4 && type2 == StackTypeI8)
         {
-            EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
+            EmitConv(m_pStackPointer - 2, StackTypeI8, convOpForI4ToIConversions);
             type1 = StackTypeI8;
         }
 #endif

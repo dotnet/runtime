@@ -24,28 +24,28 @@
          extends ['mscorlib']System.Object
   {
     .method public hidebysig static native int 
-            add_ovf_un_I_i32(native int a,
-                         int32 b) il managed
+            add_I_i32(native int a,
+                     int32 b) il managed
     {
       // Code size       161 (0xa1)
       .maxstack  2
       ldarg.0
       ldarg.1
-      add.ovf.un
+      add
       ret
-    } // end of method 'Test::add_ovf_un_I_i32'
+    } // end of method 'Test::add_I_i32'
 
     .method public hidebysig static native int 
-            add_ovf_un_i32_I(int32 a,
-                        native int b) il managed
+            add_i32_I(int32 a,
+                    native int b) il managed
     {
       // Code size       161 (0xa1)
       .maxstack  2
       ldarg.0
       ldarg.1
-      add.ovf.un
+      add
       ret
-    } // end of method 'Test::add_ovf_un_i32_I'
+    } // end of method 'Test::add_i32_I'
 
     .method public hidebysig static native int 
             add_ovf_I_i32(native int a,
@@ -70,6 +70,270 @@
       add.ovf
       ret
     } // end of method 'Test::add_ovf_i32_I'
+
+    .method public hidebysig static native int 
+            add_ovf_un_I_i32(native int a,
+                         int32 b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      add.ovf.un
+      ret
+    } // end of method 'Test::add_ovf_un_I_i32'
+
+    .method public hidebysig static native int 
+            add_ovf_un_i32_I(int32 a,
+                        native int b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      add.ovf.un
+      ret
+    } // end of method 'Test::add_ovf_un_i32_I'
+
+    .method public hidebysig static native int 
+            sub_I_i32(native int a,
+                     int32 b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      sub
+      ret
+    } // end of method 'Test::sub_I_i32'
+
+    .method public hidebysig static native int 
+            sub_i32_I(int32 a,
+                    native int b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      sub
+      ret
+    } // end of method 'Test::sub_i32_I'
+
+    .method public hidebysig static native int 
+            sub_ovf_I_i32(native int a,
+                         int32 b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      sub.ovf
+      ret
+    } // end of method 'Test::sub_ovf_I_i32'
+
+    .method public hidebysig static native int 
+            sub_ovf_i32_I(int32 a,
+                        native int b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      sub.ovf
+      ret
+    } // end of method 'Test::sub_ovf_i32_I'
+
+    .method public hidebysig static native int 
+            sub_ovf_un_I_i32(native int a,
+                            int32 b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      sub.ovf.un
+      ret
+    } // end of method 'Test::sub_ovf_un_I_i32'
+
+    .method public hidebysig static native int 
+            sub_ovf_un_i32_I(int32 a,
+                           native int b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      sub.ovf.un
+      ret
+    } // end of method 'Test::sub_ovf_un_i32'
+
+    .method public hidebysig static native int 
+            mul_I_i32(native int a,
+                     int32 b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      mul
+      ret
+    } // end of method 'Test::mul_I_i32'
+
+    .method public hidebysig static native int 
+            mul_i32_I(int32 a,
+                    native int b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      mul
+      ret
+    } // end of method 'Test::mul_i32_I'
+
+    .method public hidebysig static native int 
+            mul_ovf_I_i32(native int a,
+                         int32 b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      mul.ovf
+      ret
+    } // end of method 'Test::mul_ovf_I_i32'
+
+    .method public hidebysig static native int 
+            mul_ovf_i32_I(int32 a,
+                        native int b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      mul.ovf
+      ret
+    } // end of method 'Test::mul_ovf_i32_I'
+
+    .method public hidebysig static native int 
+            mul_ovf_un_I_i32(native int a,
+                            int32 b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      mul.ovf.un
+      ret
+    } // end of method 'Test::mul_ovf_un_I_i32'
+
+    .method public hidebysig static native int 
+            mul_ovf_un_i32_I(int32 a,
+                           native int b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      mul.ovf.un
+      ret
+    } // end of method 'Test::mul_ovf_un_i32'
+
+    .method public hidebysig static native int 
+            div_I_i32(native int a,
+                     int32 b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      div
+      ret
+    } // end of method 'Test::div_I_i32'
+
+    .method public hidebysig static native int 
+            div_i32_I(int32 a,
+                    native int b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      div
+      ret
+    } // end of method 'Test::div_i32_I'
+
+    .method public hidebysig static native int 
+            div_un_I_i32(native int a,
+                        int32 b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      div.un
+      ret
+    } // end of method 'Test::div_un_I_i32'
+
+    .method public hidebysig static native int 
+            div_un_i32_I(int32 a,
+                       native int b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      div.un
+      ret
+    } // end of method 'Test::div_un_i32'
+
+    .method public hidebysig static native int 
+            rem_I_i32(native int a,
+                     int32 b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      rem
+      ret
+    } // end of method 'Test::rem_I_i32'
+
+    .method public hidebysig static native int 
+            rem_i32_I(int32 a,
+                    native int b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      rem
+      ret
+    } // end of method 'Test::rem_i32_I'
+
+    .method public hidebysig static native int 
+            rem_un_I_i32(native int a,
+                        int32 b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      rem.un
+      ret
+    } // end of method 'Test::rem_un_I_i32'
+
+    .method public hidebysig static native int 
+            rem_un_i32_I(int32 a,
+                       native int b) il managed
+    {
+      // Code size       161 (0xa1)
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      rem.un
+      ret
+    } // end of method 'Test::rem_un_i32'
 
     .method public hidebysig specialname rtspecialname 
             instance void .ctor() il managed
