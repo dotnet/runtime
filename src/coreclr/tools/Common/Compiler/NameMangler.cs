@@ -23,7 +23,7 @@ namespace ILCompiler
         public NodeMangler NodeMangler { get; private set; }
 #endif
 
-        public abstract string CompilationUnitPrefix { get; set; }
+        public abstract Utf8String CompilationUnitPrefix { get; set; }
 
         public abstract Utf8String SanitizeName(Utf8String s);
 

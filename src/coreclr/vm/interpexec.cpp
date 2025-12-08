@@ -274,7 +274,7 @@ void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, in
     CallStubHeader *stubHeaderTemplate = pMDDelegateInvoke->GetCallStub();
     if (stubHeaderTemplate == NULL)
     {
-        stubHeaderTemplate = UpdateCallStubForMethod(pMDDelegateInvoke, (PCODE)NULL);
+        stubHeaderTemplate = UpdateCallStubForMethod(pMDDelegateInvoke, (PCODE)pMDDelegateInvoke->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
     }
 
     // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
@@ -841,6 +841,31 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
     END_QCALL;
 }
 
+static void DECLSPEC_NORETURN HandleInterpreterStackOverflow(InterpreterFrame* pInterpreterFrame)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END
+
+    CONTEXT ctx;
+    memset(&ctx, 0, sizeof(CONTEXT));
+    pInterpreterFrame->SetIsFaulting(true);
+    pInterpreterFrame->SetContextToInterpMethodContextFrame(&ctx);
+
+    EXCEPTION_RECORD exceptionRecord;
+    memset(&exceptionRecord, 0, sizeof(EXCEPTION_RECORD));
+    exceptionRecord.ExceptionCode = STATUS_STACK_OVERFLOW;
+    exceptionRecord.ExceptionAddress = (PVOID)GetIP(&ctx);
+
+    EXCEPTION_POINTERS exceptionInfo = { &exceptionRecord, &ctx };
+    EEPolicy::HandleFatalStackOverflow(&exceptionInfo);
+}
+
+
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
 {
     CONTRACTL
@@ -860,9 +885,6 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     InterpMethod *pMethod = pFrame->startIp->Method;
     _ASSERTE(pMethod->CheckIntegrity());
 
-    pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
-    stack = pFrame->pStack;
-
     if (pExceptionClauseArgs == NULL)
     {
         // Start executing at the beginning of the method
@@ -870,21 +892,31 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     }
     else
     {
+        // Start executing at the beginning of the exception clause
+        ip = pExceptionClauseArgs->ip;
+    }
+
+    if (pFrame->pStack + pMethod->allocaSize > pThreadContext->pStackEnd)
+    {
+        pFrame->ip = ip;
+        HandleInterpreterStackOverflow(pInterpreterFrame);
+        UNREACHABLE();
+    }
+
+    pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
+    stack = pFrame->pStack;
+
+    if ((pExceptionClauseArgs != NULL) && pExceptionClauseArgs->isFilter)
+    {
         // * Filter funclets are executed in the current frame, because they are executed
         //   in the first pass of EH when the frames between the current frame and the
         //   parent frame are still alive. All accesses to the locals and arguments
         //   in this case use the pExceptionClauseArgs->pFrame->pStack as a frame pointer.
         // * Catch and finally funclets are running in the parent frame directly
 
-        if (pExceptionClauseArgs->isFilter)
-        {
-            // Since filters run in their own frame, we need to clear the global variables
-            // so that GC doesn't pick garbage in variables that were not yet written to.
-            memset(pFrame->pStack, 0, pMethod->allocaSize);
-        }
-
-        // Start executing at the beginning of the exception clause
-        ip = pExceptionClauseArgs->ip;
+        // Since filters run in their own frame, we need to clear the global variables
+        // so that GC doesn't pick garbage in variables that were not yet written to.
+        memset(pFrame->pStack, 0, pMethod->allocaSize);
     }
 
     int32_t returnOffset, callArgsOffset, methodSlot;
@@ -2908,6 +2940,13 @@ CALL_INTERP_METHOD:
                     _ASSERTE(pMethod->CheckIntegrity());
                     stack = pFrame->pStack;
                     ip = pFrame->startIp->GetByteCodes();
+
+                    if (stack + pMethod->allocaSize > pThreadContext->pStackEnd)
+                    {
+                        pFrame->ip = ip;
+                        HandleInterpreterStackOverflow(pInterpreterFrame);
+                        UNREACHABLE();
+                    }
                     pThreadContext->pStackPointer = stack + pMethod->allocaSize;
                     break;
                 }
@@ -4091,6 +4130,7 @@ do                                                                      \
         stack = pFrame->pStack;
         pMethod = pFrame->startIp->Method;
         _ASSERTE(pMethod->CheckIntegrity());
+
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
 
         pInterpreterFrame->SetIsFaulting(false);

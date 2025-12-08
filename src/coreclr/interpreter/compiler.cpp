@@ -586,7 +586,7 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
                 }
 #ifdef TARGET_64BIT
                 // nint and int32 can be used interchangeably. Add implicit conversions.
-                else if (interpType == InterpTypeI4 && interpDestType == InterpTypeI8)
+                else if (interpType == InterpTypeI4 && ((interpDestType == InterpTypeI8) || (interpDestType == InterpTypeByRef)))
                 {
                     movOp = INTOP_CONV_I8_I4;
                 }
@@ -2271,6 +2271,9 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
                     // This is a ret instruction coming from the initial IL of a synchronized or async method.
                     CreateLeaveChainIslandBasicBlocks(methodInfo, insOffset, GetBB(m_synchronizedOrAsyncPostFinallyOffset));
                 }
+
+                // The instruction AFTER a ret is always a different basic block if it exists.
+                GetBB((int32_t)(ip - codeStart));
             }
             break;
         case InlineString:
@@ -4542,6 +4545,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     int32_t vtsize = 0;
     bool injectRet = false;
 
+    bool resultIsNewObjToVTWithCopy = false;
+
     if (newObjThisArgLocation != INT_MAX)
     {
         ctorType = GetInterpType(m_compHnd->asCorInfoType(resolvedCallToken.hClass));
@@ -4574,6 +4579,14 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         // Consider this arg as being defined, although newobj defines it
         AddIns(INTOP_DEF);
         m_pLastNewIns->SetDVar(newObjThisVar);
+
+        if (ctorType == InterpTypeVT)
+        {
+            resultIsNewObjToVTWithCopy = true;
+            AllocGlobalVarOffset(newObjDVar);
+            m_pVars[newObjDVar].global = true;
+            INTERP_DUMP("alloc global var %d to offset %d of size %d\n", newObjDVar, m_pVars[newObjDVar].offset, m_pVars[newObjDVar].size);
+        }
 
         callArgs[newObjThisArgLocation] = newObjThisVar;
     }
@@ -4948,6 +4961,30 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 m_pLastNewIns->SetSVar(dVar);
                 break;
         }
+    }
+
+    if (resultIsNewObjToVTWithCopy)
+    {
+        // For compliance with the exact letter of the ECMA spec, the result of a newobj to a valuetype must be computed
+        // by creating an instance of the valuetype, calling the constructor on that instance, and then copying the initialized
+        // value to the logical IL stack. This is done in case the constructor for the valuetype exposes the `this` pointer, and
+        // then something else captures that this pointer, and mutates the valuetype after the constructor returns. To prevent this
+        // from being generally unsafe, we need to make the temporary initial copy of the valuetype to be in a variable which has
+        // memory which will always be an instance of the newobj type, and to match RyuJit behavior that it is never possible to modify
+        // a valuetype on the IL evaluation stack we need to copy from there to the evaluation stack after running the constructor.
+
+        assert(m_pStackPointer[-1].var == newObjDVar);
+        assert(m_pVars[newObjDVar].global);
+
+        // For newobj to VT with copy, we need to copy the value type from the global var to the stack
+        m_pStackPointer--;
+
+        assert(m_pVars[newObjDVar].interpType == InterpTypeVT);
+        PushTypeVT(m_pVars[newObjDVar].clsHnd, m_pVars[newObjDVar].size);
+        AddIns(InterpGetMovForType(InterpTypeVT, true));
+        m_pLastNewIns->SetSVar(newObjDVar);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        m_pLastNewIns->data[0] = m_pVars[newObjDVar].size;
     }
 
     if (callInfo.sig.isAsyncCall() && m_methodInfo->args.isAsyncCall()) // Async2 functions may need to suspend

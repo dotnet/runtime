@@ -144,7 +144,6 @@ struct JitInterfaceCallbacks
     void (* getHelperFtn)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE* pMethod);
     void (* getFunctionEntryPoint)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags);
     void (* getFunctionFixedEntryPoint)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult);
-    CorInfoHelpFunc (* getLazyStringLiteralHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE handle);
     CORINFO_MODULE_HANDLE (* embedModuleHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE handle, void** ppIndirection);
     CORINFO_CLASS_HANDLE (* embedClassHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE handle, void** ppIndirection);
     CORINFO_METHOD_HANDLE (* embedMethodHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE handle, void** ppIndirection);
@@ -1488,15 +1487,6 @@ public:
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->getFunctionFixedEntryPoint(_thisHandle, &pException, ftn, isUnsafeFunctionPointer, pResult);
     if (pException != nullptr) throw pException;
-}
-
-    virtual CorInfoHelpFunc getLazyStringLiteralHelper(
-          CORINFO_MODULE_HANDLE handle)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CorInfoHelpFunc temp = _callbacks->getLazyStringLiteralHelper(_thisHandle, &pException, handle);
-    if (pException != nullptr) throw pException;
-    return temp;
 }
 
     virtual CORINFO_MODULE_HANDLE embedModuleHandle(
