@@ -64,7 +64,7 @@ namespace System.Collections.Generic
         {
             if (_count == Capacity)
             {
-                EnsureCapacity(_count + 1);
+                Grow(_count + 1);
             }
 
             UncheckedAdd(item);
@@ -85,7 +85,7 @@ namespace System.Collections.Generic
                 {
                     if (_count + count > Capacity)
                     {
-                        EnsureCapacity(_count + count);
+                        Grow(_count + count);
                     }
 
                     collection.CopyTo(_array!, _count);
@@ -167,7 +167,7 @@ namespace System.Collections.Generic
             _array![_count++] = item;
         }
 
-        private void EnsureCapacity(int minimum)
+        private void Grow(int minimum)
         {
             Debug.Assert(minimum > Capacity);
 
