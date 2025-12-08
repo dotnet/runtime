@@ -51,6 +51,11 @@ namespace JitTest_implicit_promotion
             {
                 a_nint = unchecked((nint)(nuint)0xFFFFFFFF);
             }
+            if (opcode == "mul.ovf.un" && !Environment.Is64BitProcess)
+            {
+                Assert.Throws<OverflowException>(() => Operator.mul_ovf_un_I_i32(a_nint, b));
+                return;
+            }
 
             switch(opcode)
             {
@@ -190,6 +195,12 @@ namespace JitTest_implicit_promotion
         {
             nint b_nint = (nint)b;
             nint result = 0;
+
+            if (opcode == "mul.ovf.un" && !Environment.Is64BitProcess)
+            {
+                Assert.Throws<OverflowException>(() => Operator.mul_ovf_un_i32_I(a, b_nint));
+                return;
+            }
 
             switch(opcode)
             {
