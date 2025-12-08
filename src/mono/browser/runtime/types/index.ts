@@ -250,19 +250,19 @@ export type Asset = {
 
 export type WasmAsset = Asset & {
     name: string;
-    hash?: string | null | "";
+    integrity?: string | null | "";
 }
 
 export type AssemblyAsset = Asset & {
     virtualPath: string;
     name: string; // actually URL
-    hash?: string | null | "";
+    integrity?: string | null | "";
 }
 
 export type PdbAsset = Asset & {
     virtualPath: string;
     name: string; // actually URL
-    hash?: string | null | "";
+    integrity?: string | null | "";
 }
 
 export type JsAsset = Asset & {
@@ -282,13 +282,13 @@ export type SymbolsAsset = Asset & {
 export type VfsAsset = Asset & {
     virtualPath: string;
     name: string; // actually URL
-    hash?: string | null | "";
+    integrity?: string | null | "";
 }
 
 export type IcuAsset = Asset & {
     virtualPath: string;
     name: string; // actually URL
-    hash?: string | null | "";
+    integrity?: string | null | "";
 }
 
 /**

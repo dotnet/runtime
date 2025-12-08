@@ -309,6 +309,10 @@ export function prepareAssets () {
         const addAsset = (asset: Asset, behavior: AssetBehaviors, isCore: boolean) => {
             const assetEntry = asset as AssetEntryInternal;
             assetEntry.behavior = behavior;
+            if ((asset as any).integrity) {
+                assetEntry.hash = (asset as any).integrity;
+            }
+
             if (isCore) {
                 assetEntry.isCore = true;
                 coreAssetsToLoad.push(assetEntry);
