@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -710,6 +711,114 @@ namespace System.Net.Sockets
                         _sendPacketsFileHandles[i].Dispose();
                     _sendPacketsFileHandles = null;
                     throw;
+                }
+
+                // Check if any files need partitioning due to >2GB size limitation on Windows
+                // This needs to be done after files are opened so we have the actual file size
+                bool needsPartitioning = false;
+                for (int i = 0; i < _sendPacketsFileHandles.Length; i++)
+                {
+                    long fileLength = RandomAccess.GetLength(_sendPacketsFileHandles[i]);
+                    if (fileLength > int.MaxValue)
+                    {
+                        needsPartitioning = true;
+                        break;
+                    }
+                }
+
+                if (needsPartitioning)
+                {
+                    // Expand the sendPacketsElementsCopy array to accommodate file partitioning
+                    List<SendPacketsElement> expandedElements = new List<SendPacketsElement>();
+                    int fileIndex = 0;
+
+                    foreach (SendPacketsElement spe in sendPacketsElementsCopy)
+                    {
+                        if (spe == null)
+                        {
+                            continue;
+                        }
+
+                        if (spe.FilePath != null)
+                        {
+                            // This is a file element - check if it needs partitioning
+                            long fileLength = RandomAccess.GetLength(_sendPacketsFileHandles[fileIndex]);
+
+                            if (fileLength > int.MaxValue && spe.Count == 0)
+                            {
+                                // File needs partitioning - create multiple elements
+                                long offset = spe.OffsetLong;
+                                long remaining = fileLength - offset;
+
+                                while (remaining > 0)
+                                {
+                                    int chunkSize = (int)Math.Min(remaining, int.MaxValue);
+                                    expandedElements.Add(new SendPacketsElement(spe.FilePath, offset, chunkSize, endOfPacket: false));
+                                    offset += chunkSize;
+                                    remaining -= chunkSize;
+                                }
+                            }
+                            else
+                            {
+                                // File doesn't need partitioning or already has a specific count
+                                expandedElements.Add(spe);
+                            }
+
+                            fileIndex++;
+                        }
+                        else
+                        {
+                            // Not a file element - keep as is
+                            expandedElements.Add(spe);
+                        }
+                    }
+
+                    // Set endOfPacket on the last element
+                    if (expandedElements.Count > 0 && !expandedElements[expandedElements.Count - 1].EndOfPacket)
+                    {
+                        SendPacketsElement lastElement = expandedElements[expandedElements.Count - 1];
+                        if (lastElement.MemoryBuffer != null)
+                        {
+                            expandedElements[expandedElements.Count - 1] = new SendPacketsElement(lastElement.MemoryBuffer.Value, endOfPacket: true);
+                        }
+                        else if (lastElement.FilePath != null)
+                        {
+                            expandedElements[expandedElements.Count - 1] = new SendPacketsElement(lastElement.FilePath, lastElement.OffsetLong, lastElement.Count, endOfPacket: true);
+                        }
+                        else if (lastElement.FileStream != null)
+                        {
+                            expandedElements[expandedElements.Count - 1] = new SendPacketsElement(lastElement.FileStream, lastElement.OffsetLong, lastElement.Count, endOfPacket: true);
+                        }
+                        else if (lastElement.Buffer != null)
+                        {
+                            expandedElements[expandedElements.Count - 1] = new SendPacketsElement(lastElement.Buffer, lastElement.Offset, lastElement.Count, endOfPacket: true);
+                        }
+                    }
+
+                    sendPacketsElementsCopy = expandedElements.ToArray();
+
+                    // Recount the elements since we may have expanded them
+                    sendPacketsElementsFileCount = 0;
+                    sendPacketsElementsFileStreamCount = 0;
+                    sendPacketsElementsBufferCount = 0;
+                    foreach (SendPacketsElement spe in sendPacketsElementsCopy)
+                    {
+                        if (spe != null)
+                        {
+                            if (spe.FilePath != null)
+                            {
+                                sendPacketsElementsFileCount++;
+                            }
+                            else if (spe.FileStream != null)
+                            {
+                                sendPacketsElementsFileStreamCount++;
+                            }
+                            else if (spe.MemoryBuffer != null && spe.Count > 0)
+                            {
+                                sendPacketsElementsBufferCount++;
+                            }
+                        }
+                    }
                 }
             }
 

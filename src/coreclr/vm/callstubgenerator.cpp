@@ -1402,6 +1402,472 @@ PCODE FPRegs32LoadRoutines[] =
 
 #endif // TARGET_ARM64
 
+#ifdef TARGET_RISCV64
+
+extern "C" void Load_A0();
+extern "C" void Load_A0_A1();
+extern "C" void Load_A0_A1_A2();
+extern "C" void Load_A0_A1_A2_A3();
+extern "C" void Load_A0_A1_A2_A3_A4();
+extern "C" void Load_A0_A1_A2_A3_A4_A5();
+extern "C" void Load_A0_A1_A2_A3_A4_A5_A6();
+extern "C" void Load_A0_A1_A2_A3_A4_A5_A6_A7();
+extern "C" void Load_A1();
+extern "C" void Load_A1_A2();
+extern "C" void Load_A1_A2_A3();
+extern "C" void Load_A1_A2_A3_A4();
+extern "C" void Load_A1_A2_A3_A4_A5();
+extern "C" void Load_A1_A2_A3_A4_A5_A6();
+extern "C" void Load_A1_A2_A3_A4_A5_A6_A7();
+extern "C" void Load_A2();
+extern "C" void Load_A2_A3();
+extern "C" void Load_A2_A3_A4();
+extern "C" void Load_A2_A3_A4_A5();
+extern "C" void Load_A2_A3_A4_A5_A6();
+extern "C" void Load_A2_A3_A4_A5_A6_A7();
+extern "C" void Load_A3();
+extern "C" void Load_A3_A4();
+extern "C" void Load_A3_A4_A5();
+extern "C" void Load_A3_A4_A5_A6();
+extern "C" void Load_A3_A4_A5_A6_A7();
+extern "C" void Load_A4();
+extern "C" void Load_A4_A5();
+extern "C" void Load_A4_A5_A6();
+extern "C" void Load_A4_A5_A6_A7();
+extern "C" void Load_A5();
+extern "C" void Load_A5_A6();
+extern "C" void Load_A5_A6_A7();
+extern "C" void Load_A6();
+extern "C" void Load_A6_A7();
+extern "C" void Load_A7();
+
+extern "C" void Store_A0();
+extern "C" void Store_A0_A1();
+extern "C" void Store_A0_A1_A2();
+extern "C" void Store_A0_A1_A2_A3();
+extern "C" void Store_A0_A1_A2_A3_A4();
+extern "C" void Store_A0_A1_A2_A3_A4_A5();
+extern "C" void Store_A0_A1_A2_A3_A4_A5_A6();
+extern "C" void Store_A0_A1_A2_A3_A4_A5_A6_A7();
+extern "C" void Store_A1();
+extern "C" void Store_A1_A2();
+extern "C" void Store_A1_A2_A3();
+extern "C" void Store_A1_A2_A3_A4();
+extern "C" void Store_A1_A2_A3_A4_A5();
+extern "C" void Store_A1_A2_A3_A4_A5_A6();
+extern "C" void Store_A1_A2_A3_A4_A5_A6_A7();
+extern "C" void Store_A2();
+extern "C" void Store_A2_A3();
+extern "C" void Store_A2_A3_A4();
+extern "C" void Store_A2_A3_A4_A5();
+extern "C" void Store_A2_A3_A4_A5_A6();
+extern "C" void Store_A2_A3_A4_A5_A6_A7();
+extern "C" void Store_A3();
+extern "C" void Store_A3_A4();
+extern "C" void Store_A3_A4_A5();
+extern "C" void Store_A3_A4_A5_A6();
+extern "C" void Store_A3_A4_A5_A6_A7();
+extern "C" void Store_A4();
+extern "C" void Store_A4_A5();
+extern "C" void Store_A4_A5_A6();
+extern "C" void Store_A4_A5_A6_A7();
+extern "C" void Store_A5();
+extern "C" void Store_A5_A6();
+extern "C" void Store_A5_A6_A7();
+extern "C" void Store_A6();
+extern "C" void Store_A6_A7();
+extern "C" void Store_A7();
+
+extern "C" void Load_Ref_A0();
+extern "C" void Load_Ref_A1();
+extern "C" void Load_Ref_A2();
+extern "C" void Load_Ref_A3();
+extern "C" void Load_Ref_A4();
+extern "C" void Load_Ref_A5();
+extern "C" void Load_Ref_A6();
+extern "C" void Load_Ref_A7();
+
+extern "C" void Store_Ref_A0();
+extern "C" void Store_Ref_A1();
+extern "C" void Store_Ref_A2();
+extern "C" void Store_Ref_A3();
+extern "C" void Store_Ref_A4();
+extern "C" void Store_Ref_A5();
+extern "C" void Store_Ref_A6();
+extern "C" void Store_Ref_A7();
+
+PCODE GPRegsRoutines[] =
+{
+    (PCODE)Load_A0,                         // 00
+    (PCODE)Load_A0_A1,                      // 01
+    (PCODE)Load_A0_A1_A2,                   // 02
+    (PCODE)Load_A0_A1_A2_A3,                // 03
+    (PCODE)Load_A0_A1_A2_A3_A4,             // 04
+    (PCODE)Load_A0_A1_A2_A3_A4_A5,          // 05
+    (PCODE)Load_A0_A1_A2_A3_A4_A5_A6,       // 06
+    (PCODE)Load_A0_A1_A2_A3_A4_A5_A6_A7,    // 07
+    (PCODE)0,                               // 10
+    (PCODE)Load_A1,                         // 11
+    (PCODE)Load_A1_A2,                      // 12
+    (PCODE)Load_A1_A2_A3,                   // 13
+    (PCODE)Load_A1_A2_A3_A4,                // 14
+    (PCODE)Load_A1_A2_A3_A4_A5,             // 15
+    (PCODE)Load_A1_A2_A3_A4_A5_A6,          // 16
+    (PCODE)Load_A1_A2_A3_A4_A5_A6_A7,       // 17
+    (PCODE)0,                               // 20
+    (PCODE)0,                               // 21
+    (PCODE)Load_A2,                         // 22
+    (PCODE)Load_A2_A3,                      // 23
+    (PCODE)Load_A2_A3_A4,                   // 24
+    (PCODE)Load_A2_A3_A4_A5,                // 25
+    (PCODE)Load_A2_A3_A4_A5_A6,             // 26
+    (PCODE)Load_A2_A3_A4_A5_A6_A7,          // 27
+    (PCODE)0,                               // 30
+    (PCODE)0,                               // 31
+    (PCODE)0,                               // 32
+    (PCODE)Load_A3,                         // 33
+    (PCODE)Load_A3_A4,                      // 34
+    (PCODE)Load_A3_A4_A5,                   // 35
+    (PCODE)Load_A3_A4_A5_A6,                // 36
+    (PCODE)Load_A3_A4_A5_A6_A7,             // 37
+    (PCODE)0,                               // 40
+    (PCODE)0,                               // 41
+    (PCODE)0,                               // 42
+    (PCODE)0,                               // 43
+    (PCODE)Load_A4,                         // 44
+    (PCODE)Load_A4_A5,                      // 45
+    (PCODE)Load_A4_A5_A6,                   // 46
+    (PCODE)Load_A4_A5_A6_A7,                // 47
+    (PCODE)0,                               // 50
+    (PCODE)0,                               // 51
+    (PCODE)0,                               // 52
+    (PCODE)0,                               // 53
+    (PCODE)0,                               // 54
+    (PCODE)Load_A5,                         // 55
+    (PCODE)Load_A5_A6,                      // 56
+    (PCODE)Load_A5_A6_A7,                   // 57
+    (PCODE)0,                               // 60
+    (PCODE)0,                               // 61
+    (PCODE)0,                               // 62
+    (PCODE)0,                               // 63
+    (PCODE)0,                               // 64
+    (PCODE)0,                               // 65
+    (PCODE)Load_A6,                         // 66
+    (PCODE)Load_A6_A7,                      // 67
+    (PCODE)0,                               // 70
+    (PCODE)0,                               // 71
+    (PCODE)0,                               // 72
+    (PCODE)0,                               // 73
+    (PCODE)0,                               // 74
+    (PCODE)0,                               // 75
+    (PCODE)0,                               // 76
+    (PCODE)Load_A7                          // 77
+};
+
+PCODE GPRegsStoreRoutines[] =
+{
+    (PCODE)Store_A0,                         // 00
+    (PCODE)Store_A0_A1,                      // 01
+    (PCODE)Store_A0_A1_A2,                   // 02
+    (PCODE)Store_A0_A1_A2_A3,                // 03
+    (PCODE)Store_A0_A1_A2_A3_A4,             // 04
+    (PCODE)Store_A0_A1_A2_A3_A4_A5,          // 05
+    (PCODE)Store_A0_A1_A2_A3_A4_A5_A6,       // 06
+    (PCODE)Store_A0_A1_A2_A3_A4_A5_A6_A7,    // 07
+    (PCODE)0,                                // 10
+    (PCODE)Store_A1,                         // 11
+    (PCODE)Store_A1_A2,                      // 12
+    (PCODE)Store_A1_A2_A3,                   // 13
+    (PCODE)Store_A1_A2_A3_A4,                // 14
+    (PCODE)Store_A1_A2_A3_A4_A5,             // 15
+    (PCODE)Store_A1_A2_A3_A4_A5_A6,          // 16
+    (PCODE)Store_A1_A2_A3_A4_A5_A6_A7,       // 17
+    (PCODE)0,                                // 20
+    (PCODE)0,                                // 21
+    (PCODE)Store_A2,                         // 22
+    (PCODE)Store_A2_A3,                      // 23
+    (PCODE)Store_A2_A3_A4,                   // 24
+    (PCODE)Store_A2_A3_A4_A5,                // 25
+    (PCODE)Store_A2_A3_A4_A5_A6,             // 26
+    (PCODE)Store_A2_A3_A4_A5_A6_A7,          // 27
+    (PCODE)0,                                // 30
+    (PCODE)0,                                // 31
+    (PCODE)0,                                // 32
+    (PCODE)Store_A3,                         // 33
+    (PCODE)Store_A3_A4,                      // 34
+    (PCODE)Store_A3_A4_A5,                   // 35
+    (PCODE)Store_A3_A4_A5_A6,                // 36
+    (PCODE)Store_A3_A4_A5_A6_A7,             // 37
+    (PCODE)0,                                // 40
+    (PCODE)0,                                // 41
+    (PCODE)0,                                // 42
+    (PCODE)0,                                // 43
+    (PCODE)Store_A4,                         // 44
+    (PCODE)Store_A4_A5,                      // 45
+    (PCODE)Store_A4_A5_A6,                   // 46
+    (PCODE)Store_A4_A5_A6_A7,                // 47
+    (PCODE)0,                                // 50
+    (PCODE)0,                                // 51
+    (PCODE)0,                                // 52
+    (PCODE)0,                                // 53
+    (PCODE)0,                                // 54
+    (PCODE)Store_A5,                         // 55
+    (PCODE)Store_A5_A6,                      // 56
+    (PCODE)Store_A5_A6_A7,                   // 57
+    (PCODE)0,                                // 60
+    (PCODE)0,                                // 61
+    (PCODE)0,                                // 62
+    (PCODE)0,                                // 63
+    (PCODE)0,                                // 64
+    (PCODE)0,                                // 65
+    (PCODE)Store_A6,                         // 66
+    (PCODE)Store_A6_A7,                      // 67
+    (PCODE)0,                                // 70
+    (PCODE)0,                                // 71
+    (PCODE)0,                                // 72
+    (PCODE)0,                                // 73
+    (PCODE)0,                                // 74
+    (PCODE)0,                                // 75
+    (PCODE)0,                                // 76
+    (PCODE)Store_A7                          // 77
+};
+
+extern "C" void Load_FA0();
+extern "C" void Load_FA0_FA1();
+extern "C" void Load_FA0_FA1_FA2();
+extern "C" void Load_FA0_FA1_FA2_FA3();
+extern "C" void Load_FA0_FA1_FA2_FA3_FA4();
+extern "C" void Load_FA0_FA1_FA2_FA3_FA4_FA5();
+extern "C" void Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6();
+extern "C" void Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7();
+extern "C" void Load_FA1();
+extern "C" void Load_FA1_FA2();
+extern "C" void Load_FA1_FA2_FA3();
+extern "C" void Load_FA1_FA2_FA3_FA4();
+extern "C" void Load_FA1_FA2_FA3_FA4_FA5();
+extern "C" void Load_FA1_FA2_FA3_FA4_FA5_FA6();
+extern "C" void Load_FA1_FA2_FA3_FA4_FA5_FA6_FA7();
+extern "C" void Load_FA2();
+extern "C" void Load_FA2_FA3();
+extern "C" void Load_FA2_FA3_FA4();
+extern "C" void Load_FA2_FA3_FA4_FA5();
+extern "C" void Load_FA2_FA3_FA4_FA5_FA6();
+extern "C" void Load_FA2_FA3_FA4_FA5_FA6_FA7();
+extern "C" void Load_FA3();
+extern "C" void Load_FA3_FA4();
+extern "C" void Load_FA3_FA4_FA5();
+extern "C" void Load_FA3_FA4_FA5_FA6();
+extern "C" void Load_FA3_FA4_FA5_FA6_FA7();
+extern "C" void Load_FA4();
+extern "C" void Load_FA4_FA5();
+extern "C" void Load_FA4_FA5_FA6();
+extern "C" void Load_FA4_FA5_FA6_FA7();
+extern "C" void Load_FA5();
+extern "C" void Load_FA5_FA6();
+extern "C" void Load_FA5_FA6_FA7();
+extern "C" void Load_FA6();
+extern "C" void Load_FA6_FA7();
+extern "C" void Load_FA7();
+
+extern "C" void Store_FA0();
+extern "C" void Store_FA0_FA1();
+extern "C" void Store_FA0_FA1_FA2();
+extern "C" void Store_FA0_FA1_FA2_FA3();
+extern "C" void Store_FA0_FA1_FA2_FA3_FA4();
+extern "C" void Store_FA0_FA1_FA2_FA3_FA4_FA5();
+extern "C" void Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6();
+extern "C" void Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7();
+extern "C" void Store_FA1();
+extern "C" void Store_FA1_FA2();
+extern "C" void Store_FA1_FA2_FA3();
+extern "C" void Store_FA1_FA2_FA3_FA4();
+extern "C" void Store_FA1_FA2_FA3_FA4_FA5();
+extern "C" void Store_FA1_FA2_FA3_FA4_FA5_FA6();
+extern "C" void Store_FA1_FA2_FA3_FA4_FA5_FA6_FA7();
+extern "C" void Store_FA2();
+extern "C" void Store_FA2_FA3();
+extern "C" void Store_FA2_FA3_FA4();
+extern "C" void Store_FA2_FA3_FA4_FA5();
+extern "C" void Store_FA2_FA3_FA4_FA5_FA6();
+extern "C" void Store_FA2_FA3_FA4_FA5_FA6_FA7();
+extern "C" void Store_FA3();
+extern "C" void Store_FA3_FA4();
+extern "C" void Store_FA3_FA4_FA5();
+extern "C" void Store_FA3_FA4_FA5_FA6();
+extern "C" void Store_FA3_FA4_FA5_FA6_FA7();
+extern "C" void Store_FA4();
+extern "C" void Store_FA4_FA5();
+extern "C" void Store_FA4_FA5_FA6();
+extern "C" void Store_FA4_FA5_FA6_FA7();
+extern "C" void Store_FA5();
+extern "C" void Store_FA5_FA6();
+extern "C" void Store_FA5_FA6_FA7();
+extern "C" void Store_FA6();
+extern "C" void Store_FA6_FA7();
+extern "C" void Store_FA7();
+
+PCODE FPRegsRoutines[] =
+{
+    (PCODE)Load_FA0,                         // 00
+    (PCODE)Load_FA0_FA1,                     // 01
+    (PCODE)Load_FA0_FA1_FA2,                 // 02
+    (PCODE)Load_FA0_FA1_FA2_FA3,             // 03
+    (PCODE)Load_FA0_FA1_FA2_FA3_FA4,         // 04
+    (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5,     // 05
+    (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6,    // 06
+    (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7, // 07
+    (PCODE)0,                                // 10
+    (PCODE)Load_FA1,                         // 11
+    (PCODE)Load_FA1_FA2,                     // 12
+    (PCODE)Load_FA1_FA2_FA3,                 // 13
+    (PCODE)Load_FA1_FA2_FA3_FA4,             // 14
+    (PCODE)Load_FA1_FA2_FA3_FA4_FA5,         // 15
+    (PCODE)Load_FA1_FA2_FA3_FA4_FA5_FA6,     // 16
+    (PCODE)Load_FA1_FA2_FA3_FA4_FA5_FA6_FA7, // 17
+    (PCODE)0,                                // 20
+    (PCODE)0,                                // 21
+    (PCODE)Load_FA2,                         // 22
+    (PCODE)Load_FA2_FA3,                     // 23
+    (PCODE)Load_FA2_FA3_FA4,                 // 24
+    (PCODE)Load_FA2_FA3_FA4_FA5,             // 25
+    (PCODE)Load_FA2_FA3_FA4_FA5_FA6,         // 26
+    (PCODE)Load_FA2_FA3_FA4_FA5_FA6_FA7,     // 27
+    (PCODE)0,                                // 30
+    (PCODE)0,                                // 31
+    (PCODE)0,                                // 32
+    (PCODE)Load_FA3,                         // 33
+    (PCODE)Load_FA3_FA4,                     // 34
+    (PCODE)Load_FA3_FA4_FA5,                 // 35
+    (PCODE)Load_FA3_FA4_FA5_FA6,             // 36
+    (PCODE)Load_FA3_FA4_FA5_FA6_FA7,         // 37
+    (PCODE)0,                                // 40
+    (PCODE)0,                                // 41
+    (PCODE)0,                                // 42
+    (PCODE)0,                                // 43
+    (PCODE)Load_FA4,                         // 44
+    (PCODE)Load_FA4_FA5,                     // 45
+    (PCODE)Load_FA4_FA5_FA6,                 // 46
+    (PCODE)Load_FA4_FA5_FA6_FA7,             // 47
+    (PCODE)0,                                // 50
+    (PCODE)0,                                // 51
+    (PCODE)0,                                // 52
+    (PCODE)0,                                // 53
+    (PCODE)0,                                // 54
+    (PCODE)Load_FA5,                         // 55
+    (PCODE)Load_FA5_FA6,                     // 56
+    (PCODE)Load_FA5_FA6_FA7,                 // 57
+    (PCODE)0,                                // 60
+    (PCODE)0,                                // 61
+    (PCODE)0,                                // 62
+    (PCODE)0,                                // 63
+    (PCODE)0,                                // 64
+    (PCODE)0,                                // 65
+    (PCODE)Load_FA6,                         // 66
+    (PCODE)Load_FA6_FA7,                     // 67
+    (PCODE)0,                                // 70
+    (PCODE)0,                                // 71
+    (PCODE)0,                                // 72
+    (PCODE)0,                                // 73
+    (PCODE)0,                                // 74
+    (PCODE)0,                                // 75
+    (PCODE)0,                                // 76
+    (PCODE)Load_FA7                          // 77
+};
+
+PCODE FPRegsStoreRoutines[] =
+{
+    (PCODE)Store_FA0,                         // 00
+    (PCODE)Store_FA0_FA1,                     // 01
+    (PCODE)Store_FA0_FA1_FA2,                 // 02
+    (PCODE)Store_FA0_FA1_FA2_FA3,             // 03
+    (PCODE)Store_FA0_FA1_FA2_FA3_FA4,         // 04
+    (PCODE)Store_FA0_FA1_FA2_FA3_FA4_FA5,     // 05
+    (PCODE)Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6,    // 06
+    (PCODE)Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7, // 07
+    (PCODE)0,                                 // 10
+    (PCODE)Store_FA1,                         // 11
+    (PCODE)Store_FA1_FA2,                     // 12
+    (PCODE)Store_FA1_FA2_FA3,                 // 13
+    (PCODE)Store_FA1_FA2_FA3_FA4,             // 14
+    (PCODE)Store_FA1_FA2_FA3_FA4_FA5,         // 15
+    (PCODE)Store_FA1_FA2_FA3_FA4_FA5_FA6,     // 16
+    (PCODE)Store_FA1_FA2_FA3_FA4_FA5_FA6_FA7, // 17
+    (PCODE)0,                                 // 20
+    (PCODE)0,                                 // 21
+    (PCODE)Store_FA2,                         // 22
+    (PCODE)Store_FA2_FA3,                     // 23
+    (PCODE)Store_FA2_FA3_FA4,                 // 24
+    (PCODE)Store_FA2_FA3_FA4_FA5,             // 25
+    (PCODE)Store_FA2_FA3_FA4_FA5_FA6,         // 26
+    (PCODE)Store_FA2_FA3_FA4_FA5_FA6_FA7,     // 27
+    (PCODE)0,                                 // 30
+    (PCODE)0,                                 // 31
+    (PCODE)0,                                 // 32
+    (PCODE)Store_FA3,                         // 33
+    (PCODE)Store_FA3_FA4,                     // 34
+    (PCODE)Store_FA3_FA4_FA5,                 // 35
+    (PCODE)Store_FA3_FA4_FA5_FA6,             // 36
+    (PCODE)Store_FA3_FA4_FA5_FA6_FA7,         // 37
+    (PCODE)0,                                 // 40
+    (PCODE)0,                                 // 41
+    (PCODE)0,                                 // 42
+    (PCODE)0,                                 // 43
+    (PCODE)Store_FA4,                         // 44
+    (PCODE)Store_FA4_FA5,                     // 45
+    (PCODE)Store_FA4_FA5_FA6,                 // 46
+    (PCODE)Store_FA4_FA5_FA6_FA7,             // 47
+    (PCODE)0,                                 // 50
+    (PCODE)0,                                 // 51
+    (PCODE)0,                                 // 52
+    (PCODE)0,                                 // 53
+    (PCODE)0,                                 // 54
+    (PCODE)Store_FA5,                         // 55
+    (PCODE)Store_FA5_FA6,                     // 56
+    (PCODE)Store_FA5_FA6_FA7,                 // 57
+    (PCODE)0,                                 // 60
+    (PCODE)0,                                 // 61
+    (PCODE)0,                                 // 62
+    (PCODE)0,                                 // 63
+    (PCODE)0,                                 // 64
+    (PCODE)0,                                 // 65
+    (PCODE)Store_FA6,                         // 66
+    (PCODE)Store_FA6_FA7,                     // 67
+    (PCODE)0,                                 // 70
+    (PCODE)0,                                 // 71
+    (PCODE)0,                                 // 72
+    (PCODE)0,                                 // 73
+    (PCODE)0,                                 // 74
+    (PCODE)0,                                 // 75
+    (PCODE)0,                                 // 76
+    (PCODE)Store_FA7                          // 77
+};
+
+PCODE GPRegsRefRoutines[] =
+{
+    (PCODE)Load_Ref_A0,        // 0 - a0
+    (PCODE)Load_Ref_A1,        // 1 - a1
+    (PCODE)Load_Ref_A2,        // 2 - a2
+    (PCODE)Load_Ref_A3,        // 3 - a3
+    (PCODE)Load_Ref_A4,        // 4 - a4
+    (PCODE)Load_Ref_A5,        // 5 - a5
+    (PCODE)Load_Ref_A6,        // 6 - a6
+    (PCODE)Load_Ref_A7         // 7 - a7
+};
+
+PCODE GPRegsRefStoreRoutines[] =
+{
+    (PCODE)Store_Ref_A0,        // 0 - a0
+    (PCODE)Store_Ref_A1,        // 1 - a1
+    (PCODE)Store_Ref_A2,        // 2 - a2
+    (PCODE)Store_Ref_A3,        // 3 - a3
+    (PCODE)Store_Ref_A4,        // 4 - a4
+    (PCODE)Store_Ref_A5,        // 5 - a5
+    (PCODE)Store_Ref_A6,        // 6 - a6
+    (PCODE)Store_Ref_A7         // 7 - a7
+};
+
+#endif // TARGET_RISCV64
+
 #define LOG_COMPUTE_CALL_STUB 0
 
 PCODE CallStubGenerator::GetStackRoutine()
@@ -1502,28 +1968,35 @@ PCODE CallStubGenerator::GetFPReg32RangeRoutine(int x1, int x2)
 }
 #endif // TARGET_ARM64
 
-extern "C" void CallJittedMethodRetVoid(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetVoid(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetVoid();
 extern "C" void InterpreterStubRetDouble();
 extern "C" void InterpreterStubRetI8();
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-extern "C" void CallJittedMethodRetBuffRCX(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetBuffRDX(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+#ifdef TARGET_AMD64
+#ifdef TARGET_WINDOWS
+extern "C" void CallJittedMethodRetBuffRCX(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetBuffRDX(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetBuffRCX();
 extern "C" void InterpreterStubRetBuffRDX();
-#else // TARGET_WINDOWS && TARGET_AMD64
-extern "C" void CallJittedMethodRetBuff(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+#else // TARGET_WINDOWS
+extern "C" void CallJittedMethodRetBuffRDI(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetBuffRSI(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void InterpreterStubRetBuffRDI();
+extern "C" void InterpreterStubRetBuffRSI();
+#endif // TARGET_WINDOWS
+#else // TARGET_AMD64
+extern "C" void CallJittedMethodRetBuff(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetBuff();
-#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // TARGET_AMD64
 
 #ifdef UNIX_AMD64_ABI
-extern "C" void CallJittedMethodRetI8I8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetI8Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetDoubleI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetDoubleDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetI8I8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetI8Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetDoubleI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetDoubleDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetI8I8();
 extern "C" void InterpreterStubRetI8Double();
 extern "C" void InterpreterStubRetDoubleI8();
@@ -1531,22 +2004,22 @@ extern "C" void InterpreterStubRetDoubleDouble();
 #endif
 
 #ifdef TARGET_ARM64
-extern "C" void CallJittedMethodRet2I8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet2Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet3Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet4Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet2Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet3Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet4Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetVector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet2Vector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet3Vector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet4Vector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetVector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet2Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet3Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet4Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
+extern "C" void CallJittedMethodRet2I8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet2Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet3Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet4Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet2Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet3Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet4Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetVector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet2Vector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet3Vector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet4Vector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetVector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet2Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet3Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet4Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRet2I8();
 extern "C" void InterpreterStubRet2Double();
 extern "C" void InterpreterStubRet3Double();
@@ -1564,6 +2037,17 @@ extern "C" void InterpreterStubRet2Vector128();
 extern "C" void InterpreterStubRet3Vector128();
 extern "C" void InterpreterStubRet4Vector128();
 #endif // TARGET_ARM64
+
+#if defined(TARGET_RISCV64)
+extern "C" void CallJittedMethodRet2I8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet2Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetFloatInt(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetIntFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void InterpreterStubRet2I8();
+extern "C" void InterpreterStubRet2Double();
+extern "C" void InterpreterStubRetFloatInt();
+extern "C" void InterpreterStubRetIntFloat();
+#endif // TARGET_RISCV64
 
 #if LOG_COMPUTE_CALL_STUB
 #define INVOKE_FUNCTION_PTR(functionPtrName) printf(#functionPtrName "\n"); return functionPtrName
@@ -1583,15 +2067,22 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
             INVOKE_FUNCTION_PTR(CallJittedMethodRetDouble);
         case ReturnTypeI8:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetI8);
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#ifdef TARGET_AMD64
+#ifdef TARGET_WINDOWS
         case ReturnTypeBuffArg1:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRCX);
         case ReturnTypeBuffArg2:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRDX);
-#else // TARGET_WINDOWS && TARGET_AMD64
+#else // TARGET_WINDOWS
+        case ReturnTypeBuffArg1:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRDI);
+        case ReturnTypeBuffArg2:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRSI);
+#endif // TARGET_WINDOWS
+#else // TARGET_AMD64
         case ReturnTypeBuff:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuff);
-#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // TARGET_AMD64
 #ifdef UNIX_AMD64_ABI
         case ReturnTypeI8I8:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetI8I8);
@@ -1636,6 +2127,16 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
         case ReturnType4Vector128:
             INVOKE_FUNCTION_PTR(CallJittedMethodRet4Vector128);
 #endif // TARGET_ARM64
+#if defined(TARGET_RISCV64)
+        case ReturnType2I8:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet2I8);
+        case ReturnType2Double:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet2Double);
+        case ReturnTypeFloatInt:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetFloatInt);
+        case ReturnTypeIntFloat:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetIntFloat);
+#endif // TARGET_RISCV64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
             return NULL; // This should never happen, but just in case.
@@ -1660,15 +2161,23 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
             RETURN_TYPE_HANDLER(InterpreterStubRetDouble);
         case ReturnTypeI8:
             RETURN_TYPE_HANDLER(InterpreterStubRetI8);
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#ifdef TARGET_AMD64
         case ReturnTypeBuffArg1:
+#ifdef TARGET_WINDOWS
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffRCX);
+#else
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuffRDI);
+#endif
         case ReturnTypeBuffArg2:
+#ifdef TARGET_WINDOWS
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffRDX);
-#else // TARGET_WINDOWS && TARGET_AMD64
+#else
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuffRSI);
+#endif
+#else // TARGET_AMD64
         case ReturnTypeBuff:
             RETURN_TYPE_HANDLER(InterpreterStubRetBuff);
-#endif // TARGET_WINDOWS && TARGET_AMD64
+#endif // TARGET_AMD64
 #ifdef UNIX_AMD64_ABI
         case ReturnTypeI8I8:
             RETURN_TYPE_HANDLER(InterpreterStubRetI8I8);
@@ -1713,6 +2222,16 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
         case ReturnType4Vector128:
             RETURN_TYPE_HANDLER(InterpreterStubRet4Vector128);
 #endif // TARGET_ARM64
+#if defined(TARGET_RISCV64)
+        case ReturnType2I8:
+            RETURN_TYPE_HANDLER(InterpreterStubRet2I8);
+        case ReturnType2Double:
+            RETURN_TYPE_HANDLER(InterpreterStubRet2Double);
+        case ReturnTypeFloatInt:
+            RETURN_TYPE_HANDLER(InterpreterStubRetFloatInt);
+        case ReturnTypeIntFloat:
+            RETURN_TYPE_HANDLER(InterpreterStubRetIntFloat);
+#endif // TARGET_RISCV64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
             return 0; // This should never happen, but just in case.
@@ -1754,15 +2273,15 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     S_SIZE_T finalStubSize(sizeof(CallStubHeader) + m_routineIndex * sizeof(PCODE));
     void *pHeaderStorage = pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(finalStubSize));
 
-    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), m_pInvokeFunction);
+    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_pInvokeFunction);
 
     return pHeader;
 }
 
 struct CachedCallStubKey
 {
-    CachedCallStubKey(int32_t hashCode, int numRoutines, PCODE *pRoutines, int totalStackSize, CallStubHeader::InvokeFunctionPtr pInvokeFunction)
-     : HashCode(hashCode), NumRoutines(numRoutines), TotalStackSize(totalStackSize), Invoke(pInvokeFunction), Routines(pRoutines)
+    CachedCallStubKey(int32_t hashCode, int numRoutines, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, CallStubHeader::InvokeFunctionPtr pInvokeFunction)
+     : HashCode(hashCode), NumRoutines(numRoutines), TotalStackSize(totalStackSize), HasContinuationRet(hasContinuationRet), Invoke(pInvokeFunction), Routines(pRoutines)
     {
     }
 
@@ -1770,7 +2289,7 @@ struct CachedCallStubKey
     {
         LIMITED_METHOD_CONTRACT;
 
-        if (HashCode != other.HashCode || NumRoutines != other.NumRoutines || TotalStackSize != other.TotalStackSize || Invoke != other.Invoke)
+        if (HashCode != other.HashCode || NumRoutines != other.NumRoutines || TotalStackSize != other.TotalStackSize || Invoke != other.Invoke || HasContinuationRet != other.HasContinuationRet)
             return false;
 
         for (int i = 0; i < NumRoutines; i++)
@@ -1784,15 +2303,16 @@ struct CachedCallStubKey
     const int32_t HashCode = 0;
     const int NumRoutines = 0;
     const int TotalStackSize = 0;
+    const bool HasContinuationRet = false;
     const CallStubHeader::InvokeFunctionPtr Invoke = NULL; // Pointer to the invoke function
     const PCODE *Routines;
 };
 
 struct CachedCallStub
 {
-    CachedCallStub(int32_t hashCode, int numRoutines, PCODE *pRoutines, int totalStackSize, CallStubHeader::InvokeFunctionPtr pInvokeFunction) :
+    CachedCallStub(int32_t hashCode, int numRoutines, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, CallStubHeader::InvokeFunctionPtr pInvokeFunction) :
         HashCode(hashCode),
-        Header(numRoutines, pRoutines, totalStackSize, pInvokeFunction)
+        Header(numRoutines, pRoutines, totalStackSize, hasContinuationRet, pInvokeFunction)
     {
     }
 
@@ -1806,6 +2326,7 @@ struct CachedCallStub
             Header.NumRoutines,
             &Header.Routines[0],
             Header.TotalStackSize,
+            Header.HasContinuationRet,
             Header.Invoke);
     }
 
@@ -1852,12 +2373,14 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
     }
     hashState.Add(m_totalStackSize);
     hashState.AddPointer((void*)m_pInvokeFunction);
+    hashState.Add(sig.IsAsyncCall() ? 1 : 0);
 
     CachedCallStubKey cachedHeaderKey(
         hashState.ToHashCode(),
         m_routineIndex,
         pRoutines,
         ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE),
+        sig.IsAsyncCall(),
         m_pInvokeFunction);
 
     CrstHolder lockHolder(&s_callStubCrst);
@@ -1877,7 +2400,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         // We only need to allocate the actual pRoutines array, and then we can just use the cachedHeader we already constructed
         size_t finalCachedCallStubSize = sizeof(CachedCallStub) + m_routineIndex * sizeof(PCODE);
         void* pHeaderStorage = amTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(finalCachedCallStubSize)));
-        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), m_pInvokeFunction);
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_pInvokeFunction);
         s_callStubCache->Add(pHeader);
         amTracker.SuppressRelease();
 
@@ -1963,12 +2486,24 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
     if (argIt.HasParamType())
     {
 #if LOG_COMPUTE_CALL_STUB
-            printf("argIt.HasParamType\n");
+        printf("argIt.HasParamType\n");
 #endif
         // In the Interpreter calling convention the argument after the "this" pointer is the parameter type
         ArgLocDesc paramArgLocDesc;
         argIt.GetParamTypeLoc(&paramArgLocDesc);
         ProcessArgument(NULL, paramArgLocDesc, pRoutines);
+        interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
+    }
+
+    if (argIt.HasAsyncContinuation())
+    {
+#if LOG_COMPUTE_CALL_STUB
+        printf("argIt.HasAsyncContinuation\n");
+#endif
+        // In the Interpreter calling convention the argument after the param type is the async continuation
+        ArgLocDesc asyncContinuationLocDesc;
+        argIt.GetAsyncContinuationLoc(&asyncContinuationLocDesc);
+        ProcessArgument(NULL, asyncContinuationLocDesc, pRoutines);
         interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
     }
 
@@ -2302,7 +2837,7 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
 {
     if (pArgIt->HasRetBuffArg())
     {
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#ifdef TARGET_AMD64
         if (pArgIt->HasThis())
         {
             return ReturnTypeBuffArg2;
@@ -2313,7 +2848,7 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
         }
 #else
         return ReturnTypeBuff;
-#endif
+#endif // TARGET_AMD64
     }
     else
     {
@@ -2482,6 +3017,49 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                     else
                     {
                         _ASSERTE(!"The return types that are not HFA should be <= 16 bytes in size");
+                    }
+                }
+#elif defined(TARGET_RISCV64)
+                {
+                    FpStructInRegistersInfo info = pArgIt->GetReturnFpStructInRegistersInfo();
+                    // RISC-V pass floating-point struct fields in FA registers
+                    if ((info.flags & FpStruct::OnlyOne) != 0)
+                    {
+                        // Single field - could be float or int in single register
+                        return ReturnTypeDouble; // Use Double routine for both float and double (NaN-boxed)
+                    }
+                    else if ((info.flags & FpStruct::BothFloat) != 0)
+                    {
+                        // Two float/double fields
+                        return ReturnType2Double;
+                    }
+                    else if ((info.flags & FpStruct::FloatInt) != 0)
+                    {
+                        // First field float, second int
+                        return ReturnTypeFloatInt;
+                    }
+                    else if ((info.flags & FpStruct::IntFloat) != 0)
+                    {
+                        // First field int, second float
+                        return ReturnTypeIntFloat;
+                    }
+                    else
+                    {
+                        _ASSERTE(info.flags == FpStruct::UseIntCallConv);
+                        _ASSERTE(thReturnValueType.AsMethodTable()->IsRegPassedStruct());
+                        unsigned size = thReturnValueType.GetSize();
+                        if (size <= 8)
+                        {
+                            return ReturnTypeI8;
+                        }
+                        else if (size <= 16)
+                        {
+                            return ReturnType2I8;
+                        }
+                        else
+                        {
+                            _ASSERTE(!"Struct returns should be <= 16 bytes in size");
+                        }
                     }
                 }
 #else

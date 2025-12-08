@@ -4379,41 +4379,53 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float AbsoluteDifference(float op1, float op2) => MathF.Abs(op1 - op2);
 
+        private static float ConvertToSingleRoundToOdd(double val)
+        {
+            float f = (float)val;
+
+            // If val is NaN or Inf there’s nothing else to do
+            if (double.IsNaN(val) || double.IsInfinity(val))
+                return f;
+
+            // Detect the cases where the default cast rounded away from zero
+            if ((val > 0 && (double)f > val) ||
+                (val < 0 && (double)f < val))
+            {
+                // Move toward zero to get truncate() behaviour.
+                int bits = BitConverter.SingleToInt32Bits(f);
+                bits += (val > 0) ? -1 : +1;
+                f = BitConverter.Int32BitsToSingle(bits);
+            }
+
+            // Round to odd, force the last bit of the mantissa to 1 if the conversion was inexact
+            if (val != (double)f)
+            {
+                int bits = BitConverter.SingleToInt32Bits(f);
+                bits |= 0x1;
+                f = BitConverter.Int32BitsToSingle(bits);
+            }
+
+            return f;
+        }
+
         public static float ConvertToSingleEvenRoundToOdd(double[] value, int i)
         {
             if (i % 2 == 0)
             {
-                double val = value[i / 2];
-                float floatVal = (float)val;
-
-                float f = (float)val;
-
-                // If val is NaN or Inf there’s nothing else to do
-                if (double.IsNaN(val) || double.IsInfinity(val))
-                    return f;
-
-                // Detect the cases where the default cast rounded away from zero
-                if ((val > 0 && (double)f > val) ||
-                    (val < 0 && (double)f < val))
-                {
-                    // Move toward zero to get truncate() behaviour.
-                    int bits = BitConverter.SingleToInt32Bits(f);
-                    bits += (val > 0) ? -1 : +1;
-                    f = BitConverter.Int32BitsToSingle(bits);
-                }
-
-                // Round to odd, force the last bit of the mantissa to 1 if the conversion was inexact
-                if (val != (double)f)
-                {
-                    int bits = BitConverter.SingleToInt32Bits(f);
-                    bits |= 0x1;
-                    f = BitConverter.Int32BitsToSingle(bits);
-                }
-
-                return f;
+                return ConvertToSingleRoundToOdd(value[i / 2]);
             }
 
             return 0f;
+        }
+
+        public static float ConvertToSingleOddRoundToOdd(float[] even, double[] op, int i)
+        {
+            if (i % 2 != 0)
+            {
+                return ConvertToSingleRoundToOdd(op[(i - 1) / 2]);
+            }
+
+            return even[i];
         }
 
         public static float FusedMultiplyAdd(float op1, float op2, float op3) => MathF.FusedMultiplyAdd(op2, op3, op1);
@@ -5923,6 +5935,16 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return result;
+        }
+
+        public static float ConvertToSingleOdd(float[] even, double[] op, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return even[i];
+            }
+
+            return (float)op[(i - 1) / 2];
         }
 
         public static float ConvertToSingleUpper(float[] op1, double[] op2, int i) => i < op1.Length ? op1[i] : ConvertToSingle(op2[i - op1.Length]);
@@ -7905,25 +7927,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte SveShiftArithmeticRounded(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
 
-        public static sbyte SveShiftArithmeticSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+        public static sbyte SveShiftArithmeticSaturate(sbyte op1, sbyte op2) => ArithmeticShift<sbyte, sbyte>(op1, (int)ShiftSat(-op2, 8), saturate: true);
 
         public static sbyte SveShiftArithmeticRoundedSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
 
         public static short SveShiftArithmeticRounded(short op1, short op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
 
-        public static short SveShiftArithmeticSaturate(short op1, short op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+        public static short SveShiftArithmeticSaturate(short op1, short op2) => ArithmeticShift<short, short>(op1, (int)ShiftSat(-op2, 16), saturate: true);
 
         public static short SveShiftArithmeticRoundedSaturate(short op1, short op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
 
         public static int SveShiftArithmeticRounded(int op1, int op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
 
-        public static int SveShiftArithmeticSaturate(int op1, int op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+        public static int SveShiftArithmeticSaturate(int op1, int op2) => ArithmeticShift<int, int>(op1, (int)ShiftSat(-op2, 32), saturate: true);
 
         public static int SveShiftArithmeticRoundedSaturate(int op1, int op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
 
         public static long SveShiftArithmeticRounded(long op1, long op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
 
-        public static long SveShiftArithmeticSaturate(long op1, long op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+        public static long SveShiftArithmeticSaturate(long op1, long op2) => ArithmeticShift<long, long>(op1, (int)ShiftSat(-op2, 64), saturate: true);
 
         public static long SveShiftArithmeticRoundedSaturate(long op1, long op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
 
@@ -7992,15 +8014,15 @@ namespace JIT.HardwareIntrinsics.Arm
             where T : IBinaryInteger<T>
             where U : IBinaryInteger<U>, IMinMaxValue<U>
         {
-            long v = long.CreateChecked(value);
-            long shifted;
+            BigInteger v = BigInteger.CreateChecked(value);
+            BigInteger shifted = new BigInteger();
             if (count > 0)
             {
                 if (rounding)
                 {
                     long bias = 1L << (count - 1);
                     shifted = v >= 0 ? (v + bias) >> count
-                                     : (v - bias) >> count;
+                                        : (v - bias) >> count;
                 }
                 else
                 {
@@ -8018,8 +8040,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
             if (saturate)
             {
-                long min = long.CreateChecked(U.MinValue);
-                long max = long.CreateChecked(U.MaxValue);
+                BigInteger min = BigInteger.CreateChecked(U.MinValue);
+                BigInteger max = BigInteger.CreateChecked(U.MaxValue);
                 if (shifted < min) shifted = min;
                 if (shifted > max) shifted = max;
             }

@@ -14,10 +14,11 @@ import GitHash from "consts:gitHash";
 import { netLoaderConfig, getLoaderConfig } from "./config";
 import { exit } from "./exit";
 import { invokeLibraryInitializers } from "./lib-initializers";
-import { check, error, info, warn } from "./logging";
+import { check, error, info, warn, debug } from "./logging";
 
 import { dotnetAssert, dotnetLoaderExports, dotnetLogger, dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
 import { rejectRunMainPromise, resolveRunMainPromise, getRunMainPromise } from "./run";
+import { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "./promise-completion-source";
 
 export function dotnetInitializeModule(): RuntimeAPI {
 
@@ -38,7 +39,7 @@ export function dotnetInitializeModule(): RuntimeAPI {
         invokeLibraryInitializers,
     };
 
-    const internals:InternalExchange = [
+    const internals: InternalExchange = [
         dotnetApi as RuntimeAPI, //0
         [], //1
         netLoaderConfig, //2
@@ -53,9 +54,13 @@ export function dotnetInitializeModule(): RuntimeAPI {
         getRunMainPromise,
         rejectRunMainPromise,
         resolveRunMainPromise,
+        createPromiseCompletionSource,
+        isControllablePromise,
+        getPromiseCompletionSource,
     };
     Object.assign(dotnetLoaderExports, loaderFunctions);
     const logger: LoggerType = {
+        debug,
         info,
         warn,
         error,
@@ -70,9 +75,10 @@ export function dotnetInitializeModule(): RuntimeAPI {
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
     return dotnetApi as RuntimeAPI;
 
-    function loaderExportsToTable(logger:LoggerType, assert:AssertType, dotnetLoaderExports:LoaderExports):LoaderExportsTable {
+    function loaderExportsToTable(logger: LoggerType, assert: AssertType, dotnetLoaderExports: LoaderExports): LoaderExportsTable {
         // keep in sync with loaderExportsFromTable()
         return [
+            logger.debug,
             logger.info,
             logger.warn,
             logger.error,
@@ -80,6 +86,9 @@ export function dotnetInitializeModule(): RuntimeAPI {
             dotnetLoaderExports.resolveRunMainPromise,
             dotnetLoaderExports.rejectRunMainPromise,
             dotnetLoaderExports.getRunMainPromise,
+            dotnetLoaderExports.createPromiseCompletionSource,
+            dotnetLoaderExports.isControllablePromise,
+            dotnetLoaderExports.getPromiseCompletionSource,
         ];
     }
 }

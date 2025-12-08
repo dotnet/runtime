@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_105693;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
@@ -22,25 +25,22 @@ public class Runtime_105693
 {
     public static int s_2;
 
-    [Fact]
+    [ConditionalFact(typeof(Avx2), nameof(Avx2.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Avx2.IsSupported)
+        var vr5 = Vector128.Create<int>(1);
+        var vr6 = Avx2.BroadcastScalarToVector256(vr5);
+        var vr7 = Avx2.Abs(vr6);
+        var vr8 = Vector256.CreateScalar(1U);
+        if (Avx.TestZ(vr7, vr8))
         {
-            var vr5 = Vector128.Create<int>(1);
-            var vr6 = Avx2.BroadcastScalarToVector256(vr5);
-            var vr7 = Avx2.Abs(vr6);
-            var vr8 = Vector256.CreateScalar(1U);
-            if (Avx.TestZ(vr7, vr8))
-            {
-                var vr9 = Vector128.CreateScalar(1f);
-                s_2 = Sse.ConvertToInt32(vr9);
-            }
-            else
-            {
-                s_2 = 1;
-            }
-            Assert.Equal(1, s_2);
+            var vr9 = Vector128.CreateScalar(1f);
+            s_2 = Sse.ConvertToInt32(vr9);
         }
+        else
+        {
+            s_2 = 1;
+        }
+        Assert.Equal(1, s_2);
     }
 }

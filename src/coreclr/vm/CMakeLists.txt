@@ -1,7 +1,5 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(RUNTIME_DIR ../runtime)
-
 # Needed due to the munged files being in the binary folders, the set(CMAKE_INCLUDE_CURRENT_DIR ON) is not enough
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
@@ -382,6 +380,12 @@ set(VM_SOURCES_WKS
     ${VM_SOURCES_GDBJIT}
 )
 
+if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND VM_SOURCES_WKS
+        ${RUNTIME_DIR}/asyncsafethreadmap.cpp
+    )
+endif()
+
 # coreclr needs to compile codeman.cpp differently depending on flavor (i.e. dll vs. static lib))
 list(REMOVE_ITEM VM_SOURCES_WKS codeman.cpp)
 
@@ -477,6 +481,12 @@ set(VM_HEADERS_WKS
     weakreferencenative.h
     ${VM_HEADERS_GDBJIT}
 )
+
+if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND VM_HEADERS_WKS
+        ${RUNTIME_DIR}/asyncsafethreadmap.h
+    )
+endif()
 
 set(GC_SOURCES_WKS
     ${GC_SOURCES_DAC_AND_WKS_COMMON}
@@ -922,7 +932,8 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
         ${ARCH_SOURCES_DIR}/calldescrworkerwasm.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         ${ARCH_SOURCES_DIR}/helpers.cpp
-        ${ARCH_SOURCES_DIR}/callhelpers.cpp
+        ${ARCH_SOURCES_DIR}/callhelpers-interp-to-managed.cpp
+        ${ARCH_SOURCES_DIR}/callhelpers-reverse.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
     )

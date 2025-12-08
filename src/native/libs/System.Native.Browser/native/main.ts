@@ -3,16 +3,16 @@
 
 import { } from "./cross-linked"; // ensure ambient symbols are declared
 
-export function SystemJS_ResolveMainPromise(exitCode: number) {
+export function SystemJS_ResolveMainPromise(exitCode: number): void {
     if (dotnetLoaderExports.resolveRunMainPromise) {
         dotnetLoaderExports.resolveRunMainPromise(exitCode);
     } else {
         // this is for corerun, which does not use the promise
-        Module.exitJS(exitCode, true);
+        exitJS(exitCode, true);
     }
 }
 
-export function SystemJS_RejectMainPromise(messagePtr: number, messageLength: number, stackTracePtr: number, stackTraceLength: number) {
+export function SystemJS_RejectMainPromise(messagePtr: number, messageLength: number, stackTracePtr: number, stackTraceLength: number): void {
     const message = dotnetBrowserUtilsExports.utf16ToString(messagePtr, messagePtr + messageLength * 2);
     const stackTrace = dotnetBrowserUtilsExports.utf16ToString(stackTracePtr, stackTracePtr + stackTraceLength * 2);
     const error = new Error(message);
@@ -23,4 +23,9 @@ export function SystemJS_RejectMainPromise(messagePtr: number, messageLength: nu
         // this is for corerun, which does not use the promise
         throw error;
     }
+}
+
+export function SystemJS_ConsoleClear(): void {
+    // eslint-disable-next-line no-console
+    console.clear();
 }

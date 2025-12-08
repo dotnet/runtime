@@ -618,6 +618,8 @@ internal sealed class Xcode
             {
                 File.WriteAllText(Path.Combine(binDir, "coreclrhost.h"),
                     Utils.GetEmbeddedResource("coreclrhost.h"));
+                File.WriteAllText(Path.Combine(binDir, "host_runtime_contract.h"),
+                    Utils.GetEmbeddedResource("host_runtime_contract.h"));
 
                 // NOTE: Library mode is not supported yet
                 File.WriteAllText(Path.Combine(binDir, "runtime.m"),

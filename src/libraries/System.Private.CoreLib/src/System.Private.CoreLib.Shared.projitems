@@ -484,7 +484,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\StringSearchValuesAhoCorasick.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Strings\StringSearchValuesRabinKarp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IndexOutOfRangeException.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\InlineArrays.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientExecutionStackException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InsufficientMemoryException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Int16.cs" />
@@ -1376,7 +1375,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ComAwareWeakReference.cs" />
-    <Compile Include="$(CommonPath)Interop\Browser\Interop.Locale.cs" Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.Locale.CoreCLR.cs" Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+      <Link>Common\Interop\Browser\Interop.Locale.CoreCLR.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.Locale.cs" Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'Mono'">
       <Link>Common\Interop\Browser\Interop.Locale.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Calendar.cs">
@@ -1830,6 +1832,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeviceIoControl.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.DeviceIoControl.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.DynamicLoad.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.DynamicLoad.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs</Link>
     </Compile>
@@ -2279,6 +2284,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\LibraryNameVariation.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshal.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\NativeLibrary.Windows.cs" Condition="'$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\NativeMemory.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\PosixSignalRegistration.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\RuntimeInformation.Windows.cs" />
@@ -2563,8 +2569,8 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Write.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs">
-      <Link>Common\System\Text\ValueUtf8Converter.cs</Link>
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\SpanOfCharAsUtf8StringMarshaller.cs">
+      <Link>Common\System\Runtime\InteropServices\SpanOfCharAsUtf8StringMarshaller.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
@@ -2622,6 +2628,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\LibraryNameVariation.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshal.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\NativeLibrary.Unix.cs" Condition="'$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\NativeMemory.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\RuntimeInformation.Unix.cs" Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Unix.cs" />

@@ -19,7 +19,7 @@
         const exports = {};
         libNativeBrowser(exports);
 
-        let commonDeps = ["$BROWSER_UTILS"];
+        let commonDeps = ["$BROWSER_UTILS", "GetDotNetRuntimeContractDescriptor"];
         const lib = {
             $DOTNET: {
                 selfInitialize: () => {

@@ -179,26 +179,12 @@ namespace ILCompiler.DependencyAnalysis
             {
                 var stopwatch = Stopwatch.StartNew();
 
-                Debug.Assert(format == ReadyToRunContainerFormat.PE);
-
-                int? timeDateStamp;
-
-                if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
+                ObjectWriter.ObjectWriter objectWriter = format switch
                 {
-                    timeDateStamp = null;
-                }
-                else
-                {
-                    PEReader inputPeReader = (_componentModule != null ? _componentModule.PEReader : _nodeFactory.CompilationModuleGroup.CompilationModuleSet.First().PEReader);
-                    timeDateStamp = inputPeReader.PEHeaders.CoffHeader.TimeDateStamp;
-                }
-
-                PEObjectWriter objectWriter = new(_nodeFactory, ObjectWritingOptions.None, _outputInfoBuilder, _objectFilePath, _customPESectionAlignment, timeDateStamp);
-
-                if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
-                {
-                    objectWriter.AddExportedSymbol("RTR_HEADER");
-                }
+                    ReadyToRunContainerFormat.PE => CreatePEObjectWriter(),
+                    ReadyToRunContainerFormat.MachO => CreateMachObjectWriter(),
+                    _ => throw new UnreachableException()
+                };
 
                 using FileStream stream = new FileStream(_objectFilePath, FileMode.Create);
                 objectWriter.EmitObject(stream, _nodes, dumper: null, logger);
@@ -283,6 +269,34 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        private PEObjectWriter CreatePEObjectWriter()
+        {
+            int? timeDateStamp;
+
+            if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
+            {
+                timeDateStamp = null;
+            }
+            else
+            {
+                PEReader inputPeReader = (_componentModule != null ? _componentModule.PEReader : _nodeFactory.CompilationModuleGroup.CompilationModuleSet.First().PEReader);
+                timeDateStamp = inputPeReader.PEHeaders.CoffHeader.TimeDateStamp;
+            }
+
+            PEObjectWriter objectWriter = new(_nodeFactory, ObjectWritingOptions.None, _outputInfoBuilder, _objectFilePath, _customPESectionAlignment, timeDateStamp);
+
+            if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
+            {
+                objectWriter.AddExportedSymbol("RTR_HEADER");
+            }
+            return objectWriter;
+        }
+
+        private MachObjectWriter CreateMachObjectWriter()
+        {
+            return new MachObjectWriter(_nodeFactory, ObjectWritingOptions.None, _outputInfoBuilder, baseSymbolName: "__mh_dylib_header");
+        }
+
         public static void EmitObject(
             string objectFilePath,
             EcmaModule componentModule,
@@ -302,7 +316,7 @@ namespace ILCompiler.DependencyAnalysis
             int customPESectionAlignment,
             Logger logger)
         {
-            Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
+            Console.WriteLine($@"Emitting R2R {format} file: {objectFilePath}");
             ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(
                 objectFilePath,
                 componentModule,

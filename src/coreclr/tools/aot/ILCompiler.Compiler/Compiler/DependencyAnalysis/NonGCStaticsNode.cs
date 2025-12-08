@@ -71,7 +71,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
+        public static Utf8String GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
             return nameMangler.NodeMangler.NonGCStatics(type);
         }

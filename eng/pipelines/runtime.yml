@@ -50,6 +50,7 @@ pr:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -289,7 +290,7 @@ extends:
           - windows_x64
           jobParameters:
             nameSuffix: Libraries_CheckedCoreCLR
-            buildArgs: -s clr+libs -c $(_BuildConfig) -rc Checked
+            buildArgs: -s clr+clr.wasmjit+libs -c $(_BuildConfig) -rc Checked
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
@@ -604,7 +605,7 @@ extends:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
                   creator: dotnet-bot
-                  testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;" /p:BuildNativeAotFrameworkObjects=true'
+                  testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;async;" /p:BuildNativeAotFrameworkObjects=true'
                   liveLibrariesBuildConfig: Release
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
@@ -853,6 +854,7 @@ extends:
           platforms:
             - browser_wasm
           nameSuffix: _EAT
+          buildAOTOnHelix: false
           runAOT: false
           shouldRunSmokeOnly: false
           alwaysRun: ${{ variables.isRollingBuild }}
@@ -866,6 +868,7 @@ extends:
             - browser_wasm_win
           nameSuffix: _Smoke_AOT
           runAOT: true
+          buildAOTOnHelix: false
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
@@ -943,7 +946,7 @@ extends:
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
           jobParameters:
             testGroup: innerloop
-            nameSuffix: AllSubsets_Mono
+            nameSuffix: AllSubsets_Mono_Smoke
             buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:EnableAdditionalTimezoneChecks=true
             timeoutInMinutes: 120
             condition: >-
@@ -985,7 +988,7 @@ extends:
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
           jobParameters:
             testGroup: innerloop
-            nameSuffix: AllSubsets_CoreCLR
+            nameSuffix: AllSubsets_CoreCLR_Smoke
             buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true
             timeoutInMinutes: 180
             condition: >-
@@ -1029,8 +1032,8 @@ extends:
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'] ]
           jobParameters:
             testGroup: innerloop
-            nameSuffix: AllSubsets_Mono
-            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:EnableAggressiveTrimming=true
+            nameSuffix: AllSubsets_Mono_Smoke
+            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:EnableAggressiveTrimming=true
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -1040,12 +1043,12 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
+            # TODO: Re-enable build on helix https://github.com/dotnet/runtime/issues/121967
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-                  extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
                   condition: >-
                     or(
                     eq(variables['librariesContainsChange'], true),
@@ -1074,7 +1077,7 @@ extends:
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'] ]
           jobParameters:
             testGroup: innerloop
-            nameSuffix: AllSubsets_CoreCLR
+            nameSuffix: AllSubsets_CoreCLR_Smoke
             buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:BuildTestsOnHelix=false /p:UseNativeAOTRuntime=false /p:RunSmokeTestsOnly=true
             timeoutInMinutes: 120
             condition: >-
@@ -1117,7 +1120,7 @@ extends:
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
           jobParameters:
             testGroup: innerloop
-            nameSuffix: AllSubsets_NativeAOT
+            nameSuffix: AllSubsets_NativeAOT_Smoke
             buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
             timeoutInMinutes: 180
             condition: >-
@@ -1160,7 +1163,7 @@ extends:
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
           jobParameters:
             testGroup: innerloop
-            nameSuffix: AllSubsets_Mono
+            nameSuffix: AllSubsets_Mono_Smoke
             buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true
             timeoutInMinutes: 180
             condition: >-

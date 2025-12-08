@@ -116,20 +116,6 @@ enum gtCallTypes : BYTE
     CT_COUNT // fake entry (must be last)
 };
 
-enum class ExceptionSetFlags : uint32_t
-{
-    None                     = 0x0,
-    OverflowException        = 0x1,
-    DivideByZeroException    = 0x2,
-    ArithmeticException      = 0x4,
-    NullReferenceException   = 0x8,
-    IndexOutOfRangeException = 0x10,
-    StackOverflowException   = 0x20,
-
-    All = OverflowException | DivideByZeroException | ArithmeticException | NullReferenceException |
-          IndexOutOfRangeException | StackOverflowException,
-};
-
 inline constexpr ExceptionSetFlags operator~(ExceptionSetFlags a)
 {
     return (ExceptionSetFlags)(~(uint32_t)a);
@@ -970,7 +956,7 @@ public:
 
     void SetRegNum(regNumber reg)
     {
-        assert(reg >= REG_FIRST && reg <= REG_COUNT);
+        genIsValidReg(reg);
         _gtRegNum = (regNumberSmall)reg;
         INDEBUG(gtRegTag = GT_REGTAG_REG;)
         assert(_gtRegNum == reg);
@@ -1521,10 +1507,10 @@ public:
 #if defined(TARGET_XARCH)
     bool isEvexCompatibleHWIntrinsic(Compiler* comp) const;
     bool isEmbeddedBroadcastCompatibleHWIntrinsic(Compiler* comp) const;
-    bool isEmbeddedMaskingCompatible(Compiler*    comp,
-                                     unsigned     tgtMaskSize,
-                                     CorInfoType& tgtSimdBaseJitType,
-                                     size_t*      broadcastOpIndex = nullptr) const;
+    bool isEmbeddedMaskingCompatible(Compiler*  comp,
+                                     unsigned   tgtMaskSize,
+                                     var_types& tgtSimdBaseType,
+                                     size_t*    broadcastOpIndex = nullptr) const;
 #endif // TARGET_XARCH
     bool isEmbeddedMaskingCompatible() const;
 #else
@@ -1939,7 +1925,12 @@ public:
 
     bool OperSupportsOrderingSideEffect() const;
 
-    GenTreeFlags OperEffects(Compiler* comp);
+    GenTreeFlags OperEffects(Compiler* comp, ExceptionSetFlags* preciseExceptions);
+    GenTreeFlags OperEffects(Compiler* comp)
+    {
+        ExceptionSetFlags preciseExceptions;
+        return OperEffects(comp, &preciseExceptions);
+    }
 
     unsigned GetScaleIndexMul();
     unsigned GetScaleIndexShf();
@@ -2070,7 +2061,7 @@ public:
 
     bool SupportsSettingZeroFlag();
 
-    bool SupportsSettingResultFlags();
+    bool SupportsSettingFlagsAsCompareToZero();
 
     // These are only used for dumping.
     // The GetRegNum() is only valid in LIR, but the dumping methods are not easily
@@ -3244,7 +3235,7 @@ struct GenTreeIntConCommon : public GenTree
     bool ImmedValNeedsReloc(Compiler* comp);
     bool ImmedValCanBeFolded(Compiler* comp, genTreeOps op);
 
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
     bool FitsInAddrBase(Compiler* comp);
     bool AddrNeedsReloc(Compiler* comp);
 #endif
@@ -4341,18 +4332,6 @@ inline GenTreeCallDebugFlags& operator &=(GenTreeCallDebugFlags& a, GenTreeCallD
 
 // clang-format on
 
-enum class ExecutionContextHandling
-{
-    // No special handling of execution context is required.
-    None,
-    // Always save and restore ExecutionContext around this await.
-    // Used for task awaits.
-    SaveAndRestore,
-    // Save and restore execution context on suspension/resumption only.
-    // Used for custom awaitables.
-    AsyncSaveAndRestore,
-};
-
 enum class ContinuationContextHandling
 {
     // No special handling of SynchronizationContext/TaskScheduler is required.
@@ -4369,42 +4348,10 @@ struct AsyncCallInfo
     // DebugInfo with SOURCE_TYPE_ASYNC pointing at the await call IL instruction
     DebugInfo CallAsyncDebugInfo;
 
-    // The following information is used to implement the proper observable handling of `ExecutionContext`,
-    // `SynchronizationContext` and `TaskScheduler` in async methods.
-    //
-    // The breakdown of the handling is as follows:
-    //
-    // - For custom awaitables there is no special handling of `SynchronizationContext` or `TaskScheduler`. All the
-    // handling that exists is custom implemented by the user. In this case "ContinuationContextHandling == None" and
-    // "SaveAndRestoreSynchronizationContextField == false".
-    //
-    // - For custom awaitables there _is_ special handling of `ExecutionContext`: when the custom awaitable suspends,
-    // the JIT ensures that the `ExecutionContext` will be captured on suspension and restored when the continuation is
-    // running. This is represented by "ExecutionContextHandling == AsyncSaveAndRestore".
-    //
-    // - For task awaits there is special handling of `SynchronizationContext` and `TaskScheduler` in multiple ways:
-    //
-    //   * The JIT ensures that `Thread.CurrentThread._synchronizationContext` is saved and restored around
-    //   synchronously finishing calls. This is represented by "SaveAndRestoreSynchronizationContextField == true".
-    //
-    //   * The JIT/runtime/BCL ensure that when the callee suspends, the caller will eventually be resumed on the
-    //   `SynchronizationContext`/`TaskScheduler` present before the call started, depending on the configuration of the
-    //   task await by the user. This resumption can be inlined if the `SynchronizationContext` is current when the
-    //   continuation is about to run, and otherwise will be posted to it. This is represented by
-    //   "ContinuationContextHandling == ContinueOnCapturedContext/ContinueOnThreadPool".
-    //
-    //   * When the callee suspends restoration of `Thread.CurrentThread._synchronizationContext` is left up to the
-    //   custom implementation of the `SynchronizationContext`, it must not be done by the JIT.
-    //
-    // - For task awaits the runtime/BCL ensure that `Thread.CurrentThread._executionContext` is captured before the
-    // call and restored after it. This happens consistently regardless of whether the callee finishes synchronously or
-    // not. This is represented by "ExecutionContextHandling == SaveAndRestore".
-    //
-    ExecutionContextHandling    ExecutionContextHandling                  = ExecutionContextHandling::None;
-    ContinuationContextHandling ContinuationContextHandling               = ContinuationContextHandling::None;
-    bool                        SaveAndRestoreSynchronizationContextField = false;
-    bool                        HasSuspensionIndicatorDef                 = false;
-    unsigned                    SynchronizationContextLclNum              = BAD_VAR_NUM;
+    // Behavior where we continue for each call depends on how it was
+    // configured and whether it is a task await or custom await. This field
+    // records that behavior.
+    ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
 };
 
 // Return type descriptor of a GT_CALL node.
@@ -4677,7 +4624,8 @@ enum class WellKnownArg : unsigned
     X86TailCallSpecialArg,
     StackArrayLocal,
     RuntimeMethodHandle,
-    AsyncSuspendedIndicator,
+    AsyncExecutionContext,
+    AsyncSynchronizationContext,
 };
 
 #ifdef DEBUG
@@ -4857,10 +4805,10 @@ class CallArgs
     bool m_alignmentDone : 1;
 #endif
 
-    void      AddedWellKnownArg(WellKnownArg arg);
-    void      RemovedWellKnownArg(WellKnownArg arg);
-    regNumber GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg);
-    void      SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs);
+    void AddedWellKnownArg(WellKnownArg arg);
+    void RemovedWellKnownArg(WellKnownArg arg);
+    bool GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg, regNumber* reg);
+    void SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs);
 
 public:
     CallArgs();
@@ -5138,8 +5086,6 @@ struct GenTreeCall final : public GenTree
         assert(IsAsync());
         return *asyncInfo;
     }
-
-    bool IsAsyncAndAlwaysSavesAndRestoresExecutionContext() const;
 
     //---------------------------------------------------------------------------
     // GetRegNumByIdx: get i'th return register allocated to this call node.
@@ -6313,7 +6259,7 @@ protected:
     regNumberSmall     gtOtherReg;     // The second register for multi-reg intrinsics.
     MultiRegSpillFlags gtSpillFlags;   // Spill flags for multi-reg intrinsics.
     unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
-    unsigned char  gtSimdBaseJitType;  // SIMD vector base JIT type
+    unsigned char  gtSimdBaseType;     // SIMD vector base JIT type
     unsigned char  gtSimdSize;         // SIMD vector size in bytes, use 0 for scalar intrinsics
     NamedIntrinsic gtHWIntrinsicId;
 
@@ -6419,46 +6365,17 @@ public:
 
     var_types GetAuxiliaryType() const;
 
-    CorInfoType GetSimdBaseJitType() const
+    // The invariant here is that simdBaseType is a converted
+    // CorInfoType using JitType2PreciseVarType.
+    void SetSimdBaseType(var_types simdBaseType)
     {
-        return (CorInfoType)gtSimdBaseJitType;
-    }
-
-    CorInfoType GetNormalizedSimdBaseJitType() const
-    {
-        CorInfoType simdBaseJitType = GetSimdBaseJitType();
-        switch (simdBaseJitType)
-        {
-            case CORINFO_TYPE_NATIVEINT:
-            {
-#ifdef TARGET_64BIT
-                return CORINFO_TYPE_LONG;
-#else
-                return CORINFO_TYPE_INT;
-#endif
-            }
-
-            case CORINFO_TYPE_NATIVEUINT:
-            {
-#ifdef TARGET_64BIT
-                return CORINFO_TYPE_ULONG;
-#else
-                return CORINFO_TYPE_UINT;
-#endif
-            }
-
-            default:
-                return simdBaseJitType;
-        }
-    }
-
-    void SetSimdBaseJitType(CorInfoType simdBaseJitType)
-    {
-        gtSimdBaseJitType = (unsigned char)simdBaseJitType;
-        assert(gtSimdBaseJitType == simdBaseJitType);
+        gtSimdBaseType = (unsigned char)simdBaseType;
+        assert(gtSimdBaseType == simdBaseType);
     }
 
     var_types GetSimdBaseType() const;
+
+    var_types GetSimdBaseTypeAsVarType() const;
 
     unsigned char GetSimdSize() const
     {
@@ -6475,18 +6392,18 @@ public:
     GenTreeJitIntrinsic(genTreeOps    oper,
                         var_types     type,
                         CompAllocator allocator,
-                        CorInfoType   simdBaseJitType,
+                        var_types     simdBaseType,
                         unsigned      simdSize,
                         Operands... operands)
         : GenTreeMultiOp(oper, type, allocator, gtInlineOperands DEBUGARG(false), operands...)
         , gtOtherReg(REG_NA)
         , gtSpillFlags(0)
         , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
-        , gtSimdBaseJitType((unsigned char)simdBaseJitType)
+        , gtSimdBaseType((unsigned char)simdBaseType)
         , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)
     {
-        assert(gtSimdBaseJitType == simdBaseJitType);
+        assert(gtSimdBaseType == simdBaseType);
         assert(gtSimdSize == simdSize);
     }
 
@@ -6498,11 +6415,8 @@ public:
 #endif
 
 protected:
-    GenTreeJitIntrinsic(genTreeOps             oper,
-                        var_types              type,
-                        IntrinsicNodeBuilder&& nodeBuilder,
-                        CorInfoType            simdBaseJitType,
-                        unsigned               simdSize)
+    GenTreeJitIntrinsic(
+        genTreeOps oper, var_types type, IntrinsicNodeBuilder&& nodeBuilder, var_types simdBaseType, unsigned simdSize)
         : GenTreeMultiOp(oper,
                          type,
                          nodeBuilder.GetBuiltOperands(),
@@ -6511,11 +6425,11 @@ protected:
         , gtOtherReg(REG_NA)
         , gtSpillFlags(0)
         , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
-        , gtSimdBaseJitType((unsigned char)simdBaseJitType)
+        , gtSimdBaseType((unsigned char)simdBaseType)
         , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)
     {
-        assert(gtSimdBaseJitType == simdBaseJitType);
+        assert(gtSimdBaseType == simdBaseType);
         assert(gtSimdSize == simdSize);
     }
 
@@ -6533,9 +6447,9 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     GenTreeHWIntrinsic(var_types              type,
                        IntrinsicNodeBuilder&& nodeBuilder,
                        NamedIntrinsic         hwIntrinsicID,
-                       CorInfoType            simdBaseJitType,
+                       var_types              simdBaseType,
                        unsigned               simdSize)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, std::move(nodeBuilder), simdBaseJitType, simdSize)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, std::move(nodeBuilder), simdBaseType, simdSize)
     {
         Initialize(hwIntrinsicID);
     }
@@ -6544,10 +6458,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     GenTreeHWIntrinsic(var_types      type,
                        CompAllocator  allocator,
                        NamedIntrinsic hwIntrinsicID,
-                       CorInfoType    simdBaseJitType,
+                       var_types      simdBaseType,
                        unsigned       simdSize,
                        Operands... operands)
-        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, allocator, simdBaseJitType, simdSize, operands...)
+        : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, allocator, simdBaseType, simdSize, operands...)
     {
         Initialize(hwIntrinsicID);
     }

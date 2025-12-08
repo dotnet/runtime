@@ -98,13 +98,13 @@ GenTree* Compiler::impExpandHalfConstEquals(
 #ifdef FEATURE_HW_INTRINSICS
         if (varTypeIsSIMD(type))
         {
-            return gtNewSimdBinOpNode(oper, type, op1, op2, CORINFO_TYPE_NATIVEUINT, genTypeSize(type));
+            return gtNewSimdBinOpNode(oper, type, op1, op2, TYP_U_IMPL, genTypeSize(type));
         }
         if (varTypeIsSIMD(op1))
         {
             // E.g. a comparison of SIMD ops returning TYP_INT;
             assert(varTypeIsSIMD(op2));
-            return gtNewSimdCmpOpAllNode(oper, type, op1, op2, CORINFO_TYPE_NATIVEUINT, genTypeSize(op1));
+            return gtNewSimdCmpOpAllNode(oper, type, op1, op2, TYP_U_IMPL, genTypeSize(op1));
         }
 #endif
         return gtNewOperNode(oper, type, op1, op2);

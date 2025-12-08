@@ -16,7 +16,7 @@ namespace DotnetFuzzing.Fuzzers
 
         public string[] TargetCoreLibPrefixes => [];
 
-        public string Dictionary => "nrbfdecoder.dict";
+        public string Corpus => "nrbf";
 
         public void FuzzTarget(ReadOnlySpan<byte> bytes)
         {
@@ -104,7 +104,7 @@ namespace DotnetFuzzing.Fuzzers
                             // It was a reference to a non-existing record, just continue.
                             continue;
                         }
-                        
+
                         if (rawValue is not null)
                         {
                             if (rawValue is SerializationRecord nestedRecord)
@@ -114,7 +114,7 @@ namespace DotnetFuzzing.Fuzzers
                             else
                             {
                                 ConsumePrimitiveValue(rawValue);
-                            }    
+                            }
                         }
                     }
                 }
@@ -164,7 +164,8 @@ namespace DotnetFuzzing.Fuzzers
                     int[] indices = new int[arrayRecord.Rank];
 
                     long flatIndex = 0;
-                    for (; flatIndex < totalElementsCount; flatIndex++)
+                    int maxIndex = 1_000_000; // to prevent long loops timing out the fuzzer
+                    for (; flatIndex < Math.Min(totalElementsCount, maxIndex); flatIndex++)
                     {
                         object? rawValue = array.GetValue(indices);
                         if (rawValue is not null)
@@ -195,7 +196,7 @@ namespace DotnetFuzzing.Fuzzers
                     }
 
                     // We track the flat index to ensure that we have enumerated over all elements.
-                    Assert.Equal(totalElementsCount, flatIndex);
+                    Assert.Equal(Math.Min(totalElementsCount, maxIndex), flatIndex);
                 }
                 else
                 {

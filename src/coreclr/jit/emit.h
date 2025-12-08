@@ -758,6 +758,7 @@ protected:
         // arm64:       21 bits
         // loongarch64: 14 bits
         // risc-v:      14 bits
+        // wasm:        16 bits (TODO-WASM-TP: shrink the format field)
 
     private:
 #if defined(TARGET_XARCH)
@@ -806,6 +807,7 @@ protected:
         // arm64:       46 bits
         // loongarch64: 28 bits
         // risc-v:      28 bits
+        // wasm:        20 bits (TODO-WASM-TP: remove the reg fields)
 
         unsigned _idSmallDsc : 1; // is this a "small" descriptor?
         unsigned _idLargeCns : 1; // does a large constant     follow? (or if large call descriptor used)
@@ -898,6 +900,7 @@ protected:
         // arm64:       55 bits
         // loongarch64: 46 bits
         // risc-v:      46 bits
+        // wasm:        28 bits
 
         //
         // How many bits have been used beyond the first 32?
@@ -914,6 +917,8 @@ protected:
 #define ID_EXTRA_BITFIELD_BITS (18)
 #elif defined(TARGET_AMD64)
 #define ID_EXTRA_BITFIELD_BITS (20)
+#elif defined(TARGET_WASM)
+#define ID_EXTRA_BITFIELD_BITS (-4)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -953,12 +958,17 @@ protected:
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
         // risc-v:      53/48 bits
+        // wasm:        35/30 bits
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
 
         /* Use whatever bits are left over for small constants */
 
+#if ID_EXTRA_BITS <= 0
+#define ID_BIT_SMALL_CNS 30 // Not 32 or 31 here to avoid breaking the math below.
+#else
 #define ID_BIT_SMALL_CNS (32 - ID_EXTRA_BITS)
+#endif
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size (with/without prev offset, assuming host==target):
@@ -968,6 +978,7 @@ protected:
         // arm64:        2/7 bits
         // loongarch64: 11/16 bits
         // risc-v:      11/16 bits
+        // wasm:        32 bits
 
 #define ID_ADJ_SMALL_CNS (int)(1 << (ID_BIT_SMALL_CNS - 1))
 #define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
@@ -1252,6 +1263,8 @@ protected:
             assert(sz <= 32);
             _idCodeSize = sz;
         }
+#elif defined(TARGET_WASM)
+        unsigned idCodeSize() const;
 #endif
 
         emitAttr idOpSize() const
@@ -2138,7 +2151,28 @@ protected:
 #define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
 #define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
 
-#endif // TARGET_XXX
+#elif defined(TARGET_WASM)
+// Latencies for an "average" physical target.
+//
+// a read,write or modify from stack location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_STACK         PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_STACK         PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_STACK      PERFSCORE_LATENCY_3C
+
+// a read, write or modify from constant location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_CONST_ADDR    PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_CONST_ADDR    PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_CONST_ADDR PERFSCORE_LATENCY_3C
+
+// a read, write or modify from memory location, possible def to use latency from L0 or L1 cache
+// plus an extra cost  (of 1.0) for a increased chance  of a cache miss
+#define PERFSCORE_LATENCY_RD_GENERAL       PERFSCORE_LATENCY_4C
+#define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
+
+#else
+#error Unknown TARGET
+#endif
 
 // Make this an enum:
 //
@@ -2421,8 +2455,8 @@ protected:
     static bool          HasApxPpx(instruction ins);
 #endif // TARGET_XARCH
 
-    cnsval_ssize_t emitGetInsSC(const instrDesc* id) const;
-    unsigned       emitInsCount;
+    NOT_ARM(static) cnsval_ssize_t emitGetInsSC(const instrDesc* id);
+    unsigned emitInsCount;
 
     /************************************************************************/
     /*           A few routines used for debug display purposes             */
@@ -3421,15 +3455,14 @@ public:
 
     void emitStackKillArgs(BYTE* addr, unsigned count, unsigned char callInstrSize);
 
-    void emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize);
-
-    bool emitLastInsIsCallWithGC();
-
     // Helpers for the above
 
     void emitStackPushLargeStk(BYTE* addr, GCtype gcType, unsigned count = 1);
     void emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callInstrSize, unsigned count = 1);
 #endif // EMIT_TRACK_STACK_DEPTH
+
+    bool emitLastInsIsCallWithGC();
+    void emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize);
 
     /* Liveness of stack variables, and registers */
 
@@ -3467,17 +3500,6 @@ public:
     /************************************************************************/
     /*      The following logic keeps track of initialized data sections    */
     /************************************************************************/
-
-    // Note: Keep synchronized with AsyncHelpers.ResumeInfo
-    struct dataAsyncResumeInfo
-    {
-        // delegate*<Continuation, ref byte, Continuation>
-        target_size_t Resume;
-        // Pointer in main code for diagnostics. See comments on
-        // ICorDebugInfo::AsyncSuspensionPoint::DiagnosticNativeOffset and
-        // ResumeInfo.DiagnosticIP in SPC.
-        target_size_t DiagnosticIP;
-    };
 
     /* One of these is allocated for every blob of initialized data */
 
@@ -3552,26 +3574,26 @@ public:
 #define emitRecordRelocationWithAddlDelta(location, target, fRelocType, addlDelta)                                     \
     emitRecordRelocationHelp(location, target, fRelocType, #fRelocType, addlDelta)
 
-    void emitRecordRelocationHelp(void*       location,      /* IN */
-                                  void*       target,        /* IN */
-                                  uint16_t    fRelocType,    /* IN */
-                                  const char* relocTypeName, /* IN */
-                                  int32_t     addlDelta = 0);    /* IN */
+    void emitRecordRelocationHelp(void*        location,      /* IN */
+                                  void*        target,        /* IN */
+                                  CorInfoReloc fRelocType,    /* IN */
+                                  const char*  relocTypeName, /* IN */
+                                  int32_t      addlDelta = 0);     /* IN */
 
 #else // !DEBUG
 
-    void emitRecordRelocationWithAddlDelta(void*    location,   /* IN */
-                                           void*    target,     /* IN */
-                                           uint16_t fRelocType, /* IN */
-                                           int32_t  addlDelta)   /* IN */
+    void emitRecordRelocationWithAddlDelta(void*        location,   /* IN */
+                                           void*        target,     /* IN */
+                                           CorInfoReloc fRelocType, /* IN */
+                                           int32_t      addlDelta)       /* IN */
     {
         emitRecordRelocation(location, target, fRelocType, addlDelta);
     }
 
-    void emitRecordRelocation(void*    location,      /* IN */
-                              void*    target,        /* IN */
-                              uint16_t fRelocType,    /* IN */
-                              int32_t  addlDelta = 0); /* IN */
+    void emitRecordRelocation(void*        location,   /* IN */
+                              void*        target,     /* IN */
+                              CorInfoReloc fRelocType, /* IN */
+                              int32_t      addlDelta = 0);  /* IN */
 
 #endif // !DEBUG
 
@@ -3583,12 +3605,6 @@ public:
     void emitRecordCallSite(ULONG                 instrOffset,   /* IN */
                             CORINFO_SIG_INFO*     callSig,       /* IN */
                             CORINFO_METHOD_HANDLE methodHandle); /* IN */
-
-#ifdef DEBUG
-    // This is a scratch buffer used to minimize the number of sig info structs
-    // we have to allocate for recordCallSite.
-    CORINFO_SIG_INFO* emitScratchSigInfo;
-#endif // DEBUG
 
     /************************************************************************/
     /*               Logic to collect and display statistics                */
@@ -3808,17 +3824,6 @@ inline unsigned emitter::emitGetEpilogCnt()
 inline UNATIVE_OFFSET emitter::emitDataSize()
 {
     return emitConsDsc.dsdOffs;
-}
-
-/*****************************************************************************
- *
- *  Return a handle to the current position in the output stream. This can
- *  be later converted to an actual code offset in bytes.
- */
-
-inline void* emitter::emitCurBlock()
-{
-    return emitCurIG;
 }
 
 /*****************************************************************************
@@ -4326,6 +4331,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
 
 #endif // TARGET_XARCH
 
+#if HAS_FIXED_REGISTER_SET
 /*****************************************************************************
  *
  *  Returns true if the given register contains a live GC ref.
@@ -4348,6 +4354,7 @@ inline GCtype emitter::emitRegGCtype(regNumber reg)
         return GCT_NONE;
     }
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 #ifdef DEBUG
 

@@ -51,6 +51,7 @@ namespace TestLibrary
 
         public static bool IsNonZeroLowerBoundArrayNotSupported => !IsNonZeroLowerBoundArraySupported;
 
+        public static bool IsTypeEquivalenceSupported => IsWindows && !Utilities.IsNativeAot && !Utilities.IsMonoRuntime;
         public static bool IsVarArgSupported => IsWindows && !Utilities.IsNativeAot && !Utilities.IsMonoRuntime && !Utilities.IsCoreClrInterpreter;
 
         public static bool IsExceptionInteropSupported => IsWindows && !Utilities.IsNativeAot && !Utilities.IsMonoRuntime && !Utilities.IsCoreClrInterpreter;

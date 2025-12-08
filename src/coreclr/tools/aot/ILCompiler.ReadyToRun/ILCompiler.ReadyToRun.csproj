@@ -45,6 +45,9 @@
     <Compile Include="..\..\Common\System\FormattingHelpers.cs" Link="Common\FormattingHelpers.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\ILProvider.cs" Link="IL\ILProvider.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs" Link="IL\ILReader.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.cs" Link="IL\Stubs\AsyncResumptionStub.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.Sorting.cs" Link="IL\Stubs\AsyncResumptionStub.Sorting.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.Mangling.cs" Link="IL\Stubs\AsyncResumptionStub.Mangling.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ComparerIntrinsics.cs" Link="IL\Stubs\ComparerIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\InterlockedIntrinsics.cs" Link="IL\Stubs\InterlockedIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\RuntimeHelpersIntrinsics.cs" Link="IL\Stubs\RuntimeHelpersIntrinsics.cs" />
@@ -55,6 +58,7 @@
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalHelpers.cs" Link="Interop\IL\MarshalHelpers.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalUtils.cs" Link="Interop\IL\MarshalUtils.cs" />
     <Compile Include="..\..\Common\TypeSystem\MetadataEmitter\TypeSystemMetadataEmitter.cs" Link="MetadataEmitter\TypeSystemMetadataEmitter.cs" />
+    <Compile Include="..\..\Common\Compiler\AsyncContinuationType.cs" Link="Compiler\AsyncContinuationType.cs" />
     <Compile Include="..\..\Common\Compiler\AsyncMethodVariant.cs" Link="Compiler\AsyncMethodVariant.cs" />
     <Compile Include="..\..\Common\Compiler\CodeGenerationFailedException.cs" Link="Compiler\CodeGenerationFailedException.cs" />
     <Compile Include="..\..\Common\Compiler\CompilationBuilder.cs" Link="Compiler\CompilationBuilder.cs" />
@@ -102,6 +106,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_RiscV64\RiscV64Emitter.cs" Link="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64Emitter.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_RiscV64\Register.cs" Link="Compiler\DependencyAnalysis\Target_RiscV64\Register.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_RiscV64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_RiscV64\TargetRegisterMap.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Wasm\WasmEmitter.cs" Link="Compiler\DependencyAnalysis\Target_Wasm\WasmEmitter.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\Register.cs" Link="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />
@@ -178,7 +183,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodIsGenericMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ILBodyFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ManifestAssemblyMvidHeaderNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadMethodCallThunkNodeRange.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SymbolNodeRange.cs" />
     <Compile Include="Compiler\CallChainProfile.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeValidationChecker.cs" />
     <Compile Include="Compiler\Logger.cs" />
@@ -256,6 +261,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_ARM\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_LoongArch64\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_RiscV64\ImportThunk.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_Wasm\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X64\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X86\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TransitionBlock.cs" />
@@ -356,6 +362,10 @@
     <Compile Include="..\..\Common\JitInterface\UnboxingMethodDescFactory.cs">
       <Link>JitInterface\UnboxingMethodDescFactory.cs</Link>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="tools\aot\ilcompiler.readytorun\codegen\" />
   </ItemGroup>
 
   <ItemGroup>

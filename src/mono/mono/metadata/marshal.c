@@ -6022,7 +6022,7 @@ mono_marshal_load_standard_layout_type_info(MonoClass* klass, MonoMarshalType* i
 					if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct size out of bounds, abnormally large."))
 						break;
 					else
-						size = initial_size; // failure occured during AOT compilation, continue execution
+						size = initial_size; // failure occurred during AOT compilation, continue execution
 				} else {
 					mono_class_set_type_load_failure (klass, "Inline array struct size out of bounds, abnormally large.");
 					break;
