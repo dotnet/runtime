@@ -389,8 +389,7 @@ void SetThread(Thread* t)
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
         if (!InsertThreadIntoAsyncSafeMap(t->GetOSThreadId64(), t))
         {
-            // TODO: can we handle this OOM more gracefully?
-            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to insert thread into async-safe map due to OOM."));
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to insert thread into async-safe map due to out of memory."));
         }
 #endif // TARGET_UNIX && !TARGET_WASM
     }

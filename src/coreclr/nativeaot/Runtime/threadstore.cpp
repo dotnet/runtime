@@ -149,7 +149,7 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
     if (!InsertThreadIntoAsyncSafeMap(pAttachingThread->m_threadId, pAttachingThread))
     {
-        ASSERT_UNCONDITIONALLY("Failed to insert thread into async-safe map due to OOM.");
+        PalPrintFatalError("\nFailed to insert thread into async-safe map due to out of memory.\n");
         RhFailFast();
     }
 #endif // TARGET_UNIX && !TARGET_WASM
