@@ -180,10 +180,10 @@ if ($vs) {
   }
 
   # Auto-generated solution file that still uses the sln format
-  if ($vs -ieq "coreclr.sln" -or $vs -ieq "coreclr") {
-    # If someone passes in coreclr.sln or just coreclr (case-insensitive),
+  if ($vs -match "^coreclr(\.slnx|\.sln)?$") {
+    # If someone passes in coreclr.sln (or .slnx) or just coreclr (case-insensitive),
     # launch the generated CMake solution.
-    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "windows.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "CoreCLR.sln"
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "windows.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "CoreCLR.slnx"
     if (-Not (Test-Path $vs)) {
       Invoke-Expression "& `"$repoRoot/eng/common/msbuild.ps1`" $repoRoot/src/coreclr/runtime.proj /clp:nosummary /restore /p:Ninja=false /p:Configuration=$configToOpen /p:TargetArchitecture=$archToOpen /p:ConfigureOnly=true /p:ClrFullNativeBuild=true"
       if ($lastExitCode -ne 0) {
@@ -196,8 +196,8 @@ if ($vs) {
     }
   }
   # Auto-generated solution file that still uses the sln format
-  elseif ($vs -ieq "corehost.sln" -or $vs -ieq "corehost") {
-    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\" | Join-Path -ChildPath "win-$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "corehost" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "corehost.sln"
+  elseif ($vs -match "^corehost(\.slnx|\.sln)?$") {
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\" | Join-Path -ChildPath "win-$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "corehost" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "corehost.slnx"
     if (-Not (Test-Path $vs)) {
       Invoke-Expression "& `"$repoRoot/eng/common/msbuild.ps1`" $repoRoot/src/native/corehost/corehost.proj /clp:nosummary /restore /p:Ninja=false /p:Configuration=$configToOpen /p:TargetArchitecture=$archToOpen /p:ConfigureOnly=true"
       if ($lastExitCode -ne 0) {
