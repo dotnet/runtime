@@ -397,9 +397,7 @@ namespace System.IO.Compression
                     return access switch
                     {
                         FileAccess.Read => OpenInReadMode(checkOpenable: true),
-                        // In Update mode, OpenInWriteMode() cannot be used because it requires archive stream ownership
-                        // which is only acquired in Create mode. OpenInUpdateMode() provides a writable stream.
-                        FileAccess.Write => OpenInUpdateMode(),
+                        FileAccess.Write => OpenInWriteModeForUpdate(),
                         FileAccess.ReadWrite => OpenInUpdateMode(),
                         _ => throw new UnreachableException()
                     };
@@ -840,6 +838,25 @@ namespace System.IO.Compression
             // we assume that if another entry grabbed the archive stream, that it set this entry's _everOpenedForWrite property to true by calling WriteLocalFileHeaderAndDataIfNeeded
             _archive.DebugAssertIsStillArchiveStreamOwner(this);
 
+            return OpenInWriteModeCore();
+        }
+
+        private WrappedStream OpenInWriteModeForUpdate()
+        {
+            if (_everOpenedForWrite)
+                throw new IOException(SR.UpdateModeOneStream);
+
+            // Acquire the archive stream for direct writing. This enables writing directly to the archive
+            // without buffering the entire entry in memory, which is more memory-efficient for large entries.
+            // Note: For existing entries, this will write new data at the end of the archive; the old data
+            // becomes orphaned and will not be reclaimed until the archive is rewritten.
+            _archive.AcquireArchiveStream(this);
+
+            return OpenInWriteModeCore();
+        }
+
+        private WrappedStream OpenInWriteModeCore()
+        {
             _everOpenedForWrite = true;
             Changes |= ZipArchive.ChangeState.StoredData;
             CheckSumAndSizeWriteStream crcSizeStream = GetDataCompressor(_archive.ArchiveStream, true, (object? o, EventArgs e) =>

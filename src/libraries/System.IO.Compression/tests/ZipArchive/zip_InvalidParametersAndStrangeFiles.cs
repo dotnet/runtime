@@ -2298,14 +2298,13 @@ namespace System.IO.Compression.Tests
             using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
             ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update);
 
-            ZipArchiveEntry entry = archive.GetEntry("first.txt");
-            Assert.NotNull(entry);
+            ZipArchiveEntry entry = archive.CreateEntry("new_entry.txt");
 
-            // In Update mode, FileAccess.Write uses OpenInUpdateMode which returns a read-write-seekable stream
+            // In Update mode, FileAccess.Write uses direct-to-archive writing which returns a write-only, non-seekable stream
             using Stream stream = entry.Open(FileAccess.Write);
             Assert.True(stream.CanWrite);
-            Assert.True(stream.CanRead);
-            Assert.True(stream.CanSeek);
+            Assert.False(stream.CanRead);
+            Assert.False(stream.CanSeek);
 
             await DisposeZipArchive(async, archive);
         }
