@@ -844,7 +844,15 @@ namespace ILCompiler
 
             foreach (var method in GetReflectableMethods())
             {
-                Method record = transformed.GetTransformedMethodDefinition(method.GetTypicalMethodDefinition());
+                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
+
+                if ((GetMetadataCategory(method) & MetadataCategory.Description) == 0)
+                {
+                    Debug.Assert(!factory.CompilationModuleGroup.IsSingleFileCompilation);
+                    continue;
+                }
+
+                Method record = transformed.GetTransformedMethodDefinition(typicalMethod);
                 Debug.Assert(record != null);
                 Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
 
