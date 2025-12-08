@@ -85,7 +85,6 @@ export async function findResources(dotnet: DotnetHostBuilder): Promise<void> {
         runtimeConfig = JSON.parse(json);
     }
     const icus = files
-        // TODO-WASM: webCIL
         .filter(file => file.startsWith("icudt") && file.endsWith(".dat"))
         .map(filename => {
             // filename without path
