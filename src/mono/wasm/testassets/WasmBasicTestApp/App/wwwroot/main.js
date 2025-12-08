@@ -95,6 +95,11 @@ switch (testCase) {
             }
         });
         break;
+    case "AssetIntegrity":
+            dotnet.withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+                testOutput(`Asset '${name}' has integrity '${integrity}'`);
+                return defaultUri;
+            });
     case "OutErrOverrideWorks":
         dotnet.withModuleConfig({
             out: (message) => {
@@ -232,6 +237,7 @@ try {
             exit(0);
             break;
         case "DownloadResourceProgressTest":
+        case "AssetIntegrity":
             exit(0);
             break;
         case "OutErrOverrideWorks":
