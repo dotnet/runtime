@@ -22,6 +22,8 @@
 #include "TargetPtrs.h"
 #include "yieldprocessornormalized.h"
 #include <minipal/time.h>
+#include <minipal/thread.h>
+#include "asyncsafethreadmap.h"
 
 #include "slist.inl"
 
@@ -143,6 +145,14 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     pAttachingThread->m_ThreadStateFlags = Thread::TSF_Attached;
 
     pTS->m_ThreadList.PushHead(pAttachingThread);
+
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+    if (!InsertThreadIntoAsyncSafeMap(pAttachingThread->m_threadId, pAttachingThread))
+    {
+        PalPrintFatalError("\nFailed to insert thread into async-safe map due to out of memory.\n");
+        RhFailFast();
+    }
+#endif // TARGET_UNIX && !TARGET_WASM
 }
 
 // static
@@ -188,6 +198,9 @@ void ThreadStore::DetachCurrentThread()
         pTS->m_ThreadList.RemoveFirst(pDetachingThread);
         // tidy up GC related stuff (release allocation context, etc..)
         pDetachingThread->Detach();
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+        RemoveThreadFromAsyncSafeMap(pDetachingThread->m_threadId, pDetachingThread);
+#endif
     }
 
     // post-mortem clean up.
@@ -351,6 +364,13 @@ EXTERN_C RuntimeThreadLocals* RhpGetThread()
 {
     return &tls_CurrentThread;
 }
+
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+Thread * ThreadStore::GetCurrentThreadIfAvailableAsyncSafe()
+{
+    return (Thread*)FindThreadInAsyncSafeMap(minipal_get_current_thread_id_no_cache());
+}
+#endif // TARGET_UNIX && !TARGET_WASM
 
 #endif // !DACCESS_COMPILE
 
