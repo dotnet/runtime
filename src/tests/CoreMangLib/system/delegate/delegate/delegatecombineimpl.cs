@@ -74,7 +74,7 @@ namespace DelegateTest
 
             try
             {
-                booldelegate delegate1 = new booldelegate(new TestClass().Working_Bool);
+                booldelegate delegate1 = new booldelegate(new DelegateCombineImplTestClass().Working_Bool);
                 if (!CombineImpl(delegate1,identify_null.c_Start_null_false))
                 {
                     TestLibrary.TestFramework.LogError("001", "delegate combineimpl is not successful ");
@@ -129,7 +129,7 @@ namespace DelegateTest
             try
             {
 
-                booldelegate delegate1 = new booldelegate(new TestClass().StartWork_Bool);
+                booldelegate delegate1 = new booldelegate(new DelegateCombineImplTestClass().StartWork_Bool);
                 if (!CombineImpl(delegate1, identify_null.c_Working_null_true   ))
                 {
                     TestLibrary.TestFramework.LogError("005", "delegate combine is not successful ");
@@ -183,7 +183,7 @@ namespace DelegateTest
 
             try
             {
-                booldelegate delegate1 = new booldelegate(new TestClass().Working_Bool);
+                booldelegate delegate1 = new booldelegate(new DelegateCombineImplTestClass().Working_Bool);
                 if (!CombineImpl(delegate1, identify_null.c_Start_null_false_duplicate ))
                 {
                     TestLibrary.TestFramework.LogError("009", "delegate combine is not successful ");
@@ -202,7 +202,7 @@ namespace DelegateTest
         private bool CombineImpl(booldelegate delegatesrc,identify_null start)
         {
             DelegateCombineImpl delctor = new DelegateCombineImpl();
-            TestClass testinstance = new TestClass();
+            DelegateCombineImplTestClass testinstance = new DelegateCombineImplTestClass();
 
             string sFlag = string.Empty;
             string sFlagAdd=string.Empty ;
@@ -268,7 +268,7 @@ namespace DelegateTest
     }
 
     //create testclass for providing test method and test target.
-    class TestClass
+    class DelegateCombineImplTestClass
     {
         public bool StartWork_Bool()
         {

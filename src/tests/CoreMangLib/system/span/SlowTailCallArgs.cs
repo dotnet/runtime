@@ -7,7 +7,7 @@ using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using Xunit;
 
-public static class Program
+public static class SlowTailCallArgs
 {
     [OuterLoop]
     [Fact]

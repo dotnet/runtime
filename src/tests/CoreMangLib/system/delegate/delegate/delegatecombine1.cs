@@ -182,7 +182,7 @@ namespace DelegateTest
             try
             {
                 DelegateCombine1 delctor = new DelegateCombine1();
-                TestClass testinstance = new TestClass();
+                DelegateCombine1TestClass testinstance = new DelegateCombine1TestClass();
                 delctor.starkWork = new booldelegate(testinstance.StartWork_Bool);
                 delctor.completeWork = new voiddelegate(testinstance.CompleteWork_Void);
 
@@ -208,7 +208,7 @@ namespace DelegateTest
         private string GetInvocationListFlag(identify_null start,identify_null working)
         {
             DelegateCombine1 delctor = new DelegateCombine1();
-            TestClass testinstance = new TestClass();
+            DelegateCombine1TestClass testinstance = new DelegateCombine1TestClass();
 
             string sFlag = string.Empty;
             if (start == identify_null.c_Start_null_false)
@@ -251,7 +251,7 @@ namespace DelegateTest
 
     }
     //create testclass for providing test method and test target.
-    class TestClass
+    class DelegateCombine1TestClass
     {
         public bool StartWork_Bool()
         {

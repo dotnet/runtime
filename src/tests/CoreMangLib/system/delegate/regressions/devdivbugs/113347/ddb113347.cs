@@ -6,7 +6,7 @@ using System.Security;
 using Xunit;
 
 [SecuritySafeCritical]
-public class Program {
+public class DDB113347 {
     [OuterLoop]
     [Fact]
     public static int TestEntryPoint() {

@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using Xunit;
 
-public class Program
+public class OpenDelegate
 {
     public class ClassA
     {
