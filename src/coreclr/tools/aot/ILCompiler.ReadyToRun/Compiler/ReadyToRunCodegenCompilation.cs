@@ -729,7 +729,7 @@ namespace ILCompiler
                                             }
                                             break;
                                         default:
-                                            Logger.LogMessage("Didn't handle entity: " + entity.GetDisplayName());
+                                            Logger.LogMessage($"Unable to add a reference to '{entity.GetDisplayName()}' to the mutable module");
                                             break;
                                     }
                                 }
