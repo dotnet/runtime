@@ -136,6 +136,15 @@ namespace ILCompiler.ObjectWriter
             bufferWriter.Advance(size);
         }
 
+        public readonly void WriteUtf8StringNoNull(string value)
+        {
+            IBufferWriter<byte> bufferWriter = _sectionData.BufferWriter;
+            int size = Encoding.UTF8.GetByteCount(value);
+            Span<byte> buffer = bufferWriter.GetSpan(size);
+            Encoding.UTF8.GetBytes(value, buffer);
+            bufferWriter.Advance(size);
+        }
+
         public readonly void WritePadding(int size) => _sectionData.AppendPadding(size);
 
         public readonly long Position => _sectionData.Length;
