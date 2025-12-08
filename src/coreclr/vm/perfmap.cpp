@@ -261,11 +261,7 @@ void PerfMap::WriteLine(SString& line)
     EX_TRY
     {
         // Write the line.
-        int fd = fileno(m_fp);
-        const char* buf = line.GetUTF8();
-        size_t len = line.GetCount();
-        ssize_t written = write(fd, buf, len);
-        if (written < 0 || (size_t)written != len)
+        if (fprintf(m_fp, "%s", line.GetUTF8()) != line.GetCount())
         {
             // This will cause us to stop writing to the file.
             // The file will still remain open until shutdown so that we don't have to take a lock at this level when we touch the file stream.
