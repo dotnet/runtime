@@ -78,7 +78,7 @@ namespace ILCompiler.ObjectWriter
         /// For associated sections, such as exception or debugging information, the <paramref name="symbolName"/>
         /// will be different.
         /// </remarks>
-        internal virtual SectionWriter GetOrCreateSection(ObjectNodeSection section, string comdatName = null, string symbolName = null)
+        private protected SectionWriter GetOrCreateSection(ObjectNodeSection section, string comdatName = null, string symbolName = null)
         {
             int sectionIndex;
             SectionData sectionData;
