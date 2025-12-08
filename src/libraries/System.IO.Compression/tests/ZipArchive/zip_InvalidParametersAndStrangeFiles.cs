@@ -2256,6 +2256,7 @@ namespace System.IO.Compression.Tests
             // ReadWrite should be allowed in Create mode (it opens in write mode)
             using Stream stream = entry.Open(FileAccess.ReadWrite);
             Assert.True(stream.CanWrite);
+            Assert.False(stream.CanRead);
 
             await DisposeZipArchive(async, archive);
         }
