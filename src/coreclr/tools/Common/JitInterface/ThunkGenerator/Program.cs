@@ -285,12 +285,12 @@ namespace Internal.JitInterface
 {
     internal unsafe partial class CorInfoImpl
     {
-        private struct ICorJitInfoVtbl
+        private struct ICorJitInfoCallbacks
         {
             [FixedAddressValueType]
-            internal static readonly ICorJitInfoVtbl s_vtbl;
+            internal static readonly ICorJitInfoCallbacks s_vtbl;
 
-            static ICorJitInfoVtbl()
+            static ICorJitInfoCallbacks()
             {
 ");
             foreach (FunctionDecl decl in functionData)
@@ -315,7 +315,7 @@ namespace Internal.JitInterface
 
         private static IntPtr GetUnmanagedCallbacks()
         {
-            return (IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in ICorJitInfoVtbl.s_vtbl));
+            return (IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in ICorJitInfoCallbacks.s_vtbl));
         }
 
 ");

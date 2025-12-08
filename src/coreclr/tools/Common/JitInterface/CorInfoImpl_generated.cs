@@ -16,9 +16,9 @@ namespace Internal.JitInterface
         private struct ICorJitInfoCallbacks
         {
             [FixedAddressValueType]
-            internal static readonly ICorJitInfoVtbl s_vtbl;
+            internal static readonly ICorJitInfoCallbacks s_vtbl;
 
-            static ICorJitInfoVtbl()
+            static ICorJitInfoCallbacks()
             {
                 s_vtbl.IsIntrinsic = &_isIntrinsic;
                 s_vtbl.NotifyMethodInfoUsage = &_notifyMethodInfoUsage;
@@ -380,7 +380,7 @@ namespace Internal.JitInterface
 
         private static IntPtr GetUnmanagedCallbacks()
         {
-            return (IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in ICorJitInfoVtbl.s_vtbl));
+            return (IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in ICorJitInfoCallbacks.s_vtbl));
         }
 
         [UnmanagedCallersOnly]
