@@ -31,6 +31,7 @@
   </ItemGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
+  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
 
   <Target Name="BuildAppBundle" AfterTargets="$(BuildAppBundleAfterTargets)" DependsOnTargets="$(BuildAppBundleDependsOnTargets)"/>
   <Target Name="_SetAppleGenerateAppBundleProps" Condition="'$(TargetOS)' != 'ios' and '$(ArchiveTests)' != 'true'" BeforeTargets="_AppleGenerateAppBundle">
