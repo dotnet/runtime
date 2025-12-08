@@ -267,12 +267,6 @@ namespace Internal.StackTraceMetadata
                 return GetDiagnosticMethodInfoFromStartAddressIfAvailable(methodStartAddress);
             }
 
-            public override string TryGetMethodNameFromStartAddress(IntPtr methodStartAddress, out bool isStackTraceHidden)
-            {
-                string methodName = GetMethodNameFromStartAddressIfAvailable(methodStartAddress, out string owningTypeName, out string genericArgs, out string methodSignature, out isStackTraceHidden, out _);
-                return string.Concat(owningTypeName, ".", methodName, genericArgs != null ? string.Concat("[", genericArgs, "]") : "", "(", methodSignature, ")");
-            }
-
             public override string TryGetMethodStackFrameInfo(IntPtr methodStartAddress, int offset, bool needsFileInfo, out string owningType, out string genericArgs, out string methodSignature, out bool isStackTraceHidden, out string fileName, out int lineNumber)
             {
                 string methodName = GetMethodNameFromStartAddressIfAvailable(methodStartAddress, out owningType, out genericArgs, out methodSignature, out isStackTraceHidden, out int hashCode);
