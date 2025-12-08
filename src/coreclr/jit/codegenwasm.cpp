@@ -442,7 +442,8 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
             ins = INS_f32_demote_f64;
             break;
 
-        // TODO: Floating point conversions - we need to figure out where semantics require a helper and where they don't.
+            // TODO: Floating point conversions - we need to figure out where semantics require a helper and where they
+            // don't.
 
         default:
             ins = INS_none;

@@ -5445,7 +5445,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = 1;
                     costSz = 4;
 #elif defined(TARGET_WASM)
-                    // TODO-WASM: Better estimate of costs for these opcodes. Most of them are one op on x64 but may be multiple uops.
+                    // TODO-WASM: Better estimate of costs for these opcodes. Most of them are one op on x64 but may be
+                    // multiple uops.
                     costEx = 2;
                     // TODO-WASM: 1 byte opcodes except for the int->fp saturating casts which are 2 bytes.
                     costSz = 1;
