@@ -335,6 +335,72 @@
       ret
     } // end of method 'Test::rem_un_i32'
 
+    .method public hidebysig static native int 
+            and_I_i32(native int a,
+                     int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      and
+      ret
+    } // end of method 'Test::and_I_i32'
+
+    .method public hidebysig static native int 
+            and_i32_I(int32 a,
+                    native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      and
+      ret
+    } // end of method 'Test::and_i32_I'
+
+    .method public hidebysig static native int 
+            or_I_i32(native int a,
+                    int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      or
+      ret
+    } // end of method 'Test::or_I_i32'
+
+    .method public hidebysig static native int 
+            or_i32_I(int32 a,
+                   native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      or
+      ret
+    } // end of method 'Test::or_i32_I'
+
+    .method public hidebysig static native int 
+            xor_I_i32(native int a,
+                     int32 b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      xor
+      ret
+    } // end of method 'Test::xor_I_i32'
+
+    .method public hidebysig static native int 
+            xor_i32_I(int32 a,
+                    native int b) il managed
+    {
+      .maxstack  2
+      ldarg.0
+      ldarg.1
+      xor
+      ret
+    } // end of method 'Test::xor_i32_I'
+
     .method public hidebysig specialname rtspecialname 
             instance void .ctor() il managed
     {

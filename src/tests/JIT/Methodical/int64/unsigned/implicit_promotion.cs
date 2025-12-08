@@ -24,6 +24,9 @@ namespace JitTest_implicit_promotion
         [InlineData("div.un", -1, -1, 1, 1)]
         [InlineData("rem", -1, -1, 0, 0)]
         [InlineData("rem.un", -1, -1, 0, 0)]
+        [InlineData("and", -1, -1, -1, -1)]
+        [InlineData("or", 0, -1, -1, -1)]
+        [InlineData("xor", -1, -1, 0, 0)]
         public static void testI_i32_opcode(string opcode, int a, int b, int resultI_i32_32Bit_expected, long resultI_i32_64Bit_expected)
         {
             nint a_nint = (nint)a;
@@ -70,6 +73,15 @@ namespace JitTest_implicit_promotion
                 case "rem.un":
                     result = Operator.rem_un_I_i32(a_nint, b);
                     break;
+                case "and":
+                    result = Operator.and_I_i32(a_nint, b);
+                    break;
+                case "or":
+                    result = Operator.or_I_i32(a_nint, b);
+                    break;
+                case "xor":
+                    result = Operator.xor_I_i32(a_nint, b);
+                    break;
                 default:
                     throw new ArgumentException("Invalid opcode");
             }
@@ -91,6 +103,9 @@ namespace JitTest_implicit_promotion
         [InlineData("div.un", -1, -1, 1, 1)]
         [InlineData("rem", -1, -1, 0, 0)]
         [InlineData("rem.un", -1, -1, 0, 0)]
+        [InlineData("and", -1, -1, -1, -1)]
+        [InlineData("or", -1, 0, -1, -1)]
+        [InlineData("xor", -1, -1, 0, 0)]
         public static void testi32_I_opcode(string opcode, int a, int b, int resultI_i32_32Bit_expected, long resultI_i32_64Bit_expected)
         {
             nint b_nint = (nint)b;
@@ -136,6 +151,15 @@ namespace JitTest_implicit_promotion
                     break;
                 case "rem.un":
                     result = Operator.rem_un_i32_I(a, b_nint);
+                    break;
+                case "and":
+                    result = Operator.and_i32_I(a, b_nint);
+                    break;
+                case "or":
+                    result = Operator.or_i32_I(a, b_nint);
+                    break;
+                case "xor":
+                    result = Operator.xor_i32_I(a, b_nint);
                     break;
                 default:
                     throw new ArgumentException("Invalid opcode");
