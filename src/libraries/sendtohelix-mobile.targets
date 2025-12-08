@@ -27,12 +27,6 @@
     </XHarnessApkToTest>
   </ItemDefinitionGroup>
 
-  <ItemDefinitionGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(NativeAotTest)' == 'true'">
-    <XHarnessAppBundleToTest>
-      <ExpectedExitCode>100</ExpectedExitCode>
-    </XHarnessAppBundleToTest>
-  </ItemDefinitionGroup>
-
   <PropertyGroup Condition="'$(NeedsiOSSDK)' == 'true'">
     <NeedsDotNetSdk>true</NeedsDotNetSdk>
     <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
