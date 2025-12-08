@@ -365,8 +365,8 @@ namespace System.IO.Compression
         /// <summary>
         /// Opens the entry with the specified access mode. This allows for more granular control over the returned stream's capabilities.
         /// </summary>
-        /// <param name="access">The desired file access mode for the returned stream.</param>
-        /// <returns>A Stream that represents the contents of the entry with the specified access capabilities.</returns>
+        /// <param name="access">The file access mode for the returned stream.</param>
+        /// <returns>A <see cref="Stream"/> that represents the contents of the entry with the specified access capabilities.</returns>
         /// <exception cref="ArgumentException">The requested access is not compatible with the archive's open mode.</exception>
         /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
         /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
