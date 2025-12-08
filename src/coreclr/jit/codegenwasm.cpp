@@ -417,7 +417,7 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
     switch (PackOperAndType(tree->OperGet(), /* toType */ tree->TypeGet(), /* fromType */ tree->gtOp1->TypeGet()))
     {
         case PackOperAndType(GT_CAST, TYP_INT, TYP_LONG):
-            if (treeNode->gtOverflow())
+            if (tree->gtOverflow())
                 NYI_WASM("Overflow checks");
             ins = INS_i32_wrap_i64;
             break;
@@ -428,8 +428,8 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
             break;
 
         case PackOperAndType(GT_CAST, TYP_DOUBLE, TYP_FLOAT):
-            // FIXME: This name looks wrong in the spec?
-            ins = INS_f32_promote_f64;
+            // NOTE: This name is wrong in the spec.
+            ins = INS_f64_promote_f32;
             break;
 
         case PackOperAndType(GT_CAST, TYP_FLOAT, TYP_DOUBLE):
@@ -445,7 +445,7 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
     }
 
     GetEmitter()->emitIns(ins);
-    genProduceReg(treeNode);
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------

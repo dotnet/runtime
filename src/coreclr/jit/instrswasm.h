@@ -172,6 +172,7 @@ INST(f64_convert_s_i32,"f64.convert_s_i32",0, IF_OPCODE,  0xB7)
 INST(f64_convert_u_i32,"f64.convert_u_i32",0, IF_OPCODE,  0xB8)
 INST(f64_convert_s_i64,"f64.convert_s_i64",0, IF_OPCODE,  0xB9)
 INST(f64_convert_u_i64,"f64.convert_u_i64",0, IF_OPCODE,  0xBA)
+// NOTE: This is named f32_promote_f64 in the spec, which is wrong.
 INST(f64_promote_f32,"f64.promote_f32",0, IF_OPCODE,  0xBB)
 INST(i32_reinterpret_f32,"i32.reinterpret_f32",0, IF_OPCODE,  0xBC)
 INST(i64_reinterpret_f64,"i64.reinterpret_f64",0, IF_OPCODE,  0xBD)
