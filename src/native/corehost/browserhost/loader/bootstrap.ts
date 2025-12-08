@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { LoaderConfig, DotnetHostBuilder } from "./types";
+import { type LoaderConfig, type DotnetHostBuilder, GlobalizationMode } from "./types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
 import { nodeFs } from "./polyfills";
 
@@ -84,17 +84,35 @@ export async function findResources(dotnet: DotnetHostBuilder): Promise<void> {
         const json = await fs.promises.readFile(runtimeConfigName, { encoding: "utf8" });
         runtimeConfig = JSON.parse(json);
     }
+    const icus = files
+        // TODO-WASM: webCIL
+        .filter(file => file.startsWith("icudt") && file.endsWith(".dat"))
+        .map(filename => {
+            // filename without path
+            const name = filename.substring(filename.lastIndexOf("/") + 1);
+            return { virtualPath: name, name };
+        });
+
+    const environmentVariables: { [key: string]: string } = {};
+    let globalizationMode = GlobalizationMode.All;
+    if (!icus.length) {
+        globalizationMode = GlobalizationMode.Invariant;
+        environmentVariables["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "1";
+    }
 
     const config: LoaderConfig = {
         mainAssemblyName,
         runtimeConfig,
+        globalizationMode,
         virtualWorkingDirectory: mountedDir,
+        environmentVariables,
         resources: {
             jsModuleNative: [{ name: "dotnet.native.js" }],
             jsModuleRuntime: [{ name: "dotnet.runtime.js" }],
             wasmNative: [{ name: "dotnet.native.wasm", }],
             coreAssembly: [{ virtualPath: mountedDir + "/System.Private.CoreLib.dll", name: "System.Private.CoreLib.dll" },],
             assembly: assemblies,
+            icu: icus,
         }
     };
     dotnet.withConfig(config);

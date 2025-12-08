@@ -2,18 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { LoadBootResourceCallback, JsModuleExports, JsAsset, AssemblyAsset, PdbAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, InstantiateWasmSuccessCallback } from "./types";
+
 import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateInternals } from "./cross-module";
-import { ENVIRONMENT_IS_NODE } from "./per-module";
 import { getIcuResourceName } from "./icu";
 import { getLoaderConfig } from "./config";
 import { BrowserHost_InitializeCoreCLR } from "./run";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { locateFile } from "./bootstrap";
+import { fetchLike } from "./polyfills";
 
 const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenModuleInternal>(() => {
     dotnetUpdateInternals(dotnetGetInternals());
 });
-let wasmBinaryPromise: Promise<Response> = undefined as any;
+let wasmBinaryPromise: any = undefined;
 
 // WASM-TODO: retry logic
 // WASM-TODO: throttling logic
@@ -79,8 +80,16 @@ function fetchWasm(asset: WasmAsset): Promise<Response> {
 }
 
 export async function instantiateWasm(imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback): Promise<void> {
-    const res = await WebAssembly.instantiateStreaming(wasmBinaryPromise, imports);
-    successCallback(res.instance, res.module);
+    if (wasmBinaryPromise instanceof globalThis.Response === false || !WebAssembly.instantiateStreaming) {
+        const res = await wasmBinaryPromise;
+        const data = await res.arrayBuffer();
+        const module = await WebAssembly.compile(data);
+        const instance = await WebAssembly.instantiate(module, imports);
+        successCallback(instance, module);
+    } else {
+        const res = await WebAssembly.instantiateStreaming(wasmBinaryPromise, imports);
+        successCallback(res.instance, res.module);
+    }
 }
 
 async function fetchIcu(asset: IcuAsset): Promise<void> {
@@ -117,36 +126,4 @@ async function fetchBytes(asset: WasmAsset | AssemblyAsset | PdbAsset | IcuAsset
     const response = await fetchLike(asset.resolvedUrl);
     const buffer = await response.arrayBuffer();
     return new Uint8Array(buffer);
-}
-
-async function fetchLike(resolvedUrl: string): Promise<Response> {
-    dotnetAssert.check(resolvedUrl, "Bad resolvedUrl");
-    if (ENVIRONMENT_IS_NODE) {
-        const { promises: fs } = await import(/*! webpackIgnore: true */"fs");
-        const { fileURLToPath } = await import(/*! webpackIgnore: true */"url");
-        const isFileUrl = resolvedUrl.startsWith("file://");
-        if (isFileUrl) {
-            resolvedUrl = fileURLToPath(resolvedUrl);
-        }
-        const arrayBuffer = await fs.readFile(resolvedUrl) as any;
-        return <Response><any>{
-            ok: true,
-            headers: {
-                length: 0,
-                get: () => null
-            },
-            url: resolvedUrl,
-            arrayBuffer: () => arrayBuffer,
-            json: () => JSON.parse(arrayBuffer),
-            text: () => {
-                throw new Error("NotImplementedException");
-            }
-        };
-    } else {
-        const response = await fetch(resolvedUrl);
-        if (!response.ok) {
-            throw new Error(`Failed to load ${resolvedUrl} with ${response.status} ${response.statusText}`);
-        }
-        return response;
-    }
 }
