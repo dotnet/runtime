@@ -183,6 +183,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     ReadyToRunContainerFormat.PE => CreatePEObjectWriter(),
                     ReadyToRunContainerFormat.MachO => CreateMachObjectWriter(),
+                    ReadyToRunContainerFormat.Wasm => CreateWasmObjectWriter(),
                     _ => throw new UnreachableException()
                 };
 
@@ -295,6 +296,11 @@ namespace ILCompiler.DependencyAnalysis
         private MachObjectWriter CreateMachObjectWriter()
         {
             return new MachObjectWriter(_nodeFactory, ObjectWritingOptions.None, _outputInfoBuilder, baseSymbolName: "__mh_dylib_header");
+        }
+
+        private WasmObjectWriter CreateWasmObjectWriter()
+        {
+            return new WasmObjectWriter(_nodeFactory, ObjectWritingOptions.None,  _outputInfoBuilder);
         }
 
         public static void EmitObject(

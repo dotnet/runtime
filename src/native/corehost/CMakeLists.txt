@@ -27,9 +27,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
 
 if (NOT ${CLR_SINGLE_FILE_HOST_ONLY})
-    if("${CLI_CMAKE_PKG_RID}" STREQUAL "")
-        message(FATAL_ERROR "A minimum supported package rid is not specified (ex: win7-x86 or ubuntu.14.04-x64, osx.10.12-x64, rhel.7-x64)")
-    endif()
     if("${CLI_CMAKE_COMMIT_HASH}" STREQUAL "")
         message(FATAL_ERROR "Commit hash needs to be specified to build the host")
     endif()
