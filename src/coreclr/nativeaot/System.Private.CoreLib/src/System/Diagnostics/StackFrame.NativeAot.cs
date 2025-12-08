@@ -8,7 +8,6 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-using Internal.DeveloperExperience;
 using Internal.Reflection.Augments;
 using Internal.Runtime.Augments;
 
@@ -216,26 +215,9 @@ namespace System.Diagnostics
                     string word_At = SR.UsingResourceKeys() ? "at" : SR.Word_At;
                     builder.Append("   ").Append(word_At).Append(' ');
 
-                    if (_methodOwningType != null)
-                    {
-                        builder.Append(_methodOwningType);
-                        builder.Append('.');
-                        builder.Append(_methodName);
-                        if (_methodGenericArgs != null)
-                        {
-                            builder.Append('[');
-                            builder.Append(_methodGenericArgs);
-                            builder.Append(']');
-                        }
-                        builder.Append('(');
-                        builder.Append(_methodSignature);
-                        builder.AppendLine(")");
-                    }
-                    else
-                    {
-                        Debug.Assert(_methodSignature == null);
-                        builder.Append(_methodName);
-                    }
+                    AppendCommonStringRepresenation(builder, allowFallback: true);
+
+                    builder.AppendLine();
                 }
             }
             if (_isLastFrameFromForeignExceptionStackTrace)
@@ -245,6 +227,37 @@ namespace System.Diagnostics
                     "--- End of stack trace from previous location ---" :
                     SR.Exception_EndStackTraceFromPreviousThrow);
             }
+        }
+
+        private void AppendCommonStringRepresenation(StringBuilder builder, bool allowFallback)
+        {
+            if (_methodOwningType != null)
+            {
+                builder.Append(_methodOwningType);
+                builder.Append('.');
+                builder.Append(_methodName);
+                if (_methodGenericArgs != null)
+                {
+                    builder.Append('[');
+                    builder.Append(_methodGenericArgs);
+                    builder.Append(']');
+                }
+                builder.Append('(');
+                builder.Append(_methodSignature);
+                builder.Append(')');
+            }
+            else if (allowFallback)
+            {
+                Debug.Assert(_methodSignature == null);
+                builder.Append(_methodName);
+            }
+        }
+
+        internal string GetCrashInfoString()
+        {
+            StringBuilder sb = new StringBuilder();
+            AppendCommonStringRepresenation(sb, allowFallback: false);
+            return sb.Length > 0 ? sb.ToString() : null;
         }
     }
 }
