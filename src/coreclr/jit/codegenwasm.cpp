@@ -275,6 +275,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForConstant(treeNode);
             break;
 
+        case GT_CAST:
+            genCodeForCast(treeNode->AsOp());
+            break;
+
         default:
 #ifdef DEBUG
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
