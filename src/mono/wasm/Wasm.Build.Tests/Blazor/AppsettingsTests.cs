@@ -23,7 +23,7 @@ public class AppsettingsTests : BlazorWasmTestBase
     public async Task FileInVfs()
     {
         Configuration config = Configuration.Debug;
-        ProjectInfo info = CreateWasmTemplateProject(Template.BlazorWasm, config, aot: false, "blazor", addFrameworkArg: true);
+        ProjectInfo info = CreateWasmTemplateProject(Template.BlazorWasm, config, aot: false, "blazor");
         UpdateHomePage();
         string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
         File.WriteAllText(Path.Combine(projectDirectory, "wwwroot", "appsettings.json"), $"{{ \"Id\": \"{info.ProjectName}\" }}");
