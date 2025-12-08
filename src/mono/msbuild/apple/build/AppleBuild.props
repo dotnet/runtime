@@ -9,9 +9,10 @@
     <MonoForceInterpreter Condition="'$(MonoForceInterpreter)' == ''">true</MonoForceInterpreter>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true'">
-    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
-    <PublishReadyToRunContainerFormat>macho</PublishReadyToRunContainerFormat>
+  <PropertyGroup Condition="'$(UseMonoRuntime)' != 'true'">
+    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">true</PublishReadyToRun>
+    <PublishReadyToRunComposite Condition="'$(PublishReadyToRun)' == 'true'">true</PublishReadyToRunComposite>
+    <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRun)' == 'true'">macho</PublishReadyToRunContainerFormat>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(PublishReadyToRun)' != 'true' and '$(UseMonoRuntime)' != 'true'">
