@@ -330,8 +330,6 @@ ipc_message_try_parse_string_utf16_t_byte_array (
 
 	bool result = false;
 
-	ep_raise_error_if_nok (((uintptr_t)*buffer & 0x1u) == 0);
-
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, string_byte_array_len));
 	*string_byte_array_len *= sizeof (ep_char16_t);
 
