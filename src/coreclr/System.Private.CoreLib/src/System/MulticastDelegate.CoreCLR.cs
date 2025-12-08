@@ -20,6 +20,7 @@ namespace System
         // This is set under 2 circumstances
         // 1. Multicast delegate
         // 2. Wrapper delegate
+        // 3. DynamicMethods
         private object? _invocationList; // Initialized by VM as needed
         private nint _invocationCount;
 
@@ -30,7 +31,7 @@ namespace System
 
         internal bool InvocationListLogicallyNull()
         {
-            return (_invocationList == null) || (_invocationList is LoaderAllocator) || (_invocationList is DynamicResolver);
+            return (_invocationList == null) || (_invocationList is LoaderAllocator) || (_invocationList is DynamicResolver) || (_invocationList is DynamicMethod);
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -201,10 +202,13 @@ namespace System
                 Debug.Assert(!IsUnmanagedFunctionPtr(), "dynamic method and unmanaged fntptr delegate combined");
                 // must be a secure/wrapper one, unwrap and save
                 MulticastDelegate d = ((MulticastDelegate?)_invocationList)!;
-                d._methodBase = dynamicMethod;
+                d.StoreDynamicMethod(dynamicMethod);
             }
             else
-                _methodBase = dynamicMethod;
+            {
+                Debug.Assert(InvocationListLogicallyNull(), "dynamic method with invocation list");
+                _invocationList = dynamicMethod;
+            }
         }
 
         // This method will combine this delegate with the passed delegate
@@ -495,7 +499,7 @@ namespace System
             return base.GetTarget();
         }
 
-        protected override MethodInfo GetMethodImpl()
+        internal MethodInfo GetMethodImplMulticast()
         {
             if (_invocationCount != 0 && _invocationList != null)
             {
@@ -512,16 +516,15 @@ namespace System
                     return innerDelegate.GetMethodImpl();
                 }
             }
+            else if (_invocationList is DynamicMethod dynamicMethod)
+            {
+                return dynamicMethod;
+            }
             else if (IsUnmanagedFunctionPtr())
             {
                 // we handle unmanaged function pointers here because the generic ones (used for WinRT) would otherwise
                 // be treated as open delegates by the base implementation, resulting in failure to get the MethodInfo
-                if (_methodBase is MethodInfo methodInfo)
-                {
-                    return methodInfo;
-                }
-
-                IRuntimeMethodInfo method = FindMethodHandle();
+                IRuntimeMethodInfo method = CreateMethodInfo(MethodDesc);
                 RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(method);
 
                 // need a proper declaring type instance method on a generic type
@@ -532,12 +535,13 @@ namespace System
                     declaringType = reflectedType;
                 }
 
-                _methodBase = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
-                return (MethodInfo)_methodBase;
+                MethodInfo methodInfo = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
+                SetCachedMethod(methodInfo);
+                return methodInfo;
             }
 
             // Otherwise, must be an inner delegate of a wrapper delegate of an open virtual method. In that case, call base implementation
-            return base.GetMethodImpl();
+            return GetMethodImplNormal();
         }
 
         // this should help inlining
@@ -599,7 +603,8 @@ namespace System
         {
             this._target = target;
             this._methodPtr = methodPtr;
-            this._methodBase = GCHandle.InternalGet(gchandle);
+            this._invocationList = GCHandle.InternalGet(gchandle);
+            Debug.Assert(InvocationListLogicallyNull());
         }
 
         [DebuggerNonUserCode]
@@ -609,7 +614,8 @@ namespace System
             this._target = this;
             this._methodPtr = shuffleThunk;
             this._methodPtrAux = methodPtr;
-            this._methodBase = GCHandle.InternalGet(gchandle);
+            this._invocationList = GCHandle.InternalGet(gchandle);
+            Debug.Assert(InvocationListLogicallyNull());
         }
 
         [DebuggerNonUserCode]
@@ -618,7 +624,8 @@ namespace System
         {
             this._target = this;
             this._methodPtr = shuffleThunk;
-            this._methodBase = GCHandle.InternalGet(gchandle);
+            this._invocationList = GCHandle.InternalGet(gchandle);
+            Debug.Assert(InvocationListLogicallyNull());
             this.InitializeVirtualCallStub(methodPtr);
         }
 #pragma warning restore IDE0060
