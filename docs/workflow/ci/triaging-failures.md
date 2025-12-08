@@ -60,12 +60,6 @@ set RunningIlasmRoundTrip=1
 ```
 triggers an ildasm/ilasm round-trip test (that is, the test assembly is disassembled, then re-assembled, then run).
 
-And,
-```
-set DoLink=1
-```
-triggers ILLink testing.
-
 ## Product and test assets
 
 To reproduce and/or debug a test failure, you'll need the product and test assets. You can either build these using the normal build processes,
