@@ -285,12 +285,22 @@ namespace Internal.JitInterface
 {
     internal unsafe partial class CorInfoImpl
     {
-        [FixedAddressValueType]
-        private static readonly ICorJitInfoVtbl s_corJitInfoVtbl;
-
         private struct ICorJitInfoVtbl
         {
+            [FixedAddressValueType]
+            internal static readonly ICorJitInfoVtbl s_vtbl;
+
+            static ICorJitInfoVtbl()
+            {
 ");
+            foreach (FunctionDecl decl in functionData)
+            {
+                tw.Write($"                s_vtbl.{char.ToUpperInvariant(decl.FunctionName[0])}");
+                tw.WriteLine($"{decl.FunctionName.Substring(1)} = &_{decl.FunctionName};");
+            }
+            tw.WriteLine("            }");
+            tw.WriteLine();
+
             foreach (FunctionDecl decl in functionData)
             {
                 tw.Write("            public delegate* unmanaged<IntPtr, IntPtr*");
@@ -303,19 +313,9 @@ namespace Internal.JitInterface
             }
             tw.Write(@"        }
 
-        static CorInfoImpl()
-        {
-");
-            foreach (FunctionDecl decl in functionData)
-            {
-                tw.Write($"            s_corJitInfoVtbl.{char.ToUpperInvariant(decl.FunctionName[0])}");
-                tw.WriteLine($"{decl.FunctionName.Substring(1)} = &_{decl.FunctionName};");
-            }
-            tw.Write(@"        }
-
         private static IntPtr GetUnmanagedCallbacks()
         {
-            return (IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in s_corJitInfoVtbl));
+            return (IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in ICorJitInfoVtbl.s_vtbl));
         }
 
 ");
