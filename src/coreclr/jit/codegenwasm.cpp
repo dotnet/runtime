@@ -373,22 +373,129 @@ static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types type)
     {
         type = TYP_I_IMPL;
     }
-    static_assert((ssize_t)GT_COUNT > (ssize_t)TYP_COUNT);
-    return ((uint32_t)oper << (ConstLog2<GT_COUNT>::value + 1)) | ((uint32_t)type);
+    const int shift1 = ConstLog2<TYP_COUNT>::value + 1;
+    return ((uint32_t)oper << shift1) | ((uint32_t)type);
 }
 
 //------------------------------------------------------------------------
-// PackOperAndType: Pack a GenTreeOp* into a uint32_t
+// PackOperAndType: Pack a genTreeOps and two var_types into a uint32_t
 //
 // Arguments:
-//    treeNode - a GenTreeOp to extract oper and type from
+//    oper - a genTreeOps to pack
+//    fromType - a var_types to pack
+//    toType - a var_types to pack
 //
 // Return Value:
-//    the node's oper and type packed into an integer that can be used as a switch value
+//    oper and the types packed into an integer that can be used as a switch value/case
 //
-static uint32_t PackOperAndType(GenTreeOp* treeNode)
+static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types fromType, var_types toType)
 {
-    return PackOperAndType(treeNode->OperGet(), treeNode->TypeGet());
+    if (fromType == TYP_BYREF)
+    {
+        fromType = TYP_I_IMPL;
+    }
+    if (toType == TYP_BYREF)
+    {
+        toType = TYP_I_IMPL;
+    }
+    const int shift1 = ConstLog2<TYP_COUNT>::value + 1;
+    const int shift2 = shift1 + ConstLog2<GT_COUNT>::value + 1;
+    return ((uint32_t)oper << shift1) | ((uint32_t)fromType) | ((uint32_t)toType << shift2);
+}
+
+//------------------------------------------------------------------------
+// genCodeForBinary: Generate code for a binary arithmetic operator
+//
+// Arguments:
+//    treeNode - The binary operation for which we are generating code.
+//
+void CodeGen::genCodeForUnary(GenTreeUnOp* treeNode)
+{
+    genConsumeOperands(treeNode);
+
+    instruction ins;
+    switch (PackOperAndType(treeNode->OperGet(), /* fromType */ treeNode->gtOp1->TypeGet(), /* toType */ treeNode->TypeGet()))
+    {
+        case PackOperAndType(GT_ADD, TYP_INT):
+            if (treeNode->gtOverflow())
+                NYI_WASM("Overflow checks");
+            ins = INS_i32_add;
+            break;
+        case PackOperAndType(GT_ADD, TYP_LONG):
+            if (treeNode->gtOverflow())
+                NYI_WASM("Overflow checks");
+            ins = INS_i64_add;
+            break;
+        case PackOperAndType(GT_ADD, TYP_FLOAT):
+            ins = INS_f32_add;
+            break;
+        case PackOperAndType(GT_ADD, TYP_DOUBLE):
+            ins = INS_f64_add;
+            break;
+
+        case PackOperAndType(GT_SUB, TYP_INT):
+            if (treeNode->gtOverflow())
+                NYI_WASM("Overflow checks");
+            ins = INS_i32_sub;
+            break;
+        case PackOperAndType(GT_SUB, TYP_LONG):
+            if (treeNode->gtOverflow())
+                NYI_WASM("Overflow checks");
+            ins = INS_i64_sub;
+            break;
+        case PackOperAndType(GT_SUB, TYP_FLOAT):
+            ins = INS_f32_sub;
+            break;
+        case PackOperAndType(GT_SUB, TYP_DOUBLE):
+            ins = INS_f64_sub;
+            break;
+
+        case PackOperAndType(GT_MUL, TYP_INT):
+            if (treeNode->gtOverflow())
+                NYI_WASM("Overflow checks");
+            ins = INS_i32_mul;
+            break;
+        case PackOperAndType(GT_MUL, TYP_LONG):
+            if (treeNode->gtOverflow())
+                NYI_WASM("Overflow checks");
+            ins = INS_i64_mul;
+            break;
+        case PackOperAndType(GT_MUL, TYP_FLOAT):
+            ins = INS_f32_mul;
+            break;
+        case PackOperAndType(GT_MUL, TYP_DOUBLE):
+            ins = INS_f64_mul;
+            break;
+
+        case PackOperAndType(GT_AND, TYP_INT):
+            ins = INS_i32_and;
+            break;
+        case PackOperAndType(GT_AND, TYP_LONG):
+            ins = INS_i64_and;
+            break;
+
+        case PackOperAndType(GT_OR, TYP_INT):
+            ins = INS_i32_or;
+            break;
+        case PackOperAndType(GT_OR, TYP_LONG):
+            ins = INS_i64_or;
+            break;
+
+        case PackOperAndType(GT_XOR, TYP_INT):
+            ins = INS_i32_xor;
+            break;
+        case PackOperAndType(GT_XOR, TYP_LONG):
+            ins = INS_i64_xor;
+            break;
+
+        default:
+            ins = INS_none;
+            NYI_WASM("genCodeForBinary");
+            break;
+    }
+
+    GetEmitter()->emitIns(ins);
+    genProduceReg(treeNode);
 }
 
 //------------------------------------------------------------------------
@@ -402,7 +509,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     genConsumeOperands(treeNode);
 
     instruction ins;
-    switch (PackOperAndType(treeNode))
+    switch (PackOperAndType(treeNode->OperGet(), treeNode->TypeGet()))
     {
         case PackOperAndType(GT_ADD, TYP_INT):
             if (treeNode->gtOverflow())
@@ -497,7 +604,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     genConsumeOperands(treeNode);
 
     instruction ins;
-    switch (PackOperAndType(treeNode))
+    switch (PackOperAndType(treeNode->OperGet(), treeNode->TypeGet()))
     {
         case PackOperAndType(GT_DIV, TYP_INT):
             ins = INS_i32_div_s;
@@ -615,7 +722,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
     // for both the shift and shiftee. So the shift may need to be extended (zero-extended) for TYP_LONG.
 
     instruction ins;
-    switch (PackOperAndType(treeNode))
+    switch (PackOperAndType(treeNode->OperGet(), treeNode->TypeGet()))
     {
         case PackOperAndType(GT_LSH, TYP_INT):
             ins = INS_i32_shl;
