@@ -13,7 +13,7 @@ namespace Internal.JitInterface
 {
     internal unsafe partial class CorInfoImpl
     {
-        private struct ICorJitInfoVtbl
+        private struct ICorJitInfoCallbacks
         {
             [FixedAddressValueType]
             internal static readonly ICorJitInfoVtbl s_vtbl;
