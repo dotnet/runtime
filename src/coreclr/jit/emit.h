@@ -3828,17 +3828,6 @@ inline UNATIVE_OFFSET emitter::emitDataSize()
 
 /*****************************************************************************
  *
- *  Return a handle to the current position in the output stream. This can
- *  be later converted to an actual code offset in bytes.
- */
-
-inline void* emitter::emitCurBlock()
-{
-    return emitCurIG;
-}
-
-/*****************************************************************************
- *
  *  The emitCurOffset() method returns a cookie that identifies the current
  *  position in the instruction stream. Due to things like scheduling (and
  *  the fact that the final size of some instructions cannot be known until

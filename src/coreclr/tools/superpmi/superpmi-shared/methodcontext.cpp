@@ -2099,29 +2099,6 @@ unsigned MethodContext::repGetFieldOffset(CORINFO_FIELD_HANDLE field)
     return result;
 }
 
-void MethodContext::recGetLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle, CorInfoHelpFunc result)
-{
-    if (GetLazyStringLiteralHelper == nullptr)
-        GetLazyStringLiteralHelper = new LightWeightMap<DWORDLONG, DWORD>();
-
-    DWORDLONG key = CastHandle(handle);
-    DWORD value = (DWORD)result;
-    GetLazyStringLiteralHelper->Add(key, value);
-    DEBUG_REC(dmpGetLazyStringLiteralHelper(key, value));
-}
-void MethodContext::dmpGetLazyStringLiteralHelper(DWORDLONG key, DWORD value)
-{
-    printf("GetLazyStringLiteralHelper key mod-%016" PRIX64 ", value res-%u", key, value);
-}
-CorInfoHelpFunc MethodContext::repGetLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle)
-{
-    DWORDLONG key = CastHandle(handle);
-    DWORD value = LookupByKeyOrMiss(GetLazyStringLiteralHelper, key, ": key %016" PRIX64 "", key);
-    DEBUG_REP(dmpGetLazyStringLiteralHelper(key, value));
-    CorInfoHelpFunc result = (CorInfoHelpFunc)value;
-    return result;
-}
-
 void MethodContext::recGetUnBoxHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc result)
 {
     if (GetUnBoxHelper == nullptr)
