@@ -141,7 +141,7 @@ namespace ILCompiler.ObjectWriter
                             (input[0], input[1]) = (input[1], input[0]);
                             break;
                         }
-                        else if (c0 > c1 || c0 == (char)0)
+                        else if (c0 > c1 || c0 == 0)
                         {
                             break;
                         }
@@ -157,13 +157,10 @@ namespace ILCompiler.ObjectWriter
         private uint CreateIndex(Utf8String text)
         {
             uint offset = (uint)_stream.Position;
-            int reservedBytes = text.Length + 1;
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(reservedBytes);
-            var span = new Span<byte>(buffer, 0, reservedBytes);
-            text.AsSpan().CopyTo(span);
-            span[reservedBytes - 1] = 0;
-            _stream.Write(span);
-            ArrayPool<byte>.Shared.Return(buffer);
+
+            _stream.Write(text.AsSpan());
+            _stream.WriteByte(0);
+
             _stringToOffset[text] = offset;
             return offset;
         }
