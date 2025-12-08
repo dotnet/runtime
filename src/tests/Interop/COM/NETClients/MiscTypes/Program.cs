@@ -164,12 +164,10 @@ namespace NetClient
             }
 
             Console.WriteLine("-- Wrappers <=> VARIANT...");
-#pragma warning disable 0618 // CurrencyWrapper is obsolete
             {
                 var expected = 123.456m;
                 Assert.Equal(expected, miscTypeTesting.Marshal_Variant(new CurrencyWrapper(expected)));
             }
-#pragma warning restore 0618
             {
                 var expected = "The quick Fox jumped over the lazy Dog.";
                 Assert.Equal(expected, miscTypeTesting.Marshal_Variant(new BStrWrapper(expected)));

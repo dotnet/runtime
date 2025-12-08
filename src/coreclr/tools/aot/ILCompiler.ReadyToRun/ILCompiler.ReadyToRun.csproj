@@ -369,4 +369,8 @@
   <ItemGroup>
     <Folder Include="tools\aot\ilcompiler.readytorun\codegen\" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="tools\aot\ilcompiler.readytorun\codegen\" />
+  </ItemGroup>
 </Project>

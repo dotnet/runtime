@@ -14127,6 +14127,7 @@ namespace System.Runtime.CompilerServices
         [System.ObsoleteAttribute("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData { get { throw null; } }
         public static System.IntPtr AllocateTypeAssociatedMemory(System.Type type, int size) { throw null; }
+        public static System.IntPtr AllocateTypeAssociatedMemory(System.Type type, int size, int alignment) { throw null; }
         public static object? Box(ref byte target, System.RuntimeTypeHandle type) { throw null; }
         public static System.ReadOnlySpan<T> CreateSpan<T>(System.RuntimeFieldHandle fldHandle) { throw null; }
         public static void EnsureSufficientExecutionStack() { }
@@ -14764,7 +14765,6 @@ namespace System.Runtime.InteropServices
         R4 = 11,
         R8 = 12,
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Marshalling as Currency may be unavailable in future releases.")]
         Currency = 15,
         BStr = 19,
         LPStr = 20,

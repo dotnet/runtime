@@ -774,7 +774,7 @@ if ($PrNumber) {
     Write-Host "   Mode: Query - $Query"
 
     try {
-        $prsJson = gh pr list --repo $Config.SourceRepo --search $Query --limit $Config.MaxPRs --json number,title,url,baseRefName,closedAt,mergeCommit,labels,files
+        $prsJson = gh pr list --repo $Config.SourceRepo --search $Query --limit $Config.MaxPRs --json number
         $prs = $prsJson | ConvertFrom-Json
     } catch {
         Write-Error "Failed to fetch PRs: $($_.Exception.Message)"
@@ -791,7 +791,7 @@ foreach ($pr in $prs) {
 
     # Get comprehensive PR details including comments, reviews, and commits
     try {
-        $prDetails = gh pr view $pr.number --repo $Config.SourceRepo --json body,title,comments,reviews,closingIssuesReferences,commits
+        $prDetails = gh pr view $pr.number --repo $Config.SourceRepo --json number,title,author,url,baseRefName,closedAt,mergedAt,mergeCommit,labels,files,state,body,comments,reviews,closingIssuesReferences,commits
         $prDetailData = $prDetails | ConvertFrom-Json
     } catch {
         Write-Warning "Could not fetch detailed PR data for #$($pr.number)"
@@ -837,31 +837,31 @@ foreach ($pr in $prs) {
     }
 
     # Create merge commit URL
-    $mergeCommitUrl = if ($pr.mergeCommit.oid) {
-        "https://github.com/$($Config.SourceRepo)/commit/$($pr.mergeCommit.oid)"
+    $mergeCommitUrl = if ($prDetailData.mergeCommit.oid) {
+        "https://github.com/$($Config.SourceRepo)/commit/$($prDetailData.mergeCommit.oid)"
     } else {
         $null
     }
 
     # Get version information using local git repository
     Write-Host "     🏷️ Getting version info..." -ForegroundColor DarkGray
-    $versionInfo = Get-VersionInfo -prNumber $pr.number -mergedAt $pr.closedAt -baseRef $pr.baseRefName
+    $versionInfo = Get-VersionInfo -prNumber $prDetailData.number -mergedAt $prDetailData.closedAt -baseRef $prDetailData.baseRefName
 
     # Check for existing docs issues
     $hasDocsIssue = $false
     try {
-        $searchResult = gh issue list --repo $Config.DocsRepo --search "Breaking change $($pr.number)" --json number,title
+        $searchResult = gh issue list --repo $Config.DocsRepo --search "Breaking change $($prDetailData.number)" --json number,title
         $existingIssues = $searchResult | ConvertFrom-Json
         $hasDocsIssue = $existingIssues.Count -gt 0
     } catch {
-        Write-Warning "Could not check for existing docs issues for PR #$($pr.number)"
+        Write-Warning "Could not check for existing docs issues for PR #$($prDetailData.number)"
     }
 
     # Get feature areas from area- labels first, then fall back to file paths
     $featureAreas = @()
 
     # First try to get feature areas from area- labels
-    foreach ($label in $pr.labels) {
+    foreach ($label in $prDetailData.labels) {
         if ($label.name -match "^area-(.+)$") {
             $featureAreas += $matches[1]
         }
@@ -869,36 +869,36 @@ foreach ($pr in $prs) {
 
     $featureAreas = $featureAreas | Select-Object -Unique
     if ($featureAreas.Count -eq 0) {
-        Write-Error "Unable to determine feature area for PR #$($pr.Number).  Please set an 'area-' label."
+        Write-Error "Unable to determine feature area for PR #$($prDetailData.Number).  Please set an 'area-' label."
     }
 
     $analysisData += @{
-        Number = $pr.number
-        Title = $pr.title
-        Url = $pr.url
-        Author = $pr.author.login
-        BaseRef = $pr.baseRefName
-        ClosedAt = $pr.closedAt
-        MergedAt = $pr.mergedAt
+        Number = $prDetailData.number
+        Title = $prDetailData.title
+        Url = $prDetailData.url
+        Author = $prDetailData.author.login
+        BaseRef = $prDetailData.baseRefName
+        ClosedAt = $prDetailData.closedAt
+        MergedAt = $prDetailData.mergedAt
         MergeCommit = @{
-            Sha = $pr.mergeCommit.oid
+            Sha = $prDetailData.mergeCommit.oid
             Url = $mergeCommitUrl
         }
         Commits = $commits
-        Body = if ($prDetailData.body) { $prDetailData.body } else { $pr.body }
+        Body = $prDetailData.body
         Comments = $prDetailData.comments
         Reviews = $prDetailData.reviews
         ClosingIssues = $closingIssues
         HasDocsIssue = $hasDocsIssue
         ExistingDocsIssues = if ($hasDocsIssue) { $existingIssues } else { @() }
         FeatureAreas = $featureAreas -join ", "
-        ChangedFiles = $pr.files | ForEach-Object { $_.path }
-        Labels = $pr.labels | ForEach-Object { $_.name }
+        ChangedFiles = $prDetailData.files | ForEach-Object { $_.path }
+        Labels = $prDetailData.labels | ForEach-Object { $_.name }
         VersionInfo = $versionInfo
     }
 
     # Save individual PR data file
-    $prFileName = Join-Path $dataDir "pr_$($pr.number).json"
+    $prFileName = Join-Path $dataDir "pr_$($prDetailData.number).json"
     $analysisData[-1] | ConvertTo-Json -Depth 10 | Out-File $prFileName -Encoding UTF8
     Write-Host "     💾 Saved: $prFileName" -ForegroundColor DarkGray
 

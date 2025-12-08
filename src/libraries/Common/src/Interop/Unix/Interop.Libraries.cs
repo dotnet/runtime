@@ -15,5 +15,6 @@ internal static partial class Interop
         internal const string GlobalizationNative = "libSystem.Globalization.Native";
         internal const string IOPortsNative = "libSystem.IO.Ports.Native";
         internal const string HostPolicy = "libhostpolicy";
+        internal const string JavaScriptNative = "libSystem.JavaScript.Native";
     }
 }
