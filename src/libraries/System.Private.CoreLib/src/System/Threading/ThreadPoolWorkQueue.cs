@@ -930,7 +930,7 @@ namespace System.Threading
 
                 // Missing a steal means there may be an item that we were unable to get.
                 // Effectively, we failed to fulfill our promise to check the queues after
-                // clearing "Scheduled" flag.
+                // clearing the outstanding thread request flag.
                 // We need to make sure someone will do another pass.
                 if (missedSteal)
                 {
