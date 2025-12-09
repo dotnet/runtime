@@ -10,298 +10,225 @@ namespace JitTest_implicit_promotion
 {
     public class Test
     {
-        [Theory]
-        [InlineData("add", (int)0x1, -2, -1, -1)]
-        [InlineData("add.ovf.un", (int)0x1, -2, -1, (long)0x00000000FFFFFFFF)]
-        [InlineData("add.ovf", (int)0x1, -2, -1, -1)]
-        [InlineData("sub", -1, -1, 0, 0)]
-        [InlineData("sub.ovf", -1, -1, 0, 0)]
-        [InlineData("sub.ovf.un", -1, -1, 0, unchecked((long)0xFFFFFFFF00000000))]
-        [InlineData("mul", (int)0x2, -1, -2, -2)]
-        [InlineData("mul.ovf", (int)0x2, -1, -2, -2)]
-        [InlineData("mul.ovf.un", (int)0x2, -1, -2, 0x1FFFFFFFE)]
-        [InlineData("div", -1, -1, 1, 1)]
-        [InlineData("div.un", -1, -1, 1, 1)]
-        [InlineData("rem", -1, -1, 0, 0)]
-        [InlineData("rem.un", -1, -1, 0, 0)]
-        [InlineData("and", -1, -1, -1, -1)]
-        [InlineData("or", 0, -1, -1, -1)]
-        [InlineData("xor", -1, -1, 0, 0)]
-        [InlineData("ceq", -1, -1, 1, 1)]
-        [InlineData("cgt", -2, -3, 1, 1)]
-        [InlineData("cgt.un", -2, -1, 0, 0)]
-        [InlineData("clt", -1, -2, 0, 0)]
-        [InlineData("clt.un", -2, -1, 1, 1)]
-        [InlineData("beq", -1, -1, 1, 1)]
-        [InlineData("bne.un", -1, -1, 0, 1)]
-        [InlineData("blt", -1, -1, 0, 0)]
-        [InlineData("blt.un", -2, -1, 1, 0)]
-        [InlineData("ble", -1, -1, 1, 1)]
-        [InlineData("ble.un", -1, -1, 1, 0)]
-        [InlineData("bgt", -1, -1, 0, 0)]
-        [InlineData("bgt.un", -1, -1, 0, 1)]
-        [InlineData("bge", -1, -1, 1, 1)]
-        [InlineData("bge.un", -1, -2, 1, 1)] // Special case this one.
-        public static void testI_i32_opcode(string opcode, int a, int b, int resultI_i32_32Bit_expected, long resultI_i32_64Bit_expected)
+        // These tests attempt to verify that the implicit upcasting from I4 to I which happens on 64 bit platforms
+        // is done in a consistent manner across all implementations.
+        // Notable details of interest:
+        // add.ovf.un, sub.ovf.un, mul.ovf.un upcast without sign-extension.
+        // div.un, and rem.un upcast with sign-extension.
+        // clt.un, cgt.un upcast without sign-extension
+        // bne.un, blt.un, ble.un, bgt.un, bge.un upcast without sign-extension
+        public static void TestUpcastBehavior()
         {
-            nint a_nint = (nint)a;
-            nint result = 0;
-
-            if (opcode == "bge.un")
+            unchecked
             {
-                a_nint = unchecked((nint)(nuint)0xFFFFFFFF);
+                //////////////////////////////////////////////////////////////////
+                /// Test scenarios where the first operand is I and the second is i32
+                /////////////////////////////////////////////////////////////////
+
+                // add: (int)0x1 + -2
+                Assert.Equal(Environment.Is64BitProcess ? (nint)(-1) : (nint)(-1), Operator.add_I_i32((nint)0x1, -2));
+
+                // add.ovf.un: (int)0x1 + -2
+                Assert.Equal(Environment.Is64BitProcess ? (nint)(ulong)0x00000000FFFFFFFF : (nint)(-1), Operator.add_ovf_un_I_i32((nint)0x1, -2));
+
+                // add.ovf: (int)0x1 + -2
+                Assert.Equal(Environment.Is64BitProcess ? (nint)(-1) : (nint)(-1), Operator.add_ovf_I_i32((nint)0x1, -2));
+
+                // sub: -1 - -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)0, Operator.sub_I_i32((nint)(-1), -1));
+
+                // sub.ovf: -1 - -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)0, Operator.sub_ovf_I_i32((nint)(-1), -1));
+
+                // sub.ovf.un: -1 - -1
+                Assert.Equal(Environment.Is64BitProcess ? unchecked((nint)(ulong)0xFFFFFFFF00000000) : (nint)0, Operator.sub_ovf_un_I_i32((nint)(-1), -1));
+
+                // mul: (int)0x2 * -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)(-2) : (nint)(-2), Operator.mul_I_i32((nint)0x2, -1));
+
+                // mul.ovf: (int)0x2 * -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)(-2) : (nint)(-2), Operator.mul_ovf_I_i32((nint)0x2, -1));
+
+                // mul.ovf.un: (int)0x2 * -1
+                if (!Environment.Is64BitProcess)
+                {
+                    Assert.Throws<OverflowException>(() => Operator.mul_ovf_un_I_i32((nint)0x2, -1));
+                }
+                else
+                {
+                    Assert.Equal((nint)(ulong)0x1FFFFFFFE, Operator.mul_ovf_un_I_i32((nint)0x2, -1));
+                }
+
+                // div: -1 / -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.div_I_i32((nint)(-1), -1));
+
+                // div.un: -1 / -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.div_un_I_i32((nint)(-1), -1));
+
+                // rem: -1 % -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)0, Operator.rem_I_i32((nint)(-1), -1));
+
+                // rem.un: -1 % -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)0, Operator.rem_un_I_i32((nint)(-1), -1));
+
+                // and: -1 & -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)(-1) : (nint)(-1), Operator.and_I_i32((nint)(-1), -1));
+
+                // or: 0 | -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)(-1) : (nint)(-1), Operator.or_I_i32((nint)0, -1));
+
+                // xor: -1 ^ -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)0, Operator.xor_I_i32((nint)(-1), -1));
+
+                // ceq: -1 == -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.ceq_I_i32((nint)(-1), -1));
+
+                // cgt: -2 > -3
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.cgt_I_i32((nint)(-2), -3));
+
+                // cgt.un: -2 > -1 (unsigned)
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)0, Operator.cgt_un_I_i32((nint)(-2), -1));
+
+                // clt: -1 < -2
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)0, Operator.clt_I_i32((nint)(-1), -2));
+
+                // clt.un: -2 < -1 (unsigned)
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.clt_un_I_i32((nint)(-2), -1));
+
+                // beq: -1 == -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.beq_I_i32((nint)(-1), -1));
+
+                // bne.un: -1 != -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)0, Operator.bne_un_I_i32((nint)(-1), -1));
+
+                // blt: -1 < -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)0, Operator.blt_I_i32((nint)(-1), -1));
+
+                // blt.un: -2 < -1 (unsigned)
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)1, Operator.blt_un_I_i32((nint)(-2), -1));
+
+                // ble: -1 <= -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.ble_I_i32((nint)(-1), -1));
+
+                // ble.un: -1 <= -1 (unsigned)
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)1, Operator.ble_un_I_i32((nint)(-1), -1));
+
+                // bgt: -1 > -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)0, Operator.bgt_I_i32((nint)(-1), -1));
+
+                // bgt.un: -1 > -1 (unsigned)
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)0, Operator.bgt_un_I_i32((nint)(-1), -1));
+
+                // bge: -1 >= -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.bge_I_i32((nint)(-1), -1));
+
+                // bge.un: 0xFFFFFFFF >= -2 (unsigned, special case)
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.bge_un_I_i32(unchecked((nint)(nuint)0xFFFFFFFF), -2));
+
+                //////////////////////////////////////////////////////////////////
+                /// Test scenarios where the first operand is i32 and the second is I
+                /////////////////////////////////////////////////////////////////
+
+                // add: -2 + 1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)(-1) : (nint)(-1), Operator.add_i32_I(-2, (nint)1));
+
+                // add.ovf.un: -2 + 1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)(ulong)0x00000000FFFFFFFF : (nint)(-1), Operator.add_ovf_un_i32_I(-2, (nint)1));
+
+                // add.ovf: -2 + 1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)(-1) : (nint)(-1), Operator.add_ovf_i32_I(-2, (nint)1));
+
+                // sub: -1 - -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)0, Operator.sub_i32_I(-1, (nint)(-1)));
+
+                // sub.ovf: -1 - -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)0, Operator.sub_ovf_i32_I(-1, (nint)(-1)));
+
+                // sub.ovf.un: -1 - 1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)(ulong)0xFFFFFFFE : (nint)(-2), Operator.sub_ovf_un_i32_I(-1, (nint)1));
+
+                // mul: -1 * 2
+                Assert.Equal(Environment.Is64BitProcess ? (nint)(-2) : (nint)(-2), Operator.mul_i32_I(-1, (nint)2));
+
+                // mul.ovf: -1 * 2
+                Assert.Equal(Environment.Is64BitProcess ? (nint)(-2) : (nint)(-2), Operator.mul_ovf_i32_I(-1, (nint)2));
+
+                // mul.ovf.un: -1 * 2
+                if (!Environment.Is64BitProcess)
+                {
+                    Assert.Throws<OverflowException>(() => Operator.mul_ovf_un_i32_I(-1, (nint)2));
+                }
+                else
+                {
+                    Assert.Equal((nint)(ulong)0x1FFFFFFFE, Operator.mul_ovf_un_i32_I(-1, (nint)2));
+                }
+
+                // div: -1 / -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.div_i32_I(-1, (nint)(-1)));
+
+                // div.un: -1 / -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.div_un_i32_I(-1, (nint)(-1)));
+
+                // rem: -1 % -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)0, Operator.rem_i32_I(-1, (nint)(-1)));
+
+                // rem.un: -1 % -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)0, Operator.rem_un_i32_I(-1, (nint)(-1)));
+
+                // and: -1 & -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)(-1) : (nint)(-1), Operator.and_i32_I(-1, (nint)(-1)));
+
+                // or: -1 | 0
+                Assert.Equal(Environment.Is64BitProcess ? (nint)(-1) : (nint)(-1), Operator.or_i32_I(-1, (nint)0));
+
+                // xor: -1 ^ -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)0, Operator.xor_i32_I(-1, (nint)(-1)));
+
+                // ceq: -1 == -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.ceq_i32_I(-1, (nint)(-1)));
+
+                // cgt: -2 > -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)0, Operator.cgt_i32_I(-2, (nint)(-1)));
+
+                // cgt.un: -1 > -2 (unsigned)
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.cgt_un_i32_I(-1, (nint)(-2)));
+
+                // clt: -1 < -2
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)0, Operator.clt_i32_I(-1, (nint)(-2)));
+
+                // clt.un: -2 < -1 (unsigned)
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.clt_un_i32_I(-2, (nint)(-1)));
+
+                // beq: -1 == -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.beq_i32_I(-1, (nint)(-1)));
+
+                // bne.un: -1 != -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)0, Operator.bne_un_i32_I(-1, (nint)(-1)));
+
+                // blt: -2 < -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.blt_i32_I(-2, (nint)(-1)));
+
+                // blt.un: -1 < -2 (unsigned)
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)0, Operator.blt_un_i32_I(-1, (nint)(-2)));
+
+                // ble: -1 <= -1
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.ble_i32_I(-1, (nint)(-1)));
+
+                // ble.un: -1 <= -2 (unsigned)
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)0, Operator.ble_un_i32_I(-1, (nint)(-2)));
+
+                // bgt: -1 > -2
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.bgt_i32_I(-1, (nint)(-2)));
+
+                // bgt.un: -1 > -2 (unsigned)
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)1, Operator.bgt_un_i32_I(-1, (nint)(-2)));
+
+                // bge: -1 >= -2
+                Assert.Equal(Environment.Is64BitProcess ? (nint)1 : (nint)1, Operator.bge_i32_I(-1, (nint)(-2)));
+
+                // bge.un: -1 >= -2 (unsigned)
+                Assert.Equal(Environment.Is64BitProcess ? (nint)0 : (nint)1, Operator.bge_un_i32_I(-1, (nint)(-2)));
             }
-            if (opcode == "mul.ovf.un" && !Environment.Is64BitProcess)
-            {
-                Assert.Throws<OverflowException>(() => Operator.mul_ovf_un_I_i32(a_nint, b));
-                return;
-            }
-
-            switch(opcode)
-            {
-                case "add":
-                    result = Operator.add_I_i32(a_nint, b);
-                    break;
-                case "add.ovf.un":
-                    result = Operator.add_ovf_un_I_i32(a_nint, b);
-                    break;
-                case "add.ovf":
-                    result = Operator.add_ovf_I_i32(a_nint, b);
-                    break;
-                case "sub":
-                    result = Operator.sub_I_i32(a_nint, b);
-                    break;
-                case "sub.ovf":
-                    result = Operator.sub_ovf_I_i32(a_nint, b);
-                    break;
-                case "sub.ovf.un":
-                    result = Operator.sub_ovf_un_I_i32(a_nint, b);
-                    break;
-                case "mul":
-                    result = Operator.mul_I_i32(a_nint, b);
-                    break;
-                case "mul.ovf":
-                    result = Operator.mul_ovf_I_i32(a_nint, b);
-                    break;
-                case "mul.ovf.un":
-                    result = Operator.mul_ovf_un_I_i32(a_nint, b);
-                    break;
-                case "div":
-                    result = Operator.div_I_i32(a_nint, b);
-                    break;
-                case "div.un":
-                    result = Operator.div_un_I_i32(a_nint, b);
-                    break;
-                case "rem":
-                    result = Operator.rem_I_i32(a_nint, b);
-                    break;
-                case "rem.un":
-                    result = Operator.rem_un_I_i32(a_nint, b);
-                    break;
-                case "and":
-                    result = Operator.and_I_i32(a_nint, b);
-                    break;
-                case "or":
-                    result = Operator.or_I_i32(a_nint, b);
-                    break;
-                case "xor":
-                    result = Operator.xor_I_i32(a_nint, b);
-                    break;
-                case "ceq":
-                    result = Operator.ceq_I_i32(a_nint, b);
-                    break;
-                case "cgt":
-                    result = Operator.cgt_I_i32(a_nint, b);
-                    break;
-                case "cgt.un":
-                    result = Operator.cgt_un_I_i32(a_nint, b);
-                    break;
-                case "clt":
-                    result = Operator.clt_I_i32(a_nint, b);
-                    break;
-                case "clt.un":
-                    result = Operator.clt_un_I_i32(a_nint, b);
-                    break;
-                case "beq":
-                    result = Operator.beq_I_i32(a_nint, b);
-                    break;
-                case "bne.un":
-                    result = Operator.bne_un_I_i32(a_nint, b);
-                    break;
-                case "blt":
-                    result = Operator.blt_I_i32(a_nint, b);
-                    break;
-                case "blt.un":
-                    result = Operator.blt_un_I_i32(a_nint, b);
-                    break;
-                case "ble":
-                    result = Operator.ble_I_i32(a_nint, b);
-                    break;
-                case "ble.un":
-                    result = Operator.ble_un_I_i32(a_nint, b);
-                    break;
-                case "bgt":
-                    result = Operator.bgt_I_i32(a_nint, b);
-                    break;
-                case "bgt.un":
-                    result = Operator.bgt_un_I_i32(a_nint, b);
-                    break;
-                case "bge":
-                    result = Operator.bge_I_i32(a_nint, b);
-                    break;
-                case "bge.un":
-                    result = Operator.bge_un_I_i32(a_nint, b);
-                    break;
-                default:
-                    throw new ArgumentException("Invalid opcode");
-            }
-
-            Assert.Equal(Environment.Is64BitProcess ? (nint)resultI_i32_64Bit_expected : (nint)resultI_i32_32Bit_expected, result);
-        }
-
-        [Theory]
-        [InlineData("add", -2, 1, -1, -1)]
-        [InlineData("add.ovf.un", -2, 1, -1, (long)0x00000000FFFFFFFF)]
-        [InlineData("add.ovf", -2, 1, -1, -1)]
-        [InlineData("sub", -1, -1, 0, 0)]
-        [InlineData("sub.ovf", -1, -1, 0, 0)]
-        [InlineData("sub.ovf.un", -1, 1, -2, 0xFFFFFFFE)]
-        [InlineData("mul",  -1, 2,-2, -2)]
-        [InlineData("mul.ovf", -1, 2, -2, -2)]
-        [InlineData("mul.ovf.un", -1, 2, -2, 0x1FFFFFFFE)]
-        [InlineData("div", -1, -1, 1, 1)]
-        [InlineData("div.un", -1, -1, 1, 1)]
-        [InlineData("rem", -1, -1, 0, 0)]
-        [InlineData("rem.un", -1, -1, 0, 0)]
-        [InlineData("and", -1, -1, -1, -1)]
-        [InlineData("or", -1, 0, -1, -1)]
-        [InlineData("xor", -1, -1, 0, 0)]
-        [InlineData("ceq", -1, -1, 1, 1)]
-        [InlineData("cgt", -2, -1, 0, 0)]
-        [InlineData("cgt.un", -1, -2, 1, 1)]
-        [InlineData("clt", -1, -2, 0, 0)]
-        [InlineData("clt.un", -2, -1, 1, 1)]
-        [InlineData("beq", -1, -1, 1, 1)]
-        [InlineData("bne.un", -1, -1, 0, 1)]
-        [InlineData("blt", -2, -1, 1, 1)]
-        [InlineData("blt.un", -1, -2, 0, 1)]
-        [InlineData("ble", -1, -1, 1, 1)]
-        [InlineData("ble.un", -1, -2, 0, 1)]
-        [InlineData("bgt", -1, -2, 1, 1)]
-        [InlineData("bgt.un", -1, -2, 1, 0)]
-        [InlineData("bge", -1, -2, 1, 1)]
-        [InlineData("bge.un", -1, -2, 1, 0)]
-        public static void testi32_I_opcode(string opcode, int a, int b, int resultI_i32_32Bit_expected, long resultI_i32_64Bit_expected)
-        {
-            nint b_nint = (nint)b;
-            nint result = 0;
-
-            if (opcode == "mul.ovf.un" && !Environment.Is64BitProcess)
-            {
-                Assert.Throws<OverflowException>(() => Operator.mul_ovf_un_i32_I(a, b_nint));
-                return;
-            }
-
-            switch(opcode)
-            {
-                case "add":
-                    result = Operator.add_i32_I(a, b_nint);
-                    break;
-                case "add.ovf.un":
-                    result = Operator.add_ovf_un_i32_I(a, b_nint);
-                    break;
-                case "add.ovf":
-                    result = Operator.add_ovf_i32_I(a, b_nint);
-                    break;
-                case "sub":
-                    result = Operator.sub_i32_I(a, b_nint);
-                    break;
-                case "sub.ovf":
-                    result = Operator.sub_ovf_i32_I(a, b_nint);
-                    break;
-                case "sub.ovf.un":
-                    result = Operator.sub_ovf_un_i32_I(a, b_nint);
-                    break;
-                case "mul":
-                    result = Operator.mul_i32_I(a, b_nint);
-                    break;
-                case "mul.ovf":
-                    result = Operator.mul_ovf_i32_I(a, b_nint);
-                    break;
-                case "mul.ovf.un":
-                    result = Operator.mul_ovf_un_i32_I(a, b_nint);
-                    break;
-                case "div":
-                    result = Operator.div_i32_I(a, b_nint);
-                    break;
-                case "div.un":
-                    result = Operator.div_un_i32_I(a, b_nint);
-                    break;
-                case "rem":
-                    result = Operator.rem_i32_I(a, b_nint);
-                    break;
-                case "rem.un":
-                    result = Operator.rem_un_i32_I(a, b_nint);
-                    break;
-                case "and":
-                    result = Operator.and_i32_I(a, b_nint);
-                    break;
-                case "or":
-                    result = Operator.or_i32_I(a, b_nint);
-                    break;
-                case "xor":
-                    result = Operator.xor_i32_I(a, b_nint);
-                    break;
-                case "ceq":
-                    result = Operator.ceq_i32_I(a, b_nint);
-                    break;
-                case "cgt":
-                    result = Operator.cgt_i32_I(a, b_nint);
-                    break;
-                case "cgt.un":
-                    result = Operator.cgt_un_i32_I(a, b_nint);
-                    break;
-                case "clt":
-                    result = Operator.clt_i32_I(a, b_nint);
-                    break;
-                case "clt.un":
-                    result = Operator.clt_un_i32_I(a, b_nint);
-                    break;
-                case "beq":
-                    result = Operator.beq_i32_I(a, b_nint);
-                    break;
-                case "bne.un":
-                    result = Operator.bne_un_i32_I(a, b_nint);
-                    break;
-                case "blt":
-                    result = Operator.blt_i32_I(a, b_nint);
-                    break;
-                case "blt.un":
-                    result = Operator.blt_un_i32_I(a, b_nint);
-                    break;
-                case "ble":
-                    result = Operator.ble_i32_I(a, b_nint);
-                    break;
-                case "ble.un":
-                    result = Operator.ble_un_i32_I(a, b_nint);
-                    break;
-                case "bgt":
-                    result = Operator.bgt_i32_I(a, b_nint);
-                    break;
-                case "bgt.un":
-                    result = Operator.bgt_un_i32_I(a, b_nint);
-                    break;
-                case "bge":
-                    result = Operator.bge_i32_I(a, b_nint);
-                    break;
-                case "bge.un":
-                    result = Operator.bge_un_i32_I(a, b_nint);
-                    break;
-                default:
-                    throw new ArgumentException("Invalid opcode");
-            }
-
-            Assert.Equal(Environment.Is64BitProcess ? (nint)resultI_i32_64Bit_expected : (nint)resultI_i32_32Bit_expected, result);
         }
     }
 }
