@@ -3635,6 +3635,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     // Emulate sendfile using a simple read/send loop.
     *sent = 0;
     char* buffer = NULL;
+    size_t bufferLength = Min((size_t)count, 80 * 1024 * sizeof(char));
 
     // Save the original input file position and seek to the offset position
     off_t inputFileOrigOffset = lseek(infd, 0, SEEK_CUR);
@@ -3644,7 +3645,6 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     }
 
     // Allocate a buffer
-    size_t bufferLength = Min((size_t)count, 80 * 1024 * sizeof(char));
     buffer = (char*)malloc(bufferLength);
     if (buffer == NULL)
     {
