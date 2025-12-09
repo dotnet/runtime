@@ -412,8 +412,9 @@ namespace ILCompiler
             ILProvider unsubstitutedILProvider = ilProvider;
             ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider, new DevirtualizationManager());
 
+            bool stackTraceLineNumbers = Get(_command.EmitStackTraceLineNumbers);
             var stackTracePolicy = Get(_command.EmitStackTraceData) ?
-                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy(true) : new NoStackTraceEmissionPolicy();
+                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy(stackTraceLineNumbers) : new NoStackTraceEmissionPolicy();
 
             MetadataBlockingPolicy mdBlockingPolicy;
             ManifestResourceBlockingPolicy resBlockingPolicy;

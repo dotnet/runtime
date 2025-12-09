@@ -160,10 +160,7 @@ namespace Internal.StackTraceMetadata
                             nativeOffsetDelta = entryParser.GetSigned();
                         }
 
-                        // We do a +1 because if the instruction is a call, the offset
-                        // we have is for the call return which might already be a different
-                        // line number.
-                        if (currentNativeOffset + nativeOffsetDelta + 1 > offset)
+                        if (currentNativeOffset + nativeOffsetDelta > offset)
                         {
                             documentIndex = oldDocumentIndex;
                             break;

@@ -79,6 +79,7 @@ class StackTraces
 
     class TestLineNumbers
     {
+        [MethodImpl(MethodImplOptions.NoOptimization)]
         static void MethodWithoutMetadata()
         {
 #line 10 "A:\MyFile1.cs"
@@ -95,6 +96,7 @@ class StackTraces
                 throw new Exception(sf3.ToString());
         }
 
+        [MethodImpl(MethodImplOptions.NoOptimization)]
         static void MethodWithMetadata()
         {
 #line 10 "A:\MyFile1.cs"
