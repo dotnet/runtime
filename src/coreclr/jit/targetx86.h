@@ -7,6 +7,8 @@
 #endif
 
 // clang-format off
+  #define CORINFO_ARCH_TARGET      CORINFO_ARCH_X86
+
   #define CPU_LOAD_STORE_ARCH      0
   #define CPU_HAS_BYTE_REGS        1
 
@@ -328,12 +330,6 @@
   #define RBM_PROFILER_ENTER_TRASH     RBM_NONE
   #define RBM_PROFILER_LEAVE_TRASH     RBM_NONE
   #define RBM_PROFILER_TAILCALL_TRASH  (RBM_CALLEE_TRASH & ~RBM_ARG_REGS)
-
-  // What sort of reloc do we use for [disp32] address mode
-  #define IMAGE_REL_BASED_DISP32   IMAGE_REL_BASED_HIGHLOW
-
-  // What sort of reloc to we use for 'moffset' address mode (for 'mov eax, moffset' or 'mov moffset, eax')
-  #define IMAGE_REL_BASED_MOFFSET  IMAGE_REL_BASED_HIGHLOW
 
   // Pointer-sized string move instructions
   #define INS_movsp                INS_movsd

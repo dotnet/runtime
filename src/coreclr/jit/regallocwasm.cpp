@@ -8,19 +8,48 @@
 
 #include "regallocwasm.h"
 
-LinearScanInterface* getLinearScanAllocator(Compiler* compiler)
+RegAllocInterface* GetRegisterAllocator(Compiler* compiler)
 {
-    NYI_WASM("getLinearScanAllocator");
-    return nullptr;
+    return new (compiler->getAllocator(CMK_LSRA)) WasmRegAlloc(compiler);
 }
 
-bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
+WasmRegAlloc::WasmRegAlloc(Compiler* compiler)
+    : m_compiler(compiler)
+{
+}
+
+PhaseStatus WasmRegAlloc::doRegisterAllocation()
+{
+    m_compiler->codeGen->setFramePointerUsed(false);
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
+void WasmRegAlloc::recordVarLocationsAtStartOfBB(BasicBlock* bb)
+{
+}
+
+bool WasmRegAlloc::willEnregisterLocalVars() const
+{
+    return m_compiler->compEnregLocals();
+}
+
+#if TRACK_LSRA_STATS
+void WasmRegAlloc::dumpLsraStatsCsv(FILE* file)
+{
+}
+
+void WasmRegAlloc::dumpLsraStatsSummary(FILE* file)
+{
+}
+#endif // TRACK_LSRA_STATS
+
+bool WasmRegAlloc::isRegCandidate(LclVarDsc* varDsc)
 {
     NYI_WASM("isRegCandidate");
     return false;
 }
 
-bool LinearScan::isContainableMemoryOp(GenTree* node)
+bool WasmRegAlloc::isContainableMemoryOp(GenTree* node)
 {
     NYI_WASM("isContainableMemoryOp");
     return false;

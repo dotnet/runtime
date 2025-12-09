@@ -304,7 +304,7 @@ inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
 
     SmallStackSString WordAt;
 
-    if (!WordAt.LoadResource(CCompRC::Optional, IDS_ER_WORDAT))
+    if (!WordAt.LoadResource(IDS_ER_WORDAT))
     {
         WordAt.Set(W("   at"));
     }

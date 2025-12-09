@@ -79,7 +79,7 @@ LIST(APPEND NATIVE_LIBS
 set(JS_SYSTEM_NATIVE_BROWSER
     "${SHARED_LIB_DESTINATION}/libSystem.Native.Browser.js")
 set(JS_SYSTEM_BROWSER_UTILS
-    "${SHARED_LIB_DESTINATION}/libSystem.Browser.Utils.js")
+    "${SHARED_LIB_DESTINATION}/libSystem.Native.Browser.Utils.js")
 set(JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE
     "${SHARED_LIB_DESTINATION}/libSystem.Runtime.InteropServices.JavaScript.Native.js")
 set(JS_BROWSER_HOST

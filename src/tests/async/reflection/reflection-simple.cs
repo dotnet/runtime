@@ -17,9 +17,19 @@ public class Async2Reflection
         var mi = typeof(Async2Reflection).GetMethod("Foo", BindingFlags.Static | BindingFlags.NonPublic)!;
         Task<int> r = (Task<int>)mi.Invoke(null, null)!;
 
-        dynamic d = new Async2Reflection();
+        int barResult;
+        if (TestLibrary.Utilities.IsNativeAot)
+        {
+            mi = typeof(Async2Reflection).GetMethod("Bar", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            barResult = ((Task<int>)mi.Invoke(new Async2Reflection(), null)!).Result;
+        }
+        else
+        {
+            dynamic d = new Async2Reflection();
+            barResult = d.Bar().Result;
+        }
 
-        Assert.Equal(100, (int)(r.Result + d.Bar().Result));
+        Assert.Equal(100, (int)(r.Result + barResult));
     }
 
     [Fact]
@@ -103,6 +113,7 @@ public class Async2Reflection
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/89157", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void GetInterfaceMap()
     {
         Type interfaceType = typeof(IExample<Task>);

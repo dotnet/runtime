@@ -14,6 +14,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.Text;
 using Internal.TypeSystem;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using static ILCompiler.ObjectWriter.CoffObjectWriter.CoffRelocationType;
@@ -46,16 +47,16 @@ namespace ILCompiler.ObjectWriter
     /// </remarks>
     internal partial class CoffObjectWriter : ObjectWriter
     {
-        protected sealed record SectionDefinition(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations, string ComdatName, string SymbolName);
+        protected sealed record SectionDefinition(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations, Utf8String ComdatName, Utf8String SymbolName);
 
         protected readonly Machine _machine;
         protected readonly List<SectionDefinition> _sections = new();
 
         // Symbol table
         private readonly List<CoffSymbolRecord> _symbols = new();
-        private readonly Dictionary<string, uint> _symbolNameToIndex = new(StringComparer.Ordinal);
+        private readonly Dictionary<Utf8String, uint> _symbolNameToIndex = new();
         private readonly Dictionary<int, CoffSectionSymbol> _sectionNumberToComdatAuxRecord = new();
-        private readonly HashSet<string> _referencedMethods = new();
+        private readonly HashSet<Utf8String> _referencedMethods = new();
 
         private static readonly ObjectNodeSection GfidsSection = new ObjectNodeSection(".gfids$y", SectionType.ReadOnly);
         private static readonly ObjectNodeSection DebugTypesSection = new ObjectNodeSection(".debug$T", SectionType.ReadOnly);
@@ -76,7 +77,7 @@ namespace ILCompiler.ObjectWriter
             };
         }
 
-        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
         {
             var sectionHeader = new CoffSectionHeader
             {
@@ -108,7 +109,7 @@ namespace ILCompiler.ObjectWriter
                     SectionCharacteristics.MemDiscardable;
             }
 
-            if (comdatName is not null)
+            if (!comdatName.IsNull)
             {
                 sectionHeader.SectionCharacteristics |= SectionCharacteristics.LinkerComdat;
 
@@ -140,7 +141,7 @@ namespace ILCompiler.ObjectWriter
                 });
                 _symbols.Add(auxRecord);
 
-                if (symbolName is not null)
+                if (!symbolName.IsNull)
                 {
                     _symbolNameToIndex.Add(symbolName, (uint)_symbols.Count);
                     _symbols.Add(new CoffSymbol
@@ -186,7 +187,7 @@ namespace ILCompiler.ObjectWriter
             long offset,
             Span<byte> data,
             RelocType relocType,
-            string symbolName,
+            Utf8String symbolName,
             long addend)
         {
             if (relocType is IMAGE_REL_BASED_RELPTR32)
@@ -206,14 +207,14 @@ namespace ILCompiler.ObjectWriter
             base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, 0);
         }
 
-        private protected override void EmitReferencedMethod(string symbolName)
+        private protected override void EmitReferencedMethod(Utf8String symbolName)
         {
             _referencedMethods.Add(symbolName);
         }
 
         private protected override void EmitSymbolTable(
-            IDictionary<string, SymbolDefinition> definedSymbols,
-            SortedSet<string> undefinedSymbols)
+            IDictionary<Utf8String, SymbolDefinition> definedSymbols,
+            SortedSet<Utf8String> undefinedSymbols)
         {
             Feat00Flags feat00Flags = _machine is Machine.I386 ? Feat00Flags.SafeSEH : 0;
 
@@ -734,7 +735,7 @@ namespace ILCompiler.ObjectWriter
 
         private sealed class CoffSymbol : CoffSymbolRecord
         {
-            public string Name { get; set; }
+            public Utf8String Name { get; set; }
             public uint Value { get; set; }
             public uint SectionIndex { get; set; }
             public ushort Type { get; set; }
@@ -763,13 +764,12 @@ namespace ILCompiler.ObjectWriter
             {
                 Span<byte> buffer = stackalloc byte[isBigObj ? BigObjSize : RegularSize];
 
-                int nameBytes = Encoding.UTF8.GetByteCount(Name);
-                if (nameBytes <= NameSize)
+                if (Name.Length <= NameSize)
                 {
-                    Encoding.UTF8.GetBytes(Name, buffer);
-                    if (nameBytes < NameSize)
+                    Name.AsSpan().CopyTo(buffer);
+                    if (Name.Length < NameSize)
                     {
-                        buffer.Slice(nameBytes, 8 - nameBytes).Clear();
+                        buffer.Slice(Name.Length, 8 - Name.Length).Clear();
                     }
                 }
                 else
@@ -853,7 +853,7 @@ namespace ILCompiler.ObjectWriter
         {
             public new uint Size => (uint)(base.Size + 4);
 
-            public new uint GetStringOffset(string text)
+            public new uint GetStringOffset(Utf8String text)
             {
                 return base.GetStringOffset(text) + 4;
             }

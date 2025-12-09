@@ -11,6 +11,8 @@
 //  It can be used only manually and very carefully!!!
 
 // clang-format off
+  #define CORINFO_ARCH_TARGET      CORINFO_ARCH_LOONGARCH64
+
   #define CPU_LOAD_STORE_ARCH      1
   #define CPU_HAS_FP_SUPPORT       1
   #define CPU_HAS_BYTE_REGS        0

@@ -1299,24 +1299,6 @@ namespace System.StubHelpers
         }
     }
 
-    // Keeps an object instance alive across the full Managed->Native call.
-    // This ensures that users don't have to call GC.KeepAlive after passing a struct or class
-    // that has a delegate field to native code.
-    internal sealed class KeepAliveCleanupWorkListElement : CleanupWorkListElement
-    {
-        public KeepAliveCleanupWorkListElement(object obj)
-        {
-            m_obj = obj;
-        }
-
-        private readonly object m_obj;
-
-        protected override void DestroyCore()
-        {
-            GC.KeepAlive(m_obj);
-        }
-    }
-
     // Aggregates SafeHandle and the "owned" bit which indicates whether the SafeHandle
     // has been successfully AddRef'ed. This allows us to do realiable cleanup (Release)
     // if and only if it is needed.
@@ -1365,12 +1347,6 @@ namespace System.StubHelpers
             SafeHandleCleanupWorkListElement element = new SafeHandleCleanupWorkListElement(handle);
             CleanupWorkListElement.AddToCleanupList(ref pCleanupWorkList, element);
             return element.AddRef();
-        }
-
-        internal static void KeepAliveViaCleanupList(ref CleanupWorkListElement? pCleanupWorkList, object obj)
-        {
-            KeepAliveCleanupWorkListElement element = new KeepAliveCleanupWorkListElement(obj);
-            CleanupWorkListElement.AddToCleanupList(ref pCleanupWorkList, element);
         }
 
         internal static void DestroyCleanupList(ref CleanupWorkListElement? pCleanupWorkList)
@@ -1561,21 +1537,6 @@ namespace System.StubHelpers
             else
             {
                 SpanHelpers.Memmove(ref obj.GetRawData(), ref *pNative, size);
-            }
-        }
-
-        internal static unsafe void LayoutDestroyNativeInternal(object obj, byte* pNative)
-        {
-            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
-
-            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
-            nuint size;
-            bool success = Marshal.TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size);
-            Debug.Assert(success);
-
-            if (structMarshalStub != null)
-            {
-                structMarshalStub(ref obj.GetRawData(), pNative, MarshalOperation.Cleanup, ref Unsafe.NullRef<CleanupWorkListElement?>());
             }
         }
 

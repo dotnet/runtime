@@ -3,10 +3,23 @@
 
 #pragma once
 
-// TODO-WASM-Factoring: rename the abstractions related to register allocation to make them less LSRA-specific.
-class LinearScan : public LinearScanInterface
+class WasmRegAlloc : public RegAllocInterface
 {
+    Compiler* m_compiler;
+
 public:
+    WasmRegAlloc(Compiler* compiler);
+
+    virtual PhaseStatus doRegisterAllocation();
+    virtual void        recordVarLocationsAtStartOfBB(BasicBlock* bb);
+    virtual bool        willEnregisterLocalVars() const;
+#if TRACK_LSRA_STATS
+    virtual void dumpLsraStatsCsv(FILE* file);
+    virtual void dumpLsraStatsSummary(FILE* file);
+#endif // TRACK_LSRA_STATS
+
     bool isRegCandidate(LclVarDsc* varDsc);
     bool isContainableMemoryOp(GenTree* node);
 };
+
+using RegAllocImpl = WasmRegAlloc;

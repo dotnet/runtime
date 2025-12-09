@@ -7,6 +7,8 @@
 #endif
 
 // clang-format off
+  #define CORINFO_ARCH_TARGET      CORINFO_ARCH_ARM64
+
   #define CPU_LOAD_STORE_ARCH      1
   #define CPU_HAS_BYTE_REGS        0
 
