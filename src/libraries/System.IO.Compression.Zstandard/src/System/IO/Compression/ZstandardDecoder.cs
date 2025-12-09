@@ -14,7 +14,10 @@ namespace System.IO.Compression
     {
         private SafeZstdDecompressHandle _context;
         private bool _disposed;
-        // True if we finished decompressing the entire input.
+
+        /// <summary>
+        /// True if we finished decompressing the entire input.
+        /// </summary>
         private bool _finished;
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> struct with default settings.</summary>
@@ -155,7 +158,7 @@ namespace System.IO.Compression
                         pos = 0
                     };
 
-                    nuint result = Interop.Zstd.ZSTD_decompressStream(_context!, ref output, ref input);
+                    nuint result = Interop.Zstd.ZSTD_decompressStream(_context, ref output, ref input);
 
                     if (ZstandardUtils.IsError(result))
                     {
@@ -256,7 +259,7 @@ namespace System.IO.Compression
         /// <param name="bytesWritten">The number of bytes written to the destination.</param>
         /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
-        /// <remarks>If this method returns <see langword="false" />, <paramref name="destination" /> may be empty or contain partially decompressed data, with <paramref name="bytesWritten" /> being zero or greater than zero but less than the expected total.</remarks>
+        /// <remarks>If this method returns <see langword="false" />, <paramref name="destination" /> may be empty or contain partially decompressed data, with <paramref name="bytesWritten" /> being zero.</remarks>
         public static bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, ZstandardDictionary dictionary)
         {
             // TODO: the of parameters here is not consistent with ZstandardEncoder.TryCompress
@@ -302,11 +305,6 @@ namespace System.IO.Compression
         {
             EnsureNotDisposed();
 
-            if (_context is null)
-            {
-                return;
-            }
-
             _context.Reset();
             _finished = false;
         }
@@ -322,7 +320,7 @@ namespace System.IO.Compression
                 throw new InvalidOperationException(SR.ZstandardDecoder_InvalidState);
             }
 
-            nuint result = _context!.SetPrefix(prefix);
+            nuint result = _context.SetPrefix(prefix);
 
             if (ZstandardUtils.IsError(result))
             {
@@ -339,20 +337,12 @@ namespace System.IO.Compression
         public void Dispose()
         {
             _disposed = true;
-            _context?.Dispose();
+            _context.Dispose();
         }
 
         private void EnsureNotDisposed()
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(ZstandardDecoder), SR.ZstandardDecoder_Disposed);
-            }
         }
 
         internal void SetWindowLog(int maxWindowLog)
@@ -365,7 +355,7 @@ namespace System.IO.Compression
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(maxWindowLog, ZstandardUtils.WindowLog_Max, nameof(maxWindowLog));
             }
 
-            nuint result = Interop.Zstd.ZSTD_DCtx_setParameter(_context!, Interop.Zstd.ZstdDParameter.ZSTD_d_windowLogMax, maxWindowLog);
+            nuint result = Interop.Zstd.ZSTD_DCtx_setParameter(_context, Interop.Zstd.ZstdDParameter.ZSTD_d_windowLogMax, maxWindowLog);
             ZstandardUtils.ThrowIfError(result);
         }
 
@@ -374,7 +364,7 @@ namespace System.IO.Compression
             Debug.Assert(_context != null);
             ArgumentNullException.ThrowIfNull(dictionary);
 
-            _context!.SetDictionary(dictionary.DecompressionDictionary);
+            _context.SetDictionary(dictionary.DecompressionDictionary);
         }
     }
 }

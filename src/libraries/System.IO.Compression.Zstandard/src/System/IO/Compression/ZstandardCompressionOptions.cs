@@ -73,6 +73,7 @@ namespace System.IO.Compression
                     ArgumentOutOfRangeException.ThrowIfLessThan(value, ZstandardUtils.WindowLog_Min, nameof(value));
                     ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZstandardUtils.WindowLog_Max, nameof(value));
                 }
+
                 field = value;
             }
         }
@@ -93,6 +94,7 @@ namespace System.IO.Compression
                     ArgumentOutOfRangeException.ThrowIfLessThan(value, ZstandardUtils.TargetBlockSize_Min, nameof(value));
                     ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZstandardUtils.TargetBlockSize_Max, nameof(value));
                 }
+
                 field = value;
             }
         }
