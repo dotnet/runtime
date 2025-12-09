@@ -100,6 +100,7 @@ switch (testCase) {
                 testOutput(`Asset '${name}' has integrity '${integrity}'`);
                 return defaultUri;
             });
+        break;
     case "OutErrOverrideWorks":
         dotnet.withModuleConfig({
             out: (message) => {
