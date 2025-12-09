@@ -98,6 +98,42 @@ export class HostBuilder implements DotnetHostBuilder {
         Object.assign(Module, moduleConfig);
         return this;
     }
+    withExitOnUnhandledError(): DotnetHostBuilder {
+        mergeLoaderConfig({
+            exitOnUnhandledError: true
+        });
+        return this;
+    }
+    withExitCodeLogging(): DotnetHostBuilder {
+        mergeLoaderConfig({
+            logExitCode: true
+        });
+        return this;
+    }
+    withElementOnExit(): DotnetHostBuilder {
+        mergeLoaderConfig({
+            appendElementOnExit: true
+        });
+        return this;
+    }
+    withInteropCleanupOnExit(): DotnetHostBuilder {
+        mergeLoaderConfig({
+            //TODO
+        });
+        return this;
+    }
+    withDumpThreadsOnNonZeroExit(): DotnetHostBuilder {
+        mergeLoaderConfig({
+            //TODO
+        });
+        return this;
+    }
+    withConsoleForwarding(): DotnetHostBuilder {
+        mergeLoaderConfig({
+            //TODO
+        });
+        return this;
+    }
 
     async download(): Promise<void> {
         try {
