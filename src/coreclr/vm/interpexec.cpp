@@ -674,14 +674,14 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
 static float CkfiniteHelper(float value)
 {
     if (!std::isfinite(value))
-        COMPlusThrow(kArithmeticException);
+        COMPlusThrow(kOverflowException);
     return value;
 }
 
 static double CkfiniteHelper(double value)
 {
     if (!std::isfinite(value))
-        COMPlusThrow(kArithmeticException);
+        COMPlusThrow(kOverflowException);
     return value;
 }
 
