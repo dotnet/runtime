@@ -13,3 +13,5 @@ The `caniuse.com` website can also be used to check the avalability of features,
 - `mutable-globals`
 - `sign-ext`
 - `nontrapping-fptoint`
+- `exception-handling` (with exnref)
+- `simd128`
