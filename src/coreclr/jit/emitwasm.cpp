@@ -52,7 +52,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 // Arguments:
 //   ins         - instruction to emit
 //   attr        - emit attributes
-//   imm         - immediiate value (depth in control flow stack)
+//   imm         - immediate value (depth in control flow stack)
 //   targetBlock - block at that depth
 //
 void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* targetBlock)
@@ -468,7 +468,6 @@ void emitter::emitDispIns(
     {
         case IF_OPCODE:
         case IF_BLOCK:
-            dispJumpTargetIfAny();
             break;
 
         case IF_LABEL:
