@@ -3488,24 +3488,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impPopStack().val;
             op1 = impPopStack().val;
 
-            // NI_Sve2_AddSaturate has an OptionalEmbeddedMaskOperation flag so that it could fallback to the
-            // unpredicated AddSaturate instruction, while NI_Sve2_AddSaturateWithSigned/UnsignedAddend are
-            // always predicated. Therefore, separate HWIntrinsic IDs are used here instead of emitting the
-            // corresponding instructions in the codegen with the same HWIntrinsic.
-
-            if (op1BaseJitType != op2BaseJitType)
-            {
-                if (varTypeIsUnsigned(simdBaseType))
-                {
-                    intrinsic = NI_Sve2_AddSaturateWithSignedAddend;
-                }
-                else
-                {
-                    intrinsic = NI_Sve2_AddSaturateWithUnsignedAddend;
-                }
-            }
-
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
+            retNode->AsHWIntrinsic()->SetSimdBaseType(simdBaseType);
+            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op2BaseJitType);
             break;
         }
 
