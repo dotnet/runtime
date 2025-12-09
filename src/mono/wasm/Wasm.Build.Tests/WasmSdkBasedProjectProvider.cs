@@ -180,10 +180,13 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
     public void AssertWasmSdkBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null, bool? wasmFingerprintDotnetJs = null, string? buildOutput = null)
     {
-        if (isUsingWorkloads && buildOutput is not null)
+        if ((isUsingWorkloads && buildOutput is not null)
+            && (_defaultTargetFramework == BuildTestBase.DefaultTargetFramework))
         {
             // In no-workload case, the path would be from a restored nuget
-            ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? _defaultTargetFramework, buildOptions.RuntimeType);
+            // FIXME: if the _defaultTargetFramework is not the same as the the DefaultTargetFramework
+            // we skup the RuntimePath check as the path would be from a restored nuget
+            AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? _defaultTargetFramework, buildOptions.RuntimeType);
         }
         AssertBundle(config, buildOptions, isUsingWorkloads, isNativeBuild, wasmFingerprintDotnetJs);
     }
