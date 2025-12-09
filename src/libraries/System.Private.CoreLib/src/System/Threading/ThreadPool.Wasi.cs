@@ -35,7 +35,9 @@ namespace System.Threading
     {
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work
+#pragma warning disable IDE0060 // Remove unused parameter
         internal static bool YieldFromDispatchLoop(int currentTickCount) => true;
+#pragma warning restore IDE0060
 
         private const bool IsWorkerTrackingEnabledInConfig = false;
 

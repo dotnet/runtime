@@ -742,7 +742,11 @@ namespace System.Threading
 
                 tl.isProcessingHighPriorityWorkItems = false;
             }
+#if FEATURE_SINGLE_THREADED
+            else if (highPriorityWorkItems.Count == 0 &&
+#else
             else if (!highPriorityWorkItems.IsEmpty &&
+#endif
                 TryStartProcessingHighPriorityWorkItemsAndDequeue(tl, out workItem))
             {
                 return workItem;
