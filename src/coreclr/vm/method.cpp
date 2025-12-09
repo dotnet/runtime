@@ -1357,13 +1357,13 @@ WORD MethodDesc::GetComSlot()
         THROWS;
         GC_NOTRIGGER;
         FORBID_FAULT;
+        PRECONDITION(!IsAsyncMethod());
     }
     CONTRACTL_END
 
     MethodTable * pMT = GetMethodTable();
 
     _ASSERTE(pMT->IsInterface());
-    _ASSERTE(!IsAsyncMethod());
 
     // COM slots are biased from MethodTable slots depending on interface type
     WORD numExtraSlots = ComMethodTable::GetNumExtraSlots(pMT->GetComInterfaceType());

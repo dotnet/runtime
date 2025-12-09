@@ -505,11 +505,9 @@ UINT32 CLRToCOMLateBoundWorker(
     LPCUTF8 strMemberName;
     ULONG uSemantic;
 
-    // Async methods aren't supported on IDispatch ComImport interfaces on RCWs.
-    if (pItfMD->IsAsyncMethod())
-    {
-        ThrowHR(COR_E_NOTSUPPORTED);
-    }
+    // We should never see an async method here, as the async variant should go down
+    // the async stub path and call the non-async variant (which ends up here).
+    _ASSERTE(!pItfMD->IsAsyncMethod());
 
     // See if there is property information for this member.
     hr = pItfMT->GetMDImport()->GetPropertyInfoForMethodDef(pItfMD->GetMemberDef(), &propToken, &strMemberName, &uSemantic);

@@ -633,7 +633,7 @@ void ComMTMemberInfoMap::SetupPropsForInterface(size_t sizeOfPtr)
                 _ASSERTE(m_MethodProps[j].pMeth == nullptr);
             }
 #endif
-            nSlots = iMD + 1;
+            nSlots = iMD;
             break;
         }
         GetMethodPropsForMeth(pMeth, iMD, m_MethodProps, m_sNames);

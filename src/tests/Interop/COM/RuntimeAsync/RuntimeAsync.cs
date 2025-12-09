@@ -24,15 +24,38 @@ public class RuntimeAsyncBuiltInCom
     [Fact]
     public static void RuntimeAsyncDoNotModifyRcwVtable()
     {
-        using IDisposable registration = TaskComServer.RegisterObject();
-        ITaskComServer_Imported comObject = new();
-        TestAsyncMethod(comObject).GetAwaiter().GetResult();
-
-        Assert.Equal(TaskComServer.ExpectedValue, comObject.GetValue());
-
-        async Task TestAsyncMethod(ITaskComServer_Imported obj)
+        using (ComActivationHelpers.RegisterTypeForActivation<TaskComServer>())
         {
-            await obj.GetTask();
+            var myObjectType = Type.GetTypeFromCLSID(typeof(TaskComServer).GUID, throwOnError: true)!;
+            object obj = Activator.CreateInstance(myObjectType)!;
+            ITaskComServer_Imported comObject = (ITaskComServer_Imported)obj;
+            TestAsyncMethod(comObject).GetAwaiter().GetResult();
+
+            Assert.Equal(TaskComServer.ExpectedValue, comObject.GetValue());
+
+            static async Task TestAsyncMethod(ITaskComServer_Imported obj)
+            {
+                await obj.GetTask();
+            }
+        }
+    }
+
+    [Fact]
+    public static void IDispatchCallInvokesCorrectMethod()
+    {
+        using (ComActivationHelpers.RegisterTypeForActivation<TaskComServer>())
+        {
+            var myObjectType = Type.GetTypeFromCLSID(typeof(TaskComServer).GUID, throwOnError: true)!;
+            object obj = Activator.CreateInstance(myObjectType)!;
+            ITaskComServer_AsDispatchOnly comObject = (ITaskComServer_AsDispatchOnly)obj;
+            TestAsyncMethod(comObject).GetAwaiter().GetResult();
+
+            Assert.Equal(TaskComServer.ExpectedValue, comObject.GetValue());
+
+            static async Task TestAsyncMethod(ITaskComServer_AsDispatchOnly obj)
+            {
+                await obj.GetTask();
+            }
         }
     }
 }
