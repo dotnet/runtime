@@ -29,6 +29,11 @@ void emitter::emitIns(instruction ins)
 //------------------------------------------------------------------------
 // emitIns_I: Emit an instruction with an immediate operand.
 //
+// Arguments:
+//   ins      - instruction to emit
+//   attr     - emit attributes
+//   imm      - immediate value
+//
 void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 {
     instrDesc* id  = emitNewInstrSC(attr, imm);
@@ -44,15 +49,24 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 //------------------------------------------------------------------------
 // emitIns_J: Emit a jump instruction with an immediate operand.
 //
-void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* tgtBlock)
+// Arguments:
+//   ins         - instruction to emit
+//   attr        - emit attributes
+//   imm         - immediiate value (depth in control flow stack)
+//   targetBlock - block at that depth
+//
+void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* targetBlock)
 {
-    instrDesc* id  = emitNewInstrCns(attr, imm);
+    instrDesc* id  = emitNewInstrSC(attr, imm);
     insFormat  fmt = emitInsFormat(ins);
 
     id->idIns(ins);
     id->idInsFmt(fmt);
-    id->idAddr()->iiaBBlabel = tgtBlock;
-    id->idSetIsJump();
+
+    if (m_debugInfoSize > 0)
+    {
+        id->idDebugOnlyInfo()->idTargetBlock = targetBlock;
+    }
 
     dispIns(id);
     appendToCurIG(id);
@@ -434,13 +448,18 @@ void emitter::emitDispIns(
 
     emitDispInst(ins);
 
-    auto dispJumpTarget = [this, id]() {
-        BasicBlock* target = id->idAddr()->iiaBBlabel;
-        printf(" ;; ");
-        void* label = emitCodeGetCookie(target);
-        assert(label != nullptr);
-        insGroup* targetGroup = (insGroup*)label;
-        emitPrintLabel(targetGroup);
+    auto dispJumpTargetIfAny = [this, id]() {
+        if (m_debugInfoSize > 0)
+        {
+            BasicBlock* const targetBlock = id->idDebugOnlyInfo()->idTargetBlock;
+            if (targetBlock != nullptr)
+            {
+                printf(" ;; ");
+                insGroup* const targetGroup = (insGroup*)emitCodeGetCookie(targetBlock);
+                assert(targetGroup != nullptr);
+                emitPrintLabel(targetGroup);
+            }
+        }
     };
 
     // The reference for the following style of display is wasm-objdump output.
@@ -449,10 +468,7 @@ void emitter::emitDispIns(
     {
         case IF_OPCODE:
         case IF_BLOCK:
-            if (id->idIsJump())
-            {
-                dispJumpTarget();
-            }
+            dispJumpTargetIfAny();
             break;
 
         case IF_LABEL:
@@ -460,11 +476,7 @@ void emitter::emitDispIns(
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
-
-            if (id->idIsJump())
-            {
-                dispJumpTarget();
-            }
+            dispJumpTargetIfAny();
         }
         break;
 

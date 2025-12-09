@@ -11,7 +11,8 @@
 
 void CodeGen::genMarkLabelsForCodegen()
 {
-    // We have alredy marked labels, so nothing to do here
+    // No work needed here for now.
+    // We mark labels as needed in genEmitStartBlock.
 }
 
 void CodeGen::genFnEpilog(BasicBlock* block)
