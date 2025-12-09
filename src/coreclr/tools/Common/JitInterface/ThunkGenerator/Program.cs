@@ -288,14 +288,14 @@ namespace Internal.JitInterface
         private struct ICorJitInfoCallbacks
         {
             [FixedAddressValueType]
-            internal static readonly ICorJitInfoCallbacks s_vtbl;
+            internal static readonly ICorJitInfoCallbacks s_callbacks;
 
             static ICorJitInfoCallbacks()
             {
 ");
             foreach (FunctionDecl decl in functionData)
             {
-                tw.Write($"                s_vtbl.{char.ToUpperInvariant(decl.FunctionName[0])}");
+                tw.Write($"                s_callbacks.{char.ToUpperInvariant(decl.FunctionName[0])}");
                 tw.WriteLine($"{decl.FunctionName.Substring(1)} = &_{decl.FunctionName};");
             }
             tw.WriteLine("            }");
@@ -315,7 +315,7 @@ namespace Internal.JitInterface
 
         private static IntPtr GetUnmanagedCallbacks()
         {
-            return (IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in ICorJitInfoCallbacks.s_vtbl));
+            return (IntPtr)Unsafe.AsPointer(ref Unsafe.AsRef(in ICorJitInfoCallbacks.s_callbacks));
         }
 
 ");
