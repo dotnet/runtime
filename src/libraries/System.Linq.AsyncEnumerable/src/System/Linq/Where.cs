@@ -50,6 +50,7 @@ namespace System.Linq
         /// <returns>An <see cref="IAsyncEnumerable{T}"/> that contains elements from the input sequence that satisfy the condition.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate" /> is <see langword="null" />.</exception>
+        [OverloadResolutionPriority(1)]
         public static IAsyncEnumerable<TSource> Where<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<bool>> predicate)
@@ -129,6 +130,7 @@ namespace System.Linq
         /// <returns>An <see cref="IAsyncEnumerable{T}"/> that contains elements from the input sequence that satisfy the condition.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate" /> is <see langword="null" />.</exception>
+        [OverloadResolutionPriority(1)]
         public static IAsyncEnumerable<TSource> Where<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, CancellationToken, ValueTask<bool>> predicate)

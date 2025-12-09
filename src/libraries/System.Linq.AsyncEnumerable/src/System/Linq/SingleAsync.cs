@@ -20,6 +20,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException">The <paramref name="source"/> sequence is empty (via the returned task).</exception>
         /// <exception cref="InvalidOperationException">The <paramref name="source"/> sequence contains more than one element. (via the returned task).</exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<TSource> SingleAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             CancellationToken cancellationToken = default)
@@ -167,6 +168,7 @@ namespace System.Linq
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException">The <paramref name="source"/> sequence contains more than one element. (via the returned task).</exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<TSource?> SingleOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             CancellationToken cancellationToken = default) =>
@@ -265,6 +267,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate" /> is <see langword="null" />.</exception>
         /// <exception cref="InvalidOperationException">More than one element satisfies the condition in <paramref name="predicate" />.</exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<TSource> SingleOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, bool> predicate,

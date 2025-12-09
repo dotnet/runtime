@@ -98,6 +98,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="outerKeySelector" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="innerKeySelector" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="resultSelector" /> is <see langword="null" />.</exception>
+        [OverloadResolutionPriority(1)]
         public static IAsyncEnumerable<TResult> GroupJoin<TOuter, TInner, TKey, TResult>(
             this IAsyncEnumerable<TOuter> outer,
             IAsyncEnumerable<TInner> inner,

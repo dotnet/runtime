@@ -71,6 +71,7 @@ namespace System.Linq
         /// <returns>An enumerable containing the frequencies of each key occurrence in <paramref name="source"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static IAsyncEnumerable<KeyValuePair<TKey, int>> CountBy<TSource, TKey>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,

@@ -17,6 +17,7 @@ namespace System.Linq
         /// <returns>The number of elements in the input sequence.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="OverflowException">The number of elements in source is larger than <see cref="int.MaxValue"/> (via the returned task).</exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<int> CountAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             CancellationToken cancellationToken = default)
@@ -118,6 +119,7 @@ namespace System.Linq
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests. The default is <see cref="CancellationToken.None"/>.</param>
         /// <returns>The number of elements in the input sequence that satisfy the condition in the predicate function.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<long> LongCountAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             CancellationToken cancellationToken = default)

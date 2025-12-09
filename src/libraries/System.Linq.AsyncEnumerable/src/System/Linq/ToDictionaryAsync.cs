@@ -112,6 +112,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="source"/> contains one or more duplicate keys (via the returned task).</exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<Dictionary<TKey, TSource>> ToDictionaryAsync<TSource, TKey>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
@@ -201,6 +202,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="elementSelector"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="source"/> contains one or more duplicate keys (via the returned task).</exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<Dictionary<TKey, TElement>> ToDictionaryAsync<TSource, TKey, TElement>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,

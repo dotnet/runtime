@@ -112,6 +112,7 @@ namespace System.Linq
         /// The source sequence is empty, or no element in the sequence satisfies
         /// the condition in predicate (via the returned task).
         /// </exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<TSource> LastAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<bool>> predicate,
@@ -163,6 +164,7 @@ namespace System.Linq
         /// otherwise, the last element in the <see cref="IAsyncEnumerable{T}"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<TSource?> LastOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             CancellationToken cancellationToken = default) =>
@@ -240,6 +242,7 @@ namespace System.Linq
         /// <returns><paramref name="defaultValue" /> if the sequence is empty or if no elements pass the test in the predicate function; otherwise, the last element that passes the test in the predicate function.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate" /> is <see langword="null" />.</exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<TSource> LastOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, bool> predicate,

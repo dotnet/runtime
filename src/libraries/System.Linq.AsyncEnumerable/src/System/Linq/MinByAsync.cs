@@ -132,6 +132,7 @@ namespace System.Linq
         /// <remarks>
         /// <para>If <typeparamref name="TKey" /> is a reference type and the source sequence is empty or contains only values that are <see langword="null" />, this method returns <see langword="null" />.</para>
         /// </remarks>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<TSource?> MinByAsync<TSource, TKey>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,

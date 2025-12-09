@@ -88,9 +88,14 @@
     <Compile Include="System\Linq\Sequence.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+  <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\OverloadResolutionPriorityAttribute.cs" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <!-- Suppress warning about duplicate OverloadResolutionPriorityAttribute when building for net10.0 -->
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
+  </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />

@@ -71,6 +71,7 @@ namespace System.Linq
         /// <returns>An <see cref="IAsyncEnumerable{T}" /> that contains the elements from both input sequences, excluding duplicates.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="first" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="second" /> is <see langword="null" />.</exception>
+        [OverloadResolutionPriority(1)]
         public static IAsyncEnumerable<TSource> UnionBy<TSource, TKey>(
             this IAsyncEnumerable<TSource> first,
             IAsyncEnumerable<TSource> second,

@@ -73,6 +73,7 @@ namespace System.Linq
         /// <returns>A <see cref="ILookup{TKey, TElement}"/> that contains keys and values.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<ILookup<TKey, TSource>> ToLookupAsync<TSource, TKey>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
@@ -177,6 +178,7 @@ namespace System.Linq
         /// <returns>A <see cref="ILookup{TKey, TElement}"/> that contains keys and values.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<ILookup<TKey, TElement>> ToLookupAsync<TSource, TKey, TElement>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,

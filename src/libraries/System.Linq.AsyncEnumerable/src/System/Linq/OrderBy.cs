@@ -52,6 +52,7 @@ namespace System.Linq
         /// <returns>An <see cref="IAsyncEnumerable{TElement}"/> whose elements are sorted according to a key.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static IOrderedAsyncEnumerable<TSource> OrderBy<TSource, TKey>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
@@ -107,6 +108,7 @@ namespace System.Linq
         /// <returns>An <see cref="IAsyncEnumerable{TElement}"/> whose elements are sorted in descending order according to a key.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static IOrderedAsyncEnumerable<TSource> OrderByDescending<TSource, TKey>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
@@ -148,6 +150,7 @@ namespace System.Linq
         /// <returns>An <see cref="IAsyncEnumerable{TElement}"/> whose elements are sorted according to a key.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static IOrderedAsyncEnumerable<TSource> ThenBy<TSource, TKey>(
             this IOrderedAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
@@ -186,6 +189,7 @@ namespace System.Linq
         /// <returns>An <see cref="IAsyncEnumerable{TElement}"/> whose elements are sorted in descending order according to a key.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static IOrderedAsyncEnumerable<TSource> ThenByDescending<TSource, TKey>(
             this IOrderedAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,

@@ -64,6 +64,7 @@ namespace System.Linq
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static IAsyncEnumerable<TResult> SelectMany<TSource, TResult>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<IEnumerable<TResult>>> selector)
@@ -187,6 +188,7 @@ namespace System.Linq
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="selector"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static IAsyncEnumerable<TResult> SelectMany<TSource, TResult>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, CancellationToken, ValueTask<IEnumerable<TResult>>> selector)
@@ -327,6 +329,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="collectionSelector"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="resultSelector"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static IAsyncEnumerable<TResult> SelectMany<TSource, TCollection, TResult>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<IEnumerable<TCollection>>> collectionSelector,
@@ -427,6 +430,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="collectionSelector"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="resultSelector"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static IAsyncEnumerable<TResult> SelectMany<TSource, TCollection, TResult>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, IAsyncEnumerable<TCollection>> collectionSelector,
@@ -526,6 +530,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="collectionSelector"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="resultSelector"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static IAsyncEnumerable<TResult> SelectMany<TSource, TCollection, TResult>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, CancellationToken, ValueTask<IEnumerable<TCollection>>> collectionSelector,
@@ -576,6 +581,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="collectionSelector"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="resultSelector"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static IAsyncEnumerable<TResult> SelectMany<TSource, TCollection, TResult>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, IAsyncEnumerable<TCollection>> collectionSelector,

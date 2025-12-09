@@ -83,6 +83,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="first"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="second"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="keySelector"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static IAsyncEnumerable<TSource> ExceptBy<TSource, TKey>(
             this IAsyncEnumerable<TSource> first,
             IAsyncEnumerable<TKey> second,

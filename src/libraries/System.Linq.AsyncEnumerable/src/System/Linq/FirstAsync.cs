@@ -91,6 +91,7 @@ namespace System.Linq
         /// The source sequence is empty, or no element in the sequence satisfies
         /// the condition in predicate (via the returned task).
         /// </exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<TSource> FirstAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<bool>> predicate,
@@ -185,6 +186,7 @@ namespace System.Linq
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate" /> is <see langword="null" />.</exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<TSource?> FirstOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<bool>> predicate,
@@ -237,6 +239,7 @@ namespace System.Linq
         /// <returns><paramref name="defaultValue" /> if <paramref name="source" /> is empty or if no element passes the test specified by <paramref name="predicate" />; otherwise, the first element in <paramref name="source" /> that passes the test specified by <paramref name="predicate" />.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate" /> is <see langword="null" />.</exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<TSource> FirstOrDefaultAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, CancellationToken, ValueTask<bool>> predicate,

@@ -20,6 +20,7 @@ namespace System.Linq
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate" /> is <see langword="null" />.</exception>
+        [OverloadResolutionPriority(1)]
         public static IAsyncEnumerable<TSource> TakeWhile<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, bool> predicate)
@@ -98,6 +99,7 @@ namespace System.Linq
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="predicate" /> is <see langword="null" />.</exception>
+        [OverloadResolutionPriority(1)]
         public static IAsyncEnumerable<TSource> TakeWhile<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, int, bool> predicate)

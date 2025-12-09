@@ -60,6 +60,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="func"/> is <see langword="null"/>.</exception>
         /// <exception cref="InvalidOperationException"><paramref name="source"/> contains no elements.</exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<TSource> AggregateAsync<TSource>(
             this IAsyncEnumerable<TSource> source,
             Func<TSource, TSource, CancellationToken, ValueTask<TSource>> func,
@@ -139,6 +140,7 @@ namespace System.Linq
         /// <returns>The final accumulator value.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="func"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<TAccumulate> AggregateAsync<TSource, TAccumulate>(
             this IAsyncEnumerable<TSource> source, TAccumulate seed,
             Func<TAccumulate, TSource, CancellationToken, ValueTask<TAccumulate>> func,
@@ -229,6 +231,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="func"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="resultSelector"/> is <see langword="null"/>.</exception>
+        [OverloadResolutionPriority(1)]
         public static ValueTask<TResult> AggregateAsync<TSource, TAccumulate, TResult>(
             this IAsyncEnumerable<TSource> source,
             TAccumulate seed,
