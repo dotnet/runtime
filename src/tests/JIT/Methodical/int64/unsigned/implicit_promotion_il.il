@@ -823,6 +823,6 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'JitTest_addsub_unsigned_il'
+} // end of namespace 'implicit_promotion'
 
 //*********** DISASSEMBLY COMPLETE ***********************

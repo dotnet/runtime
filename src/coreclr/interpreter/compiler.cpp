@@ -2502,6 +2502,8 @@ void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     }
 }
 
+// Determines whether I4 to I8 promotion should use zero-extension (for unsigned operations)
+// or sign-extension (for signed operations), based on the opcode.
 InterpOpcode InterpOpForWideningArgForImplicitUpcast(InterpOpcode opcode)
 {
     switch (opcode)
