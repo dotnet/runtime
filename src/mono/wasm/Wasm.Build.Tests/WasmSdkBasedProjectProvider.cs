@@ -24,6 +24,8 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
     protected override string BundleDirName { get { return "wwwroot"; } }
 
+    public string GetDefaultTargetFramework() => _defaultTargetFramework;
+
     protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptions assertOptions)
     {
         var result = new SortedDictionary<string, bool>()

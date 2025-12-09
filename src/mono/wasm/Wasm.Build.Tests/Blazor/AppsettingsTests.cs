@@ -20,7 +20,6 @@ public class AppsettingsTests : BlazorWasmTestBase
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/122338")] // add it back to eng\testing\scenarios\BuildWasmAppsJobsList.txt
     public async Task FileInVfs()
     {
         Configuration config = Configuration.Debug;

@@ -73,14 +73,9 @@ public class WasmTemplateTestsBase : BuildTestBase
         (string projectName, string logPath, string nugetDir) =
             InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath ?? s_buildEnv.IsRunningOnCI);
 
-        if (addFrameworkArg) {
-            var defaultTarget = template switch
-            {
-                Template.BlazorWasm => DefaultTargetFrameworkForBlazorTemplate,
-                _ => DefaultTargetFramework,
-            };
-
-            extraArgs += $" -f {defaultTarget}";
+        if (addFrameworkArg)
+        {
+            extraArgs += $" -f {_provider.GetDefaultTargetFramework()}";
         }
 
         using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
@@ -282,7 +277,7 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
     {
-        targetFramework ??= DefaultTargetFramework;
+        targetFramework ??= _provider.GetDefaultTargetFramework();
         string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
         string mainJsContent = File.ReadAllText(mainJsPath);
         Version targetFrameworkVersion = new Version(targetFramework.Replace("net", ""));
@@ -431,10 +426,10 @@ public class WasmTemplateTestsBase : BuildTestBase
     }
 
     public string GetBinFrameworkDir(Configuration config, bool forPublish, string? framework = null, string? projectDir = null) =>
-        _provider.GetBinFrameworkDir(config, forPublish, framework ?? DefaultTargetFramework, projectDir);
+        _provider.GetBinFrameworkDir(config, forPublish, framework ?? _provider.GetDefaultTargetFramework(), projectDir);
 
     public string GetObjDir(Configuration config, string? framework = null, string? projectDir = null) =>
-        _provider.GetObjDir(config, framework ?? DefaultTargetFramework, projectDir);
+        _provider.GetObjDir(config, framework ?? _provider.GetDefaultTargetFramework(), projectDir);
 
     public BuildPaths GetBuildPaths(Configuration config, bool forPublish) =>
         _provider.GetBuildPaths(config, forPublish);
