@@ -672,12 +672,19 @@ function fetchResource (asset: AssetEntryInternal): Promise<Response> {
     }
 
     const fetchOptions: RequestInit = {};
-    if (!loaderHelpers.config.disableNoCacheFetch) {
-        // FIXME: "no-cache" is how blazor works in Net7, but this prevents caching on HTTP level
-        // if we would like to get rid of our own cache and only use HTTP cache, we need to remove this
+
+    if (asset.noCache === true) {
+        // Internal no-cache setting overrides other configuration.
+        fetchOptions.cache = "no-cache";
+    } else if (isAssetFingerprinted(asset)) {
+        // Fingerprinted assets are by definition never stale (newer version would have a different name).
+        fetchOptions.cache = "force-cache";
+    } else if (!loaderHelpers.config.disableNoCacheFetch) {
+        // For backwards compatibility other assets get no-cache setting unless disabled by the user.
         // https://github.com/dotnet/runtime/issues/74815
         fetchOptions.cache = "no-cache";
     }
+
     if (asset.useCredentials) {
         // Include credentials so the server can allow download / provide user specific file
         fetchOptions.credentials = "include";
@@ -690,6 +697,24 @@ function fetchResource (asset: AssetEntryInternal): Promise<Response> {
     }
 
     return loaderHelpers.fetch_like(url, fetchOptions);
+}
+
+function isAssetFingerprinted (asset: AssetEntryInternal): boolean {
+    if (asset.virtualPath != undefined) {
+        return asset.virtualPath !== asset.name;
+    } else {
+        // Special assets such as dotnet.native.wasm can be missing virtualPath
+        // even when they are fingerprinted.
+        // In such cases we look at some core assembly that we know will have its
+        // virtualPath set and different from its name when fingerprinting is enabled.
+        const coreAssembly = loaderHelpers.config.resources?.coreAssembly?.[0];
+
+        if (coreAssembly && coreAssembly.virtualPath != undefined) {
+            return coreAssembly.virtualPath !== coreAssembly.name;
+        }
+    }
+
+    return false;
 }
 
 const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
