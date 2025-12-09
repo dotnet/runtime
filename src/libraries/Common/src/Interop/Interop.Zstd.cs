@@ -96,7 +96,7 @@ internal static partial class Interop
         internal static partial nuint ZSTD_CCtx_reset(SafeZstdCompressHandle cctx, ZstdResetDirective reset);
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_CCtx_setPledgedSrcSize(SafeZstdCompressHandle cctx, nuint pledgedSrcSize);
+        internal static partial nuint ZSTD_CCtx_setPledgedSrcSize(SafeZstdCompressHandle cctx, ulong pledgedSrcSize);
 
         // Compression level functions
         [LibraryImport(Libraries.CompressionNative)]

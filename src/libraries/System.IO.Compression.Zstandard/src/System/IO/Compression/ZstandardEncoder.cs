@@ -426,7 +426,7 @@ namespace System.IO.Compression
 
             EnsureNotDisposed();
 
-            if (_finished || ZstandardUtils.IsError(Interop.Zstd.ZSTD_CCtx_setPledgedSrcSize(_context!, (nuint)length)))
+            if (_finished || ZstandardUtils.IsError(Interop.Zstd.ZSTD_CCtx_setPledgedSrcSize(_context!, (ulong)length)))
             {
                 throw new InvalidOperationException(SR.ZstandardEncoder_InvalidState);
             }
