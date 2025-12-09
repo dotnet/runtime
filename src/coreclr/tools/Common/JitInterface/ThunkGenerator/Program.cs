@@ -295,8 +295,7 @@ namespace Internal.JitInterface
 ");
             foreach (FunctionDecl decl in functionData)
             {
-                tw.Write($"                s_callbacks.{char.ToUpperInvariant(decl.FunctionName[0])}");
-                tw.WriteLine($"{decl.FunctionName.Substring(1)} = &_{decl.FunctionName};");
+                tw.WriteLine($"                s_callbacks.{decl.FunctionName} = &_{decl.FunctionName};");
             }
             tw.WriteLine("            }");
             tw.WriteLine();
@@ -308,8 +307,7 @@ namespace Internal.JitInterface
                 {
                     tw.Write($", {param.Type.UnmanagedTypeName}");
                 }
-                tw.Write($", {decl.ReturnType.UnmanagedTypeName}> {char.ToUpperInvariant(decl.FunctionName[0])}");
-                tw.WriteLine($"{decl.FunctionName.Substring(1)};");
+                tw.WriteLine($", {decl.ReturnType.UnmanagedTypeName}> {decl.FunctionName};");
             }
             tw.Write(@"        }
 
