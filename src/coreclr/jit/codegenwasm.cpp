@@ -269,6 +269,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // Do nothing; this node is a marker for debug info.
             break;
 
+        case GT_NOP:
+            break;
+
+        case GT_NO_OP:
+            instGen(INS_nop);
+            break;
+
         case GT_CNS_INT:
         case GT_CNS_LNG:
         case GT_CNS_DBL:
