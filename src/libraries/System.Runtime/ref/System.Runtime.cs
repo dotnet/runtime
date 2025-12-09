@@ -11220,7 +11220,8 @@ namespace System.Numerics
         : System.IComparable,
           System.IComparable<Decimal32>,
           System.IEquatable<Decimal32>,
-          System.ISpanParsable<Decimal32>
+          System.ISpanParsable<Decimal32>,
+          System.Numerics.IMinMaxValue<Decimal32>
     {
         public Decimal32(int significand, int exponent) { throw null; }
 
@@ -11240,6 +11241,8 @@ namespace System.Numerics
         public static Decimal32 PositiveInfinity { get { throw null; } }
         public static Decimal32 NegativeZero { get { throw null; } }
         public static Decimal32 Zero { get { throw null; } }
+        public static Decimal32 MaxValue { get { throw null; } }
+        public static Decimal32 MinValue { get { throw null; } }
 
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
@@ -11258,7 +11261,8 @@ namespace System.Numerics
         : System.IComparable,
           System.IComparable<Decimal64>,
           System.IEquatable<Decimal64>,
-          System.ISpanParsable<Decimal64>
+          System.ISpanParsable<Decimal64>,
+          System.Numerics.IMinMaxValue<Decimal64>
     {
         public Decimal64(long significand, int exponent) { throw null; }
 
@@ -11278,6 +11282,8 @@ namespace System.Numerics
         public static Decimal64 PositiveInfinity { get { throw null; } }
         public static Decimal64 NegativeZero { get { throw null; } }
         public static Decimal64 Zero { get { throw null; } }
+        public static Decimal64 MaxValue { get { throw null; } }
+        public static Decimal64 MinValue { get { throw null; } }
 
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
@@ -11296,7 +11302,8 @@ namespace System.Numerics
         : System.IComparable,
           System.IComparable<Decimal128>,
           System.IEquatable<Decimal128>,
-          System.ISpanParsable<Decimal128>
+          System.ISpanParsable<Decimal128>,
+          System.Numerics.IMinMaxValue<Decimal128>
     {
         public Decimal128(Int128 significand, int exponent) { throw null; }
 
@@ -11316,6 +11323,8 @@ namespace System.Numerics
         public static Decimal128 PositiveInfinity { get { throw null; } }
         public static Decimal128 NegativeZero { get { throw null; } }
         public static Decimal128 Zero { get { throw null; } }
+        public static Decimal128 MaxValue { get { throw null; } }
+        public static Decimal128 MinValue { get { throw null; } }
 
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }

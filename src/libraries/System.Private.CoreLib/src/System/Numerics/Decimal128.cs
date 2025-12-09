@@ -15,6 +15,7 @@ namespace System.Numerics
           IComparable<Decimal128>,
           IEquatable<Decimal128>,
           ISpanParsable<Decimal128>,
+          IMinMaxValue<Decimal128>,
           IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>
     {
 #if BIGENDIAN
@@ -35,6 +36,9 @@ namespace System.Numerics
         private static UInt128 ZeroValue => new UInt128(0, 0);
         private static UInt128 NegativeZeroValue => new UInt128(0x8000_0000_0000_0000, 0);
         private static UInt128 QuietNaNValue => new UInt128(0x7C00_0000_0000_0000, 0);
+        private static UInt128 MaxInternalValue = new UInt128(upper: 0x5FFF_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
+        private static UInt128 MinInternalValue = new UInt128(upper: 0xDFFF_ED09B_EAD_87C0, lower: 0x378D_8E63_FFFF_FFFF);
+
         private const ulong NaNMaskUpper = 0x7C00_0000_0000_0000;
 
         public static Decimal128 PositiveInfinity => new Decimal128(PositiveInfinityValue);
@@ -42,6 +46,8 @@ namespace System.Numerics
         public static Decimal128 NaN => new Decimal128(QuietNaNValue);
         public static Decimal128 NegativeZero => new Decimal128(NegativeZeroValue);
         public static Decimal128 Zero => new Decimal128(ZeroValue);
+        public static Decimal128 MinValue => new Decimal128(MinInternalValue);
+        public static Decimal128 MaxValue => new Decimal128(MaxInternalValue);
 
         internal Decimal128(UInt128 value)
         {

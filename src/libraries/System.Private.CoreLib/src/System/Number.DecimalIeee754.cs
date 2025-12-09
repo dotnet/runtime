@@ -272,42 +272,32 @@ namespace System
             Debug.Assert(number.Digits[0] != '0');
             Debug.Assert(number.DigitsCount != 0);
 
-            TValue significand;
-            int exponent;
-
             if (number.DigitsCount > TDecimal.Precision)
             {
-                DecimalIeee754Rounding<TDecimal, TValue>(ref number, TDecimal.Precision, out significand, out exponent);
-
-                if (exponent > TDecimal.MaxExponent)
-                {
-                    return number.IsNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
-                }
+                return DecimalIeee754Rounding<TDecimal, TValue>(ref number, TDecimal.Precision);
             }
-            else
+
+            int positiveExponent = (Math.Max(0, number.Scale));
+            int integerDigitsPresent = Math.Min(positiveExponent, number.DigitsCount);
+            int fractionalDigitsPresent = number.DigitsCount - integerDigitsPresent;
+            int exponent = number.Scale - integerDigitsPresent - fractionalDigitsPresent;
+
+            if (exponent < TDecimal.MinExponent)
             {
-                int positiveExponent = (Math.Max(0, number.Scale));
-                int integerDigitsPresent = Math.Min(positiveExponent, number.DigitsCount);
-                int fractionalDigitsPresent = number.DigitsCount - integerDigitsPresent;
-                exponent = number.Scale - integerDigitsPresent - fractionalDigitsPresent;
-
-                if (exponent < TDecimal.MinExponent)
+                int numberDigitsRemove = (TDecimal.MinExponent - exponent);
+                if (numberDigitsRemove < number.DigitsCount)
                 {
-                    int numberDigitsRemove = (TDecimal.MinExponent - exponent);
-                    if (numberDigitsRemove < number.DigitsCount)
-                    {
-                        int numberDigitsRemain = number.DigitsCount - numberDigitsRemove;
-                        DecimalIeee754Rounding<TDecimal, TValue>(ref number, numberDigitsRemain, out significand, out exponent);
-                        return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(number.IsNegative, significand, exponent);
-                    }
-                    else
-                    {
-                        return number.IsNegative ? TDecimal.NegativeZero : TDecimal.Zero;
-                    }
+                    int numberDigitsRemain = number.DigitsCount - numberDigitsRemove;
+                    return DecimalIeee754Rounding<TDecimal, TValue>(ref number, numberDigitsRemain);
                 }
-
-                significand = TDecimal.NumberToSignificand(ref number, number.DigitsCount);
+                else
+                {
+                    return number.IsNegative ? TDecimal.NegativeZero : TDecimal.Zero;
+                }
             }
+
+            TValue significand = TDecimal.NumberToSignificand(ref number, number.DigitsCount);
+
             return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(number.IsNegative, significand, exponent);
         }
 
@@ -366,18 +356,33 @@ namespace System
             return value;
         }
 
-        private static bool DecimalIeee754Rounding<TDecimal, TValue>(ref NumberBuffer number, int digits, out TValue significand, out int exponent)
+        /// <summary>
+        /// Performs IEEE 754-compliant rounding on a decimal-like number before converting it
+        /// to an IEEE 754 decimal32/64/128 encoded value.
+        ///
+        /// ---------------------------------------------------------------
+        ///  ROUNDING DECISION (implements round-to-nearest, ties-to-even)
+        ///
+        ///  Unit In The Last Place (ULP) formula: ULP = 10^(unbiased exponent - number digits precision + 1)
+        ///  The difference between the unrounded number and the rounded
+        ///  representable value is effectively compared against ±ULP/2.
+        ///
+        ///  If discarded part > 0.5 ULP → round up
+        ///  If discarded part &lt; 0.5 ULP → round down
+        ///  If exactly 0.5 ULP → ties-to-even
+        /// </summary>
+        private static TValue DecimalIeee754Rounding<TDecimal, TValue>(ref NumberBuffer number, int digits)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
             Debug.Assert(digits < number.DigitsCount);
 
-            significand = TDecimal.NumberToSignificand(ref number, digits);
+            TValue significand = TDecimal.NumberToSignificand(ref number, digits);
 
             int positiveExponent = (Math.Max(0, number.Scale));
             int integerDigitsPresent = Math.Min(positiveExponent, number.DigitsCount);
             int fractionalDigitsPresent = number.DigitsCount - integerDigitsPresent;
-            exponent = number.Scale - integerDigitsPresent - fractionalDigitsPresent;
+            int exponent = number.Scale - integerDigitsPresent - fractionalDigitsPresent;
 
             exponent += number.DigitsCount - digits;
 
@@ -425,7 +430,12 @@ namespace System
                 }
             }
 
-            return exponent <= TDecimal.MaxExponent;
+            if (exponent > TDecimal.MaxExponent)
+            {
+                return number.IsNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(number.IsNegative, significand, exponent);
         }
     }
 }

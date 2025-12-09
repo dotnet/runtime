@@ -14,6 +14,7 @@ namespace System.Numerics
           IComparable<Decimal32>,
           IEquatable<Decimal32>,
           ISpanParsable<Decimal32>,
+          IMinMaxValue<Decimal32>,
           IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>
     {
         internal readonly uint _value;
@@ -38,12 +39,16 @@ namespace System.Numerics
         private const uint MostSignificantBitOfSignificandMask = 0x0080_0000;
         private const uint NaNMask = 0x7C00_0000;
         private const uint MaxSignificand = 9_999_999;
+        private const uint MaxInternalValue = 0x77F8_967F; // 9,999,999 x 10^90
+        private const uint MinInternalValue = 0xF7F8_967F; // -9,999,999 x 10^90
 
         public static Decimal32 PositiveInfinity => new Decimal32(PositiveInfinityValue);
         public static Decimal32 NegativeInfinity => new Decimal32(NegativeInfinityValue);
         public static Decimal32 NaN => new Decimal32(QuietNaNValue);
         public static Decimal32 NegativeZero => new Decimal32(NegativeZeroValue);
         public static Decimal32 Zero => new Decimal32(ZeroValue);
+        public static Decimal32 MinValue => new Decimal32(MinInternalValue);
+        public static Decimal32 MaxValue => new Decimal32(MaxInternalValue);
 
         private static ReadOnlySpan<uint> UInt32Powers10 =>
             [

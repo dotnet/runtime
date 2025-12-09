@@ -12,6 +12,7 @@ namespace System.Numerics
           IComparable<Decimal64>,
           IEquatable<Decimal64>,
           ISpanParsable<Decimal64>,
+          IMinMaxValue<Decimal64>,
           IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>
     {
         internal readonly ulong _value;
@@ -31,12 +32,17 @@ namespace System.Numerics
         private const ulong MostSignificantBitOfSignificandMask = 0x0020_0000_0000_0000;
         private const ulong NaNMask = 0x7C00_0000_0000_0000;
         private const ulong MaxSignificand = 9_999_999_999_999_999;
+        private const ulong MaxInternalValue = 0x77FB_86F2_6FC0_FFFF; // 9_999_999_999_999_999 x 10^369
+        private const ulong MinInternalValue = 0xF7FB_86F2_6FC0_FFFF; // -9_999_999_999_999_999 x 10^369
 
         public static Decimal64 PositiveInfinity => new Decimal64(PositiveInfinityValue);
         public static Decimal64 NegativeInfinity => new Decimal64(NegativeInfinityValue);
         public static Decimal64 NaN => new Decimal64(QuietNaNValue);
         public static Decimal64 NegativeZero => new Decimal64(NegativeZeroValue);
         public static Decimal64 Zero => new Decimal64(ZeroValue);
+        public static Decimal64 MinValue => new Decimal64(MinInternalValue);
+        public static Decimal64 MaxValue => new Decimal64(MaxInternalValue);
+
 
         private static ReadOnlySpan<ulong> UInt64Powers10 =>
             [
