@@ -11,6 +11,7 @@
     <MergedWrapperProjectReference Remove="e*/**/*_r.??proj" />
     <ProjectReference Include="../common/localloc_common.ilproj" />
     <ProjectReference Include="../common/eh_common.csproj" />
+    <ProjectReference Include="int64/unsigned/implicit_promotion_il.ilproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FPtrunc\convr4a.cs" />
