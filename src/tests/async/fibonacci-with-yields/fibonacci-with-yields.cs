@@ -28,7 +28,7 @@ public class Async2FibonacciWithYields
         for (int i = 0; i < iterations; i++)
         {
             var sw = Stopwatch.StartNew();
-            int result = await Fib(25);
+            int result = await Fib(TestLibrary.Utilities.IsCoreClrInterpreter ? 5 : 25);
             sw.Stop();
 
             Console.WriteLine($"{sw.ElapsedMilliseconds} ms result={result}");

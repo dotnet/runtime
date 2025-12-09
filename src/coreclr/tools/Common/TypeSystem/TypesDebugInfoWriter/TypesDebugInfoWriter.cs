@@ -32,7 +32,7 @@ namespace Internal.TypeSystem.TypesDebugInfo
     public struct EnumRecordTypeDescriptor
     {
         public ulong Value;
-        public string Name;
+        public Utf8String Name;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -57,13 +57,13 @@ namespace Internal.TypeSystem.TypesDebugInfo
     {
         public uint FieldTypeIndex;
         public ulong Offset;
-        public string Name;
+        public Utf8String Name;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct StaticDataFieldDescriptor
     {
-        public string StaticDataName;
+        public Utf8String StaticDataName;
         public ulong StaticOffset;
         public int IsStaticDataInObject;
     }
@@ -109,6 +109,6 @@ namespace Internal.TypeSystem.TypesDebugInfo
     {
         public uint MemberFunction;
         public uint ParentClass;
-        public string Name;
+        public Utf8String Name;
     }
 }

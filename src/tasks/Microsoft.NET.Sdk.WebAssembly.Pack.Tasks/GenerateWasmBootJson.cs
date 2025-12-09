@@ -359,11 +359,11 @@ public class GenerateWasmBootJson : Task
                 {
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as VFS resource '{1}'.", resource.ItemSpec, assetTraitValue);
 
-                    var targetPath = assetTraitValue.Substring("vfs:".Length);
+                    var targetPath = assetTraitValue.Substring("vfs:".Length).Replace("\\", "/");
 
                     resourceData.vfs ??= [];
                     resourceData.vfs[targetPath] = [];
-                    AddResourceToList(resource, resourceData.vfs[targetPath], resourceEndpoint);
+                    AddResourceToList(resource, resourceData.vfs[targetPath], resourceEndpoint.Replace("\\", "/"));
                 }
                 else
                 {

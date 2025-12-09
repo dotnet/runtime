@@ -13,7 +13,6 @@ public class RunCommand : DotNetCommand
         WithEnvironmentVariables(buildEnv.EnvVars);
         WithEnvironmentVariable("DOTNET_ROOT", Path.GetDirectoryName(buildEnv.DotNet)!);
         WithEnvironmentVariable("DOTNET_INSTALL_DIR", Path.GetDirectoryName(buildEnv.DotNet)!);
-        WithEnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0");
-        WithEnvironmentVariable("DOTNET_NOLOGO", "1");
+        WithEnvironmentVariable("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1");
     }
 }

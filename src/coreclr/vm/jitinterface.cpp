@@ -783,25 +783,6 @@ size_t CEEInfo::findNameOfToken (Module* module,
     return strlen (szFQName);
 }
 
-CorInfoHelpFunc CEEInfo::getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CorInfoHelpFunc result = CORINFO_HELP_UNDEF;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    result = IsDynamicScope(handle) ? CORINFO_HELP_UNDEF : CORINFO_HELP_STRCNS;
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
-}
-
 
 CHECK CheckContext(CORINFO_MODULE_HANDLE scopeHnd, CORINFO_CONTEXT_HANDLE context)
 {
@@ -11332,6 +11313,12 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
     Module* mod = GetModule(szMetaSig->scope);
 
     MetaSig sig(szMetaSig->pSig, szMetaSig->cbSig, mod, &typeContext);
+
+    if (szMetaSig->isAsyncCall())
+        sig.SetIsAsyncCall();
+
+    _ASSERTE(szMetaSig->isAsyncCall() == sig.IsAsyncCall());
+
     result = GetCookieForCalliSig(sig);
 
     EE_TO_JIT_TRANSITION();
@@ -13648,8 +13635,6 @@ CorInfoHelpFunc MapReadyToRunHelper(ReadyToRunHelper helperNum)
     case readyToRunHelper:                                  return corInfoHelpFunc;
 #include "readytorunhelpers.h"
 
-    case READYTORUN_HELPER_GetString:                       return CORINFO_HELP_STRCNS;
-
     default:                                                return CORINFO_HELP_UNDEF;
     }
 }
@@ -14653,6 +14638,27 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
     return AllocateSignature(alloc, sigBuilder, pamTracker);
 }
 
+#ifdef FEATURE_INTERPRETER
+CORINFO_METHOD_HANDLE CInterpreterJitInfo::getAsyncResumptionStub(void** entryPoint)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    MethodDesc *pMDResumeFunc = NULL;
+    JIT_TO_EE_TRANSITION();
+
+    pMDResumeFunc = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESUME_INTERPRETER_CONTINUATION);
+    *entryPoint = (void*)pMDResumeFunc->GetMultiCallableAddrOfCode();
+
+    EE_TO_JIT_TRANSITION();
+
+    return (CORINFO_METHOD_HANDLE)pMDResumeFunc;
+}
+#endif // FEATURE_INTERPRETER
+
 CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
 {
     CONTRACTL{
@@ -14660,6 +14666,9 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
+
+    MethodDesc* result = NULL;
+    JIT_TO_EE_TRANSITION();
 
     MethodDesc* md = m_pMethodBeingCompiled;
 
@@ -14776,7 +14785,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
     pCode->EmitLDLOC(newContinuationLoc);
     pCode->EmitRET();
 
-    MethodDesc* result =
+    result =
         ILStubCache::CreateAndLinkNewILStubMethodDesc(
             md->GetLoaderAllocator(),
             md->GetLoaderModule()->GetILStubCache()->GetOrCreateStubMethodTable(md->GetLoaderModule()),
@@ -14823,6 +14832,9 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
 #endif
 
     *entryPoint = (void*)result->GetMultiCallableAddrOfCode();
+
+    EE_TO_JIT_TRANSITION();
+
     return CORINFO_METHOD_HANDLE(result);
 }
 

@@ -93,22 +93,13 @@ if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
 :CreateIntermediates
 if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 
-if /i "%__BuildArch%" == "x64"     (set cm_BaseRid=win7)
-if /i "%__BuildArch%" == "x86"     (set cm_BaseRid=win7)
-if /i "%__BuildArch%" == "arm64"   (set cm_BaseRid=win10)
-if /i "%__BuildArch%" == "wasm"   (set cm_BaseRid=browser)
-:: Form the base RID to be used if we are doing a portable build
-if /i "%__PortableBuild%" == "1"   (set cm_BaseRid=win)
-set cm_BaseRid=%cm_BaseRid%-%__BuildArch%
-echo "Computed RID for native build is %cm_BaseRid%"
-
 :: When the host runs on an unknown rid, it falls back to the output rid
 :: Strip the architecture
 for /f "delims=-" %%i in ("%__TargetRid%") do set __HostFallbackOS=%%i
 :: The "win" host build is Windows 10 compatible
 if "%__HostFallbackOS%" == "win"       (set __HostFallbackOS=win10)
 
-set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_PKG_RID=%cm_BaseRid%" "-DCLI_CMAKE_FALLBACK_OS=%__HostFallbackOS%" "-DCLI_CMAKE_COMMIT_HASH=%__CommitSha%"
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_FALLBACK_OS=%__HostFallbackOS%" "-DCLI_CMAKE_COMMIT_HASH=%__CommitSha%"
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%"
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_RESOURCE_DIR=%__ResourcesDir%" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 

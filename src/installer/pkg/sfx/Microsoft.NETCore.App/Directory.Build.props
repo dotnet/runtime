@@ -74,7 +74,7 @@
     <PlatformManifestFileEntry Include="System.Private.Xml.dll" />
     <PlatformManifestFileEntry Include="System.Private.Xml.Linq.dll" />
     <!-- Platform-Native Composite R2R images -->
-    <PlatformManifestFileEntry Include="Microsoft.NETCore.App.Runtime.ios-arm64.r2r.dylib" />
+    <PlatformManifestFileEntry Include="Microsoft.NETCore.App.r2r.dylib" />
     <!-- Native libraries -->
     <PlatformManifestFileEntry Include="libSystem.Globalization.Native.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Globalization.Native.dylib" IsNative="true" />

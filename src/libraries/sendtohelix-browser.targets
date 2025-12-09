@@ -207,6 +207,9 @@
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm-shared" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
+
+      <HelixCorrelationPayload Include="$(MonoProjectRoot)\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\" Destination="build/WasmSdkTargets" />
+      <HelixCorrelationPayload Include="$(ArtifactsBinDir)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(RuntimeConfiguration)\" Destination="build/WasmSdkTools" />
     </ItemGroup>
 
     <!-- copy node separately only if EMSDK is not being included -->

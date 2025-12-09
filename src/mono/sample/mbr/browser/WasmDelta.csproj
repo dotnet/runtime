@@ -37,10 +37,6 @@
   </Target>
 
   <ItemGroup>
-    <WasmExtraFilesToDeploy Include="index.html" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="Program.cs"/>
   </ItemGroup>
 

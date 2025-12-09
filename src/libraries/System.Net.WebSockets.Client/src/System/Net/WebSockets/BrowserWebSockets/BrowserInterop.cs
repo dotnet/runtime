@@ -56,11 +56,11 @@ namespace System.Net.WebSockets
             return BrowserInterop.WebSocketGetState(webSocket);
         }
 
-        [JSImport("INTERNAL.ws_get_state")]
+        [JSImport("INTERNAL.wsGetState")]
         public static partial int WebSocketGetState(
             JSObject webSocket);
 
-        [JSImport("INTERNAL.ws_wasm_create")]
+        [JSImport("INTERNAL.wsCreate")]
         public static partial JSObject WebSocketCreate(
             string uri,
             string?[]? subProtocols,
@@ -74,11 +74,11 @@ namespace System.Net.WebSockets
             return WebSocketCreate(uri, subProtocols, (IntPtr)responseHandle.Pointer);
         }
 
-        [JSImport("INTERNAL.ws_wasm_open")]
+        [JSImport("INTERNAL.wsOpen")]
         public static partial Task WebSocketOpen(
             JSObject webSocket);
 
-        [JSImport("INTERNAL.ws_wasm_send")]
+        [JSImport("INTERNAL.wsSend")]
         public static partial Task? WebSocketSend(
             JSObject webSocket,
             IntPtr bufferPtr,
@@ -91,7 +91,7 @@ namespace System.Net.WebSockets
             return WebSocketSend(jsWs, (IntPtr)pinBuffer.Pointer, length, (int)messageType, endOfMessage);
         }
 
-        [JSImport("INTERNAL.ws_wasm_receive")]
+        [JSImport("INTERNAL.wsReceive")]
         public static partial Task? WebSocketReceive(
             JSObject webSocket,
             IntPtr bufferPtr,
@@ -102,14 +102,14 @@ namespace System.Net.WebSockets
             return WebSocketReceive(jsWs, (IntPtr)pinBuffer.Pointer, length);
         }
 
-        [JSImport("INTERNAL.ws_wasm_close")]
+        [JSImport("INTERNAL.wsClose")]
         public static partial Task? WebSocketClose(
             JSObject webSocket,
             int code,
             string? reason,
             bool waitForCloseReceived);
 
-        [JSImport("INTERNAL.ws_wasm_abort")]
+        [JSImport("INTERNAL.wsAbort")]
         public static partial void WebSocketAbort(
             JSObject webSocket);
 
