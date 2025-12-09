@@ -16,7 +16,7 @@ public abstract record RunOptions
     bool AOT = false,
     RunHost Host = RunHost.DotnetRun,
     bool DetectRuntimeFailures = true,
-    
+
     Dictionary<string, string>? ServerEnvironment = null,
     NameValueCollection? BrowserQueryString = null,
     Action<string, string>? OnConsoleMessage = null,
@@ -31,4 +31,4 @@ public abstract record RunOptions
     Func<RunOptions, IPage, Task>? ExecuteAfterLoaded = null
 );
 
-public enum RunHost { DotnetRun, WebServer, DotnetServe };
+public enum RunHost { DotnetRun, WebServer };
