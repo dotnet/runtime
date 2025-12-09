@@ -85,6 +85,7 @@
   </Target>
 
   <Import Project="{NativeSanitizersTargets}" />
+  <Import Project="$(RepositoryEngineeringDir)pruning.targets" />
   <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
 
   <ItemGroup>
