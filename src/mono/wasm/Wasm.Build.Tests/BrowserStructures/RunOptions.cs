@@ -31,4 +31,4 @@ public abstract record RunOptions
     Func<RunOptions, IPage, Task>? ExecuteAfterLoaded = null
 );
 
-public enum RunHost { DotnetRun, WebServer };
+public enum RunHost { DotnetRun, WebServer, DotnetServe };
