@@ -9742,6 +9742,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         // Transforms:
         // 1. (-v1) * cns2 to v1 * (-cns2)
         // 2. v1 * -1 to -v1; for floating-point
+        // 3. v1 * 2 to to v1 + v2; for floating-point
         case GT_MUL:
         {
             GenTree* op1 = node->Op(1);
@@ -9800,12 +9801,14 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            if (!op2Cns->IsBroadcast(simdBaseType))
+            if (!varTypeIsFloating(simdBaseType) || !op2Cns->IsBroadcast(simdBaseType))
             {
                 break;
             }
 
-            if (op2Cns->ToScalarFloating(simdBaseType) == -1.0)
+            double multiplier = op2Cns->ToScalarFloating(simdBaseType);
+
+            if (multiplier == -1.0)
             {
                 op1 = gtNewSimdUnOpNode(GT_NEG, retType, op1, simdBaseType, simdSize);
 
@@ -9818,6 +9821,26 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 DEBUG_DESTROY_NODE(tree);
 
                 return fgMorphHWIntrinsicRequired(op1->AsHWIntrinsic());
+            }
+
+            if ((multiplier == 2.0) && (op1->IsLocal() || (fgOrder == FGOrderLinear)))
+            {
+                // If op1 is not a local we will have to introduce a temporary via GT_COMMA.
+                // Unfortunately, it's not optHoistLoopCode-friendly (yet), so we'll only do
+                // this for locals / after hoisting has run (when rationalization remorphs
+                // math INTRINSICSs into calls...).
+
+                GenTree* op1Clone = fgMakeMultiUse(&op1);
+
+                NamedIntrinsic addIntrinsic =
+                    GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, GT_ADD, op1, op1Clone, simdBaseType, simdSize,
+                                                                 isScalar);
+
+                GenTree* add = gtNewSimdBinOpNode(GT_ADD, simdType, op1, op1Clone, simdBaseType, simdSize);
+                DEBUG_DESTROY_NODE(op2);
+
+                add->SetMorphed(this, /* doChildren */ true);
+                return add;
             }
             break;
         }
@@ -10528,6 +10551,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         // math INTRINSICSs into calls...).
         if ((multiplierValue == 2.0) && (op1->IsLocal() || (fgOrder == FGOrderLinear)))
         {
+            DEBUG_DESTROY_NODE(op2);
             op2          = fgMakeMultiUse(&op1);
             GenTree* add = gtNewOperNode(GT_ADD, mul->TypeGet(), op1, op2);
             add->SetMorphed(this, /* doChildren */ true);
