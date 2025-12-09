@@ -339,9 +339,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - vitek-karas
             - agocke
-            - vsadov
+            - elinor-fung
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
