@@ -118,7 +118,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             TestScenario: "AssetIntegrity"
         ));
         Assert.False(
-            result.TestOutput.Any(m => !m.Contains(".js") && m.Contains("has integrity 'undefined'")),
+            result.TestOutput.Any(m => (!m.Contains(".js") || !m.Contains(".json")) && m.Contains("has integrity ''")),
             "There are assets without integrity hash"
         );
     }
