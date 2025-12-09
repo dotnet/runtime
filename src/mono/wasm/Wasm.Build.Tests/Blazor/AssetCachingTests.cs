@@ -95,6 +95,8 @@ public class AssetCachingTests : BlazorWasmTestBase
                 await Task.Delay(100);
             }
         }
+
+        throw new TimeoutException("Test component not interactive");
     }
 }
 
@@ -111,9 +113,9 @@ partial class WasmRequestRecorder
 
         if (match.Success)
         {
-           	var name = match.Groups["name"].Value;
-           	var code = int.Parse(match.Groups["code"].Value);
-           	ResponseCodes.Add((name, code));
+            var name = match.Groups["name"].Value;
+            var code = int.Parse(match.Groups["code"].Value);
+            ResponseCodes.Add((name, code));
         }
     }
 }
