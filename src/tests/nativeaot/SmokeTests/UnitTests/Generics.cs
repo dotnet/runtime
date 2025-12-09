@@ -55,6 +55,7 @@ class Generics
         TestRecursionThroughGenericLookups.Run();
         TestRecursionInFields.Run();
         TestGvmLookupDependency.Run();
+        TestGvmBaseCallDependencies.Run();
         Test99198Regression.Run();
         Test102259Regression.Run();
         Test104913Regression.Run();
@@ -3822,6 +3823,44 @@ class Generics
 
             if (TestAll(ref structValue, typeof(int)) != structValue)
                 throw new Exception();
+        }
+    }
+
+    class TestGvmBaseCallDependencies
+    {
+        class Container<T>
+        {
+            public static int MyStaticField;
+        }
+
+        abstract class Base<T>
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public virtual void TryInvoke<TArg>()
+            {
+                Container<T>.MyStaticField = 3;
+            }
+        }
+
+        sealed class Derived : Base<IFoo>
+        {
+            public override void TryInvoke<TArg>()
+            {
+                base.TryInvoke<TArg>();
+            }
+        }
+
+        interface IFoo { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Base<IFoo> Get() => new Derived();
+
+        public static void Run()
+        {
+            // Testing for compilation failures due to missing GVM dependencies.
+            // See: https://github.com/dotnet/runtime/issues/120847
+            Container<int>.MyStaticField = 3;
+            Get().TryInvoke<object>();
         }
     }
 }
