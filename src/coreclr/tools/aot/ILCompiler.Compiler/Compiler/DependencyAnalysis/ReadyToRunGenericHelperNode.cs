@@ -131,6 +131,10 @@ namespace ILCompiler.DependencyAnalysis
             DependencyList result = new DependencyList();
 
             var lookupContext = new GenericLookupResultContext(_dictionaryOwner, typeInstantiation, methodInstantiation);
+            if (!_lookupSignature.LookupResultIsConcreteAfterInstantiation(lookupContext))
+            {
+                return result.ToArray();
+            }
 
             switch (_id)
             {

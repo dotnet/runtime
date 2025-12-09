@@ -13,13 +13,13 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents a concrete method on a generic type (or a generic method) that doesn't
+    /// Represents a generic method on a generic type (or a generic method) that doesn't
     /// have code emitted in the executable because it's physically backed by a canonical
-    /// method body. The purpose of this node is to track the dependencies of the concrete
+    /// method body. The purpose of this node is to track the dependencies of the generic
     /// method body, as if it was generated. The node acts as a symbol for the canonical
     /// method for convenience.
     /// </summary>
-    public class ShadowConcreteMethodNode : DependencyNodeCore<NodeFactory>, IMethodNode, ISymbolNodeWithLinkage
+    public class ShadowGenericMethodNode : DependencyNodeCore<NodeFactory>, IMethodNode, ISymbolNodeWithLinkage
     {
         /// <summary>
         /// Gets the canonical method body that defines the dependencies of this node.
@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
         public IMethodNode CanonicalMethodNode { get; }
 
         /// <summary>
-        /// Gets the concrete method represented by this node.
+        /// Gets the generic method represented by this node.
         /// </summary>
         public MethodDesc Method { get; }
 
@@ -42,9 +42,12 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed
             => CanonicalMethodNode.StaticDependenciesAreComputed;
 
-        public ShadowConcreteMethodNode(MethodDesc method, IMethodNode canonicalMethod)
+        public ShadowGenericMethodNode(MethodDesc method, IMethodNode canonicalMethod)
         {
-            Debug.Assert(!method.IsSharedByGenericInstantiations);
+            if (method.ToString().Contains("MyRepro"))
+            {
+                System.Console.Error.WriteLine("ShadowGenericMethodNode: " + method.ToString());
+            }
             Debug.Assert(!method.IsRuntimeDeterminedExactMethod);
             Debug.Assert(canonicalMethod.Method.IsSharedByGenericInstantiations);
             Debug.Assert(canonicalMethod.Method == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
@@ -121,11 +124,11 @@ namespace ILCompiler.DependencyAnalysis
 
         int ISortableNode.CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            var compare = comparer.Compare(Method, ((ShadowConcreteMethodNode)other).Method);
+            var compare = comparer.Compare(Method, ((ShadowGenericMethodNode)other).Method);
             if (compare != 0)
                 return compare;
 
-            return comparer.Compare(CanonicalMethodNode, ((ShadowConcreteMethodNode)other).CanonicalMethodNode);
+            return comparer.Compare(CanonicalMethodNode, ((ShadowGenericMethodNode)other).CanonicalMethodNode);
         }
     }
 }

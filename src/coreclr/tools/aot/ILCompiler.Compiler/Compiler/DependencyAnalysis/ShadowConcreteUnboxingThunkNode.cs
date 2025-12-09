@@ -55,7 +55,7 @@ namespace ILCompiler.DependencyAnalysis
             dependencies.Add(new DependencyListEntry(_canonicalThunk, "Canonical body"));
 
             // Make sure the target of the thunk gets modeled as a dependency
-            dependencies.Add(new DependencyListEntry(factory.ShadowConcreteMethod(Method), "Unboxing thunk target"));
+            dependencies.Add(new DependencyListEntry(factory.ShadowGenericMethod(Method), "Unboxing thunk target"));
 
             return dependencies;
         }

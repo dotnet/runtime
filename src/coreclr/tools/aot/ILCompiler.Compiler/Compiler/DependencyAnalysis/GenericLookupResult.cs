@@ -72,6 +72,17 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected abstract int ClassCode { get; }
         public abstract ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary);
+
+        /// <summary>
+        /// Returns true if this lookup result would produce a concrete (non-canonical) result
+        /// when instantiated with the given context. This is used to filter out dependencies
+        /// that would still be canonical after instantiation.
+        /// </summary>
+        public virtual bool LookupResultIsConcreteAfterInstantiation(GenericLookupResultContext dictionary)
+        {
+            return true;
+        }
+
         public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
         public abstract override string ToString();
         protected abstract int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer);
@@ -504,6 +515,12 @@ namespace ILCompiler.DependencyAnalysis
             return factory.MethodGenericDictionary(instantiatedMethod);
         }
 
+        public override bool LookupResultIsConcreteAfterInstantiation(GenericLookupResultContext dictionary)
+        {
+            var instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            return !instantiatedMethod.IsSharedByGenericInstantiations;
+        }
+
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("MethodDictionary_"u8);
@@ -683,6 +700,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             var instantiatedType = (MetadataType)_type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
             return factory.TypeNonGCStaticsSymbol(instantiatedType);
+        }
+
+        public override bool LookupResultIsConcreteAfterInstantiation(GenericLookupResultContext dictionary)
+        {
+            var instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+            return !instantiatedType.IsCanonicalSubtype(CanonicalFormKind.Any);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
