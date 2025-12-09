@@ -337,14 +337,10 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     BBswtDesc* const desc      = block->GetSwitchTargets();
     unsigned const   caseCount = desc->GetCaseCount();
 
-    // TODO-WASM: update lowering not to peel off the default
+    // We don't expect degenerate or default-less switches
     //
-    assert(!desc->HasDefaultCase());
-
-    if (caseCount == 0)
-    {
-        return;
-    }
+    assert(caseCount > 0);
+    assert(desc->HasDefaultCase());
 
     GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount);
 

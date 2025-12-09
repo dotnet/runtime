@@ -891,6 +891,12 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
     noway_assert(jumpCnt >= 2);
 
+#ifdef TARGET_WASM
+    // Wasm's br_table maps exactly to GT_SWITCH
+    //
+    return node->gtNext;
+#endif // TARGET_WASM
+
     // Spill the argument to the switch node into a local so that it can be used later.
     LIR::Use use(switchBBRange, &(node->AsOp()->gtOp1), node);
     ReplaceWithLclVar(use);
