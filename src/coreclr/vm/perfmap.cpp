@@ -261,14 +261,12 @@ void PerfMap::WriteLine(SString& line)
     EX_TRY
     {
         // Write the line.
-
-        if (fprintf(m_fp, "%s", line.GetUTF8()) != 0)
+        if (fprintf(m_fp, "%s", line.GetUTF8()) < 0)
         {
             // This will cause us to stop writing to the file.
             // The file will still remain open until shutdown so that we don't have to take a lock at this level when we touch the file stream.
             m_ErrorEncountered = true;
         }
-
     }
     EX_CATCH{} EX_END_CATCH
 }

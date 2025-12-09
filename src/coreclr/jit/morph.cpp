@@ -6714,36 +6714,6 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
         return fgMorphTree(gtNewStringLiteralNode(iat, pValue));
     }
 
-    // TODO-CQ: Do this for compCurBB->isRunRarely(). Doing that currently will
-    // guarantee slow performance for that block. Instead cache the return value
-    // of CORINFO_HELP_STRCNS and go to cache first giving reasonable perf.
-
-    bool useLazyStrCns = false;
-    if (compCurBB->KindIs(BBJ_THROW))
-    {
-        useLazyStrCns = true;
-    }
-    else if (fgGlobalMorph && compCurStmt->GetRootNode()->IsCall())
-    {
-        // Quick check: if the root node of the current statement happens to be a noreturn call.
-        GenTreeCall* call = compCurStmt->GetRootNode()->AsCall();
-        useLazyStrCns     = call->IsNoReturn() || fgIsThrow(call);
-    }
-
-    if (useLazyStrCns)
-    {
-        CorInfoHelpFunc helper = info.compCompHnd->getLazyStringLiteralHelper(tree->AsStrCon()->gtScpHnd);
-        if (helper != CORINFO_HELP_UNDEF)
-        {
-            // For un-important blocks, we want to construct the string lazily
-
-            tree =
-                gtNewHelperCallNode(helper, TYP_REF, gtNewIconNode(RidFromToken(tree->AsStrCon()->gtSconCPX), TYP_INT),
-                                    gtNewIconEmbScpHndNode(tree->AsStrCon()->gtScpHnd));
-            return fgMorphTree(tree);
-        }
-    }
-
     assert(tree->AsStrCon()->gtScpHnd == info.compScopeHnd || !IsUninitialized(tree->AsStrCon()->gtScpHnd));
 
     LPVOID         pValue;
