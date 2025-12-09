@@ -7168,21 +7168,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             break;
 
         case GT_DIV:
-            // Replace "val / dcon" with "val * (1.0 / dcon)" if dcon is a power of two.
-            // Powers of two within range are always exactly represented,
-            // so multiplication by the reciprocal is safe in this scenario
-            if (fgGlobalMorph && op2->IsCnsFltOrDbl())
-            {
-                double divisor = op2->AsDblCon()->DconValue();
-                if (((typ == TYP_DOUBLE) && FloatingPointUtils::hasPreciseReciprocal(divisor)) ||
-                    ((typ == TYP_FLOAT) && FloatingPointUtils::hasPreciseReciprocal(forceCastToFloat(divisor))))
-                {
-                    oper = GT_MUL;
-                    tree->ChangeOper(oper);
-                    op2->AsDblCon()->SetDconValue(1.0 / divisor);
-                }
-            }
-
             // Convert DIV to UDIV if both op1 and op2 are known to be never negative
             if (varTypeIsIntegral(tree) && op1->IsNeverNegative(this) && op2->IsNeverNegative(this))
             {
@@ -8055,21 +8040,50 @@ DONE_MORPHING_CHILDREN:
                 break;
             }
 
-            if (!op1->OperIs(GT_NEG))
-            {
-                break;
-            }
-
             if (op2->IsCnsFltOrDbl())
             {
-                // DIV(NEG(a), C) => DIV(a, NEG(C)); for floating-point
-                tree->AsOp()->gtOp1 = op1->gtGetOp1();
+                if (op1->OperIs(GT_NEG))
+                {
+                    // DIV(NEG(a), C) => DIV(a, NEG(C)); for floating-point
+                    tree->AsOp()->gtOp1 = op1->gtGetOp1();
 
-                op2->AsDblCon()->SetDconValue(-op2->AsDblCon()->DconValue());
-                fgUpdateConstTreeValueNumber(op2);
+                    op2->AsDblCon()->SetDconValue(-op2->AsDblCon()->DconValue());
+                    fgUpdateConstTreeValueNumber(op2);
 
-                DEBUG_DESTROY_NODE(op1);
-                op1 = tree->AsOp()->gtOp1;
+                    DEBUG_DESTROY_NODE(op1);
+                    op1 = tree->AsOp()->gtOp1;
+                }
+
+                if (fgGlobalMorph)
+                {
+                    // Replace "val / dcon" with "val * (1.0 / dcon)" if dcon is a power of two.
+                    // Powers of two within range are always exactly represented,
+                    // so multiplication by the reciprocal is safe in this scenario
+
+                    double divisor   = op2->AsDblCon()->DconValue();
+                    bool   transform = false;
+
+                    if (typ == TYP_DOUBLE)
+                    {
+                        transform = FloatingPointUtils::hasPreciseReciprocal(divisor);
+                        divisor   = 1.0 / divisor;
+                    }
+                    else
+                    {
+                        assert(typ == TYP_FLOAT);
+                        transform = FloatingPointUtils::hasPreciseReciprocal(forceCastToFloat(divisor));
+                        divisor   = forceCastToFloat(1.0 / divisor);
+                    }
+
+                    if (transform)
+                    {
+                        tree->ChangeOper(GT_MUL);
+                        op2->AsDblCon()->SetDconValue(divisor);
+
+                        oper = GT_MUL;
+                        goto CM_OVF_OP;
+                    }
+                }
             }
             break;
         }
