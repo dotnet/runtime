@@ -46,13 +46,9 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 _dictionary = dictionary;
             }
-            catch
+            catch when (added)
             {
-                if (added)
-                {
-                    dictionary.DangerousRelease();
-                }
-
+                dictionary.DangerousRelease();
                 throw;
             }
         }
@@ -132,13 +128,9 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 _dictionary = dictionary;
             }
-            catch
+            catch when (added)
             {
-                if (added)
-                {
-                    dictionary.DangerousRelease();
-                }
-
+                dictionary.DangerousRelease();
                 throw;
             }
         }

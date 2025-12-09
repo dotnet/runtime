@@ -12,8 +12,12 @@ namespace System.IO.Compression
     /// <summary>Provides methods and properties to compress data using Zstandard compression.</summary>
     public sealed class ZstandardEncoder : IDisposable
     {
-        internal SafeZstdCompressHandle? _context;
+        internal SafeZstdCompressHandle _context;
         private bool _disposed;
+
+        /// <summary>
+        /// True if we finished compressing the entire input.
+        /// </summary>
         private bool _finished;
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> struct with default settings.</summary>
@@ -42,7 +46,7 @@ namespace System.IO.Compression
             }
             catch
             {
-                _context!.Dispose();
+                _context.Dispose();
                 throw;
             }
         }
@@ -62,7 +66,7 @@ namespace System.IO.Compression
             }
             catch
             {
-                _context!.Dispose();
+                _context.Dispose();
                 throw;
             }
         }
@@ -90,7 +94,7 @@ namespace System.IO.Compression
             }
             catch
             {
-                _context!.Dispose();
+                _context.Dispose();
                 throw;
             }
         }
@@ -118,7 +122,7 @@ namespace System.IO.Compression
             }
             catch
             {
-                _context!.Dispose();
+                _context.Dispose();
                 throw;
             }
         }
@@ -168,7 +172,7 @@ namespace System.IO.Compression
             }
             catch
             {
-                _context!.Dispose();
+                _context.Dispose();
                 throw;
             }
         }
@@ -245,7 +249,7 @@ namespace System.IO.Compression
                         pos = 0
                     };
 
-                    nuint result = Interop.Zstd.ZSTD_compressStream2(_context!, ref output, ref input, endDirective);
+                    nuint result = Interop.Zstd.ZSTD_compressStream2(_context, ref output, ref input, endDirective);
                     if (ZstandardUtils.IsError(result))
                     {
                         if ((Interop.Zstd.ZSTD_error)result == Interop.Zstd.ZSTD_error.srcSize_wrong)
@@ -261,7 +265,6 @@ namespace System.IO.Compression
 
                     if (input.pos == input.size)
                     {
-                        // this may be wrong
                         _finished |= endDirective == Interop.Zstd.ZstdEndDirective.ZSTD_e_end;
 
                         return result == 0 ? OperationStatus.Done : OperationStatus.DestinationTooSmall;
@@ -384,7 +387,7 @@ namespace System.IO.Compression
             EnsureNotDisposed();
 
             _finished = false;
-            _context?.Reset();
+            _context.Reset();
         }
 
         /// <summary>References a prefix for the next compression operation.</summary>
@@ -398,7 +401,7 @@ namespace System.IO.Compression
                 throw new InvalidOperationException(SR.ZstandardEncoder_InvalidState);
             }
 
-            nuint result = _context!.SetPrefix(prefix);
+            nuint result = _context.SetPrefix(prefix);
 
             if (ZstandardUtils.IsError(result))
             {
@@ -426,7 +429,7 @@ namespace System.IO.Compression
 
             EnsureNotDisposed();
 
-            if (_finished || ZstandardUtils.IsError(Interop.Zstd.ZSTD_CCtx_setPledgedSrcSize(_context!, (ulong)length)))
+            if (_finished || ZstandardUtils.IsError(Interop.Zstd.ZSTD_CCtx_setPledgedSrcSize(_context, (ulong)length)))
             {
                 throw new InvalidOperationException(SR.ZstandardEncoder_InvalidState);
             }
@@ -436,7 +439,7 @@ namespace System.IO.Compression
         public void Dispose()
         {
             _disposed = true;
-            _context?.Dispose();
+            _context.Dispose();
         }
 
         private void EnsureNotDisposed()
@@ -471,7 +474,7 @@ namespace System.IO.Compression
             Debug.Assert(_context != null);
             ArgumentNullException.ThrowIfNull(dictionary);
 
-            _context!.SetDictionary(dictionary.CompressionDictionary);
+            _context.SetDictionary(dictionary.CompressionDictionary);
         }
 
         internal static void SetParameter(SafeZstdCompressHandle handle, Interop.Zstd.ZstdCParameter parameter, int value)
