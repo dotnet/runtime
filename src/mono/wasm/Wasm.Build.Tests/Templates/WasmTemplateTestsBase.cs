@@ -364,13 +364,13 @@ public class WasmTemplateTestsBase : BuildTestBase
         List<string> serverOutput = new();
         var runner = new BrowserRunner(_testOutput);
         var page = await runner.RunAsync(
-                    cmd,
-                    runArgs,
-                    locale: runOptions.Locale,
-                    onConsoleMessage: OnConsoleMessage,
-                    onServerMessage: OnServerMessage,
-                    onError: OnErrorMessage,
-                    modifyBrowserUrl: browserUrl => new Uri(new Uri(browserUrl), runOptions.BrowserPath + queryString).ToString());
+            cmd,
+            runArgs,
+            locale: runOptions.Locale,
+            onConsoleMessage: OnConsoleMessage,
+            onServerMessage: OnServerMessage,
+            onError: OnErrorMessage,
+            modifyBrowserUrl: browserUrl => new Uri(new Uri(browserUrl), runOptions.BrowserPath + queryString).ToString());
 
         _testOutput.WriteLine("Waiting for page to load");
         await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new() { Timeout = 1 * 60 * 1000 });

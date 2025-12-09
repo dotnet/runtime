@@ -43,7 +43,7 @@ public class AssetCachingTests : BlazorWasmTestBase
             {
                 await WaitForCounterInteractivity(page);
 
-                // Check server request logs after first load.
+                // Check server request logs after the first load.
                 Assert.NotEmpty(wasmRequestRecorder.ResponseCodes);
                 Assert.All(wasmRequestRecorder.ResponseCodes, r => Assert.Equal(200, r.ResponseCode));
 

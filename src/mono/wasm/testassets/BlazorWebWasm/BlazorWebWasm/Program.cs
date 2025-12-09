@@ -4,11 +4,6 @@ using Microsoft.AspNetCore.HttpLogging;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// builder.Services.AddHttpLogging(logging =>
-// {
-//     logging.LoggingFields = HttpLoggingFields.RequestPath;
-// });
-
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
@@ -28,7 +23,6 @@ else
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
-// app.UseHttpLogging();
 
 app.UseAntiforgery();
 
