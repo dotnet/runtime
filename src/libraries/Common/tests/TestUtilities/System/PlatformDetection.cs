@@ -738,6 +738,8 @@ namespace System
         {
             if (IsCoreCLR)
             {
+                if (RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled)
+                    return true;
                 if (!string.IsNullOrWhiteSpace(GetEnvironmentVariableValue("Interpreter", "")))
                     return true;
                 if (int.TryParse(GetEnvironmentVariableValue("InterpMode", "0"), out int mode) && (mode > 0))

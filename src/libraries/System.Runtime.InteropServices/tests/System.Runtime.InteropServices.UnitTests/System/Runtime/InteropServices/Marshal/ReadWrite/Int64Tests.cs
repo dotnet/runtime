@@ -142,10 +142,10 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void ReadInt64_ZeroPointer_ThrowsException()
         {
-            AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.ReadInt64(IntPtr.Zero));
+            AssertExtensions.Throws<AccessViolationException>(() => Marshal.ReadInt64(IntPtr.Zero));
             if (PlatformDetection.SupportsDirtyAccessViolations)
             {
-                AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.ReadInt64(IntPtr.Zero, 2));
+                AssertExtensions.Throws<AccessViolationException>(() => Marshal.ReadInt64(IntPtr.Zero, 2));
             }
         }
 
@@ -171,10 +171,10 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void WriteInt64_ZeroPointer_ThrowsException()
         {
-            AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteInt64(IntPtr.Zero, 0));
+            AssertExtensions.Throws<AccessViolationException>(() => Marshal.WriteInt64(IntPtr.Zero, 0));
             if (PlatformDetection.SupportsDirtyAccessViolations)
             {
-                AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteInt64(IntPtr.Zero, 2, 0));
+                AssertExtensions.Throws<AccessViolationException>(() => Marshal.WriteInt64(IntPtr.Zero, 2, 0));
             }
         }
         [Fact]

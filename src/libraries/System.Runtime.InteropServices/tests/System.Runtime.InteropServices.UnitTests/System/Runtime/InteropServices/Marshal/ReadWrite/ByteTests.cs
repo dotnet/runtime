@@ -133,10 +133,10 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void ReadByte_ZeroPointer_ThrowsException()
         {
-            AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.ReadByte(IntPtr.Zero));
+            AssertExtensions.Throws<AccessViolationException>(() => Marshal.ReadByte(IntPtr.Zero));
             if (PlatformDetection.SupportsDirtyAccessViolations)
             {
-                AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.ReadByte(IntPtr.Zero, 2));
+                AssertExtensions.Throws<AccessViolationException>(() => Marshal.ReadByte(IntPtr.Zero, 2));
             }
         }
 
@@ -162,10 +162,10 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void WriteByte_ZeroPointer_ThrowsException()
         {
-            AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteByte(IntPtr.Zero, 0));
+            AssertExtensions.Throws<AccessViolationException>(() => Marshal.WriteByte(IntPtr.Zero, 0));
             if (PlatformDetection.SupportsDirtyAccessViolations)
             {
-                AssertExtensions.ThrowsAny<AccessViolationException, NullReferenceException>(() => Marshal.WriteByte(IntPtr.Zero, 2, 0));
+                AssertExtensions.Throws<AccessViolationException>(() => Marshal.WriteByte(IntPtr.Zero, 2, 0));
             }
         }
         [Fact]
