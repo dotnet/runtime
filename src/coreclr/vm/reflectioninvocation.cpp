@@ -408,6 +408,9 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     callDescrData.dwRegTypeMap = 0;
 #endif
     callDescrData.fpReturnSize = argit.GetFPReturnSize();
+#ifdef TARGET_WASM
+    callDescrData.nArgsSize = nStackBytes;
+#endif // TARGET_WASM
 
     // This is duplicated logic from MethodDesc::GetCallTarget
     PCODE pTarget;
