@@ -1773,7 +1773,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
         }
         id->idCodeSize(numberOfInstructions * 4);
         id->idIns(id->ins[numberOfInstructions - 1]);
-    
+
         dispIns(id);
         appendToCurIG(id);
     }
@@ -3403,7 +3403,15 @@ void emitter::emitDispInsName(
                 imm20 |= 0xfff00000;
             }
             printf("auipc          %s, ", rd);
-            emitDispImmediate(imm20);
+            if (addr == nullptr && imm20 == 0) // When `addr` is not set, assume this is called in `emitDispIns`
+            {
+                // Since jump offset cannot be known here, print placeholder
+                printf("??\n");
+            }
+            else
+            {
+                emitDispImmediate(imm20);
+            }
             return;
         }
         case MajorOpcode::OpImm:
@@ -3945,7 +3953,15 @@ void emitter::emitDispInsName(
             else
             {
                 printf("jalr           %s, ", RegNames[rd]);
-                emitDispImmediate(offset, false);
+                if (addr == nullptr && offset == 0) // When `addr` is not set, assume this is called in `emitDispIns`
+                {
+                    // Print placeholder
+                    printf("??");
+                }
+                else
+                {
+                    emitDispImmediate(offset, false);
+                }
                 printf("(%s)", RegNames[rs1]);
             }
             CORINFO_METHOD_HANDLE handle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
@@ -3975,7 +3991,12 @@ void emitter::emitDispInsName(
                 const char* name = (rd == REG_RA) ? "jal" : "j  ";
                 printf("%s            ", name);
 
-                if (id->idIsBound())
+                if (addr == nullptr && offset == 0) // When `addr` is not set, assume this is called in `emitDispIns`
+                {
+                    // Since correct offset is unavailable, print placeholder instead.
+                    printf("pc%+?? instructions");
+                }
+                else if (id->idIsBound())
                 {
                     emitPrintLabel(id->idAddr()->iiaIGlabel);
                 }
@@ -4469,23 +4490,130 @@ void emitter::emitDispIns(
     if (pCode == nullptr)
     {
         instruction ins = id->idIns();
-        insOpts insOpt = id->idInsOpt();        
-
-        // TODO-RISCV64: Support 16-bit wise instructions
+        insOpts insOpt = id->idInsOpt();
 
         switch (insOpt)
         {
             case INS_OPTS_JUMP:  // `id` points to `instrDescJmp`
             {
+                // Note: Refer to the structure of `emitOutputInstr_OptsJump`
+
                 instrDescJmp* idJmp = static_cast<instrDescJmp*>(id);
+                ssize_t immediate = emitOutputInstrJumpDistance(nullptr, ig, idJmp);
+                BasicBlock* dst = id->idAddr()->iiaBBlabel;
 
                 if (idJmp->idjShort) // Short jump
                 {
+                    if (emitIsUncondJump(idJmp))
+                    {
+                        // J type
+                        code_t insCode = emitInsCode(ins);
 
+                        unsigned opcode = insCode & kInstructionOpcodeMask;
+                        unsigned rd = castFloatOrIntegralReg(idJmp->idReg1());
+                        unsigned imm21 = UpperNBitsOfWordSignExtend<20>(immediate);
+
+                        code_t subInsCode = insEncodeJTypeInstr(opcode, rd, imm21);
+                        emitDispInsName(subInsCode, nullptr, false, 0, id, nullptr);
+                    }
+                    else
+                    {
+                        // B type
+                        code_t insCode = emitInsCode(ins);
+
+                        unsigned opcode = insCode & kInstructionOpcodeMask;
+                        unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
+                        unsigned rs1 = castFloatOrIntegralReg(idJmp->idReg1());
+                        unsigned rs2 = castFloatOrIntegralReg(idJmp->idReg2());
+                        unsigned imm13 = LowerNBitsOfWord<12>(immediate);
+
+                        // FIXME: WIll explode
+                        code_t subInsCode = insEncodeBTypeInstr(opcode, funct3, rs1, rs2, imm13);
+                        emitDispInsName(subInsCode, nullptr, false, 0, id, nullptr);
+                    }
                 }
                 else // Far jump
                 {
+                    if (emitIsUncondJump(idJmp))
+                    {
+                        // auipc + jalr
+                        code_t auipcCode = emitInsCode(INS_auipc);
 
+                        unsigned opcode = auipcCode & kInstructionOpcodeMask;
+                        regNumber linkReg = idJmp->idReg1();
+                        regNumber tempReg = (linkReg == REG_ZERO) ? codeGen->rsGetRsvdReg() : linkReg;
+                        unsigned auipcRD = castFloatOrIntegralReg(tempReg);
+                        unsigned auipcImm20 = UpperNBitsOfWordSignExtend<20>(immediate);
+
+                        code_t subInsCode = insEncodeUTypeInstr(opcode, auipcRD, auipcImm20);
+                        emitDispInsName(subInsCode, nullptr, false, 0, id, nullptr);
+
+                        code_t jalrCode = emitInsCode(INS_jalr);
+
+                        unsigned jalrOpcode = jalrCode & kInstructionOpcodeMask;
+                        unsigned jalrFunct3 = (jalrCode & kInstructionFunct3Mask) >> 12;
+                        unsigned jalrRD = castFloatOrIntegralReg(linkReg);
+                        unsigned jalrRS = castFloatOrIntegralReg(tempReg);
+                        unsigned jalrImm12 = LowerNBitsOfWord<12>(immediate);
+
+                        code_t subInsCode2 = insEncodeITypeInstr(jalrOpcode, jalrRD, jalrFunct3, jalrRS, jalrImm12);
+                        emitDispInsName(subInsCode2, nullptr, false, 0, id, nullptr);
+                    }
+                    else
+                    {
+                        // branch + (jal) or (auipc + jalr)
+                        assert(!idJmp->idInsIs(INS_beqz, INS_bnez) || (idJmp->idReg2() == REG_ZERO));
+                        // TODO:
+                        code_t invCmpCode = emitInsCode(idJmp->idIns()) ^ 0x1000;
+
+                        unsigned invCmpOpcode = invCmpCode & kInstructionOpcodeMask;
+                        unsigned invCmpFunct3 = (invCmpCode & kInstructionFunct3Mask) >> 12;
+                        unsigned invCmpRS1 = castFloatOrIntegralReg(idJmp->idReg1());
+                        unsigned invCmpRS2 = castFloatOrIntegralReg(idJmp->idReg2());
+                        unsigned invCmpImm13 = idJmp->idCodeSize();
+
+                        code_t subInsCode = insEncodeBTypeInstr(invCmpOpcode, invCmpFunct3, invCmpRS1, invCmpRS2, invCmpImm13);
+                        emitDispInsName(subInsCode, nullptr, false, 0, id, nullptr);
+
+                        immediate -= sizeof(code_t);
+
+                        if (idJmp->idCodeSize() == 2 * sizeof(code_t))
+                        {
+                            // jal
+                            code_t jalCode = emitInsCode(INS_jal);
+
+                            unsigned jalOpcode = jalCode & kInstructionOpcodeMask;
+                            unsigned jalRD = castFloatOrIntegralReg(REG_ZERO);
+                            unsigned jalImm21 = TrimSignedToImm21(immediate);
+                            
+                            code_t subInsCode2 = insEncodeJTypeInstr(jalOpcode, jalRD, jalImm21);
+                            emitDispInsName(subInsCode2, nullptr, false, 0, id, nullptr);
+                        }
+                        else
+                        {
+                            // auipc + jalr
+                            
+                            code_t auipcCode = emitInsCode(INS_auipc);
+                            
+                            unsigned auipcOpcode = auipcCode & kInstructionOpcodeMask;
+                            regNumber tempReg = codeGen->rsGetRsvdReg();
+                            unsigned auipcImm20 = UpperNBitsOfWordSignExtend<20>(immediate);
+
+                            code_t subInsCode2 = insEncodeUTypeInstr(auipcOpcode, tempReg, auipcImm20);
+                            emitDispInsName(subInsCode2, nullptr, false, 0, id, nullptr);
+
+                            code_t jalrCode = emitInsCode(INS_jalr);
+
+                            unsigned jalrOpcode = jalrCode & kInstructionOpcodeMask;
+                            unsigned jalrFunct3 = (jalrCode & kInstructionFunct3Mask) >> 12;
+                            unsigned jalRD = castFloatOrIntegralReg(REG_ZERO);
+                            unsigned jalRS1 = tempReg;
+                            unsigned jalImm12 = LowerNBitsOfWord<12>(immediate);
+
+                            code_t subInsCode3 = insEncodeITypeInstr(jalrOpcode, jalRD, jalrFunct3, jalRS1, jalImm12);
+                            emitDispInsName(subInsCode3, nullptr, false, 0, id, nullptr);
+                        }
+                    }
                 }
 
                 break;
@@ -4496,7 +4624,7 @@ void emitter::emitDispIns(
                 // Note: Refer to the generation logic in `emitOutputCall`.
 
                 instrDescCGCA* idCall = static_cast<instrDescCGCA*>(id);
-                
+
                 if (idCall->idIsCallRegPtr()) // Indirect call (jalr)
                 {
                     code_t insCode = emitInsCode(ins);
