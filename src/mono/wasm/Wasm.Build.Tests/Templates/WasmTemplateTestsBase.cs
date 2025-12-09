@@ -306,6 +306,9 @@ public class WasmTemplateTestsBase : BuildTestBase
     public virtual async Task<RunResult> RunForPublishWithWebServer(RunOptions runOptions)
         => await BrowserRun(runOptions with { Host = RunHost.WebServer });
 
+    public virtual async Task<RunResult> RunForPublishWithDotnetServe(RunOptions runOptions)
+        => await BrowserRun(runOptions with { Host = RunHost.DotnetServe });
+
     private async Task<RunResult> BrowserRun(RunOptions runOptions)
     {
         if (EnvironmentVariables.UseJavascriptBundler)
@@ -324,6 +327,13 @@ public class WasmTemplateTestsBase : BuildTestBase
                             Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")) :
                             runOptions.CustomBundleDir,
                          runOptions),
+
+            RunHost.DotnetServe =>
+                    await BrowserRunTest($"serve",
+                        string.IsNullOrEmpty(runOptions.CustomBundleDir) ?
+                            Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")) :
+                            runOptions.CustomBundleDir,
+                        runOptions),
 
             _ => throw new NotImplementedException(runOptions.Host.ToString())
         };
