@@ -676,13 +676,15 @@ function fetchResource (asset: AssetEntryInternal): Promise<Response> {
     // If the user explicitly set `disableNoCacheFetch`, we respect it.
     // Otherwise, we configure caching depending on if the asset is fingerprinted or not.
     // Fingerprinted assets do not need to be validated for staleness.
-    // Therefore, we do not want to use the "no-cache" header with them.
     // https://github.com/dotnet/runtime/issues/74815
     const assetIsFingerprinted = asset.virtualPath != undefined && asset.virtualPath !== asset.name;
 
     if (!loaderHelpers.config.disableNoCacheFetch && !assetIsFingerprinted) {
         fetchOptions.cache = "no-cache";
+    } else if (assetIsFingerprinted) {
+        fetchOptions.cache = "force-cache";
     }
+
     if (asset.useCredentials) {
         // Include credentials so the server can allow download / provide user specific file
         fetchOptions.credentials = "include";
