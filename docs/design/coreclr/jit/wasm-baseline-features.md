@@ -11,4 +11,5 @@ The `caniuse.com` website can also be used to check the avalability of features,
 ## .NET 11
 
 - `mutable-globals`
+- `sign-ext`
 - `nontrapping-fptoint`
