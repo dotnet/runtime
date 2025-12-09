@@ -409,6 +409,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
 #endif
     callDescrData.fpReturnSize = argit.GetFPReturnSize();
 #ifdef TARGET_WASM
+    // WASM-TODO: this is now called from the interpreter, so the arguments layout is OK. reconsider with codegen
     callDescrData.nArgsSize = nStackBytes;
 #endif // TARGET_WASM
 
