@@ -46,11 +46,15 @@ public class ForeignThreadCleanupTest
 
         bool mutexAcquired = false;
 
-        // Start a foreign thread that acquires the mutex and then exits without releasing it.
-        InvokeCallbackOnNewThread(() =>
+        MyCallback cb = () =>
         {
             mutexAcquired = mutex.WaitOne(0);
-        }, joinBeforeReturn: true);
+        };
+
+        // Start a foreign thread that acquires the mutex and then exits without releasing it.
+        InvokeCallbackOnNewThread(cb, joinBeforeReturn: true);
+
+        GC.KeepAlive(cb);
 
         Assert.True(mutexAcquired, "Foreign thread should have acquired the mutex.");
 
@@ -94,13 +98,15 @@ public class ForeignThreadCleanupTest
     {
         using AutoResetEvent startTestEvent = new(false);
         using AutoResetEvent exitForeignThreadEvent = new(false);
+
         // Start a foreign thread that waits for a signal to exit.
-        InvokeCallbackOnNewThread(() =>
+        MyCallback cb = () =>
         {
             JoinThreadInFinalizer.ForeignThread = Thread.CurrentThread;
             startTestEvent.Set();
             exitForeignThreadEvent.WaitOne();
-        }, joinBeforeReturn: false);
+        };
+        InvokeCallbackOnNewThread(cb, joinBeforeReturn: false);
 
         (WeakReference shortRef, WeakReference longRef) = ConstructThreadJoiner(startTestEvent, exitForeignThreadEvent);
         GC.Collect();
@@ -114,6 +120,8 @@ public class ForeignThreadCleanupTest
         }
 
         Assert.True(JoinThreadInFinalizer.TestPassed, "Finalizer should have been able to join the foreign thread.");
+
+        GC.KeepAlive(cb);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         (WeakReference, WeakReference) ConstructThreadJoiner(AutoResetEvent startTestEvent, AutoResetEvent exitForeignThreadEvent)
