@@ -42,6 +42,23 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 }
 
 //------------------------------------------------------------------------
+// emitIns_J: Emit a jump instruction with an immediate operand.
+//
+void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* tgtBlock)
+{
+    instrDesc* id  = emitNewInstrCns(attr, imm);
+    insFormat  fmt = emitInsFormat(ins);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idAddr()->iiaBBlabel = tgtBlock;
+    id->idSetIsJump();
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+//------------------------------------------------------------------------
 // emitIns_S: Emit a memory instruction with a stack-based address mode operand.
 //
 void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
@@ -113,7 +130,9 @@ static unsigned GetInsOpcode(instruction ins)
 size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
     if (emitIsSmallInsDsc(id))
+    {
         return SMALL_IDSC_SIZE;
+    }
 
     if (id->idIsLargeCns())
     {
@@ -121,6 +140,7 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
         assert(!id->idIsLargeCall());
         return sizeof(instrDescCns);
     }
+
     return sizeof(instrDesc);
 }
 
@@ -304,8 +324,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
         }
         case IF_LABEL:
-            NYI_WASM("emitOutputInstr IF_LABEL");
+        {
+            cnsval_ssize_t constant = emitGetInsSC(id);
+            dst += emitOutputULEB128(dst, (uint64_t)constant);
             break;
+        }
         case IF_MEMARG:
         {
             dst += emitOutputByte(dst, opcode);
@@ -411,12 +434,25 @@ void emitter::emitDispIns(
 
     emitDispInst(ins);
 
+    auto dispJumpTarget = [this, id]() {
+        BasicBlock* target = id->idAddr()->iiaBBlabel;
+        printf(" ;; ");
+        void* label = emitCodeGetCookie(target);
+        assert(label != nullptr);
+        insGroup* targetGroup = (insGroup*)label;
+        emitPrintLabel(targetGroup);
+    };
+
     // The reference for the following style of display is wasm-objdump output.
     //
     switch (fmt)
     {
         case IF_OPCODE:
         case IF_BLOCK:
+            if (id->idIsJump())
+            {
+                dispJumpTarget();
+            }
             break;
 
         case IF_LABEL:
@@ -424,6 +460,11 @@ void emitter::emitDispIns(
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
+
+            if (id->idIsJump())
+            {
+                dispJumpTarget();
+            }
         }
         break;
 

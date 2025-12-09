@@ -11,8 +11,7 @@
 
 void CodeGen::genMarkLabelsForCodegen()
 {
-    // TODO-WASM: serialize fgWasmControlFlow results into codegen-level metadata/labels
-    // (or use them directly and leave this empty).
+    // We have alredy marked labels, so nothing to do here
 }
 
 void CodeGen::genFnEpilog(BasicBlock* block)
@@ -154,7 +153,13 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
     while (!wasmControlFlowStack->Empty() && (wasmControlFlowStack->Top()->End() == cursor))
     {
         instGen(INS_end);
-        wasmControlFlowStack->Pop();
+        WasmInterval* interval = wasmControlFlowStack->Pop();
+
+        if (!interval->IsLoop() && !block->HasFlag(BBF_HAS_LABEL))
+        {
+            block->SetFlags(BBF_HAS_LABEL);
+            genDefineTempLabel(block);
+        }
     }
 
     // Push control flow for intervals that start here or earlier, and emit
@@ -178,6 +183,12 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 
             wasmCursor++;
             wasmControlFlowStack->Push(interval);
+
+            if (interval->IsLoop() && !block->HasFlag(BBF_HAS_LABEL))
+            {
+                block->SetFlags(BBF_HAS_LABEL);
+                genDefineTempLabel(block);
+            }
 
             if (wasmCursor >= compiler->fgWasmIntervals->size())
             {
@@ -349,7 +360,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
         BasicBlock* const caseTarget = desc->GetCase(caseNum)->getDestinationBlock();
         unsigned          depth      = findTargetDepth(caseTarget);
 
-        GetEmitter()->emitIns_I(INS_label, EA_4BYTE, depth);
+        GetEmitter()->emitIns_J(INS_label, EA_4BYTE, depth, caseTarget);
     }
 }
 
@@ -878,7 +889,7 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 {
     instruction    instr = emitter::emitJumpKindToIns(jmp);
     unsigned const depth = findTargetDepth(tgtBlock);
-    GetEmitter()->emitIns_I(instr, EA_4BYTE, depth);
+    GetEmitter()->emitIns_J(instr, EA_4BYTE, depth, tgtBlock);
 }
 
 void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* code))

@@ -892,6 +892,10 @@ protected:
         insOpts  _idInsOpt    : 3; // options for Load/Store instructions
 #endif
 
+#ifdef TARGET_WASM
+        unsigned _idJump : 1; // jump descriptor
+#endif
+
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
         // x86:         50 bits
@@ -900,7 +904,7 @@ protected:
         // arm64:       55 bits
         // loongarch64: 46 bits
         // risc-v:      46 bits
-        // wasm:        28 bits
+        // wasm:        29 bits
 
         //
         // How many bits have been used beyond the first 32?
@@ -918,7 +922,7 @@ protected:
 #elif defined(TARGET_AMD64)
 #define ID_EXTRA_BITFIELD_BITS (20)
 #elif defined(TARGET_WASM)
-#define ID_EXTRA_BITFIELD_BITS (-4)
+#define ID_EXTRA_BITFIELD_BITS (-3)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -1934,6 +1938,17 @@ protected:
             _idLclVar = 1;
         }
 #endif // TARGET_RISCV64
+
+#ifdef TARGET_WASM
+        bool idIsJump() const
+        {
+            return _idJump != 0;
+        }
+        void idSetIsJump()
+        {
+            _idJump = 1;
+        }
+#endif
 
         bool idIsCnsReloc() const
         {
