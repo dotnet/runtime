@@ -9723,7 +9723,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (allPreciseReciprocal)
             {
-                GenTree* reciprocal = gtNewOneConNode(simdType, simdBaseType);
+                var_types      simdType   = getSIMDTypeForSize(simdSize);
+                GenTreeVecCon* reciprocal = gtNewOneConNode(simdType, simdBaseType)->AsVecCon();
                 reciprocal->EvaluateBinaryInPlace(GT_DIV, isScalar, simdBaseType, op2Cns);
 
                 reciprocal->SetMorphed(this);
@@ -9818,7 +9819,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 #endif // TARGET_XARCH
 
                 DEBUG_DESTROY_NODE(op2);
-                DEBUG_DESTROY_NODE(tree);
+                DEBUG_DESTROY_NODE(node);
 
                 return fgMorphHWIntrinsicRequired(op1->AsHWIntrinsic());
             }
@@ -9836,10 +9837,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, GT_ADD, op1, op1Clone, simdBaseType, simdSize,
                                                                  isScalar);
 
-                GenTree* add = gtNewSimdBinOpNode(GT_ADD, simdType, op1, op1Clone, simdBaseType, simdSize);
-                DEBUG_DESTROY_NODE(op2);
+                var_types simdType = getSIMDTypeForSize(simdSize);
 
+                GenTree* add = gtNewSimdBinOpNode(GT_ADD, simdType, op1, op1Clone, simdBaseType, simdSize);
                 add->SetMorphed(this, /* doChildren */ true);
+
+                DEBUG_DESTROY_NODE(op2);
                 return add;
             }
             break;
@@ -10541,7 +10544,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
             mul->AsOp()->gtOp2 = nullptr;
 
             DEBUG_DESTROY_NODE(op2);
-            return tree;
+            return mul;
         }
 
         // Fold "x * 2.0" to "x + x".
