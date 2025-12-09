@@ -17,6 +17,9 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Internal\StackTraceMetadata\StackTraceMetadata.cs" />
     <Compile Include="Internal\StackTraceMetadata\MethodNameFormatter.cs" />
+    <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.cs">
+      <Link>Internal\NativeFormat\NativeFormatReader.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
       <Link>Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
     </Compile>

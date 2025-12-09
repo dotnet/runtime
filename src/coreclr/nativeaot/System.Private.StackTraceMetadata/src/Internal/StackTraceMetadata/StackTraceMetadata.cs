@@ -119,6 +119,71 @@ namespace Internal.StackTraceMetadata
             return null;
         }
 
+        private static unsafe (string, int) GetLineNumberInfo(IntPtr methodStartAddress, int offset, int hashCode)
+        {
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
+            {
+                if (!module.TryFindBlob((int)ReflectionMapBlob.BlobIdStackTraceLineNumbers, out byte* lineNumbersBlob, out uint cbLineNumbersBlob)
+                    || !module.TryFindBlob((int)ReflectionMapBlob.BlobIdStackTraceDocuments, out byte* documentsBlob, out uint cbDocumentsBlob))
+                {
+                    continue;
+                }
+
+                ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
+                externalReferences.InitializeCommonFixupsTable(module);
+
+                var reader = new NativeReader(lineNumbersBlob, cbLineNumbersBlob);
+                var parser = new NativeParser(reader, 0);
+                var hashtable = new NativeHashtable(parser);
+                var lookup = hashtable.Lookup(hashCode);
+                NativeParser entryParser;
+
+                while (!(entryParser = lookup.GetNext()).IsNull)
+                {
+                    IntPtr foundMethod = externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
+                    if (foundMethod != methodStartAddress)
+                        continue;
+
+                    uint numEntries = entryParser.GetUnsigned();
+
+                    int currentLineNumber = 0;
+                    int currentNativeOffset = 0;
+                    int documentIndex = entryParser.GetSigned();
+
+                    for (uint i = 0; i < numEntries; i++)
+                    {
+                        int nativeOffsetDelta = entryParser.GetSigned();
+                        int oldDocumentIndex = documentIndex;
+                        if (i > 0 && nativeOffsetDelta == 0)
+                        {
+                            documentIndex = entryParser.GetSigned();
+                            nativeOffsetDelta = entryParser.GetSigned();
+                        }
+
+                        // We do a +1 because if the instruction is a call, the offset
+                        // we have is for the call return which might already be a different
+                        // line number.
+                        if (currentNativeOffset + nativeOffsetDelta + 1 > offset)
+                        {
+                            documentIndex = oldDocumentIndex;
+                            break;
+                        }
+
+                        int lineNumberDelta = entryParser.GetSigned();
+
+                        currentNativeOffset += nativeOffsetDelta;
+                        currentLineNumber += lineNumberDelta;
+                    }
+
+                    int documentOffset = ((int*)documentsBlob)[documentIndex];
+                    string documentName = new string((sbyte*)documentsBlob + documentOffset);
+                    return (documentName, currentLineNumber);
+                }
+            }
+
+            return (null, 0);
+        }
+
         public static unsafe DiagnosticMethodInfo? GetDiagnosticMethodInfoFromStartAddressIfAvailable(IntPtr methodStartAddress)
         {
             IntPtr moduleStartAddress = RuntimeAugments.GetOSModuleFromPointer(methodStartAddress);
@@ -271,10 +336,15 @@ namespace Internal.StackTraceMetadata
             {
                 string methodName = GetMethodNameFromStartAddressIfAvailable(methodStartAddress, out owningType, out genericArgs, out methodSignature, out isStackTraceHidden, out int hashCode);
 
-                // TODO: find line number
-                _ = hashCode;
-                fileName = null;
-                lineNumber = 0;
+                if (needsFileInfo)
+                {
+                    (fileName, lineNumber) = GetLineNumberInfo(methodStartAddress, offset, hashCode);
+                }
+                else
+                {
+                    fileName = null;
+                    lineNumber = 0;
+                }
 
                 return methodName;
             }

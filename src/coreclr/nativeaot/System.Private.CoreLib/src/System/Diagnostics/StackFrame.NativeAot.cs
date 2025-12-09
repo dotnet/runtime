@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime;
@@ -213,9 +214,18 @@ namespace System.Diagnostics
                     // Passing a default string for "at" in case SR.UsingResourceKeys() is true
                     // as this is a special case and we don't want to have "Word_At" on stack traces.
                     string word_At = SR.UsingResourceKeys() ? "at" : SR.Word_At;
+                    // We also want to pass in a default for inFileLineNumber.
+                    string inFileLineNum = SR.UsingResourceKeys() ? "in {0}:line {1}" : SR.StackTrace_InFileLineNumber;
                     builder.Append("   ").Append(word_At).Append(' ');
 
                     AppendCommonStringRepresenation(builder, allowFallback: true);
+
+                    if (_fileName != null)
+                    {
+                        // tack on " in c:\tmp\MyFile.cs:line 5"
+                        builder.Append(' ');
+                        builder.AppendFormat(CultureInfo.InvariantCulture, inFileLineNum, _fileName, _lineNumber);
+                    }
 
                     builder.AppendLine();
                 }

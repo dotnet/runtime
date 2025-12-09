@@ -13,6 +13,7 @@ class StackTraces
     internal static int Run()
     {
         TestStackTraceHidden.Run();
+        TestLineNumbers.Run();
 
         return 100;
     }
@@ -76,4 +77,52 @@ class StackTraces
         }
     }
 
+    class TestLineNumbers
+    {
+        static void MethodWithoutMetadata()
+        {
+#line 10 "A:\MyFile1.cs"
+            var sf1 = new StackFrame(needFileInfo: true);
+            var sf2 = new StackFrame(needFileInfo: true);
+#line 1 "A:\MyFile2.cs"
+            var sf3 = new StackFrame(needFileInfo: true);
+#line default
+            if (sf1.GetFileName() != "A:\\MyFile1.cs" || sf1.GetFileLineNumber() != 10)
+                throw new Exception(sf1.ToString());
+            if (sf2.GetFileName() != "A:\\MyFile1.cs" || sf2.GetFileLineNumber() != 11)
+                throw new Exception(sf2.ToString());
+            if (sf3.GetFileName() != "A:\\MyFile2.cs" || sf3.GetFileLineNumber() != 1)
+                throw new Exception(sf3.ToString());
+        }
+
+        static void MethodWithMetadata()
+        {
+#line 10 "A:\MyFile1.cs"
+            var sf1 = new StackFrame(needFileInfo: true);
+            var sf2 = new StackFrame(needFileInfo: true);
+#line 1 "A:\MyFile2.cs"
+            var sf3 = new StackFrame(needFileInfo: true);
+#line default
+            if (sf1.GetFileName() != "A:\\MyFile1.cs" || sf1.GetFileLineNumber() != 10)
+                throw new Exception(sf1.ToString());
+            if (sf2.GetFileName() != "A:\\MyFile1.cs" || sf2.GetFileLineNumber() != 11)
+                throw new Exception(sf2.ToString());
+            if (sf3.GetFileName() != "A:\\MyFile2.cs" || sf3.GetFileLineNumber() != 1)
+                throw new Exception(sf3.ToString());
+        }
+
+        public static void Run()
+        {
+            typeof(TestLineNumbers).GetMethod(nameof(MethodWithMetadata), BindingFlags.Static | BindingFlags.NonPublic);
+
+            MethodWithoutMetadata();
+            if (GetMethodSecretly(typeof(TestLineNumbers), nameof(MethodWithoutMetadata)) != null)
+                throw new Exception();
+
+            GetMethodSecretly(typeof(TestLineNumbers), nameof(MethodWithMetadata)).Invoke(null, []);
+
+            [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "That's the point")]
+            static MethodInfo GetMethodSecretly(Type type, string name) => type.GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic);
+        }
+    }
 }

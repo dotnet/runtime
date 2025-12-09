@@ -206,7 +206,7 @@ namespace Internal
 
         public static uint CombineThreeValuesIntoHash(uint value1, uint value2, uint value3)
         {
-            // This matches the behavior of System.HashCode.Combine(value1, value2) as of the time of authoring
+            // This matches the behavior of System.HashCode.Combine(value1, value2, value3) as of the time of authoring
             uint hash = XXHash32_MixEmptyState();
             hash += 12;
             hash = XXHash32_QueueRound(hash, value1);

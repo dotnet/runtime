@@ -53,11 +53,14 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (StackTraceMapping mapping in factory.MetadataManager.GetStackTraceMapping(factory))
             {
+                if ((factory.MetadataManager.StackTracePolicy.GetMethodVisibility(mapping.Method) & MethodStackTraceVisibilityFlags.HasLineNumbers) == 0)
+                    continue;
+
                 var entrypointSymbol = factory.MethodEntrypoint(mapping.Method);
                 if (entrypointSymbol is not INodeWithDebugInfo debugInfo)
                     continue;
 
-                BlobVertex blob = CreateLineNumbersBlob(_documents, debugInfo);
+                Vertex blob = CreateLineNumbersBlob(nativeWriter, _documents, debugInfo);
                 if (blob == null)
                     continue;
 
@@ -70,11 +73,13 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (ReflectionStackTraceMapping mapping in factory.MetadataManager.GetReflectionStackTraceMappings(factory))
             {
+                Debug.Assert((factory.MetadataManager.StackTracePolicy.GetMethodVisibility(mapping.Method) & MethodStackTraceVisibilityFlags.HasLineNumbers) != 0);
+
                 var entrypointSymbol = factory.MethodEntrypoint(mapping.Method);
                 if (entrypointSymbol is not INodeWithDebugInfo debugInfo)
                     continue;
 
-                BlobVertex blob = CreateLineNumbersBlob(_documents, debugInfo);
+                Vertex blob = CreateLineNumbersBlob(nativeWriter, _documents, debugInfo);
                 if (blob == null)
                     continue;
 
@@ -85,14 +90,17 @@ namespace ILCompiler.DependencyAnalysis
                 hashtable.Append(hashcode, nativeSection.Place(hashtableEntry));
             }
 
-            static BlobVertex CreateLineNumbersBlob(StackTraceDocumentsNode documents, INodeWithDebugInfo debugInfoNode)
+            static Vertex CreateLineNumbersBlob(NativeWriter writer, StackTraceDocumentsNode documents, INodeWithDebugInfo debugInfoNode)
             {
-                var ms = new MemoryStream();
-                var bw = new BinaryWriter(ms);
+                var encoder = default(NativePrimitiveEncoder);
+                encoder.Init();
 
                 int currentNativeOffset = 0;
                 int currentLineNumber = 0;
                 string currentDocument = null;
+
+                uint numEntries = 0;
+
                 foreach (NativeSequencePoint sequencePoint in debugInfoNode.GetNativeSequencePoints())
                 {
                     if (currentLineNumber == sequencePoint.LineNumber && currentDocument == sequencePoint.FileName)
@@ -109,22 +117,27 @@ namespace ILCompiler.DependencyAnalysis
                         // is a document number. Otherwise we use NativeOffsetDelta == 0 as a marker that the next
                         // byte is a document number and not a native offset delta.
                         if (currentDocument != null)
-                            bw.Write7BitEncodedInt((byte)0);
-                        bw.Write7BitEncodedInt(documents.GetDocumentId(sequencePoint.FileName));
+                            encoder.WriteSigned(0);
+                        encoder.WriteSigned(documents.GetDocumentId(sequencePoint.FileName));
                     }
 
                     int nativeOffsetDelta = sequencePoint.NativeOffset - currentNativeOffset;
-                    bw.Write7BitEncodedInt(nativeOffsetDelta);
+                    encoder.WriteSigned(nativeOffsetDelta);
 
                     int lineNumberDelta = sequencePoint.LineNumber - currentLineNumber;
-                    bw.Write7BitEncodedInt(lineNumberDelta);
+                    encoder.WriteSigned(lineNumberDelta);
+
+                    numEntries++;
 
                     currentLineNumber = sequencePoint.LineNumber;
                     currentNativeOffset = sequencePoint.NativeOffset;
                     currentDocument = sequencePoint.FileName;
                 }
 
-                return ms.Length == 0 ? null : new BlobVertex(ms.ToArray());
+                var ms = new MemoryStream();
+                encoder.Save(ms);
+
+                return numEntries == 0 ? null : writer.GetTuple(writer.GetUnsignedConstant(numEntries), new BlobVertex(ms.ToArray()));
             }
 
             byte[] streamBytes = nativeWriter.Save();

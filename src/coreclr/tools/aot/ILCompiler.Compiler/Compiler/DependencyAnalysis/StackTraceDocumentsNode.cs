@@ -63,7 +63,6 @@ namespace ILCompiler.DependencyAnalysis
             var bw = new BinaryWriter(ms);
 
             // We write out:
-            // (Int32) Number of documents
             // (Int32) Offset of document1 from beginning of blob
             // (Int32) Offset of document2 from beginning of blob
             // ...
@@ -73,9 +72,7 @@ namespace ILCompiler.DependencyAnalysis
             // ...
             // Null-terminated UTF-8 bytes of documentN
 
-            bw.Write(_documents.Count);
-
-            int position = sizeof(int) /* count of documents */ + _documents.Count * sizeof(int);
+            int position = _documents.Count * sizeof(int);
             for (int i = 0; i < _documents.Count; i++)
             {
                 bw.Write(position);

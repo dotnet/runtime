@@ -89,6 +89,8 @@ namespace ILCompiler
 
         internal FlowAnnotations FlowAnnotations { get; }
 
+        internal StackTraceEmissionPolicy StackTracePolicy => _stackTraceEmissionPolicy;
+
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
 
         public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy,
@@ -1038,9 +1040,9 @@ namespace ILCompiler
             return _stackTraceMappings;
         }
 
-        public IEnumerable<ReflectionStackTraceMapping> GetReflectionStackTraceMappings(NodeFactory factor)
+        public IEnumerable<ReflectionStackTraceMapping> GetReflectionStackTraceMappings(NodeFactory factory)
         {
-            EnsureMetadataGenerated(factor);
+            EnsureMetadataGenerated(factory);
             return _reflectionStackTraceMappings;
         }
 
