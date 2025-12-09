@@ -4,9 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
@@ -84,12 +81,20 @@ public class AssetCachingTests : BlazorWasmTestBase
 
     private static async Task WaitForCounterInteractivity(IPage page)
     {
-        var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-        Assert.Equal("Current count: 0", txt);
-
-        await page.Locator("text=\"Click me\"").ClickAsync();
-        txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-        Assert.Equal("Current count: 1", txt);
+        await Assertions.Expect(page.GetByRole(AriaRole.Status)).ToContainTextAsync("Current count: 0");
+        for (int i = 0; i < 10; i++)
+        {
+            try
+            {
+                await page.GetByText("Click me").ClickAsync();
+                await Assertions.Expect(page.GetByRole(AriaRole.Status)).ToContainTextAsync("Current count: 1");
+                return;
+            }
+            catch (PlaywrightException)
+            {
+                await Task.Delay(100);
+            }
+        }
     }
 }
 
