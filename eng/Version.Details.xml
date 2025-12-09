@@ -1,9 +1,9 @@
 <Dependencies>
   <Source Uri="https://github.com/dotnet/dotnet" Mapping="runtime" Sha="02dfa783c1f4223a5590a1b689ef381c337db1ab" BarId="293404" />
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="10.0.0-rtm.25553.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="10.0.0-rtm.25564.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>93ee2e8312a2c5475f5de64a47c3e31024636a05</Sha>
+      <Sha>9f2fbaf6604ee5a025b27b3571abaf64ca7332a4</Sha>
     </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
       <Uri>https://github.com/dotnet/wcf</Uri>
@@ -291,17 +291,17 @@
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>02dfa783c1f4223a5590a1b689ef381c337db1ab</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="10.0.0-prerelease.25527.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="10.0.0-prerelease.25605.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>b9f51d9ff3ac9411d1aa9988ef20bfda9a041418</Sha>
+      <Sha>ccb455efce66706ea8b3927fefb425f621e5af0a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="10.0.0-prerelease.25527.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="10.0.0-prerelease.25605.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>b9f51d9ff3ac9411d1aa9988ef20bfda9a041418</Sha>
+      <Sha>ccb455efce66706ea8b3927fefb425f621e5af0a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="10.0.0-prerelease.25527.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="10.0.0-prerelease.25605.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>b9f51d9ff3ac9411d1aa9988ef20bfda9a041418</Sha>
+      <Sha>ccb455efce66706ea8b3927fefb425f621e5af0a</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="10.0.0-beta.25604.105">
       <Uri>https://github.com/dotnet/dotnet</Uri>
