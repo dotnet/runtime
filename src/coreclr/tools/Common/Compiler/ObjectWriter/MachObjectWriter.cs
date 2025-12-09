@@ -12,6 +12,7 @@ using System.Numerics;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.Text;
 using Internal.TypeSystem;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using static ILCompiler.ObjectWriter.MachNative;
@@ -62,10 +63,10 @@ namespace ILCompiler.ObjectWriter
         private readonly List<MachSection> _sections = new();
 
         // Symbol table
-        private readonly Dictionary<string, uint> _symbolNameToIndex = new();
+        private readonly Dictionary<Utf8String, uint> _symbolNameToIndex = new();
         private readonly List<MachSymbol> _symbolTable = new();
         private readonly MachDynamicLinkEditSymbolTable _dySymbolTable = new();
-        private readonly Dictionary<string, (string StartNode, string EndNode, int Size)> _rangeSymbols = new();
+        private readonly Dictionary<Utf8String, (Utf8String StartNode, Utf8String EndNode, int Size)> _rangeSymbols = new();
 
         /// <summary>
         /// Base symbol to use for <see cref="RelocType.IMAGE_REL_BASED_ADDR32NB"/> relocations.
@@ -316,7 +317,7 @@ namespace ILCompiler.ObjectWriter
             stringTable.Write(outputFileStream);
         }
 
-        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
         {
             string segmentName = section.Name switch
             {
@@ -374,7 +375,7 @@ namespace ILCompiler.ObjectWriter
 
             _sections.Add(machSection);
 
-            base.CreateSection(section, comdatName, symbolName ?? $"lsection{sectionIndex}", sectionIndex, sectionStream);
+            base.CreateSection(section, comdatName, symbolName.IsNull ? $"lsection{sectionIndex}" : symbolName, sectionIndex, sectionStream);
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
@@ -384,7 +385,7 @@ namespace ILCompiler.ObjectWriter
             machSection.Log2Alignment = Math.Max(machSection.Log2Alignment, (uint)BitOperations.Log2((uint)alignment));
         }
 
-        private protected override void EmitSymbolRangeDefinition(string rangeNodeName, string startSymbolName, string endSymbolName, SymbolDefinition endSymbol)
+        private protected override void EmitSymbolRangeDefinition(Utf8String rangeNodeName, Utf8String startSymbolName, Utf8String endSymbolName, SymbolDefinition endSymbol)
         {
             // Mach has a few characteristics that make range symbols more difficult to emit:
             // - Emitting two symbols in the same location is not well supported by the Apple linker.
@@ -399,13 +400,13 @@ namespace ILCompiler.ObjectWriter
             long offset,
             Span<byte> data,
             RelocType relocType,
-            string symbolName,
+            Utf8String symbolName,
             long addend)
         {
             // We don't emit the range node name into the image as it overlaps with another symbol.
             // For relocs to it, instead target the start symbol.
             // For the "symbol size" reloc, we'll handle it later when we emit relocations in the Mach format.
-            if (_rangeSymbols.TryGetValue(symbolName, out (string StartNode, string, int Size) range))
+            if (_rangeSymbols.TryGetValue(symbolName, out (Utf8String StartNode, Utf8String, int Size) range))
             {
                 if (relocType == RelocType.IMAGE_REL_SYMBOL_SIZE)
                 {
@@ -425,7 +426,7 @@ namespace ILCompiler.ObjectWriter
                 _sections[sectionIndex].IsDwarfSection)
             {
                 // DWARF section to DWARF section relocation
-                if (symbolName.StartsWith('.'))
+                if (symbolName.AsSpan().StartsWith((byte)'.'))
                 {
                     switch (relocType)
                     {
@@ -504,8 +505,8 @@ namespace ILCompiler.ObjectWriter
         }
 
         private protected override void EmitSymbolTable(
-            IDictionary<string, SymbolDefinition> definedSymbols,
-            SortedSet<string> undefinedSymbols)
+            IDictionary<Utf8String, SymbolDefinition> definedSymbols,
+            SortedSet<Utf8String> undefinedSymbols)
         {
             // We already emitted symbols for all non-debug sections in EmitSectionsAndLayout,
             // these symbols are local and we need to account for them.
@@ -515,7 +516,7 @@ namespace ILCompiler.ObjectWriter
 
             // Sort and insert all defined symbols
             var sortedDefinedSymbols = new List<MachSymbol>(definedSymbols.Count);
-            foreach ((string name, SymbolDefinition definition) in definedSymbols)
+            foreach ((Utf8String name, SymbolDefinition definition) in definedSymbols)
             {
                 MachSection section = _sections[definition.SectionIndex];
                 // Sections in our object file should not be altered during native linking as the runtime
@@ -530,7 +531,7 @@ namespace ILCompiler.ObjectWriter
                     Type = (byte)(N_SECT | N_EXT | (definition.Global ? 0 : N_PEXT)),
                 });
             }
-            sortedDefinedSymbols.Sort((symA, symB) => string.CompareOrdinal(symA.Name, symB.Name));
+            sortedDefinedSymbols.Sort((symA, symB) => Comparer<Utf8String>.Default.Compare(symA.Name, symB.Name));
             foreach (MachSymbol definedSymbol in sortedDefinedSymbols)
             {
                 _symbolTable.Add(definedSymbol);
@@ -549,7 +550,7 @@ namespace ILCompiler.ObjectWriter
                 undefinedSymbols.Add(_baseSymbolName);
             }
 
-            foreach (string externSymbol in undefinedSymbols)
+            foreach (Utf8String externSymbol in undefinedSymbols)
             {
                 if (!_symbolNameToIndex.ContainsKey(externSymbol))
                 {
@@ -597,10 +598,10 @@ namespace ILCompiler.ObjectWriter
             foreach (SymbolicRelocation symbolicRelocation in relocationList)
             {
                 if (symbolicRelocation.Type == RelocType.IMAGE_REL_SYMBOL_SIZE
-                    && _rangeSymbols.TryGetValue(symbolicRelocation.SymbolName, out (string, string, int) range))
+                    && _rangeSymbols.TryGetValue(symbolicRelocation.SymbolName, out (Utf8String, Utf8String, int) range))
                 {
                     // Represent as X86_64_RELOC_SUBTRACTOR + X86_64_RELOC_UNSIGNED.
-                    (string StartNode, string EndNode, int Size) = range;
+                    (Utf8String StartNode, Utf8String EndNode, int Size) = range;
                     uint startSymbolIndex = _symbolNameToIndex[StartNode];
                     uint endSymbolIndex = _symbolNameToIndex[EndNode];
                     sectionRelocations.Add(
@@ -724,10 +725,10 @@ namespace ILCompiler.ObjectWriter
             foreach (SymbolicRelocation symbolicRelocation in relocationList)
             {
                 if (symbolicRelocation.Type == RelocType.IMAGE_REL_SYMBOL_SIZE
-                    && _rangeSymbols.TryGetValue(symbolicRelocation.SymbolName, out (string, string, int) range))
+                    && _rangeSymbols.TryGetValue(symbolicRelocation.SymbolName, out (Utf8String, Utf8String, int) range))
                 {
                     // Represent as ARM64_RELOC_SUBTRACTOR + ARM64_RELOC_UNSIGNED.
-                    (string StartNode, string EndNode, _) = range;
+                    (Utf8String StartNode, Utf8String EndNode, _) = range;
                     uint startSymbolIndex = _symbolNameToIndex[StartNode];
                     uint endSymbolIndex = _symbolNameToIndex[EndNode];
                     sectionRelocations.Add(
@@ -879,11 +880,11 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        partial void EmitCompactUnwindTable(IDictionary<string, SymbolDefinition> definedSymbols);
+        partial void EmitCompactUnwindTable(IDictionary<Utf8String, SymbolDefinition> definedSymbols);
 
-        private protected override string ExternCName(string name) => "_" + name;
+        private protected override Utf8String ExternCName(Utf8String name) => Utf8String.Concat("_"u8, name.AsSpan());
 
-        private static bool IsSectionSymbolName(string symbolName) => symbolName.StartsWith('l');
+        private static bool IsSectionSymbolName(Utf8String symbolName) => symbolName.AsSpan().StartsWith((byte)'l');
 
         private struct MachHeader64
         {
@@ -1033,7 +1034,7 @@ namespace ILCompiler.ObjectWriter
 
         private sealed class MachSymbol
         {
-            public string Name { get; init; } = string.Empty;
+            public Utf8String Name { get; init; } = string.Empty;
             public byte Type { get; init; }
             public MachSection Section { get; init; }
             public ushort Descriptor { get; init; }

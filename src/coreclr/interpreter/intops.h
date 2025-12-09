@@ -30,6 +30,8 @@ typedef enum
     InterpOpPointerHelperFtn,
     InterpOpPointerInt,
     InterpOpGenericLookupInt,
+    InterpOpHandleContinuation,
+    InterpOpHandleContinuationPt2,
 } InterpOpArgType;
 
 extern const uint8_t g_interpOpLen[];
@@ -127,6 +129,7 @@ inline double getR8LittleEndian(const uint8_t* ptr)
 // We use a couple of special "intrinsic" tokens to represent these operations.
 // These are recognized by our implementation of the CALL opcode.
 const uint32_t INTERP_CALL_SYNCHRONIZED_MONITOR_EXIT = 0xFFFFFFFE;
-const uint32_t INTERP_LOAD_RETURN_VALUE_FOR_SYNCHRONIZED = 0xFFFFFFFF;
+const uint32_t INTERP_LOAD_RETURN_VALUE_FOR_SYNCHRONIZED_OR_ASYNC = 0xFFFFFFFF;
+const uint32_t INTERP_RESTORE_CONTEXTS_FOR_ASYNC_METHOD = 0xFFFFFFFD;
 
 #endif

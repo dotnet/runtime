@@ -54,6 +54,7 @@ public class AssetsComputingHelper
         var assetType = candidate.GetMetadata("AssetType");
         bool fromMonoPackage = IsFromMonoPackage(candidate);
 
+        // A similar logic is in ReadWasmNativeAssetsFromFileSystem target for RuntimeTests
         reason = extension switch
         {
             ".a" when fromMonoPackage => "extension is .a is not supported.",
