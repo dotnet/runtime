@@ -100,6 +100,9 @@ function convert_single_asset (assetsCollection: AssetEntryInternal[], resource:
 
     const assetEntry = resource[0] as AssetEntryInternal;
     assetEntry.behavior = behavior;
+    if ((assetEntry as any).integrity) {
+        assetEntry.hash = (assetEntry as any).integrity;
+    }
 
     set_single_asset(assetEntry);
 

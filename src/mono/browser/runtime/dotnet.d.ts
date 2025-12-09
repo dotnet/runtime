@@ -289,17 +289,17 @@ type Asset = {
 };
 type WasmAsset = Asset & {
     name: string;
-    hash?: string | null | "";
+    integrity?: string | null | "";
 };
 type AssemblyAsset = Asset & {
     virtualPath: string;
     name: string;
-    hash?: string | null | "";
+    integrity?: string | null | "";
 };
 type PdbAsset = Asset & {
     virtualPath: string;
     name: string;
-    hash?: string | null | "";
+    integrity?: string | null | "";
 };
 type JsAsset = Asset & {
     /**
@@ -315,12 +315,12 @@ type SymbolsAsset = Asset & {
 type VfsAsset = Asset & {
     virtualPath: string;
     name: string;
-    hash?: string | null | "";
+    integrity?: string | null | "";
 };
 type IcuAsset = Asset & {
     virtualPath: string;
     name: string;
-    hash?: string | null | "";
+    integrity?: string | null | "";
 };
 /**
  * A "key" is name of the file, a "value" is optional hash for integrity check.
