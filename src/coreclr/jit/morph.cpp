@@ -9629,8 +9629,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        // Transforms:
         // 1. (-v1) / cns2 to v1 / (-cns2); for floating-point
+        // 2. v1 / cns2 to v1 * (1.0 / cns2); for floating-point if cns2 is a power of 2
         case GT_DIV:
         {
             if (varTypeIsIntegral(simdBaseType))
@@ -9641,43 +9641,102 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
 
-            if (!op1->OperIsHWIntrinsic())
-            {
-                break;
-            }
-
-            GenTreeHWIntrinsic* op1Intrin = op1->AsHWIntrinsic();
-
-            bool       op1IsScalar     = false;
-            genTreeOps op1Oper         = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar, /* getEffectiveOp */ true);
-            var_types  op1SimdBaseType = op1Intrin->GetSimdBaseType();
-
-            if ((op1Oper != GT_NEG) || op1IsScalar)
-            {
-                // scalar operations zero or copy the upper bits
-                break;
-            }
-
-            if (varTypeToSigned(simdBaseType) != varTypeToSigned(op1SimdBaseType))
-            {
-                // We need the base types to be of the same kind and size
-                // that is, we can't mix floating-point and integers or int and long
-                // but we can mix int and uint or long and ulong.
-                break;
-            }
-
             if (!op2->IsCnsVec())
             {
                 break;
             }
 
-            op2->AsVecCon()->EvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType);
-            fgUpdateConstTreeValueNumber(op2);
+            GenTreeHWIntrinsic* op1Intrin = nullptr;
+            genTreeOps          op1Oper   = GT_NONE;
+            var_types           op1SimdBaseType = TYP_UNDEF;
 
-            op1         = ExtractEffectiveOp(GT_NEG, op1Intrin, /* destroyNodes */ true);
-            node->Op(1) = op1;
+            if (op1->OperIsHWIntrinsic())
+            {
+                op1Intrin = op1->AsHWIntrinsic();
 
-            return node;
+                bool op1IsScalar = false;
+                op1Oper          = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar, /* getEffectiveOp */ true);
+                op1SimdBaseType  = op1Intrin->GetSimdBaseType();
+
+                if (op1IsScalar)
+                {
+                    // scalar operations zero or copy the upper bits
+                    break;
+                }
+            }
+
+            GenTreeVecCon* op2Cns = op2->AsVecCon();
+
+            if (op1Oper == GT_NEG)
+            {
+                if (varTypeToSigned(simdBaseType) != varTypeToSigned(op1SimdBaseType))
+                {
+                    // We need the base types to be of the same kind and size
+                    // that is, we can't mix floating-point and integers or int and long
+                    // but we can mix int and uint or long and ulong.
+                    break;
+                }
+
+                op2Cns->EvaluateUnaryInPlace(GT_NEG, isScalar, simdBaseType);
+                fgUpdateConstTreeValueNumber(op2);
+
+                op1         = ExtractEffectiveOp(GT_NEG, op1Intrin, /* destroyNodes */ true);
+                node->Op(1) = op1;
+            }
+
+            if (!fgGlobalMorph)
+            {
+                break;
+            }
+
+            bool     allPreciseReciprocal = true;
+            unsigned elementCount         = GenTreeVecCon::ElementCount(simdSize, simdBaseType);
+
+            if (simdBaseType == TYP_DOUBLE)
+            {
+                for (unsigned i = 0; i < elementCount; i++)
+                {
+                    double val = forceCastToFloat(op2Cns->GetElementFloating(TYP_FLOAT, i));
+
+                    if (!FloatingPointUtils::hasPreciseReciprocal(val))
+                    {
+                        allPreciseReciprocal = false;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                assert(simdBaseType == TYP_FLOAT);
+
+                for (unsigned i = 0; i < elementCount; i++)
+                {
+                    float val = forceCastToFloat(op2Cns->GetElementFloating(TYP_FLOAT, i));
+
+                    if (!FloatingPointUtils::hasPreciseReciprocal(val))
+                    {
+                        allPreciseReciprocal = false;
+                        break;
+                    }
+                }
+            }
+
+            if (allPreciseReciprocal)
+            {
+                GenTree* reciprocal = gtNewOneConNode(simdType, simdBaseType);
+                reciprocal->EvaluateBinaryInPlace(GT_DIV, isScalar, simdBaseType, op2Cns);
+
+                reciprocal->SetMorphed(this);
+                fgUpdateConstTreeValueNumber(reciprocal);
+
+                NamedIntrinsic mulIntrinsic =
+                    GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, GT_MUL, op1, reciprocal, simdBaseType, simdSize,
+                                                                 isScalar);
+
+                node->ChangeHWIntrinsicId(mulIntrinsic, op1, reciprocal);
+                DEBUG_DESTROY_NODE(op2);
+            }
+            break;
         }
 
         // Transforms:
