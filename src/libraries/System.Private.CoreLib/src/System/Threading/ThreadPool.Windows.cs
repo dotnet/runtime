@@ -168,7 +168,7 @@ namespace System.Threading
         /// optimize for a case when queues already have items and this flag is already set.
         /// Make sure that the presence of the item that is being added to the queue is visible
         /// before calling this.
-        /// Typically this is not a problem when enqueing uses an inerlocked update of the queue
+        /// Typically this is not a problem when enqueing uses an interlocked update of the queue
         /// index to establish the presence of the new item. More care may be needed when an item
         /// is inserted via ordinary or volatile writes.
         /// </summary>

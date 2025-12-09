@@ -119,7 +119,7 @@ namespace System.Threading
                         WorkerDoWork(threadPoolInstance, ref spinWait);
                     }
 
-                    // We`ve timed out waiting on the semaphore. Time to exit.
+                    // We've timed out waiting on the semaphore. Time to exit.
                     // In rare cases we may be asked to keep running/waiting.
                     if (ShouldExitWorker(threadPoolInstance, threadAdjustmentLock))
                     {
