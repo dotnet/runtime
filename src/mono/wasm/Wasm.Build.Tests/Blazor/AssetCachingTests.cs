@@ -27,24 +27,21 @@ public class AssetCachingTests : BlazorWasmTestBase
     [Fact, TestCategory("no-fingerprinting")]
     public async Task BlazorApp_BasedOnFingerprinting_LoadsWasmAssetsFromCache()
     {
-        var config = Configuration.Release;
-
         var project = CopyTestAsset(
-            config,
+            Configuration.Release,
             aot: false,
             TestAsset.BlazorWebWasm,
             "AssetCachingTest"
         );
 
-        (string projectDir, string output) = BlazorPublish(project, config, new PublishOptions(AssertAppBundle: false));
+        (string projectDir, string output) = BlazorPublish(project, Configuration.Release, new PublishOptions(AssertAppBundle: false));
 
-        var startUrl = string.Empty;
         var wasmRequestRecorder = new WasmRequestRecorder();
 
         var runOptions = new BlazorRunOptions(Configuration.Release)
         {
-            OnServerMessage = (msg) => wasmRequestRecorder.RecordIfWasmRequestFinished(msg),
-            ExecuteAfterLoaded = async (_, page) => startUrl = page.Url,
+            BrowserPath = "/counter",
+            OnServerMessage = wasmRequestRecorder.RecordIfWasmRequestFinished,
             Test = async (page) =>
             {
                 await WaitForCounterInteractivity(page);
@@ -57,7 +54,7 @@ public class AssetCachingTests : BlazorWasmTestBase
 
                 // Perform browser navigation to cause resource reload.
                 // We use the initial base URL because the test server is not configured for SPA routing.
-                await page.GotoAsync(startUrl);
+                await page.ReloadAsync();
                 await WaitForCounterInteractivity(page);
 
                 // Check server logs after the second load.
@@ -68,10 +65,13 @@ public class AssetCachingTests : BlazorWasmTestBase
                 }
                 else
                 {
-                    // Without fingerprinting we should see validation requests for Wasm assets during the second load with response status 304.
+                    // Without fingerprinting we should see validation requests for Wasm assets
+                    // during the second load with response status 304.
                     Assert.NotEmpty(wasmRequestRecorder.ResponseCodes);
                     Assert.All(wasmRequestRecorder.ResponseCodes, r => Assert.Equal(304, r.ResponseCode));
                 }
+
+                await page.EvaluateAsync("console.log('WASM EXIT 0');");
             }
         };
 
@@ -84,7 +84,6 @@ public class AssetCachingTests : BlazorWasmTestBase
 
     private static async Task WaitForCounterInteractivity(IPage page)
     {
-        await page.Locator("text=Counter").ClickAsync();
         var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
         Assert.Equal("Current count: 0", txt);
 
@@ -103,13 +102,13 @@ partial class WasmRequestRecorder
 
     public void RecordIfWasmRequestFinished(string message)
     {
-		var match = LogRegex().Match(message);
+        var match = LogRegex().Match(message);
 
-		if (match.Success)
-		{
-			var name = match.Groups["name"].Value;
-			var code = int.Parse(match.Groups["code"].Value);
-			ResponseCodes.Add((name, code));
-		}
+        if (match.Success)
+        {
+           	var name = match.Groups["name"].Value;
+           	var code = int.Parse(match.Groups["code"].Value);
+           	ResponseCodes.Add((name, code));
+        }
     }
 }
