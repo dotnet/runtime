@@ -163,7 +163,7 @@ namespace Internal.JitInterface
 
         public static void Startup(CORINFO_OS os)
         {
-            jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
+            jitStartup(GetJitHost(JitConfigProvider.UnmanagedInstance));
             JitSetOs(JitPointerAccessor.Get(), os);
         }
 
@@ -3655,14 +3655,6 @@ namespace Internal.JitInterface
         private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
         { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
 
-#pragma warning disable CA1822 // Mark members as static
-        private CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_STRUCT_* handle)
-#pragma warning restore CA1822 // Mark members as static
-        {
-            // TODO: Lazy string literal helper
-            return CorInfoHelpFunc.CORINFO_HELP_UNDEF;
-        }
-
         private CORINFO_MODULE_STRUCT_* embedModuleHandle(CORINFO_MODULE_STRUCT_* handle, ref void* ppIndirection)
         { throw new NotImplementedException("embedModuleHandle"); }
 
@@ -4081,7 +4073,9 @@ namespace Internal.JitInterface
                 CorInfoReloc.ARM32_THUMB_MOV32_PCREL => RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL,
                 CorInfoReloc.LOONGARCH64_PC => RelocType.IMAGE_REL_BASED_LOONGARCH64_PC,
                 CorInfoReloc.LOONGARCH64_JIR => RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR,
-                CorInfoReloc.RISCV64_PC => RelocType.IMAGE_REL_BASED_RISCV64_PC,
+                CorInfoReloc.RISCV64_CALL_PLT => RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT,
+                CorInfoReloc.RISCV64_PCREL_I => RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I,
+                CorInfoReloc.RISCV64_PCREL_S => RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S,
                 _ => throw new ArgumentException("Unsupported relocation type: " + reloc),
             };
 
