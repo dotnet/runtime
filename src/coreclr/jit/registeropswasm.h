@@ -9,7 +9,6 @@ enum class WasmValueType : unsigned
     F32,
     F64,
     Count,
-
 #ifdef TARGET_64BIT
     I = I64,
 #else

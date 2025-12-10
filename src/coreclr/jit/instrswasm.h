@@ -37,6 +37,8 @@ INST(br,          "br",          0, IF_ULEB128, 0x0C)
 INST(br_if,       "br_if",       0, IF_ULEB128, 0x0D)
 INST(br_table,    "br_table",    0, IF_ULEB128, 0x0E)
 INST(return,      "return",      0, IF_OPCODE,  0x0F)
+INST(local_cnt,   "local.cnt",   0, IF_LOCAL_CNT, 0x00)
+INST(local_decl,  "local",       0, IF_LOCAL_DECL, 0x00)
 
 INST(local_get,   "local.get",   0, IF_ULEB128, 0x20)
 INST(i32_load,    "i32.load",    0, IF_MEMARG,  0x28)

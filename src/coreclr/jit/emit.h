@@ -52,6 +52,7 @@
 #define DEBUG_EMIT 0
 #endif
 
+
 #if EMITTER_STATS
 void emitterStats(FILE* fout);
 void emitterStaticStats(FILE* fout); // Static stats about the emitter (data structure offsets, sizes, etc.)
@@ -2334,6 +2335,27 @@ protected:
     };
 #endif
 
+#ifdef TARGET_WASM
+#include "wasmtypes.h"
+
+    struct instrDescLclVarDecl : instrDesc
+    {
+        instrDescLclVarDecl() = delete;
+        cnsval_ssize_t lclCnt;
+        instWasmValueType lclType;
+
+        void idLclType(instWasmValueType type)
+        {
+            lclType = type;
+        }
+
+        void idLclCnt(cnsval_ssize_t cnt)
+        {
+            lclCnt = cnt;
+        }
+    };
+#endif // TARGET_WASM
+
 #ifdef TARGET_RISCV64
     struct instrDescLoadImm : instrDescCns
     {
@@ -3292,6 +3314,11 @@ private:
     instrDesc* emitNewInstrCns(emitAttr attr, cnsval_ssize_t cns);
     instrDesc* emitNewInstrDsp(emitAttr attr, target_ssize_t dsp);
     instrDesc* emitNewInstrCnsDsp(emitAttr attr, target_ssize_t cns, int dsp);
+
+#ifdef TARGET_WASM
+    instrDesc* emitNewInstrLclVarDecl(emitAttr attr, cnsval_ssize_t localCount, instWasmValueType type);
+#endif
+
 #ifdef TARGET_ARM
     instrDesc* emitNewInstrReloc(emitAttr attr, BYTE* addr);
 #endif // TARGET_ARM
@@ -4106,6 +4133,19 @@ inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t
         return id;
     }
 }
+
+#ifdef TARGET_WASM
+#include "wasmtypes.h"
+
+inline emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr attr, cnsval_ssize_t localCount, instWasmValueType type)
+{
+    instrDescLclVarDecl* id = static_cast<instrDescLclVarDecl*>(emitAllocAnyInstr(sizeof(instrDescLclVarDecl), attr));
+    id->idLclCnt(localCount);
+    id->idLclType(type);
+
+    return id;
+}
+#endif
 
 #ifdef TARGET_ARM
 

@@ -85,6 +85,21 @@ bool emitter::emitInsIsStore(instruction ins)
     return false;
 }
 
+//------------------------------------------------------------------------
+// emitIns_I: Emit an instruction with an immediate operand and an encoded valye type
+//
+void emitter::emitIns_I_Ty(instruction ins, cnsval_ssize_t imm, instWasmValueType valType)
+{
+    instrDesc* id  = this->emitNewInstrLclVarDecl(EA_8BYTE, imm, valType);
+    insFormat  fmt = this->emitInsFormat(ins);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+
+    this->dispIns(id);
+    this->appendToCurIG(id);
+}
+
 emitter::insFormat emitter::emitInsFormat(instruction ins)
 {
     static_assert(IF_COUNT < 255);
@@ -166,6 +181,7 @@ unsigned emitter::instrDesc::idCodeSize() const
             size += 1;
             break;
         case IF_LABEL:
+        case IF_LOCAL_CNT:
             assert(!idIsCnsReloc());
             size = SizeOfULEB128(emitGetInsSC(this));
             break;
@@ -317,6 +333,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputULEB128(dst, offset);
             break;
         }
+        case IF_LOCAL_CNT:
+        {
+            cnsval_ssize_t constant = emitGetInsSC(id);
+            dst += emitOutputULEB128(dst, (uint64_t)constant);
+            break;
+        }
+        case IF_LOCAL_DECL:
+        {
+            cnsval_ssize_t constant = emitGetInsSC(id);
+            dst += emitOutputULEB128(dst, (uint64_t)constant);
+            // TODO-WASM: currently assuming all locals are numtypes which are single byte encoded.
+            // vec types are also single byte encoded. If we end up using reftypes, we'll need to handle the more complex encoding.
+            dst += emitOutputByte(dst, static_cast<uint8_t>(instWasmValueType::I32));
+            break;
+        }
         default:
             NYI_WASM("emitOutputInstr");
             break;
@@ -421,6 +452,7 @@ void emitter::emitDispIns(
 
         case IF_LABEL:
         case IF_ULEB128:
+        case IF_LOCAL_CNT:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
