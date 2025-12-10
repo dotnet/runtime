@@ -40,8 +40,7 @@ namespace System.IO.Compression
                 throw new ArgumentException(SR.ZstandardDictionary_EmptyBuffer, nameof(buffer));
             }
 
-            // since the data needs to be pinned for the lifetime of the dictionary, allocate directly to the pinned heap
-            byte[] data = GC.AllocateArray<byte>(buffer.Length, pinned: true);
+            byte[] data = buffer.ToArray();
             buffer.CopyTo(data);
 
             unsafe
