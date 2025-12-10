@@ -20,12 +20,13 @@ RUN cd msquic/build/bin/Debug && \
     $( ls ./* | cut -d "/" -f 2 | sed -r "s/(.*)/\1=\/usr\/lib\/\1/g" ) && \
     dpkg -i libmsquic_*.deb
 
-ARG VERSION
-ARG CONFIGURATION
-
 # Build the stress server
 WORKDIR /app
 COPY . .
+WORKDIR /app/System.Net.Http/tests/StressTests/HttpStress
+
+ARG VERSION
+ARG CONFIGURATION
 
 RUN dotnet build -c $CONFIGURATION \
     -p:NetCoreAppCurrentVersion=$VERSION \

@@ -18,6 +18,7 @@ while [[ -h "$source" ]]; do
   # symlink file was located
   [[ $source != /* ]] && source="$scriptroot/$source"
 done
+
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 repo_root=$(git -C "$scriptroot" rev-parse --show-toplevel)
 

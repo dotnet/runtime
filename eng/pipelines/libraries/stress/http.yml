@@ -99,12 +99,12 @@ extends:
       - job: windows
         displayName: Docker NanoServer
         timeoutInMinutes: 150
-        variables:
-          DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
-          DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
         pool:
           name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals 1es-windows-2022-open
+        variables:
+          DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
+          DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
 
         steps:
         - checkout: self
