@@ -86,5 +86,70 @@ namespace System.Linq.Tests
             Assert.Equal(3, second.CurrentCount);
             Assert.Equal(1, second.DisposeAsyncCount);
         }
+
+        [Fact]
+        public async Task MultipleConcat_Coalesced()
+        {
+            IAsyncEnumerable<int> first = CreateSource(1, 2);
+            IAsyncEnumerable<int> second = CreateSource(3, 4);
+            IAsyncEnumerable<int> third = CreateSource(5, 6);
+            IAsyncEnumerable<int> result = first.Concat(second).Concat(third);
+            
+            await AssertEqual(
+                new[] { 1, 2, 3, 4, 5, 6 },
+                result);
+        }
+
+        [Theory]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(5)]
+        [InlineData(10)]
+        public async Task ChainedConcat_ProducesCorrectSequence(int concatCount)
+        {
+            IAsyncEnumerable<int> result = AsyncEnumerable.Empty<int>();
+            List<int> expected = new();
+            
+            for (int i = 0; i < concatCount; i++)
+            {
+                int start = i * 2;
+                var source = CreateSource(start, start + 1);
+                result = result.Concat(source);
+                expected.Add(start);
+                expected.Add(start + 1);
+            }
+
+            await AssertEqual(expected, result);
+        }
+
+        [Fact]
+        public async Task LongConcatChain_WorksCorrectly()
+        {
+            var enumerable = AsyncEnumerable.Empty<int>();
+            for (int i = 0; i < 100; i++)
+            {
+                enumerable = enumerable.Concat(CreateSource(i));
+            }
+
+            int sum = 0;
+            await foreach (int item in enumerable)
+            {
+                sum += item;
+            }
+
+            Assert.Equal(Enumerable.Range(0, 100).Sum(), sum);
+        }
+
+        [Fact]
+        public async Task ConcatWithAppendPrepend_WorksCorrectly()
+        {
+            IAsyncEnumerable<int> first = CreateSource(2, 3);
+            IAsyncEnumerable<int> second = CreateSource(5, 6);
+            IAsyncEnumerable<int> result = first.Append(4).Concat(second).Prepend(1).Append(7);
+            
+            await AssertEqual(
+                new[] { 1, 2, 3, 4, 5, 6, 7 },
+                result);
+        }
     }
 }
