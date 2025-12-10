@@ -79,7 +79,7 @@ namespace System.IO.Compression
                     if (!stream.CanRead)
                         throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
-                    _inflater = new Inflater(windowBits, uncompressedSize);
+                    _inflater = Inflater.CreateInflater(windowBits, uncompressedSize);
                     _stream = stream;
                     _mode = CompressionMode.Decompress;
                     _leaveOpen = leaveOpen;
@@ -114,7 +114,7 @@ namespace System.IO.Compression
             if (!stream.CanWrite)
                 throw new ArgumentException(SR.NotSupported_UnwritableStream, nameof(stream));
 
-            _deflater = new Deflater(compressionLevel, strategy, windowBits, GetMemLevel(compressionLevel));
+            _deflater = Deflater.CreateDeflater(compressionLevel, strategy, windowBits, GetMemLevel(compressionLevel));
 
             _stream = stream;
             _mode = CompressionMode.Compress;
