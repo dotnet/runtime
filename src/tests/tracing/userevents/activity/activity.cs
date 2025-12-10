@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics.Tracing;
-using System.Threading;
 using System.Threading.Tasks;
 using Tracing.UserEvents.Tests.Common;
 using Microsoft.Diagnostics.Tracing;
@@ -14,8 +13,6 @@ namespace Tracing.UserEvents.Tests.Activity
     {
         public static void ActivityTracee()
         {
-            // Allow some time for tracepoints be enabled before emitting events
-            Thread.Sleep(150);
             ActivityTraceeAsync().GetAwaiter().GetResult();
         }
 
@@ -151,13 +148,12 @@ namespace Tracing.UserEvents.Tests.Activity
 
         public static int Main(string[] args)
         {
-            if (args.Length > 0 && args[0].Equals("tracee", StringComparison.OrdinalIgnoreCase))
-            {
-                ActivityTracee();
-                return 0;
-            }
-
-            return UserEventsTestRunner.Run("activity", typeof(Activity).Assembly.Location, s_traceValidator, 10000);
+            return UserEventsTestRunner.Run(
+                args,
+                "activity",
+                typeof(Activity).Assembly.Location,
+                ActivityTracee,
+                s_traceValidator);
         }
     }
 

@@ -2,9 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+using System.Threading;
 using Microsoft.Diagnostics.Tracing;
 
 namespace Tracing.UserEvents.Tests.Common
@@ -14,16 +18,46 @@ namespace Tracing.UserEvents.Tests.Common
         private const int SIGINT = 2;
         private const int DefaultTraceeExitTimeoutMs = 5000;
         private const int DefaultRecordTraceExitTimeoutMs = 20000;
+        private const int DefaultTraceeDelayToSetupTracepointsMs = 200;
 
         [DllImport("libc", EntryPoint = "kill", SetLastError = true)]
         private static extern int Kill(int pid, int sig);
 
         public static int Run(
+            string[] args,
+            string scenarioName,
+            string traceeAssemblyPath,
+            Action traceeAction,
+            Func<EventPipeEventSource, bool> traceValidator,
+            int traceeExitTimeout = DefaultTraceeExitTimeoutMs,
+            int recordTraceExitTimeout = DefaultRecordTraceExitTimeoutMs,
+            int traceeDelayToSetupTracepoints = DefaultTraceeDelayToSetupTracepointsMs)
+        {
+            if (args.Length > 0 && args[0].Equals("tracee", StringComparison.OrdinalIgnoreCase))
+            {
+                if (traceeDelayToSetupTracepoints > 0)
+                {
+                    Thread.Sleep(traceeDelayToSetupTracepoints);
+                }
+
+                traceeAction();
+                return 0;
+            }
+
+            return RunOrchestrator(
+                scenarioName,
+                traceeAssemblyPath,
+                traceValidator,
+                traceeExitTimeout,
+                recordTraceExitTimeout);
+        }
+
+        private static int RunOrchestrator(
             string scenarioName,
             string traceeAssemblyPath,
             Func<EventPipeEventSource, bool> traceValidator,
-            int traceeExitTimeout = DefaultTraceeExitTimeoutMs,
-            int recordTraceExitTimeout = DefaultRecordTraceExitTimeoutMs)
+            int traceeExitTimeout,
+            int recordTraceExitTimeout)
         {
             string userEventsScenarioDir = Path.GetDirectoryName(traceeAssemblyPath);
             string recordTracePath = ResolveRecordTracePath(userEventsScenarioDir);
@@ -88,8 +122,14 @@ namespace Tracing.UserEvents.Tests.Common
             traceeStartInfo.RedirectStandardError = true;
 
             // record-trace currently only searches /tmp/ for diagnostic ports https://github.com/microsoft/one-collect/issues/183
-            string diagnosticPortDir = "/tmp/";
+            string diagnosticPortDir = "/tmp";
             traceeStartInfo.Environment["TMPDIR"] = diagnosticPortDir;
+
+            // TMPDIR is configured on Helix, but the diagnostic port is created outside of Helix's default temp datadisk path.
+            // The diagnostic port should be automatically cleaned up when the tracee shuts down, but zombie sockets can be left
+            // behind after catastrophic exits. Clean them before launching the tracee to avoid deleting sockets from a reused PID.
+            // When https://github.com/microsoft/one-collect/issues/183 is fixed, this and the above TMPDIR should be removed.
+            EnsureCleanDiagnosticPorts(diagnosticPortDir);
 
             Console.WriteLine($"Starting tracee process: {traceeStartInfo.FileName} {traceeStartInfo.Arguments}");
             using Process traceeProcess = Process.Start(traceeStartInfo);
@@ -119,12 +159,6 @@ namespace Tracing.UserEvents.Tests.Common
                 traceeProcess.Kill();
             }
             traceeProcess.WaitForExit(); // flush async output
-
-            // TMPDIR is configured on Helix, but the diagnostic port was created outside of helix's default temp datadisk path.
-            // The diagnostic port should be automatically cleaned up when the tracee shutsdown, but just in case of an
-            // abrupt exit, ensure cleanup to avoid leaving artifacts on helix machines.
-            // When https://github.com/microsoft/one-collect/issues/183 is fixed, this and the above TMPDIR should be removed.
-            CleanupTraceeDiagnosticPorts(diagnosticPortDir, traceePid);
 
             if (!recordTraceProcess.HasExited)
             {
@@ -172,20 +206,50 @@ namespace Tracing.UserEvents.Tests.Common
             return recordTracePath;
         }
 
-        private static void CleanupTraceeDiagnosticPorts(string diagnosticPortDir, int traceePid)
+        // Similar to IpcTraceTest.EnsureCleanEnvironment, but scoped to the provided diagnosticPortDir.
+        // Check for zombie diagnostic IPC sockets left behind by previous runs and remove them.
+        // If multiple sockets exist for a running PID, delete all but the newest.
+        private static void EnsureCleanDiagnosticPorts(string diagnosticPortDir)
         {
-            try
+            if (!Directory.Exists(diagnosticPortDir))
             {
-                string[] udsFiles = Directory.GetFiles(diagnosticPortDir, $"dotnet-diagnostic-{traceePid}-*-socket");
-                foreach (string udsFile in udsFiles)
-                {
-                    Console.WriteLine($"Deleting tracee diagnostic port UDS file: {udsFile}");
-                    File.Delete(udsFile);
-                }
+                return;
             }
-            catch (Exception ex)
+
+            Func<(IEnumerable<IGrouping<int,FileInfo>>, List<int>)> getPidsAndSockets = () =>
             {
-                Console.Error.WriteLine($"Failed to cleanup tracee diagnostic ports: {ex}");
+                IEnumerable<IGrouping<int,FileInfo>> currentIpcs = Directory.GetFiles(diagnosticPortDir, "dotnet-diagnostic*")
+                    .Select(filename => new { pid = int.Parse(Regex.Match(filename, @"dotnet-diagnostic-(?<pid>\d+)").Groups["pid"].Value), fileInfo = new FileInfo(filename) })
+                    .GroupBy(fileInfos => fileInfos.pid, fileInfos => fileInfos.fileInfo);
+                List<int> currentPids = System.Diagnostics.Process.GetProcesses().Select(pid => pid.Id).ToList();
+                return (currentIpcs, currentPids);
+            };
+
+            var (currentIpcs, currentPids) = getPidsAndSockets();
+
+            foreach (var ipc in currentIpcs)
+            {
+                if (!currentPids.Contains(ipc.Key))
+                {
+                    foreach (FileInfo fi in ipc)
+                    {
+                        Console.WriteLine($"Deleting zombie diagnostic port: {fi.FullName}");
+                        fi.Delete();
+                    }
+                }
+                else
+                {
+                    if (ipc.Count() > 1)
+                    {
+                        // delete zombied pipes except newest which is owned
+                        var duplicates = ipc.OrderBy(fileInfo => fileInfo.CreationTime.Ticks).SkipLast(1);
+                        foreach (FileInfo fi in duplicates)
+                        {
+                            Console.WriteLine($"Deleting duplicate diagnostic port: {fi.FullName}");
+                            fi.Delete();
+                        }
+                    }
+                }
             }
         }
 

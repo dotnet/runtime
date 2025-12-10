@@ -55,13 +55,12 @@ namespace Tracing.UserEvents.Tests.ManagedEvent
 
         public static int Main(string[] args)
         {
-            if (args.Length > 0 && args[0].Equals("tracee", StringComparison.OrdinalIgnoreCase))
-            {
-                ManagedEventTracee();
-                return 0;
-            }
-
-            return UserEventsTestRunner.Run("managedevent", typeof(ManagedEvent).Assembly.Location, s_traceValidator);
+            return UserEventsTestRunner.Run(
+                args,
+                "managedevent",
+                typeof(ManagedEvent).Assembly.Location,
+                ManagedEventTracee,
+                s_traceValidator);
         }
     }
 

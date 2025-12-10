@@ -52,13 +52,12 @@ namespace Tracing.UserEvents.Tests.Basic
 
         public static int Main(string[] args)
         {
-            if (args.Length > 0 && args[0].Equals("tracee", StringComparison.OrdinalIgnoreCase))
-            {
-                BasicTracee();
-                return 0;
-            }
-
-            return UserEventsTestRunner.Run("basic", typeof(Basic).Assembly.Location, s_traceValidator);
+            return UserEventsTestRunner.Run(
+                args,
+                "basic",
+                typeof(Basic).Assembly.Location,
+                BasicTracee,
+                s_traceValidator);
         }
     }
 }

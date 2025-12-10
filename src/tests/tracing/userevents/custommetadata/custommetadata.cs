@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using System.Threading;
 using Tracing.UserEvents.Tests.Common;
 using Microsoft.Diagnostics.Tracing;
 
@@ -14,8 +13,6 @@ namespace Tracing.UserEvents.Tests.CustomMetadata
     {
         public static void CustomMetadataTracee()
         {
-            // Allow some time for tracepoints be enabled before emitting events
-            Thread.Sleep(150);
             CustomMetadataEventSource.Log.WorkItem(1, "Item1");
         }
 
@@ -70,13 +67,12 @@ namespace Tracing.UserEvents.Tests.CustomMetadata
 
         public static int Main(string[] args)
         {
-            if (args.Length > 0 && args[0].Equals("tracee", StringComparison.OrdinalIgnoreCase))
-            {
-                CustomMetadataTracee();
-                return 0;
-            }
-
-            return UserEventsTestRunner.Run("custommetadata", typeof(CustomMetadata).Assembly.Location, s_traceValidator, 20000);
+            return UserEventsTestRunner.Run(
+                args,
+                "custommetadata",
+                typeof(CustomMetadata).Assembly.Location,
+                CustomMetadataTracee,
+                s_traceValidator);
         }
     }
 

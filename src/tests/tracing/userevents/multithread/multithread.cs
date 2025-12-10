@@ -94,13 +94,12 @@ namespace Tracing.UserEvents.Tests.MultiThread
 
         public static int Main(string[] args)
         {
-            if (args.Length > 0 && args[0].Equals("tracee", StringComparison.OrdinalIgnoreCase))
-            {
-                MultiThreadTracee();
-                return 0;
-            }
-
-            return UserEventsTestRunner.Run("multithread", typeof(MultiThread).Assembly.Location, s_traceValidator);
+            return UserEventsTestRunner.Run(
+                args,
+                "multithread",
+                typeof(MultiThread).Assembly.Location,
+                MultiThreadTracee,
+                s_traceValidator);
         }
     }
 }
