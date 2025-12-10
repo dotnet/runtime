@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 public class CapacityTests
@@ -24,6 +25,13 @@ public class CapacityTests
         Assert.NotNull(instance);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static object AllocLargeClassWithTaskMethods_Exception()
+    {
+        var instance = new LargeClassWithTaskMethods_Exception();
+        return instance;
+    }
+
     [Fact]
     public static void TestLargeClassWithTaskMethods_Exception()
     {
@@ -31,7 +39,7 @@ public class CapacityTests
         // The call should throw an exception
         Assert.Throws<TypeLoadException>(() =>
         {
-            var instance = new LargeClassWithTaskMethods_Exception();
+            AllocLargeClassWithTaskMethods_Exception();
         });
     }
 }
