@@ -5,7 +5,7 @@
   "generatorVersions": "[1.0.0.0-*)",
   "groupIdentity": "WebAssembly.Browser",
   "precedence": 9000,
-  "identity": "WebAssembly.Browser.10.0",
+  "identity": "WebAssembly.Browser.11.0",
   "name": "WebAssembly Browser App",
   "description": "A project template for creating a .NET app that runs on WebAssembly in a browser",
   "shortName": "wasmbrowser",
@@ -40,12 +40,12 @@
       "datatype": "choice",
       "choices": [
         {
-          "choice": "net10.0",
-          "description": "Target net10.0",
-          "displayName": ".NET 10.0"
+          "choice": "net11.0",
+          "description": "Target net11.0",
+          "displayName": ".NET 11.0"
         }
       ],
-      "defaultValue": "net10.0",
+      "defaultValue": "net11.0",
       "replaces": "netX.0",
       "displayName": "framework"
     }

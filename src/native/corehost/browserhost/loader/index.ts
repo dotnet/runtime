@@ -3,7 +3,8 @@
 
 import type {
     LoggerType, AssertType, RuntimeAPI, LoaderExports,
-    NativeBrowserExportsTable, LoaderExportsTable, RuntimeExportsTable, InternalExchange, BrowserHostExportsTable, InteropJavaScriptExportsTable, BrowserUtilsExportsTable
+    NativeBrowserExportsTable, LoaderExportsTable, RuntimeExportsTable, InternalExchange, BrowserHostExportsTable, InteropJavaScriptExportsTable, BrowserUtilsExportsTable,
+    EmscriptenModuleInternal
 } from "./types";
 import { InternalExchangeIndex } from "../types";
 
@@ -19,6 +20,7 @@ import { check, error, info, warn, debug } from "./logging";
 import { dotnetAssert, dotnetLoaderExports, dotnetLogger, dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
 import { rejectRunMainPromise, resolveRunMainPromise, getRunMainPromise } from "./run";
 import { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "./promise-completion-source";
+import { instantiateWasm } from "./assets";
 
 export function dotnetInitializeModule(): RuntimeAPI {
 
@@ -70,6 +72,12 @@ export function dotnetInitializeModule(): RuntimeAPI {
         check,
     };
     Object.assign(dotnetAssert, assert);
+
+    // emscripten extension point
+    const localModule: Partial<EmscriptenModuleInternal> = {
+        instantiateWasm,
+    };
+    Object.assign(dotnetApi.Module!, localModule);
 
     internals[InternalExchangeIndex.LoaderExportsTable] = loaderExportsToTable(dotnetLogger, dotnetAssert, dotnetLoaderExports);
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);

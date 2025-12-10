@@ -1,4 +1,8 @@
 <Project>
-    <Import Project="..\..\..\Directory.Build.props" />
-    <Import Project=".\native-library.props" Condition="'$(IsSourceProject)' == 'true' and '$(Language)' == 'C#'" />
+  <Import Project="..\..\..\Directory.Build.props" />
+  <Import Project=".\native-library.props" Condition="'$(IsSourceProject)' == 'true' and '$(Language)' == 'C#'" />
+
+  <PropertyGroup Condition="'$(UseBootstrapLayout)' == 'true'">
+    <UseLocalTargetingRuntimePack>true</UseLocalTargetingRuntimePack>
+  </PropertyGroup>
 </Project>

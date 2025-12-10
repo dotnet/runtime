@@ -1,9 +1,11 @@
 <Project>
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
+  <Import Project="$(RepositoryEngineeringDir)pruning.targets" />
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
 
   <PropertyGroup>
     <UseAppHost Condition="'$(SelfContained)' != 'true'">false</UseAppHost>
+    <NETCoreAppMaximumVersion>$(NetCoreAppCurrentVersion)</NETCoreAppMaximumVersion>
   </PropertyGroup>
 
   <!-- Override target from targetingpacks.targets. Use Version instead of ProductVersion (written into runtimeconfig.json).

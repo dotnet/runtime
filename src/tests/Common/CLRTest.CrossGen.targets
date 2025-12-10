@@ -184,7 +184,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
           do
             echo $dllFile
             bareFileName="${dllFile##*/}"
-            RunCrossgen2OnFiles "$PWD/$bareFileName" "$dllFile"
+            RunCrossgen2OnFiles "$PWD/$bareFileName" "$PWD/$bareFileName" "$dllFile"
             if [ $__cg2ExitCode -ne 0 ]; then
               break
             fi
