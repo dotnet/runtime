@@ -276,9 +276,6 @@ namespace System.Threading
                 }
             }
 
-            // Mutexes are abandoned by managed thread cleanup.
-            public bool RequiresDetachedThreadCleanupBeforeWait => _type == WaitableObjectType.Mutex;
-
             private void AcceptSignal(ThreadWaitInfo waitInfo)
             {
                 s_lock.VerifyIsLocked();

@@ -738,20 +738,6 @@ extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
     YieldProcessorNormalized(iterations);
 }
 
-extern "C" BOOL QCALLTYPE ThreadNative_EnsureDetachedThreadCleanupThreadExists()
-{
-    QCALL_CONTRACT;
-
-    BOOL ret = FALSE;
-    BEGIN_QCALL;
-
-    ret = ThreadCleanupThread::EnsureCleanupThreadExists();
-
-    END_QCALL;
-
-    return ret;
-}
-
 #ifdef TARGET_WINDOWS
 // This service can be called on unstarted and dead threads.  For unstarted ones, the
 // next wait will be interrupted.  For dead ones, this service quietly does nothing.

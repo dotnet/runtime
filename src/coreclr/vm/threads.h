@@ -5483,14 +5483,6 @@ private:
     Thread* m_PreviousValue;
 };
 
-class ThreadCleanupThread
-{
-    public:
-    static bool UsingExternalCleanupThread();
-    static BOOL EnsureCleanupThreadExists();
-    static void SetHasThreadsToCleanUp();
-};
-
 EXTERN_C Thread* GetThreadAsyncSafe();
 
 #ifndef DACCESS_COMPILE

@@ -147,7 +147,7 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
         SystemDomain::System()->ProcessDelayedUnloadLoaderAllocators();
     }
 
-    if (Thread::m_DetachCount > 0 && !ThreadCleanupThread::UsingExternalCleanupThread())
+    if (Thread::m_DetachCount > 0)
     {
         Thread::CleanupDetachedThreads();
     }

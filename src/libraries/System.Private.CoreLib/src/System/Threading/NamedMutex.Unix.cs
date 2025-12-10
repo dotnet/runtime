@@ -639,10 +639,6 @@ namespace System.Threading
         {
             private readonly SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> _processDataHeader;
 
-            // Mutexes are abandoned by managed thread cleanup.
-            // Named mutexes can be recognized as abandoned after the fact, but it is better to try to clean up ourselves.
-            public bool RequiresDetachedThreadCleanupBeforeWait => true;
-
             public NamedMutex(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader)
             {
                 _processDataHeader = processDataHeader;

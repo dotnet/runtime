@@ -305,7 +305,6 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_Abort)
     DllImportEntry(ThreadNative_ResetAbort)
     DllImportEntry(ThreadNative_SpinWait)
-    DllImportEntry(ThreadNative_EnsureDetachedThreadCleanupThreadExists)
 #ifdef TARGET_WINDOWS
     DllImportEntry(ThreadNative_CheckForPendingInterrupt)
     DllImportEntry(ThreadNative_Interrupt)

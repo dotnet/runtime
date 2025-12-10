@@ -60,7 +60,6 @@ extern "C" void QCALLTYPE ThreadNative_SetWaitSleepJoinState(QCall::ThreadHandle
 extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_ReportDead(QCall::ThreadHandle thread);
 extern "C" INT32 QCALLTYPE ThreadNative_ReentrantWaitAny(BOOL alertable, INT32 timeout, INT32 count, HANDLE *handles);
-extern "C" BOOL QCALLTYPE ThreadNative_EnsureDetachedThreadCleanupThreadExists();
 #ifdef TARGET_WINDOWS
 extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_CheckForPendingInterrupt(QCall::ThreadHandle thread);

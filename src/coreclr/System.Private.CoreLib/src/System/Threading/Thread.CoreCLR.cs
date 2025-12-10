@@ -459,20 +459,6 @@ namespace System.Threading
         }
 #endif
 
-#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
-        static partial void EnsureDetachedThreadCleanupThreadExistsCore()
-        {
-            if (!EnsureDetachedThreadCleanupThreadExistsInternal())
-            {
-                throw new OutOfMemoryException();
-            }
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_EnsureDetachedThreadCleanupThreadExists")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool EnsureDetachedThreadCleanupThreadExistsInternal();
-#endif // TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
-
         /// <summary>
         /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. This value is normalized to be
         /// appropriate for the processor.

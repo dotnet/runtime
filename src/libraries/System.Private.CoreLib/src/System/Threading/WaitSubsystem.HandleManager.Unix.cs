@@ -15,7 +15,6 @@ namespace System.Threading
             void OnDeleteHandle();
             int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize, ref LockHolder lockHolder);
             void Signal(int count, ref LockHolder lockHolder);
-            bool RequiresDetachedThreadCleanupBeforeWait { get; }
         }
 
         public static int Wait(this IWaitableObject waitable, ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize)
@@ -23,11 +22,6 @@ namespace System.Threading
             Debug.Assert(waitInfo.Thread == Thread.CurrentThread);
 
             Debug.Assert(timeoutMilliseconds >= -1);
-
-            if (waitable.RequiresDetachedThreadCleanupBeforeWait && Thread.CurrentThreadIsFinalizerThread())
-            {
-                Thread.EnsureDetachedThreadCleanupThreadExists();
-            }
 
             var lockHolder = new LockHolder(s_lock);
             try
