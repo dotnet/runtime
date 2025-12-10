@@ -43,7 +43,7 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     [GeneratedRegex(""ab"")]
                     [GeneratedRegex(""abc"")]
-                    private static partial Regex MultipleAttributes { get; };
+                    private static partial Regex MultipleAttributes { get; }
                 }
             ");
 
@@ -301,7 +301,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(""ab"")]
-                    private static partial int MethodMustReturnRegex { get; };
+                    private static partial int MethodMustReturnRegex { get; }
                 }
             ");
 
@@ -459,13 +459,13 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(""ab"")]
-                    public abstract partial Regex MethodMustBeNonAbstract { get; };
+                    public abstract partial Regex MethodMustBeNonAbstract { get; }
                 }
 
                 partial interface I
                 {
                     [GeneratedRegex(""ab"")]
-                    public static abstract partial Regex MethodMustBeNonAbstract { get; };
+                    public static abstract partial Regex MethodMustBeNonAbstract { get; }
                 }
             ");
 
