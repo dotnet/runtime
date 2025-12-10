@@ -4766,7 +4766,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
     GCPROTECT_BEGIN(throwable);
     if (throwable != NULL)
     {
-        if (FAILED(UtilLoadResourceString(CCompRC::Error, IDS_EE_UNHANDLED_EXCEPTION, buf, buf_size)))
+        if (FAILED(CCompRC::LoadString(IDS_EE_UNHANDLED_EXCEPTION, buf, buf_size)))
         {
             wcsncpy_s(buf, buf_size, SZ_UNHANDLED_EXCEPTION, SZ_UNHANDLED_EXCEPTION_CHARLEN);
         }
@@ -4961,7 +4961,7 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 
                     _ASSERTE(buf_size > 6);
                     wcscpy_s(buf, buf_size, W("\n   "));
-                    UtilLoadStringRC(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf + 4, buf_size - 6);
+                    CCompRC::LoadString(IDS_EE_EXCEPTION_TOSTRING_FAILED, buf + 4, buf_size - 6);
                     wcscat_s(buf, buf_size, W("\n"));
 
                     PrintToStdErrW(buf);
@@ -5189,12 +5189,12 @@ LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
 // Note: This is not general purpose routine. It handles only cases found
 // in TypeLoadException and FileLoadException.
 //==========================================================================
-static BOOL GetManagedFormatStringForResourceID(CCompRC::ResourceCategory eCategory, UINT32 resId, SString & converted)
+static BOOL GetManagedFormatStringForResourceID(UINT32 resId, SString & converted)
 {
     STANDARD_VM_CONTRACT;
 
     StackSString temp;
-    if (!temp.LoadResource(eCategory, resId))
+    if (!temp.LoadResource(resId))
         return FALSE;
 
     SString::Iterator itr = temp.Begin();
@@ -5243,7 +5243,7 @@ extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::Strin
     BEGIN_QCALL;
 
     StackSString format;
-    GetManagedFormatStringForResourceID(CCompRC::Error, resId ? resId : IDS_CLASSLOAD_GENERAL,  format);
+    GetManagedFormatStringForResourceID(resId ? resId : IDS_CLASSLOAD_GENERAL,  format);
     retString.Set(format);
 
     END_QCALL;
@@ -5262,7 +5262,7 @@ extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHa
     BEGIN_QCALL;
 
     StackSString format;
-    GetManagedFormatStringForResourceID(CCompRC::Error, GetResourceIDForFileLoadExceptionHR(hr), format);
+    GetManagedFormatStringForResourceID(GetResourceIDForFileLoadExceptionHR(hr), format);
     retString.Set(format);
 
     END_QCALL;
@@ -10532,16 +10532,16 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
     SString msgStr;
 
     SString resStr;
-    if (resID == 0 || !resStr.LoadResource(CCompRC::Optional, resID))
+    if (resID == 0 || !resStr.LoadResource(resID))
     {
-        resStr.LoadResource(CCompRC::Error, BFA_BAD_IL); // "Bad IL format."
+        resStr.LoadResource(BFA_BAD_IL); // "Bad IL format."
     }
     msgStr.Append(resStr);
 
     if ((imageName != NULL) && (imageName[0] != 0))
     {
         SString suffixResStr;
-        if (suffixResStr.LoadResource(CCompRC::Optional, COR_E_BADIMAGEFORMAT)) // "The format of the file '%1' is invalid."
+        if (suffixResStr.LoadResource(COR_E_BADIMAGEFORMAT)) // "The format of the file '%1' is invalid."
         {
             SString suffixMsgStr;
             suffixMsgStr.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)suffixResStr, 0, 0, SString{ SString::Literal, imageName });

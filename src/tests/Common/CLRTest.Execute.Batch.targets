@@ -298,7 +298,6 @@ IF defined DoLink (
     REM Copy CORECLR native binaries and the test watcher to %LinkBin%, so that we can run the test based on that directory
     copy %CORE_ROOT%\clrjit.dll %LinkBin% > nul 2> nul
     copy %CORE_ROOT%\coreclr.dll %LinkBin% > nul 2> nul
-    copy %CORE_ROOT%\mscorrc.dll %LinkBin% > nul 2> nul
     copy %CORE_ROOT%\CoreRun.exe %LinkBin% > nul 2> nul
     copy %CORE_ROOT%\watchdog.exe %LinkBin% > nul 2> nul
 

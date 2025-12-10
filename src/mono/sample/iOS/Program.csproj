@@ -26,24 +26,12 @@
     <BuildAppBundleDependsOnTargets Condition="'$(ArchiveTests)' == 'true'">Publish</BuildAppBundleDependsOnTargets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true' and '$(UseMonoRuntime)' != 'true'">
-    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
-    <PublishReadyToRunContainerFormat>macho</PublishReadyToRunContainerFormat>
-  </PropertyGroup>
-
   <ItemGroup>
     <RuntimeComponents Condition="'$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
   </ItemGroup>
 
-  <!-- Use the repo's CrossGen props/targets.
-       This can be removed once we upstream Mach-O support in the targets to the SDK -->
-  <Import Project="$(Crossgen2SdkOverridePropsPath)" Condition="'$(PublishReadyToRun)' == 'true' and '$(Crossgen2SdkOverridePropsPath)' != ''" />
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
-  <PropertyGroup>
-    <!-- Import after SDK targets in order to override R2R-related targets in the SDK -->
-    <AfterMicrosoftNETSdkTargets Condition="'$(PublishReadyToRun)' == 'true' and '$(Crossgen2SdkOverrideTargetsPath)' != ''">$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
-    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets</AfterMicrosoftNETSdkTargets>
-  </PropertyGroup>
+  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
 
   <Target Name="BuildAppBundle" AfterTargets="$(BuildAppBundleAfterTargets)" DependsOnTargets="$(BuildAppBundleDependsOnTargets)"/>
   <Target Name="_SetAppleGenerateAppBundleProps" Condition="'$(TargetOS)' != 'ios' and '$(ArchiveTests)' != 'true'" BeforeTargets="_AppleGenerateAppBundle">
