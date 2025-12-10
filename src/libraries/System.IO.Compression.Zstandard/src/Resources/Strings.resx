@@ -46,7 +46,7 @@
     <value>The provided dictionary wasn't created for encoding data.</value>
   </data>
   <data name="ZstandardEncoder_CompressError" xml:space="preserve">
-    <value>An error occurred during compression: '{0}'.</value>
+    <value>An error occurred during compression, see inner exception for details.</value>
   </data>
   <data name="ZstandardEncoder_FlushError" xml:space="preserve">
     <value>An error occurred during flush operation.</value>
@@ -64,7 +64,7 @@
     <value>Failed to create the Zstandard decoder instance.</value>
   </data>
   <data name="ZstandardDecoder_DecompressError" xml:space="preserve">
-    <value>An error occurred during decompression: '{0}'.</value>
+    <value>An error occurred during decompression, see inner exception for details.</value>
   </data>
   <data name="ZstandardDecoder_DictionaryAttachFailed" xml:space="preserve">
     <value>Failed to attach dictionary to Zstandard decoder context.</value>
@@ -102,7 +102,7 @@
   <data name="ZstandardDictionary_Train_MinimumSampleCount" xml:space="preserve">
     <value>At least {0} samples are required to train the dictionary.</value>
   </data>
-  <data name="Zstd_NativeError" xml:space="preserve">
-    <value>An internal error has occured. Native zstd API returned '{0}'.</value>
+  <data name="Zstd_InternalError" xml:space="preserve">
+    <value>An internal error has occured, see inner exception for details.</value>
   </data>
 </root>

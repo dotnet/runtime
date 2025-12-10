@@ -157,11 +157,7 @@ namespace System.IO.Compression
                     }
                 }
 
-                if (ZstandardUtils.IsError(dictSize))
-                {
-                    throw new IOException(SR.ZstandardDictionary_Train_Failure, ZstandardUtils.CreateExceptionForError(dictSize));
-                }
-
+                ZstandardUtils.ThrowIfError(dictSize, SR.ZstandardDictionary_Train_Failure);
                 return Create(dictionaryBuffer.AsSpan(0, (int)dictSize));
             }
         }
