@@ -8,7 +8,13 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 	mflr %r0
 	std %r0, 16(%r1)
 	std %r2, 24(%r1)
-	stdu %r1, -496(%r1)
+	std %r31, -8(%r1)
+	stdu %r1, -504(%r1)
+	.cfi_def_cfa_offset 504
+	.cfi_offset 65, 16
+	.cfi_offset 31, -8
+	mr %r31, %r1
+	.cfi_def_cfa_register 31
 // Store GPR r3 to r10 and r14 to r31. (base from stack pointer r1)
 
 	std %r3, 32(%r1)
@@ -74,7 +80,7 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 	stfd %f30, 480(%r1)
 	stfd %f31, 488(%r1)
 
-	addi %r3, %r1, 496		//load pTransitionBlock structure address in r3 (parameter registers)
+	addi %r3, %r1, 504		//load pTransitionBlock structure address in r3 (parameter registers)
 	mr %r4, METHODDESC_REGISTER	//load METHODDESC_REGISTER(r11)  in r4 (parameter registers)
 
 	bl C_FUNC(PreStubWorker)	//call function PreStubWorker
@@ -144,11 +150,12 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
 	lfd %f30, 480(%r1)
 	lfd %f31, 488(%r1)
 
-	addi %r1, %r1, 496
+	addi %r1, %r1, 504
+	.cfi_def_cfa %r1, 0
 	ld %r0, 16(%r1) 
 	ld %r2, 24(%r1)
 	mtlr %r0
-
+	ld %r31, -8(%r1)
 	mtctr %r12
 	bctr
 
