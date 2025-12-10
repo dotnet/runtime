@@ -59,6 +59,7 @@ jobs:
   steps:
   - checkout: self
     clean: true
+    fetchTags: false
 
   # If the template caller didn't provide an AzDO parameter, set them all up as Maestro vars.
   - ${{ if not(and(parameters.AzDOProjectName, parameters.AzDOPipelineId, parameters.AzDOBuildId)) }}:

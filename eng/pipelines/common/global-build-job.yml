@@ -153,6 +153,7 @@ jobs:
       # as a stash of a shallow cloned repo is not currently supported.
       ${{ if ne(parameters.isSourceBuild, true) }}:
         fetchDepth: $(checkoutFetchDepth)
+      fetchTags: false
 
     - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml

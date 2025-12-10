@@ -75,6 +75,7 @@ jobs:
     - checkout: ${{ parameters.repositoryAlias }}
       fetchDepth: 3
       clean: true
+      fetchTags: false
     - task: DownloadBuildArtifacts@0
       displayName: Download artifact
       inputs:
