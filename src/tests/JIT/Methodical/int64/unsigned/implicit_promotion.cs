@@ -17,6 +17,7 @@ namespace JitTest_implicit_promotion
         // div.un, and rem.un upcast with sign-extension.
         // clt.un, cgt.un upcast without sign-extension
         // bne.un, blt.un, ble.un, bgt.un, bge.un upcast without sign-extension
+        [Fact]
         public static void TestUpcastBehavior()
         {
             unchecked
