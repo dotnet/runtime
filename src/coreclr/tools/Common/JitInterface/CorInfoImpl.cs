@@ -163,7 +163,7 @@ namespace Internal.JitInterface
 
         public static void Startup(CORINFO_OS os)
         {
-            jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
+            jitStartup(GetJitHost(JitConfigProvider.UnmanagedInstance));
             JitSetOs(JitPointerAccessor.Get(), os);
         }
 
