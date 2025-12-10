@@ -805,9 +805,9 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             WellKnownArg wellKnownArgType =
                 srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
-            // Return buffers cannot be volatile or unaligned
+            // Return buffers cannot have volatile, unaligned, or initclass flags
             GenTreeFlags indirFlags = GTF_EMPTY;
-            GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags, /* allowVolatileUnaligned */ false);
+            GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags, /* allowConfiguredDerefs */ false);
 
             if (!impIsLegalRetBuf(destAddr, srcCall))
             {
@@ -929,9 +929,9 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
         if (call->ShouldHaveRetBufArg())
         {
             // insert the return value buffer into the argument list as first byref parameter after 'this'
-            // Return buffers cannot be volatile or unaligned
+            // Return buffers cannot have volatile, unaligned, or initclass flags
             GenTreeFlags indirFlags = GTF_EMPTY;
-            GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags, /* allowVolatileUnaligned */ false);
+            GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags, /* allowConfiguredDerefs */ false);
 
             if (!impIsLegalRetBuf(destAddr, call))
             {
@@ -1096,20 +1096,20 @@ GenTree* Compiler::impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned
 // impGetNodeAddr: Get the address of a value.
 //
 // Arguments:
-//    val                     - The value in question
-//    curLevel                - Stack level for spilling
-//    pDerefFlags             - Flags to be used on dereference, nullptr when
-//                              the address won't be dereferenced. Returned flags
-//                              are included in the GTF_IND_COPYABLE_FLAGS mask.
-//    allowVolatileUnaligned  - If false, volatile or unaligned addresses will
-//                              cause the value to be copied to a temporary
+//    val                    - The value in question
+//    curLevel               - Stack level for spilling
+//    pDerefFlags            - Flags to be used on dereference, nullptr when
+//                             the address won't be dereferenced. Returned flags
+//                             are included in the GTF_IND_COPYABLE_FLAGS mask.
+//    allowConfiguredDerefs  - If false, derefs with volatile, unaligned, or initclass
+//                             flags will cause the value to be copied to a temporary
 //
 // Return Value:
 //    In case "val" represents a location (is an indirection/local),
 //    will return its address. Otherwise, address of a temporary assigned
 //    the value of "val" will be returned.
 //
-GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags, bool allowVolatileUnaligned)
+GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags, bool allowConfiguredDerefs)
 {
     if (pDerefFlags != nullptr)
     {
@@ -1123,8 +1123,8 @@ GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags*
         case GT_STORE_BLK:
             if (pDerefFlags != nullptr)
             {
-                // If volatile or unaligned is not allowed and present, fall through to create a temp
-                if (!allowVolatileUnaligned && ((val->gtFlags & (GTF_IND_VOLATILE | GTF_IND_UNALIGNED)) != 0))
+                // If configured derefs (volatile, unaligned, initclass) are not allowed and present, fall through to create a temp
+                if (!allowConfiguredDerefs && ((val->gtFlags & (GTF_IND_VOLATILE | GTF_IND_UNALIGNED | GTF_IND_INITCLASS)) != 0))
                 {
                     break;
                 }
@@ -1146,7 +1146,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags*
 
         case GT_COMMA:
             impAppendTree(val->AsOp()->gtGetOp1(), curLevel, impCurStmtDI);
-            return impGetNodeAddr(val->AsOp()->gtGetOp2(), curLevel, pDerefFlags, allowVolatileUnaligned);
+            return impGetNodeAddr(val->AsOp()->gtGetOp2(), curLevel, pDerefFlags, allowConfiguredDerefs);
 
         default:
             break;
@@ -3683,9 +3683,9 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
             return;
         }
 
-        // Boxing helpers cannot accept volatile or unaligned addresses
+        // Boxing helpers cannot accept addresses with volatile, unaligned, or initclass flags
         GenTreeFlags indirFlags = GTF_EMPTY;
-        op1 = gtNewHelperCallNode(boxHelper, TYP_REF, op2, impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, &indirFlags, /* allowVolatileUnaligned */ false));
+        op1 = gtNewHelperCallNode(boxHelper, TYP_REF, op2, impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, &indirFlags, /* allowConfiguredDerefs */ false));
     }
 
     /* Push the result back on the stack, */
