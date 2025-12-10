@@ -297,5 +297,52 @@ namespace System.Formats.Tar.Tests
 
             Assert.Null(await reader.GetNextEntryAsync()); // subDirectory should not be found
         }
+
+        [Fact]
+        public async Task InvalidFormat_Throws_Async()
+        {
+            using TempDirectory source = new TempDirectory();
+            using TempDirectory destination = new TempDirectory();
+
+            string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
+
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => TarFile.CreateFromDirectoryAsync(source.Path, destinationArchiveFileName, includeBaseDirectory: false, TarEntryFormat.Unknown));
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => TarFile.CreateFromDirectoryAsync(source.Path, destinationArchiveFileName, includeBaseDirectory: false, (TarEntryFormat)99));
+        }
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public async Task CreateArchiveWithSpecificFormat_Async(TarEntryFormat format)
+        {
+            using TempDirectory source = new TempDirectory();
+            using TempDirectory destination = new TempDirectory();
+
+            string fileName = "file.txt";
+            string filePath = Path.Join(source.Path, fileName);
+            File.Create(filePath).Dispose();
+
+            string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
+            await TarFile.CreateFromDirectoryAsync(source.Path, destinationArchiveFileName, includeBaseDirectory: false, format);
+
+            FileStreamOptions readOptions = new()
+            {
+                Access = FileAccess.Read,
+                Mode = FileMode.Open,
+                Options = FileOptions.Asynchronous,
+            };
+
+            await using FileStream fileStream = File.Open(destinationArchiveFileName, readOptions);
+            await using TarReader reader = new TarReader(fileStream);
+
+            TarEntry entry = await reader.GetNextEntryAsync();
+            Assert.NotNull(entry);
+            Assert.Equal(format, entry.Format);
+            Assert.Equal(fileName, entry.Name);
+
+            Assert.Null(await reader.GetNextEntryAsync());
+        }
     }
 }

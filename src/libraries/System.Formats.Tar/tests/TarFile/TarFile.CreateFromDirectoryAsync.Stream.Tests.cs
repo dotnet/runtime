@@ -66,5 +66,42 @@ namespace System.Formats.Tar.Tests
                 }
             }
         }
+
+        [Fact]
+        public async Task InvalidFormat_Throws_Async()
+        {
+            using TempDirectory source = new TempDirectory();
+            await using MemoryStream archive = new MemoryStream();
+
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => TarFile.CreateFromDirectoryAsync(source.Path, archive, includeBaseDirectory: false, TarEntryFormat.Unknown));
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => TarFile.CreateFromDirectoryAsync(source.Path, archive, includeBaseDirectory: false, (TarEntryFormat)99));
+        }
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public async Task CreateArchiveWithSpecificFormat_Async(TarEntryFormat format)
+        {
+            using TempDirectory source = new TempDirectory();
+
+            string fileName = "file.txt";
+            string filePath = Path.Join(source.Path, fileName);
+            File.Create(filePath).Dispose();
+
+            await using MemoryStream archive = new MemoryStream();
+            await TarFile.CreateFromDirectoryAsync(source.Path, archive, includeBaseDirectory: false, format);
+
+            archive.Seek(0, SeekOrigin.Begin);
+            await using TarReader reader = new TarReader(archive);
+
+            TarEntry entry = await reader.GetNextEntryAsync();
+            Assert.NotNull(entry);
+            Assert.Equal(format, entry.Format);
+            Assert.Equal(fileName, entry.Name);
+
+            Assert.Null(await reader.GetNextEntryAsync());
+        }
     }
 }

@@ -253,5 +253,45 @@ namespace System.Formats.Tar.Tests
 
             Assert.Null(reader.GetNextEntry());
         }
+
+        [Fact]
+        public void InvalidFormat_Throws()
+        {
+            using TempDirectory source = new TempDirectory();
+            using TempDirectory destination = new TempDirectory();
+
+            string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => TarFile.CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: false, TarEntryFormat.Unknown));
+            Assert.Throws<ArgumentOutOfRangeException>(() => TarFile.CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: false, (TarEntryFormat)99));
+        }
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        [InlineData(TarEntryFormat.Ustar)]
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void CreateArchiveWithSpecificFormat(TarEntryFormat format)
+        {
+            using TempDirectory source = new TempDirectory();
+            using TempDirectory destination = new TempDirectory();
+
+            string fileName = "file.txt";
+            string filePath = Path.Join(source.Path, fileName);
+            File.Create(filePath).Dispose();
+
+            string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
+            TarFile.CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: false, format);
+
+            using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
+            using TarReader reader = new TarReader(fileStream);
+
+            TarEntry entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal(format, entry.Format);
+            Assert.Equal(fileName, entry.Name);
+
+            Assert.Null(reader.GetNextEntry());
+        }
     }
 }
