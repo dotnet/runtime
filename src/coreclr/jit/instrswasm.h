@@ -37,6 +37,7 @@ INST(br,          "br",          0, IF_ULEB128, 0x0C)
 INST(br_if,       "br_if",       0, IF_ULEB128, 0x0D)
 INST(br_table,    "br_table",    0, IF_ULEB128, 0x0E)
 INST(return,      "return",      0, IF_OPCODE,  0x0F)
+INST(drop,        "drop",        0, IF_OPCODE,  0x1A)
 
 INST(local_get,   "local.get",   0, IF_ULEB128, 0x20)
 INST(local_set,   "local.set",   0, IF_ULEB128, 0x21)

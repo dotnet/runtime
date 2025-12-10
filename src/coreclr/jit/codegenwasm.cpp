@@ -725,22 +725,22 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     assert(!op1->IsMultiRegNode());
     genConsumeRegs(op1);
 
-    LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
-    regNumber targetReg = lclNode->GetRegNum();
+    LclVarDsc* varDsc    = compiler->lvaGetDesc(tree);
+    regNumber  targetReg = varDsc->GetRegNum();
 
     if (!varDsc->lvIsRegCandidate())
     {
-        var_types type = varDsc->GetRegisterType(tree);
-        // TODO-WASM: actually local.get the frame base local here.
-        GetEmitter()->emitIns_S(ins_Store(type), emitTypeSize(tree), tree->GetLclNum(), 0);
+        // TODO-WASM: handle these cases in lower/ra.
+        // Emit drop for now to simulate the store effect on the wasm stack.
+        GetEmitter()->emitIns(INS_drop);
         genUpdateLife(tree);
     }
     else
     {
-        assert(genIsValidReg(varDsc->GetRegNum()));
-        unsigned wasmLclIndex = UnpackWasmReg(varDsc->GetRegNum());
+        assert(genIsValidReg(targetReg));
+        unsigned wasmLclIndex = UnpackWasmReg(targetReg);
         GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), wasmLclIndex);
-        genProduceReg(tree);
+        genUpdateLifeStore(tree, targetReg, varDsc);
     }
 }
 
