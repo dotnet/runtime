@@ -160,6 +160,9 @@ jobs:
         container: ${{ parameters.container }}
 
     ${{ if eq(parameters.jobParameters.pool, '') }}:
+      # N.B.: We should always be building on the latest available version of our build platform.
+      # Each of these queues should be the latest version or have a tracking issue if the latest version
+      # does not work for some reason.
       pool:
         # Public Linux Build Pool
         ${{ if and(or(in(parameters.osGroup, 'linux', 'freebsd', 'android', 'tizen'), eq(parameters.jobParameters.hostedOs, 'linux')), eq(variables['System.TeamProject'], 'public')) }}:
@@ -174,7 +177,7 @@ jobs:
 
         # OSX Public Build Pool (we don't have on-prem OSX BuildPool).
         ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(variables['System.TeamProject'], 'public')) }}:
-          vmImage: 'macos-13'
+          vmImage: 'macos-15'
 
         # Official build OSX pool
         ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), ne(variables['System.TeamProject'], 'public')) }}:
