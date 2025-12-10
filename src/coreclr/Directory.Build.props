@@ -24,6 +24,5 @@
 
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <SignAssembly Condition="'$(UsingMicrosoftNETSdk)' != 'true'">false</SignAssembly>
-    <CL_MPCount>$(NumberOfCores)</CL_MPCount>
   </PropertyGroup>
 </Project>
