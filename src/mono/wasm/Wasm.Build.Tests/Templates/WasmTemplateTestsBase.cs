@@ -362,7 +362,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         List<string> testOutput = new();
         List<string> consoleOutput = new();
         List<string> serverOutput = new();
-        var runner = new BrowserRunner(_testOutput);
+        await using var runner = new BrowserRunner(_testOutput);
         var page = await runner.RunAsync(
             cmd,
             runArgs,

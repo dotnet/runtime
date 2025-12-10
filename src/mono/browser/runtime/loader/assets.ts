@@ -674,11 +674,10 @@ function fetchResource (asset: AssetEntryInternal): Promise<Response> {
     const fetchOptions: RequestInit = {};
 
     if (asset.cache) {
-        // Internal no-cache setting overrides other configuration.
+        // If the asset definition specifies a cache mode, use it.
         fetchOptions.cache = asset.cache;
     } else if (!loaderHelpers.config.disableNoCacheFetch) {
-        // We use no-cache if specified internally.
-        // For backwards compatibility other assets also get no-cache setting unless disabled by the user.
+        // Otherwise, for backwards compatibility use "no-cache" setting unless disabled by the user.
         // https://github.com/dotnet/runtime/issues/74815
         fetchOptions.cache = "no-cache";
     }
