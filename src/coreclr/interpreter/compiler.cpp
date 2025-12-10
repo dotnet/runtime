@@ -8675,6 +8675,14 @@ retry_emit:
                     }
                 }
 
+#ifdef TARGET_64BIT
+                if (m_pStackPointer->GetStackType() == StackTypeI)
+                {
+                    // Emit a saturating conversion from U8 to U4
+                    EmitConv(m_pStackPointer, StackTypeI4, INTOP_CONV_U4_U8_SAT);
+                }
+#endif // TARGET_64BIT
+
                 AddInsExplicit(INTOP_SWITCH, n + 3);
                 m_pLastNewIns->data[0] = n;
                 m_pLastNewIns->SetSVar(m_pStackPointer->var);
