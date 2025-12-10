@@ -348,6 +348,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ConvertDllsToWebCil>
 
     <ItemGroup>
+      <_WebCilAssetsCandidates Update="@(_WebCilAssetsCandidates)">
+        <OriginalItemSpec>%(Identity)</OriginalItemSpec>
+      </_WebCilAssetsCandidates>
       <_WasmFingerprintPatterns Include="WasmFiles" Pattern="*.wasm" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="DllFiles" Pattern="*.dll" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="DatFiles" Pattern="*.dat" Expression="#[.{fingerprint}]!" />
