@@ -6,7 +6,7 @@
     <!-- This test uses very custom execution logic including explicit Main -->
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
 
-    <!-- This test uses very custom execution logic including explicit and expects the JIT to be loaded, which may not happen with the intepreter -->
+    <!-- This test uses very custom execution logic including explicit Main and expects the JIT to be loaded, which may not happen with the intepreter -->
     <InterpreterIncompatible>true</InterpreterIncompatible>
 
     <!-- ilasm round-trip testing works, but is not interesting for this test:
