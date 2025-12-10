@@ -544,33 +544,6 @@ private:
     }
 #endif // FEATURE_MULTIREG_RET
 
-    CORINFO_METHOD_HANDLE GetMethodHandle(GenTreeCall* call)
-    {
-        assert(call->IsDevirtualizationCandidate(m_compiler));
-        if (call->IsVirtual())
-        {
-            return call->gtCallMethHnd;
-        }
-        else if (call->IsGenericVirtual(m_compiler))
-        {
-            GenTree* runtimeMethHndNode =
-                call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetNode();
-            assert(runtimeMethHndNode != nullptr);
-            switch (runtimeMethHndNode->OperGet())
-            {
-                case GT_RUNTIMELOOKUP:
-                    return runtimeMethHndNode->AsRuntimeLookup()->GetMethodHandle();
-                case GT_CNS_INT:
-                    return CORINFO_METHOD_HANDLE(runtimeMethHndNode->AsIntCon()->IconValue());
-                default:
-                    // Unable to get method handle for devirtualization.
-                    // This can happen if the method handle is not an RUNTIMELOOKUP or CNS_INT for generic virtuals,
-                    return nullptr;
-            }
-        }
-        return nullptr;
-    }
-
     //------------------------------------------------------------------------
     // LateDevirtualization: re-examine calls after inlining to see if we
     //   can do more devirtualization
@@ -613,13 +586,9 @@ private:
 
         if (tree->OperIs(GT_CALL))
         {
-            GenTreeCall* call          = tree->AsCall();
-            bool         tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler);
-            if (tryLateDevirt && call->gtCallType == CT_INDIRECT)
-            {
-                // For indirect calls, we can only late devirt if it's a generic virtual method for now.
-                tryLateDevirt = call->IsGenericVirtual(m_compiler);
-            }
+            GenTreeCall*          call          = tree->AsCall();
+            CORINFO_METHOD_HANDLE method        = NO_METHOD_HANDLE;
+            bool                  tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler, &method);
 
 #ifdef DEBUG
             tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization() == 1);
@@ -637,20 +606,11 @@ private:
 
                 CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
                 InlineContext*         inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
-                CORINFO_METHOD_HANDLE  method                 = GetMethodHandle(call);
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
 
-                if (method == nullptr)
-                {
-                    assert(!call->IsVirtual());
-                    // Unable to get method handle for devirtualization.
-                    // This can happen if the method handle is not an RUNTIMELOOKUP or CNS_INT for generic virtuals,
-                    // e.g. a local variable holding the method handle.
-                    // Just bail out.
-                    return;
-                }
+                assert(method != NO_METHOD_HANDLE);
 
                 CORINFO_CONTEXT_HANDLE contextInput = context;
                 context                             = nullptr;
