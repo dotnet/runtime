@@ -88,8 +88,10 @@ Write-Output ""
 Write-Output "extern NativeStringResourceTable $TableName;"
 Write-Output "const NativeStringResource $ArrayName[] = {"
 
-foreach ($id in $ResourceArray.Keys) {
-    $hexId = "{0:x8}" -f $id
+$sortedKeys = $ResourceArray.Keys | Sort-Object { [convert]::ToInt64($_, 16) }
+foreach ($id in $sortedKeys) {
+    $numericId = [convert]::ToInt64($id, 16)
+    $hexId = "{0:x8}" -f $numericId
     Write-Output "    {0x$hexId,`"$($ResourceArray[$id])`"},"
 }
 
