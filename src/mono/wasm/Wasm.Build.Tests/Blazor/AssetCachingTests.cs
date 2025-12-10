@@ -74,9 +74,9 @@ public class AssetCachingTests : BlazorWasmTestBase
 
         var buildPaths = GetBuildPaths(Configuration.Release, forPublish: true, projectDir: projectDir);
         var publishedAppPath = Path.Combine(buildPaths.BinDir, "publish");
-        var publishedAppDllPath = Path.Combine(publishedAppPath, project.ProjectName + ".dll");
+        var publishedAppDllFileName = $"{project.ProjectName}.dll";
         using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput).WithWorkingDirectory(publishedAppPath);
-        var result = await BrowserRun(cmd, $"exec \"{publishedAppDllPath}\"", runOptions);
+        var result = await BrowserRun(cmd, $"exec {publishedAppDllFileName}", runOptions);
     }
 
     private static async Task WaitForCounterInteractivity(IPage page)
