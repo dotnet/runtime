@@ -112,7 +112,7 @@ namespace ILCompiler.ObjectWriter
         }
 
         public void EmitSubprogramInfo(
-            string methodName,
+            Utf8String methodName,
             int methodPCLength,
             uint methodTypeIndex,
             IEnumerable<(DebugVarInfoMetadata, uint)> debugVars,
@@ -220,7 +220,7 @@ namespace ILCompiler.ObjectWriter
 
         public void EmitLineInfo(
             CodeViewFileTableBuilder fileTableBuilder,
-            string methodName,
+            Utf8String methodName,
             int methodPCLength,
             IEnumerable<NativeSequencePoint> sequencePoints)
         {
@@ -300,7 +300,7 @@ namespace ILCompiler.ObjectWriter
             private readonly SectionWriter _sectionWriter;
             internal uint _size;
             internal readonly List<byte[]> _data = new();
-            internal readonly List<(uint, RelocType, string)> _relocations = new();
+            internal readonly List<(uint, RelocType, Utf8String)> _relocations = new();
 
             public SubsectionWriter(DebugSymbolsSubsectionType kind, SectionWriter sectionWriter)
             {
@@ -416,7 +416,7 @@ namespace ILCompiler.ObjectWriter
 
             public void EmitSymbolReference(
                 RelocType relocType,
-                string symbolName,
+                Utf8String symbolName,
                 int addend = 0)
             {
                 _subsectionWriter._relocations.Add((

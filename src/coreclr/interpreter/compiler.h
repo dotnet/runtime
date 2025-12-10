@@ -825,6 +825,9 @@ private:
     // Opcode peeps
     bool    FindAndApplyPeep(OpcodePeep* Peeps[]);
 
+    bool    IsConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo) { return true; }
+    int     ApplyConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
     bool    IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     int     ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 

@@ -209,4 +209,6 @@
       <Analyzer Remove="@(_targetingPackExcludedAnalyzerReferenceWithProjectName->Metadata('OriginalIdentity'))" />
     </ItemGroup>
   </Target>
+
+  <Import Project="$(RepositoryEngineeringDir)pruning.targets" />
 </Project>
