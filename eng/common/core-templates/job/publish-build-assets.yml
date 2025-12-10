@@ -83,6 +83,7 @@ jobs:
   - ${{ if and(eq(parameters.runAsPublic, 'false'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
     - checkout: ${{ parameters.repositoryAlias }}
       fetchDepth: 3
+      fetchTags: false
       clean: true
       
     - task: DownloadBuildArtifacts@0
