@@ -2108,7 +2108,7 @@ void CodeGen::genEmitMachineCode()
     trackedStackPtrsContig = !compiler->opts.compDbgEnC && (compiler->lvaAsyncExecutionContextVar == BAD_VAR_NUM) &&
                              (compiler->lvaAsyncSynchronizationContextVar == BAD_VAR_NUM);
 
-#ifdef TARGET_ARM32
+#ifdef TARGET_ARM
     // On arm due to prespilling of arguments, tracked stk-ptrs may not be contiguous
     trackedStackPtrsContig &= !compiler->compIsProfilerHookNeeded();
 #endif
