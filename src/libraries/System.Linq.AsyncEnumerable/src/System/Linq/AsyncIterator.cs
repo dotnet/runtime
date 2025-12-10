@@ -35,6 +35,7 @@ namespace System.Linq
 
             private protected int _state;
             private protected TSource _current = default!;
+            private protected CancellationToken _cancellationToken;
 
             /// <summary>
             /// The item currently yielded by this iterator.
@@ -78,8 +79,6 @@ namespace System.Linq
                 enumerator._cancellationToken = cancellationToken;
                 return enumerator;
             }
-
-            private protected CancellationToken _cancellationToken;
 
             /// <summary>
             /// Retrieves the next item in this iterator and yields it via <see cref="Current"/>.
