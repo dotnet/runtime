@@ -90,9 +90,7 @@ Write-Output "const NativeStringResource $ArrayName[] = {"
 
 $sortedKeys = $ResourceArray.Keys | Sort-Object { [convert]::ToInt64($_, 16) }
 foreach ($id in $sortedKeys) {
-    $numericId = [convert]::ToInt64($id, 16)
-    $hexId = "{0:x8}" -f $numericId
-    Write-Output "    {0x$hexId,`"$($ResourceArray[$id])`"},"
+    Write-Output "    {0x$id,`"$($ResourceArray[$id])`"},"
 }
 
 Write-Output "};"
