@@ -18,6 +18,7 @@ namespace JitTest_implicit_promotion
         // clt.un, cgt.un upcast without sign-extension
         // bne.un, blt.un, ble.un, bgt.un, bge.un upcast without sign-extension
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/122398", TestRuntimes.Mono)]
         public static void TestUpcastBehavior()
         {
             unchecked
