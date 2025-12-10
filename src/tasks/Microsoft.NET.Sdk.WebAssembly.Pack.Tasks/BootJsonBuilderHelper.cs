@@ -224,7 +224,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 var asset = new WasmAsset()
                 {
                     name = a.Key,
-                    integrity = a.Value
+                    hash = a.Value
                 };
 
                 if (bundlerFriendly)
@@ -284,7 +284,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 {
                     virtualPath = resources.fingerprinting?[a.Key] ?? a.Key,
                     name = a.Key,
-                    integrity = a.Value
+                    hash = a.Value
                 };
 
                 if (bundlerFriendly)
@@ -322,7 +322,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 {
                     virtualPath = a.Key,
                     name = $"../{a.Value.Keys.First()}",
-                    integrity = a.Value.Values.First()
+                    hash = a.Value.Values.First()
                 };
 
                 if (bundlerFriendly)
