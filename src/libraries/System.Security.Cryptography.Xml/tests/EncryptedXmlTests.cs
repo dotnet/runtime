@@ -85,15 +85,9 @@ namespace System.Security.Cryptography.Xml.Tests
             encData.EncryptionProperties.Add(prop);
 
             XmlElement xml = encData.GetXml();
-            // Verify full XML structure
-            Assert.Contains(@"Id=""test-id""", xml.OuterXml);
-            Assert.Contains(@"Type=""http://www.w3.org/2001/04/xmlenc#Element""", xml.OuterXml);
-            Assert.Contains(@"MimeType=""text/xml""", xml.OuterXml);
-            Assert.Contains(@"Encoding=""utf-8""", xml.OuterXml);
-            Assert.Contains(@"Algorithm=""http://www.w3.org/2001/04/xmlenc#aes256-cbc""", xml.OuterXml);
-            Assert.Contains("<KeyName>key1</KeyName>", xml.OuterXml);
-            Assert.Contains("<CipherValue>AQID</CipherValue>", xml.OuterXml);
-            Assert.Contains("EncryptionProperty", xml.OuterXml);
+            // Verify the full output XML structure
+            string expectedXml = @"<EncryptedData Id=""test-id"" Type=""http://www.w3.org/2001/04/xmlenc#Element"" MimeType=""text/xml"" Encoding=""utf-8"" xmlns=""http://www.w3.org/2001/04/xmlenc#""><EncryptionMethod Algorithm=""http://www.w3.org/2001/04/xmlenc#aes256-cbc"" /><KeyInfo xmlns=""http://www.w3.org/2000/09/xmldsig#""><KeyName>key1</KeyName></KeyInfo><CipherData><CipherValue>AQID</CipherValue></CipherData><EncryptionProperties><EncryptionProperty>value</EncryptionProperty></EncryptionProperties></EncryptedData>";
+            Assert.Equal(expectedXml, xml.OuterXml);
         }
 
         [Fact]
@@ -176,10 +170,15 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Throws<CryptographicException>(() => encData.LoadXml(doc.DocumentElement));
         }
 
+
+
         [Fact]
-        public static void EncryptedKey_Constructor()
+        public static void EncryptedKey_Constructor_AndAddReference()
         {
+            // Test constructor and AddReference in one test
             EncryptedKey encKey = new EncryptedKey();
+            
+            // Verify constructor initialized properties
             Assert.Null(encKey.Id);
             Assert.Null(encKey.Type);
             Assert.Null(encKey.MimeType);
@@ -188,12 +187,8 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Null(encKey.CarriedKeyName);
             Assert.NotNull(encKey.ReferenceList); // ReferenceList is auto-initialized
             Assert.Equal(0, encKey.ReferenceList.Count);
-        }
-
-        [Fact]
-        public static void EncryptedKey_AddReference_DataReference()
-        {
-            EncryptedKey encKey = new EncryptedKey();
+            
+            // Test AddReference functionality
             DataReference dataRef = new DataReference("#data1");
             encKey.AddReference(dataRef);
             Assert.Equal(1, encKey.ReferenceList.Count);

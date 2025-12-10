@@ -289,10 +289,8 @@ namespace System.Security.Cryptography.Xml.Tests
             dataObject.Encoding = "";
             
             XmlElement xml = dataObject.GetXml();
-            Assert.NotNull(xml);
-            Assert.Equal("Object", xml.LocalName);
-            Assert.Equal(SignedXml.XmlDsigNamespaceUrl, xml.NamespaceURI);
-            // Empty string attributes may or may not be present depending on implementation
+            // Verify the full output XML - empty strings for MimeType and Encoding mean no attributes are added
+            Assert.Equal(@"<Object xmlns=""http://www.w3.org/2000/09/xmldsig#"" />", xml.OuterXml);
         }
 
         [Fact]
