@@ -228,16 +228,18 @@ public:
         // Number of repetitions of the largest repeated sequence of frames
         int largestCommonRepeat = 0;
 
-        // NOTE: the algorithm below is O(n^2) but the number of the frames in the stack at the
-        // stack overflow is around ~30000 for the default stack size and the body of the loop is
-        // very simple. Even in the worst case when no repetition would be found, the overall time
-        // spent in this code is ~160 milliseconds on an Intel i9-13900K CPU in Release build.
-        // But for stack overflow, it is highly unlikely that there would be no repetition at all,
-        // so the average time spent is much lower.
+        // NOTE: the algorithm below is O(n^2) but we limit the depth of the search for
+        // the start of the repetition to a maximum of 1000 frames.
+        // Even on macOS M1 where the minimal stack frames are smaller than on Intel
+        // and the default stack size is larger than on Windows and stack overflow in
+        // a tight loop produces a stack trace with ~350000 frames, the search in case
+        // we would not find any repetitions at all would take around 130ms.
 
+        const int MaxRepetitionStartOffsetSearch = 1000;
+        int repetitionSearchLimit = min(m_frames.Count(), MaxRepetitionStartOffsetSearch);
         // Start index of the repetition
         int largestCommonStartOffset;
-        for (largestCommonStartOffset = 0; largestCommonStartOffset < m_frames.Count(); largestCommonStartOffset++)
+        for (largestCommonStartOffset = 0; largestCommonStartOffset < repetitionSearchLimit; largestCommonStartOffset++)
         {
             // Index of a stack frame where a possible repetition of frames starts
             int commonStartIndex = -1;
