@@ -41,7 +41,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private sealed partial class ExpressionSyntaxReplacer : CSharpSyntaxWalker
         {
             [GeneratedRegex(@"[^A-Za-z0-9_]", RegexOptions.Singleline)]
-            private static partial Regex RegexForReplaceVarName();
+            private static partial Regex RegexForReplaceVarName { get; }
 
             public List<IdentifierNameSyntax> identifiers = new List<IdentifierNameSyntax>();
             public List<InvocationExpressionSyntax> methodCalls = new List<InvocationExpressionSyntax>();

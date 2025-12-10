@@ -472,10 +472,10 @@ internal sealed partial class TypeFileParser
 
     // Compile regular expressions for detecting comments and tokens in the parser input.
     [GeneratedRegex(@"//.*")]
-    private static partial Regex CommentRegex();
+    private static partial Regex CommentRegex { get; }
 
     [GeneratedRegex(@"^(\s*(\S+)\s*)*")]
-    private static partial Regex TokenRegex();
+    private static partial Regex TokenRegex { get; }
 
     // Input is lexed into an array of tokens. We record the index of the token being currently parsed.
     private Token[] m_tokens;

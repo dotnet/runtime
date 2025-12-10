@@ -1149,7 +1149,7 @@ namespace Mono.Options
         }
 
         [GeneratedRegex(@"^(?<flag>--|-|/)(?<name>[^:=]+)((?<sep>[:=])(?<value>.*))?$")]
-        private static partial Regex ValueOption();
+        private static partial Regex ValueOption { get; }
 
         protected bool GetOptionParts(string argument, out string flag, out string name, out string sep, out string value)
         {
@@ -1462,7 +1462,7 @@ namespace Mono.Options
         }
 
         [GeneratedRegex(@"(?<=(?<!\{)\{)[^{}]*(?=\}(?!\}))")]
-        private static partial Regex IgnoreDoubleBracesRegex();
+        private static partial Regex IgnoreDoubleBracesRegex { get; }
 
         private static string GetArgumentName(int index, int maxIndex, string description)
         {

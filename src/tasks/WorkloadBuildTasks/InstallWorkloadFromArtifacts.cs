@@ -57,7 +57,7 @@ namespace Microsoft.Workload.Build.Tasks
         };
 
         [GeneratedRegex(@"^\d+\.\d+\.\d+(-(?!rtm)[A-z]*\.*\d*)?")]
-        private static partial Regex bandVersionRegex();
+        private static partial Regex bandVersionRegex { get; }
 
         public override bool Execute()
         {

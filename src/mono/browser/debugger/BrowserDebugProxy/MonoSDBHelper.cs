@@ -922,22 +922,22 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal readonly ILogger logger;
 
         [GeneratedRegex(@"\<(?<varName>[^)]*)\>(?<varId>[^)]*)(__)(?<scopeId>\d+)", RegexOptions.Singleline)]
-        private static partial Regex RegexForAsyncLocals(); //<testCSharpScope>5__1 // works
+        private static partial Regex RegexForAsyncLocals { get; } //<testCSharpScope>5__1 // works
 
         [GeneratedRegex(@"\$VB\$ResumableLocal_(?<varName>[^\$]*)\$(?<scopeId>\d+)", RegexOptions.Singleline)]
-        private static partial Regex RegexForVBAsyncLocals(); //$VB$ResumableLocal_testVbScope$2
+        private static partial Regex RegexForVBAsyncLocals { get; } //$VB$ResumableLocal_testVbScope$2
 
         [GeneratedRegex(@"VB\$StateMachine_(\d+)_(?<methodName>.*)", RegexOptions.Singleline)]
-        private static partial Regex RegexForVBAsyncMethodName(); //VB$StateMachine_2_RunVBScope
+        private static partial Regex RegexForVBAsyncMethodName { get; } //VB$StateMachine_2_RunVBScope
 
         [GeneratedRegex(@"\<([^>]*)\>([d][_][_])([0-9]*)")]
-        private static partial Regex RegexForAsyncMethodName();
+        private static partial Regex RegexForAsyncMethodName { get; }
 
         [GeneratedRegex(@"[`][0-9]+")]
-        private static partial Regex RegexForGenericArgs();
+        private static partial Regex RegexForGenericArgs { get; }
 
         [GeneratedRegex("^(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))[^<>]*")]
-        private static partial Regex RegexForNestedLeftRightAngleBrackets(); // <ContinueWithStaticAsync>b__3_0
+        private static partial Regex RegexForNestedLeftRightAngleBrackets { get; } // <ContinueWithStaticAsync>b__3_0
 
         public JObjectValueCreator ValueCreator { get; init; }
 
@@ -1805,10 +1805,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         [GeneratedRegex(@"`\d+")]
-        private static partial Regex RegexForGenericArity();
+        private static partial Regex RegexForGenericArity { get; }
 
         [GeneratedRegex(@"[[, ]+]")]
-        private static partial Regex RegexForSquareBrackets();
+        private static partial Regex RegexForSquareBrackets { get; }
 
         public async Task<string> GetTypeName(int typeId, CancellationToken token)
         {

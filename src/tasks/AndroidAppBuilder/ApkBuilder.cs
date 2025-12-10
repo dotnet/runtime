@@ -666,7 +666,7 @@ public partial class ApkBuilder
     }
 
     [GeneratedRegex(@"\.(\d)")]
-    private static partial Regex DotNumberRegex();
+    private static partial Regex DotNumberRegex { get; }
 
     private string RenderMonodroidCoreClrTemplate(string monodroidContent)
     {

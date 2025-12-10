@@ -27,7 +27,7 @@ public partial class UpdateChromeVersions : MBU.Task
     private static readonly HttpClient s_httpClient = new();
 
     [GeneratedRegex("#define V8_BUILD_NUMBER (\\d+)")]
-    private static partial Regex V8BuildNumberRegex();
+    private static partial Regex V8BuildNumberRegex { get; }
 
     public string Channel { get; set; } = "stable";
 

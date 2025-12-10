@@ -23,7 +23,7 @@ public partial class ContractDescriptorSourceFileEmitter
     }
 
     [GeneratedRegex("%%([a-zA-Z0-9_]+)%%", RegexOptions.CultureInvariant)]
-    private static partial Regex FindTemplatePlaceholderRegex();
+    private static partial Regex FindTemplatePlaceholderRegex { get; }
 
     private string GetTemplateString()
     {
@@ -50,7 +50,7 @@ public partial class ContractDescriptorSourceFileEmitter
     }
 
     [GeneratedRegex("(\")", RegexOptions.CultureInvariant)]
-    private static partial Regex CStringEscape();
+    private static partial Regex CStringEscape { get; }
 
     public Dictionary<string, string> Elements { get; } = new();
 

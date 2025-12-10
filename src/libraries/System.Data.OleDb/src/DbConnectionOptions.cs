@@ -61,10 +61,10 @@ namespace System.Data.Common
 
 #if NET
         [GeneratedRegex(ConnectionStringPattern, RegexOptions.ExplicitCapture)]
-        private static partial Regex CreateConnectionStringRegex();
+        private static partial Regex CreateConnectionStringRegex { get; }
 
         [GeneratedRegex(ConnectionStringPatternOdbc, RegexOptions.ExplicitCapture)]
-        private static partial Regex CreateConnectionStringRegexOdbc();
+        private static partial Regex CreateConnectionStringRegexOdbc { get; }
 #else
         private static Regex CreateConnectionStringRegex() => new Regex(ConnectionStringPattern, RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         private static Regex CreateConnectionStringRegexOdbc() => new Regex(ConnectionStringPatternOdbc, RegexOptions.ExplicitCapture | RegexOptions.Compiled);
@@ -78,11 +78,11 @@ namespace System.Data.Common
 
 #if NET
         [GeneratedRegex("^(?![;\\s])[^\\p{Cc}]+(?<!\\s)$")]
-        private static partial Regex CreateConnectionStringValidKeyRegex();
+        private static partial Regex CreateConnectionStringValidKeyRegex { get; }
         [GeneratedRegex("^[^\"'=;\\s\\p{Cc}]*$")]
-        private static partial Regex CreateConnectionStringQuoteValueRegex();
+        private static partial Regex CreateConnectionStringQuoteValueRegex { get; }
         [GeneratedRegex("^\\{([^\\}\u0000]|\\}\\})*\\}$", RegexOptions.ExplicitCapture)]
-        private static partial Regex CreateConnectionStringQuoteOdbcValueRegex();
+        private static partial Regex CreateConnectionStringQuoteOdbcValueRegex { get; }
 #else
         private static Regex CreateConnectionStringValidKeyRegex() => new Regex("^(?![;\\s])[^\\p{Cc}]+(?<!\\s)$", RegexOptions.Compiled);
         private static Regex CreateConnectionStringQuoteValueRegex() => new Regex("^[^\"'=;\\s\\p{Cc}]*$", RegexOptions.Compiled);

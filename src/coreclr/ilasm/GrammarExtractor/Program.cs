@@ -79,20 +79,20 @@ return 0;
 internal static partial class Patterns
 {
     [GeneratedRegex(@"^(.*)%%(.*)%%", RegexOptions.Singleline)]
-    internal static partial Regex GetRegexExtractMarkers();
+    internal static partial Regex GetRegexExtractMarkers { get; }
 
     [GeneratedRegex(@"\s*([^'])\{[^{}]*\}", RegexOptions.Singleline)]
-    internal static partial Regex GetRegexRemoveTextInBraces();
+    internal static partial Regex GetRegexRemoveTextInBraces { get; }
 
     [GeneratedRegex(@"\b([A-Z0-9_]+)_\b", RegexOptions.Singleline)]
-    internal static partial Regex GetRegexKeywordIdentifiers();
+    internal static partial Regex GetRegexKeywordIdentifiers { get; }
 
     [GeneratedRegex(@"\b_([A-Z0-9]+)\b", RegexOptions.Singleline)]
-    internal static partial Regex GetRegexAssemblerDirectives();
+    internal static partial Regex GetRegexAssemblerDirectives { get; }
 
     [GeneratedRegex(@"\bELLIPSIS\b", RegexOptions.Singleline)]
-    internal static partial Regex GetRegexEllipsis();
+    internal static partial Regex GetRegexEllipsis { get; }
 
     [GeneratedRegex(@"\bDCOLON\b", RegexOptions.Singleline)]
-    internal static partial Regex GetRegexDcolon();
+    internal static partial Regex GetRegexDcolon { get; }
 }

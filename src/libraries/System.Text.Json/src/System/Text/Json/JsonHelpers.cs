@@ -298,7 +298,7 @@ namespace System.Text.Json
 
 #if NET
         [GeneratedRegex(IntegerRegexPattern, RegexOptions.None, matchTimeoutMilliseconds: IntegerRegexTimeoutMs)]
-        private static partial Regex CreateIntegerRegex();
+        private static partial Regex CreateIntegerRegex { get; }
 #else
         private static Regex CreateIntegerRegex() => new(IntegerRegexPattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(IntegerRegexTimeoutMs));
 #endif

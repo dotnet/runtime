@@ -1374,7 +1374,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal sealed partial class SourceFile
     {
         [GeneratedRegex(@"([:/])")]
-        private static partial Regex RegexForEscapeFileName();
+        private static partial Regex RegexForEscapeFileName { get; }
 
         private readonly Dictionary<int, MethodInfo> methods;
         private readonly AssemblyInfo assembly;

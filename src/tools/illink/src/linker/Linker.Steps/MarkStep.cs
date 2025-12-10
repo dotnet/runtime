@@ -2362,10 +2362,10 @@ namespace Mono.Linker.Steps
         }
 
         [GeneratedRegex("{[^{}]+}")]
-        private static partial Regex DebuggerDisplayAttributeValueRegex();
+        private static partial Regex DebuggerDisplayAttributeValueRegex { get; }
 
         [GeneratedRegex(@".+,\s*nq")]
-        private static partial Regex ContainsNqSuffixRegex();
+        private static partial Regex ContainsNqSuffixRegex { get; }
 
         void MarkTypeWithDebuggerDisplayAttribute(TypeDefinition type, CustomAttribute attribute, MessageOrigin origin)
         {

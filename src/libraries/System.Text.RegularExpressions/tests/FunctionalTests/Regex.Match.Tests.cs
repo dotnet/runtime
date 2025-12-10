@@ -1512,7 +1512,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [GeneratedRegex(@"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$")]
-        private static partial Regex Match_InstanceMethods_DefaultTimeout_SourceGenerated_ThrowsImpl();
+        private static partial Regex Match_InstanceMethods_DefaultTimeout_SourceGenerated_ThrowsImpl { get; }
 #endif
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
