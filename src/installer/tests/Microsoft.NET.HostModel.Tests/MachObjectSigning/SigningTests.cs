@@ -26,10 +26,12 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
     public class SigningTests :IClassFixture<SigningTests.SharedTestState>
     {
         private SharedTestState sharedTestState;
+        private ITestOutputHelper output;
 
-        public SigningTests(SharedTestState fixture)
+        public SigningTests(SharedTestState fixture, ITestOutputHelper output)
         {
             sharedTestState = fixture;
+            this.output = output;
         }
 
         [Theory]
@@ -78,9 +80,9 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         }
 
         [Theory(Skip = "Temporarily disabled due to macOS 26 codesign behavior change - only hashing __TEXT segment")]
-        [MemberData(nameof(GetTestFilePaths), nameof(MatchesCodesignOutput))]
         [PlatformSpecific(TestPlatforms.OSX)]
-        void MatchesCodesignOutput(string filePath, TestArtifact _)
+        [MemberData(nameof(GetTestFilePaths), nameof(MatchesCodesignOutput))]
+        public void MatchesCodesignOutput(string filePath, TestArtifact _)
         {
             string fileName = Path.GetFileName(filePath);
             string originalFilePath = filePath;
@@ -98,7 +100,19 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 
             (exitCode, stdErr) = Codesign.Run("-v", managedSignedPath);
             Assert.Equal(0, exitCode);
-            AssertMachFilesAreEquivalent(codesignFilePath, managedSignedPath, fileName);
+            try
+            {
+                AssertMachFilesAreEquivalent(codesignFilePath, managedSignedPath, fileName);
+            }
+            catch
+            {
+                string args = "--display --verbose=6";
+                var (_, stderr) = Codesign.Run(args, codesignFilePath);
+                output.WriteLine($"Codesign info for {codesignFilePath}:\n{stderr}");
+                (int _, stderr) = Codesign.Run(args, managedSignedPath);
+                output.WriteLine($"Codesign info for {managedSignedPath}:\n{stderr}");
+                throw;
+            }
         }
 
         [Fact]

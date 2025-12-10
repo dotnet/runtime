@@ -57,7 +57,6 @@ if (-not (Test-Path -Path $DailyDotnetRoot)) {
 
 $env:DOTNET_ROOT=$DailyDotnetRoot
 $env:PATH="$DailyDotnetRoot;$env:PATH"
-$env:DOTNET_MULTILEVEL_LOOKUP=0
 
 if (-not (Test-Path -Path "$TestHostRoot/shared/Microsoft.AspNetCore.App")) {
     Write-Host "Copying Microsoft.AspNetCore.App bits from daily SDK to testhost: $TestHostRoot"

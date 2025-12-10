@@ -615,6 +615,8 @@ static uint32_t BitScanForward(const regMaskTP& mask)
 #error Unsupported or unset target architecture
 #endif
 
+#include "targetcommon.h"
+
 #ifdef TARGET_XARCH
 
   #define JMP_DIST_SMALL_MAX_NEG  (-128)
@@ -873,13 +875,6 @@ inline bool isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv)
 {
     return (genSingleTypeRegMask(reg) & fullIntArgRegMask(callConv)) != 0;
 }
-
-//-------------------------------------------------------------------------------------------
-// genRegArgNext:
-//     Given a register that is an integer or floating point argument register
-//     returns the next argument register
-//
-regNumber genRegArgNext(regNumber argReg);
 
 //-------------------------------------------------------------------------------------------
 // isValidFloatArgReg:
@@ -1191,6 +1186,11 @@ static_assert(sizeof(target_ssize_t) == TARGET_POINTER_SIZE);
 // to represent these pointers.
 typedef ssize_t cnsval_ssize_t;
 typedef size_t  cnsval_size_t;
+#elif defined(TARGET_WASM)
+// WebAssembly has native support for 64-bit constants even in 32-bit mode, so we need the
+//  ability to store long constants regardless of pointer size on host or target.
+typedef int64_t  cnsval_ssize_t;
+typedef uint64_t cnsval_size_t;
 #else
 typedef target_ssize_t cnsval_ssize_t;
 typedef target_size_t  cnsval_size_t;
