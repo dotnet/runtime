@@ -2505,6 +2505,26 @@ void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     }
 }
 
+// Determines whether I4 to I8 promotion should use zero-extension (for unsigned operations)
+// or sign-extension (for signed operations), based on the opcode.
+InterpOpcode InterpOpForWideningArgForImplicitUpcast(InterpOpcode opcode)
+{
+    switch (opcode)
+    {
+        case INTOP_BNE_UN_I4:
+        case INTOP_BLE_UN_I4:
+        case INTOP_BLT_UN_I4:
+        case INTOP_BGE_UN_I4:
+        case INTOP_BGT_UN_I4:
+        case INTOP_ADD_OVF_UN_I4:
+        case INTOP_SUB_OVF_UN_I4:
+        case INTOP_MUL_OVF_UN_I4:
+            return INTOP_CONV_U8_U4;
+        default:
+            return INTOP_CONV_I8_I4;
+    }
+}
+
 void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
 {
     CHECK_STACK(2);
@@ -2515,12 +2535,12 @@ void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     // emitting the conditional branch
     if (argType1 == StackTypeI4 && argType2 == StackTypeI8)
     {
-        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+        EmitConv(m_pStackPointer - 1, StackTypeI8, InterpOpForWideningArgForImplicitUpcast(opcode));
         argType1 = StackTypeI8;
     }
     else if (argType1 == StackTypeI8 && argType2 == StackTypeI4)
     {
-        EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
+        EmitConv(m_pStackPointer - 2, StackTypeI8, InterpOpForWideningArgForImplicitUpcast(opcode));
     }
     else if (argType1 == StackTypeR4 && argType2 == StackTypeR8)
     {
@@ -2756,12 +2776,12 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 #if TARGET_64BIT
         if (type1 == StackTypeI8 && type2 == StackTypeI4)
         {
-            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+            EmitConv(m_pStackPointer - 1, StackTypeI8, InterpOpForWideningArgForImplicitUpcast((InterpOpcode)opBase));
             type2 = StackTypeI8;
         }
         else if (type1 == StackTypeI4 && type2 == StackTypeI8)
         {
-            EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
+            EmitConv(m_pStackPointer - 2, StackTypeI8, InterpOpForWideningArgForImplicitUpcast((InterpOpcode)opBase));
             type1 = StackTypeI8;
         }
 #endif
