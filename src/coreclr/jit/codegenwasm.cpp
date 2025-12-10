@@ -284,7 +284,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_NEG:
         case GT_NOT:
-            genCodeForNegNot(treeNode);
+            genCodeForNegNot(treeNode->AsOp());
             break;
 
         default:
@@ -676,22 +676,20 @@ void CodeGen::genCodeForShift(GenTree* tree)
 // Arguments:
 //    tree - neg/not tree node
 //
-void CodeGen::genCodeForNegNot(GenTree* tree)
+void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_NEG, GT_NOT));
-
-    GenTreeOp* treeNode = tree->AsOp();
-    genConsumeOperands(treeNode);
+    genConsumeOperands(tree);
 
     instruction ins;
-    switch (PackOperAndType(treeNode))
+    switch (PackOperAndType(tree))
     {
         case PackOperAndType(GT_NOT, TYP_INT):
-            GetEmitter()->emitIns_I(INS_i32_const, emitTypeSize(treeNode), -1);
+            GetEmitter()->emitIns_I(INS_i32_const, emitTypeSize(tree), -1);
             ins = INS_i32_xor;
             break;
         case PackOperAndType(GT_NOT, TYP_LONG):
-            GetEmitter()->emitIns_I(INS_i64_const, emitTypeSize(treeNode), -1);
+            GetEmitter()->emitIns_I(INS_i64_const, emitTypeSize(tree), -1);
             ins = INS_i64_xor;
             break;
         case PackOperAndType(GT_NOT, TYP_FLOAT):
@@ -712,13 +710,12 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
             break;
 
         default:
-            ins = INS_none;
-            NYI_WASM("genCodeForNegNot");
+            unreached();
             break;
     }
 
     GetEmitter()->emitIns(ins);
-    genProduceReg(treeNode);
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
