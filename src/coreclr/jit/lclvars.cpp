@@ -5446,6 +5446,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                     }
                     else
                     {
+                        assert(lclNum < info.compPatchpointInfo->NumberOfLocals());
                         originalOffset = info.compPatchpointInfo->Offset(lclNum);
                     }
                     const int offset = originalFrameStkOffs + originalOffset;
