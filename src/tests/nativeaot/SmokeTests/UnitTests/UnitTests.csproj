@@ -12,6 +12,7 @@
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
 
     <IlcOrderFile>order.txt</IlcOrderFile>
+    <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicThreading.cs" />
