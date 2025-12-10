@@ -759,6 +759,10 @@ protected:
     void genCodeForBinary(GenTreeOp* treeNode);
     bool genIsSameLocalVar(GenTree* tree1, GenTree* tree2);
 
+#if defined(TARGET_WASM)
+    void genCodeForConstant(GenTree* treeNode);
+#endif
+
 #if defined(TARGET_X86)
     void genCodeForLongUMod(GenTreeOp* node);
 #endif // TARGET_X86

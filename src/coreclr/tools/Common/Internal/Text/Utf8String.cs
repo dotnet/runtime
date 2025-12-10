@@ -11,6 +11,8 @@ namespace Internal.Text
     {
         private readonly byte[] _value;
 
+        public bool IsNull => _value == null;
+
         public Utf8String(byte[] underlyingArray)
         {
             _value = underlyingArray;
@@ -100,6 +102,44 @@ namespace Internal.Text
                 resultSpan = resultSpan.Slice(s.Length);
             }
 
+            return new Utf8String(result);
+        }
+
+        public static Utf8String Concat(ReadOnlySpan<byte> s1, ReadOnlySpan<byte> s2)
+        {
+            var result = new byte[s1.Length + s2.Length];
+            s1.CopyTo(result);
+            s2.CopyTo(result.AsSpan(s1.Length));
+            return new Utf8String(result);
+        }
+
+        public static Utf8String Concat(ReadOnlySpan<byte> s1, ReadOnlySpan<byte> s2, ReadOnlySpan<byte> s3)
+        {
+            var result = new byte[s1.Length + s2.Length + s3.Length];
+            s1.CopyTo(result);
+            s2.CopyTo(result.AsSpan(s1.Length));
+            s3.CopyTo(result.AsSpan(s1.Length + s2.Length));
+            return new Utf8String(result);
+        }
+
+        public static Utf8String Concat(ReadOnlySpan<byte> s1, ReadOnlySpan<byte> s2, ReadOnlySpan<byte> s3, ReadOnlySpan<byte> s4)
+        {
+            var result = new byte[s1.Length + s2.Length + s3.Length + s4.Length];
+            s1.CopyTo(result);
+            s2.CopyTo(result.AsSpan(s1.Length));
+            s3.CopyTo(result.AsSpan(s1.Length + s2.Length));
+            s4.CopyTo(result.AsSpan(s1.Length + s2.Length + s3.Length));
+            return new Utf8String(result);
+        }
+
+        public static Utf8String Concat(ReadOnlySpan<byte> s1, ReadOnlySpan<byte> s2, ReadOnlySpan<byte> s3, ReadOnlySpan<byte> s4, ReadOnlySpan<byte> s5)
+        {
+            var result = new byte[s1.Length + s2.Length + s3.Length + s4.Length + s5.Length];
+            s1.CopyTo(result);
+            s2.CopyTo(result.AsSpan(s1.Length));
+            s3.CopyTo(result.AsSpan(s1.Length + s2.Length));
+            s4.CopyTo(result.AsSpan(s1.Length + s2.Length + s3.Length));
+            s5.CopyTo(result.AsSpan(s1.Length + s2.Length + s3.Length + s4.Length));
             return new Utf8String(result);
         }
     }
