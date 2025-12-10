@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -127,8 +128,12 @@ namespace System.IO.Compression
                 else
                 {
                     // on 64-bit platforms, we need to convert ints to nuints
-                    const int maxStackAlloc = 1024; // 8 kB
-                    Span<nuint> lengthsAsNuint = sampleLengths.Length <= maxStackAlloc ? stackalloc nuint[maxStackAlloc] : new nuint[sampleLengths.Length];
+                    const int maxStackAlloc = 128; // 1 kB
+                    byte[]? rented = null;
+                    Span<nuint> lengthsAsNuint = sampleLengths.Length <= maxStackAlloc
+                        ? stackalloc nuint[maxStackAlloc]
+                        // rent as byte[] since nuint[] don't get much reuse
+                        : MemoryMarshal.Cast<byte, nuint>((rented = ArrayPool<byte>.Shared.Rent(sampleLengths.Length * sizeof(nuint))).AsSpan());
 
                     for (int i = 0; i < sampleLengths.Length; i++)
                     {
@@ -144,6 +149,11 @@ namespace System.IO.Compression
                         dictSize = Interop.Zstd.ZDICT_trainFromBuffer(
                                 dictPtr, (nuint)maxDictionarySize,
                                 samplesPtr, lengthsAsNuintPtr, (uint)sampleLengths.Length);
+                    }
+
+                    if (rented != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(rented);
                     }
                 }
 
