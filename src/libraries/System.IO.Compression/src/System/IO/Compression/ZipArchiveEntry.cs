@@ -843,16 +843,27 @@ namespace System.IO.Compression
 
         private WrappedStream OpenInWriteModeForUpdate()
         {
-            if (_everOpenedForWrite)
+            if (_currentlyOpenForWrite)
                 throw new IOException(SR.UpdateModeOneStream);
 
-            // Acquire the archive stream for direct writing. This enables writing directly to the archive
-            // without buffering the entire entry in memory, which is more memory-efficient for large entries.
-            // Note: For existing entries, this will write new data at the end of the archive; the old data
-            // becomes orphaned and will not be reclaimed until the archive is rewritten.
-            _archive.AcquireArchiveStream(this);
+            // Write access in Update mode means "replace the entry content entirely".
+            // We provide an empty MemoryStream (discarding any existing data) and write
+            // the new content to the archive at dispose time. This is necessary because
+            // writing directly to the archive could overwrite the next entry if the new
+            // data is larger than the original.
+            _everOpenedForWrite = true;
+            Changes |= ZipArchive.ChangeState.StoredData;
+            _currentlyOpenForWrite = true;
 
-            return OpenInWriteModeCore();
+            // Create a fresh empty MemoryStream, discarding any previously loaded data
+            _storedUncompressedData = new MemoryStream();
+
+            // Return a stream wrapper. The stream is writable and seekable (like MemoryStream),
+            // but starts empty unlike ReadWrite mode which loads existing data.
+            return new WrappedStream(_storedUncompressedData, this, thisRef =>
+            {
+                thisRef!._currentlyOpenForWrite = false;
+            });
         }
 
         private WrappedStream OpenInWriteModeCore()

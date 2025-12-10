@@ -2301,13 +2301,94 @@ namespace System.IO.Compression.Tests
 
             ZipArchiveEntry entry = archive.CreateEntry("new_entry.txt");
 
-            // In Update mode, FileAccess.Write uses direct-to-archive writing which returns a write-only, non-seekable stream
+            // In Update mode, FileAccess.Write provides an empty stream (discarding any existing data).
+            // The stream is backed by a MemoryStream, so it supports read/write/seek, but starts empty.
             using Stream stream = entry.Open(FileAccess.Write);
             Assert.True(stream.CanWrite);
-            Assert.False(stream.CanRead);
-            Assert.False(stream.CanSeek);
+            Assert.True(stream.CanRead);
+            Assert.True(stream.CanSeek);
+            Assert.Equal(0, stream.Length);
 
             await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_UpdateMode_WriteAccess_CanWriteAndReadBack(bool async)
+        {
+            const string entryName = "new_entry.txt";
+            const string testContent = "Hello, World!";
+            byte[] testData = System.Text.Encoding.UTF8.GetBytes(testContent);
+
+            using MemoryStream ms = new MemoryStream();
+
+            // Create archive with an entry using FileAccess.Write
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entry = archive.CreateEntry(entryName);
+
+            using (Stream stream = entry.Open(FileAccess.Write))
+            {
+                stream.Write(testData, 0, testData.Length);
+            }
+
+            await DisposeZipArchive(async, archive);
+
+            // Re-open archive and verify the entry can be read back
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+
+            ZipArchiveEntry readEntry = readArchive.GetEntry(entryName);
+            Assert.NotNull(readEntry);
+
+            using (Stream readStream = readEntry.Open())
+            using (StreamReader reader = new StreamReader(readStream))
+            {
+                string content = reader.ReadToEnd();
+                Assert.Equal(testContent, content);
+            }
+
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_UpdateMode_WriteAccess_ExistingEntry_DiscardsOldData(bool async)
+        {
+            const string entryName = "first.txt";
+            const string newContent = "New content replaces old";
+            byte[] newData = System.Text.Encoding.UTF8.GetBytes(newContent);
+
+            using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+
+            // Open in Update mode and overwrite existing entry with FileAccess.Write
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entry = archive.GetEntry(entryName);
+            Assert.NotNull(entry);
+
+            using (Stream stream = entry.Open(FileAccess.Write))
+            {
+                // Stream should be empty - existing data is discarded
+                Assert.Equal(0, stream.Length);
+                stream.Write(newData, 0, newData.Length);
+            }
+
+            await DisposeZipArchive(async, archive);
+
+            // Re-open and verify the entry contains only the new content
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+
+            ZipArchiveEntry readEntry = readArchive.GetEntry(entryName);
+            Assert.NotNull(readEntry);
+
+            using (Stream readStream = readEntry.Open())
+            using (StreamReader reader = new StreamReader(readStream))
+            {
+                string content = reader.ReadToEnd();
+                Assert.Equal(newContent, content);
+            }
+
+            await DisposeZipArchive(async, readArchive);
         }
 
         [Theory]
