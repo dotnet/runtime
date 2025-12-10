@@ -149,5 +149,15 @@ namespace System.PrivateUri.Tests
             Assert.True(uri.IsUnc);
             Assert.Empty(uri.Host);
         }
+
+        [Fact]
+        public static void UncWithTrailingSpaces_CanBeParsed()
+        {
+            Uri uri = new Uri("//9\n");
+            Assert.True(uri.IsUnc);
+            Assert.Equal(UriHostNameType.IPv4, uri.HostNameType);
+            Assert.Equal("0.0.0.9", uri.Host);
+            Assert.Equal(@"\\0.0.0.9", uri.LocalPath);
+        }
     }
 }
