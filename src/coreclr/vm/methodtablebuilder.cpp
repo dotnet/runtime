@@ -2677,13 +2677,21 @@ MethodTableBuilder::EnumerateClassMethods()
     if ((DWORD)MAX_SLOT_INDEX <= cMethAndGaps)
         BuildMethodTableThrowException(IDS_CLASSLOAD_TOO_MANY_METHODS);
 
-    bmtMethod->m_cMaxDeclaredMethods = (SLOT_INDEX)cMethAndGaps;
-
+    DWORD cMethUpperBound = cMethAndGaps;
     if (g_pConfig->RuntimeAsync())
     {
-        // TODO: (async) the index is uint16 and can potentially overflow. This needs to be more robust.
-        bmtMethod->m_cMaxDeclaredMethods *= 2;
+        // In a worst case the number of declared methods will double
+        // as every async method may have two variants.
+        // It is typically a modest number though.
+        // We will reserve twice the size for the builder, up to the max, just in case.
+        cMethUpperBound *= 2;
+        if (cMethUpperBound >= (DWORD)MAX_SLOT_INDEX)
+        {
+            cMethUpperBound = MAX_SLOT_INDEX - 1;
+        }
     }
+
+    bmtMethod->m_cMaxDeclaredMethods = (SLOT_INDEX)cMethUpperBound;
 
     bmtMethod->m_cDeclaredMethods = 0;
     bmtMethod->m_rgDeclaredMethods = new (GetStackingAllocator())
@@ -3305,6 +3313,11 @@ MethodTableBuilder::EnumerateClassMethods()
         bmtMDMethod *pDeclaredMethod = NULL;
         for (int insertCount = 0; insertCount < 2; insertCount++)
         {
+            if (bmtMethod->m_cDeclaredMethods >= bmtMethod->m_cMaxDeclaredMethods)
+            {
+                BuildMethodTableThrowException(IDS_CLASSLOAD_TOO_MANY_METHODS);
+            }
+
             bmtMDMethod * pNewMethod;
             if (insertCount == 0)
             {
