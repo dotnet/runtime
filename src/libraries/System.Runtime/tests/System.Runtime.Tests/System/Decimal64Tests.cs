@@ -239,15 +239,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Parse_Rounding()
-        {
-            Assert.Equal(Decimal64.Parse(new string('9', 17)), new Decimal64(1, 17));
-            Assert.Equal(Decimal64.Parse(new string('9', 17) + new string('0', 367)), new Decimal64(1_000_000_000_000_000, 369));
-            Assert.Equal(Decimal64.Parse(new string('9', 16) + '5' + new string('0', 367)), new Decimal64(1_000_000_000_000_000, 369));
-            Assert.Equal(Decimal64.Parse(new string('9', 16) + '4' + new string('0', 367)), new Decimal64(9_999_999_999_999_999, 368));
-        }
-
-        [Fact]
         public static void Rounding()
         {
             var number = new Decimal64(12345677777777778, 0);
@@ -258,6 +249,14 @@ namespace System.Tests
 
             number = new Decimal64(12345677777777771, -399);
             Assert.Equal(new Decimal64(1234567777777777, -398), number);
+        }
+
+        [Fact]
+        public static void MaxValue_Rounding()
+        {
+            Assert.Equal(Decimal64.MaxValue, Decimal64.Parse(new string('9', 16) + '4' + new string('0', 367)));
+            Assert.Equal(Decimal64.PositiveInfinity, Decimal64.Parse(new string('9', 16) + '5' + new string('0', 367)));
+            Assert.Equal(Decimal64.PositiveInfinity, Decimal64.Parse(new string('9', 16) + '5' + new string('0', 366) + '1'));
         }
 
         [Theory]

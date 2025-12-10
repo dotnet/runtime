@@ -238,15 +238,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Parse_Rounding()
-        {
-            Assert.Equal(Decimal128.Parse(new string('9', 35)), new Decimal128(1, 35));
-            Assert.Equal(Decimal128.Parse(new string('9', 35) + new string('0', 6109)), new Decimal128(Int128.Parse("1" + new string('0', 33)), 6111));
-            Assert.Equal(Decimal128.Parse(new string('9', 34) + '5' + new string('0', 6109)), new Decimal128(Int128.Parse("1" + new string('0', 33)), 6111));
-            Assert.Equal(Decimal128.Parse(new string('9', 34) + '4' + new string('0', 6109)), new Decimal128(Int128.Parse(new string('9', 34)), 6110));
-        }
-
-        [Fact]
         public static void Rounding()
         {
             var number = new Decimal128(Int128.Parse("12345677777777771234567777777777778"), 0);
@@ -257,6 +248,14 @@ namespace System.Tests
 
             number = new Decimal128(Int128.Parse("12345677777777771234567777777777771"), -6177);
             Assert.Equal(new Decimal128(Int128.Parse("1234567777777777123456777777777777"), -6176), number);
+        }
+
+        [Fact]
+        public static void MaxValue_Rounding()
+        {
+            Assert.Equal(Decimal128.MaxValue, Decimal128.Parse(new string('9', 34) + '4' + new string('0', 6110)));
+            Assert.Equal(Decimal128.PositiveInfinity, Decimal128.Parse(new string('9', 34) + '5' + new string('0', 6110)));
+            Assert.Equal(Decimal128.PositiveInfinity, Decimal128.Parse(new string('9', 34) + '5' + new string('0', 6109) + '1'));
         }
 
         [Theory]

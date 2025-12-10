@@ -231,15 +231,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Parse_Rounding()
-        {
-            Assert.Equal(Decimal32.Parse(new string('9', 8)), new Decimal32(1, 8));
-            Assert.Equal(Decimal32.Parse(new string('9', 8) + new string('0', 88)), new Decimal32(1_000_000, 90));
-            Assert.Equal(Decimal32.Parse(new string('9', 7) + '5' + new string('0', 88)), new Decimal32(1_000_000, 90));
-            Assert.Equal(Decimal32.Parse(new string('9', 7) + '4' + new string('0', 88)), new Decimal32(9_999_999, 89));
-        }
-
-        [Fact]
         public static void Midpoint_Rounding()
         {
             var number = new Decimal32(12345685, 0);
@@ -257,6 +248,14 @@ namespace System.Tests
 
             number = new Decimal32(12345650, -103);
             Assert.Equal(new Decimal32(123456, -101), number);
+        }
+
+        [Fact]
+        public static void MaxValue_Rounding()
+        {
+            Assert.Equal(Decimal32.MaxValue, Decimal32.Parse(new string('9', 7) + '4' + new string('9', 89)));
+            Assert.Equal(Decimal32.PositiveInfinity, Decimal32.Parse(new string('9', 7) + '5' + new string('0', 89)));
+            Assert.Equal(Decimal32.PositiveInfinity, Decimal32.Parse(new string('9', 7) + '5' + new string('0', 88) + '1'));
         }
 
         [Theory]
