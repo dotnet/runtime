@@ -784,7 +784,7 @@ namespace System.Net.Http
                     responseStream = EmptyReadStream.Instance;
                     CompleteResponse();
                 }
-                else if (request.Method.IsConnect && response.StatusCode == HttpStatusCode.OK)
+                else if (request.Method.IsConnect && response.IsSuccessStatusCode)
                 {
                     // Successful response to CONNECT does not have body.
                     // What ever comes next should be opaque.
