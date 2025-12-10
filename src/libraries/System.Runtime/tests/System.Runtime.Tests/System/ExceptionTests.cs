@@ -109,7 +109,7 @@ namespace System.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/mono/mono/issues/15140", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/120055", TestRuntimes.CoreCLR, typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120055", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public static void ThrowStatementDoesNotResetExceptionStackLineSameMethod()
         {
             (string, string, int) rethrownExceptionStackFrame = (null, null, 0);
