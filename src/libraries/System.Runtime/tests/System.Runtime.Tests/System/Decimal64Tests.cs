@@ -254,9 +254,9 @@ namespace System.Tests
         [Fact]
         public static void MaxValue_Rounding()
         {
-            Assert.Equal(Decimal64.MaxValue, Decimal64.Parse(new string('9', 16) + '4' + new string('0', 367)));
-            Assert.Equal(Decimal64.PositiveInfinity, Decimal64.Parse(new string('9', 16) + '5' + new string('0', 367)));
-            Assert.Equal(Decimal64.PositiveInfinity, Decimal64.Parse(new string('9', 16) + '5' + new string('0', 366) + '1'));
+            Assert.Equal(Decimal64.MaxValue, Decimal64.Parse(new string('9', 16) + '4' + new string('0', 368)));
+            Assert.Equal(Decimal64.PositiveInfinity, Decimal64.Parse(new string('9', 16) + '5' + new string('0', 368)));
+            Assert.Equal(Decimal64.PositiveInfinity, Decimal64.Parse(new string('9', 16) + '5' + new string('0', 367) + '1'));
         }
 
         [Theory]
