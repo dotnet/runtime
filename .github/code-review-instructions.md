@@ -1,5 +1,5 @@
 ---
-excludeAgent: coding
+excludeAgent: coding-agent
 ---
 
 # Code Review Instructions for dotnet/runtime
@@ -100,11 +100,10 @@ These instructions guide code reviews for the dotnet/runtime repository. The com
 ### 8. Documentation and Code Clarity
 
 **Documentation:**
-- **XML Documentation**: Public APIs must have clear XML documentation explaining purpose, parameters, return values, and exceptions
-- **Complex Logic**: Non-obvious code should have explanatory comments
+- **XML Documentation**: New public APIs must have clear XML documentation explaining purpose, parameters, return values, and exceptions. Do not comment on existing APIs that lack documentation.
+- **Complex Logic**: Comments should explain the "why" behind non-obvious decisions, not restate what the code does
 - **TODOs and FIXMEs**: Ensure they are tracked with issues and are appropriate for the change
 - **Breaking Changes**: Must be clearly documented with migration guidance
-- **Performance Characteristics**: Document performance expectations for performance-critical APIs (O(n), allocation behavior)
 
 ## What NOT to Focus On
 
@@ -118,7 +117,7 @@ The following are handled by automated tooling and don't need review comments:
 
 ## Review Approach
 
-1. **Understand the Context**: Read the PR description and linked issues to understand the goal
+1. **Understand the Context**: Read the PR description and linked issues to understand the goal. Consider as much relevant code from the containing project as possible. For public APIs, review any code in the repo that consumes the method.
 2. **Assess the Scope**: Verify the change is focused and not mixing unrelated concerns
 3. **Evaluate Risk**: Consider the risk level based on what components are affected and how widely used they are
 4. **Think Like an Attacker**: For security-sensitive code, consider how it might be exploited
