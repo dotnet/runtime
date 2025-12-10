@@ -341,28 +341,28 @@ namespace System.IO.Compression
         {
             bytesWritten = 0;
 
+            using SafeZstdCompressHandle ctx = Interop.Zstd.ZSTD_createCCtx();
+            if (ctx.IsInvalid)
+            {
+                throw new IOException(SR.ZstandardEncoder_Create);
+            }
+
+            if (dictionary != null)
+            {
+                ctx.SetDictionary(dictionary.CompressionDictionary);
+            }
+            else
+            {
+                SetQuality(ctx, quality);
+            }
+
+            if (windowLog != 0)
+            {
+                SetWindowLog(ctx, windowLog);
+            }
+
             unsafe
             {
-                using SafeZstdCompressHandle ctx = Interop.Zstd.ZSTD_createCCtx();
-                if (ctx.IsInvalid)
-                {
-                    return false;
-                }
-
-                if (dictionary != null)
-                {
-                    ctx.SetDictionary(dictionary.CompressionDictionary);
-                }
-                else
-                {
-                    SetQuality(ctx, quality);
-                }
-
-                if (windowLog != 0)
-                {
-                    SetWindowLog(ctx, windowLog);
-                }
-
                 fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
                 fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
                 {
