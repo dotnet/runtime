@@ -659,7 +659,7 @@ function download_resource (asset: AssetEntryInternal): LoadingResource {
     }
 }
 
-function fetchResource(asset: AssetEntryInternal): Promise<Response> {
+function fetchResource (asset: AssetEntryInternal): Promise<Response> {
     // Allow developers to override how the resource is loaded
     let url = asset.resolvedUrl!;
     if (loaderHelpers.loadBootResource) {
