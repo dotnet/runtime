@@ -3164,7 +3164,9 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             if (g_stackTypeFromInterpType[targetType] != StackTypeI4 &&
                 g_stackTypeFromInterpType[targetType] != StackTypeI8)
             {
-                goto FAIL_TO_EXPAND_INTRINSIC;
+                // The intrinsic is must expand only when the target type is primitive. For other types (e.g. int128),
+                // use the compiled method.
+                return false;
             }
 
             InterpOpcode convOp;
