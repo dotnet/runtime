@@ -1,0 +1,19 @@
+<Project>
+  <!-- Temporarily use .NET 10 pruning data for .NET 11 https://github.com/dotnet/runtime/issues/122115 -->
+  <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
+    <TargetFrameworkVersionForPruningData>10.0</TargetFrameworkVersionForPruningData>
+  </PropertyGroup>
+  <Target Name="UseNet10PruningData" AfterTargets="AddPrunePackageReferences"
+          Condition="('$(RestoreEnablePackagePruning)' == 'true' OR '$(RestoreEnablePackagePruning)' == '') and '$(TargetFrameworkVersionForPruningData)' != ''">    
+    <GetPackagesToPrune TargetFrameworkIdentifier="$(TargetFrameworkIdentifier)"
+                        TargetFrameworkVersion="$(TargetFrameworkVersionForPruningData)"
+                        FrameworkReferences="@(FrameworkReference)"
+                        TargetingPacks="@(TargetingPack)"
+                        TargetingPackRoots="$(PrunePackageTargetingPackRoots)"
+                        PrunePackageDataRoot="$(PrunePackageDataRoot)"
+                        AllowMissingPrunePackageData="$(AllowMissingPrunePackageData)">
+      <Output TaskParameter="PackagesToPrune" ItemName="PrunePackageReference" />
+    </GetPackagesToPrune>
+  </Target>
+</Project>

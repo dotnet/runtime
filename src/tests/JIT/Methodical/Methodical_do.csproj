@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
     <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
   <ItemGroup>

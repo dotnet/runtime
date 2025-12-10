@@ -55,10 +55,10 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <PropertyGroup>
     <!-- Paths to tools, tasks, and extensions are calculated relative to the WebAssemblySdkDirectoryRoot. This can be modified to test a local build. -->
-    <WebAssemblySdkDirectoryRoot Condition="'$(WebAssemblySdkDirectoryRoot)'==''">$(MSBuildThisFileDirectory)..\</WebAssemblySdkDirectoryRoot>
+    <_WebAssemblySdkToolsDirectory Condition="'$(_WebAssemblySdkToolsDirectory)'==''">$(MSBuildThisFileDirectory)..\tools\</_WebAssemblySdkToolsDirectory>
     <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' == 'Core'">net10.0</_WebAssemblySdkTasksTFM>
     <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' != 'Core'">net472</_WebAssemblySdkTasksTFM>
-    <_WebAssemblySdkTasksAssembly>$(WebAssemblySdkDirectoryRoot)tools\$(_WebAssemblySdkTasksTFM)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
+    <_WebAssemblySdkTasksAssembly Condition="'$(_WebAssemblySdkTasksAssembly)' == ''">$(_WebAssemblySdkToolsDirectory)\$(_WebAssemblySdkTasksTFM)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
 
     <!-- Compression -->
     <CompressionIncludePatterns>$(CompressionIncludePatterns);_framework\**</CompressionIncludePatterns>
@@ -141,6 +141,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <GenerateBuildWasmBootJsonDependsOn>
       $(GenerateBuildWasmBootJsonDependsOn);
       GenerateBuildRuntimeConfigurationFiles;
+      ComputeWasmVfs;
       ResolveWasmOutputs;
       _AddWasmDiagnosticPortsEnvironmentVariable;
     </GenerateBuildWasmBootJsonDependsOn>
@@ -237,19 +238,52 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Warning Text="Custom Blazor cache has been removed and setting 'BlazorCacheBootResources' has no effect." Condition="'$(_BlazorCacheBootResources)' != 'false' and '$(_TargetingNET100OrLater)' == 'true'" />
   </Target>
 
-  <Target Name="ResolveWasmOutputs" DependsOnTargets="_ResolveWasmOutputs" />
+  <Target Name="ResolveWasmOutputs" DependsOnTargets="$(ResolveWasmOutputsDependsOn);_ResolveWasmOutputs" />
 
-  <Target Name="_GetWasmRuntimePackVersion">
-    <PropertyGroup>
-      <_WasmRuntimePackVersion>%(ResolvedRuntimePack.NuGetPackageVersion)</_WasmRuntimePackVersion>
-    </PropertyGroup>
+  <Target Name="ComputeWasmVfs">
+    <ItemGroup>
+      <WasmFilesToIncludeInFileSystem Condition="'%(WasmFilesToIncludeInFileSystem.TargetPath)' == ''">
+        <TargetPath>/%(WasmFilesToIncludeInFileSystem.Identity)</TargetPath>
+      </WasmFilesToIncludeInFileSystem>
+    </ItemGroup>
+    
+    <DefineStaticWebAssets
+      CandidateAssets="@(StaticWebAsset)"
+      AssetTraitName="WasmResource"
+      AssetTraitValue="vfs:%(WasmFilesToIncludeInFileSystem.TargetPath)"
+      RelativePathFilter="@(WasmFilesToIncludeInFileSystem)"
+      Condition="'@(WasmFilesToIncludeInFileSystem)' != ''"
+    >
+      <Output TaskParameter="Assets" ItemName="_WasmFilesToIncludeInFileSystemStaticWebAsset" />
+    </DefineStaticWebAssets>
 
-    <Error Code="WASM0005" Text="Unable to resolve WebAssembly runtime pack version" Condition="'$(_WasmRuntimePackVersion)' == ''" />
+    <Error
+      Text="Some of the 'WasmFilesToIncludeInFileSystem' where not found in StaticWebAssets. WasmFilesToIncludeInFileSystem: @(WasmFilesToIncludeInFileSystem), matched StaticWebAssets: @(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
+      Condition="'@(WasmFilesToIncludeInFileSystem->Count())' != '@(_WasmFilesToIncludeInFileSystemStaticWebAsset->Count())'" />
+
+    <DefineStaticWebAssetEndpoints
+      CandidateAssets="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
+      ExistingEndpoints="@(StaticWebAssetEndpoint)"
+      ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
+    >
+      <Output TaskParameter="Endpoints" ItemName="_WasmFilesToIncludeInFileSystemStaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
+
+    <ItemGroup>
+      <!-- Update the boot config static web asset since we've given it a trait -->
+      <_WasmFilesToIncludeInFileSystemOriginalAssetsWithChangedIdentity Include="%(_WasmFilesToIncludeInFileSystemStaticWebAsset.OriginalItemSpec)" Condition="'%(_WasmFilesToIncludeInFileSystemStaticWebAsset.OriginalItemSpec)' != '%(_WasmFilesToIncludeInFileSystemStaticWebAsset.Identity)'" /> 
+
+      <StaticWebAsset Remove="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)" />
+      <StaticWebAsset Remove="@(_WasmFilesToIncludeInFileSystemOriginalAssetsWithChangedIdentity)" />
+      <StaticWebAsset Include="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)" />
+      <StaticWebAssetEndpoint Include="@(_WasmFilesToIncludeInFileSystemStaticWebAssetEndpoint)" />
+    </ItemGroup>
   </Target>
 
-  <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild;_GetWasmRuntimePackVersion">
+  <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild">
     <PropertyGroup>
-      <_WasmNativeAssetFileNames>;@(WasmNativeAsset->'%(FileName)%(Extension)');</_WasmNativeAssetFileNames>
+      <_WasmNativeAssetFileNames>;@(WasmNativeAsset->'%(FileName)%(Extension)');@(WasmAssembliesFinal->'%(FileName)%(Extension)');</_WasmNativeAssetFileNames>
+      <_WasmIntermediateAssemblyFileNames Condition="@(WasmAssembliesFinal->Count()) != 0">;@(IntermediateAssembly->'%(FileName)%(Extension)');</_WasmIntermediateAssemblyFileNames>
     </PropertyGroup>
 
     <ItemGroup>
@@ -257,6 +291,14 @@ Copyright (c) .NET Foundation. All rights reserved.
 
       <!-- Remove dotnet.js/wasm from runtime pack, in favor of the relinked ones in @(WasmNativeAsset) -->
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="$(_WasmNativeAssetFileNames.Contains(';%(FileName)%(Extension);'))" />
+
+      <!-- If we have @(WasmAssembliesFinal), prefer them over @(ReferenceCopyLocalPaths). They come from AOT during build. In that case @(ReferenceCopyLocalPaths) is already empty  -->
+      <_WasmProjectAssemblyBuild Include="@(WasmAssembliesFinal)" Condition="$(_WasmIntermediateAssemblyFileNames.Contains(';%(FileName)%(Extension);'))" />
+      <_WasmProjectAssemblyBuild Include="@(IntermediateAssembly)" Condition="@(_WasmProjectAssemblyBuild->Count()) == 0" />
+      <_WasmBuildAssetCandidates Include="@(ReferenceCopyLocalPaths)" />
+      <_WasmBuildAssetCandidates Include="@(WasmNativeAsset)" />
+      <_WasmBuildAssetCandidates Include="@(WasmAssembliesFinal)" />
+      <_WasmBuildAssetCandidates Remove="@(_WasmProjectAssemblyBuild)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -265,9 +307,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
 
     <ComputeWasmBuildAssets
-      Candidates="@(ReferenceCopyLocalPaths->Distinct());@(WasmNativeAsset)"
+      Candidates="@(_WasmBuildAssetCandidates->Distinct())"
       CustomIcuCandidate="$(_BlazorIcuDataFileName)"
-      ProjectAssembly="@(IntermediateAssembly)"
+      ProjectAssembly="@(_WasmProjectAssemblyBuild)"
       ProjectDebugSymbols="@(_DebugSymbolsIntermediatePath)"
       SatelliteAssemblies="@(ReferenceSatellitePaths)"
       ProjectSatelliteAssemblies="@(IntermediateSatelliteAssembliesWithTargetPath)"
@@ -287,7 +329,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ComputeWasmBuildAssets>
 
     <ItemGroup Condition="'$(_WasmInlineBootConfig)' == 'true'">
-      <_WasmDotnetJsForBuild Include="@(ReferenceCopyLocalPaths)" Condition="'%(FileName)%(Extension)' == 'dotnet.js'" />
+      <_WasmDotnetJsForBuild Include="@(_WasmBuildAssetCandidates)" Condition="'%(FileName)%(Extension)' == 'dotnet.js'" />
       <_BuildAssetsCandidates Remove="@(_WasmDotnetJsForBuild)" />
     </ItemGroup>
 
@@ -340,43 +382,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     >
       <Output TaskParameter="Endpoints" ItemName="_WasmJsConfigStaticWebAssetEndpoint" />
     </DefineStaticWebAssetEndpoints>
-
-    <ItemGroup>
-      <WasmFilesToIncludeInFileSystem Condition="'%(WasmFilesToIncludeInFileSystem.TargetPath)' == ''">
-        <TargetPath>/%(WasmFilesToIncludeInFileSystem.Identity)</TargetPath>
-      </WasmFilesToIncludeInFileSystem>
-    </ItemGroup>
     
-    <DefineStaticWebAssets
-      CandidateAssets="@(_WasmDiscoveredFileCandidates)"
-      AssetTraitName="WasmResource"
-      AssetTraitValue="vfs:%(WasmFilesToIncludeInFileSystem.TargetPath)"
-      RelativePathFilter="@(WasmFilesToIncludeInFileSystem)"
-      Condition="'@(WasmFilesToIncludeInFileSystem)' != ''"
-    >
-      <Output TaskParameter="Assets" ItemName="_WasmFilesToIncludeInFileSystemStaticWebAsset" />
-    </DefineStaticWebAssets>
-
-    <Error
-      Text="Some of the 'WasmFilesToIncludeInFileSystem' where not found in StaticWebAssets. WasmFilesToIncludeInFileSystem: @(WasmFilesToIncludeInFileSystem), matched StaticWebAssets: @(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
-      Condition="'@(WasmFilesToIncludeInFileSystem->Count())' != '@(_WasmFilesToIncludeInFileSystemStaticWebAsset->Count())'" />
-
-    <DefineStaticWebAssetEndpoints
-      CandidateAssets="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
-      ExistingEndpoints="@(StaticWebAssetEndpoint)"
-      ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
-    >
-      <Output TaskParameter="Endpoints" ItemName="_WasmFilesToIncludeInFileSystemStaticWebAssetEndpoint" />
-    </DefineStaticWebAssetEndpoints>
-
     <ItemGroup>
-      <!-- Update the boot config static web asset since we've given it a trait -->
       <StaticWebAsset Remove="@(_WasmJsConfigStaticWebAsset)" />
       <StaticWebAsset Include="@(_WasmJsConfigStaticWebAsset)" />
-      <StaticWebAsset Remove="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)" />
-      <StaticWebAsset Include="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)" />
       <StaticWebAssetEndpoint Include="@(_WasmJsConfigStaticWebAssetEndpoint)" />
-      <StaticWebAssetEndpoint Include="@(_WasmFilesToIncludeInFileSystemStaticWebAssetEndpoint)" />
       <ReferenceCopyLocalPaths Remove="@(_WasmBuildFilesToRemove)" />
     </ItemGroup>
 
@@ -620,7 +630,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     BeforeTargets="PrepareForPublish" />
 
   <!-- Wasm's Nested publish is run just to build the native bits. We don't need to run blazor targets for that -->
-  <Target Name="ProcessPublishFilesForWasm" DependsOnTargets="_ResolveWasmConfiguration;LoadStaticWebAssetsBuildManifest;_GetWasmRuntimePackVersion;_GatherWasmFilesToPublish" AfterTargets="ILLink" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+  <Target Name="ProcessPublishFilesForWasm" DependsOnTargets="_ResolveWasmConfiguration;LoadStaticWebAssetsBuildManifest;_GatherWasmFilesToPublish" AfterTargets="ILLink" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <!-- The list of static web assets already contains all the assets from the build. We want to correct certain assets that might
          have changed as part of the publish process. We are going to do so as follows:
          * We will update Blazor runtime asset dlls if we are running PublishTrimmed
