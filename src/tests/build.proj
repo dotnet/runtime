@@ -42,7 +42,6 @@
     <RestoreProjects Include="Common\XHarnessRunnerLibrary\XHarnessRunnerLibrary.csproj" />
     <RestoreProjects Include="Common\external\external.csproj" />
     <RestoreProjects Include="Common\ilasm\ilasm.ilproj" />
-    <RestoreProjects Include="tracing\userevents\common\userevents_common.csproj" />
   </ItemGroup>
 
   <ItemGroup>
