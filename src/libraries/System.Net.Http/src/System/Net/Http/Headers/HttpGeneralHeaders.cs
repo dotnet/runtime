@@ -125,12 +125,8 @@ namespace System.Net.Http.Headers
                 else
                 {
                     _transferEncodingChunkedSet = value != null;
-                    // Remove all occurrences of "chunked". RemoveParsedValue only removes the first occurrence,
-                    // so we need to call it in a loop until all are removed.
-                    while (_parent.RemoveParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked))
-                    {
-                        // Continue removing until no more "chunked" values exist
-                    }
+                    // Remove all occurrences of "chunked" in a single pass.
+                    _parent.RemoveAllParsedValues(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked);
                 }
             }
         }

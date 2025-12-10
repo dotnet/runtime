@@ -558,6 +558,83 @@ namespace System.Net.Http.Headers
             return false;
         }
 
+        internal bool RemoveAllParsedValues(HeaderDescriptor descriptor, object value)
+        {
+            Debug.Assert(value != null);
+
+            // If we have a value for this header, then verify if we have a single value. If so, compare that
+            // value with 'item'. If we have a list of values, then remove all matching items from the list.
+            if (TryGetAndParseHeaderInfo(descriptor, out HeaderStoreItemInfo? info))
+            {
+                Debug.Assert(descriptor.Parser != null, "Can't add parsed value if there is no parser available.");
+                Debug.Assert(descriptor.Parser.SupportsMultipleValues,
+                    "This method should not be used for single-value headers. Use Remove(string) instead.");
+
+                // If there is no entry, just return.
+                var parsedValue = info.ParsedAndInvalidValues;
+                if (parsedValue == null)
+                {
+                    return false;
+                }
+
+                bool result = false;
+                IEqualityComparer? comparer = descriptor.Parser.Comparer;
+
+                List<object>? parsedValues = parsedValue as List<object>;
+                if (parsedValues == null)
+                {
+                    if (parsedValue is not InvalidValue)
+                    {
+                        Debug.Assert(parsedValue.GetType() == value.GetType(),
+                            "Stored value does not have the same type as 'value'.");
+
+                        if (AreEqual(value, parsedValue, comparer))
+                        {
+                            info.ParsedAndInvalidValues = null;
+                            result = true;
+                        }
+                    }
+                }
+                else
+                {
+                    // Remove all matching items in a single pass to avoid O(n^2) complexity
+                    for (int i = parsedValues.Count - 1; i >= 0; i--)
+                    {
+                        object item = parsedValues[i];
+                        if (item is not InvalidValue)
+                        {
+                            Debug.Assert(item.GetType() == value.GetType(),
+                                "One of the stored values does not have the same type as 'value'.");
+
+                            if (AreEqual(value, item, comparer))
+                            {
+                                parsedValues.RemoveAt(i);
+                                result = true;
+                            }
+                        }
+                    }
+
+                    // If we removed the last item in a list, remove the list.
+                    if (parsedValues.Count == 0)
+                    {
+                        info.AssertContainsNoInvalidValues();
+                        info.ParsedAndInvalidValues = null;
+                    }
+                }
+
+                // If there is no value for the header left, remove the header.
+                if (info.IsEmpty)
+                {
+                    bool headerRemoved = Remove(descriptor);
+                    Debug.Assert(headerRemoved, $"Existing header '{descriptor.Name}' couldn't be removed.");
+                }
+
+                return result;
+            }
+
+            return false;
+        }
+
         internal bool ContainsParsedValue(HeaderDescriptor descriptor, object value)
         {
             Debug.Assert(value != null);
