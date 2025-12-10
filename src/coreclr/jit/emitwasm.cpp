@@ -29,6 +29,11 @@ void emitter::emitIns(instruction ins)
 //------------------------------------------------------------------------
 // emitIns_I: Emit an instruction with an immediate operand.
 //
+// Arguments:
+//   ins      - instruction to emit
+//   attr     - emit attributes
+//   imm      - immediate value
+//
 void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 {
     instrDesc* id  = emitNewInstrSC(attr, imm);
@@ -36,6 +41,32 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 
     id->idIns(ins);
     id->idInsFmt(fmt);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+//------------------------------------------------------------------------
+// emitIns_J: Emit a jump instruction with an immediate operand.
+//
+// Arguments:
+//   ins         - instruction to emit
+//   attr        - emit attributes
+//   imm         - immediate value (depth in control flow stack)
+//   targetBlock - block at that depth
+//
+void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* targetBlock)
+{
+    instrDesc* id  = emitNewInstrSC(attr, imm);
+    insFormat  fmt = emitInsFormat(ins);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+
+    if (m_debugInfoSize > 0)
+    {
+        id->idDebugOnlyInfo()->idTargetBlock = targetBlock;
+    }
 
     dispIns(id);
     appendToCurIG(id);
@@ -113,7 +144,9 @@ static unsigned GetInsOpcode(instruction ins)
 size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
     if (emitIsSmallInsDsc(id))
+    {
         return SMALL_IDSC_SIZE;
+    }
 
     if (id->idIsLargeCns())
     {
@@ -121,6 +154,7 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
         assert(!id->idIsLargeCall());
         return sizeof(instrDescCns);
     }
+
     return sizeof(instrDesc);
 }
 
@@ -304,8 +338,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
         }
         case IF_LABEL:
-            NYI_WASM("emitOutputInstr IF_LABEL");
+        {
+            cnsval_ssize_t constant = emitGetInsSC(id);
+            dst += emitOutputULEB128(dst, (uint64_t)constant);
             break;
+        }
         case IF_MEMARG:
         {
             dst += emitOutputByte(dst, opcode);
@@ -411,6 +448,20 @@ void emitter::emitDispIns(
 
     emitDispInst(ins);
 
+    auto dispJumpTargetIfAny = [this, id]() {
+        if (m_debugInfoSize > 0)
+        {
+            BasicBlock* const targetBlock = id->idDebugOnlyInfo()->idTargetBlock;
+            if (targetBlock != nullptr)
+            {
+                printf(" ;; ");
+                insGroup* const targetGroup = (insGroup*)emitCodeGetCookie(targetBlock);
+                assert(targetGroup != nullptr);
+                emitPrintLabel(targetGroup);
+            }
+        }
+    };
+
     // The reference for the following style of display is wasm-objdump output.
     //
     switch (fmt)
@@ -424,6 +475,7 @@ void emitter::emitDispIns(
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
+            dispJumpTargetIfAny();
         }
         break;
 

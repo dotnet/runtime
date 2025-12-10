@@ -18,6 +18,7 @@ void emitDispInst(instruction ins);
 public:
 void emitIns(instruction ins);
 void emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm);
+void emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, BasicBlock* tgtBlock);
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 
