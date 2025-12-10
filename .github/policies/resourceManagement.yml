@@ -629,7 +629,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - agocke
-            - Maoni0
+            - dotnet/gc
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
