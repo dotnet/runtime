@@ -659,7 +659,7 @@ function download_resource (asset: AssetEntryInternal): LoadingResource {
     }
 }
 
-function fetchResource (asset: AssetEntryInternal): Promise<Response> {
+function fetchResource(asset: AssetEntryInternal): Promise<Response> {
     // Allow developers to override how the resource is loaded
     let url = asset.resolvedUrl!;
     if (loaderHelpers.loadBootResource) {
@@ -674,14 +674,12 @@ function fetchResource (asset: AssetEntryInternal): Promise<Response> {
 
     const fetchOptions: RequestInit = {};
 
-    if (asset.noCache === true) {
-        // Internal no-cache setting overrides other configuration.
-        fetchOptions.cache = "no-cache";
-    } else if (isAssetFingerprinted(asset)) {
+    if (isAssetFingerprinted(asset)) {
         // Fingerprinted assets are by definition never stale (newer version would have a different name).
         fetchOptions.cache = "force-cache";
-    } else if (!loaderHelpers.config.disableNoCacheFetch) {
-        // For backwards compatibility other assets get no-cache setting unless disabled by the user.
+    } else if (asset.noCache === true || !loaderHelpers.config.disableNoCacheFetch) {
+        // We use no-cache if specified internally.
+        // For backwards compatibility other assets also get no-cache setting unless disabled by the user.
         // https://github.com/dotnet/runtime/issues/74815
         fetchOptions.cache = "no-cache";
     }
