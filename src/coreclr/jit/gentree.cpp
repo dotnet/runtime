@@ -2383,7 +2383,7 @@ bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler, CORINFO_METHOD
         methHandleToDevirt = gtCallMethHnd;
         isDevirtCandidate  = true;
     }
-    else if (IsGenericVirtual(compiler))
+    else if (IsGenericVirtual(compiler) && (JitConfig.JitEnableGenericVirtualDevirtualization() != 0))
     {
         GenTree* runtimeMethHndNode =
             gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetNode();

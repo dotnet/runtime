@@ -8618,12 +8618,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                                                                      &rootCompiler->info.compMethodInfo->args);
 #endif // DEBUG
 
-    if ((JitConfig.JitEnableGenericVirtualDevirtualization() == 0) && call->IsGenericVirtual(this))
-    {
-        JITDUMP("\nimpDevirtualizeCall: generic virtual devirtualization disabled\n");
-        return;
-    }
-
     // Fetch information about the virtual method we're calling.
     CORINFO_METHOD_HANDLE baseMethod        = *method;
     unsigned              baseMethodAttribs = *methodFlags;
