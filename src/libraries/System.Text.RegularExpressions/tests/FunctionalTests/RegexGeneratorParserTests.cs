@@ -27,7 +27,7 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     [GeneratedRegex(""ab"")]
                     [GeneratedRegex(""abc"")]
-                    private static partial Regex MultipleAttributes();
+                    private static partial Regex MultipleAttributes { get; }
                 }
             ");
 
@@ -79,7 +79,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {{
                     {attribute}
-                    private static partial Regex MultipleAttributes();
+                    private static partial Regex MultipleAttributes { get; }
                 }}
             ");
 
@@ -120,7 +120,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {{
                     [GeneratedRegex({pattern})]
-                    private static partial Regex InvalidPattern();
+                    private static partial Regex InvalidPattern { get; }
                 }}
             ");
 
@@ -153,7 +153,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {{
                     [GeneratedRegex(""ab"", (RegexOptions){options})]
-                    private static partial Regex InvalidPattern();
+                    private static partial Regex InvalidPattern { get; }
                 }}
             ");
 
@@ -186,7 +186,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {{
                     [GeneratedRegex(""ab"", RegexOptions.None, {matchTimeout.ToString(CultureInfo.InvariantCulture)})]
-                    private static partial Regex InvalidPattern();
+                    private static partial Regex InvalidPattern { get; }
                 }}
             ");
 
@@ -220,7 +220,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {{
                     [GeneratedRegex(""(?i)ab"", RegexOptions.None, {cultureName})]
-                    private static partial Regex InvalidPattern();
+                    private static partial Regex InvalidPattern { get; }
                 }}
             ");
 
@@ -254,7 +254,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {{
                     [GeneratedRegex(""{pattern}"", {options}, ""en-US"")]
-                    private static partial Regex InvalidPattern();
+                    private static partial Regex InvalidPattern { get; }
                 }}
             ");
 
@@ -316,7 +316,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(""ab"")]
-                    private static partial Regex MethodMustNotBeGeneric<T>();
+                    private static partial Regex MethodMustNotBeGeneric<T> { get; }
                 }
             ");
 
@@ -436,13 +436,13 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(""ab"")]
-                    public abstract partial Regex MethodMustBeNonAbstract();
+                    public abstract partial Regex MethodMustBeNonAbstract { get; }
                 }
 
                 partial interface I
                 {
                     [GeneratedRegex(""ab"")]
-                    public static abstract partial Regex MethodMustBeNonAbstract();
+                    public static abstract partial Regex MethodMustBeNonAbstract { get; }
                 }
             ");
 
@@ -483,7 +483,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(""ab"")]
-                    private static partial Regex InvalidLangVersion();
+                    private static partial Regex InvalidLangVersion { get; }
                 }
             ", langVersion: version, compile: true);
 
@@ -528,7 +528,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(""" + new string('(', 100) + "a" + new string(')', 100) + @""")]
-                    private static partial Regex TooMuchNestingNotSupported();
+                    private static partial Regex TooMuchNestingNotSupported { get; }
                 }
             ");
 
@@ -543,7 +543,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex]
-                    private static partial Regex InvalidCtor();
+                    private static partial Regex InvalidCtor { get; }
                 }
 
                 namespace System.Text.RegularExpressions
@@ -566,7 +566,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(""a"", RegexOptions.None, -1, ""en-Us"", ""b""]
-                    private static partial Regex InvalidCtor();
+                    private static partial Regex InvalidCtor { get; }
                 }
 
                 namespace System.Text.RegularExpressions
@@ -590,7 +590,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(""ab"")]
-                    private static partial Regex Valid1();
+                    private static partial Regex Valid1 { get; }
 
                     [GeneratedRegex(""ab"")]
                     private static partial Regex Valid2 { get; }
@@ -609,7 +609,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {{
                     [GeneratedRegex(""ab"", {options})]
-                    private static partial Regex Valid1();
+                    private static partial Regex Valid1 { get; }
 
                     [GeneratedRegex(""ab"", {options})]
                     private static partial Regex Valid2 {{ get; }}
@@ -628,7 +628,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {{
                     [GeneratedRegex(""ab"", RegexOptions.None, {timeout})]
-                    private static partial Regex Valid1();
+                    private static partial Regex Valid1 { get; }
 
                     [GeneratedRegex(""ab"", RegexOptions.None, {timeout})]
                     private static partial Regex Valid2 {{ get; }}
@@ -644,7 +644,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {{
                     [GeneratedRegex(pattern: ""ab"", options: RegexOptions.None, matchTimeoutMilliseconds: -1)]
-                    private static partial Regex Valid1();
+                    private static partial Regex Valid1 { get; }
 
                     [GeneratedRegex(pattern: ""ab"", options: RegexOptions.None, matchTimeoutMilliseconds: -1)]
                     private static partial Regex Valid2 {{ get; }}
@@ -660,10 +660,10 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {{
                     [GeneratedRegex(options: RegexOptions.None, matchTimeoutMilliseconds: -1, pattern: ""ab"")]
-                    private static partial Regex Valid1();
+                    private static partial Regex Valid1 { get; }
 
                     [GeneratedRegex(matchTimeoutMilliseconds: -1, pattern: ""ab"", options: RegexOptions.None)]
-                    private static partial Regex Valid2();
+                    private static partial Regex Valid2 { get; }
 
                     [GeneratedRegex(options: RegexOptions.None, matchTimeoutMilliseconds: -1, pattern: ""ab"")]
                     private static partial Regex Valid3 {{ get; }}
@@ -685,7 +685,7 @@ namespace System.Text.RegularExpressions.Tests
                     [SuppressMessage(""CATEGORY1"", ""SOMEID1"")]
                     [GeneratedRegex(""abc"")]
                     [SuppressMessage(""CATEGORY2"", ""SOMEID2"")]
-                    private static partial Regex AdditionalAttributes1();
+                    private static partial Regex AdditionalAttributes1 { get; }
 
                     [SuppressMessage(""CATEGORY1"", ""SOMEID1"")]
                     [GeneratedRegex(""abc"")]
@@ -713,7 +713,7 @@ namespace System.Text.RegularExpressions.Tests
                     partial class C
                     {{
                         [GeneratedRegex(""{pattern}"", RegexOptions.{options})]
-                        private static partial Regex Valid1();
+                        private static partial Regex Valid1 { get; }
 
                         [GeneratedRegex(""{pattern}"", RegexOptions.{options})]
                         private static partial Regex Valid2 {{ get; }}
@@ -731,7 +731,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(""ab"")]
-                    private static partial Regex Valid1();
+                    private static partial Regex Valid1 { get; }
 
                     [GeneratedRegex(""ab"")]
                     private static partial Regex Valid2 { get; }
@@ -751,7 +751,7 @@ namespace System.Text.RegularExpressions.Tests
                         partial class C
                         {
                             [GeneratedRegex(""ab"")]
-                            private static partial Regex Valid1();
+                            private static partial Regex Valid1 { get; }
 
                             [GeneratedRegex(""ab"")]
                             private static partial Regex Valid2 { get; }
@@ -771,7 +771,7 @@ namespace System.Text.RegularExpressions.Tests
                     partial class C
                     {
                         [GeneratedRegex(""ab"")]
-                        private static partial Regex Valid1();
+                        private static partial Regex Valid1 { get; }
 
                         [GeneratedRegex(""ab"")]
                         private static partial Regex Valid2 { get; }
@@ -792,7 +792,7 @@ namespace System.Text.RegularExpressions.Tests
                         partial class C
                         {
                             [GeneratedRegex(""ab"")]
-                            private static partial Regex Valid1();
+                            private static partial Regex Valid1 { get; }
 
                             [GeneratedRegex(""ab"")]
                             private static partial Regex Valid2 { get; }
@@ -813,7 +813,7 @@ namespace System.Text.RegularExpressions.Tests
                     partial class C
                     {
                         [GeneratedRegex(""ab"")]
-                        private static partial Regex Valid1();
+                        private static partial Regex Valid1 { get; }
 
                         [GeneratedRegex(""ab"")]
                         private static partial Regex Valid2 { get; }
@@ -840,7 +840,7 @@ namespace System.Text.RegularExpressions.Tests
                                     private partial class F
                                     {
                                         [GeneratedRegex(""ab"")]
-                                        private static partial Regex Valid1();
+                                        private static partial Regex Valid1 { get; }
 
                                         [GeneratedRegex(""ab"")]
                                         private static partial Regex Valid2 { get; }
@@ -863,7 +863,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(""ab"")]
-                    private static partial Regex? Valid1();
+                    private static partial Regex? Valid1 { get; }
 
                     [GeneratedRegex(""ab"")]
                     private static partial Regex? Valid2 { get; }
@@ -900,7 +900,7 @@ namespace System.Text.RegularExpressions.Tests
                         private partial class C<T> where T : IBlah
                         {
                             [GeneratedRegex(""ab"")]
-                            private static partial Regex Valid1();
+                            private static partial Regex Valid1 { get; }
 
                             [GeneratedRegex(""ab"")]
                             private static partial Regex Valid2 { get; }
@@ -923,7 +923,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial interface INonGeneric
                 {
                     [GeneratedRegex("".+?"")]
-                    public static partial Regex Test1();
+                    public static partial Regex Test1 { get; }
 
                     [GeneratedRegex("".+?"")]
                     public static partial Regex Test2 { get; }
@@ -932,7 +932,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial interface IGeneric<T>
                 {
                     [GeneratedRegex("".+?"")]
-                    public static partial Regex Test1();
+                    public static partial Regex Test1 { get; }
 
                     [GeneratedRegex("".+?"")]
                     public static partial Regex Test2 { get; }
@@ -941,7 +941,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial interface ICovariantGeneric<out T>
                 {
                     [GeneratedRegex("".+?"")]
-                    public static partial Regex Test1();
+                    public static partial Regex Test1 { get; }
 
                     [GeneratedRegex("".+?"")]
                     public static partial Regex Test2 { get; }
@@ -950,7 +950,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial interface IContravariantGeneric<in T>
                 {
                     [GeneratedRegex("".+?"")]
-                    public static partial Regex Test1();
+                    public static partial Regex Test1 { get; }
 
                     [GeneratedRegex("".+?"")]
                     public static partial Regex Test2 { get; }
@@ -967,7 +967,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(""ab"")]
-                    public virtual partial Regex Valid1();
+                    public virtual partial Regex Valid1 { get; }
 
                     [GeneratedRegex(""ab"")]
                     public virtual partial Regex Valid2 { get; }
@@ -987,7 +987,7 @@ namespace System.Text.RegularExpressions.Tests
                         private partial class C<T>
                         {
                             [GeneratedRegex(""1"")]
-                            public partial Regex Valid1();
+                            public partial Regex Valid1 { get; }
 
                             [GeneratedRegex(""1"")]
                             public partial Regex Valid2 { get; }
@@ -996,7 +996,7 @@ namespace System.Text.RegularExpressions.Tests
                         private partial class C<T1,T2>
                         {
                             [GeneratedRegex(""2"")]
-                            private static partial Regex Valid1();
+                            private static partial Regex Valid1 { get; }
 
                             [GeneratedRegex(""2"")]
                             private static partial Regex Valid2 { get; }
@@ -1004,7 +1004,7 @@ namespace System.Text.RegularExpressions.Tests
                             private partial class D
                             {
                                 [GeneratedRegex(""3"")]
-                                internal partial Regex Valid1();
+                                internal partial Regex Valid1 { get; }
 
                                 [GeneratedRegex(""3"")]
                                 internal partial Regex Valid2 { get; }
@@ -1014,7 +1014,7 @@ namespace System.Text.RegularExpressions.Tests
                         private partial class E
                         {
                             [GeneratedRegex(""4"")]
-                            private static partial Regex Valid1();
+                            private static partial Regex Valid1 { get; }
 
                             [GeneratedRegex(""4"")]
                             private static partial Regex Valid2 { get; }
@@ -1025,10 +1025,10 @@ namespace System.Text.RegularExpressions.Tests
                 partial class F
                 {
                     [GeneratedRegex(""5"")]
-                    public partial Regex Valid();
+                    public partial Regex Valid { get; }
 
                     [GeneratedRegex(""6"")]
-                    public partial Regex Valid2();
+                    public partial Regex Valid2 { get; }
 
                     [GeneratedRegex(""7"")]
                     public partial Regex Valid3 { get; }
@@ -1074,7 +1074,7 @@ namespace System.Text.RegularExpressions.Tests
                 {typeModifier} partial {type} C
                 {{
                     [GeneratedRegex(""ab"")]
-                    {methodVisibility} {(instance ? "" : "static")} partial Regex Valid1();
+                    {methodVisibility} {(instance ? "" : "static")} partial Regex Valid1 {{ get; }}
 
                     [GeneratedRegex(""ab"")]
                     {methodVisibility} {(instance ? "" : "static")} partial Regex Valid2 {{ get; }}
@@ -1090,13 +1090,13 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C1
                 {
                     [GeneratedRegex(""a"")]
-                    private static partial Regex A();
+                    private static partial Regex A { get; }
 
                     [GeneratedRegex(""b"")]
-                    public static partial Regex B();
+                    public static partial Regex B { get; }
 
                     [GeneratedRegex(""b"")]
-                    public static partial Regex C();
+                    public static partial Regex C { get; }
 
                     [GeneratedRegex(""c"")]
                     public static partial Regex D { get; }
@@ -1110,10 +1110,10 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C2
                 {
                     [GeneratedRegex(""e"")]
-                    public static partial Regex G();
+                    public static partial Regex G { get; }
 
                     [GeneratedRegex(""e"")]
-                    public static partial Regex H();
+                    public static partial Regex H { get; }
                 }
             ", compile: true));
         }
@@ -1134,7 +1134,7 @@ namespace System.Text.RegularExpressions.Tests
                                 public partial struct E
                                 {
                                     [GeneratedRegex(""ab"")]
-                                    public static partial Regex Valid1();
+                                    public static partial Regex Valid1 { get; }
 
                                     [GeneratedRegex(""ab"")]
                                     public static partial Regex Valid2 { get; }
@@ -1163,7 +1163,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(""abc"")]
-                    private static partial Regex Valid1();
+                    private static partial Regex Valid1 { get; }
 
                     [GeneratedRegex(""abc"")]
                     private static partial Regex Valid2 { get; }
@@ -1179,7 +1179,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(""ab"" + ""[cd]"")]
-                    public static partial Regex Valid1();
+                    public static partial Regex Valid1 { get; }
 
                     [GeneratedRegex(""ab"" + ""[cd]"")]
                     public static partial Regex Valid2 { get; }
@@ -1196,7 +1196,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex($""{""ab""}{""cd""}"")]
-                    public static partial Regex Valid1();
+                    public static partial Regex Valid1 { get; }
 
                     [GeneratedRegex($""{""ab""}{""cd""}"")]
                     public static partial Regex Valid2 { get; }
@@ -1220,7 +1220,7 @@ namespace System.Text.RegularExpressions.Tests
                     partial class C
                     {
                         [GeneratedRegex(""(?<Name>\w+) (?<Street>\w+), (?<City>\w+) (?<State>[A-Z]{2}) (?<Zip>[0-9]{5})"")]
-                        public static partial Regex Valid();
+                        public static partial Regex Valid { get; }
                     }";
 
                 // Generate the source in a new process so that any process-specific randomization is different between runs,

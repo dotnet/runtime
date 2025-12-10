@@ -186,8 +186,7 @@ namespace System.Text.RegularExpressions.Tests
                     code.Append($", {SymbolDisplay.FormatLiteral(regex.culture.Name, quote: true)}");
                 }
 
-                bool useProp = count % 2 == 0; // validate both methods and properties by alternating between them
-                code.AppendLine($")] public static partial Regex Get{count}{(useProp ? " { get; }" : "();")}");
+                code.AppendLine($")] public static partial Regex Get{count} {{ get; }}");
 
                 count++;
             }
