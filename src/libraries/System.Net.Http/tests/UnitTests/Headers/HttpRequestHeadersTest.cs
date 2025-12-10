@@ -1204,12 +1204,12 @@ namespace System.Net.Http.Tests
             headers.TransferEncoding.Add(new TransferCodingHeaderValue("chunked"));
             
             Assert.Equal(2, headers.TransferEncoding.Count);
-            Assert.True(headers.TransferEncodingChunked == true);
+            Assert.True(headers.TransferEncodingChunked);
             
             // Setting to false should remove all "chunked" values
             headers.TransferEncodingChunked = false;
             
-            Assert.False(headers.TransferEncodingChunked == true, "TransferEncodingChunked should be false after setting to false");
+            Assert.False(headers.TransferEncodingChunked, "TransferEncodingChunked should be false after setting to false");
             Assert.Equal(0, headers.TransferEncoding.Count);
         }
 
