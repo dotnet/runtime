@@ -77,6 +77,7 @@ namespace System.Threading
 
         public static long CompletedWorkItemCount => 0;
 
+        [DynamicDependency("BackgroundJobHandler")] // https://github.com/dotnet/runtime/issues/101434
         internal static unsafe void RequestWorkerThread()
         {
             if (_callbackQueued)
@@ -99,10 +100,10 @@ namespace System.Threading
         {
         }
 
-        internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
+        internal static ThreadInt64PersistentCounter.ThreadLocalNode? GetOrCreateThreadLocalCompletionCountNode() => null;
 
 #pragma warning disable IDE0060
-        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
+        internal static bool NotifyWorkItemComplete(ThreadInt64PersistentCounter.ThreadLocalNode? threadLocalCompletionCountNode, int currentTimeMs)
         {
             return true;
         }

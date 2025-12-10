@@ -10603,7 +10603,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
                 if (emitComp->info.compMatchedVM)
                 {
                     void* target = emitOffsetToPtr(dstOffs);
-                    emitRecordRelocation((void*)dst, target, IMAGE_REL_ARM64_BRANCH26);
+                    emitRecordRelocation((void*)dst, target, CorInfoReloc::ARM64_BRANCH26);
                 }
             }
 
@@ -11007,7 +11007,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz   = id->idIsLargeCall() ? sizeof(instrDescCGCA) : sizeof(instrDesc);
             dst += emitOutputCall(ig, dst, id, code);
             // Always call RecordRelocation so that we wire in a JumpStub when we don't reach
-            emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_BRANCH26);
+            emitRecordRelocation(odst, id->idAddr()->iiaAddr, CorInfoReloc::ARM64_BRANCH26);
             break;
 
         case IF_BI_1A: // BI_1A   ......iiiiiiiiii iiiiiiiiiiittttt      Rt       simm19:00
@@ -11043,7 +11043,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
             {
                 emitRecordRelocation(odst, (CORINFO_METHOD_HANDLE)id->idAddr()->iiaAddr,
-                                     IMAGE_REL_AARCH64_TLSDESC_CALL);
+                                     CorInfoReloc::ARM64_LIN_TLSDESC_CALL);
                 code |= insEncodeReg_Rn(REG_R2); // nnnnn
             }
             else
@@ -11083,7 +11083,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             if (id->idIsTlsGD())
             {
-                emitRecordRelocation(odst, (void*)emitGetInsSC(id), IMAGE_REL_AARCH64_TLSDESC_LD64_LO12);
+                emitRecordRelocation(odst, (void*)emitGetInsSC(id), CorInfoReloc::ARM64_LIN_TLSDESC_LD64_LO12);
             }
             break;
 
@@ -11382,8 +11382,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code |= insEncodeReg_Rd(id->idReg1()); // ddddd
                 dst += emitOutput_Instr(dst, code);
                 emitRecordRelocation(odst, id->idAddr()->iiaAddr,
-                                     id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21
-                                                     : IMAGE_REL_ARM64_PAGEBASE_REL21);
+                                     id->idIsTlsGD() ? CorInfoReloc::ARM64_LIN_TLSDESC_ADR_PAGE21
+                                                     : CorInfoReloc::ARM64_PAGEBASE_REL21);
             }
             else
             {
@@ -11426,7 +11426,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 assert(sz == sizeof(instrDesc));
                 assert(id->idAddr()->iiaAddr != nullptr);
-                emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEOFFSET_12A);
+                emitRecordRelocation(odst, id->idAddr()->iiaAddr, CorInfoReloc::ARM64_PAGEOFFSET_12A);
             }
             else
             {
@@ -11437,25 +11437,27 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         if (id->idIsReloc())
                         {
                             // This is first "add" of "add/add" pair
-                            emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_SECREL_HIGH12A);
+                            emitRecordRelocation(odst, id->idAddr()->iiaAddr,
+                                                 CorInfoReloc::ARM64_WIN_TLS_SECREL_HIGH12A);
                         }
                         else
                         {
                             // This is second "add" of "add/add" pair
-                            emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_SECREL_LOW12A);
+                            emitRecordRelocation(odst, id->idAddr()->iiaAddr,
+                                                 CorInfoReloc::ARM64_WIN_TLS_SECREL_LOW12A);
                         }
                     }
                     else
                     {
                         // For unix/arm64 it is the "add" of "adrp/add" pair
-                        emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_AARCH64_TLSDESC_ADD_LO12);
+                        emitRecordRelocation(odst, id->idAddr()->iiaAddr, CorInfoReloc::ARM64_LIN_TLSDESC_ADD_LO12);
                     }
                 }
                 else if (id->idIsReloc())
                 {
                     assert(sz == sizeof(instrDesc));
                     assert(id->idAddr()->iiaAddr != nullptr);
-                    emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEOFFSET_12A);
+                    emitRecordRelocation(odst, id->idAddr()->iiaAddr, CorInfoReloc::ARM64_PAGEOFFSET_12A);
                 }
             }
             break;

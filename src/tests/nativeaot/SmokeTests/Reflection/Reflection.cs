@@ -99,6 +99,7 @@ internal static class ReflectionTest
         TestGenericAttributesOnEnum.Run();
         TestLdtokenWithSignaturesDifferingInModifiers.Run();
         TestActivatingThingsInSignature.Run();
+        TestArrayInitialize.Run();
         TestDelegateInvokeFromEvent.Run();
 
         return 100;
@@ -3002,6 +3003,37 @@ internal static class ReflectionTest
         public struct MyStruct;
 
         public struct MyArrayElementStruct;
+    }
+
+    class TestArrayInitialize
+    {
+        static int s_constructorCallCount = 0;
+
+        public struct ValueTypeWithConstructor
+        {
+            public ValueTypeWithConstructor()
+            {
+                s_constructorCallCount++;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Array AllocateArray() => new ValueTypeWithConstructor[3];
+
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestArrayInitialize));
+
+            s_constructorCallCount = 0;
+
+            // Create an array and call Initialize
+            var array = AllocateArray();
+            array.Initialize();
+
+            // Verify that the constructor was called for each element
+            if (s_constructorCallCount != 3)
+                throw new Exception($"Expected constructor to be called 3 times, but was called {s_constructorCallCount} times");
+        }
     }
 
     class TestDelegateInvokeFromEvent
