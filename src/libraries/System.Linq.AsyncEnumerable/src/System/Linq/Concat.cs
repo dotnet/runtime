@@ -76,7 +76,7 @@ namespace System.Linq
 
             internal override IAsyncEnumerable<TSource>? GetAsyncEnumerable(int index)
             {
-                Debug.Assert(index >= 0 && index <= 2);
+                Debug.Assert(index >= 0);
 
                 return index switch
                 {
