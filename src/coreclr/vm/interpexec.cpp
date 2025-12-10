@@ -24,46 +24,6 @@
 #define SAVE_THE_LOWEST_SP pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP())
 #endif // !TARGET_WASM
 
-// Arguments are bundled in a struct to force register passing on ARM32.
-// This ensures the SP value precisely matches the context used during stack unwinding,
-// preventing a crash from SP mismatch.
-struct ManagedMethodParam
-{
-    MethodDesc *pMD;
-    int8_t *pArgs;
-    int8_t *pRet;
-    PCODE target;
-    Object** pContinuationRet;
-};
-
-struct CalliStubParam
-{
-    PCODE ftn;
-    void* cookie;
-    int8_t *pArgs;
-    int8_t *pRet;
-    Object** pContinuationRet;
-};
-
-struct DelegateInvokeMethodParam
-{
-    MethodDesc *pMDDelegateInvoke;
-    int8_t *pArgs;
-    int8_t *pRet;
-    PCODE target;
-    Object** pContinuationRet;
-};
-
-struct UnmanagedMethodWithTransitionParam
-{
-    MethodDesc *targetMethod;
-    int8_t *stack;
-    InterpMethodContextFrame *pFrame;
-    int8_t *pArgs;
-    int8_t *pRet;
-    PCODE callTarget;
-};
-
 // Call invoker helpers provided by platform.
 void InvokeManagedMethod(ManagedMethodParam *pParam);
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget);
@@ -304,9 +264,9 @@ void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam)
     {
         THROWS;
         MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pMDDelegateInvoke));
-        PRECONDITION(CheckPointer(pArgs));
-        PRECONDITION(CheckPointer(pRet));
+        PRECONDITION(CheckPointer(pParam->pMDDelegateInvoke));
+        PRECONDITION(CheckPointer(pParam->pArgs));
+        PRECONDITION(CheckPointer(pParam->pRet));
     }
     CONTRACTL_END
 
@@ -369,8 +329,8 @@ void InvokeCalliStub(CalliStubParam* pParam)
     {
         THROWS;
         MODE_ANY;
-        PRECONDITION(CheckPointer((void*)ftn));
-        PRECONDITION(CheckPointer(cookie));
+        PRECONDITION(CheckPointer((void*)param->ftn));
+        PRECONDITION(CheckPointer(pParam->cookie));
     }
     CONTRACTL_END
 
