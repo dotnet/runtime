@@ -510,8 +510,7 @@ namespace System.IO
         [Fact]
         public void FileInfo_Create_ReadRights_CanWriteIsFalse()
         {
-            // Regression test for https://github.com/dotnet/runtime/issues/XXXXX
-            // When opening a file with FileSystemRights.Read, the FileStream should have CanWrite = false
+            // Regression test: When opening a file with FileSystemRights.Read, the FileStream should have CanWrite = false
             using var tempRootDir = new TempAclDirectory();
             string path = tempRootDir.GenerateSubItemPath();
             var fileInfo = new FileInfo(path);
