@@ -255,11 +255,11 @@ namespace Mono.Linker.Steps
             InitializeCorelibAttributeXml();
             Context.Pipeline.InitializeMarkHandlers(Context, MarkContext);
 
-            // Check for TypeMappingEntryAssembly override from Features
+            // Check for TypeMappingEntryAssembly override
             AssemblyDefinition? startingAssembly = null;
-            if (Context.Features.TryGetValue("System.Runtime.InteropServices.TypeMappingEntryAssembly", out string? assemblyNameString))
+            if (Context.TypeMapEntryAssembly is not null)
             {
-                var assemblyName = AssemblyNameReference.Parse(assemblyNameString);
+                var assemblyName = AssemblyNameReference.Parse(Context.TypeMapEntryAssembly);
                 startingAssembly = Context.TryResolve(assemblyName);
             }
             // If resolution fails, fall back to entry point assembly

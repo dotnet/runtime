@@ -12,18 +12,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.TypeMappingEntryAssembly"
+                                    Value="$(TypeMapEntryAssembly)"
+                                    Trim="true" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="TypeMapEntryAssemblyApp.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="TypeMapLib5.csproj" />
     <ProjectReference Include="TypeMapLib1.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.TypeMappingEntryAssembly"
-      Value="$(TypeMapEntryAssembly)"
-      Condition="'$(TypeMapEntryAssembly)' != ''"
-      Trim="true" />
   </ItemGroup>
 </Project>

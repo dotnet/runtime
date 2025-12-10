@@ -10,11 +10,7 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[SetupCompileBefore("TypeMapEntryAssemblyLib.dll", new[] { "Dependencies/TypeMapEntryAssemblyLib.cs" })]
-#if NATIVEAOT
-	[SetupLinkerArgument("--runtimeknob", "System.Runtime.InteropServices.TypeMappingEntryAssembly", "TypeMapEntryAssemblyLib")]
-#else
-	[SetupLinkerArgument("--feature", "System.Runtime.InteropServices.TypeMappingEntryAssembly", "TypeMapEntryAssemblyLib")]
-#endif
+	[SetupLinkerArgument("--typemap-entry-assembly", "TypeMapEntryAssemblyLib")]
 
 	// The TypeMapEntryAssemblyGroup is defined in TypeMapEntryAssemblyLib, so its attributes should be kept
 	[KeptTypeInAssembly("TypeMapEntryAssemblyLib.dll", typeof(TypeMapEntryAssemblyGroup))]

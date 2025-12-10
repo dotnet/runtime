@@ -465,6 +465,13 @@ namespace Mono.Linker
 
                             continue;
 
+                        case "--typemap-entry-assembly":
+                            if (!GetStringParam(token, out string? typeMapEntryAssembly))
+                                return -1;
+
+                            context.TypeMapEntryAssembly = typeMapEntryAssembly;
+                            continue;
+
                         case "--ignore-descriptors":
                             if (!GetBoolParam(token, l => context.IgnoreDescriptors = l))
                                 return -1;
@@ -1528,6 +1535,7 @@ namespace Mono.Linker
             Console.WriteLine("                               sealer: Any method or type which does not have override is marked as sealed");
             Console.WriteLine("  --explicit-reflection      Adds to members never used through reflection DisablePrivateReflection attribute. Defaults to false");
             Console.WriteLine("  --feature FEATURE VALUE    Set feature setting as a constant known at link time. The trimmer may be able to optimize code based on the value.");
+            Console.WriteLine("  --typemap-entry-assembly NAME  Set the assembly name to use as entry point for TypeMap generation.");
             Console.WriteLine("  --keep-com-interfaces      Keep COM interfaces implemented by kept types. Defaults to true");
             Console.WriteLine("  --keep-compilers-resources Keep assembly resources used for F# compilation resources. Defaults to false");
             Console.WriteLine("  --keep-dep-attributes      Keep attributes used for manual dependency tracking. Defaults to false");

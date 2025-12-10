@@ -314,17 +314,8 @@ namespace ILCompiler
                     compilationRoots.Add(new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode(linkTrimFilePath));
                 }
 
-                // Get TypeMappingEntryAssembly from runtime knobs if specified
-                string typeMappingEntryAssembly = null;
-                foreach (var runtimeKnob in runtimeKnobs)
-                {
-                    var knobAndValue = runtimeKnob.Split('=', 2);
-                    if (knobAndValue.Length == 2 && knobAndValue[0] == "System.Runtime.InteropServices.TypeMappingEntryAssembly")
-                    {
-                        typeMappingEntryAssembly = knobAndValue[1];
-                        break;
-                    }
-                }
+                // Get TypeMappingEntryAssembly from command-line option if specified
+                string typeMappingEntryAssembly = Get(_command.TypeMapEntryAssembly);
                 if (typeMappingEntryAssembly is not null)
                 {
                     var typeMapEntryAssembly = (EcmaAssembly)typeSystemContext.ResolveAssembly(AssemblyNameInfo.Parse(typeMappingEntryAssembly), throwIfNotFound: true);
