@@ -121,7 +121,7 @@ namespace System.Net.Sockets
                 // Using public SafeSocketHandle(IntPtr) a user can add the same handle
                 // from a different Socket instance.
                 throw new InvalidOperationException(SR.net_sockets_handle_already_used);
-                    }
+            }
 
             error = Interop.Sys.TryChangeSocketEventRegistration(_port, socketHandle, Interop.Sys.SocketEvents.None,
                 Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, socketHandle);
@@ -135,7 +135,7 @@ namespace System.Net.Sockets
         }
 
         public void UnregisterSocket(IntPtr socketHandle)
-            {
+        {
             _handleToContextMap.TryRemove(socketHandle, out _);
         }
 

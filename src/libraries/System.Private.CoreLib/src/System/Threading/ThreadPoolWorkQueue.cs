@@ -1110,8 +1110,8 @@ namespace System.Threading
             else
             {
                 Debug.Assert(workItem is IThreadPoolWorkItem);
-                    Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
-                }
+                Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
+            }
         }
     }
 
@@ -1220,8 +1220,8 @@ namespace System.Threading
             if (!_workItems.TryDequeue(out var workItem))
             {
                 // Discount a work item here to avoid counting this queue processing work item
-                    ThreadInt64PersistentCounter.Decrement(
-                        ThreadPoolWorkQueueThreadLocals.threadLocals!.threadLocalCompletionCountObject!);
+                ThreadInt64PersistentCounter.Decrement(
+                    ThreadPoolWorkQueueThreadLocals.threadLocals!.threadLocalCompletionCountObject!);
                 return;
             }
 
