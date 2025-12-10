@@ -700,7 +700,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
             break;
         case PackOperAndType(GT_NEG, TYP_INT):
         case PackOperAndType(GT_NEG, TYP_LONG):
-            // We cannot easily emit i32.sub(x, 0) here since x is already on the stack.
+            // We cannot easily emit i32.sub(0, x) here since x is already on the stack.
             // So we transform these to SUB in lower.
             unreached();
             break;

@@ -102,7 +102,7 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 }
 
 //------------------------------------------------------------------------
-// LowerMul: Lower a GT_NEG node.
+// LowerNeg: Lower a GT_NEG node.
 //
 // Arguments:
 //    node - The node to lower
@@ -117,7 +117,7 @@ GenTree* Lowering::LowerNeg(GenTreeOp* node)
         return node->gtNext;
     }
 
-    // For ints, NEG(x) ==> SUB(0, x)
+    // For integer types (TYP_INT and TYP_LONG), NEG(x) ==> SUB(0, x)
     //
     GenTree* x    = node->gtGetOp1();
     GenTree* zero = comp->gtNewZeroConNode(node->TypeGet());
