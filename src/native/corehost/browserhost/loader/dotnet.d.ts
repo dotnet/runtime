@@ -773,10 +773,6 @@ declare global {
     function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
 }
 
-declare global {
-    function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
-    const dotnetSidecar: boolean | undefined;
-}
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
 export { GlobalizationMode, createDotnetRuntime as default, dotnet, exit };

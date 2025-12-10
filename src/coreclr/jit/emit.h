@@ -637,6 +637,7 @@ protected:
         bool              idFinallyCall; // Branch instruction is a call to finally
         bool              idCatchRet;    // Instruction is for a catch 'return'
         CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
+        BasicBlock*       idTargetBlock; // Target block for branches
     };
 
 #ifdef TARGET_ARM
@@ -3824,17 +3825,6 @@ inline unsigned emitter::emitGetEpilogCnt()
 inline UNATIVE_OFFSET emitter::emitDataSize()
 {
     return emitConsDsc.dsdOffs;
-}
-
-/*****************************************************************************
- *
- *  Return a handle to the current position in the output stream. This can
- *  be later converted to an actual code offset in bytes.
- */
-
-inline void* emitter::emitCurBlock()
-{
-    return emitCurIG;
 }
 
 /*****************************************************************************
