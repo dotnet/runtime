@@ -1989,7 +1989,16 @@ uint8_t* gc_heap::pad_for_alignment_large (uint8_t* newAlloc, int requiredAlignm
 #endif //BACKGROUND_GC && !USE_REGIONS
 
 // This is always power of 2.
+#ifdef HOST_64BIT
 const size_t min_segment_size_hard_limit = 1024*1024*16;
+#else //HOST_64BIT
+const size_t min_segment_size_hard_limit = 1024*1024*4;
+#endif //HOST_64BIT
+
+#ifndef HOST_64BIT
+// Max size of heap hard limit (2^31) to be able to be aligned and rounded up on power of 2 and not overflow
+const size_t max_heap_hard_limit = (size_t)2 * (size_t)1024 * (size_t)1024 * (size_t)1024;
+#endif //!HOST_64BIT
 
 inline
 size_t align_on_segment_hard_limit (size_t add)
@@ -7442,9 +7451,6 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
      *
      * Note  : We never commit into free directly, so bucket != recorded_committed_free_bucket
      */
-#ifndef HOST_64BIT
-    assert (heap_hard_limit == 0);
-#endif //!HOST_64BIT
 
     assert(0 <= bucket && bucket < recorded_committed_bucket_counts);
     assert(bucket < total_oh_count || h_number == -1);
@@ -7587,9 +7593,6 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_nu
      * Case 2: This is for bookkeeping - the bucket will be recorded_committed_bookkeeping_bucket, and the h_number will be -1
      * Case 3: This is for free - the bucket will be recorded_committed_free_bucket, and the h_number will be -1
      */
-#ifndef HOST_64BIT
-    assert (heap_hard_limit == 0);
-#endif //!HOST_64BIT
 
     bool decommit_succeeded_p = ((bucket != recorded_committed_bookkeeping_bucket) && use_large_pages_p) ? true : GCToOSInterface::VirtualDecommit (address, size);
 
@@ -14488,6 +14491,11 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         return E_OUTOFMEMORY;
     if (use_large_pages_p)
     {
+#ifndef HOST_64BIT
+        // Large pages are not supported on 32bit
+        assert (false);
+#endif //!HOST_64BIT
+
         if (heap_hard_limit_oh[soh])
         {
             heap_hard_limit_oh[soh] = soh_segment_size * number_of_heaps;
@@ -21128,12 +21136,12 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_before_oom);
             full_compact_gc_p = true;
         }
-        else if ((current_total_committed * 10) >= (heap_hard_limit * 9))
+        else if (((uint64_t)current_total_committed * (uint64_t)10) >= ((uint64_t)heap_hard_limit * (uint64_t)9))
         {
             size_t loh_frag = get_total_gen_fragmentation (loh_generation);
 
             // If the LOH frag is >= 1/8 it's worth compacting it
-            if ((loh_frag * 8) >= heap_hard_limit)
+            if (loh_frag >= heap_hard_limit / 8)
             {
                 dprintf (GTC_LOG, ("loh frag: %zd > 1/8 of limit %zd", loh_frag, (heap_hard_limit / 8)));
                 gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_loh_frag);
@@ -21144,7 +21152,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
                 // If there's not much fragmentation but it looks like it'll be productive to
                 // collect LOH, do that.
                 size_t est_loh_reclaim = get_total_gen_estimated_reclaim (loh_generation);
-                if ((est_loh_reclaim * 8) >= heap_hard_limit)
+                if (est_loh_reclaim >= heap_hard_limit / 8)
                 {
                     gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_loh_reclaim);
                     full_compact_gc_p = true;
@@ -44159,6 +44167,15 @@ void gc_heap::init_static_data()
         );
 #endif //MULTIPLE_HEAPS
 
+#ifndef HOST_64BIT
+    if (heap_hard_limit)
+    {
+        size_t gen1_max_size_seg = soh_segment_size / 2;
+        dprintf (GTC_LOG, ("limit gen1 max %zd->%zd", gen1_max_size, gen1_max_size_seg));
+        gen1_max_size = min (gen1_max_size, gen1_max_size_seg);
+    }
+#endif //!HOST_64BIT
+
     size_t gen1_max_size_config = (size_t)GCConfig::GetGCGen1MaxBudget();
 
     if (gen1_max_size_config)
@@ -49291,6 +49308,11 @@ HRESULT GCHeap::Initialize()
     {
         if (gc_heap::heap_hard_limit)
         {
+#ifndef HOST_64BIT
+            // Regions are not supported on 32bit
+            assert(false);
+#endif //!HOST_64BIT
+
             if (gc_heap::heap_hard_limit_oh[soh])
             {
                 gc_heap::regions_range = gc_heap::heap_hard_limit;
@@ -49332,12 +49354,32 @@ HRESULT GCHeap::Initialize()
     {
         if (gc_heap::heap_hard_limit_oh[soh])
         {
+            // On 32bit we have next guarantees:
+            //   0 <= seg_size_from_config <= 1Gb (from max_heap_hard_limit/2)
+            //   0 <= (heap_hard_limit = heap_hard_limit_oh[soh] + heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh]) < 4Gb (from gc_heap::compute_hard_limit_from_heap_limits)
+            //   0 <= heap_hard_limit_oh[loh] <= 1Gb or < 2Gb
+            //   0 <= heap_hard_limit_oh[poh] <= 1Gb or < 2Gb
+            //   0 <= large_seg_size <= 1Gb or <= 2Gb (alignment and round up)
+            //   0 <= pin_seg_size <= 1Gb or <= 2Gb (alignment and round up)
+            //   0 <= soh_segment_size + large_seg_size + pin_seg_size <= 4Gb
+            // 4Gb overflow is ok, because 0 size allocation will fail
             large_seg_size = max (gc_heap::adjust_segment_size_hard_limit (gc_heap::heap_hard_limit_oh[loh], nhp), seg_size_from_config);
             pin_seg_size = max (gc_heap::adjust_segment_size_hard_limit (gc_heap::heap_hard_limit_oh[poh], nhp), seg_size_from_config);
         }
         else
         {
+            // On 32bit we have next guarantees:
+            //   0 <= heap_hard_limit <= 1Gb (from gc_heap::compute_hard_limit)
+            //   0 <= soh_segment_size <= 1Gb
+            //   0 <= large_seg_size <= 1Gb
+            //   0 <= pin_seg_size <= 1Gb
+            //   0 <= soh_segment_size + large_seg_size + pin_seg_size <= 3Gb
+#ifdef HOST_64BIT
             large_seg_size = gc_heap::use_large_pages_p ? gc_heap::soh_segment_size : gc_heap::soh_segment_size * 2;
+#else //HOST_64BIT
+            assert (!gc_heap::use_large_pages_p);
+            large_seg_size = gc_heap::soh_segment_size;
+#endif //HOST_64BIT
             pin_seg_size = large_seg_size;
         }
         if (gc_heap::use_large_pages_p)
@@ -53679,16 +53721,45 @@ int GCHeap::RefreshMemoryLimit()
     return gc_heap::refresh_memory_limit();
 }
 
+bool gc_heap::compute_hard_limit_from_heap_limits()
+{
+#ifndef HOST_64BIT
+    // need to consider overflows:
+    if (! ((heap_hard_limit_oh[soh] < max_heap_hard_limit && heap_hard_limit_oh[loh] <= max_heap_hard_limit / 2 && heap_hard_limit_oh[poh] <= max_heap_hard_limit / 2)
+           || (heap_hard_limit_oh[soh] <= max_heap_hard_limit / 2 && heap_hard_limit_oh[loh] < max_heap_hard_limit && heap_hard_limit_oh[poh] <= max_heap_hard_limit / 2)
+           || (heap_hard_limit_oh[soh] <= max_heap_hard_limit / 2 && heap_hard_limit_oh[loh] <= max_heap_hard_limit / 2 && heap_hard_limit_oh[poh] < max_heap_hard_limit)))
+    {
+        return false;
+    }
+#endif //!HOST_64BIT
+
+    heap_hard_limit = heap_hard_limit_oh[soh] + heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh];
+    return true;
+}
+
+// On 32bit we have next guarantees for limits:
+// 1) heap-specific limits:
+//   0 <= (heap_hard_limit = heap_hard_limit_oh[soh] + heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh]) < 4Gb
+//   a) 0 <= heap_hard_limit_oh[soh] < 2Gb, 0 <= heap_hard_limit_oh[loh] <= 1Gb, 0 <= heap_hard_limit_oh[poh] <= 1Gb
+//   b) 0 <= heap_hard_limit_oh[soh] <= 1Gb, 0 <= heap_hard_limit_oh[loh] < 2Gb, 0 <= heap_hard_limit_oh[poh] <= 1Gb
+//   c) 0 <= heap_hard_limit_oh[soh] <= 1Gb, 0 <= heap_hard_limit_oh[loh] <= 1Gb, 0 <= heap_hard_limit_oh[poh] < 2Gb
+// 2) same limit for all heaps:
+//   0 <= heap_hard_limit <= 1Gb
+//
+// These ranges guarantee that calculation of soh_segment_size, loh_segment_size and poh_segment_size with alignment and round up won't overflow,
+// as well as calculation of sum of them (overflow to 0 is allowed, because allocation with 0 size will fail later).
 bool gc_heap::compute_hard_limit()
 {
     heap_hard_limit_oh[soh] = 0;
-#ifdef HOST_64BIT
+
     heap_hard_limit = (size_t)GCConfig::GetGCHeapHardLimit();
     heap_hard_limit_oh[soh] = (size_t)GCConfig::GetGCHeapHardLimitSOH();
     heap_hard_limit_oh[loh] = (size_t)GCConfig::GetGCHeapHardLimitLOH();
     heap_hard_limit_oh[poh] = (size_t)GCConfig::GetGCHeapHardLimitPOH();
 
+#ifdef HOST_64BIT
     use_large_pages_p = GCConfig::GetGCLargePages();
+#endif //HOST_64BIT
 
     if (heap_hard_limit_oh[soh] || heap_hard_limit_oh[loh] || heap_hard_limit_oh[poh])
     {
@@ -53700,8 +53771,10 @@ bool gc_heap::compute_hard_limit()
         {
             return false;
         }
-        heap_hard_limit = heap_hard_limit_oh[soh] +
-            heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh];
+        if (!compute_hard_limit_from_heap_limits())
+        {
+            return false;
+        }
     }
     else
     {
@@ -53729,9 +53802,22 @@ bool gc_heap::compute_hard_limit()
             heap_hard_limit_oh[soh] = (size_t)(total_physical_mem * (uint64_t)percent_of_mem_soh / (uint64_t)100);
             heap_hard_limit_oh[loh] = (size_t)(total_physical_mem * (uint64_t)percent_of_mem_loh / (uint64_t)100);
             heap_hard_limit_oh[poh] = (size_t)(total_physical_mem * (uint64_t)percent_of_mem_poh / (uint64_t)100);
-            heap_hard_limit = heap_hard_limit_oh[soh] +
-                heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh];
+
+            if (!compute_hard_limit_from_heap_limits())
+            {
+                return false;
+            }
         }
+#ifndef HOST_64BIT
+        else
+        {
+            // need to consider overflows
+            if (heap_hard_limit > max_heap_hard_limit / 2)
+            {
+                return false;
+            }
+        }
+#endif //!HOST_64BIT
     }
 
     if (heap_hard_limit_oh[soh] && (!heap_hard_limit_oh[poh]) && (!use_large_pages_p))
@@ -53745,9 +53831,17 @@ bool gc_heap::compute_hard_limit()
         if ((percent_of_mem > 0) && (percent_of_mem < 100))
         {
             heap_hard_limit = (size_t)(total_physical_mem * (uint64_t)percent_of_mem / (uint64_t)100);
+
+#ifndef HOST_64BIT
+            // need to consider overflows
+            if (heap_hard_limit > max_heap_hard_limit / 2)
+            {
+                return false;
+            }
+#endif //!HOST_64BIT
         }
     }
-#endif //HOST_64BIT
+
     return true;
 }
 
@@ -53772,12 +53866,12 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
             }
         }
     }
+#endif //HOST_64BIT
 
     if (heap_hard_limit && (heap_hard_limit < new_current_total_committed))
     {
         return false;
     }
-#endif //HOST_64BIT
 
 #ifdef USE_REGIONS
     {
@@ -53796,9 +53890,24 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
             seg_size_from_config = (size_t)GCConfig::GetSegmentSize();
             if (seg_size_from_config)
             {
-                seg_size_from_config = adjust_segment_size_hard_limit_va (seg_size_from_config);
+                seg_size_from_config = use_large_pages_p ? align_on_segment_hard_limit (seg_size_from_config) :
+#ifdef HOST_64BIT
+                    round_up_power2 (seg_size_from_config);
+#else //HOST_64BIT
+                    round_down_power2 (seg_size_from_config);
+                seg_size_from_config = min (seg_size_from_config, max_heap_hard_limit / 2);
+#endif //HOST_64BIT
             }
 
+            // On 32bit we have next guarantees:
+            //   0 <= seg_size_from_config <= 1Gb (from max_heap_hard_limit/2)
+            // a) heap-specific limits:
+            //   0 <= (heap_hard_limit = heap_hard_limit_oh[soh] + heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh]) < 4Gb (from gc_heap::compute_hard_limit_from_heap_limits)
+            //   0 <= heap_hard_limit_oh[soh] <= 1Gb or < 2Gb
+            //   0 <= soh_segment_size <= 1Gb or <= 2Gb (alignment and round up)
+            // b) same limit for all heaps:
+            //   0 <= heap_hard_limit <= 1Gb
+            //   0 <= soh_segment_size <= 1Gb
             size_t limit_to_check = (heap_hard_limit_oh[soh] ? heap_hard_limit_oh[soh] : heap_hard_limit);
             soh_segment_size = max (adjust_segment_size_hard_limit (limit_to_check, nhp), seg_size_from_config);
         }

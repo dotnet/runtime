@@ -1729,6 +1729,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         assert(info->idFinallyCall == false);
         assert(info->idCatchRet == false);
         assert(info->idCallSig == nullptr);
+        assert(info->idTargetBlock == nullptr);
 
         info->idNum  = emitInsCount;
         info->idSize = sz;
@@ -7869,9 +7870,6 @@ UNATIVE_OFFSET emitter::emitFindOffset(const insGroup* ig, unsigned insNum) cons
 //
 UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_types dataType)
 {
-    unsigned     secOffs;
-    dataSection* secDesc;
-
     assert(emitDataSecCur == nullptr);
 
     // The size must not be zero and must be a multiple of MIN_DATA_ALIGN
@@ -7882,46 +7880,16 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     // simpler to allow it than to check and block it.
     //
     assert((size != 0) && ((size % dataSection::MIN_DATA_ALIGN) == 0));
-    assert(isPow2(alignment) && (alignment <= dataSection::MAX_DATA_ALIGN));
 
-    /* Get hold of the current offset */
-    secOffs = emitConsDsc.dsdOffs;
+    emitEnsureDataSectionAlignment(alignment);
 
-    if (((secOffs % alignment) != 0) && (alignment > dataSection::MIN_DATA_ALIGN))
-    {
-        // As per the above comment, the minimum alignment is actually (MIN_DATA_ALIGN)
-        // bytes so we don't need to make any adjustments if the requested
-        // alignment is less than MIN_DATA_ALIGN.
-        //
-        // The maximum requested alignment is tracked and the memory allocator
-        // will end up ensuring offset 0 is at an address matching that
-        // alignment.  So if the requested alignment is greater than MIN_DATA_ALIGN,
-        // we need to pad the space out so the offset is a multiple of the requested.
-        //
-        uint8_t zeros[dataSection::MAX_DATA_ALIGN] = {}; // auto initialize to all zeros
-
-        unsigned  zeroSize  = alignment - (secOffs % alignment);
-        unsigned  zeroAlign = dataSection::MIN_DATA_ALIGN;
-        var_types zeroType  = TYP_INT;
-
-        emitBlkConst(&zeros, zeroSize, zeroAlign, zeroType);
-        secOffs = emitConsDsc.dsdOffs;
-    }
-
-    assert((secOffs % alignment) == 0);
-    if (emitConsDsc.alignment < alignment)
-    {
-        JITDUMP("Increasing data section alignment from %u to %u for type %s\n", emitConsDsc.alignment, alignment,
-                varTypeName(dataType));
-        emitConsDsc.alignment = alignment;
-    }
-
+    unsigned secOffs = emitConsDsc.dsdOffs;
     /* Advance the current offset */
     emitConsDsc.dsdOffs += size;
 
     /* Allocate a data section descriptor and add it to the list */
 
-    secDesc = emitDataSecCur = (dataSection*)emitGetMem(roundUp(sizeof(*secDesc) + size));
+    dataSection* secDesc = emitDataSecCur = (dataSection*)emitGetMem(roundUp(sizeof(*secDesc) + size));
 
     secDesc->dsSize = size;
 
@@ -7944,6 +7912,50 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     return secOffs;
 }
 
+//---------------------------------------------------------------------------
+// emitEnsureDataSectionAlignment:
+//   Ensure that data is emitted such that the next byte would be aligned at
+//   the specified alignment. Also increase the overall data section alignment
+//   if necessary.
+//
+// Arguments:
+//   alignment - The aligment
+//
+void emitter::emitEnsureDataSectionAlignment(unsigned alignment)
+{
+    assert(isPow2(alignment) && (alignment <= dataSection::MAX_DATA_ALIGN));
+
+    if (emitConsDsc.alignment < alignment)
+    {
+        JITDUMP("Increasing overall data section alignment from %u to %u\n", emitConsDsc.alignment, alignment);
+        emitConsDsc.alignment = alignment;
+    }
+
+    unsigned secOffs = emitConsDsc.dsdOffs;
+    if ((secOffs % alignment) == 0)
+    {
+        return;
+    }
+
+    // Should always be aligned to the minimum alignment.
+    assert((secOffs % dataSection::MIN_DATA_ALIGN) == 0);
+
+    // The maximum requested alignment is tracked and the memory allocator
+    // will end up ensuring offset 0 is at an address matching that
+    // alignment.  So if the requested alignment is greater than MIN_DATA_ALIGN,
+    // we need to pad the space out so the offset is a multiple of the requested.
+    //
+    uint8_t zeros[dataSection::MAX_DATA_ALIGN] = {}; // auto initialize to all zeros
+
+    unsigned  zeroSize  = alignment - (secOffs % alignment);
+    unsigned  zeroAlign = dataSection::MIN_DATA_ALIGN;
+    var_types zeroType  = TYP_INT;
+
+    emitBlkConst(zeros, zeroSize, zeroAlign, zeroType);
+
+    assert((emitConsDsc.dsdOffs % alignment) == 0);
+}
+
 //  Start generating a constant data section for the current function
 //  populated with BasicBlock references.
 //  You can choose the references to be either absolute pointers, or
@@ -7958,16 +7970,11 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
 
     assert(emitDataSecCur == nullptr);
 
-    UNATIVE_OFFSET emittedSize;
+    unsigned elemSize = relativeAddr ? 4 : TARGET_POINTER_SIZE;
 
-    if (relativeAddr)
-    {
-        emittedSize = numEntries * 4;
-    }
-    else
-    {
-        emittedSize = numEntries * TARGET_POINTER_SIZE;
-    }
+    emitEnsureDataSectionAlignment(elemSize);
+
+    UNATIVE_OFFSET emittedSize = numEntries * elemSize;
 
     /* Get hold of the current offset */
 
@@ -8014,8 +8021,10 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
 //
 void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecOffs, emitter::dataSection** dataSec)
 {
+    emitEnsureDataSectionAlignment(TARGET_POINTER_SIZE);
+
     UNATIVE_OFFSET secOffs     = emitConsDsc.dsdOffs;
-    unsigned       emittedSize = sizeof(emitter::dataAsyncResumeInfo) * numEntries;
+    unsigned       emittedSize = sizeof(CORINFO_AsyncResumeInfo) * numEntries;
     emitConsDsc.dsdOffs += emittedSize;
 
     dataSection* secDesc = (dataSection*)emitGetMem(roundUp(sizeof(dataSection) + numEntries * sizeof(emitLocation)));
@@ -8037,8 +8046,7 @@ void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecO
         emitConsDsc.dsdList = secDesc;
     }
 
-    emitConsDsc.dsdLast   = secDesc;
-    emitConsDsc.alignment = std::max(emitConsDsc.alignment, (UNATIVE_OFFSET)TARGET_POINTER_SIZE);
+    emitConsDsc.dsdLast = secDesc;
 
     *dataSecOffs = secOffs;
     *dataSec     = secDesc;
@@ -8521,8 +8529,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                 bDstRW[i] = (target_size_t)(size_t)target;
                 if (emitComp->opts.compReloc)
                 {
-                    uint16_t relocType = TARGET_POINTER_SIZE == 8 ? IMAGE_REL_BASED_DIR64 : IMAGE_REL_BASED_HIGHLOW;
-                    emitRecordRelocation(&(bDstRW[i]), target, relocType);
+                    emitRecordRelocation(&(bDstRW[i]), target, CorInfoReloc::DIRECT);
                 }
 
                 JITDUMP("  " FMT_BB ": 0x%p\n", block->bbNum, bDstRW[i]);
@@ -8554,9 +8561,9 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
         {
             JITDUMP("  section %u, size %u, async resume info\n", secNum++, dscSize);
 
-            size_t numElems = dscSize / sizeof(emitter::dataAsyncResumeInfo);
+            size_t numElems = dscSize / sizeof(CORINFO_AsyncResumeInfo);
 
-            emitter::dataAsyncResumeInfo* aDstRW = (emitter::dataAsyncResumeInfo*)dstRW;
+            CORINFO_AsyncResumeInfo* aDstRW = (CORINFO_AsyncResumeInfo*)dstRW;
             for (size_t i = 0; i < numElems; i++)
             {
                 emitLocation* emitLoc = &((emitLocation*)dsc->dsCont)[i];
@@ -8568,11 +8575,10 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                 aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
                 if (emitComp->opts.compReloc)
                 {
-                    uint16_t relocType = TARGET_POINTER_SIZE == 8 ? IMAGE_REL_BASED_DIR64 : IMAGE_REL_BASED_HIGHLOW;
-                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, relocType);
+                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
                     if (target != nullptr)
                     {
-                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, relocType);
+                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
                     }
                 }
 
@@ -8730,7 +8736,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
             {
                 if (i > 0)
                 {
-                    sprintf_s(label, ArrLen(label), "RWD%02zu", i * sizeof(dataAsyncResumeInfo));
+                    sprintf_s(label, ArrLen(label), "RWD%02zu", i * sizeof(CORINFO_AsyncResumeInfo));
                     printf(labelFormat, label);
                 }
 
@@ -10368,9 +10374,10 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
     assert(regMaskTP::FromIntRegSet(SingleTypeRegSet(byrefRegs << REG_INT_FIRST)) == emitThisByrefRegs);
 
 #ifdef JIT32_GCENCODER
-    // x86 does not report GC refs/byrefs in return registers at call sites
-    gcrefRegs &= ~(1u << (REG_INTRET - REG_INT_FIRST));
-    byrefRegs &= ~(1u << (REG_INTRET - REG_INT_FIRST));
+    // x86 only reports GC refs/byrefs in callee saves at call sites -- no return registers.
+    unsigned reportedRegs = (RBM_INT_CALLEE_SAVED | RBM_EBP).GetIntRegSet() >> REG_INT_FIRST;
+    gcrefRegs &= reportedRegs;
+    byrefRegs &= reportedRegs;
 
     // For the general encoder, we always have to record calls, so we don't take this early return.    /* Are there any
     // args to pop at this call site?
@@ -10508,31 +10515,35 @@ void emitter::emitStackKillArgs(BYTE* addr, unsigned count, unsigned char callIn
     }
 }
 
+/*****************************************************************************/
+#endif // EMIT_TRACK_STACK_DEPTH
+/*****************************************************************************/
+
 /*****************************************************************************
  *  A helper for recording a relocation with the EE.
  */
 
 #ifdef DEBUG
 
-void emitter::emitRecordRelocationHelp(void*       location,        /* IN */
-                                       void*       target,          /* IN */
-                                       uint16_t    fRelocType,      /* IN */
-                                       const char* relocTypeName,   /* IN */
-                                       int32_t     addlDelta /* = 0 */) /* IN */
+void emitter::emitRecordRelocationHelp(void*        location,       /* IN */
+                                       void*        target,         /* IN */
+                                       CorInfoReloc fRelocType,     /* IN */
+                                       const char*  relocTypeName,  /* IN */
+                                       int32_t      addlDelta /* = 0 */) /* IN */
 
 #else // !DEBUG
 
-void emitter::emitRecordRelocation(void*    location,           /* IN */
-                                   void*    target,             /* IN */
-                                   uint16_t fRelocType,         /* IN */
-                                   int32_t  addlDelta /* = 0 */) /* IN */
+void emitter::emitRecordRelocation(void*        location,       /* IN */
+                                   void*        target,         /* IN */
+                                   CorInfoReloc fRelocType,     /* IN */
+                                   int32_t      addlDelta /* = 0 */) /* IN */
 
 #endif // !DEBUG
 {
     void* locationRW = (BYTE*)location + writeableOffset;
 
     JITDUMP("recordRelocation: %p (rw: %p) => %p, type %u (%s), delta %d\n", dspPtr(location), dspPtr(locationRW),
-            dspPtr(target), fRelocType, relocTypeName, addlDelta);
+            dspPtr(target), (unsigned)fRelocType, relocTypeName, addlDelta);
 
     // If we're an unmatched altjit, don't tell the VM anything. We still record the relocation for
     // late disassembly; maybe we'll need it?
@@ -10559,11 +10570,11 @@ void emitter::emitHandlePCRelativeMov32(void* location, /* IN */
 {
     if (emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELATIVE_CODE_RELOCS))
     {
-        emitRecordRelocation(location, target, IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL);
+        emitRecordRelocation(location, target, CorInfoReloc::ARM32_THUMB_MOV32_PCREL);
     }
     else
     {
-        emitRecordRelocation(location, target, IMAGE_REL_BASED_THUMB_MOV32);
+        emitRecordRelocation(location, target, CorInfoReloc::ARM32_THUMB_MOV32);
     }
 }
 #endif // TARGET_ARM
@@ -10597,9 +10608,6 @@ void emitter::emitRecordCallSite(ULONG                 instrOffset,  /* IN */
 #endif // defined(DEBUG)
 }
 
-/*****************************************************************************/
-#endif // EMIT_TRACK_STACK_DEPTH
-/*****************************************************************************/
 /*****************************************************************************/
 
 #ifdef DEBUG

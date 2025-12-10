@@ -5,7 +5,7 @@ import type { DotnetHostBuilder, LoaderConfig, RuntimeAPI, LoadBootResourceCallb
 
 import { Module, dotnetApi } from "./cross-module";
 import { getLoaderConfig, mergeLoaderConfig, validateLoaderConfig } from "./config";
-import { createRuntime } from "./bootstrap";
+import { createRuntime } from "./assets";
 import { exit } from "./exit";
 
 let applicationArguments: string[] | undefined = [];
