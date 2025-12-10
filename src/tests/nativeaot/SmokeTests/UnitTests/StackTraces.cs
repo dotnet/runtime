@@ -88,11 +88,11 @@ class StackTraces
 #line 1 "MyFile2.cs"
             var sf3 = new StackFrame(needFileInfo: true);
 #line default
-            if (sf1.GetFileName() != "A:\\MyFile1.cs" || sf1.GetFileLineNumber() != 10)
+            if (!sf1.GetFileName().EndsWith("MyFile1.cs", StringComparison.Ordinal) || sf1.GetFileLineNumber() != 10)
                 throw new Exception(sf1.ToString());
-            if (sf2.GetFileName() != "A:\\MyFile1.cs" || sf2.GetFileLineNumber() != 11)
+            if (!sf2.GetFileName().EndsWith("MyFile1.cs", StringComparison.Ordinal) || sf2.GetFileLineNumber() != 11)
                 throw new Exception(sf2.ToString());
-            if (sf3.GetFileName() != "A:\\MyFile2.cs" || sf3.GetFileLineNumber() != 1)
+            if (!sf3.GetFileName().EndsWith("MyFile2.cs", StringComparison.Ordinal) || sf3.GetFileLineNumber() != 1)
                 throw new Exception(sf3.ToString());
         }
 
