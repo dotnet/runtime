@@ -65,7 +65,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(@"^(?<proto>\w+)://[^/]+?(?<port>:\d+)?/")]
-                    public static partial Regex Valid { get; }
+                    public static partial Regex Valid();
                 }
                 """,
 
@@ -467,7 +467,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(@"href\s*=\s*(?:[""'](?<1>[^""']*)[""']|(?<1>[^>\s]+))", RegexOptions.None, -1)]
-                    public static partial Regex Valid { get; }
+                    public static partial Regex Valid();
                 }
                 """,
 
@@ -772,7 +772,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(@"[A-Za-z]+")]
-                    public static partial Regex Valid { get; }
+                    public static partial Regex Valid();
                 }
                 """,
 
@@ -939,7 +939,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(@"abcd*e|f")]
-                    public static partial Regex Valid { get; }
+                    public static partial Regex Valid();
                 }
                 """,
 
@@ -1141,7 +1141,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex(@"\.")]
-                    public static partial Regex DotPattern { get; }
+                    public static partial Regex DotPattern();
                 }
                 """;
 
@@ -1160,7 +1160,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex("a\0b")]
-                    public static partial Regex NullCharPattern { get; }
+                    public static partial Regex NullCharPattern();
                 }
                 """;
 
@@ -1181,7 +1181,7 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     [GeneratedRegex("\n")]
-                    public static partial Regex NewlinePattern { get; }
+                    public static partial Regex NewlinePattern();
                 }
                 """;
 
