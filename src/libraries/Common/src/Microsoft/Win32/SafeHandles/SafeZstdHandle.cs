@@ -39,11 +39,8 @@ namespace Microsoft.Win32.SafeHandles
             try
             {
                 dictionary.DangerousAddRef(ref added);
-                nuint result = Interop.Zstd.ZSTD_CCtx_refCDict(this, dictionary);
-                if (Interop.Zstd.ZSTD_isError(result) != 0)
-                {
-                    throw new Interop.Zstd.ZstdNativeException(SR.ZstandardDecoder_DictionaryAttachFailed);
-                }
+                ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_CCtx_refCDict(this, dictionary), SR.ZstandardDecoder_DictionaryAttachFailed);
+
                 _dictionary = dictionary;
             }
             catch when (added)
@@ -74,11 +71,7 @@ namespace Microsoft.Win32.SafeHandles
 
         public unsafe void Reset()
         {
-            nuint result = Interop.Zstd.ZSTD_CCtx_reset(this, Interop.Zstd.ZstdResetDirective.ZSTD_reset_session_only);
-            if (ZstandardUtils.IsError(result))
-            {
-                throw new Interop.Zstd.ZstdNativeException(SR.Format(SR.Zstd_NativeError, ZstandardUtils.GetErrorMessage(result)));
-            }
+            ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_CCtx_reset(this, Interop.Zstd.ZstdResetDirective.ZSTD_reset_session_only));
 
             // prefix is not sticky and is cleared by reset
             if (_prefixHandle != null)
@@ -121,11 +114,8 @@ namespace Microsoft.Win32.SafeHandles
             try
             {
                 dictionary.DangerousAddRef(ref added);
-                nuint result = Interop.Zstd.ZSTD_DCtx_refDDict(this, dictionary);
-                if (Interop.Zstd.ZSTD_isError(result) != 0)
-                {
-                    throw new Interop.Zstd.ZstdNativeException(SR.ZstandardDecoder_DictionaryAttachFailed);
-                }
+                ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_DCtx_refDDict(this, dictionary), SR.ZstandardDecoder_DictionaryAttachFailed);
+
                 _dictionary = dictionary;
             }
             catch when (added)
@@ -156,11 +146,7 @@ namespace Microsoft.Win32.SafeHandles
 
         public unsafe void Reset()
         {
-            nuint result = Interop.Zstd.ZSTD_DCtx_reset(this, Interop.Zstd.ZstdResetDirective.ZSTD_reset_session_only);
-            if (ZstandardUtils.IsError(result))
-            {
-                throw new Interop.Zstd.ZstdNativeException(SR.Format(SR.Zstd_NativeError, ZstandardUtils.GetErrorMessage(result)));
-            }
+            ZstandardUtils.ThrowIfError(Interop.Zstd.ZSTD_DCtx_reset(this, Interop.Zstd.ZstdResetDirective.ZSTD_reset_session_only));
 
             // prefix is not sticky and is cleared by reset
             if (_prefixHandle != null)

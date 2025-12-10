@@ -31,7 +31,7 @@ namespace System.IO.Compression
         internal static string GetErrorMessage(nuint errorCode)
         {
             IntPtr errorNamePtr = Interop.Zstd.ZSTD_getErrorName(errorCode);
-            return System.Runtime.InteropServices.Marshal.PtrToStringAnsi(errorNamePtr) ?? "Unknown error";
+            return System.Runtime.InteropServices.Marshal.PtrToStringAnsi(errorNamePtr) ?? $"Unknown error {errorCode}";
         }
 
         internal static void ThrowIfError(nuint result, string? message = null)
@@ -52,7 +52,8 @@ namespace System.IO.Compression
         internal static Exception CreateExceptionForError(nuint errorResult, string? message = null)
         {
             Debug.Assert(IsError(errorResult));
-            return new Interop.Zstd.ZstdNativeException(SR.Format(message ?? SR.Zstd_NativeError, GetErrorMessage(errorResult)));
+
+            return new IOException(message ?? SR.Zstd_InternalError, new Interop.Zstd.ZstdNativeException(SR.Format(GetErrorMessage(errorResult))));
         }
 
         internal static int GetQualityFromCompressionLevel(CompressionLevel compressionLevel) =>
