@@ -1123,15 +1123,13 @@ GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags*
         case GT_STORE_BLK:
             if (pDerefFlags != nullptr)
             {
-                GenTreeFlags flags = val->gtFlags & GTF_IND_COPYABLE_FLAGS;
-                
                 // If volatile or unaligned is not allowed and present, fall through to create a temp
-                if (!allowVolatileUnaligned && ((flags & (GTF_IND_VOLATILE | GTF_IND_UNALIGNED)) != 0))
+                if (!allowVolatileUnaligned && ((val->gtFlags & (GTF_IND_VOLATILE | GTF_IND_UNALIGNED)) != 0))
                 {
                     break;
                 }
-                
-                *pDerefFlags = flags;
+
+                *pDerefFlags = val->gtFlags & GTF_IND_COPYABLE_FLAGS;
                 return val->AsIndir()->Addr();
             }
             break;
@@ -1148,7 +1146,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags*
 
         case GT_COMMA:
             impAppendTree(val->AsOp()->gtGetOp1(), curLevel, impCurStmtDI);
-            return impGetNodeAddr(val->AsOp()->gtGetOp2(), curLevel, pDerefFlags);
+            return impGetNodeAddr(val->AsOp()->gtGetOp2(), curLevel, pDerefFlags, allowVolatileUnaligned);
 
         default:
             break;
