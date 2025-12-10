@@ -10,6 +10,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -126,14 +127,100 @@ namespace ILCompiler.DependencyAnalysis
             return factory.PreinitializationManager.HasLazyStaticConstructor(type.ConvertToCanonForm(CanonicalFormKind.Specific));
         }
 
+        private static bool ContainsCanonicalTypes(Instantiation instantiation)
+        {
+            foreach (TypeDesc arg in instantiation)
+            {
+                if (arg.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    return true;
+            }
+            return false;
+        }
+
         public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
             DependencyList result = new DependencyList();
 
             var lookupContext = new GenericLookupResultContext(_dictionaryOwner, typeInstantiation, methodInstantiation);
-            if (!_lookupSignature.LookupResultIsConcreteAfterInstantiation(lookupContext))
+
+            // Check if the instantiation is not fully concrete (contains canonical types like __Canon)
+            bool isNotConcreteInstantiation = ContainsCanonicalTypes(typeInstantiation) || ContainsCanonicalTypes(methodInstantiation);
+
+            if (isNotConcreteInstantiation)
             {
-                return result.ToArray();
+                switch (_id)
+                {
+                    case ReadyToRunHelperId.MethodHandle:
+                    case ReadyToRunHelperId.MethodDictionary:
+                    case ReadyToRunHelperId.VirtualDispatchCell:
+                    case ReadyToRunHelperId.MethodEntry:
+                        {
+                            MethodDesc instantiatedMethod = ((MethodDesc)_target).GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
+                            if (instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                            {
+                                if (!instantiatedMethod.IsAbstract)
+                                {
+                                    result.Add(new DependencyListEntry(
+                                        factory.ShadowGenericMethod(instantiatedMethod),
+                                        "Partially instantiated generic dictionary dependencies"));
+                                }
+                                return result.ToArray();
+                            }
+                        }
+                        break;
+
+                    case ReadyToRunHelperId.TypeHandle:
+                    case ReadyToRunHelperId.NecessaryTypeHandle:
+                    case ReadyToRunHelperId.MetadataTypeHandle:
+                    case ReadyToRunHelperId.TypeHandleForCasting:
+                    case ReadyToRunHelperId.GetGCStaticBase:
+                    case ReadyToRunHelperId.GetNonGCStaticBase:
+                    case ReadyToRunHelperId.GetThreadStaticBase:
+                    case ReadyToRunHelperId.DefaultConstructor:
+                    case ReadyToRunHelperId.ObjectAllocator:
+                        {
+                            TypeDesc instantiatedType = ((TypeDesc)_target).GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
+                            if (instantiatedType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                            {
+                                return result.ToArray();
+                            }
+                        }
+                        break;
+
+                    case ReadyToRunHelperId.FieldHandle:
+                        {
+                            FieldDesc field = (FieldDesc)_target;
+                            TypeDesc instantiatedOwningType = field.OwningType.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
+                            if (instantiatedOwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                            {
+                                return result.ToArray();
+                            }
+                        }
+                        break;
+
+                    case ReadyToRunHelperId.DelegateCtor:
+                        {
+                            DelegateCreationInfo createInfo = (DelegateCreationInfo)_target;
+                            MethodDesc instantiatedMethod = createInfo.PossiblyUnresolvedTargetMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
+                            if (instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                            {
+                                return result.ToArray();
+                            }
+                        }
+                        break;
+
+                    case ReadyToRunHelperId.ConstrainedDirectCall:
+                        {
+                            ConstrainedCallInfo callInfo = (ConstrainedCallInfo)_target;
+                            MethodDesc instantiatedMethod = callInfo.Method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
+                            TypeDesc instantiatedConstrainedType = callInfo.ConstrainedType.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
+                            if (instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any) || instantiatedConstrainedType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                            {
+                                return result.ToArray();
+                            }
+                        }
+                        break;
+                }
             }
 
             switch (_id)

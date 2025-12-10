@@ -44,12 +44,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ShadowGenericMethodNode(MethodDesc method, IMethodNode canonicalMethod)
         {
-            if (method.ToString().Contains("MyRepro"))
-            {
-                System.Console.Error.WriteLine("ShadowGenericMethodNode: " + method.ToString());
-            }
             Debug.Assert(!method.IsRuntimeDeterminedExactMethod);
-            Debug.Assert(canonicalMethod.Method.IsSharedByGenericInstantiations);
             Debug.Assert(canonicalMethod.Method == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
             Method = method;
             CanonicalMethodNode = canonicalMethod;
