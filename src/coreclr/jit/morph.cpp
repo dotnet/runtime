@@ -9646,8 +9646,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            GenTreeHWIntrinsic* op1Intrin = nullptr;
-            genTreeOps          op1Oper   = GT_NONE;
+            GenTreeHWIntrinsic* op1Intrin       = nullptr;
+            genTreeOps          op1Oper         = GT_NONE;
             var_types           op1SimdBaseType = TYP_UNDEF;
 
             if (op1->OperIsHWIntrinsic())
