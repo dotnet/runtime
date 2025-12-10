@@ -1523,7 +1523,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     // 0...01...10...x
     // <-n-><-m->
     //
-    // It will emit instructions to load the left shifted immidiate then
+    // It will emit instructions to load the left shifted immediate then
     // followed by a single SRLI instruction.
     //
     // Since it adds 1 instruction, loading the new form should at least remove
@@ -1535,10 +1535,10 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     //  -> (1) && ( (2) || (3) )
     //
     // Visualization aid:
-    // - Original immidiate
+    // - Original immediate
     //   0...01...10...x
     //       y       <-x
-    // - Left shifted immidiate
+    // - Left shifted immediate
     //   1...10...x0...0
     //       b  <-a
 
