@@ -2112,8 +2112,8 @@ extern "C" void CallJittedMethodRetVoid(PCODE *routines, int8_t*pArgs, int8_t*pR
 extern "C" void CallJittedMethodRetDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRetI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 #ifdef TARGET_32BIT
-extern "C" void CallJittedMethodRetI4(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetI4(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 #endif // TARGET_32BIT
 extern "C" void InterpreterStubRetVoid();
 extern "C" void InterpreterStubRetDouble();
@@ -2136,8 +2136,8 @@ extern "C" void InterpreterStubRetBuffRDI();
 extern "C" void InterpreterStubRetBuffRSI();
 #endif // TARGET_WINDOWS
 #elif defined(TARGET_ARM) // TARGET_ARM
-extern "C" void CallJittedMethodRetBuffR0(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetBuffR1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetBuffR0(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetBuffR1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetBuffR0();
 extern "C" void InterpreterStubRetBuffR1();
 #else // !TARGET_AMD64 && !TARGET_ARM
