@@ -5961,6 +5961,12 @@ static OpcodePeepElement peepTypeEqualityCheckOpcodes[] = {
     { 25, CEE_ILLEGAL } // End marker
 };
 
+static OpcodePeepElement peepConvRUn_R4Opcodes[] = {
+    { 0, CEE_CONV_R_UN },
+    { 1, CEE_CONV_R4 },
+    { 2, CEE_ILLEGAL } // End marker
+};
+
 static OpcodePeepElement peepStLdLoc0[] = {
     { 0, CEE_STLOC_0 },
     { 1, CEE_LDLOC_0 },
@@ -6087,6 +6093,7 @@ class InterpILOpcodePeeps
 {
 public:
     OpcodePeep peepTypeEqualityCheck = { peepTypeEqualityCheckOpcodes, &InterpCompiler::IsTypeEqualityCheckPeep, &InterpCompiler::ApplyTypeEqualityCheckPeep, "TypeEqualityCheck" };
+    OpcodePeep peepConvRUn_R4 = { peepConvRUn_R4Opcodes, &InterpCompiler::IsConvRUnR4Peep, &InterpCompiler::ApplyConvRUnR4Peep, "ConvRUn_R4" };
     OpcodePeep peepStoreLoad0 = { peepStLdLoc0, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad0" };
     OpcodePeep peepStoreLoad1 = { peepStLdLoc1, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad1" };
     OpcodePeep peepStoreLoad2 = { peepStLdLoc2, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad2" };
@@ -6108,8 +6115,9 @@ public:
     OpcodePeep peepTypeValueType = { peepTypeValueTypeOpcodesOpcodes, &InterpCompiler::IsTypeValueTypePeep, &InterpCompiler::ApplyTypeValueTypePeep, "TypeValueType" };
 
 public:
-    OpcodePeep* Peeps[21] = {
+    OpcodePeep* Peeps[22] = {
         &peepTypeEqualityCheck,
+        &peepConvRUn_R4, // This peep is not an optimization. It is for correctness.
         &peepStoreLoad,
         &peepStoreLoad1,
         &peepStoreLoad2,
@@ -6338,6 +6346,32 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip
         return false;
     }
     return true;
+}
+
+int InterpCompiler::ApplyConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo)
+{
+    // Replace with CONV_R4_UN
+    CHECK_STACK(1);
+    m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+    switch (m_pStackPointer[-1].GetStackType())
+    {
+    case StackTypeR4:
+        break;
+    case StackTypeR8:
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+        break;
+    case StackTypeI8:
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_UN_I8);
+        break;
+    case StackTypeI4:
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_UN_I4);
+        break;
+    default:
+        BADCODE("conv.r.un operand must be R4, R8, I4 or I8");
+        break;
+    }
+
+    return -1;
 }
 
 bool InterpCompiler::FindAndApplyPeep(OpcodePeep* Peeps[])
@@ -8115,10 +8149,10 @@ retry_emit:
                 case StackTypeR8:
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_UN_I8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_UN_I4);
                     break;
                 default:
                     BADCODE("conv.r8 operand must be R4, R8, I4 or I8");

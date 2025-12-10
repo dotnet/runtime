@@ -1067,12 +1067,20 @@ MAIN_LOOP:
                     ip += 3;
                     break;
 
-                case INTOP_CONV_R_UN_I4:
+                case INTOP_CONV_R8_UN_I4:
                     LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], uint32_t);
                     ip += 3;
                     break;
-                case INTOP_CONV_R_UN_I8:
+                case INTOP_CONV_R8_UN_I8:
                     LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], uint64_t);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_R4_UN_I4:
+                    LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], uint32_t);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_R4_UN_I8:
+                    LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], uint64_t);
                     ip += 3;
                     break;
                 case INTOP_CONV_I1_I4:
