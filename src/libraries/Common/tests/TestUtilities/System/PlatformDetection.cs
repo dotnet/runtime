@@ -732,14 +732,16 @@ namespace System
         }
 
         private static string GetEnvironmentVariableValue(string name, string defaultValue = "0") =>
-        Environment.GetEnvironmentVariable("DOTNET_" + name) ?? Environment.GetEnvironmentVariable("COMPlus_" + name) ?? defaultValue;
+            Environment.GetEnvironmentVariable("DOTNET_" + name) ?? Environment.GetEnvironmentVariable("COMPlus_" + name) ?? defaultValue;
 
         private static bool GetIsRunningOnCoreClrInterpreter()
         {
             if (IsCoreCLR)
             {
+#if NET
                 if (RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled)
                     return true;
+#endif
                 if (!string.IsNullOrWhiteSpace(GetEnvironmentVariableValue("Interpreter", "")))
                     return true;
                 if (int.TryParse(GetEnvironmentVariableValue("InterpMode", "0"), out int mode) && (mode > 0))
