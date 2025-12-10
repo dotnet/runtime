@@ -805,9 +805,9 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             WellKnownArg wellKnownArgType =
                 srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
-            // TODO-Bug?: verify if flags matter here
+            // Return buffers cannot be volatile or unaligned
             GenTreeFlags indirFlags = GTF_EMPTY;
-            GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
+            GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags, /* allowVolatileUnaligned */ false);
 
             if (!impIsLegalRetBuf(destAddr, srcCall))
             {
@@ -929,9 +929,9 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
         if (call->ShouldHaveRetBufArg())
         {
             // insert the return value buffer into the argument list as first byref parameter after 'this'
-            // TODO-Bug?: verify if flags matter here
+            // Return buffers cannot be volatile or unaligned
             GenTreeFlags indirFlags = GTF_EMPTY;
-            GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
+            GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags, /* allowVolatileUnaligned */ false);
 
             if (!impIsLegalRetBuf(destAddr, call))
             {
@@ -1096,18 +1096,20 @@ GenTree* Compiler::impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned
 // impGetNodeAddr: Get the address of a value.
 //
 // Arguments:
-//    val         - The value in question
-//    curLevel    - Stack level for spilling
-//    pDerefFlags - Flags to be used on dereference, nullptr when
-//                 the address won't be dereferenced. Returned flags
-//                 are included in the GTF_IND_COPYABLE_FLAGS mask.
+//    val                     - The value in question
+//    curLevel                - Stack level for spilling
+//    pDerefFlags             - Flags to be used on dereference, nullptr when
+//                              the address won't be dereferenced. Returned flags
+//                              are included in the GTF_IND_COPYABLE_FLAGS mask.
+//    allowVolatileUnaligned  - If false, volatile or unaligned addresses will
+//                              cause the value to be copied to a temporary
 //
 // Return Value:
 //    In case "val" represents a location (is an indirection/local),
 //    will return its address. Otherwise, address of a temporary assigned
 //    the value of "val" will be returned.
 //
-GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags)
+GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags, bool allowVolatileUnaligned)
 {
     if (pDerefFlags != nullptr)
     {
@@ -1121,7 +1123,15 @@ GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags*
         case GT_STORE_BLK:
             if (pDerefFlags != nullptr)
             {
-                *pDerefFlags = val->gtFlags & GTF_IND_COPYABLE_FLAGS;
+                GenTreeFlags flags = val->gtFlags & GTF_IND_COPYABLE_FLAGS;
+                
+                // If volatile or unaligned is not allowed and present, fall through to create a temp
+                if (!allowVolatileUnaligned && ((flags & (GTF_IND_VOLATILE | GTF_IND_UNALIGNED)) != 0))
+                {
+                    break;
+                }
+                
+                *pDerefFlags = flags;
                 return val->AsIndir()->Addr();
             }
             break;
@@ -3290,12 +3300,12 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 GenTree* objToBox = impPopStack().val;
 
                                 // Spill struct to get its address (to access hasValue field)
-                                // TODO-Bug?: verify if flags matter here
+                                // Transfer any volatile/unaligned flags to the indirection
                                 GenTreeFlags indirFlags = GTF_EMPTY;
                                 objToBox                = impGetNodeAddr(objToBox, CHECK_SPILL_ALL, &indirFlags);
 
                                 static_assert(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
-                                impPushOnStack(gtNewIndir(TYP_UBYTE, objToBox), typeInfo(TYP_INT));
+                                impPushOnStack(gtNewIndir(TYP_UBYTE, objToBox, indirFlags), typeInfo(TYP_INT));
 
                                 JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
                                 return returnToken;
@@ -3675,9 +3685,9 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
             return;
         }
 
-        // TODO-Bug?: verify if flags matter here
+        // Boxing helpers cannot accept volatile or unaligned addresses
         GenTreeFlags indirFlags = GTF_EMPTY;
-        op1 = gtNewHelperCallNode(boxHelper, TYP_REF, op2, impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, &indirFlags));
+        op1 = gtNewHelperCallNode(boxHelper, TYP_REF, op2, impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, &indirFlags, /* allowVolatileUnaligned */ false));
     }
 
     /* Push the result back on the stack, */
@@ -9537,9 +9547,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 BADCODE3("Unexpected opcode (has to be LDFLD)", ": %02X", (int)opcode);
                             }
 
-                            // TODO-Bug?: verify if flags matter here
-                            GenTreeFlags indirFlags = GTF_EMPTY;
-                            obj                     = impGetNodeAddr(obj, CHECK_SPILL_ALL, &indirFlags);
+                            // Get the address and any flags from the original access (volatile, unaligned, etc.)
+                            GenTreeFlags objAddrFlags = GTF_EMPTY;
+                            obj                       = impGetNodeAddr(obj, CHECK_SPILL_ALL, &objAddrFlags);
+                            
+                            // Combine the flags from the object address with any prefix flags
+                            indirFlags |= objAddrFlags;
                         }
 
                         op1 = gtNewFieldAddrNode(resolvedToken.hField, obj, fieldInfo.offset);
