@@ -9550,7 +9550,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // Get the address and any flags from the original access (volatile, unaligned, etc.)
                             GenTreeFlags objAddrFlags = GTF_EMPTY;
                             obj                       = impGetNodeAddr(obj, CHECK_SPILL_ALL, &objAddrFlags);
-                            
+
                             // Combine the flags from the object address with any prefix flags
                             indirFlags |= objAddrFlags;
                         }
