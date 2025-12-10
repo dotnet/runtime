@@ -265,6 +265,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForLclVar(treeNode->AsLclVar());
             break;
 
+        case GT_STORE_LCL_VAR:
+            genCodeForStoreLclVar(treeNode->AsLclVar());
+            break;
+
         case GT_JTRUE:
             genCodeForJTrue(treeNode->AsOp());
             break;
@@ -704,6 +708,38 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         assert(genIsValidReg(varDsc->GetRegNum()));
         unsigned wasmLclIndex = UnpackWasmReg(varDsc->GetRegNum());
         GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(tree), wasmLclIndex);
+    }
+}
+
+//------------------------------------------------------------------------
+// genCodeForStoreLclVar: Produce code for a GT_STORE_LCL_VAR node.
+//
+// Arguments:
+//    tree - the GT_STORE_LCL_VAR node
+//
+void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
+{
+    assert(tree->OperIs(GT_STORE_LCL_VAR));
+
+    if (tree->gtGetOp1()->IsMultiRegNode())
+    {
+        NYI_WASM("multi-reg GT_STORE_LCL_VAR");
+    }
+
+    LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
+
+    if (!varDsc->lvIsRegCandidate())
+    {
+        var_types type = varDsc->GetRegisterType(tree);
+        // TODO-WASM: actually local.get the frame base local here.
+        GetEmitter()->emitIns_S(ins_Store(type), emitTypeSize(tree), tree->GetLclNum(), 0);
+        genProduceReg(tree);
+    }
+    else
+    {
+        assert(genIsValidReg(varDsc->GetRegNum()));
+        unsigned wasmLclIndex = UnpackWasmReg(varDsc->GetRegNum());
+        GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), wasmLclIndex);
     }
 }
 
