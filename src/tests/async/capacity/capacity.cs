@@ -58,7 +58,10 @@ public class CapacityTests
 
         ILGenerator constructorIL = constructorBuilder.GetILGenerator();
         constructorIL.Emit(OpCodes.Ldarg_0);
-        constructorIL.Emit(OpCodes.Call, typeof(object).GetConstructor(Type.EmptyTypes));
+        ConstructorInfo? objectCtor = typeof(object).GetConstructor(Type.EmptyTypes);
+        if (objectCtor is null)
+            throw new InvalidOperationException("Could not find object constructor");
+        constructorIL.Emit(OpCodes.Call, objectCtor);
         constructorIL.Emit(OpCodes.Ret);
 
         // Generate the specified number of methods
@@ -81,15 +84,23 @@ public class CapacityTests
             else if (returnType == typeof(Task))
             {
                 // Return Task.CompletedTask for Task methods
-                methodIL.Emit(OpCodes.Call, typeof(Task).GetProperty("CompletedTask").GetGetMethod());
+                MethodInfo? completedTaskGetter = typeof(Task).GetProperty("CompletedTask")?.GetGetMethod();
+                if (completedTaskGetter is null)
+                    throw new InvalidOperationException("Could not find Task.CompletedTask getter");
+                methodIL.Emit(OpCodes.Call, completedTaskGetter);
                 methodIL.Emit(OpCodes.Ret);
             }
         }
 
         // Create the type - this is where the TypeLoadException might be thrown
-        Type createdType = typeBuilder.CreateType();
+        Type? createdType = typeBuilder.CreateType();
+        if (createdType is null)
+            throw new InvalidOperationException("Failed to create type");
 
         // Create an instance of the type
-        return Activator.CreateInstance(createdType);
+        object? instance = Activator.CreateInstance(createdType);
+        if (instance is null)
+            throw new InvalidOperationException("Failed to create instance");
+        return instance;
     }
 }
