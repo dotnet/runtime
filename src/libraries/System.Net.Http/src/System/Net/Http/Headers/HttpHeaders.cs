@@ -597,7 +597,7 @@ namespace System.Net.Http.Headers
                 }
                 else
                 {
-                    // Remove all matching items in a single pass to avoid O(n^2) complexity
+                    // Remove all matching items in a single backward pass for O(n) complexity
                     for (int i = parsedValues.Count - 1; i >= 0; i--)
                     {
                         object item = parsedValues[i];
