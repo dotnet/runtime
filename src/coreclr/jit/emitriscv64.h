@@ -76,6 +76,7 @@ unsigned    tryGetRvcRegisterNumber(regNumber reg);
 instruction getCompressedArithmeticIns(instruction ins);
 regNumber   getRegNumberFromRvcReg(unsigned rvcReg);
 
+void emitDispInsName(code_t code, const instrDesc* id);
 void emitDispInsName(
     code_t code, const BYTE* addr, bool doffs, unsigned insOffset, const instrDesc* id, const insGroup* ig);
 void emitDispInsInstrNum(const instrDesc* id) const;
@@ -85,6 +86,13 @@ void emitDispBranchLabel(const instrDesc* id) const;
 bool emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& print_second_reg) const;
 void emitDispIllegalInstruction(code_t instructionCode);
 void emitDispImmediate(ssize_t imm, bool newLine = true, unsigned regBase = REG_ZERO);
+
+void emitDispIns_OptsReloc(const instrDesc *id);
+void emitDispIns_OptsRc(const instrDesc *id);
+void emitDispIns_OptsRl(const instrDesc *id);
+void emitDispIns_OptsJump(const instrDesc *id);
+void emitDispIns_OptsC(const instrDesc *id);
+void emitDispIns_OptsI(const instrDesc *id);
 
 static emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/);
 
@@ -374,12 +382,12 @@ inline static bool emitIsCmpJump(instruction ins)
 // Arguments:
 //    jmp - the instruction to check
 //
-inline static bool emitIsUncondJump(instrDesc* jmp)
+inline static bool emitIsUncondJump(const instrDesc* jmp)
 {
     return emitIsUncondJump(jmp->idIns());
 }
 
-inline static bool emitIsUncondJump(instruction ins)
+inline static bool emitIsUncondJump(const instruction ins)
 {
     return (ins == INS_j) || (ins == INS_jal);
 }
