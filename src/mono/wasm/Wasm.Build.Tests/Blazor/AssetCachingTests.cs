@@ -28,7 +28,8 @@ public class AssetCachingTests : BlazorWasmTestBase
             Configuration.Release,
             aot: false,
             TestAsset.BlazorWebWasm,
-            "AssetCachingTest"
+            "AssetCachingTest",
+            appendUnicodeToPath: false
         );
 
         (string projectDir, string output) = BlazorPublish(project, Configuration.Release, new PublishOptions(AssertAppBundle: false));
