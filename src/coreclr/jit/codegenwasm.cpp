@@ -294,6 +294,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForConstant(treeNode);
             break;
 
+        case GT_CAST:
+            genCodeForCast(treeNode->AsOp());
+            break;
+
         default:
 #ifdef DEBUG
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
@@ -388,22 +392,82 @@ static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types type)
     {
         type = TYP_I_IMPL;
     }
-    static_assert((ssize_t)GT_COUNT > (ssize_t)TYP_COUNT);
-    return ((uint32_t)oper << (ConstLog2<GT_COUNT>::value + 1)) | ((uint32_t)type);
+    const int shift1 = ConstLog2<TYP_COUNT>::value + 1;
+    return ((uint32_t)oper << shift1) | ((uint32_t)type);
 }
 
 //------------------------------------------------------------------------
-// PackOperAndType: Pack a GenTreeOp* into a uint32_t
+// PackOperAndType: Pack a genTreeOps and two var_types into a uint32_t
 //
 // Arguments:
-//    treeNode - a GenTreeOp to extract oper and type from
+//    oper - a genTreeOps to pack
+//    toType - a var_types to pack
+//    fromType - a var_types to pack
 //
 // Return Value:
-//    the node's oper and type packed into an integer that can be used as a switch value
+//    oper and the types packed into an integer that can be used as a switch value/case
 //
-static uint32_t PackOperAndType(GenTreeOp* treeNode)
+static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types toType, var_types fromType)
 {
-    return PackOperAndType(treeNode->OperGet(), treeNode->TypeGet());
+    if (fromType == TYP_BYREF)
+    {
+        fromType = TYP_I_IMPL;
+    }
+    if (toType == TYP_BYREF)
+    {
+        toType = TYP_I_IMPL;
+    }
+    const int shift1 = ConstLog2<TYP_COUNT>::value + 1;
+    const int shift2 = shift1 + ConstLog2<GT_COUNT>::value + 1;
+    return ((uint32_t)oper << shift1) | ((uint32_t)fromType) | ((uint32_t)toType << shift2);
+}
+
+//------------------------------------------------------------------------
+// genCodeForCast: Generate code for a cast operation
+//
+// Arguments:
+//    tree - The cast operation for which we are generating code.
+//
+void CodeGen::genCodeForCast(GenTreeOp* tree)
+{
+    genConsumeOperands(tree);
+
+    instruction ins;
+    switch (PackOperAndType(tree->OperGet(), /* toType */ tree->TypeGet(), /* fromType */ tree->gtOp1->TypeGet()))
+    {
+        // NOTE: For this, RyuJIT seems to just generate an i32 load of the i64 operand instead of a GT_CAST.
+        // I suspect once we implement use of wasm locals instead of the linear stack, GT_CAST will appear.
+        case PackOperAndType(GT_CAST, TYP_INT, TYP_LONG):
+            if (tree->gtOverflow())
+                NYI_WASM("Overflow checks");
+            ins = INS_i32_wrap_i64;
+            break;
+
+        case PackOperAndType(GT_CAST, TYP_LONG, TYP_INT):
+            // FIXME: Use extend8/extend16 as appropriate
+            ins = tree->IsUnsigned() ? INS_i64_extend_u_i32 : INS_i64_extend_s_i32;
+            break;
+
+        case PackOperAndType(GT_CAST, TYP_DOUBLE, TYP_FLOAT):
+            // NOTE: This name is wrong in the spec.
+            ins = INS_f64_promote_f32;
+            break;
+
+        case PackOperAndType(GT_CAST, TYP_FLOAT, TYP_DOUBLE):
+            ins = INS_f32_demote_f64;
+            break;
+
+            // TODO: Floating point conversions - we need to figure out where semantics require a helper and where they
+            // don't.
+
+        default:
+            ins = INS_none;
+            NYI_WASM("genCodeForCast");
+            break;
+    }
+
+    GetEmitter()->emitIns(ins);
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
@@ -417,7 +481,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     genConsumeOperands(treeNode);
 
     instruction ins;
-    switch (PackOperAndType(treeNode))
+    switch (PackOperAndType(treeNode->OperGet(), treeNode->TypeGet()))
     {
         case PackOperAndType(GT_ADD, TYP_INT):
             if (treeNode->gtOverflow())
@@ -512,7 +576,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     genConsumeOperands(treeNode);
 
     instruction ins;
-    switch (PackOperAndType(treeNode))
+    switch (PackOperAndType(treeNode->OperGet(), treeNode->TypeGet()))
     {
         case PackOperAndType(GT_DIV, TYP_INT):
             ins = INS_i32_div_s;
@@ -630,7 +694,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
     // for both the shift and shiftee. So the shift may need to be extended (zero-extended) for TYP_LONG.
 
     instruction ins;
-    switch (PackOperAndType(treeNode))
+    switch (PackOperAndType(treeNode->OperGet(), treeNode->TypeGet()))
     {
         case PackOperAndType(GT_LSH, TYP_INT):
             ins = INS_i32_shl;
