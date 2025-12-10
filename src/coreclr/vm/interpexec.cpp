@@ -1385,7 +1385,6 @@ MAIN_LOOP:
                     ConvOvfHelper<uint32_t, uint64_t>(stack, ip);
                     ip += 3;
                     break;
-                
                 case INTOP_CONV_U4_U8_SAT:
                 {
                     uint64_t val = LOCAL_VAR(ip[2], uint64_t);
