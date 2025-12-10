@@ -4,10 +4,32 @@
 using System;
 using System.ComponentModel;
 using System.Configuration;
+using System.Runtime.Caching.Resources;
 using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching.Configuration
 {
+    /// <summary>
+    /// Defines the physical memory monitoring modes for the cache.
+    /// </summary>
+    internal enum PhysicalMemoryMode
+    {
+        /// <summary>
+        /// Legacy mode - uses platform-specific memory detection with GC-induced stats on non-Windows.
+        /// </summary>
+        Legacy = 0,
+
+        /// <summary>
+        /// Standard mode - uses GCMemoryInfo without inducing GC collections.
+        /// </summary>
+        Standard = 1,
+
+        /// <summary>
+        /// GC thresholds mode - uses GCMemoryInfo.HighMemoryLoadThresholdBytes instead of percentage of total memory.
+        /// </summary>
+        GCThresholds = 2
+    }
+
 #if NETCOREAPP
     [UnsupportedOSPlatform("browser")]
 #endif
@@ -28,6 +50,13 @@ namespace System.Runtime.Caching.Configuration
                 null,
                 new IntegerValidator(0, 100),
                 ConfigurationPropertyOptions.None);
+        private static readonly ConfigurationProperty s_propPhysicalMemoryMode =
+            new ConfigurationProperty("physicalMemoryMode",
+                typeof(string),
+                "Legacy",
+                new GenericEnumConverter(typeof(PhysicalMemoryMode)),
+                null,
+                ConfigurationPropertyOptions.None);
         private static readonly ConfigurationProperty s_propCacheMemoryLimitMegabytes =
             new ConfigurationProperty("cacheMemoryLimitMegabytes",
                 typeof(int),
@@ -46,6 +75,7 @@ namespace System.Runtime.Caching.Configuration
         {
             s_propName,
             s_propPhysicalMemoryLimitPercentage,
+            s_propPhysicalMemoryMode,
             s_propCacheMemoryLimitMegabytes,
             s_propPollingInterval
         };
@@ -82,6 +112,10 @@ namespace System.Runtime.Caching.Configuration
             }
         }
 
+        /// <summary>
+        /// Gets or sets the percentage of physical memory that can be used before cache entries are removed.
+        /// Valid values: 0 (auto-calculated defaults), 1-100 (specific percentage of physical memory).
+        /// </summary>
         [ConfigurationProperty("physicalMemoryLimitPercentage", DefaultValue = (int)0)]
         [IntegerValidator(MinValue = 0, MaxValue = 100)]
         public int PhysicalMemoryLimitPercentage
@@ -93,6 +127,22 @@ namespace System.Runtime.Caching.Configuration
             set
             {
                 base["physicalMemoryLimitPercentage"] = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the physical memory monitoring mode.
+        /// Valid values:
+        /// - "Legacy": Platform-specific memory detection (default)
+        /// - "Standard": Use GC.GetGCMemoryInfo().TotalAvailableMemoryBytes without inducing GC
+        /// - "GCThresholds": Follow GC's high memory load threshold
+        /// </summary>
+        [ConfigurationProperty("physicalMemoryMode", DefaultValue = "Legacy")]
+        internal PhysicalMemoryMode PhysicalMemoryMode
+        {
+            get
+            {
+                return (PhysicalMemoryMode)base["physicalMemoryMode"];
             }
         }
 
