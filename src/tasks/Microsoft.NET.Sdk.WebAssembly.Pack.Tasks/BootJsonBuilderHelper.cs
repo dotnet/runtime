@@ -345,6 +345,6 @@ namespace Microsoft.NET.Sdk.WebAssembly
             return string.Join(Environment.NewLine, imports);
         }
 
-        private static string? GetCacheControl(string endpoint, ResourcesData resources) => resources.fingerprinting?[endpoint] != null ? "force-cache" : null;
+        private static string? GetCacheControl(string endpoint, ResourcesData resources) => resources.fingerprinting?.ContainsKey(endpoint) ?? false ? "force-cache" : null;
     }
 }
