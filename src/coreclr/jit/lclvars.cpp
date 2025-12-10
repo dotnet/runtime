@@ -4099,18 +4099,14 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |-----------------------| <---- EBP
  *      |Callee saved registers |
  *      |-----------------------|
- *      |   security object     |
+ *      |      MonAcquired      |
  *      |-----------------------|
  *      |     ParamTypeArg      |
-// If funclet support is disabled
  *      |-----------------------|
- *      |  Last-executed-filter |
+ *      |    Async contexts     |
  *      |-----------------------|
- *      |                       |
- *      ~      Shadow SPs       ~
- *      |                       |
+ *      |      GS cookie        |
  *      |-----------------------|
-// Endif funclet support is disabled
  *      |                       |
  *      ~      Variables        ~
  *      |                       |
@@ -4182,9 +4178,13 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      -------------------------
  *      | Callee saved Flt regs |
  *      |-----------------------|
- *      |   security object     |
+ *      |      MonAcquired      |
+ *      |-----------------------|
+ *      |     Async contexts    |
  *      |-----------------------|
  *      |     ParamTypeArg      |
+ *      |-----------------------|
+ *      |      GS cookie        |
  *      |-----------------------|
  *      |                       |
  *      |                       |
@@ -4223,9 +4223,11 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |-----------------------| <---- Virtual '0'
  *      |Callee saved registers |
  *      |-----------------------|
- *      ~ possible double align ~
+ *      |      MonAcquired      |
  *      |-----------------------|
- *      |   security object     |
+ *      |     Async contexts    |
+ *      |-----------------------|
+ *      ~ possible double align ~
  *      |-----------------------|
  *      |     ParamTypeArg      |
  *      |-----------------------|
@@ -4263,9 +4265,11 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |-----------------------| <---- Virtual '0'
  *      |Callee saved registers |
  *      |-----------------------|
- *      ~ possible double align ~
+ *      |      MonAcquired      |
  *      |-----------------------|
- *      |   security object     |
+ *      |     Async contexts    |
+ *      |-----------------------|
+ *      ~ possible double align ~
  *      |-----------------------|
  *      |     ParamTypeArg      |
  *      |-----------------------|
@@ -4311,7 +4315,9 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |Callee saved registers |
  *      |   except fp/lr        |
  *      |-----------------------|
- *      |   security object     |
+ *      |      MonAcquired      |
+ *      |-----------------------|
+ *      |     Async contexts    |
  *      |-----------------------|
  *      |     ParamTypeArg      |
  *      |-----------------------|
@@ -4352,7 +4358,9 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |Callee saved registers |
  *      |   except fp/lr        |
  *      |-----------------------|
- *      |   security object     |
+ *      |      MonAcquired      |
+ *      |-----------------------|
+ *      |     Async contexts    |
  *      |-----------------------|
  *      |     ParamTypeArg      |
  *      |-----------------------|
@@ -4398,7 +4406,9 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |-----------------------|
  *      |Callee saved registers |
  *      |-----------------------|
- *      |   security object     |
+ *      |      MonAcquired      |
+ *      |-----------------------|
+ *      |     Async contexts    |
  *      |-----------------------|
  *      |     ParamTypeArg      |
  *      |-----------------------|
@@ -5144,27 +5154,15 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaMonAcquired, lvaLclStackHomeSize(lvaMonAcquired), stkOffs);
         }
 
-        if (lvaAsyncExecutionContextVar != BAD_VAR_NUM)
-        {
-            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncExecutionContextVar,
-                                                       lvaLclStackHomeSize(lvaAsyncExecutionContextVar), stkOffs);
-        }
-        else
-        {
-            // For x86 EnC the VM expects that we always allocate stack space
-            // for this local when contexts were saved.
-            assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
-        }
-
-        if (lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
-        {
-            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncSynchronizationContextVar,
-                                                       lvaLclStackHomeSize(lvaAsyncSynchronizationContextVar), stkOffs);
-        }
-        else
-        {
-            assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
-        }
+#ifndef JIT32_GCENCODER
+        // In this case the async contexts are part of the EnC frame header and the generic context is _not_.
+        // Preserving the generic context is handled as if it was a normal IL local.
+        //
+        // For jit32 the generic context is considered part of the EnC frame header too, and the async contexts
+        // come after it, so we allocate them later.
+        //
+        stkOffs = lvaAllocAsyncContexts(stkOffs);
+#endif
     }
 
     if (mustDoubleAlign)
@@ -5281,6 +5279,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             lvaAllocLocalAndSetVirtualOffset(lvaShadowSPslotsVar, lvaLclStackHomeSize(lvaShadowSPslotsVar), stkOffs);
     }
 #endif // FEATURE_EH_WINDOWS_X86
+
+#ifdef JIT32_GCENCODER
+    assert(!opts.IsOSR());
+    stkOffs = lvaAllocAsyncContexts(stkOffs);
+#endif
 
     if (compGSReorderStackLayout)
     {
@@ -5951,6 +5954,43 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
         printf(", size=%d, stkOffs=%c0x%x\n", size, stkOffs < 0 ? '-' : '+', stkOffs < 0 ? -stkOffs : stkOffs);
     }
 #endif
+
+    return stkOffs;
+}
+
+//------------------------------------------------------------------------
+// lvaAllocAsyncContexts:
+//   Allocate stack space for the two async context locals, if present.
+//
+// Arguments:
+//   stkOffs - Current stack offset
+//
+// Return Value:
+//    New stck offset.
+//
+int Compiler::lvaAllocAsyncContexts(int stkOffs)
+{
+    if (lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+    {
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncExecutionContextVar,
+                                                   lvaLclStackHomeSize(lvaAsyncExecutionContextVar), stkOffs);
+    }
+    else
+    {
+        // For x86 EnC the VM expects that we always allocate stack space
+        // for this local when contexts were saved.
+        assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
+    }
+
+    if (lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
+    {
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncSynchronizationContextVar,
+                                                   lvaLclStackHomeSize(lvaAsyncSynchronizationContextVar), stkOffs);
+    }
+    else
+    {
+        assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
+    }
 
     return stkOffs;
 }
