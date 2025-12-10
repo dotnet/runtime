@@ -2378,7 +2378,7 @@ bool GenTreeCall::IsDevirtualizationCandidate(Compiler* compiler, CORINFO_METHOD
     CORINFO_METHOD_HANDLE methHandleToDevirt = NO_METHOD_HANDLE;
     bool                  isDevirtCandidate  = false;
 
-    if (IsVirtual())
+    if (IsVirtual() && gtCallType == CT_USER_FUNC)
     {
         methHandleToDevirt = gtCallMethHnd;
         isDevirtCandidate  = true;
