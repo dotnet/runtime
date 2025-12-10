@@ -32,7 +32,7 @@ namespace System.Text.Unicode
 
         public static bool TryParseLine(string line, [NotNullWhen(true)] out PropsFileEntry? value)
         {
-            Match match = GetRegex().Match(line);
+            Match match = GetRegex.Match(line);
 
             if (!match.Success)
             {

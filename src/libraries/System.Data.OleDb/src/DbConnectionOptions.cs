@@ -56,7 +56,7 @@ namespace System.Data.Common
         ;
 
 
-        private static readonly Regex ConnectionStringRegex = CreateConnectionStringRegex();
+        private static readonly Regex ConnectionStringRegex = CreateConnectionStringRegex;
         private static readonly Regex ConnectionStringRegexOdbc = CreateConnectionStringRegexOdbc();
 
 #if NET
@@ -72,9 +72,9 @@ namespace System.Data.Common
 #endif
         internal const string DataDirectory = "|datadirectory|";
 
-        private static readonly Regex ConnectionStringValidKeyRegex = CreateConnectionStringValidKeyRegex(); // key not allowed to start with semi-colon or space or contain non-visible characters or end with space
-        private static readonly Regex ConnectionStringQuoteValueRegex = CreateConnectionStringQuoteValueRegex(); // generally do not quote the value if it matches the pattern
-        private static readonly Regex ConnectionStringQuoteOdbcValueRegex = CreateConnectionStringQuoteOdbcValueRegex(); // do not quote odbc value if it matches this pattern
+        private static readonly Regex ConnectionStringValidKeyRegex = CreateConnectionStringValidKeyRegex; // key not allowed to start with semi-colon or space or contain non-visible characters or end with space
+        private static readonly Regex ConnectionStringQuoteValueRegex = CreateConnectionStringQuoteValueRegex; // generally do not quote the value if it matches the pattern
+        private static readonly Regex ConnectionStringQuoteOdbcValueRegex = CreateConnectionStringQuoteOdbcValueRegex; // do not quote odbc value if it matches this pattern
 
 #if NET
         [GeneratedRegex("^(?![;\\s])[^\\p{Cc}]+(?<!\\s)$")]

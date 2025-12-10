@@ -44,7 +44,7 @@ public partial class ContractDescriptorSourceFileEmitter
     public void SetJsonDescriptor(string jsonDescriptor)
     {
         var count = jsonDescriptor.Length; // return the length before escaping
-        var escaped = CStringEscape().Replace(jsonDescriptor, "\\$1");
+        var escaped = CStringEscape.Replace(jsonDescriptor, "\\$1");
         Elements[JsonDescriptorKey] = escaped;
         Elements[JsonDescriptorSizeKey] = count.ToString();
     }
@@ -57,7 +57,7 @@ public partial class ContractDescriptorSourceFileEmitter
     public void Emit(TextWriter dest)
     {
         var template = GetTemplateString();
-        var matches = FindTemplatePlaceholderRegex().Matches(template);
+        var matches = FindTemplatePlaceholderRegex.Matches(template);
         var prevPos = 0;
         foreach (Match match in matches)
         {

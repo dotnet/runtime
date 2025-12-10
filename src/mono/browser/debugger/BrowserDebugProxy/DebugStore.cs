@@ -1476,7 +1476,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static string EscapePathForUri(string path)
         {
             var builder = new StringBuilder();
-            foreach (var part in RegexForEscapeFileName().Split(path))
+            foreach (var part in RegexForEscapeFileName.Split(path))
             {
                 if (part == ":" || part == "/")
                     builder.Append(part);

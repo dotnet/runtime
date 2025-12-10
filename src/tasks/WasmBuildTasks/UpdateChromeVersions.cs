@@ -222,7 +222,7 @@ public partial class UpdateChromeVersions : MBU.Task
                 Log.LogMessage(MessageImportance.Low, $"Checking {lkgUrl} ...");
                 string v8VersionHContents = await s_httpClient.GetStringAsync(lkgUrl).ConfigureAwait(false);
 
-                var m = V8BuildNumberRegex().Match(v8VersionHContents);
+                var m = V8BuildNumberRegex.Match(v8VersionHContents);
                 if (!m.Success)
                     throw new LogAsErrorException($"Failed to find v8 build number at {lkgUrl}: {v8VersionHContents}");
 

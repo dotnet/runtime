@@ -255,7 +255,7 @@ namespace Amd64InstructionTableGenerator
 
             if (Debug.debug) Console.WriteLine($"new sample: {disassembly}");
 
-            var match = EncDisassemblySplit().Match(disassembly);
+            var match = EncDisassemblySplit.Match(disassembly);
 
             if (Debug.debug)
             {
@@ -299,7 +299,7 @@ namespace Amd64InstructionTableGenerator
 
             while (rest?.Length != 0)
             {
-                var opMatch = EncOperandSplit().Match(rest);
+                var opMatch = EncOperandSplit.Match(rest);
 
                 string op = opMatch.Groups["op"].ToString();
                 operands.Add(op);
@@ -593,7 +593,7 @@ namespace Amd64InstructionTableGenerator
             for (int i = 0; i < operands.Count; i++)
             {
                 string operand = operands[i];
-                bool memop = EncOperandIsMemOp().IsMatch(operand);
+                bool memop = EncOperandIsMemOp.IsMatch(operand);
 
                 if (memop)
                 {
@@ -603,7 +603,7 @@ namespace Amd64InstructionTableGenerator
 
                     accounted += hasSIB ? 6 : 5;
 
-                    if (EncOperandIsMOp().IsMatch(operand))
+                    if (EncOperandIsMOp.IsMatch(operand))
                     {
                         if (i == 0)
                         {
@@ -737,7 +737,7 @@ namespace Amd64InstructionTableGenerator
             {
                 //if (Debug.debug) Console.WriteLine($"line: {line}");
 
-                var match = AssemblyAddress().Match(line);
+                var match = AssemblyAddress.Match(line);
                 if (!match.Success)
                 {
                     continue;
@@ -759,7 +759,7 @@ namespace Amd64InstructionTableGenerator
                     continue;
                 }
 
-                if (!BadDisassembly().IsMatch(sample))
+                if (!BadDisassembly.IsMatch(sample))
                 {
                     try
                     {

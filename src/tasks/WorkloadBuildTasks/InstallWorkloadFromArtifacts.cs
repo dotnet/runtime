@@ -301,8 +301,8 @@ namespace Microsoft.Workload.Build.Tasks
 
             var bandVersion = VersionBandForManifestPackages;
             // regex matching the version band, e.g. 6.0.100-preview.3.21202.5 => 6.0.100-preview.3
-            string packagePreleaseVersion = bandVersionRegex().Match(version).Groups[1].Value;
-            string bandPreleaseVersion = bandVersionRegex().Match(bandVersion).Groups[1].Value;
+            string packagePreleaseVersion = bandVersionRegex.Match(version).Groups[1].Value;
+            string bandPreleaseVersion = bandVersionRegex.Match(bandVersion).Groups[1].Value;
 
             if (!string.IsNullOrEmpty(bandPreleaseVersion) &&
                 packagePreleaseVersion != bandPreleaseVersion &&

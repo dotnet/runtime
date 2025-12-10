@@ -1156,7 +1156,7 @@ namespace Mono.Options
             ArgumentNullException.ThrowIfNull(argument);
 
             flag = name = sep = value = null;
-            Match m = ValueOption().Match(argument);
+            Match m = ValueOption.Match(argument);
             if (!m.Success)
             {
                 return false;
@@ -1466,7 +1466,7 @@ namespace Mono.Options
 
         private static string GetArgumentName(int index, int maxIndex, string description)
         {
-            var matches = IgnoreDoubleBracesRegex().Matches(description ?? "");
+            var matches = IgnoreDoubleBracesRegex.Matches(description ?? "");
             string argName = "";
             foreach (Match match in matches)
             {

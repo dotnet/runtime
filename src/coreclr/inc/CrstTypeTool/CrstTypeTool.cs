@@ -630,10 +630,10 @@ internal sealed partial class TypeFileParser
         while ((line = file.ReadLine()) != null)
         {
             // Remove comments from the current line.
-            line = CommentRegex().Replace(line, "");
+            line = CommentRegex.Replace(line, "");
 
             // Match all contiguous non-whitespace characters as individual tokens.
-            Match match = TokenRegex().Match(line);
+            Match match = TokenRegex.Match(line);
             if (match.Success)
             {
                 // For each token captured build a token instance and record the token text and the file, line

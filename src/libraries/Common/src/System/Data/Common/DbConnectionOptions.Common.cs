@@ -47,8 +47,8 @@ namespace System.Data.Common
                 + "[\\s;]*[\u0000\\s]*"                                    // trailing whitespace/semicolons (DataSourceLocator), embedded nulls are allowed only in the end
             ;
 
-        private static readonly Regex s_connectionStringRegex = CreateConnectionStringRegex();
-        private static readonly Regex s_connectionStringRegexOdbc = CreateConnectionStringRegexOdbc();
+        private static readonly Regex s_connectionStringRegex = CreateConnectionStringRegex;
+        private static readonly Regex s_connectionStringRegexOdbc = CreateConnectionStringRegexOdbc;
 
 #if NET
         [GeneratedRegex(ConnectionStringPattern, RegexOptions.ExplicitCapture)]
@@ -63,9 +63,9 @@ namespace System.Data.Common
 #endif
         internal const string DataDirectory = "|datadirectory|";
 
-        private static readonly Regex s_connectionStringValidKeyRegex = CreateConnectionStringValidKeyRegex(); // key not allowed to start with semi-colon or space or contain non-visible characters or end with space
-        private static readonly Regex s_connectionStringQuoteValueRegex = CreateConnectionStringQuoteValueRegex(); // generally do not quote the value if it matches the pattern
-        private static readonly Regex s_connectionStringQuoteOdbcValueRegex = CreateConnectionStringQuoteOdbcValueRegex(); // do not quote odbc value if it matches this pattern
+        private static readonly Regex s_connectionStringValidKeyRegex = CreateConnectionStringValidKeyRegex; // key not allowed to start with semi-colon or space or contain non-visible characters or end with space
+        private static readonly Regex s_connectionStringQuoteValueRegex = CreateConnectionStringQuoteValueRegex; // generally do not quote the value if it matches the pattern
+        private static readonly Regex s_connectionStringQuoteOdbcValueRegex = CreateConnectionStringQuoteOdbcValueRegex; // do not quote odbc value if it matches this pattern
 
 #if NET
         [GeneratedRegex("^(?![;\\s])[^\\p{Cc}]+(?<!\\s)$")]

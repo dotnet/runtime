@@ -292,7 +292,7 @@ namespace System.Text.Json
         /// <summary>
         /// Gets a Regex instance for recognizing integer representations of enums.
         /// </summary>
-        public static readonly Regex IntegerRegex = CreateIntegerRegex();
+        public static readonly Regex IntegerRegex = CreateIntegerRegex;
         private const string IntegerRegexPattern = @"^\s*(?:\+|\-)?[0-9]+\s*$";
         private const int IntegerRegexTimeoutMs = 200;
 

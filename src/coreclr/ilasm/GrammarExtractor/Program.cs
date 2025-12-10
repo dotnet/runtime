@@ -16,7 +16,7 @@ string filePath = args[0];
 
 string fileContent = File.ReadAllText(filePath);
 
-var match = GetRegexExtractMarkers().Match(fileContent);
+var match = GetRegexExtractMarkers.Match(fileContent);
 if (!match.Success)
 {
     Console.Error.WriteLine("Could not find %% markers");
@@ -27,7 +27,7 @@ if (!match.Success)
 string grammar = match.Groups[2].Value;
 
 // Remove any text in {}
-var regexRemoveTextInBraces = GetRegexRemoveTextInBraces();
+var regexRemoveTextInBraces = GetRegexRemoveTextInBraces;
 string previousGrammar;
 
 do
@@ -37,14 +37,14 @@ do
 } while (grammar != previousGrammar);
 
 // Change keyword identifiers into the string they represent (lowercase)
-grammar = GetRegexKeywordIdentifiers().Replace(grammar, m => $"'{m.Groups[1].Value.ToLowerInvariant()}'");
+grammar = GetRegexKeywordIdentifiers.Replace(grammar, m => $"'{m.Groups[1].Value.ToLowerInvariant()}'");
 
 // Change assembler directives into their string (lowercase with a period)
-grammar = GetRegexAssemblerDirectives().Replace(grammar, m => $"'.{m.Groups[1].Value.ToLowerInvariant()}'");
+grammar = GetRegexAssemblerDirectives.Replace(grammar, m => $"'.{m.Groups[1].Value.ToLowerInvariant()}'");
 
 // Handle special punctuation
-grammar = GetRegexEllipsis().Replace(grammar, "'...'");
-grammar = GetRegexDcolon().Replace(grammar, "'::'");
+grammar = GetRegexEllipsis.Replace(grammar, "'...'");
+grammar = GetRegexDcolon.Replace(grammar, "'::'");
 
 // Print the output header
 Console.Write(@"// Licensed to the .NET Foundation under one or more agreements.
