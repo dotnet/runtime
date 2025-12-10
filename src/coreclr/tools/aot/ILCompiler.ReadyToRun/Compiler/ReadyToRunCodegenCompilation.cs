@@ -704,32 +704,41 @@ namespace ILCompiler
                         {
                             // The synthetic async thunks require references to methods/types that may not have existing methodRef entries in the version bubble.
                             // These references need to be added to the mutable module if they don't exist.
-                            var requiredMutableModuleReferences = method.IsAsyncVariant() ?
-                                AsyncThunkILEmitter.GetRequiredReferencesForAsyncThunk(((AsyncMethodVariant)method).Target)
-                                : AsyncThunkILEmitter.GetRequiredReferencesForTaskReturningThunk(method);
+                            // Extract the required references by reading the IL of the thunk method.
+                            MethodIL methodIL = GetMethodIL(method);
+                            if (methodIL is null)
+                                continue;
+
                             _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
                             try
                             {
-                                foreach (var entity in requiredMutableModuleReferences)
+                                foreach (var entity in KnownILStubReferences.ExtractReferencesFromIL(methodIL))
                                 {
                                     switch (entity)
                                     {
                                         case MethodDesc md:
-                                            if (_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull)
+                                            if (md.IsAsyncVariant())
                                             {
+                                                Debug.Assert(((CompilerTypeSystemContext)md.Context).GetTargetOfAsyncVariantMethod(md.GetTypicalMethodDefinition()) == method);
+                                                Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: false, throwIfNotFound: true).IsNull);
+                                            }
+                                            else if (_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull)
+                                            {
+                                                KnownILStubReferences.AssertIsKnownEntity(md, $"Referenced method '{md}' in method '{method}' is neither already referenced in the owning assembly nor a known reference.");
                                                 _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(md);
                                                 Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
                                             }
                                             break;
                                         case EcmaType td:
+                                            // Type represented by simple element type
+                                            if (td.IsPrimitive || td.IsVoid || td.IsObject || td.IsString || td.IsTypedReference)
+                                                continue;
                                             if (_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull)
                                             {
+                                                KnownILStubReferences.AssertIsKnownEntity(td, $"Referenced type '{td}' in method '{method}' is neither already referenced in the owning assembly nor a known reference.");
                                                 _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(td);
-                                                Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
                                             }
-                                            break;
-                                        default:
-                                            Logger.LogMessage($"Unable to add a reference to '{entity.GetDisplayName()}' to the mutable module");
+                                            Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
                                             break;
                                     }
                                 }
@@ -1023,5 +1032,6 @@ namespace ILCompiler
         {
             return _printReproInstructions(method);
         }
+
     }
 }
