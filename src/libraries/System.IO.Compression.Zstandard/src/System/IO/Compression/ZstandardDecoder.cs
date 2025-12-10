@@ -262,7 +262,6 @@ namespace System.IO.Compression
         /// <remarks>If this method returns <see langword="false" />, <paramref name="destination" /> may be empty or contain partially decompressed data, with <paramref name="bytesWritten" /> being zero.</remarks>
         public static bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, ZstandardDictionary dictionary)
         {
-            // TODO: the of parameters here is not consistent with ZstandardEncoder.TryCompress
             ArgumentNullException.ThrowIfNull(dictionary);
 
             bytesWritten = 0;
