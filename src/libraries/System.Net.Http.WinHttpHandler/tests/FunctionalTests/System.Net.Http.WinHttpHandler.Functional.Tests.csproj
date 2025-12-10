@@ -40,6 +40,8 @@
              Link="Common\System\Net\VerboseTestLogging.cs" />
     <Compile Include="$(CommonTestPath)System\Net\TestWebProxies.cs"
              Link="Common\System\Net\TestWebProxies.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\AsyncGateContent.cs"
+             Link="Common\System\Net\Http\AsyncGateContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ByteAtATimeContent.cs"
              Link="Common\System\Net\Http\ByteAtATimeContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ChannelBindingAwareContent.cs"

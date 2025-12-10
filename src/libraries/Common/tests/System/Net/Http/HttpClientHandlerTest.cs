@@ -1773,6 +1773,102 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [Theory]
+        [InlineData(10)]
+        [InlineData(10000)]
+        [InlineData(null)]
+        public async Task SendAsync_HttpContentThrowsException_ExceptionsAreObserved(int? contentLength)
+        {
+            if (!TestAsync)
+            {
+                return;
+            }
+
+            if (PlatformDetection.IsBrowser || PlatformDetection.IsWasi || PlatformDetection.IsNodeJS)
+            {
+                return;
+            }
+
+            bool seenUnobservedExceptions = false;
+
+            EventHandler<UnobservedTaskExceptionEventArgs> eventHandler = (_, e) =>
+            {
+                _output.WriteLine(e.Exception.ToString());
+                seenUnobservedExceptions = true;
+            };
+
+            TaskScheduler.UnobservedTaskException += eventHandler;
+
+            try
+            {
+                var requestHeadersReceived = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var clientFinished = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                WeakReference<HttpClientHandler> handlerWeakRef = null;
+
+                await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+                {
+                    using (HttpClientHandler handler = CreateHttpClientHandler())
+                    using (HttpClient client = CreateHttpClient(handler))
+                    using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion })
+                    {
+                        handlerWeakRef = new WeakReference<HttpClientHandler>(handler);
+
+                        var content = new AsyncGateContent(contentLength);
+                        request.Content = content;
+
+                        Task<HttpResponseMessage> sendPromise = client.SendAsync(TestAsync, request);
+
+                        // Wait for the HttpContent to be asked to produce the body
+                        (Stream requestStream, TransportContext transportCtx) = await content.SerializeInvokedTcs.Task.ConfigureAwait(false);
+
+                        // Start writing request body, and flush - this will also ensure that the server receives the request headers
+                        byte[] initialBody = Encoding.UTF8.GetBytes("HELLO");
+                        await requestStream.WriteAsync(initialBody, 0, initialBody.Length, CancellationToken.None).ConfigureAwait(false);
+                        await requestStream.FlushAsync(CancellationToken.None).ConfigureAwait(false);
+
+                        // Wait for the server to have received the request headers
+                        await requestHeadersReceived.Task.ConfigureAwait(false);
+
+                        // Act: fail SerializeToStreamAsync invocation
+                        content.SerializeTrapTcs.SetException(new IOException(nameof(SendAsync_HttpContentThrowsException_ExceptionsAreObserved)));
+
+                        await Assert.ThrowsAsync<HttpRequestException>(() => sendPromise);
+
+                        clientFinished.SetResult(null);
+                    }
+                }, async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestDataAsync(readBody: false);
+                        requestHeadersReceived.SetResult(null);
+                        await clientFinished.Task.ConfigureAwait(false);
+                    });
+                });
+
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                int millisecondsDelay = 2;
+                while (handlerWeakRef.TryGetTarget(out _))
+                {
+                    await Task.Delay(millisecondsDelay, CancellationToken.None).ConfigureAwait(false);
+                    millisecondsDelay *= 2;
+
+                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
+                    GC.WaitForPendingFinalizers();
+                }
+            }
+            finally
+            {
+                TaskScheduler.UnobservedTaskException -= eventHandler;
+            }
+
+            // Assert: make sure we never got an unobserved task exception
+            Assert.False(seenUnobservedExceptions);
+        }
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "ExpectContinue not supported on Browser")]
         public async Task SendAsync_Expect100Continue_RequestBodyFails_ThrowsContentException()
