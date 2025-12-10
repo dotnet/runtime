@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- This test uses Reflection.Emit which is not supported in NativeAOT -->
+    <DisableProjectBuild Condition="'$(TestBuildMode)' == 'nativeaot'">true</DisableProjectBuild>
+    <!-- Skip this test for Mono as well since it's CoreCLR-specific capacity limits -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+    <!-- Override the async directory's DisableProjectBuild setting for CoreCLR -->
+    <DisableProjectBuild Condition="'$(TestBuildMode)' != 'nativeaot' and '$(RuntimeFlavor)' != 'mono'">false</DisableProjectBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>
