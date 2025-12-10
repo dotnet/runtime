@@ -127,6 +127,7 @@ jobs:
       - checkout: self
         clean: true
         fetchDepth: $(checkoutFetchDepth)
+        fetchTags: false
 
       - ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), eq(parameters.runTests, true)) }}:
         - template: /eng/pipelines/common/download-artifact-step.yml

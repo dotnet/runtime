@@ -104,5 +104,6 @@ jobs:
     - checkout: self
       clean: true
       fetchDepth: $(checkoutFetchDepth)
+      fetchTags: false
 
     - ${{ parameters.steps }}
