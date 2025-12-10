@@ -33,26 +33,33 @@ public class AssetCachingTests : BlazorWasmTestBase
 
         (string projectDir, string output) = BlazorPublish(project, Configuration.Release, new PublishOptions(AssertAppBundle: false));
 
+        var counterLoaded = new TaskCompletionSource();
         var wasmRequestRecorder = new WasmRequestRecorder();
 
         var runOptions = new BlazorRunOptions(Configuration.Release)
         {
             BrowserPath = "/counter",
             OnServerMessage = wasmRequestRecorder.RecordIfWasmRequestFinished,
+            OnConsoleMessage = (type, msg) =>
+            {
+                if (msg.Contains("Counter.OnAfterRender"))
+                    counterLoaded.SetResult();
+            },
             Test = async (page) =>
             {
-                await WaitForCounterInteractivity(page);
+                await counterLoaded.Task;
 
                 // Check server request logs after the first load.
                 Assert.NotEmpty(wasmRequestRecorder.ResponseCodes);
                 Assert.All(wasmRequestRecorder.ResponseCodes, r => Assert.Equal(200, r.ResponseCode));
 
                 wasmRequestRecorder.ResponseCodes.Clear();
+                counterLoaded = new();
 
                 // Perform browser navigation to cause resource reload.
                 // We use the initial base URL because the test server is not configured for SPA routing.
                 await page.ReloadAsync();
-                await WaitForCounterInteractivity(page);
+                await counterLoaded.Task;
 
                 // Check server logs after the second load.
                 if (EnvironmentVariables.UseFingerprinting)
@@ -77,26 +84,6 @@ public class AssetCachingTests : BlazorWasmTestBase
         var publishedAppDllFileName = $"{project.ProjectName}.dll";
         using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput).WithWorkingDirectory(publishedAppPath);
         var result = await BrowserRun(cmd, $"exec {publishedAppDllFileName}", runOptions);
-    }
-
-    private static async Task WaitForCounterInteractivity(IPage page)
-    {
-        await Assertions.Expect(page.GetByRole(AriaRole.Status)).ToContainTextAsync("Current count: 0");
-        for (int i = 0; i < 10; i++)
-        {
-            try
-            {
-                await page.GetByText("Click me").ClickAsync();
-                await Assertions.Expect(page.GetByRole(AriaRole.Status)).ToContainTextAsync("Current count: 1");
-                return;
-            }
-            catch (PlaywrightException)
-            {
-                await Task.Delay(100);
-            }
-        }
-
-        throw new TimeoutException("Test component not interactive");
     }
 }
 
