@@ -55,7 +55,11 @@ class Generics
         TestRecursionThroughGenericLookups.Run();
         TestRecursionInFields.Run();
         TestGvmLookupDependency.Run();
-        TestGvmBaseCallDependencies.Run();
+        TestGvmInliningDependencies.Run();
+        TestGvmInliningWithAbstract.Run();
+        TestGenericInliningWithReflection.Run();
+        TestGenericInliningMethodGenericsOnly.Run();
+        TestGenericInliningTypeGenericsOnly.Run();
         Test99198Regression.Run();
         Test102259Regression.Run();
         Test104913Regression.Run();
@@ -3515,6 +3519,163 @@ class Generics
         }
     }
 
+    class TestGvmInliningDependencies
+    {
+        class Container<T>
+        {
+            public static int MyStaticField;
+        }
+
+        abstract class Base<T>
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public virtual void VirtualMethod<TArg>()
+            {
+                Container<T>.MyStaticField = 3;
+            }
+        }
+
+        sealed class Derived : Base<IFoo>
+        {
+            public override void VirtualMethod<TArg>()
+            {
+                base.VirtualMethod<TArg>();
+            }
+        }
+
+        interface IFoo { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Base<IFoo> Get() => new Derived();
+
+        public static void Run()
+        {
+            // Testing for compilation failures due to missing GVM dependencies.
+            // See: https://github.com/dotnet/runtime/issues/120847
+            Container<int>.MyStaticField = 3;
+            Get().VirtualMethod<object>();
+        }
+    }
+
+    // Additional testcases for GVM inlining dependencies with different inheritance patterns.
+    // See: https://github.com/dotnet/runtime/issues/120847
+    class TestGvmInliningWithAbstract
+    {
+        class Container<T>
+        {
+            public static int MyStaticField;
+        }
+
+        abstract class Base<T>
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public abstract void VirtualMethod<TArg>();
+        }
+
+        class Mid<T> : Base<T>
+        {
+            public override void VirtualMethod<TArg>()
+            {
+                Container<T>.MyStaticField = 3;
+            }
+        }
+
+        sealed class Derived : Mid<IFoo>
+        {
+            public override void VirtualMethod<TArg>()
+            {
+                base.VirtualMethod<TArg>();
+            }
+        }
+
+        interface IFoo { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Base<IFoo> Get() => new Derived();
+
+        public static void Run()
+        {
+            Container<int>.MyStaticField = 5;
+            Get().VirtualMethod<object>();
+        }
+    }
+
+    // Testcases for generic inlining with reflection.
+    // See: https://github.com/dotnet/runtime/issues/120847
+    class TestGenericInliningWithReflection
+    {
+        class Container<T> { }
+
+        class Base<T>
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public string BaseMethod<U>() => new Container<T>().ToString();
+        }
+
+        class Derived : Base<object>
+        {
+            public string DerivedMethod<T>() where T : class => BaseMethod<T>();
+        }
+
+        static Type s_stringType = typeof(string);
+
+        public static void Run()
+        {
+            object r = typeof(Derived).GetMethod(nameof(Derived.DerivedMethod)).MakeGenericMethod(s_stringType).Invoke(new Derived(), []);
+            if (r is null || !r.ToString().Contains("Container"))
+                throw new Exception();
+        }
+    }
+
+    class TestGenericInliningMethodGenericsOnly
+    {
+        class Container<T> { }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static string CalleeMethod<T, U>() => new Container<T>().ToString();
+
+        public static string CallerMethod<T>() => CalleeMethod<object, T>();
+
+        static Type s_stringType = typeof(string);
+
+        public static void Run()
+        {
+            var r = typeof(TestGenericInliningMethodGenericsOnly).GetMethod(nameof(CallerMethod)).MakeGenericMethod(s_stringType).Invoke(null, []);
+            if (r is null || !r.ToString().Contains("Container"))
+                throw new Exception();
+        }
+    }
+
+    class TestGenericInliningTypeGenericsOnly
+    {
+        class Container<T> { }
+
+        class Base<T, U>
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public string BaseMethod()
+            {
+                return new Container<T>().ToString();
+            }
+        }
+
+        class Derived<T> : Base<object, T>
+        {
+            public string DerivedMethod() => base.BaseMethod();
+        }
+
+        static Type s_stringType = typeof(string);
+
+        public static void Run()
+        {
+            var type = typeof(Derived<>).MakeGenericType(s_stringType);
+            var instance = Activator.CreateInstance(type);
+            var r = type.GetMethod("DerivedMethod").Invoke(instance, null);
+            if (r is null || !r.ToString().Contains("Container"))
+                throw new Exception();
+        }
+    }
+
     class Test99198Regression
     {
         delegate void Set<T>(ref T t, IFoo ifoo);
@@ -3823,44 +3984,6 @@ class Generics
 
             if (TestAll(ref structValue, typeof(int)) != structValue)
                 throw new Exception();
-        }
-    }
-
-    class TestGvmBaseCallDependencies
-    {
-        class Container<T>
-        {
-            public static int MyStaticField;
-        }
-
-        abstract class Base<T>
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public virtual void TryInvoke<TArg>()
-            {
-                Container<T>.MyStaticField = 3;
-            }
-        }
-
-        sealed class Derived : Base<IFoo>
-        {
-            public override void TryInvoke<TArg>()
-            {
-                base.TryInvoke<TArg>();
-            }
-        }
-
-        interface IFoo { }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static Base<IFoo> Get() => new Derived();
-
-        public static void Run()
-        {
-            // Testing for compilation failures due to missing GVM dependencies.
-            // See: https://github.com/dotnet/runtime/issues/120847
-            Container<int>.MyStaticField = 3;
-            Get().TryInvoke<object>();
         }
     }
 }
