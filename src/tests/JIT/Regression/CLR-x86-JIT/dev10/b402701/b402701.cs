@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace b402701;
+
 using System;
 using System.Security;
 using Xunit;
@@ -23,6 +26,7 @@ public class Foo
         }
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

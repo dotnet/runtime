@@ -972,7 +972,7 @@ private:
             DWORD dwImplAttrs,
             DWORD dwRVA,
             Signature sig,
-            AsyncMethodKind thunkKind,
+            AsyncMethodFlags asyncMethodFlags,
             MethodClassification type,
             METHOD_IMPL_TYPE implType);
 
@@ -1078,19 +1078,18 @@ private:
 
         bool IsAsyncVariant() const
         {
-            return GetAsyncMethodKind() == AsyncMethodKind::AsyncVariantThunk ||
-                GetAsyncMethodKind() == AsyncMethodKind::AsyncVariantImpl;
+            return hasAsyncFlags(GetAsyncMethodFlags(), AsyncMethodFlags::IsAsyncVariant);
         }
 
-        void SetAsyncMethodKind(AsyncMethodKind kind)
+        void SetAsyncMethodFlags(AsyncMethodFlags flags)
         {
-            m_asyncMethodKind = kind;
+            m_asyncMethodFlags = flags;
         }
 
-        AsyncMethodKind GetAsyncMethodKind() const
+        AsyncMethodFlags GetAsyncMethodFlags() const
         {
             LIMITED_METHOD_CONTRACT;
-            return m_asyncMethodKind;
+            return m_asyncMethodFlags;
         }
 
         bmtMDMethod *     GetAsyncOtherVariant() const { return m_asyncOtherVariant; }
@@ -1104,7 +1103,7 @@ private:
         DWORD             m_dwImplAttrs;
         DWORD             m_dwRVA;
         MethodClassification  m_type;               // Specific MethodDesc flavour
-        AsyncMethodKind   m_asyncMethodKind;
+        AsyncMethodFlags  m_asyncMethodFlags;
         METHOD_IMPL_TYPE  m_implType;           // Whether or not the method is a methodImpl body
         MethodSignature   m_methodSig;
         bmtMDMethod*      m_asyncOtherVariant = NULL;
@@ -2702,7 +2701,7 @@ private:
         IMDInternalImport * pIMDII,  // Needed for PInvoke, EEImpl(Delegate) cases
         LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
         Signature           sig, // Only needed for the Async thunk case
-        AsyncMethodKind     asyncKind
+        AsyncMethodFlags    asyncFlags
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodName)
         COMMA_INDEBUG(LPCUTF8             pszDebugClassName)
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodSignature));

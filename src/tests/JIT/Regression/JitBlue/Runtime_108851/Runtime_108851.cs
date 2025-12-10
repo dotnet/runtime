@@ -7,9 +7,12 @@
 // Reduced from 49.4 KiB to 0.5 KiB in 00:03:38
 // Hits JIT assert in Release:
 // Assertion failed '!fgRngChkThrowAdded' in 'Program:Main(Fuzzlyn.ExecutionServer.IRuntime)' during 'Calculate stack level slots' (IL size 59; hash 0xade6b36b; FullOpts)
-// 
+//
 //     File: D:\a\_work\1\s\src\coreclr\jit\flowgraph.cpp Line: 3655
-// 
+//
+
+namespace Runtime_108851;
+
 using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;
@@ -20,14 +23,9 @@ public class Runtime_108851
 {
     public static int[] s_21 = new int[1];
 
-    [Fact]
+    [ConditionalFact(typeof(Avx512F), nameof(Avx512F.IsSupported))]
     public static void Problem()
     {
-        if (!Avx512F.IsSupported)
-        {
-            return;
-        }
-
         var vr1 = Vector128.Create<double>(0);
         if (Avx512F.ConvertToUInt32WithTruncation(vr1) >= 2894444111893762202L)
         {

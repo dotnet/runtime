@@ -14,7 +14,7 @@ EXECUTION_DIR=$(dirname "$0")
 RUNTIME_PATH=''
 RSP_FILE=''
 
-while [[ $# > 0 ]]; do
+while [[ $# -gt 0 ]]; do
   opt="$(echo "${1}" | tr "[:upper:]" "[:lower:]")"
   case "$opt" in
     --help|-h)
@@ -44,9 +44,6 @@ if [[ -z "$RUNTIME_PATH" ]]; then
   usage
   exit -1
 fi
-
-# Don't use a globally installed SDK.
-export DOTNET_MULTILEVEL_LOOKUP=0
 
 exitcode_list[0]="Exited Successfully"
 exitcode_list[130]="SIGINT  Ctrl-C occurred. Likely tests timed out."
@@ -80,7 +77,7 @@ function invoke_xunitlogchecker {
 
   total_dumps=$(find $dump_folder -name "*.dmp" | wc -l)
 
-  if [[ $total_dumps > 0 ]]; then
+  if [[ $total_dumps -gt 0 ]]; then
     echo "Total dumps found in $dump_folder: $total_dumps"
     xunitlogchecker_file_name="$HELIX_CORRELATION_PAYLOAD/XUnitLogChecker"
 

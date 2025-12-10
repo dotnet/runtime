@@ -107,7 +107,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_RuntimeType_get_TypeHandle,
     NI_System_StubHelpers_GetStubContext,
     NI_System_StubHelpers_NextCallReturnAddress,
-    NI_System_StubHelpers_AsyncCallContinuation,
 
     NI_Array_Address,
     NI_Array_Get,
@@ -123,9 +122,12 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation,
 
     NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend,
     NI_System_Runtime_CompilerServices_AsyncHelpers_Await,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation,
 
     NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref,
 

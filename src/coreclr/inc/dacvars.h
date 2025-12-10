@@ -95,7 +95,9 @@ DEFINE_DACVAR(VMHELPDEF *, dac__hlpDynamicFuncTable, ::hlpDynamicFuncTable)
 DEFINE_DACVAR(PTR_StubManager, StubManager__g_pFirstManager, StubManager::g_pFirstManager)
 DEFINE_DACVAR(PTR_PrecodeStubManager, PrecodeStubManager__g_pManager, PrecodeStubManager::g_pManager)
 DEFINE_DACVAR(PTR_StubLinkStubManager, StubLinkStubManager__g_pManager, StubLinkStubManager::g_pManager)
+#ifdef FEATURE_JIT
 DEFINE_DACVAR(PTR_JumpStubStubManager, JumpStubStubManager__g_pManager, JumpStubStubManager::g_pManager)
+#endif // FEATURE_JIT
 DEFINE_DACVAR(PTR_RangeSectionStubManager, RangeSectionStubManager__g_pManager, RangeSectionStubManager::g_pManager)
 DEFINE_DACVAR(PTR_VirtualCallStubManagerManager, VirtualCallStubManagerManager__g_pManager, VirtualCallStubManagerManager::g_pManager)
 #ifdef FEATURE_TIERED_COMPILATION

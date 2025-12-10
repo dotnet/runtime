@@ -2682,22 +2682,10 @@ void CordbThread::ClearStackFrameCache()
     m_stackFrames.Clear();
 }
 
-// ----------------------------------------------------------------------------
-// EnumerateBlockingObjectsCallback
-//
-// Description:
-//    A small helper used by CordbThread::GetBlockingObjects. This callback adds the enumerated items
-//    to a list
-//
-// Arguments:
-//    blockingObject - the object to add to the list
-//    pUserData - the list to add it to
-
-VOID EnumerateBlockingObjectsCallback(DacBlockingObject blockingObject, CALLBACK_DATA pUserData)
-{
-    CQuickArrayList<DacBlockingObject>* pDacBlockingObjs = (CQuickArrayList<DacBlockingObject>*)pUserData;
-    pDacBlockingObjs->Push(blockingObject);
-}
+typedef CordbEnumerator<CorDebugBlockingObject,
+                        CorDebugBlockingObject,
+                        ICorDebugBlockingObjectEnum, IID_ICorDebugBlockingObjectEnum,
+                        IdentityConvert<CorDebugBlockingObject> > CordbBlockingObjectEnumerator;
 
 // ----------------------------------------------------------------------------
 // CordbThread::GetBlockingObjects
@@ -2720,51 +2708,21 @@ HRESULT CordbThread::GetBlockingObjects(ICorDebugBlockingObjectEnum **ppBlocking
     VALIDATE_POINTER_TO_OBJECT(ppBlockingObjectEnum, ICorDebugBlockingObjectEnum **);
 
     HRESULT hr = S_OK;
-    CorDebugBlockingObject* blockingObjs = NULL;
+    *ppBlockingObjectEnum = NULL;
+
     EX_TRY
     {
-        CQuickArrayList<DacBlockingObject> dacBlockingObjects;
-        IDacDbiInterface* pDac = GetProcess()->GetDAC();
-        pDac->EnumerateBlockingObjects(m_vmThreadToken,
-            (IDacDbiInterface::FP_BLOCKINGOBJECT_ENUMERATION_CALLBACK) EnumerateBlockingObjectsCallback,
-            (CALLBACK_DATA) &dacBlockingObjects);
-        blockingObjs = new CorDebugBlockingObject[dacBlockingObjects.Size()];
-        for(SIZE_T i = 0 ; i < dacBlockingObjects.Size(); i++)
-        {
-            // ICorDebug API needs to flip the direction of the list from the way DAC stores it
-            SIZE_T dacObjIndex = dacBlockingObjects.Size()-i-1;
-            switch(dacBlockingObjects[dacObjIndex].blockingReason)
-            {
-                case DacBlockReason_MonitorCriticalSection:
-                    blockingObjs[i].blockingReason = BLOCKING_MONITOR_CRITICAL_SECTION;
-                    break;
-                case DacBlockReason_MonitorEvent:
-                    blockingObjs[i].blockingReason = BLOCKING_MONITOR_EVENT;
-                    break;
-                default:
-                    _ASSERTE(!"Should not get here");
-                    ThrowHR(E_FAIL);
-                    break;
-            }
-            blockingObjs[i].dwTimeout = dacBlockingObjects[dacObjIndex].dwTimeout;
-            CordbAppDomain* pAppDomain;
-            {
-                RSLockHolder holder(GetProcess()->GetProcessLock());
-                pAppDomain = GetProcess()->LookupOrCreateAppDomain(dacBlockingObjects[dacObjIndex].vmAppDomain);
-            }
-            blockingObjs[i].pBlockingObject = CordbValue::CreateHeapValue(pAppDomain,
-                dacBlockingObjects[dacObjIndex].vmBlockingObject);
-        }
-
-        CordbBlockingObjectEnumerator* objEnum = new CordbBlockingObjectEnumerator(GetProcess(),
-                                                                                  blockingObjs,
-                                                                                  (DWORD)dacBlockingObjects.Size());
+        // We don't have any blocking objects to enumerate from the native side,
+        // so we create an empty enumerator.
+        CordbBlockingObjectEnumerator* objEnum = new CordbBlockingObjectEnumerator(
+            GetProcess(),
+            new CorDebugBlockingObject[0],
+            0);
         GetProcess()->GetContinueNeuterList()->Add(GetProcess(), objEnum);
         hr = objEnum->QueryInterface(__uuidof(ICorDebugBlockingObjectEnum), (void**)ppBlockingObjectEnum);
-        _ASSERTE(SUCCEEDED(hr));
     }
     EX_CATCH_HRESULT(hr);
-    delete [] blockingObjs;
+
     return hr;
 }
 

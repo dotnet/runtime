@@ -966,26 +966,28 @@ GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput,
             }
         }
 #ifdef TARGET_RISCV64
-        bool               isCondReversed = false;
-        IntConstSelectOper selectOper     = MatchIntConstSelectValues(trueVal, falseVal);
-        if (!selectOper.isMatched())
+        if (varTypeIsIntegral(trueInput) && varTypeIsIntegral(falseInput) && (trueVal != falseVal))
         {
-            isCondReversed = true;
-            selectOper     = MatchIntConstSelectValues(falseVal, trueVal);
-        }
-        if (selectOper.isMatched())
-        {
-            GenTree* left  = isCondReversed ? trueInput : falseInput;
-            GenTree* right = isCondReversed ? m_comp->gtReverseCond(m_cond) : m_cond;
-            if (selectOper.bitIndex > 0)
+            bool               isCondReversed = false;
+            IntConstSelectOper selectOper     = MatchIntConstSelectValues(trueVal, falseVal);
+            if (!selectOper.isMatched())
             {
-                assert(selectOper.oper == GT_LSH);
-                left->AsIntConCommon()->SetIntegralValue(selectOper.bitIndex);
-                std::swap(left, right);
+                isCondReversed = true;
+                selectOper     = MatchIntConstSelectValues(falseVal, trueVal);
             }
-            return m_comp->gtNewOperNode(selectOper.oper, selectOper.type, left, right);
+            if (selectOper.isMatched())
+            {
+                GenTree* left  = isCondReversed ? trueInput : falseInput;
+                GenTree* right = isCondReversed ? m_comp->gtReverseCond(m_cond) : m_cond;
+                if (selectOper.bitIndex > 0)
+                {
+                    assert(selectOper.oper == GT_LSH);
+                    left->AsIntConCommon()->SetIntegralValue(selectOper.bitIndex);
+                    std::swap(left, right);
+                }
+                return m_comp->gtNewOperNode(selectOper.oper, selectOper.type, left, right);
+            }
         }
-        return nullptr;
 #endif // TARGET_RISCV64
     }
 #ifdef TARGET_RISCV64

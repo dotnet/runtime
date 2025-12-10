@@ -699,22 +699,6 @@ struct DbiVersion
     DWORD m_dwReservedMustBeZero1;  // reserved for future use
 };
 
-// The way in which a thread is blocking on an object
-enum DacBlockingReason
-{
-    DacBlockReason_MonitorCriticalSection,
-    DacBlockReason_MonitorEvent
-};
-
-// Information about an object which is blocking a managed thread
-struct DacBlockingObject
-{
-    VMPTR_Object      vmBlockingObject;
-    VMPTR_AppDomain   vmAppDomain;
-    DWORD             dwTimeout;
-    DacBlockingReason blockingReason;
-};
-
 // Opaque user defined data used in callbacks
 typedef void* CALLBACK_DATA;
 

@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_105716;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
@@ -19,16 +22,13 @@ public class Runtime_105716
 {
     public static Vector64<float> s_3 = Vector64.Create<float>(-1);
 
-    [Fact]
+    [ConditionalFact(typeof(AdvSimd.Arm64), nameof(AdvSimd.Arm64.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (AdvSimd.Arm64.IsSupported)
-        {
-            var vr3 = Vector64.Create(-179.81139f, 0);
-            var vr5 = Vector64.CreateScalar(0f);
-            Vector64<float> vr6 = AdvSimd.SubtractScalar(s_3, vr5);
-            s_3 = AdvSimd.Arm64.MultiplyExtended(vr3, vr6);
-            Assert.Equal(Vector64.Create(179.81139f, 0f), s_3);
-        }
+        var vr3 = Vector64.Create(-179.81139f, 0);
+        var vr5 = Vector64.CreateScalar(0f);
+        Vector64<float> vr6 = AdvSimd.SubtractScalar(s_3, vr5);
+        s_3 = AdvSimd.Arm64.MultiplyExtended(vr3, vr6);
+        Assert.Equal(Vector64.Create(179.81139f, 0f), s_3);
     }
 }

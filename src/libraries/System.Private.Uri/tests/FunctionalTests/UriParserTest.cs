@@ -469,6 +469,45 @@ namespace System.PrivateUri.Tests
             Assert.Throws<InvalidOperationException>(() => UriParser.Register(parser, scheme, 2006));
         }
 
+        [Fact]
+        public static void NoQuery()
+        {
+            UriParser.Register(new GenericUriParser(GenericUriParserOptions.NoQuery), "no-query-scheme", 123);
+
+            var uri = new Uri("no-query-scheme://host/path?query?#?fragment#");
+            Assert.Equal("host", uri.Host);
+            Assert.Equal(123, uri.Port);
+            Assert.Equal("/path%3Fquery%3F", uri.AbsolutePath);
+            Assert.Equal(string.Empty, uri.Query);
+            Assert.Equal("#?fragment#", uri.Fragment);
+        }
+
+        [Fact]
+        public static void NoFragment()
+        {
+            UriParser.Register(new GenericUriParser(GenericUriParserOptions.NoFragment), "no-fragment-scheme", 321);
+
+            var uri = new Uri("no-fragment-scheme://host/path?query?#?fragment#");
+            Assert.Equal("host", uri.Host);
+            Assert.Equal(321, uri.Port);
+            Assert.Equal("/path", uri.AbsolutePath);
+            Assert.Equal("?query?%23?fragment%23", uri.Query);
+            Assert.Equal(string.Empty, uri.Fragment);
+        }
+
+        [Fact]
+        public static void NoQueryOrFragment()
+        {
+            UriParser.Register(new GenericUriParser(GenericUriParserOptions.NoQuery | GenericUriParserOptions.NoFragment), "no-queryfragment-scheme", 213);
+
+            var uri = new Uri("no-queryfragment-scheme://host/path?query?#?fragment#");
+            Assert.Equal("host", uri.Host);
+            Assert.Equal(213, uri.Port);
+            Assert.Equal("/path%3Fquery%3F%23%3Ffragment%23", uri.AbsolutePath);
+            Assert.Equal(string.Empty, uri.Query);
+            Assert.Equal(string.Empty, uri.Fragment);
+        }
+
         #endregion UriParser tests
 
         #region GenericUriParser tests

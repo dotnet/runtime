@@ -2265,6 +2265,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, genPendingCallLabel, treeNode->GetRegNum());
             break;
 
+        case GT_ASYNC_RESUME_INFO:
+            genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -2285,7 +2289,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif
 
         case GT_IL_OFFSET:
-            // Do nothing; these nodes are simply markers for debug info.
+            // Do nothing; this node is a marker for debug info.
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
             break;
 
 #if defined(TARGET_AMD64)
@@ -4412,6 +4420,19 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     // to constant data, not a real static field.
     GetEmitter()->emitIns_R_C(INS_lea, emitTypeSize(TYP_I_IMPL), treeNode->GetRegNum(),
                               compiler->eeFindJitDataOffs(jmpTabBase), 0);
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genAsyncResumeInfo: emits address of async resume info for a specific state
+//
+// Parameters:
+//   treeNode - the GT_ASYNC_RESUME_INFO node
+//
+void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
+{
+    GetEmitter()->emitIns_R_C(INS_lea, emitTypeSize(TYP_I_IMPL), treeNode->GetRegNum(),
+                              genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1), 0);
     genProduceReg(treeNode);
 }
 
@@ -6605,11 +6626,11 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 // Arguments:
 //    treeNode - the compare tree
 //
-void CodeGen::genCompareFloat(GenTree* treeNode)
+void CodeGen::genCompareFloat(GenTreeOp* treeNode)
 {
     assert(treeNode->OperIsCompare() || treeNode->OperIs(GT_CMP));
 
-    GenTreeOp* tree    = treeNode->AsOp();
+    GenTreeOp* tree    = treeNode;
     GenTree*   op1     = tree->gtOp1;
     GenTree*   op2     = tree->gtOp2;
     var_types  op1Type = op1->TypeGet();
@@ -6670,11 +6691,11 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
 //
 // Return Value:
 //    None.
-void CodeGen::genCompareInt(GenTree* treeNode)
+void CodeGen::genCompareInt(GenTreeOp* treeNode)
 {
     assert(treeNode->OperIsCompare() || treeNode->OperIs(GT_CMP, GT_TEST, GT_BT));
 
-    GenTreeOp* tree          = treeNode->AsOp();
+    GenTreeOp* tree          = treeNode;
     GenTree*   op1           = tree->gtOp1;
     GenTree*   op2           = tree->gtOp2;
     var_types  op1Type       = op1->TypeGet();
@@ -11701,7 +11722,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
 // Returns
 //    relocation type hint
 //
-unsigned short CodeGenInterface::genAddrRelocTypeHint(size_t addr)
+CorInfoReloc CodeGenInterface::genAddrRelocTypeHint(size_t addr)
 {
     return compiler->eeGetRelocTypeHint((void*)addr);
 }
@@ -11721,7 +11742,7 @@ unsigned short CodeGenInterface::genAddrRelocTypeHint(size_t addr)
 bool CodeGenInterface::genDataIndirAddrCanBeEncodedAsPCRelOffset(size_t addr)
 {
 #ifdef TARGET_AMD64
-    return genAddrRelocTypeHint(addr) == IMAGE_REL_BASED_REL32;
+    return genAddrRelocTypeHint(addr) == CorInfoReloc::RELATIVE32;
 #else
     // x86: PC-relative addressing is available only for control flow instructions (jmp and call)
     return false;
@@ -11742,7 +11763,7 @@ bool CodeGenInterface::genDataIndirAddrCanBeEncodedAsPCRelOffset(size_t addr)
 bool CodeGenInterface::genCodeIndirAddrCanBeEncodedAsPCRelOffset(size_t addr)
 {
 #ifdef TARGET_AMD64
-    return genAddrRelocTypeHint(addr) == IMAGE_REL_BASED_REL32;
+    return genAddrRelocTypeHint(addr) == CorInfoReloc::RELATIVE32;
 #else
     // x86: PC-relative addressing is available only for control flow instructions (jmp and call)
     return true;

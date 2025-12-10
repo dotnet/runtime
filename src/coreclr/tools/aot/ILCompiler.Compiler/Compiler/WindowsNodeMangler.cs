@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Internal.Text;
 using Internal.TypeSystem;
+using System;
 using System.Diagnostics;
 
 namespace ILCompiler
@@ -13,10 +15,10 @@ namespace ILCompiler
     {
         private TargetDetails _target;
 
-        public const string NonGCStaticMemberName = "__NONGCSTATICS";
-        public const string GCStaticMemberName = "__GCSTATICS";
-        public const string ThreadStaticMemberName = "__THREADSTATICS";
-        public const string ThreadStaticIndexName = "__THREADSTATICINDEX";
+        public static Utf8String NonGCStaticMemberName = "__NONGCSTATICS";
+        public static Utf8String GCStaticMemberName = "__GCSTATICS";
+        public static Utf8String ThreadStaticMemberName = "__THREADSTATICS";
+        public static Utf8String ThreadStaticIndexName = "__THREADSTATICINDEX";
 
         public WindowsNodeMangler(TargetDetails target)
         {
@@ -24,63 +26,64 @@ namespace ILCompiler
         }
 
         // Mangled name of boxed version of a type
-        public sealed override string MangledBoxedTypeName(TypeDesc type)
+        public sealed override Utf8String MangledBoxedTypeName(TypeDesc type)
         {
             Debug.Assert(type.IsValueType);
-            return "Boxed_" + NameMangler.GetMangledTypeName(type);
+            return Utf8String.Concat("Boxed_"u8, NameMangler.GetMangledTypeName(type).AsSpan());
         }
 
-        public sealed override string MethodTable(TypeDesc type)
+        public sealed override Utf8String MethodTable(TypeDesc type)
         {
-            string mangledJustTypeName;
-
-            if (type.IsValueType)
-                mangledJustTypeName = MangledBoxedTypeName(type);
-            else
-                mangledJustTypeName = NameMangler.GetMangledTypeName(type);
+            Utf8String mangledJustTypeName = type.IsValueType
+                ? MangledBoxedTypeName(type)
+                : NameMangler.GetMangledTypeName(type);
 
             // "??_7TypeName@@6B@" is the C++ mangling for "const TypeName::`vftable'"
             // This, along with LF_VTSHAPE debug records added by the object writer
             // is the debugger magic that allows debuggers to vcast types to their bases.
-            return "??_7" + mangledJustTypeName + "@@6B@";
+            return Utf8String.Concat("??_7"u8, mangledJustTypeName.AsSpan(), "@@6B@"u8);
         }
 
-        private string CreateStaticFieldName(TypeDesc type, string fieldName)
+        private Utf8String CreateStaticFieldName(TypeDesc type, ReadOnlySpan<byte> fieldName)
         {
-            return @$"?{fieldName}@{NameMangler.GetMangledTypeName(type)}@@";
+            return Utf8String.Concat("?"u8, fieldName, "@"u8, NameMangler.GetMangledTypeName(type).AsSpan(), "@@"u8);
         }
 
-        public sealed override string GCStatics(TypeDesc type)
+        public sealed override Utf8String GCStatics(TypeDesc type)
         {
-            return CreateStaticFieldName(type, GCStaticMemberName);
+            return CreateStaticFieldName(type, GCStaticMemberName.AsSpan());
         }
 
-        public sealed override string NonGCStatics(TypeDesc type)
+        public sealed override Utf8String NonGCStatics(TypeDesc type)
         {
-            return CreateStaticFieldName(type, NonGCStaticMemberName);
+            return CreateStaticFieldName(type, NonGCStaticMemberName.AsSpan());
         }
 
-        public sealed override string ThreadStatics(TypeDesc type)
+        public sealed override Utf8String ThreadStatics(TypeDesc type)
         {
-            return CreateStaticFieldName(type, NameMangler.CompilationUnitPrefix + ThreadStaticMemberName);
+            Utf8String name = NameMangler.CompilationUnitPrefix.Length > 0
+                ? Utf8String.Concat(NameMangler.CompilationUnitPrefix, ThreadStaticMemberName)
+                : ThreadStaticMemberName;
+
+            return CreateStaticFieldName(type, name.AsSpan());
         }
 
-        public sealed override string ThreadStaticsIndex(TypeDesc type)
+        public sealed override Utf8String ThreadStaticsIndex(TypeDesc type)
         {
-            return CreateStaticFieldName(type, ThreadStaticIndexName);
+            return CreateStaticFieldName(type, ThreadStaticIndexName.AsSpan());
         }
 
-        public sealed override string TypeGenericDictionary(TypeDesc type)
+        public sealed override Utf8String TypeGenericDictionary(TypeDesc type)
         {
-            return GenericDictionaryNamePrefix + NameMangler.GetMangledTypeName(type);
+            return Utf8String.Concat(GenericDictionaryNamePrefix, NameMangler.GetMangledTypeName(type));
         }
 
-        public sealed override string MethodGenericDictionary(MethodDesc method)
+        public sealed override Utf8String MethodGenericDictionary(MethodDesc method)
         {
-            return GenericDictionaryNamePrefix + NameMangler.GetMangledMethodName(method);
+            return Utf8String.Concat(GenericDictionaryNamePrefix, NameMangler.GetMangledMethodName(method));
         }
 
-        public sealed override string ExternMethod(string unmangledName, MethodDesc method)
+        public sealed override Utf8String ExternMethod(Utf8String unmangledName, MethodDesc method)
         {
             if (_target.Architecture != TargetArchitecture.X86)
             {
@@ -120,7 +123,7 @@ namespace ILCompiler
             };
         }
 
-        public sealed override string ExternVariable(string unmangledName)
+        public sealed override Utf8String ExternVariable(Utf8String unmangledName)
         {
             if (_target.Architecture != TargetArchitecture.X86)
             {

@@ -10,6 +10,14 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/gen/">
+    <Project Path="../System.Private.CoreLib/gen/EventSourceGenerator.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
     <Project Path="../System.Private.CoreLib/gen/System.Private.CoreLib.Generators.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
@@ -255,6 +263,14 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
+    <Project Path="tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMember/System.Reflection.Metadata.ApplyUpdate.Test.ReflectionDeleteMember.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
     <Project Path="tests/ApplyUpdate/System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression/System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
@@ -336,6 +352,14 @@
       <Build Solution="Checked|x86" Project="false" />
     </Project>
     <Project Path="tests/System.Runtime.Loader.Test.Assembly2/System.Runtime.Loader.Test.Assembly2.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="tests/System.Runtime.Loader.Test.AssemblyVersion1/System.Runtime.Loader.Test.AssemblyVersion1.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />

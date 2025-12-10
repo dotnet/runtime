@@ -3,6 +3,9 @@
 
 // The test showed CSE issues with struct return retyping.
 
+
+namespace Runtime_33884;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

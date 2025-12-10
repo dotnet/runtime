@@ -34,15 +34,9 @@ class OleVariant
     static void MarshalObjectForOleVariant(const VARIANT *pOle, OBJECTREF * const & pObj);
     static void MarshalOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle);
 
-    // Helper functions to convert BSTR to managed strings.
-    static void AllocateEmptyStringForBSTR(BSTR bstr, STRINGREF *pStringObj);
-    static void ConvertContentsBSTRToString(BSTR bstr, STRINGREF *pStringObj);
     static void ConvertBSTRToString(BSTR bstr, STRINGREF *pStringObj);
-
-    // Helper functions to convert managed strings to BSTRs.
-    static BSTR AllocateEmptyBSTRForString(STRINGREF *pStringObj);
-    static void ConvertContentsStringToBSTR(STRINGREF *pStringObj, BSTR bstr);
     static BSTR ConvertStringToBSTR(STRINGREF *pStringObj);
+
     static void MarshalObjectForOleVariantUncommon(const VARIANT *pOle, OBJECTREF * const & pObj);
     static void MarshalOleVariantForObjectUncommon(OBJECTREF * const & pObj, VARIANT *pOle);
 #endif // FEATURE_COMINTEROP

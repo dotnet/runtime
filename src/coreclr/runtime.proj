@@ -11,11 +11,11 @@
     <ProjectReference Condition="'$(HasCdacBuildTool)' == 'true'" Include="tools\cdac-build-tool\cdac-build-tool.csproj" ReferenceOutputAssembly="false" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
   </ItemGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)native.props" />
+  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" />
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
   
   <Target Name="BuildRuntime"
-          DependsOnTargets="GetPgoDataPackagePath"
+          DependsOnTargets="GetPgoDataPackagePath;GenerateEmccExports"
           BeforeTargets="Build">
     <ItemGroup>
       <_CMakeArgs Include="$(CMakeArgs)" />
@@ -51,6 +51,7 @@
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH=$(DOTNET_HOST_PATH)&quot;" />
       <_CoreClrBuildArg Condition="'$(HasCdacBuildTool)' == 'true'" Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureXplatEventSource)' == 'false'" Include="-cmakeargs &quot;-DFEATURE_EVENTSOURCE_XPLAT=0&quot;" />
+      <_CoreClrBuildArg Condition="'$(FeatureInterpreter)' == 'true'" Include="-cmakeargs &quot;-DFEATURE_INTERPRETER=1&quot;" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(CxxStandardLibrary)' != ''">
@@ -69,6 +70,7 @@
       <_CoreClrBuildArg Condition="'$(ClrHostsSubset)' == 'true'" Include="-component hosts" />
       <_CoreClrBuildArg Condition="'$(ClrRuntimeSubset)' == 'true'" Include="-component runtime" />
       <_CoreClrBuildArg Condition="'$(ClrJitSubset)' == 'true'" Include="-component jit" />
+      <_CoreClrBuildArg Condition="'$(ClrWasmJitSubset)' == 'true'" Include="-component wasmjit" />
       <_CoreClrBuildArg Condition="'$(ClrPalTestsSubset)' == 'true'" Include="-component paltests" />
       <_CoreClrBuildArg Condition="'$(ClrAllJitsSubset)' == 'true'" Include="-component alljits" />
       <_CoreClrBuildArg Condition="'$(ClrAllJitsCommunitySubset)' == 'true'" Include="-component alljits;-cmakeargs &quot;-DCLR_CMAKE_BUILD_COMMUNITY_ALTJITS=1&quot;" />

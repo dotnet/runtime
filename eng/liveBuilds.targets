@@ -37,7 +37,6 @@
     <ToolsILLinkDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILLink.Tasks', '$(ToolsConfiguration)'))</ToolsILLinkDir>
 
     <MonoAotCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)', 'cross', $(TargetOS)-$(TargetArchitecture.ToLowerInvariant())))</MonoAotCrossDir>
-    <GrpcServerDockerImageDir>$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'obj', 'grpcserver', 'docker'))</GrpcServerDockerImageDir>
 
     <LibrariesPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'packages', '$(LibrariesConfiguration)'))</LibrariesPackagesDir>
     <LibrariesShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesPackagesDir)', 'Shipping'))</LibrariesShippingPackagesDir>
@@ -223,7 +222,6 @@
 
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'"
                              Include="
-        $(CoreCLRSharedFrameworkDir)libclrinterpreter.a;
         $(CoreCLRSharedFrameworkDir)libcoreclr_static.a;
         $(CoreCLRSharedFrameworkDir)libcoreclrminipal.a;
         $(CoreCLRSharedFrameworkDir)libcoreclrpal.a;

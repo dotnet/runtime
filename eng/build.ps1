@@ -26,6 +26,7 @@ Param(
   [string[]]$fsanitize,
   [switch]$bootstrap,
   [switch]$useBoostrap,
+  [switch]$clrinterpreter,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -57,6 +58,7 @@ function Get-Help() {
   Write-Host "                                 '-subset' can be omitted if the subset is given as the first argument."
   Write-Host "                                 [Default: Builds the entire repo.]"
   Write-Host "  -usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
+  Write-Host "  -clrinterpreter                Enables CoreCLR interpreter for Release builds of targets where it is a Debug only feature."
   Write-Host "  -verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   Write-Host "                                 [Default: Minimal]"
   Write-Host "  --useBootstrap                 Use the results of building the bootstrap subset to build published tools on the target machine."
@@ -82,8 +84,8 @@ function Get-Help() {
 
   Write-Host "Libraries settings:"
   Write-Host "  -coverage               Collect code coverage when testing."
-  Write-Host "  -framework (-f)         Build framework: net10.0 or net481."
-  Write-Host "                          [Default: net10.0]"
+  Write-Host "  -framework (-f)         Build framework: net11.0 or net481."
+  Write-Host "                          [Default: net11.0]"
   Write-Host "  -testnobuild            Skip building tests when invoking -test."
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all."
   Write-Host ""
@@ -257,9 +259,6 @@ if ($vs) {
   # This tells MSBuild to load the SDK from the directory of the bootstrapped SDK
   $env:DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=$env:DOTNET_ROOT
 
-  # This tells .NET Core not to go looking for .NET Core in other places
-  $env:DOTNET_MULTILEVEL_LOOKUP=0;
-
   # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
 
@@ -335,6 +334,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "arch"                   {}
     "fsanitize"              { $arguments += " /p:EnableNativeSanitizers=$($PSBoundParameters[$argument])"}
     "useBootstrap"           { $arguments += " /p:UseBootstrap=$($PSBoundParameters[$argument])" }
+    "clrinterpreter"         { $arguments += " /p:FeatureInterpreter=true" }
     default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
 }

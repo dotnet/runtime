@@ -188,7 +188,7 @@
     <value>An attempt was made to move the position before the beginning of the stream.</value>
   </data>
   <data name="TarInvalidNumber" xml:space="preserve">
-    <value>Unable to parse number.</value>
+    <value>The TAR archive is corrupted or invalid.</value>
   </data>
   <data name="TarInvalidChecksum" xml:space="preserve">
     <value>Checksum validation failed. The archive might be corrupted.</value>
@@ -210,5 +210,8 @@
   </data>
   <data name="ExtHeaderInvalidRecords" xml:space="preserve">
     <value>The extended header contains invalid records.</value>
+  </data>
+  <data name="TarCompressionArchiveDetected" xml:space="preserve">
+    <value>The file appears to be a {0} archive. TAR format expected.</value>
   </data>
 </root>

@@ -115,8 +115,8 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEventStreamHandle.OSX.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeEventStreamHandle.OSX.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
-             Link="Common\System\Text\ValueUtf8Converter.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\SpanOfCharAsUtf8StringMarshaller.cs"
+             Link="Common\System\Runtime\InteropServices\SpanOfCharAsUtf8StringMarshaller.cs" />
   </ItemGroup>
 
   <ItemGroup>

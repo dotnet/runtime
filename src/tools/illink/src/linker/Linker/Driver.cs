@@ -185,7 +185,7 @@ namespace Mono.Linker
                         numBackslash /= 2;
                     }
                     if (numBackslash > 0)
-                        argBuilder.Append(new string('\\', numBackslash));
+                        argBuilder.Append('\\', numBackslash);
                     if (cur < 0 || (!inquote && char.IsWhiteSpace((char)cur)))
                         break;
                     if (copyChar)

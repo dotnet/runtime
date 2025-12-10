@@ -65,6 +65,7 @@ export declare interface EmscriptenModuleInternal extends EmscriptenModule {
     print(message: string): void;
     printErr(message: string): void;
     abort(reason: any): void;
+    exitJS(status: number, implicit?: boolean | number): void;
     _emscripten_force_exit(exit_code: number): void;
 }
 
@@ -93,7 +94,7 @@ export interface ControllablePromise<T = any> extends Promise<T> {
 }
 
 /// Just a pair of a promise and its controller
-export interface PromiseController<T> {
+export interface PromiseCompletionSource<T> {
     readonly promise: ControllablePromise<T>;
     isDone: boolean;
     resolve: (value: T | PromiseLike<T>) => void;

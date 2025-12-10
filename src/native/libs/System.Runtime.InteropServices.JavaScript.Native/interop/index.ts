@@ -21,7 +21,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function runtimeExportsToTable(map:RuntimeExports):RuntimeExportsTable {
+    function runtimeExportsToTable(map: RuntimeExports): RuntimeExportsTable {
         // keep in sync with runtimeExportsFromTable()
         return [
         ];

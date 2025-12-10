@@ -17,11 +17,12 @@ export function SystemJS_RandomBytes(bufferPtr: number, bufferLength: number): n
         return -1;
     }
 
+    bufferPtr = bufferPtr >>> 0;
     const memoryView = dotnetApi.localHeapViewU8();
     const targetView = memoryView.subarray(bufferPtr, bufferPtr + bufferLength);
 
     // When threading is enabled, Chrome doesn't want SharedArrayBuffer to be passed to crypto APIs
-    const needsCopy = false;//TODOHelpers.isSharedArrayBuffer(memoryView.buffer);
+    const needsCopy = dotnetBrowserUtilsExports.isSharedArrayBuffer(memoryView.buffer);
     const targetBuffer = needsCopy
         ? new Uint8Array(bufferLength)
         : targetView;

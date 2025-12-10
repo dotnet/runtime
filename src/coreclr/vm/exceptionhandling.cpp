@@ -3292,7 +3292,12 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
 #endif
         {
             STRESS_LOG2(LF_EH, LL_INFO100, "Resuming propagation of managed exception through native frames at IP=%p, SP=%p\n", GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
+#ifdef TARGET_WASM
+            // wasm cannot unwind frames, so we let C++ exception handling do all the work
+            PropagateExceptionThroughNativeFrames(OBJECTREFToObject(throwable));
+#else // !TARGET_WASM
             ExecuteFunctionBelowContext((PCODE)PropagateExceptionThroughNativeFrames, pvRegDisplay->pCurrentContext, targetSSP, (size_t)OBJECTREFToObject(throwable));
+#endif // TARGET_WASM
         }
 #undef FIRST_ARG_REG
     }
@@ -3962,7 +3967,8 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
         InterpreterFrame *pInterpreterFrame = (InterpreterFrame *)pThis->m_crawl.GetFrame();
         // If the GetReturnAddress returns 0, it means the caller is InterpreterCodeManager::CallFunclet.
         // We don't have any TransitionFrame to update the regdisplay from in that case.
-        if (pInterpreterFrame->GetReturnAddress() != 0)
+        PCODE returnAddress = pInterpreterFrame->GetReturnAddress();
+        if (returnAddress != 0)
         {
             // The callerIP is InterpreterFrame::DummyCallerIP when we are going to unwind from the first interpreted frame belonging to an InterpreterFrame.
             // That means it is at a transition where non-interpreted code called interpreted one.
@@ -3971,18 +3977,18 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             _ASSERTE(retVal != SWA_FAILED);
             _ASSERTE(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAME_FUNCTION);
             _ASSERTE(pThis->m_crawl.GetFrame()->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
-            // Move to the caller of the interpreted code
-            retVal = pThis->Next();
-            _ASSERTE(retVal != SWA_FAILED);
-            if (pThis->GetFrameState() != StackFrameIterator::SFITER_FRAMELESS_METHOD)
+            if (ExecutionManager::IsManagedCode(returnAddress))
             {
-                    // The caller is a managed code, so we can update the regdisplay to point to it.
-                    pInterpreterFrame->UpdateRegDisplay(pThis->m_crawl.GetRegisterSet(), /* updateFloats */ true);
-                }
+                // The caller of the interpreted code is managed code. Advance the stack frame iterator to that frame.
+                retVal = pThis->Next();
+                _ASSERTE(retVal != SWA_FAILED);
+                _ASSERTE(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD);
+                isNativeTransition = false;
+            }
             else
             {
-                // The caller of the interpreted code is managed.
-                isNativeTransition = false;
+                // The caller is native code, so we can update the regdisplay to point to it.
+                pInterpreterFrame->UpdateRegDisplay(pThis->m_crawl.GetRegisterSet(), /* updateFloats */ true);
             }
         }
     }
@@ -4102,7 +4108,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             goto Exit;
         }
 
-        if (doingFuncletUnwind && pThis->GetNextExInfo() != NULL && GetRegdisplaySP(pThis->m_crawl.GetRegisterSet()) > (TADDR)pTopExInfo)
+        if (doingFuncletUnwind && pThis->GetNextExInfo() != NULL && pThis->GetFrameState() != StackFrameIterator::SFITER_FRAMELESS_METHOD)
         {
             // Detected collided unwind
             if ((pThis->GetNextExInfo()->m_passNumber == 1) ||

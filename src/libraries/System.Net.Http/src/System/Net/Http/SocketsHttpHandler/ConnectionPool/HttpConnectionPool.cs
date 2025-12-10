@@ -534,15 +534,6 @@ namespace System.Net.Http
                     // Eat exception and try again on a lower protocol version.
                     request.Version = HttpVersion.Version11;
                 }
-                catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnStreamLimitReached)
-                {
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        Trace($"Retrying request on another HTTP/2 connection after active streams limit is reached on existing one: {e}");
-                    }
-
-                    // Eat exception and try again.
-                }
                 finally
                 {
                     // We never cancel both attempts at the same time. When downgrade happens, it's possible that both waiters are non-null,

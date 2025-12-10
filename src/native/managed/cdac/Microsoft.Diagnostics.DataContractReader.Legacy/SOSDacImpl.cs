@@ -589,9 +589,10 @@ public sealed unsafe partial class SOSDacImpl
         byte[] buckets = Array.Empty<byte>();
         try
         {
-            if (_target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Unix)
+            if (_target.Contracts.RuntimeInfo.GetTargetOperatingSystem() != RuntimeInfoOperatingSystem.Windows)
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
-            else if (thread == 0 || pGenericModeBlock == null)
+
+            if (thread == 0 || pGenericModeBlock == null)
                 throw new ArgumentException();
 
             buckets = threadContract.GetWatsonBuckets(thread.ToTargetPointer(_target));

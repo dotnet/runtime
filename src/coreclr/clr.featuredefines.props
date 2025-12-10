@@ -36,6 +36,10 @@
         <FeatureObjCMarshal>true</FeatureObjCMarshal>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(TargetsMacCatalyst)' == 'true' OR '$(TargetsiOS)' == 'true' OR '$(TargetstvOS)' == 'true'">
+        <FeatureInterpreter>true</FeatureInterpreter>
+    </PropertyGroup>
+
     <PropertyGroup Condition="('$(Platform)' == 'x64' OR '$(Platform)' == 'arm64') AND ('$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked') AND '$(TargetsAndroid)' != 'true'">
         <FeatureInterpreter>true</FeatureInterpreter>
     </PropertyGroup>

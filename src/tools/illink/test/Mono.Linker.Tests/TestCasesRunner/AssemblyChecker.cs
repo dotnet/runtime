@@ -265,7 +265,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
                 foreach (var err in VerifyInterfaces(original, linked))
                     yield return err;
-                foreach (var err in VerifyPseudoAttributes(original, linked))   
+                foreach (var err in VerifyPseudoAttributes(original, linked))
                     yield return err;
                 foreach (var err in VerifyGenericParameters(original, linked, skipKeptItemsValidation: false))
                     yield return err;

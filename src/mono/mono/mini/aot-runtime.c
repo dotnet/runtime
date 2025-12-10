@@ -1622,6 +1622,7 @@ open_aot_data (MonoAssembly *assembly, MonoAotFileInfo *info, void **ret_handle)
 	data = (guint8*)mono_file_map (info->datafile_size, MONO_MMAP_READ, mono_file_map_fd (map), 0, ret_handle);
 	g_assert (data);
 
+	g_free(filename);
 	return data;
 }
 
@@ -2708,8 +2709,10 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	table_size = amodule->class_name_table [0];
 	table = amodule->class_name_table + 1;
 
-	if (table_size == 0)
+	if (table_size == 0) {
+		amodule_unlock (amodule);
 		return FALSE;
+	}
 
 	if (name_space [0] == '\0')
 		full_name = g_strdup_printf ("%s", name);

@@ -24,10 +24,6 @@ add_library(BrowserHost-Static
 )
 set_target_properties(BrowserHost-Static PROPERTIES OUTPUT_NAME BrowserHost CLEAN_DIRECT_OUTPUT 1)
 
-target_compile_options(BrowserHost-Static PRIVATE
-        -fwasm-exceptions
-        -msimd128
-    )
 target_link_libraries(BrowserHost-Static PRIVATE
     hostmisc
 )
@@ -61,7 +57,6 @@ set(SHARED_CLR_DESTINATION
 # these dependencies assume that you built `libs.native+clr.runtime` subsets first
 LIST(APPEND NATIVE_LIBS
     ${SHARED_CLR_DESTINATION}/libcoreclr_static.a
-    ${SHARED_CLR_DESTINATION}/libclrinterpreter.a
     ${SHARED_CLR_DESTINATION}/libnativeresourcestring.a
     ${SHARED_CLR_DESTINATION}/libgcinfo_unix_wasm.a
     ${SHARED_CLR_DESTINATION}/libcoreclrminipal.a
@@ -84,7 +79,7 @@ LIST(APPEND NATIVE_LIBS
 set(JS_SYSTEM_NATIVE_BROWSER
     "${SHARED_LIB_DESTINATION}/libSystem.Native.Browser.js")
 set(JS_SYSTEM_BROWSER_UTILS
-    "${SHARED_LIB_DESTINATION}/libSystem.Browser.Utils.js")
+    "${SHARED_LIB_DESTINATION}/libSystem.Native.Browser.Utils.js")
 set(JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE
     "${SHARED_LIB_DESTINATION}/libSystem.Runtime.InteropServices.JavaScript.Native.js")
 set(JS_BROWSER_HOST
@@ -97,11 +92,6 @@ set_target_properties(browserhost PROPERTIES
     LINK_FLAGS "--js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS} --js-library ${JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE} --js-library ${JS_BROWSER_HOST} --extern-post-js ${JS_SYSTEM_NATIVE_BROWSER_EXPOST}"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
-target_compile_options(browserhost PRIVATE
-        -fwasm-exceptions
-        -msimd128
-    )
-
 if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
     target_link_options(browserhost PRIVATE
 #        -sVERBOSE
@@ -112,7 +102,6 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
     )
 endif ()
 
-# WASM-TODO    -sWASM_BIGINT=1
 # WASM-TODO    -emit-llvm
 # WASM-TODO    --source-map-base http://microsoft.com
 target_link_options(browserhost PRIVATE
@@ -120,15 +109,15 @@ target_link_options(browserhost PRIVATE
     -sMAXIMUM_MEMORY=2147483648
     -sALLOW_MEMORY_GROWTH=1
     -sSTACK_SIZE=5MB
+    -sWASM_BIGINT=1
     -sMODULARIZE=1
     -sEXPORT_ES6=1
     -sEXIT_RUNTIME=0
-    -sEXPORTED_RUNTIME_METHODS=UTF8ToString,cwrap,ccall,HEAPU8,HEAPU32,HEAPU64,BROWSER_HOST
-    -sEXPORTED_FUNCTIONS=_posix_memalign,_free,stackAlloc,stackRestore,stackSave,_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly,___cpp_exception
+    -sEXPORTED_RUNTIME_METHODS=BROWSER_HOST,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
+    -sEXPORTED_FUNCTIONS=_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
     -sEXPORT_NAME=createDotnetRuntime
-    -fwasm-exceptions
+    -sENVIRONMENT=web,webview,worker,node,shell
     -lnodefs.js
-    -Wno-unused-command-line-argument
     -Wl,-error-limit=0)
 
 target_link_libraries(browserhost PUBLIC

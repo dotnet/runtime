@@ -716,11 +716,35 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
     CONTRACTL_END;
 
     PCODE uControlPc = GetIP(pContext);
+    Thread *pThread = GetThread();
+
+#ifdef FEATURE_INTERPRETER
+    Frame *pFrame = pThread->GetFrame();
+    while (pFrame != FRAME_TOP && (pFrame->GetFrameIdentifier() != FrameIdentifier::InterpreterFrame))
+    {
+        pFrame = pFrame->PtrNextFrame();
+    }
+    InterpreterFrame *pInterpreterFrame = (pFrame != FRAME_TOP) ? (InterpreterFrame *)pFrame : NULL;
+#endif // FEATURE_INTERPRETER
 
     // unwind out of this function and out of our caller to
     // get our caller's PSP, or our caller's caller's SP.
     while (!ExecutionManager::IsManagedCode(uControlPc))
     {
+#ifdef FEATURE_INTERPRETER
+        // Check if we are past the topmost interpreter frame
+        if ((pInterpreterFrame != NULL) && (GetSP(pContext) > (TADDR)pFrame))
+        {
+            InterpMethodContextFrame *pInterpMethodContextFrame = pInterpreterFrame->GetTopInterpMethodContextFrame();
+            if (pInterpMethodContextFrame != NULL)
+            {
+                pInterpreterFrame->SetContextToInterpMethodContextFrame(pContext);
+                uControlPc = GetIP(pContext);
+                break;
+            }
+        }
+#endif // FEATURE_INTERPRETER
+
         if (IsIPInWriteBarrierCodeCopy(uControlPc))
         {
             // Pretend we were executing the barrier function at its original location so that the unwinder can unwind the frame
@@ -2375,7 +2399,10 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 
                     if (orUnwind != NULL)
                     {
-                        orUnwind->LeaveObjMonitorAtException();
+                        PREPARE_NONVIRTUAL_CALLSITE(METHOD__MONITOR__EXIT);
+                        DECLARE_ARGHOLDER_ARRAY(args, 1);
+                        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(orUnwind);
+                        CALL_MANAGED_METHOD_NORET(args);
                     }
                 }
             }
@@ -3065,10 +3092,14 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
         _ASSERTE(obj != NULL);
         VALIDATEOBJECTREF(obj);
 
-        DWORD threadId = 0;
-        DWORD acquisitionCount = 0;
-        _ASSERTE(obj->GetThreadOwningMonitorLock(&threadId, &acquisitionCount) &&
-                 (threadId == m_crawl.pThread->GetThreadId()));
+        GCPROTECT_BEGIN(obj);
+
+        DWORD owningThreadId = 0;
+        DWORD recursionLevel;
+        obj->GetSyncBlock()->TryGetLockInfo(&owningThreadId, &recursionLevel);
+        _ASSERTE(owningThreadId == m_crawl.pThread->GetThreadId());
+
+        GCPROTECT_END();
 
         END_GCX_ASSERT_COOP;
     }

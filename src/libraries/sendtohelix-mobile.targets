@@ -86,7 +86,7 @@
 
     <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
       <!-- Create work items for test apps -->
-      <XHarnessAppBundleToTest
+      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveTestsRoot)')"
         Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">
         <TestTarget>$(AppleTestTarget)</TestTarget>
         <TestTimeout>$(_workItemTimeout)</TestTimeout>
@@ -94,9 +94,9 @@
       </XHarnessAppBundleToTest>
 
       <!-- To save on overall size, we compress each app after building. -->
-      <XHarnessAppBundleToTest
+      <XHarnessAppBundleToTest Condition="Exists('$(TestArchiveTestsRoot)$(OSPlatformConfig)')"
         Include="$([System.IO.Directory]::GetFiles('$(TestArchiveTestsRoot)$(OSPlatformConfig)', '*.zip', System.IO.SearchOption.TopDirectoryOnly))"
-        Exclude="$([System.IO.Directory]::GetFiles('$(TestArchiveRoot)', 'xharness-app-payload*', System.IO.SearchOption.AllDirectories))">
+        Exclude="$([System.IO.Directory]::GetFiles('$(TestArchiveTestsRoot)', 'xharness-app-payload*', System.IO.SearchOption.AllDirectories))">
         <TestTarget>$(AppleTestTarget)</TestTarget>
         <TestTimeout>$(_workItemTimeout)</TestTimeout>
         <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
@@ -109,6 +109,7 @@
         <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
         <ExpectedExitCode>42</ExpectedExitCode>
         <TestTarget>$(AppleTestTarget)</TestTarget>
+        <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
       </XHarnessAppBundleToTest>
 
       <!-- To save on overall size, we compress each app after building. -->
@@ -120,6 +121,7 @@
         <!-- The sample's C# Main method returns 42 so it should be considered by xharness as a success -->
         <ExpectedExitCode>42</ExpectedExitCode>
         <TestTarget>$(AppleTestTarget)</TestTarget>
+        <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
       </XHarnessAppBundleToTest>
     </ItemGroup>
 

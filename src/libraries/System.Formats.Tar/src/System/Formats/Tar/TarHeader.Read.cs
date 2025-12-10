@@ -370,7 +370,20 @@ namespace System.Formats.Tar
             {
                 return null;
             }
-            int checksum = (int)TarHelpers.ParseOctal<uint>(spanChecksum);
+
+            int checksum;
+            try
+            {
+                checksum = (int)TarHelpers.ParseOctal<uint>(spanChecksum);
+            }
+            catch (InvalidDataException)
+            {
+                // Check if this might be a compressed file by looking at the buffer for compression magic numbers
+                ThrowIfCompressedArchive(buffer);
+                // If not a compressed file, re-throw the original parsing exception
+                throw;
+            }
+
             // Zero checksum means the whole header is empty
             if (checksum == 0)
             {
@@ -788,6 +801,94 @@ namespace System.Formats.Tar
             // Update buffer to point to the next line for the next call
             buffer = buffer.Slice(newlinePos + 1);
             return true;
+        }
+
+        /// <summary>
+        /// Analyzes the buffer for known compression format magic numbers and throws an InvalidDataException
+        /// with a specific error message if a compression format is detected.
+        /// If no compression format is detected, the method returns without throwing.
+        /// </summary>
+        /// <exception cref="InvalidDataException">
+        /// Thrown if a compression format is detected.
+        /// </exception>
+        private static void ThrowIfCompressedArchive(ReadOnlySpan<byte> buffer)
+        {
+            if (buffer.Length < 2)
+            {
+                return;
+            }
+
+            byte firstByte = buffer[0];
+            switch (firstByte)
+            {
+                case 0x37: // 7-Zip
+                    if (buffer.Length >= 6 &&
+                        buffer[1] == 0x7A && buffer[2] == 0xBC &&
+                        buffer[3] == 0xAF && buffer[4] == 0x27 && buffer[5] == 0x1C)
+                    {
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "7-Zip"));
+                    }
+                    break;
+
+                case 0x50: // ZIP files start with "PK"
+                    if (buffer.Length >= 2 && buffer[1] == 0x4B)
+                    {
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "ZIP"));
+                    }
+                    break;
+
+                case 0x1F: // GZIP
+                    if (buffer.Length >= 2 && buffer[1] == 0x8B)
+                    {
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "GZIP"));
+                    }
+                    break;
+
+                case 0x42: // BZIP2 - "BZh"
+                    if (buffer.Length >= 3 && buffer[1] == 0x5A && buffer[2] == 0x68)
+                    {
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "BZIP2"));
+                    }
+                    break;
+
+                case 0xFD: // XZ
+                    if (buffer.Length >= 6 &&
+                        buffer[1] == 0x37 && buffer[2] == 0x7A &&
+                        buffer[3] == 0x58 && buffer[4] == 0x5A && buffer[5] == 0x00)
+                    {
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "XZ"));
+                    }
+                    break;
+
+                case 0x28: // Could be Zstandard or ZLIB
+                    if (buffer.Length >= 4 &&
+                        buffer[1] == 0xB5 && buffer[2] == 0x2F && buffer[3] == 0xFD)
+                    {
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "Zstandard"));
+                    }
+                    // If not Zstandard, check if it's ZLIB
+                    goto CheckZlib;
+
+                // ZLIB (deflate compression) - various compression methods and window sizes
+                case 0x08:
+                case 0x18:
+                case 0x38:
+                case 0x48:
+                case 0x58:
+                case 0x68:
+                case 0x78:
+                CheckZlib:
+                    if (buffer.Length >= 2)
+                    {
+                        byte secondByte = buffer[1];
+                        // Check if this is a valid ZLIB header (must be divisible by 31)
+                        if (((firstByte * 256) + secondByte) % 31 == 0)
+                        {
+                            throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "ZLIB"));
+                        }
+                    }
+                    break;
+            }
         }
     }
 }

@@ -47,7 +47,7 @@ namespace System
         internal static void FailFast(string? message, Exception? exception, string errorSource) =>
             RuntimeExceptionHelpers.FailFast(message, exception, errorSource: errorSource, reason: RhFailFastReason.AssertionFailure);
 
-        private static int GetProcessorCount() => Runtime.RuntimeImports.RhGetProcessCpuCount();
+        internal static int GetProcessorCount() => Runtime.RuntimeImports.RhGetProcessCpuCount();
 
         internal static void ShutdownCore()
         {

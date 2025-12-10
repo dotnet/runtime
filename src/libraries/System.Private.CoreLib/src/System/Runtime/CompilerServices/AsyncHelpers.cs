@@ -13,7 +13,7 @@ namespace System.Runtime.CompilerServices
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static partial class AsyncHelpers
     {
-#if CORECLR
+#if CORECLR || NATIVEAOT
         // "BypassReadyToRun" is until AOT/R2R typesystem has support for MethodImpl.Async
         // Must be NoInlining because we use AsyncSuspend to manufacture an explicit suspension point.
         // It will not capture/restore any local state that is live across it.
@@ -34,6 +34,7 @@ namespace System.Runtime.CompilerServices
                 state.SentinelContinuation = sentinelContinuation = new Continuation();
 
             state.Notifier = awaiter;
+            state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }
 
@@ -56,9 +57,9 @@ namespace System.Runtime.CompilerServices
                 state.SentinelContinuation = sentinelContinuation = new Continuation();
 
             state.CriticalNotifier = awaiter;
+            state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }
-
 
         /// <summary>
         /// Awaits the specified <see cref="Task{T}"/> and returns its result, throwing any exception produced by the task.

@@ -46,7 +46,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Playwright" Version="1.47.0" />
+    <PackageReference Include="Microsoft.Playwright" Version="1.55.0" />
     <PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.10" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
@@ -143,8 +143,11 @@
       <_RuntimePackCurrentVersion Condition="'$(DotNetFinalVersionKind)' == ''">$(PackageVersion)</_RuntimePackCurrentVersion>
     </PropertyGroup>
     <ItemGroup>
-      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER10" />
+      <!-- net11 Add new entry when adding major version -->
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER11" />
 
+      <_RuntimePackVersions Include="$(PackageVersionNet10)" EnvVarName="RUNTIME_PACK_VER10" Condition="'$(PackageVersionNet10)' != ''" />
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER10" Condition="'$(PackageVersionNet10)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet9)" EnvVarName="RUNTIME_PACK_VER9" Condition="'$(PackageVersionNet9)' != ''" />
       <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER9" Condition="'$(PackageVersionNet9)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet8)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' != ''" />

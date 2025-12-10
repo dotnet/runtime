@@ -16,23 +16,28 @@ namespace System.Threading
     /// that holds a lock may enter the lock repeatedly without exiting it, such as recursively, in which case the thread should
     /// eventually exit the lock the same number of times to fully exit the lock and allow other threads to enter the lock.
     /// </remarks>
-    public sealed partial class Lock
+    public sealed class Lock
     {
         private const short DefaultMaxSpinCount = 22;
         private const short DefaultAdaptiveSpinPeriod = 100;
         private const short SpinSleep0Threshold = 10;
         private const ushort MaxDurationMsForPreemptingWaiters = 100;
 
+        private const short SpinCountNotInitialized = short.MinValue;
+
+        internal const int UninitializedThreadId = 0;
+
+        // NOTE: Lock must not have a static (class) constructor, as Lock itself is used to synchronize
+        // class construction.  If Lock has its own class constructor, this can lead to infinite recursion.
+        // All static data in Lock must be lazy-initialized.
+        private static int s_staticsInitializationStage;
+        private static bool s_isSingleProcessor;
+        private static short s_maxSpinCount;
+        private static short s_minSpinCountForAdaptiveSpin;
+
         private static long s_contentionCount;
 
-        // The field's type is not ThreadId to try to retain the relative order of fields of intrinsic types. The type system
-        // appears to place struct fields after fields of other types, in which case there can be a greater chance that
-        // _owningThreadId is not in the same cache line as _state.
-#if TARGET_OSX && !NATIVEAOT
-        private ulong _owningThreadId;
-#else
-        private uint _owningThreadId;
-#endif
+        private int _owningThreadId;
 
         private uint _state; // see State for layout
         private uint _recursionCount;
@@ -48,6 +53,12 @@ namespace System.Threading
         private ushort _waiterStartTimeMs;
         private AutoResetEvent? _waitEvent;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Lock"/> class.
+        /// </summary>
+        public Lock() => _spinCount = SpinCountNotInitialized;
+
+
 #if NATIVEAOT // The method needs to be public in NativeAOT so that other private libraries can access it
         public Lock(bool useTrivialWaits)
 #else
@@ -57,6 +68,8 @@ namespace System.Threading
         {
             State.InitializeUseTrivialWaits(this, useTrivialWaits);
         }
+
+        internal int OwningManagedThreadId => (int)_owningThreadId;
 
         /// <summary>
         /// Enters the lock. Once the method returns, the calling thread would be the only thread that holds the lock.
@@ -73,16 +86,16 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void Enter()
         {
-            ThreadId currentThreadId = TryEnter_Inlined(timeoutMs: -1);
-            Debug.Assert(currentThreadId.IsInitialized);
+            int currentThreadId = TryEnter_Inlined(timeoutMs: -1);
+            Debug.Assert(currentThreadId != UninitializedThreadId);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private ThreadId EnterAndGetCurrentThreadId()
+        private int EnterAndGetCurrentThreadId()
         {
-            ThreadId currentThreadId = TryEnter_Inlined(timeoutMs: -1);
-            Debug.Assert(currentThreadId.IsInitialized);
-            Debug.Assert(currentThreadId.Id == _owningThreadId);
+            int currentThreadId = TryEnter_Inlined(timeoutMs: -1);
+            Debug.Assert(currentThreadId != UninitializedThreadId);
+            Debug.Assert(currentThreadId == _owningThreadId);
             return currentThreadId;
         }
 
@@ -114,10 +127,10 @@ namespace System.Threading
         public ref struct Scope
         {
             private Lock? _lockObj;
-            private ThreadId _currentThreadId;
+            private int _currentThreadId;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal Scope(Lock lockObj, ThreadId currentThreadId)
+            internal Scope(Lock lockObj, int currentThreadId)
             {
                 _lockObj = lockObj;
                 _currentThreadId = currentThreadId;
@@ -162,7 +175,7 @@ namespace System.Threading
         /// enough that it would typically not be reached when the lock is used properly.
         /// </exception>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public bool TryEnter() => TryEnter_Inlined(timeoutMs: 0).IsInitialized;
+        public bool TryEnter() => TryEnter_Inlined(timeoutMs: 0) != UninitializedThreadId;
 
         /// <summary>
         /// Tries to enter the lock, waiting for roughly the specified duration. If the lock is entered, the calling thread
@@ -226,19 +239,19 @@ namespace System.Threading
         public bool TryEnter(TimeSpan timeout) => TryEnter_Outlined(WaitHandle.ToTimeoutMilliseconds(timeout));
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private bool TryEnter_Outlined(int timeoutMs) => TryEnter_Inlined(timeoutMs).IsInitialized;
+        private bool TryEnter_Outlined(int timeoutMs) => TryEnter_Inlined(timeoutMs) != UninitializedThreadId;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ThreadId TryEnter_Inlined(int timeoutMs)
+        private int TryEnter_Inlined(int timeoutMs)
         {
             Debug.Assert(timeoutMs >= -1);
 
-            ThreadId currentThreadId = ThreadId.Current_NoInitialize;
-            if (currentThreadId.IsInitialized && State.TryLock(this))
+            int currentThreadId = ManagedThreadId.CurrentManagedThreadIdUnchecked;
+            if (currentThreadId != UninitializedThreadId && State.TryLock(this))
             {
-                Debug.Assert(!new ThreadId(_owningThreadId).IsInitialized);
+                Debug.Assert(_owningThreadId == UninitializedThreadId);
                 Debug.Assert(_recursionCount == 0);
-                _owningThreadId = currentThreadId.Id;
+                _owningThreadId = currentThreadId;
                 return currentThreadId;
             }
 
@@ -258,8 +271,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void Exit()
         {
-            var owningThreadId = new ThreadId(_owningThreadId);
-            if (!owningThreadId.IsInitialized || owningThreadId.Id != ThreadId.Current_NoInitialize.Id)
+            var owningThreadId = _owningThreadId;
+            if (owningThreadId == UninitializedThreadId || owningThreadId != ManagedThreadId.CurrentManagedThreadIdUnchecked)
             {
                 ThrowHelper.ThrowSynchronizationLockException_LockExit();
             }
@@ -268,12 +281,12 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private void Exit(ThreadId currentThreadId)
+        internal void Exit(int currentThreadId)
         {
-            Debug.Assert(currentThreadId.IsInitialized);
-            Debug.Assert(currentThreadId.Id == ThreadId.Current_NoInitialize.Id);
+            Debug.Assert(currentThreadId != UninitializedThreadId);
+            Debug.Assert(currentThreadId == ManagedThreadId.CurrentManagedThreadIdUnchecked);
 
-            if (_owningThreadId != currentThreadId.Id)
+            if (_owningThreadId != currentThreadId)
             {
                 ThrowHelper.ThrowSynchronizationLockException_LockExit();
             }
@@ -284,8 +297,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ExitImpl()
         {
-            Debug.Assert(new ThreadId(_owningThreadId).IsInitialized);
-            Debug.Assert(_owningThreadId == ThreadId.Current_NoInitialize.Id);
+            Debug.Assert(_owningThreadId != UninitializedThreadId);
+            Debug.Assert(_owningThreadId == ManagedThreadId.CurrentManagedThreadIdUnchecked);
             Debug.Assert(new State(this).IsLocked);
 
             if (_recursionCount == 0)
@@ -304,25 +317,50 @@ namespace System.Threading
             }
         }
 
+        internal uint ExitAll()
+        {
+            Debug.Assert(IsHeldByCurrentThread);
+
+            uint recursionCount = _recursionCount;
+            _owningThreadId = 0;
+            _recursionCount = 0;
+
+            State state = State.Unlock(this);
+            if (state.HasAnyWaiters)
+            {
+                SignalWaiterIfNecessary(state);
+            }
+
+            return recursionCount;
+        }
+
+        internal void Reenter(uint previousRecursionCount)
+        {
+            Debug.Assert(!IsHeldByCurrentThread);
+
+            Enter();
+            _recursionCount = previousRecursionCount;
+        }
+
         private static bool IsAdaptiveSpinEnabled(short minSpinCountForAdaptiveSpin) => minSpinCountForAdaptiveSpin <= 0;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private ThreadId TryEnterSlow(int timeoutMs, ThreadId currentThreadId)
+        internal int TryEnterSlow(int timeoutMs, int currentThreadId)
         {
             Debug.Assert(timeoutMs >= -1);
 
-            if (!currentThreadId.IsInitialized)
+            if (currentThreadId == UninitializedThreadId)
             {
                 // The thread info hasn't been initialized yet for this thread, and the fast path hasn't been tried yet. After
                 // initializing the thread info, try the fast path first.
-                currentThreadId.InitializeForCurrentThread();
-                Debug.Assert(_owningThreadId != currentThreadId.Id);
+                currentThreadId = ManagedThreadId.Current;
+                Debug.Assert(_owningThreadId != currentThreadId);
                 if (State.TryLock(this))
                 {
                     goto Locked;
                 }
             }
-            else if (_owningThreadId == currentThreadId.Id)
+            else if (_owningThreadId == currentThreadId)
             {
                 Debug.Assert(new State(this).IsLocked);
 
@@ -338,7 +376,7 @@ namespace System.Threading
 
             if (timeoutMs == 0)
             {
-                return new ThreadId(0);
+                return UninitializedThreadId;
             }
 
             //
@@ -464,9 +502,9 @@ namespace System.Threading
             Debug.Assert(tryLockResult == TryLockResult.Locked);
 
         Locked:
-            Debug.Assert(!new ThreadId(_owningThreadId).IsInitialized);
+            Debug.Assert(_owningThreadId == UninitializedThreadId);
             Debug.Assert(_recursionCount == 0);
-            _owningThreadId = currentThreadId.Id;
+            _owningThreadId = currentThreadId;
             return currentThreadId;
 
         Wait:
@@ -553,12 +591,12 @@ namespace System.Threading
 
                 if (acquiredLock)
                 {
-                    // In NativeAOT, ensure that class construction cycles do not occur after the lock is acquired but before
+                    // Ensure that class construction cycles do not occur after the lock is acquired but before
                     // the state is fully updated. Update the state to fully reflect that this thread owns the lock before doing
                     // other things.
-                    Debug.Assert(!new ThreadId(_owningThreadId).IsInitialized);
+                    Debug.Assert(_owningThreadId == UninitializedThreadId);
                     Debug.Assert(_recursionCount == 0);
-                    _owningThreadId = currentThreadId.Id;
+                    _owningThreadId = currentThreadId;
 
                     if (areContentionEventsEnabled)
                     {
@@ -577,7 +615,7 @@ namespace System.Threading
             }
 
             State.UnregisterWaiter(this);
-            return new ThreadId(0);
+            return UninitializedThreadId;
         }
 
         private void ResetWaiterStartTime() => _waiterStartTimeMs = 0;
@@ -646,8 +684,8 @@ namespace System.Threading
         {
             get
             {
-                var owningThreadId = new ThreadId(_owningThreadId);
-                bool isHeld = owningThreadId.IsInitialized && owningThreadId.Id == ThreadId.Current_NoInitialize.Id;
+                var owningThreadId = _owningThreadId;
+                bool isHeld = owningThreadId != UninitializedThreadId && owningThreadId == ManagedThreadId.CurrentManagedThreadIdUnchecked;
                 Debug.Assert(!isHeld || new State(this).IsLocked);
                 return isHeld;
             }
@@ -665,7 +703,176 @@ namespace System.Threading
             }
         }
 
-        internal ulong OwningThreadId => _owningThreadId;
+        internal int OwningThreadId => _owningThreadId;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool TryEnterOneShot(int currentManagedThreadId)
+        {
+            Debug.Assert(currentManagedThreadId != UninitializedThreadId);
+
+            if (State.TryLock(this))
+            {
+                Debug.Assert(_owningThreadId == UninitializedThreadId);
+                Debug.Assert(_recursionCount == 0);
+                _owningThreadId = currentManagedThreadId;
+                return true;
+            }
+
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool GetIsHeldByCurrentThread(int currentManagedThreadId)
+        {
+            Debug.Assert(currentManagedThreadId != UninitializedThreadId);
+
+            bool isHeld = _owningThreadId == currentManagedThreadId;
+            Debug.Assert(!isHeld || new State(this).IsLocked);
+            return isHeld;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private TryLockResult LazyInitializeOrEnter()
+        {
+            StaticsInitializationStage stage = (StaticsInitializationStage)Volatile.Read(ref s_staticsInitializationStage);
+            switch (stage)
+            {
+                case StaticsInitializationStage.Complete:
+                    if (_spinCount == SpinCountNotInitialized)
+                    {
+                        _spinCount = s_maxSpinCount;
+                    }
+                    return TryLockResult.Spin;
+
+                case StaticsInitializationStage.Started:
+                    // Spin-wait until initialization is complete or the lock is acquired to prevent class construction cycles
+                    // later during a full wait
+                    bool sleep = true;
+                    while (true)
+                    {
+                        if (sleep)
+                        {
+                            Thread.UninterruptibleSleep0();
+                        }
+                        else
+                        {
+                            Thread.SpinWait(1);
+                        }
+
+                        stage = (StaticsInitializationStage)Volatile.Read(ref s_staticsInitializationStage);
+                        if (stage == StaticsInitializationStage.Complete)
+                        {
+                            goto case StaticsInitializationStage.Complete;
+                        }
+                        else if (stage == StaticsInitializationStage.NotStarted)
+                        {
+                            goto default;
+                        }
+
+                        if (State.TryLock(this))
+                        {
+                            return TryLockResult.Locked;
+                        }
+
+                        sleep = !sleep;
+                    }
+
+                default:
+                    Debug.Assert(
+                        stage == StaticsInitializationStage.NotStarted ||
+                        stage == StaticsInitializationStage.PartiallyComplete);
+                    if (TryInitializeStatics())
+                    {
+                        goto case StaticsInitializationStage.Complete;
+                    }
+                    goto case StaticsInitializationStage.Started;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool TryInitializeStatics()
+        {
+            // Since Lock is used to synchronize class construction, and some of the statics initialization may involve class
+            // construction, update the stage first to avoid infinite recursion
+            var oldStage = (StaticsInitializationStage)s_staticsInitializationStage;
+            while (true)
+            {
+                if (oldStage == StaticsInitializationStage.Complete)
+                {
+                    return true;
+                }
+
+                var stageBeforeUpdate =
+                    (StaticsInitializationStage)Interlocked.CompareExchange(
+                        ref s_staticsInitializationStage,
+                        (int)StaticsInitializationStage.Started,
+                        (int)oldStage);
+                if (stageBeforeUpdate == StaticsInitializationStage.Started)
+                {
+                    return false;
+                }
+                if (stageBeforeUpdate == oldStage)
+                {
+                    Debug.Assert(
+                        oldStage == StaticsInitializationStage.NotStarted ||
+                        oldStage == StaticsInitializationStage.PartiallyComplete);
+                    break;
+                }
+
+                oldStage = stageBeforeUpdate;
+            }
+
+            bool isFullyInitialized;
+            try
+            {
+                if (oldStage == StaticsInitializationStage.NotStarted)
+                {
+                    // If the stage is PartiallyComplete, these will have already been initialized.
+                    //
+                    // Not using Environment.ProcessorCount here as it involves class construction, and if that property is
+                    // already being constructed earlier in the stack on the same thread, it would return the default value
+                    // here. Initialize s_isSingleProcessor first, as it may be used by other initialization afterwards.
+                    s_isSingleProcessor = Environment.GetProcessorCount() == 1;
+                    s_maxSpinCount = DetermineMaxSpinCount();
+                    s_minSpinCountForAdaptiveSpin = DetermineMinSpinCountForAdaptiveSpin();
+                }
+
+                // Also initialize some types that are used later to prevent potential class construction cycles. If
+                // NativeRuntimeEventSource is already being class-constructed by this thread earlier in the stack, Log can be
+                // null. Avoid going down the wait path in that case to avoid null checks in several other places. If not fully
+                // initialized, the stage will also be set to PartiallyComplete to try again.
+                isFullyInitialized = NativeRuntimeEventSource.Log != null;
+            }
+            catch
+            {
+                s_staticsInitializationStage = (int)StaticsInitializationStage.NotStarted;
+                throw;
+            }
+
+            Volatile.Write(
+                ref s_staticsInitializationStage,
+                isFullyInitialized
+                    ? (int)StaticsInitializationStage.Complete
+                    : (int)StaticsInitializationStage.PartiallyComplete);
+            return isFullyInitialized;
+        }
+
+        // Returns false until the static variable is lazy-initialized
+        internal static bool IsSingleProcessor => s_isSingleProcessor;
+
+        // Used to transfer the state when inflating thin locks. The lock is considered unlocked if managedThreadId is zero, and
+        // locked otherwise.
+        internal void InitializeForMonitor(int managedThreadId, uint recursionCount)
+        {
+            Debug.Assert(recursionCount == 0 || managedThreadId != UninitializedThreadId);
+            Debug.Assert(!new State(this).UseTrivialWaits);
+
+            _state = managedThreadId == 0 ? State.InitialStateValue : State.LockedStateValue;
+            _owningThreadId = managedThreadId;
+            _recursionCount = recursionCount;
+
+            Debug.Assert(!new State(this).UseTrivialWaits);
+        }
 
         private static short DetermineMaxSpinCount()
         {
@@ -1270,6 +1477,14 @@ namespace System.Threading
             Locked,
             Spin,
             Wait
+        }
+
+        private enum StaticsInitializationStage
+        {
+            NotStarted,
+            Started,
+            PartiallyComplete,
+            Complete
         }
     }
 }

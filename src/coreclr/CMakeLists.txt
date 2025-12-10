@@ -15,6 +15,7 @@ endif (MSVC)
 
 # Set commonly used directory names
 set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(RUNTIME_DIR ${CMAKE_CURRENT_SOURCE_DIR}/runtime)
 set(VM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vm)
 set(GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/inc)
 set(GENERATED_EVENTING_DIR ${CMAKE_CURRENT_BINARY_DIR}/Eventing)
@@ -34,15 +35,6 @@ if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CL
 endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
-
-if (CLR_CMAKE_TARGET_ARCH_WASM)
-    add_compile_options(
-      -fwasm-exceptions 
-      -msimd128)
-    add_link_options(
-      -fwasm-exceptions 
-      )
-endif()
 
 #----------------------------------------------------
 # Cross target Component build specific configuration

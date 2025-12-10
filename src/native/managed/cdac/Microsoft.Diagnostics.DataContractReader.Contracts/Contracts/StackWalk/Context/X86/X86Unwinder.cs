@@ -34,7 +34,7 @@ public class X86Unwinder(Target target)
     private readonly Target _target = target;
     private readonly uint _pointerSize = (uint)target.PointerSize;
     private readonly bool _updateAllRegs = true;
-    private readonly bool _unixX86ABI = target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Unix;
+    private readonly bool _unixX86ABI = target.Contracts.RuntimeInfo.GetTargetOperatingSystem() != RuntimeInfoOperatingSystem.Windows;
 
     private static readonly RegMask[] registerOrder =
     [

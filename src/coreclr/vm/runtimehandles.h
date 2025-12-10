@@ -141,6 +141,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAlloc(MethodTable* pMT, QCal
 
 extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAllocNoChecks(MethodTable* pMT, QCall::ObjectHandleOnStack allocated);
 extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemory(QCall::TypeHandle type, uint32_t size);
+extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned(QCall::TypeHandle type, uint32_t size, uint32_t alignment);
 
 extern "C" PVOID QCALLTYPE QCall_GetGCHandleForTypeHandle(QCall::TypeHandle pTypeHandle, INT32 handleType);
 extern "C" void QCALLTYPE QCall_FreeGCHandleForTypeHandle(QCall::TypeHandle pTypeHandle, OBJECTHANDLE objHandle);
@@ -214,6 +215,8 @@ public:
     FCDECL1(Object*, GetResolver, MethodDesc * pMethod);
 
     static FCDECL1(FC_BOOL_RET, IsConstructor, MethodDesc *pMethod);
+
+    static FCDECL1(FC_BOOL_RET, IsAsyncMethod, MethodDesc *pMethod);
 
     static FCDECL1(Object*, GetLoaderAllocatorInternal, MethodDesc *pMethod);
 };

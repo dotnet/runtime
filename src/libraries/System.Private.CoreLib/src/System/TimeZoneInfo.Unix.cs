@@ -284,7 +284,7 @@ namespace System
             return daylightDisplayName;
         }
 
-        private static void PopulateAllSystemTimeZones(CachedData cachedData)
+        private static Dictionary<string, TimeZoneInfo> PopulateAllSystemTimeZones(CachedData cachedData)
         {
             Debug.Assert(Monitor.IsEntered(cachedData));
 
@@ -295,13 +295,27 @@ namespace System
 
             if (Invariant)
             {
-                return;
+                return cachedData._systemTimeZones;
             }
+
+            const int initialCapacity = 430; // Should be enough for all time zones
+
+            // The filtered list that shouldn't have any duplicates.
+            Dictionary<string, TimeZoneInfo> filteredTimeZones = new Dictionary<string, TimeZoneInfo>(capacity: initialCapacity, comparer: StringComparer.OrdinalIgnoreCase)
+            {
+                { UtcId, s_utcTimeZone }
+            };
 
             foreach (string timeZoneId in GetTimeZoneIds())
             {
-                TryGetTimeZone(timeZoneId, false, out _, out _, cachedData, alwaysFallbackToLocalMachine: true);  // populate the cache
+                if (TryGetTimeZone(timeZoneId, false, out TimeZoneInfo? timeZone, out _, cachedData, alwaysFallbackToLocalMachine: true) == TimeZoneInfoResult.Success &&
+                    timeZone is not null)
+                {
+                    filteredTimeZones[timeZoneId] = timeZone;
+                }
             }
+
+            return filteredTimeZones;
         }
 
         /// <summary>

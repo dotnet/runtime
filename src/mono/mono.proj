@@ -803,7 +803,6 @@ JS_ENGINES = [NODE_JS]
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
       <MonoAotAbi Condition="'$(TargetsBrowser)' == 'true'">wasm32-unknown-none</MonoAotAbi>
       <MonoAotAbi Condition="'$(TargetsWasi)' == 'true'">wasm32-unknown-wasip2</MonoAotAbi>
-      <_ForceRelease Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(TargetArchitecture)' == 'wasm' and '$(Configuration)' == 'Debug'">true</_ForceRelease>
     </PropertyGroup>
 
     <!-- Windows specific options -->

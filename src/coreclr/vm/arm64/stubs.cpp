@@ -585,14 +585,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-#ifdef DACCESS_COMPILE
-BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
-{
-    _ASSERTE(!"ARM64:NYI");
-    return FALSE;
-}
-#endif // DACCESS_COMPILE
-
 #ifndef DACCESS_COMPILE
 // ----------------------------------------------------------------
 // StubLinkerCPU methods

@@ -1232,9 +1232,9 @@ HRESULT ClrDataAccess::GetTieredVersions(
             PTR_Module pModule = (PTR_Module)pMD->GetModule();
             if (pModule->IsReadyToRun())
             {
-                PTR_PEImageLayout pImage = pModule->GetReadyToRunInfo()->GetImage();
+                PTR_ReadyToRunLoadedImage pImage = pModule->GetReadyToRunInfo()->GetImage();
                 r2rImageBase = dac_cast<TADDR>(pImage->GetBase());
-                r2rImageEnd = r2rImageBase + pImage->GetSize();
+                r2rImageEnd = r2rImageBase + pImage->GetVirtualSize();
             }
         }
 
@@ -3801,9 +3801,13 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
                 }
 #endif // FEATURE_COMINTEROP
 
-                pSyncBlockData->MonitorHeld = pBlock->m_Monitor.GetMonitorHeldStateVolatile();
-                pSyncBlockData->Recursion = pBlock->m_Monitor.GetRecursionLevel();
-                pSyncBlockData->HoldingThread = HOST_CDADDR(pBlock->m_Monitor.GetHoldingThread());
+                DWORD holdingThread = 0;
+                DWORD recursionCount = 0;
+                BOOL monitorHeld = pBlock->TryGetLockInfo(&holdingThread, &recursionCount);
+
+                pSyncBlockData->MonitorHeld = monitorHeld == TRUE ? 1 : 0;
+                pSyncBlockData->Recursion = recursionCount + 1; // The runtime tracks recursion count starting at 0, but diagnostics users expect it to start at 1.
+                pSyncBlockData->HoldingThread = PTR_HOST_TO_TADDR(g_pThinLockThreadIdDispenser->IdToThread(holdingThread));
                 pSyncBlockData->appDomainPtr = PTR_HOST_TO_TADDR(AppDomain::GetCurrentDomain());
 
                 // TODO: Microsoft, implement the wait list

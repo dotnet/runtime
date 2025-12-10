@@ -269,7 +269,7 @@ namespace System
 
             // InitializeAndValidate should not be called outside of the constructor
             Debug.Assert(sizeof(Uri.Flags) == sizeof(ulong));
-            Interlocked.Or(ref Unsafe.As<Uri.Flags, ulong>(ref thisUri._flags), (ulong)Uri.Flags.CustomParser_ParseMinimalAlreadyCalled);
+            Interlocked.Or(ref thisUri._flags, Uri.Flags.CustomParser_ParseMinimalAlreadyCalled);
         }
 
         internal string? InternalResolve(Uri thisBaseUri, Uri uriLink, out UriFormatException? parsingError)

@@ -1,7 +1,6 @@
 add_definitions(-DFEATURE_NO_HOST)
 
-set(CLR_DAC_SOURCES
-)
+set(CLR_DAC_SOURCES)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=mscordaccore.dll)
 

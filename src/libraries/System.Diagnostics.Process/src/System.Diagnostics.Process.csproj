@@ -273,8 +273,8 @@
              Link="Common\Interop\Unix\Interop.ResourceLimits.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs"
              Link="Common\Interop\Unix\Interop.PathConf.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
-             Link="Common\System\Text\ValueUtf8Converter.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\SpanOfCharAsUtf8StringMarshaller.cs"
+             Link="Common\System\Runtime\InteropServices\SpanOfCharAsUtf8StringMarshaller.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.WaitId.cs"
              Link="Common\Interop\Unix\Interop.WaitId.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.WaitPid.cs"

@@ -74,8 +74,8 @@ const libBrowserUtils = configure({
     output: [{
         name: "libBrowserUtils",
         format: "iife",
-        file: staticLibDestination + "/libSystem.Browser.Utils.js",
-        footer: await fs.readFile("./libs/System.Native.Browser/libSystem.Browser.Utils.footer.js"),
+        file: staticLibDestination + "/libSystem.Native.Browser.Utils.js",
+        footer: await fs.readFile("./libs/System.Native.Browser/libSystem.Native.Browser.Utils.footer.js"),
     }],
     terser: {
         compress: {
@@ -85,6 +85,21 @@ const libBrowserUtils = configure({
             toplevel: true,
             keep_fnames,
             reserved,
+        }
+    }
+});
+
+const dotnetDiagnosticsJS = configure({
+    input: "./libs/System.Native.Browser/diagnostics/index.ts",
+    output: [{
+        file: staticLibDestination + "/dotnet.diagnostics.js",
+    }],
+    terser: {
+        compress: {
+            module: true,
+        }, mangle: {
+            module: true,
+            keep_classnames,
         }
     }
 });
@@ -149,6 +164,7 @@ export default defineConfig([
     dotnetDTS,
     libNativeBrowser,
     libBrowserUtils,
+    dotnetDiagnosticsJS,
     dotnetRuntimeJS,
     libInteropJavaScriptNative,
     libBrowserHost,

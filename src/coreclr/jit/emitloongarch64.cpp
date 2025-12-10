@@ -2646,7 +2646,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
 #endif
         emitOutput_Instr(dst, 0x4c000000 | ((int)REG_DEFAULT_HELPER_CALL_TARGET << 5) | reg2);
 
-        emitRecordRelocation(dst - 4, (BYTE*)addr, IMAGE_REL_LOONGARCH64_JIR);
+        emitRecordRelocation(dst - 4, (BYTE*)addr, CorInfoReloc::LOONGARCH64_JIR);
     }
     else
     {
@@ -3259,7 +3259,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             dstRW += 4;
 
-            emitRecordRelocation(dstRW - 8 - writeableOffset, id->idAddr()->iiaAddr, IMAGE_REL_LOONGARCH64_PC);
+            emitRecordRelocation(dstRW - 8 - writeableOffset, id->idAddr()->iiaAddr, CorInfoReloc::LOONGARCH64_PC);
 
             sz = sizeof(instrDesc);
         }

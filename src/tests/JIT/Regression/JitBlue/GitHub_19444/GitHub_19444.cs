@@ -4,6 +4,9 @@
 // This test case illustrates a bug where the JIT_ByRefWriteBarrier was not
 // included in IsIPInMarkedJitHelper on non-32-bit-x86 platforms.
 
+
+namespace GitHub_19444;
+
 using System;
 using Xunit;
 

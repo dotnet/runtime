@@ -1178,5 +1178,11 @@ namespace Microsoft.Extensions
             public byte[] ByteArray2 { get; set; }
             public byte[] ByteArray3 { get; set; }
         }
+
+        public class MyOptionsWithNullableEnumerable
+        {
+            public IEnumerable<int>? IEnumerableProperty { get; set; }
+            public string[] StringArray { get; set; }
+        }
     }
 }

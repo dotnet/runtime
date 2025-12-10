@@ -8,6 +8,7 @@ import { config } from "./dotnet.boot.js";
 try {
     await dotnet
         .withConfig(config)
+        .withApplicationArguments("arg1", "arg2", "arg3")
         .run();
 } catch (err) {
     console.error(err);

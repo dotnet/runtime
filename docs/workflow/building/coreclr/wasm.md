@@ -64,7 +64,7 @@ You can also run the runtime directly in Node.js:
 In script below please replace `/path/to/runtime/` by a **absolute unix path** to the actual runtime repo (even on Windows).
 
 ```bash
-cp ./artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Debug/runtimes/browser-wasm/lib/net10.0/*.dll ./artifacts/bin/coreclr/browser.wasm.Debug/IL
+cp ./artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Debug/runtimes/browser-wasm/lib/net11.0/*.dll ./artifacts/bin/coreclr/browser.wasm.Debug/IL
 cp helloworld.dll ./artifacts/bin/coreclr/browser.wasm.Debug/IL
 cd ./artifacts/bin/coreclr/browser.wasm.Debug/
 node ./corerun.js -c /path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL /path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL/helloworld.dll
@@ -75,7 +75,7 @@ node ./corerun.js -c /path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/I
 You can also run the corehost directly in Node.js:
 
 ```bash
-cp ./artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Debug/runtimes/browser-wasm/lib/net10.0/*.dll ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
+cp ./artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Debug/runtimes/browser-wasm/lib/net11.0/*.dll ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
 cp helloworld.dll ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
 cd ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
 node ./main.mjs
@@ -128,6 +128,9 @@ In config below please replace `/path/to/runtime/` by a **absolute unix path** t
                 "env": {
                     "CORE_ROOT":"/path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL/"
                 },
+                "runtimeArgs": [
+                    "--stack-trace-limit=1000"
+                ],
                 "args": [
                     "/path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL/helloworld.dll"
                 ],
@@ -139,6 +142,9 @@ In config below please replace `/path/to/runtime/` by a **absolute unix path** t
                 "request": "launch",
                 "skipFiles": [
                     "<node_internals>/**"
+                ],
+                "runtimeArgs": [
+                    "--stack-trace-limit=1000"
                 ],
                 "args": [
                     "HelloWorld.dll"

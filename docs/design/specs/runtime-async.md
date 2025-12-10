@@ -83,3 +83,5 @@ Other restrictions are likely to be permanent, including
 | ------------- | ------------- | ------------- |
 | . . . | . . . | . . . |
 |Async |0x2000 |Method is an Async Method.|
+
+The flag is represented in IL by the `async` keyword. Tools like `ilasm` and `ildasm` recognize this flag.

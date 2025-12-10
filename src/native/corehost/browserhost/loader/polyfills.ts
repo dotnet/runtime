@@ -4,20 +4,6 @@
 import { ENVIRONMENT_IS_NODE } from "./per-module";
 
 export function initPolyfills(): void {
-    if (typeof globalThis.WeakRef !== "function") {
-        class WeakRefPolyfill<T> {
-            private _value: T | undefined;
-
-            constructor(value: T) {
-                this._value = value;
-            }
-
-            deref(): T | undefined {
-                return this._value;
-            }
-        }
-        globalThis.WeakRef = WeakRefPolyfill as any;
-    }
     if (typeof globalThis.fetch !== "function") {
         globalThis.fetch = fetchLike as any;
     }
@@ -62,10 +48,31 @@ export async function initPolyfillsAsync(): Promise<void> {
     // WASM-TODO: performance polyfill for V8
 }
 
+let _nodeFs: any | undefined = undefined;
+let _nodeUrl: any | undefined = undefined;
+
+export async function nodeFs(): Promise<any> {
+    if (ENVIRONMENT_IS_NODE && !_nodeFs) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore:
+        _nodeFs = await import(/*! webpackIgnore: true */"fs");
+    }
+    return _nodeFs;
+}
+
+export async function nodeUrl(): Promise<any> {
+    if (ENVIRONMENT_IS_NODE && !_nodeUrl) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore:
+        _nodeUrl = await import(/*! webpackIgnore: true */"node:url");
+    }
+    return _nodeUrl;
+}
+
 export async function fetchLike(url: string, init?: RequestInit): Promise<Response> {
-    let node_fs: any | undefined = undefined;
-    let node_url: any | undefined = undefined;
     try {
+        await nodeFs();
+        await nodeUrl();
         // this need to be detected only after we import node modules in onConfigLoaded
         const hasFetch = typeof (globalThis.fetch) === "function";
         if (ENVIRONMENT_IS_NODE) {
@@ -73,19 +80,11 @@ export async function fetchLike(url: string, init?: RequestInit): Promise<Respon
             if (!isFileUrl && hasFetch) {
                 return globalThis.fetch(url, init || { credentials: "same-origin" });
             }
-            if (!node_fs) {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore:
-                node_url = await import(/*! webpackIgnore: true */"url");
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore:
-                node_fs = await import(/*! webpackIgnore: true */"fs");
-            }
             if (isFileUrl) {
-                url = node_url.fileURLToPath(url);
+                url = _nodeUrl.fileURLToPath(url);
             }
 
-            const arrayBuffer = await node_fs.promises.readFile(url);
+            const arrayBuffer = await _nodeFs.promises.readFile(url);
             return <Response><any>{
                 ok: true,
                 headers: {
@@ -102,8 +101,6 @@ export async function fetchLike(url: string, init?: RequestInit): Promise<Respon
         } else if (hasFetch) {
             return globalThis.fetch(url, init || { credentials: "same-origin" });
         } else if (typeof (read) === "function") {
-            // note that it can't open files with unicode names, like Stra<unicode char - Latin Small Letter Sharp S>e.xml
-            // https://bugs.chromium.org/p/v8/issues/detail?id=12541
             return <Response><any>{
                 ok: true,
                 url,

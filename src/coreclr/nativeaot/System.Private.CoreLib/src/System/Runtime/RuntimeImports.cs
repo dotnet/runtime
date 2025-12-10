@@ -404,7 +404,7 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewArray")]
-        internal static extern unsafe Array RhNewArray(MethodTable* pEEType, int length);
+        internal static extern unsafe Array RhNewArray(MethodTable* pEEType, nint length);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewVariableSizeObject")]

@@ -20,25 +20,27 @@ typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
 class NativeImage;
 class PrepareCodeConfig;
+class ReadyToRunLoadedImage;
 
 typedef DPTR(class ReadyToRunCoreInfo) PTR_ReadyToRunCoreInfo;
+typedef DPTR(class ReadyToRunLoadedImage) PTR_ReadyToRunLoadedImage;
 class ReadyToRunCoreInfo
 {
 private:
-    PTR_PEImageLayout               m_pLayout;
+    PTR_ReadyToRunLoadedImage       m_pLayout;
     PTR_READYTORUN_CORE_HEADER      m_pCoreHeader;
     Volatile<bool>                  m_fForbidLoadILBodyFixups;
 
 public:
     ReadyToRunCoreInfo();
-    ReadyToRunCoreInfo(PEImageLayout * pLayout, READYTORUN_CORE_HEADER * pCoreHeader);
+    ReadyToRunCoreInfo(ReadyToRunLoadedImage * pLayout, READYTORUN_CORE_HEADER * pCoreHeader);
 
-    PTR_PEImageLayout GetLayout() const { return m_pLayout; }
+    PTR_ReadyToRunLoadedImage GetLayout() const { return m_pLayout; }
     IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const;
     void ForbidProcessMoreILBodyFixups() { m_fForbidLoadILBodyFixups = true; }
     bool IsForbidProcessMoreILBodyFixups() { return m_fForbidLoadILBodyFixups; }
 
-    PTR_PEImageLayout GetImage() const
+    PTR_ReadyToRunLoadedImage GetImage() const
     {
         LIMITED_METHOD_CONTRACT;
         return m_pLayout;
@@ -144,7 +146,7 @@ class ReadyToRunInfo
     PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
 
 public:
-    ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, AllocMemTracker *pamTracker);
+    ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, ReadyToRunLoadedImage * pLayout, AllocMemTracker *pamTracker);
 
     static PTR_ReadyToRunInfo ComputeAlternateGenericLocationForR2RCode(MethodDesc *pMethod);
     static PTR_ReadyToRunInfo GetUnrelatedR2RModules();
@@ -165,7 +167,7 @@ public:
 
     PTR_NativeImage GetNativeImage() const { return m_pNativeImage; }
 
-    PTR_PEImageLayout GetImage() const { return m_pComposite->GetImage(); }
+    PTR_ReadyToRunLoadedImage GetImage() const { return m_pComposite->GetImage(); }
     IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const { return m_pComposite->FindSection(type); }
 
     PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups);
@@ -389,6 +391,66 @@ struct GenericDictionaryDynamicHelperStubData
     UINT32 SizeOffset;
     UINT32 SlotOffset;
     GenericHandleArgs *HandleArgs;
+};
+
+class ReadyToRunLoadedImage
+{
+    TADDR m_pImageBase;
+    uint32_t m_imageSize;
+
+    void* m_pImageCleanupData;
+
+    void(*m_pfnCleanup)(void*);
+
+public:
+    ReadyToRunLoadedImage(TADDR m_pImageBase, uint32_t imageSize)
+        : m_pImageBase(m_pImageBase), m_imageSize(imageSize), m_pImageCleanupData(nullptr), m_pfnCleanup(nullptr)
+    {
+    }
+
+    ReadyToRunLoadedImage(TADDR m_pImageBase, uint32_t imageSize, void* pImageCleanupData, void(*pfnCleanup)(void*))
+        : m_pImageBase(m_pImageBase), m_imageSize(imageSize), m_pImageCleanupData(pImageCleanupData), m_pfnCleanup(pfnCleanup)
+    {
+    }
+
+    ReadyToRunLoadedImage(const ReadyToRunLoadedImage&) = delete;
+    ReadyToRunLoadedImage& operator=(const ReadyToRunLoadedImage&) = delete;
+    ReadyToRunLoadedImage(ReadyToRunLoadedImage&&) = delete;
+    ReadyToRunLoadedImage& operator=(ReadyToRunLoadedImage&&) = delete;
+
+    ~ReadyToRunLoadedImage()
+    {
+        if (m_pfnCleanup)
+            m_pfnCleanup(m_pImageCleanupData);
+    }
+
+    TADDR GetBase() const
+    {
+        return m_pImageBase;
+    }
+
+    uint32_t GetVirtualSize() const
+    {
+        return m_imageSize;
+    }
+
+    TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY* pDir, uint32_t* pSize = nullptr) const
+    {
+        if (pSize != nullptr)
+            *pSize = pDir->Size;
+        return m_pImageBase + pDir->VirtualAddress;
+    }
+
+    TADDR GetRvaData(RVA rva) const
+    {
+        return m_pImageBase + rva;
+    }
+
+    RVA GetDataRva(TADDR data) const
+    {
+        _ASSERTE_MSG(data >= m_pImageBase && data < m_pImageBase + m_imageSize, "Data pointer is outside of loaded image.");
+        return (RVA)(data - m_pImageBase);
+    }
 };
 
 #endif // _READYTORUNINFO_H_

@@ -13,7 +13,6 @@
 #include "debugdebugger.h"
 #include "../inc/common.h"
 #include "eeconfig.h" // This is here even for retail & free builds...
-#include "../../dlls/mscorrc/resource.h"
 
 #include "vars.hpp"
 #include <limits.h>
@@ -11657,6 +11656,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
     case ELEMENT_TYPE_CLASS:
     case ELEMENT_TYPE_VALUETYPE:
         {
+            th = th.UpCastTypeIfNeeded();
             res->vmTypeHandle = th.HasInstantiation() ? WrapTypeHandle(th) : VMPTR_TypeHandle::NullPtr();
                                                                              // only set if instantiated
             res->metadataToken = th.GetCl();
@@ -11739,6 +11739,7 @@ void Debugger::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed,
     case ELEMENT_TYPE_CLASS:
         {
 treatAllValuesAsBoxed:
+            th = th.UpCastTypeIfNeeded();
             res->ClassTypeData.typeHandle = th.HasInstantiation() ? WrapTypeHandle(th) : VMPTR_TypeHandle::NullPtr(); // only set if instantiated
             res->ClassTypeData.metadataToken = th.GetCl();
             DebuggerModule * pModule = LookupOrCreateModule(th.GetModule());

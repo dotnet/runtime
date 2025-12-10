@@ -34,16 +34,13 @@ namespace GitHub_23530
             return Sse.Add(c, d).ToScalar();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(Fma), nameof(Fma.IsSupported))]
         public static int TestEntryPoint()
         {
-            if (Fma.IsSupported)
+            float result = fmaTest();
+            if (Math.Abs(result - 5.0F) > System.Single.Epsilon)
             {
-                float result = fmaTest();
-                if (Math.Abs(result - 5.0F) > System.Single.Epsilon)
-                {
-                    return -1;
-                }
+                return -1;
             }
             return 100;
         }

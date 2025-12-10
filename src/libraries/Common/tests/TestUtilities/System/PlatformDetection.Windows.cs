@@ -69,9 +69,8 @@ namespace System
         // Windows 11 aka 21H2
         public static bool IsWindows10Version22000OrGreater => IsWindowsVersionOrLater(10, 0, 22000);
 
-        // TODO: Update this to the first official PQC supported build when available.
-        // Windows 11 Insider Preview Build 27871 (Canary Channel)
-        public static bool IsWindows10Version27858OrGreater => IsWindowsVersionOrLater(10, 0, 27858);
+        // Windows 11 2024 Update (24H2)
+        public static bool IsWindows10Version26100OrGreater => IsWindowsVersionOrLater(10, 0, 26100);
 
         public static bool IsWindowsIoTCore
         {

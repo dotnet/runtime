@@ -75,6 +75,12 @@
         </File>
       </Component>
 
+      <!-- Adding the new PATH component in 10.0 (P7 through RC2) and then reverting that change also modified when RemoveExistingProducts
+           was scheduled. To avoid losing the PATH setting when upgrading from P7/RC1/RC2, we need to retain an empty component to ensure
+           reference counts are maintained. -->
+      <Component Id="cmpSetPath" Guid="{0B910ED8-0877-473D-8658-647382324433}" Directory="DOTNETHOME">
+        <CreateFolder />
+      </Component>
     </ComponentGroup>
 
     <Property Id="ProductCPU" Value="$(var.Platform)" />

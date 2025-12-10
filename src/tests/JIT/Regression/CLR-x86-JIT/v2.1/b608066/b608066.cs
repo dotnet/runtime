@@ -4,6 +4,9 @@
 
 //The test checks for a gchole and an assert failure.
 //The test should print out 33 and 3 if it passed the gchole and assert tests.
+
+namespace b608066;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -163,6 +166,7 @@ public class ReproTwo
 
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint() => Run(0);
 

@@ -168,7 +168,7 @@
     <value>The version of the underlying compression routine does not match expected version.</value>
   </data>
   <data name="ZLibErrorUnexpected" xml:space="preserve">
-    <value>The underlying compression routine returned an unexpected error code.</value>
+    <value>The underlying compression routine returned an unexpected error code: '{0}'.</value>
   </data>
   <data name="CDCorrupt" xml:space="preserve">
     <value>Central Directory corrupt.</value>

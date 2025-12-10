@@ -134,7 +134,6 @@ SpinConstants g_SpinConstants = {
     40000,     // dwMaximumDuration - ideally (20000 * max(2, numProc))
     3,         // dwBackoffFactor
     10,        // dwRepetitions
-    0          // dwMonitorSpinCount
 };
 
 // support for Event Tracing for Windows (ETW)

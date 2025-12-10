@@ -7,13 +7,13 @@
 .syntax unified
 .thumb
 
-// LPVOID __stdcall GetCurrentIP(void)//
+// void* GetCurrentIP(void)//
     LEAF_ENTRY GetCurrentIP, _TEXT
         mov     r0, lr
         bx      lr
     LEAF_END GetCurrentIP, _TEXT
 
-// LPVOID __stdcall GetCurrentSP(void)//
+// void* GetCurrentSP(void)//
     LEAF_ENTRY GetCurrentSP, _TEXT
         mov     r0, sp
         bx      lr

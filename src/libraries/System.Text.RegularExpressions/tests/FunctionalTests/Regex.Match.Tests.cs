@@ -407,6 +407,11 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(\d{2,3}?)+?", "1234", RegexOptions.None, 0, 4, true, "12");
             yield return (@"(\d{2,3}?)*?", "123456", RegexOptions.None, 0, 4, true, "");
 
+            yield return (@"^.*$", "abcd\nefg", RegexOptions.Singleline, 0, 8, true, "abcd\nefg");
+            yield return (@"^(?:.|\n)*$", "abcd\nefg", RegexOptions.None, 0, 8, true, "abcd\nefg");
+            yield return (@"^(?:.|\r|\n)*$", "abcd\nefg", RegexOptions.None, 0, 8, true, "abcd\nefg");
+            yield return (@"^(?:\r|.|\n)*$", "abcd\nefg", RegexOptions.None, 0, 8, true, "abcd\nefg");
+
             foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline })
             {
                 yield return (@".*", "abc", lineOption, 1, 2, true, "bc");

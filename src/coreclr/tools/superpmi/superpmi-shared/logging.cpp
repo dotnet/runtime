@@ -53,7 +53,7 @@ void Logger::Shutdown()
 // Opens a log file at the given path and enables file-based logging, if the given path is valid.
 //
 /* static */
-void Logger::OpenLogFile(char* logFilePath)
+void Logger::OpenLogFile(const char* logFilePath)
 {
     if (s_logFile == INVALID_HANDLE_VALUE && logFilePath != nullptr)
     {

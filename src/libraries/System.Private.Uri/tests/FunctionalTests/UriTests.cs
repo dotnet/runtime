@@ -821,11 +821,32 @@ namespace System.PrivateUri.Tests
             yield return new object[] { "file:///\u00FCri/", "file:///\u00FCri/", "/%C3%BCri/", "file:///%C3%BCri/", "/\u00FCri/" };
             yield return new object[] { "file:///a/b\uD83D\uDE1F/Foo.cs", "file:///a/b\uD83D\uDE1F/Foo.cs", "/a/b%F0%9F%98%9F/Foo.cs", "file:///a/b%F0%9F%98%9F/Foo.cs", "/a/b\uD83D\uDE1F/Foo.cs" };
 
+            // DOS with ':' or ':/' instead of '://'
+            yield return new object[] { "file:C:/uri/", "file:///C:/uri/", "C:/uri/", "file:///C:/uri/", "C:\\uri\\" };
+            yield return new object[] { "file:C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
+            yield return new object[] { "file:/C:/uri/", "file:///C:/uri/", "C:/uri/", "file:///C:/uri/", "C:\\uri\\" };
+            yield return new object[] { "file:/C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
+
             // DOS
+            yield return new object[] { "file://C:/uri/", "file:///C:/uri/", "C:/uri/", "file:///C:/uri/", "C:\\uri\\" };
             yield return new object[] { "file://C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
+            yield return new object[] { "file:///C:/uri/", "file:///C:/uri/", "C:/uri/", "file:///C:/uri/", "C:\\uri\\" };
             yield return new object[] { "file:///C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
             yield return new object[] { "C:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
             yield return new object[] { "\tC:/\u00FCri/", "file:///C:/\u00FCri/", "C:/%C3%BCri/", "file:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
+
+            // DOS in custom scheme (differs in whether ':' vs '://' is used since it doesn't have MustHaveAuthority)
+            yield return new object[] { "custom:C:/uri/", "custom:C:/uri/", "C:/uri/", "custom:C:/uri/", "C:\\uri\\" };
+            yield return new object[] { "custom:C:/\u00FCri/", "custom:C:/\u00FCri/", "C:/%C3%BCri/", "custom:C:/%C3%BCri/", "C:\\\u00FCri\\" };
+            yield return new object[] { "custom:/C:/uri/", "custom:/C:/uri/", "C:/uri/", "custom:/C:/uri/", "C:\\uri\\" };
+            yield return new object[] { "custom:/C:/\u00FCri/", "custom:/C:/\u00FCri/", "C:/%C3%BCri/", "custom:/C:/%C3%BCri/", "C:\\\u00FCri\\" };
+            yield return new object[] { "custom://C:/uri/", "custom:///C:/uri/", "C:/uri/", "custom:///C:/uri/", "C:\\uri\\" };
+            yield return new object[] { "custom://C:/\u00FCri/", "custom:///C:/\u00FCri/", "C:/%C3%BCri/", "custom:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
+            yield return new object[] { "custom:///C:/uri/", "custom:///C:/uri/", "C:/uri/", "custom:///C:/uri/", "C:\\uri\\" };
+            yield return new object[] { "custom:///C:/\u00FCri/", "custom:///C:/\u00FCri/", "C:/%C3%BCri/", "custom:///C:/%C3%BCri/", "C:\\\u00FCri\\" };
+
+            yield return new object[] { "vsmacros://C:/\u00FCri/", "vsmacros://C:/\u00FCri/", "C:/%C3%BCri/", "vsmacros://C:/%C3%BCri/", "C:\\\u00FCri\\" };
+            yield return new object[] { "vsmacros://test/\u00FCri/", "vsmacros://test/\u00FCri/", "/%C3%BCri/", "vsmacros://test/%C3%BCri/", "\\\\test\\\u00FCri\\" };
 
             // UNC
             yield return new object[] { "\\\\\u00FCri/", "file://\u00FCri/", "/", "file://\u00FCri/", "\\\\\u00FCri\\" };
