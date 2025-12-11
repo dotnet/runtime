@@ -5651,8 +5651,9 @@ void CodeGen::genFnProlog()
 
 #else  // defined(TARGET_WASM)
     // TODO-WASM: proper local count, local declarations, and shadow stack maintenance
-    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, compiler->info.compArgsCount);
-    genWasmArgsAsLocals();
+    assert(compiler->info.compLocalsCount >= compiler->info.compArgsCount);
+    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, compiler->info.compLocalsCount - compiler->info.compArgsCount);
+    genWasmLocals();
     GetEmitter()->emitMarkPrologEnd();
 #endif // !defined(TARGET_WASM)
 
@@ -5662,11 +5663,13 @@ void CodeGen::genFnProlog()
 #if defined(TARGET_WASM)
 
 //------------------------------------------------------------------------
-// genWasmArgsAsLocals: generate wasm locals for all incoming arguments
-void CodeGen::genWasmArgsAsLocals()
+// genWasmLocals: generate wasm locals for all locals
+//
+// TODO-WASM: re-evaluate this, we may not want a 1:1 mapping of locals to wasm locals
+// TODO-WASM: pre-declare all "register" locals
+void CodeGen::genWasmLocals()
 {
-    // Declare locals for all incoming arguments
-    for (unsigned i = 0; i < compiler->info.compArgsCount; i++)
+    for (unsigned i = 0; i < compiler->info.compLocalsCount - compiler->info.compArgsCount; i++)
     {
         LclVarDsc* varDsc = compiler->lvaGetDesc(i);
         assert(varDsc->lvIsParam);

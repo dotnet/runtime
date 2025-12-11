@@ -591,7 +591,7 @@ protected:
     void genReserveEpilog(BasicBlock* block);
     void genFnProlog();
 #if defined(TARGET_WASM)
-    void genWasmArgsAsLocals();
+    void genWasmLocals();
 #endif
     void genFnEpilog(BasicBlock* block);
 
