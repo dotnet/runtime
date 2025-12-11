@@ -2603,10 +2603,7 @@ void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, 
         m_r1 = NoRange;
         m_currentRoutineType = RoutineType::None;
     }
-#ifndef TARGET_ARM
-    else
-#endif // !TARGET_ARM
-    if ((m_currentRoutineType == RoutineType::FPReg) && (type != RoutineType::FPReg))
+    else if ((m_currentRoutineType == RoutineType::FPReg) && (type != RoutineType::FPReg))
     {
         pRoutines[m_routineIndex++] = GetFPRegRangeRoutine(m_x1, m_x2);
         m_x1 = NoRange;
@@ -2626,10 +2623,7 @@ void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, 
         m_currentRoutineType = RoutineType::None;
     }
 #endif // TARGET_ARM64
-#ifndef TARGET_ARM
-    else
-#endif // !TARGET_ARM
-    if ((m_currentRoutineType == RoutineType::Stack) && (type != RoutineType::Stack))
+    else if ((m_currentRoutineType == RoutineType::Stack) && (type != RoutineType::Stack))
     {
         pRoutines[m_routineIndex++] = GetStackRoutine();
 #ifdef TARGET_32BIT
@@ -2799,6 +2793,20 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
                 }
                 ProcessArgument(&argIt, argLocDescEightByte, pRoutines);
             }
+        }
+        else
+#elif defined(TARGET_ARM) && defined(ARM_SOFTFP)
+        if (argLocDesc.m_cGenReg != 0 && argLocDesc.m_byteStackSize != 0)
+        {
+            ArgLocDesc argLocDescReg = {};
+            argLocDescReg.m_idxGenReg = argLocDesc.m_idxGenReg;
+            argLocDescReg.m_cGenReg = argLocDesc.m_cGenReg;
+            ProcessArgument(&argIt, argLocDescReg, pRoutines);
+
+            ArgLocDesc argLocDescStack = {};
+            argLocDescStack.m_byteStackIndex = argLocDesc.m_byteStackIndex;
+            argLocDescStack.m_byteStackSize = argLocDesc.m_byteStackSize;
+            ProcessArgument(&argIt, argLocDescStack, pRoutines);
         }
         else
 #endif // UNIX_AMD64_ABI
