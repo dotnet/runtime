@@ -87,6 +87,26 @@ bool emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& print_sec
 void emitDispIllegalInstruction(code_t instructionCode);
 void emitDispImmediate(ssize_t imm, bool newLine = true, unsigned regBase = REG_ZERO);
 
+struct DisplayPolicy
+{
+    DisplayPolicy(emitter* host, const instrDesc* id)
+            : host(host), id(id) {}
+    
+    void EmitRType(instruction ins, regNumber rd, regNumber rs1, regNumber rs2);
+    void EmitIType(instruction ins, regNumber rd, regNumber rs1, unsigned imm12);
+    void EmitSType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm12);
+    void EmitUType(instruction ins, regNumber rd, unsigned imm20);
+    void EmitBType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13);
+    void EmitBTypeInverted(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13);
+    void EmitJType(instruction ins, regNumber rd, unsigned imm21);
+
+    void MarkGCRegDead(regNumber reg) {}
+    void EmitRelocation(const instrDesc *id, int offset, BYTE* targetAddr) {}
+
+    emitter* host;
+    const instrDesc* id;
+};
+
 void emitDispIns_OptsReloc(const instrDesc *id);
 void emitDispIns_OptsRc(const instrDesc *id);
 void emitDispIns_OptsRl(const instrDesc *id);
@@ -146,6 +166,35 @@ unsigned emitOutput_BTypeInstr_InvertComparation(
     BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, unsigned imm13) const;
 unsigned emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd, unsigned imm21) const;
 
+struct OutputPolicy
+{
+    OutputPolicy(emitter* host, BYTE*& dst, instruction* outIns = nullptr)
+            : host(host), dst(dst), outIns(outIns) {}
+
+    void EmitRType(instruction ins, regNumber rd, regNumber rs1, regNumber rs2);
+    void EmitIType(instruction ins, regNumber rd, regNumber rs1, unsigned imm12);
+    void EmitSType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm12);
+    void EmitUType(instruction ins, regNumber rd, unsigned imm20);
+    void EmitBType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13);
+    void EmitBTypeInverted(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13);
+    void EmitJType(instruction ins, regNumber rd, unsigned imm21);
+
+    void MarkGCRegDead(regNumber reg)
+    {
+        host->emitGCregDeadUpd(reg, dst);
+    }
+
+    void EmitRelocation(const instrDesc *id, int offset, BYTE* targetAddr)
+    {
+        assert(id->idIsDspReloc());
+        host->emitRecordRelocation(dst - offset, targetAddr, IMAGE_REL_RISCV64_PC);
+    }
+
+    emitter* host;
+    BYTE*& dst;
+    instruction* outIns;
+};
+
 BYTE* emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins);
 BYTE* emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instruction* ins);
 BYTE* emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins);
@@ -157,6 +206,19 @@ static unsigned TrimSignedToImm12(ssize_t imm12);
 static unsigned TrimSignedToImm13(ssize_t imm13);
 static unsigned TrimSignedToImm20(ssize_t imm20);
 static unsigned TrimSignedToImm21(ssize_t imm21);
+
+template <typename PolicyType>
+static void EmitLogic_OptsReloc(PolicyType& policy, const instrDesc* id);
+template <typename PolicyType>
+static void EmitLogic_OptsRc(PolicyType& policy, const instrDesc* id, ssize_t immediate);
+template <typename PolicyType>
+static void EmitLogic_OptsRl(PolicyType& policy, const instrDesc* id, ssize_t immediate);
+template <typename PolicyType>
+static void EmitLogic_OptsJump(PolicyType& policy, const instrDescJmp* jmp, ssize_t immediate, instruction* ins);
+template <typename PolicyType>
+static void EmitLogic_OptsC(PolicyType& policy, const instrDesc* id);
+template <typename PolicyType>
+static void EmitLogic_OptsI(PolicyType& policy, const instrDescLoadImm* ldli, instruction* lastIns);
 
 // Major opcode of 32-bit & 16-bit instructions as per "The RISC-V Instruction Set Manual", chapter "RV32/64G
 // Instruction Set Listings", table "RISC-V base opcode map" and chapter "RVC Instruction Set Listings", table "RVC

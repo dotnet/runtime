@@ -2031,28 +2031,9 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id)
 
     assert(id->idIns() == INS_jalr);
     BYTE* origDst = dst;
-    if (id->idIsCallRegPtr())
-    { // EC_INDIR_R
-        ssize_t offset = id->idSmallCns();
-        dst += emitOutput_ITypeInstr(dst, INS_jalr, id->idReg4(), id->idReg3(), TrimSignedToImm12(offset));
-    }
-    else
-    {
-        size_t addr = (size_t)(id->idAddr()->iiaAddr); // get addr.
 
-        regNumber linkReg = (regNumber)(addr & 1);
-        assert(linkReg == REG_ZERO || linkReg == REG_RA);
-        addr -= linkReg;
-        assert((addr & 1) == 0);
-        regNumber tempReg = (linkReg == REG_ZERO) ? REG_DEFAULT_HELPER_CALL_TARGET : REG_RA;
-
-        dst += emitOutput_UTypeInstr(dst, INS_auipc, tempReg, 0);
-        emitGCregDeadUpd(tempReg, dst);
-        dst += emitOutput_ITypeInstr(dst, INS_jalr, linkReg, tempReg, 0);
-
-        assert(id->idIsDspReloc());
-        emitRecordRelocation(origDst, (BYTE*)addr, IMAGE_REL_RISCV64_PC);
-    }
+    OutputPolicy policy(this, dst);
+    EmitLogic_OptsC(policy, id);
 
     // If the method returns a GC ref, mark INTRET (A0) appropriately.
     if (id->idGCref() == GCT_GCREF)
@@ -2894,25 +2875,167 @@ static ssize_t UpperWordOfDoubleWordDoubleSignExtend(ssize_t doubleWord)
     return static_cast<unsigned>(LowerNBitsOfWord<21>(imm21));
 }
 
-BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins)
+template <typename PolicyType>
+void emitter::EmitLogic_OptsReloc(PolicyType& policy, const instrDesc* id)
 {
-    BYTE* const     dstBase = dst;
-    const regNumber reg1    = id->idReg1();
+    const regNumber reg1 = id->idReg1();
 
-    dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, 0);
+    policy.EmitUType(INS_auipc, reg1, 0);
 
     if (id->idIsCnsReloc())
     {
-        *ins = INS_addi;
+        policy.EmitIType(INS_addi, reg1, reg1, 0);
     }
     else
     {
         assert(id->idIsDspReloc());
-        *ins = INS_ld;
+        policy.EmitIType(INS_ld, reg1, reg1, 0);
+    }
+}
+
+template <typename PolicyType>
+void emitter::EmitLogic_OptsRc(PolicyType& policy, const instrDesc* id, ssize_t immediate)
+{
+    const regNumber reg1 = id->idReg1();
+    const regNumber tempReg = isFloatReg(id->idReg1()) ? policy.host->codeGen->rsGetRsvdReg() : id->idReg1();
+
+    policy.EmitUType(INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
+    policy.EmitIType(id->idIns(), reg1, tempReg, LowerNBitsOfWord<12>(immediate));
+}
+
+template <typename PolicyType>
+void emitter::EmitLogic_OptsRl(PolicyType& policy, const instrDesc* id, ssize_t immediate)
+{
+    const regNumber reg1 = id->idReg1();
+    
+    policy.EmitUType(INS_auipc, reg1, UpperNBitsOfWordSignExtend<20>(immediate));
+    policy.EmitIType(INS_addi, reg1, reg1, LowerNBitsOfWord<12>(immediate));
+}
+
+template <typename PolicyType>
+void emitter::EmitLogic_OptsJump(PolicyType& policy, const instrDescJmp* jmp, ssize_t immediate, instruction* ins)
+{
+    if (ins)
+    {
+        *ins = jmp->idIns();
     }
 
-    dst += emitOutput_ITypeInstr(dst, *ins, reg1, reg1, 0);
+    if (jmp->idjShort)
+    {
+        assert(jmp->idCodeSize() == sizeof(code_t));
+        if (emitIsUncondJump(jmp))
+        {
+            policy.EmitJType(*ins, jmp->idReg1(), TrimSignedToImm21(immediate));
+        }
+        else
+        {
+            policy.EmitBType(*ins, jmp->idReg1(), jmp->idReg2(), TrimSignedToImm13(immediate));
+        }
+    }
+    else // far jump
+    {
+        if (emitIsUncondJump(jmp))
+        {
+            assert(jmp->idCodeSize() == 2 * sizeof(code_t));
+            assert(isValidSimm32(immediate));
+            regNumber linkReg = jmp->idReg1();
+            regNumber tempReg = (linkReg == REG_ZERO) ? policy.host->codeGen->rsGetRsvdReg() : linkReg;
+            policy.EmitUType(INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
+            policy.EmitIType(INS_jalr, linkReg, tempReg, LowerNBitsOfWord<12>(immediate));
+        }
+        else
+        {
+            assert(!jmp->idInsIs(INS_beqz, INS_bnez) || (jmp->idReg2() == REG_ZERO));
+            policy.EmitBTypeInverted(*ins, jmp->idReg1(), jmp->idReg2(), jmp->idCodeSize());
+            immediate -= sizeof(code_t);
+            if (jmp->idCodeSize() == 2 * sizeof(code_t))
+            {
+                policy.EmitJType(INS_jal, REG_ZERO, TrimSignedToImm21(immediate));
+            }
+            else
+            {
+                assert(jmp->idCodeSize() == 3 * sizeof(code_t));
+                assert(isValidSimm32(immediate));
+                regNumber tempReg = policy.host->codeGen->rsGetRsvdReg();
+                policy.EmitUType(INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
+                policy.EmitIType(INS_jalr, REG_ZERO, tempReg, LowerNBitsOfWord<12>(immediate));
+            }
+        }
+    }
+}
 
+template <typename PolicyType>
+void emitter::EmitLogic_OptsC(PolicyType& policy, const instrDesc *id)
+{
+    if (id->idIsCallRegPtr())
+    {
+        ssize_t offset = id->idSmallCns();
+        policy.EmitIType(INS_jalr, id->idReg4(), id->idReg3(), TrimSignedToImm12(offset));
+    }
+    else
+    {
+        size_t addr = (size_t)(id->idAddr()->iiaAddr); // get addr.
+
+        regNumber linkReg = (regNumber)(addr & 1);
+        assert(linkReg == REG_ZERO || linkReg == REG_RA);
+        addr -= linkReg;
+        assert((addr & 1) == 0);
+        regNumber tempReg = (linkReg == REG_ZERO) ? REG_DEFAULT_HELPER_CALL_TARGET : REG_RA;
+
+        policy.EmitUType(INS_auipc, tempReg, 0);
+        policy.MarkGCRegDead(tempReg);
+        policy.EmitIType(INS_jalr, linkReg, tempReg, 0);
+
+        policy.EmitRelocation(id, 2 * sizeof(code_t), (BYTE*)addr);
+    }
+}
+
+template <typename PolicyType>
+void emitter::EmitLogic_OptsI(PolicyType& policy, const instrDescLoadImm* idli, instruction* lastIns)
+{
+    const instruction* ins = idli->ins;
+    const int32_t* values = idli->values;
+    regNumber reg = idli->idReg1();
+
+    assert((reg != REG_NA) && (reg != REG_R0));
+
+    int numberOfInstructions = idli->idCodeSize() / sizeof(code_t);
+    for (int i = 0; i < numberOfInstructions; i++)
+    {
+        if ((i == 0) && (ins[0] == INS_lui))
+        {
+            assert(isValidSimm20(values[i]));
+            policy.EmitUType(ins[i], reg, values[i] & 0xfffff);
+        }
+        else if ((i == 0) && ((ins[0] == INS_addiw) || (ins[0] == INS_addi)))
+        {
+            assert(isValidSimm12(values[i]) || ((ins[i] == INS_addiw) && isValidUimm12(values[i])));
+            policy.EmitIType(ins[i], reg, REG_R0, values[i] & 0xfff);
+        }
+        else if (i == 0)
+        {
+            assert(false && "First instruction must be lui / addiw / addi");
+        }
+        else if ((ins[i] == INS_addi) || (ins[i] == INS_addiw) || (ins[i] == INS_slli) || (ins[i] == INS_srli))
+        {
+            assert(isValidSimm12(values[i]) || ((ins[i] == INS_addiw) && isValidUimm12(values[i])));
+            policy.EmitIType(ins[i], reg, reg, values[i] & 0xfff);
+        }
+        else
+        {
+            assert(false && "Remaining instructions must be addi / addiw / slli / srli");
+        }
+    }
+
+    *lastIns = ins[numberOfInstructions - 1];
+}
+
+BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins)
+{
+    BYTE* const dstBase = dst;
+    OutputPolicy policy(this, dst, ins);
+
+    EmitLogic_OptsReloc(policy, id);
     emitRecordRelocation(dstBase, id->idAddr()->iiaAddr, IMAGE_REL_RISCV64_PC);
 
     return dst;
@@ -2936,8 +3059,10 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
     assert(isValidSimm32(immediate));
 
     const regNumber tempReg = isFloatReg(reg1) ? codeGen->rsGetRsvdReg() : reg1;
-    dst += emitOutput_UTypeInstr(dst, INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
-    dst += emitOutput_ITypeInstr(dst, *ins, reg1, tempReg, LowerNBitsOfWord<12>(immediate));
+
+    OutputPolicy policy(this, dst);
+    EmitLogic_OptsRc(policy, id, immediate);
+
     return dst;
 }
 
@@ -2954,8 +3079,10 @@ BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins
     const ssize_t immediate = (emitCodeBlock - dst) + igOffs;
     assert((immediate & 0x01) == 0);
     assert(isValidSimm32(immediate));
-    dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, UpperNBitsOfWordSignExtend<20>(immediate));
-    dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, reg1, LowerNBitsOfWord<12>(immediate));
+
+    OutputPolicy policy(this, dst);
+    EmitLogic_OptsRl(policy, id, immediate);
+
     return dst;
 }
 
@@ -2965,49 +3092,9 @@ BYTE* emitter::emitOutputInstr_OptsJump(BYTE* dst, instrDescJmp* jmp, const insG
     assert((immediate & 0x01) == 0);
     assert(emitIsUncondJump(jmp) || emitIsCmpJump(jmp));
 
-    *ins = jmp->idIns();
-    if (jmp->idjShort)
-    {
-        assert(jmp->idCodeSize() == sizeof(code_t));
-        if (emitIsUncondJump(jmp))
-        {
-            dst += emitOutput_JTypeInstr(dst, *ins, jmp->idReg1(), TrimSignedToImm21(immediate));
-        }
-        else
-        {
-            dst += emitOutput_BTypeInstr(dst, *ins, jmp->idReg1(), jmp->idReg2(), TrimSignedToImm13(immediate));
-        }
-    }
-    else // far jump
-    {
-        if (emitIsUncondJump(jmp))
-        {
-            assert(jmp->idCodeSize() == 2 * sizeof(code_t));
-            assert(isValidSimm32(immediate));
-            regNumber linkReg = jmp->idReg1();
-            regNumber tempReg = (linkReg == REG_ZERO) ? codeGen->rsGetRsvdReg() : linkReg;
-            dst += emitOutput_UTypeInstr(dst, INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
-            dst += emitOutput_ITypeInstr(dst, INS_jalr, linkReg, tempReg, LowerNBitsOfWord<12>(immediate));
-        }
-        else // opposite branch + jump
-        {
-            assert(!jmp->idInsIs(INS_beqz, INS_bnez) || (jmp->idReg2() == REG_ZERO));
-            dst += emitOutput_BTypeInstr_InvertComparation(dst, *ins, jmp->idReg1(), jmp->idReg2(), jmp->idCodeSize());
-            immediate -= sizeof(code_t);
-            if (jmp->idCodeSize() == 2 * sizeof(code_t))
-            {
-                dst += emitOutput_JTypeInstr(dst, INS_jal, REG_ZERO, TrimSignedToImm21(immediate));
-            }
-            else
-            {
-                assert(jmp->idCodeSize() == 3 * sizeof(code_t));
-                assert(isValidSimm32(immediate));
-                regNumber tempReg = codeGen->rsGetRsvdReg();
-                dst += emitOutput_UTypeInstr(dst, INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
-                dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_ZERO, tempReg, LowerNBitsOfWord<12>(immediate));
-            }
-        }
-    }
+    OutputPolicy policy(this, dst);
+    EmitLogic_OptsJump(policy, jmp, immediate, ins);
+
     return dst;
 }
 
@@ -3032,43 +3119,60 @@ BYTE* emitter::emitOutputInstr_OptsI(BYTE* dst, instrDesc* id, instruction* last
     assert(id->idInsOpt() == INS_OPTS_I);
 
     instrDescLoadImm* idli   = static_cast<instrDescLoadImm*>(id);
-    instruction*      ins    = idli->ins;
-    int32_t*          values = idli->values;
-    regNumber         reg    = idli->idReg1();
 
-    assert((reg != REG_NA) && (reg != REG_R0));
-
-    int numberOfInstructions = idli->idCodeSize() / sizeof(code_t);
-    for (int i = 0; i < numberOfInstructions; i++)
-    {
-        if ((i == 0) && (ins[0] == INS_lui))
-        {
-            assert(isValidSimm20(values[i]));
-            dst += emitOutput_UTypeInstr(dst, ins[i], reg, values[i] & 0xfffff);
-        }
-        else if ((i == 0) && ((ins[0] == INS_addiw) || (ins[0] == INS_addi)))
-        {
-            assert(isValidSimm12(values[i]) || ((ins[i] == INS_addiw) && isValidUimm12(values[i])));
-            dst += emitOutput_ITypeInstr(dst, ins[i], reg, REG_R0, values[i] & 0xfff);
-        }
-        else if (i == 0)
-        {
-            assert(false && "First instruction must be lui / addiw / addi");
-        }
-        else if ((ins[i] == INS_addi) || (ins[i] == INS_addiw) || (ins[i] == INS_slli) || (ins[i] == INS_srli))
-        {
-            assert(isValidSimm12(values[i]) || ((ins[i] == INS_addiw) && isValidUimm12(values[i])));
-            dst += emitOutput_ITypeInstr(dst, ins[i], reg, reg, values[i] & 0xfff);
-        }
-        else
-        {
-            assert(false && "Remaining instructions must be addi / addiw / slli / srli");
-        }
-    }
-
-    *lastIns = ins[numberOfInstructions - 1];
+    OutputPolicy policy(this, dst);
+    EmitLogic_OptsI(policy, idli, lastIns);
 
     return dst;
+}
+
+void emitter::OutputPolicy::EmitRType(instruction ins, regNumber rd, regNumber rs1, regNumber rs2)
+{
+    dst += host->emitOutput_RTypeInstr(dst, ins, rd, rs1, rs2);
+    if (outIns)
+        *outIns = ins;
+}
+
+void emitter::OutputPolicy::EmitIType(instruction ins, regNumber rd, regNumber rs1, unsigned imm12)
+{
+    dst += host->emitOutput_ITypeInstr(dst, ins, rd, rs1, imm12);
+    if (outIns)
+        *outIns = ins;
+}
+
+void emitter::OutputPolicy::EmitSType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm12)
+{
+    dst += host->emitOutput_STypeInstr(dst, ins, rs1, rs2, imm12);
+    if (outIns)
+        *outIns = ins;
+}
+
+void emitter::OutputPolicy::EmitUType(instruction ins, regNumber rd, unsigned imm20)
+{
+    dst += host->emitOutput_UTypeInstr(dst, ins, rd, imm20);
+    if (outIns)
+        *outIns = ins;
+}
+
+void emitter::OutputPolicy::EmitBType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13)
+{
+    dst += host->emitOutput_BTypeInstr(dst, ins, rs1, rs2, imm13);
+    if (outIns)
+        *outIns = ins;
+}
+
+void emitter::OutputPolicy::EmitBTypeInverted(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13)
+{
+    dst += host->emitOutput_BTypeInstr_InvertComparation(dst, ins, rs1, rs2, imm13);
+    if (outIns)
+        *outIns = ins;
+}
+
+void emitter::OutputPolicy::EmitJType(instruction ins, regNumber rd, unsigned imm21)
+{
+    dst += host->emitOutput_JTypeInstr(dst, ins, rd, imm21);
+    if (outIns)
+        *outIns = ins;
 }
 
 /*****************************************************************************
@@ -3381,8 +3485,7 @@ void emitter::emitDispInsName(
 
     printf("      ");
 
-    bool idNotNullptr = id != nullptr;
-    bool willPrintLoadImmValue = idNotNullptr && (id->idInsOpt() == INS_OPTS_I) && !emitComp->opts.disDiffable;
+    bool willPrintLoadImmValue = (id->idInsOpt() == INS_OPTS_I) && !emitComp->opts.disDiffable;
 
     switch (GetMajorOpcode(code))
     {
@@ -4468,79 +4571,24 @@ void emitter::emitDispInsInstrNum(const instrDesc* id) const
 
 void emitter::emitDispIns_OptsReloc(const instrDesc *id)
 {
-    // auipc + (addi) or (ld)
-    code_t auipcCode = emitInsCode(INS_auipc);
-
-    unsigned auipcOpcode = auipcCode & kInstructionOpcodeMask;
-    unsigned reg1 = castFloatOrIntegralReg(id->idReg1());
-
-    code_t subInsCode = insEncodeUTypeInstr(auipcOpcode, reg1, 0);
-    emitDispInsName(subInsCode, id);
-
-    code_t relocCode;
-
-    if (id->idIsCnsReloc())
-    {
-        // addi
-        relocCode = emitInsCode(INS_addi);
-    }
-    else
-    {
-        // ld
-        assert(id->idIsDspReloc());
-        relocCode = emitInsCode(INS_ld);
-    }
-
-    unsigned relocOpcode = relocCode & kInstructionOpcodeMask;
-    unsigned relocFunct3 = (relocCode & kInstructionFunct3Mask) >> 12;
-
-    code_t subInsCode2 = insEncodeITypeInstr(relocCode, reg1, relocFunct3, reg1, 0);
-    emitDispInsName(subInsCode2, id);
+    DisplayPolicy policy(this, id);
+    EmitLogic_OptsReloc(policy, id);
 }
 
 void emitter::emitDispIns_OptsRc(const instrDesc *id)
 {
     // Logics from `emitOutputInstr_OptsRc`
     // auipc + `ins`
-    code_t auipcCode = emitInsCode(INS_auipc);
-
-    const regNumber tempReg = isFloatReg(id->idReg1()) ? codeGen->rsGetRsvdReg() : id->idReg1();
-    unsigned auipcOpcode = auipcCode & kInstructionOpcodeMask;
-    unsigned auipcRd = castFloatOrIntegralReg(tempReg);
-
-    code_t subInsCode = insEncodeUTypeInstr(auipcOpcode, auipcRd, 0);
-    emitDispInsName(subInsCode, id);
-
-    code_t insCode = emitInsCode(id->idIns());
-
-    unsigned insOpcode = insCode & kInstructionOpcodeMask;
-    unsigned insFunct3 = (insCode & kInstructionFunct3Mask) >> 12;
-    unsigned insRd = castFloatOrIntegralReg(id->idReg1());
-
-    code_t subInsCode2 = insEncodeITypeInstr(insOpcode, insRd, insFunct3, auipcRd, 0);
-    emitDispInsName(subInsCode2, id);
+    DisplayPolicy policy(this, id);
+    EmitLogic_OptsRc(policy, id, 0);
 }
 
 void emitter::emitDispIns_OptsRl(const instrDesc *id)
 {
     // Logics from `emitOutputInstr_OptsRl`
     // auipc + addi
-    code_t auipcCode = emitInsCode(INS_auipc);
-
-    unsigned auipcOpcode = auipcCode & kInstructionOpcodeMask;
-    unsigned auipcRd = castFloatOrIntegralReg(id->idReg1());
-
-    code_t subInsCode = insEncodeUTypeInstr(auipcOpcode, auipcRd, 0);
-    emitDispInsName(subInsCode, id);
-
-    code_t addiCode = emitInsCode(INS_addi);
-
-    unsigned addiOpcode = addiCode & kInstructionOpcodeMask;
-    unsigned addiFunct3 = (addiCode & kInstructionFunct3Mask) >> 12;
-    unsigned reg1 = castFloatOrIntegralReg(id->idReg1());
-    
-    code_t subInsCode2 = insEncodeITypeInstr(addiOpcode, reg1, addiFunct3, reg1, 0);
-    emitDispInsName(subInsCode2, id);
+    DisplayPolicy policy(this, id);
+    EmitLogic_OptsRl(policy, id, 0);
 }
 
 void emitter::emitDispIns_OptsJump(const instrDesc *id)
@@ -4549,212 +4597,112 @@ void emitter::emitDispIns_OptsJump(const instrDesc *id)
     ssize_t immediate = 0; // Jump offset cannot be known here
     BasicBlock* dst = id->idAddr()->iiaBBlabel;
 
-    if (idJmp->idjShort) // Short jump
-    {
-        if (emitIsUncondJump(id))
-        {
-            // J type
-            code_t insCode = emitInsCode(id->idIns());
-
-            unsigned opcode = insCode & kInstructionOpcodeMask;
-            unsigned rd = castFloatOrIntegralReg(idJmp->idReg1());
-            unsigned imm21 = UpperNBitsOfWordSignExtend<20>(immediate);
-
-            code_t subInsCode = insEncodeJTypeInstr(opcode, rd, imm21);
-            emitDispInsName(subInsCode, id);
-        }
-        else
-        {
-            // B type
-            code_t insCode = emitInsCode(id->idIns());
-
-            unsigned opcode = insCode & kInstructionOpcodeMask;
-            unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
-            unsigned rs1 = castFloatOrIntegralReg(idJmp->idReg1());
-            unsigned rs2 = castFloatOrIntegralReg(idJmp->idReg2());
-            unsigned imm13 = LowerNBitsOfWord<12>(immediate);
-
-            code_t subInsCode = insEncodeBTypeInstr(opcode, funct3, rs1, rs2, imm13);
-            emitDispInsName(subInsCode, id);
-        }
-    }
-    else // Far jump
-    {
-        if (emitIsUncondJump(id))
-        {
-            // auipc + jalr
-            code_t auipcCode = emitInsCode(INS_auipc);
-
-            unsigned opcode = auipcCode & kInstructionOpcodeMask;
-            regNumber linkReg = idJmp->idReg1();
-            regNumber tempReg = (linkReg == REG_ZERO) ? codeGen->rsGetRsvdReg() : linkReg;
-            unsigned auipcRd = castFloatOrIntegralReg(tempReg);
-            unsigned auipcImm20 = UpperNBitsOfWordSignExtend<20>(immediate);
-
-            code_t subInsCode = insEncodeUTypeInstr(opcode, auipcRd, auipcImm20);
-            emitDispInsName(subInsCode, id);
-
-            code_t jalrCode = emitInsCode(INS_jalr);
-
-            unsigned jalrOpcode = jalrCode & kInstructionOpcodeMask;
-            unsigned jalrFunct3 = (jalrCode & kInstructionFunct3Mask) >> 12;
-            unsigned jalrRd = castFloatOrIntegralReg(linkReg);
-            unsigned jalrRs = castFloatOrIntegralReg(tempReg);
-            unsigned jalrImm12 = LowerNBitsOfWord<12>(immediate);
-
-            code_t subInsCode2 = insEncodeITypeInstr(jalrOpcode, jalrRd, jalrFunct3, jalrRs, jalrImm12);
-            emitDispInsName(subInsCode2, id);
-        }
-        else
-        {
-            // branch + (jal) or (auipc + jalr)
-            assert(!idJmp->idInsIs(INS_beqz, INS_bnez) || (idJmp->idReg2() == REG_ZERO));
-            code_t invCmpCode = emitInsCode(idJmp->idIns()) ^ 0x1000;
-
-            unsigned invCmpOpcode = invCmpCode & kInstructionOpcodeMask;
-            unsigned invCmpFunct3 = (invCmpCode & kInstructionFunct3Mask) >> 12;
-            unsigned invCmpRs1 = castFloatOrIntegralReg(idJmp->idReg1());
-            unsigned invCmpRs2 = castFloatOrIntegralReg(idJmp->idReg2());
-            unsigned invCmpImm13 = idJmp->idCodeSize();
-
-            code_t subInsCode = insEncodeBTypeInstr(invCmpOpcode, invCmpFunct3, invCmpRs1, invCmpRs2, invCmpImm13);
-            emitDispInsName(subInsCode, id);
-
-            if (idJmp->idCodeSize() == 2 * sizeof(code_t))
-            {
-                // jal
-                code_t jalCode = emitInsCode(INS_jal);
-
-                unsigned jalOpcode = jalCode & kInstructionOpcodeMask;
-                unsigned jalRd = castFloatOrIntegralReg(REG_ZERO);
-                
-                code_t subInsCode2 = insEncodeJTypeInstr(jalOpcode, jalRd, 0);
-                emitDispInsName(subInsCode2, id);
-            }
-            else
-            {
-                // auipc + jalr                
-                code_t auipcCode = emitInsCode(INS_auipc);
-                
-                unsigned auipcOpcode = auipcCode & kInstructionOpcodeMask;
-                regNumber tempReg = codeGen->rsGetRsvdReg();
-
-                code_t subInsCode2 = insEncodeUTypeInstr(auipcOpcode, tempReg, 0);
-                emitDispInsName(subInsCode2, id);
-
-                code_t jalrCode = emitInsCode(INS_jalr);
-
-                unsigned jalrOpcode = jalrCode & kInstructionOpcodeMask;
-                unsigned jalrFunct3 = (jalrCode & kInstructionFunct3Mask) >> 12;
-                unsigned jalRd = castFloatOrIntegralReg(REG_ZERO);
-                unsigned jalRs1 = tempReg;
-
-                code_t subInsCode3 = insEncodeITypeInstr(jalrOpcode, jalRd, jalrFunct3, jalRs1, 0);
-                emitDispInsName(subInsCode3, id);
-            }
-        }
-    }
+    DisplayPolicy policy(this, id);
+    instruction dummyIns;
+    EmitLogic_OptsJump(policy, idJmp, 0, &dummyIns);
 }
 
 void emitter::emitDispIns_OptsC(const instrDesc *id)
 {
-    // Note: Refer to the generation logic in `emitOutputCall`.
-    const instrDescCGCA* idCall = static_cast<const instrDescCGCA*>(id);
-    if (idCall->idIsCallRegPtr()) // Indirect call (jalr)
-    {
-        code_t insCode = emitInsCode(id->idIns());
-
-        unsigned opcode = insCode & kInstructionOpcodeMask;
-        unsigned funct3 = (insCode & kInstructionFunct3Mask) >> 12;
-        unsigned rd = castFloatOrIntegralReg(idCall->idReg4());
-        unsigned rs = castFloatOrIntegralReg(idCall->idReg3());
-        unsigned offset = TrimSignedToImm12((idCall->idSmallCns() << 20) >> 20);
-
-        code_t subInsCode = insEncodeITypeInstr(opcode, rd, funct3, rs, offset);
-        emitDispInsName(subInsCode, id);
-    }
-    else // Direct call (auipc + jalr)
-    {
-        size_t addr = (size_t)(id->idAddr()->iiaAddr);
-
-        regNumber linkReg = (regNumber)(addr & 1);
-        assert(linkReg == REG_ZERO || linkReg == REG_RA);
-
-        regNumber tempReg = (linkReg == REG_ZERO) ? REG_DEFAULT_HELPER_CALL_TARGET : REG_RA;
-
-        code_t auipcCode = emitInsCode(INS_auipc);
-
-        unsigned auipcOpcode = auipcCode & kInstructionOpcodeMask;
-        unsigned auipcRd = castFloatOrIntegralReg(tempReg);
-
-        code_t subInsCode = insEncodeUTypeInstr(auipcOpcode, auipcRd, 0);
-        emitDispInsName(subInsCode, id);
-
-        code_t jalrCode = emitInsCode(id->idIns());
-
-        unsigned jalrOpcode = jalrCode & kInstructionOpcodeMask;
-        unsigned jalrFunct3 = (jalrCode & kInstructionFunct3Mask) >> 12;
-        unsigned jalrRd = castFloatOrIntegralReg(linkReg);
-        unsigned jalrRs = castFloatOrIntegralReg(tempReg);
-
-        code_t subInsCode2 = insEncodeITypeInstr(jalrOpcode, jalrRd, jalrFunct3, jalrRs, 0);
-        emitDispInsName(subInsCode2, id);
-    }
+    DisplayPolicy policy(this, id);
+    EmitLogic_OptsC(policy, id);
 }
 
 void emitter::emitDispIns_OptsI(const instrDesc *id)
 {
     const instrDescLoadImm* idli = static_cast<const instrDescLoadImm*>(id);
-    const instruction* ins = idli->ins;
-    const int32_t* values = idli->values;
-    regNumber reg = idli->idReg1();
+    instruction dummyIns;
 
-    int numberOfInstructions = idli->idCodeSize() / sizeof(code_t);
-    for (int i = 0; i < numberOfInstructions; ++i)
-    {
-        // Note: Instructions created by emitLoadImmediate should be one of
-        // `lui`, `addiw`, `addi`, `slli`, `srli`.
-        // Also, the instrDesc made by emitter::emitLoadImmediate only uses a single register.
-        const instruction ithIns = ins[i];
-        const int32_t ithVal = values[i];
+    DisplayPolicy policy(this, id);
+    EmitLogic_OptsI(policy, idli, &dummyIns);
+}
 
-        code_t ithCode = emitInsCode(ithIns);
-        const instrDesc* ithInsid = (i < numberOfInstructions) ? nullptr : id;
+void emitter::DisplayPolicy::EmitRType(instruction ins, regNumber rd, regNumber rs1, regNumber rs2)
+{
+    unsigned baseOpcode = host->emitInsCode(ins);
 
-        switch (ithIns)
-        {
-            case INS_addi:
-            case INS_addiw:
-            case INS_slli:
-            case INS_srli:
-            {
-                // I-type
-                unsigned opcode = ithCode & kInstructionOpcodeMask;
-                unsigned rs = castFloatOrIntegralReg(reg);
-                unsigned funct3 = (ithCode & kInstructionFunct3Mask) >> 12;
-                unsigned imm12 = TrimSignedToImm12((ithVal << 20) >> 20);
+    unsigned opcode = baseOpcode & kInstructionOpcodeMask;
+    unsigned funct3 = (baseOpcode & kInstructionFunct3Mask) >> 12;
+    unsigned funct7 = (baseOpcode & kInstructionFunct7Mask) >> 25;
+    unsigned _rd = castFloatOrIntegralReg(rd);
+    unsigned _rs1 = castFloatOrIntegralReg(rs1);
+    unsigned _rs2 = castFloatOrIntegralReg(rs2);
 
-                code_t subInsCode = insEncodeITypeInstr(opcode, rs, funct3, rs, imm12);
-                emitDispInsName(subInsCode, ithInsid);
-                break;
-            }
+    code_t code = insEncodeRTypeInstr(opcode, _rd, funct3, _rs1, _rs2, funct7);
+    host->emitDispInsName(code, id);
+}
 
-            case INS_lui:
-            {
-                // U-type
-                unsigned imm20 = TrimSignedToImm20((ithVal << 12) >> 12);
-                code_t subInsCode = insEncodeUTypeInstr(ithCode, reg, imm20);
-                emitDispInsName(subInsCode, ithInsid);
-                break;
-            }
+void emitter::DisplayPolicy::EmitIType(instruction ins, regNumber rd, regNumber rs1, unsigned imm12)
+{
+    unsigned baseOpcode = host->emitInsCode(ins);
 
-            default:
-            {
-                NYI_RISCV64("Unknown instruction inside `instrDescLoadImm`\n");
-                break;
-            }
-        }
-    }
+    unsigned opcode = baseOpcode & kInstructionOpcodeMask;
+    unsigned funct3 = (baseOpcode & kInstructionFunct3Mask) >> 12;
+    unsigned _rd = castFloatOrIntegralReg(rd);
+    unsigned _rs1 = castFloatOrIntegralReg(rs1);
+
+    code_t code = insEncodeITypeInstr(opcode, _rd, funct3, _rs1, imm12);
+    host->emitDispInsName(code, id);
+}
+
+void emitter::DisplayPolicy::EmitSType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm12)
+{
+    unsigned baseOpcode = host->emitInsCode(ins);
+
+    unsigned opcode = baseOpcode & kInstructionOpcodeMask;
+    unsigned funct3 = (baseOpcode & kInstructionFunct3Mask) >> 12;
+    unsigned _rs1 = castFloatOrIntegralReg(rs1);
+    unsigned _rs2 = castFloatOrIntegralReg(rs2);
+
+    code_t code = insEncodeSTypeInstr(opcode, funct3, _rs1, _rs2, imm12);
+    host->emitDispInsName(code, id);
+}
+
+void emitter::DisplayPolicy::EmitUType(instruction ins, regNumber rd, unsigned imm20)
+{
+    unsigned opcode = host->emitInsCode(ins) & kInstructionOpcodeMask;
+    unsigned _rd = castFloatOrIntegralReg(rd);
+
+    code_t code = insEncodeUTypeInstr(opcode, _rd, imm20);
+    host->emitDispInsName(code, id);
+}
+
+void emitter::DisplayPolicy::EmitBType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13)
+{
+    unsigned baseOpcode = host->emitInsCode(ins);
+
+    unsigned opcode = baseOpcode & kInstructionOpcodeMask;
+    unsigned funct3 = (baseOpcode & kInstructionFunct3Mask) >> 12;
+    unsigned _rs1 = castFloatOrIntegralReg(rs1);
+    unsigned _rs2 = castFloatOrIntegralReg(rs2);
+
+    code_t code = insEncodeBTypeInstr(opcode, funct3, _rs1, _rs2, imm13);
+    host->emitDispInsName(code, id);
+}
+
+void emitter::DisplayPolicy::EmitBTypeInverted(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13)
+{
+    unsigned baseOpcode = host->emitInsCode(ins);
+    unsigned invertedOpcode = baseOpcode ^ 0x1000;
+
+    unsigned opcode = invertedOpcode & kInstructionOpcodeMask;
+    unsigned funct3 = (invertedOpcode & kInstructionFunct3Mask) >> 12;
+    unsigned _rs1 = castFloatOrIntegralReg(rs1);
+    unsigned _rs2 = castFloatOrIntegralReg(rs2);
+
+    code_t code = insEncodeBTypeInstr(opcode, funct3, _rs1, _rs2, imm13);
+    host->emitDispInsName(code, id);
+}
+
+void emitter::DisplayPolicy::EmitJType(instruction ins, regNumber rd, unsigned imm21)
+{
+    unsigned baseOpcode = host->emitInsCode(ins);
+
+    unsigned opcode = baseOpcode & kInstructionOpcodeMask;
+    unsigned _rd = castFloatOrIntegralReg(rd);
+
+    code_t code = insEncodeJTypeInstr(opcode, _rd, imm21);
+    host->emitDispInsName(code, id);
 }
 
 void emitter::emitDispIns(
