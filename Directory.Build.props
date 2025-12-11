@@ -39,8 +39,8 @@
         - https://github.com/dotnet/sdk repo > src/Installer/redist-installer/targets/GeneratePKG.targets
      -->
     <AndroidApiLevelMin>21</AndroidApiLevelMin>
-    <iOSVersionMin>12.2</iOSVersionMin>
-    <tvOSVersionMin>12.2</tvOSVersionMin>
+    <iOSVersionMin>13.0</iOSVersionMin>
+    <tvOSVersionMin>13.0</tvOSVersionMin>
     <macOSVersionMin>12.0</macOSVersionMin>
     <MacCatalystVersionMin>15.0</MacCatalystVersionMin>
   </PropertyGroup>
