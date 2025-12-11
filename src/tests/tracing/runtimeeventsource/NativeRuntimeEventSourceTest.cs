@@ -77,7 +77,7 @@ namespace Tracing.Tests
 
                         Stopwatch sw = Stopwatch.StartNew();
 
-                        while (sw.Elapsed <= TimeSpan.FromMinutes(1d / 12d))
+                        while (sw.Elapsed <= TimeSpan.FromMinutes(0.75))
                         {
                             Thread.Sleep(100);
 
