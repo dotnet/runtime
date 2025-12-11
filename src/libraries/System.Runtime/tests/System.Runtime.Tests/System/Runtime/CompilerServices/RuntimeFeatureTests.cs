@@ -32,6 +32,7 @@ namespace System.Runtime.CompilerServices.Tests
 
         [Fact]
         [SkipOnMono("IsDynamicCodeCompiled returns false in cases where mono doesn't support these features")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "IsDynamicCodeCompiled returns false on Apple mobile platforms")]
         public static void DynamicCode_Jit()
         {
             if (PlatformDetection.IsNativeAot)
@@ -53,7 +54,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.True(RuntimeFeature.IsDynamicCodeSupported);
             Assert.False(RuntimeFeature.IsDynamicCodeCompiled);
         }
-        
+
         public static IEnumerable<object[]> GetStaticFeatureNames()
         {
             foreach (var field in typeof(RuntimeFeature).GetFields(BindingFlags.Public | BindingFlags.Static))
@@ -64,7 +65,7 @@ namespace System.Runtime.CompilerServices.Tests
                 yield return new object[] { field.Name };
             }
         }
-        
+
         [Theory]
         [MemberData(nameof(GetStaticFeatureNames))]
         public static void StaticDataMatchesDynamicProbing(string probedValue)
