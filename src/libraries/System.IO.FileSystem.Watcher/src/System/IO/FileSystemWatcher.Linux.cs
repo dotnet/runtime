@@ -200,10 +200,10 @@ namespace System.IO
                 // This method gets called only on the ProcessEvents thread, or when that thread fails to start.
                 // It closes the inotify handle.
                 Debug.Assert(!_isThreadStopping);
-                _isThreadStopping = true;
 
-                // Sync with AddOrUpdateWatchedDirectory and RemoveUnusedINotifyWatches.
+                // Sync with AddOrUpdateWatchedDirectory and RemoveUnusedINotifyWatches to stop using the inotify handle.
                 _addLock.EnterWriteLock();
+                _isThreadStopping = true;
                 _addLock.ExitWriteLock();
 
                 // Close the handle.
