@@ -7618,7 +7618,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 }
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
-                                                    clsAttrs, likelyHood, dvInfo.mayNeedMethodContext,
+                                                    clsAttrs, likelyHood, dvInfo.needsMethodContext,
                                                     dvInfo.isInstantiatingStub, baseMethod, originalContext);
             }
 
@@ -7642,11 +7642,11 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     // Iterate over the guesses
     for (int candidateId = 0; candidateId < candidatesCount; candidateId++)
     {
-        CORINFO_CLASS_HANDLE  likelyClass          = likelyClasses[candidateId];
-        CORINFO_METHOD_HANDLE likelyMethod         = likelyMethods[candidateId];
-        unsigned              likelihood           = likelihoods[candidateId];
-        bool                  mayNeedMethodContext = false;
-        bool                  instantiatingStub    = false;
+        CORINFO_CLASS_HANDLE  likelyClass        = likelyClasses[candidateId];
+        CORINFO_METHOD_HANDLE likelyMethod       = likelyMethods[candidateId];
+        unsigned              likelihood         = likelihoods[candidateId];
+        bool                  needsMethodContext = false;
+        bool                  instantiatingStub  = false;
 
         CORINFO_CONTEXT_HANDLE likelyContext = originalContext;
 
@@ -7689,10 +7689,10 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 break;
             }
 
-            likelyContext        = dvInfo.exactContext;
-            likelyMethod         = dvInfo.devirtualizedMethod;
-            mayNeedMethodContext = dvInfo.mayNeedMethodContext;
-            instantiatingStub    = dvInfo.isInstantiatingStub;
+            likelyContext      = dvInfo.exactContext;
+            likelyMethod       = dvInfo.devirtualizedMethod;
+            needsMethodContext = dvInfo.needsMethodContext;
+            instantiatingStub  = dvInfo.isInstantiatingStub;
         }
         else
         {
@@ -7767,7 +7767,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         // Add this as a potential candidate.
         //
         addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyContext, likelyMethodAttribs,
-                                            likelyClassAttribs, likelihood, mayNeedMethodContext, instantiatingStub,
+                                            likelyClassAttribs, likelihood, needsMethodContext, instantiatingStub,
                                             baseMethod, originalContext);
     }
 }
@@ -7793,7 +7793,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 //    methodAttr - attributes of the method
 //    classAttr - attributes of the class
 //    likelihood - odds that this class is the class seen at runtime
-//    mayNeedMethodContext - devirtualized method may need generic method context (e.g. array interfaces)
+//    needsMethodContext - devirtualized method may need generic method context (e.g. array interfaces)
 //    instantiatingStub - devirtualized method in an instantiating stub
 //    originalMethodHandle - method handle of base method (before devirt)
 //    originalContextHandle - context for the original call
@@ -7805,7 +7805,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
                                                    unsigned               methodAttr,
                                                    unsigned               classAttr,
                                                    unsigned               likelihood,
-                                                   bool                   mayNeedMethodContext,
+                                                   bool                   needsMethodContext,
                                                    bool                   instantiatingStub,
                                                    CORINFO_METHOD_HANDLE  originalMethodHandle,
                                                    CORINFO_CONTEXT_HANDLE originalContextHandle)
@@ -7884,7 +7884,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
     pInfo->originalContextHandle                = originalContextHandle;
     pInfo->likelihood                           = likelihood;
     pInfo->exactContextHandle                   = contextHandle;
-    pInfo->mayNeedMethodContext                 = mayNeedMethodContext;
+    pInfo->needsMethodContext                   = needsMethodContext;
 
     // If the guarded method is an instantiating stub, find the instantiated method
     //
@@ -8785,14 +8785,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
         {
-            assert(!dvInfo.mayNeedMethodContext);
+            assert(!dvInfo.needsMethodContext);
             derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
         }
         else
         {
             // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
             //
-            assert(isGenericVirtual || dvInfo.mayNeedMethodContext);
+            assert(isGenericVirtual || dvInfo.needsMethodContext);
             assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
             derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
         }
@@ -8815,7 +8815,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     {
         // We should only end up with generic methods that needs a method context (eg. array interface, GVM).
         //
-        assert(dvInfo.mayNeedMethodContext);
+        assert(dvInfo.needsMethodContext);
 
         // We don't expect NAOT to end up here, since it has Array<T>
         // and normal devirtualization.
@@ -9822,7 +9822,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             pInfo->originalMethodHandle                 = nullptr;
             pInfo->originalContextHandle                = nullptr;
             pInfo->likelihood                           = 0;
-            pInfo->mayNeedMethodContext                 = false;
+            pInfo->needsMethodContext                   = false;
         }
 
         pInfo->methInfo                       = methInfo;

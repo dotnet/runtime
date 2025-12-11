@@ -8549,7 +8549,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     memset(&info->resolvedTokenDevirtualizedMethod, 0, sizeof(info->resolvedTokenDevirtualizedMethod));
     memset(&info->resolvedTokenDevirtualizedUnboxedMethod, 0, sizeof(info->resolvedTokenDevirtualizedUnboxedMethod));
     info->isInstantiatingStub = false;
-    info->mayNeedMethodContext = false;
+    info->needsMethodContext = false;
 
     MethodDesc* pBaseMD = GetMethod(info->virtualMethod);
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
@@ -8816,19 +8816,19 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         //
         info->isInstantiatingStub = pDevirtMD->IsInstantiatingStub();
         info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-        info->mayNeedMethodContext = true;
+        info->needsMethodContext = true;
     }
     else if (isGenericVirtual)
     {
         // We only need the method context when the devirted generic method is a shared generic method
-        info->mayNeedMethodContext = info->isInstantiatingStub = pDevirtMD->IsInstantiatingStub();
+        info->needsMethodContext = info->isInstantiatingStub = pDevirtMD->IsInstantiatingStub();
         info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
     }
     else
     {
         info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
         info->isInstantiatingStub = false;
-        info->mayNeedMethodContext = false;
+        info->needsMethodContext = false;
     }
 
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;
