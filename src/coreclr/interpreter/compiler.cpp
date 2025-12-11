@@ -7221,7 +7221,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
 #if DEBUG
     if (InterpConfig.InterpHalt().contains(m_compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args))
-        AddIns(INTOP_BREAKPOINT);
+        AddIns(INTOP_HALT);
 #endif
 
     // We need to always generate this opcode because even if we have no IL locals, we may have
