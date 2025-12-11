@@ -201,9 +201,6 @@
       <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and $(TargetOS.StartsWith('ios'))">$(iOSVersionMin)</AppleMinOSVersion>
       <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and $(TargetOS.StartsWith('tvos'))">$(tvOSVersionMin)</AppleMinOSVersion>
 
-      <!-- TODO: remove this override once we bump to a new enough version -->
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' != '' and '$(TargetOS)' == 'maccatalyst' and $([MSBuild]::VersionLessThan('$(AppleMinOSVersion)', '15.2'))">15.2</AppleMinOSVersion>
-
       <_AppleSdkName Condition="'$(TargetOS)' == 'ios'">iphoneos</_AppleSdkName>
       <_AppleSdkName Condition="'$(TargetOS)' == 'iossimulator'">iphonesimulator</_AppleSdkName>
       <_AppleSdkName Condition="'$(TargetOS)' == 'tvos'">appletvos</_AppleSdkName>

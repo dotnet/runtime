@@ -690,7 +690,7 @@ internal sealed class Xcode
                         .Append(" -UseModernBuildSystem=YES")
                         .Append(" -archivePath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
                         .Append(" -derivedDataPath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
-                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.0");
+                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.2");
                     break;
             }
         }
@@ -715,7 +715,7 @@ internal sealed class Xcode
                         .Append(" -UseModernBuildSystem=YES")
                         .Append(" -archivePath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
                         .Append(" -derivedDataPath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
-                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.0");
+                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.2");
                     break;
             }
         }

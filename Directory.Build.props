@@ -44,7 +44,7 @@
     <iOSVersionMin>13.0</iOSVersionMin>
     <tvOSVersionMin>13.0</tvOSVersionMin>
     <macOSVersionMin>12.0</macOSVersionMin>
-    <MacCatalystVersionMin>15.0</MacCatalystVersionMin>
+    <MacCatalystVersionMin>15.2</MacCatalystVersionMin>
   </PropertyGroup>
 
   <PropertyGroup>
