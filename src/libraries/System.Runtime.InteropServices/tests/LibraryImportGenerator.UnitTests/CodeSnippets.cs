@@ -1526,5 +1526,25 @@ namespace LibraryImportGenerator.UnitTests
                 }
             }
             """;
+
+        public static string ComInterfaceWithNativeMarshallingInLibraryImport => """
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [GeneratedComInterface]
+            [Guid("0E7204B5-4B61-4E06-B872-82BA652F2ECA")]
+            [NativeMarshalling(typeof(UniqueComInterfaceMarshaller<IFoo>))]
+            partial interface IFoo
+            {
+                void DoWork();
+            }
+
+            static partial class PInvokes
+            {
+                [LibraryImport("lib")]
+                [return: MarshalAs(UnmanagedType.I1)]
+                public static partial bool TryGetFoo(out IFoo foo);
+            }
+            """;
     }
 }
