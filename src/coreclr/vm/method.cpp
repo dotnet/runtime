@@ -2451,7 +2451,9 @@ void MethodDesc::Reset()
     // Reset any flags relevant to the old code
     ClearFlagsOnUpdate();
 
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    if (GetLoaderModule()->IsReflectionEmit())
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     if (HasPrecode())
     {
         GetPrecode()->Reset();
