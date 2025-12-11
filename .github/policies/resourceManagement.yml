@@ -711,7 +711,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - agocke
-            - jeffschwMSFT
+            - dotnet/runtime-infrastructure
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -760,7 +760,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - jaredpar
+            - phil-allen-msft
             - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -785,7 +785,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - jaredpar
+            - phil-allen-msft
             - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1110,7 +1110,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - jaredpar
+            - phil-allen-msft
             - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1232,7 +1232,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - jaredpar
+            - phil-allen-msft
             - 333fred
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
