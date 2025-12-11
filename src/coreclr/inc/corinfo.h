@@ -2381,7 +2381,6 @@ public:
     //
     // Return value: The actual length of the (sub)string. Note that this may be larger
     // than bufferSize, in which case only bufferSize characters are copied to buffer.
-    // The caller should use min(returnValue, bufferSize) when working with the buffer.
     virtual int getStringLiteral (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK,    /* IN  */
