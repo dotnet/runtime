@@ -3593,7 +3593,15 @@ void emitter::emitDispInsName(
                 imm20 |= 0xfff00000;
             }
             printf("lui            %s, ", rd);
-            emitDispImmediate(imm20, !willPrintLoadImmValue);
+            if ((addr == nullptr) && (imm20 == 0))
+            {
+                // If address is not given, print placeholder instead.
+                printf("??\n");
+            }
+            else
+            {
+                emitDispImmediate(imm20, !willPrintLoadImmValue);
+            }
             return;
         }
         case MajorOpcode::Auipc:
@@ -3605,7 +3613,16 @@ void emitter::emitDispInsName(
                 imm20 |= 0xfff00000;
             }
             printf("auipc          %s, ", rd);
-            emitDispImmediate(imm20);
+
+            if ((addr == nullptr) && (imm20 == 0))
+            {
+                // If address is not given, print placeholder instead.
+                printf("??\n");
+            }
+            else
+            {
+                emitDispImmediate(imm20);
+            }
             return;
         }
         case MajorOpcode::OpImm:
@@ -4128,6 +4145,11 @@ void emitter::emitDispInsName(
             const unsigned rs1    = (code >> 15) & 0x1f;
             const unsigned rd     = (code >> 7) & 0x1f;
             int            offset = ((code >> 20) & 0xfff);
+
+            bool callHasRelocOffset = (addr == nullptr) && \
+                    id && (id->idInsOpt() == INS_OPTS_C) && \
+                    !id->idIsCallRegPtr();
+
             if (offset & 0x800)
             {
                 offset |= 0xfffff000;
@@ -4139,7 +4161,7 @@ void emitter::emitDispInsName(
                 return;
             }
 
-            if ((offset == 0) && ((rd == REG_RA) || (rd == REG_ZERO)))
+            if ((offset == 0) && ((rd == REG_RA) || (rd == REG_ZERO)) && !callHasRelocOffset)
             {
                 const char* name = (rd == REG_RA) ? "jalr" : "jr  ";
                 printf("%s           %s", name, RegNames[rs1]);
@@ -4147,7 +4169,15 @@ void emitter::emitDispInsName(
             else
             {
                 printf("jalr           %s, ", RegNames[rd]);
-                emitDispImmediate(offset, false);
+                if ((offset == 0) && callHasRelocOffset)
+                {
+                    // Print placeholder instead.
+                    printf("??");
+                }
+                else
+                {
+                    emitDispImmediate(offset, false);
+                }
                 printf("(%s)", RegNames[rs1]);
             }
             CORINFO_METHOD_HANDLE handle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
@@ -4183,15 +4213,31 @@ void emitter::emitDispInsName(
                 }
                 else
                 {
-                    printf("pc%+");
-                    emitDispImmediate(offset / sizeof(code_t));
-                    printf(" instructions");
+                    if ((addr == nullptr) && (offset == 0))
+                    {
+                        // If address is not given, print placeholder instead.
+                        printf("pc%+??");
+                    }
+                    else
+                    {
+                        printf("pc%+");
+                        emitDispImmediate(offset / sizeof(code_t));
+                        printf(" instructions");
+                    }
                 }
             }
             else
             {
                 printf("jal            %s, ", RegNames[rd]);
-                emitDispImmediate(offset, false);
+                if ((addr == nullptr) && (offset == 0))
+                {
+                    // If address is not given, print placeholder instead.
+                    printf("??");
+                }
+                else
+                {
+                    emitDispImmediate(offset, false);
+                }
             }
             CORINFO_METHOD_HANDLE handle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
             if (handle != 0)
