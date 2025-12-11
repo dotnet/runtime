@@ -44,9 +44,15 @@ namespace ILAssembler
                 return x.ContentEquals(y!);
             }
 
-            // For simplicity, we'll just use the signature size as the hash code.
-            // TODO: Make this better.
-            public int GetHashCode(BlobBuilder obj) => obj.Count;
+            public int GetHashCode(BlobBuilder obj)
+            {
+                HashCode hash = default;
+                foreach (var b in obj.GetBlobs())
+                {
+                    hash.AddBytes(b.GetBytes());
+                }
+                return hash.ToHashCode();
+            }
         }
 
         private sealed class MethodSpecEqualityComparer : IEqualityComparer<(EntityBase, BlobBuilder)>
