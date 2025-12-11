@@ -4151,11 +4151,6 @@ inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t
     }
 }
 
-#ifdef TARGET_WASM
-#include "wasmtypesdef.h"
-
-#endif
-
 #ifdef TARGET_ARM
 
 inline emitter::instrDesc* emitter::emitNewInstrReloc(emitAttr attr, BYTE* addr)
