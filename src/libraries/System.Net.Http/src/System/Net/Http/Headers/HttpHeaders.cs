@@ -519,40 +519,38 @@ namespace System.Net.Http.Headers
                 }
                 else
                 {
-                    if (removeAll)
+                    for (int i = 0; i < parsedValues.Count; i++)
                     {
-                        // Remove all matching items in a single backward pass for O(n) complexity
-                        for (int i = parsedValues.Count - 1; i >= 0; i--)
+                        object item = parsedValues[i];
+                        if (item is not InvalidValue)
                         {
-                            object item = parsedValues[i];
-                            if (item is not InvalidValue)
-                            {
-                                Debug.Assert(item.GetType() == value.GetType(),
-                                    "One of the stored values does not have the same type as 'value'.");
+                            Debug.Assert(item.GetType() == value.GetType(),
+                                "One of the stored values does not have the same type as 'value'.");
 
-                                if (AreEqual(value, item, comparer))
+                            if (AreEqual(value, item, comparer))
+                            {
+                                // Remove 'item' rather than 'value', since the 'comparer' may consider two values
+                                // equal even though the default obj.Equals() may not (e.g. if 'comparer' does
+                                // case-insensitive comparison for strings, but string.Equals() is case-sensitive).
+                                parsedValues.RemoveAt(i);
+                                i--;
+
+                                if (!result)
                                 {
-                                    parsedValues.RemoveAt(i);
                                     result = true;
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        foreach (object item in parsedValues)
-                        {
-                            if (item is not InvalidValue)
-                            {
-                                Debug.Assert(item.GetType() == value.GetType(),
-                                    "One of the stored values does not have the same type as 'value'.");
 
-                                if (AreEqual(value, item, comparer))
+                                    if (!removeAll)
+                                    {
+                                        break;
+                                    }
+                                }
+                                else
                                 {
-                                    // Remove 'item' rather than 'value', since the 'comparer' may consider two values
-                                    // equal even though the default obj.Equals() may not (e.g. if 'comparer' does
-                                    // case-insensitive comparison for strings, but string.Equals() is case-sensitive).
-                                    result = parsedValues.Remove(item);
+                                    // We've removed a second item. Fallback to RemoveAll in case there are more to maintain a linear worst-case.
+                                    // Create a copy of the locals to avoid the capture allocation in the common case.
+                                    object valueLocal = value;
+                                    IEqualityComparer? comparerLocal = comparer;
+                                    parsedValues.RemoveAll(item => item is not InvalidValue && AreEqual(valueLocal, item, comparerLocal));
                                     break;
                                 }
                             }
