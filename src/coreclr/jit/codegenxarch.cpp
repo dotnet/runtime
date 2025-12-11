@@ -654,7 +654,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForNegNot(GenTree* tree)
+void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_NEG, GT_NOT));
 
@@ -1919,7 +1919,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_NOT:
         case GT_NEG:
-            genCodeForNegNot(treeNode);
+            genCodeForNegNot(treeNode->AsOp());
             break;
 
         case GT_BSWAP:

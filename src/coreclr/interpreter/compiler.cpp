@@ -1719,13 +1719,11 @@ InterpMethod* InterpCompiler::CreateInterpMethod()
         pDataItems[i] = m_dataItems.Get(i);
 
     bool initLocals = (m_methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0;
-    CORJIT_FLAGS corJitFlags;
-    DWORD jitFlagsSize = m_compHnd->getJitFlags(&corJitFlags, sizeof(corJitFlags));
-    assert(jitFlagsSize == sizeof(corJitFlags));
 
-    bool unmanagedCallersOnly = corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+    bool unmanagedCallersOnly = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+    bool publishSecretStubParam = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
 
-    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly);
+    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly, publishSecretStubParam);
 
     return pMethod;
 }
@@ -1784,6 +1782,8 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     m_compHnd = compHnd;
     m_methodInfo = methodInfo;
     m_classHnd   = compHnd->getMethodClass(m_methodHnd);
+    DWORD jitFlagsSize = m_compHnd->getJitFlags(&m_corJitFlags, sizeof(m_corJitFlags));
+    assert(jitFlagsSize == sizeof(m_corJitFlags));
 
 #ifdef DEBUG
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
@@ -1811,6 +1811,11 @@ InterpMethod* InterpCompiler::CompileMethod()
         InterpreterCompilerBreak();
     }
 #endif
+
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE))
+    {
+        NO_WAY("Interpreter does not support profiling enter/leave hooks\n");
+    }
 
     m_isSynchronized = m_compHnd->getMethodAttribs(m_methodHnd) & CORINFO_FLG_SYNCH;
     if (m_isSynchronized)
@@ -2505,6 +2510,26 @@ void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     }
 }
 
+// Determines whether I4 to I8 promotion should use zero-extension (for unsigned operations)
+// or sign-extension (for signed operations), based on the opcode.
+InterpOpcode InterpOpForWideningArgForImplicitUpcast(InterpOpcode opcode)
+{
+    switch (opcode)
+    {
+        case INTOP_BNE_UN_I4:
+        case INTOP_BLE_UN_I4:
+        case INTOP_BLT_UN_I4:
+        case INTOP_BGE_UN_I4:
+        case INTOP_BGT_UN_I4:
+        case INTOP_ADD_OVF_UN_I4:
+        case INTOP_SUB_OVF_UN_I4:
+        case INTOP_MUL_OVF_UN_I4:
+            return INTOP_CONV_U8_U4;
+        default:
+            return INTOP_CONV_I8_I4;
+    }
+}
+
 void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
 {
     CHECK_STACK(2);
@@ -2515,12 +2540,12 @@ void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     // emitting the conditional branch
     if (argType1 == StackTypeI4 && argType2 == StackTypeI8)
     {
-        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+        EmitConv(m_pStackPointer - 1, StackTypeI8, InterpOpForWideningArgForImplicitUpcast(opcode));
         argType1 = StackTypeI8;
     }
     else if (argType1 == StackTypeI8 && argType2 == StackTypeI4)
     {
-        EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
+        EmitConv(m_pStackPointer - 2, StackTypeI8, InterpOpForWideningArgForImplicitUpcast(opcode));
     }
     else if (argType1 == StackTypeR4 && argType2 == StackTypeR8)
     {
@@ -2756,12 +2781,12 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 #if TARGET_64BIT
         if (type1 == StackTypeI8 && type2 == StackTypeI4)
         {
-            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+            EmitConv(m_pStackPointer - 1, StackTypeI8, InterpOpForWideningArgForImplicitUpcast((InterpOpcode)opBase));
             type2 = StackTypeI8;
         }
         else if (type1 == StackTypeI4 && type2 == StackTypeI8)
         {
-            EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
+            EmitConv(m_pStackPointer - 2, StackTypeI8, InterpOpForWideningArgForImplicitUpcast((InterpOpcode)opBase));
             type1 = StackTypeI8;
         }
 #endif
@@ -3144,7 +3169,9 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             if (g_stackTypeFromInterpType[targetType] != StackTypeI4 &&
                 g_stackTypeFromInterpType[targetType] != StackTypeI8)
             {
-                goto FAIL_TO_EXPAND_INTRINSIC;
+                // The intrinsic is must expand only when the target type is primitive. For other types (e.g. int128),
+                // use the compiled method.
+                return false;
             }
 
             InterpOpcode convOp;
@@ -3961,6 +3988,8 @@ void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunc
     {
         if (m_compHnd->pInvokeMarshalingRequired(NULL, callSiteSig))
         {
+            // If we remove this restriction, we should handle the track transitions scenario by forcing a 
+            // p/invoke marshaling calli stub even when not needed.
             BADCODE("PInvoke marshalling for calli is not supported in interpreted code");
         }
         m_compHnd->getUnmanagedCallConv(nullptr, callSiteSig, &suppressGCTransition);
@@ -4420,6 +4449,16 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     bool isPInvoke = callInfo.methodFlags & CORINFO_FLG_PINVOKE;
     bool isMarshaledPInvoke = isPInvoke && m_compHnd->pInvokeMarshalingRequired(callInfo.hMethod, &callInfo.sig);
+
+    if (isPInvoke && m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE))
+    {
+        // If the method is a pinvoke il stub, we can inline pinvokes
+        if (!(m_compHnd->getMethodAttribs(m_methodInfo->ftn) & CORINFO_FLG_PINVOKE))
+        {
+            // Otherwise, we have to treat it as a marshaled pinvoke
+            isMarshaledPInvoke = true;
+        }
+    }
 
     // Process sVars
     int numArgsFromStack = callInfo.sig.numArgs + (newObj ? 0 : callInfo.sig.hasImplicitThis());
@@ -5964,6 +6003,12 @@ static OpcodePeepElement peepTypeEqualityCheckOpcodes[] = {
     { 25, CEE_ILLEGAL } // End marker
 };
 
+static OpcodePeepElement peepConvRUn_R4Opcodes[] = {
+    { 0, CEE_CONV_R_UN },
+    { 1, CEE_CONV_R4 },
+    { 2, CEE_ILLEGAL } // End marker
+};
+
 static OpcodePeepElement peepStLdLoc0[] = {
     { 0, CEE_STLOC_0 },
     { 1, CEE_LDLOC_0 },
@@ -6090,6 +6135,7 @@ class InterpILOpcodePeeps
 {
 public:
     OpcodePeep peepTypeEqualityCheck = { peepTypeEqualityCheckOpcodes, &InterpCompiler::IsTypeEqualityCheckPeep, &InterpCompiler::ApplyTypeEqualityCheckPeep, "TypeEqualityCheck" };
+    OpcodePeep peepConvRUn_R4 = { peepConvRUn_R4Opcodes, &InterpCompiler::IsConvRUnR4Peep, &InterpCompiler::ApplyConvRUnR4Peep, "ConvRUn_R4" };
     OpcodePeep peepStoreLoad0 = { peepStLdLoc0, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad0" };
     OpcodePeep peepStoreLoad1 = { peepStLdLoc1, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad1" };
     OpcodePeep peepStoreLoad2 = { peepStLdLoc2, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad2" };
@@ -6111,8 +6157,9 @@ public:
     OpcodePeep peepTypeValueType = { peepTypeValueTypeOpcodesOpcodes, &InterpCompiler::IsTypeValueTypePeep, &InterpCompiler::ApplyTypeValueTypePeep, "TypeValueType" };
 
 public:
-    OpcodePeep* Peeps[21] = {
+    OpcodePeep* Peeps[22] = {
         &peepTypeEqualityCheck,
+        &peepConvRUn_R4, // This peep is not an optimization. It is for correctness.
         &peepStoreLoad,
         &peepStoreLoad1,
         &peepStoreLoad2,
@@ -6343,6 +6390,32 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip
     return true;
 }
 
+int InterpCompiler::ApplyConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo)
+{
+    // Replace with CONV_R4_UN
+    CHECK_STACK(1);
+    m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+    switch (m_pStackPointer[-1].GetStackType())
+    {
+    case StackTypeR4:
+        break;
+    case StackTypeR8:
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+        break;
+    case StackTypeI8:
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_UN_I8);
+        break;
+    case StackTypeI4:
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_UN_I4);
+        break;
+    default:
+        BADCODE("conv.r.un operand must be R4, R8, I4 or I8");
+        break;
+    }
+
+    return -1;
+}
+
 bool InterpCompiler::FindAndApplyPeep(OpcodePeep* Peeps[])
 {
     const uint8_t* ip = m_ip;
@@ -6500,6 +6573,11 @@ int InterpCompiler::ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElem
 
 bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
 {
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+    {
+        return false; // Don't optimize in debug code, this can remove needed sequence points
+    }
+
     int localVar = 0;
 
     switch(pattern[0].opcode)
@@ -7166,11 +7244,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         m_pLastNewIns->SetSVar(m_continuationArgIndex);
     }
 
-    CORJIT_FLAGS corJitFlags;
-    DWORD jitFlagsSize = m_compHnd->getJitFlags(&corJitFlags, sizeof(corJitFlags));
-    assert(jitFlagsSize == sizeof(corJitFlags));
-
-    if (corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM))
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM))
     {
         m_hiddenArgumentVar = CreateVarExplicit(InterpTypeI, NULL, sizeof(void *));
         AddIns(INTOP_STORESTUBCONTEXT);
@@ -8118,10 +8192,10 @@ retry_emit:
                 case StackTypeR8:
                     break;
                 case StackTypeI8:
-                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I8);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_UN_I8);
                     break;
                 case StackTypeI4:
-                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I4);
+                    EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_UN_I4);
                     break;
                 default:
                     BADCODE("conv.r8 operand must be R4, R8, I4 or I8");
@@ -8674,6 +8748,14 @@ retry_emit:
                         LinkBBs(m_pCBB, targetBB);
                     }
                 }
+
+#ifdef TARGET_64BIT
+                if (m_pStackPointer->GetStackType() == StackTypeI)
+                {
+                    // Emit a saturating conversion from U8 to U4
+                    EmitConv(m_pStackPointer, StackTypeI4, INTOP_CONV_U4_U8_SAT);
+                }
+#endif // TARGET_64BIT
 
                 AddInsExplicit(INTOP_SWITCH, n + 3);
                 m_pLastNewIns->data[0] = n;
