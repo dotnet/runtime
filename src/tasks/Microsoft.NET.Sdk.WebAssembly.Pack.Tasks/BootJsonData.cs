@@ -357,7 +357,7 @@ public class SymbolsAsset
 public class WasmAsset
 {
     public string name { get; set; }
-    public string integrity { get; set; }
+    public string hash { get; set; }
     public string resolvedUrl { get; set; }
 }
 
@@ -366,7 +366,7 @@ public class GeneralAsset
 {
     public string virtualPath { get; set; }
     public string name { get; set; }
-    public string integrity { get; set; }
+    public string hash { get; set; }
     public string resolvedUrl { get; set; }
 }
 
@@ -375,7 +375,7 @@ public class VfsAsset
 {
     public string virtualPath { get; set; }
     public string name { get; set; }
-    public string integrity { get; set; }
+    public string hash { get; set; }
     public string resolvedUrl { get; set; }
 }
 

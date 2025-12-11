@@ -23,6 +23,9 @@ namespace TestLibrary
                                                 ? isEnabled
                                                 : true);
 
+        public static bool IsICorProfilerEnabled => !Utilities.IsNativeAot && !IsMonoRuntime;
+        public static bool IsICorProfilerEnterLeaveHooksEnabled => IsICorProfilerEnabled && !Utilities.IsCoreClrInterpreter;
+
         public static bool IsRareEnumsSupported => !Utilities.IsNativeAot;
 
         public static bool IsCollectibleAssembliesSupported => !Utilities.IsNativeAot;
