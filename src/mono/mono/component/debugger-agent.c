@@ -1000,8 +1000,21 @@ socket_transport_send (void *data, int len)
 	MONO_REQ_GC_SAFE_MODE;
 
 	do {
-		res = send (conn_fd, (const char*)data, len, 0);
-	} while (res == SOCKET_ERROR && get_last_sock_error () == MONO_EINTR);
+		res = send (conn_fd, (char*)data, len, 0);
+	} while (res == -1 && get_last_sock_error () == MONO_EINTR);
+
+#if defined(linux) || defined(__linux__)
+	if (res != -1) {
+#ifdef TCP_QUICKACK
+		{
+			int flag = 1;
+			if (setsockopt (conn_fd, IPPROTO_TCP, TCP_QUICKACK, (char *) &flag, sizeof (int)) == -1) {
+				/* Fail silently */
+			}
+		}
+#endif
+	}
+#endif
 
 	if (res != len)
 		return FALSE;
@@ -1411,6 +1424,29 @@ transport_handshake (void)
 
 	MONO_REQ_GC_UNSAFE_MODE;
 
+#ifndef DISABLE_SOCKET_TRANSPORT
+#ifndef HOST_WASI
+	// FIXME: Move this somewhere else
+	/*
+	 * Set TCP_NODELAY on the socket so the client receives events/command
+	 * results immediately.
+	 */
+	MONO_ENTER_GC_SAFE;
+	if (conn_fd) {
+		int flag = 1;
+		int result = setsockopt (conn_fd,
+                                 IPPROTO_TCP,
+                                 TCP_NODELAY,
+                                 (char *) &flag,
+                                 sizeof(int));
+		if (result < 0) {
+			PRINT_ERROR_MSG ("debugger-agent: Unable to set TCP_NODELAY: %s\n", strerror (errno));
+		}
+	}
+	MONO_EXIT_GC_SAFE;
+#endif // !HOST_WASI
+#endif // DISABLE_SOCKET_TRANSPORT
+
 	disconnected = TRUE;
 
 	/* Write handshake message */
@@ -1437,24 +1473,6 @@ transport_handshake (void)
 	minor_version = MINOR_VERSION;
 	using_icordbg = FALSE;
 	protocol_version_set = FALSE;
-
-#ifndef DISABLE_SOCKET_TRANSPORT
-#ifndef HOST_WASI
-	// FIXME: Move this somewhere else
-	/*
-	 * Set TCP_NODELAY on the socket so the client receives events/command
-	 * results immediately.
-	 */
-	MONO_ENTER_GC_SAFE;
-	if (conn_fd) {
-		int flag = 1;
-		int result = setsockopt (conn_fd,
-                                 IPPROTO_TCP,
-                                 TCP_NODELAY,
-                                 (char *) &flag,
-                                 sizeof(int));
-		g_assert (result >= 0);
-	}
 
 	set_keepalive ();
 	MONO_EXIT_GC_SAFE;
