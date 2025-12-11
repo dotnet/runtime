@@ -712,7 +712,7 @@ namespace ILCompiler
                             _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
                             try
                             {
-                                foreach (var entity in KnownILStubReferences.ExtractReferencesFromIL(methodIL))
+                                foreach (var entity in ILStubReferences.GetNecessaryReferencesFromIL(methodIL))
                                 {
                                     switch (entity)
                                     {
@@ -724,18 +724,13 @@ namespace ILCompiler
                                             }
                                             else if (_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull)
                                             {
-                                                KnownILStubReferences.AssertIsKnownEntity(md, $"Referenced method '{md}' in method '{method}' is neither already referenced in the owning assembly nor a known reference.");
                                                 _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(md);
                                                 Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
                                             }
                                             break;
                                         case EcmaType td:
-                                            // Type represented by simple element type
-                                            if (td.IsPrimitive || td.IsVoid || td.IsObject || td.IsString || td.IsTypedReference)
-                                                continue;
                                             if (_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull)
                                             {
-                                                KnownILStubReferences.AssertIsKnownEntity(td, $"Referenced type '{td}' in method '{method}' is neither already referenced in the owning assembly nor a known reference.");
                                                 _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(td);
                                             }
                                             Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);

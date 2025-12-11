@@ -45,7 +45,7 @@
     <Compile Include="..\..\Common\System\FormattingHelpers.cs" Link="Common\FormattingHelpers.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\ILProvider.cs" Link="IL\ILProvider.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs" Link="IL\ILReader.cs" />
-    <Compile Include="..\..\Common\TypeSystem\IL\KnownReferences.cs" Link="IL\KnownReferences.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\ILStubReferences.cs" Link="IL\ILStubReferences.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncThunks.cs" Link="IL\Stubs\AsyncThunks.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.cs" Link="IL\Stubs\AsyncResumptionStub.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.Sorting.cs" Link="IL\Stubs\AsyncResumptionStub.Sorting.cs" />

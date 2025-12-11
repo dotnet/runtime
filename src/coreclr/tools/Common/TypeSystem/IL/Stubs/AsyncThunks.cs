@@ -3,7 +3,6 @@
 
 using System;
 using Internal.TypeSystem;
-using static Internal.IL.KnownILStubReferences;
 
 namespace Internal.IL.Stubs
 {
@@ -38,7 +37,7 @@ namespace Internal.IL.Stubs
 
             ILLocalVariable returnTaskLocal = emitter.NewLocal(returnType);
 
-            TypeDesc executionAndSyncBlockStoreType = GetKnownType(context, KnownILStubReference.ExecutionAndSyncBlockStore);
+            TypeDesc executionAndSyncBlockStoreType = context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "ExecutionAndSyncBlockStore"u8);
             ILLocalVariable executionAndSyncBlockStoreLocal = emitter.NewLocal(executionAndSyncBlockStoreType);
 
             ILCodeLabel returnTaskLabel = emitter.NewCodeLabel();
@@ -46,13 +45,13 @@ namespace Internal.IL.Stubs
             ILCodeLabel finishedLabel = emitter.NewCodeLabel();
 
             codestream.EmitLdLoca(executionAndSyncBlockStoreLocal);
-            codestream.Emit(ILOpcode.call, emitter.NewToken(GetKnownMethod(context, KnownILStubReference.ExecutionAndSyncBlockStore_Push)));
+            codestream.Emit(ILOpcode.call, emitter.NewToken(executionAndSyncBlockStoreType.GetKnownMethod("Push"u8, null)));
 
             ILExceptionRegionBuilder tryFinallyRegion = emitter.NewFinallyRegion();
             {
                 codestream.BeginTry(tryFinallyRegion);
                 codestream.Emit(ILOpcode.nop);
-                ILExceptionRegionBuilder tryCatchRegion = emitter.NewCatchRegion(GetKnownType(context, KnownILStubReference.Exception));
+                ILExceptionRegionBuilder tryCatchRegion = emitter.NewCatchRegion(context.GetWellKnownType(WellKnownType.Object));
                 {
                     codestream.BeginTry(tryCatchRegion);
 
@@ -90,7 +89,11 @@ namespace Internal.IL.Stubs
                         codestream.EmitStLoc(logicalResultLocal);
                     }
 
-                    codestream.Emit(ILOpcode.call, emitter.NewToken(GetKnownMethod(context, KnownILStubReference.AsyncHelpers_AsyncCallContinuation)));
+                    MethodDesc asyncCallContinuationMd = context.SystemModule
+                                                .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
+                                                .GetKnownMethod("AsyncCallContinuation"u8, null);
+
+                    codestream.Emit(ILOpcode.call, emitter.NewToken(asyncCallContinuationMd));
 
                     codestream.Emit(ILOpcode.brfalse, finishedLabel);
                     codestream.Emit(ILOpcode.leave, suspendedLabel);
@@ -100,14 +103,39 @@ namespace Internal.IL.Stubs
                     {
                         codestream.EmitLdLoc(logicalResultLocal);
 
-                        MethodDesc fromResultMethod = GetKnownMethod(context, isValueTask ? KnownILStubReference.ValueTask_FromResult_1 : KnownILStubReference.Task_FromResult_1)
-                            .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
+                        MethodDesc fromResultMethod;
+                        if (isValueTask)
+                        {
+                            fromResultMethod = context.SystemModule
+                                .GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8)
+                                .GetKnownMethod("FromResult"u8, null)
+                                .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
+                        }
+                        else
+                        {
+                            fromResultMethod = context.SystemModule
+                                .GetKnownType("System.Threading.Tasks"u8, "Task"u8)
+                                .GetKnownMethod("FromResult"u8, null)
+                                .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
+                        }
 
                         codestream.Emit(ILOpcode.call, emitter.NewToken(fromResultMethod));
                     }
                     else
                     {
-                        MethodDesc getCompletedTaskMethod = GetKnownMethod(context, isValueTask ? KnownILStubReference.ValueTask_get_CompletedTask : KnownILStubReference.Task_get_CompletedTask);
+                        MethodDesc getCompletedTaskMethod;
+                        if (isValueTask)
+                        {
+                            getCompletedTaskMethod = context.SystemModule
+                                .GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8)
+                                .GetKnownMethod("get_CompletedTask"u8, null);
+                        }
+                        else
+                        {
+                            getCompletedTaskMethod = context.SystemModule
+                                .GetKnownType("System.Threading.Tasks"u8, "Task"u8)
+                                .GetKnownMethod("get_CompletedTask"u8, null);
+                        }
                         codestream.Emit(ILOpcode.call, emitter.NewToken(getCompletedTaskMethod));
                     }
 
@@ -120,15 +148,35 @@ namespace Internal.IL.Stubs
                 {
                     codestream.BeginHandler(tryCatchRegion);
 
+                    TypeDesc exceptionType = context.GetWellKnownType(WellKnownType.Exception);
+
                     MethodDesc fromExceptionMd;
                     if (logicalReturnType != null)
                     {
-                        fromExceptionMd = GetKnownMethod(context, isValueTask ? KnownILStubReference.AsyncHelpers_ValueTaskFromException_1 : KnownILStubReference.AsyncHelpers_TaskFromException_1)
+                        MethodSignature fromExceptionSignature = new MethodSignature(
+                            MethodSignatureFlags.Static,
+                            genericParameterCount: 1,
+                            returnType: ((MetadataType)returnType.GetTypeDefinition()).MakeInstantiatedType(context.GetSignatureVariable(0, true)),
+                            parameters: new[] { exceptionType }
+                        );
+
+                        fromExceptionMd = context.SystemModule
+                            .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
+                            .GetKnownMethod(isValueTask ? "ValueTaskFromException"u8 : "TaskFromException"u8, fromExceptionSignature)
                             .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
                     }
                     else
                     {
-                        fromExceptionMd = GetKnownMethod(context, isValueTask ? KnownILStubReference.AsyncHelpers_ValueTaskFromException : KnownILStubReference.AsyncHelpers_TaskFromException);
+                        MethodSignature fromExceptionSignature = new MethodSignature(
+                            MethodSignatureFlags.Static,
+                            genericParameterCount: 0,
+                            returnType: returnType,
+                            parameters: new[] { exceptionType }
+                        );
+
+                        fromExceptionMd = context.SystemModule
+                            .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
+                            .GetKnownMethod(isValueTask ? "ValueTaskFromException"u8 : "TaskFromException"u8, fromExceptionSignature);
                     }
 
                     codestream.Emit(ILOpcode.call, emitter.NewToken(fromExceptionMd));
@@ -142,12 +190,30 @@ namespace Internal.IL.Stubs
                 MethodDesc finalizeTaskReturningThunkMd;
                 if (logicalReturnType != null)
                 {
-                    finalizeTaskReturningThunkMd = GetKnownMethod(context, isValueTask ? KnownILStubReference.AsyncHelpers_FinalizeValueTaskReturningThunk_1 : KnownILStubReference.AsyncHelpers_FinalizeTaskReturningThunk_1)
+                    MethodSignature finalizeReturningThunkSignature = new MethodSignature(
+                        MethodSignatureFlags.Static,
+                        genericParameterCount: 1,
+                        returnType: ((MetadataType)returnType.GetTypeDefinition()).MakeInstantiatedType(context.GetSignatureVariable(0, true)),
+                        parameters: Array.Empty<TypeDesc>()
+                    );
+
+                    finalizeTaskReturningThunkMd = context.SystemModule
+                        .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
+                        .GetKnownMethod(isValueTask ? "FinalizeValueTaskReturningThunk"u8 : "FinalizeTaskReturningThunk"u8, finalizeReturningThunkSignature)
                         .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
                 }
                 else
                 {
-                    finalizeTaskReturningThunkMd = GetKnownMethod(context, isValueTask ? KnownILStubReference.AsyncHelpers_FinalizeValueTaskReturningThunk : KnownILStubReference.AsyncHelpers_FinalizeTaskReturningThunk);
+                    MethodSignature finalizeReturningThunkSignature = new MethodSignature(
+                        MethodSignatureFlags.Static,
+                        genericParameterCount: 0,
+                        returnType: returnType,
+                        parameters: Array.Empty<TypeDesc>()
+                    );
+
+                    finalizeTaskReturningThunkMd = context.SystemModule
+                        .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
+                        .GetKnownMethod(isValueTask ? "FinalizeValueTaskReturningThunk"u8 : "FinalizeTaskReturningThunk"u8, finalizeReturningThunkSignature);
                 }
 
                 codestream.Emit(ILOpcode.call, emitter.NewToken(finalizeTaskReturningThunkMd));
@@ -161,7 +227,7 @@ namespace Internal.IL.Stubs
                 codestream.BeginHandler(tryFinallyRegion);
 
                 codestream.EmitLdLoca(executionAndSyncBlockStoreLocal);
-                codestream.Emit(ILOpcode.call, emitter.NewToken(GetKnownMethod(context, KnownILStubReference.ExecutionAndSyncBlockStore_Pop)));
+                codestream.Emit(ILOpcode.call, emitter.NewToken(executionAndSyncBlockStoreType.GetKnownMethod("Pop"u8, null)));
                 codestream.Emit(ILOpcode.endfinally);
                 codestream.EndHandler(tryFinallyRegion);
             }
@@ -226,16 +292,16 @@ namespace Internal.IL.Stubs
                 if (!taskReturningMethodReturnType.HasInstantiation)
                 {
                     // ValueTask (non-generic)
-                    isCompletedMethod = GetKnownMethod(context, KnownILStubReference.ValueTask_get_IsCompleted);
-                    completionResultMethod = GetKnownMethod(context, KnownILStubReference.ValueTask_ThrowIfCompletedUnsuccessfully);
-                    asTaskOrNotifierMethod = GetKnownMethod(context, KnownILStubReference.ValueTask_AsTaskOrNotifier);
+                    isCompletedMethod = valueTaskType.GetKnownMethod("get_IsCompleted"u8, null);
+                    completionResultMethod = valueTaskType.GetKnownMethod("ThrowIfCompletedUnsuccessfully"u8, null);
+                    asTaskOrNotifierMethod = valueTaskType.GetKnownMethod("AsTaskOrNotifier"u8, null);
                 }
                 else
                 {
                     // ValueTask<T> (generic)
-                    isCompletedMethod = context.GetMethodForInstantiatedType(GetKnownMethod(context, KnownILStubReference.ValueTask_1_get_IsCompleted), (InstantiatedType)valueTaskType);
-                    completionResultMethod = context.GetMethodForInstantiatedType(GetKnownMethod(context, KnownILStubReference.ValueTask_1_get_Result), (InstantiatedType)valueTaskType);
-                    asTaskOrNotifierMethod = context.GetMethodForInstantiatedType(GetKnownMethod(context, KnownILStubReference.ValueTask_1_AsTaskOrNotifier), (InstantiatedType)valueTaskType);
+                    isCompletedMethod = valueTaskType.GetKnownMethod("get_IsCompleted"u8, null);
+                    completionResultMethod = valueTaskType.GetKnownMethod("get_Result"u8, null);
+                    asTaskOrNotifierMethod = valueTaskType.GetKnownMethod("AsTaskOrNotifier"u8, null);
                 }
 
                 ILLocalVariable valueTaskLocal = emitter.NewLocal(valueTaskType);
@@ -249,7 +315,9 @@ namespace Internal.IL.Stubs
 
                 codestream.EmitLdLoca(valueTaskLocal);
                 codestream.Emit(ILOpcode.call, emitter.NewToken(asTaskOrNotifierMethod));
-                codestream.Emit(ILOpcode.call, emitter.NewToken(GetKnownMethod(context, KnownILStubReference.AsyncHelpers_TransparentAwait)));
+                codestream.Emit(ILOpcode.call, emitter.NewToken(
+                    context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
+                        .GetKnownMethod("TransparentAwait"u8, null)));
 
                 codestream.EmitLabel(valueTaskCompletedLabel);
                 codestream.EmitLdLoca(valueTaskLocal);
@@ -265,14 +333,19 @@ namespace Internal.IL.Stubs
                 if (!taskReturningMethodReturnType.HasInstantiation)
                 {
                     // Task (non-generic)
-                    completedTaskResultMethod = GetKnownMethod(context, KnownILStubReference.AsyncHelpers_CompletedTask);
+                    completedTaskResultMethod = context.SystemModule
+                        .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
+                        .GetKnownMethod("CompletedTask"u8, null);
                 }
                 else
                 {
                     // Task<T> (generic)
                     TypeDesc logicalReturnType = taskReturningMethodReturnType.Instantiation[0];
-                    completedTaskResultMethod = GetKnownMethod(context, KnownILStubReference.AsyncHelpers_CompletedTaskResult)
-                        .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
+
+                    MethodDesc completedTaskResultMethodOpen = context.SystemModule
+                        .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
+                        .GetKnownMethod("CompletedTaskResult"u8, null);
+                    completedTaskResultMethod = completedTaskResultMethodOpen.MakeInstantiatedMethod(new Instantiation(logicalReturnType));
                 }
 
                 ILLocalVariable taskLocal = emitter.NewLocal(taskType);
@@ -282,11 +355,15 @@ namespace Internal.IL.Stubs
                 codestream.EmitStLoc(taskLocal);
 
                 codestream.EmitLdLoc(taskLocal);
-                codestream.Emit(ILOpcode.call, emitter.NewToken(GetKnownMethod(context, KnownILStubReference.Task_get_IsCompleted)));
+                codestream.Emit(ILOpcode.call, emitter.NewToken(
+                    context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8)
+                        .GetKnownMethod("get_IsCompleted"u8, null)));
                 codestream.Emit(ILOpcode.brtrue, getResultLabel);
 
                 codestream.EmitLdLoc(taskLocal);
-                codestream.Emit(ILOpcode.call, emitter.NewToken(GetKnownMethod(context, KnownILStubReference.AsyncHelpers_TransparentAwait)));
+                codestream.Emit(ILOpcode.call, emitter.NewToken(
+                    context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
+                        .GetKnownMethod("TransparentAwait"u8, null)));
 
                 codestream.EmitLabel(getResultLabel);
                 codestream.EmitLdLoc(taskLocal);
