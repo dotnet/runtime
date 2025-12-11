@@ -17,6 +17,7 @@
 #if !defined(DACCESS_COMPILE)
 
 #include "frameinfo.h"
+#include "executioncontrol.h"
 
 /* ------------------------------------------------------------------------- *
  * Forward declarations
