@@ -146,13 +146,13 @@ namespace ILAssembler
             {
                 "retargetable" => new(AssemblyFlags.Retargetable),
                 "windowsruntime" => new(AssemblyFlags.WindowsRuntime),
-                "noplatform" => new((AssemblyFlags)0x70),
+                "noplatform" => new(AssemblyFlags.NoPlatform),
                 "legacy library" => new(0),
-                "cil" => new(GetFlagForArch(ProcessorArchitecture.MSIL), (AssemblyFlags)0xF0),
-                "x86" => new(GetFlagForArch(ProcessorArchitecture.X86), (AssemblyFlags)0xF0),
-                "amd64" => new(GetFlagForArch(ProcessorArchitecture.Amd64), (AssemblyFlags)0xF0),
-                "arm" => new(GetFlagForArch(ProcessorArchitecture.Arm), (AssemblyFlags)0xF0),
-                "arm64" => new(GetFlagForArch((ProcessorArchitecture)6), (AssemblyFlags)0xF0),
+                "cil" => new(GetFlagForArch(ProcessorArchitecture.MSIL), AssemblyFlags.ArchitectureMask),
+                "x86" => new(GetFlagForArch(ProcessorArchitecture.X86), AssemblyFlags.ArchitectureMask),
+                "amd64" => new(GetFlagForArch(ProcessorArchitecture.Amd64), AssemblyFlags.ArchitectureMask),
+                "arm" => new(GetFlagForArch(ProcessorArchitecture.Arm), AssemblyFlags.ArchitectureMask),
+                "arm64" => new(GetFlagForArch((ProcessorArchitecture)6), AssemblyFlags.ArchitectureMask),
                 _ => throw new UnreachableException()
             };
         }
@@ -483,7 +483,7 @@ namespace ILAssembler
                 case "explicit":
                     return new((new(TypeAttributes.ExplicitLayout), null, false));
                 case "extended":
-                    return new((new((TypeAttributes)0x18), null, false));
+                    return new((new(TypeAttributes.ExtendedLayout), null, false));
                 default:
                     return new((new((TypeAttributes)Enum.Parse(typeof(TypeAttributes), context.GetText(), true)), null, false));
             }
@@ -1520,8 +1520,6 @@ namespace ILAssembler
 
         public GrammarResult VisitExportHead(CILParser.ExportHeadContext context) => throw new NotImplementedException("Obsolete syntax");
 
-        private const TypeAttributes TypeAttributesForwarder = (TypeAttributes)0x00200000;
-
         GrammarResult ICILVisitor<GrammarResult>.VisitExptAttr(CILParser.ExptAttrContext context) => VisitExptAttr(context);
         public static GrammarResult.Flag<TypeAttributes> VisitExptAttr(CILParser.ExptAttrContext context)
         {
@@ -1529,7 +1527,7 @@ namespace ILAssembler
             {
                 "private" => new(TypeAttributes.NotPublic, TypeAttributes.VisibilityMask),
                 "public" => new(TypeAttributes.Public, TypeAttributes.VisibilityMask),
-                "forwarder" => new(TypeAttributesForwarder),
+                "forwarder" => new(TypeAttributes.Forwarder),
                 "nestedpublic" => new(TypeAttributes.NestedPublic, TypeAttributes.VisibilityMask),
                 "nestedprivate" => new(TypeAttributes.NestedPrivate, TypeAttributes.VisibilityMask),
                 "nestedfamily" => new(TypeAttributes.NestedFamily, TypeAttributes.VisibilityMask),
@@ -3612,22 +3610,12 @@ namespace ILAssembler
             return GrammarResult.SentinelValue.Result;
         }
 
-        private static class DeclarativeSecurityActionEx
-        {
-            public const DeclarativeSecurityAction Request = (DeclarativeSecurityAction)1;
-            public const DeclarativeSecurityAction PrejitGrant = (DeclarativeSecurityAction)0xB;
-            public const DeclarativeSecurityAction PrejitDeny = (DeclarativeSecurityAction)0xC;
-            public const DeclarativeSecurityAction NonCasDemand = (DeclarativeSecurityAction)0xD;
-            public const DeclarativeSecurityAction NonCasLinkDemand = (DeclarativeSecurityAction)0xE;
-            public const DeclarativeSecurityAction NonCasInheritanceDemand = (DeclarativeSecurityAction)0xF;
-        }
-
         GrammarResult ICILVisitor<GrammarResult>.VisitSecAction(CILParser.SecActionContext context) => VisitSecAction(context);
         public static GrammarResult.Literal<DeclarativeSecurityAction> VisitSecAction(CILParser.SecActionContext context)
         {
             return context.GetText() switch
             {
-                "request" => new(DeclarativeSecurityActionEx.Request),
+                "request" => new(DeclarativeSecurityAction.Request),
                 "demand" => new(DeclarativeSecurityAction.Demand),
                 "assert" => new(DeclarativeSecurityAction.Assert),
                 "deny" => new(DeclarativeSecurityAction.Deny),
@@ -3637,11 +3625,11 @@ namespace ILAssembler
                 "reqmin" => new(DeclarativeSecurityAction.RequestMinimum),
                 "reqopt" => new(DeclarativeSecurityAction.RequestOptional),
                 "reqrefuse" => new(DeclarativeSecurityAction.RequestRefuse),
-                "prejitgrant" => new(DeclarativeSecurityActionEx.PrejitGrant),
-                "prejitdeny" => new(DeclarativeSecurityActionEx.PrejitDeny),
-                "noncasdemand" => new(DeclarativeSecurityActionEx.NonCasDemand),
-                "noncaslinkdemand" => new(DeclarativeSecurityActionEx.NonCasLinkDemand),
-                "noncasinheritance" => new(DeclarativeSecurityActionEx.NonCasInheritanceDemand),
+                "prejitgrant" => new(DeclarativeSecurityAction.PrejitGrant),
+                "prejitdeny" => new(DeclarativeSecurityAction.PrejitDeny),
+                "noncasdemand" => new(DeclarativeSecurityAction.NonCasDemand),
+                "noncaslinkdemand" => new(DeclarativeSecurityAction.NonCasLinkDemand),
+                "noncasinheritance" => new(DeclarativeSecurityAction.NonCasInheritanceDemand),
                 _ => throw new UnreachableException()
             };
         }
@@ -4054,7 +4042,7 @@ namespace ILAssembler
                 { contravariant: not null } => new(GenericParameterAttributes.Contravariant),
                 { @class: not null } => new(GenericParameterAttributes.ReferenceTypeConstraint),
                 { valuetype: not null } => new(GenericParameterAttributes.NotNullableValueTypeConstraint),
-                { byrefLike: not null } => new((GenericParameterAttributes)0x0020),
+                { byrefLike: not null } => new(GenericParameterAttributes.AllowByRefLike),
                 { ctor: not null } => new(GenericParameterAttributes.DefaultConstructorConstraint),
                 { flags: CILParser.Int32Context int32 } => new((GenericParameterAttributes)VisitInt32(int32).Value),
                 _ => throw new UnreachableException()
