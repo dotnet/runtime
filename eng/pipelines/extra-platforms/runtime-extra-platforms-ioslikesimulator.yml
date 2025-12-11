@@ -24,8 +24,8 @@ jobs:
     isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
     platforms:
     - iossimulator_x64
-    - tvossimulator_x64
     - iossimulator_arm64
+    - tvossimulator_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -58,8 +58,8 @@ jobs:
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
       - iossimulator_x64
-      - tvossimulator_x64
       - iossimulator_arm64
+      - tvossimulator_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -103,8 +103,8 @@ jobs:
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
       - iossimulator_x64
-      - tvossimulator_x64
       - iossimulator_arm64
+      - tvossimulator_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
