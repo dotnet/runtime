@@ -281,7 +281,7 @@ namespace System.IO
                             return null;
                         }
 
-                        Watch watch = _wdToWatch.AddOrUpdate(wd, (int wd) => new Watch(wd), (int wd, Watch current) => current);
+                        Watch watch = _wdToWatch.AddOrUpdate(wd, (int watchDescriptor) => new Watch(watchDescriptor), (int watchDescriptor, Watch current) => current);
 
                         if (parent is null)
                         {
@@ -350,11 +350,11 @@ namespace System.IO
 
             private void RemoveUnusedINotifyWatches(WatchedDirectory removedDir, int ignoredFd = -1)
             {
-                Debug.Assert(!Monitor.IsEntered(removedDir.Watcher)); // We musn't hold the watcher lock prior to taking the _addLock.
+                Debug.Assert(!Monitor.IsEntered(removedDir.Watcher)); // We mustn't hold the watcher lock prior to taking the _addLock.
 
-                // _addLock stops handles from being added while we'll removing watches.
+                // _addLock stops handles from being added while we're removing watches.
                 // This is needed to prevent removing watch descriptors between INotifyAddWatch and adding them to the Watch.Watchers.
-                // _addLock is also used to synchronizes with Stop.
+                // _addLock is also used to synchronize with Stop.
                 _addLock.EnterWriteLock();
                 try
                 {
