@@ -861,7 +861,7 @@ IJitManager::IJitManager()
 // been stopped when we suspend the EE so they won't be touching an element that is about to be deleted.
 // However for pre-emptive mode threads, they could be stalled right on top of the element we want
 // to delete, so we need to apply the reader lock to them and wait for them to drain.
-ExecutionManager::ScanFlag ExecutionManager::GetScanFlags(Thread *pThread)
+ExecutionManager::ScanFlag ExecutionManager::GetScanFlags()
 {
     CONTRACTL {
         NOTHROW;
@@ -872,10 +872,7 @@ ExecutionManager::ScanFlag ExecutionManager::GetScanFlags(Thread *pThread)
 #if !defined(DACCESS_COMPILE)
 
 
-    if (!pThread)
-    {
-        pThread = GetThreadNULLOk();
-    }
+    Thread *pThread = GetThreadNULLOk();
 
     if (!pThread)
         return ScanNoReaderLock;
@@ -5237,24 +5234,6 @@ BOOL ExecutionManager::IsManagedCode(PCODE currentPC)
 
     if (GetScanFlags() == ScanReaderLock)
         return IsManagedCodeWithLock(currentPC);
-
-    // Since ScanReaderLock is not set, then we must assume that the ReaderLock is effectively taken.
-    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked;
-    return IsManagedCodeWorker(currentPC, &lockState);
-}
-
-//**************************************************************************
-BOOL ExecutionManager::IsManagedCodeNoLock(PCODE currentPC)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    if (currentPC == (PCODE)NULL)
-        return FALSE;
-
-    _ASSERTE(GetScanFlags() != ScanReaderLock);
 
     // Since ScanReaderLock is not set, then we must assume that the ReaderLock is effectively taken.
     RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked;

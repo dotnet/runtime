@@ -14626,6 +14626,7 @@ namespace System.Runtime.InteropServices
         public static System.Span<byte> AsBytes<T>(System.Span<T> span) where T : struct { throw null; }
         public static System.Memory<T> AsMemory<T>(System.ReadOnlyMemory<T> memory) { throw null; }
         public static ref readonly T AsRef<T>(System.ReadOnlySpan<byte> span) where T : struct { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(1)]
         public static ref T AsRef<T>(System.Span<byte> span) where T : struct { throw null; }
         public static System.ReadOnlySpan<TTo> Cast<TFrom, TTo>(System.ReadOnlySpan<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
         public static System.Span<TTo> Cast<TFrom, TTo>(System.Span<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
