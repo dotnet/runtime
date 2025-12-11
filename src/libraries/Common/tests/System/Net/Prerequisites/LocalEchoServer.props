@@ -1,17 +1,17 @@
 <Project>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">
-    <_TargetFrameworkForXHarness>$(NetCoreAppPrevious)</_TargetFrameworkForXHarness>
+    <_TargetFrameworkForXHarness>$(NetCoreAppMinimum)</_TargetFrameworkForXHarness>
     <HelixTargetsFile>$(MSBuildThisFileDirectory)LocalEchoServer.helix.targets</HelixTargetsFile>
 
     <!-- handle different path to middleware in Helix -->
     <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">%HELIX_CORRELATION_PAYLOAD%/xharness/TestEchoMiddleware</_TestEchoMiddleware>
     <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'">$HELIX_CORRELATION_PAYLOAD/xharness/TestEchoMiddleware</_TestEchoMiddleware>
-    <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(ArtifactsDir)bin/NetCoreServer/$(Configuration)/$(NetCoreAppPrevious)</_TestEchoMiddleware>
+    <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(ArtifactsDir)bin/NetCoreServer/$(Configuration)/$(NetCoreAppMinimum)</_TestEchoMiddleware>
 
     <_RemoteLoopMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">%HELIX_CORRELATION_PAYLOAD%/xharness/RemoteLoopMiddleware</_RemoteLoopMiddleware>
     <_RemoteLoopMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'">$HELIX_CORRELATION_PAYLOAD/xharness/RemoteLoopMiddleware</_RemoteLoopMiddleware>
-    <_RemoteLoopMiddleware Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(ArtifactsDir)bin/RemoteLoopServer/$(Configuration)/$(NetCoreAppPrevious)</_RemoteLoopMiddleware>
-
+    <_RemoteLoopMiddleware Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(ArtifactsDir)bin/RemoteLoopServer/$(Configuration)/$(NetCoreAppMinimum)</_RemoteLoopMiddleware>
+    
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --web-server-use-cors --web-server-use-https</WasmXHarnessArgs>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --set-web-server-http-env=DOTNET_TEST_WEBSOCKETHOST,DOTNET_TEST_HTTPHOST,DOTNET_TEST_REMOTE_LOOP_HOST</WasmXHarnessArgs>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --set-web-server-https-env=DOTNET_TEST_SECUREWEBSOCKETHOST,DOTNET_TEST_SECUREHTTPHOST,DOTNET_TEST_HTTP2HOST</WasmXHarnessArgs>

@@ -11,8 +11,8 @@
 
 void CodeGen::genMarkLabelsForCodegen()
 {
-    // TODO-WASM: serialize fgWasmControlFlow results into codegen-level metadata/labels
-    // (or use them directly and leave this empty).
+    // No work needed here for now.
+    // We mark labels as needed in genEmitStartBlock.
 }
 
 void CodeGen::genFnEpilog(BasicBlock* block)
@@ -155,7 +155,13 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
     while (!wasmControlFlowStack->Empty() && (wasmControlFlowStack->Top()->End() == cursor))
     {
         instGen(INS_end);
-        wasmControlFlowStack->Pop();
+        WasmInterval* interval = wasmControlFlowStack->Pop();
+
+        if (!interval->IsLoop() && !block->HasFlag(BBF_HAS_LABEL))
+        {
+            block->SetFlags(BBF_HAS_LABEL);
+            genDefineTempLabel(block);
+        }
     }
 
     // Push control flow for intervals that start here or earlier, and emit
@@ -179,6 +185,12 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 
             wasmCursor++;
             wasmControlFlowStack->Push(interval);
+
+            if (interval->IsLoop() && !block->HasFlag(BBF_HAS_LABEL))
+            {
+                block->SetFlags(BBF_HAS_LABEL);
+                genDefineTempLabel(block);
+            }
 
             if (wasmCursor >= compiler->fgWasmIntervals->size())
             {
@@ -270,10 +282,22 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // Do nothing; this node is a marker for debug info.
             break;
 
+        case GT_NOP:
+            break;
+
+        case GT_NO_OP:
+            instGen(INS_nop);
+            break;
+
         case GT_CNS_INT:
         case GT_CNS_LNG:
         case GT_CNS_DBL:
             genCodeForConstant(treeNode);
+            break;
+
+        case GT_NEG:
+        case GT_NOT:
+            genCodeForNegNot(treeNode->AsOp());
             break;
 
         default:
@@ -338,14 +362,10 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     BBswtDesc* const desc      = block->GetSwitchTargets();
     unsigned const   caseCount = desc->GetCaseCount();
 
-    // TODO-WASM: update lowering not to peel off the default
+    // We don't expect degenerate or default-less switches
     //
-    assert(!desc->HasDefaultCase());
-
-    if (caseCount == 0)
-    {
-        return;
-    }
+    assert(caseCount > 0);
+    assert(desc->HasDefaultCase());
 
     GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount);
 
@@ -354,7 +374,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
         BasicBlock* const caseTarget = desc->GetCase(caseNum)->getDestinationBlock();
         unsigned          depth      = findTargetDepth(caseTarget);
 
-        GetEmitter()->emitIns_I(INS_label, EA_4BYTE, depth);
+        GetEmitter()->emitIns_J(INS_label, EA_4BYTE, depth, caseTarget);
     }
 }
 
@@ -664,6 +684,54 @@ void CodeGen::genCodeForShift(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForNegNot: Generate code for a neg/not
+//
+// Arguments:
+//    tree - neg/not tree node
+//
+void CodeGen::genCodeForNegNot(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_NEG, GT_NOT));
+    genConsumeOperands(tree);
+
+    instruction ins;
+    switch (PackOperAndType(tree))
+    {
+        case PackOperAndType(GT_NOT, TYP_INT):
+            GetEmitter()->emitIns_I(INS_i32_const, emitTypeSize(tree), -1);
+            ins = INS_i32_xor;
+            break;
+        case PackOperAndType(GT_NOT, TYP_LONG):
+            GetEmitter()->emitIns_I(INS_i64_const, emitTypeSize(tree), -1);
+            ins = INS_i64_xor;
+            break;
+        case PackOperAndType(GT_NOT, TYP_FLOAT):
+        case PackOperAndType(GT_NOT, TYP_DOUBLE):
+            unreached();
+            break;
+        case PackOperAndType(GT_NEG, TYP_INT):
+        case PackOperAndType(GT_NEG, TYP_LONG):
+            // We cannot easily emit i32.sub(0, x) here since x is already on the stack.
+            // So we transform these to SUB in lower.
+            unreached();
+            break;
+        case PackOperAndType(GT_NEG, TYP_FLOAT):
+            ins = INS_f32_neg;
+            break;
+        case PackOperAndType(GT_NEG, TYP_DOUBLE):
+            ins = INS_f64_neg;
+            break;
+
+        default:
+            unreached();
+            break;
+    }
+
+    GetEmitter()->emitIns(ins);
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
 // genCodeForLclVar: Produce code for a GT_LCL_VAR node.
 //
 // Arguments:
@@ -883,7 +951,7 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 {
     instruction    instr = emitter::emitJumpKindToIns(jmp);
     unsigned const depth = findTargetDepth(tgtBlock);
-    GetEmitter()->emitIns_I(instr, EA_4BYTE, depth);
+    GetEmitter()->emitIns_J(instr, EA_4BYTE, depth, tgtBlock);
 }
 
 void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* code))
