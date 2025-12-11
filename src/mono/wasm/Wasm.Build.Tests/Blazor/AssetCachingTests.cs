@@ -17,7 +17,7 @@ namespace Wasm.Build.Tests.Blazor;
 public class AssetCachingTests : BlazorWasmTestBase
 {
     public AssetCachingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-        : base(output, buildContext)
+        : base(output, buildContext, PreviousTargetFramework)
     {
     }
 

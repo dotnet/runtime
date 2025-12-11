@@ -89,7 +89,18 @@ namespace Wasm.Build.Tests
             var resolvedCommand = _command;
             string fullArgs = GetFullArgs(args);
             _testOutput.WriteLine($"[{_label}] Executing (Captured Output) - {resolvedCommand} {fullArgs} - {WorkingDirectoryInfo()}");
-            return Task.Run(async () => await ExecuteAsyncInternal(resolvedCommand, fullArgs)).Result;
+            return Task.Run(async () =>
+            {
+                try
+                {
+                    return await ExecuteAsyncInternal(resolvedCommand, fullArgs);
+                }
+                catch (Exception ex)
+                {
+                    _testOutput.WriteLine($"[{_label}] Exception during execution: {ex}");
+                    throw;
+                }
+            }).Result;
         }
 
         public virtual void Dispose()
