@@ -708,6 +708,61 @@ namespace SerializationTypes
             writer.WriteAttributeString("BoolValue", BoolValue.ToString());
         }
     }
+
+    public struct StructImplementingIXmlSerializableWithoutParameterlessConstructor : IXmlSerializable
+    {
+        public static bool WriteXmlInvoked = false;
+        public static bool ReadXmlInvoked = false;
+
+        public string StringValue { get; set; }
+
+        public System.Xml.Schema.XmlSchema GetSchema()
+        {
+            return null;
+        }
+
+        public void ReadXml(System.Xml.XmlReader reader)
+        {
+            ReadXmlInvoked = true;
+            reader.MoveToContent();
+            StringValue = reader.GetAttribute("StringValue");
+        }
+
+        public void WriteXml(System.Xml.XmlWriter writer)
+        {
+            WriteXmlInvoked = true;
+            writer.WriteAttributeString("StringValue", StringValue);
+        }
+    }
+
+    public struct StructImplementingIXmlSerializableWithParameterlessConstructor : IXmlSerializable
+    {
+        public static bool WriteXmlInvoked = false;
+        public static bool ReadXmlInvoked = false;
+
+        public string StringValue { get; set; }
+
+        public StructImplementingIXmlSerializableWithParameterlessConstructor() { }
+
+        public System.Xml.Schema.XmlSchema GetSchema()
+        {
+            return null;
+        }
+
+        public void ReadXml(System.Xml.XmlReader reader)
+        {
+            ReadXmlInvoked = true;
+            reader.MoveToContent();
+            StringValue = reader.GetAttribute("StringValue");
+        }
+
+        public void WriteXml(System.Xml.XmlWriter writer)
+        {
+            WriteXmlInvoked = true;
+            writer.WriteAttributeString("StringValue", StringValue);
+        }
+    }
+
     public class TypeWithPropertyNameSpecified
     {
         public string MyField;
