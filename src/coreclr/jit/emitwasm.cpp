@@ -127,7 +127,9 @@ emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr attr, cnsval_ssize_
 }
 
 //-----------------------------------------------------------------------------------
-// emitIns_I: Emit an instruction with an immediate operand and an encoded value type
+// emitIns_I_Ty: Emit an instruction for a local variable declaration, encoding both
+// a count (immediate) and a value type. This is specifically used for local variable
+// declarations that require both the number of locals and their type to be encoded.
 //
 void emitter::emitIns_I_Ty(instruction ins, cnsval_ssize_t imm, emitter::instWasmValueType valType)
 {
