@@ -5672,7 +5672,7 @@ void CodeGen::genWasmLocals()
     for (unsigned i = 0; i < compiler->info.compLocalsCount - compiler->info.compArgsCount; i++)
     {
         LclVarDsc* varDsc = compiler->lvaGetDesc(i);
-        assert(varDsc->lvIsParam);
+        assert(!varDsc->lvIsParam);
         emitter::instWasmValueType type = GetEmitter()->genWasmTypeFromVarType(varDsc->TypeGet());
         GetEmitter()->emitIns_I_Ty(INS_local_decl, 1, type);
     }
