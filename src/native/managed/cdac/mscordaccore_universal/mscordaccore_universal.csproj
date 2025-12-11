@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <NeedsAotPublish>true</NeedsAotPublish>
     <AssemblyName>$(LibPrefix)$(MSBuildProjectName)</AssemblyName>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <RootNamespace>Microsoft.Diagnostics.DataContractReader</RootNamespace>
