@@ -2779,9 +2779,11 @@ MAIN_LOOP:
                         if (isOpenVirtual)
                         {
                             targetMethod = COMDelegate::GetMethodDescForOpenVirtualDelegate(*delegateObj);
+                            OBJECTREF *pThisArg = LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF);
+                            NULL_CHECK(*pThisArg);
                             targetMethod = CallWithSEHWrapper(
-                                [&targetMethod, &callArgsOffset, &stack]() {
-                                    return targetMethod->GetMethodDescOfVirtualizedCode(LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF), targetMethod->GetMethodTable());
+                                [&targetMethod, &pThisArg]() {
+                                    return targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, targetMethod->GetMethodTable());
                                 });
 
                         }
