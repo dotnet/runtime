@@ -16,3 +16,4 @@ The `caniuse.com` website can also be used to check the avalability of features,
 - `exception-handling` (with exnref)
 - `reference-types` (dependency of `exception-handling` with exnref)
 - `simd128`
+- `extended-constant-expressions` (possible dependency for R2R modules)
