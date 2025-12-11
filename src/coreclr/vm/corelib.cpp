@@ -33,7 +33,6 @@
 #include "comdatetime.h"
 #include "debugdebugger.h"
 #include "assemblynative.hpp"
-#include "comwaithandle.h"
 
 #include "proftoeeinterfaceimpl.h"
 
