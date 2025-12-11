@@ -640,6 +640,10 @@ protected:
         BasicBlock*       idTargetBlock; // Target block for branches
     };
 
+#if defined(TARGET_WASM)
+#include "wasmtypesdef.h"
+#endif
+
 #ifdef TARGET_ARM
     unsigned insEncodeSetFlags(insFlags sf);
 
@@ -892,6 +896,9 @@ protected:
         unsigned _idLclFPBase : 1; // access a local on stack - SP based offset
         insOpts  _idInsOpt    : 3; // options for Load/Store instructions
 #endif
+#ifdef TARGET_WASM
+        unsigned _idLclDecl : 1; // is this a local declaration?
+#endif
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
@@ -919,7 +926,7 @@ protected:
 #elif defined(TARGET_AMD64)
 #define ID_EXTRA_BITFIELD_BITS (20)
 #elif defined(TARGET_WASM)
-#define ID_EXTRA_BITFIELD_BITS (-4)
+#define ID_EXTRA_BITFIELD_BITS (-3)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -1295,6 +1302,18 @@ protected:
             _idReg1 = reg;
             assert(reg == _idReg1);
         }
+
+#ifdef TARGET_WASM
+        bool idIsLclVarDecl() const
+        {
+            return (_idLclDecl != 0);
+        }
+
+        void idSetIsLclVarDecl(bool isDecl)
+        {
+            _idLclDecl = isDecl ? 1 : 0;
+        }
+#endif
 
 #ifdef TARGET_ARM64
         GCtype idGCrefReg2() const
@@ -2335,6 +2354,25 @@ protected:
     };
 #endif
 
+#if defined(TARGET_WASM)
+    struct instrDescLclVarDecl : instrDesc
+    {
+        instrDescLclVarDecl() = delete;
+        cnsval_ssize_t    lclCnt;
+        instWasmValueType lclType;
+
+        void idLclType(instWasmValueType type)
+        {
+            lclType = type;
+        }
+
+        void idLclCnt(cnsval_ssize_t cnt)
+        {
+            lclCnt = cnt;
+        }
+    };
+#endif // TARGET_WASM
+
 #ifdef TARGET_RISCV64
     struct instrDescLoadImm : instrDescCns
     {
@@ -3293,6 +3331,7 @@ private:
     instrDesc* emitNewInstrCns(emitAttr attr, cnsval_ssize_t cns);
     instrDesc* emitNewInstrDsp(emitAttr attr, target_ssize_t dsp);
     instrDesc* emitNewInstrCnsDsp(emitAttr attr, target_ssize_t cns, int dsp);
+
 #ifdef TARGET_ARM
     instrDesc* emitNewInstrReloc(emitAttr attr, BYTE* addr);
 #endif // TARGET_ARM

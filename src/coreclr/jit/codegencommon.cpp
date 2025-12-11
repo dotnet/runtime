@@ -5650,12 +5650,34 @@ void CodeGen::genFnProlog()
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
 #else  // defined(TARGET_WASM)
-    // TODO-WASM: prolog zeroing, shadow stack maintenance
+    // TODO-WASM: proper local count, local declarations, and shadow stack maintenance
+    assert(compiler->info.compLocalsCount >= compiler->info.compArgsCount);
+    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, compiler->info.compLocalsCount - compiler->info.compArgsCount);
+    genWasmLocals();
     GetEmitter()->emitMarkPrologEnd();
 #endif // !defined(TARGET_WASM)
 
     GetEmitter()->emitEndProlog();
 }
+
+#if defined(TARGET_WASM)
+
+//------------------------------------------------------------------------
+// genWasmLocals: generate wasm locals for all locals
+//
+// TODO-WASM: re-evaluate this, we may not want a 1:1 mapping of locals to wasm locals
+// TODO-WASM: pre-declare all "register" locals
+void CodeGen::genWasmLocals()
+{
+    for (unsigned i = 0; i < compiler->info.compLocalsCount - compiler->info.compArgsCount; i++)
+    {
+        LclVarDsc* varDsc = compiler->lvaGetDesc(i);
+        assert(!varDsc->lvIsParam);
+        emitter::instWasmValueType type = GetEmitter()->genWasmTypeFromVarType(varDsc->TypeGet());
+        GetEmitter()->emitIns_I_Ty(INS_local_decl, 1, type);
+    }
+}
+#endif
 
 #if !defined(TARGET_WASM)
 

@@ -14,6 +14,10 @@
 #include "regset.h"
 #include "jitgcinfo.h"
 
+#if defined(TARGET_WASM)
+#include "wasmtypesdef.h"
+#endif
+
 class CodeGen final : public CodeGenInterface
 {
     friend class emitter;
@@ -589,6 +593,9 @@ protected:
     void genReserveProlog(BasicBlock* block); // currently unused
     void genReserveEpilog(BasicBlock* block);
     void genFnProlog();
+#if defined(TARGET_WASM)
+    void genWasmLocals();
+#endif
     void genFnEpilog(BasicBlock* block);
 
     void genReserveFuncletProlog(BasicBlock* block);
