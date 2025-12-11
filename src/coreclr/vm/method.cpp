@@ -2451,28 +2451,10 @@ void MethodDesc::Reset()
     // Reset any flags relevant to the old code
     ClearFlagsOnUpdate();
 
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    if (GetLoaderModule()->IsReflectionEmit())
-#else // !FEATURE_PORTABLE_ENTRYPOINTS
-    if (HasPrecode())
-    {
-        GetPrecode()->Reset();
-    }
-    else
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
-    {
-        // We should go here only for the rental methods
-        _ASSERTE(GetLoaderModule()->IsReflectionEmit());
-
-        WORD flagsToSet = enum_flag3_HasStableEntryPoint;
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
-        flagsToSet |= enum_flag3_HasPrecode;
+    _ASSERTE(HasPrecode());
+    GetPrecode()->Reset();
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
-
-        InterlockedUpdateFlags3(flagsToSet, FALSE);
-
-        *GetAddrOfSlot() = GetTemporaryEntryPoint();
-    }
 
     if (HasNativeCodeSlot())
     {
