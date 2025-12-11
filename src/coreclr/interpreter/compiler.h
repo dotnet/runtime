@@ -305,7 +305,6 @@ struct InterpBasicBlock
     int32_t ilOffset, nativeOffset;
     int32_t nativeEndOffset;
     int32_t stackHeight;
-    uint32_t bbEHClauseIndex;
     StackInfo *pStackState;
 
     InterpInst *pFirstIns, *pLastIns;
@@ -346,11 +345,10 @@ struct InterpBasicBlock
     // Number of try blocks that enclose this basic block.
     int32_t enclosingTryBlockCount;
 
-    InterpBasicBlock(int32_t index, int32_t ilOffset, uint32_t bbEHClauseIndex)
+    InterpBasicBlock(int32_t index, int32_t ilOffset)
     {
         this->index = index;
         this->ilOffset = ilOffset;
-        this->bbEHClauseIndex = bbEHClauseIndex;
         nativeOffset = -1;
         nativeEndOffset = -1;
         stackHeight = -1;
@@ -546,9 +544,9 @@ class InterpreterRetryData
     int32_t m_tryCount = 0;
     const char *m_reasonString = "";
 
-    dn_simdhash_u64_ptr_holder m_ilMergePointStackTypes;
+    dn_simdhash_u32_ptr_holder m_ilMergePointStackTypes;
 
-    static void FreeStackInfo(uint64_t key, void *value, void *userdata)
+    static void FreeStackInfo(uint32_t key, void *value, void *userdata)
     {
         free(value);
     }
@@ -587,8 +585,8 @@ public:
         }
     }
 
-    void SetOverrideILMergePointStack(int32_t ilOffset, uint32_t bbEHClauseIndex, uint32_t stackHeight, StackInfo *pStackInfo);
-    bool GetOverrideILMergePointStackType(int32_t ilOffset, uint32_t bbEHClauseIndex, uint32_t* stackHeight, StackInfo** stack);
+    void SetOverrideILMergePointStack(int32_t ilOffset, uint32_t stackHeight, StackInfo *pStackInfo);
+    bool GetOverrideILMergePointStackType(int32_t ilOffset, uint32_t* stackHeight, StackInfo** stack);
 };
 
 class InterpCompiler
@@ -801,7 +799,7 @@ private:
 #endif
     int32_t m_ILToNativeMapSize = 0;
 
-    InterpBasicBlock*   AllocBB(int32_t ilOffset, uint32_t bbEHClauseIndex);
+    InterpBasicBlock*   AllocBB(int32_t ilOffset);
     InterpBasicBlock*   GetBB(int32_t ilOffset);
     void                LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to);
     void                UnlinkBBs(InterpBasicBlock *from, InterpBasicBlock *to);

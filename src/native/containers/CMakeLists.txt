@@ -8,7 +8,6 @@ set(SOURCES
     dn-simdhash.c
     dn-simdhash-string-ptr.c
     dn-simdhash-u32-ptr.c
-    dn-simdhash-u64-ptr.c
     dn-simdhash-ptr-ptr.c
     dn-simdhash-ght-compatible.c
     dn-simdhash-ptrpair-ptr.c

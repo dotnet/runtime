@@ -390,37 +390,13 @@ void InterpCompiler::ForEachInsVar(InterpInst *ins, void *pData, void (InterpCom
 }
 
 
-InterpBasicBlock* InterpCompiler::AllocBB(int32_t ilOffset, uint32_t bbEHClauseIndex)
+InterpBasicBlock* InterpCompiler::AllocBB(int32_t ilOffset)
 {
     InterpBasicBlock *bb = (InterpBasicBlock*)AllocMemPool(sizeof(InterpBasicBlock));
 
-    new (bb) InterpBasicBlock (m_BBCount, ilOffset, bbEHClauseIndex);
+    new (bb) InterpBasicBlock (m_BBCount, ilOffset);
     m_BBCount++;
 
-    uint32_t stackHeight;
-    StackInfo* stack;
-    // In some cases while linearly processing the IL, we may discover that we predicted the wrong stack state for a given IL merge point.
-    // In those cases, we will restart the compilation, and on the retry we will have the correct stack state information available here.
-    if (m_pRetryData->GetOverrideILMergePointStackType(ilOffset, bbEHClauseIndex, &stackHeight, &stack))
-    {
-        bb->stackHeight = stackHeight;
-        bb->pStackState = (StackInfo*)AllocMemPool(sizeof(StackInfo) * stackHeight);
-        memcpy(bb->pStackState, stack, sizeof(StackInfo) * stackHeight);
-        for (uint32_t i = 0; i < stackHeight; i++)
-        {
-            int size = INTERP_STACK_SLOT_SIZE;
-            if (bb->pStackState[i].GetStackType() == StackTypeVT)
-            {
-                size = m_compHnd->getClassSize(bb->pStackState[i].clsHnd);
-            }
-            int32_t var = CreateVarExplicit(g_interpTypeFromStackType[bb->pStackState[i].GetStackType()], bb->pStackState[i].clsHnd, size);
-            AllocGlobalVarOffset(var);
-            m_pVars[var].global = true;
-
-            bb->pStackState[i].var = var;
-            INTERP_DUMP("Using StackType %s for stack height %d with var %d\n", g_stackTypeString[bb->pStackState[i].GetStackType()], (int)i, var);
-        }
-    }
     return bb;
 }
 
@@ -430,7 +406,32 @@ InterpBasicBlock* InterpCompiler::GetBB(int32_t ilOffset)
 
     if (!bb)
     {
-        bb = AllocBB(ilOffset, 0);
+        bb = AllocBB(ilOffset);
+
+        uint32_t stackHeight;
+        StackInfo* stack;
+        // In some cases while linearly processing the IL, we may discover that we predicted the wrong stack state for a given IL merge point.
+        // In those cases, we will restart the compilation, and on the retry we will have the correct stack state information available here.
+        if (m_pRetryData->GetOverrideILMergePointStackType(ilOffset, &stackHeight, &stack))
+        {
+            bb->stackHeight = stackHeight;
+            bb->pStackState = (StackInfo*)AllocMemPool(sizeof(StackInfo) * stackHeight);
+            memcpy(bb->pStackState, stack, sizeof(StackInfo) * stackHeight);
+            for (uint32_t i = 0; i < stackHeight; i++)
+            {
+                int size = INTERP_STACK_SLOT_SIZE;
+                if (bb->pStackState[i].GetStackType() == StackTypeVT)
+                {
+                    size = m_compHnd->getClassSize(bb->pStackState[i].clsHnd);
+                }
+                int32_t var = CreateVarExplicit(g_interpTypeFromStackType[bb->pStackState[i].GetStackType()], bb->pStackState[i].clsHnd, size);
+                AllocGlobalVarOffset(var);
+                m_pVars[var].global = true;
+
+                bb->pStackState[i].var = var;
+                INTERP_DUMP("Using StackType %s for stack height %d with var %d\n", g_stackTypeString[bb->pStackState[i].GetStackType()], (int)i, var);
+            }
+        }
 
         m_ppOffsetToBB[ilOffset] = bb;
     }
@@ -586,6 +587,8 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
     if (pTargetBB->stackHeight <= 0)
         return;
 
+    assert(m_ppOffsetToBB[pTargetBB->ilOffset] == pTargetBB);
+
     for (int i = 0; i < pTargetBB->stackHeight; i++)
     {
         int sVar = m_pStackBase[i].var;
@@ -607,7 +610,7 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
                     // in the next retry of compilation.
                     movOp = INTOP_CONV_R4_R8;
                     pTargetBB->pStackState[i] = StackInfo(StackTypeR8, nullptr, pTargetBB->pStackState[i].var);
-                    m_pRetryData->SetOverrideILMergePointStack(pTargetBB->ilOffset, pTargetBB->bbEHClauseIndex, pTargetBB->stackHeight, pTargetBB->pStackState);
+                    m_pRetryData->SetOverrideILMergePointStack(pTargetBB->ilOffset, pTargetBB->stackHeight, pTargetBB->pStackState);
                 }
                 else if (interpType == InterpTypeI && interpDestType == InterpTypeByRef)
                 {
@@ -619,7 +622,7 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
                     // in the next retry of compilation.
                     movOp = InterpGetMovForType(interpType, false);
                     pTargetBB->pStackState[i] = StackInfo(StackTypeByRef, nullptr, pTargetBB->pStackState[i].var);
-                    m_pRetryData->SetOverrideILMergePointStack(pTargetBB->ilOffset, pTargetBB->bbEHClauseIndex, pTargetBB->stackHeight, pTargetBB->pStackState);
+                    m_pRetryData->SetOverrideILMergePointStack(pTargetBB->ilOffset, pTargetBB->stackHeight, pTargetBB->pStackState);
                 }
 #ifdef TARGET_64BIT
                 // nint and int32 can be used interchangeably. Add implicit conversions.
@@ -633,7 +636,7 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
                     // in the next retry of compilation.
                     movOp = INTOP_MOV_8;
                     pTargetBB->pStackState[i] = StackInfo(g_stackTypeFromInterpType[interpType], nullptr, pTargetBB->pStackState[i].var);
-                    m_pRetryData->SetOverrideILMergePointStack(pTargetBB->ilOffset, pTargetBB->bbEHClauseIndex, pTargetBB->stackHeight, pTargetBB->pStackState);
+                    m_pRetryData->SetOverrideILMergePointStack(pTargetBB->ilOffset, pTargetBB->stackHeight, pTargetBB->pStackState);
                 }
 #endif // TARGET_64BIT
                 else
@@ -2264,9 +2267,7 @@ void InterpCompiler::CreateLeaveChainIslandBasicBlocks(CORINFO_METHOD_INFO* meth
 
         if (pLeaveChainIslandBB == NULL)
         {
-            unsigned int bbEHClauseIndex = i + 1;
-
-            pLeaveChainIslandBB = AllocBB(clause.HandlerOffset + clause.HandlerLength, bbEHClauseIndex);
+            pLeaveChainIslandBB = AllocBB(clause.HandlerOffset + clause.HandlerLength);
             pLeaveChainIslandBB->pLeaveTargetBB = pLeaveTargetBB;
             *ppLastBBNext = pLeaveChainIslandBB;
         }
@@ -7178,7 +7179,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     m_stackCapacity = methodInfo->maxStack + 1;
     m_pStackBase = m_pStackPointer = (StackInfo*)AllocTemporary(sizeof(StackInfo) * m_stackCapacity);
 
-    m_pEntryBB = AllocBB(0, 0);
+    m_pEntryBB = AllocBB(0);
     m_pEntryBB->emitState = BBStateEmitting;
     m_pEntryBB->stackHeight = 0;
     m_pCBB = m_pEntryBB;
@@ -10384,14 +10385,14 @@ void InterpCompiler::UpdateWithFinalMethodByteCodeAddress(InterpByteCodeStart *p
     }
 }
 
-void InterpreterRetryData::SetOverrideILMergePointStack(int32_t ilOffset, uint32_t bbEHClauseIndex, uint32_t stackHeight, StackInfo *pStackInfo)
+void InterpreterRetryData::SetOverrideILMergePointStack(int32_t ilOffset, uint32_t stackHeight, StackInfo *pStackInfo)
 {
     assert(stackHeight > 0);
     SetNeedsRetry("IL stack type override change at merge point");
 
-    INTERP_DUMP("  Override IL merge point stack at IL offset 0x%X, EH clause index %u, stack depth %u: ", ilOffset, bbEHClauseIndex, stackHeight);
+    INTERP_DUMP("  Override IL merge point stack at IL offset 0x%X, stack depth %u: ", ilOffset, stackHeight);
 
-    uint64_t key = ((uint64_t)ilOffset << 32) | (uint64_t)bbEHClauseIndex;
+    uint32_t key = (uint32_t)ilOffset;
     StackInfo* value = (StackInfo*)malloc(sizeof(StackInfo) * stackHeight);
     if (value == nullptr)
     {
@@ -10405,12 +10406,11 @@ void InterpreterRetryData::SetOverrideILMergePointStack(int32_t ilOffset, uint32
     }
 
     void* oldValue;
-    if (dn_simdhash_u64_ptr_try_get_value(m_ilMergePointStackTypes.GetValue(), key, &oldValue))
+    if (dn_simdhash_u32_ptr_try_get_value(m_ilMergePointStackTypes.GetValue(), key, &oldValue))
     {
         assert(((StackInfo*)oldValue)[0].var == (int)stackHeight);
         FreeStackInfo(key, oldValue, nullptr);
-        uint8_t success = dn_simdhash_u64_ptr_try_replace_value(m_ilMergePointStackTypes.GetValue(), key, value);
-
+        uint8_t success = dn_simdhash_u32_ptr_try_replace_value(m_ilMergePointStackTypes.GetValue(), key, value);
         if (!success)
         {
             NOMEM();
@@ -10418,22 +10418,22 @@ void InterpreterRetryData::SetOverrideILMergePointStack(int32_t ilOffset, uint32
     }
     else
     {
-        checkAddedNew(dn_simdhash_u64_ptr_try_add(m_ilMergePointStackTypes.GetValue(), key, value));
+        checkAddedNew(dn_simdhash_u32_ptr_try_add(m_ilMergePointStackTypes.GetValue(), key, value));
     }
 }
 
-bool InterpreterRetryData::GetOverrideILMergePointStackType(int32_t ilOffset, uint32_t bbEHClauseIndex, uint32_t* stackHeight, StackInfo** stack)
+bool InterpreterRetryData::GetOverrideILMergePointStackType(int32_t ilOffset, uint32_t* stackHeight, StackInfo** stack)
 {
     if (!m_ilMergePointStackTypes.HasValue())
     {
         return false;
     }
 
-    uint64_t key = ((uint64_t)ilOffset << 32) | (uint64_t)bbEHClauseIndex;
+    uint32_t key = (uint32_t)ilOffset;
     void* value;
-    if (dn_simdhash_u64_ptr_try_get_value(m_ilMergePointStackTypes.GetValue(), key, &value))
+    if (dn_simdhash_u32_ptr_try_get_value(m_ilMergePointStackTypes.GetValue(), key, &value))
     {
-        INTERP_DUMP("  Found override IL merge point stack at IL offset 0x%X, EH clause index %u, stack depth %u\n", ilOffset, bbEHClauseIndex, (uint32_t)((StackInfo*)value)[0].var);
+        INTERP_DUMP("  Found override IL merge point stack at IL offset 0x%X, stack depth %u\n", ilOffset, (uint32_t)((StackInfo*)value)[0].var);
         *stack = (StackInfo*)value;
         *stackHeight = (uint32_t)((StackInfo*)value)[0].var;
         return true;

@@ -33,16 +33,6 @@ typedef struct dn_simdhash_str_key dn_simdhash_str_key;
 #undef DN_SIMDHASH_KEY_T
 #undef DN_SIMDHASH_VALUE_T
 
-#define DN_SIMDHASH_T dn_simdhash_u64_ptr
-#define DN_SIMDHASH_KEY_T uint64_t
-#define DN_SIMDHASH_VALUE_T void *
-
-#include "dn-simdhash-specialization-declarations.h"
-
-#undef DN_SIMDHASH_T
-#undef DN_SIMDHASH_KEY_T
-#undef DN_SIMDHASH_VALUE_T
-
 
 #define DN_SIMDHASH_T dn_simdhash_ptr_ptr
 #define DN_SIMDHASH_KEY_T void *
