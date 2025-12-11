@@ -137,8 +137,6 @@ namespace Mono.Linker
 
         public Dictionary<string, bool> FeatureSettings { get; init; }
 
-        public Dictionary<string, string> Features { get; init; }
-
         public List<PInvokeInfo> PInvokes { get; private set; }
 
         public string? PInvokesListFile;
@@ -223,7 +221,6 @@ namespace Mono.Linker
             _isTrimmable = new Dictionary<AssemblyDefinition, bool>();
             OutputDirectory = outputDirectory;
             FeatureSettings = new Dictionary<string, bool>(StringComparer.Ordinal);
-            Features = new Dictionary<string, string>(StringComparer.Ordinal);
 
             SymbolReaderProvider = new DefaultSymbolReaderProvider(false);
 

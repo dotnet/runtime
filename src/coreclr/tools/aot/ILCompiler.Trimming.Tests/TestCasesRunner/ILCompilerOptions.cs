@@ -14,7 +14,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
         public List<string> AdditionalRootAssemblies = new List<string>();
         public List<string> RootEntireAssemblies = new List<string>();
         public Dictionary<string, bool> FeatureSwitches = new Dictionary<string, bool>();
-        public Dictionary<string, string> RuntimeKnobs = new Dictionary<string, string>();
         public List<string> Descriptors = new List<string>();
         public bool FrameworkCompilation;
         public bool SingleWarn;
