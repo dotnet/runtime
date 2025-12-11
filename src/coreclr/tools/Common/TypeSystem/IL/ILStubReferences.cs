@@ -66,9 +66,7 @@ namespace Internal.IL
                     {
                         int token = reader.ReadILToken();
                         object obj = methodIL.GetObject(token, NotFoundBehavior.ReturnNull);
-                        if (obj is TypeDesc type
-                            // These types can be represented by ELEMENT_TYPE values and don't need references.
-                            && !type.IsPrimitive && !type.IsVoid && !type.IsObject && !type.IsString && !type.IsTypedReference)
+                        if (obj is TypeDesc type)
                         {
                             references.Add(type);
                         }
@@ -83,9 +81,7 @@ namespace Internal.IL
                         {
                             references.Add(method);
                         }
-                        else if (obj is TypeDesc type
-                            // These types can be represented by ELEMENT_TYPE values and don't need references.
-                            && !type.IsPrimitive && !type.IsVoid && !type.IsObject && !type.IsString && !type.IsTypedReference)
+                        else if (obj is TypeDesc type)
                         {
                             references.Add(type);
                         }
@@ -103,7 +99,7 @@ namespace Internal.IL
                 if (region.Kind == ILExceptionRegionKind.Catch && region.ClassToken != 0)
                 {
                     object obj = methodIL.GetObject(region.ClassToken, NotFoundBehavior.ReturnNull);
-                    if (obj is TypeDesc type && !type.IsPrimitive && !type.IsVoid && !type.IsObject && !type.IsString && !type.IsTypedReference)
+                    if (obj is TypeDesc type)
                         references.Add(type);
                 }
             }
