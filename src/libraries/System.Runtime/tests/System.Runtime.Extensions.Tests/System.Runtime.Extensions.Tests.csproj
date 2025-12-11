@@ -100,7 +100,7 @@
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
 
     <RuntimeHostConfigurationOption Include="System.Runtime.Extensions.Tests.EnvironmentTests.ExpectedVersion">
-      <Value>$(Version)</Value>
+      <Value>$(AssemblyVersion)</Value>
     </RuntimeHostConfigurationOption>
   </ItemGroup>
 </Project>
