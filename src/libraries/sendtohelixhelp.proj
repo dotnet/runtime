@@ -281,7 +281,6 @@
         $(HelixPreCommands);
         find $HELIX_CORRELATION_PAYLOAD -name createdump | xargs -n 1 codesign -s - -f --preserve-metadata=entitlements
       </HelixPreCommands>
-      <HelixJobName>$(WorkItemPrefix.TrimEnd('-'))</HelixJobName>
     </PropertyGroup>
 
     <Error Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true' and ('$(SdkWithWorkloadForTestingPath)' == '' or !Exists($(SdkWithWorkloadForTestingPath)))"
@@ -343,6 +342,10 @@
 
   <Target Name="PrintBuildTargetFramework">
     <Message Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
+  </Target>
+
+  <Target Name="SetHelixJobName" BeforeTargets="CoreTest">
+    <HelixJobName>$(WorkItemPrefix.TrimEnd('-'))</HelixJobName>
   </Target>
 
   <!--
