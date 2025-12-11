@@ -9629,6 +9629,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        // Transforms:
         // 1. (-v1) / cns2 to v1 / (-cns2); for floating-point
         // 2. v1 / cns2 to v1 * (1.0 / cns2); for floating-point if cns2 is a power of 2
         case GT_DIV:
@@ -9696,7 +9697,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 for (unsigned i = 0; i < elementCount; i++)
                 {
-                    double val = forceCastToFloat(op2Cns->GetElementFloating(TYP_FLOAT, i));
+                    double val = op2Cns->GetElementFloating(TYP_DOUBLE, i);
 
                     if (!FloatingPointUtils::hasPreciseReciprocal(val))
                     {
@@ -9743,18 +9744,13 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         // Transforms:
         // 1. (-v1) * cns2 to v1 * (-cns2)
         // 2. v1 * -1 to -v1; for floating-point
-        // 3. v1 * 2 to to v1 + v2; for floating-point
+        // 3. v1 * 2 to to v1 + v1; for floating-point
         case GT_MUL:
         {
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
 
             if (!op2->IsCnsVec())
-            {
-                break;
-            }
-
-            if (!op1->OperIsHWIntrinsic())
             {
                 break;
             }
@@ -9843,6 +9839,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 add->SetMorphed(this, /* doChildren */ true);
 
                 DEBUG_DESTROY_NODE(op2);
+                DEBUG_DESTROY_NODE(node);
+
                 return add;
             }
             break;
@@ -10540,11 +10538,24 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         if (multiplierValue == -1.0)
         {
             // Fold "x * -1.0" to "-x"
-            mul->ChangeOper(GT_NEG);
-            mul->AsOp()->gtOp2 = nullptr;
-
             DEBUG_DESTROY_NODE(op2);
-            return mul;
+
+            if (op1->OperIs(GT_NEG))
+            {
+                // Remove double negation/not
+                GenTree* op1op1 = op1->gtGetOp1();
+
+                DEBUG_DESTROY_NODE(mul);
+                DEBUG_DESTROY_NODE(op1);
+
+                return op1op1;
+            }
+            else
+            {
+                mul->ChangeOper(GT_NEG);
+                mul->AsOp()->gtOp2 = nullptr;
+                return mul;
+            }
         }
 
         // Fold "x * 2.0" to "x + x".
@@ -10554,10 +10565,14 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         // math INTRINSICSs into calls...).
         if ((multiplierValue == 2.0) && (op1->IsLocal() || (fgOrder == FGOrderLinear)))
         {
-            DEBUG_DESTROY_NODE(op2);
-            op2          = fgMakeMultiUse(&op1);
-            GenTree* add = gtNewOperNode(GT_ADD, mul->TypeGet(), op1, op2);
+            GenTree* op1Clone = fgMakeMultiUse(&op1);
+
+            GenTree* add = gtNewOperNode(GT_ADD, mul->TypeGet(), op1, op1Clone);
             add->SetMorphed(this, /* doChildren */ true);
+
+            DEBUG_DESTROY_NODE(op2);
+            DEBUG_DESTROY_NODE(mul);
+
             return add;
         }
     }
