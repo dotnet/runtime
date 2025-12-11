@@ -783,25 +783,6 @@ size_t CEEInfo::findNameOfToken (Module* module,
     return strlen (szFQName);
 }
 
-CorInfoHelpFunc CEEInfo::getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CorInfoHelpFunc result = CORINFO_HELP_UNDEF;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    result = IsDynamicScope(handle) ? CORINFO_HELP_UNDEF : CORINFO_HELP_STRCNS;
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
-}
-
 
 CHECK CheckContext(CORINFO_MODULE_HANDLE scopeHnd, CORINFO_CONTEXT_HANDLE context)
 {
@@ -13287,7 +13268,20 @@ static TADDR UnsafeJitFunctionWorker(
         //
         // Notify the debugger that we have successfully jitted the function
         //
-        if (g_pDebugInterface)
+        bool isInterpreterCode = false;
+#ifdef FEATURE_INTERPRETER
+        EECodeInfo codeInfo((TADDR)nativeEntry);
+        if (codeInfo.IsValid())
+        {
+            IJitManager* pJitManager = codeInfo.GetJitManager();
+            if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
+            {
+                isInterpreterCode = true;
+            }
+        }
+#endif // FEATURE_INTERPRETER
+        // TODO: Revisit this for interpreter code
+        if (g_pDebugInterface && !isInterpreterCode)
         {
             g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)nativeEntry);
 
@@ -13653,8 +13647,6 @@ CorInfoHelpFunc MapReadyToRunHelper(ReadyToRunHelper helperNum)
 #define HELPER(readyToRunHelper, corInfoHelpFunc, flags) \
     case readyToRunHelper:                                  return corInfoHelpFunc;
 #include "readytorunhelpers.h"
-
-    case READYTORUN_HELPER_GetString:                       return CORINFO_HELP_STRCNS;
 
     default:                                                return CORINFO_HELP_UNDEF;
     }

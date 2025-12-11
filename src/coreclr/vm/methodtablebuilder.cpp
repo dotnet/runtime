@@ -3431,6 +3431,17 @@ MethodTableBuilder::EnumerateClassMethods()
                     pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_CMOD_REQD;
                 }
 
+                MethodClassification asyncVariantType = type;
+#ifdef FEATURE_COMINTEROP
+                if (type == mcComInterop)
+                {
+                    // For COM interop methods,
+                    // we don't want to treat the async variant as a COM Interop method
+                    // (as it isn't, it's a transient IL method).
+                    asyncVariantType = mcIL;
+                }
+#endif // FEATURE_COMINTEROP
+
                 Signature newMemberSig(pNewMemberSignature, cAsyncThunkMemberSignature);
                 pNewMethod = new (GetStackingAllocator()) bmtMDMethod(
                     bmtInternal->pType,
@@ -3440,11 +3451,23 @@ MethodTableBuilder::EnumerateClassMethods()
                     dwMethodRVA,
                     newMemberSig,
                     asyncFlags,
-                    type,
+                    asyncVariantType,
                     implType);
 
                 pNewMethod->SetAsyncOtherVariant(pDeclaredMethod);
                 pDeclaredMethod->SetAsyncOtherVariant(pNewMethod);
+
+#ifdef FEATURE_COMINTEROP
+                // We only ever include one of the two async variants (whichever doesn't have the async calling convention)
+                // Record an excluded method here in the COM VTable.
+                EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
+                if (GetHalfBakedClass()->GetSparseCOMInteropVTableMap() == NULL)
+                    GetHalfBakedClass()->SetSparseCOMInteropVTableMap(new SparseVTableMap());
+
+                GetHalfBakedClass()->GetSparseCOMInteropVTableMap()->RecordExcludedMethod((WORD)NumDeclaredMethods());
+
+                bmtProp->fSparse = true;
+#endif // FEATURE_COMINTEROP
             }
 
             bmtMethod->AddDeclaredMethod(pNewMethod);

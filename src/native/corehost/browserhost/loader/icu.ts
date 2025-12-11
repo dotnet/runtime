@@ -33,6 +33,7 @@ export function getIcuResourceName(config: LoaderConfig): string | null {
     }
 
     config.globalizationMode = GlobalizationMode.Invariant;
+    config.environmentVariables!["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "1";
     return null;
 }
 

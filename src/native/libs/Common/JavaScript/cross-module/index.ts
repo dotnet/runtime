@@ -156,6 +156,7 @@ export function dotnetUpdateInternalsSubscriber() {
             stringToUTF16Ptr: table[2],
             stringToUTF8Ptr: table[3],
             zeroRegion: table[4],
+            isSharedArrayBuffer: table[5],
         };
         Object.assign(interop, interopLocal);
     }
