@@ -2682,7 +2682,7 @@ MethodTableBuilder::EnumerateClassMethods()
     // The method count is typically a modest number though.
     // We will reserve twice the size for the builder, up to the max, just in case.
     DWORD cMethUpperBound = cMethAndGaps * 2;
-    if (cMethUpperBound >= (DWORD)MAX_SLOT_INDEX)
+    if ((DWORD)MAX_SLOT_INDEX <= cMethUpperBound)
     {
         cMethUpperBound = MAX_SLOT_INDEX - 1;
     }
