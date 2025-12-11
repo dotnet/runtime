@@ -35,7 +35,7 @@ IF_DEF(SLEB128,    IS_NONE, NONE) // <opcode> <LEB128 immediate (signed)>
 IF_DEF(F32,        IS_NONE, NONE) // <opcode> <f32 immediate (stored as 64-bit integer constant)>
 IF_DEF(F64,        IS_NONE, NONE) // <opcode> <f64 immediate (stored as 64-bit integer constant)>
 IF_DEF(MEMARG,     IS_NONE, NONE) // <opcode> <memarg> (<align> <offset>)
-IF_DEF(LOCAL_CNT,  IS_NONE, NONE) // <ULEB128 immediate> 
+IF_DEF(LOCAL_CNT,  IS_NONE, NONE) // <ULEB128 immediate>
 IF_DEF(LOCAL_DECL, IS_NONE, NONE) // <ULEB128 immediate> <byte>
 
 #undef IF_DEF
