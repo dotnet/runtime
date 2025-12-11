@@ -18,7 +18,7 @@ enum class instWasmValueType : uint8_t
     I32 = 0x7F,
 };
 
-const char* const wasmValueTypeNames[4] = {
+const char* const instWasmValueTypeNames[4] = {
     "f64",
     "f32",
     "i64",
@@ -26,17 +26,18 @@ const char* const wasmValueTypeNames[4] = {
 };
 
 //------------------------------------------------------------------------
-// wasmValueTypeToStr: map wasm type to string
-const char* const instWasmValueTypeToStr(instWasmValueType type)
+// instWasmValueTypeToStr: map wasm type to string
+//
+inline const char* const instWasmValueTypeToStr(instWasmValueType type)
 {
     assert((type >= instWasmValueType::F64) && (type <= instWasmValueType::I32));
-    return wasmValueTypeNames[static_cast<uint8_t>(type) - static_cast<uint8_t>(instWasmValueType::F64)];
+    return instWasmValueTypeNames[static_cast<uint8_t>(type) - static_cast<uint8_t>(instWasmValueType::F64)];
 }
 
 //------------------------------------------------------------------------
 // genWasmTypeFromVarType: map var_type to wasm type
 //
-instWasmValueType genWasmTypeFromVarType(var_types type)
+inline instWasmValueType genWasmTypeFromVarType(var_types type)
 {
     switch (type)
     {
