@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
@@ -13,6 +14,7 @@ namespace System.Threading
     {
         private WaitSubsystem.WaitableObject _semaphore;
 
+        [MemberNotNull(nameof(_semaphore))]
         private void Create(int maximumSignalCount)
         {
             _semaphore = WaitSubsystem.WaitableObject.NewSemaphore(0, maximumSignalCount);
