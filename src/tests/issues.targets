@@ -138,6 +138,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/ServerModel/servermodel/*">
             <Issue>times out</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/THDChaos/thdchaos/*">
+            <Issue>https://github.com/dotnet/runtime/issues/111857</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/eh/FinallyExec/nonlocalexitinhandler/*">
             <Issue>times out</Issue>
         </ExcludeList>
