@@ -9,10 +9,10 @@ namespace ILLink.Shared.TypeSystemProxy
 {
 	internal partial struct ParameterProxy
 	{
-		public ParameterProxy (IParameterSymbol parameter)
+		public ParameterProxy (IParameterSymbol parameter, IMethodSymbol method)
 		{
-			Method = new ((IMethodSymbol) parameter.ContainingSymbol);
-			Index = (ParameterIndex) parameter.Ordinal + (Method.HasImplicitThis () ? 1 : 0);
+			Method = new (method);
+			Index = (ParameterIndex) parameter.Ordinal + (method.HasImplicitThis () ? 1 : 0);
 		}
 
 		public partial ReferenceKind GetReferenceKind ()
