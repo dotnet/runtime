@@ -205,6 +205,11 @@ public:
 
     Kinds GetKind();
 
+    bool IsGCStaticMethodTable()
+    {
+        return GetElementType() == ElementType_Unknown;
+    }
+
     bool IsArray()
     {
         EETypeElementType elementType = GetElementType();
