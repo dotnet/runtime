@@ -58,7 +58,7 @@ export RunningIlasmRoundTrip=
       <IlasmRoundTripBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
 # IlasmRoundTrip Script
 
-if [ -z "$RunningIlasmRoundTrip" ];
+if [ -n "$RunningIlasmRoundTrip" ];
 then
   python3 $(AssemblyName)_ilasmroundtrip.py
   ERRORLEVEL=$?
