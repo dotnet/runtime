@@ -1719,13 +1719,11 @@ InterpMethod* InterpCompiler::CreateInterpMethod()
         pDataItems[i] = m_dataItems.Get(i);
 
     bool initLocals = (m_methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0;
-    CORJIT_FLAGS corJitFlags;
-    DWORD jitFlagsSize = m_compHnd->getJitFlags(&corJitFlags, sizeof(corJitFlags));
-    assert(jitFlagsSize == sizeof(corJitFlags));
 
-    bool unmanagedCallersOnly = corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+    bool unmanagedCallersOnly = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+    bool publishSecretStubParam = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
 
-    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly);
+    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly, publishSecretStubParam);
 
     return pMethod;
 }
@@ -1784,6 +1782,8 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     m_compHnd = compHnd;
     m_methodInfo = methodInfo;
     m_classHnd   = compHnd->getMethodClass(m_methodHnd);
+    DWORD jitFlagsSize = m_compHnd->getJitFlags(&m_corJitFlags, sizeof(m_corJitFlags));
+    assert(jitFlagsSize == sizeof(m_corJitFlags));
 
 #ifdef DEBUG
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
@@ -1811,6 +1811,11 @@ InterpMethod* InterpCompiler::CompileMethod()
         InterpreterCompilerBreak();
     }
 #endif
+
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE))
+    {
+        NO_WAY("Interpreter does not support profiling enter/leave hooks\n");
+    }
 
     m_isSynchronized = m_compHnd->getMethodAttribs(m_methodHnd) & CORINFO_FLG_SYNCH;
     if (m_isSynchronized)
@@ -3983,6 +3988,8 @@ void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunc
     {
         if (m_compHnd->pInvokeMarshalingRequired(NULL, callSiteSig))
         {
+            // If we remove this restriction, we should handle the track transitions scenario by forcing a 
+            // p/invoke marshaling calli stub even when not needed.
             BADCODE("PInvoke marshalling for calli is not supported in interpreted code");
         }
         m_compHnd->getUnmanagedCallConv(nullptr, callSiteSig, &suppressGCTransition);
@@ -4442,6 +4449,16 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     bool isPInvoke = callInfo.methodFlags & CORINFO_FLG_PINVOKE;
     bool isMarshaledPInvoke = isPInvoke && m_compHnd->pInvokeMarshalingRequired(callInfo.hMethod, &callInfo.sig);
+
+    if (isPInvoke && m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE))
+    {
+        // If the method is a pinvoke il stub, we can inline pinvokes
+        if (!(m_compHnd->getMethodAttribs(m_methodInfo->ftn) & CORINFO_FLG_PINVOKE))
+        {
+            // Otherwise, we have to treat it as a marshaled pinvoke
+            isMarshaledPInvoke = true;
+        }
+    }
 
     // Process sVars
     int numArgsFromStack = callInfo.sig.numArgs + (newObj ? 0 : callInfo.sig.hasImplicitThis());
@@ -6556,11 +6573,7 @@ int InterpCompiler::ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElem
 
 bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
 {
-    CORJIT_FLAGS corJitFlags;
-    DWORD jitFlagsSize = m_compHnd->getJitFlags(&corJitFlags, sizeof(corJitFlags));
-    assert(jitFlagsSize == sizeof(corJitFlags));
-
-    if (corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
     {
         return false; // Don't optimize in debug code, this can remove needed sequence points
     }
@@ -7231,11 +7244,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         m_pLastNewIns->SetSVar(m_continuationArgIndex);
     }
 
-    CORJIT_FLAGS corJitFlags;
-    DWORD jitFlagsSize = m_compHnd->getJitFlags(&corJitFlags, sizeof(corJitFlags));
-    assert(jitFlagsSize == sizeof(corJitFlags));
-
-    if (corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM))
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM))
     {
         m_hiddenArgumentVar = CreateVarExplicit(InterpTypeI, NULL, sizeof(void *));
         AddIns(INTOP_STORESTUBCONTEXT);

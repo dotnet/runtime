@@ -136,7 +136,19 @@ void InvokeUnmanagedCalliWithTransition(PCODE ftn, void *cookie, int8_t *stack, 
     inlinedCallFrame.Push();
     {
         GCX_PREEMP();
+#ifdef PROFILING_SUPPORTED
+        if (CORProfilerTrackTransitions() && !pFrame->startIp->Method->methodHnd->IsILStub())
+        {
+            ProfilerManagedToUnmanagedTransitionMD(pFrame->startIp->Method->methodHnd, COR_PRF_TRANSITION_CALL);
+        }
+#endif
         InvokeUnmanagedCalli(ftn, cookie, pArgs, pRet);
+#ifdef PROFILING_SUPPORTED
+        if (CORProfilerTrackTransitions() && !pFrame->startIp->Method->methodHnd->IsILStub())
+        {
+            ProfilerUnmanagedToManagedTransitionMD(pFrame->startIp->Method->methodHnd, COR_PRF_TRANSITION_CALL);
+        }
+#endif
     }
     inlinedCallFrame.Pop();
 }
