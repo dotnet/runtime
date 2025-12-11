@@ -7185,8 +7185,7 @@ mono_lookup_icall_symbol (MonoMethod *m)
 //
 // mono_create_icall_signatures depends on this order. Handle with care.
 typedef enum ICallSigType {
-	ICALL_SIG_TYPE_bool     = 0x00,
-	ICALL_SIG_TYPE_boolean  = ICALL_SIG_TYPE_bool,
+	ICALL_SIG_TYPE_boolean  = 0x00,
 	ICALL_SIG_TYPE_double   = 0x01,
 	ICALL_SIG_TYPE_float    = 0x02,
 	ICALL_SIG_TYPE_int      = 0x03,
