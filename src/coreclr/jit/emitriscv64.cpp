@@ -1458,9 +1458,20 @@ void emitter::emitIns_Jump(instruction ins, BasicBlock* dst, regNumber reg1, reg
 static inline constexpr unsigned WordMask(uint8_t bits);
 
 //------------------------------------------------------------------------
+// emitLoadImmediate: Emits the instruction sequence needed to load a
+//                    64-bit constant into register "reg".
 //
-//  Emits load of 64-bit constant to register.
+// Arguments:
+//    size - The emit attribute of the target.
+//    reg  - The target register that will receive the constructed 64-bit constant. 
+//    imm  - The 64-bit immediate value to materialize.
 //
+// Notes:
+//    The immediate is constructed using a combination of LUI/ADDIW for the high
+//    32 bits and SLLI/ADDI for the offset, unless the required instruction count
+//    exceeds five, in which case the function falls back to "emitDataConst".
+//    When materializing the offset, the emitter heuristically selects between
+//    add mode and subtract mode to minimize the instruction count.
 //
 void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 {
