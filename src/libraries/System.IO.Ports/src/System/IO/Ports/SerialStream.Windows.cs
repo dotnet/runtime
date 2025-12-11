@@ -634,17 +634,20 @@ namespace System.IO.Ports
                 // set constant properties of the DCB
                 InitializeDCB(baudRate, parity, dataBits, stopBits, discardNull);
 
-                DtrEnable = dtrEnable;
+                //if device doesnt support DTR and DTR is disabled, then dont try to set DTR 
+                if (DtrEnable || ((_commProp.dwProvCapabilities & Interop.Kernel32.COMMPROP.PCF_DTRDSR) != 0)) {
+                    DtrEnable = dtrEnable;
 
-                // query and cache the initial RtsEnable value
-                // so that set_RtsEnable can do the (value != rtsEnable) optimization
-                _rtsEnable = (GetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL) == Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_ENABLE);
+                    // query and cache the initial RtsEnable value
+                    // so that set_RtsEnable can do the (value != rtsEnable) optimization
+                    _rtsEnable = (GetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL) == Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_ENABLE);
 
-                // now set this.RtsEnable to the specified value.
-                // Handshake takes precedence, this will be a nop if
-                // handshake is either RequestToSend or RequestToSendXOnXOff
-                if ((handshake != Handshake.RequestToSend && handshake != Handshake.RequestToSendXOnXOff))
-                    RtsEnable = rtsEnable;
+                    // now set this.RtsEnable to the specified value.
+                    // Handshake takes precedence, this will be a nop if
+                    // handshake is either RequestToSend or RequestToSendXOnXOff
+                    if ((handshake != Handshake.RequestToSend && handshake != Handshake.RequestToSendXOnXOff))
+                        RtsEnable = rtsEnable;
+                }
 
                 // NOTE: this logic should match what is in the ReadTimeout property
                 if (readTimeout == 0)
@@ -717,29 +720,33 @@ namespace System.IO.Ports
 
                     // turn off all events and signal WaitCommEvent
                     Interop.Kernel32.SetCommMask(_handle, 0);
-                    if (!Interop.Kernel32.EscapeCommFunction(_handle, Interop.Kernel32.CommFunctions.CLRDTR))
-                    {
-                        int hr = Marshal.GetLastPInvokeError();
-
-                        // access denied can happen if USB is yanked out. If that happens, we
-                        // want to at least allow finalize to succeed and clean up everything
-                        // we can. To achieve this, we need to avoid further attempts to access
-                        // the SerialPort.  A customer also reported seeing ERROR_BAD_COMMAND here.
-                        // Do not throw an exception on the finalizer thread - that's just rude,
-                        // since apps can't catch it and we may tear down the app.
-                        const int ERROR_DEVICE_REMOVED = 1617;
-                        if ((hr == Interop.Errors.ERROR_ACCESS_DENIED || hr == Interop.Errors.ERROR_BAD_COMMAND || hr == ERROR_DEVICE_REMOVED) && !disposing)
+                    
+                    //if device supports DTR then clear
+                    if ((_commProp.dwProvCapabilities & Interop.Kernel32.COMMPROP.PCF_DTRDSR) != 0) {
+                        if (!Interop.Kernel32.EscapeCommFunction(_handle, Interop.Kernel32.CommFunctions.CLRDTR))
                         {
-                            skipSPAccess = true;
-                        }
-                        else
-                        {
-                            // should not happen
-                            Debug.Fail($"Unexpected error code from EscapeCommFunction in SerialPort.Dispose(bool)  Error code: 0x{(uint)hr:x}");
+                            int hr = Marshal.GetLastPInvokeError();
 
-                            // Do not throw an exception from the finalizer here.
-                            if (disposing)
-                                throw Win32Marshal.GetExceptionForLastWin32Error();
+                            // access denied can happen if USB is yanked out. If that happens, we
+                            // want to at least allow finalize to succeed and clean up everything
+                            // we can. To achieve this, we need to avoid further attempts to access
+                            // the SerialPort.  A customer also reported seeing ERROR_BAD_COMMAND here.
+                            // Do not throw an exception on the finalizer thread - that's just rude,
+                            // since apps can't catch it and we may tear down the app.
+                            const int ERROR_DEVICE_REMOVED = 1617;
+                            if ((hr == Interop.Errors.ERROR_ACCESS_DENIED || hr == Interop.Errors.ERROR_BAD_COMMAND || hr == ERROR_DEVICE_REMOVED) && !disposing)
+                            {
+                                skipSPAccess = true;
+                            }
+                            else
+                            {
+                                // should not happen
+                                Debug.Fail($"Unexpected error code from EscapeCommFunction in SerialPort.Dispose(bool)  Error code: 0x{(uint)hr:x}");
+
+                                // Do not throw an exception from the finalizer here.
+                                if (disposing)
+                                    throw Win32Marshal.GetExceptionForLastWin32Error();
+                            }
                         }
                     }
 
