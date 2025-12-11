@@ -197,7 +197,8 @@
 
     <PropertyGroup>
       <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(TargetOS)' == 'osx'">$(macOSVersionMin)</AppleMinOSVersion>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(TargetOS)' == 'maccatalyst'">$(MacCatalystVersionMin)</AppleMinOSVersion>
+      <!-- TODO: replace the hardcoded 15.2 with $(MacCatalystVersionMin) once we bump to a newer version -->
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(TargetOS)' == 'maccatalyst'">15.2</AppleMinOSVersion>
       <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and $(TargetOS.StartsWith('ios'))">$(iOSVersionMin)</AppleMinOSVersion>
       <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and $(TargetOS.StartsWith('tvos'))">$(tvOSVersionMin)</AppleMinOSVersion>
 
