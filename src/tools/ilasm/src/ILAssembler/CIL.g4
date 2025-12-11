@@ -217,7 +217,7 @@ float64:
 
 intOrWildcard: int32 | PTR;
 
-/* TODO: Handle in custom lexer and have this in the grammar just for completeness */
+/* This is handled in the PreprocessedTokenSource lexer. We have this in the grammar just for completeness */
 compControl:
 	PP_DEFINE ID
 	| PP_DEFINE ID QSTRING
