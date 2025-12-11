@@ -211,7 +211,7 @@ namespace System.IO.Compression
                         return false;
                     }
 
-                    length = (int)frameContentSize;
+                    length = (long)frameContentSize;
                     return true;
                 }
             }
@@ -291,7 +291,7 @@ namespace System.IO.Compression
                         return false;
                     }
 
-                    bytesWritten = (int)result;
+                    bytesWritten = checked((int)result);
                     return true;
                 }
             }

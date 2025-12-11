@@ -72,7 +72,7 @@ namespace System.IO.Compression
 
         /// <summary>Creates a dictionary by training on the provided samples.</summary>
         /// <param name="samples">All training samples concatenated in one large buffer.</param>
-        /// <param name="sampleLengths">The lengths of the individual samples.</param>
+        /// <param name="sampleLengths">The lengths of the individual samples. The sum of these lengths must equal the length of <paramref name="samples"/>. Minimum of 5 samples is required.</param>
         /// <param name="maxDictionarySize">The maximum size of the dictionary to create.</param>
         /// <returns>A new <see cref="ZstandardDictionary"/> instance.</returns>
         /// <exception cref="ArgumentException">Invalid sample data or lengths.</exception>

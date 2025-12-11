@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Microsoft.DotNet.XUnitExtensions;
 using System.Buffers;
+using System.Diagnostics;
 
 namespace System.IO.Compression
 {
@@ -331,7 +332,26 @@ namespace System.IO.Compression
                 byte[] input = CreateTestData();
                 byte[] output = new byte[GetMaxCompressedLength(input.Length)];
 
-                OperationStatus result = encoder.Compress(input, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: true);
+                encoder.Compress(input, output, out _, out _, isFinalBlock: true);
+                // no Dispose()
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+        }
+
+        [Fact]
+        public void Decoder_Finalize()
+        {
+            {
+                DecoderAdapter decoder = CreateDecoder();
+                byte[] input = CreateTestData();
+                byte[] output = new byte[GetMaxCompressedLength(input.Length)];
+                Debug.Assert(TryCompress(input, output, out int compressedLength));
+
+                decoder.Decompress(output.AsSpan(0, compressedLength), input, out _, out _);
+                // no Dispose()
             }
 
             GC.Collect();
