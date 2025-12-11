@@ -151,6 +151,10 @@ ValueNumFuncDef(ReadyToRunGenericHandle, 2, false, true, false)
 
 ValueNumFuncDef(GetStaticAddrTLS, 1, false, true, false)
 
+ValueNumFuncDef(VirtualFuncPtr, 3, false, true, false)
+ValueNumFuncDef(GVMLookupForSlot, 2, false, true, false)
+ValueNumFuncDef(ReadyToRunVirtualFuncPtr, 2, false, true, false)
+
 ValueNumFuncDef(JitNew, 2, false, true, false)
 ValueNumFuncDef(JitNewArr, 3, false, true, false)
 ValueNumFuncDef(JitNewLclArr, 3, false, true, false)
@@ -161,7 +165,6 @@ ValueNumFuncDef(JitReadyToRunNewLclArr, 3, false, true, false)
 ValueNumFuncDef(Box, 3, false, true, false)
 ValueNumFuncDef(BoxNullable, 3, false, false, false)
 
-ValueNumFuncDef(LazyStrCns, 2, false, true, false)            // Lazy-initialized string literal (helper)
 ValueNumFuncDef(InvariantLoad, 1, false, false, false)        // Args: 0: (VN of) the address.
 ValueNumFuncDef(InvariantNonNullLoad, 1, false, true, false)  // Args: 0: (VN of) the address.
 ValueNumFuncDef(Unbox, 2, false, false, false)

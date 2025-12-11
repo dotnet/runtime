@@ -1156,8 +1156,26 @@ public:
 };
 
 
+class ExecutionContextObject: public Object
+{
+    friend class CoreLibBinder;
 
+private:
+    // These field are also defined in the managed representation.  (SecurityContext.cs)If you
+    // add or change these field you must also change the managed code so that
+    // it matches these.  This is necessary so that the object is the proper
+    // size.
+    OBJECTREF m_localValues;
+    OBJECTREF m_localChangeNotifications;
+    CLR_BOOL m_isFlowSuppressed;
 
+public:
+    bool IsFlowSuppressed() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_isFlowSuppressed;
+    }
+};
 
 typedef DPTR(class CultureInfoBaseObject) PTR_CultureInfoBaseObject;
 
@@ -1170,6 +1188,7 @@ typedef REF<ArrayBase> ARRAYBASEREF;
 #else
 typedef SynchronizationContextObject*     SYNCHRONIZATIONCONTEXTREF;
 typedef CultureInfoBaseObject*     CULTUREINFOBASEREF;
+typedef ExecutionContextObject* EXECUTIONCONTEXTREF;
 typedef PTR_ArrayBase ARRAYBASEREF;
 #endif
 
@@ -1272,6 +1291,12 @@ public:
     STRINGREF GetName() {
         LIMITED_METHOD_CONTRACT;
         return m_Name;
+    }
+
+    OBJECTREF GetExecutionContext()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_ExecutionContext;
     }
 
     OBJECTREF GetSynchronizationContext()
@@ -1423,6 +1448,10 @@ public:
     uintptr_t m_taggedHandle;
 };
 
+
+typedef DPTR(class ContinuationObject) PTR_ContinuationObject;
+class ContinuationObject;
+
 #ifdef USE_CHECKED_OBJECTREFS
 
 typedef REF<ReflectModuleBaseObject> REFLECTMODULEBASEREF;
@@ -1440,6 +1469,10 @@ typedef REF<AssemblyBaseObject> ASSEMBLYREF;
 typedef REF<AssemblyLoadContextBaseObject> ASSEMBLYLOADCONTEXTREF;
 
 typedef REF<AssemblyNameBaseObject> ASSEMBLYNAMEREF;
+
+typedef REF<ThreadBaseObject> THREADBASEREF;
+
+typedef REF<ContinuationObject> CONTINUATIONREF;
 
 inline ARG_SLOT ObjToArgSlot(OBJECTREF objRef)
 {
@@ -1483,6 +1516,8 @@ typedef PTR_ThreadBaseObject THREADBASEREF;
 typedef PTR_AssemblyBaseObject ASSEMBLYREF;
 typedef PTR_AssemblyLoadContextBaseObject ASSEMBLYLOADCONTEXTREF;
 typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
+typedef PTR_ThreadBaseObject THREADBASEREF;
+typedef PTR_ContinuationObject CONTINUATIONREF;
 
 #define ObjToArgSlot(objref) ((ARG_SLOT)(SIZE_T)(objref))
 #define ArgSlotToObj(s) ((OBJECTREF)(SIZE_T)(s))
@@ -2138,6 +2173,98 @@ class GenericCacheStruct
     int32_t _lastFlushSize;
     int32_t _initialCacheSize;
     int32_t _maxCacheSize;
+};
+
+class ContinuationObject : public Object
+{
+    friend class CoreLibBinder;
+
+    public:
+    CorInfoContinuationFlags GetFlags() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (CorInfoContinuationFlags)Flags;
+    }
+
+    void SetFlags(CorInfoContinuationFlags flags)
+    {
+        LIMITED_METHOD_CONTRACT;
+        Flags = (int32_t)flags;
+    }
+
+    void SetResumeInfo(void* resumeInfo)
+    {
+        LIMITED_METHOD_CONTRACT;
+        ResumeInfo = resumeInfo;
+    }
+
+    void* GetResumeInfo() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return ResumeInfo;
+    }
+
+    void SetState(int32_t state)
+    {
+        LIMITED_METHOD_CONTRACT;
+        State = state;
+    }
+
+    int32_t GetState() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return State;
+    }
+
+    PTR_BYTE GetResultStorage()
+    {
+        LIMITED_METHOD_CONTRACT;
+        PTR_BYTE dataAddress = dac_cast<PTR_BYTE>((dac_cast<TADDR>(this) + OFFSETOF__CORINFO_Continuation__data));
+        if (GetFlags() & CORINFO_CONTINUATION_HAS_OSR_ILOFFSET)
+        {
+            dataAddress += sizeof(void*);
+        }
+        if (GetFlags() & CORINFO_CONTINUATION_HAS_EXCEPTION)
+        {
+            dataAddress += sizeof(void*);
+        }
+        if (GetFlags() & CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT)
+        {
+            dataAddress += sizeof(void*);
+        }
+        return dataAddress;
+    }
+
+    PTR_OBJECTREF GetExceptionObjectStorage()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE((GetFlags() & CORINFO_CONTINUATION_HAS_EXCEPTION));
+
+        PTR_BYTE dataAddress = dac_cast<PTR_BYTE>((dac_cast<TADDR>(this) + OFFSETOF__CORINFO_Continuation__data));
+        if (GetFlags() & CORINFO_CONTINUATION_HAS_OSR_ILOFFSET)
+        {
+            dataAddress += sizeof(void*);
+        }
+        return dac_cast<PTR_OBJECTREF>(dataAddress);
+    }
+
+#ifndef DACCESS_COMPILE
+    int32_t* GetFlagsAddress()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (int32_t*)&Flags;
+    }
+#endif // DACCESS_COMPILE
+
+private:
+    // README:
+    // If you modify the order of these fields, make sure to update the definition in
+    // BCL for this object.
+
+    CONTINUATIONREF Next;
+    void* ResumeInfo;
+    int32_t Flags;
+    int32_t State;
 };
 
 // This class corresponds to Exception on the managed side.
