@@ -126,7 +126,7 @@ public class Co6010DelegateEqualsTwo
 		{
 			iTestCount++;
 			Console.WriteLine( "test7: delegates point to different instance method with same signature" );
-			Co6010DelegateEqualsTwo obj1 = new TestClass();
+			Co6010DelegateEqualsTwo obj1 = new();
 			Void_VoidDelegate sdg1 = new Void_VoidDelegate( obj1.instanceMethVoid_Void1 );
 			Void_VoidDelegate sdg2 = new Void_VoidDelegate( obj1.instanceMethVoid_Void2 );
 			if( sdg1.Equals( sdg2 ) )
@@ -139,8 +139,8 @@ public class Co6010DelegateEqualsTwo
 		{
 			iTestCount++;
 			Console.WriteLine( "test8: delegates point to same instance method on different objects" );
-			Co6010DelegateEqualsTwo obj1 = new TestClass();
-			Co6010DelegateEqualsTwo obj2 = new TestClass();
+			Co6010DelegateEqualsTwo obj1 = new();
+			Co6010DelegateEqualsTwo obj2 = new();
 			Void_VoidDelegate sdg1 = new Void_VoidDelegate( obj1.instanceMethVoid_Void1 );
 			Void_VoidDelegate sdg2 = new Void_VoidDelegate( obj1.instanceMethVoid_Void2 );
 			if( sdg1.Equals( sdg2 ) )
@@ -152,7 +152,7 @@ public class Co6010DelegateEqualsTwo
 		{
 			iTestCount++;
 			Console.WriteLine( "test9: delegates point to instance method with same name but in different classes " );
-			Co6010DelegateEqualsTwo obj1 = new TestClass();
+			Co6010DelegateEqualsTwo obj1 = new();
 			Foo_Globİı obj2 = new Foo_Globİı();
 			Void_VoidDelegate sdg1 = new Void_VoidDelegate( obj1.instanceMethVoid_Void1 );
 			Void_VoidDelegate sdg2 = new Void_VoidDelegate( obj2.instanceMethVoid_Void1 );
