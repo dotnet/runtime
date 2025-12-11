@@ -529,9 +529,6 @@ namespace System.Net.Http.Headers
 
                             if (AreEqual(value, item, comparer))
                             {
-                                // Remove 'item' rather than 'value', since the 'comparer' may consider two values
-                                // equal even though the default obj.Equals() may not (e.g. if 'comparer' does
-                                // case-insensitive comparison for strings, but string.Equals() is case-sensitive).
                                 parsedValues.RemoveAt(i);
                                 i--;
 
