@@ -719,7 +719,9 @@ void Compiler::eePrintStringLiteral(CORINFO_MODULE_HANDLE module, unsigned token
     else
     {
         char dst[MAX_LITERAL_LENGTH];
-        convertUtf16ToUtf8ForPrinting(str, length, dst, MAX_LITERAL_LENGTH);
+        // Truncate length to MAX_LITERAL_LENGTH since that's the maximum we copied into str
+        int truncatedLength = min(length, MAX_LITERAL_LENGTH);
+        convertUtf16ToUtf8ForPrinting(str, truncatedLength, dst, MAX_LITERAL_LENGTH);
         printf("\"%.50s%s\"", dst, length > 50 ? "..." : "");
     }
 }
