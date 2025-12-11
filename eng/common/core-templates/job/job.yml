@@ -217,7 +217,7 @@ jobs:
         inputs:
           SourceFolder: 'artifacts/obj'
           Contents: '**/CMakeConfigureLog.yaml'
-          TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/obj'
+          TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/log/cmake'
         continueOnError: true
         condition: always()
       
