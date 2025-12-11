@@ -841,7 +841,7 @@ namespace ILAssembler
             var decoder = new SignatureDecoder<SignatureRewriter.BlobOrHandle, SignatureRewriter.EmptyGenericContext>(new SignatureRewriter(), null!, default);
             BlobEncoder methodDefSig = new(new BlobBuilder());
             bool hasVarargParameters = false;
-            // TODO: Propose a public API to construct a blob reader over a byte array or ReadOnlyMemory<byte>
+            // TODO-SRM: Propose a public API to construct a blob reader over a byte array or ReadOnlyMemory<byte>
             // to avoid the unsafe block.
             // Alternatively, propose an API to get the corresponding MethodDefSig for a MethodRefSig and move all of this logic into SRM.
             unsafe
