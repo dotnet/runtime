@@ -8788,20 +8788,13 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(
             pDevirtMD, pExactMT, pExactMT->IsValueType() && !pDevirtMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
         
-        // If the generic virtual method requires a runtime lookup, and we devirted to a class that also
-        // requires a runtime lookup, we can't handle this case yet because we don't have the right generic context.
-        // For example: Base.M<U> devirted to Derived<T>.M<U>, where both T and U are shared generic.
-        // In this case we would need both the T and U be part of the context to be able to do the lookup.
-        // TODO-CQ: Fix this limitation.
+        // We still can't handle shared generic methods because we don't have
+        // the right generic context for runtime lookup.
+        // TODO: Remove this limitation.
         if (pDevirtMD->IsInstantiatingStub())
         {
-            MethodDesc* instantiatingStub = pDevirtMD->GetWrappedMethodDesc();
-            if (instantiatingStub->GetMethodTable()->IsSharedByGenericInstantiations()
-                && instantiatingStub->IsSharedByGenericMethodInstantiations())
-            {
-                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                return false;
-            }
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
         }
 
         isGenericVirtual = true;

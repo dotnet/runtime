@@ -1540,7 +1540,7 @@ enum CORINFO_DEVIRTUALIZATION_DETAIL
 {
     CORINFO_DEVIRTUALIZATION_UNKNOWN,                              // no details available
     CORINFO_DEVIRTUALIZATION_SUCCESS,                              // devirtualization was successful
-    CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class was canonical
+    CORINFO_DEVIRTUALIZATION_FAILED_CANON,                         // object class or method was canonical
     CORINFO_DEVIRTUALIZATION_FAILED_COM,                           // object class was com
     CORINFO_DEVIRTUALIZATION_FAILED_CAST,                          // object class could not be cast to interface class
     CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP,                        // interface method could not be found

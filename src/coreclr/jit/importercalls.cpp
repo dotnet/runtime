@@ -8791,6 +8791,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         else
         {
             // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
+            // Generic virtual method devirt also returns a generic method.
             //
             assert(isGenericVirtual || dvInfo.needsMethodContext);
             assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
@@ -8842,12 +8843,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         if (!isExact)
         {
             JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
-            return;
-        }
-
-        if (isGenericVirtual)
-        {
-            JITDUMP("Shared generic virtual devirt not supported yet\n");
             return;
         }
 
