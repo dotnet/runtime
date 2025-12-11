@@ -851,7 +851,6 @@ jobs:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # macOS x64
