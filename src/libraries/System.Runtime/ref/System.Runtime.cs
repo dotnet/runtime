@@ -783,6 +783,9 @@ namespace System
     public static partial class BitConverter
     {
         public static readonly bool IsLittleEndian;
+        public static short BFloat16ToInt16Bits(System.Numerics.BFloat16 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ushort BFloat16ToUInt16Bits(System.Numerics.BFloat16 value) { throw null; }
         public static long DoubleToInt64Bits(double value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong DoubleToUInt64Bits(double value) { throw null; }
@@ -803,15 +806,19 @@ namespace System
         public static byte[] GetBytes(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static byte[] GetBytes(ulong value) { throw null; }
+        public static byte[] GetBytes(System.Numerics.BFloat16 value) { throw null; }
         public static short HalfToInt16Bits(System.Half value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ushort HalfToUInt16Bits(System.Half value) { throw null; }
+        public static System.Numerics.BFloat16 Int16BitsToBFloat16(short value) { throw null; }
         public static System.Half Int16BitsToHalf(short value) { throw null; }
         public static float Int32BitsToSingle(int value) { throw null; }
         public static double Int64BitsToDouble(long value) { throw null; }
         public static int SingleToInt32Bits(float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static uint SingleToUInt32Bits(float value) { throw null; }
+        public static System.Numerics.BFloat16 ToBFloat16(byte[] value, int startIndex) { throw null; }
+        public static System.Numerics.BFloat16 ToBFloat16(System.ReadOnlySpan<byte> value) { throw null; }
         public static bool ToBoolean(byte[] value, int startIndex) { throw null; }
         public static bool ToBoolean(System.ReadOnlySpan<byte> value) { throw null; }
         public static char ToChar(byte[] value, int startIndex) { throw null; }
@@ -866,6 +873,9 @@ namespace System
         public static bool TryWriteBytes(System.Span<byte> destination, uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryWriteBytes(System.Span<byte> destination, ulong value) { throw null; }
+        public static bool TryWriteBytes(System.Span<byte> destination, System.Numerics.BFloat16 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Numerics.BFloat16 UInt16BitsToBFloat16(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Half UInt16BitsToHalf(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -11053,6 +11063,7 @@ namespace System.IO
         public virtual System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public virtual System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual System.Threading.Tasks.Task WriteAsync(string? value) { throw null; }
+        public System.Threading.Tasks.Task WriteAsync(string? value, System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual System.Threading.Tasks.Task WriteAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual void WriteLine() { }
         public virtual void WriteLine(bool value) { }
@@ -11079,12 +11090,14 @@ namespace System.IO
         [System.CLSCompliantAttribute(false)]
         public virtual void WriteLine(ulong value) { }
         public virtual System.Threading.Tasks.Task WriteLineAsync() { throw null; }
+        public System.Threading.Tasks.Task WriteLineAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(char value) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(System.Text.Rune value) { throw null; }
         public System.Threading.Tasks.Task WriteLineAsync(char[]? buffer) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(string? value) { throw null; }
+        public System.Threading.Tasks.Task WriteLineAsync(string? value, System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual System.Threading.Tasks.Task WriteLineAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     [System.FlagsAttribute]
@@ -14117,6 +14130,7 @@ namespace System.Runtime.CompilerServices
         [System.ObsoleteAttribute("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData { get { throw null; } }
         public static System.IntPtr AllocateTypeAssociatedMemory(System.Type type, int size) { throw null; }
+        public static System.IntPtr AllocateTypeAssociatedMemory(System.Type type, int size, int alignment) { throw null; }
         public static object? Box(ref byte target, System.RuntimeTypeHandle type) { throw null; }
         public static System.ReadOnlySpan<T> CreateSpan<T>(System.RuntimeFieldHandle fldHandle) { throw null; }
         public static void EnsureSufficientExecutionStack() { }
@@ -14612,6 +14626,7 @@ namespace System.Runtime.InteropServices
         public static System.Span<byte> AsBytes<T>(System.Span<T> span) where T : struct { throw null; }
         public static System.Memory<T> AsMemory<T>(System.ReadOnlyMemory<T> memory) { throw null; }
         public static ref readonly T AsRef<T>(System.ReadOnlySpan<byte> span) where T : struct { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(1)]
         public static ref T AsRef<T>(System.Span<byte> span) where T : struct { throw null; }
         public static System.ReadOnlySpan<TTo> Cast<TFrom, TTo>(System.ReadOnlySpan<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
         public static System.Span<TTo> Cast<TFrom, TTo>(System.Span<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
@@ -14754,7 +14769,6 @@ namespace System.Runtime.InteropServices
         R4 = 11,
         R8 = 12,
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Marshalling as Currency may be unavailable in future releases.")]
         Currency = 15,
         BStr = 19,
         LPStr = 20,

@@ -21,6 +21,15 @@
       <BuildType Solution="Checked|x64" Project="Release" />
       <BuildType Solution="Checked|x86" Project="Debug" />
     </Project>
+    <Project Path="../../libraries/System.Private.CoreLib/gen/EventSourceGenerator.csproj">
+      <BuildType Solution="Checked|amd64" Project="Debug" />
+      <BuildType Solution="Checked|Any CPU" Project="Debug" />
+      <BuildType Solution="Checked|arm" Project="Debug" />
+      <BuildType Solution="Checked|arm64" Project="Debug" />
+      <BuildType Solution="Checked|wasm" Project="Debug" />
+      <BuildType Solution="Checked|x64" Project="Release" />
+      <BuildType Solution="Checked|x86" Project="Debug" />
+    </Project>
     <Project Path="../../libraries/System.Runtime.InteropServices/gen/LibraryImportGenerator/LibraryImportGenerator.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
     </Project>

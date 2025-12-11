@@ -107,10 +107,11 @@ public:
     ~NativeImage();
 
     static NativeImage *Open(
-        Module *componentModule,
+        const SString& componentModulePath,
         LPCUTF8 nativeImageFileName,
         AssemblyBinder *pAssemblyBinder,
         LoaderAllocator *pLoaderAllocator,
+        bool isPlatformNative,
         /* out */ bool *isNewNativeImage);
 
     Crst *EagerFixupsLock() { return &m_eagerFixupsLock; }

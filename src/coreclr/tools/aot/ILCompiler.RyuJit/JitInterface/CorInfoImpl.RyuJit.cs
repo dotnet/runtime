@@ -8,12 +8,13 @@ using System.IO;
 using System.Runtime.InteropServices;
 
 using Internal.IL;
-using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
+using Internal.Text;
+using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
-using Internal.TypeSystem.Ecma;
 
 #if SUPPORT_JIT
 using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
@@ -466,6 +467,7 @@ namespace Internal.JitInterface
             switch (ftnNum)
             {
                 case CorInfoHelpFunc.CORINFO_HELP_THROW:
+                case CorInfoHelpFunc.CORINFO_HELP_THROWEXACT: // TODO: (async): THROWEXACT
                     id = ReadyToRunHelper.Throw;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_RETHROW:
@@ -1739,7 +1741,7 @@ namespace Internal.JitInterface
                     helperId = ReadyToRunHelperId.MethodHandle;
                 else
                 {
-                    Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Method);
+                    Debug.Assert((pResolvedToken.tokenType & CorInfoTokenKind.CORINFO_TOKENKIND_Method) != 0);
                     helperId = ReadyToRunHelperId.MethodDictionary;
                 }
 
@@ -1921,7 +1923,7 @@ namespace Internal.JitInterface
         {
             MethodDesc md = HandleToObject(method);
 
-            string externName = _compilation.PInvokeILProvider.GetDirectCallExternName(md);
+            Utf8String externName = _compilation.PInvokeILProvider.GetDirectCallExternName(md);
             externName = _compilation.NodeFactory.NameMangler.NodeMangler.ExternMethod(externName, md);
 
             pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternFunctionSymbol(externName));

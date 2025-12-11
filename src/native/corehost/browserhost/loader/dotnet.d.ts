@@ -767,16 +767,12 @@ interface IMemoryView extends IDisposable {
     get length(): number;
     get byteLength(): number;
 }
-declare function exit(exit_code: number, reason?: any): void;
+declare function exit(exitCode: number, reason?: any): void;
 declare const dotnet: DotnetHostBuilder;
 declare global {
     function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
 }
 
-declare global {
-    function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
-    const dotnetSidecar: boolean | undefined;
-}
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
 export { GlobalizationMode, createDotnetRuntime as default, dotnet, exit };

@@ -20,6 +20,8 @@ export function stringsInit(): void {
 }
 
 export function stringToUTF16(dstPtr: number, endPtr: number, text: string) {
+    dstPtr = dstPtr >>> 0;
+    endPtr = endPtr >>> 0;
     const heapI16 = dotnetApi.localHeapViewU16();
     const len = text.length;
     for (let i = 0; i < len; i++) {
@@ -45,6 +47,8 @@ export function stringToUTF8Ptr(str: string): CharPtr {
 }
 
 export function utf16ToString(startPtr: number, endPtr: number): string {
+    startPtr = startPtr >>> 0;
+    endPtr = endPtr >>> 0;
     stringsInit();
     if (textDecoderUtf16) {
         const subArray = viewOrCopy(dotnetApi.localHeapViewU8(), startPtr as any, endPtr as any);
@@ -56,6 +60,8 @@ export function utf16ToString(startPtr: number, endPtr: number): string {
 
 // V8 does not provide TextDecoder
 export function utf16ToStringLoop(startPtr: number, endPtr: number): string {
+    startPtr = startPtr >>> 0;
+    endPtr = endPtr >>> 0;
     let str = "";
     const heapU16 = dotnetApi.localHeapViewU16();
     for (let i = startPtr; i < endPtr; i += 2) {

@@ -12,7 +12,7 @@ namespace ILCompiler
 
         protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
-            return comparer.Compare(_owningMethod, ((AsyncResumptionStub)other)._owningMethod);
+            return comparer.Compare(_targetMethod, ((AsyncResumptionStub)other)._targetMethod);
         }
     }
 }

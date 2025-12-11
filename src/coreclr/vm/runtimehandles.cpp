@@ -1233,6 +1233,32 @@ extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemory(QCall:
     return allocatedMemory;
 }
 
+extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned(QCall::TypeHandle type, uint32_t size, uint32_t alignment)
+{
+    QCALL_CONTRACT;
+
+    void *allocatedMemory = nullptr;
+
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = type.AsTypeHandle();
+    _ASSERTE(!typeHandle.IsNull());
+
+    _ASSERTE(alignment != 0);
+    _ASSERTE(0 == (alignment & (alignment - 1))); // require power of 2
+
+    // Get the loader allocator for the associated type.
+    // Allocating using the type's associated loader allocator means
+    // that the memory will be freed when the type is unloaded.
+    PTR_LoaderAllocator loaderAllocator = typeHandle.GetMethodTable()->GetLoaderAllocator();
+    LoaderHeap* loaderHeap = loaderAllocator->GetHighFrequencyHeap();
+    allocatedMemory = loaderHeap->AllocAlignedMem(size, alignment);
+
+    END_QCALL;
+
+    return allocatedMemory;
+}
+
 extern "C" void QCALLTYPE RuntimeTypeHandle_RegisterCollectibleTypeDependency(QCall::TypeHandle pTypeHandle, QCall::AssemblyHandle pAssembly)
 {
     QCALL_CONTRACT;
@@ -2120,8 +2146,19 @@ FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsConstructor, MethodDesc *pMethod)
     }
     CONTRACTL_END;
 
-    BOOL ret = (BOOL)pMethod->IsClassConstructorOrCtor();
-    FC_RETURN_BOOL(ret);
+    FC_RETURN_BOOL(pMethod->IsClassConstructorOrCtor());
+}
+FCIMPLEND
+
+FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsAsyncMethod, MethodDesc *pMethod)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pMethod));
+    }
+    CONTRACTL_END;
+
+    FC_RETURN_BOOL(pMethod->IsAsyncMethod());
 }
 FCIMPLEND
 

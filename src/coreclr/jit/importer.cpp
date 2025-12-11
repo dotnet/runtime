@@ -1169,7 +1169,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags*
 //    for full enregistration, e.g. TYP_SIMD16. If the size of the struct is already known
 //    call structSizeMightRepresentSIMDType to determine if this api needs to be called.
 //
-var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoType* pSimdBaseJitType)
+var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseJitType)
 {
     assert(structHnd != NO_CLASS_HANDLE);
 
@@ -1186,14 +1186,14 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
         if (structSizeMightRepresentSIMDType(originalSize))
         {
             unsigned int sizeBytes;
-            CorInfoType  simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
-            if (simdBaseJitType != CORINFO_TYPE_UNDEF)
+            var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
+            if (simdBaseType != TYP_UNDEF)
             {
                 assert(sizeBytes == originalSize);
                 structType = getSIMDTypeForSize(sizeBytes);
                 if (pSimdBaseJitType != nullptr)
                 {
-                    *pSimdBaseJitType = simdBaseJitType;
+                    *pSimdBaseJitType = simdBaseType;
                 }
                 // Also indicate that we use floating point registers.
                 compFloatingPointUsed = true;
@@ -3396,6 +3396,15 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     // Spill any special side effects
     impSpillSpecialSideEff();
 
+    // In async methods, if the value to box contains an async call, we need to spill it
+    // before popping it from the stack. This is because we will later create a byref
+    // destination (box temp + offset) for storing the value, and we cannot have a
+    // byref live across an async call.
+    if (gtTreeContainsAsyncCall(impStackTop().val))
+    {
+        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("async box with call"));
+    }
+
     // Get get the expression to box from the stack.
     GenTree*   op1       = nullptr;
     GenTree*   op2       = nullptr;
@@ -4437,15 +4446,6 @@ bool Compiler::impIsImplicitTailCallCandidate(
 
     // must not be tail prefixed
     if (prefixFlags & PREFIX_TAILCALL_EXPLICIT)
-    {
-        return false;
-    }
-
-    // We cannot tailcall ValueTask returning methods as we need to preserve
-    // the Continuation instance for ValueTaskSource handling (the BCL needs
-    // to look at continuation.Next). We cannot easily differentiate between
-    // ValueTask and Task here, so we just disable it more generally.
-    if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
     {
         return false;
     }
@@ -9772,11 +9772,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("value for stsfld with typeinit"));
                         }
-                        else if (compIsAsync() && op1->TypeIs(TYP_BYREF))
+                        else if (op1->TypeIs(TYP_BYREF) && gtTreeContainsAsyncCall(impStackTop().val))
                         {
-                            // TODO-Async: We really only need to spill if
-                            // there is a possibility of an async call in op2.
-                            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("byref address in async method"));
+                            // Spill if we have a byref address and the value to store contains
+                            // an async call. This avoids keeping the byref live across an await.
+                            impSpillSideEffects(true,
+                                                CHECK_SPILL_ALL DEBUGARG("byref address with async call in value"));
                         }
                         break;
 
@@ -10489,16 +10490,26 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 GenTree* boxPayloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                                 GenTree* boxPayloadAddress =
                                     gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, boxPayloadOffset);
-                                GenTree* nullcheck = gtNewNullCheck(op1);
-                                // Add an ordering dependency between the null
-                                // check and forming the byref; the JIT assumes
-                                // in many places that the only legal null
-                                // byref is literally 0, and since the byref
-                                // leaks out here, we need to ensure it is
-                                // nullchecked.
-                                nullcheck->SetHasOrderingSideEffect();
-                                boxPayloadAddress->SetHasOrderingSideEffect();
-                                GenTree* result = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
+
+                                GenTree* result;
+                                if (fgAddrCouldBeNull(op1))
+                                {
+                                    GenTree* nullcheck = gtNewNullCheck(op1);
+                                    // Add an ordering dependency between the null
+                                    // check and forming the byref; the JIT assumes
+                                    // in many places that the only legal null
+                                    // byref is literally 0, and since the byref
+                                    // leaks out here, we need to ensure it is
+                                    // nullchecked.
+                                    nullcheck->SetHasOrderingSideEffect();
+                                    boxPayloadAddress->SetHasOrderingSideEffect();
+                                    result = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
+                                }
+                                else
+                                {
+                                    // We don't need a nullcheck if this is e.g. a preinitialized value
+                                    result = boxPayloadAddress;
+                                }
                                 impPushOnStack(result, tiRetVal);
                                 break;
                             }
@@ -13527,6 +13538,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         {
             case WellKnownArg::RetBuffer:
             case WellKnownArg::AsyncContinuation:
+            case WellKnownArg::AsyncExecutionContext:
+            case WellKnownArg::AsyncSynchronizationContext:
                 // These do not appear in the table of inline arg info; do not include them
                 continue;
             case WellKnownArg::InstParam:

@@ -438,6 +438,7 @@ namespace Internal.JitInterface
                                                    CORINFO_GENERICS_CTXT_FROM_METHODDESC |
                                                    CORINFO_GENERICS_CTXT_FROM_METHODTABLE),
         CORINFO_GENERICS_CTXT_KEEP_ALIVE = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
+        CORINFO_ASYNC_SAVE_CONTEXTS = 0x00000200, // Runtime async method must save and restore contexts
     }
 
     // These are used to detect array methods as NamedIntrinsic in JIT importer,
@@ -458,6 +459,47 @@ namespace Internal.JitInterface
         IAT_PVALUE,     // The value needs to be accessed via an       indirection
         IAT_PPVALUE,    // The value needs to be accessed via a double indirection
         IAT_RELPVALUE   // The value needs to be accessed via a relative indirection
+    }
+
+    public enum CorInfoReloc
+    {
+        NONE,
+
+        // General relocation types
+        DIRECT,                                // Direct/absolute pointer sized address
+        RELATIVE32,                            // 32-bit relative address from byte following reloc
+
+        // Arm64 relocs
+        ARM64_BRANCH26,                        // Arm64: B, BL
+        ARM64_PAGEBASE_REL21,                  // ADRP
+        ARM64_PAGEOFFSET_12A,                  // ADD/ADDS (immediate) with zero shift, for page offset
+        // Linux arm64
+        ARM64_LIN_TLSDESC_ADR_PAGE21,
+        ARM64_LIN_TLSDESC_LD64_LO12,
+        ARM64_LIN_TLSDESC_ADD_LO12,
+        ARM64_LIN_TLSDESC_CALL,
+        // Windows arm64
+        ARM64_WIN_TLS_SECREL_HIGH12A,          // ADD high 12-bit offset for tls
+        ARM64_WIN_TLS_SECREL_LOW12A,           // ADD low 12-bit offset for tls
+
+        // Windows x64
+        AMD64_WIN_SECREL,
+        // Linux x64
+        AMD64_LIN_TLSGD,
+
+        // Arm32 relocs
+        ARM32_THUMB_BRANCH24,                  // Thumb2: based B, BL
+        ARM32_THUMB_MOV32,                     // Thumb2: based MOVW/MOVT
+        ARM32_THUMB_MOV32_PCREL,               // Thumb2: based MOVW/MOVT
+
+        // LoongArch64 relocs
+        LOONGARCH64_PC,                        // LoongArch64: pcalau12i+imm12
+        LOONGARCH64_JIR,                       // LoongArch64: pcaddu18i+jirl
+
+        // RISCV64 relocs
+        RISCV64_CALL_PLT,                      // RiscV64: auipc + jalr
+        RISCV64_PCREL_I,                       // RiscV64: auipc + I-type
+        RISCV64_PCREL_S,                       // RiscV64: auipc + S-type
     }
 
     public enum CorInfoGCType
@@ -810,6 +852,16 @@ namespace Internal.JitInterface
         public CORINFO_HELPER_ARG args3;
     }
 
+    public enum CorInfoArch
+    {
+        CORINFO_ARCH_X86,
+        CORINFO_ARCH_X64,
+        CORINFO_ARCH_ARM,
+        CORINFO_ARCH_ARM64,
+        CORINFO_ARCH_LOONGARCH64,
+        CORINFO_ARCH_RISCV64,
+        CORINFO_ARCH_WASM32,
+    }
 
     public enum CORINFO_OS
     {
@@ -894,6 +946,7 @@ namespace Internal.JitInterface
         public CORINFO_METHOD_STRUCT_* captureContinuationContextMethHnd;
         public CORINFO_METHOD_STRUCT_* captureContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsMethHnd;
+        public CORINFO_METHOD_STRUCT_* restoreContextsOnSuspensionMethHnd;
     }
 
     // Flags passed from JIT to runtime.

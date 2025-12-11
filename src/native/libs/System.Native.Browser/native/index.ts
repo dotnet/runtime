@@ -6,7 +6,7 @@ import { InternalExchangeIndex } from "../types";
 
 export { SystemJS_RandomBytes } from "./crypto";
 export { SystemJS_GetLocaleInfo } from "./globalization-locale";
-export { SystemJS_RejectMainPromise, SystemJS_ResolveMainPromise } from "./main";
+export { SystemJS_RejectMainPromise, SystemJS_ResolveMainPromise, SystemJS_ConsoleClear } from "./main";
 export { SystemJS_ScheduleTimer, SystemJS_ScheduleBackgroundJob } from "./timer";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
@@ -15,7 +15,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function nativeBrowserExportsToTable(map:NativeBrowserExports):NativeBrowserExportsTable {
+    function nativeBrowserExportsToTable(map: NativeBrowserExports): NativeBrowserExportsTable {
         // keep in sync with nativeBrowserExportsFromTable()
         return [
         ];
