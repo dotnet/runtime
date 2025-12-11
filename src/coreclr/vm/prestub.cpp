@@ -1979,9 +1979,10 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
         if (g_TrapReturningThreads && CORDebuggerTraceCall())
         {
             void* thunkDataMaybe = nullptr;
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
             if (pInterpreterCode->Method->publishSecretStubParam)
                 thunkDataMaybe = GetMostRecentUMEntryThunkDataNonDestructive();
-
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
             DebuggerTraceCall((void*)pInterpreterCode->GetByteCodes(), thunkDataMaybe);
         }
 #endif // DEBUGGING_SUPPORTED
