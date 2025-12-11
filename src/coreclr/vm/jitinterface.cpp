@@ -8786,12 +8786,12 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     if (!isArray && pBaseMD->HasMethodInstantiation())
     {
         pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(
-            pDevirtMD, pExactMT, pExactMT->IsValueType() && !pDevirtMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
+            pDevirtMD, pExactMT, pExactMT->IsValueType() && !pDevirtMD->IsStatic(), pBaseMD->GetMethodInstantiation(), true);
         
         // We still can't handle shared generic methods because we don't have
         // the right generic context for runtime lookup.
         // TODO: Remove this limitation.
-        if (pDevirtMD->IsInstantiatingStub())
+        if (pDevirtMD->IsSharedByGenericMethodInstantiations())
         {
             info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
             return false;
