@@ -85,10 +85,20 @@ bool emitter::emitInsIsStore(instruction ins)
     return false;
 }
 
-//------------------------------------------------------------------------
-// emitIns_I: Emit an instruction with an immediate operand and an encoded valye type
+emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr attr, cnsval_ssize_t localCount, instWasmValueType type)
+{
+    instrDescLclVarDecl* id = static_cast<instrDescLclVarDecl*>(emitAllocAnyInstr(sizeof(instrDescLclVarDecl), attr));
+    id->idSetIsLclVarDecl(true);
+    id->idLclCnt(localCount);
+    id->idLclType(type);
+
+    return id;
+}
+
+//-----------------------------------------------------------------------------------
+// emitIns_I: Emit an instruction with an immediate operand and an encoded value type
 //
-void emitter::emitIns_I_Ty(instruction ins, cnsval_ssize_t imm, instWasmValueType valType)
+void emitter::emitIns_I_Ty(instruction ins, cnsval_ssize_t imm, emitter::instWasmValueType valType)
 {
     instrDesc* id  = this->emitNewInstrLclVarDecl(EA_8BYTE, imm, valType);
     insFormat  fmt = this->emitInsFormat(ins);
@@ -98,6 +108,26 @@ void emitter::emitIns_I_Ty(instruction ins, cnsval_ssize_t imm, instWasmValueTyp
 
     this->dispIns(id);
     this->appendToCurIG(id);
+}
+
+emitter::instWasmValueType emitter::emitGetLclVarDeclType(instrDesc* id)
+{
+    if (!id->idIsLclVarDecl())
+    {
+        noway_assert("not a LclVarDecl instrDesc");
+    }
+
+    return static_cast<instrDescLclVarDecl*>(id)->lclType;
+}
+
+cnsval_ssize_t emitter::emitGetLclVarDeclCount(instrDesc* id)
+{
+    if (!id->idIsLclVarDecl())
+    {
+        noway_assert("not a LclVarDecl instrDesc");
+    }
+    
+    return static_cast<instrDescLclVarDecl*>(id)->lclCnt;
 }
 
 emitter::insFormat emitter::emitInsFormat(instruction ins)
@@ -136,6 +166,12 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
         assert(!id->idIsLargeCall());
         return sizeof(instrDescCns);
     }
+
+    if (id->idIsLclVarDecl())
+    {
+        return sizeof(instrDescLclVarDecl);
+    }
+
     return sizeof(instrDesc);
 }
 
@@ -185,6 +221,13 @@ unsigned emitter::instrDesc::idCodeSize() const
             assert(!idIsCnsReloc());
             size = SizeOfULEB128(emitGetInsSC(this));
             break;
+        case IF_LOCAL_DECL:
+        {
+            assert(idIsLclVarDecl());
+            instrDescLclVarDecl* idl = static_cast<instrDescLclVarDecl*>(const_cast<instrDesc*>(this));
+            size = SizeOfULEB128(idl->lclCnt) + sizeof(emitter::instWasmValueType);
+            break;
+        }
         case IF_ULEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             break;
@@ -341,11 +384,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         case IF_LOCAL_DECL:
         {
-            cnsval_ssize_t constant = emitGetInsSC(id);
-            dst += emitOutputULEB128(dst, (uint64_t)constant);
+            assert(id->idIsLclVarDecl());
+            cnsval_ssize_t count = emitGetLclVarDeclCount(id);
+            instWasmValueType valType = emitGetLclVarDeclType(id);
+            dst += emitOutputULEB128(dst, (uint64_t)count);
             // TODO-WASM: currently assuming all locals are numtypes which are single byte encoded.
             // vec types are also single byte encoded. If we end up using reftypes, we'll need to handle the more complex encoding.
-            dst += emitOutputByte(dst, static_cast<uint8_t>(instWasmValueType::I32));
+            dst += emitOutputByte(dst, static_cast<uint8_t>(valType));
             break;
         }
         default:
@@ -456,6 +501,14 @@ void emitter::emitDispIns(
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
+        }
+        break;
+
+        case IF_LOCAL_DECL:
+        {
+            cnsval_ssize_t imm = emitGetLclVarDeclCount(id);
+            instWasmValueType valType = emitGetLclVarDeclType(id);
+            printf(" %llu %s", (uint64_t)imm, instWasmValueTypeToStr(valType));
         }
         break;
 

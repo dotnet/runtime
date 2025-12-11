@@ -13,9 +13,7 @@
 #include "compiler.h" // temporary??
 #include "regset.h"
 #include "jitgcinfo.h"
-
-#include "wasmtypes.h"
-#include "vartype.h"
+#include "wasmtypesdef.h"
 
 class CodeGen final : public CodeGenInterface
 {
@@ -594,7 +592,6 @@ protected:
     void genFnProlog();
 #if defined(TARGET_WASM)
     void genWasmArgsAsLocals();
-    instWasmValueType genWasmTypeFromVarType(var_types type);
 #endif
     void genFnEpilog(BasicBlock* block);
 

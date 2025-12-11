@@ -32,11 +32,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "jitstd/algorithm.h"
 
-#if defined(TARGET_WASM)
-#include "vartypedef.h"
-#include "wasmtypes.h"
-#endif
-
 /*****************************************************************************/
 
 void CodeGenInterface::setFramePointerRequiredEH(bool value)
@@ -5657,6 +5652,7 @@ void CodeGen::genFnProlog()
 #else  // defined(TARGET_WASM)
     // TODO-WASM: proper local count, local declarations, and shadow stack maintenance
     GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, compiler->info.compArgsCount);
+    genWasmArgsAsLocals();
     GetEmitter()->emitMarkPrologEnd();
 #endif // !defined(TARGET_WASM)
 
@@ -5664,27 +5660,6 @@ void CodeGen::genFnProlog()
 }
 
 #if defined(TARGET_WASM)
-//------------------------------------------------------------------------
-// genWasmTypeFromVarType: map var_type to wasm type
-// 
-instWasmValueType CodeGen::genWasmTypeFromVarType(var_types type)
-{
-    switch (type)
-    {
-        case TYP_INT:
-        case TYP_REF:
-        case TYP_BYREF:
-            return instWasmValueType ;
-        case TYP_LONG:
-            return instWasmValueType::I64;
-        case TYP_FLOAT:
-            return instWasmValueType::F32;
-        case TYP_DOUBLE:
-            return instWasmValueType::F64;
-        default:
-            unreached();
-    }
-}
 
 //------------------------------------------------------------------------
 // genWasmArgsAsLocals: generate wasm locals for all incoming arguments
@@ -5695,8 +5670,8 @@ void CodeGen::genWasmArgsAsLocals()
     {
         LclVarDsc* varDsc = compiler->lvaGetDesc(i);
         assert(varDsc->lvIsParam);
-        instWasmValueType type = genWasmTypeFromVarType(varDsc->TypeGet());
-        GetEmitter()->emitIns_I_Ty(INS_local_decl, emitTypeSize(varDsc->TypeGet()), type);
+        emitter::instWasmValueType type = GetEmitter()->genWasmTypeFromVarType(varDsc->TypeGet());
+        GetEmitter()->emitIns_I_Ty(INS_local_decl, 1, type);
     }
 }
 #endif

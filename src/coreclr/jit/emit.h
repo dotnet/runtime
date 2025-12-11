@@ -640,6 +640,10 @@ protected:
         CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
     };
 
+#if defined(TARGET_WASM)
+#include "wasmtypesdef.h"
+#endif
+
 #ifdef TARGET_ARM
     unsigned insEncodeSetFlags(insFlags sf);
 
@@ -892,6 +896,9 @@ protected:
         unsigned _idLclFPBase : 1; // access a local on stack - SP based offset
         insOpts  _idInsOpt    : 3; // options for Load/Store instructions
 #endif
+#ifdef TARGET_WASM
+        unsigned _idLclDecl : 1; // is this a local declaration?
+#endif
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
@@ -919,7 +926,7 @@ protected:
 #elif defined(TARGET_AMD64)
 #define ID_EXTRA_BITFIELD_BITS (20)
 #elif defined(TARGET_WASM)
-#define ID_EXTRA_BITFIELD_BITS (-4)
+#define ID_EXTRA_BITFIELD_BITS (-3)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -1295,6 +1302,18 @@ protected:
             _idReg1 = reg;
             assert(reg == _idReg1);
         }
+
+#ifdef TARGET_WASM
+        bool idIsLclVarDecl() const 
+        {
+            return (_idLclDecl != 0);
+        }
+
+        void idSetIsLclVarDecl(bool isDecl) 
+        {
+            _idLclDecl = isDecl ? 1 : 0;
+        }
+#endif
 
 #ifdef TARGET_ARM64
         GCtype idGCrefReg2() const
@@ -2335,9 +2354,7 @@ protected:
     };
 #endif
 
-#ifdef TARGET_WASM
-#include "wasmtypes.h"
-
+#if defined(TARGET_WASM)
     struct instrDescLclVarDecl : instrDesc
     {
         instrDescLclVarDecl() = delete;
@@ -3316,7 +3333,7 @@ private:
     instrDesc* emitNewInstrCnsDsp(emitAttr attr, target_ssize_t cns, int dsp);
 
 #ifdef TARGET_WASM
-    instrDesc* emitNewInstrLclVarDecl(emitAttr attr, cnsval_ssize_t localCount, instWasmValueType type);
+   
 #endif
 
 #ifdef TARGET_ARM
@@ -4135,16 +4152,10 @@ inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t
 }
 
 #ifdef TARGET_WASM
-#include "wasmtypes.h"
+#include "wasmtypesdef.h"
 
-inline emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr attr, cnsval_ssize_t localCount, instWasmValueType type)
-{
-    instrDescLclVarDecl* id = static_cast<instrDescLclVarDecl*>(emitAllocAnyInstr(sizeof(instrDescLclVarDecl), attr));
-    id->idLclCnt(localCount);
-    id->idLclType(type);
 
-    return id;
-}
+
 #endif
 
 #ifdef TARGET_ARM
