@@ -793,7 +793,7 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           runtimeFlavor: mono
           platforms:
-          - tvossimulator_x64
+          - tvossimulator_arm64
           - linux_x64
           - linux_arm
           - linux_arm64
