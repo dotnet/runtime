@@ -91,9 +91,6 @@
         <TestTarget>$(AppleTestTarget)</TestTarget>
         <TestTimeout>$(_workItemTimeout)</TestTimeout>
         <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
-        <!-- Native AOT runtime tests don't include test runner, test run with exit code 100 is expected -->
-        <IncludesTestRunner Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(CLRTestKind)' != ''">false</IncludesTestRunner>
-        <ExpectedExitCode Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(CLRTestKind)' != ''">100</ExpectedExitCode>
       </XHarnessAppBundleToTest>
 
       <!-- To save on overall size, we compress each app after building. -->
@@ -103,9 +100,6 @@
         <TestTarget>$(AppleTestTarget)</TestTarget>
         <TestTimeout>$(_workItemTimeout)</TestTimeout>
         <CustomCommands>$(_XHarnessAppleCustomCommand)</CustomCommands>
-        <!-- Native AOT runtime tests don't include test runner, test run with exit code 100 is expected -->
-        <IncludesTestRunner Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(CLRTestKind)' != ''">false</IncludesTestRunner>
-        <ExpectedExitCode Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(CLRTestKind)' != ''">100</ExpectedExitCode>
       </XHarnessAppBundleToTest>
 
       <!-- Create work items for run-only apps -->
