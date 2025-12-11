@@ -20,7 +20,6 @@ Each scenario (for example, `basic`) uses the same pattern:
   - `UserEventsRequirements.cs` - Checks whether the environment supports user events.
   - `UserEventsTestRunner.cs` - Shared runner that coordinates `record-trace`, the tracee process, and event validation.
   - `userevents_common.csproj` - Common project for shared user events test logic.
-  - `NuGet.config` - Configures dotnet-diagnostics-tests nuget source which transports Microsoft.OneCollect.RecordTrace.
 - `<scenario>/`
   - `<scenario>.cs` - The tracee workload logic used when invoked with the `tracee` argument.
   - `<scenario>.csproj` - Project file for the scenario.
