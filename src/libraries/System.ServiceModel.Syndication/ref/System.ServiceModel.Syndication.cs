@@ -11,7 +11,8 @@ namespace System.ServiceModel.Syndication
     {
         public Atom10FeedFormatter() { }
         public Atom10FeedFormatter(System.ServiceModel.Syndication.SyndicationFeed feedToWrite) { }
-        public Atom10FeedFormatter(System.Type feedTypeToCreate) { }
+        public Atom10FeedFormatter([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type feedTypeToCreate) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         protected System.Type FeedType { get { throw null; } }
         public bool PreserveAttributeExtensions { get { throw null; } set { } }
         public bool PreserveElementExtensions { get { throw null; } set { } }
@@ -40,7 +41,8 @@ namespace System.ServiceModel.Syndication
     {
         public Atom10ItemFormatter() { }
         public Atom10ItemFormatter(System.ServiceModel.Syndication.SyndicationItem itemToWrite) { }
-        public Atom10ItemFormatter(System.Type itemTypeToCreate) { }
+        public Atom10ItemFormatter([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type itemTypeToCreate) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         protected System.Type ItemType { get { throw null; } }
         public bool PreserveAttributeExtensions { get { throw null; } set { } }
         public bool PreserveElementExtensions { get { throw null; } set { } }
@@ -65,7 +67,7 @@ namespace System.ServiceModel.Syndication
     {
         public AtomPub10CategoriesDocumentFormatter() { }
         public AtomPub10CategoriesDocumentFormatter(System.ServiceModel.Syndication.CategoriesDocument documentToWrite) { }
-        public AtomPub10CategoriesDocumentFormatter(System.Type inlineDocumentType, System.Type referencedDocumentType) { }
+        public AtomPub10CategoriesDocumentFormatter([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type inlineDocumentType, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type referencedDocumentType) { }
         public override string Version { get { throw null; } }
         public override bool CanRead(System.Xml.XmlReader reader) { throw null; }
         protected override System.ServiceModel.Syndication.InlineCategoriesDocument CreateInlineCategoriesDocument() { throw null; }
@@ -81,7 +83,7 @@ namespace System.ServiceModel.Syndication
     {
         public AtomPub10ServiceDocumentFormatter() { }
         public AtomPub10ServiceDocumentFormatter(System.ServiceModel.Syndication.ServiceDocument documentToWrite) { }
-        public AtomPub10ServiceDocumentFormatter(System.Type documentTypeToCreate) { }
+        public AtomPub10ServiceDocumentFormatter([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type documentTypeToCreate) { }
         public override string Version { get { throw null; } }
         public override bool CanRead(System.Xml.XmlReader reader) { throw null; }
         protected override System.ServiceModel.Syndication.ServiceDocument CreateDocumentInstance() { throw null; }
@@ -98,6 +100,7 @@ namespace System.ServiceModel.Syndication
         public AtomPub10ServiceDocumentFormatter(TServiceDocument documentToWrite) { }
         protected override System.ServiceModel.Syndication.ServiceDocument CreateDocumentInstance() { throw null; }
     }
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public abstract partial class CategoriesDocument
     {
         internal CategoriesDocument() { }
@@ -173,7 +176,8 @@ namespace System.ServiceModel.Syndication
         public Rss20FeedFormatter() { }
         public Rss20FeedFormatter(System.ServiceModel.Syndication.SyndicationFeed feedToWrite) { }
         public Rss20FeedFormatter(System.ServiceModel.Syndication.SyndicationFeed feedToWrite, bool serializeExtensionsAsAtom) { }
-        public Rss20FeedFormatter(System.Type feedTypeToCreate) { }
+        public Rss20FeedFormatter([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type feedTypeToCreate) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         protected System.Type FeedType { get { throw null; } }
         public bool PreserveAttributeExtensions { get { throw null; } set { } }
         public bool PreserveElementExtensions { get { throw null; } set { } }
@@ -206,7 +210,8 @@ namespace System.ServiceModel.Syndication
         public Rss20ItemFormatter() { }
         public Rss20ItemFormatter(System.ServiceModel.Syndication.SyndicationItem itemToWrite) { }
         public Rss20ItemFormatter(System.ServiceModel.Syndication.SyndicationItem itemToWrite, bool serializeExtensionsAsAtom) { }
-        public Rss20ItemFormatter(System.Type itemTypeToCreate) { }
+        public Rss20ItemFormatter([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type itemTypeToCreate) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         protected System.Type ItemType { get { throw null; } }
         public bool PreserveAttributeExtensions { get { throw null; } set { } }
         public bool PreserveElementExtensions { get { throw null; } set { } }
@@ -228,6 +233,7 @@ namespace System.ServiceModel.Syndication
         public Rss20ItemFormatter(TSyndicationItem itemToWrite, bool serializeExtensionsAsAtom) { }
         protected override System.ServiceModel.Syndication.SyndicationItem CreateItemInstance() { throw null; }
     }
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public partial class ServiceDocument
     {
         public ServiceDocument() { }
@@ -313,8 +319,12 @@ namespace System.ServiceModel.Syndication
         public static System.ServiceModel.Syndication.TextSyndicationContent CreatePlaintextContent(string content) { throw null; }
         public static System.ServiceModel.Syndication.UrlSyndicationContent CreateUrlContent(System.Uri url, string mediaType) { throw null; }
         public static System.ServiceModel.Syndication.TextSyndicationContent CreateXhtmlContent(string content) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public static System.ServiceModel.Syndication.XmlSyndicationContent CreateXmlContent(object dataContractObject) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public static System.ServiceModel.Syndication.XmlSyndicationContent CreateXmlContent(object dataContractObject, System.Runtime.Serialization.XmlObjectSerializer dataContractSerializer) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public static System.ServiceModel.Syndication.XmlSyndicationContent CreateXmlContent(object xmlSerializerObject, System.Xml.Serialization.XmlSerializer serializer) { throw null; }
         public static System.ServiceModel.Syndication.XmlSyndicationContent CreateXmlContent(System.Xml.XmlReader xmlReader) { throw null; }
         protected abstract void WriteContentsTo(System.Xml.XmlWriter writer);
@@ -322,16 +332,28 @@ namespace System.ServiceModel.Syndication
     }
     public partial class SyndicationElementExtension
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public SyndicationElementExtension(object dataContractExtension) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public SyndicationElementExtension(object dataContractExtension, System.Runtime.Serialization.XmlObjectSerializer dataContractSerializer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public SyndicationElementExtension(object xmlSerializerExtension, System.Xml.Serialization.XmlSerializer serializer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public SyndicationElementExtension(string outerName, string outerNamespace, object dataContractExtension) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public SyndicationElementExtension(string outerName, string outerNamespace, object dataContractExtension, System.Runtime.Serialization.XmlObjectSerializer dataContractSerializer) { }
         public SyndicationElementExtension(System.Xml.XmlReader xmlReader) { }
         public string OuterName { get { throw null; } }
         public string OuterNamespace { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public TExtension GetObject<TExtension>() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public TExtension GetObject<TExtension>(System.Runtime.Serialization.XmlObjectSerializer serializer) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public TExtension GetObject<TExtension>(System.Xml.Serialization.XmlSerializer serializer) { throw null; }
         public System.Xml.XmlReader GetReader() { throw null; }
         public void WriteTo(System.Xml.XmlWriter writer) { }
@@ -339,21 +361,34 @@ namespace System.ServiceModel.Syndication
     public sealed partial class SyndicationElementExtensionCollection : System.Collections.ObjectModel.Collection<System.ServiceModel.Syndication.SyndicationElementExtension>
     {
         internal SyndicationElementExtensionCollection() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public void Add(object extension) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public void Add(object dataContractExtension, System.Runtime.Serialization.DataContractSerializer serializer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public void Add(object xmlSerializerExtension, System.Xml.Serialization.XmlSerializer serializer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public void Add(string outerName, string outerNamespace, object dataContractExtension) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public void Add(string outerName, string outerNamespace, object dataContractExtension, System.Runtime.Serialization.XmlObjectSerializer dataContractSerializer) { }
         public void Add(System.Xml.XmlReader xmlReader) { }
         protected override void ClearItems() { }
         public System.Xml.XmlReader GetReaderAtElementExtensions() { throw null; }
         protected override void InsertItem(int index, System.ServiceModel.Syndication.SyndicationElementExtension item) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public System.Collections.ObjectModel.Collection<TExtension> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public System.Collections.ObjectModel.Collection<TExtension> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace, System.Runtime.Serialization.XmlObjectSerializer serializer) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public System.Collections.ObjectModel.Collection<TExtension> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace, System.Xml.Serialization.XmlSerializer serializer) { throw null; }
         protected override void RemoveItem(int index) { }
         protected override void SetItem(int index, System.ServiceModel.Syndication.SyndicationElementExtension item) { }
     }
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public partial class SyndicationFeed
     {
         public SyndicationFeed() { }
@@ -443,6 +478,7 @@ namespace System.ServiceModel.Syndication
         protected internal static void WriteElementExtensions(System.Xml.XmlWriter writer, System.ServiceModel.Syndication.SyndicationPerson person, string version) { }
         public abstract void WriteTo(System.Xml.XmlWriter writer);
     }
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public partial class SyndicationItem
     {
         public SyndicationItem() { }
@@ -613,7 +649,10 @@ namespace System.ServiceModel.Syndication
     public partial class XmlSyndicationContent : System.ServiceModel.Syndication.SyndicationContent
     {
         protected XmlSyndicationContent(System.ServiceModel.Syndication.XmlSyndicationContent source) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public XmlSyndicationContent(string type, object dataContractExtension, System.Runtime.Serialization.XmlObjectSerializer dataContractSerializer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public XmlSyndicationContent(string type, object xmlSerializerExtension, System.Xml.Serialization.XmlSerializer serializer) { }
         public XmlSyndicationContent(string type, System.ServiceModel.Syndication.SyndicationElementExtension extension) { }
         public XmlSyndicationContent(System.Xml.XmlReader reader) { }
@@ -621,8 +660,14 @@ namespace System.ServiceModel.Syndication
         public override string Type { get { throw null; } }
         public override System.ServiceModel.Syndication.SyndicationContent Clone() { throw null; }
         public System.Xml.XmlDictionaryReader GetReaderAtContent() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public TContent ReadContent<TContent>() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public TContent ReadContent<TContent>(System.Runtime.Serialization.XmlObjectSerializer dataContractSerializer) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Serialization and deserialization requires dynamic code generation")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized and deserialized types may be trimmed if not referenced directly")]
         public TContent ReadContent<TContent>(System.Xml.Serialization.XmlSerializer serializer) { throw null; }
         protected override void WriteContentsTo(System.Xml.XmlWriter writer) { }
     }
