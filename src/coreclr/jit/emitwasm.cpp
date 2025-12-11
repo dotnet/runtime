@@ -145,21 +145,13 @@ void emitter::emitIns_I_Ty(instruction ins, cnsval_ssize_t imm, emitter::instWas
 
 emitter::instWasmValueType emitter::emitGetLclVarDeclType(instrDesc* id)
 {
-    if (!id->idIsLclVarDecl())
-    {
-        noway_assert("not a LclVarDecl instrDesc");
-    }
-
+    assert(id->idIsLclVarDecl());
     return static_cast<instrDescLclVarDecl*>(id)->lclType;
 }
 
 cnsval_ssize_t emitter::emitGetLclVarDeclCount(instrDesc* id)
 {
-    if (!id->idIsLclVarDecl())
-    {
-        noway_assert("not a LclVarDecl instrDesc");
-    }
-
+    assert(id->idIsLclVarDecl());
     return static_cast<instrDescLclVarDecl*>(id)->lclCnt;
 }
 
