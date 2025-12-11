@@ -70,7 +70,7 @@ namespace System.Net.Sockets
         private bool _disposed;
 
         public Socket(SocketType socketType, ProtocolType protocolType)
-            : this(OSSupportsIPv6DualMode ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, socketType, protocolType)
+            : this(OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, socketType, protocolType)
         {
             if (OSSupportsIPv6DualMode)
             {
@@ -749,7 +749,7 @@ namespace System.Net.Sockets
                 {
                     return false;
                 }
-                if (!OSSupportsIPv6DualMode)
+                if (OperatingSystem.IsWasi())
                 {
                     return false;
                 }
@@ -762,7 +762,7 @@ namespace System.Net.Sockets
                     throw new NotSupportedException(SR.net_invalidversion);
                 }
 
-                if (!OSSupportsIPv6DualMode && value) throw new PlatformNotSupportedException();
+                if (OperatingSystem.IsWasi() && value) throw new PlatformNotSupportedException();
 
                 SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, value ? 0 : 1);
             }
