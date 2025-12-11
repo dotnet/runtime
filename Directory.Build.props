@@ -27,7 +27,6 @@
         - eng/native/build-commons.sh
         - eng/native/gen-buildsys.cmd
         - src/native/libs/build-native.sh
-        - src/coreclr/crossgen-corelib.proj
         - src/coreclr/tools/aot/ILCompiler.Compiler/Compiler/ObjectWriter/MachObjectWriter.cs
         - src/coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets
         - src/mono/mono/tools/offsets-tool/offsets-tool.py
