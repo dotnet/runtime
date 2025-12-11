@@ -329,7 +329,7 @@ void InvokeCalliStub(CalliStubParam* pParam)
     {
         THROWS;
         MODE_ANY;
-        PRECONDITION(CheckPointer((void*)param->ftn));
+        PRECONDITION(CheckPointer((void*)pParam->ftn));
         PRECONDITION(CheckPointer(pParam->cookie));
     }
     CONTRACTL_END
