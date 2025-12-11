@@ -520,7 +520,8 @@ namespace Internal.JitInterface
             {
                 return true;
             }
-            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(methodNeedingCode))
+            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(methodNeedingCode)
+                && ((ReadyToRunCompilerContext)methodNeedingCode.Context).TargetAllowsRuntimeCodeGeneration)
             {
                 return true;
             }
