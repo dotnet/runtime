@@ -126,7 +126,7 @@ cnsval_ssize_t emitter::emitGetLclVarDeclCount(instrDesc* id)
     {
         noway_assert("not a LclVarDecl instrDesc");
     }
-    
+
     return static_cast<instrDescLclVarDecl*>(id)->lclCnt;
 }
 
@@ -225,7 +225,7 @@ unsigned emitter::instrDesc::idCodeSize() const
         {
             assert(idIsLclVarDecl());
             instrDescLclVarDecl* idl = static_cast<instrDescLclVarDecl*>(const_cast<instrDesc*>(this));
-            size = SizeOfULEB128(idl->lclCnt) + sizeof(emitter::instWasmValueType);
+            size                     = SizeOfULEB128(idl->lclCnt) + sizeof(emitter::instWasmValueType);
             break;
         }
         case IF_ULEB128:
@@ -385,11 +385,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_LOCAL_DECL:
         {
             assert(id->idIsLclVarDecl());
-            cnsval_ssize_t count = emitGetLclVarDeclCount(id);
+            cnsval_ssize_t    count   = emitGetLclVarDeclCount(id);
             instWasmValueType valType = emitGetLclVarDeclType(id);
             dst += emitOutputULEB128(dst, (uint64_t)count);
             // TODO-WASM: currently assuming all locals are numtypes which are single byte encoded.
-            // vec types are also single byte encoded. If we end up using reftypes, we'll need to handle the more complex encoding.
+            // vec types are also single byte encoded. If we end up using reftypes, we'll need to handle the more
+            // complex encoding.
             dst += emitOutputByte(dst, static_cast<uint8_t>(valType));
             break;
         }
@@ -506,7 +507,7 @@ void emitter::emitDispIns(
 
         case IF_LOCAL_DECL:
         {
-            cnsval_ssize_t imm = emitGetLclVarDeclCount(id);
+            cnsval_ssize_t    imm     = emitGetLclVarDeclCount(id);
             instWasmValueType valType = emitGetLclVarDeclType(id);
             printf(" %llu %s", (uint64_t)imm, instWasmValueTypeToStr(valType));
         }

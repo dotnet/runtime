@@ -52,7 +52,6 @@
 #define DEBUG_EMIT 0
 #endif
 
-
 #if EMITTER_STATS
 void emitterStats(FILE* fout);
 void emitterStaticStats(FILE* fout); // Static stats about the emitter (data structure offsets, sizes, etc.)
@@ -1304,12 +1303,12 @@ protected:
         }
 
 #ifdef TARGET_WASM
-        bool idIsLclVarDecl() const 
+        bool idIsLclVarDecl() const
         {
             return (_idLclDecl != 0);
         }
 
-        void idSetIsLclVarDecl(bool isDecl) 
+        void idSetIsLclVarDecl(bool isDecl)
         {
             _idLclDecl = isDecl ? 1 : 0;
         }
@@ -2358,7 +2357,7 @@ protected:
     struct instrDescLclVarDecl : instrDesc
     {
         instrDescLclVarDecl() = delete;
-        cnsval_ssize_t lclCnt;
+        cnsval_ssize_t    lclCnt;
         instWasmValueType lclType;
 
         void idLclType(instWasmValueType type)
@@ -3333,7 +3332,7 @@ private:
     instrDesc* emitNewInstrCnsDsp(emitAttr attr, target_ssize_t cns, int dsp);
 
 #ifdef TARGET_WASM
-   
+
 #endif
 
 #ifdef TARGET_ARM
@@ -4153,8 +4152,6 @@ inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, cnsval_ssize_t
 
 #ifdef TARGET_WASM
 #include "wasmtypesdef.h"
-
-
 
 #endif
 

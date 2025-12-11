@@ -35,9 +35,9 @@ static unsigned SizeOfSLEB128(int64_t value);
 
 static unsigned emitGetAlignHintLog2(const instrDesc* id);
 
-instrDesc* emitNewInstrLclVarDecl(emitAttr attr, cnsval_ssize_t localCount, instWasmValueType type);
+instrDesc*               emitNewInstrLclVarDecl(emitAttr attr, cnsval_ssize_t localCount, instWasmValueType type);
 static instWasmValueType emitGetLclVarDeclType(instrDesc* id);
-static cnsval_ssize_t emitGetLclVarDeclCount(instrDesc* id);
+static cnsval_ssize_t    emitGetLclVarDeclCount(instrDesc* id);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */

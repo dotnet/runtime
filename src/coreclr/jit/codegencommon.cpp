@@ -5663,7 +5663,7 @@ void CodeGen::genFnProlog()
 
 //------------------------------------------------------------------------
 // genWasmArgsAsLocals: generate wasm locals for all incoming arguments
-void CodeGen::genWasmArgsAsLocals() 
+void CodeGen::genWasmArgsAsLocals()
 {
     // Declare locals for all incoming arguments
     for (unsigned i = 0; i < compiler->info.compArgsCount; i++)
