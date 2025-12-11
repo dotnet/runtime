@@ -482,6 +482,8 @@ namespace ILAssembler
                     return new((new(TypeAttributes.SequentialLayout), null, false));
                 case "explicit":
                     return new((new(TypeAttributes.ExplicitLayout), null, false));
+                case "extended":
+                    return new((new((TypeAttributes)0x18), null, false));
                 default:
                     return new((new((TypeAttributes)Enum.Parse(typeof(TypeAttributes), context.GetText(), true)), null, false));
             }
@@ -2055,7 +2057,7 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitId(CILParser.IdContext context) => VisitId(context);
         public static GrammarResult.String VisitId(CILParser.IdContext context)
         {
-            return new GrammarResult.String((context.ID() ?? context.SQSTRING()).Symbol.Text);
+            return new GrammarResult.String(context.GetText());
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitIidParamIndex(CILParser.IidParamIndexContext context) => VisitIidParamIndex(context);
@@ -2088,7 +2090,8 @@ namespace ILAssembler
                 "noinlining" => new(MethodImplAttributes.NoInlining),
                 "aggressiveinlining" => new(MethodImplAttributes.AggressiveInlining),
                 "nooptimization" => new(MethodImplAttributes.NoOptimization),
-                "aggressiveoptimization" => new((MethodImplAttributes)0x0200),
+                "aggressiveoptimization" => new(MethodImplAttributes.AggressiveOptimization),
+                "async" => new(MethodImplAttributes.Async),
                 _ => throw new UnreachableException(),
             };
         }

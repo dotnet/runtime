@@ -128,7 +128,25 @@ fragment IDCONT: [A-Za-z0-9_#?$@`];
 DOTTEDNAME: (ID DOT)+ ID;
 ID: IDSTART IDCONT*;
 
-id: ID | SQSTRING;
+id:
+	ID
+	| 'native'
+	| 'cil'
+	| 'optil'
+	| 'managed'
+	| 'unmanaged'
+	| 'forwardref'
+	| 'preservesig'
+	| 'runtime'
+	| 'internalcall'
+	| 'synchronized'
+	| 'noinlining'
+	| 'aggressiveinlining'
+	| 'nooptimization'
+	| 'aggressiveoptimization'
+	| 'async'
+	| 'extended'
+	| SQSTRING;
 dottedName: DOTTEDNAME | ((ID '.')* ID);
 compQstring: (QSTRING PLUS)* QSTRING;
 
@@ -296,6 +314,7 @@ classAttr:
 	| 'auto'
 	| 'sequential'
 	| 'explicit'
+	| 'extended'
 	| ANSI
 	| 'unicode'
 	| 'autochar'
@@ -888,6 +907,7 @@ implAttr:
 	| 'aggressiveinlining'
 	| 'nooptimization'
 	| 'aggressiveoptimization'
+	| 'async'
 	| 'flags' '(' int32 ')';
 
 EMITBYTE: '.emitbyte';
