@@ -1502,7 +1502,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
 
-                Regex r = Match_InstanceMethods_DefaultTimeout_SourceGenerated_ThrowsImpl();
+                Regex r = Match_InstanceMethods_DefaultTimeout_SourceGenerated_ThrowsImpl;
                 string input = new string('a', 50) + "@a.a";
 
                 Assert.Throws<RegexMatchTimeoutException>(() => r.Match(input));
