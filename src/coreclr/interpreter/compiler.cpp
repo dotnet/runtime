@@ -1814,7 +1814,7 @@ InterpMethod* InterpCompiler::CompileMethod()
 
     if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE))
     {
-        BADCODE("Interpreter does not support profiling enter/leave hooks\n");
+        NO_WAY("Interpreter does not support profiling enter/leave hooks\n");
     }
 
     m_isSynchronized = m_compHnd->getMethodAttribs(m_methodHnd) & CORINFO_FLG_SYNCH;
