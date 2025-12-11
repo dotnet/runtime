@@ -1945,9 +1945,6 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
     int8_t *sp = threadContext->pStackPointer;
 
     InterpByteCodeStart* pInterpreterCode = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
-#if (defined(PROFILING_SUPPORTED) || defined(DEBUGGER_SUPPORTED)) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
-    void* thunkDataMaybe = nullptr;
-#endif
 #if defined(PROFILING_SUPPORTED)
     MethodDesc* methodDescToReportAsTransition = nullptr;
 #endif

@@ -3989,7 +3989,7 @@ void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunc
         if (m_compHnd->pInvokeMarshalingRequired(NULL, callSiteSig))
         {
             // If we remove this restriction, we should handle the track transitions scenario by forcing a 
-            // p/invoke marshaling calli stub even when needed.
+            // p/invoke marshaling calli stub even when not needed.
             BADCODE("PInvoke marshalling for calli is not supported in interpreted code");
         }
         m_compHnd->getUnmanagedCallConv(nullptr, callSiteSig, &suppressGCTransition);
