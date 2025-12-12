@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { dotnetApi, dotnetAssert } from "./cross-module";
+
 import { TypedArray, VoidPtr } from "../types";
 import { jsOwnedGcHandleSymbol, teardownManagedProxy } from "./gc-handles";
 import { getManagedStackTrace } from "./managed-exports";
