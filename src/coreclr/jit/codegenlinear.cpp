@@ -563,6 +563,13 @@ void CodeGen::genCodeForBBlist()
 #endif // EMIT_GENERATE_GCINFO
 #endif // DEBUG
 
+#ifdef TARGET_WASM
+        if (block->IsLast())
+        {
+            instGen(INS_end);
+        }
+#endif
+
 #if defined(DEBUG)
         if (block->IsLast())
         {
@@ -574,7 +581,7 @@ void CodeGen::genCodeForBBlist()
         // For example, if the following IR ends the current block, no code will have been generated for
         // offset 21:
         //
-        //          (  0,  0) [000040] ------------                il_offset void   IL offset: 21
+        //          (  0,  0) [000040] ------------   /             il_offset void   IL offset: 21
         //
         //     N001 (  0,  0) [000039] ------------                nop       void
         //
@@ -657,11 +664,6 @@ void CodeGen::genCodeForBBlist()
         compiler->compCurBB = nullptr;
 #endif // DEBUG
     }  //------------------ END-FOR each block of the method -------------------
-
-#if defined(TARGET_WASM)
-    // The last instruction in a wasm function must be an explicit 'end' instruction.
-    instGen(INS_end);
-#endif
 
 #if defined(FEATURE_EH_WINDOWS_X86)
     // If this is a synchronized method on x86, and we generated all the code without
