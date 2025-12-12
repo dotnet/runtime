@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <!-- iOS/tvOS arm64 simulators do not support JIT, so force interpreter fallback, devices should FullAOT -->
-  <PropertyGroup Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') And '$(TargetArchitecture)' == 'arm64' and '$(UseNativeAOTRuntime)' != 'true'">
+  <PropertyGroup Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') And '$(TargetArchitecture)' == 'arm64' and '$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' == 'true'">
     <MonoForceInterpreter Condition="'$(MonoForceInterpreter)' == ''">true</MonoForceInterpreter>
   </PropertyGroup>
 

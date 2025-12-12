@@ -147,7 +147,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      - iossimulator_arm64
+      - iossimulator_x64
       - tvossimulator_x64
       - iossimulator_arm64
     variables:
@@ -192,7 +192,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeSimulatorOnlyBuild: ${{ parameters.isiOSLikeSimulatorOnlyBuild }}
     platforms:
-      - iossimulator_arm64
+      - iossimulator_x64
       - tvossimulator_x64
       - iossimulator_arm64
     variables:
