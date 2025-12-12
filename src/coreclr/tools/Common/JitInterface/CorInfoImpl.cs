@@ -1854,7 +1854,7 @@ namespace Internal.JitInterface
                     bool allowAsyncVariant = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask();
 
                     // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
-                    allowAsyncVariant &= !method.OwningType.IsDelegate;
+                    allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
 
                     method = allowAsyncVariant
                         ? _compilation.TypeSystemContext.GetAsyncVariantMethod(method)
