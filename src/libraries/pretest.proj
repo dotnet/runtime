@@ -26,6 +26,9 @@
     <ProjectReference Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.Mono.sfxproj"
                       Pack="true"
                       Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'Mono'" />
+    <ProjectReference Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj"
+                      Pack="true"
+                      Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'CoreCLR'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestReadyToRun)' == 'true'">
