@@ -379,6 +379,48 @@ namespace System.IO.Compression
         }
 
         /// <summary>
+        /// Opens the entry with the specified access mode. This allows for more granular control over the returned stream's capabilities.
+        /// </summary>
+        /// <param name="access">The file access mode for the returned stream.</param>
+        /// <returns>A <see cref="Stream"/> that represents the contents of the entry with the specified access capabilities.</returns>
+        /// <exception cref="ArgumentException">The requested access is not compatible with the archive's open mode.</exception>
+        /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
+        /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
+        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+        public Stream Open(FileAccess access)
+        {
+            ThrowIfInvalidArchive();
+
+            if (access is not FileAccess.Read and not FileAccess.Write and not FileAccess.ReadWrite)
+                throw new ArgumentException(SR.InvalidFileAccess, nameof(access));
+
+            // Validate that the requested access is compatible with the archive's mode
+            switch (_archive.Mode)
+            {
+                case ZipArchiveMode.Read:
+                    if (access != FileAccess.Read)
+                        throw new ArgumentException(SR.CannotBeWrittenInReadMode, nameof(access));
+                    return OpenInReadMode(checkOpenable: true);
+
+                case ZipArchiveMode.Create:
+                    if (access == FileAccess.Read)
+                        throw new ArgumentException(SR.CannotBeReadInCreateMode, nameof(access));
+                    return OpenInWriteMode();
+
+                case ZipArchiveMode.Update:
+                default:
+                    Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
+                    return access switch
+                    {
+                        FileAccess.Read => OpenInReadMode(checkOpenable: true),
+                        FileAccess.Write => OpenInWriteModeForUpdate(),
+                        FileAccess.ReadWrite => OpenInUpdateMode(),
+                        _ => throw new UnreachableException()
+                    };
+            }
+        }
+
+        /// <summary>
         /// Returns the FullName of the entry.
         /// </summary>
         /// <returns>FullName of the entry</returns>
@@ -800,6 +842,36 @@ namespace System.IO.Compression
             // we assume that if another entry grabbed the archive stream, that it set this entry's _everOpenedForWrite property to true by calling WriteLocalFileHeaderAndDataIfNeeded
             _archive.DebugAssertIsStillArchiveStreamOwner(this);
 
+            return OpenInWriteModeCore();
+        }
+
+        private WrappedStream OpenInWriteModeForUpdate()
+        {
+            if (_currentlyOpenForWrite)
+                throw new IOException(SR.UpdateModeOneStream);
+
+            // Write access in Update mode means "replace the entry content entirely".
+            // We provide an empty MemoryStream (discarding any existing data) and write
+            // the new content to the archive at dispose time. This is necessary because
+            // writing directly to the archive could overwrite the next entry if the new
+            // data is larger than the original.
+            _everOpenedForWrite = true;
+            Changes |= ZipArchive.ChangeState.StoredData;
+            _currentlyOpenForWrite = true;
+
+            // Create a fresh empty MemoryStream, discarding any previously loaded data
+            _storedUncompressedData = new MemoryStream();
+
+            // Return a stream wrapper. The stream is writable and seekable (like MemoryStream),
+            // but starts empty unlike ReadWrite mode which loads existing data.
+            return new WrappedStream(_storedUncompressedData, this, thisRef =>
+            {
+                thisRef!._currentlyOpenForWrite = false;
+            });
+        }
+
+        private WrappedStream OpenInWriteModeCore()
+        {
             _everOpenedForWrite = true;
             Changes |= ZipArchive.ChangeState.StoredData;
             CheckSumAndSizeWriteStream crcSizeStream = GetDataCompressor(_archive.ArchiveStream, true, (object? o, EventArgs e) =>
