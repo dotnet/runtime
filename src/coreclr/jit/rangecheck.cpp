@@ -1170,7 +1170,7 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
 // Compute the range for a binary operation.
 Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monIncreasing DEBUGARG(int indent))
 {
-    assert(binop->OperIs(GT_ADD, GT_XOR, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL));
+    assert(binop->OperIs(GT_ADD, GT_OR, GT_XOR, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL));
 
     // For XOR we only care about Log2 pattern for now
     if (binop->OperIs(GT_XOR))
@@ -1204,79 +1204,24 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         std::swap(op1IsCns, op2IsCns);
     }
 
-    // Special cases for binops where op2 is a constant
-    if (binop->OperIs(GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD))
+    // Special case for UMOD
+    if (binop->OperIs(GT_UMOD))
     {
-        if (!op2IsCns)
+        if (op2IsCns)
         {
-            // only cns is supported for op2 at the moment for &,%,<<,>> operators
-            return Range(Limit::keUnknown);
-        }
-
-        ssize_t op2Cns = vnStore->CoercedConstantValue<ssize_t>(op2VN);
-        if (!FitsIn<int>(op2Cns))
-        {
-            return Range(Limit::keUnknown);
-        }
-
-        int op1op2Cns = 0;
-        int icon      = -1;
-        if (binop->OperIs(GT_AND))
-        {
-            // x & cns -> [0..cns]
-            icon = static_cast<int>(op2Cns);
-        }
-        else if (binop->OperIs(GT_UMOD))
-        {
-            // x % cns -> [0..cns-1]
-            icon = static_cast<int>(op2Cns) - 1;
-        }
-        else if (binop->OperIs(GT_RSH, GT_LSH) && op1->OperIs(GT_AND) &&
-                 vnStore->IsVNIntegralConstant<int>(op1->AsOp()->gtGetOp2()->gtVNPair.GetConservative(), &op1op2Cns))
-        {
-            // (x & cns1) >> cns2 -> [0..cns1>>cns2]
-            int icon1 = op1op2Cns;
-            int icon2 = static_cast<int>(op2Cns);
-            if ((icon1 >= 0) && (icon2 >= 0) && (icon2 < 32))
+            ssize_t op2Cns = vnStore->CoercedConstantValue<ssize_t>(op2VN);
+            if (FitsIn<int>(op2Cns) && (op2Cns >= 1))
             {
-                icon = binop->OperIs(GT_RSH) ? (icon1 >> icon2) : (icon1 << icon2);
+                // x % cns -> [0..cns-1]
+                Range range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, static_cast<int>(op2Cns) - 1));
+                JITDUMP("Limit range to %s\n", range.ToString(m_pCompiler));
+                return range;
             }
         }
-        else if (binop->OperIs(GT_RSZ))
-        {
-            // (x u>> cns) -> [0..(x's max value >> cns)]
-            int shiftBy = static_cast<int>(op2->AsIntCon()->IconValue());
-            if (shiftBy < 0)
-            {
-                return Range(Limit::keUnknown);
-            }
-
-            int op1Width = (int)(genTypeSize(op1) * BITS_PER_BYTE);
-            if (shiftBy >= op1Width)
-            {
-                return Range(Limit(Limit::keConstant, 0));
-            }
-
-            // Calculate max possible value of op1, e.g. UINT_MAX for TYP_INT/TYP_UINT
-            uint64_t maxValue = (1ULL << op1Width) - 1;
-            icon              = (int)(maxValue >> static_cast<int>(op2->AsIntCon()->IconValue()));
-        }
-
-        if (icon >= 0)
-        {
-            Range range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, icon));
-            JITDUMP("Limit range to %s\n", range.ToString(m_pCompiler));
-            return range;
-        }
-        // Generalized range computation not implemented for these operators
-        else if (binop->OperIs(GT_AND, GT_UMOD))
-        {
-            return Range(Limit::keUnknown);
-        }
+        return Range(Limit::keUnknown);
     }
 
-    // other operators are expected to be handled above.
-    assert(binop->OperIs(GT_ADD, GT_MUL, GT_LSH, GT_RSH, GT_RSZ));
+    assert(!binop->OperIs(GT_UMOD, GT_XOR));
 
     Range* op1RangeCached = nullptr;
     Range  op1Range       = Limit(Limit::keUndef);
@@ -1326,6 +1271,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     assert(op2Range.IsValid());
 
     Range r = Range(Limit::keUnknown);
+
     if (binop->OperIs(GT_ADD))
     {
         r = RangeOps::Add(op1Range, op2Range);
@@ -1349,7 +1295,19 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     else if (binop->OperIs(GT_RSH))
     {
         r = RangeOps::ShiftRight(op1Range, op2Range);
-        JITDUMP("Right shift range: %s >> %s = %s\n", op1Range.ToString(m_pCompiler), op2Range.ToString(m_pCompiler),
+        JITDUMP("BinOp Right shift range: %s >> %s = %s\n", op1Range.ToString(m_pCompiler),
+                op2Range.ToString(m_pCompiler), r.ToString(m_pCompiler));
+    }
+    else if (binop->OperIs(GT_AND))
+    {
+        r = RangeOps::And(op1Range, op2Range);
+        JITDUMP("BinOp AND range: %s & %s = %s\n", op1Range.ToString(m_pCompiler), op2Range.ToString(m_pCompiler),
+                r.ToString(m_pCompiler));
+    }
+    else if (binop->OperIs(GT_OR))
+    {
+        r = RangeOps::Or(op1Range, op2Range);
+        JITDUMP("BinOp OP range: %s | %s = %s\n", op1Range.ToString(m_pCompiler), op2Range.ToString(m_pCompiler),
                 r.ToString(m_pCompiler));
     }
 
@@ -1547,6 +1505,15 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop, const Ra
         Range convertedOp2Range = RangeOps::ConvertShiftToMultiply(*op2Range);
         return MultiplyOverflows(op1Range->UpperLimit(), convertedOp2Range.UpperLimit());
     }
+    if (binop->OperIs(GT_OR))
+    {
+        // OR never overflows if both operands are non-negative.
+        if (op1Range->LowerLimit().IsConstant() && op2Range->LowerLimit().IsConstant() &&
+            (op1Range->LowerLimit().GetConstant() >= 0) && (op2Range->LowerLimit().GetConstant() >= 0))
+        {
+            return false;
+        }
+    }
 
     return true;
 }
@@ -1653,8 +1620,8 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
     {
         overflows = DoesVarDefOverflow(block, expr->AsLclVarCommon(), range);
     }
-    // Check if add overflows.
-    else if (expr->OperIs(GT_ADD, GT_MUL, GT_LSH))
+    // Check if these binary ops overflow.
+    else if (expr->OperIs(GT_ADD, GT_MUL, GT_LSH, GT_OR))
     {
         overflows = DoesBinOpOverflow(block, expr->AsOp(), range);
     }
@@ -1755,7 +1722,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         MergeAssertion(block, expr, &range DEBUGARG(indent + 1));
     }
     // compute the range for binary operation
-    else if (expr->OperIs(GT_XOR, GT_ADD, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL))
+    else if (expr->OperIs(GT_XOR, GT_OR, GT_ADD, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL))
     {
         range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
     }
