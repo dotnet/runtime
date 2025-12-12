@@ -417,7 +417,7 @@ namespace System.Runtime.CompilerServices
                 ExecutionAndSyncBlockStore contexts = default;
                 contexts.Push();
 
-                RuntimeAsyncTaskCore.DispatcherInfo dispatcherInfo;
+                DispatcherInfo dispatcherInfo;
                 dispatcherInfo.Next = t_dispatcherInfo;
                 dispatcherInfo.NextContinuation = MoveContinuationState();
                 t_dispatcherInfo = &dispatcherInfo;
