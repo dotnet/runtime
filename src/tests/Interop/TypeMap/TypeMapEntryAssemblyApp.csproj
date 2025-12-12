@@ -13,8 +13,7 @@
 
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.TypeMappingEntryAssembly"
-                                    Value="$(TypeMapEntryAssembly)"
-                                    Trim="true" />
+                                    Value="$(TypeMapEntryAssembly)" />
   </ItemGroup>
 
   <ItemGroup>
