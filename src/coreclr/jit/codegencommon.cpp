@@ -7069,11 +7069,6 @@ void CodeGen::genReturn(GenTree* treeNode)
         }
     }
 
-    if (treeNode->OperIs(GT_RETURN) && compiler->compIsAsync())
-    {
-        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_ASYNC_CONTINUATION_RET);
-    }
-
 #if EMIT_GENERATE_GCINFO
     if (treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
     {
@@ -7096,6 +7091,11 @@ void CodeGen::genReturn(GenTree* treeNode)
         genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
     }
 #endif // PROFILING_SUPPORTED
+
+    if (treeNode->OperIs(GT_RETURN) && compiler->compIsAsync())
+    {
+        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_ASYNC_CONTINUATION_RET);
+    }
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
     bool doStackPointerCheck = compiler->opts.compStackCheckOnRet;
