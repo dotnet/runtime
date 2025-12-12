@@ -151,8 +151,7 @@ public:
 
     void EmitRelocation(const instrDesc* id, int offset, BYTE* targetAddr)
     {
-        assert(id->idIsDspReloc());
-        host->emitRecordRelocation(dst - offset, targetAddr, IMAGE_REL_RISCV64_PC);
+        host->emitRecordRelocation(dst - offset, targetAddr, CorInfoReloc::RISCV64_CALL_PLT);
     }
 
     emitter* host;
