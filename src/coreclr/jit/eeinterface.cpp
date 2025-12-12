@@ -722,7 +722,7 @@ void Compiler::eePrintStringLiteral(CORINFO_MODULE_HANDLE module, unsigned token
         // Truncate length to MAX_LITERAL_LENGTH since that's the maximum we copied into str
         int truncatedLength = min(length, MAX_LITERAL_LENGTH);
         convertUtf16ToUtf8ForPrinting(str, truncatedLength, dst, sizeof(dst));
-        printf("\"%.*s%s\"", MAX_LITERAL_LENGTH, dst, length > MAX_LITERAL_LENGTH ? "..." : "");
+        printf("\"%s%s\"", dst, length > MAX_LITERAL_LENGTH ? "..." : "");
     }
 }
 #endif // DEBUG
