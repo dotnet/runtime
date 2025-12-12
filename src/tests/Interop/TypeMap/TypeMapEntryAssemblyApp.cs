@@ -37,6 +37,10 @@ public class TypeMapEntryAssemblyTest
     {
         Console.WriteLine(nameof(Validate_TypeMappingEntryAssembly_ProxyMap));
 
+        // For NativeAOT, instantiate the type to ensure the mappings are marked
+        _ = new Lib5Type1();
+        _ = new Lib5Type2();
+
         // These proxy mappings should be resolved from TypeMapLib5's type maps
         IReadOnlyDictionary<Type, Type> proxyMap = TypeMapping.GetOrCreateProxyTypeMapping<AlternateEntryPoint>();
 
