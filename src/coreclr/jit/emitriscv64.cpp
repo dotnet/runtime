@@ -2030,7 +2030,7 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id)
     assert(id->idIns() == INS_jalr);
     BYTE* origDst = dst;
 
-    InstructionEncoder encoder(this, dst);
+    InstructionEncoder encoder(*this, dst);
     EmitLogic_OptsC(encoder, id);
 
     // If the method returns a GC ref, mark INTRET (A0) appropriately.
@@ -2886,7 +2886,7 @@ static ssize_t UpperWordOfDoubleWordDoubleSignExtend(ssize_t doubleWord)
 //
 void emitter::InstructionFormatter::EmitRType(instruction ins, regNumber rd, regNumber rs1, regNumber rs2)
 {
-    unsigned baseOpcode = host->emitInsCode(ins);
+    unsigned baseOpcode = emitInsCode(ins);
 
     unsigned opcode = baseOpcode & kInstructionOpcodeMask;
     unsigned funct3 = (baseOpcode & kInstructionFunct3Mask) >> 12;
@@ -2896,12 +2896,12 @@ void emitter::InstructionFormatter::EmitRType(instruction ins, regNumber rd, reg
     unsigned _rs2   = castFloatOrIntegralReg(rs2);
 
     code_t code = insEncodeRTypeInstr(opcode, _rd, funct3, _rs1, _rs2, funct7);
-    host->emitDispInsName(code, id);
+    emit.emitDispInsName(code, id);
 }
 
 void emitter::InstructionFormatter::EmitIType(instruction ins, regNumber rd, regNumber rs1, unsigned imm12)
 {
-    unsigned baseOpcode = host->emitInsCode(ins);
+    unsigned baseOpcode = emitInsCode(ins);
 
     unsigned opcode = baseOpcode & kInstructionOpcodeMask;
     unsigned funct3 = (baseOpcode & kInstructionFunct3Mask) >> 12;
@@ -2909,12 +2909,12 @@ void emitter::InstructionFormatter::EmitIType(instruction ins, regNumber rd, reg
     unsigned _rs1   = castFloatOrIntegralReg(rs1);
 
     code_t code = insEncodeITypeInstr(opcode, _rd, funct3, _rs1, imm12);
-    host->emitDispInsName(code, id);
+    emit.emitDispInsName(code, id);
 }
 
 void emitter::InstructionFormatter::EmitSType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm12)
 {
-    unsigned baseOpcode = host->emitInsCode(ins);
+    unsigned baseOpcode = emitInsCode(ins);
 
     unsigned opcode = baseOpcode & kInstructionOpcodeMask;
     unsigned funct3 = (baseOpcode & kInstructionFunct3Mask) >> 12;
@@ -2922,21 +2922,21 @@ void emitter::InstructionFormatter::EmitSType(instruction ins, regNumber rs1, re
     unsigned _rs2   = castFloatOrIntegralReg(rs2);
 
     code_t code = insEncodeSTypeInstr(opcode, funct3, _rs1, _rs2, imm12);
-    host->emitDispInsName(code, id);
+    emit.emitDispInsName(code, id);
 }
 
 void emitter::InstructionFormatter::EmitUType(instruction ins, regNumber rd, unsigned imm20)
 {
-    unsigned opcode = host->emitInsCode(ins) & kInstructionOpcodeMask;
+    unsigned opcode = emitInsCode(ins) & kInstructionOpcodeMask;
     unsigned _rd    = castFloatOrIntegralReg(rd);
 
     code_t code = insEncodeUTypeInstr(opcode, _rd, imm20);
-    host->emitDispInsName(code, id);
+    emit.emitDispInsName(code, id);
 }
 
 void emitter::InstructionFormatter::EmitBType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13)
 {
-    unsigned baseOpcode = host->emitInsCode(ins);
+    unsigned baseOpcode = emitInsCode(ins);
 
     unsigned opcode = baseOpcode & kInstructionOpcodeMask;
     unsigned funct3 = (baseOpcode & kInstructionFunct3Mask) >> 12;
@@ -2944,12 +2944,12 @@ void emitter::InstructionFormatter::EmitBType(instruction ins, regNumber rs1, re
     unsigned _rs2   = castFloatOrIntegralReg(rs2);
 
     code_t code = insEncodeBTypeInstr(opcode, funct3, _rs1, _rs2, imm13);
-    host->emitDispInsName(code, id);
+    emit.emitDispInsName(code, id);
 }
 
 void emitter::InstructionFormatter::EmitBTypeInverted(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13)
 {
-    unsigned baseOpcode     = host->emitInsCode(ins);
+    unsigned baseOpcode     = emitInsCode(ins);
     unsigned invertedOpcode = baseOpcode ^ 0x1000;
 
     unsigned opcode = invertedOpcode & kInstructionOpcodeMask;
@@ -2958,18 +2958,18 @@ void emitter::InstructionFormatter::EmitBTypeInverted(instruction ins, regNumber
     unsigned _rs2   = castFloatOrIntegralReg(rs2);
 
     code_t code = insEncodeBTypeInstr(opcode, funct3, _rs1, _rs2, imm13);
-    host->emitDispInsName(code, id);
+    emit.emitDispInsName(code, id);
 }
 
 void emitter::InstructionFormatter::EmitJType(instruction ins, regNumber rd, unsigned imm21)
 {
-    unsigned baseOpcode = host->emitInsCode(ins);
+    unsigned baseOpcode = emitInsCode(ins);
 
     unsigned opcode = baseOpcode & kInstructionOpcodeMask;
     unsigned _rd    = castFloatOrIntegralReg(rd);
 
     code_t code = insEncodeJTypeInstr(opcode, _rd, imm21);
-    host->emitDispInsName(code, id);
+    emit.emitDispInsName(code, id);
 }
 
 //--------------------------------------------
@@ -2978,37 +2978,37 @@ void emitter::InstructionFormatter::EmitJType(instruction ins, regNumber rd, uns
 //
 void emitter::InstructionEncoder::EmitRType(instruction ins, regNumber rd, regNumber rs1, regNumber rs2)
 {
-    dst += host->emitOutput_RTypeInstr(dst, ins, rd, rs1, rs2);
+    dst += emit.emitOutput_RTypeInstr(dst, ins, rd, rs1, rs2);
 }
 
 void emitter::InstructionEncoder::EmitIType(instruction ins, regNumber rd, regNumber rs1, unsigned imm12)
 {
-    dst += host->emitOutput_ITypeInstr(dst, ins, rd, rs1, imm12);
+    dst += emit.emitOutput_ITypeInstr(dst, ins, rd, rs1, imm12);
 }
 
 void emitter::InstructionEncoder::EmitSType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm12)
 {
-    dst += host->emitOutput_STypeInstr(dst, ins, rs1, rs2, imm12);
+    dst += emit.emitOutput_STypeInstr(dst, ins, rs1, rs2, imm12);
 }
 
 void emitter::InstructionEncoder::EmitUType(instruction ins, regNumber rd, unsigned imm20)
 {
-    dst += host->emitOutput_UTypeInstr(dst, ins, rd, imm20);
+    dst += emit.emitOutput_UTypeInstr(dst, ins, rd, imm20);
 }
 
 void emitter::InstructionEncoder::EmitBType(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13)
 {
-    dst += host->emitOutput_BTypeInstr(dst, ins, rs1, rs2, imm13);
+    dst += emit.emitOutput_BTypeInstr(dst, ins, rs1, rs2, imm13);
 }
 
 void emitter::InstructionEncoder::EmitBTypeInverted(instruction ins, regNumber rs1, regNumber rs2, unsigned imm13)
 {
-    dst += host->emitOutput_BTypeInstr_InvertComparation(dst, ins, rs1, rs2, imm13);
+    dst += emit.emitOutput_BTypeInstr_InvertComparation(dst, ins, rs1, rs2, imm13);
 }
 
 void emitter::InstructionEncoder::EmitJType(instruction ins, regNumber rd, unsigned imm21)
 {
-    dst += host->emitOutput_JTypeInstr(dst, ins, rd, imm21);
+    dst += emit.emitOutput_JTypeInstr(dst, ins, rd, imm21);
 }
 
 //--------------------------------------------
@@ -3017,14 +3017,14 @@ void emitter::InstructionEncoder::EmitJType(instruction ins, regNumber rd, unsig
 // where 'XX' indicates the specific `insOpts`.
 //
 
-template <typename PolicyType>
-void emitter::EmitLogic_OptsReloc(PolicyType& policy, const instrDesc* id)
+template <typename TEmitPolicy>
+void emitter::EmitLogic_OptsReloc(TEmitPolicy& policy, const instrDesc* id)
 {
-    const instruction ins = id->idIns();
-    const regNumber dataReg = id->idReg1();
-    const regNumber addrReg = id->idReg2();
+    const instruction ins     = id->idIns();
+    const regNumber   dataReg = id->idReg1();
+    const regNumber   addrReg = id->idReg2();
 
-    assert(*ins == INS_addi || emitInsIsLoadOrStore(*ins));
+    assert(ins == INS_addi || emitInsIsLoadOrStore(ins));
 
     policy.EmitUType(INS_auipc, addrReg, 0);
 
@@ -3038,30 +3038,20 @@ void emitter::EmitLogic_OptsReloc(PolicyType& policy, const instrDesc* id)
     {
         policy.EmitIType(ins, dataReg, addrReg, 0);
     }
-
-    if (id->idIsCnsReloc())
-    {
-        policy.EmitIType(INS_addi, reg1, reg1, 0);
-    }
-    else
-    {
-        assert(id->idIsDspReloc());
-        policy.EmitIType(INS_ld, reg1, reg1, 0);
-    }
 }
 
-template <typename PolicyType>
-void emitter::EmitLogic_OptsRc(PolicyType& policy, const instrDesc* id, ssize_t immediate)
+template <typename TEmitPolicy>
+void emitter::EmitLogic_OptsRc(TEmitPolicy& policy, const instrDesc* id, ssize_t immediate)
 {
     const regNumber reg1    = id->idReg1();
-    const regNumber tempReg = isFloatReg(id->idReg1()) ? policy.host->codeGen->rsGetRsvdReg() : id->idReg1();
+    const regNumber tempReg = isFloatReg(id->idReg1()) ? codeGen->rsGetRsvdReg() : id->idReg1();
 
     policy.EmitUType(INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
     policy.EmitIType(id->idIns(), reg1, tempReg, LowerNBitsOfWord<12>(immediate));
 }
 
-template <typename PolicyType>
-void emitter::EmitLogic_OptsRl(PolicyType& policy, const instrDesc* id, ssize_t immediate)
+template <typename TEmitPolicy>
+void emitter::EmitLogic_OptsRl(TEmitPolicy& policy, const instrDesc* id, ssize_t immediate)
 {
     const regNumber reg1 = id->idReg1();
 
@@ -3069,8 +3059,8 @@ void emitter::EmitLogic_OptsRl(PolicyType& policy, const instrDesc* id, ssize_t 
     policy.EmitIType(INS_addi, reg1, reg1, LowerNBitsOfWord<12>(immediate));
 }
 
-template <typename PolicyType>
-void emitter::EmitLogic_OptsJump(PolicyType& policy, const instrDescJmp* jmp, ssize_t immediate)
+template <typename TEmitPolicy>
+void emitter::EmitLogic_OptsJump(TEmitPolicy& policy, const instrDescJmp* jmp, ssize_t immediate)
 {
     instruction ins = jmp->idIns();
 
@@ -3093,7 +3083,7 @@ void emitter::EmitLogic_OptsJump(PolicyType& policy, const instrDescJmp* jmp, ss
             assert(jmp->idCodeSize() == 2 * sizeof(code_t));
             assert(isValidSimm32(immediate));
             regNumber linkReg = jmp->idReg1();
-            regNumber tempReg = (linkReg == REG_ZERO) ? policy.host->codeGen->rsGetRsvdReg() : linkReg;
+            regNumber tempReg = (linkReg == REG_ZERO) ? codeGen->rsGetRsvdReg() : linkReg;
             policy.EmitUType(INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
             policy.EmitIType(INS_jalr, linkReg, tempReg, LowerNBitsOfWord<12>(immediate));
         }
@@ -3110,7 +3100,7 @@ void emitter::EmitLogic_OptsJump(PolicyType& policy, const instrDescJmp* jmp, ss
             {
                 assert(jmp->idCodeSize() == 3 * sizeof(code_t));
                 assert(isValidSimm32(immediate));
-                regNumber tempReg = policy.host->codeGen->rsGetRsvdReg();
+                regNumber tempReg = codeGen->rsGetRsvdReg();
                 policy.EmitUType(INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
                 policy.EmitIType(INS_jalr, REG_ZERO, tempReg, LowerNBitsOfWord<12>(immediate));
             }
@@ -3118,8 +3108,8 @@ void emitter::EmitLogic_OptsJump(PolicyType& policy, const instrDescJmp* jmp, ss
     }
 }
 
-template <typename PolicyType>
-void emitter::EmitLogic_OptsC(PolicyType& policy, const instrDesc* id)
+template <typename TEmitPolicy>
+void emitter::EmitLogic_OptsC(TEmitPolicy& policy, const instrDesc* id)
 {
     if (id->idIsCallRegPtr())
     { // EC_INDIR_R
@@ -3145,8 +3135,8 @@ void emitter::EmitLogic_OptsC(PolicyType& policy, const instrDesc* id)
     }
 }
 
-template <typename PolicyType>
-void emitter::EmitLogic_OptsI(PolicyType& policy, const instrDescLoadImm* idli)
+template <typename TEmitPolicy>
+void emitter::EmitLogic_OptsI(TEmitPolicy& policy, const instrDescLoadImm* idli)
 {
     const instruction* ins    = idli->ins;
     const int32_t*     values = idli->values;
@@ -3185,10 +3175,10 @@ void emitter::EmitLogic_OptsI(PolicyType& policy, const instrDescLoadImm* idli)
 
 BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins)
 {
-    BYTE* const        dstBase = dst;
-    *ins = id->idIns();
-    
-    InstructionEncoder encoder(this, dst);
+    BYTE* const dstBase = dst;
+    *ins                = id->idIns();
+
+    InstructionEncoder encoder(*this, dst);
     EmitLogic_OptsReloc(encoder, id);
 
     CorInfoReloc type = emitInsIsStore(*ins) ? CorInfoReloc::RISCV64_PCREL_S : CorInfoReloc::RISCV64_PCREL_I;
@@ -3213,7 +3203,7 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
     assert((immediate > 0) && ((immediate & 0x01) == 0));
     assert(isValidSimm32(immediate));
 
-    InstructionEncoder encoder(this, dst);
+    InstructionEncoder encoder(*this, dst);
     EmitLogic_OptsRc(encoder, id, immediate);
 
     return dst;
@@ -3233,7 +3223,7 @@ BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins
     assert((immediate & 0x01) == 0);
     assert(isValidSimm32(immediate));
 
-    InstructionEncoder encoder(this, dst);
+    InstructionEncoder encoder(*this, dst);
     EmitLogic_OptsRl(encoder, id, immediate);
 
     return dst;
@@ -3247,7 +3237,7 @@ BYTE* emitter::emitOutputInstr_OptsJump(BYTE* dst, instrDescJmp* jmp, const insG
 
     *ins = jmp->idIns();
 
-    InstructionEncoder encoder(this, dst);
+    InstructionEncoder encoder(*this, dst);
     EmitLogic_OptsJump(encoder, jmp, immediate);
 
     return dst;
@@ -3278,7 +3268,7 @@ BYTE* emitter::emitOutputInstr_OptsI(BYTE* dst, instrDesc* id, instruction* ins)
     unsigned n = GetLoadImmediateNumberOfInstructions(idli);
     *ins       = idli->ins[n - 1];
 
-    InstructionEncoder encoder(this, dst);
+    InstructionEncoder encoder(*this, dst);
     EmitLogic_OptsI(encoder, idli);
 
     return dst;
@@ -4725,19 +4715,19 @@ void emitter::emitDispInsInstrNum(const instrDesc* id) const
 
 void emitter::emitDispIns_OptsReloc(const instrDesc* id)
 {
-    InstructionFormatter formatter(this, id);
+    InstructionFormatter formatter(*this, id);
     EmitLogic_OptsReloc(formatter, id);
 }
 
 void emitter::emitDispIns_OptsRc(const instrDesc* id)
 {
-    InstructionFormatter formatter(this, id);
+    InstructionFormatter formatter(*this, id);
     EmitLogic_OptsRc(formatter, id, 0);
 }
 
 void emitter::emitDispIns_OptsRl(const instrDesc* id)
 {
-    InstructionFormatter formatter(this, id);
+    InstructionFormatter formatter(*this, id);
     EmitLogic_OptsRl(formatter, id, 0);
 }
 
@@ -4747,13 +4737,13 @@ void emitter::emitDispIns_OptsJump(const instrDesc* id)
     ssize_t             immediate = 0; // Jump offset cannot be known here
     BasicBlock*         dst       = id->idAddr()->iiaBBlabel;
 
-    InstructionFormatter formatter(this, id);
+    InstructionFormatter formatter(*this, id);
     EmitLogic_OptsJump(formatter, idJmp, 0);
 }
 
 void emitter::emitDispIns_OptsC(const instrDesc* id)
 {
-    InstructionFormatter formatter(this, id);
+    InstructionFormatter formatter(*this, id);
     EmitLogic_OptsC(formatter, id);
 }
 
@@ -4761,7 +4751,7 @@ void emitter::emitDispIns_OptsI(const instrDesc* id)
 {
     const instrDescLoadImm* idli = static_cast<const instrDescLoadImm*>(id);
 
-    InstructionFormatter formatter(this, id);
+    InstructionFormatter formatter(*this, id);
     EmitLogic_OptsI(formatter, idli);
 }
 

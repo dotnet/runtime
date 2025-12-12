@@ -85,8 +85,8 @@ private:
 class InstructionFormatter
 {
 public:
-    InstructionFormatter(emitter* host, const instrDesc* id)
-        : host(host)
+    InstructionFormatter(emitter& emit, const instrDesc* id)
+        : emit(emit)
         , id(id)
     {
     }
@@ -109,7 +109,7 @@ public:
         /* Intentionally left empty */
     }
 
-    emitter*         host;
+    emitter&         emit;
     const instrDesc* id;
 };
 
@@ -130,8 +130,8 @@ public:
 class InstructionEncoder
 {
 public:
-    InstructionEncoder(emitter* host, BYTE*& dst)
-        : host(host)
+    InstructionEncoder(emitter& emit, BYTE*& dst)
+        : emit(emit)
         , dst(dst)
     {
     }
@@ -146,15 +146,15 @@ public:
 
     void MarkGCRegDead(regNumber reg)
     {
-        host->emitGCregDeadUpd(reg, dst);
+        emit.emitGCregDeadUpd(reg, dst);
     }
 
     void EmitRelocation(const instrDesc* id, int offset, BYTE* targetAddr)
     {
-        host->emitRecordRelocation(dst - offset, targetAddr, CorInfoReloc::RISCV64_CALL_PLT);
+        emit.emitRecordRelocation(dst - offset, targetAddr, CorInfoReloc::RISCV64_CALL_PLT);
     }
 
-    emitter* host;
+    emitter& emit;
     BYTE*&   dst;
 };
 
@@ -259,18 +259,18 @@ static unsigned TrimSignedToImm21(ssize_t imm21);
 
 static inline unsigned GetLoadImmediateNumberOfInstructions(const instrDescLoadImm* idli);
 
-template <typename PolicyType>
-static void EmitLogic_OptsReloc(PolicyType& policy, const instrDesc* id);
-template <typename PolicyType>
-static void EmitLogic_OptsRc(PolicyType& policy, const instrDesc* id, ssize_t immediate);
-template <typename PolicyType>
-static void EmitLogic_OptsRl(PolicyType& policy, const instrDesc* id, ssize_t immediate);
-template <typename PolicyType>
-static void EmitLogic_OptsJump(PolicyType& policy, const instrDescJmp* jmp, ssize_t immediate);
-template <typename PolicyType>
-static void EmitLogic_OptsC(PolicyType& policy, const instrDesc* id);
-template <typename PolicyType>
-static void EmitLogic_OptsI(PolicyType& policy, const instrDescLoadImm* idli);
+template <typename TEmitPolicy>
+void EmitLogic_OptsReloc(TEmitPolicy& policy, const instrDesc* id);
+template <typename TEmitPolicy>
+void EmitLogic_OptsRc(TEmitPolicy& policy, const instrDesc* id, ssize_t immediate);
+template <typename TEmitPolicy>
+void EmitLogic_OptsRl(TEmitPolicy& policy, const instrDesc* id, ssize_t immediate);
+template <typename TEmitPolicy>
+void EmitLogic_OptsJump(TEmitPolicy& policy, const instrDescJmp* jmp, ssize_t immediate);
+template <typename TEmitPolicy>
+void EmitLogic_OptsC(TEmitPolicy& policy, const instrDesc* id);
+template <typename TEmitPolicy>
+void EmitLogic_OptsI(TEmitPolicy& policy, const instrDescLoadImm* idli);
 
 // Major opcode of 32-bit & 16-bit instructions as per "The RISC-V Instruction Set Manual", chapter "RV32/64G
 // Instruction Set Listings", table "RISC-V base opcode map" and chapter "RVC Instruction Set Listings", table "RVC
