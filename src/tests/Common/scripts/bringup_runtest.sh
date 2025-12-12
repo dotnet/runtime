@@ -1086,10 +1086,6 @@ do
         --jitforcerelocs)
             export DOTNET_ForceRelocs=1
             ;;
-        --link=*)
-            export ILLINK=${i#*=}
-            export DoLink=true
-            ;;
         --tieredcompilation)
             export DOTNET_TieredCompilation=1
             ;;
