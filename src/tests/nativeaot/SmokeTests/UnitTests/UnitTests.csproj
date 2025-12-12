@@ -15,7 +15,8 @@
   </PropertyGroup>
 
   <!-- Enable runtime async; delete this block once it's on by default -->
-  <PropertyGroup>
+  <!-- Conditioned to x64 only due to https://github.com/dotnet/runtime/issues/121871 -->
+  <PropertyGroup Condition="'$(TargetArchitecture)' == 'x64'">
     <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
 
