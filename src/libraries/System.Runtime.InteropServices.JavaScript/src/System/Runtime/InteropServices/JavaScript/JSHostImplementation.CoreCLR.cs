@@ -42,6 +42,7 @@ namespace System.Runtime.InteropServices.JavaScript
             var ctx = JSProxyContext.CurrentThreadContext;
             var (assemblyName, nameSpace, shortClassName, methodName) = ParseFQN(fullyQualifiedName);
             var wrapperName = $"__Wrapper_{methodName}_{signatureHash}";
+            shortClassName = shortClassName.Replace('/', '+');
 
             // get MethodInfo from the fully qualified name
             var assembly = Assembly.Load(new AssemblyName(assemblyName));
@@ -50,12 +51,12 @@ namespace System.Runtime.InteropServices.JavaScript
                 : assembly.GetType(nameSpace + "." + shortClassName);
             if (clazz == null)
             {
-                Environment.FailFast($"Can't find {nameSpace}{shortClassName} in {assemblyName}.dll");
+                Environment.FailFast($"Can't find {nameSpace}{shortClassName} in {assemblyName} assembly");
             }
             var wrapperInfo = clazz.GetMethod(wrapperName, BindingFlags.Static | BindingFlags.NonPublic);
             if (wrapperInfo == null)
             {
-                Environment.FailFast($"Can't find method wrapper {wrapperName} in {nameSpace}.{shortClassName} in {assemblyName}.dll");
+                Environment.FailFast($"Can't find method wrapper {wrapperName} in {nameSpace}.{shortClassName} in {assemblyName} assembly");
             }
 
             Action<IntPtr> wrapper = (IntPtr args) =>

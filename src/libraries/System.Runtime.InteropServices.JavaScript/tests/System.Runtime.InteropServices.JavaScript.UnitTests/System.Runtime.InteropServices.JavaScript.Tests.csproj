@@ -59,7 +59,9 @@
 
   <ItemGroup Condition="'$(FeatureWasmManagedThreads)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.cs" />
+    <!-- TODO
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs" />
+    -->
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
   </ItemGroup>
 

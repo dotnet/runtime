@@ -11,13 +11,21 @@ const modulesUniqueQuery = queryIndex > 0 ? scriptUrlQuery.substring(queryIndex)
 const scriptUrl = normalizeFileUrl(scriptUrlQuery);
 const scriptDirectory = normalizeDirectoryUrl(scriptUrl);
 
-export function locateFile(path: string) {
-    if ("URL" in globalThis) {
-        return new URL(path, scriptDirectory).toString();
+export function locateFile(path: string, isModule = false): string {
+    let res;
+    if (isPathAbsolute(path)) {
+        res = path;
+    } else if (globalThis.URL) {
+        res = new globalThis.URL(path, scriptDirectory).href;
+    } else {
+        res = scriptDirectory + path;
     }
 
-    if (isPathAbsolute(path)) return path;
-    return scriptDirectory + path + modulesUniqueQuery;
+    if (isModule) {
+        res += modulesUniqueQuery;
+    }
+
+    return res;
 }
 
 function normalizeFileUrl(filename: string) {

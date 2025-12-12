@@ -18,6 +18,9 @@ export const exportsByAssembly: Map<string, any> = new Map();
 
 export async function getAssemblyExports(assemblyName: string): Promise<any> {
     assertJsInterop();
+    if (assemblyName.endsWith(".dll")) {
+        assemblyName = assemblyName.substring(0, assemblyName.length - 4);
+    }
     const result = exportsByAssembly.get(assemblyName);
     if (!result) {
         await bindAssemblyExports(assemblyName);
@@ -331,7 +334,7 @@ function bindFn(closure: BindingClosureCS) {
 }
 
 function walkExportsToSeFunction(assembly: string, namespace: string, classname: string, methodname: string, signatureHash: number, fn: Function): void {
-    const parts = `${namespace}.${classname}`.replace(/\//g, ".").split(".");
+    const parts = `${namespace}.${classname}`.replace(/\+/g, ".").replace(/\//g, ".").split(".");
     let scope: any = undefined;
     let assemblyScope = exportsByAssembly.get(assembly);
     if (!assemblyScope) {
