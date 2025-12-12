@@ -631,7 +631,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - agocke
+            - brzvlad
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -696,9 +696,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - agocke
-            - jeffschwMSFT
-            - MichaelSimons
+            - dotnet/runtime-infrastructure
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -735,8 +733,9 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - steveisok
-            - agocke
+            - akoeplinger
+            - matouskozak
+            - simonrozsival
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1124,6 +1123,8 @@ configuration:
         - mentionUsers:
             mentionees:
             - dotnet/area-system-formats-asn1
+            - bartonjs
+            - vcsjones
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1136,6 +1137,8 @@ configuration:
         - mentionUsers:
             mentionees:
             - dotnet/area-system-formats-cbor
+            - bartonjs
+            - vcsjones
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1197,6 +1200,8 @@ configuration:
         - mentionUsers:
             mentionees:
             - dotnet/area-system-io-hashing
+            - bartonjs
+            - vcsjones
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1320,8 +1325,9 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - karelz
             - dotnet/ncl
+            - bartonjs
+            - vcsjones
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1442,9 +1448,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - agocke
-            - AaronRobinsonMSFT
-            - jkoritzinsky
+            - dotnet/interop-contrib
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1456,9 +1460,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - agocke
-            - AaronRobinsonMSFT
-            - jkoritzinsky
+            - dotnet/interop-contrib
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
