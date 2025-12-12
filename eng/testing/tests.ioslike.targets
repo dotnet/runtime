@@ -9,12 +9,6 @@
     <BuildTestsOn Condition="'$(BuildTestsOn)' == ''">local</BuildTestsOn>
   </PropertyGroup>
 
-  <!-- NativeAOT tests don't use Apple test runner; they return exit code 100 on success -->
-  <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
-    <IncludesTestRunner>false</IncludesTestRunner>
-    <ExpectedExitCode Condition="'$(ExpectedExitCode)' == ''">100</ExpectedExitCode>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(BuildTestsOnHelix)' == 'true'">
     <_AOTBuildCommand>export PATH=$HELIX_CORRELATION_PAYLOAD/build/cmake/cmake-3.28.0-macos-universal/CMake.app/Contents/bin:$PATH &amp;&amp; </_AOTBuildCommand>
     <_AOTBuildCommand>$(_AOTBuildCommand) dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:$XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
