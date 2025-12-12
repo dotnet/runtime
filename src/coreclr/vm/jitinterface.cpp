@@ -8813,8 +8813,10 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     }
     else if (isGenericVirtual)
     {
-        // We only need the method context when the devirted generic method is a shared generic method
-        info->needsMethodContext = info->isInstantiatingStub = pDevirtMD->IsInstantiatingStub();
+        // We don't support shared generic methods yet so this should always be false
+        info->needsMethodContext = false;
+        // We don't produce an instantiating stub
+        info->isInstantiatingStub = false;
         info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
     }
     else
