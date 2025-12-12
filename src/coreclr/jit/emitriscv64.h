@@ -77,6 +77,11 @@ private:
 //    during `PHASE Generate code`, and many of them are later optimized out by
 //    `emitJumpDistBind`.
 //
+//    For example, in JitDump,
+//        (PHASE generate code)     |    (After end code gen, before unwindEmit())
+//        auipc          t6, ??     |    j              G_M19511_IG08
+//        jr             t6         |
+//
 class InstructionFormatter
 {
 public:
