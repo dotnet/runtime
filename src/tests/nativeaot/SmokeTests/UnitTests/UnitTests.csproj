@@ -13,6 +13,12 @@
 
     <IlcOrderFile>order.txt</IlcOrderFile>
   </PropertyGroup>
+
+  <!-- Enable runtime async; delete this block once it's on by default -->
+  <PropertyGroup>
+    <Features>$(Features);runtime-async=on</Features>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="BasicThreading.cs" />
     <Compile Include="Delegates.cs" />
