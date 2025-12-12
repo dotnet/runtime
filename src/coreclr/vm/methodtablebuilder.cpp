@@ -2677,14 +2677,17 @@ MethodTableBuilder::EnumerateClassMethods()
     if ((DWORD)MAX_SLOT_INDEX <= cMethAndGaps)
         BuildMethodTableThrowException(IDS_CLASSLOAD_TOO_MANY_METHODS);
 
-    bmtMethod->m_cMaxDeclaredMethods = (SLOT_INDEX)cMethAndGaps;
-
-    if (g_pConfig->RuntimeAsync())
+    // In a worst case the number of declared methods can double
+    // as each async method may have two variants.
+    // The method count is typically a modest number though.
+    // We will reserve twice the size for the builder, up to the max, just in case.
+    DWORD cMethUpperBound = cMethAndGaps * 2;
+    if ((DWORD)MAX_SLOT_INDEX <= cMethUpperBound)
     {
-        // TODO: (async) the index is uint16 and can potentially overflow. This needs to be more robust.
-        bmtMethod->m_cMaxDeclaredMethods *= 2;
+        cMethUpperBound = MAX_SLOT_INDEX - 1;
     }
 
+    bmtMethod->m_cMaxDeclaredMethods = (SLOT_INDEX)cMethUpperBound;
     bmtMethod->m_cDeclaredMethods = 0;
     bmtMethod->m_rgDeclaredMethods = new (GetStackingAllocator())
         bmtMDMethod *[bmtMethod->m_cMaxDeclaredMethods];
@@ -3305,6 +3308,11 @@ MethodTableBuilder::EnumerateClassMethods()
         bmtMDMethod *pDeclaredMethod = NULL;
         for (int insertCount = 0; insertCount < 2; insertCount++)
         {
+            if (bmtMethod->m_cDeclaredMethods >= bmtMethod->m_cMaxDeclaredMethods)
+            {
+                BuildMethodTableThrowException(IDS_CLASSLOAD_TOO_MANY_METHODS);
+            }
+
             bmtMDMethod * pNewMethod;
             if (insertCount == 0)
             {
@@ -3431,6 +3439,17 @@ MethodTableBuilder::EnumerateClassMethods()
                     pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_CMOD_REQD;
                 }
 
+                MethodClassification asyncVariantType = type;
+#ifdef FEATURE_COMINTEROP
+                if (type == mcComInterop)
+                {
+                    // For COM interop methods,
+                    // we don't want to treat the async variant as a COM Interop method
+                    // (as it isn't, it's a transient IL method).
+                    asyncVariantType = mcIL;
+                }
+#endif // FEATURE_COMINTEROP
+
                 Signature newMemberSig(pNewMemberSignature, cAsyncThunkMemberSignature);
                 pNewMethod = new (GetStackingAllocator()) bmtMDMethod(
                     bmtInternal->pType,
@@ -3440,11 +3459,23 @@ MethodTableBuilder::EnumerateClassMethods()
                     dwMethodRVA,
                     newMemberSig,
                     asyncFlags,
-                    type,
+                    asyncVariantType,
                     implType);
 
                 pNewMethod->SetAsyncOtherVariant(pDeclaredMethod);
                 pDeclaredMethod->SetAsyncOtherVariant(pNewMethod);
+
+#ifdef FEATURE_COMINTEROP
+                // We only ever include one of the two async variants (whichever doesn't have the async calling convention)
+                // Record an excluded method here in the COM VTable.
+                EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
+                if (GetHalfBakedClass()->GetSparseCOMInteropVTableMap() == NULL)
+                    GetHalfBakedClass()->SetSparseCOMInteropVTableMap(new SparseVTableMap());
+
+                GetHalfBakedClass()->GetSparseCOMInteropVTableMap()->RecordExcludedMethod((WORD)NumDeclaredMethods());
+
+                bmtProp->fSparse = true;
+#endif // FEATURE_COMINTEROP
             }
 
             bmtMethod->AddDeclaredMethod(pNewMethod);

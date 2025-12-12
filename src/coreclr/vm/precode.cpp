@@ -190,7 +190,7 @@ TADDR InterpreterPrecode::GetMethodDesc()
     LIMITED_METHOD_DAC_CONTRACT;
 
     InterpByteCodeStart* pInterpreterCode = dac_cast<PTR_InterpByteCodeStart>(GetData()->ByteCodeAddr);
-    return dac_cast<TADDR>(pInterpreterCode->Method->methodDesc);
+    return dac_cast<TADDR>(pInterpreterCode->Method->methodHnd);
 }
 #endif // FEATURE_INTERPRETER
 

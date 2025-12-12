@@ -9,8 +9,6 @@
 
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.targets" />
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmAppBuilder" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
-
   <PropertyGroup>
     <PrepareForWasmBuildNativeDependsOn>
       _CheckToolchainIsExpectedVersion;
@@ -23,30 +21,13 @@
       _BrowserWasmLinkDotNet;
     </WasmLinkDotNetDependsOn>
 
-    <WasmGenerateAppBundleDependsOn>
-      $(WasmGenerateAppBundleDependsOn);
-      GenerateBuildRuntimeConfigurationFiles;
-      _GetWasmGenerateAppBundleDependencies;
-      _WasmGenerateAppBundle;
-      _WasmGenerateRunV8Script;
-    </WasmGenerateAppBundleDependsOn>
-
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and '$(WasmEnableThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
 
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">false</WasmEmitSymbolMap>
 
-    <!-- by default, package assemblies as webcil -->
-    <WasmEnableWebcil Condition="'$(WasmEnableWebcil)' == ''">true</WasmEnableWebcil>
-    <WasmAssemblyExtension Condition="'$(WasmEnableWebcil)' == 'true'">.wasm</WasmAssemblyExtension>
-    <WasmAssemblyExtension Condition="'$(WasmEnableWebcil)' != 'true'">.dll</WasmAssemblyExtension>
-
     <WasmStripILAfterAOT Condition="'$(WasmStripILAfterAOT)' == ''">true</WasmStripILAfterAOT>
-    <WasmRuntimeAssetsLocation Condition="'$(WasmRuntimeAssetsLocation)' == ''">_framework</WasmRuntimeAssetsLocation>
-    <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
-
-    <_WasmGenerateAppBundleDependsOn>_GetWasmGenerateAppBundleDependencies;$(_WasmGenerateAppBundleDependsOn)</_WasmGenerateAppBundleDependsOn>
 
     <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'false'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
     <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'false'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
@@ -75,114 +56,6 @@
         <RootMode>all</RootMode>
       </TrimmerRootAssembly>
     </ItemGroup>
-  </Target>
-
-  <Target Name="_GetWasmGenerateAppBundleDependencies">
-    <Warning Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true' and '$(WasmIcuDataFileName)' != ''" Text="%24(WasmIcuDataFileName) has no effect when %24(WasmIncludeFullIcuData) is set to true." />
-
-    <PropertyGroup>
-      <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'">true</_HasDotnetWasm>
-      <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.worker.mjs'">true</_HasDotnetJsWorker>
-      <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js.symbols'">true</_HasDotnetJsSymbols>
-      <_HasDotnetNativeJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js'">true</_HasDotnetNativeJs>
-      <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and Exists('$(WasmIcuDataFileName)')">$(WasmIcuDataFileName)</_WasmIcuDataFileName>
-      <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and !Exists('$(WasmIcuDataFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)</_WasmIcuDataFileName>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js" Condition="'$(EnableDiagnostics)' == 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js" Condition="'$(_HasDotnetNativeJs)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs')" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js.symbols"
-                       Condition="'$(WasmEmitSymbolMap)' == 'true' and
-                                  '$(_HasDotnetJsSymbols)' != 'true' and
-                                  Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js.symbols')" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.map"
-                       Condition="'$(WasmEmitSourceMap)' != 'false'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js.map"
-                       Condition="'$(WasmEmitSourceMap)' != 'false'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js.map"
-                       Condition="'$(WasmEmitSourceMap)' != 'false' and '$(EnableDiagnostics)' == 'true'" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
-      <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*" Exclude="$(_WasmIcuDataFileName)"/>
-      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
-      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' == ''" Include="@(_IcuAvailableDataFiles)"/>
-      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' != ''" Include="$(_WasmIcuDataFileName)"/>
-      <WasmNativeAsset Include="@(WasmIcuDataFileNames)"/>
-    </ItemGroup>
-
-    <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(WasmIcuDataFileName)' != '' and !Exists('$(_WasmIcuDataFileName)')" Text="File in location %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) cannot be found neither when used as absolute path nor a relative runtime pack path. You might want to pass one of the values: @(_IcuAvailableDataFiles->'%(Filename)')."/>
-    <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(WasmIcuDataFileName)' != '' and !$([System.IO.Path]::GetFileName('$(WasmIcuDataFileName)').StartsWith('icudt'))" Text="Custom ICU file name in path %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) must start with 'icudt'."/>
-  </Target>
-
-  <Target Name="_WasmGenerateAppBundle"
-          Inputs="@(_WasmAssembliesInternal);@(WasmExtraFilesToDeploy);$(WasmIcuDataFileName);@(WasmNativeAsset)"
-          Outputs="$(WasmAppDir)\.stamp"
-          Condition="'$(WasmGenerateAppBundle)' == 'true'">
-
-    <PropertyGroup>
-      <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.native.js -->
-      <_WasmPThreadPoolInitialSize Condition="'$(_WasmPThreadPoolInitialSize)' == ''">-1</_WasmPThreadPoolInitialSize>
-      <_WasmPThreadPoolUnusedSize Condition="'$(_WasmPThreadPoolUnusedSize)' == ''">-1</_WasmPThreadPoolUnusedSize>
-      <_WasmIsPublishing Condition="'$(_WasmIsPublishing)' == '' and '$(_IsPublishing)' != ''">$(_IsPublishing)</_WasmIsPublishing>
-      
-      <_WasmAppBuilderBootConfigFileName>$(WasmBootConfigFileName)</_WasmAppBuilderBootConfigFileName>
-      <_WasmAppBuilderBootConfigFileName Condition="'$(_WasmAppBuilderBootConfigFileName)' == ''">dotnet.boot.js</_WasmAppBuilderBootConfigFileName>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <WasmExtraFilesToDeploy Include="$(WasmMainHTMLPath)" Condition="'$(WasmMainHTMLPath)' != ''" />
-      <WasmExtraFilesToDeploy Include="$(WasmMainJSPath)" Condition="'$(WasmMainJSPath)' != ''" />
-      <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != ''"/>
-    </ItemGroup>
-
-    <RemoveDir Directories="$(WasmAppDir)" />
-    <WasmAppBuilder
-      AppDir="$(WasmAppDir)"
-      ConfigFileName="$(_WasmAppBuilderBootConfigFileName)"
-      Assemblies="@(_WasmAssembliesInternal)"
-      MainAssemblyName="$(WasmMainAssemblyFileName)"
-      HostConfigs="@(HostConfig)"
-      RuntimeArgsForHost="@(WasmMonoRuntimeArgs)"
-      DefaultHostConfig="$(DefaultWasmHostConfig)"
-      InvariantGlobalization="$(InvariantGlobalization)"
-      SatelliteAssemblies="@(_WasmSatelliteAssemblies)"
-      FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
-      IcuDataFileNames="@(WasmIcuDataFileNames)"
-      RemoteSources="@(WasmRemoteSources)"
-      ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
-      ExtraConfig="@(WasmExtraConfig)"
-      EnvVariables="@(WasmEnvironmentVariable)"
-      Profilers="$(WasmProfilers)"
-      NativeAssets="@(WasmNativeAsset)"
-      DebugLevel="$(WasmDebugLevel)"
-      IsPublish="$(_WasmIsPublishing)"
-      IncludeThreadsWorker="$(WasmEnableThreads)"
-      PThreadPoolInitialSize="$(_WasmPThreadPoolInitialSize)"
-      PThreadPoolUnusedSize="$(_WasmPThreadPoolUnusedSize)"
-      UseWebcil="$(WasmEnableWebcil)"
-      WasmIncludeFullIcuData="$(WasmIncludeFullIcuData)"
-      WasmIcuDataFileName="$(WasmIcuDataFileName)"
-      RuntimeAssetsLocation="$(WasmRuntimeAssetsLocation)"
-      CacheBootResources="$(BlazorCacheBootResources)"
-      RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
-      IsAot="$(RunAOTCompilation)"
-      IsMultiThreaded="$(WasmEnableThreads)"
-      >
-      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </WasmAppBuilder>
-
-    <Message Text="Generated app bundle at $(WasmAppDir)" Importance="High" />
-
-    <Copy SourceFiles="@(_WasmAppHostFiles)" DestinationFiles="@(_WasmAppHostFiles->'$(WasmAppDir)\WasmAppHost\%(RecursiveDir)%(FileName)%(Extension)')" />
-
-    <WriteLinesToFile File="$(WasmAppDir)\.stamp" Lines="" Overwrite="true" />
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
@@ -534,6 +407,7 @@
     <OnError ExecuteTargets="_OnError_WasmLinkDotNet_UndefinedSymbols"
              Condition="'$(WasmAllowUndefinedSymbols)' != 'true' and '$(_EmccLinkStepExitCode)' != '0' and $([System.Text.RegularExpressions.Regex]::IsMatch($(_EmccLinkStepConsoleOutput), 'wasm-ld *: *error *:.*undefined symbol:'))" />
   </Target>
+
   <Target Name="_OnError_WasmLinkDotNet_UndefinedSymbols">
     <Error Text="Use '-p:WasmAllowUndefinedSymbols=true' to allow undefined symbols" />
   </Target>

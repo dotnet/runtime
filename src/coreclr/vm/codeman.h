@@ -79,6 +79,7 @@ class ReadyToRunJitManager;
 class ExecutionManager;
 class Thread;
 class CrawlFrame;
+class IExecutionControl;
 struct EE_ILEXCEPTION;
 struct EE_ILEXCEPTION_CLAUSE;
 typedef struct
@@ -1791,6 +1792,11 @@ public:
         return m_runtimeSupport;
     }
 
+#if !defined(DACCESS_COMPILE)
+    // Returns execution control, currently NULL outside of CoreCLR interpreter.
+    virtual IExecutionControl* GetExecutionControl() { return NULL; }
+#endif
+
 protected:
     PTR_ICodeManager m_runtimeSupport;
 };
@@ -2867,6 +2873,11 @@ public:
     {
         return STUB_CODE_BLOCK_UNKNOWN;
     }
+
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_BROWSER)
+    // Return execution control for interpreter bytecode breakpoints
+    virtual IExecutionControl* GetExecutionControl();
+#endif
 
 #if defined(DACCESS_COMPILE)
 

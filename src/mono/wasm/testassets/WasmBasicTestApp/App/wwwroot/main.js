@@ -95,6 +95,12 @@ switch (testCase) {
             }
         });
         break;
+    case "AssetIntegrity":
+        dotnet.withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+            testOutput(`Asset '${name}' has integrity '${integrity}'`);
+            return defaultUri;
+        });
+        break;
     case "OutErrOverrideWorks":
         dotnet.withModuleConfig({
             out: (message) => {
@@ -168,6 +174,8 @@ switch (testCase) {
         break;
     case "HttpNoStreamingTest":
         break;
+    case "DevServer_UploadPattern":
+        break;
     case "BrowserProfilerTest":
         break;
     case "OverrideBootConfigName":
@@ -236,6 +244,7 @@ try {
             exit(0);
             break;
         case "DownloadResourceProgressTest":
+        case "AssetIntegrity":
             exit(0);
             break;
         case "OutErrOverrideWorks":
@@ -271,6 +280,15 @@ try {
                 countChars
             });
             exports.MemoryTest.Run();
+            exit(0);
+            break;
+        case "DevServer_UploadPattern":
+            console.log("not ready yet");
+            const dsExportsHttp = await getAssemblyExports(config.mainAssemblyName);
+            console.log("ready");
+            await dsExportsHttp.HttpTest.GoodUpload();
+            await dsExportsHttp.HttpTest.BadUpload();
+            console.log("done");
             exit(0);
             break;
         case "HttpNoStreamingTest":
