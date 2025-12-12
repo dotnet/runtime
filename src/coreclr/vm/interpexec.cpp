@@ -136,7 +136,19 @@ void InvokeUnmanagedCalliWithTransition(PCODE ftn, void *cookie, int8_t *stack, 
     inlinedCallFrame.Push();
     {
         GCX_PREEMP();
+#ifdef PROFILING_SUPPORTED
+        if (CORProfilerTrackTransitions() && !pFrame->startIp->Method->methodHnd->IsILStub())
+        {
+            ProfilerManagedToUnmanagedTransitionMD(pFrame->startIp->Method->methodHnd, COR_PRF_TRANSITION_CALL);
+        }
+#endif
         InvokeUnmanagedCalli(ftn, cookie, pArgs, pRet);
+#ifdef PROFILING_SUPPORTED
+        if (CORProfilerTrackTransitions() && !pFrame->startIp->Method->methodHnd->IsILStub())
+        {
+            ProfilerUnmanagedToManagedTransitionMD(pFrame->startIp->Method->methodHnd, COR_PRF_TRANSITION_CALL);
+        }
+#endif
     }
     inlinedCallFrame.Pop();
 }
@@ -457,11 +469,50 @@ void* GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
 }
 
 #ifdef DEBUG
-static void InterpBreakpoint()
+static void InterpHalt()
 {
-
+    // Native debugging aid: INTOP_HALT is injected as the first instruction in methods matching
+    // DOTNET_InterpHalt. Set a native breakpoint here to break when the targeted method executes.
 }
-#endif
+#endif // DEBUG
+
+#ifdef DEBUGGING_SUPPORTED
+static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame)
+{
+    Thread *pThread = GetThread();
+    if (pThread != NULL && g_pDebugInterface != NULL)
+    {
+        EXCEPTION_RECORD exceptionRecord;
+        memset(&exceptionRecord, 0, sizeof(EXCEPTION_RECORD));
+        exceptionRecord.ExceptionCode = STATUS_BREAKPOINT;
+        exceptionRecord.ExceptionAddress = (PVOID)ip;
+
+        // Construct a CONTEXT for the debugger
+        CONTEXT ctx;
+        memset(&ctx, 0, sizeof(CONTEXT));
+
+        ctx.ContextFlags = CONTEXT_FULL;
+        SetSP(&ctx, (DWORD64)pFrame);
+        SetFP(&ctx, (DWORD64)stack);
+        SetIP(&ctx, (DWORD64)ip); 
+        SetFirstArgReg(&ctx, dac_cast<TADDR>(pInterpreterFrame)); // Enable debugger to iterate over interpreter frames
+
+        // We need to add a FaultingExceptionFrame because debugger checks for it
+        // before adjusting the IP (see `AdjustIPAfterException`).
+        FaultingExceptionFrame fef;
+        fef.InitAndLink(&ctx);
+
+        // Notify the debugger of the exception
+        g_pDebugInterface->FirstChanceNativeException(
+            &exceptionRecord,
+            &ctx,
+            STATUS_BREAKPOINT,
+            pThread);
+
+        fef.Pop();
+    }
+}
+#endif // DEBUGGING_SUPPORTED
 
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
@@ -942,11 +993,18 @@ MAIN_LOOP:
             switch (*ip)
             {
 #ifdef DEBUG
-                case INTOP_BREAKPOINT:
-                    InterpBreakpoint();
+                case INTOP_HALT:
+                    InterpHalt();
                     ip++;
                     break;
-#endif
+#endif // DEBUG
+#ifdef DEBUGGING_SUPPORTED
+                case INTOP_BREAKPOINT:
+                {
+                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
+                    break;
+                }
+#endif // DEBUGGING_SUPPORTED
                 case INTOP_INITLOCALS:
                     memset(LOCAL_VAR_ADDR(ip[1], void), 0, ip[2]);
                     ip += 3;
@@ -2767,9 +2825,11 @@ MAIN_LOOP:
                         if (isOpenVirtual)
                         {
                             targetMethod = COMDelegate::GetMethodDescForOpenVirtualDelegate(*delegateObj);
+                            OBJECTREF *pThisArg = LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF);
+                            NULL_CHECK(*pThisArg);
                             targetMethod = CallWithSEHWrapper(
-                                [&targetMethod, &callArgsOffset, &stack]() {
-                                    return targetMethod->GetMethodDescOfVirtualizedCode(LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF), targetMethod->GetMethodTable());
+                                [&targetMethod, &pThisArg]() {
+                                    return targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, targetMethod->GetMethodTable());
                                 });
 
                         }

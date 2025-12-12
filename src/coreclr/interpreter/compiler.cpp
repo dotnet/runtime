@@ -396,6 +396,7 @@ InterpBasicBlock* InterpCompiler::AllocBB(int32_t ilOffset)
 
     new (bb) InterpBasicBlock (m_BBCount, ilOffset);
     m_BBCount++;
+
     return bb;
 }
 
@@ -406,6 +407,31 @@ InterpBasicBlock* InterpCompiler::GetBB(int32_t ilOffset)
     if (!bb)
     {
         bb = AllocBB(ilOffset);
+
+        uint32_t stackHeight;
+        StackInfo* stack;
+        // In some cases while linearly processing the IL, we may discover that we predicted the wrong stack state for a given IL merge point.
+        // In those cases, we will restart the compilation, and on the retry we will have the correct stack state information available here.
+        if (m_pRetryData->GetOverrideILMergePointStackType(ilOffset, &stackHeight, &stack))
+        {
+            bb->stackHeight = stackHeight;
+            bb->pStackState = (StackInfo*)AllocMemPool(sizeof(StackInfo) * stackHeight);
+            memcpy(bb->pStackState, stack, sizeof(StackInfo) * stackHeight);
+            for (uint32_t i = 0; i < stackHeight; i++)
+            {
+                int size = INTERP_STACK_SLOT_SIZE;
+                if (bb->pStackState[i].GetStackType() == StackTypeVT)
+                {
+                    size = m_compHnd->getClassSize(bb->pStackState[i].clsHnd);
+                }
+                int32_t var = CreateVarExplicit(g_interpTypeFromStackType[bb->pStackState[i].GetStackType()], bb->pStackState[i].clsHnd, size);
+                AllocGlobalVarOffset(var);
+                m_pVars[var].global = true;
+
+                bb->pStackState[i].var = var;
+                INTERP_DUMP("Using StackType %s for stack height %d with var %d\n", g_stackTypeString[bb->pStackState[i].GetStackType()], (int)i, var);
+            }
+        }
 
         m_ppOffsetToBB[ilOffset] = bb;
     }
@@ -561,6 +587,8 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
     if (pTargetBB->stackHeight <= 0)
         return;
 
+    assert(m_ppOffsetToBB[pTargetBB->ilOffset] == pTargetBB);
+
     for (int i = 0; i < pTargetBB->stackHeight; i++)
     {
         int sVar = m_pStackBase[i].var;
@@ -578,11 +606,23 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
                 }
                 else if (interpType == InterpTypeR8 && interpDestType == InterpTypeR4)
                 {
+                    // Data-loss conversion on IL stack merge point. We will need to restart compilation, but for now, emit a conv to continue processing, but update the stack data to reflect the change we need to make.
+                    // in the next retry of compilation.
                     movOp = INTOP_CONV_R4_R8;
+                    pTargetBB->pStackState[i] = StackInfo(StackTypeR8, nullptr, pTargetBB->pStackState[i].var);
+                    m_pRetryData->SetOverrideILMergePointStack(pTargetBB->ilOffset, pTargetBB->stackHeight, pTargetBB->pStackState);
                 }
                 else if (interpType == InterpTypeI && interpDestType == InterpTypeByRef)
                 {
                     movOp = InterpGetMovForType(interpDestType, false);
+                }
+                else if (interpType == InterpTypeByRef && interpDestType == InterpTypeI)
+                {
+                    // GC pointer conversion on IL stack merge point. We will need to restart compilation, but for now, emit a mov to continue processing, but update the stack data to reflect the change we need to make.
+                    // in the next retry of compilation.
+                    movOp = InterpGetMovForType(interpType, false);
+                    pTargetBB->pStackState[i] = StackInfo(StackTypeByRef, nullptr, pTargetBB->pStackState[i].var);
+                    m_pRetryData->SetOverrideILMergePointStack(pTargetBB->ilOffset, pTargetBB->stackHeight, pTargetBB->pStackState);
                 }
 #ifdef TARGET_64BIT
                 // nint and int32 can be used interchangeably. Add implicit conversions.
@@ -590,9 +630,13 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
                 {
                     movOp = INTOP_CONV_I8_I4;
                 }
-                else if (interpType == InterpTypeI8 && interpDestType == InterpTypeI4)
+                else if ((interpType == InterpTypeI8 || interpType == InterpTypeByRef) && interpDestType == InterpTypeI4)
                 {
-                    movOp = InterpGetMovForType(interpDestType, false);
+                    // Data-loss conversion on IL stack merge point. We will need to restart compilation, but for now, emit a mov to continue processing, but update the stack data to reflect the change we need to make.
+                    // in the next retry of compilation.
+                    movOp = INTOP_MOV_8;
+                    pTargetBB->pStackState[i] = StackInfo(g_stackTypeFromInterpType[interpType], nullptr, pTargetBB->pStackState[i].var);
+                    m_pRetryData->SetOverrideILMergePointStack(pTargetBB->ilOffset, pTargetBB->stackHeight, pTargetBB->pStackState);
                 }
 #endif // TARGET_64BIT
                 else
@@ -1719,13 +1763,11 @@ InterpMethod* InterpCompiler::CreateInterpMethod()
         pDataItems[i] = m_dataItems.Get(i);
 
     bool initLocals = (m_methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0;
-    CORJIT_FLAGS corJitFlags;
-    DWORD jitFlagsSize = m_compHnd->getJitFlags(&corJitFlags, sizeof(corJitFlags));
-    assert(jitFlagsSize == sizeof(corJitFlags));
 
-    bool unmanagedCallersOnly = corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+    bool unmanagedCallersOnly = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+    bool publishSecretStubParam = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
 
-    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly);
+    InterpMethod *pMethod = new InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly, publishSecretStubParam);
 
     return pMethod;
 }
@@ -1758,8 +1800,9 @@ static void InterpreterCompilerBreak()
 }
 
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
-                                CORINFO_METHOD_INFO* methodInfo)
+                                CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData* pRetryData)
     : m_stackmapsByClass(FreeInterpreterStackMap)
+    , m_pRetryData(pRetryData)
     , m_pInitLocalsIns(nullptr)
     , m_hiddenArgumentVar(-1)
     , m_nextCallGenericContextVar(-1)
@@ -1784,6 +1827,8 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     m_compHnd = compHnd;
     m_methodInfo = methodInfo;
     m_classHnd   = compHnd->getMethodClass(m_methodHnd);
+    DWORD jitFlagsSize = m_compHnd->getJitFlags(&m_corJitFlags, sizeof(m_corJitFlags));
+    assert(jitFlagsSize == sizeof(m_corJitFlags));
 
 #ifdef DEBUG
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
@@ -1812,6 +1857,11 @@ InterpMethod* InterpCompiler::CompileMethod()
     }
 #endif
 
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE))
+    {
+        NO_WAY("Interpreter does not support profiling enter/leave hooks\n");
+    }
+
     m_isSynchronized = m_compHnd->getMethodAttribs(m_methodHnd) & CORINFO_FLG_SYNCH;
     if (m_isSynchronized)
     {
@@ -1826,6 +1876,12 @@ InterpMethod* InterpCompiler::CompileMethod()
     CreateILVars();
 
     GenerateCode(m_methodInfo);
+
+    if (m_pRetryData->NeedsRetry())
+    {
+        INTERP_DUMP("Retrying compilation due to %s\n", m_pRetryData->GetReasonString());
+        return nullptr;
+    }
 
 #ifdef DEBUG
     if (IsInterpDumpActive())
@@ -3164,7 +3220,9 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             if (g_stackTypeFromInterpType[targetType] != StackTypeI4 &&
                 g_stackTypeFromInterpType[targetType] != StackTypeI8)
             {
-                goto FAIL_TO_EXPAND_INTRINSIC;
+                // The intrinsic is must expand only when the target type is primitive. For other types (e.g. int128),
+                // use the compiled method.
+                return false;
             }
 
             InterpOpcode convOp;
@@ -3981,6 +4039,8 @@ void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunc
     {
         if (m_compHnd->pInvokeMarshalingRequired(NULL, callSiteSig))
         {
+            // If we remove this restriction, we should handle the track transitions scenario by forcing a 
+            // p/invoke marshaling calli stub even when not needed.
             BADCODE("PInvoke marshalling for calli is not supported in interpreted code");
         }
         m_compHnd->getUnmanagedCallConv(nullptr, callSiteSig, &suppressGCTransition);
@@ -4440,6 +4500,16 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     bool isPInvoke = callInfo.methodFlags & CORINFO_FLG_PINVOKE;
     bool isMarshaledPInvoke = isPInvoke && m_compHnd->pInvokeMarshalingRequired(callInfo.hMethod, &callInfo.sig);
+
+    if (isPInvoke && m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE))
+    {
+        // If the method is a pinvoke il stub, we can inline pinvokes
+        if (!(m_compHnd->getMethodAttribs(m_methodInfo->ftn) & CORINFO_FLG_PINVOKE))
+        {
+            // Otherwise, we have to treat it as a marshaled pinvoke
+            isMarshaledPInvoke = true;
+        }
+    }
 
     // Process sVars
     int numArgsFromStack = callInfo.sig.numArgs + (newObj ? 0 : callInfo.sig.hasImplicitThis());
@@ -6554,6 +6624,11 @@ int InterpCompiler::ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElem
 
 bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
 {
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+    {
+        return false; // Don't optimize in debug code, this can remove needed sequence points
+    }
+
     int localVar = 0;
 
     switch(pattern[0].opcode)
@@ -7197,7 +7272,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 
 #if DEBUG
     if (InterpConfig.InterpHalt().contains(m_compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args))
-        AddIns(INTOP_BREAKPOINT);
+        AddIns(INTOP_HALT);
 #endif
 
     // We need to always generate this opcode because even if we have no IL locals, we may have
@@ -7220,11 +7295,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         m_pLastNewIns->SetSVar(m_continuationArgIndex);
     }
 
-    CORJIT_FLAGS corJitFlags;
-    DWORD jitFlagsSize = m_compHnd->getJitFlags(&corJitFlags, sizeof(corJitFlags));
-    assert(jitFlagsSize == sizeof(corJitFlags));
-
-    if (corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM))
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM))
     {
         m_hiddenArgumentVar = CreateVarExplicit(InterpTypeI, NULL, sizeof(void *));
         AddIns(INTOP_STORESTUBCONTEXT);
@@ -10393,6 +10464,65 @@ void InterpCompiler::UpdateWithFinalMethodByteCodeAddress(InterpByteCodeStart *p
     for (int32_t i = 0; i < m_asyncSuspendDataItems.GetSize(); i++)
     {
         m_asyncSuspendDataItems.Get(i)->methodStartIP = pByteCodeStart;
+    }
+}
+
+void InterpreterRetryData::SetOverrideILMergePointStack(int32_t ilOffset, uint32_t stackHeight, StackInfo *pStackInfo)
+{
+    assert(stackHeight > 0);
+    SetNeedsRetry("IL stack type override change at merge point");
+
+    INTERP_DUMP("  Override IL merge point stack at IL offset 0x%X, stack depth %u: ", ilOffset, stackHeight);
+
+    uint32_t key = (uint32_t)ilOffset;
+    StackInfo* value = (StackInfo*)malloc(sizeof(StackInfo) * stackHeight);
+    if (value == nullptr)
+    {
+        NOMEM();
+    }
+
+    for (uint32_t i = 0; i < stackHeight; i++)
+    {
+        value[i] = pStackInfo[i];
+        value[i].var = (int)stackHeight; // Encode the stack depth in the var field
+    }
+
+    void* oldValue;
+    if (dn_simdhash_u32_ptr_try_get_value(m_ilMergePointStackTypes.GetValue(), key, &oldValue))
+    {
+        assert(((StackInfo*)oldValue)[0].var == (int)stackHeight);
+        FreeStackInfo(key, oldValue, nullptr);
+        uint8_t success = dn_simdhash_u32_ptr_try_replace_value(m_ilMergePointStackTypes.GetValue(), key, value);
+        if (!success)
+        {
+            NOMEM();
+        }
+    }
+    else
+    {
+        checkAddedNew(dn_simdhash_u32_ptr_try_add(m_ilMergePointStackTypes.GetValue(), key, value));
+    }
+}
+
+bool InterpreterRetryData::GetOverrideILMergePointStackType(int32_t ilOffset, uint32_t* stackHeight, StackInfo** stack)
+{
+    if (!m_ilMergePointStackTypes.HasValue())
+    {
+        return false;
+    }
+
+    uint32_t key = (uint32_t)ilOffset;
+    void* value;
+    if (dn_simdhash_u32_ptr_try_get_value(m_ilMergePointStackTypes.GetValue(), key, &value))
+    {
+        INTERP_DUMP("  Found override IL merge point stack at IL offset 0x%X, stack depth %u\n", ilOffset, (uint32_t)((StackInfo*)value)[0].var);
+        *stack = (StackInfo*)value;
+        *stackHeight = (uint32_t)((StackInfo*)value)[0].var;
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }
 
