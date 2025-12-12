@@ -60,7 +60,6 @@ namespace ILCompiler.ObjectWriter
             0x24, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
         ];
 
-        private static ObjectNodeSection ExportDirectorySection = new ObjectNodeSection("edata", SectionType.ReadOnly);
         private static ObjectNodeSection BaseRelocSection = new ObjectNodeSection("reloc", SectionType.ReadOnly);
 
         private uint _peSectionAlignment;
@@ -72,18 +71,14 @@ namespace ILCompiler.ObjectWriter
         // Relocations that we can resolve at emit time (ie not file-based relocations).
         private Dictionary<int, List<SymbolicRelocation>> _resolvableRelocations = [];
 
-        private int _pdataSectionIndex = NoSectionIndex;
-        private int _debugSectionIndex = NoSectionIndex;
-        private int _exportSectionIndex = NoSectionIndex;
         private int _baseRelocSectionIndex = NoSectionIndex;
-        private int _corMetaSectionIndex = NoSectionIndex;
-        private int _rsrcSectionIndex = NoSectionIndex;
 
         // Base relocation (.reloc) bookkeeping
         private readonly SortedDictionary<uint, List<ushort>> _baseRelocMap = new();
         private Dictionary<Utf8String, SymbolDefinition> _definedSymbols = [];
 
         private HashSet<string> _exportedSymbolNames = new();
+        private Dictionary<SortableDependencyNode.ObjectNodeOrder, Utf8String> _wellKnownSymbols = new();
         private long _coffHeaderOffset;
 
         public PEObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder, string outputPath, int sectionAlignment, int? coffTimestamp)
@@ -100,6 +95,26 @@ namespace ILCompiler.ObjectWriter
             {
                 _exportedSymbolNames.Add(symbol);
             }
+        }
+
+        private protected override ObjectNodeSection GetEmitSection(ObjectNodeSection section)
+        {
+            // Put executable code into .text for PE files as AV software really
+            // doesn't like executable code in non-standard sections.
+            if (section == ObjectNodeSection.ManagedCodeWindowsContentSection)
+            {
+                return ObjectNodeSection.TextSection;
+            }
+
+            // We want to reduce the number of sections in the PE files we emit,
+            // so merge the read-only data section into the .text section.
+            if (section == ObjectNodeSection.ReadOnlyDataSection)
+            {
+                return ObjectNodeSection.TextSection;
+            }
+
+            // Otherwise, use the requested section.
+            return section;
         }
 
         private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
@@ -340,6 +355,19 @@ namespace ILCompiler.ObjectWriter
             Reserved = 15,
         }
 
+        private protected override void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)
+        {
+            if (classCode is SortableDependencyNode.ObjectNodeOrder.Win32ResourcesNode
+                or SortableDependencyNode.ObjectNodeOrder.CorHeaderNode
+                or SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode
+                or SortableDependencyNode.ObjectNodeOrder.RuntimeFunctionsTableNode)
+            {
+                // These nodes represent directories in the PE header.
+                // We need to know what symbol name they have so we know where they are located during emit.
+                _wellKnownSymbols.Add(classCode, currentSymbolName);
+            }
+        }
+
         private protected override void EmitSymbolTable(IDictionary<Utf8String, SymbolDefinition> definedSymbols, SortedSet<Utf8String> undefinedSymbols)
         {
             if (undefinedSymbols.Count > 0)
@@ -353,16 +381,19 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitSectionsAndLayout()
         {
-            SectionWriter exportDirectory = GetOrCreateSection(ExportDirectorySection);
+            if (_exportedSymbolNames.Count != 0)
+            {
+                // Emit the export directory into the text section to reduce the number of sections we emit.
+                SectionWriter textSection = GetOrCreateSection(ObjectNodeSection.TextSection);
 
-            EmitExportDirectory(exportDirectory);
+                textSection.EmitAlignment(_nodeFactory.Target.PointerSize);
 
-            // Grab section indicies.
-            _pdataSectionIndex = GetOrCreateSection(ObjectNodeSection.PDataSection).SectionIndex;
-            _debugSectionIndex = GetOrCreateSection(ObjectNodeSection.DebugDirectorySection).SectionIndex;
-            _corMetaSectionIndex = GetOrCreateSection(ObjectNodeSection.CorMetaSection).SectionIndex;
-            _rsrcSectionIndex = GetOrCreateSection(ObjectNodeSection.Win32ResourcesSection).SectionIndex;
-            _exportSectionIndex = exportDirectory.SectionIndex;
+                long startOffset = textSection.Position;
+
+                EmitExportDirectory(textSection);
+
+                EmitSymbolDefinition(textSection.SectionIndex, ExportDirectorySymbol, startOffset, (int)(textSection.Position - startOffset));
+            }
 
             // Create the reloc section last. We write page offsets into it based on the virtual addresses of other sections
             // and we write it after the initial layout. Therefore, we need to have it after all other sections that it may reference,
@@ -406,6 +437,8 @@ namespace ILCompiler.ObjectWriter
             _peSectionAlignment = sectionAlignment;
             LayoutSections(recordFinalLayout: false, out _, out _, out _, out _, out _);
         }
+
+        private string ExportDirectorySymbol => $"{_nodeFactory.NameMangler.CompilationUnitPrefix}__ExportDirectory";
 
         private void LayoutSections(bool recordFinalLayout, out ushort numberOfSections, out uint sizeOfHeaders, out uint sizeOfImage, out uint sizeOfInitializedData, out uint sizeOfCode)
         {
@@ -542,12 +575,6 @@ namespace ILCompiler.ObjectWriter
 
         private void EmitExportDirectory(SectionWriter sectionWriter)
         {
-            if (_exportedSymbolNames.Count == 0)
-            {
-                // No exports to emit.
-                return;
-            }
-
             List<string> exports = [.._exportedSymbolNames];
 
             exports.Sort(StringComparer.Ordinal);
@@ -683,7 +710,7 @@ namespace ILCompiler.ObjectWriter
 #if READYTORUN
             // On R2R, we encode the target OS into the machine bits to ensure we don't try running
             // linux or mac R2R code on Windows, or vice versa.
-            machine = (Machine) ((ushort)machine ^ (ushort)_nodeFactory.Target.MachineOSOverrideFromTarget());
+            machine = (Machine)((ushort)machine ^ (ushort)_nodeFactory.Target.MachineOSOverrideFromTarget());
 #endif
 
             // COFF File Header
@@ -737,30 +764,17 @@ namespace ILCompiler.ObjectWriter
             // before writing if needed.
             var dataDirs = new OptionalHeaderDataDirectories();
             // Populate data directories if present.
-            if (_rsrcSectionIndex != NoSectionIndex)
-            {
-                dataDirs.SetIfNonEmpty((int)ImageDirectoryEntry.Resource, (uint)_outputSectionLayout[_rsrcSectionIndex].VirtualAddress, (uint)_outputSectionLayout[_rsrcSectionIndex].Length);
-            }
-            if (_pdataSectionIndex != NoSectionIndex)
-            {
-                dataDirs.SetIfNonEmpty((int)ImageDirectoryEntry.Exception, (uint)_outputSectionLayout[_pdataSectionIndex].VirtualAddress, (uint)_outputSectionLayout[_pdataSectionIndex].Length);
-            }
-            if (_exportSectionIndex != NoSectionIndex)
-            {
-                dataDirs.SetIfNonEmpty((int)ImageDirectoryEntry.Export, (uint)_outputSectionLayout[_exportSectionIndex].VirtualAddress, (uint)_outputSectionLayout[_exportSectionIndex].Length);
-            }
+            PopulateDataDirectoryForWellKnownSymbolfPresent(dataDirs, ImageDirectoryEntry.Resource, SortableDependencyNode.ObjectNodeOrder.Win32ResourcesNode);
+            PopulateDataDirectoryForWellKnownSymbolfPresent(dataDirs, ImageDirectoryEntry.Debug, SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode);
+            PopulateDataDirectoryForWellKnownSymbolfPresent(dataDirs, ImageDirectoryEntry.CLRRuntimeHeader, SortableDependencyNode.ObjectNodeOrder.CorHeaderNode);
+            PopulateDataDirectoryForWellKnownSymbolfPresent(dataDirs, ImageDirectoryEntry.Exception, SortableDependencyNode.ObjectNodeOrder.RuntimeFunctionsTableNode);
+            PopulateDataDirectoryForWellKnownSymbolfPresent(dataDirs, ImageDirectoryEntry.Export, ExportDirectorySymbol);
+
             if (_baseRelocSectionIndex != NoSectionIndex)
             {
                 dataDirs.SetIfNonEmpty((int)ImageDirectoryEntry.BaseRelocation, (uint)_outputSectionLayout[_baseRelocSectionIndex].VirtualAddress, (uint)_outputSectionLayout[_baseRelocSectionIndex].Length);
             }
-            if (_debugSectionIndex != NoSectionIndex)
-            {
-                dataDirs.SetIfNonEmpty((int)ImageDirectoryEntry.Debug, (uint)_outputSectionLayout[_debugSectionIndex].VirtualAddress, (uint)_outputSectionLayout[_debugSectionIndex].Length);
-            }
-            if (_corMetaSectionIndex != NoSectionIndex)
-            {
-                dataDirs.SetIfNonEmpty((int)ImageDirectoryEntry.CLRRuntimeHeader, (uint)_outputSectionLayout[_corMetaSectionIndex].VirtualAddress, (uint)_outputSectionLayout[_corMetaSectionIndex].Length);
-            }
+
             peOptional.Write(outputFileStream, dataDirs);
 
             CoffStringTable stringTable = new();
@@ -809,6 +823,22 @@ namespace ILCompiler.ObjectWriter
             // Align the output file size with the image (including trailing padding for section and file alignment).
             Debug.Assert(outputFileStream.Position <= sizeOfImage);
             outputFileStream.SetLength(sizeOfImage);
+        }
+
+        private void PopulateDataDirectoryForWellKnownSymbolfPresent(OptionalHeaderDataDirectories dataDirs, ImageDirectoryEntry directory, SortableDependencyNode.ObjectNodeOrder wellKnownSymbol)
+        {
+            if (_wellKnownSymbols.TryGetValue(wellKnownSymbol, out Utf8String symbolName))
+            {
+                PopulateDataDirectoryForWellKnownSymbolfPresent(dataDirs, directory, symbolName);
+            }
+        }
+
+        private void PopulateDataDirectoryForWellKnownSymbolfPresent(OptionalHeaderDataDirectories dataDirs, ImageDirectoryEntry directory, Utf8String symbolName)
+        {
+            if (_definedSymbols.TryGetValue(symbolName, out SymbolDefinition symbol))
+            {
+                dataDirs.SetIfNonEmpty((int)directory, checked((uint)(_outputSectionLayout[symbol.SectionIndex].VirtualAddress + (ulong)symbol.Value)), (uint)symbol.Size);
+            }
         }
 
         private protected override void EmitChecksumsForObject(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations, ReadOnlySpan<byte> originalOutput)
