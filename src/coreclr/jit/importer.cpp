@@ -812,7 +812,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             if (((indirFlags & GTF_IND_MUST_PRESERVE_FLAGS) != GTF_EMPTY) || !impIsLegalRetBuf(destAddr, srcCall))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG(
-                    printfAlloc("stack copy for value returned via return buffer for flags %x", (unsigned)indirFlags)));
+                    printfAlloc("stack copy for value returned via return buffer")));
                 lvaSetStruct(tmp, srcCall->gtRetClsHnd, false);
 
                 GenTree* spilledCall = gtNewStoreLclVarNode(tmp, srcCall);
@@ -937,7 +937,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             if (((indirFlags & GTF_IND_MUST_PRESERVE_FLAGS) != GTF_EMPTY) || !impIsLegalRetBuf(destAddr, call))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG(
-                    printfAlloc("stack copy for value returned via return buffer for flags %x", (unsigned)indirFlags)));
+                    printfAlloc("stack copy for value returned via return buffer")));
                 lvaSetStruct(tmp, call->gtRetClsHnd, false);
                 destAddr = gtNewLclVarAddrNode(tmp, TYP_I_IMPL);
 
