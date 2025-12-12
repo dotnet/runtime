@@ -26,9 +26,8 @@ public class Async2Varargs
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task TaskWithArglist(int fixedArg, __arglist)
+    private static Task TaskWithArglist(int fixedArg, __arglist)
     {
-        await Task.Yield();
         Assert.Equal(42, fixedArg);
 
         ArgIterator args = new ArgIterator(__arglist);
@@ -39,6 +38,8 @@ public class Async2Varargs
 
         Assert.Equal(100, arg1);
         Assert.Equal(200, arg2);
+
+        return Task.CompletedTask;
     }
 
     [Fact]
@@ -61,9 +62,8 @@ public class Async2Varargs
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async ValueTask<int> ValueTaskWithArglist(int fixedArg, __arglist)
+    private static ValueTask<int> ValueTaskWithArglist(int fixedArg, __arglist)
     {
-        await Task.Yield();
         Assert.Equal(42, fixedArg);
 
         ArgIterator args = new ArgIterator(__arglist);
@@ -75,6 +75,6 @@ public class Async2Varargs
         Assert.Equal(100, arg1);
         Assert.Equal(200, arg2);
 
-        return fixedArg + arg1 + arg2;
+        return new ValueTask<int>(fixedArg + arg1 + arg2);
     }
 }
