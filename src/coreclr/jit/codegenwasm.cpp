@@ -265,6 +265,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForLclVar(treeNode->AsLclVar());
             break;
 
+        case GT_STORE_LCL_VAR:
+            genCodeForStoreLclVar(treeNode->AsLclVar());
+            break;
+
         case GT_JTRUE:
             genCodeForJTrue(treeNode->AsOp());
             break;
@@ -292,6 +296,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_CNS_LNG:
         case GT_CNS_DBL:
             genCodeForConstant(treeNode);
+            break;
+
+        case GT_NEG:
+        case GT_NOT:
+            genCodeForNegNot(treeNode->AsOp());
             break;
 
         default:
@@ -678,6 +687,54 @@ void CodeGen::genCodeForShift(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForNegNot: Generate code for a neg/not
+//
+// Arguments:
+//    tree - neg/not tree node
+//
+void CodeGen::genCodeForNegNot(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_NEG, GT_NOT));
+    genConsumeOperands(tree);
+
+    instruction ins;
+    switch (PackOperAndType(tree))
+    {
+        case PackOperAndType(GT_NOT, TYP_INT):
+            GetEmitter()->emitIns_I(INS_i32_const, emitTypeSize(tree), -1);
+            ins = INS_i32_xor;
+            break;
+        case PackOperAndType(GT_NOT, TYP_LONG):
+            GetEmitter()->emitIns_I(INS_i64_const, emitTypeSize(tree), -1);
+            ins = INS_i64_xor;
+            break;
+        case PackOperAndType(GT_NOT, TYP_FLOAT):
+        case PackOperAndType(GT_NOT, TYP_DOUBLE):
+            unreached();
+            break;
+        case PackOperAndType(GT_NEG, TYP_INT):
+        case PackOperAndType(GT_NEG, TYP_LONG):
+            // We cannot easily emit i32.sub(0, x) here since x is already on the stack.
+            // So we transform these to SUB in lower.
+            unreached();
+            break;
+        case PackOperAndType(GT_NEG, TYP_FLOAT):
+            ins = INS_f32_neg;
+            break;
+        case PackOperAndType(GT_NEG, TYP_DOUBLE):
+            ins = INS_f64_neg;
+            break;
+
+        default:
+            unreached();
+            break;
+    }
+
+    GetEmitter()->emitIns(ins);
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
 // genCodeForLclVar: Produce code for a GT_LCL_VAR node.
 //
 // Arguments:
@@ -704,6 +761,39 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         assert(genIsValidReg(varDsc->GetRegNum()));
         unsigned wasmLclIndex = UnpackWasmReg(varDsc->GetRegNum());
         GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(tree), wasmLclIndex);
+    }
+}
+
+//------------------------------------------------------------------------
+// genCodeForStoreLclVar: Produce code for a GT_STORE_LCL_VAR node.
+//
+// Arguments:
+//    tree - the GT_STORE_LCL_VAR node
+//
+void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
+{
+    assert(tree->OperIs(GT_STORE_LCL_VAR));
+
+    GenTree* const op1 = tree->gtGetOp1();
+    assert(!op1->IsMultiRegNode());
+    genConsumeRegs(op1);
+
+    LclVarDsc* varDsc    = compiler->lvaGetDesc(tree);
+    regNumber  targetReg = varDsc->GetRegNum();
+
+    if (!varDsc->lvIsRegCandidate())
+    {
+        // TODO-WASM: handle these cases in lower/ra.
+        // Emit drop for now to simulate the store effect on the wasm stack.
+        GetEmitter()->emitIns(INS_drop);
+        genUpdateLife(tree);
+    }
+    else
+    {
+        assert(genIsValidReg(targetReg));
+        unsigned wasmLclIndex = UnpackWasmReg(targetReg);
+        GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), wasmLclIndex);
+        genUpdateLifeStore(tree, targetReg, varDsc);
     }
 }
 
