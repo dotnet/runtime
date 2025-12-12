@@ -728,13 +728,15 @@ namespace ILCompiler
                                                 Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
                                             }
                                             break;
-                                        case EcmaType td:
+                                        case TypeDesc td:
                                             if (_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull)
                                             {
                                                 _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(td);
                                             }
                                             Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
                                             break;
+                                        default:
+                                            throw new NotImplementedException("Unexpected entity type in Async thunk.");
                                     }
                                 }
                             }
