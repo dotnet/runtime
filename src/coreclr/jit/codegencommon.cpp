@@ -7095,6 +7095,8 @@ void CodeGen::genReturn(GenTree* treeNode)
     if (treeNode->OperIs(GT_RETURN) && compiler->compIsAsync())
     {
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_ASYNC_CONTINUATION_RET);
+
+        gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
     }
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
@@ -7173,6 +7175,11 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
     }
 
     genMarkReturnGCInfo();
+
+    if (compiler->compIsAsync())
+    {
+        gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -7195,11 +7202,6 @@ void CodeGen::genMarkReturnGCInfo()
             gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
                                    retTypeDesc.GetReturnRegType(i));
         }
-    }
-
-    if (compiler->compIsAsync())
-    {
-        gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
     }
 }
 
