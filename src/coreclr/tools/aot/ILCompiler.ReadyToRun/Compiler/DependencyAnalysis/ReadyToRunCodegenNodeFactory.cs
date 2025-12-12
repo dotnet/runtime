@@ -1062,14 +1062,14 @@ namespace ILCompiler.DependencyAnalysis
             _genericCycleDetector?.DetectCycle(caller, callee);
         }
 
-        public string GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
+        public Utf8String GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
         {
             isHidden = false;
             if (node == Header)
             {
-                return "RTR_HEADER";
+                return new Utf8String("RTR_HEADER"u8.ToArray());
             }
-            return null;
+            return default;
         }
     }
 }

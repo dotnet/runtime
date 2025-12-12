@@ -80,7 +80,7 @@ namespace Profiler.Tests
             RuntimeHelpers.PrepareMethod(GetMainMethod(beforeDisableInlining).MethodHandle);
             var actual = GetInlineCount();
             Console.WriteLine($"After jitting first case, inline count is: {actual}");
-            var expected = initialInlineCount + 1;
+            var expected = TestLibrary.Utilities.IsCoreClrInterpreter ? 0 : initialInlineCount + 1;
             if (expected != actual)
             {
                 throw new Exception($"Expected {expected}, got {actual}");
@@ -97,7 +97,9 @@ namespace Profiler.Tests
             RuntimeHelpers.PrepareMethod(GetMainMethod(afterReenableInlining).MethodHandle);
             actual = GetInlineCount();
             Console.WriteLine($"After jitting third case, inline count is: {actual}");
-            expected++;
+            if (!TestLibrary.Utilities.IsCoreClrInterpreter)
+                expected++;
+
             if (expected != actual)
             {
                 throw new Exception($"Expected {expected}, got {GetInlineCount()}");
@@ -189,7 +191,7 @@ namespace Profiler.Tests
         [DllImport("Profiler")]
         public static extern int SwitchInlining(bool disable);
 
-        // this retrieves the number of inlining operations that occured
+        // this retrieves the number of inlining operations that occurred
         [DllImport("Profiler")]
         public static extern int GetInlineCount();
     }

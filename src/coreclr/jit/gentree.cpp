@@ -5175,11 +5175,13 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             case GT_CNS_LNG:
             case GT_CNS_INT:
-                // TODO-WASM: needs tuning based on the [S]LEB128 encoding size.
-                NYI_WASM("GT_CNS_LNG/GT_CNS_INT costing");
-                costEx = 0;
-                costSz = 0;
+            {
+                GenTreeIntConCommon* con = tree->AsIntConCommon();
+                int64_t              imm = con->IntegralValue();
+                costEx                   = 1;
+                costSz                   = 1 + (int)emitter::SizeOfSLEB128(imm);
                 goto COMMON_CNS;
+            }
 #else
             case GT_CNS_STR:
             case GT_CNS_LNG:
@@ -19919,7 +19921,7 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 //
 bool GenTree::SupportsSettingZeroFlag()
 {
-    if (SupportsSettingResultFlags())
+    if (SupportsSettingFlagsAsCompareToZero())
     {
         return true;
     }
@@ -19942,42 +19944,13 @@ bool GenTree::SupportsSettingZeroFlag()
         return true;
     }
 #endif
-#endif
-
-    return false;
-}
-
-//------------------------------------------------------------------------
-// SupportsSettingResultFlags: Returns true if this is an arithmetic operation
-// whose codegen supports setting the carry, overflow, zero and sign flags based
-// on the result of the operation.
-//
-// Return Value:
-//    True if so. A false return does not imply that codegen for the node will
-//    not trash the result flags.
-//
-// Remarks:
-//    For example, for GT (AND x y) 0, arm64 can emit instructions that
-//    directly set the flags after the 'AND' and thus no comparison is needed.
-//
-//    The backend expects any node for which the flags will be consumed to be
-//    marked with GTF_SET_FLAGS.
-//
-bool GenTree::SupportsSettingResultFlags()
-{
-#if defined(TARGET_ARM64)
-    if (OperIs(GT_AND, GT_AND_NOT))
-    {
-        return true;
-    }
-
-    // We do not support setting result flags if neg has a contained mul
+#elif defined(TARGET_ARM64)
+    // We do not support setting zero flag for madd/msub.
     if (OperIs(GT_NEG) && (!gtGetOp1()->OperIs(GT_MUL) || !gtGetOp1()->isContained()))
     {
         return true;
     }
 
-    // We do not support setting result flags for madd/msub.
     if (OperIs(GT_ADD, GT_SUB) && (!gtGetOp2()->OperIs(GT_MUL) || !gtGetOp2()->isContained()))
     {
         return true;
@@ -19985,6 +19958,20 @@ bool GenTree::SupportsSettingResultFlags()
 #endif
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// SupportsSettingFlagsAsCompareToZero:
+//   Returns true if this operation supports setting the flags as if the result
+//   was a compare to zero.
+//
+bool GenTree::SupportsSettingFlagsAsCompareToZero()
+{
+#if defined(TARGET_ARM64)
+    return OperIs(GT_AND, GT_AND_NOT);
+#else
+    return false;
+#endif
 }
 
 //------------------------------------------------------------------------
