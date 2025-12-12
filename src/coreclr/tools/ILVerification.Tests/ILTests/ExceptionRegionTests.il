@@ -764,4 +764,54 @@
         throw
         ret
     }
+
+    .method public hidebysig instance void TryOffset.ExceedsCodeSize_Invalid_EHClauseOutOfRange() cil managed
+    {
+        .maxstack 1
+
+        ret
+        // Try region starts at offset 1000 which is beyond code size (code size is 1)
+        .try 1000 to 1001 catch [System.Runtime]System.Exception handler 0 to 1
+    }
+
+    .method public hidebysig instance void HandlerOffset.ExceedsCodeSize_Invalid_EHClauseOutOfRange() cil managed
+    {
+        .maxstack 1
+
+        ret
+        // Handler region starts at offset 1000 which is beyond code size (code size is 1)
+        .try 0 to 1 catch [System.Runtime]System.Exception handler 1000 to 1001
+    }
+
+    .method public hidebysig instance void FilterOffset.ExceedsCodeSize_Invalid_EHClauseOutOfRange() cil managed
+    {
+        .maxstack 1
+
+        ldc.i4.0
+        endfilter
+        leave.s IL_0004
+        IL_0004: ret
+        // Filter region starts at offset 1000 which is beyond code size (code size is 5)
+        .try 0 to 2 filter 1000 handler 2 to 4
+    }
+
+    .method public hidebysig instance void TryEndOffset.ExceedsCodeSize_Invalid_EHClauseOutOfRange() cil managed
+    {
+        .maxstack 1
+
+        nop
+        ret
+        // Try region ends at offset 1000 which is beyond code size (code size is 2)
+        .try 0 to 1000 catch [System.Runtime]System.Exception handler 1 to 2
+    }
+
+    .method public hidebysig instance void HandlerEndOffset.ExceedsCodeSize_Invalid_EHClauseOutOfRange() cil managed
+    {
+        .maxstack 1
+
+        nop
+        ret
+        // Handler region ends at offset 1000 which is beyond code size (code size is 2)
+        .try 0 to 1 catch [System.Runtime]System.Exception handler 1 to 1000
+    }
 }
