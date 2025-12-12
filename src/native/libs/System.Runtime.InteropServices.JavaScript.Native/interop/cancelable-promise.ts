@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { dotnetAssert, dotnetLoaderExports, dotnetLogger } from "./cross-module";
+import { dotnetAssert, dotnetLoaderExports, dotnetLogger, Module } from "./cross-module";
 
 import { ManagedObject } from "./marshaled-types";
 import { ControllablePromise, GCHandle, MarshalerToCs } from "./types";

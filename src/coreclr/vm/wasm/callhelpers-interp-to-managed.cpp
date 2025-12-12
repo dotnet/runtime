@@ -61,6 +61,12 @@ namespace
         *((double*)pRet) = (*fptr)(ARG_I32(0));
     }
 
+    static void CallFunc_RetF32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    {
+        float (*fptr)() = (float (*)())pcode;
+        *((float*)pRet) = (*fptr)();
+    }
+
     static void CallFunc_F32_RetF32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         float (*fptr)(float) = (float (*)(float))pcode;
@@ -627,6 +633,7 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "ddi", (void*)&CallFunc_F64_I32_RetF64 },
     { "di", (void*)&CallFunc_I32_RetF64 },
     { "dii", (void*)&CallFunc_I32_I32_RetF64 },
+    { "f", (void*)&CallFunc_RetF32 },
     { "ff", (void*)&CallFunc_F32_RetF32 },
     { "fff", (void*)&CallFunc_F32_F32_RetF32 },
     { "ffff", (void*)&CallFunc_F32_F32_F32_RetF32 },
