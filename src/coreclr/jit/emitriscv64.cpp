@@ -308,6 +308,7 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
     ssize_t imm;
 
     assert(tmpReg != codeGen->rsGetRsvdReg());
+    // namu
     // assert(reg1 != codeGen->rsGetRsvdReg());
 
     emitAttr size = EA_SIZE(attr);
@@ -1468,7 +1469,7 @@ static inline constexpr unsigned WordMask(uint8_t bits);
 //
 // Returns:
 //    Returns a positive integer which is the required number of instructions to synthesize a constant.
-//    But if the value cannot be synthesized using maximum 5 insturctions, returns -1 to indicate that
+//    But if the value cannot be synthesized using maximum 5 instructions, returns -1 to indicate that
 //    the constant should be loaded from the memory.
 //
 int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm, bool doEmit /* = true */)

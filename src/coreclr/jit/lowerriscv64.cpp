@@ -1201,6 +1201,7 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     }
 #endif // FEATURE_SIMD
 
+    // namu: refactor dead codes
     if (IsContainableImmed(storeLoc, op1))
     {
         MakeSrcContained(storeLoc, op1);
@@ -1215,9 +1216,10 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
         MakeSrcContained(storeLoc, op1);
     }
 
-    if (storeLoc->OperIs(GT_STORE_LCL_VAR) && 
-        op1->IsIconHandle() && 
-        op1->AsIntCon()->FitsInAddrBase(comp) && 
+    // namu
+    if (storeLoc->OperIs(GT_STORE_LCL_VAR) &&
+        op1->IsIconHandle() &&
+        op1->AsIntCon()->FitsInAddrBase(comp) &&
         op1->AsIntCon()->AddrNeedsReloc(comp))
     {
         MakeSrcContained(storeLoc, op1);

@@ -1245,9 +1245,10 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             }
             else if (data->IsIntegralConst())
             {
+                // namu
                 ssize_t imm = data->AsIntConCommon()->IconValue();
-                emit->emitLoadImmediate(EA_PTRSIZE, rsGetRsvdReg(), imm);
                 dataReg = rsGetRsvdReg();
+                emit->emitLoadImmediate(EA_PTRSIZE, dataReg, imm);
             }
             else
             {
