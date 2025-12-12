@@ -3051,7 +3051,7 @@ template <typename PolicyType>
 void emitter::EmitLogic_OptsRl(PolicyType& policy, const instrDesc* id, ssize_t immediate)
 {
     const regNumber reg1 = id->idReg1();
-    
+
     policy.EmitUType(INS_auipc, reg1, UpperNBitsOfWordSignExtend<20>(immediate));
     policy.EmitIType(INS_addi, reg1, reg1, LowerNBitsOfWord<12>(immediate));
 }
