@@ -73,8 +73,15 @@ public class WasmTemplateTestsBase : BuildTestBase
         (string projectName, string logPath, string nugetDir) =
             InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath ?? s_buildEnv.IsRunningOnCI);
 
-        if (addFrameworkArg)
-            extraArgs += $" -f {DefaultTargetFramework}";
+        if (addFrameworkArg) {
+            var defaultTarget = template switch
+            {
+                Template.BlazorWasm => DefaultTargetFrameworkForBlazorTemplate,
+                _ => DefaultTargetFramework,
+            };
+
+            extraArgs += $" -f {defaultTarget}";
+        }
 
         using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
         CommandResult result = cmd.WithWorkingDirectory(_projectDir)
