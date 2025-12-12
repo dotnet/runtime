@@ -86,7 +86,10 @@ class InstructionFormatter
 {
 public:
     InstructionFormatter(emitter* host, const instrDesc* id)
-            : host(host), id(id) {}
+        : host(host)
+        , id(id)
+    {
+    }
 
     void EmitRType(instruction ins, regNumber rd, regNumber rs1, regNumber rs2);
     void EmitIType(instruction ins, regNumber rd, regNumber rs1, unsigned imm12);
@@ -101,12 +104,12 @@ public:
         /* Intentionally left empty */
     }
 
-    void EmitRelocation(const instrDesc *id, int offset, BYTE* targetAddr)
+    void EmitRelocation(const instrDesc* id, int offset, BYTE* targetAddr)
     {
         /* Intentionally left empty */
     }
 
-    emitter* host;
+    emitter*         host;
     const instrDesc* id;
 };
 
@@ -128,7 +131,10 @@ class InstructionEncoder
 {
 public:
     InstructionEncoder(emitter* host, BYTE*& dst)
-            : host(host), dst(dst) {}
+        : host(host)
+        , dst(dst)
+    {
+    }
 
     void EmitRType(instruction ins, regNumber rd, regNumber rs1, regNumber rs2);
     void EmitIType(instruction ins, regNumber rd, regNumber rs1, unsigned imm12);
@@ -143,14 +149,14 @@ public:
         host->emitGCregDeadUpd(reg, dst);
     }
 
-    void EmitRelocation(const instrDesc *id, int offset, BYTE* targetAddr)
+    void EmitRelocation(const instrDesc* id, int offset, BYTE* targetAddr)
     {
         assert(id->idIsDspReloc());
         host->emitRecordRelocation(dst - offset, targetAddr, IMAGE_REL_RISCV64_PC);
     }
 
     emitter* host;
-    BYTE*& dst;
+    BYTE*&   dst;
 };
 
 bool emitInsIsLoad(instruction ins);
@@ -181,12 +187,12 @@ bool emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& print_sec
 void emitDispIllegalInstruction(code_t instructionCode);
 void emitDispImmediate(ssize_t imm, bool newLine = true, unsigned regBase = REG_ZERO);
 
-void emitDispIns_OptsReloc(const instrDesc *id);
-void emitDispIns_OptsRc(const instrDesc *id);
-void emitDispIns_OptsRl(const instrDesc *id);
-void emitDispIns_OptsJump(const instrDesc *id);
-void emitDispIns_OptsC(const instrDesc *id);
-void emitDispIns_OptsI(const instrDesc *id);
+void emitDispIns_OptsReloc(const instrDesc* id);
+void emitDispIns_OptsRc(const instrDesc* id);
+void emitDispIns_OptsRl(const instrDesc* id);
+void emitDispIns_OptsJump(const instrDesc* id);
+void emitDispIns_OptsC(const instrDesc* id);
+void emitDispIns_OptsI(const instrDesc* id);
 
 static emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/);
 
