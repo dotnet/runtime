@@ -127,7 +127,11 @@ namespace System.Threading
                 // When there are at least 2 elements' worth of space, we can take the fast path.
                 if (tail < m_headIndex + m_mask)
                 {
-                    Volatile.Write(ref m_array[tail & m_mask], obj);
+                    m_array[tail & m_mask] = obj;
+                    // The following write makes the slot to "appear" in the queue.
+                    // It must happen after the write of the item, and it does, since m_tailIndex is volatile.
+                    // NOTE: we also must be sure this write is not delayed past our check for a
+                    // pending thread request.
                     m_tailIndex = tail + 1;
                 }
                 else
@@ -156,7 +160,11 @@ namespace System.Threading
                             m_mask = (m_mask << 1) | 1;
                         }
 
-                        Volatile.Write(ref m_array[tail & m_mask], obj);
+                        m_array[tail & m_mask] = obj;
+                        // The following write makes the slot to "appear" in the queue.
+                        // It must happen after the write of the item, and it does, since m_tailIndex is volatile.
+                        // NOTE: we also must be sure this write is not delayed past our check for a
+                        // pending thread request.
                         m_tailIndex = tail + 1;
                     }
                     finally
@@ -165,6 +173,10 @@ namespace System.Threading
                             m_foreignLock.Exit(useMemoryBarrier: false);
                     }
                 }
+
+                // Our caller will check for a thread request now (with an ordinary read),
+                // make sure the check happens after the new slot appears in the queue.
+                Interlocked.MemoryBarrier();
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
@@ -410,7 +422,6 @@ namespace System.Threading
 
         private bool _loggingEnabled;
         private bool _dispatchNormalPriorityWorkFirst;
-        private bool _mayHaveHighPriorityWorkItems;
 
         // SOS's ThreadPool command depends on the following names
         internal readonly WorkQueue workItems = new WorkQueue();
@@ -430,29 +441,6 @@ namespace System.Threading
         private readonly LowLevelLock _queueAssignmentLock = new();
         private readonly int[] _assignedWorkItemQueueThreadCounts =
             s_assignableWorkItemQueueCount > 0 ? new int[s_assignableWorkItemQueueCount] : Array.Empty<int>();
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct CacheLineSeparated
-        {
-            private readonly Internal.PaddingFor32 pad1;
-
-            // This flag is used for communication between item enqueuing and workers that process the items.
-            // There are two states of this flag:
-            // 0: has no guarantees
-            // 1: means a worker will check work queues and ensure that
-            //    any work items inserted in work queue before setting the flag
-            //    are picked up.
-            //    Note: The state must be cleared by the worker thread _before_
-            //       checking. Otherwise there is a window between finding no work
-            //       and resetting the flag, when the flag is in a wrong state.
-            //       A new work item may be added right before the flag is reset
-            //       without asking for a worker, while the last worker is quitting.
-            public int _hasOutstandingThreadRequest;
-
-            private readonly Internal.PaddingFor32 pad2;
-        }
-
-        private CacheLineSeparated _separated;
 
         public ThreadPoolWorkQueue()
         {
@@ -572,7 +560,7 @@ namespace System.Threading
 
             if (movedWorkItem)
             {
-                EnsureThreadRequested();
+                ThreadPool.EnsureWorkerRequested();
             }
         }
 
@@ -608,16 +596,6 @@ namespace System.Threading
             _loggingEnabled = FrameworkEventSource.Log.IsEnabled(EventLevel.Verbose, FrameworkEventSource.Keywords.ThreadPool | FrameworkEventSource.Keywords.ThreadTransfer);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void EnsureThreadRequested()
-        {
-            // Only one worker is requested at a time to mitigate Thundering Herd problem.
-            if (Interlocked.Exchange(ref _separated._hasOutstandingThreadRequest, 1) == 0)
-            {
-                ThreadPool.RequestWorkerThread();
-            }
-        }
-
         public void Enqueue(object callback, bool forceGlobal)
         {
             Debug.Assert((callback is IThreadPoolWorkItem) ^ (callback is Task));
@@ -648,7 +626,7 @@ namespace System.Threading
                 }
             }
 
-            EnsureThreadRequested();
+            ThreadPool.EnsureWorkerRequested();
         }
 
 #if CORECLR
@@ -696,10 +674,7 @@ namespace System.Threading
 
             highPriorityWorkItems.Enqueue(workItem);
 
-            // If the change below is seen by another thread, ensure that the enqueued work item will also be visible
-            Volatile.Write(ref _mayHaveHighPriorityWorkItems, true);
-
-            EnsureThreadRequested();
+            ThreadPool.EnsureWorkerRequested();
         }
 
         internal static void TransferAllLocalWorkItemsToHighPriorityGlobalQueue()
@@ -713,39 +688,32 @@ namespace System.Threading
             // Pop each work item off the local queue and push it onto the global. This is a
             // bounded loop as no other thread is allowed to push into this thread's queue.
             ThreadPoolWorkQueue queue = ThreadPool.s_workQueue;
-            bool addedHighPriorityWorkItem = false;
-            bool ensureThreadRequest = false;
+            bool ensureWorkerRequest = false;
             while (tl.workStealingQueue.LocalPop() is object workItem)
             {
+                // A work item had been removed temporarily and other threads may have missed stealing it, so ensure that
+                // there will be a thread request
+                ensureWorkerRequest = true;
+
                 // If there's an unexpected exception here that happens to get handled, the lost work item, or missing thread
                 // request, etc., may lead to other issues. A fail-fast or try-finally here could reduce the effect of such
                 // uncommon issues to various degrees, but it's also uncommon to check for unexpected exceptions.
                 try
                 {
                     queue.highPriorityWorkItems.Enqueue(workItem);
-                    addedHighPriorityWorkItem = true;
                 }
                 catch (OutOfMemoryException)
                 {
                     // This is not expected to throw under normal circumstances
                     tl.workStealingQueue.LocalPush(workItem);
 
-                    // A work item had been removed temporarily and other threads may have missed stealing it, so ensure that
-                    // there will be a thread request
-                    ensureThreadRequest = true;
                     break;
                 }
             }
 
-            if (addedHighPriorityWorkItem)
+            if (ensureWorkerRequest)
             {
-                Volatile.Write(ref queue._mayHaveHighPriorityWorkItems, true);
-                ensureThreadRequest = true;
-            }
-
-            if (ensureThreadRequest)
-            {
-                queue.EnsureThreadRequested();
+                ThreadPool.EnsureWorkerRequested();
             }
         }
 
@@ -774,9 +742,11 @@ namespace System.Threading
 
                 tl.isProcessingHighPriorityWorkItems = false;
             }
-            else if (
-                _mayHaveHighPriorityWorkItems &&
-                Interlocked.CompareExchange(ref _mayHaveHighPriorityWorkItems, false, true) &&
+#if FEATURE_SINGLE_THREADED
+            else if (highPriorityWorkItems.Count == 0 &&
+#else
+            else if (!highPriorityWorkItems.IsEmpty &&
+#endif
                 TryStartProcessingHighPriorityWorkItemsAndDequeue(tl, out workItem))
             {
                 return workItem;
@@ -855,7 +825,6 @@ namespace System.Threading
             }
 
             tl.isProcessingHighPriorityWorkItems = true;
-            _mayHaveHighPriorityWorkItems = true;
             return true;
         }
 
@@ -940,9 +909,6 @@ namespace System.Threading
                 workQueue.AssignWorkItemQueue(tl);
             }
 
-            // Before dequeuing the first work item, acknowledge that the thread request has been satisfied
-            workQueue._separated._hasOutstandingThreadRequest = 0;
-
             // The state change must happen before sweeping queues for items.
             Interlocked.MemoryBarrier();
 
@@ -955,12 +921,11 @@ namespace System.Threading
                 }
 
                 // Missing a steal means there may be an item that we were unable to get.
-                // Effectively, we failed to fulfill our promise to check the queues after
-                // clearing "Scheduled" flag.
+                // Effectively, we failed to fulfill our promise to check the queues for work.
                 // We need to make sure someone will do another pass.
                 if (missedSteal)
                 {
-                    workQueue.EnsureThreadRequested();
+                    ThreadPool.EnsureWorkerRequested();
                 }
 
                 // Tell the VM we're returning normally, not because Hill Climbing asked us to return.
@@ -972,11 +937,8 @@ namespace System.Threading
             // In a worst case the current workitem will indirectly depend on progress of other
             // items and that would lead to a deadlock if no one else checks the queue.
             // We must ensure at least one more worker is coming if the queue is not empty.
-            workQueue.EnsureThreadRequested();
-
-            //
-            // After this point, this method is no longer responsible for ensuring thread requests except for missed steals
-            //
+            // After this point, we are no longer responsible for ensuring thread requests.
+            ThreadPool.EnsureWorkerRequested();
 
             // Has the desire for logging changed since the last time we entered?
             workQueue.RefreshLoggingEnabled();
@@ -1008,18 +970,6 @@ namespace System.Threading
                         if (s_assignableWorkItemQueueCount > 0)
                         {
                             workQueue.UnassignWorkItemQueue(tl);
-                        }
-
-                        //
-                        // No work.
-                        // If we missed a steal, though, there may be more work in the queue.
-                        // Instead of looping around and trying again, we'll just request another thread.  Hopefully the thread
-                        // that owns the contended work-stealing queue will pick up its own workitems in the meantime,
-                        // which will be more efficient than this thread doing it anyway.
-                        //
-                        if (missedSteal)
-                        {
-                            workQueue.EnsureThreadRequested();
                         }
 
                         return true;
@@ -1089,7 +1039,7 @@ namespace System.Threading
 
                 // The quantum expired, do any necessary periodic activities
 
-                if (ThreadPool.YieldFromDispatchLoop)
+                if (ThreadPool.YieldFromDispatchLoop(currentTickCount))
                 {
                     // The runtime-specific thread pool implementation requires the Dispatch loop to return to the VM
                     // periodically to let it perform its own work
