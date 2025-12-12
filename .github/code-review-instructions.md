@@ -4,7 +4,7 @@ excludeAgent: coding-agent
 
 # Code Review Instructions for dotnet/runtime
 
-These instructions guide code reviews for the dotnet/runtime repository. The compiler and static analyzers run on every PR, so focus on higher-level concerns that require expert judgment rather than stylistic or syntactic issues.
+These instructions guide code reviews for the dotnet/runtime repository. A compiler runs on every PR (as do a wealth of static analyzers for C# changes), so focus on higher-level concerns that require expert judgment rather than stylistic or syntactic issues.
 
 ## Review Priorities
 
