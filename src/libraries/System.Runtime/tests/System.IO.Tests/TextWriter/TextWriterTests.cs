@@ -725,6 +725,91 @@ namespace System.IO.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task WriteAsyncStringWithCancellationTokenTest()
+        {
+            using (CharArrayTextWriter tw = NewTextWriter)
+            {
+                var toWrite = new string(TestDataProvider.CharData);
+                await tw.WriteAsync(toWrite, CancellationToken.None);
+                Assert.Equal(toWrite, tw.Text);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task WriteAsyncStringWithCancellationTokenNullTest()
+        {
+            using (CharArrayTextWriter tw = NewTextWriter)
+            {
+                await tw.WriteAsync((string?)null, CancellationToken.None);
+                Assert.Equal(string.Empty, tw.Text);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task WriteAsyncStringWithCancellationTokenCanceledTest()
+        {
+            using (CharArrayTextWriter tw = NewTextWriter)
+            {
+                var cts = new CancellationTokenSource();
+                cts.Cancel();
+                await Assert.ThrowsAsync<TaskCanceledException>(() => tw.WriteAsync("test", cts.Token));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task WriteLineAsyncWithCancellationTokenTest()
+        {
+            using (CharArrayTextWriter tw = NewTextWriter)
+            {
+                await tw.WriteLineAsync(CancellationToken.None);
+                Assert.Equal(tw.NewLine, tw.Text);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task WriteLineAsyncWithCancellationTokenCanceledTest()
+        {
+            using (CharArrayTextWriter tw = NewTextWriter)
+            {
+                var cts = new CancellationTokenSource();
+                cts.Cancel();
+                await Assert.ThrowsAsync<TaskCanceledException>(() => tw.WriteLineAsync(cts.Token));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task WriteLineAsyncStringWithCancellationTokenTest()
+        {
+            using (CharArrayTextWriter tw = NewTextWriter)
+            {
+                var toWrite = new string(TestDataProvider.CharData);
+                await tw.WriteLineAsync(toWrite, CancellationToken.None);
+                Assert.Equal(toWrite + tw.NewLine, tw.Text);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task WriteLineAsyncStringWithCancellationTokenNullTest()
+        {
+            using (CharArrayTextWriter tw = NewTextWriter)
+            {
+                await tw.WriteLineAsync((string?)null, CancellationToken.None);
+                Assert.Equal(tw.NewLine, tw.Text);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task WriteLineAsyncStringWithCancellationTokenCanceledTest()
+        {
+            using (CharArrayTextWriter tw = NewTextWriter)
+            {
+                var cts = new CancellationTokenSource();
+                cts.Cancel();
+                await Assert.ThrowsAsync<TaskCanceledException>(() => tw.WriteLineAsync("test", cts.Token));
+            }
+        }
+
         [Fact]
         public void DisposeAsync_InvokesDisposeSynchronously()
         {

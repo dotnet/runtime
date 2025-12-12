@@ -428,6 +428,7 @@ OPDEF(INTOP_INITBLK, "initblk", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_CPBLK, "cpblk", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_LOCALLOC, "localloc", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_BREAKPOINT, "breakpoint", 1, 0, 0, InterpOpNoArgs)
+OPDEF(INTOP_HALT, "halt", 1, 0, 0, InterpOpNoArgs)
 
 OPDEF(INTOP_THROW, "throw", 4, 0, 1, InterpOpInt)
 OPDEF(INTOP_RETHROW, "rethrow", 1, 0, 0, InterpOpInt)

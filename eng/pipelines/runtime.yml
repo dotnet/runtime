@@ -793,7 +793,7 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           runtimeFlavor: mono
           platforms:
-          - tvossimulator_x64
+          - tvossimulator_arm64
           - linux_x64
           - linux_arm
           - linux_arm64
@@ -1022,7 +1022,7 @@ extends:
           runtimeFlavor: mono
           platforms:
             - ios_arm64
-            - tvos_arm64
+            # - tvos_arm64 TODO: Enable when Helix queue upgrade is finished https://github.com/dotnet/runtime/issues/122452
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1112,7 +1112,7 @@ extends:
           runtimeFlavor: coreclr
           platforms:
             - ios_arm64
-            - tvos_arm64
+            # - tvos_arm64 TODO: Enable when Helix queue upgrade is finished https://github.com/dotnet/runtime/issues/122452
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange

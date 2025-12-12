@@ -265,6 +265,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForLclVar(treeNode->AsLclVar());
             break;
 
+        case GT_STORE_LCL_VAR:
+            genCodeForStoreLclVar(treeNode->AsLclVar());
+            break;
+
         case GT_JTRUE:
             genCodeForJTrue(treeNode->AsOp());
             break;
@@ -757,6 +761,39 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         assert(genIsValidReg(varDsc->GetRegNum()));
         unsigned wasmLclIndex = UnpackWasmReg(varDsc->GetRegNum());
         GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(tree), wasmLclIndex);
+    }
+}
+
+//------------------------------------------------------------------------
+// genCodeForStoreLclVar: Produce code for a GT_STORE_LCL_VAR node.
+//
+// Arguments:
+//    tree - the GT_STORE_LCL_VAR node
+//
+void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
+{
+    assert(tree->OperIs(GT_STORE_LCL_VAR));
+
+    GenTree* const op1 = tree->gtGetOp1();
+    assert(!op1->IsMultiRegNode());
+    genConsumeRegs(op1);
+
+    LclVarDsc* varDsc    = compiler->lvaGetDesc(tree);
+    regNumber  targetReg = varDsc->GetRegNum();
+
+    if (!varDsc->lvIsRegCandidate())
+    {
+        // TODO-WASM: handle these cases in lower/ra.
+        // Emit drop for now to simulate the store effect on the wasm stack.
+        GetEmitter()->emitIns(INS_drop);
+        genUpdateLife(tree);
+    }
+    else
+    {
+        assert(genIsValidReg(targetReg));
+        unsigned wasmLclIndex = UnpackWasmReg(targetReg);
+        GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), wasmLclIndex);
+        genUpdateLifeStore(tree, targetReg, varDsc);
     }
 }
 

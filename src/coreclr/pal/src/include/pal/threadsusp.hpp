@@ -24,7 +24,6 @@ Abstract:
 
 #include "pal/threadinfo.hpp"
 #include "pal/thread.hpp"
-#include "pal/mutex.hpp"
 #include "pal/init.h"
 #if !HAVE_MACH_EXCEPTIONS
 #include <signal.h>

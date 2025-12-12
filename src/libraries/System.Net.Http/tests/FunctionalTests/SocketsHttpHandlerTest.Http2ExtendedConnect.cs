@@ -295,5 +295,57 @@ namespace System.Net.Http.Functional.Tests
                 },
                 options: new GenericLoopbackOptions { UseSsl = useSsl });
         }
+
+        [Theory]
+        [InlineData(HttpStatusCode.OK)]
+        [InlineData(HttpStatusCode.Created)]
+        [InlineData(HttpStatusCode.Accepted)]
+        [InlineData(HttpStatusCode.NoContent)]
+        public async Task Connect_Accepts2xxStatusCodes(HttpStatusCode statusCode)
+        {
+            byte[] clientMessage = new byte[] { 1, 2, 3 };
+            byte[] serverMessage = new byte[] { 4, 5, 6, 7 };
+
+            TaskCompletionSource clientCompleted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await Http2LoopbackServerFactory.Singleton.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                HttpRequestMessage request = CreateRequest(HttpMethod.Connect, uri, UseVersion, exactVersion: true);
+                request.Headers.Protocol = "foo";
+
+                using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+                Assert.Equal(statusCode, response.StatusCode);
+
+                using Stream responseStream = await response.Content.ReadAsStreamAsync();
+
+                await responseStream.WriteAsync(clientMessage);
+                await responseStream.FlushAsync();
+
+                byte[] readBuffer = new byte[serverMessage.Length];
+                await responseStream.ReadExactlyAsync(readBuffer);
+                Assert.Equal(serverMessage, readBuffer);
+
+                clientCompleted.SetResult();
+            },
+            async server =>
+            {
+                await using Http2LoopbackConnection connection = await ((Http2LoopbackServer)server).EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 });
+                connection.IgnoreWindowUpdates();
+
+                (int streamId, HttpRequestData request) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
+
+                await connection.SendResponseHeadersAsync(streamId, endStream: false, statusCode: statusCode).ConfigureAwait(false);
+
+                DataFrame dataFrame = await connection.ReadDataFrameAsync();
+                Assert.Equal(clientMessage, dataFrame.Data.ToArray());
+
+                await connection.SendResponseDataAsync(streamId, serverMessage, endStream: true);
+
+                await clientCompleted.Task.WaitAsync(TestHelper.PassingTestTimeout);
+            }, options: new GenericLoopbackOptions { UseSsl = false });
+        }
     }
 }

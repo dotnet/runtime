@@ -4,8 +4,6 @@
 #ifndef HAVE_MINIPAL_THREAD_H
 #define HAVE_MINIPAL_THREAD_H
 
-#ifndef HOST_WINDOWS
-
 #include <pthread.h>
 #include <stdint.h>
 #include <string.h>
@@ -39,42 +37,6 @@ extern "C" {
 #endif
 
 /**
- * Get the current thread ID without caching in a TLS variable.
- *
- * @return The current thread ID as a size_t value.
- */
-static inline size_t minipal_get_current_thread_id_no_cache(void)
-{
-    size_t tid;
-#if defined(__wasm) && !defined(_REENTRANT)
-    tid = 1; // In non-reentrant WASM builds, we define a single thread with ID 1.
-#else // !__wasm || _REENTRANT
-
-#if defined(__linux__)
-    tid = (size_t)syscall(SYS_gettid);
-#elif defined(__APPLE__)
-    uint64_t thread_id;
-    pthread_threadid_np(pthread_self(), &thread_id);
-    tid = (size_t)thread_id;  // Cast the uint64_t thread ID to size_t
-#elif defined(__FreeBSD__)
-    tid = (size_t)pthread_getthreadid_np();
-#elif defined(__NetBSD__)
-    tid = (size_t)_lwp_self();
-#elif defined(__HAIKU__)
-    tid = (size_t)find_thread(NULL);
-#elif defined(__sun)
-    tid = (size_t)pthread_self();
-#elif defined(__wasm)
-    tid = (size_t)(void*)pthread_self();
-#else
-#error "Unsupported platform"
-#endif
-
-#endif // __wasm && !_REENTRANT
-    return tid;
-}
-
-/**
  * Get the current thread ID.
  *
  * @return The current thread ID as a size_t value.
@@ -82,7 +44,7 @@ static inline size_t minipal_get_current_thread_id_no_cache(void)
 static inline size_t minipal_get_current_thread_id(void)
 {
 #if defined(__wasm) && !defined(_REENTRANT)
-    return minipal_get_current_thread_id_no_cache();
+    return 1; // In non-reentrant WASM builds, we define a single thread with ID 1.
 
 #else // !__wasm || _REENTRANT
 #if defined(__GNUC__) && !defined(__clang__) && defined(__cplusplus)
@@ -95,7 +57,25 @@ static inline size_t minipal_get_current_thread_id(void)
 
     if (!tid)
     {
-        tid = minipal_get_current_thread_id_no_cache();
+#if defined(__linux__)
+        tid = (size_t)syscall(SYS_gettid);
+#elif defined(__APPLE__)
+        uint64_t thread_id;
+        pthread_threadid_np(pthread_self(), &thread_id);
+        tid = (size_t)thread_id;  // Cast the uint64_t thread ID to size_t
+#elif defined(__FreeBSD__)
+        tid = (size_t)pthread_getthreadid_np();
+#elif defined(__NetBSD__)
+        tid = (size_t)_lwp_self();
+#elif defined(__HAIKU__)
+        tid = (size_t)find_thread(NULL);
+#elif defined(__sun)
+        tid = (size_t)pthread_self();
+#elif defined(__wasm)
+        tid = (size_t)(void*)pthread_self();
+#else
+#error "Unsupported platform"
+#endif
     }
 
     return tid;
@@ -138,11 +118,8 @@ static inline int minipal_set_thread_name(pthread_t thread, const char* name)
 #endif
 }
 
-
 #ifdef __cplusplus
 }
 #endif // extern "C"
-
-#endif // !HOST_WINDOWS
 
 #endif // HAVE_MINIPAL_THREAD_H
