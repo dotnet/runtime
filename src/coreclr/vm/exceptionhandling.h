@@ -30,13 +30,13 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD     pExceptionRe
 
 void NormalizeThrownObject(OBJECTREF *ppThrowable);
 
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT *pExceptionContext, EXCEPTION_RECORD *pExceptionRecord = NULL);
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable);
-VOID DECLSPEC_NORETURN DispatchManagedException(RuntimeExceptionKind reKind);
-VOID DECLSPEC_NORETURN DispatchRethrownManagedException();
-VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionContext);
+VOID DispatchManagedException(OBJECTREF throwable, CONTEXT *pExceptionContext, EXCEPTION_RECORD *pExceptionRecord = NULL);
+VOID DispatchManagedException(OBJECTREF throwable);
+VOID DispatchManagedException(RuntimeExceptionKind reKind);
+VOID DispatchRethrownManagedException();
+VOID DispatchRethrownManagedException(CONTEXT* pExceptionContext);
 
-void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo);
+void DispatchExSecondPass(ExInfo *pExInfo);
 
 bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode);
 
