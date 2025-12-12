@@ -129,6 +129,7 @@ export function dotnetUpdateInternalsSubscriber() {
         const nativeLocal: BrowserHostExports = {
             registerDllBytes: table[0],
             installVfsFile: table[1],
+            loadIcuData: table[2],
         };
         Object.assign(native, nativeLocal);
     }
@@ -155,6 +156,7 @@ export function dotnetUpdateInternalsSubscriber() {
             stringToUTF16Ptr: table[2],
             stringToUTF8Ptr: table[3],
             zeroRegion: table[4],
+            isSharedArrayBuffer: table[5],
         };
         Object.assign(interop, interopLocal);
     }

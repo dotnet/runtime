@@ -1729,6 +1729,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         assert(info->idFinallyCall == false);
         assert(info->idCatchRet == false);
         assert(info->idCallSig == nullptr);
+        assert(info->idTargetBlock == nullptr);
 
         info->idNum  = emitInsCount;
         info->idSize = sz;
@@ -8023,7 +8024,7 @@ void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecO
     emitEnsureDataSectionAlignment(TARGET_POINTER_SIZE);
 
     UNATIVE_OFFSET secOffs     = emitConsDsc.dsdOffs;
-    unsigned       emittedSize = sizeof(emitter::dataAsyncResumeInfo) * numEntries;
+    unsigned       emittedSize = sizeof(CORINFO_AsyncResumeInfo) * numEntries;
     emitConsDsc.dsdOffs += emittedSize;
 
     dataSection* secDesc = (dataSection*)emitGetMem(roundUp(sizeof(dataSection) + numEntries * sizeof(emitLocation)));
@@ -8560,9 +8561,9 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
         {
             JITDUMP("  section %u, size %u, async resume info\n", secNum++, dscSize);
 
-            size_t numElems = dscSize / sizeof(emitter::dataAsyncResumeInfo);
+            size_t numElems = dscSize / sizeof(CORINFO_AsyncResumeInfo);
 
-            emitter::dataAsyncResumeInfo* aDstRW = (emitter::dataAsyncResumeInfo*)dstRW;
+            CORINFO_AsyncResumeInfo* aDstRW = (CORINFO_AsyncResumeInfo*)dstRW;
             for (size_t i = 0; i < numElems; i++)
             {
                 emitLocation* emitLoc = &((emitLocation*)dsc->dsCont)[i];
@@ -8735,7 +8736,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
             {
                 if (i > 0)
                 {
-                    sprintf_s(label, ArrLen(label), "RWD%02zu", i * sizeof(dataAsyncResumeInfo));
+                    sprintf_s(label, ArrLen(label), "RWD%02zu", i * sizeof(CORINFO_AsyncResumeInfo));
                     printf(labelFormat, label);
                 }
 
@@ -10514,6 +10515,10 @@ void emitter::emitStackKillArgs(BYTE* addr, unsigned count, unsigned char callIn
     }
 }
 
+/*****************************************************************************/
+#endif // EMIT_TRACK_STACK_DEPTH
+/*****************************************************************************/
+
 /*****************************************************************************
  *  A helper for recording a relocation with the EE.
  */
@@ -10603,9 +10608,6 @@ void emitter::emitRecordCallSite(ULONG                 instrOffset,  /* IN */
 #endif // defined(DEBUG)
 }
 
-/*****************************************************************************/
-#endif // EMIT_TRACK_STACK_DEPTH
-/*****************************************************************************/
 /*****************************************************************************/
 
 #ifdef DEBUG
