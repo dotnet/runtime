@@ -410,12 +410,6 @@ namespace ILCompiler.DependencyAnalysis
 
             _shadowConcreteMethods = new ShadowConcreteMethodHashtable(this);
 
-            _shadowConcreteUnboxingMethods = new NodeCache<MethodDesc, ShadowConcreteUnboxingThunkNode>(method =>
-            {
-                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                return new ShadowConcreteUnboxingThunkNode(method, MethodEntrypoint(canonMethod, true));
-            });
-
             _virtMethods = new VirtualMethodUseHashtable(this);
 
             _variantMethods = new NodeCache<MethodDesc, VariantInterfaceMethodUseNode>((MethodDesc method) =>
@@ -1159,13 +1153,14 @@ namespace ILCompiler.DependencyAnalysis
                 return AddressTakenMethodEntrypoint(method, isUnboxingStub);
         }
 
-        public IMethodNode CanonicalEntrypoint(MethodDesc method, bool isUnboxingStub = false)
+        public IMethodNode CanonicalEntrypoint(MethodDesc method)
         {
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            if (method != canonMethod)
-                return ShadowConcreteMethod(method, isUnboxingStub);
+            if (method != canonMethod) {
+                return ShadowConcreteMethod(method);
+            }
             else
-                return MethodEntrypoint(method, isUnboxingStub);
+                return MethodEntrypoint(method);
         }
 
         private NodeCache<MethodDesc, GVMDependenciesNode> _gvmDependenciesNode;
@@ -1284,13 +1279,9 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private ShadowConcreteMethodHashtable _shadowConcreteMethods;
-        private NodeCache<MethodDesc, ShadowConcreteUnboxingThunkNode> _shadowConcreteUnboxingMethods;
-        public IMethodNode ShadowConcreteMethod(MethodDesc method, bool isUnboxingStub = false)
+        public IMethodNode ShadowConcreteMethod(MethodDesc method)
         {
-            if (isUnboxingStub)
-                return _shadowConcreteUnboxingMethods.GetOrAdd(method);
-            else
-                return _shadowConcreteMethods.GetOrCreateValue(method);
+            return _shadowConcreteMethods.GetOrCreateValue(method);
         }
 
         private static readonly string[][] s_helperEntrypointNames = new string[][] {
