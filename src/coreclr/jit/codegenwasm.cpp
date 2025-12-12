@@ -42,7 +42,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     // TODO-WASM-CQ: do not emit "return" in case this is the last block
 
     instGen(INS_return);
-    instGen(INS_end);
 }
 
 void CodeGen::genCaptureFuncletPrologEpilogInfo()

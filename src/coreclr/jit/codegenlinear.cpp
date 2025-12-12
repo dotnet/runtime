@@ -658,6 +658,11 @@ void CodeGen::genCodeForBBlist()
 #endif // DEBUG
     }  //------------------ END-FOR each block of the method -------------------
 
+#if defined(TARGET_WASM)
+    // The last instruction in a wasm function must be an explicit 'end' instruction.
+    instGen(INS_end);
+#endif
+
 #if defined(FEATURE_EH_WINDOWS_X86)
     // If this is a synchronized method on x86, and we generated all the code without
     // generating the "exit monitor" call, then we must have deleted the single return block

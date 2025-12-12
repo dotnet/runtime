@@ -119,7 +119,6 @@ bool emitter::emitInsIsStore(instruction ins)
 emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr attr, cnsval_ssize_t localCount, WasmValueType type)
 {
     instrDescLclVarDecl* id = static_cast<instrDescLclVarDecl*>(emitAllocAnyInstr(sizeof(instrDescLclVarDecl), attr));
-    id->idSetIsLclVarDecl(true);
     id->idLclCnt(localCount);
     id->idLclType(type);
 
@@ -143,7 +142,7 @@ void emitter::emitIns_I_Ty(instruction ins, cnsval_ssize_t imm, WasmValueType va
     this->appendToCurIG(id);
 }
 
-emitter::instWasmValueType emitter::emitGetLclVarDeclType(instrDesc* id)
+WasmValueType emitter::emitGetLclVarDeclType(instrDesc* id)
 {
     assert(id->idIsLclVarDecl());
     return static_cast<instrDescLclVarDecl*>(id)->lclType;
@@ -225,21 +224,20 @@ unsigned emitter::SizeOfSLEB128(int64_t value)
     return (x * 37) >> 8;
 }
 
-uint8_t getWasmValueTypeCode(WasmValueType type)
+static uint8_t getWasmValueTypeCode(WasmValueType type)
 {
     // clang-format off
-    static const WasmValueType typecode_mapping[] = {
+    static const uint8_t typecode_mapping[] = {
         0x00, // WasmValueType::Invalid = 0,
         0x7C, // WasmValueType::F64 = 1,
         0x7D, // WasmValueType::F32 = 2,
         0x7E, // WasmValueType::I64 = 3,
         0x7F, // WasmValueType::I32 = 4,
     };
-
-    static_assert(ArrLen(mapping) == TYP_COUNT);
+    static const int WASM_TYP_COUNT = ArrLen(typecode_mapping);
+    static_assert(ArrLen(typecode_mapping) == (int)WasmValueType::Count);
     // clang-format on
 
-    assert(0 <= type && type < WasmValueType::Count);
     return typecode_mapping[static_cast<unsigned>(type)];
 }
 
@@ -435,12 +433,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             assert(id->idIsLclVarDecl());
             cnsval_ssize_t    count   = emitGetLclVarDeclCount(id);
-            instWasmValueType valType = emitGetLclVarDeclType(id);
+            uint8_t valType = getWasmValueTypeCode(emitGetLclVarDeclType(id));
             dst += emitOutputULEB128(dst, (uint64_t)count);
             // TODO-WASM: currently assuming all locals are numtypes which are single byte encoded.
             // vec types are also single byte encoded. If we end up using reftypes, we'll need to handle the more
             // complex encoding.
-            dst += emitOutputByte(dst, static_cast<uint8_t>(valType));
+            dst += emitOutputByte(dst, valType);
             break;
         }
         default:
@@ -572,8 +570,8 @@ void emitter::emitDispIns(
         case IF_LOCAL_DECL:
         {
             cnsval_ssize_t    imm     = emitGetLclVarDeclCount(id);
-            instWasmValueType valType = emitGetLclVarDeclType(id);
-            printf(" %llu %s", (uint64_t)imm, instWasmValueTypeToStr(valType));
+            WasmValueType  valType = emitGetLclVarDeclType(id);
+            printf(" %llu %s", (uint64_t)imm, WasmValueTypeName(valType));
         }
         break;
 

@@ -1299,7 +1299,7 @@ protected:
 #ifdef TARGET_WASM
         bool idIsLclVarDecl() const
         {
-            return _idInsFmt == IF_LOCAL_DECL
+            return _idInsFmt == IF_LOCAL_DECL;
         }
 #endif
 

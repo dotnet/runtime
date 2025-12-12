@@ -5665,16 +5665,15 @@ void CodeGen::genFnProlog()
 //------------------------------------------------------------------------
 // genWasmLocals: generate wasm locals for all locals
 //
-// TODO-WASM: re-evaluate this, we may not want a 1:1 mapping of locals to wasm locals
 // TODO-WASM: pre-declare all "register" locals
 void CodeGen::genWasmLocals()
 {
-    for (unsigned i = 0; i < compiler->info.compLocalsCount - compiler->info.compArgsCount; i++)
+    // Emit 1 local of each supported value type to ensure
+    // the declarations can be encoded.
+    // TODO-WASM: remove and declare locals based on RA assignments once this is supported.
+    for (unsigned i = (uint8_t)WasmValueType::Invalid + 1; i < (unsigned)WasmValueType::Count; i++)
     {
-        LclVarDsc* varDsc = compiler->lvaGetDesc(i);
-        assert(!varDsc->lvIsParam);
-        emitter::instWasmValueType type = GetEmitter()->genWasmTypeFromVarType(varDsc->TypeGet());
-        GetEmitter()->emitIns_I_Ty(INS_local_decl, 1, type);
+        GetEmitter()->emitIns_I_Ty(INS_local_decl, 1, static_cast<WasmValueType>(i));
     }
 }
 #endif
