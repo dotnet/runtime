@@ -1027,6 +1027,11 @@
       <TestTarget>$(AppleTestTarget)</TestTarget>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
     </XHarnessAppBundleToTest>
+
+    <XHarnessAppBundleToTest Update="@(XHarnessAppBundleToTest)" Condition="'$(TargetsAppleMobile)' == 'true'">
+      <ExpectedExitCode Condition="Exists('%(PayloadDirectory)/ExpectedExitCode.txt')">$([System.IO.File]::ReadAllText('%(PayloadDirectory)/ExpectedExitCode.txt').Trim())</ExpectedExitCode>
+      <IncludesTestRunner Condition="Exists('%(PayloadDirectory)/ExpectedExitCode.txt')">false</IncludesTestRunner>
+    </XHarnessAppBundleToTest>
   </ItemGroup>
 
   <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.targets" Condition=" '$(UsesHelixSdk)' == 'true' " />
