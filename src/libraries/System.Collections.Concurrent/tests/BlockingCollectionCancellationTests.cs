@@ -150,6 +150,29 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(expected: 1, actual: total);
         }
 
+        [Fact]
+        public static void ExternalCancel_TakeFromAny_PreCanceled_WithAvailableItems()
+        {
+            BlockingCollection<int> bc1 = new BlockingCollection<int>();
+            BlockingCollection<int> bc2 = new BlockingCollection<int>();
+            bc1.Add(1);
+            bc2.Add(2);
+
+            CancellationTokenSource cs = new CancellationTokenSource();
+            cs.Cancel();
+
+            int item;
+            EnsureOperationCanceledExceptionThrown(
+                () => BlockingCollection<int>.TakeFromAny(new[] { bc1, bc2 }, out item, cs.Token),
+                cs.Token);
+            EnsureOperationCanceledExceptionThrown(
+                () => BlockingCollection<int>.TryTakeFromAny(new[] { bc1, bc2 }, out item, Timeout.Infinite, cs.Token),
+                cs.Token);
+            EnsureOperationCanceledExceptionThrown(
+                () => BlockingCollection<int>.TryTakeFromAny(new[] { bc1, bc2 }, out item, 10000, cs.Token),
+                cs.Token);
+        }
+
         #region Helper Methods
 
         private static void EnsureOperationCanceledExceptionThrown(Action action, CancellationToken token)
