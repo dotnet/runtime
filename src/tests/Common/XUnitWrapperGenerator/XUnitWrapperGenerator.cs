@@ -255,9 +255,11 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         configOptions.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
         string assemblyName = compData.AssemblyName;
 
+        bool isMobilePlatform = targetOS?.ToLowerInvariant() is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android" or "browser";
+
         if (isMergedTestRunnerAssembly)
         {
-            if (targetOS?.ToLowerInvariant() is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android" or "browser")
+            if (isMobilePlatform)
             {
                 context.AddSource("XHarnessRunner.g.cs", GenerateXHarnessTestRunner(methods, aliasMap, assemblyName, targetOS));
             }
@@ -265,6 +267,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             {
                 context.AddSource("FullRunner.g.cs", GenerateFullTestRunner(methods, aliasMap, assemblyName));
             }
+        }
+        else if (isMobilePlatform)
+        {
+            // For mobile platforms without IsMergedTestRunnerAssembly (e.g., NativeAOT tests),
+            // still use XHarness runner to get proper exit code (0 on success)
+            context.AddSource("XHarnessRunner.g.cs", GenerateXHarnessTestRunner(methods, aliasMap, assemblyName, targetOS));
         }
         else
         {
