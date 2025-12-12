@@ -4,7 +4,7 @@
     <!-- File version numbers -->
     <MajorVersion>10</MajorVersion>
     <MinorVersion>0</MinorVersion>
-    <PatchVersion>1</PatchVersion>
+    <PatchVersion>2</PatchVersion>
     <!-- The .NET product branding version -->
     <ProductVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</ProductVersion>
     <SdkBandVersion>$(MajorVersion).0.100</SdkBandVersion>
