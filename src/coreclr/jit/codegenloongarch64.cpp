@@ -1710,7 +1710,7 @@ BAILOUT:
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForNegNot(GenTree* tree)
+void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_NEG, GT_NOT));
 
@@ -2275,6 +2275,19 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     // to constant data, not a real static field.
     GetEmitter()->emitIns_R_C(INS_bl, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
                               compiler->eeFindJitDataOffs(jmpTabBase), 0);
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genAsyncResumeInfo: emits address of async resume info for a specific state
+//
+// Parameters:
+//   treeNode - the GT_ASYNC_RESUME_INFO node
+//
+void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
+{
+    GetEmitter()->emitIns_R_C(INS_bl, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+                              genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1), 0);
     genProduceReg(treeNode);
 }
 
@@ -4103,7 +4116,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_NOT:
         case GT_NEG:
-            genCodeForNegNot(treeNode);
+            genCodeForNegNot(treeNode->AsOp());
             break;
 
         case GT_BSWAP:
@@ -4367,6 +4380,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_ld_d, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
+        case GT_ASYNC_RESUME_INFO:
+            genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -4380,7 +4397,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_IL_OFFSET:
-            // Do nothing; these nodes are simply markers for debug info.
+            // Do nothing; this node is a marker for debug info.
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
             break;
 
         default:

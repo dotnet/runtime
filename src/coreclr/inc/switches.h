@@ -165,12 +165,9 @@
 #define CHAIN_LOOKUP
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
-#if !defined(FEATURE_PORTABLE_ENTRYPOINTS) && !defined(TARGET_X86)
+// FEATURE_PORTABLE_SHUFFLE_THUNKS depends on CPUSTUBLINKER that is de-facto JIT
+#if defined(FEATURE_JIT) && !defined(TARGET_X86)
 #define FEATURE_PORTABLE_SHUFFLE_THUNKS
-#endif
-
-#if defined(TARGET_UNIX) || !defined(TARGET_X86)
-#define FEATURE_INSTANTIATINGSTUB_AS_IL
 #endif
 
 // If this is uncommented, leaves a file "StubLog_<pid>.log" with statistics on the behavior

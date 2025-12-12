@@ -768,6 +768,15 @@ void interceptor_ICJI::reportRichMappings(
     original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
 }
 
+void interceptor_ICJI::reportAsyncDebugInfo(
+          ICorDebugInfo::AsyncInfo* asyncInfo,
+          ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints,
+          ICorDebugInfo::AsyncContinuationVarInfo* vars,
+          uint32_t numVars)
+{
+    original_ICorJitInfo->reportAsyncDebugInfo(asyncInfo, suspensionPoints, vars, numVars);
+}
+
 void interceptor_ICJI::reportMetadata(
           const char* key,
           const void* value,
@@ -935,12 +944,6 @@ void interceptor_ICJI::getFunctionFixedEntryPoint(
           CORINFO_CONST_LOOKUP* pResult)
 {
     original_ICorJitInfo->getFunctionFixedEntryPoint(ftn, isUnsafeFunctionPointer, pResult);
-}
-
-CorInfoHelpFunc interceptor_ICJI::getLazyStringLiteralHelper(
-          CORINFO_MODULE_HANDLE handle)
-{
-    return original_ICorJitInfo->getLazyStringLiteralHelper(handle);
 }
 
 CORINFO_MODULE_HANDLE interceptor_ICJI::embedModuleHandle(
@@ -1119,9 +1122,10 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getContinuationType(
     return original_ICorJitInfo->getContinuationType(dataSize, objRefs, objRefsSize);
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub(
+          void** entryPoint)
 {
-    return original_ICorJitInfo->getAsyncResumptionStub();
+    return original_ICorJitInfo->getAsyncResumptionStub(entryPoint);
 }
 
 bool interceptor_ICJI::convertPInvokeCalliToCall(
@@ -1243,13 +1247,13 @@ void interceptor_ICJI::recordRelocation(
           void* location,
           void* locationRW,
           void* target,
-          uint16_t fRelocType,
+          CorInfoReloc fRelocType,
           int32_t addlDelta)
 {
     original_ICorJitInfo->recordRelocation(location, locationRW, target, fRelocType, addlDelta);
 }
 
-uint16_t interceptor_ICJI::getRelocTypeHint(
+CorInfoReloc interceptor_ICJI::getRelocTypeHint(
           void* target)
 {
     return original_ICorJitInfo->getRelocTypeHint(target);

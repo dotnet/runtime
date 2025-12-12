@@ -111,7 +111,7 @@
     <DefaultCoreClrSubsets Condition="'$(TargetRid)' == 'linux-armel'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsAndroid)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsAppleMobile)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
-    <DefaultCoreClrSubsets Condition="'$(TargetsBrowser)' == 'true'">mono.emsdk+clr.native+clr.corelib+clr.tools+clr.packages+clr.crossarchtools</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets Condition="'$(TargetsBrowser)' == 'true'">mono.emsdk+clr.native+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.crossarchtools+host.native</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(RuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
 
@@ -219,6 +219,7 @@
     <SubsetName Include="Clr.PalTestList" OnDemand="true" Description="Generate the list of the CoreCLR PAL tests. When using the command line, use Clr.PalTests instead." />
     <SubsetName Include="Clr.Hosts" Description="The CoreCLR corerun test host." />
     <SubsetName Include="Clr.Jit" Description="The JIT for the CoreCLR .NET runtime." />
+    <SubsetName Include="Clr.WasmJit" Description="The cross-targeting WebAssembly JIT compiler for the CoreCLR .NET runtime." />
     <SubsetName Include="Clr.AllJits" Description="All of the cross-targeting JIT compilers for the CoreCLR .NET runtime." />
     <SubsetName Include="Clr.AllJitsCommunity" Description="All of the cross-targeting JIT compilers for the CoreCLR .NET runtime, including community targets." />
     <SubsetName Include="Clr.Spmi" Description="SuperPMI, a tool for CoreCLR JIT testing." />
@@ -320,6 +321,10 @@
 
   <PropertyGroup Condition="$(_subset.Contains('+clr.jit+'))">
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrJitSubset=true</ClrRuntimeBuildSubsets>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(_subset.Contains('+clr.wasmjit+'))">
+    <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrWasmJitSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(_subset.Contains('+clr.paltests+'))">
@@ -465,6 +470,8 @@
                              $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj;
                              $(CoreClrProjectRoot)tools\PdbChecker\PdbChecker.csproj;
                              $(CoreClrProjectRoot)tools\AssemblyChecker\AssemblyChecker.csproj;
+                             $(CoreClrProjectRoot)tools\ILVerify\ILVerify.csproj;
+                             $(CoreClrProjectRoot)tools\ILVerification\ILVerification.csproj;
                              $(ToolsProjectRoot)StressLogAnalyzer\src\StressLogAnalyzer.csproj" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
     <!--
       Always build the in-build variants of these tools. They run on the host machine, which we always have LKG packs for.
@@ -495,6 +502,8 @@
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Trimming.Tests\ILCompiler.Trimming.Tests.csproj"
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\ILVerification.Tests\ILVerification.Tests.csproj"
+      Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
   </ItemGroup>
 
   <PropertyGroup Condition="$(_subset.Contains('+tools.cdac+'))">
@@ -503,11 +512,12 @@
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdac+'))">
     <ProjectToBuild Include="$(SharedNativeRoot)managed\compile-native.proj" Category="tools" />
-    
+
     <!-- Direct references to cDAC projects for packing -->
-    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj" Category="tools"/>
-    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj" Category="tools"/>
-    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Contracts\Microsoft.Diagnostics.DataContractReader.Contracts.csproj" Category="tools"/>
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj;
+                             $(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Abstractions\Microsoft.Diagnostics.DataContractReader.Abstractions.csproj;
+                             $(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Legacy\Microsoft.Diagnostics.DataContractReader.Legacy.csproj;
+                             $(SharedNativeRoot)managed\cdac\Microsoft.Diagnostics.DataContractReader.Contracts\Microsoft.Diagnostics.DataContractReader.Contracts.csproj" Category="tools" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdactests+'))">
@@ -588,22 +598,6 @@
     <ProjectToBuild Include="$(MonoProjectRoot)\wasm\workloads.proj" Category="mono" />
   </ItemGroup>
 
-  <!-- Host sets -->
-  <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
-    <CorehostProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" />
-    <ProjectToBuild Include="@(CorehostProjectToBuild)" AdditionalProperties="$(TargetCxxLibraryProperties)" Category="host" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+host.tools+'))">
-    <ManagedProjectToBuild Include="$(InstallerProjectRoot)managed\**\*.csproj" />
-    <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Category="host" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+host.pkg+'))">
-    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" />
-    <ProjectToBuild Include="@(PkgprojProjectToBuild)" Category="host" />
-  </ItemGroup>
-
   <!-- Libraries sets -->
   <ItemGroup Condition="$(_subset.Contains('+libs.native+'))">
     <ProjectToBuild Include="$(SharedNativeRoot)libs\build-native.proj" Category="libs" />
@@ -630,6 +624,23 @@
     <ProjectToBuild Include="$(WasiProjectRoot)wasi.proj" Category="mono" />
   </ItemGroup>
 
+  <!-- Host sets -->
+  <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
+    <CorehostProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" />
+    <ProjectToBuild Include="@(CorehostProjectToBuild)" AdditionalProperties="$(TargetCxxLibraryProperties)" Category="host" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+host.tools+'))">
+    <ManagedProjectToBuild Include="$(InstallerProjectRoot)managed\**\*.csproj" />
+    <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Category="host" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+host.pkg+'))">
+    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" />
+    <ProjectToBuild Include="@(PkgprojProjectToBuild)" Category="host" />
+  </ItemGroup>
+
+  <!-- Libraries test sets -->
   <ItemGroup Condition="$(_subset.Contains('+libs.pretest+'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)pretest.proj" Category="libs"  />
   </ItemGroup>
@@ -667,8 +678,6 @@
             <_BuildMonoRuntimePack Condition="'$(RuntimeFlavor)' == 'Mono' and '$(MonoSupported)' == 'true'">true</_BuildMonoRuntimePack>
             <_BuildHostPack Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildHostPack>
             <_BuildCdacPack Condition="'$(_CDacToolsBuilt)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true' and ('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'linux')">true</_BuildCdacPack>
-            <!-- Some configurations need to work out packaging errors before they can be enabled -->
-            <_BuildCdacPack Condition="'$(TargetArchitecture)' == 'loongarch64'">false</_BuildCdacPack>
             <_BuildBundle Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildBundle>
           </PropertyGroup>
 

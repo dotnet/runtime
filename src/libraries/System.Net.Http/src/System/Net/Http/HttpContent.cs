@@ -1103,12 +1103,22 @@ namespace System.Net.Http
 
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled(cancellationToken);
+                }
+
                 Write(buffer, offset, count);
                 return Task.CompletedTask;
             }
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return ValueTask.FromCanceled(cancellationToken);
+                }
+
                 Write(buffer.Span);
                 return default;
             }

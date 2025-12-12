@@ -12,6 +12,8 @@ pr:
     - '*'
   paths:
     include:
+    - .devcontainer/*
+    - .github/*
     - docs/*
     - '**/*.md'
     - '**/*.txt'

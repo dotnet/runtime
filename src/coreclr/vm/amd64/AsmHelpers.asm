@@ -13,7 +13,7 @@ extern OnHijackWorker:proc
 extern JIT_RareDisableHelperWorker:proc
 ifdef FEATURE_INTERPRETER
 extern ExecuteInterpretedMethod:proc
-extern GetInterpThreadContextWithPossiblyMissingThread:proc
+extern GetInterpThreadContextWithPossiblyMissingThreadOrCallStub:proc
 endif
 
 extern g_pPollGC:QWORD
@@ -563,15 +563,16 @@ NESTED_ENTRY InterpreterStub, _TEXT
 
         INLINE_GETTHREAD r10; thrashes rax and r11
         test            r10, r10
-        jz              NoManagedThread
+        jz              NoManagedThreadOrCallStub
 
         mov             rax, qword ptr [r10 + OFFSETOF__Thread__m_pInterpThreadContext]
         test            rax, rax
         jnz             HaveInterpThreadContext
 
-NoManagedThread:
-        mov             rcx, r10
-        call            GetInterpThreadContextWithPossiblyMissingThread
+NoManagedThreadOrCallStub:
+        lea             rcx, [rsp + __PWTB_TransitionBlock]     ; pTransitionBlock*
+        mov             rdx, rbx
+        call            GetInterpThreadContextWithPossiblyMissingThreadOrCallStub
         RESTORE_ARGUMENT_REGISTERS __PWTB_ArgumentRegisters
         RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
 
@@ -580,10 +581,14 @@ HaveInterpThreadContext:
         ; Load the InterpMethod pointer from the IR bytecode
         mov             rax, qword ptr [rbx]
         mov             rax, qword ptr [rax + OFFSETOF__InterpMethod__pCallStub]
+        test            rax, rax
+        jz              NoManagedThreadOrCallStub
         lea             r11, qword ptr [rax + OFFSETOF__CallStubHeader__Routines]
         lea             rax, [rsp + __PWTB_TransitionBlock]
         ; Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
         call            qword ptr [r11]
+        ; Fill in the ContinuationContext register
+        mov             rcx, [rsp + __PWTB_ArgumentRegisters]
 
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
@@ -1111,6 +1116,8 @@ END_PROLOGUE
         mov r11, rcx ; The routines list
         mov r10, rdx ; interpreter stack args
         call qword ptr [r11]
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
         mov rsp, rbp
         pop rbp
         ret
@@ -1126,6 +1133,8 @@ END_PROLOGUE
         mov r10, rdx ; interpreter stack args
         mov rcx, r8  ; return buffer
         call qword ptr [r11]
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
         mov rsp, rbp
         pop rbp
         ret
@@ -1141,6 +1150,8 @@ END_PROLOGUE
         mov r10, rdx ; interpreter stack args
         mov rdx, r8  ; return buffer
         call qword ptr [r11]
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
         mov rsp, rbp
         pop rbp
         ret
@@ -1158,6 +1169,8 @@ END_PROLOGUE
         mov r11, rcx ; The routines list
         mov r10, rdx ; interpreter stack args
         call qword ptr [r11]
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
         mov r8, [rbp - 8]
         movsd real8 ptr [r8], xmm0
         mov rsp, rbp
@@ -1176,6 +1189,8 @@ END_PROLOGUE
         mov r11, rcx ; The routines list
         mov r10, rdx ; interpreter stack args
         call qword ptr [r11]
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
         mov r8, [rbp - 8]
         mov qword ptr [r8], rax
         mov rsp, rbp

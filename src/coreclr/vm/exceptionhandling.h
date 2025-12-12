@@ -38,6 +38,8 @@ VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionConte
 
 void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo);
 
+bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode);
+
 enum CLRUnwindStatus { UnwindPending, FirstPassComplete, SecondPassComplete };
 
 enum TrackerMemoryType

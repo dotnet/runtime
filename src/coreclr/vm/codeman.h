@@ -79,6 +79,7 @@ class ReadyToRunJitManager;
 class ExecutionManager;
 class Thread;
 class CrawlFrame;
+class IExecutionControl;
 struct EE_ILEXCEPTION;
 struct EE_ILEXCEPTION_CLAUSE;
 typedef struct
@@ -1716,6 +1717,14 @@ public:
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32* pNumRichMappings) = 0;
 
+    virtual BOOL GetAsyncDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32* pcAsyncVars) = 0;
+
     virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset) = 0;
 
     virtual BOOL JitCodeToMethodInfo(
@@ -1782,6 +1791,11 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return m_runtimeSupport;
     }
+
+#if !defined(DACCESS_COMPILE)
+    // Returns execution control, currently NULL outside of CoreCLR interpreter.
+    virtual IExecutionControl* GetExecutionControl() { return NULL; }
+#endif
 
 protected:
     PTR_ICodeManager m_runtimeSupport;
@@ -1900,6 +1914,14 @@ protected:
         OUT ULONG32* pNumInlineTree,
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32* pNumRichMappings);
+
+    BOOL GetAsyncDebugInfoWorker(
+        PTR_BYTE pDebugInfo,
+        IN FP_IDS_NEW fpNew, IN void* pNewData,
+        OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32* pcAsyncVars);
 
     template<typename TCodeHeader>
     BOOL JitCodeToMethodInfoWorker(
@@ -2115,6 +2137,14 @@ public:
         OUT ULONG32* pNumInlineTree,
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32* pNumRichMappings);
+
+    virtual BOOL GetAsyncDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32* pcAsyncVars);
 
     virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset);
 
@@ -2388,14 +2418,14 @@ public:
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
     static PCODE jumpStub(MethodDesc* pMD,
                           PCODE target,
                           BYTE * loAddr,
                           BYTE * hiAddr,
                           LoaderAllocator *pLoaderAllocator = NULL,
                           bool throwOnOutOfMemoryWithinRange = true);
-#endif
+#endif // !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
 
 private:
     static RangeSection * FindCodeRangeWithLock(PCODE currentPC);
@@ -2459,13 +2489,13 @@ private:
     }
 #endif // defined(_DEBUG)
 
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
     static PCODE getNextJumpStub(MethodDesc* pMD,
                                  PCODE target,
                                  BYTE * loAddr,  BYTE * hiAddr,
                                  LoaderAllocator *pLoaderAllocator,
                                  bool throwOnOutOfMemoryWithinRange);
-#endif
+#endif // !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
 
 private:
     // ***************************************************************************
@@ -2668,6 +2698,14 @@ public:
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32*                           pNumRichMappings);
 
+    virtual BOOL GetAsyncDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32* pcAsyncVars);
+
     virtual BOOL JitCodeToMethodInfo(RangeSection * pRangeSection,
                                      PCODE currentPC,
                                      MethodDesc** ppMethodDesc,
@@ -2795,6 +2833,14 @@ public:
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32* pNumRichMappings);
 
+    virtual BOOL GetAsyncDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32* pcAsyncVars);
+
 #ifndef DACCESS_COMPILE
     virtual TypeHandle  ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
                                         CrawlFrame *pCf);
@@ -2827,6 +2873,11 @@ public:
     {
         return STUB_CODE_BLOCK_UNKNOWN;
     }
+
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_BROWSER)
+    // Return execution control for interpreter bytecode breakpoints
+    virtual IExecutionControl* GetExecutionControl();
+#endif
 
 #if defined(DACCESS_COMPILE)
 

@@ -14,6 +14,13 @@ export function check(condition: unknown, messageFactory: string | (() => string
 
 const prefix = "DOTNET: ";
 
+export function debug(msg: string | (() => string), ...data: any) {
+    if (typeof msg === "function") {
+        msg = msg();
+    }
+    console.debug(prefix + msg, ...data);
+}
+
 export function info(msg: string, ...data: any) {
     console.info(prefix + msg, ...data);
 }

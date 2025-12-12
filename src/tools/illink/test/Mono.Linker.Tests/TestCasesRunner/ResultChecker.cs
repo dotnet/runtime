@@ -4,12 +4,14 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Data.Common;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using ILLink.Shared.TrimAnalysis;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker;
@@ -18,9 +20,7 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCasesRunner.ILVerification;
-using ILLink.Shared.TrimAnalysis;
 using NUnit.Framework;
-using System.Data.Common;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {

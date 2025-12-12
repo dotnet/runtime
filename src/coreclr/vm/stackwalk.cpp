@@ -716,11 +716,35 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
     CONTRACTL_END;
 
     PCODE uControlPc = GetIP(pContext);
+    Thread *pThread = GetThread();
+
+#ifdef FEATURE_INTERPRETER
+    Frame *pFrame = pThread->GetFrame();
+    while (pFrame != FRAME_TOP && (pFrame->GetFrameIdentifier() != FrameIdentifier::InterpreterFrame))
+    {
+        pFrame = pFrame->PtrNextFrame();
+    }
+    InterpreterFrame *pInterpreterFrame = (pFrame != FRAME_TOP) ? (InterpreterFrame *)pFrame : NULL;
+#endif // FEATURE_INTERPRETER
 
     // unwind out of this function and out of our caller to
     // get our caller's PSP, or our caller's caller's SP.
     while (!ExecutionManager::IsManagedCode(uControlPc))
     {
+#ifdef FEATURE_INTERPRETER
+        // Check if we are past the topmost interpreter frame
+        if ((pInterpreterFrame != NULL) && (GetSP(pContext) > (TADDR)pFrame))
+        {
+            InterpMethodContextFrame *pInterpMethodContextFrame = pInterpreterFrame->GetTopInterpMethodContextFrame();
+            if (pInterpMethodContextFrame != NULL)
+            {
+                pInterpreterFrame->SetContextToInterpMethodContextFrame(pContext);
+                uControlPc = GetIP(pContext);
+                break;
+            }
+        }
+#endif // FEATURE_INTERPRETER
+
         if (IsIPInWriteBarrierCodeCopy(uControlPc))
         {
             // Pretend we were executing the barrier function at its original location so that the unwinder can unwind the frame
@@ -2065,14 +2089,14 @@ ProcessFuncletsForGCReporting:
                         // and its parent, eventually making a callback for the parent as well.
                         if (m_flags & (FUNCTIONSONLY | SKIPFUNCLETS))
                         {
-                            if (!m_sfParent.IsNull() || m_crawl.pFunc->IsILStub())
+                            if (!m_sfParent.IsNull() || m_crawl.pFunc->IsDiagnosticsHidden())
                             {
                                 STRESS_LOG4(LF_GCROOTS, LL_INFO100,
                                     "STACKWALK: %s: not making callback for this frame, SPOfParent = %p, \
-                                    isILStub = %d, m_crawl.pFunc = %pM\n",
-                                    (!m_sfParent.IsNull() ? "SKIPPING_TO_FUNCLET_PARENT" : "IS_IL_STUB"),
+                                    isDiagnosticsHidden = %d, m_crawl.pFunc = %pM\n",
+                                    (!m_sfParent.IsNull() ? "SKIPPING_TO_FUNCLET_PARENT" : "IS_DIAGNOSTICS_HIDDEN"),
                                     m_sfParent.SP,
-                                    (m_crawl.pFunc->IsILStub() ? 1 : 0),
+                                    (m_crawl.pFunc->IsDiagnosticsHidden() ? 1 : 0),
                                     m_crawl.pFunc);
 
                                 // don't stop here
@@ -2085,10 +2109,10 @@ ProcessFuncletsForGCReporting:
                             {
                                 STRESS_LOG4(LF_GCROOTS, LL_INFO100,
                                      "STACKWALK: %s: not making callback for this frame, SPOfParent = %p, \
-                                     isILStub = %d, m_crawl.pFunc = %pM\n",
-                                     (!m_sfParent.IsNull() ? "SKIPPING_TO_FUNCLET_PARENT" : "IS_IL_STUB"),
+                                     isDiagnosticsHidden = %d, m_crawl.pFunc = %pM\n",
+                                     (!m_sfParent.IsNull() ? "SKIPPING_TO_FUNCLET_PARENT" : "IS_DIAGNOSTICS_HIDDEN"),
                                      m_sfParent.SP,
-                                     (m_crawl.pFunc->IsILStub() ? 1 : 0),
+                                     (m_crawl.pFunc->IsDiagnosticsHidden() ? 1 : 0),
                                      m_crawl.pFunc);
 
                                 // don't stop here
@@ -2114,10 +2138,10 @@ ProcessFuncletsForGCReporting:
                 // Skip IL stubs
                 if (m_flags & FUNCTIONSONLY)
                 {
-                    if (m_crawl.pFunc->IsILStub())
+                    if (m_crawl.pFunc->IsDiagnosticsHidden())
                     {
                         LOG((LF_GCROOTS, LL_INFO100000,
-                             "STACKWALK: IS_IL_STUB: not making callback for this frame, m_crawl.pFunc = %s\n",
+                             "STACKWALK: IS_DIAGNOSTICS_HIDDEN: not making callback for this frame, m_crawl.pFunc = %s\n",
                              m_crawl.pFunc->m_pszDebugMethodName));
 
                         // don't stop here
@@ -2375,7 +2399,10 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 
                     if (orUnwind != NULL)
                     {
-                        orUnwind->LeaveObjMonitorAtException();
+                        PREPARE_NONVIRTUAL_CALLSITE(METHOD__MONITOR__EXIT);
+                        DECLARE_ARGHOLDER_ARRAY(args, 1);
+                        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(orUnwind);
+                        CALL_MANAGED_METHOD_NORET(args);
                     }
                 }
             }
@@ -3065,10 +3092,14 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
         _ASSERTE(obj != NULL);
         VALIDATEOBJECTREF(obj);
 
-        DWORD threadId = 0;
-        DWORD acquisitionCount = 0;
-        _ASSERTE(obj->GetThreadOwningMonitorLock(&threadId, &acquisitionCount) &&
-                 (threadId == m_crawl.pThread->GetThreadId()));
+        GCPROTECT_BEGIN(obj);
+
+        DWORD owningThreadId = 0;
+        DWORD recursionLevel;
+        obj->GetSyncBlock()->TryGetLockInfo(&owningThreadId, &recursionLevel);
+        _ASSERTE(owningThreadId == m_crawl.pThread->GetThreadId());
+
+        GCPROTECT_END();
 
         END_GCX_ASSERT_COOP;
     }
