@@ -15,6 +15,7 @@ namespace ComInterfaceGenerator.Tests
         internal static partial IUniqueMarshalling NewUniqueMarshalling();
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/122520")]
         public void MethodReturningComInterfaceReturnsUniqueInstance()
         {
             // When a COM interface method returns the same interface type,
