@@ -43,7 +43,13 @@ namespace System.Text.Json.Serialization.Converters
                 culture: null)!;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2071:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage(
+            "ReflectionAnalysis",
+#if NET9_0_OR_GREATER
+            "IL2071:UnrecognizedReflectionPattern",
+#else
+            "IL2070:UnrecognizedReflectionPattern",
+#endif
             Justification = "'NullableConverter<T> where T : struct' implies 'T : new()', so the trimmer is warning calling MakeGenericType here because valueTypeToConvert's constructors are not annotated. " +
             "But NullableConverter doesn't call new T(), so this is safe.")]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
