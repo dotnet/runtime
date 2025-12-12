@@ -102,6 +102,7 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(destination);
             ArgumentNullException.ThrowIfNull(sourceFileName);
             ArgumentNullException.ThrowIfNull(entryName);
+
             // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
             // as it is a pluggable component that completely encapsulates the meaning of compressionLevel.
 

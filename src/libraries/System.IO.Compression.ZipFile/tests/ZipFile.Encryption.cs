@@ -13,7 +13,7 @@ namespace System.IO.Compression.Tests
 {
     public class ZipFile_EncryptionTests : ZipFileTestBase
     {
-        public static IEnumerable<object[]> Get_SingleEntry_Data()
+        public static IEnumerable<object[]> EncryptionMethodAndBoolTestData()
         {
             foreach (var method in new[]
             {
@@ -28,54 +28,8 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        public static IEnumerable<object[]> Get_MultipleEntries_SamePassword_Data()
-        {
-            foreach (var method in new[]
-            {
-                ZipArchiveEntry.EncryptionMethod.ZipCrypto,
-                ZipArchiveEntry.EncryptionMethod.Aes256
-            })
-            {
-                yield return new object[] { method, false };
-                yield return new object[] { method, true };
-            }
-        }
-
-        public static IEnumerable<object[]> Get_MultipleEntries_DifferentPasswords_Data()
-        {
-            foreach (var method in new[]
-            {
-                ZipArchiveEntry.EncryptionMethod.ZipCrypto,
-                ZipArchiveEntry.EncryptionMethod.Aes256
-            })
-            {
-                yield return new object[] { method, false };
-                yield return new object[] { method, true };
-            }
-        }
-
-        public static IEnumerable<object[]> Get_MixedPlainEncrypted_Data()
-        {
-            foreach (var method in new[]
-            {
-                ZipArchiveEntry.EncryptionMethod.ZipCrypto,
-                ZipArchiveEntry.EncryptionMethod.Aes128,
-                ZipArchiveEntry.EncryptionMethod.Aes256
-            })
-            {
-                yield return new object[] { method, false };
-                yield return new object[] { method, true };
-            }
-        }
-
-        public static IEnumerable<object[]> Get_Is_Async()
-        {
-            yield return new object[] { false };
-            yield return new object[] { true };
-        }
-
         [Theory]
-        [MemberData(nameof(Get_SingleEntry_Data))]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         public async Task Encryption_SingleEntry_RoundTrip(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -97,7 +51,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_MultipleEntries_SamePassword_Data))]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         public async Task Encryption_MultipleEntries_SamePassword_RoundTrip(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -122,7 +76,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_MultipleEntries_DifferentPasswords_Data))]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         public async Task Encryption_MultipleEntries_DifferentPasswords_RoundTrip(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -146,7 +100,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_MixedPlainEncrypted_Data))]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         public async Task Encryption_MixedPlainAndEncrypted_RoundTrip(ZipArchiveEntry.EncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -173,7 +127,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Is_Async))]
+        [MemberData(nameof(Get_Booleans_Data))]
         public async Task Encryption_Combinations_RoundTrip(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -198,7 +152,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Is_Async))]
+        [MemberData(nameof(Get_Booleans_Data))]
         public async Task Encryption_LargeFile_RoundTrip(bool async)
         {
             string archivePath = GetTempArchivePath();
@@ -286,7 +240,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Get_Is_Async))]
+        [MemberData(nameof(Get_Booleans_Data))]
         public async Task ExtractToFile_Encrypted_Success(bool async)
         {
             string archivePath = GetTempArchivePath();

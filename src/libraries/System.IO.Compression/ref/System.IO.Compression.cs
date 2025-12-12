@@ -151,6 +151,7 @@ namespace System.IO.Compression
         Stored = 0,
         Deflate = 8,
         Deflate64 = 9,
+        Aes = 99
     }
     public sealed partial class ZLibCompressionOptions
     {

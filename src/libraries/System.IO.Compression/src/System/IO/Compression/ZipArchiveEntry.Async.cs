@@ -76,7 +76,7 @@ public partial class ZipArchiveEntry
             }
             else
             {
-                // AES case
+                // AES case - need to parse the AES extra field to find the actual compression method and skip the correct number of bytes
                 var (success, _) = await ZipLocalFileHeader.TrySkipBlockAESAwareAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
                 if (!success)
                     throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
@@ -317,10 +317,10 @@ public partial class ZipArchiveEntry
             message = SR.LocalFileHeaderCorrupt;
             return (false, message);
         }
-        else if (IsEncrypted && CompressionMethod == CompressionMethodValues.Aes)
+        else if (IsEncrypted && CompressionMethod == ZipCompressionMethod.Aes)
         {
             _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-            _aesCompressionMethod = CompressionMethodValues.Aes;
+            _aesCompressionMethod = ZipCompressionMethod.Aes;
             var (success, aesExtraField) = await ZipLocalFileHeader.TrySkipBlockAESAwareAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
             if (!success)
             {
@@ -346,7 +346,7 @@ public partial class ZipArchiveEntry
                 // Store the actual compression method that will be used after decryption
                 // This is needed for GetDataDecompressor to work correctly
                 // Set the compression method to the actual method for decompression
-                CompressionMethod = (CompressionMethodValues)aesExtraField.Value.CompressionMethod;
+                CompressionMethod = (ZipCompressionMethod)aesExtraField.Value.CompressionMethod;
             }
         }
 
