@@ -640,10 +640,6 @@ protected:
         BasicBlock*       idTargetBlock; // Target block for branches
     };
 
-#if defined(TARGET_WASM)
-#include "wasmtypesdef.h"
-#endif
-
 #ifdef TARGET_ARM
     unsigned insEncodeSetFlags(insFlags sf);
 
@@ -896,9 +892,6 @@ protected:
         unsigned _idLclFPBase : 1; // access a local on stack - SP based offset
         insOpts  _idInsOpt    : 3; // options for Load/Store instructions
 #endif
-#ifdef TARGET_WASM
-        unsigned _idLclDecl : 1; // is this a local declaration?
-#endif
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
@@ -926,7 +919,7 @@ protected:
 #elif defined(TARGET_AMD64)
 #define ID_EXTRA_BITFIELD_BITS (20)
 #elif defined(TARGET_WASM)
-#define ID_EXTRA_BITFIELD_BITS (-3)
+#define ID_EXTRA_BITFIELD_BITS (-4)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -1306,12 +1299,7 @@ protected:
 #ifdef TARGET_WASM
         bool idIsLclVarDecl() const
         {
-            return (_idLclDecl != 0);
-        }
-
-        void idSetIsLclVarDecl(bool isDecl)
-        {
-            _idLclDecl = isDecl ? 1 : 0;
+            return _idInsFmt == IF_LOCAL_DECL
         }
 #endif
 
@@ -2359,9 +2347,9 @@ protected:
     {
         instrDescLclVarDecl() = delete;
         cnsval_ssize_t    lclCnt;
-        instWasmValueType lclType;
+        WasmValueType lclType;
 
-        void idLclType(instWasmValueType type)
+        void idLclType(WasmValueType type)
         {
             lclType = type;
         }

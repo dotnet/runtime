@@ -116,7 +116,7 @@ bool emitter::emitInsIsStore(instruction ins)
     return false;
 }
 
-emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr attr, cnsval_ssize_t localCount, instWasmValueType type)
+emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr attr, cnsval_ssize_t localCount, WasmValueType type)
 {
     instrDescLclVarDecl* id = static_cast<instrDescLclVarDecl*>(emitAllocAnyInstr(sizeof(instrDescLclVarDecl), attr));
     id->idSetIsLclVarDecl(true);
@@ -131,7 +131,7 @@ emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr attr, cnsval_ssize_
 // a count (immediate) and a value type. This is specifically used for local variable
 // declarations that require both the number of locals and their type to be encoded.
 //
-void emitter::emitIns_I_Ty(instruction ins, cnsval_ssize_t imm, emitter::instWasmValueType valType)
+void emitter::emitIns_I_Ty(instruction ins, cnsval_ssize_t imm, WasmValueType valType)
 {
     instrDesc* id  = this->emitNewInstrLclVarDecl(EA_8BYTE, imm, valType);
     insFormat  fmt = this->emitInsFormat(ins);
@@ -225,6 +225,24 @@ unsigned emitter::SizeOfSLEB128(int64_t value)
     return (x * 37) >> 8;
 }
 
+uint8_t getWasmValueTypeCode(WasmValueType type)
+{
+    // clang-format off
+    static const WasmValueType typecode_mapping[] = {
+        0x00, // WasmValueType::Invalid = 0,
+        0x7C, // WasmValueType::F64 = 1,
+        0x7D, // WasmValueType::F32 = 2,
+        0x7E, // WasmValueType::I64 = 3,
+        0x7F, // WasmValueType::I32 = 4,
+    };
+
+    static_assert(ArrLen(mapping) == TYP_COUNT);
+    // clang-format on
+
+    assert(0 <= type && type < WasmValueType::Count);
+    return typecode_mapping[static_cast<unsigned>(type)];
+}
+
 unsigned emitter::instrDesc::idCodeSize() const
 {
 #ifdef TARGET_WASM32
@@ -252,7 +270,8 @@ unsigned emitter::instrDesc::idCodeSize() const
         {
             assert(idIsLclVarDecl());
             instrDescLclVarDecl* idl = static_cast<instrDescLclVarDecl*>(const_cast<instrDesc*>(this));
-            size                     = SizeOfULEB128(idl->lclCnt) + sizeof(emitter::instWasmValueType);
+            uint8_t typeCode = getWasmValueTypeCode(idl->lclType);
+            size                     = SizeOfULEB128(idl->lclCnt) + sizeof(typeCode);
             break;
         }
         case IF_ULEB128:
