@@ -418,9 +418,9 @@ namespace System.Runtime.CompilerServices
                 contexts.Push();
 
                 RuntimeAsyncTaskCore.DispatcherInfo dispatcherInfo;
-                dispatcherInfo.Next = RuntimeAsyncTaskCore.t_dispatcherInfo;
+                dispatcherInfo.Next = t_dispatcherInfo;
                 dispatcherInfo.NextContinuation = MoveContinuationState();
-                RuntimeAsyncTaskCore.t_dispatcherInfo = &dispatcherInfo;
+                t_dispatcherInfo = &dispatcherInfo;
 
                 while (true)
                 {
@@ -439,7 +439,7 @@ namespace System.Runtime.CompilerServices
                             newContinuation.Next = nextContinuation;
                             HandleSuspended();
                             contexts.Pop();
-                            RuntimeAsyncTaskCore.t_dispatcherInfo = dispatcherInfo.Next;
+                            t_dispatcherInfo = dispatcherInfo.Next;
                             return;
                         }
                     }
@@ -455,7 +455,7 @@ namespace System.Runtime.CompilerServices
 
                             contexts.Pop();
 
-                            RuntimeAsyncTaskCore.t_dispatcherInfo = dispatcherInfo.Next;
+                            t_dispatcherInfo = dispatcherInfo.Next;
 
                             if (!successfullySet)
                             {
@@ -475,7 +475,7 @@ namespace System.Runtime.CompilerServices
 
                         contexts.Pop();
 
-                        RuntimeAsyncTaskCore.t_dispatcherInfo = dispatcherInfo.Next;
+                        t_dispatcherInfo = dispatcherInfo.Next;
 
                         if (!successfullySet)
                         {
@@ -488,7 +488,7 @@ namespace System.Runtime.CompilerServices
                     if (QueueContinuationFollowUpActionIfNecessary(dispatcherInfo.NextContinuation))
                     {
                         contexts.Pop();
-                        RuntimeAsyncTaskCore.t_dispatcherInfo = dispatcherInfo.Next;
+                        t_dispatcherInfo = dispatcherInfo.Next;
                         return;
                     }
                 }
@@ -583,30 +583,27 @@ namespace System.Runtime.CompilerServices
             };
         }
 
-        internal static class RuntimeAsyncTaskCore
+        [StructLayout(LayoutKind.Explicit)]
+        internal unsafe ref struct DispatcherInfo
         {
-            [StructLayout(LayoutKind.Explicit)]
-            internal unsafe ref struct DispatcherInfo
-            {
-                // Dispatcher info for next dispatcher present on stack, or
-                // null if none.
-                [FieldOffset(0)]
-                public DispatcherInfo* Next;
+            // Dispatcher info for next dispatcher present on stack, or
+            // null if none.
+            [FieldOffset(0)]
+            public DispatcherInfo* Next;
 
-                // Next continuation the dispatcher will process.
+            // Next continuation the dispatcher will process.
 #if TARGET_64BIT
-                [FieldOffset(8)]
+            [FieldOffset(8)]
 #else
-                [FieldOffset(4)]
+            [FieldOffset(4)]
 #endif
-                public Continuation? NextContinuation;
-            }
-
-            // Information about current task dispatching, to be used for async
-            // stackwalking.
-            [ThreadStatic]
-            internal static unsafe DispatcherInfo* t_dispatcherInfo;
+            public Continuation? NextContinuation;
         }
+
+        // Information about current task dispatching, to be used for async
+        // stackwalking.
+        [ThreadStatic]
+        internal static unsafe DispatcherInfo* t_dispatcherInfo;
 
         // Change return type to RuntimeAsyncTask<T?> -- no benefit since this is used for Task returning thunks only
 #pragma warning disable CA1859
