@@ -24,51 +24,6 @@
 HRESULT FillErrorInfo(LPCWSTR szMsg, DWORD dwHelpContext);
 
 //*****************************************************************************
-// Public function to load a resource string
-//*****************************************************************************
-STDAPI UtilLoadStringRC(
-    UINT iResourceID,
-    _Out_writes_(iMax) LPWSTR szBuffer,
-    int iMax,
-    int bQuiet
-)
-{
-    WRAPPER_NO_CONTRACT;
-    return UtilLoadResourceString(bQuiet? CCompRC::Optional : CCompRC::Required,iResourceID, szBuffer, iMax);
-}
-
-HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax)
-{
-    CONTRACTL
-    {
-        DISABLED(NOTHROW);
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    HRESULT retVal = E_OUTOFMEMORY;
-
-    SString::Startup();
-    EX_TRY
-    {
-        CCompRC *pResourceDLL = CCompRC::GetDefaultResourceDll();
-
-        if (pResourceDLL != NULL)
-        {
-            retVal = pResourceDLL->LoadString(eCategory, iResourceID, szBuffer, iMax);
-        }
-    }
-    EX_CATCH
-    {
-        // Catch any errors and return E_OUTOFMEMORY;
-        retVal = E_OUTOFMEMORY;
-    }
-    EX_END_CATCH
-
-    return retVal;
-}
-
-//*****************************************************************************
 // Format a Runtime Error message.
 //*****************************************************************************
 static HRESULT FormatRuntimeErrorVA(
@@ -94,7 +49,7 @@ static HRESULT FormatRuntimeErrorVA(
     // If this is one of our errors or if it is simply a resource ID, then grab the error from the rc file.
     if ((HRESULT_FACILITY(hrRpt) == FACILITY_URT) || (HIWORD(hrRpt) == 0))
     {
-        hr = UtilLoadStringRC(LOWORD(hrRpt), rcBuf, ARRAY_SIZE(rcBuf), true);
+        hr = CCompRC::LoadString(LOWORD(hrRpt), rcBuf, ARRAY_SIZE(rcBuf));
         if (hr == S_OK)
         {
             hr = E_OUTOFMEMORY; // Out of memory is possible

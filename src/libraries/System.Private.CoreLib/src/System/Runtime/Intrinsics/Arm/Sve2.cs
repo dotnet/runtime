@@ -276,13 +276,13 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svadclb[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
         ///   ADCLB Ztied1.S, Zop2.S, Zop3.S
         /// </summary>
-        public static unsafe Vector<uint> AddCarryWideningEven(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) => AddCarryWideningEven(op1, op2, op3);
+        public static unsafe Vector<uint> AddCarryWideningEven(Vector<uint> left, Vector<uint> right, Vector<uint> carry) => AddCarryWideningEven(left, right, carry);
 
         /// <summary>
         /// svuint64_t svadclb[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
         ///   ADCLB Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<ulong> AddCarryWideningEven(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) => AddCarryWideningEven(op1, op2, op3);
+        public static unsafe Vector<ulong> AddCarryWideningEven(Vector<ulong> left, Vector<ulong> right, Vector<ulong> carry) => AddCarryWideningEven(left, right, carry);
 
         // Add with carry long (top)
 
@@ -290,13 +290,13 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svadclt[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
         ///   ADCLT Ztied1.S, Zop2.S, Zop3.S
         /// </summary>
-        public static unsafe Vector<uint> AddCarryWideningOdd(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) => AddCarryWideningOdd(op1, op2, op3);
+        public static unsafe Vector<uint> AddCarryWideningOdd(Vector<uint> left, Vector<uint> right, Vector<uint> carry) => AddCarryWideningOdd(left, right, carry);
 
         /// <summary>
         /// svuint64_t svadclt[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
         ///   ADCLT Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static unsafe Vector<ulong> AddCarryWideningOdd(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) => AddCarryWideningOdd(op1, op2, op3);
+        public static unsafe Vector<ulong> AddCarryWideningOdd(Vector<ulong> left, Vector<ulong> right, Vector<ulong> carry) => AddCarryWideningOdd(left, right, carry);
 
         // Add narrow high part (bottom)
 
@@ -728,25 +728,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svqcadd[_s16](svint16_t op1, svint16_t op2, uint64_t imm_rotation)
         ///   SQCADD Ztied1.H, Ztied1.H, Zop2.H, #imm_rotation
         /// </summary>
-        public static Vector<short> AddSaturateRotateComplex(Vector<short> op1, Vector<short> op2, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) => AddSaturateRotateComplex(op1, op2, rotation);
+        public static Vector<short> AddSaturateRotateComplex(Vector<short> left, Vector<short> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) => AddSaturateRotateComplex(left, right, rotation);
 
         /// <summary>
         /// svint32_t svqcadd[_s32](svint32_t op1, svint32_t op2, uint64_t imm_rotation)
         ///   SQCADD Ztied1.S, Ztied1.S, Zop2.S, #imm_rotation
         /// </summary>
-        public static Vector<int> AddSaturateRotateComplex(Vector<int> op1, Vector<int> op2, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) => AddSaturateRotateComplex(op1, op2, rotation);
+        public static Vector<int> AddSaturateRotateComplex(Vector<int> left, Vector<int> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) => AddSaturateRotateComplex(left, right, rotation);
 
         /// <summary>
         /// svint64_t svqcadd[_s64](svint64_t op1, svint64_t op2, uint64_t imm_rotation)
         ///   SQCADD Ztied1.D, Ztied1.D, Zop2.D, #imm_rotation
         /// </summary>
-        public static Vector<long> AddSaturateRotateComplex(Vector<long> op1, Vector<long> op2, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) => AddSaturateRotateComplex(op1, op2, rotation);
+        public static Vector<long> AddSaturateRotateComplex(Vector<long> left, Vector<long> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) => AddSaturateRotateComplex(left, right, rotation);
 
         /// <summary>
         /// svint8_t svqcadd[_s8](svint8_t op1, svint8_t op2, uint64_t imm_rotation)
         ///   SQCADD Ztied1.B, Ztied1.B, Zop2.B, #imm_rotation
         /// </summary>
-        public static Vector<sbyte> AddSaturateRotateComplex(Vector<sbyte> op1, Vector<sbyte> op2, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) => AddSaturateRotateComplex(op1, op2, rotation);
+        public static Vector<sbyte> AddSaturateRotateComplex(Vector<sbyte> left, Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) => AddSaturateRotateComplex(left, right, rotation);
 
 
         // Saturating add with signed addend
@@ -905,19 +905,19 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svaddlbt[_s16](svint8_t op1, svint8_t op2)
         ///   SADDLBT Zresult.H, Zop1.B, Zop2.B
         /// </summary>
-        public static Vector<short> AddWideningEvenOdd(Vector<sbyte> left, Vector<sbyte> right) => AddWideningEvenOdd(left, right);
+        public static Vector<short> AddWideningEvenOdd(Vector<sbyte> leftEven, Vector<sbyte> rightOdd) => AddWideningEvenOdd(leftEven, rightOdd);
 
         /// <summary>
         /// svint32_t svaddlbt[_s32](svint16_t op1, svint16_t op2)
         ///   SADDLBT Zresult.S, Zop1.H, Zop2.H
         /// </summary>
-        public static Vector<int> AddWideningEvenOdd(Vector<short> left, Vector<short> right) => AddWideningEvenOdd(left, right);
+        public static Vector<int> AddWideningEvenOdd(Vector<short> leftEven, Vector<short> rightOdd) => AddWideningEvenOdd(leftEven, rightOdd);
 
         /// <summary>
         /// svint64_t svaddlbt[_s64](svint32_t op1, svint32_t op2)
         ///   SADDLBT Zresult.D, Zop1.S, Zop2.S
         /// </summary>
-        public static Vector<long> AddWideningEvenOdd(Vector<int> left, Vector<int> right) => AddWideningEvenOdd(left, right);
+        public static Vector<long> AddWideningEvenOdd(Vector<int> leftEven, Vector<int> rightOdd) => AddWideningEvenOdd(leftEven, rightOdd);
 
         // Add wide (top)
 
@@ -1222,25 +1222,25 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint32_t svcdot[_s32](svint32_t op1, svint8_t op2, svint8_t op3, uint64_t imm_rotation)
         ///   CDOT Ztied1.S, Zop2.B, Zop3.B, #imm_rotation
         /// </summary>
-        public static Vector<int> DotProductRotateComplex(Vector<int> op1, Vector<sbyte> op2, Vector<sbyte> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => DotProductRotateComplex(op1, op2, op3, rotation);
+        public static Vector<int> DotProductRotateComplex(Vector<int> addend, Vector<sbyte> left, Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => DotProductRotateComplex(addend, left, right, rotation);
 
         /// <summary>
         /// svint64_t svcdot[_s64](svint64_t op1, svint16_t op2, svint16_t op3, uint64_t imm_rotation)
         ///   CDOT Ztied1.D, Zop2.H, Zop3.H, #imm_rotation
         /// </summary>
-        public static Vector<long> DotProductRotateComplex(Vector<long> op1, Vector<short> op2, Vector<short> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => DotProductRotateComplex(op1, op2, op3, rotation);
+        public static Vector<long> DotProductRotateComplex(Vector<long> addend, Vector<short> left, Vector<short> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => DotProductRotateComplex(addend, left, right, rotation);
 
         /// <summary>
         /// svint32_t svcdot_lane[_s32](svint32_t op1, svint8_t op2, svint8_t op3, uint64_t imm_index, uint64_t imm_rotation)
         ///   CDOT Ztied1.S, Zop2.B, Zop3.B[imm_index], #imm_rotation
         /// </summary>
-        public static Vector<int> DotProductRotateComplexBySelectedIndex(Vector<int> op1, Vector<sbyte> op2, Vector<sbyte> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte imm_index, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => DotProductRotateComplexBySelectedIndex(op1, op2, op3, imm_index, rotation);
+        public static Vector<int> DotProductRotateComplexBySelectedIndex(Vector<int> addend, Vector<sbyte> left, Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => DotProductRotateComplexBySelectedIndex(addend, left, right, rightIndex, rotation);
 
         /// <summary>
         /// svint64_t svcdot_lane[_s64](svint64_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index, uint64_t imm_rotation)
         ///   CDOT Ztied1.D, Zop2.H, Zop3.H[imm_index], #imm_rotation
         /// </summary>
-        public static Vector<long> DotProductRotateComplexBySelectedIndex(Vector<long> op1, Vector<short> op2, Vector<short> op3, [ConstantExpected(Min = 0, Max = (byte)(1))] byte imm_index, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => DotProductRotateComplexBySelectedIndex(op1, op2, op3, imm_index, rotation);
+        public static Vector<long> DotProductRotateComplexBySelectedIndex(Vector<long> addend, Vector<short> left, Vector<short> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => DotProductRotateComplexBySelectedIndex(addend, left, right, rightIndex, rotation);
 
         // Up convert long (top)
 
@@ -1485,97 +1485,97 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint8_t sveorbt[_s8](svint8_t odd, svint8_t op1, svint8_t op2)
         ///   EORBT Zd.B, Zn.B, Zm.B
         /// </summary>
-        public static Vector<byte> InterleavingXorEvenOdd(Vector<byte> odd, Vector<byte> left, Vector<byte> right) => InterleavingXorEvenOdd(odd, left, right);
+        public static Vector<byte> InterleavingXorEvenOdd(Vector<byte> odd, Vector<byte> leftEven, Vector<byte> rightOdd) => InterleavingXorEvenOdd(odd, leftEven, rightOdd);
 
         /// <summary>
         /// svint16_t sveorbt[_s16](svint16_t odd, svint16_t op1, svint16_t op2)
         ///   EORBT Zd.H, Zn.H, Zm.H
         /// </summary>
-        public static Vector<short> InterleavingXorEvenOdd(Vector<short> odd, Vector<short> left, Vector<short> right) => InterleavingXorEvenOdd(odd, left, right);
+        public static Vector<short> InterleavingXorEvenOdd(Vector<short> odd, Vector<short> leftEven, Vector<short> rightOdd) => InterleavingXorEvenOdd(odd, leftEven, rightOdd);
 
         /// <summary>
         /// svint32_t sveorbt[_s32](svint32_t odd, svint32_t op1, svint32_t op2)
         ///   EORBT Zd.S, Zn.S, Zm.S
         /// </summary>
-        public static Vector<int> InterleavingXorEvenOdd(Vector<int> odd, Vector<int> left, Vector<int> right) => InterleavingXorEvenOdd(odd, left, right);
+        public static Vector<int> InterleavingXorEvenOdd(Vector<int> odd, Vector<int> leftEven, Vector<int> rightOdd) => InterleavingXorEvenOdd(odd, leftEven, rightOdd);
 
         /// <summary>
         /// svint64_t sveorbt[_s64](svint64_t odd, svint64_t op1, svint64_t op2)
         ///   EORBT Zd.D, Zn.D, Zm.D
         /// </summary>
-        public static Vector<long> InterleavingXorEvenOdd(Vector<long> odd, Vector<long> left, Vector<long> right) => InterleavingXorEvenOdd(odd, left, right);
+        public static Vector<long> InterleavingXorEvenOdd(Vector<long> odd, Vector<long> leftEven, Vector<long> rightOdd) => InterleavingXorEvenOdd(odd, leftEven, rightOdd);
 
         /// <summary>
         /// svint8_t sveorbt[_s8](svint8_t odd, svint8_t op1, svint8_t op2)
         ///   EORBT Zd.B, Zn.B, Zm.B
         /// </summary>
-        public static Vector<sbyte> InterleavingXorEvenOdd(Vector<sbyte> odd, Vector<sbyte> left, Vector<sbyte> right) => InterleavingXorEvenOdd(odd, left, right);
+        public static Vector<sbyte> InterleavingXorEvenOdd(Vector<sbyte> odd, Vector<sbyte> leftEven, Vector<sbyte> rightOdd) => InterleavingXorEvenOdd(odd, leftEven, rightOdd);
 
         /// <summary>
         /// svint16_t sveorbt[_s16](svint16_t odd, svint16_t op1, svint16_t op2)
         ///   EORBT Zd.H, Zn.H, Zm.H
         /// </summary>
-        public static Vector<ushort> InterleavingXorEvenOdd(Vector<ushort> odd, Vector<ushort> left, Vector<ushort> right) => InterleavingXorEvenOdd(odd, left, right);
+        public static Vector<ushort> InterleavingXorEvenOdd(Vector<ushort> odd, Vector<ushort> leftEven, Vector<ushort> rightOdd) => InterleavingXorEvenOdd(odd, leftEven, rightOdd);
 
         /// <summary>
         /// svint32_t sveorbt[_s32](svint32_t odd, svint32_t op1, svint32_t op2)
         ///   EORBT Zd.S, Zn.S, Zm.S
         /// </summary>
-        public static Vector<uint> InterleavingXorEvenOdd(Vector<uint> odd, Vector<uint> left, Vector<uint> right) => InterleavingXorEvenOdd(odd, left, right);
+        public static Vector<uint> InterleavingXorEvenOdd(Vector<uint> odd, Vector<uint> leftEven, Vector<uint> rightOdd) => InterleavingXorEvenOdd(odd, leftEven, rightOdd);
 
         /// <summary>
         /// svint64_t sveorbt[_s64](svint64_t odd, svint64_t op1, svint64_t op2)
         ///   EORBT Zd.D, Zn.D, Zm.D
         /// </summary>
-        public static Vector<ulong> InterleavingXorEvenOdd(Vector<ulong> odd, Vector<ulong> left, Vector<ulong> right) => InterleavingXorEvenOdd(odd, left, right);
+        public static Vector<ulong> InterleavingXorEvenOdd(Vector<ulong> odd, Vector<ulong> leftEven, Vector<ulong> rightOdd) => InterleavingXorEvenOdd(odd, leftEven, rightOdd);
 
         /// <summary>
         /// svint8_t sveortb[_s8](svint8_t even, svint8_t op1, svint8_t op2)
         ///   EORTB Zd.B, Zn.B, Zm.B
         /// </summary>
-        public static Vector<byte> InterleavingXorOddEven(Vector<byte> even, Vector<byte> left, Vector<byte> right) => InterleavingXorOddEven(even, left, right);
+        public static Vector<byte> InterleavingXorOddEven(Vector<byte> even, Vector<byte> leftOdd, Vector<byte> rightEven) => InterleavingXorOddEven(even, leftOdd, rightEven);
 
         /// <summary>
         /// svint16_t sveortb[_s16](svint16_t even, svint16_t op1, svint16_t op2)
         ///   EORTB Zd.H, Zn.H, Zm.H
         /// </summary>
-        public static Vector<short> InterleavingXorOddEven(Vector<short> even, Vector<short> left, Vector<short> right) => InterleavingXorOddEven(even, left, right);
+        public static Vector<short> InterleavingXorOddEven(Vector<short> even, Vector<short> leftOdd, Vector<short> rightEven) => InterleavingXorOddEven(even, leftOdd, rightEven);
 
         /// <summary>
         /// svint32_t sveortb[_s32](svint32_t even, svint32_t op1, svint32_t op2)
         ///   EORTB Zd.S, Zn.S, Zm.S
         /// </summary>
-        public static Vector<int> InterleavingXorOddEven(Vector<int> even, Vector<int> left, Vector<int> right) => InterleavingXorOddEven(even, left, right);
+        public static Vector<int> InterleavingXorOddEven(Vector<int> even, Vector<int> leftOdd, Vector<int> rightEven) => InterleavingXorOddEven(even, leftOdd, rightEven);
 
         /// <summary>
         /// svint64_t sveortb[_s64](svint64_t even, svint64_t op1, svint64_t op2)
         ///   EORTB Zd.D, Zn.D, Zm.D
         /// </summary>
-        public static Vector<long> InterleavingXorOddEven(Vector<long> even, Vector<long> left, Vector<long> right) => InterleavingXorOddEven(even, left, right);
+        public static Vector<long> InterleavingXorOddEven(Vector<long> even, Vector<long> leftOdd, Vector<long> rightEven) => InterleavingXorOddEven(even, leftOdd, rightEven);
 
         /// <summary>
         /// svint8_t sveortb[_s8](svint8_t even, svint8_t op1, svint8_t op2)
         ///   EORTB Zd.B, Zn.B, Zm.B
         /// </summary>
-        public static Vector<sbyte> InterleavingXorOddEven(Vector<sbyte> even, Vector<sbyte> left, Vector<sbyte> right) => InterleavingXorOddEven(even, left, right);
+        public static Vector<sbyte> InterleavingXorOddEven(Vector<sbyte> even, Vector<sbyte> leftOdd, Vector<sbyte> rightEven) => InterleavingXorOddEven(even, leftOdd, rightEven);
 
         /// <summary>
         /// svint16_t sveortb[_s16](svint16_t even, svint16_t op1, svint16_t op2)
         ///   EORTB Zd.H, Zn.H, Zm.H
         /// </summary>
-        public static Vector<ushort> InterleavingXorOddEven(Vector<ushort> even, Vector<ushort> left, Vector<ushort> right) => InterleavingXorOddEven(even, left, right);
+        public static Vector<ushort> InterleavingXorOddEven(Vector<ushort> even, Vector<ushort> leftOdd, Vector<ushort> rightEven) => InterleavingXorOddEven(even, leftOdd, rightEven);
 
         /// <summary>
         /// svint32_t sveortb[_s32](svint32_t even, svint32_t op1, svint32_t op2)
         ///   EORTB Zd.S, Zn.S, Zm.S
         /// </summary>
-        public static Vector<uint> InterleavingXorOddEven(Vector<uint> even, Vector<uint> left, Vector<uint> right) => InterleavingXorOddEven(even, left, right);
+        public static Vector<uint> InterleavingXorOddEven(Vector<uint> even, Vector<uint> leftOdd, Vector<uint> rightEven) => InterleavingXorOddEven(even, leftOdd, rightEven);
 
         /// <summary>
         /// svint64_t sveortb[_s64](svint64_t even, svint64_t op1, svint64_t op2)
         ///   EORTB Zd.D, Zn.D, Zm.D
         /// </summary>
-        public static Vector<ulong> InterleavingXorOddEven(Vector<ulong> even, Vector<ulong> left, Vector<ulong> right) => InterleavingXorOddEven(even, left, right);
+        public static Vector<ulong> InterleavingXorOddEven(Vector<ulong> even, Vector<ulong> leftOdd, Vector<ulong> rightEven) => InterleavingXorOddEven(even, leftOdd, rightEven);
 
         // Base 2 logarithm as integer
 
@@ -1917,37 +1917,37 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svqrdcmlah[_s16](svint16_t op1, svint16_t op2, svint16_t op3, uint64_t imm_rotation)
         ///   SQRDCMLAH Ztied1.H, Zop2.H, Zop3.H, #imm_rotation
         /// </summary>
-        public static Vector<short> MultiplyAddRoundedDoublingSaturateHighRotateComplex(Vector<short> op1, Vector<short> op2, Vector<short> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRoundedDoublingSaturateHighRotateComplex(op1, op2, op3, rotation);
+        public static Vector<short> MultiplyAddRoundedDoublingSaturateHighRotateComplex(Vector<short> addend, Vector<short> left, Vector<short> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRoundedDoublingSaturateHighRotateComplex(addend, left, right, rotation);
 
         /// <summary>
         /// svint32_t svqrdcmlah[_s32](svint32_t op1, svint32_t op2, svint32_t op3, uint64_t imm_rotation)
         ///   SQRDCMLAH Ztied1.S, Zop2.S, Zop3.S, #imm_rotation
         /// </summary>
-        public static Vector<int> MultiplyAddRoundedDoublingSaturateHighRotateComplex(Vector<int> op1, Vector<int> op2, Vector<int> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRoundedDoublingSaturateHighRotateComplex(op1, op2, op3, rotation);
+        public static Vector<int> MultiplyAddRoundedDoublingSaturateHighRotateComplex(Vector<int> addend, Vector<int> left, Vector<int> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRoundedDoublingSaturateHighRotateComplex(addend, left, right, rotation);
 
         /// <summary>
         /// svint64_t svqrdcmlah[_s64](svint64_t op1, svint64_t op2, svint64_t op3, uint64_t imm_rotation)
         ///   SQRDCMLAH Ztied1.D, Zop2.D, Zop3.D, #imm_rotation
         /// </summary>
-        public static Vector<long> MultiplyAddRoundedDoublingSaturateHighRotateComplex(Vector<long> op1, Vector<long> op2, Vector<long> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRoundedDoublingSaturateHighRotateComplex(op1, op2, op3, rotation);
+        public static Vector<long> MultiplyAddRoundedDoublingSaturateHighRotateComplex(Vector<long> addend, Vector<long> left, Vector<long> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRoundedDoublingSaturateHighRotateComplex(addend, left, right, rotation);
 
         /// <summary>
         /// svint8_t svqrdcmlah[_s8](svint8_t op1, svint8_t op2, svint8_t op3, uint64_t imm_rotation)
         ///   SQRDCMLAH Ztied1.B, Zop2.B, Zop3.B, #imm_rotation
         /// </summary>
-        public static Vector<sbyte> MultiplyAddRoundedDoublingSaturateHighRotateComplex(Vector<sbyte> op1, Vector<sbyte> op2, Vector<sbyte> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRoundedDoublingSaturateHighRotateComplex(op1, op2, op3, rotation);
+        public static Vector<sbyte> MultiplyAddRoundedDoublingSaturateHighRotateComplex(Vector<sbyte> addend, Vector<sbyte> left, Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRoundedDoublingSaturateHighRotateComplex(addend, left, right, rotation);
 
         /// <summary>
         /// svint16_t svqrdcmlah_lane[_s16](svint16_t op1, svint16_t op2, svint16_t op3, uint64_t imm_index, uint64_t imm_rotation)
         ///   SQRDCMLAH Ztied1.H, Zop2.H, Zop3.H[imm_index], #imm_rotation
         /// </summary>
-        public static Vector<short> MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar(Vector<short> op1, Vector<short> op2, Vector<short> op3, [ConstantExpected(Min = 0, Max = (byte)(3))] byte imm_index, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar(op1, op2, op3, imm_index, rotation);
+        public static Vector<short> MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar(Vector<short> addend, Vector<short> left, Vector<short> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar(addend, left, right, rightIndex, rotation);
 
         /// <summary>
         /// svint32_t svqrdcmlah_lane[_s32](svint32_t op1, svint32_t op2, svint32_t op3, uint64_t imm_index, uint64_t imm_rotation)
         ///   SQRDCMLAH Ztied1.S, Zop2.S, Zop3.S[imm_index], #imm_rotation
         /// </summary>
-        public static Vector<int> MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar(Vector<int> op1, Vector<int> op2, Vector<int> op3, [ConstantExpected(Min = 0, Max = (byte)(1))] byte imm_index, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar(op1, op2, op3, imm_index, rotation);
+        public static Vector<int> MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar(Vector<int> addend, Vector<int> left, Vector<int> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar(addend, left, right, rightIndex, rotation);
 
 
         // Multiply-add long (bottom)
@@ -3864,13 +3864,13 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svsbclb[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
         ///   SBCLB Ztied1.S, Zop2.S, Zop3.S
         /// </summary>
-        public static Vector<uint> SubtractBorrowWideningEven(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) => SubtractBorrowWideningEven(op1, op2, op3);
+        public static Vector<uint> SubtractBorrowWideningEven(Vector<uint> left, Vector<uint> right, Vector<uint> borrow) => SubtractBorrowWideningEven(left, right, borrow);
 
         /// <summary>
         /// svuint64_t svsbclb[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
         ///   SBCLB Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static Vector<ulong> SubtractBorrowWideningEven(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) => SubtractBorrowWideningEven(op1, op2, op3);
+        public static Vector<ulong> SubtractBorrowWideningEven(Vector<ulong> left, Vector<ulong> right, Vector<ulong> borrow) => SubtractBorrowWideningEven(left, right, borrow);
 
 
         // Subtract with borrow long (top)
@@ -3879,13 +3879,13 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svsbclt[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
         ///   SBCLT Ztied1.S, Zop2.S, Zop3.S
         /// </summary>
-        public static Vector<uint> SubtractBorrowWideningOdd(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) => SubtractBorrowWideningOdd(op1, op2, op3);
+        public static Vector<uint> SubtractBorrowWideningOdd(Vector<uint> left, Vector<uint> right, Vector<uint> borrow) => SubtractBorrowWideningOdd(left, right, borrow);
 
         /// <summary>
         /// svuint64_t svsbclt[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
         ///   SBCLT Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
-        public static Vector<ulong> SubtractBorrowWideningOdd(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) => SubtractBorrowWideningOdd(op1, op2, op3);
+        public static Vector<ulong> SubtractBorrowWideningOdd(Vector<ulong> left, Vector<ulong> right, Vector<ulong> borrow) => SubtractBorrowWideningOdd(left, right, borrow);
 
 
         // Subtract narrow high part (bottom)
@@ -4219,19 +4219,19 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svsublbt[_s16](svint8_t op1, svint8_t op2)
         ///   SSUBLBT Zresult.H, Zop1.B, Zop2.B
         /// </summary>
-        public static Vector<short> SubtractWideningEvenOdd(Vector<sbyte> left, Vector<sbyte> right) => SubtractWideningEvenOdd(left, right);
+        public static Vector<short> SubtractWideningEvenOdd(Vector<sbyte> leftEven, Vector<sbyte> rightOdd) => SubtractWideningEvenOdd(leftEven, rightOdd);
 
         /// <summary>
         /// svint32_t svsublbt[_s32](svint16_t op1, svint16_t op2)
         ///   SSUBLBT Zresult.S, Zop1.H, Zop2.H
         /// </summary>
-        public static Vector<int> SubtractWideningEvenOdd(Vector<short> left, Vector<short> right) => SubtractWideningEvenOdd(left, right);
+        public static Vector<int> SubtractWideningEvenOdd(Vector<short> leftEven, Vector<short> rightOdd) => SubtractWideningEvenOdd(leftEven, rightOdd);
 
         /// <summary>
         /// svint64_t svsublbt[_s64](svint32_t op1, svint32_t op2)
         ///   SSUBLBT Zresult.D, Zop1.S, Zop2.S
         /// </summary>
-        public static Vector<long> SubtractWideningEvenOdd(Vector<int> left, Vector<int> right) => SubtractWideningEvenOdd(left, right);
+        public static Vector<long> SubtractWideningEvenOdd(Vector<int> leftEven, Vector<int> rightOdd) => SubtractWideningEvenOdd(leftEven, rightOdd);
 
 
         // Subtract wide (top)
@@ -4318,19 +4318,19 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint16_t svsubltb[_s16](svint8_t op1, svint8_t op2)
         ///   SSUBLTB Zresult.H, Zop1.B, Zop2.B
         /// </summary>
-        public static Vector<short> SubtractWideningOddEven(Vector<sbyte> left, Vector<sbyte> right) => SubtractWideningOddEven(left, right);
+        public static Vector<short> SubtractWideningOddEven(Vector<sbyte> leftOdd, Vector<sbyte> rightEven) => SubtractWideningOddEven(leftOdd, rightEven);
 
         /// <summary>
         /// svint32_t svsubltb[_s32](svint16_t op1, svint16_t op2)
         ///   SSUBLTB Zresult.S, Zop1.H, Zop2.H
         /// </summary>
-        public static Vector<int> SubtractWideningOddEven(Vector<short> left, Vector<short> right) => SubtractWideningOddEven(left, right);
+        public static Vector<int> SubtractWideningOddEven(Vector<short> leftOdd, Vector<short> rightEven) => SubtractWideningOddEven(leftOdd, rightEven);
 
         /// <summary>
         /// svint64_t svsubltb[_s64](svint32_t op1, svint32_t op2)
         ///   SSUBLTB Zresult.D, Zop1.S, Zop2.S
         /// </summary>
-        public static Vector<long> SubtractWideningOddEven(Vector<int> left, Vector<int> right) => SubtractWideningOddEven(left, right);
+        public static Vector<long> SubtractWideningOddEven(Vector<int> leftOdd, Vector<int> rightEven) => SubtractWideningOddEven(leftOdd, rightEven);
 
 
         // Bit vector table lookups
