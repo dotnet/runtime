@@ -2493,6 +2493,12 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
     RealCOMPlusThrow(throwable, FALSE);
 }
 
+EXCEPTION_DISPOSITION MarkAsIgnoreInManagedExceptionDispatcher(PAL_SEHException& ex)
+{
+    ex.IgnoreInManagedExceptionDispatcher = true;
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
 VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj)
 {
     CONTRACTL
@@ -2503,8 +2509,20 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
     }
     CONTRACTL_END;
 
-    OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
-    RealCOMPlusThrowWorker(throwable, FALSE);
+#ifdef TARGET_WASM
+    PAL_TRY(Object *, exceptionObj, exceptionObj)
+    {
+#endif // TARGET_WASM
+        OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
+        RealCOMPlusThrowWorker(throwable, FALSE);
+#ifdef TARGET_WASM
+    }
+    PAL_EXCEPT(MarkAsIgnoreInManagedExceptionDispatcher(ex))
+    {
+    }
+    PAL_ENDTRY
+#endif // TARGET_WASM
+    UNREACHABLE();
 }
 
 // this function finds the managed callback to get a resource

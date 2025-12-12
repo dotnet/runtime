@@ -4011,6 +4011,7 @@ void InterpCompiler::EmitCanAccessCallout(CORINFO_RESOLVED_TOKEN *pResolvedToken
 
 void InterpCompiler::EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllowed, CORINFO_HELPER_DESC* calloutDesc)
 {
+    /*HACK
     if (accessAllowed == CORINFO_ACCESS_ILLEGAL)
     {
         int32_t svars[CORINFO_ACCESS_ALLOWED_MAX_ARGS];
@@ -4081,6 +4082,7 @@ void InterpCompiler::EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllo
         }
         m_pLastNewIns->data[0] = GetDataForHelperFtn(calloutDesc->helperNum);
     }
+*/
 }
 
 static OpcodePeepElement peepRuntimeAsyncCall[] = {

@@ -289,7 +289,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         }                                           \
         catch (PAL_SEHException& ex)                \
         {                                           \
-            if (nativeRethrow)                      \
+            if (nativeRethrow || ex.IgnoreInManagedExceptionDispatcher) \
             {                                       \
                 throw;                              \
             }                                       \

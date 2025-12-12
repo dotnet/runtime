@@ -3761,6 +3761,7 @@ public:
     // The exception is a hardware exception coming from a native code out of
     // the well known runtime helpers
     bool IsExternal;
+    bool IgnoreInManagedExceptionDispatcher;
 
     void(*ManagedToNativeExceptionCallback)(void* context);
     void* ManagedToNativeExceptionCallbackContext;
@@ -3773,6 +3774,7 @@ public:
         TargetIp = 0;
         RecordsOnStack = onStack;
         IsExternal = false;
+        IgnoreInManagedExceptionDispatcher = false;
         ManagedToNativeExceptionCallback = NULL;
         ManagedToNativeExceptionCallbackContext = NULL;
     }

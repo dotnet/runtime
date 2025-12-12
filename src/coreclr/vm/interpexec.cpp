@@ -940,7 +940,7 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
 MAIN_LOOP:
     try
     {
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+///pavel
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
         while (true)
         {
@@ -4127,7 +4127,6 @@ do                                                                      \
             }
         }
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
     }
     catch (const ResumeAfterCatchException& ex)
     {
