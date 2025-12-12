@@ -1668,8 +1668,8 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
     // STEP 5: Generate instructions to load offset in 11-bits chunks
 
-    int chunkLsbPos = (x < 11) ? 0 : (x - 11);
-    int shift       = (x < 11) ? x : 11;
+    int      chunkLsbPos = (x < 11) ? 0 : (x - 11);
+    int      shift       = (x < 11) ? x : 11;
     uint64_t chunkMask   = (x < 11) ? BitMask64((uint8_t)x) : BitMask64(11);
     while (true)
     {
