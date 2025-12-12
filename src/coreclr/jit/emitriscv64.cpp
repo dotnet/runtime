@@ -1463,7 +1463,7 @@ static inline constexpr unsigned WordMask(uint8_t bits);
 //
 // Arguments:
 //    size - The emit attribute of the target.
-//    reg  - The target register that will receive the constructed 64-bit constant. 
+//    reg  - The target register that will receive the constructed 64-bit constant.
 //    imm  - The 64-bit immediate value to materialize.
 //
 // Notes:
