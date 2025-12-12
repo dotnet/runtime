@@ -92,6 +92,10 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
                     break;
                 case ZipArchiveMode.Read:
                     await zipArchive.ReadEndOfCentralDirectoryAsync(cancellationToken).ConfigureAwait(false);
+
+                    // As there is no API for accessing .Entries asynchronously, we are expected to read the central
+                    // directory up-front
+                    await zipArchive.EnsureCentralDirectoryReadAsync(cancellationToken).ConfigureAwait(false);
                     break;
                 case ZipArchiveMode.Update:
                 default:

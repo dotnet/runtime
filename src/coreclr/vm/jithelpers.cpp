@@ -2270,7 +2270,7 @@ EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
 #endif
 
 #ifdef DEBUGGING_SUPPORTED
-static void DebuggerTraceCall(void* returnAddr, void* thunkDataMaybe)
+void DebuggerTraceCall(void* returnAddr, void* thunkDataMaybe)
 {
     _ASSERTE(CORDebuggerTraceCall());
     _ASSERTE(returnAddr != NULL);
