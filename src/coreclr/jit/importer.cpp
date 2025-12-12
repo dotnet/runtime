@@ -3682,7 +3682,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
             return;
         }
 
-        // Boxing helpers cannot accept addresses with volatile, unaligned, or initclass flags
+        // Boxing helpers allow the "initclass" indir flag, but not volatile/unaligned flags
         GenTreeFlags indirFlags = GTF_EMPTY;
         op1                     = gtNewHelperCallNode(boxHelper, TYP_REF, op2,
                                                       impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, GTF_IND_INITCLASS, &indirFlags));
