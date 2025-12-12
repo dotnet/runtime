@@ -420,6 +420,7 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
+            [StackTraceHidden]
             private unsafe void DispatchContinuations()
             {
                 ExecutionAndSyncBlockStore contexts = default;
@@ -504,13 +505,32 @@ namespace System.Runtime.CompilerServices
 
             private ref byte GetResultStorage() => ref Unsafe.As<T?, byte>(ref m_result);
 
-            private unsafe static Continuation? UnwindToPossibleHandler(Continuation? continuation, Exception ex)
+            private static unsafe Continuation? UnwindToPossibleHandler(Continuation? continuation, Exception ex)
             {
                 while (true)
                 {
                     if (continuation != null && continuation.ResumeInfo != null && continuation.ResumeInfo->DiagnosticIP != null)
 #if !NATIVEAOT
                         AddContinuationToExInternal(continuation.ResumeInfo->DiagnosticIP, ex);
+#else
+        // {
+        //             IntPtr ip = (IntPtr)continuation.ResumeInfo->DiagnosticIP;
+        //             int flags = 0;
+        //             IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(ip,
+        //                 ClassLibFunctionId.AppendExceptionStackFrame);
+
+        //             if (pAppendStackFrame != IntPtr.Zero)
+        //             {
+        //                 try
+        //                 {
+        //                     ((delegate*<object, IntPtr, int, void>)pAppendStackFrame)(ex, ip, flags);
+        //                 }
+        //                 catch
+        //                 {
+        //                     // disallow all exceptions leaking out of callbacks
+        //                 }
+        //             }
+        // }
 #endif
                     if (continuation == null || (continuation.Flags & ContinuationFlags.HasException) != 0)
                         return continuation;

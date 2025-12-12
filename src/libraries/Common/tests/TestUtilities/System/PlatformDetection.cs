@@ -443,18 +443,6 @@ namespace System
             }
         }
 
-        public static bool IsCoreClrInterpreter
-        {
-            get
-            {
-                if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("Interpreter")))
-                    return true;
-                if (int.TryParse(Environment.GetEnvironmentVariable("InterpMode"), out int mode) && (mode > 0))
-                    return true;
-                return false;
-            }
-        }
-
         public static bool IsRuntimeAsyncSupported => !IsCoreClrInterpreter && !IsMonoRuntime && !IsMonoAOT && !IsMonoInterpreter && IsNotNativeAot;
 
         private static Version GetICUVersion()
