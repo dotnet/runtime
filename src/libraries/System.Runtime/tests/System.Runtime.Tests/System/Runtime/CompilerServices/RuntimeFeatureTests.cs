@@ -34,9 +34,14 @@ namespace System.Runtime.CompilerServices.Tests
         [SkipOnMono("IsDynamicCodeCompiled returns false in cases where mono doesn't support these features")]
         public static void DynamicCode_Jit()
         {
-            if (PlatformDetection.IsNativeAot || PlatformDetection.IsAppleMobile)
+            if (PlatformDetection.IsNativeAot)
             {
                 Assert.False(RuntimeFeature.IsDynamicCodeSupported);
+                Assert.False(RuntimeFeature.IsDynamicCodeCompiled);
+            }
+            else if (PlatformDetection.IsAppleMobile)
+            {
+                Assert.True(RuntimeFeature.IsDynamicCodeSupported);
                 Assert.False(RuntimeFeature.IsDynamicCodeCompiled);
             }
             else

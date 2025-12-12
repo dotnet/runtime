@@ -225,7 +225,7 @@ jobs:
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
       - ios_arm64
-      # - tvos_arm64  TODO: https://github.com/dotnet/runtime/issues/120055
+      # - tvos_arm64 TODO: https://github.com/dotnet/runtime/issues/120055
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
