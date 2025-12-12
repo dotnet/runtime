@@ -17,7 +17,9 @@ namespace LibraryImportGenerator.IntegrationTests
 
     public class NativeMarshallingAttributeTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+#pragma warning disable xUnit1004
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), Skip = "Test is not well constructed: https://github.com/dotnet/runtime/issues/122447")]
+#pragma warning restore xUnit1004
         public void GetSameComInterfaceTwiceReturnsUniqueInstances()
         {
             // When using NativeMarshalling with UniqueComInterfaceMarshaller,
