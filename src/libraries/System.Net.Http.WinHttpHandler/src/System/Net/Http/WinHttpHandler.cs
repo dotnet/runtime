@@ -1031,6 +1031,10 @@ namespace System.Net.Http
                         await sendRequestBodyTask.ConfigureAwait(false);
                     }
                 }
+                catch (Exception ex)
+                {
+                    HandleAsyncException(state, state.SavedException ?? ex);
+                }
                 finally
                 {
                     state.ClearSendRequestState();
