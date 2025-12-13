@@ -18,5 +18,18 @@ namespace System.Text.Json.Serialization.Metadata
         /// or <see langword="null"/> if no contract could be resolved.
         /// </returns>
         JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options);
+
+#if NET
+        /// <summary>
+        /// Resolves a <see cref="JsonTypeInfo{T}"/> contract for the requested type and options.
+        /// </summary>
+        /// <param name="options">Configuration used when resolving the metadata.</param>
+        /// <returns>
+        /// A <see cref="JsonTypeInfo{T}"/> instance matching the requested type,
+        /// or <see langword="null"/> if no contract could be resolved.
+        /// </returns>
+        JsonTypeInfo<T>? GetTypeInfo<T>(JsonSerializerOptions options)
+            => (JsonTypeInfo<T>?)GetTypeInfo(typeof(T), options);
+#endif
     }
 }
