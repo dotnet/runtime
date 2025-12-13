@@ -308,8 +308,6 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
     ssize_t imm;
 
     assert(tmpReg != codeGen->rsGetRsvdReg());
-    // namu
-    // assert(reg1 != codeGen->rsGetRsvdReg());
 
     emitAttr size = EA_SIZE(attr);
 

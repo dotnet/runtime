@@ -1201,7 +1201,6 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     }
 #endif // FEATURE_SIMD
 
-    // namu: refactor dead codes
     if (IsContainableImmed(storeLoc, op1))
     {
         MakeSrcContained(storeLoc, op1);
@@ -1216,7 +1215,7 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
         MakeSrcContained(storeLoc, op1);
     }
 
-    // namu
+    // Support emitting PC-relative addresses for handles hoisted by constant CSE
     if (storeLoc->OperIs(GT_STORE_LCL_VAR) &&
         op1->IsIconHandle() &&
         op1->AsIntCon()->FitsInAddrBase(comp) &&
