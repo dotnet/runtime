@@ -17,7 +17,7 @@
     <ExternalsProject Include="externals.csproj" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
     <ProjectReference Include="@(ExternalsProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
 
-    <!-- Task for building the PlatformManfiest and the sfx deps.json -->
+    <!-- Task for building the PlatformManifest and the sfx deps.json -->
     <ProjectReference Include="$(RepoTasksDir)installer.tasks\installer.tasks.csproj" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
 
     <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'"/>
