@@ -256,11 +256,11 @@ function configureRuntime(dotnet, runArgs) {
         .withVirtualWorkingDirectory(runArgs.workingDirectory)
         .withEnvironmentVariables(runArgs.environmentVariables)
         .withDiagnosticTracing(runArgs.diagnosticTracing)
-        .withExitOnUnhandledError()
-        .withExitCodeLogging()
-        .withElementOnExit()
-        .withInteropCleanupOnExit()
-        .withDumpThreadsOnNonZeroExit()
+        //TODO .withExitOnUnhandledError()
+        //TODO .withExitCodeLogging()
+        //TODO .withElementOnExit()
+        //TODO .withInteropCleanupOnExit()
+        //TODO .withDumpThreadsOnNonZeroExit()
         .withConfig({
             loadAllSatelliteResources: true,
             jsThreadBlockingMode: "ThrowWhenBlockingWait",
@@ -299,7 +299,7 @@ function configureRuntime(dotnet, runArgs) {
         dotnet.withWaitingForDebugger(-1);
     }
     if (runArgs.forwardConsole) {
-        dotnet.withConsoleForwarding();
+        // TODO dotnet.withConsoleForwarding();
     }
 }
 

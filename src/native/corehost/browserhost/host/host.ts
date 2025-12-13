@@ -17,8 +17,10 @@ export function registerDllBytes(bytes: Uint8Array, asset: { name: string, virtu
 
         const ptr = Module.HEAPU32[ptrPtr as any >>> 2];
         Module.HEAPU8.set(bytes, ptr >>> 0);
-        loadedAssemblies.set(asset.name, { ptr, length: bytes.length });
         loadedAssemblies.set(asset.virtualPath, { ptr, length: bytes.length });
+        if (!asset.virtualPath.startsWith("/")) {
+            loadedAssemblies.set("/" + asset.virtualPath, { ptr, length: bytes.length });
+        }
     } finally {
         Module.stackRestore(sp);
     }
@@ -94,6 +96,7 @@ export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStart
         Module.HEAPU32[((outSize as any) + 4) >>> 2] = 0;
         return true;
     }
+    dotnetLogger.debug(`Assembly not found: '${path}'`);
     Module.HEAPU32[outDataStartPtr as any >>> 2] = 0;
     Module.HEAPU32[outSize as any >>> 2] = 0;
     Module.HEAPU32[((outSize as any) + 4) >>> 2] = 0;
@@ -104,6 +107,9 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
     const config = dotnetApi.getConfig();
     if (!mainAssemblyName) {
         mainAssemblyName = config.mainAssemblyName!;
+    }
+    if (!mainAssemblyName.endsWith(".dll")) {
+        mainAssemblyName += ".dll";
     }
     const mainAssemblyNamePtr = dotnetBrowserUtilsExports.stringToUTF8Ptr(mainAssemblyName) as any;
 

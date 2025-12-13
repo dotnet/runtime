@@ -437,7 +437,7 @@ export async function backbackAsync(arg1, arg2, arg3) {
 }
 
 export async function callJavaScriptLibrary(a, b) {
-    const exports = await App.runtime.getAssemblyExports("JavaScriptLibrary.dll");
+    const exports = await App.runtime.getAssemblyExports("JavaScriptLibrary");
     return exports.JavaScriptLibrary.JavaScriptInterop.ExportedMethod(a, b);
 }
 
@@ -454,7 +454,7 @@ globalThis.rebound = {
 }
 
 export async function setup() {
-    dllExports = await App.runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests.dll");
+    dllExports = await App.runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests");
 }
 
 // console.log('JavaScriptTestHelper:' Object.keys(globalThis.JavaScriptTestHelper));

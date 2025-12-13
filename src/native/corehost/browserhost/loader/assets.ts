@@ -64,7 +64,7 @@ export async function createRuntime(downloadOnly: boolean, loadBootResource?: Lo
 
 async function loadJSModule(asset: JsAsset): Promise<JsModuleExports> {
     if (asset.name && !asset.resolvedUrl) {
-        asset.resolvedUrl = locateFile(asset.name);
+        asset.resolvedUrl = locateFile(asset.name, true);
     }
     if (!asset.resolvedUrl) throw new Error("Invalid config, resources is not set");
     return await import(/* webpackIgnore: true */ asset.resolvedUrl);
