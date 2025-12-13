@@ -498,8 +498,7 @@ void emitter::emitDispIns(
 
         case IF_MEMARG:
         {
-            // TODO-WASM: decide what our strategy for alignment hints is and display these accordingly.
-            unsigned       log2align = emitGetAlignHintLog2(id) + 1;
+            unsigned       log2align = emitGetAlignHintLog2(id);
             cnsval_ssize_t offset    = emitGetInsSC(id);
             printf(" %u %llu", log2align, (uint64_t)offset);
         }
