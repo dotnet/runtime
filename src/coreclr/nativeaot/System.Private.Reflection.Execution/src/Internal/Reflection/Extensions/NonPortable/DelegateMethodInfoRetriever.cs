@@ -57,13 +57,7 @@ namespace Internal.Reflection.Extensions.NonPortable
             {
                 if (!ReflectionExecution.ExecutionEnvironment.TryGetMethodForOriginalLdFtnResult(originalLdFtnResult, ref typeOfFirstParameterIfInstanceDelegate, out methodHandle, out genericMethodTypeArgumentHandles))
                 {
-                    ReflectionExecution.ExecutionEnvironment.GetFunctionPointerAndInstantiationArgumentForOriginalLdFtnResult(originalLdFtnResult, out IntPtr ip, out IntPtr _);
-
-                    string methodDisplayString = RuntimeAugments.TryGetMethodDisplayStringFromIp(ip);
-                    if (methodDisplayString == null)
-                        throw new NotSupportedException(SR.DelegateGetMethodInfo_NoDynamic);
-                    else
-                        throw new NotSupportedException(SR.Format(SR.DelegateGetMethodInfo_NoDynamic_WithDisplayString, methodDisplayString));
+                    throw new NotSupportedException(SR.DelegateGetMethodInfo_NoDynamic);
                 }
             }
             return (MethodInfo)ExecutionDomain.GetMethod(typeOfFirstParameterIfInstanceDelegate, methodHandle, genericMethodTypeArgumentHandles);
