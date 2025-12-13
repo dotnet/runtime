@@ -1246,10 +1246,9 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             else if (data->IsIntegralConst())
             {
                 ssize_t cnsVal = data->AsIntConCommon()->IconValue();
-                dataReg = (targetReg == REG_NA) ? rsGetRsvdReg() : targetReg; // Use tempReg if spilled
+                dataReg        = (targetReg == REG_NA) ? rsGetRsvdReg() : targetReg; // Use tempReg if spilled
 
-                if (data->IsIconHandle() &&
-                    data->AsIntCon()->FitsInAddrBase(compiler) &&
+                if (data->IsIconHandle() && data->AsIntCon()->FitsInAddrBase(compiler) &&
                     data->AsIntCon()->AddrNeedsReloc(compiler))
                 {
                     // Support emitting PC-relative addresses for handles hoisted by constant CSE
