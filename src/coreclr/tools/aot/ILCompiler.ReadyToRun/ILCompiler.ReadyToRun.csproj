@@ -45,7 +45,6 @@
     <Compile Include="..\..\Common\System\FormattingHelpers.cs" Link="Common\FormattingHelpers.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\ILProvider.cs" Link="IL\ILProvider.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs" Link="IL\ILReader.cs" />
-    <Compile Include="..\..\Common\TypeSystem\IL\ILStubReferences.cs" Link="IL\ILStubReferences.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncThunks.cs" Link="IL\Stubs\AsyncThunks.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.cs" Link="IL\Stubs\AsyncResumptionStub.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.Sorting.cs" Link="IL\Stubs\AsyncResumptionStub.Sorting.cs" />
@@ -302,6 +301,7 @@
     <Compile Include="IBC\IBCProfileParser.cs" />
     <Compile Include="IL\Stubs\InstanceCalliHelperIntrinsics.cs" />
     <Compile Include="IL\Stubs\PInvokeILEmitter.cs" />
+    <Compile Include="IL\ILStubReferences.cs" />
     <Compile Include="Interop\IL\Marshaller.ReadyToRun.cs" />
     <Compile Include="Compiler\PerfEventSource.cs" />
     <Compile Include="ObjectWriter\ProfileFileBuilder.cs" />
