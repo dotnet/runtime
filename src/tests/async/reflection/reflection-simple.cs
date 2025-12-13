@@ -280,4 +280,45 @@ public class Async2Reflection
     {
         return await GetCurrentMethodTask();
     }
+
+    [Fact]
+    public static void FromStack()
+    {
+        // Note: async1 leaks implementation details here and returns "Void MoveNext()"
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAsync()", FromStackAsync().Result);
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAsync()", FromStackAwait().Result);
+
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackTask()", FromStackTask().Result);
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackTask()", FromStackAwaitTask().Result);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<string> FromStackAsync()
+    {
+        await Task.Yield();
+        StackFrame stackFrame = new StackFrame(0);
+        MethodInfo mi = (MethodInfo)stackFrame.GetMethod();
+        return mi.ToString()!;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<string> FromStackAwait()
+    {
+        return await FromStackAsync();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Task<string> FromStackTask()
+    {
+        StackFrame stackFrame = new StackFrame(0);
+        MethodInfo mi = (MethodInfo)stackFrame.GetMethod();
+        return Task.FromResult(mi.ToString()!);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<string> FromStackAwaitTask()
+    {
+        return await FromStackTask();
+    }
+
 }
