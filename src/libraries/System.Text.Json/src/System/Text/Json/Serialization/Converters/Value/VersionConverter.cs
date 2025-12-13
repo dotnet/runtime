@@ -2,21 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Text.Json.Nodes;
+using System.Text.Json.Extensions;
 using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class VersionConverter : JsonPrimitiveConverter<Version?>
     {
-#if NET
-        private const int MinimumVersionLength = 3; // 0.0
-
-        private const int MaximumVersionLength = 43; // 2147483647.2147483647.2147483647.2147483647
-
-        private const int MaximumEscapedVersionLength = JsonConstants.MaxExpansionFactorWhileEscaping * MaximumVersionLength;
-#endif
-
         public override Version? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType is JsonTokenType.Null)
@@ -29,53 +21,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowInvalidOperationException_ExpectedString(reader.TokenType);
             }
 
-            return ReadCore(ref reader);
-        }
-
-        private static Version ReadCore(ref Utf8JsonReader reader)
-        {
-            Debug.Assert(reader.TokenType is JsonTokenType.PropertyName or JsonTokenType.String);
-
-#if NET
-            if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, MinimumVersionLength, MaximumEscapedVersionLength))
-            {
-                ThrowHelper.ThrowFormatException(DataType.Version);
-            }
-
-            Span<char> charBuffer = stackalloc char[MaximumEscapedVersionLength];
-            int bytesWritten = reader.CopyString(charBuffer);
-            ReadOnlySpan<char> source = charBuffer.Slice(0, bytesWritten);
-
-            if (!char.IsDigit(source[0]) || !char.IsDigit(source[^1]))
-            {
-                // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
-                // we need to make sure that our input doesn't have them,
-                // and if it has - we need to throw, to match behaviour of other converters
-                // since Version.TryParse allows them and silently parses input to Version
-                ThrowHelper.ThrowFormatException(DataType.Version);
-            }
-
-            if (Version.TryParse(source, out Version? result))
-            {
-                return result;
-            }
-#else
-            string? versionString = reader.GetString();
-            if (!string.IsNullOrEmpty(versionString) && (!char.IsDigit(versionString[0]) || !char.IsDigit(versionString[versionString.Length - 1])))
-            {
-                // Since leading and trailing whitespaces are forbidden throughout System.Text.Json converters
-                // we need to make sure that our input doesn't have them,
-                // and if it has - we need to throw, to match behaviour of other converters
-                // since Version.TryParse allows them and silently parses input to Version
-                ThrowHelper.ThrowFormatException(DataType.Version);
-            }
-            if (Version.TryParse(versionString, out Version? result))
-            {
-                return result;
-            }
-#endif
-            ThrowHelper.ThrowJsonException();
-            return null;
+            return reader.GetVersion();
         }
 
         public override void Write(Utf8JsonWriter writer, Version? value, JsonSerializerOptions options)
@@ -87,9 +33,9 @@ namespace System.Text.Json.Serialization.Converters
             }
 
 #if NET
-            Span<byte> span = stackalloc byte[MaximumVersionLength];
+            Span<byte> span = stackalloc byte[JsonConstants.MaximumVersionLength];
             bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
-            Debug.Assert(formattedSuccessfully && charsWritten >= MinimumVersionLength);
+            Debug.Assert(formattedSuccessfully && charsWritten >= JsonConstants.MinimumVersionLength);
             writer.WriteStringValue(span.Slice(0, charsWritten));
 #else
             writer.WriteStringValue(value.ToString());
@@ -98,7 +44,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override Version ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            return ReadCore(ref reader);
+            return reader.GetVersion();
         }
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, Version value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
@@ -106,9 +52,9 @@ namespace System.Text.Json.Serialization.Converters
             ArgumentNullException.ThrowIfNull(value);
 
 #if NET
-            Span<byte> span = stackalloc byte[MaximumVersionLength];
+            Span<byte> span = stackalloc byte[JsonConstants.MaximumVersionLength];
             bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
-            Debug.Assert(formattedSuccessfully && charsWritten >= MinimumVersionLength);
+            Debug.Assert(formattedSuccessfully && charsWritten >= JsonConstants.MinimumVersionLength);
             writer.WritePropertyName(span.Slice(0, charsWritten));
 #else
             writer.WritePropertyName(value.ToString());
