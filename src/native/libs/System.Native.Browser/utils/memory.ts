@@ -61,7 +61,7 @@ export function setHeapU32(offset: MemOffset, value: NumberOrPointer): void {
 
 export function setHeapI8(offset: MemOffset, value: number): void {
     assertIntInRange(value, -0x80, 0x7F);
-    Module.HEAP8[<any>offset] = value;
+    Module.HEAP8[<any>offset >>> 0] = value;
 }
 
 export function setHeapI16(offset: MemOffset, value: number): void {
@@ -139,16 +139,16 @@ export function getHeapU16_local(localView: Uint16Array, offset: MemOffset): num
 }
 
 export function getHeapU32(offset: MemOffset): number {
-    return Module.HEAPU32[<any>offset >>> 2];
+    return Module.HEAPU32[<any>offset >>> 2] >>> 0;
 }
 
 // does not check for growable heap
 export function getHeapU32_local(localView: Uint32Array, offset: MemOffset): number {
-    return localView[<any>offset >>> 2];
+    return localView[<any>offset >>> 2] >>> 0;
 }
 
 export function getHeapI8(offset: MemOffset): number {
-    return Module.HEAP8[<any>offset];
+    return Module.HEAP8[<any>offset >>> 0];
 }
 
 export function getHeapI16(offset: MemOffset): number {

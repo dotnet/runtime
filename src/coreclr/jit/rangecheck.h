@@ -328,6 +328,25 @@ struct RangeOps
         return Limit(Limit::keUnknown);
     }
 
+    // Perform 'value' - 'cns'
+    static Limit SubtractConstantLimit(const Limit& value, const Limit& cns)
+    {
+        assert(cns.IsConstant());
+
+        if (cns.GetConstant() == INT_MIN)
+        {
+            // Subtracting INT_MIN would overflow
+            return Limit(Limit::keUnknown);
+        }
+
+        Limit l = value;
+        if (l.AddConstant(-cns.GetConstant()))
+        {
+            return l;
+        }
+        return Limit(Limit::keUnknown);
+    }
+
     // Perform 'value' * 'cns'
     static Limit MultiplyConstantLimit(const Limit& value, const Limit& cns)
     {
@@ -352,9 +371,9 @@ struct RangeOps
         return Limit(Limit::keUnknown);
     }
 
-    // Given two ranges "r1" and "r2", perform an add operation on the
-    // ranges.
-    static Range Add(Range& r1, Range& r2)
+    // Given two ranges "r1" and "r2", perform a generic 'op' operation on the ranges.
+    template <typename Operation>
+    static Range ApplyRangeOp(Range& r1, Range& r2, Operation op)
     {
         Limit& r1lo = r1.LowerLimit();
         Limit& r1hi = r1.UpperLimit();
@@ -376,21 +395,43 @@ struct RangeOps
 
         if (r1lo.IsConstant())
         {
-            result.lLimit = AddConstantLimit(r2lo, r1lo);
+            result.lLimit = op(r2lo, r1lo);
         }
         if (r2lo.IsConstant())
         {
-            result.lLimit = AddConstantLimit(r1lo, r2lo);
+            result.lLimit = op(r1lo, r2lo);
         }
         if (r1hi.IsConstant())
         {
-            result.uLimit = AddConstantLimit(r2hi, r1hi);
+            result.uLimit = op(r2hi, r1hi);
         }
         if (r2hi.IsConstant())
         {
-            result.uLimit = AddConstantLimit(r1hi, r2hi);
+            result.uLimit = op(r1hi, r2hi);
         }
+
         return result;
+    }
+
+    static Range Add(Range& r1, Range& r2)
+    {
+        return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
+            return AddConstantLimit(a, b);
+        });
+    }
+
+    static Range Subtract(Range& r1, Range& r2)
+    {
+        return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
+            return SubtractConstantLimit(a, b);
+        });
+    }
+
+    static Range Multiply(Range& r1, Range& r2)
+    {
+        return ApplyRangeOp(r1, r2, [](Limit& a, Limit& b) {
+            return MultiplyConstantLimit(a, b);
+        });
     }
 
     static Range ShiftRight(Range& r1, Range& r2)
@@ -427,47 +468,6 @@ struct RangeOps
             result.uLimit = ShiftRightConstantLimit(r1hi, r2hi);
         }
 
-        return result;
-    }
-
-    // Given two ranges "r1" and "r2", perform an multiply operation on the
-    // ranges.
-    static Range Multiply(Range& r1, Range& r2)
-    {
-        Limit& r1lo = r1.LowerLimit();
-        Limit& r1hi = r1.UpperLimit();
-        Limit& r2lo = r2.LowerLimit();
-        Limit& r2hi = r2.UpperLimit();
-
-        Range result = Limit(Limit::keUnknown);
-
-        // Check lo ranges if they are dependent and not unknown.
-        if ((r1lo.IsDependent() && !r1lo.IsUnknown()) || (r2lo.IsDependent() && !r2lo.IsUnknown()))
-        {
-            result.lLimit = Limit(Limit::keDependent);
-        }
-        // Check hi ranges if they are dependent and not unknown.
-        if ((r1hi.IsDependent() && !r1hi.IsUnknown()) || (r2hi.IsDependent() && !r2hi.IsUnknown()))
-        {
-            result.uLimit = Limit(Limit::keDependent);
-        }
-
-        if (r1lo.IsConstant())
-        {
-            result.lLimit = MultiplyConstantLimit(r2lo, r1lo);
-        }
-        if (r2lo.IsConstant())
-        {
-            result.lLimit = MultiplyConstantLimit(r1lo, r2lo);
-        }
-        if (r1hi.IsConstant())
-        {
-            result.uLimit = MultiplyConstantLimit(r2hi, r1hi);
-        }
-        if (r2hi.IsConstant())
-        {
-            result.uLimit = MultiplyConstantLimit(r1hi, r2hi);
-        }
         return result;
     }
 

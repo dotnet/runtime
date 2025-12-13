@@ -196,11 +196,13 @@ private:
     GenTreeLclVar* SpillStructCallResult(GenTreeCall* call) const;
 #endif // WINDOWS_AMD64_ABI
     GenTree* LowerDelegateInvoke(GenTreeCall* call);
+    void     OptimizeCallIndirectTargetEvaluation(GenTreeCall* call);
     GenTree* LowerIndirectNonvirtCall(GenTreeCall* call);
     GenTree* LowerDirectCall(GenTreeCall* call);
     GenTree* LowerNonvirtPinvokeCall(GenTreeCall* call);
     GenTree* LowerTailCallViaJitHelper(GenTreeCall* callNode, GenTree* callTarget);
     void     LowerFastTailCall(GenTreeCall* callNode);
+    GenTree* FirstOperand(GenTree* node);
     void     RehomeArgForFastTailCall(unsigned int lclNum,
                                       GenTree*     insertTempBefore,
                                       GenTree*     lookForUsesStart,
@@ -415,6 +417,10 @@ private:
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
 #endif // TARGET_XARCH
 
+#ifdef TARGET_WASM
+    GenTree* LowerNeg(GenTreeOp* node);
+#endif
+
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
 
     bool TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode);
@@ -470,10 +476,10 @@ private:
     bool     TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
     void     StoreFFRValue(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
-    GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types   type,
-                                                 GenTree*    op1,
-                                                 CorInfoType simdBaseJitType,
-                                                 unsigned    simdSize);
+    GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types type,
+                                                 GenTree*  op1,
+                                                 var_types simdBaseType,
+                                                 unsigned  simdSize);
     GenTree* NormalizeIndexToNativeSized(GenTree* index);
 #endif // FEATURE_HW_INTRINSICS
 

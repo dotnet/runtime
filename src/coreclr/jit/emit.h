@@ -637,6 +637,7 @@ protected:
         bool              idFinallyCall; // Branch instruction is a call to finally
         bool              idCatchRet;    // Instruction is for a catch 'return'
         CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
+        BasicBlock*       idTargetBlock; // Target block for branches
     };
 
 #ifdef TARGET_ARM
@@ -1264,12 +1265,7 @@ protected:
             _idCodeSize = sz;
         }
 #elif defined(TARGET_WASM)
-        unsigned idCodeSize() const
-        {
-            // TODO-WASM: return an accurate number here based on instruction format/opcode like ARM64 above.
-            NYI_WASM("isCodeSize");
-            return 0;
-        }
+        unsigned idCodeSize() const;
 #endif
 
         emitAttr idOpSize() const
@@ -2460,8 +2456,8 @@ protected:
     static bool          HasApxPpx(instruction ins);
 #endif // TARGET_XARCH
 
-    cnsval_ssize_t emitGetInsSC(const instrDesc* id) const;
-    unsigned       emitInsCount;
+    NOT_ARM(static) cnsval_ssize_t emitGetInsSC(const instrDesc* id);
+    unsigned emitInsCount;
 
     /************************************************************************/
     /*           A few routines used for debug display purposes             */
@@ -3460,15 +3456,14 @@ public:
 
     void emitStackKillArgs(BYTE* addr, unsigned count, unsigned char callInstrSize);
 
-    void emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize);
-
-    bool emitLastInsIsCallWithGC();
-
     // Helpers for the above
 
     void emitStackPushLargeStk(BYTE* addr, GCtype gcType, unsigned count = 1);
     void emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callInstrSize, unsigned count = 1);
 #endif // EMIT_TRACK_STACK_DEPTH
+
+    bool emitLastInsIsCallWithGC();
+    void emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize);
 
     /* Liveness of stack variables, and registers */
 
@@ -3506,17 +3501,6 @@ public:
     /************************************************************************/
     /*      The following logic keeps track of initialized data sections    */
     /************************************************************************/
-
-    // Note: Keep synchronized with AsyncHelpers.ResumeInfo
-    struct dataAsyncResumeInfo
-    {
-        // delegate*<Continuation, ref byte, Continuation>
-        target_size_t Resume;
-        // Pointer in main code for diagnostics. See comments on
-        // ICorDebugInfo::AsyncSuspensionPoint::DiagnosticNativeOffset and
-        // ResumeInfo.DiagnosticIP in SPC.
-        target_size_t DiagnosticIP;
-    };
 
     /* One of these is allocated for every blob of initialized data */
 
@@ -3591,26 +3575,26 @@ public:
 #define emitRecordRelocationWithAddlDelta(location, target, fRelocType, addlDelta)                                     \
     emitRecordRelocationHelp(location, target, fRelocType, #fRelocType, addlDelta)
 
-    void emitRecordRelocationHelp(void*       location,      /* IN */
-                                  void*       target,        /* IN */
-                                  uint16_t    fRelocType,    /* IN */
-                                  const char* relocTypeName, /* IN */
-                                  int32_t     addlDelta = 0);    /* IN */
+    void emitRecordRelocationHelp(void*        location,      /* IN */
+                                  void*        target,        /* IN */
+                                  CorInfoReloc fRelocType,    /* IN */
+                                  const char*  relocTypeName, /* IN */
+                                  int32_t      addlDelta = 0);     /* IN */
 
 #else // !DEBUG
 
-    void emitRecordRelocationWithAddlDelta(void*    location,   /* IN */
-                                           void*    target,     /* IN */
-                                           uint16_t fRelocType, /* IN */
-                                           int32_t  addlDelta)   /* IN */
+    void emitRecordRelocationWithAddlDelta(void*        location,   /* IN */
+                                           void*        target,     /* IN */
+                                           CorInfoReloc fRelocType, /* IN */
+                                           int32_t      addlDelta)       /* IN */
     {
         emitRecordRelocation(location, target, fRelocType, addlDelta);
     }
 
-    void emitRecordRelocation(void*    location,      /* IN */
-                              void*    target,        /* IN */
-                              uint16_t fRelocType,    /* IN */
-                              int32_t  addlDelta = 0); /* IN */
+    void emitRecordRelocation(void*        location,   /* IN */
+                              void*        target,     /* IN */
+                              CorInfoReloc fRelocType, /* IN */
+                              int32_t      addlDelta = 0);  /* IN */
 
 #endif // !DEBUG
 
@@ -3622,12 +3606,6 @@ public:
     void emitRecordCallSite(ULONG                 instrOffset,   /* IN */
                             CORINFO_SIG_INFO*     callSig,       /* IN */
                             CORINFO_METHOD_HANDLE methodHandle); /* IN */
-
-#ifdef DEBUG
-    // This is a scratch buffer used to minimize the number of sig info structs
-    // we have to allocate for recordCallSite.
-    CORINFO_SIG_INFO* emitScratchSigInfo;
-#endif // DEBUG
 
     /************************************************************************/
     /*               Logic to collect and display statistics                */
@@ -3847,17 +3825,6 @@ inline unsigned emitter::emitGetEpilogCnt()
 inline UNATIVE_OFFSET emitter::emitDataSize()
 {
     return emitConsDsc.dsdOffs;
-}
-
-/*****************************************************************************
- *
- *  Return a handle to the current position in the output stream. This can
- *  be later converted to an actual code offset in bytes.
- */
-
-inline void* emitter::emitCurBlock()
-{
-    return emitCurIG;
 }
 
 /*****************************************************************************

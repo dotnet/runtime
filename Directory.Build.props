@@ -36,13 +36,14 @@
         - src/mono/msbuild/common/MonoAOTCompiler.props
         - src/tasks/AppleAppBuilder/Xcode.cs
         - src/tasks/MobileBuildTasks/Apple/AppleProject.cs
+        - src/tasks/Crossgen2Tasks/Microsoft.NET.CrossGen.targets
         - https://github.com/dotnet/sdk repo > src/Installer/redist-installer/targets/GeneratePKG.targets
      -->
     <AndroidApiLevelMin>21</AndroidApiLevelMin>
-    <iOSVersionMin>12.2</iOSVersionMin>
-    <tvOSVersionMin>12.2</tvOSVersionMin>
+    <iOSVersionMin>13.0</iOSVersionMin>
+    <tvOSVersionMin>13.0</tvOSVersionMin>
     <macOSVersionMin>12.0</macOSVersionMin>
-    <MacCatalystVersionMin>15.0</MacCatalystVersionMin>
+    <MacCatalystVersionMin>15.2</MacCatalystVersionMin>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -57,7 +58,7 @@
 
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <NetCoreAppCurrentVersion>10.0</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrentVersion>11.0</NetCoreAppCurrentVersion>
     <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>
     <NetCoreAppCurrentTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
     <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
@@ -65,11 +66,11 @@
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
 
     <!-- The previous supported .NET version. -->
-    <NetCoreAppPrevious>net9.0</NetCoreAppPrevious>
-    <NetCoreAppPrevious Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppPrevious>
+    <NetCoreAppPrevious />
+    <!-- <NetCoreAppPrevious Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppPrevious> -->
 
     <!-- The minimum supported .NET version. -->
-    <NetCoreAppMinimum>net8.0</NetCoreAppMinimum>
+    <NetCoreAppMinimum>net10.0</NetCoreAppMinimum>
     <NetCoreAppMinimum Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppMinimum>
 
     <!-- when this is updated, make sure to keep $(_NetCoreAppToolCurrent)
@@ -87,8 +88,8 @@
     <NetFrameworkToolCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
     <NetFrameworkCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
 
-    <ApiCompatNetCoreAppBaselineVersion>9.0.0</ApiCompatNetCoreAppBaselineVersion>
-    <ApiCompatNetCoreAppBaselineTFM>net9.0</ApiCompatNetCoreAppBaselineTFM>
+    <ApiCompatNetCoreAppBaselineVersion>10.0.0</ApiCompatNetCoreAppBaselineVersion>
+    <ApiCompatNetCoreAppBaselineTFM>net10.0</ApiCompatNetCoreAppBaselineTFM>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateConfiguration">
@@ -178,7 +179,7 @@
 
   <PropertyGroup>
     <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(TargetRid).$(HostConfiguration)', 'corehost'))</DotNetHostBinDir>
-    <DotNetCdacBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mscordaccore_universal', '$(Configuration)', '$(NetCoreAppCurrent)', '$(PortableTargetRid)', 'publish'))</DotNetCdacBinDir>
+    <DotNetCdacBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mscordaccore_universal', '$(Configuration)', '$(PortableTargetRid)', 'publish'))</DotNetCdacBinDir>
   </PropertyGroup>
 
   <!--Feature switches -->
