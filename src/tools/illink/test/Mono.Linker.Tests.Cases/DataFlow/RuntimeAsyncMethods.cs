@@ -14,6 +14,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
     [SkipKeptItemsValidation]
     [SetupCompileArgument("/features:runtime-async=on")]
     [SetupCompileArgument("/nowarn:SYSLIB5007")]
+    [ExpectedNoWarnings]
     public class RuntimeAsyncMethods
     {
         public static async Task Main()
@@ -26,6 +27,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             await RuntimeAsyncReturningAnnotatedType();
             await RuntimeAsyncWithCorrectParameter(null);
             await RuntimeAsyncWithLocalAll();
+            await RuntimeAsyncWithLambda();
         }
 
         static async Task BasicRuntimeAsyncMethod()
@@ -102,6 +104,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             Type t = GetWithAllMembers();
             await Task.Delay(1);
             t.RequiresAll();
+        }
+
+        class TypeWithRucMethod
+        {
+            [RequiresUnreferencedCode("RUC")]
+            public static void RucMethod() { }
+        }
+
+        static async Task RuntimeAsyncWithLambda()
+        {
+            await Task.Run([ExpectedWarning("IL2026", nameof(TypeWithRucMethod.RucMethod))] () => typeof(TypeWithRucMethod).GetMethods());
         }
     }
 }
