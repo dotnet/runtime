@@ -251,18 +251,21 @@ export type Asset = {
 export type WasmAsset = Asset & {
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 }
 
 export type AssemblyAsset = Asset & {
     virtualPath: string;
     name: string; // actually URL
     hash?: string | null | "";
+    cache?: RequestCache;
 }
 
 export type PdbAsset = Asset & {
     virtualPath: string;
     name: string; // actually URL
     hash?: string | null | "";
+    cache?: RequestCache;
 }
 
 export type JsAsset = Asset & {
@@ -277,18 +280,21 @@ export type JsAsset = Asset & {
 
 export type SymbolsAsset = Asset & {
     name: string; // actually URL
+    cache?: RequestCache;
 }
 
 export type VfsAsset = Asset & {
     virtualPath: string;
     name: string; // actually URL
     hash?: string | null | "";
+    cache?: RequestCache;
 }
 
 export type IcuAsset = Asset & {
     virtualPath: string;
     name: string; // actually URL
     hash?: string | null | "";
+    cache?: RequestCache;
 }
 
 /**
