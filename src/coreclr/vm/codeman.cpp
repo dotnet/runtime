@@ -29,6 +29,9 @@
 #include "strsafe.h"
 
 #include "configuration.h"
+#if !defined(DACCESS_COMPILE)
+#include "../debug/ee/executioncontrol.h"
+#endif // !DACCESS_COMPILE
 
 #include <minipal/cpufeatures.h>
 #include <minipal/cpuid.h>
@@ -1196,6 +1199,14 @@ void EEJitManager::SetCpuInfo()
     // Get the maximum bitwidth of Vector<T>, rounding down to the nearest multiple of 128-bits
     uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
 
+#if defined(FEATURE_INTERPRETER)
+    if (maxVectorTBitWidth != 128 && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3)
+    {
+        // Disable larger Vector<T> sizes when interpreter is enabled
+        maxVectorTBitWidth = 128;
+    }
+#endif
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     CPUCompileFlags.Set(InstructionSet_VectorT128);
 
@@ -1213,7 +1224,7 @@ void EEJitManager::SetCpuInfo()
 
     // x86-64-v2
 
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
+    if (g_pConfig->EnableHWIntrinsic())
     {
         CPUCompileFlags.Set(InstructionSet_X86Base);
     }
@@ -1324,7 +1335,7 @@ void EEJitManager::SetCpuInfo()
 #elif defined(TARGET_ARM64)
     CPUCompileFlags.Set(InstructionSet_VectorT128);
 
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
+    if (g_pConfig->EnableHWIntrinsic())
     {
         CPUCompileFlags.Set(InstructionSet_ArmBase);
         CPUCompileFlags.Set(InstructionSet_AdvSimd);
@@ -1408,7 +1419,7 @@ void EEJitManager::SetCpuInfo()
         g_arm64_atomics_present = true;
     }
 #elif defined(TARGET_RISCV64)
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
+    if (g_pConfig->EnableHWIntrinsic())
     {
         CPUCompileFlags.Set(InstructionSet_RiscV64Base);
     }
@@ -1508,6 +1519,14 @@ void EEJitManager::SetCpuInfo()
     // because Vector512.IsHardwareAccelerated returns false due to config or automatic throttling.
 
     uint32_t preferredVectorBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PreferredVectorBitWidth) / 128) * 128;
+
+#ifdef FEATURE_INTERPRETER
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3)
+    {
+        // Disable larger Vector<T> sizes when interpreter is enabled, and not compiling S.P.Corelib
+        preferredVectorBitWidth = 128;
+    }
+#endif
 
     if ((preferredVectorBitWidth == 0) && throttleVector512)
     {
@@ -2412,7 +2431,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     if (pHp->CLRPersonalityRoutine != NULL)
     {
         ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
-        emitJump(pHp->CLRPersonalityRoutine, personalityRoutineWriterHolder.GetRW(), (void *)ProcessCLRException);
+        emitBackToBackJump(pHp->CLRPersonalityRoutine, personalityRoutineWriterHolder.GetRW(), (void *)ProcessCLRException);
     }
 #endif // TARGET_64BIT
 
@@ -3963,17 +3982,6 @@ BOOL EECodeGenManager::GetBoundariesAndVarsWorker(
     if (pDebugInfo == NULL)
         return FALSE;
 
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-    BOOL hasFlagByte = TRUE;
-#else
-    BOOL hasFlagByte = FALSE;
-#endif
-
-    if (m_storeRichDebugInfo)
-    {
-        hasFlagByte = TRUE;
-    }
-
     // Uncompress. This allocates memory and may throw.
     CompressDebugInfo::RestoreBoundariesAndVars(
         fpNew,
@@ -3981,8 +3989,7 @@ BOOL EECodeGenManager::GetBoundariesAndVarsWorker(
         boundsType,
         pDebugInfo,      // input
         pcMap, ppMap,    // output
-        pcVars, ppVars,  // output
-        hasFlagByte
+        pcVars, ppVars   // output
     );
 
     return TRUE;
@@ -4047,22 +4054,10 @@ size_t EECodeGenManager::WalkILOffsetsWorker(PTR_BYTE pDebugInfo,
     if (pDebugInfo == NULL)
         return 0;
 
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-    BOOL hasFlagByte = TRUE;
-#else
-    BOOL hasFlagByte = FALSE;
-#endif
-
-    if (m_storeRichDebugInfo)
-    {
-        hasFlagByte = TRUE;
-    }
-
     // Uncompress. This allocates memory and may throw.
     return CompressDebugInfo::WalkILOffsets(
         pDebugInfo,      // input
         boundsType,
-        hasFlagByte,
         pContext,
         pfnWalkILOffsets
     );
@@ -4121,6 +4116,56 @@ BOOL EEJitManager::GetRichDebugInfo(
     PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
 
     return GetRichDebugInfoWorker(pDebugInfo, fpNew, pNewData, ppInlineTree, pNumInlineTree, ppRichMappings, pNumRichMappings);
+}
+
+BOOL EECodeGenManager::GetAsyncDebugInfoWorker(
+    PTR_BYTE pDebugInfo,
+    IN FP_IDS_NEW fpNew, IN void* pNewData,
+    OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+    OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+    OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+    OUT ULONG32* pcAsyncVars)
+{
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting debug info shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    // No header created, which means no jit information is available.
+    if (pDebugInfo == NULL)
+        return FALSE;
+
+    CompressDebugInfo::RestoreAsyncDebugInfo(
+        fpNew, pNewData,
+        pDebugInfo,
+        pAsyncInfo,
+        ppSuspensionPoints,
+        ppAsyncVars, pcAsyncVars);
+
+    return TRUE;
+}
+
+BOOL EEJitManager::GetAsyncDebugInfo(
+    const DebugInfoRequest & request,
+    IN FP_IDS_NEW fpNew, IN void * pNewData,
+    OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+    OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+    OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+    OUT ULONG32* pcAsyncVars)
+{
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting debug info shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    CodeHeader * pHdr = GetCodeHeaderFromDebugInfoRequest<CodeHeader>(request);
+    _ASSERTE(pHdr != NULL);
+
+    PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
+
+    return GetAsyncDebugInfoWorker(pDebugInfo, fpNew, pNewData, pAsyncInfo, ppSuspensionPoints, ppAsyncVars, pcAsyncVars);
 }
 
 #ifdef FEATURE_INTERPRETER
@@ -4206,6 +4251,29 @@ BOOL InterpreterJitManager::GetRichDebugInfo(
 
     return GetRichDebugInfoWorker(pDebugInfo, fpNew, pNewData, ppInlineTree, pNumInlineTree, ppRichMappings, pNumRichMappings);
 }
+
+BOOL InterpreterJitManager::GetAsyncDebugInfo(
+    const DebugInfoRequest & request,
+    IN FP_IDS_NEW fpNew, IN void * pNewData,
+    OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+    OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+    OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+    OUT ULONG32* pcAsyncVars)
+{
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting debug info shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    InterpreterCodeHeader * pHdr = GetCodeHeaderFromDebugInfoRequest<InterpreterCodeHeader>(request);
+    _ASSERTE(pHdr != NULL);
+
+    PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
+
+    return GetAsyncDebugInfoWorker(pDebugInfo, fpNew, pNewData, pAsyncInfo, ppSuspensionPoints, ppAsyncVars, pcAsyncVars);
+}
+
 #endif // FEATURE_INTERPRETER
 
 #ifdef DACCESS_COMPILE
@@ -4231,15 +4299,9 @@ void CodeHeader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJ
     }
 #endif // FEATURE_EH_FUNCLETS
 
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-    BOOL hasFlagByte = TRUE;
-#else
-    BOOL hasFlagByte = FALSE;
-#endif
-
     if (this->GetDebugInfo() != NULL)
     {
-        CompressDebugInfo::EnumMemoryRegions(flags, this->GetDebugInfo(), hasFlagByte);
+        CompressDebugInfo::EnumMemoryRegions(flags, this->GetDebugInfo());
     }
 }
 
@@ -4295,7 +4357,7 @@ void InterpreterCodeHeader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJit
 
     if (this->GetDebugInfo() != NULL)
     {
-        CompressDebugInfo::EnumMemoryRegions(flags, this->GetDebugInfo(), FALSE /* hasFlagByte */);
+        CompressDebugInfo::EnumMemoryRegions(flags, this->GetDebugInfo());
     }
 }
 
@@ -4507,6 +4569,14 @@ void InterpreterJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& Method
     methodRegionInfo->coldStartAddress = 0;
     methodRegionInfo->coldSize         = 0;
 }
+
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_BROWSER)
+IExecutionControl* InterpreterJitManager::GetExecutionControl()
+{
+    LIMITED_METHOD_CONTRACT;
+    return InterpreterExecutionControl::GetInstance();
+}
+#endif // !DACCESS_COMPILE
 
 #endif // FEATURE_INTERPRETER
 
@@ -5597,6 +5667,7 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
 #endif // FEATURE_INTERPRETER
 }
 
+#ifdef HOST_64BIT
 // This method is used by the JIT and the runtime for PreStubs. It will return
 // the address of a short jump thunk that will jump to the 'target' address.
 // It is only needed when the target architecture has a perferred call instruction
@@ -5908,6 +5979,7 @@ DONE:
 
     RETURN((PCODE)jumpStub);
 }
+#endif // HOST_64BIT
 #endif // !DACCESS_COMPILE
 
 static void GetFuncletStartOffsetsHelper(PCODE pCodeStart, SIZE_T size, SIZE_T ofsAdj,
@@ -6289,7 +6361,7 @@ unsigned ReadyToRunJitManager::InitializeEHEnumeration(const METHODTOKEN& Method
     if (pExceptionInfoDir == NULL)
         return 0;
 
-    PEImageLayout * pLayout = pReadyToRunInfo->GetImage();
+    ReadyToRunLoadedImage * pLayout = pReadyToRunInfo->GetImage();
 
     PTR_CORCOMPILE_EXCEPTION_LOOKUP_TABLE pExceptionLookupTable = dac_cast<PTR_CORCOMPILE_EXCEPTION_LOOKUP_TABLE>(pLayout->GetRvaData(pExceptionInfoDir->VirtualAddress));
 
@@ -6430,8 +6502,7 @@ BOOL ReadyToRunJitManager::GetBoundariesAndVars(
         boundsType,
         pDebugInfo,      // input
         pcMap, ppMap,    // output
-        pcVars, ppVars,  // output
-        FALSE);          // no patchpoint info
+        pcVars, ppVars); // output
 
     return TRUE;
 }
@@ -6463,7 +6534,6 @@ size_t ReadyToRunJitManager::WalkILOffsets(
     return CompressDebugInfo::WalkILOffsets(
         pDebugInfo,      // input
         boundsType,
-        FALSE, // no patchpoint info
         pContext, pfnWalkILOffsets);
 }
 
@@ -6475,7 +6545,65 @@ BOOL ReadyToRunJitManager::GetRichDebugInfo(
     OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
     OUT ULONG32* pNumRichMappings)
 {
-    return FALSE;
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting vars shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    EECodeInfo codeInfo(request.GetStartAddress());
+    if (!codeInfo.IsValid())
+        return FALSE;
+
+    ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(codeInfo.GetMethodToken());
+    PTR_RUNTIME_FUNCTION pRuntimeFunction = JitTokenToRuntimeFunction(codeInfo.GetMethodToken());
+
+    PTR_BYTE pDebugInfo = pReadyToRunInfo->GetDebugInfo(pRuntimeFunction);
+    if (pDebugInfo == NULL)
+        return FALSE;
+
+    CompressDebugInfo::RestoreRichDebugInfo(
+        fpNew, pNewData,
+        pDebugInfo,
+        ppInlineTree, pNumInlineTree,
+        ppRichMappings, pNumRichMappings);
+
+    return TRUE;
+}
+
+BOOL ReadyToRunJitManager::GetAsyncDebugInfo(
+    const DebugInfoRequest & request,
+    IN FP_IDS_NEW fpNew, IN void * pNewData,
+    OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+    OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+    OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+    OUT ULONG32* pcAsyncVars)
+{
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting async debug info shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    EECodeInfo codeInfo(request.GetStartAddress());
+    if (!codeInfo.IsValid())
+        return FALSE;
+
+    ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(codeInfo.GetMethodToken());
+    PTR_RUNTIME_FUNCTION pRuntimeFunction = JitTokenToRuntimeFunction(codeInfo.GetMethodToken());
+
+    PTR_BYTE pDebugInfo = pReadyToRunInfo->GetDebugInfo(pRuntimeFunction);
+    if (pDebugInfo == NULL)
+        return FALSE;
+
+    CompressDebugInfo::RestoreAsyncDebugInfo(
+        fpNew, pNewData,
+        pDebugInfo,
+        pAsyncInfo,
+        ppSuspensionPoints,
+        ppAsyncVars, pcAsyncVars);
+
+    return TRUE;
 }
 
 #ifdef DACCESS_COMPILE
@@ -6496,7 +6624,7 @@ void ReadyToRunJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemory
     if (pDebugInfo == NULL)
         return;
 
-    CompressDebugInfo::EnumMemoryRegions(flags, pDebugInfo, FALSE);
+    CompressDebugInfo::EnumMemoryRegions(flags, pDebugInfo);
 }
 #endif
 

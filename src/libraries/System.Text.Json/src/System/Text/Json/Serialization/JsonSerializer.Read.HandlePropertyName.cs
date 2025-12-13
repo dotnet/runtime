@@ -110,11 +110,19 @@ namespace System.Text.Json
             Debug.Assert(jsonPropertyInfo != null);
 
             object? extensionData = jsonPropertyInfo.GetValueAsObject(obj);
-            if (extensionData == null)
+
+            // For IReadOnlyDictionary, if there's an existing non-null instance, we need to create a new mutable
+            // Dictionary seeded with the existing contents so we can add the deserialized extension data to it.
+            bool isReadOnlyDictionary = jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, object>) ||
+                                        jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, JsonElement>);
+
+            if (extensionData == null || (isReadOnlyDictionary && extensionData != null))
             {
                 // Create the appropriate dictionary type. We already verified the types.
 #if DEBUG
-                Type underlyingIDictionaryType = jsonPropertyInfo.PropertyType.GetCompatibleGenericInterface(typeof(IDictionary<,>))!;
+                Type? underlyingIDictionaryType = jsonPropertyInfo.PropertyType.GetCompatibleGenericInterface(typeof(IDictionary<,>))
+                    ?? jsonPropertyInfo.PropertyType.GetCompatibleGenericInterface(typeof(IReadOnlyDictionary<,>));
+                Debug.Assert(underlyingIDictionaryType is not null);
                 Type[] genericArgs = underlyingIDictionaryType.GetGenericArguments();
 
                 Debug.Assert(underlyingIDictionaryType.IsGenericType);
@@ -135,6 +143,48 @@ namespace System.Text.Json
                     if (jsonPropertyInfo.PropertyType.FullName == JsonTypeInfo.JsonObjectTypeName)
                     {
                         ThrowHelper.ThrowInvalidOperationException_NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty();
+                    }
+                    // For IReadOnlyDictionary<string, object> or IReadOnlyDictionary<string, JsonElement> interface types,
+                    // create a Dictionary<TKey, TValue> instance seeded with any existing contents.
+                    else if (jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, object>))
+                    {
+                        if (extensionData != null)
+                        {
+                            var existing = (IReadOnlyDictionary<string, object>)extensionData;
+                            var newDict = new Dictionary<string, object>();
+                            foreach (KeyValuePair<string, object> kvp in existing)
+                            {
+                                newDict[kvp.Key] = kvp.Value;
+                            }
+                            extensionData = newDict;
+                        }
+                        else
+                        {
+                            extensionData = new Dictionary<string, object>();
+                        }
+                        Debug.Assert(jsonPropertyInfo.Set != null);
+                        jsonPropertyInfo.Set(obj, extensionData);
+                        return;
+                    }
+                    else if (jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, JsonElement>))
+                    {
+                        if (extensionData != null)
+                        {
+                            var existing = (IReadOnlyDictionary<string, JsonElement>)extensionData;
+                            var newDict = new Dictionary<string, JsonElement>();
+                            foreach (KeyValuePair<string, JsonElement> kvp in existing)
+                            {
+                                newDict[kvp.Key] = kvp.Value;
+                            }
+                            extensionData = newDict;
+                        }
+                        else
+                        {
+                            extensionData = new Dictionary<string, JsonElement>();
+                        }
+                        Debug.Assert(jsonPropertyInfo.Set != null);
+                        jsonPropertyInfo.Set(obj, extensionData);
+                        return;
                     }
                     else
                     {

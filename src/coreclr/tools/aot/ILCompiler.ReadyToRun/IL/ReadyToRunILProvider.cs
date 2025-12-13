@@ -165,6 +165,14 @@ namespace Internal.IL
                         return result;
                 }
 
+                if (method.IsAsync)
+                {
+                    // We should not be creating any AsyncMethodVariants yet.
+                    // This hasn't been implemented.
+                    Debug.Assert(!method.IsAsyncVariant());
+                    return null;
+                }
+
                 // Check to see if there is an override for the EcmaMethodIL. If there is not
                 // then simply return the EcmaMethodIL. In theory this could call
                 // CreateCrossModuleInlineableTokensForILBody, but we explicitly do not want

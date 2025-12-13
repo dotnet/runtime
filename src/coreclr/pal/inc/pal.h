@@ -673,65 +673,6 @@ OpenEventW(
 #endif
 
 PALIMPORT
-HANDLE
-PALAPI
-CreateMutexW(
-    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
-    IN BOOL bInitialOwner,
-    IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateMutexExW(
-    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
-    IN LPCWSTR lpName,
-    IN DWORD dwFlags,
-    IN DWORD dwDesiredAccess);
-
-PALIMPORT
-HANDLE
-PALAPI
-PAL_CreateMutexW(
-    IN BOOL bInitialOwner,
-    IN LPCWSTR lpName,
-    IN BOOL bCurrentUserOnly,
-    IN LPSTR lpSystemCallErrors,
-    IN DWORD dwSystemCallErrorsBufferSize);
-
-// CreateMutexExW: dwFlags
-#define CREATE_MUTEX_INITIAL_OWNER ((DWORD)0x1)
-
-#define CreateMutex CreateMutexW
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenMutexW(
-       IN DWORD dwDesiredAccess,
-       IN BOOL bInheritHandle,
-       IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
-PAL_OpenMutexW(
-       IN LPCWSTR lpName,
-       IN BOOL bCurrentUserOnly,
-       IN LPSTR lpSystemCallErrors,
-       IN DWORD dwSystemCallErrorsBufferSize);
-
-#ifdef UNICODE
-#define OpenMutex  OpenMutexW
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-ReleaseMutex(
-    IN HANDLE hMutex);
-
-PALIMPORT
 DWORD
 PALAPI
 GetCurrentProcessId();
@@ -836,8 +777,6 @@ GetExitCodeProcess(
 
 #define MAXIMUM_WAIT_OBJECTS  64
 #define WAIT_OBJECT_0 0
-#define WAIT_ABANDONED   0x00000080
-#define WAIT_ABANDONED_0 0x00000080
 #define WAIT_TIMEOUT 258
 #define WAIT_FAILED ((DWORD)0xFFFFFFFF)
 
@@ -847,13 +786,6 @@ PALIMPORT
 DWORD
 PALAPI
 WaitForSingleObject(
-            IN HANDLE hHandle,
-            IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_WaitForSingleObjectPrioritized(
             IN HANDLE hHandle,
             IN DWORD dwMilliseconds);
 
@@ -883,15 +815,6 @@ WaitForMultipleObjectsEx(
              IN BOOL bWaitAll,
              IN DWORD dwMilliseconds,
              IN BOOL bAlertable);
-
-PALIMPORT
-DWORD
-PALAPI
-SignalObjectAndWait(
-    IN HANDLE hObjectToSignal,
-    IN HANDLE hObjectToWaitOn,
-    IN DWORD dwMilliseconds,
-    IN BOOL bAlertable);
 
 #define DUPLICATE_CLOSE_SOURCE      0x00000001
 #define DUPLICATE_SAME_ACCESS       0x00000002
@@ -965,16 +888,6 @@ DWORD
 PALAPI
 ResumeThread(
          IN HANDLE hThread);
-
-typedef VOID (PALAPI_NOEXPORT *PAPCFUNC)(ULONG_PTR dwParam);
-
-PALIMPORT
-DWORD
-PALAPI
-QueueUserAPC(
-         IN PAPCFUNC pfnAPC,
-         IN HANDLE hThread,
-         IN ULONG_PTR dwData);
 
 #ifdef HOST_X86
 
@@ -3625,7 +3538,6 @@ PALIMPORT DLLEXPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 
 PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);
-PALIMPORT FILE * __cdecl _wfopen(const WCHAR *, const WCHAR *);
 
 inline int _stricmp(const char* a, const char* b)
 {
@@ -3916,141 +3828,6 @@ public:
 #define HardwareExceptionHolder
 #endif // FEATURE_ENABLE_HARDWARE_EXCEPTIONS
 
-class NativeExceptionHolderBase;
-
-PALIMPORT
-PALAPI
-NativeExceptionHolderBase **
-PAL_GetNativeExceptionHolderHead();
-
-extern "C++" {
-
-//
-// This is the base class of native exception holder used to provide
-// the filter function to the exception dispatcher. This allows the
-// filter to be called during the first pass to better emulate SEH
-// the xplat platforms that only have C++ exception support.
-//
-class NativeExceptionHolderBase
-{
-    // Save the address of the holder head so the destructor
-    // doesn't have access the slow (on Linux) TLS value again.
-    NativeExceptionHolderBase **m_head;
-
-    // The next holder on the stack
-    NativeExceptionHolderBase *m_next;
-
-protected:
-    NativeExceptionHolderBase()
-    {
-        m_head = nullptr;
-        m_next = nullptr;
-    }
-
-    ~NativeExceptionHolderBase()
-    {
-        // Only destroy if Push was called
-        if (m_head != nullptr)
-        {
-            *m_head = m_next;
-            m_head = nullptr;
-            m_next = nullptr;
-        }
-    }
-
-public:
-    // Calls the holder's filter handler.
-    virtual EXCEPTION_DISPOSITION InvokeFilter(PAL_SEHException& ex) = 0;
-
-    // Adds the holder to the "stack" of holders. This is done explicitly instead
-    // of in the constructor was to avoid the mess of move constructors combined
-    // with return value optimization (in CreateHolder).
-    void Push()
-    {
-        NativeExceptionHolderBase **head = PAL_GetNativeExceptionHolderHead();
-        m_head = head;
-        m_next = *head;
-        *head = this;
-    }
-
-    // Given the currentHolder and locals stack range find the next holder starting with this one
-    // To find the first holder, pass nullptr as the currentHolder.
-    static NativeExceptionHolderBase *FindNextHolder(NativeExceptionHolderBase *currentHolder, PVOID frameLowAddress, PVOID frameHighAddress);
-};
-
-//
-// This is the second part of the native exception filter holder. It is
-// templated because the lambda used to wrap the exception filter is a
-// unknown type.
-//
-template<class FilterType>
-class NativeExceptionHolder : public NativeExceptionHolderBase
-{
-    FilterType* m_exceptionFilter;
-
-public:
-    NativeExceptionHolder(FilterType* exceptionFilter)
-        : NativeExceptionHolderBase()
-    {
-        m_exceptionFilter = exceptionFilter;
-    }
-
-    virtual EXCEPTION_DISPOSITION InvokeFilter(PAL_SEHException& ex)
-    {
-        return (*m_exceptionFilter)(ex);
-    }
-};
-
-//
-// This is a native exception holder that is used when the catch catches
-// all exceptions.
-//
-class NativeExceptionHolderCatchAll : public NativeExceptionHolderBase
-{
-
-public:
-    NativeExceptionHolderCatchAll()
-        : NativeExceptionHolderBase()
-    {
-    }
-
-    virtual EXCEPTION_DISPOSITION InvokeFilter(PAL_SEHException& ex)
-    {
-        return EXCEPTION_EXECUTE_HANDLER;
-    }
-};
-
-// This is a native exception holder that doesn't catch any exceptions.
-class NativeExceptionHolderNoCatch : public NativeExceptionHolderBase
-{
-
-public:
-    NativeExceptionHolderNoCatch()
-        : NativeExceptionHolderBase()
-    {
-    }
-
-    virtual EXCEPTION_DISPOSITION InvokeFilter(PAL_SEHException& ex)
-    {
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-};
-
-//
-// This factory class for the native exception holder is necessary because
-// templated functions don't need the explicit type parameter and can infer
-// the template type from the parameter.
-//
-class NativeExceptionHolderFactory
-{
-public:
-    template<class FilterType>
-    static NativeExceptionHolder<FilterType> CreateHolder(FilterType* exceptionFilter)
-    {
-        return NativeExceptionHolder<FilterType>(exceptionFilter);
-    }
-};
-
 // Start of a try block for exceptions raised by RaiseException
 #define PAL_TRY(__ParamType, __paramDef, __paramRef)                            \
 {                                                                               \
@@ -4078,8 +3855,6 @@ public:
     try                                                                         \
     {                                                                           \
         HardwareExceptionHolder                                                 \
-        auto __exceptionHolder = NativeExceptionHolderFactory::CreateHolder(&exceptionFilter); \
-        __exceptionHolder.Push();                                               \
         tryBlock(__param);                                                      \
     }                                                                           \
     catch (PAL_SEHException& ex)                                                \
@@ -4267,10 +4042,6 @@ public:
 #define __HRESULT_FROM_WIN32(x) HRESULT_FROM_WIN32(x)
 
 #define HRESULT_FROM_NT(x)      ((HRESULT) ((x) | FACILITY_NT_BIT))
-
-#ifdef  __cplusplus
-}
-#endif
 
 #ifndef TARGET_WASM
 #define _ReturnAddress() __builtin_return_address(0)

@@ -180,9 +180,9 @@ public:
     void recReportFatalError(CorJitResult result);
     void dmpReportFatalError(DWORD key, DWORD value);
 
-    void recRecordRelocation(void* location, void* target, uint16_t fRelocType, int32_t addlDelta);
+    void recRecordRelocation(void* location, void* target, CorInfoReloc fRelocType, int32_t addlDelta);
     void dmpRecordRelocation(DWORD key, const Agnostic_RecordRelocation& value);
-    void repRecordRelocation(void* location, void* target, uint16_t fRelocType, int32_t addlDelta);
+    void repRecordRelocation(void* location, void* target, CorInfoReloc fRelocType, int32_t addlDelta);
     void applyRelocs(RelocContext* rc, unsigned char* block1, ULONG blocksize1, void* originalAddr);
 
     void recProcessName(const char* name);

@@ -16,7 +16,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 316678892;
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+        {
+            // We may want to emit info into the XData section if we produce native
+            // unwind info for another format. Don't put this into the XData section
+            // unless we're producing PEs, where we will also emit the unwind info
+            // into the PData section.
+            return factory.Format switch
+            {
+                ReadyToRunContainerFormat.PE => ObjectNodeSection.XDataSection,
+                _ => ObjectNodeSection.ReadOnlyDataSection
+            };
+        }
 
         public override bool StaticDependenciesAreComputed => true;
 

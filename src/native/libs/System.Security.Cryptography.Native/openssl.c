@@ -22,11 +22,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
 c_static_assert(CRYPTO_EX_INDEX_X509 == 3);
-#else
-c_static_assert(CRYPTO_EX_INDEX_X509 == 10);
-#endif
+c_static_assert(CRYPTO_EX_INDEX_SSL_SESSION == 2);
 
 // See X509NameType.SimpleName
 #define NAME_TYPE_SIMPLE 0
@@ -1152,7 +1149,7 @@ int32_t CryptoNative_LookupFriendlyNameByOid(const char* oidValue, const char** 
 
 /*
 Function:
-SSLeay (OpenSSL_version_num for OpenSSL 1.1+)
+OpenSSL_version_num
 
 Gets the version of openssl library.
 
@@ -1192,11 +1189,7 @@ static void ExDataFreeOcspResponse(
 // In the OpenSSL 3 headers, `from_d` changed from (void*) to (void**).
 static int ExDataDupOcspResponse(
     CRYPTO_EX_DATA* to,
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
     const CRYPTO_EX_DATA* from,
-#else
-    CRYPTO_EX_DATA* from,
-#endif
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
     void** from_d,
 #else
@@ -1249,11 +1242,7 @@ static void ExDataFreeNoOp(
 
 static int ExDataDupNoOp(
     CRYPTO_EX_DATA* to,
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
     const CRYPTO_EX_DATA* from,
-#else
-    CRYPTO_EX_DATA* from,
-#endif
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
     void** from_d,
 #else
@@ -1313,150 +1302,6 @@ int32_t CryptoNative_IsSignatureAlgorithmAvailable(const char* algorithm)
     return ret;
 }
 
-#ifdef NEED_OPENSSL_1_0
-// Lock used to make sure EnsureopenSslInitialized itself is thread safe
-static pthread_mutex_t g_initLock = PTHREAD_MUTEX_INITIALIZER;
-
-// Set of locks initialized for OpenSSL
-static pthread_mutex_t* g_locks = NULL;
-
-/*
-Function:
-LockingCallback
-
-Called back by OpenSSL to lock or unlock.
-*/
-static void LockingCallback(int mode, int n, const char* file, int line)
-{
-    (void)file, (void)line; // deliberately unused parameters
-
-// Clang complains about releasing locks that are not held.
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wthread-safety-analysis"
-
-#ifndef CRYPTO_LOCK
-#define CRYPTO_LOCK 1
-#endif
-
-    int result;
-    if (mode & CRYPTO_LOCK)
-    {
-        result = pthread_mutex_lock(&g_locks[n]);
-    }
-    else
-    {
-        result = pthread_mutex_unlock(&g_locks[n]);
-    }
-
-    if (result != 0)
-    {
-        assert(0 && "LockingCallback failed.");
-    }
-#pragma clang diagnostic pop
-}
-
-/*
-Function:
-EnsureOpenSslInitialized
-
-Initializes OpenSSL with a locking callback to ensure thread safety.
-
-Return values:
-0 on success
-non-zero on failure
-*/
-static int32_t EnsureOpenSsl10Initialized(void)
-{
-    int ret = 0;
-    int numLocks = 0;
-    int locksInitialized = 0;
-    int randPollResult = 0;
-    size_t allocationSize = 0;
-
-    pthread_mutex_lock(&g_initLock);
-
-    if (g_locks != NULL)
-    {
-        // Already initialized; nothing more to do.
-        goto done;
-    }
-
-    // Determine how many locks are needed
-    numLocks = CRYPTO_num_locks();
-    if (numLocks <= 0)
-    {
-        assert(0 && "CRYPTO_num_locks returned invalid value.");
-        ret = 1;
-        goto done;
-    }
-
-    // Create the locks array
-    if (!multiply_s(sizeof(pthread_mutex_t), (size_t)numLocks, &allocationSize))
-    {
-        ret = 2;
-        goto done;
-    }
-
-    g_locks = (pthread_mutex_t*)malloc(allocationSize);
-    if (g_locks == NULL)
-    {
-        ret = 2;
-        goto done;
-    }
-
-    // Initialize each of the locks
-    for (locksInitialized = 0; locksInitialized < numLocks; locksInitialized++)
-    {
-        if (pthread_mutex_init(&g_locks[locksInitialized], NULL) != 0)
-        {
-            ret = 3;
-            goto done;
-        }
-    }
-
-    // Initialize the callback
-    CRYPTO_set_locking_callback(LockingCallback);
-
-    // Initialize the random number generator seed
-    randPollResult = RAND_poll();
-    if (randPollResult < 1)
-    {
-        ret = 4;
-        goto done;
-    }
-
-    // Load the SHA-2 hash algorithms, and anything else not in the default
-    // support set.
-    OPENSSL_add_all_algorithms_conf();
-
-    // Ensure that the error message table is loaded.
-    ERR_load_crypto_strings();
-
-    // In OpenSSL 1.0.2-, CRYPTO_EX_INDEX_X509 is 10.
-    g_x509_ocsp_index = CRYPTO_get_ex_new_index(10, 0, NULL, NULL, ExDataDupOcspResponse, ExDataFreeOcspResponse);
-    // In OpenSSL 1.0.2-, CRYPTO_EX_INDEX_SSL_SESSION is 3.
-    g_ssl_sess_cert_index = CRYPTO_get_ex_new_index(3, 0, NULL, NULL, ExDataDupNoOp, ExDataFreeNoOp);
-
-done:
-    if (ret != 0)
-    {
-        // Cleanup on failure
-        if (g_locks != NULL)
-        {
-            for (int i = locksInitialized - 1; i >= 0; i--)
-            {
-                pthread_mutex_destroy(&g_locks[i]); // ignore failures
-            }
-            free(g_locks);
-            g_locks = NULL;
-        }
-    }
-
-    pthread_mutex_unlock(&g_initLock);
-    return ret;
-}
-#endif // NEED_OPENSSL_1_0 */
-
 #if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
 
 // Only defined in OpenSSL 1.1.1+, has no effect on 1.1.0.
@@ -1483,16 +1328,12 @@ static void HandleShutdown(void)
 
 static int32_t EnsureOpenSsl11Initialized(void)
 {
-    // In OpenSSL 1.0 we call OPENSSL_add_all_algorithms_conf() and ERR_load_crypto_strings(),
-    // so do the same for 1.1
     OPENSSL_init_ssl(
-        // OPENSSL_add_all_algorithms_conf
             OPENSSL_INIT_ADD_ALL_CIPHERS |
             OPENSSL_INIT_ADD_ALL_DIGESTS |
             OPENSSL_INIT_LOAD_CONFIG |
-        // Do not unload on process exit, as the CLR may still have threads running
+            // Do not unload on process exit, as the CLR may still have threads running
             OPENSSL_INIT_NO_ATEXIT |
-        // ERR_load_crypto_strings
             OPENSSL_INIT_LOAD_CRYPTO_STRINGS |
             OPENSSL_INIT_LOAD_SSL_STRINGS,
         NULL);
@@ -1528,11 +1369,6 @@ int g_ssl_sess_cert_index = -1;
 
 static int32_t EnsureOpenSslInitializedCore(void)
 {
-    int ret = 0;
-
-    // If portable then decide which OpenSSL we are, and call the right one.
-    // If 1.0, call the 1.0 one.
-    // Otherwise call the 1.1 one.
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     InitializeOpenSSLShim();
 #endif
@@ -1540,25 +1376,10 @@ static int32_t EnsureOpenSslInitializedCore(void)
     // And it also needs to be after the pointers are loaded for DISTRO_AGNOSTIC_SSL
     InitializeMemoryDebug();
 
-#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-    if (API_EXISTS(SSL_state))
-    {
-        ret = EnsureOpenSsl10Initialized();
-    }
-    else
-    {
-        ret = EnsureOpenSsl11Initialized();
-    }
-#elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
-    ret = EnsureOpenSsl10Initialized();
-#else
-    ret = EnsureOpenSsl11Initialized();
-#endif
+    int ret = EnsureOpenSsl11Initialized();
 
     if (ret == 0)
     {
-        // On OpenSSL 1.0.2 our expected index is 0.
-        // On OpenSSL 1.1.0+ 0 is a reserved value and we expect 1.
         assert(g_x509_ocsp_index != -1);
         assert(g_ssl_sess_cert_index != -1);
     }

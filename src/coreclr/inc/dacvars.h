@@ -95,7 +95,9 @@ DEFINE_DACVAR(VMHELPDEF *, dac__hlpDynamicFuncTable, ::hlpDynamicFuncTable)
 DEFINE_DACVAR(PTR_StubManager, StubManager__g_pFirstManager, StubManager::g_pFirstManager)
 DEFINE_DACVAR(PTR_PrecodeStubManager, PrecodeStubManager__g_pManager, PrecodeStubManager::g_pManager)
 DEFINE_DACVAR(PTR_StubLinkStubManager, StubLinkStubManager__g_pManager, StubLinkStubManager::g_pManager)
+#ifdef FEATURE_JIT
 DEFINE_DACVAR(PTR_JumpStubStubManager, JumpStubStubManager__g_pManager, JumpStubStubManager::g_pManager)
+#endif // FEATURE_JIT
 DEFINE_DACVAR(PTR_RangeSectionStubManager, RangeSectionStubManager__g_pManager, RangeSectionStubManager::g_pManager)
 DEFINE_DACVAR(PTR_VirtualCallStubManagerManager, VirtualCallStubManagerManager__g_pManager, VirtualCallStubManagerManager::g_pManager)
 #ifdef FEATURE_TIERED_COMPILATION
@@ -128,7 +130,9 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pStackFrameIteratorClass, ::g_pStackF
 DEFINE_DACVAR(PTR_SString, SString__s_Empty, SString::s_Empty)
 
 DEFINE_DACVAR(INT32, ArrayBase__s_arrayBoundsZero, ArrayBase::s_arrayBoundsZero)
+#ifdef FEATURE_CODE_VERSIONING
 DEFINE_DACVAR(BOOL, CodeVersionManager__s_HasNonDefaultILVersions, CodeVersionManager::s_HasNonDefaultILVersions)
+#endif // FEATURE_CODE_VERSIONING
 
 DEFINE_DACVAR(PTR_JITNotification, dac__g_pNotificationTable, ::g_pNotificationTable)
 DEFINE_DACVAR(ULONG32, dac__g_dacNotificationFlags, ::g_dacNotificationFlags)
@@ -174,6 +178,8 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_TypedReferenceMT, ::g_TypedReferenceM
 
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pWeakReferenceClass, ::g_pWeakReferenceClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pWeakReferenceOfTClass, ::g_pWeakReferenceOfTClass)
+
+DEFINE_DACVAR_VOLATILE(UNKNOWN_POINTER_TYPE, dac__g_pContinuationClassIfSubTypeCreated, ::g_pContinuationClassIfSubTypeCreated)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pBaseCOMObject, ::g_pBaseCOMObject)

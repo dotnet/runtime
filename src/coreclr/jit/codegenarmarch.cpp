@@ -198,7 +198,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_NOT:
         case GT_NEG:
-            genCodeForNegNot(treeNode);
+            genCodeForNegNot(treeNode->AsOp());
             break;
 
 #if defined(TARGET_ARM64)
@@ -514,6 +514,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForAsyncContinuation(treeNode);
             break;
 
+        case GT_ASYNC_RESUME_INFO:
+            genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
         case GT_PINVOKE_PROLOG:
             noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
                           ~fullIntArgRegMask(compiler->info.compCallConv)) == 0);
@@ -553,7 +557,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif // TARGET_ARM
 
         case GT_IL_OFFSET:
-            // Do nothing; these nodes are simply markers for debug info.
+            // Do nothing; this node is a marker for debug info.
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
             break;
 
         default:
@@ -3175,7 +3183,7 @@ void CodeGen::genCall(GenTreeCall* call)
 #ifdef TARGET_ARM
                 if (compiler->opts.compUseSoftFP && returnType == TYP_DOUBLE)
                 {
-                    inst_RV_RV_RV(INS_vmov_i2d, call->GetRegNum(), returnReg, genRegArgNext(returnReg), EA_8BYTE);
+                    inst_RV_RV_RV(INS_vmov_i2d, call->GetRegNum(), returnReg, REG_NEXT(returnReg), EA_8BYTE);
                 }
                 else if (compiler->opts.compUseSoftFP && returnType == TYP_FLOAT)
                 {
@@ -5126,4 +5134,5 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     compiler->unwindEndEpilog();
 }
+
 #endif // TARGET_ARMARCH

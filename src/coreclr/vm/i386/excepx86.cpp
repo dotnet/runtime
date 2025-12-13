@@ -2094,7 +2094,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         currentSP = 0; //Don't have an SP to get.
     }
 
-    if (!pFunc->IsILStub())
+    if (!pFunc->IsDiagnosticsHidden())
     {
         if (!pData->bSkipLastElement)
         {
@@ -2153,7 +2153,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
     }
 
     bool fIsILStub = pFunc->IsILStub();
-    bool fGiveDebuggerAndProfilerNotification = !fIsILStub;
+    bool fGiveDebuggerAndProfilerNotification = !pFunc->IsDiagnosticsHidden();
     BOOL fMethodCanHandleException = TRUE;
 
     MethodDesc * pUserMDForILStub = NULL;
@@ -2490,7 +2490,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
 #endif
 
     bool fGiveDebuggerAndProfilerNotification;
-    fGiveDebuggerAndProfilerNotification = !pFunc->IsILStub();
+    fGiveDebuggerAndProfilerNotification = !pFunc->IsDiagnosticsHidden();
 
     // Notify the profiler of the function we're dealing with in the unwind phase
     if (fGiveDebuggerAndProfilerNotification)

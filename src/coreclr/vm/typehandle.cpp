@@ -91,6 +91,13 @@ BOOL TypeHandle::IsString() const
     return !IsTypeDesc() && AsMethodTable()->IsString();
 }
 
+BOOL TypeHandle::IsContinuation() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return !IsTypeDesc() && AsMethodTable()->IsContinuation();
+}
+
 BOOL TypeHandle::IsGenericVariable() const {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -318,6 +325,20 @@ bool TypeHandle::IsManagedClassObjectPinned() const
 
 void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
 {
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END
+
+    if (IsContinuation())
+    {
+        COMPlusThrow(kNotSupportedException, W("NotSupported_Continuation"));
+        return;
+    }
+
     REFLECTCLASSBASEREF refClass = NULL;
 
     PTR_LoaderAllocator allocator = GetLoaderAllocator();
@@ -950,17 +971,7 @@ TypeHandle TypeHandle::MergeArrayTypeHandlesToCommonParent(TypeHandle ta, TypeHa
         return TypeHandle(g_pArrayClass);
     }
 
-
-    {
-        // This should just result in resolving an already loaded type.
-        ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-        // == FailIfNotLoadedOrNotRestored
-        TypeHandle result = ClassLoader::LoadArrayTypeThrowing(tMergeElem, mergeKind, rank, ClassLoader::DontLoadTypes);
-        _ASSERTE(!result.IsNull());
-
-        // <TODO> should be able to assert IsRestored here </TODO>
-        return result;
-    }
+    return ClassLoader::LoadArrayTypeThrowing(tMergeElem, mergeKind, rank);
 }
 
 #endif // #ifndef DACCESS_COMPILE

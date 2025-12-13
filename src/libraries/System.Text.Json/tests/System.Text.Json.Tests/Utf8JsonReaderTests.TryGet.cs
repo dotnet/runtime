@@ -1527,5 +1527,132 @@ namespace System.Text.Json.Tests
             Test(testString, isFinalBlock: true);
             Test(testString, isFinalBlock: false);
         }
+
+        [Fact]
+        public static void TestNumericEdgeCases_Get_Methods()
+        {
+            byte[] data1 = Encoding.UTF8.GetBytes("0");
+            var reader1 = new Utf8JsonReader(data1, isFinalBlock: true, state: default);
+            Assert.True(reader1.Read());
+            Assert.Equal(0, reader1.GetByte());
+            
+            byte[] data2 = Encoding.UTF8.GetBytes("255");
+            var reader2 = new Utf8JsonReader(data2, isFinalBlock: true, state: default);
+            Assert.True(reader2.Read());
+            Assert.Equal(255, reader2.GetByte());
+            
+            byte[] data3 = Encoding.UTF8.GetBytes("-128");
+            var reader3 = new Utf8JsonReader(data3, isFinalBlock: true, state: default);
+            Assert.True(reader3.Read());
+            Assert.Equal(-128, reader3.GetSByte());
+            
+            byte[] data4 = Encoding.UTF8.GetBytes("127");
+            var reader4 = new Utf8JsonReader(data4, isFinalBlock: true, state: default);
+            Assert.True(reader4.Read());
+            Assert.Equal(127, reader4.GetSByte());
+            
+            byte[] data5 = Encoding.UTF8.GetBytes("-32768");
+            var reader5 = new Utf8JsonReader(data5, isFinalBlock: true, state: default);
+            Assert.True(reader5.Read());
+            Assert.Equal(-32768, reader5.GetInt16());
+            
+            byte[] data6 = Encoding.UTF8.GetBytes("32767");
+            var reader6 = new Utf8JsonReader(data6, isFinalBlock: true, state: default);
+            Assert.True(reader6.Read());
+            Assert.Equal(32767, reader6.GetInt16());
+            
+            byte[] data7 = Encoding.UTF8.GetBytes("-2147483648");
+            var reader7 = new Utf8JsonReader(data7, isFinalBlock: true, state: default);
+            Assert.True(reader7.Read());
+            Assert.Equal(-2147483648, reader7.GetInt32());
+            
+            byte[] data8 = Encoding.UTF8.GetBytes("2147483647");
+            var reader8 = new Utf8JsonReader(data8, isFinalBlock: true, state: default);
+            Assert.True(reader8.Read());
+            Assert.Equal(2147483647, reader8.GetInt32());
+            
+            byte[] data9 = Encoding.UTF8.GetBytes("-9223372036854775808");
+            var reader9 = new Utf8JsonReader(data9, isFinalBlock: true, state: default);
+            Assert.True(reader9.Read());
+            Assert.Equal(-9223372036854775808, reader9.GetInt64());
+            
+            byte[] data10 = Encoding.UTF8.GetBytes("9223372036854775807");
+            var reader10 = new Utf8JsonReader(data10, isFinalBlock: true, state: default);
+            Assert.True(reader10.Read());
+            Assert.Equal(9223372036854775807, reader10.GetInt64());
+            
+            byte[] data11 = Encoding.UTF8.GetBytes("0");
+            var reader11 = new Utf8JsonReader(data11, isFinalBlock: true, state: default);
+            Assert.True(reader11.Read());
+            Assert.Equal(0, reader11.GetUInt16());
+            
+            byte[] data12 = Encoding.UTF8.GetBytes("65535");
+            var reader12 = new Utf8JsonReader(data12, isFinalBlock: true, state: default);
+            Assert.True(reader12.Read());
+            Assert.Equal(65535, reader12.GetUInt16());
+            
+            byte[] data13 = Encoding.UTF8.GetBytes("0");
+            var reader13 = new Utf8JsonReader(data13, isFinalBlock: true, state: default);
+            Assert.True(reader13.Read());
+            Assert.Equal(0u, reader13.GetUInt32());
+            
+            byte[] data14 = Encoding.UTF8.GetBytes("4294967295");
+            var reader14 = new Utf8JsonReader(data14, isFinalBlock: true, state: default);
+            Assert.True(reader14.Read());
+            Assert.Equal(4294967295u, reader14.GetUInt32());
+            
+            byte[] data15 = Encoding.UTF8.GetBytes("0");
+            var reader15 = new Utf8JsonReader(data15, isFinalBlock: true, state: default);
+            Assert.True(reader15.Read());
+            Assert.Equal(0ul, reader15.GetUInt64());
+            
+            byte[] data16 = Encoding.UTF8.GetBytes("18446744073709551615");
+            var reader16 = new Utf8JsonReader(data16, isFinalBlock: true, state: default);
+            Assert.True(reader16.Read());
+            Assert.Equal(18446744073709551615ul, reader16.GetUInt64());
+            
+            byte[] data17 = Encoding.UTF8.GetBytes("0");
+            var reader17 = new Utf8JsonReader(data17, isFinalBlock: true, state: default);
+            Assert.True(reader17.Read());
+            Assert.Equal(0m, reader17.GetDecimal());
+        }
+
+        [Fact]
+        public static void TestFloatingPointEdgeCases_Get_Methods()
+        {
+            byte[] data1 = Encoding.UTF8.GetBytes("0.0");
+            var reader1 = new Utf8JsonReader(data1, isFinalBlock: true, state: default);
+            Assert.True(reader1.Read());
+            Assert.Equal(0.0f, reader1.GetSingle());
+            
+            byte[] data2 = Encoding.UTF8.GetBytes("3.4028235E+38");
+            var reader2 = new Utf8JsonReader(data2, isFinalBlock: true, state: default);
+            Assert.True(reader2.Read());
+            float result2 = reader2.GetSingle();
+            Assert.True(Math.Abs(result2 - 3.4028235E+38f) < 1E+31f);
+            
+            byte[] data3 = Encoding.UTF8.GetBytes("-3.4028235E+38");
+            var reader3 = new Utf8JsonReader(data3, isFinalBlock: true, state: default);
+            Assert.True(reader3.Read());
+            float result3 = reader3.GetSingle();
+            Assert.True(Math.Abs(result3 - (-3.4028235E+38f)) < 1E+31f);
+            
+            byte[] data4 = Encoding.UTF8.GetBytes("0.0");
+            var reader4 = new Utf8JsonReader(data4, isFinalBlock: true, state: default);
+            Assert.True(reader4.Read());
+            Assert.Equal(0.0, reader4.GetDouble());
+            
+            byte[] data5 = Encoding.UTF8.GetBytes("1.7976931348623157E+308");
+            var reader5 = new Utf8JsonReader(data5, isFinalBlock: true, state: default);
+            Assert.True(reader5.Read());
+            double result5 = reader5.GetDouble();
+            Assert.True(Math.Abs(result5 - 1.7976931348623157E+308) < 1E+300);
+            
+            byte[] data6 = Encoding.UTF8.GetBytes("-1.7976931348623157E+308");
+            var reader6 = new Utf8JsonReader(data6, isFinalBlock: true, state: default);
+            Assert.True(reader6.Read());
+            double result6 = reader6.GetDouble();
+            Assert.True(Math.Abs(result6 - (-1.7976931348623157E+308)) < 1E+300);
+        }
     }
 }

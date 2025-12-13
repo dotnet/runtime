@@ -29,8 +29,9 @@ PCODE GetAdjustedCallAddress(PCODE returnAddress)
     return returnAddress;
 }
 
-inline BOOL AdjustContextForVirtualStub(EXCEPTION_RECORD *pExceptionRecord, T_CONTEXT *pContext) {
-    _ASSERTE("AdjustContextForVirtualStub is not implemented on wasm");
+inline BOOL AdjustContextForVirtualStub(EXCEPTION_RECORD *pExceptionRecord, T_CONTEXT *pContext)
+{
+    LIMITED_METHOD_CONTRACT;
     return FALSE;
 }
 

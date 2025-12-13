@@ -22,7 +22,6 @@
 #include "peassembly.h"
 #include "typehash.h"
 #include "contractimpl.h"
-#include "bitmask.h"
 #include "instmethhash.h"
 #include "eetwain.h"    // For EnumGCRefs (we should probably move that somewhere else, but can't
                         // find anything better (modulo common or vars.hpp)
@@ -1445,7 +1444,7 @@ public:
     LPCUTF8 GetDebugName() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetDebugName(); }
 #endif
 
-    PEImageLayout * GetReadyToRunImage();
+    ReadyToRunLoadedImage * GetReadyToRunImage();
     PTR_READYTORUN_IMPORT_SECTION GetImportSections(COUNT_T *pCount);
     PTR_READYTORUN_IMPORT_SECTION GetImportSectionFromIndex(COUNT_T index);
     PTR_READYTORUN_IMPORT_SECTION GetImportSectionForRVA(RVA rva);
@@ -1490,7 +1489,7 @@ public:
     BOOL FixupDelayListAux(TADDR pFixupList,
                            Ptr pThis, FixupNativeEntryCallback pfnCB,
                            PTR_READYTORUN_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
-                           PEDecoder * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
+                           ReadyToRunLoadedImage * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
     void RunEagerFixups();
     void RunEagerFixupsUnlocked();
 

@@ -149,7 +149,7 @@ namespace ILCompiler.DependencyAnalysis
             // The generic dictionary layout is shared between all the canonically equivalent
             // instantiations. We need to track the dependencies of all canonical method bodies
             // that use the same dictionary layout.
-            foreach (var method in _owningType.GetAllMethods())
+            foreach (var method in _owningType.GetAllMethodsAndAsyncVariants())
             {
                 if (!EETypeNode.MethodHasNonGenericILMethodBody(method))
                     continue;

@@ -264,6 +264,7 @@ public static partial class ZipFile
     /// be included at the root of the archive. <code>false</code> to indicate that the files and directories in <code>sourceDirectoryName</code>
     /// should be included directly in the archive.</param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous create operation. The task completes when the archive has been written to disk.</returns>
     public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationArchiveFileName, CompressionLevel compressionLevel, bool includeBaseDirectory, CancellationToken cancellationToken = default) =>
         DoCreateFromDirectoryAsync(sourceDirectoryName, destinationArchiveFileName, compressionLevel, includeBaseDirectory, entryNameEncoding: null, cancellationToken);
 
@@ -335,6 +336,7 @@ public static partial class ZipFile
     ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
     /// </param>
     /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous create operation. The task completes when the archive has been written to disk.</returns>
     public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationArchiveFileName,
                                            CompressionLevel compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding, CancellationToken cancellationToken = default) =>
         DoCreateFromDirectoryAsync(sourceDirectoryName, destinationArchiveFileName, compressionLevel, includeBaseDirectory, entryNameEncoding, cancellationToken);
@@ -392,6 +394,7 @@ public static partial class ZipFile
     /// <exception cref="NotSupportedException"><paramref name="sourceDirectoryName" /> contains an invalid format.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
     /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
+    /// <returns>A task that represents the asynchronous create operation. The task completes when the archive has been written to the specified stream.</returns>
     public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, CompressionLevel compressionLevel, bool includeBaseDirectory, CancellationToken cancellationToken = default) =>
         DoCreateFromDirectoryAsync(sourceDirectoryName, destination, compressionLevel, includeBaseDirectory, entryNameEncoding: null, cancellationToken);
 
@@ -422,6 +425,7 @@ public static partial class ZipFile
     /// <exception cref="NotSupportedException"><paramref name="sourceDirectoryName" /> contains an invalid format.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
     /// <exception cref="OperationCanceledException">An asynchronous operation is cancelled.</exception>
+    /// <returns>A task that represents the asynchronous create operation. The task completes when the archive has been written to the specified stream.</returns>
     public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination,
                                            CompressionLevel compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding, CancellationToken cancellationToken = default) =>
         DoCreateFromDirectoryAsync(sourceDirectoryName, destination, compressionLevel, includeBaseDirectory, entryNameEncoding, cancellationToken);
