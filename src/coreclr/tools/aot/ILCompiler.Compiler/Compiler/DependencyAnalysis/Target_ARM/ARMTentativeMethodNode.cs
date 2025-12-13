@@ -9,7 +9,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected override void EmitCode(NodeFactory factory, ref ARMEmitter encoder, bool relocsOnly)
         {
-            encoder.EmitJMP(GetTarget(factory));
+            encoder.EmitJMP(GetTarget(factory), factory.Target.CodeDelta);
         }
     }
 }
