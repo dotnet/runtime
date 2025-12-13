@@ -563,13 +563,6 @@ void CodeGen::genCodeForBBlist()
 #endif // EMIT_GENERATE_GCINFO
 #endif // DEBUG
 
-#ifdef TARGET_WASM
-        if (block->IsLast())
-        {
-            instGen(INS_end);
-        }
-#endif
-
 #if defined(DEBUG)
         if (block->IsLast())
         {

@@ -40,8 +40,13 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     // TODO-WASM: shadow stack maintenance
     // TODO-WASM-CQ: do not emit "return" in case this is the last block
-
     instGen(INS_return);
+    // TODO-WASM: this condition will not be sufficient if we have funclet to determine if we're at the end of
+    // codegen for a method. Revisit later.
+    if (block->IsLast()) 
+    {
+        instGen(INS_end);
+    }
 }
 
 void CodeGen::genCaptureFuncletPrologEpilogInfo()
