@@ -105,6 +105,10 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
     if (!mainAssemblyName) {
         mainAssemblyName = config.mainAssemblyName!;
     }
+    // TODO-WASM: Difference in boot config generator
+    if (!mainAssemblyName.endsWith(".dll")) {
+        mainAssemblyName += ".dll";
+    }
     const mainAssemblyNamePtr = dotnetBrowserUtilsExports.stringToUTF8Ptr(mainAssemblyName) as any;
 
     if (!args) {

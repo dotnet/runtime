@@ -12,6 +12,8 @@
     <BuildCoreHostDependsOn>GenerateRuntimeVersionFile</BuildCoreHostDependsOn>
     <BuildCoreHostDependsOn Condition="'$(EnableSourceControlManagerQueries)' == 'true'">$(BuildCoreHostDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
     <BuildCoreHostDependsOn Condition="'$(TargetsBrowser)' == 'true'">$(BuildCoreHostDependsOn);GenerateEmccExports;ResolveRuntimeFilesFromLocalBuild</BuildCoreHostDependsOn>
+    <CopyWasmNativeFilesDependsOn Condition="'$(TargetOS)' == 'windows'">BuildCoreHostOnWindows</CopyWasmNativeFilesDependsOn>
+    <CopyWasmNativeFilesDependsOn Condition="'$(TargetOS)' != 'windows'">BuildCoreHostOnUnix</CopyWasmNativeFilesDependsOn>
     <IntermediateOutputRootPath>$(ArtifactsObjDir)$(TargetRid).$(Configuration)\</IntermediateOutputRootPath>
     <!-- Global location for version files -->
     <NativeVersionFile Condition="$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.h</NativeVersionFile>
@@ -167,6 +169,25 @@
     -->
     <Message Text="&quot;$(BuildScript)&quot; $(BuildArgs) @(NativeCMakeArg, ' ')" Importance="High"/>
     <Exec Command="&quot;$(BuildScript)&quot; $(BuildArgs) @(NativeCMakeArg, ' ')" IgnoreStandardErrorWarningFormat="true"/>
+  </Target>
+
+  <Target Name="CopyWasmNativeFiles" AfterTargets="Build" DependsOnTargets="$(CopyWasmNativeFilesDependsOn)" Condition="'$(TargetsBrowser)' == 'true'">
+    <ItemGroup>
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(LibrariesSharedFrameworkDir)package.json" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(LibrariesSharedFrameworkDir)dotnet.d.ts" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(LibrariesSharedFrameworkDir)*.map" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(LibrariesSharedFrameworkDir)*.js" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(LibrariesSharedFrameworkDir)*.a" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(LibrariesSharedFrameworkDir)*.dat" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)libBrowserHost.a" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.js" />
+      <!-- <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.js.symbols" /> -->
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.wasm" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_MicrosoftNetCoreAppRuntimePackNativeDirFiles)"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="PrependWindowsHeaderIncludeToVersionHeaderFile"
