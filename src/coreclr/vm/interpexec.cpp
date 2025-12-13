@@ -3165,14 +3165,12 @@ CALL_INTERP_METHOD:
 
                     pInterpreterFrame->SetIsFaulting(true);
                     DispatchManagedException(throwable);
-                    UNREACHABLE();
                     break;
                 }
                 case INTOP_RETHROW:
                 {
                     pInterpreterFrame->SetIsFaulting(true);
                     DispatchRethrownManagedException();
-                    UNREACHABLE();
                     break;
                 }
                 case INTOP_LOAD_EXCEPTION:
@@ -4131,7 +4129,7 @@ do                                                                      \
                             GetThread()->GetExceptionState()->SetRaisingForeignException();
                             pInterpreterFrame->SetIsFaulting(true);
                             DispatchManagedException(exception);
-                            UNREACHABLE();
+                            break;
                         }
                     }
 
