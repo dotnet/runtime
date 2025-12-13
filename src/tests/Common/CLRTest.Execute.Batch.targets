@@ -254,75 +254,6 @@ Exit /b 0
     </ItemGroup>
 
       <PropertyGroup>
-          <ReflectionRootsXml>$(AssemblyName).reflect.xml</ReflectionRootsXml>
-          <BatchLinkerTestLaunchCmds><![CDATA[
-REM Linker commands
-
-set LinkBin=__Link
-set Assemblies=-a System.Private.CoreLib
-
-IF defined DoLink (
-    IF NOT EXIST !ILLINK! (
-      ECHO ILLink executable [%ILLINK%] Invalid
-      popd
-      Exit /b 1
-    )
-
-    REM Clean up old Linked binaries, if any
-    IF EXIST %LinkBin% rmdir /s /q %LinkBin%
-
-    REM Remove Native images, since the goal is to run from Linked binaries
-    del /q /f *.ni.* 2> nul
-
-    REM Use hints for reflection roots, if provided in $(ReflectionRootsXml)
-    IF EXIST $(ReflectionRootsXml) set ReflectionRoots=-x $(ReflectionRootsXml)
-
-    REM Include all .exe files in this directory as entry points (some tests had multiple .exe file modules)
-    FOR /F "delims=" %%E IN ('dir /b *.exe *.dll') DO SET Assemblies=!Assemblies! -a %%~nE
-
-    REM Run dotnet-linker
-    REM Run the Linker such that all assemblies except System.Private.Corlib.dll are linked
-    REM Debug symbol generation needs some fixes, and is currently omitted.
-    REM Once this is fixed, add -b true option.
-    ECHO %ILLINK% -out %LinkBin% -d %CORE_ROOT% -c link -l none -t !Assemblies! !ReflectionRoots!
-    %ILLINK% -out %LinkBin% -d %CORE_ROOT% -c link -l none -t !Assemblies! !ReflectionRoots!
-    IF NOT "!ERRORLEVEL!"=="0" (
-      ECHO ILLINK FAILED !ERRORLEVEL!
-      IF NOT defined KeepLinkedBinaries (
-          IF EXIST %LinkBin% rmdir /s /q %LinkBin%
-      )
-      popd
-      Exit /b 1
-    )
-
-    REM Copy CORECLR native binaries and the test watcher to %LinkBin%, so that we can run the test based on that directory
-    copy %CORE_ROOT%\clrjit.dll %LinkBin% > nul 2> nul
-    copy %CORE_ROOT%\coreclr.dll %LinkBin% > nul 2> nul
-    copy %CORE_ROOT%\CoreRun.exe %LinkBin% > nul 2> nul
-    copy %CORE_ROOT%\watchdog.exe %LinkBin% > nul 2> nul
-
-    REM Copy some files that may be arguments
-    copy *.txt %LinkBin% > nul 2> nul
-
-    set ExePath=%LinkBin%\$(InputAssemblyName)
-    set CORE_ROOT=%scriptPath%\%LinkBin%
-)
-]]>
-          </BatchLinkerTestLaunchCmds>
-          <BatchLinkerTestCleanupCmds>
-              <![CDATA[
-REM Clean up the LinkBin directories after test execution.
-REM Otherwise, RunTests may run out of disk space.
-
-if defined DoLink (
-    if not defined KeepLinkedBinaries (
-        IF EXIST %LinkBin% rmdir /s /q %LinkBin%
-    )
-)
-]]>
-          </BatchLinkerTestCleanupCmds>
-      </PropertyGroup>
-      <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs) %__DotEnvArg%</CLRTestRunFile>
       <WatcherRunFile>"%CORE_ROOT%\watchdog.exe" %_WatcherTimeoutMins%</WatcherRunFile>
 
@@ -333,7 +264,6 @@ COPY /y %CORE_ROOT%\CoreShim.dll .
       ]]></BatchCopyCoreShimLocalCmds>
       <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'android'">
     <![CDATA[
-$(BatchLinkerTestLaunchCmds)
 $(BatchCopyCoreShimLocalCmds)
 
 IF NOT "%CLRCustomTestLauncher%"=="" (
@@ -360,7 +290,6 @@ set CLRTestExitCode=!ERRORLEVEL!
 if defined RunCrossGen2 (
   call :ReleaseLock
 )
-$(BatchLinkerTestCleanupCmds)
       ]]></BatchCLRTestLaunchCmds>
       <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'android'">
     <![CDATA[

@@ -274,94 +274,6 @@ fi
         <Description>Run the tests using the test watcher.</Description>
       </BashCLRTestExecutionScriptArgument>
     </ItemGroup>
-
-      <PropertyGroup>
-          <ReflectionRootsXml>$(AssemblyName).reflect.xml</ReflectionRootsXml>
-          <BashLinkerTestLaunchCmds>
-              <![CDATA[
-# Linker commands
-
-LinkBin=__Link
-Assemblies="-a System.Private.CoreLib"
-ReflectionRoots=
-
-shopt -s nullglob
-
-if [ ! -z "$DoLink" ];
-then
-  if [ ! -x "$ILLINK" ];
-  then
-    echo "Illink executable [$ILLINK] Invalid"
-    exit 1
-  fi
-
-  # Clean up old Linked binaries, if any
-  rm -rf $LinkBin
-
-  # Remove Native images, since the goal is to run from Linked binaries
-  rm -f *.ni.*
-
-  # Use hints for reflection roots, if provided in $(ReflectionRootsXml)
-  if [ -f $(ReflectionRootsXml) ];
-  then
-    ReflectionRoots="-x $(ReflectionRootsXml)"
-  fi
-
-  # Include all .exe files in this directory as entry points (some tests had multiple .exe file modules)
-  for bin in *.exe *.dll;
-  do
-    Assemblies="$Assemblies -a ${bin%.*}"
-  done
-
-  # Run dotnet-linker
-  # Run the Linker such that all assemblies except System.Private.Corlib.dll are linked
-  # Debug symbol generation needs some fixes, and is currently omitted.
-  # Once this is fixed, add -b true option.
-  echo "$ILLINK -out $LinkBin -d $CORE_ROOT -c link -l none -t $Assemblies $ReflectionRoots"
-  $ILLINK -out $LinkBin -d $CORE_ROOT -c link -l none -t $Assemblies $ReflectionRoots
-  ERRORLEVEL=$?
-  if [  $ERRORLEVEL -ne 0 ]
-  then
-    echo ILLINK FAILED $ERRORLEVEL
-    if [ -z "$KeepLinkedBinaries" ];
-    then
-      rm -rf $LinkBin
-    fi
-    exit 1
-  fi
-
-  # Copy CORECLR native binaries and the test watcher to $LinkBin,
-  # so that we can run the test based on that directory
-  cp $CORE_ROOT/*.so $LinkBin/
-  cp $CORE_ROOT/corerun $LinkBin/
-  cp $CORE_ROOT/watchdog $LinkBin/
-
-  # Copy some files that may be arguments
-  for f in *.txt;
-  do
-    [ -e "$f" ] && cp $f $LinkBin
-  done
-
-  ExePath=$LinkBin/$(InputAssemblyName)
-  export CORE_ROOT=$PWD/$LinkBin
-fi
-]]>
-          </BashLinkerTestLaunchCmds>
-          <BashLinkerTestCleanupCmds>
-              <![CDATA[
-# Clean up the LinkBin directories after test execution.
-# Otherwise, RunTests may run out of disk space.
-
-if [ ! -z "$DoLink" ];
-then
-  if [ -z "$KeepLinkedBinaries" ];
-  then
-    rm -rf $LinkBin
-  fi
-fi
-]]>
-          </BashLinkerTestCleanupCmds>
-      </PropertyGroup>
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
       <WatcherRunFile>"$CORE_ROOT/watchdog" $_WatcherTimeoutMins</WatcherRunFile>
@@ -386,8 +298,6 @@ $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreApp
 
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' != 'browser' And '$(TargetOS)' != 'android'">
     <![CDATA[
-$(BashLinkerTestLaunchCmds)
-
 _DebuggerArgsSeparator=
 if [[ "$_DebuggerFullPath" == *lldb* ]];
 then
@@ -425,8 +335,6 @@ CLRTestExitCode=$?
 if [ ! -z ${RunCrossGen2+x} ]%3B then
   ReleaseLock
 fi
-
-$(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'browser'">
       <![CDATA[

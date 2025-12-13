@@ -138,6 +138,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/ServerModel/servermodel/*">
             <Issue>times out</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/THDChaos/thdchaos/*">
+            <Issue>https://github.com/dotnet/runtime/issues/119700</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/eh/FinallyExec/nonlocalexitinhandler/*">
             <Issue>times out</Issue>
         </ExcludeList>
@@ -365,20 +368,6 @@
 
     <!-- OSX arm64 on CoreCLR Runtime -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsOSX)' == 'true' and '$(TargetArchitecture)' == 'arm64' and '$(RuntimeFlavor)' == 'coreclr' ">
-    </ItemGroup>
-
-    <!-- Failures while testing via ILLINK -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(RunTestsViaIllink)' == 'true'">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
-            <!-- Linker runs reset CORE_ROOT to the linked directory based on superpmicollect.exe.
-                 The test runs other benchmarks to collect superpmi data.
-                 These tests cannot run from the binaries generated wrt superpmicollect.exe -->
-            <Issue>By Test Infrastructure design</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/RVAInit/nested/*">
-            <!-- Data referred from static field is dropped -->
-            <Issue>Bug</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Crossgen2 specific -->
