@@ -388,7 +388,6 @@ namespace System.IO.Compression
 
             ThrowIfDisposed();
 
-
             ZipArchiveEntry entry = compressionLevel.HasValue ?
                 new ZipArchiveEntry(this, entryName, compressionLevel.Value) :
                 new ZipArchiveEntry(this, entryName);
