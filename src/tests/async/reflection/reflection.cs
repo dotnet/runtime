@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -64,7 +67,7 @@ public class Async2Reflection
         return 10;
     }
 
-[Fact]
+    [Fact]
     public static void AwaitTaskReturningExpressionLambda()
     {
         var expr1 = (Expression<Func<Task<int>>>)(() => Task.FromResult(42));
@@ -241,5 +244,127 @@ public class Async2Reflection
         Accessors1<int>.accessor(null, 7).GetAwaiter().GetResult();
         Assert.Equal(8, PrivateAsync1<int>.s);
         Assert.Equal(8, PrivateAsync2.s);
+    }
+
+    [Fact]
+    public static void CurrentMethod()
+    {
+        // Note: async1 leaks implementation details here and returns "Void MoveNext()"
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", GetCurrentMethodAsync().Result);
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", GetCurrentMethodAwait().Result);
+
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodTask().Result);
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodAwaitTask().Result);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<string> GetCurrentMethodAsync()
+    {
+        await Task.Yield();
+        MethodInfo mi = (MethodInfo)MethodBase.GetCurrentMethod()!;
+        return mi.ToString()!;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<string> GetCurrentMethodAwait()
+    {
+        return await GetCurrentMethodAsync();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Task<string> GetCurrentMethodTask()
+    {
+        MethodInfo mi = (MethodInfo)MethodBase.GetCurrentMethod()!;
+        return Task.FromResult(mi.ToString()!);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<string> GetCurrentMethodAwaitTask()
+    {
+        return await GetCurrentMethodTask();
+    }
+
+    [Fact]
+    public static void FromStack()
+    {
+        // Note: async1 leaks implementation details here and returns "Void MoveNext()"
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAsync()", FromStackAsync().Result);
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAsync()", FromStackAwait().Result);
+
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackTask()", FromStackTask().Result);
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackTask()", FromStackAwaitTask().Result);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<string> FromStackAsync()
+    {
+        await Task.Yield();
+        StackFrame stackFrame = new StackFrame(0);
+        MethodInfo mi = (MethodInfo)stackFrame.GetMethod();
+        return mi.ToString()!;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<string> FromStackAwait()
+    {
+        return await FromStackAsync();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Task<string> FromStackTask()
+    {
+        StackFrame stackFrame = new StackFrame(0);
+        MethodInfo mi = (MethodInfo)stackFrame.GetMethod();
+        return Task.FromResult(mi.ToString()!);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<string> FromStackAwaitTask()
+    {
+        return await FromStackTask();
+    }
+
+    [Fact]
+    public static void EnumerateAll()
+    {
+        string[] actual = EnumAll.GetAll();
+        string[] expected =
+            {"Boolean Equals(System.Object)",
+                 "Void Finalize()",
+                 "System.Threading.Tasks.Task`1[System.Int32] get_P1()",
+                 "System.String[] GetAll()",
+                 "Int32 GetHashCode()",
+                 "System.Type GetType()",
+                 "System.Threading.Tasks.Task`1[System.Int32] M1()",
+                 "System.Threading.Tasks.Task`1[System.Int32] M2()",
+                 "System.Object MemberwiseClone()",
+                 "System.String ToString()" };
+
+        Assert.Equal(expected.Length, actual.Length);
+        for (int i = 0; i < actual.Length; i++)
+        {
+            Assert.Equal(actual[i], expected[i]);
+        }
+    }
+
+    class EnumAll
+    {
+        public static Task<int> M1() => Task.FromResult(1);
+
+        public async Task<int> M2() => 1;
+
+        public static Task<int> P1 => Task.FromResult(1);
+
+        public static string[] GetAll()
+        {
+            Type t = Type.GetType(typeof(EnumAll).FullName!)!;
+            List<string> names = new();
+            foreach (MethodInfo mi in t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static).OrderBy(it => it.Name))
+            {
+                names.Add(mi.ToString()!);
+            }
+
+            return names.ToArray();
+        }
     }
 }
