@@ -594,8 +594,6 @@ namespace ILCompiler.ObjectWriter
             string namePointerTableSymbol = GenerateSymbolNameForReloc("namePointerTable");
             string ordinalPointerTableSymbol = GenerateSymbolNameForReloc("ordinalPointerTable");
 
-            Debug.Assert(sectionWriter.Position == 0);
-
             // +0x00: reserved
             sectionWriter.WriteLittleEndian(0);
             // +0x04: time/date stamp
