@@ -22,6 +22,7 @@
     <PlatformManifestFileEntry Include="libhostpolicy.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libhostpolicy.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="hostfxr.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="clrinterpreter.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libhostfxr.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libhostfxr.dylib" IsNative="true" />
 
