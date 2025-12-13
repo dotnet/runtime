@@ -124,6 +124,7 @@ namespace ILCompiler
             // Determine the list of method we actually need to compile
             var methodsToCompile = new List<MethodCodeNode>();
             var canonicalMethodsToCompile = new HashSet<MethodDesc>();
+            var methodNodesToCompile = new HashSet<MethodCodeNode>();
 
             foreach (DependencyNodeCore<NodeFactory> dependency in obj)
             {
@@ -132,14 +133,21 @@ namespace ILCompiler
                 {
                     // To compute dependencies of the shadow method that tracks dictionary
                     // dependencies we need to ensure there is code for the canonical method body.
-                    var dependencyMethod = (ShadowConcreteMethodNode)dependency;
-                    methodCodeNodeNeedingCode = (MethodCodeNode)dependencyMethod.CanonicalMethodNode;
+                    var shadowGeneric = (ShadowGenericMethodNode)dependency;
+                    methodCodeNodeNeedingCode = (MethodCodeNode)shadowGeneric.CanonicalMethodNode;
                 }
 
                 // We might have already queued this method for compilation
                 MethodDesc method = methodCodeNodeNeedingCode.Method;
                 if (method.IsCanonicalMethod(CanonicalFormKind.Any)
                     && !canonicalMethodsToCompile.Add(method))
+                {
+                    continue;
+                }
+
+                // Don't add the same node twice (can happen when both a MethodCodeNode and
+                // a ShadowGenericMethodNode referencing the same canonical method are in the list)
+                if (!methodNodesToCompile.Add(methodCodeNodeNeedingCode))
                 {
                     continue;
                 }

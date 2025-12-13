@@ -797,7 +797,7 @@ namespace Internal.IL
                             _dependencies.Add(instParam, reason);
                         }
 
-                        _dependencies.Add(_factory.CanonicalEntrypoint(targetMethod), reason);
+                        _dependencies.Add(_factory.ShadowGenericMethod(concreteMethod), reason);
                     }
                     else
                     {
