@@ -545,6 +545,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     {
         delta_PSP -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta_PSP -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta_PSP -= TARGET_POINTER_SIZE;
+    }
 
     funcletFrameSize = funcletFrameSize - delta_PSP;
     funcletFrameSize = roundUp((unsigned)funcletFrameSize, STACK_ALIGN);
@@ -3300,6 +3308,14 @@ int CodeGenInterface::genSPtoFPdelta() const
 
     int delta = compiler->compLclFrameSize;
     if ((compiler->lvaMonAcquired != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        delta -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
     {
         delta -= TARGET_POINTER_SIZE;
     }
@@ -6374,6 +6390,14 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
 
 #ifdef DEBUG
     if (compiler->opts.disAsm)
@@ -6441,6 +6465,14 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     int totalFrameSize = genTotalFrameSize();
     int localFrameSize = compiler->compLclFrameSize;
     if ((compiler->lvaMonAcquired != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
+    {
+        localFrameSize -= TARGET_POINTER_SIZE;
+    }
+    if ((compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !compiler->opts.IsOSR())
     {
         localFrameSize -= TARGET_POINTER_SIZE;
     }
