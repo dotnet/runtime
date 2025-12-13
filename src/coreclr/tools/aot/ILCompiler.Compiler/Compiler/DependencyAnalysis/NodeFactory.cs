@@ -1271,21 +1271,8 @@ namespace ILCompiler.DependencyAnalysis
             public ShadowGenericMethodHashtable(NodeFactory factory) => _factory = factory;
             protected override bool CompareKeyToValue(MethodDesc key, ShadowGenericMethodNode value) => key == value.Method;
             protected override bool CompareValueToValue(ShadowGenericMethodNode value1, ShadowGenericMethodNode value2) => value1.Method == value2.Method;
-            protected override ShadowGenericMethodNode CreateValueFromKey(MethodDesc key)
-            {
-                // Duplicate the normalization logic from CreateMethodEntrypointNode
-                if (key.IsInternalCall)
-                {
-                    if (key.IsArrayAddressMethod())
-                    {
-                        return _factory.ShadowGenericMethod(((ArrayType)key.OwningType).GetArrayMethod(ArrayMethodKind.AddressWithHiddenArg));
-                    }
-                }
-
-                MethodDesc canonMethod = key.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                var entry = _factory.MethodEntrypoint(canonMethod);
-                return new ShadowGenericMethodNode(key, entry);
-            }
+            protected override ShadowGenericMethodNode CreateValueFromKey(MethodDesc key) =>
+                new ShadowGenericMethodNode(key, _factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
             protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
             protected override int GetValueHashCode(ShadowGenericMethodNode value) => value.Method.GetHashCode();
         }
