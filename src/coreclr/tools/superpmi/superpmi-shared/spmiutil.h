@@ -65,7 +65,6 @@ enum SPMI_TARGET_ARCHITECTURE
     SPMI_TARGET_ARCHITECTURE_LOONGARCH64,
     SPMI_TARGET_ARCHITECTURE_RISCV64,
     SPMI_TARGET_ARCHITECTURE_WASM32,
-    SPMI_TARGET_ARCHITECTURE_WASM64,
 };
 
 SPMI_TARGET_ARCHITECTURE GetSpmiTargetArchitecture();
@@ -83,8 +82,7 @@ inline bool IsSpmiTarget64Bit()
     return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_AMD64) ||
            (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64) ||
            (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_LOONGARCH64) ||
-           (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_RISCV64) ||
-           (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_WASM64);
+           (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_RISCV64);
 }
 
 inline size_t SpmiTargetPointerSize()
