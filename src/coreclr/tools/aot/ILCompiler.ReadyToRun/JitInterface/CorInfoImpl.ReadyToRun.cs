@@ -558,7 +558,7 @@ namespace Internal.JitInterface
 
         public static bool ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport instructionSetSupport, MethodDesc method)
         {
-            EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
+            EcmaMethod ecmaMethod = method.GetEcmaDefinition();
 
             var metadataReader = ecmaMethod.MetadataReader;
             var stringComparer = metadataReader.StringComparer;
@@ -785,13 +785,13 @@ namespace Internal.JitInterface
                     return;
                 }
 
-                if (MethodBeingCompiled.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+                if (MethodBeingCompiled.GetEcmaDefinition() is EcmaMethod ecmaMethod)
                 {
                     if ((methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL && _compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && ecmaMethod.Module == ecmaMethod.Context.SystemModule) ||
                         (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(MethodBeingCompiled) &&
                             _compilation.NodeFactory.CompilationModuleGroup.CrossModuleInlineable(MethodBeingCompiled)))
                     {
-                        ISymbolNode ilBodyNode = _compilation.SymbolNodeFactory.CheckILBodyFixupSignature((EcmaMethod)MethodBeingCompiled.GetTypicalMethodDefinition());
+                        ISymbolNode ilBodyNode = _compilation.SymbolNodeFactory.CheckILBodyFixupSignature(ecmaMethod);
                         AddPrecodeFixup(ilBodyNode);
                     }
 
@@ -1361,7 +1361,7 @@ namespace Internal.JitInterface
                 || methodDesc.IsPInvoke))
             {
                 if ((CorTokenType)(unchecked((uint)pResolvedToken.token) & 0xFF000000u) == CorTokenType.mdtMethodDef &&
-                    methodDesc?.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+                    methodDesc?.GetEcmaDefinition() is EcmaMethod ecmaMethod)
                 {
                     mdToken token = (mdToken)MetadataTokens.GetToken(ecmaMethod.Handle);
 
@@ -1410,18 +1410,15 @@ namespace Internal.JitInterface
 
                 if (resultDef is MethodDesc resultMethod)
                 {
-                    if (resultMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
-                        resultMethod = rawPinvoke.Target;
-
                     // It's okay to strip the instantiation away because we don't need a MethodSpec
                     // token - SignatureBuilder will generate the generic method signature
                     // using instantiation parameters from the MethodDesc entity.
-                    resultMethod = resultMethod.GetTypicalMethodDefinition();
+                    EcmaMethod ecmaMethod = resultMethod.GetEcmaDefinition();
 
-                    Debug.Assert(resultMethod is EcmaMethod);
-                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultMethod).OwningType));
-                    token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultMethod).Handle);
-                    module = ((EcmaMethod)resultMethod).Module;
+                    Debug.Assert(ecmaMethod is not null);
+                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(ecmaMethod.OwningType));
+                    token = (mdToken)MetadataTokens.GetToken(ecmaMethod.Handle);
+                    module = ecmaMethod.Module;
                 }
                 else if (resultDef is FieldDesc resultField)
                 {
@@ -1896,7 +1893,7 @@ namespace Internal.JitInterface
                 throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + originalMethod.ToString());
             }
 
-            callerModule = ((EcmaMethod)callerMethod.GetTypicalMethodDefinition()).Module;
+            callerModule = callerMethod.GetEcmaDefinition().Module;
             bool isCallVirt = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0;
             bool isLdftn = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0;
             bool isStaticVirtual = (originalMethod.Signature.IsStatic && originalMethod.IsVirtual);
@@ -2997,8 +2994,8 @@ namespace Internal.JitInterface
             }
 
             // Methods without ecma metadata are not instrumented
-            EcmaMethod ecmaMethod = _methodCodeNode.Method.GetTypicalMethodDefinition() as EcmaMethod;
-            if (ecmaMethod == null)
+            EcmaMethod ecmaMethod = _methodCodeNode.Method.GetEcmaDefinition();
+            if (ecmaMethod is null)
             {
                 return HRESULT.E_NOTIMPL;
             }

@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public static byte[] BuildSignatureForMethodDefinedInModule(MethodDesc method, NodeFactory factory)
         {
-            EcmaMethod typicalMethod = (EcmaMethod)method.GetTypicalMethodDefinition();
+            EcmaMethod typicalMethod = method.GetEcmaDefinition();
 
             ModuleToken moduleToken;
             if (factory.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod))

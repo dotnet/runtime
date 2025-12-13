@@ -479,7 +479,7 @@ namespace ILCompiler.DependencyAnalysis
 #if DEBUG
                 if (!methodCodeNode.IsEmpty || CompilationModuleGroup.VersionsWithMethodBody(method))
                 {
-                    EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
+                    EcmaModule module = method.GetEcmaDefinition().Module;
                     ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
 
                     IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null), false, false, false);
