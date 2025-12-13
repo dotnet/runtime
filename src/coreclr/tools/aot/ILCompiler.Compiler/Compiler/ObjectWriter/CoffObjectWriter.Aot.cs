@@ -56,12 +56,14 @@ namespace ILCompiler.ObjectWriter
         private CodeViewTypesBuilder _debugTypesBuilder;
 
         // Exception handling
+        private static readonly ObjectNodeSection XDataSection = new ObjectNodeSection("xdata", SectionType.ReadOnly);
+        private static readonly ObjectNodeSection PDataSection = new ObjectNodeSection("pdata", SectionType.UnwindData);
         private SectionWriter _pdataSectionWriter;
 
         private protected override void CreateEhSections()
         {
             // Create .pdata
-            _pdataSectionWriter = GetOrCreateSection(ObjectNodeSection.PDataSection);
+            _pdataSectionWriter = GetOrCreateSection(PDataSection);
         }
 
         private protected override void EmitUnwindInfo(
@@ -95,14 +97,14 @@ namespace ILCompiler.ObjectWriter
                     if (shareSymbol)
                     {
                         // Produce an associative COMDAT symbol.
-                        xdataSectionWriter = GetOrCreateSection(ObjectNodeSection.XDataSection, currentSymbolName, unwindSymbolName);
-                        pdataSectionWriter = GetOrCreateSection(ObjectNodeSection.PDataSection, currentSymbolName, default);
+                        xdataSectionWriter = GetOrCreateSection(XDataSection, currentSymbolName, unwindSymbolName);
+                        pdataSectionWriter = GetOrCreateSection(PDataSection, currentSymbolName, default);
                     }
                     else
                     {
                         // Produce a COMDAT section for each unwind symbol and let linker
                         // do the deduplication across the ones with identical content.
-                        xdataSectionWriter = GetOrCreateSection(ObjectNodeSection.XDataSection, unwindSymbolName, unwindSymbolName);
+                        xdataSectionWriter = GetOrCreateSection(XDataSection, unwindSymbolName, unwindSymbolName);
                         pdataSectionWriter = _pdataSectionWriter;
                     }
 
