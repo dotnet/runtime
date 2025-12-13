@@ -44,7 +44,7 @@ namespace System.Net.Http
         private readonly IWebProxy? _proxy;
         private readonly ICredentials? _proxyCredentials;
 
-#if !ILLUMOS && !SOLARIS
+#if !ILLUMOS && !SOLARIS && !HAIKU
         private NetworkChangeCleanup? _networkChangeCleanup;
 #endif
 
@@ -139,7 +139,7 @@ namespace System.Net.Http
             }
         }
 
-#if !ILLUMOS && !SOLARIS
+#if !ILLUMOS && !SOLARIS && !HAIKU
         /// <summary>
         /// Starts monitoring for network changes. Upon a change, <see cref="HttpConnectionPool.OnNetworkChanged"/> will be
         /// called for every <see cref="HttpConnectionPool"/> in the <see cref="HttpConnectionPoolManager"/>.
@@ -457,7 +457,7 @@ namespace System.Net.Http
                 pool.Value.Dispose();
             }
 
-#if !ILLUMOS && !SOLARIS
+#if !ILLUMOS && !SOLARIS && !HAIKU
             _networkChangeCleanup?.Dispose();
 #endif
         }
