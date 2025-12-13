@@ -5652,7 +5652,7 @@ void CodeGen::genFnProlog()
 #else  // defined(TARGET_WASM)
     // TODO-WASM: proper local count, local declarations, and shadow stack maintenance
     assert(compiler->info.compLocalsCount >= compiler->info.compArgsCount);
-    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, compiler->info.compLocalsCount - compiler->info.compArgsCount);
+    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, (unsigned)WasmValueType::Count - 1);
     genWasmLocals();
     GetEmitter()->emitMarkPrologEnd();
 #endif // !defined(TARGET_WASM)
