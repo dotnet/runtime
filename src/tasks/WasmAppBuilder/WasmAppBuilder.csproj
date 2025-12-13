@@ -34,7 +34,7 @@
 
     <!-- Reference Microsoft.Build.Tasks.Core directly to avoid bringing in it's package closure.
          This assembly is provided by MSBuild.  -->
-    <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net8.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
+    <PackageDownloadAndReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" Folder="ref/net8.0" />
   </ItemGroup>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
