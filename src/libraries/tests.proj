@@ -632,7 +632,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(UseNativeAOTRuntime)' != 'true'">
-    <SmokeTestProject Remove="@(SmokeTestProject)" />
     <SmokeTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\CoreCLR\*.Test.csproj"/>
   </ItemGroup>
 
