@@ -266,17 +266,11 @@ echo %__MsgPrefix%Using CMake from !CMakePath!
 
 :SkipLocateCMake
 
-REM NumberOfCores is an WMI property providing number of physical cores on machine
-REM processor(s). It is used to set optimal level of CL parallelism during native build step
-if not defined NumberOfCores (
-    REM Determine number of physical processor cores available on machine
-    set TotalNumberOfCores=0
-    for /f "tokens=*" %%I in (
-        'wmic cpu get NumberOfCores /value ^| find "=" 2^>NUL'
-    ) do set %%I & set /a TotalNumberOfCores=TotalNumberOfCores+NumberOfCores
-    set NumberOfCores=!TotalNumberOfCores!
-)
-echo %__MsgPrefix%Number of processor cores %NumberOfCores%
+REM Set MSBuild parallelism settings for better build performance
+REM See https://devblogs.microsoft.com/cppblog/cpp-build-throughput-investigation-and-tune-up/
+set UseMultiToolTask=true
+set EnforceProcessCountAcrossBuilds=true
+set EnableClServerMode=true
 
 REM =========================================================================================
 REM ===
