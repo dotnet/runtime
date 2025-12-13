@@ -34,7 +34,13 @@ else()
     add_custom_target(clrinterpreter_exports DEPENDS ${EXPORTS_FILE})
 endif()
 
-add_library_clr(clrinterpreter_objects OBJECT ${INTERPRETER_SOURCES})
+if(CLR_CMAKE_TARGET_WIN32)
+  set(INTERPRETER_RESOURCES Native.rc)
+endif(CLR_CMAKE_TARGET_WIN32)
+
+convert_to_absolute_path(INTERPRETER_RESOURCES ${INTERPRETER_RESOURCES})
+
+add_library_clr(clrinterpreter_objects OBJECT ${INTERPRETER_SOURCES} ${INTERPRETER_RESOURCES})
 
 if (NOT CMAKE_GENERATOR MATCHES "Visual Studio")
   set_target_properties(clrinterpreter_objects PROPERTIES EXCLUDE_FROM_ALL $<NOT:${FEATURE_INTERPRETER}>)
@@ -45,6 +51,10 @@ if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
 else()
   add_library_clr(clrinterpreter STATIC $<TARGET_OBJECTS:clrinterpreter_objects> $<TARGET_OBJECTS:dn-containers>)
 endif()
+
+if(CLR_CMAKE_TARGET_WIN32)
+  target_compile_definitions(clrinterpreter_objects PRIVATE FX_VER_INTERNALNAME_STR=clrinterpreter.dll)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 target_include_directories(clrinterpreter INTERFACE "interpreter/inc")
 
