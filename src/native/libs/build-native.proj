@@ -21,7 +21,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)native-binplace.proj" />
     <ProjectReference Include="$(RepoTasksDir)AndroidAppBuilder\AndroidAppBuilder.csproj" Condition="'$(TargetOS)' == 'android'" />
   </ItemGroup>
 
@@ -104,6 +103,44 @@
       JarFileName="libSystem.Security.Cryptography.Native.Android.jar"
       OutputDir="$(ArtifactsBinDir)native/$(_BuildNativeOutConfig)">
     </AndroidLibBuilderTask>
+  </Target>
+
+  <Target Name="BinPlaceNative" AfterTargets="BuildNativeUnix;BuildNativeWindows">
+    <ItemGroup>
+      <ExcludeNativeLibrariesRuntimeFiles Include="
+          $(NativeBinDir)System.Globalization.Native.dll;
+          $(NativeBinDir)System.Globalization.Native.pdb;
+          $(NativeBinDir)System.Globalization.Native.so;
+          $(NativeBinDir)System.Globalization.Native.dylib"
+        Condition="'$(RuntimeFlavor)' != 'Mono'" />
+
+      <BinPlaceItem Include="$(NativeBinDir)*.dll" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <BinPlaceItem Include="$(NativeBinDir)*.pdb" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <BinPlaceItem Include="$(NativeBinDir)*.lib" />
+      <BinPlaceItem Include="$(NativeBinDir)*.a" />
+      <BinPlaceItem Include="$(NativeBinDir)*.bc" />
+      <BinPlaceItem Include="$(NativeBinDir)*.so" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <BinPlaceItem Include="$(NativeBinDir)*.dbg" />
+      <BinPlaceItem Include="$(NativeBinDir)*.dylib" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <BinPlaceItem Include="$(NativeBinDir)*.dwarf" />
+      <BinPlaceItem Include="$(NativeBinDir)*.dex" />
+      <BinPlaceItem Include="$(NativeBinDir)*.jar" />
+      <BinPlaceItem Include="$(NativeBinDir)*.dat" />
+      <FileWrites Include="@(BinPlaceItem)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <NativeBinPlaceDestinationDir Include="$(LibrariesAllBinArtifactsPath)" />
+      <NativeBinPlaceDestinationDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" />
+      <NativeBinPlaceDestinationDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(BinPlaceItem)"
+          DestinationFolder="%(NativeBinPlaceDestinationDir.Identity)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(BinPlaceUseHardlinksIfPossible)">
+      <Output TaskParameter="CopiedFiles" ItemName="FileWrites" />
+    </Copy>
   </Target>
 
 </Project>
