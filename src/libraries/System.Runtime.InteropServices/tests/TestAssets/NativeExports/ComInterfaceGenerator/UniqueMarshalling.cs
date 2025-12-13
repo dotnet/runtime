@@ -23,6 +23,8 @@ namespace NativeExports.ComInterfaceGenerator
                 s_cachedPtr = (void*)ptr;
             }
 
+            // AddRef before returning - caller will Release
+            Marshal.AddRef((nint)s_cachedPtr);
             return s_cachedPtr;
         }
     }
