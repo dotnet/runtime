@@ -152,6 +152,8 @@
     <Compile Include="DelegatingHandlerTest.cs" />
     <Compile Include="FakeDiagnosticSourceListenerObserver.cs" />
     <Compile Include="FormUrlEncodedContentTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\AsyncGateContent.cs"
+             Link="Common\System\Net\Http\AsyncGateContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ByteAtATimeContent.cs"
              Link="Common\System\Net\Http\ByteAtATimeContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.cs"
