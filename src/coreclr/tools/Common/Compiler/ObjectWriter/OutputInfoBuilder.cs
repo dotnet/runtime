@@ -75,7 +75,7 @@ namespace ILCompiler.ObjectWriter
         public int Relocations { get; private set; }
 
         public OutputNode(int sectionIndex, ulong offset, int length, string name)
-            : base(sectionIndex, offset, name)
+            : base(sectionIndex, offset, new Utf8String(name))
         {
             Length = length;
             Relocations = 0;

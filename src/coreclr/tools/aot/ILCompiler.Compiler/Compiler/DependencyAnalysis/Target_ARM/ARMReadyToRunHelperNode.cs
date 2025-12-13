@@ -3,7 +3,10 @@
 
 using System;
 using System.Diagnostics;
+
+using Internal.Text;
 using Internal.TypeSystem;
+
 using ILCompiler.DependencyAnalysis.ARM;
 
 namespace ILCompiler.DependencyAnalysis
@@ -128,7 +131,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (targetMethod.OwningType.IsInterface)
                         {
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.InterfaceDispatchCell(targetMethod));
-                            encoder.EmitJMP(factory.ExternFunctionSymbol("RhpResolveInterfaceMethod"));
+                            encoder.EmitJMP(factory.ExternFunctionSymbol(new Utf8String("RhpResolveInterfaceMethod"u8)));
                         }
                         else
                         {

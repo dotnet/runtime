@@ -136,7 +136,7 @@ namespace ILCompiler.ObjectWriter
 
                     // ARM EHABI requires emitting a dummy relocation to the personality routine
                     // to tell the linker to preserve it.
-                    extabSectionWriter.EmitRelocation(0, unwindWord, IMAGE_REL_BASED_ABSOLUTE, personalitySymbolName, 0);
+                    extabSectionWriter.EmitRelocation(0, unwindWord, IMAGE_REL_BASED_ABSOLUTE, new Utf8String(personalitySymbolName), 0);
 
                     // Emit the unwinding code. First word specifies the personality routine,
                     // format and first few bytes of the unwind code. For longer unwind codes

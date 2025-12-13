@@ -62,7 +62,7 @@ namespace ILCompiler
                     ClassTypeDescriptor classTypeDescriptor = new ClassTypeDescriptor
                     {
                         IsStruct = 1,
-                        Name = $"StateMachineLocals_{System.Reflection.Metadata.Ecma335.MetadataTokens.GetToken(((EcmaType)defType.GetTypeDefinition()).Handle):X}",
+                        Name = new Utf8String($"StateMachineLocals_{System.Reflection.Metadata.Ecma335.MetadataTokens.GetToken(((EcmaType)defType.GetTypeDefinition()).Handle):X}"),
                         InstanceSize = defType.InstanceByteCount.IsIndeterminate ? 0 : (ulong)defType.InstanceByteCount.AsInt,
                     };
 
@@ -123,7 +123,7 @@ namespace ILCompiler
                         {
                             FieldTypeIndex = fieldTypeIndex,
                             Offset = (ulong)fieldOffsetEmit,
-                            Name = fieldNameEmit
+                            Name = new Utf8String(fieldNameEmit)
                         };
 
                         fieldsDescs.Add(field);
@@ -789,7 +789,7 @@ namespace ILCompiler
                     ClassTypeDescriptor helperClassTypeDescriptor = new ClassTypeDescriptor
                     {
                         IsStruct = 1,
-                        Name = $"__ThreadStaticHelper<{classTypeDescriptor.Name}>",
+                        Name = new Utf8String($"__ThreadStaticHelper<{classTypeDescriptor.Name}>"),
                         BaseClassId = 0
                     };
                     var pointerTypeDescriptor = new PointerTypeDescriptor
@@ -805,13 +805,13 @@ namespace ILCompiler
                         {
                             FieldTypeIndex = _objectWriter.GetPointerTypeIndex(pointerTypeDescriptor),
                             Offset = 0,
-                            Name = "TypeManagerSlot"
+                            Name = new Utf8String("TypeManagerSlot"u8)
                         },
                         new DataFieldDescriptor
                         {
                             FieldTypeIndex = GetVariableTypeIndex(defType.Context.GetWellKnownType(Is64Bit? WellKnownType.Int64 : WellKnownType.Int32), true),
                             Offset = (ulong)NodeFactory.Target.PointerSize,
-                            Name = "ClassIndex"
+                            Name = new Utf8String("ClassIndex"u8)
                         }
                     };
 
