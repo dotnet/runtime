@@ -1541,6 +1541,15 @@ void CodeGen::siBeginBlock(BasicBlock* block)
 //
 void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned int lastBlockILEndOffset)
 {
+#if defined(TARGET_WASM)
+    // TODO-WASM: Wasm structured control flow
+    // requirements are incompatible with debug codegen's
+    // desire to keep blocks in increasing IL offset
+    // order. Figure out the proper scope manipulations.
+    //
+    return;
+#endif // defined(TARGET_WASM)
+
     unsigned int beginOffs = block->bbCodeOffs;
 
     // There aren't any tracked locals.
