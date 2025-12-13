@@ -1246,9 +1246,20 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             else if (data->IsIntegralConst())
             {
                 // namu
-                ssize_t imm = data->AsIntConCommon()->IconValue();
-                dataReg = rsGetRsvdReg();
-                emit->emitLoadImmediate(EA_PTRSIZE, dataReg, imm);
+                ssize_t cnsVal = data->AsIntConCommon()->IconValue();
+                dataReg = (targetReg == REG_NA) ? rsGetRsvdReg() : targetReg;
+
+                if (data->IsIconHandle() &&
+                    data->AsIntCon()->FitsInAddrBase(compiler) &&
+                    data->AsIntCon()->AddrNeedsReloc(compiler))
+                {
+                    emitAttr attr = EA_SET_FLG(emitActualTypeSize(targetType), EA_DSP_RELOC_FLG);
+                    emit->emitIns_R_AI(INS_addi, attr, dataReg, dataReg, cnsVal);
+                }
+                else
+                {
+                    emit->emitLoadImmediate(EA_PTRSIZE, dataReg, cnsVal);
+                }
             }
             else
             {
