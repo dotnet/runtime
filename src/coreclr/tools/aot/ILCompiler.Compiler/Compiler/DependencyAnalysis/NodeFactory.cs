@@ -1137,13 +1137,13 @@ namespace ILCompiler.DependencyAnalysis
                 return AddressTakenMethodEntrypoint(method, isUnboxingStub);
         }
 
-        public IMethodNode CanonicalEntrypoint(MethodDesc method, bool isUnboxingStub = false)
+        public IMethodNode CanonicalEntrypoint(MethodDesc method)
         {
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             if (method != canonMethod)
-                return ShadowGenericMethod(method, isUnboxingStub);
+                return ShadowGenericMethod(method);
             else
-                return MethodEntrypoint(method, isUnboxingStub);
+                return MethodEntrypoint(method);
         }
 
         private NodeCache<MethodDesc, GVMDependenciesNode> _gvmDependenciesNode;
@@ -1255,20 +1255,38 @@ namespace ILCompiler.DependencyAnalysis
             public ShadowGenericMethodHashtable(NodeFactory factory) => _factory = factory;
             protected override bool CompareKeyToValue(MethodDesc key, ShadowGenericMethodNode value) => key == value.Method;
             protected override bool CompareValueToValue(ShadowGenericMethodNode value1, ShadowGenericMethodNode value2) => value1.Method == value2.Method;
-            protected override ShadowGenericMethodNode CreateValueFromKey(MethodDesc key) =>
-                new ShadowGenericMethodNode(key, _factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+            protected override ShadowGenericMethodNode CreateValueFromKey(MethodDesc key)
+            {
+                // Duplicate the normalization logic from CreateMethodEntrypointNode
+                if (key.IsInternalCall)
+                {
+                    if (_factory.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(key))
+                    {
+                        return _factory.ShadowGenericMethod(_factory.TypeSystemContext.GetRealSpecialUnboxingThunkTargetMethod(key));
+                    }
+                    else if (_factory.TypeSystemContext.IsDefaultInterfaceMethodImplementationThunkTargetMethod(key))
+                    {
+                        return _factory.ShadowGenericMethod(_factory.TypeSystemContext.GetRealDefaultInterfaceMethodImplementationThunkTargetMethod(key));
+                    }
+                    else if (key.IsArrayAddressMethod())
+                    {
+                        return _factory.ShadowGenericMethod(((ArrayType)key.OwningType).GetArrayMethod(ArrayMethodKind.AddressWithHiddenArg));
+                    }
+                }
+
+                MethodDesc canonMethod = key.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                var entry = _factory.MethodEntrypoint(canonMethod);
+                return new ShadowGenericMethodNode(key, entry);
+            }
             protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
             protected override int GetValueHashCode(ShadowGenericMethodNode value) => value.Method.GetHashCode();
         }
 
         private ShadowGenericMethodHashtable _shadowGenericMethods;
         private NodeCache<MethodDesc, ShadowConcreteUnboxingThunkNode> _shadowConcreteUnboxingMethods;
-        public IMethodNode ShadowGenericMethod(MethodDesc method, bool isUnboxingStub = false)
+        public ShadowGenericMethodNode ShadowGenericMethod(MethodDesc method)
         {
-            if (isUnboxingStub)
-                return _shadowConcreteUnboxingMethods.GetOrAdd(method);
-            else
-                return _shadowGenericMethods.GetOrCreateValue(method);
+            return _shadowGenericMethods.GetOrCreateValue(method);
         }
 
         private static readonly string[][] s_helperEntrypointNames = new string[][] {

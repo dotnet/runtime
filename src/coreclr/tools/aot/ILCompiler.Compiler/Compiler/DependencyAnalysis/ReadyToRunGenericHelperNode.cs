@@ -160,9 +160,18 @@ namespace ILCompiler.DependencyAnalysis
                             {
                                 if (!instantiatedMethod.IsAbstract)
                                 {
+                                    try
+                                    {
+                                        factory.TypeSystemContext.DetectGenericCycles(lookupContext.Context, instantiatedMethod);
                                     result.Add(new DependencyListEntry(
                                         factory.ShadowGenericMethod(instantiatedMethod),
                                         "Partially instantiated generic dictionary dependencies"));
+                                    }
+                                    catch (TypeSystemException)
+                                    {
+                                        // It's fine to continue here - we will generate a bad slot helper when
+                                        // instantiating the dependencies of any concrete instantiations.
+                                    }
                                 }
                                 return result.ToArray();
                             }
