@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -321,4 +324,47 @@ public class Async2Reflection
         return await FromStackTask();
     }
 
+    [Fact]
+    public static void EnumerateAll()
+    {
+        string[] actual = EnumAll.GetAll();
+        string[] expected =
+            {"Boolean Equals(System.Object)",
+                 "Void Finalize()",
+                 "System.Threading.Tasks.Task`1[System.Int32] get_P1()",
+                 "System.String[] GetAll()",
+                 "Int32 GetHashCode()",
+                 "System.Type GetType()",
+                 "System.Threading.Tasks.Task`1[System.Int32] M1()",
+                 "System.Threading.Tasks.Task`1[System.Int32] M2()",
+                 "System.Object MemberwiseClone()",
+                 "System.String ToString()" };
+
+        Assert.Equal(expected.Length, actual.Length);
+        for (int i = 0; i < actual.Length; i++)
+        {
+            Assert.Equal(actual[i], expected[i]);
+        }
+    }
+
+    class EnumAll
+    {
+        public static Task<int> M1() => Task.FromResult(1);
+
+        public async Task<int> M2() => 1;
+
+        public static Task<int> P1 => Task.FromResult(1);
+
+        public static string[] GetAll()
+        {
+            Type t = Type.GetType(typeof(EnumAll).FullName!)!;
+            List<string> names = new();
+            foreach (MethodInfo mi in t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static).OrderBy(it => it.Name))
+            {
+                names.Add(mi.ToString()!);
+            }
+
+            return names.ToArray();
+        }
+    }
 }
