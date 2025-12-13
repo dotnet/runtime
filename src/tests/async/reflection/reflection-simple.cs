@@ -64,7 +64,7 @@ public class Async2Reflection
         return 10;
     }
 
-[Fact]
+    [Fact]
     public static void AwaitTaskReturningExpressionLambda()
     {
         var expr1 = (Expression<Func<Task<int>>>)(() => Task.FromResult(42));
@@ -241,5 +241,43 @@ public class Async2Reflection
         Accessors1<int>.accessor(null, 7).GetAwaiter().GetResult();
         Assert.Equal(8, PrivateAsync1<int>.s);
         Assert.Equal(8, PrivateAsync2.s);
+    }
+
+    [Fact]
+    public static void CurrentMethod()
+    {
+        // Note: async1 leaks implementation details here and returns "Void MoveNext()"
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", GetCurrentMethodAsync().Result);
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", GetCurrentMethodAwait().Result);
+
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodTask().Result);
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodAwaitTask().Result);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<string> GetCurrentMethodAsync()
+    {
+        await Task.Yield();
+        MethodInfo mi = (MethodInfo)MethodBase.GetCurrentMethod()!;
+        return mi.ToString()!;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<string> GetCurrentMethodAwait()
+    {
+        return await GetCurrentMethodAsync();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Task<string> GetCurrentMethodTask()
+    {
+        MethodInfo mi = (MethodInfo)MethodBase.GetCurrentMethod()!;
+        return Task.FromResult(mi.ToString()!);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<string> GetCurrentMethodAwaitTask()
+    {
+        return await GetCurrentMethodTask();
     }
 }
