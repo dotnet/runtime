@@ -17,6 +17,9 @@ namespace System.Threading
     {
         // Extra bits used in _threadState
         private const ThreadState ThreadPoolThread = (ThreadState)0x1000;
+#if TARGET_WINDOWS
+        private const ThreadState Interrupted = (ThreadState)0x2000;
+#endif
 
         // Bits of _threadState that are returned by the ThreadState property
         private const ThreadState PublicThreadStateMask = (ThreadState)0x1FF;
@@ -315,16 +318,6 @@ namespace System.Threading
                     SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             return millisecondsTimeout;
-        }
-
-        public bool Join(int millisecondsTimeout)
-        {
-            VerifyTimeoutMilliseconds(millisecondsTimeout);
-            if (GetThreadStateBit(ThreadState.Unstarted))
-            {
-                throw new ThreadStateException(SR.ThreadState_NotStarted);
-            }
-            return JoinInternal(millisecondsTimeout);
         }
 
         /// <summary>

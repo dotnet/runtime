@@ -9,17 +9,17 @@ using ILLink.Shared.TypeSystemProxy;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	/// <summary>
-	/// This is a known System.Reflection.MethodBase value.  MethodRepresented is the 'value' of the MethodBase.
-	/// </summary>
-	internal sealed partial record SystemReflectionMethodBaseValue : SingleValue
-	{
-		public SystemReflectionMethodBaseValue (MethodProxy representedMethod) => RepresentedMethod = representedMethod;
+    /// <summary>
+    /// This is a known System.Reflection.MethodBase value.  MethodRepresented is the 'value' of the MethodBase.
+    /// </summary>
+    internal sealed partial record SystemReflectionMethodBaseValue : SingleValue
+    {
+        public SystemReflectionMethodBaseValue(MethodProxy representedMethod) => RepresentedMethod = representedMethod;
 
-		public readonly MethodProxy RepresentedMethod;
+        public readonly MethodProxy RepresentedMethod;
 
-		public override SingleValue DeepCopy () => this; // This value is immutable
+        public override SingleValue DeepCopy() => this; // This value is immutable
 
-		public override string ToString () => this.ValueToString (RepresentedMethod);
-	}
+        public override string ToString() => this.ValueToString(RepresentedMethod);
+    }
 }

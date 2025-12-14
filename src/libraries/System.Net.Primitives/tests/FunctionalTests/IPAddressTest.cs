@@ -306,7 +306,7 @@ namespace System.Net.Primitives.Functional.Tests
         {
             return IPAddressParsingFormatting.ValidIpv4Addresses
                 .Concat(IPAddressParsingFormatting.ValidIpv6Addresses)
-                .Select(array => new object[] {IPAddress.Parse((string)array[0])});
+                .Select(array => new object[] { IPAddress.Parse((string)array[0]) });
         }
 
         public static readonly object[][] GeneratedIPAddresses =
@@ -350,6 +350,34 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Throws<SocketException>(() => IPAddress.IPv6Any.ScopeId = 1);
             Assert.Throws<SocketException>(() => IPAddress.IPv6Loopback.ScopeId = 1);
             Assert.Throws<SocketException>(() => IPAddress.IPv6None.ScopeId = 1);
+        }
+
+        [Fact]
+        public static void ScopeId_Throws_SocketException_IPv4Message()
+        {
+            IPAddress ip = IPV4Address1();
+            SocketException ex = Assert.Throws<SocketException>(() => _ = ip.ScopeId);
+            Assert.Equal(SocketError.OperationNotSupported, ex.SocketErrorCode);
+            Assert.Contains($"'{ip.AddressFamily}' {nameof(AddressFamily)}.", ex.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public static void Address_Throws_SocketException_IPv6Message()
+        {
+            IPAddress ip = IPV6Address1();
+            SocketException ex = Assert.Throws<SocketException>(() => _ = ip.Address);
+            Assert.Equal(SocketError.OperationNotSupported, ex.SocketErrorCode);
+            Assert.Contains($"'{ip.AddressFamily}' {nameof(AddressFamily)}.", ex.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public static void Address_Throws_SocketException_ReadOnlyMessage()
+        {
+            IPAddress ip1 = IPAddress.Loopback; // This is readonly
+            IPAddress ip2 = IPV4Address1();
+            SocketException ex = Assert.Throws<SocketException>(() => ip1.Address = ip2.Address);
+            Assert.Equal(SocketError.OperationNotSupported, ex.SocketErrorCode);
+            Assert.Contains("read-only", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 #pragma warning restore 618
     }

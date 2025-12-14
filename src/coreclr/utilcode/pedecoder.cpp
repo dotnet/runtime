@@ -497,7 +497,6 @@ CHECK PEDecoder::CheckRva(RVA rva, COUNT_T size, int forbiddenFlags, IsNullOK ok
         CHECK(section != NULL);
 
         CHECK(CheckBounds(VAL32(section->VirtualAddress),
-                          // AlignUp((UINT)VAL32(section->Misc.VirtualSize), (UINT)VAL32(FindNTHeaders()->OptionalHeader.SectionAlignment)),
                           (UINT)VAL32(section->Misc.VirtualSize),
                           rva, size));
         if(!IsMapped())
@@ -776,9 +775,17 @@ IMAGE_SECTION_HEADER *PEDecoder::RvaToSection(RVA rva) const
 
     while (section < sectionEnd)
     {
-        if (rva < (VAL32(section->VirtualAddress)
-                   + AlignUp((UINT)VAL32(section->Misc.VirtualSize), (UINT)VAL32(FindNTHeaders()->OptionalHeader.SectionAlignment))))
+        // The RVA should be within a section's virtual address range. 
+        if (rva < (VAL32(section->VirtualAddress) + VAL32(section->Misc.VirtualSize)))
         {
+            if (!IsMapped())
+            {
+                // On flat images (!IsMapped()), the RVA should also be within the section's raw data range.
+                if (rva >= (VAL32(section->VirtualAddress) + VAL32(section->SizeOfRawData)))
+                {
+                    return NULL;
+                }
+            }
             if (rva < VAL32(section->VirtualAddress))
                 RETURN NULL;
             else
@@ -847,7 +854,6 @@ TADDR PEDecoder::GetRvaData(RVA rva, IsNullOK ok /*= NULL_NOT_OK*/) const
         offset = rva;
     else
     {
-        // !!! check for case where rva is in padded portion of segment
         offset = RvaToOffset(rva);
     }
 
@@ -1528,7 +1534,7 @@ CHECK PEDecoder::CheckILOnlyImportByNameTable(RVA rva) const
 #define DLL_NAME "_CorDllMain"
 #define EXE_NAME "_CorExeMain"
 
-    static_assert_no_msg(sizeof(DLL_NAME) == sizeof(EXE_NAME));
+    static_assert(sizeof(DLL_NAME) == sizeof(EXE_NAME));
 
     // Check if we have enough space to hold 2 bytes +
     // _CorExeMain or _CorDllMain and a NULL char
@@ -2499,7 +2505,6 @@ BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
 {
 #ifdef _DEBUG
 		STATIC_CONTRACT_NOTHROW;                                        \
-		ANNOTATION_DEBUG_ONLY;                                          \
 		STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 #endif
 
@@ -2575,11 +2580,11 @@ ErrExit:
 #endif // _DEBUG
 
 //
-//  MethodSectionIterator class is used to iterate hot (or) cold method section in an ngen image.
-//  Also used to iterate over jitted methods in the code heap
+//  MethodSectionIterator class is used to iterate hot (or) cold method sections
+//  over jitted methods in the code heap
 //
-MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
-                                             const void *codeTable, SIZE_T codeTableSize)
+MethodSectionIterator::MethodSectionIterator(void *code, SIZE_T codeSize,
+                                             void *codeTable, SIZE_T codeTableSize)
 {
     using namespace NibbleMap;
 

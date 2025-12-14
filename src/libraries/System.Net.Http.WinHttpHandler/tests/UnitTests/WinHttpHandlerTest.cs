@@ -121,7 +121,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 
             SendRequestHelper.Send(
                 handler,
-                () => handler.TcpKeepAliveEnabled = false );
+                () => handler.TcpKeepAliveEnabled = false);
             Assert.Null(APICallHistory.WinHttpOptionTcpKeepAlive);
         }
 
@@ -130,7 +130,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             using var handler = new WinHttpHandler();
 
-            SendRequestHelper.Send(handler, () => {
+            SendRequestHelper.Send(handler, () =>
+            {
                 handler.TcpKeepAliveEnabled = true;
                 handler.TcpKeepAliveTime = TimeSpan.FromMinutes(13);
                 handler.TcpKeepAliveInterval = TimeSpan.FromSeconds(42);
@@ -148,7 +149,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         {
             using var handler = new WinHttpHandler();
 
-            SendRequestHelper.Send(handler, () => {
+            SendRequestHelper.Send(handler, () =>
+            {
                 handler.TcpKeepAliveEnabled = true;
                 handler.TcpKeepAliveTime = Timeout.InfiniteTimeSpan;
                 handler.TcpKeepAliveInterval = Timeout.InfiniteTimeSpan;
@@ -312,7 +314,8 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
 
             SendRequestHelper.Send(
                 handler,
-                delegate {
+                delegate
+                {
                     handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
                     handler.CookieContainer = new CookieContainer();
                 });

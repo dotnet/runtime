@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -12,9 +13,9 @@ namespace Internal.TypeSystem
     /// </summary>
     public abstract partial class MetadataType : DefType
     {
-        public abstract override string Name { get; }
+        public abstract override ReadOnlySpan<byte> Name { get; }
 
-        public abstract override string Namespace { get; }
+        public abstract override ReadOnlySpan<byte> Namespace { get; }
 
         /// <summary>
         /// Gets metadata that controls instance layout of this type.
@@ -32,6 +33,18 @@ namespace Internal.TypeSystem
         /// of sequentiallayout semantic defined in the ECMA-335 specification.
         /// </summary>
         public abstract bool IsSequentialLayout { get; }
+
+        /// <summary>
+        /// If true, the type layout is dictated by extended layout rules provided by the
+        /// System.Runtime.InteropServices.ExtendedLayoutAttribute.
+        /// </summary>
+        public abstract bool IsExtendedLayout { get; }
+
+        /// <summary>
+        /// If true, the type layout is dictated by the auto layout rules provided by the runtime.
+        /// Corresponds to the definition of autolayout semantic defined in the ECMA-335 specification.
+        /// </summary>
+        public abstract bool IsAutoLayout { get; }
 
         /// <summary>
         /// If true, the type initializer of this type has a relaxed semantic. Corresponds
@@ -56,13 +69,8 @@ namespace Internal.TypeSystem
         /// </summary>
         public abstract ModuleDesc Module { get; }
 
-        /// <summary>
-        /// Same as <see cref="TypeDesc.BaseType"/>, but the result is a MetadataType (avoids casting).
-        /// </summary>
-        public abstract MetadataType MetadataBaseType { get; }
-
-        // Make sure children remember to override both MetadataBaseType and BaseType.
-        public abstract override DefType BaseType { get; }
+        /// <inheritdoc />
+        public abstract override MetadataType BaseType { get; }
 
         /// <summary>
         /// If true, the type cannot be used as a base type of any other type.
@@ -79,7 +87,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);
 
-        public abstract override DefType ContainingType { get; }
+        public abstract override MetadataType ContainingType { get; }
 
         /// <summary>
         /// Get all of the types nested in this type.
@@ -102,13 +110,21 @@ namespace Internal.TypeSystem
                 return (GetTypeFlags(TypeFlags.IsInlineArray | TypeFlags.AttributeCacheComputed) & TypeFlags.IsInlineArray) != 0;
             }
         }
-
-        public abstract int GetInlineArrayLength();
     }
 
     public struct ClassLayoutMetadata
     {
+        public MetadataLayoutKind Kind;
+        public int InlineArrayLength;
         public int PackingSize;
         public int Size;
+    }
+
+    public enum MetadataLayoutKind
+    {
+        Auto,
+        Sequential,
+        Explicit,
+        CStruct
     }
 }

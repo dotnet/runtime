@@ -128,7 +128,7 @@ interface DotnetHostBuilder {
     /**
      * Runs the Main() method of the application and exits the runtime.
      * You can provide "command line" arguments for the Main() method using
-     * - dotnet.withApplicationArguments(["A", "B", "C"])
+     * - dotnet.withApplicationArguments("A", "B", "C")
      * - dotnet.withApplicationArgumentsFromQuery()
      * Note: after the runtime exits, it would reject all further calls to the API.
      * You can use runMain() if you want to keep the runtime alive.
@@ -166,14 +166,6 @@ type MonoConfig = {
      * debugLevel < 0 enables debugging and disables debug logging.
      */
     debugLevel?: number;
-    /**
-     * Gets a value that determines whether to enable caching of the 'resources' inside a CacheStorage instance within the browser.
-     */
-    cacheBootResources?: boolean;
-    /**
-     * Delay of the purge of the cached resources in milliseconds. Default is 10000 (10 seconds).
-     */
-    cachedResourcesPurgeDelay?: number;
     /**
      * Configures use of the `integrity` directive for fetching assets
      */
@@ -228,10 +220,7 @@ type MonoConfig = {
      * Gets the application culture. This is a name specified in the BCP 47 format. See https://tools.ietf.org/html/bcp47
      */
     applicationCulture?: string;
-    /**
-     * definition of assets to load along with the runtime.
-     */
-    resources?: ResourceGroups;
+    resources?: Assets;
     /**
      * appsettings files to load to VFS
      */
@@ -255,36 +244,90 @@ type MonoConfig = {
 type ResourceExtensions = {
     [extensionName: string]: ResourceList;
 };
-interface ResourceGroups {
+interface Assets {
     hash?: string;
-    fingerprinting?: {
-        [name: string]: string;
-    };
-    coreAssembly?: ResourceList;
-    assembly?: ResourceList;
-    lazyAssembly?: ResourceList;
-    corePdb?: ResourceList;
-    pdb?: ResourceList;
-    jsModuleWorker?: ResourceList;
-    jsModuleDiagnostics?: ResourceList;
-    jsModuleNative: ResourceList;
-    jsModuleRuntime: ResourceList;
-    wasmSymbols?: ResourceList;
-    wasmNative: ResourceList;
-    icu?: ResourceList;
+    coreAssembly?: AssemblyAsset[];
+    assembly?: AssemblyAsset[];
+    lazyAssembly?: AssemblyAsset[];
+    corePdb?: PdbAsset[];
+    pdb?: PdbAsset[];
+    jsModuleWorker?: JsAsset[];
+    jsModuleDiagnostics?: JsAsset[];
+    jsModuleNative: JsAsset[];
+    jsModuleRuntime: JsAsset[];
+    wasmSymbols?: SymbolsAsset[];
+    wasmNative: WasmAsset[];
+    icu?: IcuAsset[];
     satelliteResources?: {
-        [cultureName: string]: ResourceList;
+        [cultureName: string]: AssemblyAsset[];
     };
-    modulesAfterConfigLoaded?: ResourceList;
-    modulesAfterRuntimeReady?: ResourceList;
+    modulesAfterConfigLoaded?: JsAsset[];
+    modulesAfterRuntimeReady?: JsAsset[];
     extensions?: ResourceExtensions;
-    coreVfs?: {
-        [virtualPath: string]: ResourceList;
-    };
-    vfs?: {
-        [virtualPath: string]: ResourceList;
-    };
+    coreVfs?: VfsAsset[];
+    vfs?: VfsAsset[];
 }
+type Asset = {
+    /**
+     * this should be absolute url to the asset
+     */
+    resolvedUrl?: string;
+    /**
+     * If true, the runtime startup would not fail if the asset download was not successful.
+     */
+    isOptional?: boolean;
+    /**
+     * If provided, runtime doesn't have to fetch the data.
+     * Runtime would set the buffer to null after instantiation to free the memory.
+     */
+    buffer?: ArrayBuffer | Promise<ArrayBuffer>;
+    /**
+     * It's metadata + fetch-like Promise<Response>
+     * If provided, the runtime doesn't have to initiate the download. It would just await the response.
+     */
+    pendingDownload?: LoadingResource;
+};
+type WasmAsset = Asset & {
+    name: string;
+    hash?: string | null | "";
+    cache?: RequestCache;
+};
+type AssemblyAsset = Asset & {
+    virtualPath: string;
+    name: string;
+    hash?: string | null | "";
+    cache?: RequestCache;
+};
+type PdbAsset = Asset & {
+    virtualPath: string;
+    name: string;
+    hash?: string | null | "";
+    cache?: RequestCache;
+};
+type JsAsset = Asset & {
+    /**
+     * If provided, runtime doesn't have to import it's JavaScript modules.
+     * This will not work for multi-threaded runtime.
+     */
+    moduleExports?: any | Promise<any>;
+    name?: string;
+};
+type SymbolsAsset = Asset & {
+    name: string;
+    cache?: RequestCache;
+};
+type VfsAsset = Asset & {
+    virtualPath: string;
+    name: string;
+    hash?: string | null | "";
+    cache?: RequestCache;
+};
+type IcuAsset = Asset & {
+    virtualPath: string;
+    name: string;
+    hash?: string | null | "";
+    cache?: RequestCache;
+};
 /**
  * A "key" is name of the file, a "value" is optional hash for integrity check.
  */
@@ -739,4 +782,5 @@ declare global {
 }
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
-export { type AssetBehaviors, type AssetEntry, type CreateDotnetRuntimeType, type DotnetHostBuilder, type DotnetModuleConfig, type EmscriptenModule, GlobalizationMode, type IMemoryView, type ModuleAPI, type MonoConfig, type RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { GlobalizationMode, createDotnetRuntime as default, dotnet, exit };
+export type { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, ModuleAPI, MonoConfig, RuntimeAPI };

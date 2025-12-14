@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.TypesDebugInfo;
@@ -78,7 +79,7 @@ namespace ILCompiler
                         // The set of fields we're going to touch is tagged as "parsed by the expression evaluator"
                         // in the Roslyn codebase, so it's somewhat safe to do this.
                         // https://github.com/dotnet/roslyn/blob/afd10305a37c0ffb2cfb2c2d8446154c68cfa87a/src/Compilers/CSharp/Portable/Symbols/Synthesized/GeneratedNameKind.cs#L15-L22
-                        string fieldNameEmit = fieldDesc.Name;
+                        string fieldNameEmit = fieldDesc.GetName();
                         if (fieldNameEmit.Length > 0 && fieldNameEmit[0] == '<')
                         {
                             if (TryGetGeneratedNameKind(fieldNameEmit, out char kind))
@@ -233,7 +234,7 @@ namespace ILCompiler
 
                 descriptor.MemberFunction = GetMethodTypeIndex(method);
                 descriptor.ParentClass = GetTypeIndex(method.OwningType, true);
-                descriptor.Name = method.Name;
+                descriptor.Name = new Utf8String(method.Name.ToArray());
 
                 typeIndex = _objectWriter.GetMemberFunctionId(descriptor);
                 _methodIdIndices.Add(method, typeIndex);
@@ -420,7 +421,7 @@ namespace ILCompiler
                 FieldDesc field = fieldsDescriptors[i];
                 EnumRecordTypeDescriptor recordTypeDescriptor;
                 recordTypeDescriptor.Value = GetEnumRecordValue(field);
-                recordTypeDescriptor.Name = field.Name;
+                recordTypeDescriptor.Name = new Utf8String(field.Name.ToArray());
                 typeRecords[i] = recordTypeDescriptor;
             }
             uint typeIndex = _objectWriter.GetEnumTypeIndex(enumTypeDescriptor, typeRecords);
@@ -585,9 +586,9 @@ namespace ILCompiler
             List<DataFieldDescriptor> threadStaticFields = new List<DataFieldDescriptor>();
             List<StaticDataFieldDescriptor> staticsDescs = new List<StaticDataFieldDescriptor>();
 
-            string nonGcStaticDataName = NodeFactory.NameMangler.NodeMangler.NonGCStatics(type);
-            string gcStaticDataName = NodeFactory.NameMangler.NodeMangler.GCStatics(type);
-            string threadStaticDataName = NodeFactory.NameMangler.NodeMangler.ThreadStatics(type);
+            Utf8String nonGcStaticDataName = NodeFactory.NameMangler.NodeMangler.NonGCStatics(type);
+            Utf8String gcStaticDataName = NodeFactory.NameMangler.NodeMangler.GCStatics(type);
+            Utf8String threadStaticDataName = NodeFactory.NameMangler.NodeMangler.ThreadStatics(type);
             bool isNativeAOT = Abi == TargetAbi.NativeAot;
 
             bool hasNonGcStatics = NodeFactory.MetadataManager.HasNonGcStaticBase(defType);
@@ -665,7 +666,7 @@ namespace ILCompiler
                 {
                     FieldTypeIndex = fieldTypeIndex,
                     Offset = (ulong)fieldOffsetEmit,
-                    Name = fieldDesc.Name
+                    Name = new Utf8String(fieldDesc.Name.ToArray())
                 };
 
                 if (fieldDesc.IsStatic)
@@ -749,7 +750,7 @@ namespace ILCompiler
                 return typeIndex;
         }
 
-        private void InsertStaticFieldRegionMember(List<DataFieldDescriptor> fieldDescs, DefType defType, List<DataFieldDescriptor> staticFields, string staticFieldForm,
+        private void InsertStaticFieldRegionMember(List<DataFieldDescriptor> fieldDescs, DefType defType, List<DataFieldDescriptor> staticFields, Utf8String staticFieldForm,
                                                    bool staticDataInObject, bool isThreadStatic)
         {
             if (staticFields != null && (staticFields.Count > 0))
@@ -764,7 +765,7 @@ namespace ILCompiler
                 ClassTypeDescriptor classTypeDescriptor = new ClassTypeDescriptor
                 {
                     IsStruct = !staticDataInObject ? 1 : 0,
-                    Name = $"__type{staticFieldForm}{_objectWriter.GetMangledName(defType)}",
+                    Name = Utf8String.Concat("__type"u8, staticFieldForm.AsSpan(), _objectWriter.GetMangledName(defType).AsSpan()),
                     BaseClassId = 0
                 };
 
@@ -796,7 +797,7 @@ namespace ILCompiler
                         Is64Bit = Is64Bit ? 1 : 0,
                         IsConst = 0,
                         IsReference = 0,
-                        ElementType = GetTypeIndex(defType.Context.SystemModule.GetType("Internal.Runtime.CompilerHelpers", "TypeManagerSlot"), true)
+                        ElementType = GetTypeIndex(defType.Context.SystemModule.GetType("Internal.Runtime.CompilerHelpers"u8, "TypeManagerSlot"u8), true)
                     };
 
                     var helperFields = new DataFieldDescriptor[] {

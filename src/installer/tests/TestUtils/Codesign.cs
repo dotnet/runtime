@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.CoreSetup
 {
@@ -30,8 +31,11 @@ namespace Microsoft.DotNet.CoreSetup
             {
                 if (p == null)
                     return (-1, "Failed to start process");
-                p.WaitForExit();
-                return (p.ExitCode, p.StandardError.ReadToEnd());
+
+                var stderrRead = p.StandardError.ReadToEndAsync();
+                var processWait = p.WaitForExitAsync();
+                Task.WaitAll(stderrRead, processWait);
+                return (p.ExitCode, stderrRead.Result);
             }
         }
     }

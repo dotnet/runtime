@@ -25,7 +25,7 @@ public class HashMapTests
         TargetPointer mapAddress = hashMap.CreateMap(entries);
         TargetPointer ptrMapAddress = hashMap.CreatePtrMap(entries);
 
-        Target target = new TestPlaceholderTarget(builder.TargetTestHelpers.Arch, builder.GetReadContext().ReadFromTarget, hashMap.Types, hashMap.Globals);
+        Target target = new TestPlaceholderTarget(builder.TargetTestHelpers.Arch, builder.GetMemoryContext().ReadFromTarget, hashMap.Types, hashMap.Globals);
 
         var lookup = HashMapLookup.Create(target);
         var ptrLookup = PtrHashMapLookup.Create(target);
@@ -61,7 +61,7 @@ public class HashMapTests
         TargetPointer mapAddress = hashMap.CreateMap(entries);
         TargetPointer ptrMapAddress = hashMap.CreatePtrMap(entries);
 
-        Target target = new TestPlaceholderTarget(builder.TargetTestHelpers.Arch, builder.GetReadContext().ReadFromTarget, hashMap.Types, hashMap.Globals);
+        Target target = new TestPlaceholderTarget(builder.TargetTestHelpers.Arch, builder.GetMemoryContext().ReadFromTarget, hashMap.Types, hashMap.Globals);
 
         var lookup = HashMapLookup.Create(target);
         var ptrLookup = PtrHashMapLookup.Create(target);
@@ -86,7 +86,7 @@ public class HashMapTests
         TargetPointer mapAddress = hashMap.CreateMap(entries);
         TargetPointer ptrMapAddress = hashMap.CreatePtrMap(entries);
 
-        Target target = new TestPlaceholderTarget(builder.TargetTestHelpers.Arch, builder.GetReadContext().ReadFromTarget, hashMap.Types, hashMap.Globals);
+        Target target = new TestPlaceholderTarget(builder.TargetTestHelpers.Arch, builder.GetMemoryContext().ReadFromTarget, hashMap.Types, hashMap.Globals);
 
         {
             var lookup = HashMapLookup.Create(target);

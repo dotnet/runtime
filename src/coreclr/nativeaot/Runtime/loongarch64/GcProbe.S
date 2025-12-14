@@ -122,7 +122,7 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     jirl  $r0, $ra, 0
 
 LOCAL_LABEL(WaitForGC):
-    li.d  $t3, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5 + (PTFF_THREAD_HIJACK_HI << 32))
+    li.d  $t3, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R4 + PTFF_SAVE_R5 + PTFF_THREAD_HIJACK)
     b  C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack
 
@@ -134,20 +134,8 @@ NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
     ld.d        $a0, $a2, OFFSETOF__Thread__m_pDeferredTransitionFrame
     bl  C_FUNC(RhpWaitForGC2)
 
-    ld.d  $a2,$sp, OFFSETOF__PInvokeTransitionFrame__m_Flags
-    bstrpick.d  $t8, $a2, PTFF_THREAD_ABORT_BIT, PTFF_THREAD_ABORT_BIT
-    bnez  $t8, LOCAL_LABEL(ThrowThreadAbort)
-
-    .cfi_remember_state
     POP_PROBE_FRAME
     EPILOG_RETURN
-
-    .cfi_restore_state
-LOCAL_LABEL(ThrowThreadAbort):
-    POP_PROBE_FRAME
-    addi.w  $a0, $zero, STATUS_REDHAWK_THREAD_ABORT
-    ori  $a1, $ra, 0 // return address as exception PC
-    b  RhpThrowHwEx
 NESTED_END RhpWaitForGC
 
 .global C_FUNC(RhpGcPoll2)

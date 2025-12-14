@@ -21,9 +21,8 @@ namespace System.Reflection.TypeLoading
 
         public sealed override Type ReflectedType => DeclaringType;
 
-        public sealed override string Name => _lazyName ??= ComputeName();
+        public sealed override string Name => field ??= ComputeName();
         protected abstract string ComputeName();
-        private volatile string? _lazyName;
 
         public sealed override Module Module => GetRoModule();
         internal abstract RoModule GetRoModule();
@@ -65,9 +64,8 @@ namespace System.Reflection.TypeLoading
         public sealed override ParameterInfo[] GetParameters() => GetParametersNoCopy().CloneArray<ParameterInfo>();
         internal RoParameter[] GetParametersNoCopy() => MethodSig.Parameters;
 
-        private MethodSig<RoParameter> MethodSig => _lazyMethodSig ??= ComputeMethodSig();
+        private MethodSig<RoParameter> MethodSig => field ??= ComputeMethodSig();
         protected abstract MethodSig<RoParameter> ComputeMethodSig();
-        private volatile MethodSig<RoParameter>? _lazyMethodSig;
 
         public sealed override string ToString() => Loader.GetDisposedString() ?? this.ToString(ComputeMethodSigStrings());
         protected abstract MethodSig<string> ComputeMethodSigStrings();

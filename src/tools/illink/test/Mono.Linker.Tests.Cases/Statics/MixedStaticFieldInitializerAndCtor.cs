@@ -2,27 +2,27 @@
 
 namespace Mono.Linker.Tests.Cases.Statics
 {
-	public class MixedStaticFieldInitializerAndCtor
-	{
-		public static void Main ()
-		{
-			C.Foo ();
-		}
+    public class MixedStaticFieldInitializerAndCtor
+    {
+        public static void Main()
+        {
+            C.Foo();
+        }
 
-		static class C
-		{
-			[Kept]
-			public static object o = new object ();
+        static class C
+        {
+            [Kept]
+            public static object o = new object();
 
-			[Kept]
-			static C ()
-			{
-			}
+            [Kept]
+            static C()
+            {
+            }
 
-			[Kept]
-			public static void Foo ()
-			{
-			}
-		}
-	}
+            [Kept]
+            public static void Foo()
+            {
+            }
+        }
+    }
 }

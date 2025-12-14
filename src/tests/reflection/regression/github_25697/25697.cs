@@ -5,8 +5,6 @@ using System;
 using System.Reflection;
 using Xunit;
 
-#pragma warning disable CS8500
-
 unsafe public class Program
 {
 
@@ -32,5 +30,3 @@ unsafe public class Program
         return 100;
     }
 }
-
-#pragma warning restore CS8500

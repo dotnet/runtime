@@ -5,252 +5,312 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	// Note: this test's goal is to validate that the product correctly reports unrecognized patterns
-	//   - so the main validation is done by the ExpectedWarning attributes.
-	[SkipKeptItemsValidation]
-	[ExpectedNoWarnings]
-	public class MethodReturnParameterDataFlow
-	{
-		public static void Main ()
-		{
-			var instance = new MethodReturnParameterDataFlow ();
+    // Note: this test's goal is to validate that the product correctly reports unrecognized patterns
+    //   - so the main validation is done by the ExpectedWarning attributes.
+    [SkipKeptItemsValidation]
+    [ExpectedNoWarnings]
+    [SandboxDependency("Dependencies/TestSystemTypeBase.cs")]
+    public class MethodReturnParameterDataFlow
+    {
+        public static void Main()
+        {
+            var instance = new MethodReturnParameterDataFlow();
 
-			// Validation that assigning value to the return value is verified
-			NoRequirements ();
-			instance.ReturnPublicParameterlessConstructor (typeof (TestType), typeof (TestType), typeof (TestType));
-			instance.ReturnPublicParameterlessConstructorFromUnknownType (null);
-			instance.ReturnPublicParameterlessConstructorFromConstant ();
-			instance.ReturnPublicParameterlessConstructorFromNull ();
-			instance.ReturnPublicConstructorsFailure (null);
-			instance.ReturnNonPublicConstructorsFailure (null);
-			instance.ReturnUnknownValue ();
+            // Validation that assigning value to the return value is verified
+            NoRequirements();
+            instance.ReturnPublicParameterlessConstructor(typeof(TestType), typeof(TestType), typeof(TestType));
+            instance.ReturnPublicParameterlessConstructorFromUnknownType(null);
+            instance.ReturnPublicParameterlessConstructorFromConstant();
+            instance.ReturnPublicParameterlessConstructorFromNull();
+            instance.ReturnPublicConstructorsFailure(null);
+            instance.ReturnNonPublicConstructorsFailure(null);
+            instance.ReturnUnknownValue();
 
-			// Validation that value comming from return value of a method is correctly propagated
-			instance.PropagateReturnPublicParameterlessConstructor ();
-			instance.PropagateReturnPublicParameterlessConstructorFromConstant ();
-			instance.PropagateReturnToReturn (0);
+            // Validation that value comming from return value of a method is correctly propagated
+            instance.PropagateReturnPublicParameterlessConstructor();
+            instance.PropagateReturnPublicParameterlessConstructorFromConstant();
+            instance.PropagateReturnToReturn(0);
 
-			instance.ReturnWithRequirementsAlwaysThrows ();
+            instance.ReturnWithRequirementsAlwaysThrows();
 
-			UnsupportedReturnTypeAndParameter (null);
-			AnnotationOnUnsupportedReturnType.Test ();
-		}
+            UnsupportedReturnTypeAndParameter(null);
+            AnnotationOnUnsupportedReturnType.Test();
+            OperatorReturn.Test();
+        }
 
-		static Type NoRequirements ()
-		{
-			return typeof (TestType);
-		}
+        static Type NoRequirements()
+        {
+            return typeof(TestType);
+        }
 
-		[ExpectedWarning ("IL2068", nameof (ReturnPublicParameterlessConstructor))]
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-		Type ReturnPublicParameterlessConstructor (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-			Type publicParameterlessConstructorType,
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-			Type publicConstructorsType,
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-			Type nonPublicConstructorsType)
-		{
-			switch (GetHashCode ()) {
-			case 1:
-				return publicParameterlessConstructorType;
-			case 2:
-				return publicConstructorsType;
-			case 3:
-				return nonPublicConstructorsType;
-			case 4:
-				return typeof (TestType);
-			default:
-				return null;
-			}
-		}
+        [ExpectedWarning("IL2068", nameof(ReturnPublicParameterlessConstructor))]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        Type ReturnPublicParameterlessConstructor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+            Type publicParameterlessConstructorType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            Type publicConstructorsType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type nonPublicConstructorsType)
+        {
+            switch (GetHashCode())
+            {
+                case 1:
+                    return publicParameterlessConstructorType;
+                case 2:
+                    return publicConstructorsType;
+                case 3:
+                    return nonPublicConstructorsType;
+                case 4:
+                    return typeof(TestType);
+                default:
+                    return null;
+            }
+        }
 
-		[ExpectedWarning ("IL2068", nameof (ReturnPublicParameterlessConstructorFromUnknownType))]
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-		Type ReturnPublicParameterlessConstructorFromUnknownType (Type unknownType)
-		{
-			return unknownType;
-		}
+        [ExpectedWarning("IL2068", nameof(ReturnPublicParameterlessConstructorFromUnknownType))]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        Type ReturnPublicParameterlessConstructorFromUnknownType(Type unknownType)
+        {
+            return unknownType;
+        }
 
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-		Type ReturnPublicParameterlessConstructorFromConstant ()
-		{
-			return typeof (TestType);
-		}
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        Type ReturnPublicParameterlessConstructorFromConstant()
+        {
+            return typeof(TestType);
+        }
 
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-		Type ReturnPublicParameterlessConstructorFromNull ()
-		{
-			return null;
-		}
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        Type ReturnPublicParameterlessConstructorFromNull()
+        {
+            return null;
+        }
 
-		Type ReturnTypeWithNoRequirements ()
-		{
-			return null;
-		}
+        Type ReturnTypeWithNoRequirements()
+        {
+            return null;
+        }
 
-		// Validate error message when insufficiently annotated value is returned from a method
-		[ExpectedWarning ("IL2068",
-				"publicParameterlessConstructorType",
-				"MethodReturnParameterDataFlow.ReturnPublicConstructorsFailure",
-				"MethodReturnParameterDataFlow.ReturnPublicConstructorsFailure")]
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
-		Type ReturnPublicConstructorsFailure (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-			Type publicParameterlessConstructorType)
-		{
-			return publicParameterlessConstructorType;
-		}
+        // Validate error message when insufficiently annotated value is returned from a method
+        [ExpectedWarning("IL2068",
+                "publicParameterlessConstructorType",
+                "MethodReturnParameterDataFlow.ReturnPublicConstructorsFailure",
+                "MethodReturnParameterDataFlow.ReturnPublicConstructorsFailure")]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        Type ReturnPublicConstructorsFailure(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+            Type publicParameterlessConstructorType)
+        {
+            return publicParameterlessConstructorType;
+        }
 
-		[ExpectedWarning ("IL2068", nameof (ReturnNonPublicConstructorsFailure))]
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-		Type ReturnNonPublicConstructorsFailure (
-			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-			Type publicConstructorsType)
-		{
-			return publicConstructorsType;
-		}
+        [ExpectedWarning("IL2068", nameof(ReturnNonPublicConstructorsFailure))]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+        Type ReturnNonPublicConstructorsFailure(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            Type publicConstructorsType)
+        {
+            return publicConstructorsType;
+        }
 
-		[ExpectedWarning ("IL2063",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnUnknownValue) + "()")]
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
-		Type ReturnUnknownValue ()
-		{
-			var array = new object[1];
-			array[0] = this.GetType ();
-			MakeArrayValuesUnknown (array);
-			return (Type) array[0];
+        [ExpectedWarning("IL2063",
+            nameof(MethodReturnParameterDataFlow) + "." + nameof(ReturnUnknownValue) + "()")]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        Type ReturnUnknownValue()
+        {
+            var array = new object[1];
+            array[0] = this.GetType();
+            MakeArrayValuesUnknown(array);
+            return (Type)array[0];
 
-			static void MakeArrayValuesUnknown (object[] array)
-			{
-			}
-		}
+            static void MakeArrayValuesUnknown(object[] array)
+            {
+            }
+        }
 
-		[ExpectedWarning ("IL2072",
-			nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicConstructors) + "(Type)",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructor) + "(Type, Type, Type)")]
-		[ExpectedWarning ("IL2072",
-			nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors) + "(Type)",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructor) + "(Type, Type, Type)")]
-		void PropagateReturnPublicParameterlessConstructor ()
-		{
-			Type t = ReturnPublicParameterlessConstructor (typeof (TestType), typeof (TestType), typeof (TestType));
-			t.RequiresPublicParameterlessConstructor ();
-			t.RequiresPublicConstructors ();
-			t.RequiresNonPublicConstructors ();
-			t.RequiresNone ();
-		}
+        [ExpectedWarning("IL2072",
+            nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresPublicConstructors) + "(Type)",
+            nameof(MethodReturnParameterDataFlow) + "." + nameof(ReturnPublicParameterlessConstructor) + "(Type, Type, Type)")]
+        [ExpectedWarning("IL2072",
+            nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresNonPublicConstructors) + "(Type)",
+            nameof(MethodReturnParameterDataFlow) + "." + nameof(ReturnPublicParameterlessConstructor) + "(Type, Type, Type)")]
+        void PropagateReturnPublicParameterlessConstructor()
+        {
+            Type t = ReturnPublicParameterlessConstructor(typeof(TestType), typeof(TestType), typeof(TestType));
+            t.RequiresPublicParameterlessConstructor();
+            t.RequiresPublicConstructors();
+            t.RequiresNonPublicConstructors();
+            t.RequiresNone();
+        }
 
-		[ExpectedWarning ("IL2072",
-			nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresPublicConstructors) + "(Type)",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructorFromConstant) + "()")]
-		[ExpectedWarning ("IL2072",
-			nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors) + "(Type)",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructorFromConstant) + "()")]
-		void PropagateReturnPublicParameterlessConstructorFromConstant ()
-		{
-			Type t = ReturnPublicParameterlessConstructorFromConstant ();
-			t.RequiresPublicParameterlessConstructor ();
-			t.RequiresPublicConstructors ();
-			t.RequiresNonPublicConstructors ();
-			t.RequiresNone ();
-		}
+        [ExpectedWarning("IL2072",
+            nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresPublicConstructors) + "(Type)",
+            nameof(MethodReturnParameterDataFlow) + "." + nameof(ReturnPublicParameterlessConstructorFromConstant) + "()")]
+        [ExpectedWarning("IL2072",
+            nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresNonPublicConstructors) + "(Type)",
+            nameof(MethodReturnParameterDataFlow) + "." + nameof(ReturnPublicParameterlessConstructorFromConstant) + "()")]
+        void PropagateReturnPublicParameterlessConstructorFromConstant()
+        {
+            Type t = ReturnPublicParameterlessConstructorFromConstant();
+            t.RequiresPublicParameterlessConstructor();
+            t.RequiresPublicConstructors();
+            t.RequiresNonPublicConstructors();
+            t.RequiresNone();
+        }
 
-		[ExpectedWarning ("IL2073",
-				nameof (ReturnTypeWithNoRequirements),
-				nameof (PropagateReturnToReturn))]
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-		Type PropagateReturnToReturn (int n)
-		{
-			switch (n) {
-			case 0:
-				return ReturnPublicParameterlessConstructorFromConstant ();
-			case 1:
-				return ReturnTypeWithNoRequirements ();
-			}
+        [ExpectedWarning("IL2073",
+                nameof(ReturnTypeWithNoRequirements),
+                nameof(PropagateReturnToReturn))]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        Type PropagateReturnToReturn(int n)
+        {
+            switch (n)
+            {
+                case 0:
+                    return ReturnPublicParameterlessConstructorFromConstant();
+                case 1:
+                    return ReturnTypeWithNoRequirements();
+            }
 
-			return null;
-		}
+            return null;
+        }
 
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-		Type ReturnWithRequirementsAlwaysThrows ()
-		{
-			throw new NotImplementedException ();
-		}
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+        Type ReturnWithRequirementsAlwaysThrows()
+        {
+            throw new NotImplementedException();
+        }
 
-		[ExpectedWarning ("IL2106", nameof (UnsupportedReturnTypeAndParameter))]
-		[ExpectedWarning ("IL2098", nameof (UnsupportedReturnTypeAndParameter))]
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-		static object UnsupportedReturnTypeAndParameter ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] object param) => null;
+        [ExpectedWarning("IL2106", nameof(UnsupportedReturnTypeAndParameter))]
+        [ExpectedWarning("IL2098", nameof(UnsupportedReturnTypeAndParameter))]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+        static object UnsupportedReturnTypeAndParameter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] object param) => null;
 
-		class AnnotationOnUnsupportedReturnType
-		{
-			class UnsupportedType
-			{
-				public UnsupportedType () {
-					RequirePublicFields (this);
-				}
-			}
+        class AnnotationOnUnsupportedReturnType
+        {
+            class UnsupportedType
+            {
+                public UnsupportedType()
+                {
+                    RequirePublicFields(this);
+                }
+            }
 
-			static UnsupportedType GetUnsupportedTypeInstance () => null;
+            static UnsupportedType GetUnsupportedTypeInstance() => null;
 
-			[ExpectedWarning ("IL2106")]
-			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-			static UnsupportedType GetWithPublicMethods () {
-				return GetUnsupportedTypeInstance ();
-			}
+            [ExpectedWarning("IL2106")]
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            static UnsupportedType GetWithPublicMethods()
+            {
+                return GetUnsupportedTypeInstance();
+            }
 
-			[ExpectedWarning ("IL2098")]
-			static void RequirePublicFields (
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
-				UnsupportedType unsupportedTypeInstance)
-			{
-			}
+            [ExpectedWarning("IL2098")]
+            static void RequirePublicFields(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+                UnsupportedType unsupportedTypeInstance)
+            {
+            }
 
-			static void TestMethodReturnValue () {
-				var t = GetWithPublicMethods ();
-				RequirePublicFields (t);
-			}
+            static void TestMethodReturnValue()
+            {
+                var t = GetWithPublicMethods();
+                RequirePublicFields(t);
+            }
 
-			static void TestCtorReturnValue () {
-				var t = new UnsupportedType ();
-				RequirePublicFields (t);
-			}
+            static void TestCtorReturnValue()
+            {
+                var t = new UnsupportedType();
+                RequirePublicFields(t);
+            }
 
-			class StringRefReturnValue
-			{
-				string f;
+            class StringRefReturnValue
+            {
+                string f;
 
-				ref string GetRefString () => ref f;
+                ref string GetRefString() => ref f;
 
-				[ExpectedWarning ("IL2098")]
-				static void RequirePublicFields (
-					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
-					ref string s)
-				{
-				}
+                [ExpectedWarning("IL2098")]
+                static void RequirePublicFields(
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+                    ref string s)
+                {
+                }
 
-				public static void Test ()
-				{
-					var instance = new StringRefReturnValue ();
-					ref var s = ref instance.GetRefString ();
-					RequirePublicFields (ref s);
-				}
-			}
+                public static void Test()
+                {
+                    var instance = new StringRefReturnValue();
+                    ref var s = ref instance.GetRefString();
+                    RequirePublicFields(ref s);
+                }
+            }
 
-			public static void Test () {
-				TestMethodReturnValue ();
-				TestCtorReturnValue ();
-				StringRefReturnValue.Test ();
-			}
-		}
+            public static void Test()
+            {
+                TestMethodReturnValue();
+                TestCtorReturnValue();
+                StringRefReturnValue.Test();
+            }
+        }
 
-		class TestType
-		{
-			public TestType () { }
-		}
-	}
+        class TestType
+        {
+            public TestType() { }
+        }
+
+        class OperatorReturn
+        {
+            public static void Test()
+            {
+                TestMatch();
+                TestMismatch();
+            }
+
+            [UnexpectedWarning("IL2062", nameof(DataFlowTypeExtensions.RequiresPublicFields), Tool.Analyzer, "https://github.com/dotnet/runtime/issues/119110")]
+            static void TestMatch()
+            {
+                var result = new OperatorType() + new OperatorType();
+                result.RequiresPublicFields();
+            }
+
+            [ExpectedWarning("IL2072", nameof(DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
+            [UnexpectedWarning("IL2062", nameof(DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "https://github.com/dotnet/runtime/issues/119110")]
+            static void TestMismatch()
+            {
+                var result = new OperatorType() - new OperatorType();
+                result.RequiresPublicMethods();
+            }
+
+            [ExpectedWarning("IL2063")]
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+            static OperatorType GetWithFields() => new OperatorType();
+
+            [ExpectedWarning("IL2063")]
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            static OperatorType GetWithMethods() => new OperatorType();
+
+            private sealed class OperatorType : TestSystemTypeBase
+            {
+                // Matching implementation
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+                public static OperatorType operator +(OperatorType left, OperatorType right)
+                {
+                    return GetWithFields();
+                }
+
+                // Mismatch in implementation
+                [ExpectedWarning("IL2073", nameof(GetWithMethods))]
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+                public static Type operator -(OperatorType left, OperatorType right)
+                {
+                    return GetWithMethods();
+                }
+            }
+        }
+    }
 }

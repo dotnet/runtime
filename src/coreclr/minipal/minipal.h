@@ -97,11 +97,12 @@ public:
     //  pTemplate    - Value returned from CreateTemplate
     //  templateSize - Size of the templates block in the image
     //  pStart       - Where to allocate (Specify NULL if no particular address is required). If non-null, this must be an address returned by ReserveDoubleMappedMemory
+    //  dataPageGenerator - If non-null fill the data page of the template using this function. This function is called BEFORE the code page is mapped into memory.
     //
     // Return:
     //  NULL if the allocation fails
     //  Non-NULL, a pointer to the allocated region.
-    static void* AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStart);
+    static void* AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStart, void (*dataPageGenerator)(uint8_t* pageBase, size_t size));
 
     // Free thunks allocated from template
     // Parameters:

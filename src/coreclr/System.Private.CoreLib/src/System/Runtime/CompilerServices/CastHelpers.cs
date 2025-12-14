@@ -14,13 +14,21 @@ namespace System.Runtime.CompilerServices
         // In coreclr the table is allocated and written to on the native side.
         internal static int[]? s_table;
 
-        [LibraryImport(RuntimeHelpers.QCall)]
-        internal static partial void ThrowInvalidCastException(void* fromTypeHnd, void* toTypeHnd);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThrowInvalidCastException")]
+        private static partial void ThrowInvalidCastExceptionInternal(void* fromTypeHnd, void* toTypeHnd);
+
+        [DoesNotReturn]
+        internal static void ThrowInvalidCastException(void* fromTypeHnd, void* toTypeHnd)
+        {
+            ThrowInvalidCastExceptionInternal(fromTypeHnd, toTypeHnd);
+            throw null!; // Provide hint to the inliner that this method does not return
+        }
 
         [DoesNotReturn]
         internal static void ThrowInvalidCastException(object fromType, void* toTypeHnd)
         {
-            ThrowInvalidCastException(RuntimeHelpers.GetMethodTable(fromType), toTypeHnd);
+            ThrowInvalidCastExceptionInternal(RuntimeHelpers.GetMethodTable(fromType), toTypeHnd);
+            GC.KeepAlive(fromType);
             throw null!; // Provide hint to the inliner that this method does not return
         }
 

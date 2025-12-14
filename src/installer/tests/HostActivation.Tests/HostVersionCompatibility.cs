@@ -30,8 +30,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             string appExe = app.AppExe;
 
             RuntimeConfig appConfig = RuntimeConfig.FromFile(app.RuntimeConfigJson);
-            Assert.NotEqual(appConfig.Tfm, TestContext.Tfm);
-            Assert.NotEqual(appConfig.GetIncludedFramework(Constants.MicrosoftNETCoreApp).Version, TestContext.MicrosoftNETCoreAppVersion);
+            Assert.NotEqual(appConfig.Tfm, HostTestContext.Tfm);
+            Assert.NotEqual(appConfig.GetIncludedFramework(Constants.MicrosoftNETCoreApp).Version, HostTestContext.MicrosoftNETCoreAppVersion);
 
             // Use the newer apphost
             // This emulates the case when:
@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining($"--- Invoked apphost [version: {TestContext.MicrosoftNETCoreAppVersion}");
+                .And.HaveStdErrContaining($"--- Invoked apphost [version: {HostTestContext.MicrosoftNETCoreAppVersion}");
 
             // Use the newer apphost and hostFxr
             // This emulates the case when:
@@ -55,7 +55,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining($"--- Invoked apphost [version: {TestContext.MicrosoftNETCoreAppVersion}");
+                .And.HaveStdErrContaining($"--- Invoked apphost [version: {HostTestContext.MicrosoftNETCoreAppVersion}");
         }
 
         [Fact]
@@ -71,8 +71,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             RuntimeConfig previousAppConfig = RuntimeConfig.FromFile(previousVersionApp.RuntimeConfigJson);
             string previousVersion = previousAppConfig.GetIncludedFramework(Constants.MicrosoftNETCoreApp).Version;
-            Assert.NotEqual(TestContext.Tfm, previousAppConfig.Tfm);
-            Assert.NotEqual(TestContext.MicrosoftNETCoreAppVersion, previousVersion);
+            Assert.NotEqual(HostTestContext.Tfm, previousAppConfig.Tfm);
+            Assert.NotEqual(HostTestContext.MicrosoftNETCoreAppVersion, previousVersion);
 
             // Use the older apphost
             // This emulates the case when:
@@ -80,7 +80,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             //  2) App rolls forward to newer runtime
             File.Copy(previousVersionApp.AppExe, appExe, true);
             Command.Create(appExe)
-                .EnableTracingAndCaptureOutputs()
+                .CaptureStdOut().CaptureStdErr()
+                .EnvironmentVariable("COREHOST_TRACE", "1") // Old host, so we need to use the old variable name
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
@@ -95,7 +96,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             {
                 File.Copy(previousVersionApp.HostFxrDll, app.HostFxrDll, true);
                 Command.Create(appExe)
-                    .EnableTracingAndCaptureOutputs()
+                    .CaptureStdOut().CaptureStdErr()
+                    .EnvironmentVariable("COREHOST_TRACE", "1") // Old host, so we need to use the old variable name
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")

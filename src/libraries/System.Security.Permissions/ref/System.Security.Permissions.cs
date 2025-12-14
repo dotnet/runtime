@@ -676,7 +676,7 @@ namespace System.Security
     public partial class HostProtectionException : System.SystemException
     {
         public HostProtectionException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -2061,7 +2061,7 @@ namespace System.Security.Policy
         public static System.Security.Policy.Hash CreateSHA1(byte[] sha1) { throw null; }
         public static System.Security.Policy.Hash CreateSHA256(byte[] sha256) { throw null; }
         public byte[] GenerateHash(System.Security.Cryptography.HashAlgorithm hashAlg) { throw null; }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -2131,7 +2131,7 @@ namespace System.Security.Policy
     public partial class PolicyException : System.SystemException
     {
         public PolicyException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif

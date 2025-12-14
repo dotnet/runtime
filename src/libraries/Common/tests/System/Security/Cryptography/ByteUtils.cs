@@ -109,8 +109,26 @@ namespace Test.Cryptography
 #if NET
             return PemEncoding.WriteString(label, data);
 #else
-            return
-                $"-----BEGIN {label}-----\n{Convert.ToBase64String(data, Base64FormattingOptions.InsertLineBreaks)}\n-----END {label}-----";
+            StringBuilder sb = new StringBuilder();
+
+            sb.Append("-----BEGIN ");
+            sb.Append(label);
+            sb.Append("-----\n");
+
+            string base64 = Convert.ToBase64String(data);
+
+            for (int i = 0; i < base64.Length; i += 64)
+            {
+                int len = Math.Min(64, base64.Length - i);
+                sb.Append(base64, i, len);
+                sb.Append('\n');
+            }
+
+            sb.Append("-----END ");
+            sb.Append(label);
+            sb.Append("-----");
+
+            return sb.ToString();
 #endif
         }
     }

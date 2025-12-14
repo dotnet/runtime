@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
@@ -71,12 +72,12 @@ namespace System.Security.Cryptography
         /// <inheritdoc />
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
-
             if (disposing)
             {
                 _key.Dispose();
             }
+
+            base.Dispose(disposing);
         }
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
@@ -85,10 +86,32 @@ namespace System.Security.Cryptography
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             Interop.Crypto.SlhDsaVerifyPure(_key, data, context, signature);
 
+        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
+            Helpers.SlhDsaPreHash(
+                hash,
+                context,
+                hashAlgorithmOid,
+                _key,
+                destination,
+                static (key, encodedMessage, destination) =>
+                {
+                    Interop.Crypto.SlhDsaSignPreEncoded(key, encodedMessage, destination);
+                    return true;
+                });
+
+        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
+            Helpers.SlhDsaPreHash(
+                hash,
+                context,
+                hashAlgorithmOid,
+                _key,
+                signature,
+                static (key, encodedMessage, signature) => Interop.Crypto.SlhDsaVerifyPreEncoded(key, encodedMessage, signature));
+
         protected override void ExportSlhDsaPublicKeyCore(Span<byte> destination) =>
             Interop.Crypto.SlhDsaExportPublicKey(_key, destination);
 
-        protected override void ExportSlhDsaSecretKeyCore(Span<byte> destination) =>
+        protected override void ExportSlhDsaPrivateKeyCore(Span<byte> destination) =>
             Interop.Crypto.SlhDsaExportSecretKey(_key, destination);
     }
 }

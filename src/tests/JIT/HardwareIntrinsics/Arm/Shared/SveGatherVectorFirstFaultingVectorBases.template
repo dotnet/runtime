@@ -135,6 +135,7 @@ namespace JIT.HardwareIntrinsics.Arm
                     {Op2BaseType} baseAddrToValidate = (({Op2BaseType})baseArrayPtr + (sizeof({RetBaseType}) * inArray2[i]));
 
                     // Make sure we got the correct base pointers.
+                    Debug.Assert((int)inArray2[i] < (int)baseArray.Length, $"Index {inArray2[i]} exceeds array length {baseArray.Length}");
                     Debug.Assert(*(({RetBaseType}*)baseAddrToValidate) == baseArray[inArray2[i]]);
 
                     inArray2[i] = baseAddrToValidate;
@@ -157,6 +158,7 @@ namespace JIT.HardwareIntrinsics.Arm
                         {Op2BaseType} baseAddrToValidate = (({Op2BaseType})baseArrayPtr + (sizeof({RetBaseType}) * inArray2Ffr[i]));
 
                         // Make sure we got the correct base pointers.
+                        Debug.Assert((int)inArray2Ffr[i] < (int)baseArray.Length, $"Index {inArray2Ffr[i]} exceeds array length {baseArray.Length}");
                         Debug.Assert(*(({RetBaseType}*)baseAddrToValidate) == baseArray[inArray2Ffr[i]]);
 
                         inArray2Ffr[i] = baseAddrToValidate;
@@ -207,7 +209,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     {Op2BaseType} baseAddrToValidate = (({Op2BaseType})_dataTable.baseArrayPtr + (sizeof({RetBaseType}) * _data2[i]));
 
-                    // Make sure we got the correct base pointers.
+                    // Make sure we got the correct base pointers.     
                     Debug.Assert(*(({RetBaseType}*)baseAddrToValidate) == (({RetBaseType}*)_dataTable.baseArrayPtr)[_data2[i]]);
 
                     _data2[i] = baseAddrToValidate;

@@ -11,7 +11,7 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("propertyName")]
-        public void Ctor_String(string propertyName)
+        public void Ctor_String(string? propertyName)
         {
             var e = new DataErrorsChangedEventArgs(propertyName);
             Assert.Equal(propertyName, e.PropertyName);

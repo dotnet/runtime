@@ -61,7 +61,7 @@ typedef struct dn_simdhash_str_key dn_simdhash_str_key;
 
 
 typedef struct dn_ptrpair_t {
-    void *first, *second;
+	void *first, *second;
 } dn_ptrpair_t;
 
 #define DN_SIMDHASH_T dn_simdhash_ptrpair_ptr

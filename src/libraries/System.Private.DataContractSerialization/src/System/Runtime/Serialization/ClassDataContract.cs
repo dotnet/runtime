@@ -586,8 +586,6 @@ namespace System.Runtime.Serialization.DataContracts
 
         private sealed class ClassDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
-            private static Type[]? s_serInfoCtorArgs;
-
             private ClassDataContract? _baseContract;
             private List<DataMember>? _members;
             private MethodInfo? _onSerializing, _onSerialized;
@@ -1275,7 +1273,7 @@ namespace System.Runtime.Serialization.DataContracts
 
             internal XmlDictionaryString?[]? ChildElementNamespaces { get; set; }
 
-            private static Type[] SerInfoCtorArgs => s_serInfoCtorArgs ??= new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
+            private static Type[] SerInfoCtorArgs => field ??= new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
 
             internal readonly struct Member
             {

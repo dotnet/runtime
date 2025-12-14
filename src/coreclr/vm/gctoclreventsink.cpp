@@ -154,10 +154,10 @@ void GCToCLREventSink::FireGCAllocationTick_V1(uint32_t allocationAmount, uint32
     _ASSERTE(!"Superseded by FireGCAllocationTick_V4");
 }
 
-void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount, 
-                                               uint32_t allocationKind, 
-                                               uint32_t heapIndex, 
-                                               void* objectAddress, 
+void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount,
+                                               uint32_t allocationKind,
+                                               uint32_t heapIndex,
+                                               void* objectAddress,
                                                uint64_t objectSize)
 {
     LIMITED_METHOD_CONTRACT;
@@ -187,7 +187,7 @@ void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount,
         }
     }
     EX_CATCH {}
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     if (typeId != nullptr)
     {
@@ -228,7 +228,7 @@ void GCToCLREventSink::FirePinObjectAtGCTime(void* object, uint8_t** ppObject)
                              GetClrInstanceId());
     }
     EX_CATCH {}
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 void GCToCLREventSink::FirePinPlugAtGCTime(uint8_t* plugStart, uint8_t* plugEnd, uint8_t* gapBeforeSize)
@@ -278,10 +278,10 @@ void GCToCLREventSink::FireGCLOHCompact(uint16_t count, uint32_t valuesLen, void
     FireEtwGCLOHCompact(GetClrInstanceId(), count, valuesLen, values);
 }
 
-void GCToCLREventSink::FireGCFitBucketInfo(uint16_t bucketKind, 
-                                           size_t size, 
-                                           uint16_t count, 
-                                           uint32_t valuesLen, 
+void GCToCLREventSink::FireGCFitBucketInfo(uint16_t bucketKind,
+                                           size_t size,
+                                           uint16_t count,
+                                           uint32_t valuesLen,
                                            void *values)
 {
     FireEtwGCFitBucketInfo(GetClrInstanceId(), bucketKind, size, count, valuesLen, values);

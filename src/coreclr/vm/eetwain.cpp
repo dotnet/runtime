@@ -1120,6 +1120,17 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
     return true;
 }
 
+void EECodeManager::UnwindStackFrame(T_CONTEXT  *pContext)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    EECodeInfo codeInfo(dac_cast<PCODE>(GetIP(pContext)));
+    Thread::VirtualUnwindCallFrame(pContext, NULL, &codeInfo);
+}
+
 /*****************************************************************************/
 #endif // FEATURE_EH_FUNCLETS
 
@@ -1178,6 +1189,21 @@ FCIMPL1(void, GCReporting::Register, GCFrame* frame)
 
     // Construct a GCFrame.
     _ASSERTE(frame != NULL);
+#ifdef FEATURE_INTERPRETER
+    Thread *pThread = GetThread();
+    Frame *pFrame = pThread->GetFrame();
+    frame->SetOSStackLocation(frame);
+
+    if ((pFrame != FRAME_TOP) && (pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    {
+        InterpreterFrame *pInterpFrame = (InterpreterFrame *)(pFrame);
+        InterpMethodContextFrame *pTopInterpMethodContextFrame = pInterpFrame->GetTopInterpMethodContextFrame();
+        if (pTopInterpMethodContextFrame->pStack <= (int8_t*)frame && (int8_t*)frame < pThread->GetInterpThreadContext()->pStackPointer)
+        {
+            frame->SetOSStackLocation(pTopInterpMethodContextFrame);
+        }
+    }
+#endif // FEATURE_INTERPRETER
     frame->Push(GetThread());
 }
 FCIMPLEND
@@ -2009,7 +2035,7 @@ void EECodeManager::LeaveCatch(GCInfoToken gcInfoToken,
 #ifndef TARGET_WASM
 
 // This is an assembly helper that enables us to call into EH funclets.
-EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, UINT_PTR *pFirstNonVolReg, UINT_PTR *pFuncletCallerSP);
+EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, CONTEXT *pContext, UINT_PTR *pFuncletCallerSP);
 
 // This is an assembly helper that enables us to call into EH filter funclets.
 EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
@@ -2022,26 +2048,6 @@ static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
     return DataPointerToThumbCode<UINT_PTR, HandlerFn *>(pfnHandler);
 #else
     return (UINT_PTR)pfnHandler;
-#endif
-}
-
-static inline UINT_PTR *GetFirstNonVolatileRegisterAddress(PCONTEXT pContextRecord)
-{
-#if defined(TARGET_AMD64)
-    return (UINT_PTR*)&(pContextRecord->Rbx);
-#elif defined(TARGET_ARM)
-    return (UINT_PTR*)&(pContextRecord->R4);
-#elif defined(TARGET_ARM64)
-    return (UINT_PTR*)&(pContextRecord->X19);
-#elif defined(TARGET_LOONGARCH64)
-    return (UINT_PTR*)&(pContextRecord->S0);
-#elif defined(TARGET_X86)
-    return (UINT_PTR*)&(pContextRecord->Edi);
-#elif defined(TARGET_RISCV64)
-    return (UINT_PTR*)&(pContextRecord->Fp);
-#else
-    PORTABILITY_ASSERT("GetFirstNonVolatileRegisterAddress");
-    return NULL;
 #endif
 }
 
@@ -2078,7 +2084,7 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
     {
         dwResult = CallEHFunclet(OBJECTREFToObject(throwable),
                                  CastHandlerFn(pfnHandler),
-                                 GetFirstNonVolatileRegisterAddress(pRD->pCurrentContext),
+                                 pRD->pCurrentContext,
                                  pFuncletCallerSP);
     }
 
@@ -2154,67 +2160,104 @@ void EECodeManager::UpdateSSP(PREGDISPLAY pRD)
 #ifdef FEATURE_INTERPRETER
 DWORD_PTR InterpreterCodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter)
 {
-    // Interpreter-TODO: implement calling the funclet in the intepreted code
-    _ASSERTE(FALSE);
-    return 0;
+    Thread *pThread = GetThread();
+    InterpThreadContext *threadContext = pThread->GetInterpThreadContext();
+    if (threadContext == nullptr || threadContext->pStackStart == nullptr)
+    {
+        COMPlusThrow(kOutOfMemoryException);
+    }
+    int8_t *sp = threadContext->pStackPointer;
+
+    // This construct ensures that the InterpreterFrame is always stored at a higher address than the
+    // InterpMethodContextFrame. This is important for the stack walking code.
+    struct Frames
+    {
+        InterpMethodContextFrame interpMethodContextFrame = {0};
+        InterpreterFrame interpreterFrame;
+
+        Frames(TransitionBlock* pTransitionBlock)
+        : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
+        {
+        }
+    }
+    frames(NULL);
+
+    // Use the InterpreterFrame address as a representation of the caller SP of the funclet
+    // Note: this needs to match what the VirtualUnwindInterpreterCallFrame sets as the SP
+    // when it unwinds out of a block of interpreter frames belonging to that InterpreterFrame.
+    pExInfo->m_csfEHClause.SP = (TADDR)&frames.interpreterFrame;
+
+    InterpMethodContextFrame *pOriginalFrame = (InterpMethodContextFrame*)GetRegdisplaySP(pRD);
+
+    StackVal retVal;
+
+    frames.interpMethodContextFrame.startIp = pOriginalFrame->startIp;
+    frames.interpMethodContextFrame.pStack = isFilter ? sp : pOriginalFrame->pStack;
+    frames.interpMethodContextFrame.pRetVal = (int8_t*)&retVal;
+
+    ExceptionClauseArgs exceptionClauseArgs;
+    exceptionClauseArgs.ip = (const int32_t *)pHandler;
+    exceptionClauseArgs.pFrame = pOriginalFrame;
+    exceptionClauseArgs.isFilter = isFilter;
+    exceptionClauseArgs.throwable = throwable;
+
+    GCPROTECT_BEGIN(exceptionClauseArgs.throwable);
+    InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext, &exceptionClauseArgs);
+    GCPROTECT_END();
+
+    frames.interpreterFrame.Pop();
+
+    if (isFilter)
+    {
+        // The filter funclet returns the result of the filter funclet (EXCEPTION_CONTINUE_SEARCH (0) or EXCEPTION_EXECUTE_HANDLER (1))
+        return retVal.data.i;
+    }
+    else
+    {
+        // The catch funclet returns the address to resume at after the catch returns.
+        return (DWORD_PTR)retVal.data.s;
+    }
 }
 
 void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted)
 {
-    Thread *pThread = GetThread();
-    InterpreterFrame * pInterpreterFrame = (InterpreterFrame*)pThread->GetFrame();
     TADDR resumeSP = GetSP(pContext);
     TADDR resumeIP = GetIP(pContext);
+#ifdef TARGET_WASM
+    throw ResumeAfterCatchException(resumeSP, resumeIP);
+#else
+    Thread *pThread = GetThread();
+    InterpreterFrame * pInterpreterFrame = (InterpreterFrame*)pThread->GetFrame();
 
     ClrCaptureContext(pContext);
 
-    // Unwind to the caller of the Ex.RhThrowEx / Ex.RhThrowHwEx
-    Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
+    TADDR targetSP = pInterpreterFrame->GetInterpExecMethodSP();
 
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-    targetSSP = GetSSPForFrameOnCurrentStack(GetIP(pContext));
-#endif // HOST_AMD64 && HOST_WINDOWS
-
-    CONTEXT firstNativeContext;
-    size_t firstNativeSSP;
-
-    // Find the native frames chain that contains the resumeSP
+    // We are resuming in interpreter frame. So we need to skip all native, JIT and AOT generated frames until we reach
+    // the resumeSP
     do
     {
-        // Skip all managed frames upto a native frame
-        while (ExecutionManager::IsManagedCode(GetIP(pContext)))
+        if (ExecutionManager::IsManagedCode(GetIP(pContext)))
         {
+            // JIT / AOT generated managed code
             Thread::VirtualUnwindCallFrame(pContext);
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-            if (targetSSP != 0)
-            {
-                targetSSP += sizeof(size_t);
-            }
-#endif
         }
-
-        // Save the first native context after managed frames. This will be the context where we throw the resume after catch exception from.
-        firstNativeContext = *pContext;
-        firstNativeSSP = targetSSP;
-        // Move over all native frames until we move over the resumeSP
-        while ((GetSP(pContext) < resumeSP) && !ExecutionManager::IsManagedCode(GetIP(pContext)))
+        else
         {
 #ifdef TARGET_UNIX
             PAL_VirtualUnwind(pContext, NULL);
 #else
             Thread::VirtualUnwindCallFrame(pContext);
 #endif
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-            if (targetSSP != 0)
-            {
-                targetSSP += sizeof(size_t);
-            }
-#endif
         }
     }
-    while (GetSP(pContext) < resumeSP);
+    while (GetSP(pContext) != targetSP);
 
-    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, &firstNativeContext, firstNativeSSP, resumeSP, resumeIP);
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    targetSSP = pInterpreterFrame->GetInterpExecMethodSSP();
+#endif    
+    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, pContext, targetSSP, resumeSP, resumeIP);
+#endif // TARGET_WASM
 }
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
@@ -2386,11 +2429,14 @@ static void VirtualUnwindInterpreterCallFrame(TADDR sp, T_CONTEXT *pContext)
     else
     {
         // This indicates that there are no more interpreter frames to unwind in the current InterpExecMethod
-        // The stack walker will not find any code manager for the address 0 and move on to the next explicit
-        // frame which is the InterpreterFrame.
+        // The stack walker will not find any code manager for the address InterpreterFrame::DummyCallerIP (0) 
+        // and move on to the next explicit frame which is the InterpreterFrame.
+        // The SP is set to the address of the InterpreterFrame. For the case of interpreted exception handling
+        // funclets, this matches the pExInfo->m_csfEHClause.SP that the CallFunclet sets.
         // Interpreter-TODO: Consider returning the context of the JITted / AOTed code that called the interpreter instead
-        SetIP(pContext, 0);
-        SetSP(pContext, sp);
+        SetIP(pContext, InterpreterFrame::DummyCallerIP);
+        TADDR interpreterFrameAddress = GetFirstArgReg(pContext);
+        SetSP(pContext, interpreterFrameAddress);
     }
     pContext->ContextFlags = CONTEXT_FULL;
 }
@@ -2422,6 +2468,20 @@ bool InterpreterCodeManager::UnwindStackFrame(PREGDISPLAY     pRD,
     pRD->IsCallerSPValid = FALSE;
 
     return true;
+}
+
+void InterpreterCodeManager::UnwindStackFrame(T_CONTEXT *pContext)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pContext != NULL);
+    VirtualUnwindInterpreterCallFrame(GetSP(pContext), pContext);
 }
 
 void InterpreterCodeManager::EnsureCallerContextIsValid(PREGDISPLAY  pRD, EECodeInfo * pCodeInfo /*= NULL*/, unsigned flags /*= 0*/)
@@ -2564,28 +2624,68 @@ bool InterpreterCodeManager::EnumGcRefs(PREGDISPLAY     pContext,
 OBJECTREF InterpreterCodeManager::GetInstance(PREGDISPLAY     pContext,
                                               EECodeInfo *    pCodeInfo)
 {
-    // Interpreter-TODO: Implement this
-    return NULL;
+    PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
+    TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
+    return *dac_cast<PTR_OBJECTREF>(baseStackSlot);
 }
 
 PTR_VOID InterpreterCodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
                                                  EECodeInfo *    pCodeInfo)
 {
-    // Interpreter-TODO: Implement this
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
+
+    InterpreterGcInfoDecoder gcInfoDecoder(
+            gcInfoToken,
+            GcInfoDecoderFlags (DECODE_GENERICS_INST_CONTEXT)
+            );
+
+    INT32 spOffsetGenericsContext = gcInfoDecoder.GetGenericsInstContextStackSlot();
+    if (spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT)
+    {
+        PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
+        TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
+        TADDR taSlot = (TADDR)( spOffsetGenericsContext + baseStackSlot );
+        TADDR taExactGenericsToken = *PTR_TADDR(taSlot);
+        return PTR_VOID(taExactGenericsToken);
+    }
     return NULL;
 }
 
 GenericParamContextType InterpreterCodeManager::GetParamContextType(PREGDISPLAY     pContext,
                                             EECodeInfo *    pCodeInfo)
 {
-    // Interpreter-TODO: Implement this
-    return GENERIC_PARAM_CONTEXT_NONE;
+    MethodDesc *pMD = pCodeInfo->GetMethodDesc();
+    GenericParamContextType paramContextType = GENERIC_PARAM_CONTEXT_NONE;
+
+    if (pMD->RequiresInstMethodDescArg())
+        paramContextType = GENERIC_PARAM_CONTEXT_METHODDESC;
+    else if (pMD->RequiresInstMethodTableArg())
+        paramContextType = GENERIC_PARAM_CONTEXT_METHODTABLE;
+    else if (pMD->AcquiresInstMethodTableFromThis())
+        paramContextType = GENERIC_PARAM_CONTEXT_THIS;
+
+    return paramContextType;
 }
 
 size_t InterpreterCodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
 {
-    // Interpreter-TODO: Implement this
-    return 0;
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    InterpreterGcInfoDecoder gcInfoDecoder(
+            gcInfoToken,
+            DECODE_CODE_LENGTH
+            );
+
+    UINT32 codeLength = gcInfoDecoder.GetCodeLength();
+    _ASSERTE( codeLength > 0 );
+
+    return codeLength;
 }
 
 #endif // FEATURE_INTERPRETER

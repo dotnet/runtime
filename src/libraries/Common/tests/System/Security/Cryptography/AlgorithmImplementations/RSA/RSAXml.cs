@@ -996,15 +996,15 @@ zM=
                 {
                     rsaPub.FromXmlString(xmlPub);
 
-                    ImportExport.AssertKeyEquals(pubOnly, rsaPub.ExportParameters(false));
+                    RSATestHelpers.AssertKeyEquals(pubOnly, rsaPub.ExportParameters(false));
                 }
 
                 using (RSA rsaPriv = RSAFactory.Create())
                 {
                     rsaPriv.FromXmlString(xmlPriv);
 
-                    ImportExport.AssertKeyEquals(pubPriv, rsaPriv.ExportParameters(true));
-                    ImportExport.AssertKeyEquals(pubOnly, rsaPriv.ExportParameters(false));
+                    RSATestHelpers.AssertKeyEquals(pubPriv, rsaPriv.ExportParameters(true));
+                    RSATestHelpers.AssertKeyEquals(pubOnly, rsaPriv.ExportParameters(false));
                 }
             }
         }
@@ -1274,7 +1274,7 @@ zM=
 
                 bool includePrivateParameters = expectedParameters.D != null;
 
-                ImportExport.AssertKeyEquals(
+                RSATestHelpers.AssertKeyEquals(
                     expectedParameters,
                     rsa.ExportParameters(includePrivateParameters));
             }

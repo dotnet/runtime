@@ -254,7 +254,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Client content", "Server content")]
         [InlineData(null, null)]
         [InlineData(null, "Server content")]
-        public async Task Http2ClearText_SendAsync_Success(string clientContent, string serverContent)
+        public async Task Http2ClearText_SendAsync_Success(string? clientContent, string? serverContent)
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {

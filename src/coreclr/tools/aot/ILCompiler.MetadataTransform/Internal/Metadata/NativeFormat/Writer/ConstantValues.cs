@@ -18,8 +18,8 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            //return "ConstantBooleanArray : {" + String.Join(", ", this.Value.Select(v => v.ToString())) + "}";
-            return "(Boolean[]) {" + string.Join(", ", this.Value.Select(v => v.ToString())) + "}";
+            //return "ConstantBooleanArray : {" + String.Join(", ", this.Value) + "}";
+            return "(Boolean[]) {" + string.Join(", ", this.Value) + "}";
         }
     }
     public partial class ConstantCharValue
@@ -36,8 +36,8 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            //return "ConstantCharArray : {" + String.Join(", ", this.Value.Select(v => v.ToString())) + "}";
-            return "(Char[]) {" + string.Join(", ", this.Value.Select(v => v.ToString())) + "}";
+            //return "ConstantCharArray : {" + String.Join(", ", this.Value) + "}";
+            return "(Char[]) {" + string.Join(", ", this.Value) + "}";
         }
     }
     public partial class ConstantStringValue
@@ -54,8 +54,8 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            //return "ConstantStringArray : {" + String.Join(", ", this.Value.Select(v => v.ToString())) + "}";
-            return "(String[]) {" + string.Join(", ", this.Value.Select(v => v.ToString())) + "}";
+            //return "ConstantStringArray : {" + String.Join(", ", this.Value) + "}";
+            return "(String[]) {" + string.Join(", ", this.Value) + "}";
         }
     }
     public partial class ConstantByteValue
@@ -71,8 +71,8 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            //return "ConstantByteArray : {" + String.Join(", ", this.Value.Select(v => v.ToString())) + "}";
-            return "(Byte[]) {" + string.Join(", ", this.Value.Select(v => v.ToString())) + "}";
+            //return "ConstantByteArray : {" + String.Join(", ", this.Value) + "}";
+            return "(Byte[]) {" + string.Join(", ", this.Value) + "}";
         }
     }
     public partial class ConstantSByteValue
@@ -88,8 +88,8 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            //return "ConstantSByteArray : {" + String.Join(", ", this.Value.Select(v => v.ToString())) + "}";
-            return "(SByte[]) {" + string.Join(", ", this.Value.Select(v => v.ToString())) + "}";
+            //return "ConstantSByteArray : {" + String.Join(", ", this.Value) + "}";
+            return "(SByte[]) {" + string.Join(", ", this.Value) + "}";
         }
     }
     public partial class ConstantInt16Value
@@ -105,8 +105,8 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            //return "ConstantInt16Array : {" + String.Join(", ", this.Value.Select(v => v.ToString())) + "}";
-            return "(Int16[]) {" + string.Join(", ", this.Value.Select(v => v.ToString())) + "}";
+            //return "ConstantInt16Array : {" + String.Join(", ", this.Value) + "}";
+            return "(Int16[]) {" + string.Join(", ", this.Value) + "}";
         }
     }
     public partial class ConstantUInt16Value
@@ -122,8 +122,8 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            //return "ConstantUInt16Array : {" + String.Join(", ", this.Value.Select(v => v.ToString())) + "}";
-            return "(UInt16[]) {" + string.Join(", ", this.Value.Select(v => v.ToString())) + "}";
+            //return "ConstantUInt16Array : {" + String.Join(", ", this.Value) + "}";
+            return "(UInt16[]) {" + string.Join(", ", this.Value) + "}";
         }
     }
     public partial class ConstantInt32Value
@@ -139,8 +139,8 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            //return "ConstantInt32Array : {" + String.Join(", ", this.Value.Select(v => v.ToString())) + "}";
-            return "(Int32[]) {" + string.Join(", ", this.Value.Select(v => v.ToString())) + "}";
+            //return "ConstantInt32Array : {" + String.Join(", ", this.Value) + "}";
+            return "(Int32[]) {" + string.Join(", ", this.Value) + "}";
         }
     }
     public partial class ConstantUInt32Value
@@ -156,8 +156,8 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            //return "ConstantUInt32Array : {" + String.Join(", ", this.Value.Select(v => v.ToString())) + "}";
-            return "(UInt32[]) {" + string.Join(", ", this.Value.Select(v => v.ToString())) + "}";
+            //return "ConstantUInt32Array : {" + String.Join(", ", this.Value) + "}";
+            return "(UInt32[]) {" + string.Join(", ", this.Value) + "}";
         }
     }
     public partial class ConstantInt64Value
@@ -173,8 +173,8 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            //return "ConstantInt64Array : {" + String.Join(", ", this.Value.Select(v => v.ToString())) + "}";
-            return "(Int64[]) {" + string.Join(", ", this.Value.Select(v => v.ToString())) + "}";
+            //return "ConstantInt64Array : {" + String.Join(", ", this.Value) + "}";
+            return "(Int64[]) {" + string.Join(", ", this.Value) + "}";
         }
     }
     public partial class ConstantUInt64Value
@@ -190,8 +190,8 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            //return "ConstantUInt64Array : {" + String.Join(", ", this.Value.Select(v => v.ToString())) + "}";
-            return "(UInt64[]) {" + string.Join(", ", this.Value.Select(v => v.ToString())) + "}";
+            //return "ConstantUInt64Array : {" + String.Join(", ", this.Value) + "}";
+            return "(UInt64[]) {" + string.Join(", ", this.Value) + "}";
         }
     }
     public partial class ConstantSingleValue
@@ -207,8 +207,8 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            //return "ConstantSingleArray : {" + String.Join(", ", this.Value.Select(v => v.ToString())) + "}";
-            return "(Single[]) {" + string.Join(", ", this.Value.Select(v => v.ToString())) + "}";
+            //return "ConstantSingleArray : {" + String.Join(", ", this.Value) + "}";
+            return "(Single[]) {" + string.Join(", ", this.Value) + "}";
         }
     }
     public partial class ConstantDoubleValue
@@ -224,8 +224,8 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            //return "ConstantDoubleArray : {" + String.Join(", ", this.Value.Select(v => v.ToString())) + "}";
-            return "(Double[]) {" + string.Join(", ", this.Value.Select(v => v.ToString())) + "}";
+            //return "ConstantDoubleArray : {" + String.Join(", ", this.Value) + "}";
+            return "(Double[]) {" + string.Join(", ", this.Value) + "}";
         }
     }
     public partial class ConstantReferenceValue

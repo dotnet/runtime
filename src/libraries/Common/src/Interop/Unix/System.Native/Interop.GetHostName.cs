@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
@@ -38,7 +39,7 @@ internal static partial class Interop
             // If the hostname is truncated, it is unspecified whether the returned buffer includes a terminating null byte.
             name[ArrLength - 1] = 0;
 
-            return Marshal.PtrToStringUTF8((IntPtr)name)!;
+            return Utf8StringMarshaller.ConvertToManaged(name)!;
         }
     }
 }

@@ -189,6 +189,7 @@ node_modules/
 *.metaproj.tmp
 bin.localpkg/
 .mono/
+*.d.ts.sha256
 
 # RIA/Silverlight projects
 Generated_Code/
@@ -363,3 +364,8 @@ src/coreclr/System.Private.CoreLib/common
 .dotnet-daily/
 run-stress-*
 test:.cs
+
+# XUnit
+*.tempLog.xml
+*.testResults.xml
+*.testStats.csv

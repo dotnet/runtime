@@ -3,7 +3,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, emscriptenModule, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, emscriptenModule, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_log_debug, mono_log_error, mono_log_info_no_prefix, mono_log_warn, teardown_proxy_console } from "./logging";
 
 export function is_exited () {
@@ -194,8 +194,8 @@ function set_exit_code_and_quit_now (exit_code: number, reason?: any): void {
     }
     // just in case mono_wasm_exit didn't exit or throw
     if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
-        if (ENVIRONMENT_IS_NODE && INTERNAL.process) {
-            INTERNAL.process.exit(exit_code);
+        if (ENVIRONMENT_IS_NODE) {
+            process.exit(exit_code);
         } else if (runtimeHelpers.quit) {
             runtimeHelpers.quit(exit_code, reason);
         }
@@ -236,8 +236,6 @@ function abort_promises (reason: any) {
     if (runtimeHelpers.dotnetReady) {
         runtimeHelpers.dotnetReady.promise_control.reject(reason);
         runtimeHelpers.afterInstantiateWasm.promise_control.reject(reason);
-        runtimeHelpers.beforePreInit.promise_control.reject(reason);
-        runtimeHelpers.afterPreInit.promise_control.reject(reason);
         runtimeHelpers.afterPreRun.promise_control.reject(reason);
         runtimeHelpers.beforeOnRuntimeInitialized.promise_control.reject(reason);
         runtimeHelpers.afterOnRuntimeInitialized.promise_control.reject(reason);

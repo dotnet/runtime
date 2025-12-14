@@ -72,7 +72,7 @@ namespace System.Tests
         [InlineData(2000, 0, " 17 ")]
         [InlineData(0, 0, "3")]
         public static unsafe void ProcessorCount_Windows_RespectsJobCpuRateAndConfigurationSetting(
-            ushort maxRate, ushort minRate, string procCountConfig)
+            ushort maxRate, ushort minRate, string? procCountConfig)
         {
             IntPtr hJob = IntPtr.Zero;
             PROCESS_INFORMATION processInfo = default;

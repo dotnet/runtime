@@ -4,7 +4,9 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography;
+using System.Text;
 
 using Microsoft.Win32.SafeHandles;
 
@@ -67,7 +69,7 @@ internal static partial class Interop
 
             if (bytesNeeded < StackCapacity)
             {
-                return Marshal.PtrToStringUTF8((IntPtr)bufStack, bytesNeeded);
+                return Encoding.UTF8.GetString(bufStack, bytesNeeded);
             }
 
             // bytesNeeded does not count the \0 which will be written on the end (based on OpenSSL 1.0.1f),
@@ -93,7 +95,7 @@ internal static partial class Interop
                     throw new CryptographicException();
                 }
 
-                return Marshal.PtrToStringUTF8((IntPtr)buf, bytesNeeded);
+                return Encoding.UTF8.GetString(buf, bytesNeeded);
             }
         }
     }

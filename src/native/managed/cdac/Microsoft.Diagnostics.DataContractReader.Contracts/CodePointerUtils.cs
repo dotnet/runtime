@@ -13,6 +13,11 @@ internal static class CodePointerUtils
 
     internal static TargetCodePointer CodePointerFromAddress(TargetPointer address, Target target)
     {
+        if (address == TargetPointer.Null)
+        {
+            return TargetCodePointer.Null;
+        }
+
         IPlatformMetadata metadata = target.Contracts.PlatformMetadata;
         CodePointerFlags flags = metadata.GetCodePointerFlags();
         if (flags.HasFlag(CodePointerFlags.HasArm32ThumbBit))

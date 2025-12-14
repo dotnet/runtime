@@ -90,7 +90,7 @@ namespace System.Net.Http
             }
             set
             {
-                if ((value != null) && HttpRuleParser.ContainsNewLine(value))
+                if ((value != null) && HttpRuleParser.ContainsNewLineOrNull(value))
                 {
                     throw new FormatException(SR.net_http_reasonphrase_format_error);
                 }

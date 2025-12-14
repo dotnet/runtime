@@ -4,8 +4,9 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <MonoAotIncompatible>true</MonoAotIncompatible>
-    <NativeAotIncompatible>true</NativeAotIncompatible>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+    <IlcGenerateMstatFile>true</IlcGenerateMstatFile>
+    <IlcGenerateDgmlFile>true</IlcGenerateDgmlFile>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TypeMapApp.cs" />

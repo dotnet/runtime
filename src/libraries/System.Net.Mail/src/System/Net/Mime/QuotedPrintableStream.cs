@@ -58,7 +58,6 @@ namespace System.Net.Mime
         private static ReadOnlySpan<byte> HexEncodeMap => "0123456789ABCDEF"u8;
 
         private readonly int _lineLength;
-        private ReadStateInfo? _readState;
         private WriteStateInfoBase? _writeState;
 
         /// <summary>
@@ -81,7 +80,7 @@ namespace System.Net.Mime
         public override bool CanRead => false;
         public override bool CanWrite => BaseStream.CanWrite;
 
-        private ReadStateInfo ReadState => _readState ??= new ReadStateInfo();
+        private ReadStateInfo ReadState => field ??= new ReadStateInfo();
 
         internal WriteStateInfoBase WriteState => _writeState ??= new WriteStateInfoBase(1024, null, null, _lineLength);
 

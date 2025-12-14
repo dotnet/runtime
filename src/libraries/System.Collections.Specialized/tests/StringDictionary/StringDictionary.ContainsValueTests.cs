@@ -29,7 +29,7 @@ namespace System.Collections.Specialized.Tests
         [Theory]
         [InlineData("value")]
         [InlineData(null)]
-        public void ContainsValue_DuplicateValues(string value)
+        public void ContainsValue_DuplicateValues(string? value)
         {
             StringDictionary stringDictionary = new StringDictionary();
             stringDictionary.Add("key1", value);

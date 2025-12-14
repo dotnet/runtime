@@ -54,8 +54,8 @@ Following the EENameStream header, there are CountOfNames entries. Each entry be
 ``` csharp
 string StringFromEEAddress(TargetPointer address)
 {
-    TargetPointer miniMetaDataBuffAddress = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.MiniMetaDataBuffAddress));
-    uint miniMetaDataBuffMaxSize = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.MiniMetaDataBuffMaxSize));
+    TargetPointer miniMetaDataBuffAddress = _target.Read<uint>(_target.ReadGlobalPointer("MiniMetaDataBuffAddress"));
+    uint miniMetaDataBuffMaxSize = _target.Read<uint>(_target.ReadGlobalPointer("MiniMetaDataBuffMaxSize"));
 
     // Parse MiniMetadataStream according the the format described above to produce a dictionary from pointer to string from the EENameStream.
     // Then lookup in the dictionary, to produce a result if it was present in the table.

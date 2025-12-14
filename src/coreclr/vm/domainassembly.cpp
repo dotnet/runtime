@@ -21,25 +21,21 @@ DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoader
 {
     CONTRACTL
     {
+        STANDARD_VM_CHECK;
         CONSTRUCTOR_CHECK;
-        THROWS;             // ValidateForExecution
-        GC_TRIGGERS;        // ValidateForExecution
-        MODE_ANY;
     }
     CONTRACTL_END;
 
-    pPEAssembly->AddRef();
-    pPEAssembly->ValidateForExecution();
-
     // Create the Assembly
     NewHolder<Assembly> assembly = Assembly::Create(pPEAssembly, memTracker, pLoaderAllocator);
+    assembly->SetDomainAssembly(this);
 
     m_pAssembly = assembly.Extract();
 
-    m_pAssembly->SetDomainAssembly(this);
-
+#ifndef PEIMAGE_FLAT_LAYOUT_ONLY
     // Creating the Assembly should have ensured the PEAssembly is loaded
     _ASSERT(GetPEAssembly()->IsLoaded());
+#endif
 }
 
 DomainAssembly::~DomainAssembly()

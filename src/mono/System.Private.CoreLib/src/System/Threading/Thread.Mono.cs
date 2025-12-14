@@ -364,5 +364,11 @@ namespace System.Threading
                 external_eventloop = value;
             }
         }
+
+#if TARGET_WINDOWS
+        internal static void CheckForPendingInterrupt()
+        {
+        }
+#endif
     }
 }

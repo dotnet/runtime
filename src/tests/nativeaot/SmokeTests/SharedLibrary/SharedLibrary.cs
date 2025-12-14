@@ -4,37 +4,51 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace SharedLibrary
 {
     public class ClassLibrary
     {
-        [UnmanagedCallersOnly(EntryPoint = "ReturnsPrimitiveInt", CallConvs = new Type[] { typeof(CallConvStdcall) })]
-        public static int ReturnsPrimitiveInt()
+        static Thread s_setterThread;
+        static int s_primitiveInt;
+
+        [ModuleInitializer]
+        public static void CreateThreadInModuleInitializer()
         {
-            return 10;
+            // Regression test for https://github.com/dotnet/runtime/issues/107699
+            // where creating threads in module initializer would lead to a deadlock.
+            s_setterThread = new Thread(() => { s_primitiveInt = 10; });
+            s_setterThread.Start();
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "ReturnsPrimitiveBool", CallConvs = new Type[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly(EntryPoint = "ReturnsPrimitiveInt", CallConvs = [typeof(CallConvStdcall)])]
+        public static int ReturnsPrimitiveInt()
+        {
+            s_setterThread.Join();
+            return s_primitiveInt;
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "ReturnsPrimitiveBool", CallConvs = [typeof(CallConvStdcall)])]
         public static bool ReturnsPrimitiveBool()
         {
             return true;
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "ReturnsPrimitiveChar", CallConvs = new Type[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly(EntryPoint = "ReturnsPrimitiveChar", CallConvs = [typeof(CallConvStdcall)])]
         public static char ReturnsPrimitiveChar()
         {
             return 'a';
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "EnsureManagedClassLoaders", CallConvs = new Type[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly(EntryPoint = "EnsureManagedClassLoaders", CallConvs = [typeof(CallConvStdcall)])]
         public static void EnsureManagedClassLoaders()
         {
             Random random = new Random();
             random.Next();
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "CheckSimpleExceptionHandling", CallConvs = new Type[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly(EntryPoint = "CheckSimpleExceptionHandling", CallConvs = [typeof(CallConvStdcall)])]
         public static int CheckSimpleExceptionHandling()
         {
             int result = 10;
@@ -77,7 +91,7 @@ namespace SharedLibrary
             new ClassWithFinalizer();
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "CheckSimpleGCCollect", CallConvs = new Type[] { typeof(CallConvStdcall) })]
+        [UnmanagedCallersOnly(EntryPoint = "CheckSimpleGCCollect", CallConvs = [typeof(CallConvStdcall)])]
         public static int CheckSimpleGCCollect()
         {
             string myString = string.Format("Hello {0}", "world");

@@ -7,53 +7,52 @@ using Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods.Depe
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 {
-	[SetupCompileBefore ("library.dll", new[] { "Dependencies/Library.cs" })]
-	[SetupLinkerAction ("skip", "library")]
-	[SetupLinkerArgument ("-a", "test.exe", "library")]
-	public static class StaticVirtualInterfaceMethodsLibrary
-	{
-		[Kept]
-		public static void Main ()
-		{
-		}
+    [SetupCompileBefore("library.dll", new[] { "Dependencies/Library.cs" })]
+    [SetupLinkerAction("skip", "library")]
+    [SetupLinkerArgument("-a", "test.exe", "library")]
+    public static class StaticVirtualInterfaceMethodsLibrary
+    {
+        [Kept]
+        public static void Main()
+        {
+        }
 
-		[Kept]
-		public static class IfaceMethodInPreserveScope
-		{
-			[Kept]
-			[KeptMember (".ctor()")]
-			[KeptInterface (typeof (IStaticInterfaceWithDefaultImpls))]
-			public class ExplcitImplementations : IStaticInterfaceWithDefaultImpls
-			{
-				[Kept]
-				static int IStaticInterfaceWithDefaultImpls.Property { [Kept][KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))] get => 1; [Kept][KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))] set => _ = value; }
-				[Kept]
-				[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-				static int IStaticInterfaceWithDefaultImpls.Method () => 1;
-				[Kept]
-				[KeptOverride (typeof (IStaticInterfaceWithDefaultImpls))]
-				int IStaticInterfaceWithDefaultImpls.InstanceMethod () => 0;
-			}
-		}
+        [Kept]
+        public static class IfaceMethodInPreserveScope
+        {
+            [Kept]
+            [KeptMember(".ctor()")]
+            [KeptInterface(typeof(IStaticInterfaceWithDefaultImpls))]
+            public class ExplcitImplementations : IStaticInterfaceWithDefaultImpls
+            {
+                [Kept]
+                static int IStaticInterfaceWithDefaultImpls.Property { [Kept][KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))] get => 1; [Kept][KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))] set => _ = value; }
+                [Kept]
+                [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+                static int IStaticInterfaceWithDefaultImpls.Method() => 1;
+                [Kept]
+                [KeptOverride(typeof(IStaticInterfaceWithDefaultImpls))]
+                int IStaticInterfaceWithDefaultImpls.InstanceMethod() => 0;
+            }
+        }
 
-		[Kept]
-		public static class AbstractStaticInPreserveScope
-		{
-			[Kept]
-			[KeptMember (".ctor()")]
-			[KeptInterface (typeof (IStaticAbstractMethods))]
-			public class ExplcitImplementations : IStaticAbstractMethods
-			{
-				[Kept]
-				static int IStaticAbstractMethods.Property { [Kept][KeptOverride (typeof (IStaticAbstractMethods))] get => 1; [Kept][KeptOverride (typeof (IStaticAbstractMethods))] set => _ = value; }
-				[Kept]
-				[KeptOverride (typeof (IStaticAbstractMethods))]
-				static int IStaticAbstractMethods.Method () => 1;
-				[Kept]
-				[KeptOverride (typeof (IStaticAbstractMethods))]
-				int IStaticAbstractMethods.InstanceMethod () => 0;
-			}
-		}
-	}
+        [Kept]
+        public static class AbstractStaticInPreserveScope
+        {
+            [Kept]
+            [KeptMember(".ctor()")]
+            [KeptInterface(typeof(IStaticAbstractMethods))]
+            public class ExplcitImplementations : IStaticAbstractMethods
+            {
+                [Kept]
+                static int IStaticAbstractMethods.Property { [Kept][KeptOverride(typeof(IStaticAbstractMethods))] get => 1; [Kept][KeptOverride(typeof(IStaticAbstractMethods))] set => _ = value; }
+                [Kept]
+                [KeptOverride(typeof(IStaticAbstractMethods))]
+                static int IStaticAbstractMethods.Method() => 1;
+                [Kept]
+                [KeptOverride(typeof(IStaticAbstractMethods))]
+                int IStaticAbstractMethods.InstanceMethod() => 0;
+            }
+        }
+    }
 }
-

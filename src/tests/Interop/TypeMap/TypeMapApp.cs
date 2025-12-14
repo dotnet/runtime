@@ -101,40 +101,38 @@ public class TypeMap
     {
         Console.WriteLine(nameof(Validate_GroupType_Types));
 
-        ValidateExternalTypeMap<object>();
-        ValidateExternalTypeMap<string>();
-        ValidateExternalTypeMap<int[]>();
-        ValidateExternalTypeMap<C1.I1>();
-        ValidateExternalTypeMap<C1.I2<int>>();
-        ValidateExternalTypeMap<C1.I2<string>>();
-        ValidateExternalTypeMap<C2<int>.I1>();
-        ValidateExternalTypeMap<C2<int>.I2<int>>();
-        ValidateExternalTypeMap<C2<string>.I1>();
-        ValidateExternalTypeMap<C2<string>.I2<string>>();
+        ValidateExternalTypeMap(TypeMapping.GetOrCreateExternalTypeMapping<object>());
+        ValidateExternalTypeMap(TypeMapping.GetOrCreateExternalTypeMapping<string>());
+        ValidateExternalTypeMap(TypeMapping.GetOrCreateExternalTypeMapping<int[]>());
+        ValidateExternalTypeMap(TypeMapping.GetOrCreateExternalTypeMapping<C1.I1>());
+        ValidateExternalTypeMap(TypeMapping.GetOrCreateExternalTypeMapping<C1.I2<int>>());
+        ValidateExternalTypeMap(TypeMapping.GetOrCreateExternalTypeMapping<C1.I2<string>>());
+        ValidateExternalTypeMap(TypeMapping.GetOrCreateExternalTypeMapping<C2<int>.I1>());
+        ValidateExternalTypeMap(TypeMapping.GetOrCreateExternalTypeMapping<C2<int>.I2<int>>());
+        ValidateExternalTypeMap(TypeMapping.GetOrCreateExternalTypeMapping<C2<string>.I1>());
+        ValidateExternalTypeMap(TypeMapping.GetOrCreateExternalTypeMapping<C2<string>.I2<string>>());
 
-        ValidateProxyTypeMap<object>();
-        ValidateProxyTypeMap<string>();
-        ValidateProxyTypeMap<int[]>();
-        ValidateProxyTypeMap<C1.I1>();
-        ValidateProxyTypeMap<C1.I2<int>>();
-        ValidateProxyTypeMap<C1.I2<string>>();
-        ValidateProxyTypeMap<C2<int>.I1>();
-        ValidateProxyTypeMap<C2<int>.I2<int>>();
-        ValidateProxyTypeMap<C2<string>.I1>();
-        ValidateProxyTypeMap<C2<string>.I2<string>>();
+        ValidateProxyTypeMap(TypeMapping.GetOrCreateProxyTypeMapping<object>());
+        ValidateProxyTypeMap(TypeMapping.GetOrCreateProxyTypeMapping<string>());
+        ValidateProxyTypeMap(TypeMapping.GetOrCreateProxyTypeMapping<int[]>());
+        ValidateProxyTypeMap(TypeMapping.GetOrCreateProxyTypeMapping<C1.I1>());
+        ValidateProxyTypeMap(TypeMapping.GetOrCreateProxyTypeMapping<C1.I2<int>>());
+        ValidateProxyTypeMap(TypeMapping.GetOrCreateProxyTypeMapping<C1.I2<string>>());
+        ValidateProxyTypeMap(TypeMapping.GetOrCreateProxyTypeMapping<C2<int>.I1>());
+        ValidateProxyTypeMap(TypeMapping.GetOrCreateProxyTypeMapping<C2<int>.I2<int>>());
+        ValidateProxyTypeMap(TypeMapping.GetOrCreateProxyTypeMapping<C2<string>.I1>());
+        ValidateProxyTypeMap(TypeMapping.GetOrCreateProxyTypeMapping<C2<string>.I2<string>>());
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static void ValidateExternalTypeMap<T>()
+        static void ValidateExternalTypeMap(IReadOnlyDictionary<string, Type> map)
         {
-            IReadOnlyDictionary<string, Type> map = TypeMapping.GetOrCreateExternalTypeMapping<T>();
             Assert.Equal(typeof(string), map["1"]);
             Assert.False(map.TryGetValue("2", out Type? _));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static void ValidateProxyTypeMap<T>()
+        static void ValidateProxyTypeMap(IReadOnlyDictionary<Type, Type> map)
         {
-            IReadOnlyDictionary<Type, Type> map = TypeMapping.GetOrCreateProxyTypeMapping<T>();
             Assert.Equal(typeof(string), map[typeof(object)]);
             Assert.False(map.TryGetValue(typeof(string), out Type? _));
         }
@@ -147,17 +145,18 @@ public class TypeMap
 
         IReadOnlyDictionary<Type, Type> map = TypeMapping.GetOrCreateProxyTypeMapping<TypicalUseCase>();
 
-        Assert.Equal(typeof(C1), map[typeof(C1)]);
-        Assert.Equal(typeof(S1), map[typeof(S1)]);
-        Assert.Equal(typeof(C1), map[typeof(Guid)]);
-        Assert.Equal(typeof(S1), map[typeof(string)]);
-        Assert.Equal(typeof(C1), map[typeof(List<int>)]);
+        // Need to use `new`, not just `typeof` due to trimming rules: https://github.com/dotnet/runtime/blob/550c960396d3bba1a83198d0a3ac24109124e82d/docs/design/features/typemap.md#type-map-entry-trimming-rules
+        Assert.Equal(typeof(C1), map[new C1().GetType()]);
+        Assert.Equal(typeof(S1), map[((object)default(S1)).GetType()]);
+        Assert.Equal(typeof(C1), map[((object)default(Guid)).GetType()]);
+        Assert.Equal(typeof(S1), map["".GetType()]);
+        Assert.Equal(typeof(C1), map[new List<int>().GetType()]);
         Assert.Equal(typeof(S1), map[typeof(List<>)]);
-        Assert.Equal(typeof(C1), map[typeof(C1.I1)]);
-        Assert.Equal(typeof(S1), map[typeof(C1.I2<int>)]);
-        Assert.Equal(typeof(C1), map[typeof(C2<int>)]);
+        Assert.Equal(typeof(C1), map[new C1.I1().GetType()]);
+        Assert.Equal(typeof(S1), map[new C1.I2<int>().GetType()]);
+        Assert.Equal(typeof(C1), map[new C2<int>().GetType()]);
         Assert.Equal(typeof(S1), map[typeof(C2<>)]);
-        Assert.Equal(typeof(C1), map[typeof(int[])]);
+        Assert.Equal(typeof(C1), map[new int[1].GetType()]);
         Assert.Equal(typeof(S1), map[typeof(int*)]);
 
         Assert.True(map.TryGetValue(typeof(C1), out Type? _));
@@ -184,7 +183,7 @@ public class TypeMap
     {
         Console.WriteLine(nameof(Validate_ExternalTypeMapping_DuplicateTypeKey));
 
-        Assert.Throws<ArgumentException>(() => TypeMapping.GetOrCreateExternalTypeMapping<DuplicateTypeNameKey>());
+        AssertExtensions.ThrowsAny<ArgumentException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<DuplicateTypeNameKey>());
     }
 
     [Fact]
@@ -194,8 +193,8 @@ public class TypeMap
 
         IReadOnlyDictionary<Type, Type> map = TypeMapping.GetOrCreateProxyTypeMapping<DuplicateTypeNameKey>();
 
-        Assert.Equal(typeof(object), map[typeof(DupType_MapObject)]);
-        Assert.Equal(typeof(string), map[typeof(DupType_MapString)]);
+        Assert.Equal(typeof(object), map[new DupType_MapObject().GetType()]);
+        Assert.Equal(typeof(string), map[new DupType_MapString().GetType()]);
     }
 
     [Fact]
@@ -264,7 +263,7 @@ public class TypeMap
     {
         Console.WriteLine(nameof(Validate_EmptyOrInvalidMappings));
 
-        Assert.Throws<COMException>(() => TypeMapping.GetOrCreateExternalTypeMapping<InvalidTypeNameKey>());
-        Assert.Throws<COMException>(() => TypeMapping.GetOrCreateProxyTypeMapping<InvalidTypeNameKey>());
+        AssertExtensions.ThrowsAny<COMException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<InvalidTypeNameKey>());
+        AssertExtensions.ThrowsAny<COMException, BadImageFormatException>(() => TypeMapping.GetOrCreateProxyTypeMapping<InvalidTypeNameKey>());
     }
 }

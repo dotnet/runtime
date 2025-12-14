@@ -398,16 +398,11 @@ PALEXPORT intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t
 PALEXPORT int32_t SystemNative_ShmUnlink(const char* name);
 
 /**
- * Returns the size of the dirent struct on the current architecture
- */
-PALEXPORT int32_t SystemNative_GetReadDirRBufferSize(void);
-
-/**
- * Re-entrant readdir that will retrieve the next dirent from the directory stream pointed to by dir.
+ * Retrieves the next dirent from the directory stream pointed to by dir.
  *
  * Returns 0 when data is retrieved; returns -1 when end-of-stream is reached; returns an error code on failure
  */
-PALEXPORT int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, DirectoryEntry* outputEntry);
+PALEXPORT int32_t SystemNative_ReadDir(DIR* dir, DirectoryEntry* outputEntry);
 
 /**
  * Returns a DIR struct containing info about the current path or NULL on failure; sets errno on fail.

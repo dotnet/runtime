@@ -19,7 +19,7 @@ using OpenMethodInvoker = System.Reflection.Runtime.MethodInfos.OpenMethodInvoke
 namespace Internal.Reflection.Core.Execution
 {
     //
-    // This class abstracts the underlying Redhawk (or whatever execution engine) runtime and exposes the services
+    // This class abstracts the underlying NativeAOT runtime (or whatever execution engine) runtime and exposes the services
     // that I.R.Core.Execution needs.
     //
     [CLSCompliant(false)]

@@ -387,11 +387,11 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
     //-------------------------------------------------------------------------
     lvaInitUserArgs(&varNum, numUserArgsToSkip, numUserArgs);
 #if !USER_ARGS_COME_LAST
+    lvaInitAsyncContinuation(&varNum);
+
     //@GENERICS: final instantiation-info argument for shared generic methods
     // and shared generic struct instance methods
     lvaInitGenericsCtxt(&varNum);
-
-    lvaInitAsyncContinuation(&varNum);
 
     /* If the method is varargs, process the varargs cookie */
     lvaInitVarArgsHandle(&varNum);
@@ -541,7 +541,7 @@ void Compiler::lvaInitUserArgs(unsigned* curVarNum, unsigned skipArgs, unsigned 
                 continue;
             }
 
-            if (varDsc->TypeGet() == TYP_STRUCT)
+            if (varDsc->TypeIs(TYP_STRUCT))
             {
                 // Struct parameters are lowered to separate primitives in the
                 // Swift calling convention. We cannot handle these patterns
@@ -812,7 +812,6 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
     lvaParameterPassingInfo =
         info.compArgsCount == 0 ? nullptr : new (this, CMK_LvaTable) ABIPassingInformation[info.compArgsCount];
 
-    regMaskTP argRegs = RBM_NONE;
     for (unsigned i = 0; i < info.compArgsCount; i++)
     {
         LclVarDsc*   dsc          = lvaGetDesc(i);
@@ -853,7 +852,6 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         {
             if (segment.IsPassedInRegister())
             {
-                argRegs |= segment.GetRegisterMask();
                 numRegisters++;
             }
         }
@@ -863,11 +861,6 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
     }
 
     lvaParameterStackSize = classifier.StackSize();
-
-    // genFnPrologCalleeRegArgs expect these to be the counts of registers it knows how to handle.
-    // TODO-Cleanup: Recompute these values in the backend instead, where they are used.
-    codeGen->intRegState.rsCalleeRegArgCount   = genCountBits(argRegs & RBM_ARG_REGS);
-    codeGen->floatRegState.rsCalleeRegArgCount = genCountBits(argRegs & RBM_FLTARG_REGS);
 
 #ifdef TARGET_ARM
     // Prespill all argument regs on to stack in case of Arm when under profiler.
@@ -886,7 +879,7 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         const ABIPassingInformation& abiInfo  = lvaGetParameterABIInfo(i);
         LclVarDsc*                   varDsc   = lvaGetDesc(i);
         bool                         preSpill = opts.compUseSoftFP && varTypeIsFloating(varDsc);
-        preSpill |= varDsc->TypeGet() == TYP_STRUCT;
+        preSpill |= varDsc->TypeIs(TYP_STRUCT);
 
         if (!preSpill)
         {
@@ -903,7 +896,7 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         }
 
         codeGen->regSet.rsMaskPreSpillRegArg |= regs;
-        if (varDsc->lvStructDoubleAlign || (varDsc->TypeGet() == TYP_DOUBLE))
+        if (varDsc->lvStructDoubleAlign || varDsc->TypeIs(TYP_DOUBLE))
         {
             doubleAlignMask |= regs;
         }
@@ -1109,14 +1102,14 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
     }
 
     // Is this a varargs function?
-    if (info.compIsVarArgs && varNum == lvaVarargsHandleArg)
+    if (info.compIsVarArgs && (varNum == lvaVarargsHandleArg))
     {
         return (unsigned)ICorDebugInfo::VARARGS_HND_ILNUM;
     }
 
     // We create an extra argument for the type context parameter
     // needed for shared generic code.
-    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum == info.compTypeCtxtArg)
+    if (((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0) && (varNum == info.compTypeCtxtArg))
     {
         return (unsigned)ICorDebugInfo::TYPECTXT_ILNUM;
     }
@@ -1128,21 +1121,34 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 
+    if (varNum == lvaAsyncContinuationArg)
+    {
+        return (unsigned)ICorDebugInfo::UNKNOWN_ILNUM;
+    }
+
+    unsigned originalVarNum = varNum;
+
     // Now mutate varNum to remove extra parameters from the count.
-    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum > info.compTypeCtxtArg)
+    if (((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0) &&
+        (originalVarNum > info.compTypeCtxtArg))
     {
         varNum--;
     }
 
-    if (info.compIsVarArgs && varNum > lvaVarargsHandleArg)
+    if (info.compIsVarArgs && (originalVarNum > lvaVarargsHandleArg))
     {
         varNum--;
     }
 
-    /* Is there a hidden argument for the return buffer.
-       Note that this code works because if the RetBuffArg is not present,
-       compRetBuffArg will be BAD_VAR_NUM */
-    if (info.compRetBuffArg != BAD_VAR_NUM && varNum > info.compRetBuffArg)
+    if ((lvaAsyncContinuationArg != BAD_VAR_NUM) && (originalVarNum > lvaAsyncContinuationArg))
+    {
+        varNum--;
+    }
+
+    // Is there a hidden argument for the return buffer. Note that this code
+    // works because if the RetBuffArg is not present, compRetBuffArg will be
+    // BAD_VAR_NUM
+    if ((info.compRetBuffArg != BAD_VAR_NUM) && (originalVarNum > info.compRetBuffArg))
     {
         varNum--;
     }
@@ -1435,10 +1441,10 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
 #ifdef FEATURE_SIMD
         if (compiler->isRuntimeIntrinsicsNamespace(namespaceName) || compiler->isNumericsNamespace(namespaceName))
         {
-            unsigned    simdSize;
-            CorInfoType simdBaseJitType = compiler->getBaseJitTypeAndSizeOfSIMDType(node.simdTypeHnd, &simdSize);
+            unsigned  simdSize;
+            var_types simdBaseType = compiler->getBaseTypeAndSizeOfSIMDType(node.simdTypeHnd, &simdSize);
             // We will only promote fields of SIMD types that fit into a SIMD register.
-            if (simdBaseJitType != CORINFO_TYPE_UNDEF)
+            if (simdBaseType != TYP_UNDEF)
             {
                 if (compiler->structSizeMightRepresentSIMDType(simdSize))
                 {
@@ -2010,6 +2016,14 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         fieldVarDsc->lvKeepType = 1;
 #endif
     }
+
+#ifdef TARGET_ARM
+    if (varDsc->lvIsParam)
+    {
+        // TODO-Cleanup: Allow independent promotion for ARM struct parameters
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
+    }
+#endif
 }
 
 //--------------------------------------------------------------------------------------------
@@ -2089,7 +2103,7 @@ void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
     LclVarDsc* varDsc = lvaGetDesc(varNum);
 
 #ifdef DEBUG
-    varDsc->SetHiddenBufferStructArg(true);
+    varDsc->SetDefinedViaAddress(true);
 #endif
 
     if (varDsc->lvPromoted)
@@ -2100,7 +2114,7 @@ void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
         {
             noway_assert(lvaTable[i].lvIsStructField);
 #ifdef DEBUG
-            lvaTable[i].SetHiddenBufferStructArg(true);
+            lvaTable[i].SetDefinedViaAddress(true);
 #endif
 
             lvaSetVarDoNotEnregister(i DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
@@ -2336,7 +2350,7 @@ bool Compiler::lvaIsImplicitByRefLocal(unsigned lclNum) const
     {
         assert(varDsc->lvIsParam);
 
-        assert(varTypeIsStruct(varDsc) || (varDsc->TypeGet() == TYP_BYREF));
+        assert(varTypeIsStruct(varDsc) || varDsc->TypeIs(TYP_BYREF));
         return true;
     }
 #endif // FEATURE_IMPLICIT_BYREFS
@@ -2769,7 +2783,7 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
     // this for arguments, which must be passed according the defined ABI. We don't want to do this for
     // dependently promoted struct fields, but we don't know that here. See lvaMapSimd12ToSimd16().
     // (Note that for 64-bits, we are already rounding up to 16.)
-    if (varDsc->TypeGet() == TYP_SIMD12)
+    if (varDsc->TypeIs(TYP_SIMD12))
     {
         return 16;
     }
@@ -3249,7 +3263,7 @@ var_types LclVarDsc::GetRegisterType(const GenTreeLclVarCommon* tree) const
         }
         else
         {
-            assert((TypeGet() == TYP_STRUCT) && tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
+            assert(TypeIs(TYP_STRUCT) && tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
             layout = GetLayout();
         }
 
@@ -3276,10 +3290,10 @@ var_types LclVarDsc::GetRegisterType(const GenTreeLclVarCommon* tree) const
 //
 var_types LclVarDsc::GetRegisterType() const
 {
-    if (TypeGet() != TYP_STRUCT)
+    if (!TypeIs(TYP_STRUCT))
     {
 #if !defined(TARGET_64BIT)
-        if (TypeGet() == TYP_LONG)
+        if (TypeIs(TYP_LONG))
         {
             return TYP_UNDEF;
         }
@@ -3435,7 +3449,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     if (tree->OperIs(GT_LCL_ADDR))
     {
         LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
-        assert(varDsc->IsAddressExposed() || varDsc->IsHiddenBufferStructArg());
+        assert(varDsc->IsAddressExposed() || varDsc->IsDefinedViaAddress());
         varDsc->incRefCnts(weight, this);
         return;
     }
@@ -3551,8 +3565,8 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
         // Check that the LCL_VAR node has the same type as the underlying variable, save a few mismatches we allow.
         assert(tree->TypeIs(varDsc->TypeGet(), genActualType(varDsc)) ||
-               (tree->TypeIs(TYP_BYREF) && (varDsc->TypeGet() == TYP_I_IMPL)) || // Created by inliner substitution.
-               (tree->TypeIs(TYP_INT) && (varDsc->TypeGet() == TYP_LONG)));      // Created by "optNarrowTree".
+               (tree->TypeIs(TYP_BYREF) && varDsc->TypeIs(TYP_I_IMPL)) || // Created by inliner substitution.
+               (tree->TypeIs(TYP_INT) && varDsc->TypeIs(TYP_LONG)));      // Created by "optNarrowTree".
     }
 }
 
@@ -5023,7 +5037,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     assert(compCalleeRegsPushed >= 2); // always FP/RA.
     stkOffs -= (compCalleeRegsPushed << 3);
 
-#else // !TARGET_LOONGARCH64 && !TARGET_RISCV64
+#elif HAS_FIXED_REGISTER_SET
 #ifdef TARGET_ARM
     // On ARM32 LR is part of the pushed registers and is always stored at the
     // top.
@@ -5034,7 +5048,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #endif
 
     stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
-#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
+#endif // HAS_FIXED_REGISTER_SET
 
     // (2) Account for the remainder of the frame
     //
@@ -5104,20 +5118,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     stkOffs -= calleeFPRegsSavedSize;
     lvaIncrementFrameSize(calleeFPRegsSavedSize);
 
-    // Quirk for VS debug-launch scenario to work
-    if (compVSQuirkStackPaddingNeeded > 0)
-    {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nAdding VS quirk stack padding of %d bytes between save-reg area and locals\n",
-                   compVSQuirkStackPaddingNeeded);
-        }
-#endif // DEBUG
-
-        stkOffs -= compVSQuirkStackPaddingNeeded;
-        lvaIncrementFrameSize(compVSQuirkStackPaddingNeeded);
-    }
 #endif // TARGET_AMD64
 
     if (lvaMonAcquired != BAD_VAR_NUM)
@@ -5378,7 +5378,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             bool allocateOnFrame = varDsc->lvOnFrame;
 
             if (varDsc->lvRegister && (lvaDoneFrameLayout == REGALLOC_FRAME_LAYOUT) &&
-                ((varDsc->TypeGet() != TYP_LONG) || (varDsc->GetOtherReg() != REG_STK)))
+                (!varDsc->TypeIs(TYP_LONG) || (varDsc->GetOtherReg() != REG_STK)))
             {
                 allocateOnFrame = false;
             }
@@ -5703,9 +5703,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 
+#if HAS_FIXED_REGISTER_SET
     // compLclFrameSize equals our negated virtual stack offset minus the pushed registers and return address
     // and the pushed frame pointer register which for some strange reason isn't part of 'compCalleeRegsPushed'.
     int pushedCount = compCalleeRegsPushed;
+#else
+    int pushedCount = 0;
+#endif
 
 #ifdef TARGET_ARM64
     if (info.compIsVarArgs)
@@ -6064,10 +6068,12 @@ void Compiler::lvaAlignFrame()
             lvaIncrementFrameSize(STACK_ALIGN - (adjustFrameSize % STACK_ALIGN));
         }
     }
-
+#elif defined(TARGET_WASM)
+    // TODO-WASM: decide what the stack alignment strategy should be. In the native ABI, the alignment is 16, but that
+    // may be suboptimal for the managed ABI, since it may imply zeroing the padding slots.
 #else
     NYI("TARGET specific lvaAlignFrame");
-#endif // !TARGET_AMD64
+#endif
 }
 
 /*****************************************************************************
@@ -6225,7 +6231,7 @@ void Compiler::lvaDumpRegLocation(unsigned lclNum)
     const LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
 #ifdef TARGET_ARM
-    if (varDsc->TypeGet() == TYP_DOUBLE)
+    if (varDsc->TypeIs(TYP_DOUBLE))
     {
         // The assigned registers are `lvRegNum:RegNext(lvRegNum)`
         printf("%3s:%-3s    ", getRegName(varDsc->GetRegNum()), getRegName(REG_NEXT(varDsc->GetRegNum())));
@@ -6365,9 +6371,9 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         {
             printf("X");
         }
-        if (varDsc->IsHiddenBufferStructArg())
+        if (varDsc->IsDefinedViaAddress())
         {
-            printf("H");
+            printf("DA");
         }
         if (varTypeIsStruct(varDsc))
         {
@@ -6428,9 +6434,9 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     {
         printf(" addr-exposed");
     }
-    if (varDsc->IsHiddenBufferStructArg())
+    if (varDsc->IsDefinedViaAddress())
     {
-        printf(" hidden-struct-arg");
+        printf(" defined-via-address");
     }
     if (varDsc->lvHasLdAddrOp)
     {
@@ -6647,6 +6653,7 @@ unsigned Compiler::lvaFrameSize(FrameLayoutState curState)
 
     unsigned result;
 
+#if HAS_FIXED_REGISTER_SET
     /* Layout the stack frame conservatively.
        Assume all callee-saved registers are spilled to stack */
 
@@ -6684,6 +6691,7 @@ unsigned Compiler::lvaFrameSize(FrameLayoutState curState)
         compCalleeRegsPushed--;
     }
 #endif
+#endif // HAS_FIXED_REGISTER_SET
 
     lvaAssignFrameOffsets(curState);
 

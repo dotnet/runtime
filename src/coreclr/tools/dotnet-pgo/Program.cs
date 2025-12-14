@@ -161,13 +161,17 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         private bool IsSet<T>(Option<T> option) => _command.Result.GetResult(option) != null;
 
         private static int Main(string[] args) =>
-            new CommandLineConfiguration(new PgoRootCommand(args)
+            new PgoRootCommand(args)
                 .UseVersion()
-                .UseExtendedHelp(PgoRootCommand.PrintExtendedHelp))
-            {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
-                EnableDefaultExceptionHandler = false,
-            }.Invoke(args);
+                .UseExtendedHelp(PgoRootCommand.PrintExtendedHelp)
+                .Parse(args, new()
+                {
+                    ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                })
+                .Invoke(new()
+                {
+                    EnableDefaultExceptionHandler = false
+                });
 
         public static void PrintWarning(string warning)
         {
@@ -1945,7 +1949,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                     methodPrepareInstruction.Append(CsvEscape(instantiationBuilder.ToString(), outerCsvEscapeChar));
                     methodPrepareInstruction.Append(outerCsvEscapeChar);
-                    methodPrepareInstruction.Append(CsvEscape(method.Name, outerCsvEscapeChar));
+                    methodPrepareInstruction.Append(CsvEscape(method.GetName(), outerCsvEscapeChar));
                 }
                 catch (Exception ex)
                 {

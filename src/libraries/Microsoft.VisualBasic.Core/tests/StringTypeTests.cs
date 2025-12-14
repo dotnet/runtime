@@ -339,7 +339,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         [InlineData("abc", 2, 1, "def", "adc")]
         [InlineData("abc", 2, 2, "def", "ade")]
         [InlineData("abc", 2, 3, "def", "ade")]
-        public void MidStmtStr(string str, int start, int length, string insert, string expected)
+        public void MidStmtStr(string str, int start, int length, string? insert, string expected)
         {
             StringType.MidStmtStr(ref str, start, length, insert);
             Assert.Equal(expected, str);
@@ -358,7 +358,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         [InlineData("abc", 0, 0, "")]
         [InlineData("abc", 4, 0, "")]
         [InlineData("abc", 1, -3, "")]
-        public void MidStmtStr_ArgumentException(string str, int start, int length, string insert)
+        public void MidStmtStr_ArgumentException(string? str, int start, int length, string? insert)
         {
             Assert.Throws<ArgumentException>(() => StringType.MidStmtStr(ref str, start, length, insert));
         }
@@ -396,7 +396,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         [InlineData("a", "?", true, true)]
         [InlineData("a3", "[A-Z]#", false, true)]
         [InlineData("A3", "[a-z]#", false, true)]
-        public void StrLike(string source, string pattern, bool expectedBinaryCompare, bool expectedTextCompare)
+        public void StrLike(string? source, string? pattern, bool expectedBinaryCompare, bool expectedTextCompare)
         {
             Assert.Equal(expectedBinaryCompare, StringType.StrLike(source, pattern, CompareMethod.Binary));
             Assert.Equal(expectedTextCompare, StringType.StrLike(source, pattern, CompareMethod.Text));
@@ -406,7 +406,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
 
         [Theory]
         [InlineData(null, "*")]
-        public void StrLike_NullReferenceException(string source, string pattern)
+        public void StrLike_NullReferenceException(string? source, string pattern)
         {
             Assert.Throws<NullReferenceException>(() => StringType.StrLike(source, pattern, CompareMethod.Binary));
             Assert.Throws<NullReferenceException>(() => StringType.StrLike(source, pattern, CompareMethod.Text));

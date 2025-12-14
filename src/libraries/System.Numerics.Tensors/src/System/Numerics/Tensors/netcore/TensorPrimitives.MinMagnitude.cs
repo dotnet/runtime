@@ -24,8 +24,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static T MinMagnitude<T>(ReadOnlySpan<T> x)
-            where T : INumberBase<T> =>
-            MinMaxCore<T, MinMagnitudeOperator<T>>(x);
+            where T : INumberBase<T>
+        {
+            if (typeof(T) == typeof(Half) && TryMinMaxHalfAsInt16<T, MinMagnitudeOperator<float>>(x, out T result))
+            {
+                return result;
+            }
+
+            return MinMaxCore<T, MinMagnitudeOperator<T>>(x);
+        }
 
         /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -48,8 +55,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MinMagnitude<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : INumberBase<T> =>
+            where T : INumberBase<T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MinMagnitudeOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, MinMagnitudeOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -70,8 +84,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MinMagnitude<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
-            where T : INumberBase<T> =>
+            where T : INumberBase<T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MinMagnitudeOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarIntoSpan<T, MinMagnitudeOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Operator to get x or y based on which has the smaller MathF.Abs</summary>
         internal readonly struct MinMagnitudeOperator<T> : IAggregationOperator<T>

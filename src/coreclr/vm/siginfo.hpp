@@ -253,7 +253,7 @@ public:
                                          BOOL dropGenericArgumentLevel = FALSE,
                                          const Substitution *pSubst = NULL,
                                          const ZapSig::Context *pZapSigContext = NULL,
-                                         MethodTable *pMTInterfaceMapOwner = NULL,
+                                         MethodTable* pMTInterfaceMapOwner = NULL,
                                          HandleRecursiveGenericsForFieldLayoutLoad *pRecursiveFieldGenericHandling = NULL
                                          ) const;
 
@@ -613,7 +613,7 @@ class MetaSig
         // Does not count the "this" argument (which is not reflected on the
         // sig.) 64-bit arguments are counted as one argument.
         //------------------------------------------------------------------------
-        UINT NumFixedArgs()
+        UINT NumFixedArgs() const
         {
             LIMITED_METHOD_DAC_CONTRACT;
             return m_nArgs;
@@ -698,7 +698,7 @@ class MetaSig
         //----------------------------------------------------------
         // Has a 'this' pointer?
         //----------------------------------------------------------
-        BOOL HasThis()
+        BOOL HasThis() const
         {
             LIMITED_METHOD_CONTRACT;
 
@@ -746,7 +746,7 @@ class MetaSig
         //----------------------------------------------------------
         // Is it an async call?
         //----------------------------------------------------------
-        BOOL IsAsyncCall()
+        bool IsAsyncCall()
         {
             LIMITED_METHOD_CONTRACT;
             return m_CallConv & CORINFO_CALLCONV_ASYNCCALL;

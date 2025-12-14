@@ -20,20 +20,14 @@ FOR /F "tokens=*" %%i IN (
 
 IF "%vsBase%"=="" GOTO :ERROR
 
-SET procArch=%PROCESSOR_ARCHITEW6432%
-IF "%procArch%"=="" SET procArch=%PROCESSOR_ARCHITECTURE%
-
-SET vcEnvironment=%~1
-IF /I "%~1"=="x64" (
-    SET vcEnvironment=x86_amd64
-    IF /I "%procArch%"=="AMD64" SET vcEnvironment=amd64
-)
-IF /I "%~1"=="arm64" (
-    SET vcEnvironment=x86_arm64
-    IF /I "%procArch%"=="AMD64" SET vcEnvironment=amd64_arm64
-)
-IF /I "%~1"=="x86" (
-    IF /I "%procArch%"=="AMD64" SET vcEnvironment=amd64_x86
+IF /I "%PROCESSOR_ARCHITECTURE%" == "ARM64" (
+    IF /I "%~1" == "x64"   ( set vcEnvironment=arm64_amd64 )
+    IF /I "%~1" == "x86"   ( set vcEnvironment=arm64_x86 )
+    IF /I "%~1" == "arm64" ( set vcEnvironment=arm64 )
+) ELSE (
+    IF /I "%~1" == "x64"   ( set vcEnvironment=amd64 )
+    IF /I "%~1" == "x86"   ( set vcEnvironment=amd64_x86 )
+    IF /I "%~1" == "arm64" ( set vcEnvironment=amd64_arm64 )
 )
 
 CALL "%vsBase%\vc\Auxiliary\Build\vcvarsall.bat" %vcEnvironment% > NUL

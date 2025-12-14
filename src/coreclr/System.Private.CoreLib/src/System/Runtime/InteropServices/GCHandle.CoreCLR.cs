@@ -41,6 +41,26 @@ namespace System.Runtime.InteropServices
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalFreeWithGCTransition")]
         private static partial void _InternalFreeWithGCTransition(IntPtr dependentHandle);
 
+#if FEATURE_JAVAMARSHAL
+        internal static object? InternalGetBridgeWait(IntPtr handle)
+        {
+            object? target = null;
+
+            if (GCHandle.InternalTryGetBridgeWait(handle, ref target))
+                return target;
+
+            InternalGetBridgeWait(handle, ObjectHandleOnStack.Create(ref target));
+
+            return target;
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool InternalTryGetBridgeWait(IntPtr handle, ref object? result);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalGetBridgeWait")]
+        private static partial void InternalGetBridgeWait(IntPtr handle, ObjectHandleOnStack result);
+
+#endif
 #if DEBUG
         // The runtime performs additional checks in debug builds
         [MethodImpl(MethodImplOptions.InternalCall)]

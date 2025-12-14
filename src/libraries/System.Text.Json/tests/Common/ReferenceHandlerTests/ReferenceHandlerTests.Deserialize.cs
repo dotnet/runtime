@@ -1666,5 +1666,32 @@ namespace System.Text.Json.Serialization.Tests
 
             public T? PropertyWithSetter { get; set; }
         }
+
+        [Fact]
+        public async Task DuplicateNonReferenceProperties_Preserve()
+        {
+            string json = @"{
+                ""$id"": ""1"",
+                ""Name"": ""Angela"",
+                ""Manager"": {
+                    ""$ref"": ""1""
+                },
+                ""Name"": ""Angela""
+            }";
+
+            // Baseline
+            JsonSerializerOptions options = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
+            Employee angela = await Serializer.DeserializeWrapper<Employee>(json, options);
+            Assert.Same(angela, angela.Manager);
+
+            options = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.Preserve,
+                AllowDuplicateProperties = false
+            };
+
+            JsonException ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Employee>(json, options));
+            Assert.Contains("Duplicate", ex.Message);
+        }
     }
 }

@@ -3,8 +3,8 @@
 
 namespace Mono.Linker.Tests.Cases.LinkAttributes.Dependencies
 {
-	public static class Used
-	{
-		public static void Use () { }
-	}
+    public static class Used
+    {
+        public static void Use() { }
+    }
 }

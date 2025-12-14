@@ -43,26 +43,6 @@ CreateDirectoryW(
 PALIMPORT
 DWORD
 PALAPI
-GetFileAttributesA(
-           IN LPCSTR lpFileName);
-
-PALIMPORT
-BOOL
-PALAPI
-SetFileAttributesA(
-           IN LPCSTR lpFileName,
-           IN DWORD dwFileAttributes);
-
-PALIMPORT
-BOOL
-PALAPI
-SetFileAttributesW(
-           IN LPCWSTR lpFileName,
-           IN DWORD dwFileAttributes);
-
-PALIMPORT
-DWORD
-PALAPI
 GetFullPathNameA(
          IN LPCSTR lpFileName,
          IN DWORD nBufferLength,
@@ -132,13 +112,6 @@ BOOL
 PALAPI
 RemoveDirectoryW(
                  IN LPCWSTR lpPathName);
-
-PALIMPORT
-LONG
-PALAPI
-CompareFileTime(
-        IN CONST FILETIME *lpFileTime1,
-        IN CONST FILETIME *lpFileTime2);
 
 #ifdef  __cplusplus
 }

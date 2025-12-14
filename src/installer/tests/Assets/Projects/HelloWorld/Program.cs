@@ -50,6 +50,8 @@ namespace HelloWorld
                     }
                     break;
                 case "throw_exception":
+                    // Disable core dumps - test is intentionally crashing
+                    Utilities.CoreDump.Disable();
                     throw new Exception("Goodbye World!");
                 default:
                     break;

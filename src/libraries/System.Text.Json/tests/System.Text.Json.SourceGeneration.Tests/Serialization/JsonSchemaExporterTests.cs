@@ -41,6 +41,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ReadOnlyMemory<byte>))]
         [JsonSerializable(typeof(DateTime))]
         [JsonSerializable(typeof(DateTimeOffset))]
+        [JsonSerializable(typeof(DateTimeOffset?))]
         [JsonSerializable(typeof(TimeSpan))]
 #if NET
         [JsonSerializable(typeof(DateOnly))]

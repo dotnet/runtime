@@ -589,7 +589,7 @@ inline bool leafInRange(GenTree* leaf, int lower, int upper, int multiple)
 
 inline bool leafAddInRange(GenTree* leaf, int lower, int upper, int multiple = 1)
 {
-    if (leaf->OperGet() != GT_ADD)
+    if (!leaf->OperIs(GT_ADD))
     {
         return false;
     }
@@ -622,7 +622,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // to the next RefPosition in code order
 // THIS IS THE OPTION CURRENTLY BEING PURSUED
 
-class LinearScan : public LinearScanInterface
+class LinearScan : public RegAllocInterface
 {
     friend class RefPosition;
     friend class Interval;
@@ -634,7 +634,7 @@ public:
     LinearScan(Compiler* theCompiler);
 
     // This is the main driver
-    virtual PhaseStatus doLinearScan();
+    virtual PhaseStatus doRegisterAllocation();
 
     static bool isSingleRegister(SingleTypeRegSet regMask)
     {
@@ -1066,7 +1066,7 @@ private:
     regMaskTP getKillSetForCall(GenTreeCall* call);
     regMaskTP getKillSetForModDiv(GenTreeOp* tree);
     regMaskTP getKillSetForBlockStore(GenTreeBlk* blkNode);
-    regMaskTP getKillSetForReturn();
+    regMaskTP getKillSetForReturn(GenTree* returnNode);
     regMaskTP getKillSetForProfilerHook();
 #ifdef FEATURE_HW_INTRINSICS
     regMaskTP getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node);
@@ -1142,7 +1142,8 @@ private:
         return getIntervalForLocalVar(varDsc->lvVarIndex);
     }
 
-    RegRecord* getRegisterRecord(regNumber regNum);
+    RegRecord*       getRegisterRecord(regNumber regNum);
+    SingleTypeRegSet getAvailableGPRsForType(SingleTypeRegSet candidates, var_types regType);
 
     RefPosition* newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType);
 
@@ -1935,6 +1936,7 @@ private:
     // 'tgtPrefUse' to that RefPosition.
     RefPosition* tgtPrefUse  = nullptr;
     RefPosition* tgtPrefUse2 = nullptr;
+    RefPosition* tgtPrefUse3 = nullptr;
 
 public:
     // The following keep track of information about internal (temporary register) intervals
@@ -1957,6 +1959,7 @@ private:
     {
         tgtPrefUse               = nullptr;
         tgtPrefUse2              = nullptr;
+        tgtPrefUse3              = nullptr;
         internalCount            = 0;
         setInternalRegsDelayFree = false;
         pendingDelayFree         = false;
@@ -2084,9 +2087,6 @@ private:
 #endif // DEBUG
 
     int BuildPutArgStk(GenTreePutArgStk* argNode);
-#if FEATURE_ARG_SPLIT
-    int BuildPutArgSplit(GenTreePutArgSplit* tree);
-#endif // FEATURE_ARG_SPLIT
     int BuildLclHeap(GenTree* tree);
 
 #if defined(TARGET_AMD64)
@@ -2198,6 +2198,8 @@ private:
         return varTypeCalleeTrashRegs[rt].GetRegSetForType(rt);
     }
 };
+
+using RegAllocImpl = LinearScan;
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

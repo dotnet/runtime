@@ -58,44 +58,6 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 privateKey: null,
                 signaturePadding: null); // Assert.NoThrow
         }
-
-        [Fact]
-        public static void HasPrivateKey_IsCorrect()
-        {
-            CmsSigner signer = new CmsSigner();
-            AssertExtensions.FalseExpression(signer.HasPrivateKey);
-
-            using (RSA rsa = RSA.Create())
-            {
-                // Create signer with RSA key
-                signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, null, rsa);
-                AssertExtensions.TrueExpression(signer.HasPrivateKey);
-                Assert.NotNull(signer.PrivateKey);
-                Assert.Equal(rsa.SignatureAlgorithm, signer.PrivateKey.SignatureAlgorithm);
-
-                signer.PrivateKey = null;
-                AssertExtensions.FalseExpression(signer.HasPrivateKey);
-
-                if (SlhDsa.IsSupported)
-                {
-                    using SlhDsa slhDsa =
-                        SlhDsa.ImportSlhDsaSecretKey(
-                            SlhDsaAlgorithm.SlhDsaSha2_128s,
-                            SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue);
-
-                    // Create signer with SlhDsa key
-                    signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, null, slhDsa);
-                    AssertExtensions.TrueExpression(signer.HasPrivateKey);
-                    Assert.Null(signer.PrivateKey); // SlhDsa does not expose the private key
-
-                    // Change private key to RSA key
-                    signer.PrivateKey = rsa;
-                    AssertExtensions.TrueExpression(signer.HasPrivateKey);
-                    Assert.NotNull(signer.PrivateKey);
-                    Assert.Equal(rsa.SignatureAlgorithm, signer.PrivateKey.SignatureAlgorithm);
-                }
-            }
-        }
 #endif
     }
 }

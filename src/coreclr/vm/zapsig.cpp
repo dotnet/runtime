@@ -419,7 +419,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
                 EX_CATCH
                 {
                 }
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
                 if (!resolved)
                     RETURN(FALSE);
             }
@@ -482,7 +482,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
                 EX_CATCH
                 {
                 }
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
                 if (!resolved)
                     RETURN(FALSE);
             }
@@ -951,6 +951,11 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
             _ASSERTE(!"Constrained method resolution failed");
 
             MemberLoader::ThrowMissingMethodException(constrainedType.GetMethodTable(), NULL, NULL, NULL, 0, NULL);
+        }
+
+        if (directMethod->IsStatic() && (ppTH != NULL))
+        {
+            *ppTH = directMethod->GetMethodTable();
         }
 
         // Strip the instantiating stub if the signature did not ask for one

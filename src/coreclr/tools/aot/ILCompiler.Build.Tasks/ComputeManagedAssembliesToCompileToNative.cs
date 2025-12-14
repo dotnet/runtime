@@ -130,7 +130,9 @@ namespace Build.Tasks
                     continue;
                 }
 
-                if (isFromRuntimePack && taskItem.GetMetadata("AssetType")?.Equals("native", StringComparison.OrdinalIgnoreCase) == true)
+                if (isFromRuntimePack && taskItem.GetMetadata("AssetType")?.Equals("native", StringComparison.OrdinalIgnoreCase) == true
+                    && !assemblyFileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase)
+                    && !assemblyFileName.EndsWith(".dex", StringComparison.OrdinalIgnoreCase))
                 {
                     // Skip the native components of the runtime pack, we don't need them for NativeAOT.
                     assembliesToSkipPublish.Add(taskItem);

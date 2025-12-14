@@ -85,7 +85,7 @@ namespace System.Runtime.InteropServices
             return Marshal.QueryInterface(wrapper.ExternalComObject, iid, out unknown) == HResults.S_OK;
         }
 
-        public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
+        public static bool TryGetComInstance(object obj, out IntPtr unknown)
         {
             unknown = IntPtr.Zero;
             if (obj == null
@@ -119,7 +119,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// ABI for function dispatch of a COM interface.
         /// </summary>
-        public unsafe partial struct ComInterfaceDispatch
+        public partial struct ComInterfaceDispatch
         {
             public IntPtr Vtable;
 
@@ -158,7 +158,7 @@ namespace System.Runtime.InteropServices
             public DispatchTable Vtables;
 
             [InlineArray(NumEntriesInDispatchTable)]
-            internal unsafe struct DispatchTable
+            internal struct DispatchTable
             {
                 private IntPtr _element;
             }
@@ -289,7 +289,7 @@ namespace System.Runtime.InteropServices
             }
 
 
-            public unsafe int QueryInterfaceForTracker(in Guid riid, out IntPtr ppvObject)
+            public int QueryInterfaceForTracker(in Guid riid, out IntPtr ppvObject)
             {
                 if (IsMarkedToDestroy(RefCount) || Holder is null)
                 {
@@ -300,7 +300,7 @@ namespace System.Runtime.InteropServices
                 return QueryInterface(in riid, out ppvObject);
             }
 
-            public unsafe int QueryInterface(in Guid riid, out IntPtr ppvObject)
+            public int QueryInterface(in Guid riid, out IntPtr ppvObject)
             {
                 ppvObject = AsRuntimeDefined(in riid);
                 if (ppvObject == IntPtr.Zero)
@@ -314,15 +314,22 @@ namespace System.Runtime.InteropServices
                         }
                         else
                         {
-                            Guid riidLocal = riid;
-                            switch (customQueryInterface.GetInterface(ref riidLocal, out ppvObject))
+                            try
                             {
-                                case CustomQueryInterfaceResult.Handled:
-                                    return HResults.S_OK;
-                                case CustomQueryInterfaceResult.NotHandled:
-                                    break;
-                                case CustomQueryInterfaceResult.Failed:
-                                    return HResults.COR_E_INVALIDCAST;
+                                Guid riidLocal = riid;
+                                switch (customQueryInterface.GetInterface(ref riidLocal, out ppvObject))
+                                {
+                                    case CustomQueryInterfaceResult.Handled:
+                                        return HResults.S_OK;
+                                    case CustomQueryInterfaceResult.NotHandled:
+                                        break;
+                                    case CustomQueryInterfaceResult.Failed:
+                                        return HResults.COR_E_INVALIDCAST;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                return Marshal.GetHRForException(ex);
                             }
                         }
                     }
@@ -347,7 +354,7 @@ namespace System.Runtime.InteropServices
             }
 
             /// <returns>true if actually destroyed</returns>
-            public unsafe bool Destroy()
+            public bool Destroy()
             {
                 Debug.Assert(GetComCount(RefCount) == 0 || HolderHandle == IntPtr.Zero);
 
@@ -380,14 +387,14 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            private unsafe IntPtr GetDispatchPointerAtIndex(int index)
+            private IntPtr GetDispatchPointerAtIndex(int index)
             {
                 InternalComInterfaceDispatch* dispatch = &Dispatches[index / InternalComInterfaceDispatch.NumEntriesInDispatchTable];
                 IntPtr* vtables = (IntPtr*)(void*)&dispatch->Vtables;
                 return (IntPtr)(&vtables[index % InternalComInterfaceDispatch.NumEntriesInDispatchTable]);
             }
 
-            private unsafe IntPtr AsRuntimeDefined(in Guid riid)
+            private IntPtr AsRuntimeDefined(in Guid riid)
             {
                 // The order of interface lookup here is important.
                 // See CreateManagedObjectWrapper() for the expected order.
@@ -422,7 +429,7 @@ namespace System.Runtime.InteropServices
                 return IntPtr.Zero;
             }
 
-            private unsafe IntPtr AsUserDefined(in Guid riid)
+            private IntPtr AsUserDefined(in Guid riid)
             {
                 for (int i = 0; i < UserDefinedCount; ++i)
                 {
@@ -437,12 +444,16 @@ namespace System.Runtime.InteropServices
 
             private void SetFlag(CreateComInterfaceFlagsEx flag)
             {
+                // Interlocked.Or<T>cannot be used here. It would trigger type checks that can cause
+                // deadlocks when called during a GC by NativeAOT TrackerObjectManager.
                 int setMask = (int)flag;
                 Interlocked.Or(ref Unsafe.As<CreateComInterfaceFlagsEx, int>(ref Flags), setMask);
             }
 
             private void ResetFlag(CreateComInterfaceFlagsEx flag)
             {
+                // Interlocked.And<T>cannot be used here. It would trigger type checks that can cause
+                // deadlocks when called during a GC by NativeAOT TrackerObjectManager.
                 int resetMask = ~(int)flag;
                 Interlocked.And(ref Unsafe.As<CreateComInterfaceFlagsEx, int>(ref Flags), resetMask);
             }
@@ -483,7 +494,7 @@ namespace System.Runtime.InteropServices
                 _wrapper->HolderHandle = AllocateRefCountedHandle(this);
             }
 
-            public unsafe IntPtr ComIp => _wrapper->As(in ComWrappers.IID_IUnknown);
+            public IntPtr ComIp => _wrapper->As(in ComWrappers.IID_IUnknown);
 
             public object WrappedObject => _wrappedObject;
 
@@ -743,13 +754,17 @@ namespace System.Runtime.InteropServices
 
         internal static object? GetOrCreateObjectFromWrapper(ComWrappers wrapper, IntPtr externalComObject)
         {
-            if (s_globalInstanceForTrackerSupport != null && s_globalInstanceForTrackerSupport == wrapper)
+            if (wrapper is null)
+            {
+                return null;
+            }
+            if (s_globalInstanceForTrackerSupport == wrapper)
             {
                 return s_globalInstanceForTrackerSupport.GetOrCreateObjectForComInstance(externalComObject, CreateObjectFlags.TrackerObject);
             }
-            else if (s_globalInstanceForMarshalling != null && s_globalInstanceForMarshalling == wrapper)
+            else if (s_globalInstanceForMarshalling == wrapper)
             {
-                return ComObjectForInterface(externalComObject);
+                return ComObjectForInterface(externalComObject, CreateObjectFlags.TrackerObject | CreateObjectFlags.Unwrap);
             }
             else
             {
@@ -774,7 +789,7 @@ namespace System.Runtime.InteropServices
 
             ManagedObjectWrapperHolder managedObjectWrapper = _managedObjectWrapperTable.GetOrAdd(instance, static (c, state) =>
             {
-                ManagedObjectWrapper* value = state.This!.CreateManagedObjectWrapper(c, state.flags);
+                ManagedObjectWrapper* value = state.This.CreateManagedObjectWrapper(c, state.flags);
                 return new ManagedObjectWrapperHolder(value, c);
             }, new { This = this, flags });
 
@@ -1278,7 +1293,7 @@ namespace System.Runtime.InteropServices
 
         private sealed class RcwCache
         {
-            private readonly Lock _lock = new Lock(useTrivialWaits: true);
+            private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
             private readonly Dictionary<IntPtr, GCHandle> _cache = [];
 
             /// <summary>
@@ -1290,7 +1305,8 @@ namespace System.Runtime.InteropServices
             /// <returns>The proxy object currently in the cache for <paramref name="comPointer"/> or the proxy object owned by <paramref name="wrapper"/> if no entry exists and the corresponding native wrapper.</returns>
             public (NativeObjectWrapper actualWrapper, object actualProxy) GetOrAddProxyForComInstance(IntPtr comPointer, NativeObjectWrapper wrapper, object comProxy)
             {
-                lock (_lock)
+                _lock.EnterWriteLock();
+                try
                 {
                     Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
                     ref GCHandle rcwEntry = ref CollectionsMarshal.GetValueRefOrAddDefault(_cache, comPointer, out bool exists);
@@ -1325,32 +1341,63 @@ namespace System.Runtime.InteropServices
                     // Return our target object.
                     return (wrapper, comProxy);
                 }
+                finally
+                {
+                    _lock.ExitWriteLock();
+                }
             }
 
             public object? FindProxyForComInstance(IntPtr comPointer)
             {
-                lock (_lock)
+                _lock.EnterReadLock();
+                try
                 {
-                    if (_cache.TryGetValue(comPointer, out GCHandle existingHandle))
+                    if (!_cache.TryGetValue(comPointer, out GCHandle existingHandle))
                     {
-                        if (existingHandle.Target is NativeObjectWrapper { ProxyHandle.Target: object cachedProxy })
-                        {
-                            // The target exists and is still alive. Return it.
-                            return cachedProxy;
-                        }
+                        // No entry in the cache.
+                        return null;
+                    }
+                    if (existingHandle.Target is NativeObjectWrapper { ProxyHandle.Target: object cachedProxy })
+                    {
+                        // The target exists and is still alive. Return it.
+                        return cachedProxy;
+                    }
+                    // The target was collected, so we need to remove the entry from the cache.
+                    // We'll do this in a write lock after we exit the read lock.
+                    // We don't use an upgradeable lock here as only one thread can hold an upgradeable lock at a time,
+                    // effectively eliminating the benefit of using a reader-writer lock.
+                }
+                finally
+                {
+                    _lock.ExitReadLock();
+                }
 
-                        // The target was collected, so we need to remove the entry from the cache.
+                _lock.EnterWriteLock();
+                try
+                {
+                    // Someone else could have removed the entry or added a new one in the time
+                    // between us releasing the read lock and acquiring the write lock.
+                    if (_cache.TryGetValue(comPointer, out GCHandle existingHandle)
+                        && existingHandle.Target is null)
+                    {
+                        // There's still a dead entry in the cache,
+                        // remove it.
                         _cache.Remove(comPointer);
                         existingHandle.Free();
                     }
-
-                    return null;
                 }
+                finally
+                {
+                    _lock.ExitWriteLock();
+                }
+
+                return null;
             }
 
             public void Remove(IntPtr comPointer, NativeObjectWrapper wrapper)
             {
-                lock (_lock)
+                _lock.EnterWriteLock();
+                try
                 {
                     // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
                     // in the time between the GC cleared the contents of the GC handle but before the
@@ -1364,6 +1411,10 @@ namespace System.Runtime.InteropServices
                         _cache.Remove(comPointer);
                         cachedRef.Free();
                     }
+                }
+                finally
+                {
+                    _lock.ExitWriteLock();
                 }
             }
         }
@@ -1470,7 +1521,12 @@ namespace System.Runtime.InteropServices
                 throw new NotSupportedException(SR.InvalidOperation_ComInteropRequireComWrapperInstance);
             }
 
-            return s_globalInstanceForMarshalling.GetOrCreateComInterfaceForObject(instance, CreateComInterfaceFlags.None);
+            if (TryGetComInstance(instance, out IntPtr comObject))
+            {
+                return comObject;
+            }
+
+            return s_globalInstanceForMarshalling.GetOrCreateComInterfaceForObject(instance, CreateComInterfaceFlags.TrackerSupport);
         }
 
         internal static unsafe IntPtr ComInterfaceForObject(object instance, Guid targetIID)
@@ -1489,15 +1545,14 @@ namespace System.Runtime.InteropServices
             return comObjectInterface;
         }
 
-        internal static object ComObjectForInterface(IntPtr externalComObject)
+        internal static object ComObjectForInterface(IntPtr externalComObject, CreateObjectFlags flags)
         {
             if (s_globalInstanceForMarshalling == null)
             {
                 throw new NotSupportedException(SR.InvalidOperation_ComInteropRequireComWrapperInstance);
             }
 
-            // TrackerObject support and unwrapping matches the built-in semantics that the global marshalling scenario mimics.
-            return s_globalInstanceForMarshalling.GetOrCreateObjectForComInstance(externalComObject, CreateObjectFlags.TrackerObject | CreateObjectFlags.Unwrap);
+            return s_globalInstanceForMarshalling.GetOrCreateObjectForComInstance(externalComObject, flags);
         }
 
         internal static IntPtr GetOrCreateTrackerTarget(IntPtr externalComObject)
@@ -1555,7 +1610,7 @@ namespace System.Runtime.InteropServices
             return null;
         }
 
-        private static unsafe bool PossiblyComObject(object target)
+        private static bool PossiblyComObject(object target)
         {
             // If the RCW is an aggregated RCW, then the managed object cannot be recreated from the IUnknown
             // as the outer IUnknown wraps the managed object. In this case, don't create a weak reference backed
@@ -1563,7 +1618,7 @@ namespace System.Runtime.InteropServices
             return s_nativeObjectWrapperTable.TryGetValue(target, out NativeObjectWrapper? wrapper) && !wrapper.IsAggregatedWithManagedObjectWrapper;
         }
 
-        private static unsafe IntPtr ObjectToComWeakRef(object target, out object? context)
+        private static IntPtr ObjectToComWeakRef(object target, out object? context)
         {
             context = null;
             if (TryGetComInstanceForIID(

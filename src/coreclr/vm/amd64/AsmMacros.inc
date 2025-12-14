@@ -422,6 +422,13 @@ PROLOG_WITH_TRANSITION_BLOCK macro extraLocals := <0>, stackAllocOnEntry := <0>,
 
         endm
 
+EPILOG_WITH_TRANSITION_BLOCK macro
+
+        add rsp, __PWTB_StackAlloc
+        POP_CALLEE_SAVED_REGISTERS
+
+        endm
+
 EPILOG_WITH_TRANSITION_BLOCK_RETURN macro
 
         add rsp, __PWTB_StackAlloc
@@ -438,3 +445,45 @@ EPILOG_WITH_TRANSITION_BLOCK_TAILCALL macro
         POP_CALLEE_SAVED_REGISTERS
 
         endm
+
+t_runtime_thread_locals  TEXTEQU <?t_runtime_thread_locals@@3URuntimeThreadLocals@@A>
+
+; Inlined version of GetThreadEEAllocContext. Trashes RegTrash, r11
+INLINE_GET_ALLOC_CONTEXT_BASE macro Reg, RegTrash
+
+        EXTERN _tls_index : DWORD
+        EXTERN t_runtime_thread_locals : DWORD
+
+        mov     r11d, [_tls_index]
+        mov     RegTrash, gs:[OFFSET__TEB__ThreadLocalStoragePointer]
+        mov     RegTrash, [RegTrash + r11 * 8]
+        mov     r11d, SECTIONREL t_runtime_thread_locals
+        lea     Reg, [RegTrash + r11]
+
+        endm
+
+OFFSETOF__ee_alloc_context  EQU OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+
+; Pushes a TransitionBlock on the stack without saving the argument registers. See
+; the PROLOG_WITH_TRANSITION_BLOCK macro for the stack layout.
+PUSH_COOP_PINVOKE_FRAME macro target
+
+        __PWTB_StackAlloc = SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES + 8 ; alignment to make the stack 16b aligned
+        __PWTB_TransitionBlock = __PWTB_StackAlloc
+
+        PUSH_CALLEE_SAVED_REGISTERS
+        alloc_stack     __PWTB_StackAlloc
+        END_PROLOGUE
+        lea     target, [rsp + __PWTB_TransitionBlock]
+
+        endm
+
+POP_COOP_PINVOKE_FRAME macro
+
+        add rsp, __PWTB_StackAlloc
+        POP_CALLEE_SAVED_REGISTERS
+
+        endm
+
+;; GC type flags
+GC_ALLOC_FINALIZE               equ 1

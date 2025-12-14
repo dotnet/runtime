@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 namespace System.Text.Json
@@ -22,7 +23,7 @@ namespace System.Text.Json
         {
             Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName);
             ReadOnlySpan<byte> span = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
-            return reader.ValueIsEscaped ? JsonReaderHelper.GetUnescapedSpan(span) : span;
+            return reader.ValueIsEscaped ? JsonReaderHelper.GetUnescaped(span) : span;
         }
 
         /// <summary>
@@ -189,31 +190,6 @@ namespace System.Text.Json
             return reader.TrySkipPartial(reader.CurrentDepth);
         }
 
-        /// <summary>
-        /// Calls Encoding.UTF8.GetString that supports netstandard.
-        /// </summary>
-        /// <param name="bytes">The utf8 bytes to convert.</param>
-        /// <returns></returns>
-        public static string Utf8GetString(ReadOnlySpan<byte> bytes)
-        {
-#if NET
-            return Encoding.UTF8.GetString(bytes);
-#else
-            if (bytes.Length == 0)
-            {
-                return string.Empty;
-            }
-
-            unsafe
-            {
-                fixed (byte* bytesPtr = bytes)
-                {
-                    return Encoding.UTF8.GetString(bytesPtr, bytes.Length);
-                }
-            }
-#endif
-        }
-
         public static bool TryLookupUtf8Key<TValue>(
             this Dictionary<string, TValue> dictionary,
             ReadOnlySpan<byte> utf8Key,
@@ -244,7 +220,7 @@ namespace System.Text.Json
 
             return success;
 #else
-            string key = Utf8GetString(utf8Key);
+            string key = Encoding.UTF8.GetString(utf8Key);
             return dictionary.TryGetValue(key, out result);
 #endif
         }
@@ -298,7 +274,7 @@ namespace System.Text.Json
             }
         }
 
-#if !NET8_0_OR_GREATER
+#if !NET
         public static bool HasAllSet(this BitArray bitArray)
         {
             for (int i = 0; i < bitArray.Count; i++)

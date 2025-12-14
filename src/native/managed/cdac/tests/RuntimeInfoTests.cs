@@ -16,7 +16,7 @@ public class RuntimeInfoTests
         (string Name, string Value)[] globalStrings)
     {
         MockMemorySpace.Builder builder = new MockMemorySpace.Builder(new TargetTestHelpers(arch));
-        TestPlaceholderTarget target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget, [], [], globalStrings);
+        TestPlaceholderTarget target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, [], [], globalStrings);
 
         IContractFactory<IRuntimeInfo> runtimeInfoFactory = new RuntimeInfoFactory();
 

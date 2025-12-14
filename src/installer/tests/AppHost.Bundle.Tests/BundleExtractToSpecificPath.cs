@@ -224,6 +224,9 @@ namespace AppHost.Bundle.Tests
             DirectoryInfo expectedExtractDir = sharedTestState.SelfContainedApp.GetExtractionDir(Path.Combine(home, ".net"), bundledApp.Manifest);
             var extractedFiles = GetExpectedExtractedFiles(bundledApp.Manifest, bundledApp.Options);
             expectedExtractDir.Should().HaveFiles(extractedFiles);
+
+            // Extraction directory for this test is not associated with the SingleFileTestApp, so we need to explicitly delete it.
+            Directory.Delete(expectedExtractDir.FullName, recursive: true);
         }
 
         private static List<string> GetExpectedExtractedFiles(Manifest manifest, BundleOptions bundleOptions)

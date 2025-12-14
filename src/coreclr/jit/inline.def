@@ -39,7 +39,6 @@ INLINE_OBSERVATION(HAS_NO_BODY,               bool,   "has no body",            
 INLINE_OBSERVATION(HAS_NULL_FOR_LDELEM,       bool,   "has null pointer for ldelem",          FATAL,       CALLEE)
 INLINE_OBSERVATION(HAS_UNMANAGED_CALLCONV,    bool,   "has unmanaged calling convention",     FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_ARRAY_METHOD,           bool,   "is array method",                      FATAL,       CALLEE)
-INLINE_OBSERVATION(IS_GENERIC_VIRTUAL,        bool,   "generic virtual",                      FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_JIT_NOINLINE,           bool,   "noinline per JitNoinline",             FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_NOINLINE,               bool,   "noinline per IL/cached result",        FATAL,       CALLEE)
 INLINE_OBSERVATION(IS_SYNCHRONIZED,           bool,   "is synchronized",                      FATAL,       CALLEE)
@@ -129,15 +128,12 @@ INLINE_OBSERVATION(ARG_HAS_NULL_THIS,         bool,   "this pointer argument is 
 INLINE_OBSERVATION(ARG_NO_BASH_TO_INT,        bool,   "argument can't bash to int",           FATAL,       CALLSITE)
 INLINE_OBSERVATION(ARG_NO_BASH_TO_REF,        bool,   "argument can't bash to ref",           FATAL,       CALLSITE)
 INLINE_OBSERVATION(ARG_TYPES_INCOMPATIBLE,    bool,   "argument types incompatible",          FATAL,       CALLSITE)
-INLINE_OBSERVATION(CANT_EMBED_PINVOKE_COOKIE, bool,   "can't embed pinvoke cookie",           FATAL,       CALLSITE)
-INLINE_OBSERVATION(CANT_EMBED_VARARGS_COOKIE, bool,   "can't embed varargs cookie",           FATAL,       CALLSITE)
 INLINE_OBSERVATION(CANT_CLASS_INIT,           bool,   "can't class init",                     FATAL,       CALLSITE)
 INLINE_OBSERVATION(COMPILATION_ERROR,         bool,   "compilation error",                    FATAL,       CALLSITE)
 INLINE_OBSERVATION(COMPILATION_FAILURE,       bool,   "failed to compile",                    FATAL,       CALLSITE)
 INLINE_OBSERVATION(EXPLICIT_TAIL_PREFIX,      bool,   "explicit tail prefix",                 FATAL,       CALLSITE)
 INLINE_OBSERVATION(EH_TABLE_FULL,             bool,   "callee has eh, eh table is full",      FATAL,       CALLSITE)
 INLINE_OBSERVATION(GENERIC_DICTIONARY_LOOKUP, bool,   "runtime dictionary lookup",            FATAL,       CALLSITE)
-INLINE_OBSERVATION(HAS_CALL_VIA_LDVIRTFTN,    bool,   "call via ldvirtftn",                   FATAL,       CALLSITE)
 INLINE_OBSERVATION(HAS_COMPLEX_HANDLE,        bool,   "complex handle access",                FATAL,       CALLSITE)
 INLINE_OBSERVATION(IMPLICIT_REC_TAIL_CALL,    bool,   "implicit recursive tail call",         FATAL,       CALLSITE)
 INLINE_OBSERVATION(IS_CALL_TO_HELPER,         bool,   "target is helper",                     FATAL,       CALLSITE)
@@ -165,6 +161,7 @@ INLINE_OBSERVATION(RETURN_TYPE_MISMATCH,      bool,   "return type mismatch",   
 INLINE_OBSERVATION(STFLD_NEEDS_HELPER,        bool,   "stfld needs helper",                   FATAL,       CALLSITE)
 INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",                      FATAL,       CALLSITE)
 INLINE_OBSERVATION(PINVOKE_EH,                bool,   "PInvoke call site with EH",            FATAL,       CALLSITE)
+INLINE_OBSERVATION(CONTINUATION_HANDLING,     bool,   "Callsite needs continuation handling", FATAL,       CALLSITE)
 
 // ------ Call Site Performance -------
 

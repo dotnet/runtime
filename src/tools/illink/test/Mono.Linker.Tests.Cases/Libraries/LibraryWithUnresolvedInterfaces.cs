@@ -7,75 +7,75 @@ using Mono.Linker.Tests.Cases.Libraries.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Libraries
 {
-	[IgnoreTestCase ("NativeAOT doesn't implement library trimming the same way", IgnoredBy = Tool.NativeAot)]
-	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = Tool.Trimmer)]
-	[SetupCompileBefore ("copylibrary.dll", new[] { "Dependencies/CopyLibrary.cs" }, removeFromLinkerInput: true)]
-	[SetupLinkerArgument ("--skip-unresolved", "true")]
-	[SetupLinkerArgument ("-a", "test.exe", "library")]
-	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
-	[VerifyMetadataNames]
-	public class LibraryWithUnresolvedInterfaces
-	{
-		[Kept]
-		public LibraryWithUnresolvedInterfaces ()
-		{
-		}
+    [IgnoreTestCase("NativeAOT doesn't implement library trimming the same way", IgnoredBy = Tool.NativeAot)]
+    [KeptAttributeAttribute(typeof(IgnoreTestCaseAttribute), By = Tool.Trimmer)]
+    [SetupCompileBefore("copylibrary.dll", new[] { "Dependencies/CopyLibrary.cs" }, removeFromLinkerInput: true)]
+    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SetupLinkerArgument("-a", "test.exe", "library")]
+    [SetupLinkerArgument("--enable-opt", "ipconstprop")]
+    [VerifyMetadataNames]
+    public class LibraryWithUnresolvedInterfaces
+    {
+        [Kept]
+        public LibraryWithUnresolvedInterfaces()
+        {
+        }
 
-		[Kept]
-		public static void Main ()
-		{
-		}
+        [Kept]
+        public static void Main()
+        {
+        }
 
-		[Kept]
-		[KeptInterface (typeof (ICopyLibraryInterface))]
-		[KeptInterface (typeof (ICopyLibraryStaticInterface))]
-		[KeptInterface (typeof (ICopyLibraryInterfaceNoMethodImpl))]
-		public class UninstantiatedPublicClassInterfaces :
-			ICopyLibraryInterface,
-			ICopyLibraryStaticInterface,
-			ICopyLibraryInterfaceNoMethodImpl
-		{
-			internal UninstantiatedPublicClassInterfaces () { }
+        [Kept]
+        [KeptInterface(typeof(ICopyLibraryInterface))]
+        [KeptInterface(typeof(ICopyLibraryStaticInterface))]
+        [KeptInterface(typeof(ICopyLibraryInterfaceNoMethodImpl))]
+        public class UninstantiatedPublicClassInterfaces :
+            ICopyLibraryInterface,
+            ICopyLibraryStaticInterface,
+            ICopyLibraryInterfaceNoMethodImpl
+        {
+            internal UninstantiatedPublicClassInterfaces() { }
 
-			[Kept]
-			public void CopyLibraryInterfaceMethod () { }
+            [Kept]
+            public void CopyLibraryInterfaceMethod() { }
 
-			void ICopyLibraryInterface.CopyLibraryExplicitImplementationInterfaceMethod () { }
+            void ICopyLibraryInterface.CopyLibraryExplicitImplementationInterfaceMethod() { }
 
-			[Kept]
-			public static void CopyLibraryStaticInterfaceMethod () { }
+            [Kept]
+            public static void CopyLibraryStaticInterfaceMethod() { }
 
-			static void ICopyLibraryStaticInterface.CopyLibraryExplicitImplementationStaticInterfaceMethod () { }
+            static void ICopyLibraryStaticInterface.CopyLibraryExplicitImplementationStaticInterfaceMethod() { }
 
-			[Kept]
-			public void CopyLibraryInterfaceNoMethodImpl () { }
-		}
+            [Kept]
+            public void CopyLibraryInterfaceNoMethodImpl() { }
+        }
 
-		[Kept]
-		[KeptInterface (typeof (ICopyLibraryInterface))]
-		[KeptInterface (typeof (ICopyLibraryStaticInterface))]
-		[KeptInterface (typeof (ICopyLibraryInterfaceNoMethodImpl))]
-		public class InstantiatedClassWithInterfaces :
-			ICopyLibraryInterface,
-			ICopyLibraryStaticInterface,
-			ICopyLibraryInterfaceNoMethodImpl
-		{
+        [Kept]
+        [KeptInterface(typeof(ICopyLibraryInterface))]
+        [KeptInterface(typeof(ICopyLibraryStaticInterface))]
+        [KeptInterface(typeof(ICopyLibraryInterfaceNoMethodImpl))]
+        public class InstantiatedClassWithInterfaces :
+            ICopyLibraryInterface,
+            ICopyLibraryStaticInterface,
+            ICopyLibraryInterfaceNoMethodImpl
+        {
 
-			[Kept]
-			public InstantiatedClassWithInterfaces () { }
+            [Kept]
+            public InstantiatedClassWithInterfaces() { }
 
-			[Kept]
-			public void CopyLibraryInterfaceMethod () { }
+            [Kept]
+            public void CopyLibraryInterfaceMethod() { }
 
-			void ICopyLibraryInterface.CopyLibraryExplicitImplementationInterfaceMethod () { }
+            void ICopyLibraryInterface.CopyLibraryExplicitImplementationInterfaceMethod() { }
 
-			[Kept]
-			public static void CopyLibraryStaticInterfaceMethod () { }
+            [Kept]
+            public static void CopyLibraryStaticInterfaceMethod() { }
 
-			static void ICopyLibraryStaticInterface.CopyLibraryExplicitImplementationStaticInterfaceMethod () { }
+            static void ICopyLibraryStaticInterface.CopyLibraryExplicitImplementationStaticInterfaceMethod() { }
 
-			[Kept]
-			public void CopyLibraryInterfaceNoMethodImpl () { }
-		}
-	}
+            [Kept]
+            public void CopyLibraryInterfaceNoMethodImpl() { }
+        }
+    }
 }

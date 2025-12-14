@@ -216,7 +216,7 @@ namespace System
             //
             // The only SpecialFolderOption defines we have are equivalent to KnownFolderFlags.
 
-            string folderGuid;
+            ReadOnlySpan<byte> folderGuid;
             string? fallbackEnv = null;
             switch (folder)
             {
@@ -224,8 +224,6 @@ namespace System
                 case SpecialFolder.System:
                     // This assumes the system directory always exists and thus we don't need to do anything special for any SpecialFolderOption.
                     return SystemDirectory;
-                default:
-                    return string.Empty;
 
                 // Map the SpecialFolder to the appropriate Guid
                 case SpecialFolder.ApplicationData:
@@ -374,6 +372,9 @@ namespace System
                     folderGuid = Interop.Shell32.KnownFolders.Windows;
                     fallbackEnv = "windir";
                     break;
+                default:
+                    Debug.Assert(!Enum.IsDefined(folder), $"Unexpected SpecialFolder value: {folder}. Please ensure all SpecialFolder enum values are handled in the switch statement.");
+                    throw new ArgumentOutOfRangeException(nameof(folder), folder, SR.Format(SR.Arg_EnumIllegalVal, folder));
             }
 
             Guid folderId = new Guid(folderGuid);

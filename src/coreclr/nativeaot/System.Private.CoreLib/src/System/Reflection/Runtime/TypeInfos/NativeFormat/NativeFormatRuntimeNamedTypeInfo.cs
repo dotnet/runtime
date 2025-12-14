@@ -79,7 +79,11 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                         continue;
                     if (guidStringArgumentHandle.HandleType != HandleType.ConstantStringValue)
                         continue;
-                    return new Guid(guidStringArgumentHandle.ToConstantStringValueHandle(_reader).GetString(_reader));
+
+                    ConstantStringValueHandle constantStringValueHandle = guidStringArgumentHandle.ToConstantStringValueHandle(_reader);
+
+                    // Parse a 'Guid' directly from the encoded UTF8 buffer, instead of round-tripping through a 'string'
+                    return Guid.Parse(_reader.ReadStringAsBytes(constantStringValueHandle));
                 }
             }
             return null;

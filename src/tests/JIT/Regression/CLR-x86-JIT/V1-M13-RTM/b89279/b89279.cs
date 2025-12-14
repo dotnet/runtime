@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b89279;
+
 using System;
 using Xunit;
 
@@ -18,6 +21,7 @@ public class AA
         param1 = param1;
 #pragma warning restore 1717
     }
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

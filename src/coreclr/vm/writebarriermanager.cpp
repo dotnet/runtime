@@ -1135,3 +1135,10 @@ int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
         return SWB_PASS;
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
+void InitJITWriteBarrierHelpers()
+{
+    STANDARD_VM_CONTRACT;
+
+    g_WriteBarrierManager.Initialize();
+}

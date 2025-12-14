@@ -5,8 +5,6 @@ namespace System.CodeDom
 {
     public class CodeTypeOfExpression : CodeExpression
     {
-        private CodeTypeReference _type;
-
         public CodeTypeOfExpression() { }
 
         public CodeTypeOfExpression(CodeTypeReference type)
@@ -26,8 +24,8 @@ namespace System.CodeDom
 
         public CodeTypeReference Type
         {
-            get => _type ??= new CodeTypeReference("");
-            set => _type = value;
+            get => field ??= new CodeTypeReference("");
+            set => field = value;
         }
     }
 }

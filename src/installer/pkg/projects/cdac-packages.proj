@@ -3,7 +3,7 @@
 
   <ItemGroup>
     <ProjectReference Include="Microsoft.DotNet.Cdac.Transport\Microsoft.DotNet.Cdac.Transport.pkgproj" 
-                      AdditionalProperties="PackageTargetRuntime=$(OutputRID)" />
+                      AdditionalProperties="PackageTargetRuntime=$(TargetRid)" />
   </ItemGroup>
 
   <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets" />

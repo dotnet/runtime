@@ -11,16 +11,16 @@ using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 namespace System.Security.Cryptography.Cose.Tests
 {
     // Tests that apply only to custom header scenarios.
-    public abstract class CoseMessageTests_Sign_CustomHeaderMaps : CoseMessageTests_Sign<AsymmetricAlgorithm>
+    public abstract class CoseMessageTests_Sign_CustomHeaderMaps : CoseMessageTests_Sign<IDisposable>
     {
-        internal override List<CoseAlgorithm> CoseAlgorithms => Enum.GetValues(typeof(CoseAlgorithm)).Cast<CoseAlgorithm>().ToList();
+        internal override List<CoseAlgorithm> CoseAlgorithms => Enum.GetValues(typeof(CoseAlgorithm)).Cast<CoseAlgorithm>().Where(AlgorithmIsSupported).ToList();
 
         // This method always uses the specified headers for signing.
         // That is, sign headers for MultiSign and body headers for Sign1.
         internal byte[] Sign(
             byte[] content,
-            AsymmetricAlgorithm key,
-            HashAlgorithmName hashAlgorithm,
+            IDisposable key,
+            HashAlgorithmName? hashAlgorithm,
             CoseHeaderMap? protectedHeaders = null,
             CoseHeaderMap? unprotectedHeaders = null,
             RSASignaturePadding? padding = null,
@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SignVerifyWithCustomCoseHeaderMaps()
         {
-            foreach ((AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseAlgorithm algorithm, RSASignaturePadding? padding)
+            foreach ((IDisposable key, HashAlgorithmName? hashAlgorithm, CoseAlgorithm algorithm, RSASignaturePadding? padding)
                 in GetKeyHashAlgorithmPaddingQuadruplet())
             {
                 var protectedHeaders = GetEmptyHeaderMap();
@@ -60,10 +60,10 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SignVerifyWithStringAlgorithm()
         {
-            foreach ((AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseAlgorithm algorithm, RSASignaturePadding? padding)
+            foreach ((IDisposable key, HashAlgorithmName? hashAlgorithm, CoseAlgorithm algorithm, RSASignaturePadding? padding)
                 in GetKeyHashAlgorithmPaddingQuadruplet())
             {
-                string algString = algorithm.ToString();
+                string algString = GetExpectedAlgorithmStringValue(algorithm);
                 var protectedHeaders = GetEmptyHeaderMap();
                 protectedHeaders.Add(CoseHeaderLabel.Algorithm, algString);
 
@@ -83,7 +83,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SignWithIncorrectAlgorithm()
         {
-            foreach ((AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseAlgorithm algorithm, RSASignaturePadding? padding)
+            foreach ((IDisposable key, HashAlgorithmName? hashAlgorithm, CoseAlgorithm algorithm, RSASignaturePadding? padding)
                 in GetKeyHashAlgorithmPaddingQuadruplet())
             {
                 // Values out of the ranges of CoseAlgorithm.
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void SignWithIncorrectStringAlgorithm()
         {
-            foreach ((AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseAlgorithm algorithm, RSASignaturePadding? padding)
+            foreach ((IDisposable key, HashAlgorithmName? hashAlgorithm, CoseAlgorithm algorithm, RSASignaturePadding? padding)
                 in GetKeyHashAlgorithmPaddingQuadruplet())
             {
                 var protectedHeaders = GetEmptyHeaderMap();

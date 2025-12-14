@@ -920,6 +920,7 @@ void DebuggerJitInfo::LazyInitBounds()
         BOOL fSuccess = DebugInfoManager::GetBoundariesAndVars(
             request,
             InteropSafeNew, NULL, // allocator
+            BoundsType::Instrumented,  // TODO We currently don't use the uninstrumented bounds here but we should and remove the instrumented bounds logic from the SetBoundaries function.
             &cMap, &pMap,
             &cVars, &pVars);
 
@@ -950,7 +951,7 @@ void DebuggerJitInfo::LazyInitBounds()
         // Just catch the exception. The DJI maps may or may-not be initialized,
         // but they should still be in a consistent state, so we should be ok.
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 /******************************************************************************
@@ -1045,6 +1046,12 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
 
     DebuggerILToNativeMap *m = m_sequenceMap;
 
+    // TODO: Consider removing the handling for the InstrumentedILMap here.
+    // since we now have the ability to get an uninstrumented IL offset mapping
+    // directly from the VM. This work was not done when adding the instrumented
+    // IL mapping due to the work ocurring too close to the shipping deadline for .NET 10.
+    // If we do so, we need to change the input to this function to be the uninstrumented IL offset mapping
+
     // For the instrumented-IL case, we need to remove all duplicate entries.
     // So we keep a record of the last old IL offset. If the current old IL
     // offset is the same as the last old IL offset, we remove it.
@@ -1053,6 +1060,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
 
     InstrumentedILOffsetMapping mapping;
 
+#ifdef FEATURE_CODE_VERSIONING
     ILCodeVersion ilVersion = m_nativeCodeVersion.GetILCodeVersion();
     if (!ilVersion.IsDefaultVersion())
     {
@@ -1072,7 +1080,9 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
             mapping = *pReJitMap;
         }
     }
-    else if (m_methodInfo->HasInstrumentedILMap())
+    else
+#endif // FEATURE_CODE_VERSIONING
+    if (m_methodInfo->HasInstrumentedILMap())
     {
         // If a ReJIT hasn't happened, check for a profiler provided map.
         mapping = m_methodInfo->GetRuntimeModule()->GetInstrumentedILOffsetMapping(m_methodInfo->m_token);
@@ -1605,6 +1615,7 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     // CreateInitAndAddJitInfo takes a lock and checks the list again, which makes this thread-safe.
 
     NativeCodeVersion nativeCodeVersion;
+#ifdef FEATURE_CODE_VERSIONING
     if (fd->IsVersionable())
     {
         CodeVersionManager *pCodeVersionManager = fd->GetCodeVersionManager();
@@ -1615,6 +1626,7 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
         }
     }
     else
+#endif // FEATURE_CODE_VERSIONING
     {
         // Some day we'll get EnC to use code versioning properly, but until then we'll get the right behavior treating all EnC versions as the default native code version.
         nativeCodeVersion = NativeCodeVersion(fd);
@@ -2097,7 +2109,7 @@ void DebuggerMethodInfo::CreateDJIsForMethodDesc(MethodDesc * pMethodDesc)
 #else
     // We just ask for the DJI to ensure that it's lazily created.
     // This should only fail in an oom scenario.
-    DebuggerJitInfo * djiTest = g_pDebugger->GetLatestJitInfoFromMethodDesc(pDesc);
+    DebuggerJitInfo * djiTest = g_pDebugger->GetLatestJitInfoFromMethodDesc(pMethodDesc);
     if (djiTest == NULL)
     {
         // We're oom. Give up.

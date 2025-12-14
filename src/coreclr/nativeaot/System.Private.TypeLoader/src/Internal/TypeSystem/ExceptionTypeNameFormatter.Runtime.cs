@@ -10,7 +10,7 @@ namespace Internal.TypeSystem
             if (type is NoMetadata.NoMetadataType)
                 return ((NoMetadata.NoMetadataType)type).NameForDiagnostics;
 
-            return type.Name;
+            return type.GetName();
         }
 
         private static string GetTypeNamespace(DefType type)
@@ -18,7 +18,7 @@ namespace Internal.TypeSystem
             if (type is NoMetadata.NoMetadataType)
                 return ((NoMetadata.NoMetadataType)type).NamespaceForDiagnostics;
 
-            return type.Namespace;
+            return type.GetNamespace();
         }
     }
 }

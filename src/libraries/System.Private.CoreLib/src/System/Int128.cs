@@ -1180,7 +1180,12 @@ namespace System
             return lower;
         }
 
-        internal static Int128 BigMul(Int128 left, Int128 right, out Int128 lower)
+        /// <summary>Produces the full product of two unsigned native integers.</summary>
+        /// <param name="left">The integer to multiply with <paramref name="right" />.</param>
+        /// <param name="right">The integer to multiply with <paramref name="left" />.</param>
+        /// <param name="lower">The lower half of the full product.</param>
+        /// <returns>The upper half of the full product.</returns>
+        public static Int128 BigMul(Int128 left, Int128 right, out Int128 lower)
         {
             // This follows the same logic as is used in `long Math.BigMul(long, long, out long)`
 
@@ -1580,15 +1585,13 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
-                result = (actualValue >= +170141183460469231731687303715884105727.0) ? MaxValue :
-                         (actualValue <= -170141183460469231731687303715884105728.0) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
-                result = (actualValue == Half.PositiveInfinity) ? MaxValue :
-                         (actualValue == Half.NegativeInfinity) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1624,8 +1627,7 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
-                result = (actualValue >= +170141183460469231731687303715884105727.0f) ? MaxValue :
-                         (actualValue <= -170141183460469231731687303715884105728.0f) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else
@@ -1655,15 +1657,13 @@ namespace System
             if (typeof(TOther) == typeof(double))
             {
                 double actualValue = (double)(object)value;
-                result = (actualValue >= +170141183460469231731687303715884105727.0) ? MaxValue :
-                         (actualValue <= -170141183460469231731687303715884105728.0) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualValue = (Half)(object)value;
-                result = (actualValue == Half.PositiveInfinity) ? MaxValue :
-                         (actualValue == Half.NegativeInfinity) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -1699,8 +1699,7 @@ namespace System
             else if (typeof(TOther) == typeof(float))
             {
                 float actualValue = (float)(object)value;
-                result = (actualValue >= +170141183460469231731687303715884105727.0f) ? MaxValue :
-                         (actualValue <= -170141183460469231731687303715884105728.0f) ? MinValue : (Int128)actualValue;
+                result = (Int128)actualValue;
                 return true;
             }
             else

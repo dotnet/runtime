@@ -97,6 +97,7 @@ namespace Microsoft.Extensions.Configuration
         public string Key { get { throw null; } }
         public string Path { get { throw null; } }
         public string? Value { get { throw null; } set { } }
+        public bool TryGetValue(string? key, out string? value) { throw null; }
         public System.Collections.Generic.IEnumerable<Microsoft.Extensions.Configuration.IConfigurationSection> GetChildren() { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }
         public Microsoft.Extensions.Configuration.IConfigurationSection GetSection(string key) { throw null; }

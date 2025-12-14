@@ -57,7 +57,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
-    [Fact]
+    [Fact, TestCategory("bundler-friendly")]
     public async Task OutErrOverrideWorks()
     {
         Configuration config = Configuration.Debug;
@@ -103,6 +103,23 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             result.TestOutput,
             m => Assert.Equal("ConfigSrc: boot.json", m),
             m => Assert.Equal("Managed code has run", m)
+        );
+    }
+
+    [Fact, TestCategory("bundler-friendly")]
+    public async Task AssetIntegrity()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, $"AssetIntegrity");
+        PublishProject(info, config);
+
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "AssetIntegrity"
+        ));
+        Assert.False(
+            result.TestOutput.Any(m => !m.Contains(".js") && !m.Contains(".json") && m.Contains("has integrity ''")),
+            "There are assets without integrity hash"
         );
     }
 }

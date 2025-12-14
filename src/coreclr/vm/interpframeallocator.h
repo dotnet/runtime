@@ -4,6 +4,8 @@
 #ifndef _INTERPFRAMEALLOCATOR_H_
 #define _INTERPFRAMEALLOCATOR_H_
 
+struct InterpMethodContextFrame;
+
 class FrameDataAllocator
 {
 private:

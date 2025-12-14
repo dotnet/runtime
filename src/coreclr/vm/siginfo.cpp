@@ -185,7 +185,7 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, const SigTypeCo
     {
         mdToken tk;
         IfFailThrowBF(GetToken(&tk), BFA_BAD_COMPLUS_SIG, pSigModule);
-        TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pSigModule, tk);
+        TypeHandle th = ClassLoader::LoadTypeDefOrRefThrowing(pSigModule, tk, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef);
         pSigBuilder->AppendElementType(ELEMENT_TYPE_CMOD_INTERNAL);
         pSigBuilder->AppendByte(typ == ELEMENT_TYPE_CMOD_REQD); // "is required" byte
         pSigBuilder->AppendPointer(th.AsPtr());
@@ -1060,7 +1060,7 @@ TypeHandle SigPointer::GetTypeHandleNT(Module* pModule,
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
     return(th);
 }
 
@@ -1103,7 +1103,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                  const Substitution *        pSubst/*=NULL*/,
                  // ZapSigContext is only set when decoding zapsigs
                  const ZapSig::Context *     pZapSigContext,
-                 MethodTable *               pMTInterfaceMapOwner,
+                 MethodTable*                 pMTInterfaceMapOwner,
                  HandleRecursiveGenericsForFieldLayoutLoad *pRecursiveFieldGenericHandling) const
 {
     CONTRACT(TypeHandle)
@@ -1616,7 +1616,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
                 Instantiation genericLoadInst(thisinst, ntypars);
 
-                if (pMTInterfaceMapOwner != NULL && genericLoadInst.ContainsAllOneType(pMTInterfaceMapOwner))
+                if (pMTInterfaceMapOwner != NULL && genericLoadInst.ContainsAllOneType(pMTInterfaceMapOwner->GetSpecialInstantiationType()))
                 {
                     thRet = ClassLoader::LoadTypeDefThrowing(pGenericTypeModule, tkGenericType, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, level);
                 }
@@ -1637,7 +1637,16 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                                                         &instContext,
                                                                         pZapSigContext && pZapSigContext->externalTokens == ZapSig::NormalTokens));
 
-                    if (!handlingRecursiveGenericFieldScenario)
+                    if (!thFound.IsNull() && pMTInterfaceMapOwner != NULL && !thFound.IsTypeDesc() && thFound.AsMethodTable()->IsSpecialMarkerTypeForGenericCasting())
+                    {
+                        // We are trying to load an interface instantiation, and we have a concept of the special marker type enabled, but
+                        // the loaded type is not the expected type we should be looking for to return a special marker type, but the normal load has
+                        // found a type which claims to be a special marker type. In this case return something else (object) to indicate that
+                        // we found an invalid situation and this function should be retried without the special marker type logic enabled.
+                        thRet = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_OBJECT));
+                        break;
+                    }
+                    else if (!handlingRecursiveGenericFieldScenario)
                     {
                         thRet = thFound;
                         break;

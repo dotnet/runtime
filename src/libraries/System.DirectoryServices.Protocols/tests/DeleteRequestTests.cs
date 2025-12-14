@@ -19,7 +19,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("DistinguishedName")]
-        public void Ctor_DistinguishedName(string distinguishedName)
+        public void Ctor_DistinguishedName(string? distinguishedName)
         {
             var request = new DeleteRequest(distinguishedName);
             Assert.Empty(request.Controls);

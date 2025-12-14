@@ -22,9 +22,12 @@
       - $(WasmEmitSourceMap)      - Generates `dotnet.runtime.js.map` and `dotnet.js.map` files with a TypeScript source map.
       - $(WasmDedup)              - Whether to dedup generic instances when using AOT. Defaults to true.
 
-      - $(WasmPerfTracing)              - Enables diagnostic server tracing. Defaults to false.
+      - $(EnableDiagnostics)            - Enables diagnostic server tracing. Defaults to false.
       - $(EventSourceSupport)           - Enables EventSource support. Defaults to false.
-      - $(WasmPerfInstrumentation)      - Enables CPU sampling instrumentation for diagnostic server. Defaults to false.
+      - $(WasmPerformanceInstrumentation) - Enables CPU sampling instrumentation for diagnostic server.Possible values:
+                                            - all - enables all instrumentation
+                                            - none - disables all instrumentation
+                                            - N:SampleNamespace - enables instrumentation for the specified namespace
       - $(MetricsSupport)               - System.Diagnostics.Metrics support. Defaults to false.
       - $(WasmProfilers)                - Mono Profilers to use. Defaults to empty. Could be `log` and `browser`.
       - $(AOTProfilePath)               - profile data file to be used for profile-guided optimization
@@ -90,6 +93,8 @@
                                               - AppBundle/_content contains web files from nuget packages (css, js, etc)
       - $(WasmStripILAfterAOT)              - Set to true to enable trimming away AOT compiled methods body (IL code)
                                               Defaults to true.
+      - $(WasmEmitTypeScriptDefinitions)    - Controls whether TypeScript definitions (dotnet.d.ts) should be copied to the project's `wwwroot`. 
+                                              Defaults to false.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -169,6 +174,7 @@
     <EnableDefaultWasmAssembliesToBundle Condition="'$(EnableDefaultWasmAssembliesToBundle)' == ''">true</EnableDefaultWasmAssembliesToBundle>
     <!-- VS uses DeployOnBuild, and sdk sets _IsPublishing -->
     <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and ('$(DeployOnBuild)' == 'true' or '$(_IsPublishing)' == 'true')">true</WasmBuildOnlyAfterPublish>
+    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm'">false</WasmGenerateAppBundle>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and ('$(OutputType)' != 'Library' or '$(_IsLibraryMode)' == 'true')">true</WasmGenerateAppBundle>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">false</WasmGenerateAppBundle>
 
@@ -237,7 +243,8 @@
     <RunCommand Condition="'$(RunCommand)' == ''">dotnet</RunCommand>
 
     <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(_AppBundleDirForRunCommand), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
-    <RunArguments Condition="'$(RunArguments)' == ''">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
+    <_RunExtraArguments Condition="'$(WasmEnableThreads)' == 'true'">--apply-cop-headers</_RunExtraArguments>
+    <RunArguments Condition="'$(RunArguments)' == ''">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(_RunExtraArguments) $(WasmHostArguments)</RunArguments>
     <RunWorkingDirectory Condition="'$(RunWorkingDirectory)' == ''">$(_AppBundleDirForRunCommand)</RunWorkingDirectory>
   </PropertyGroup>
 
@@ -256,16 +263,14 @@
     <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' == '0'">false</_WasmDebuggerSupport>
     <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == '' and '$(WasmBuildingForNestedPublish)' == 'true'">false</_WasmDebuggerSupport> <!-- publish -->
     <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == ''">true</_WasmDebuggerSupport>
-    <WasmPerfInstrumentation Condition="'$(WasmPerfInstrumentation)' == 'true'">all</WasmPerfInstrumentation>
-    <_WasmProfilers Condition="'$(WasmPerfInstrumentation)' != ''">browser:eventpipe,callspec=$(WasmPerfInstrumentation)</_WasmProfilers>
-    <_WasmProfilers Condition="'$(WasmProfilers)' != ''">$(_WasmProfilers);$(WasmProfilers)</_WasmProfilers>
   </PropertyGroup>
   <ItemGroup Condition="'$(_WasmDebuggerSupport)' == 'true'">
     <_MonoComponent Include="debugger" />
     <_MonoComponent Include="hot_reload" />
   </ItemGroup>
-  <ItemGroup Condition="'$(WasmPerfTracing)' == 'true'">
+  <ItemGroup Condition="'$(EnableDiagnostics)' == 'true'">
     <_MonoComponent Include="diagnostics_tracing" />
+    <WasmEnvironmentVariable Condition="'$(WasmPerformanceInstrumentation)' != ''" Include="DOTNET_WasmPerformanceInstrumentation" Value="eventpipe,callspec=$(WasmPerformanceInstrumentation)" />
   </ItemGroup>
   <!-- PUBLISH -->
 
@@ -492,9 +497,10 @@
     <Error Condition="'$(WasmBuildNative)' == 'false' and '$(_WasmBuildNativeRequired)' == 'true'"
            Text="WasmBuildNative is required because %(_ChangedPropertiesThatTriggerRelinking.Identity)=$(%(_ChangedPropertiesThatTriggerRelinking.Identity)), but WasmBuildNative is already set to 'false'." />
 
-    <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerfTracing)' != 'false'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerfTracing)=$(WasmPerfTracing)"/>
-    <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerfInstrumentation)' != ''" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerfInstrumentation)=$(WasmPerfInstrumentation)"/>
-    <Error Condition="'$(WasmPerfInstrumentation)' != '' and '$(WasmPerfTracing)' != 'true'" Text="%24(WasmPerfInstrumentation)=$(WasmPerfInstrumentation) is only supported together with %24(WasmPerfTracing)=true"/>
+    <Error Condition="'$(WasmProfilers)' != '' and '$(EnableDiagnostics)' != 'false'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(EnableDiagnostics)=$(EnableDiagnostics)"/>
+    <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerformanceInstrumentation)' != ''" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation)"/>
+    <Error Condition="$(WasmProfilers.Contains('browser')) and '$(RunAOTCompilation)' == 'true'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(RunAOTCompilation)=$(RunAOTCompilation)"/>
+    <Error Condition="'$(WasmPerformanceInstrumentation)' != '' and '$(EnableDiagnostics)' != 'true'" Text="%24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation) is only supported together with %24(EnableDiagnostics)=true"/>
 
     <PropertyGroup>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(_WasmBuildNativeRequired)' == 'true'">true</WasmBuildNative>
@@ -526,9 +532,11 @@
     </PropertyGroup>
 
     <!-- Default with nothing set: Build+relink+config=debug -->
-    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
-      <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' != 'false' and '$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
       <WasmNativeStrip>false</WasmNativeStrip>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == 'false' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
+      <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -677,7 +685,7 @@
       AOTProfilePath="$(AOTProfilePath)"
       AotModulesTablePath="$(_DriverGenCPath)"
       UseLLVM="true"
-      Profilers="$(_WasmProfilers)"
+      Profilers="$(WasmProfilers)"
       DisableParallelAot="$(DisableParallelAot)"
       DedupAssembly="$(_WasmDedupAssembly)"
       CacheFilePath="$(_AOTCompilerCacheFile)"
@@ -906,7 +914,13 @@
   <Target Name="_RunWasmOptPostLink" Condition="'$(WasmRunWasmOpt)' == 'true'">
     <Error Condition="'$(_WasmOutputFileName)' == ''" Text="Could not determine %24(_WasmOutputFileName)" />
 
-    <Exec Command="wasm-opt$(_ExeExt) --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ') &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot; -o &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot;"
+    <PropertyGroup>
+      <_WasmOptPostLinkFileName>$(_WasmOutputFileName)</_WasmOptPostLinkFileName>
+      <_WasmOptPostLinkFileName Condition="'$([System.IO.Path]::IsPathRooted($(_WasmOptPostLinkFileName)))' != 'true'">$([System.IO.Path]::Combine($(_WasmIntermediateOutputPath), $(_WasmOptPostLinkFileName)))</_WasmOptPostLinkFileName>
+    </PropertyGroup>
+
+    <Message Text="Running wasm-opt with --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ')" Importance="High" />
+    <Exec Command="wasm-opt$(_ExeExt) --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ') &quot;$(_WasmOptPostLinkFileName)&quot; -o &quot;$(_WasmOptPostLinkFileName)&quot;"
           IgnoreStandardErrorWarningFormat="true"
           EnvironmentVariables="@(WasmToolchainEnvVars)" />
   </Target>

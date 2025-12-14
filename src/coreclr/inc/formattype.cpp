@@ -163,7 +163,7 @@ const char* PrettyPrintSig(
         out->Shrink(0);
         appendStr(out,"ERROR PARSING THE SIGNATURE");
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return(asString(out));
 }
@@ -217,7 +217,7 @@ PCCOR_SIGNATURE PrettyPrintSignature(
     if (name != 0)
     {
         // get the calling convention out
-        unsigned callConv = CorSigUncompressData(typePtr);
+        unsigned callConv = CorSigUncompressCallingConv(typePtr);
 
         // should not be a local var sig
         _ASSERTE(!isCallConv(callConv, IMAGE_CEE_CS_CALLCONV_LOCAL_SIG));
@@ -265,7 +265,7 @@ PCCOR_SIGNATURE PrettyPrintSignature(
                 callConvUndefined,
                 callConvUndefined
                 };
-            static_assert_no_msg(ARRAY_SIZE(callConvNames) == (IMAGE_CEE_CS_CALLCONV_MASK + 1));
+            static_assert(ARRAY_SIZE(callConvNames) == (IMAGE_CEE_CS_CALLCONV_MASK + 1));
 
             char tmp[32];
             unsigned callConvIdx = callConv & IMAGE_CEE_CS_CALLCONV_MASK;
@@ -321,7 +321,7 @@ PCCOR_SIGNATURE PrettyPrintSignature(
 #ifdef _DEBUG
         unsigned callConv =
 #endif
-            CorSigUncompressData(typePtr);
+            CorSigUncompressCallingConv(typePtr);
 #ifdef _DEBUG
         (void)callConv; //prevent "unused variable" warning from GCC
         // should be a local var sig

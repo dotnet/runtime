@@ -23,7 +23,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
 
             public override string ToString()
             {
-                return $"            [{Offset:04X}-{Offset+Size:04X})\n";
+                return $"            [{Offset:04X}-{Offset + Size:04X})\n";
             }
         }
 
@@ -31,15 +31,15 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
 
         public NoGcRegionTable() { }
 
-        public NoGcRegionTable(byte[] image, InfoHdrSmall header, ref int offset)
+        public NoGcRegionTable(NativeReader imageReader, InfoHdrSmall header, ref int offset)
         {
             Regions = new List<NoGcRegion>((int)header.NoGCRegionCnt);
 
             uint count = header.NoGCRegionCnt;
             while (count-- > 0)
             {
-                uint regionOffset = NativeReader.DecodeUnsignedGc(image, ref offset);
-                uint regionSize = NativeReader.DecodeUnsignedGc(image, ref offset);
+                uint regionOffset = imageReader.DecodeUnsignedGc(ref offset);
+                uint regionSize = imageReader.DecodeUnsignedGc(ref offset);
                 Regions.Add(new NoGcRegion(regionOffset, regionSize));
             }
         }

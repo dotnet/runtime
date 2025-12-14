@@ -23,9 +23,7 @@ namespace System.Runtime.InteropServices
         [RequiresUnreferencedCode("Interop types may be removed by trimming")]
         public static IReadOnlyDictionary<string, Type> GetOrCreateExternalTypeMapping<TTypeMapGroup>()
         {
-#if NATIVEAOT
-            throw new NotImplementedException();
-#elif MONO
+#if MONO
             throw new NotSupportedException();
 #else
             return TypeMapLazyDictionary.CreateExternalTypeMap((RuntimeType)typeof(TTypeMapGroup));
@@ -43,9 +41,7 @@ namespace System.Runtime.InteropServices
         [RequiresUnreferencedCode("Interop types may be removed by trimming")]
         public static IReadOnlyDictionary<Type, Type> GetOrCreateProxyTypeMapping<TTypeMapGroup>()
         {
-#if NATIVEAOT
-            throw new NotImplementedException();
-#elif MONO
+#if MONO
             throw new NotSupportedException();
 #else
             return TypeMapLazyDictionary.CreateProxyTypeMap((RuntimeType)typeof(TTypeMapGroup));

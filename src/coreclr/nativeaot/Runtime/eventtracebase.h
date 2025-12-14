@@ -42,7 +42,17 @@ enum EtwTypeFlags
     kEtwTypeFlagsFinalizable =                      0x2,
     kEtwTypeFlagsExternallyImplementedCOMObject =   0x4,
     kEtwTypeFlagsArray =                            0x8,
-    kEtwTypeFlagsModuleBaseAddress =                0x10,
+    kEtwTypeFlagsModuleBaseAddress =               0x10,
+    kEtwTypeFlagsArrayRankBit0 =                  0x100,
+    kEtwTypeFlagsArrayRankBit1 =                  0x200,
+    kEtwTypeFlagsArrayRankBit2 =                  0x400,
+    kEtwTypeFlagsArrayRankBit3 =                  0x800,
+    kEtwTypeFlagsArrayRankBit4 =                 0x1000,
+    kEtwTypeFlagsArrayRankBit5 =                 0x2000,
+
+    kEtwTypeFlagsArrayRankMask =                 0x3F00,
+    kEtwTypeFlagsArrayRankShift =                     8,
+    kEtwTypeFlagsArrayRankMax = kEtwTypeFlagsArrayRankMask >> kEtwTypeFlagsArrayRankShift
 };
 
 enum EtwThreadFlags
@@ -105,6 +115,8 @@ struct ProfilingScanContext;
 #define CLR_MANAGEDHEAPCOLLECT_KEYWORD 0x800000
 #define CLR_GCHEAPANDTYPENAMES_KEYWORD 0x1000000
 #define CLR_ALLOCATIONSAMPLING_KEYWORD 0x80000000000
+#define CLR_RUNDOWNLOADER_KEYWORD 0x8
+#define CLR_RUNDOWNEND_KEYWORD 0x100
 
 //
 // Using KEYWORDZERO means when checking the events category ignore the keyword
@@ -118,13 +130,18 @@ struct ProfilingScanContext;
     (ETW_TRACING_INITIALIZED(Context.RegistrationHandle) && ETW_CATEGORY_ENABLED(Context, Level, Keyword))
 
 bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long keyword);
+bool DotNETRuntimeRundownProvider_IsEnabled(unsigned char level, unsigned long long keyword);
 
 #ifdef FEATURE_ETW
 #define RUNTIME_PROVIDER_CATEGORY_ENABLED(Level, Keyword) \
     (DotNETRuntimeProvider_IsEnabled(Level, Keyword) || ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, Level, Keyword))
+#define RUNTIME_RUNDOWN_PROVIDER_CATEGORY_ENABLED(Level, Keyword) \
+    (DotNETRuntimeRundownProvider_IsEnabled(Level, Keyword) || ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_Context, Level, Keyword))
 #else
 #define RUNTIME_PROVIDER_CATEGORY_ENABLED(Level, Keyword) \
     DotNETRuntimeProvider_IsEnabled(Level, Keyword)
+#define RUNTIME_RUNDOWN_PROVIDER_CATEGORY_ENABLED(Level, Keyword) \
+    DotNETRuntimeRundownProvider_IsEnabled(Level, Keyword)
 #endif // FEATURE_ETW
 
 //
@@ -133,6 +150,51 @@ bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long key
 #define EVENT_CONTROL_CODE_DISABLE_PROVIDER 0
 #define EVENT_CONTROL_CODE_ENABLE_PROVIDER 1
 #define EVENT_CONTROL_CODE_CAPTURE_STATE 2
+
+// All ETW helpers must be a part of this namespace
+// We have auto-generated macros to directly fire the events
+// but in some cases, gathering the event payload information involves some work
+// and it can be done in a relevant helper class like the one's in this namespace
+namespace ETW
+{
+    // Class to wrap all the enumeration logic for ETW
+    class EnumerationLog
+    {
+    public:
+        typedef union _EnumerationStructs
+        {
+            typedef enum _EnumerationOptions
+            {
+                None=                               0x00000000,
+                DomainAssemblyModuleLoad=           0x00000001,
+                DomainAssemblyModuleDCEnd=          0x00000008,
+            }EnumerationOptions;
+        }EnumerationStructs;
+        static void EndRundown();
+    };
+
+    // Class to wrap all Loader logic for ETW
+    class LoaderLog
+    {
+        friend class ETW::EnumerationLog;
+        static void SendModuleEvent(HANDLE pModule, uint32_t dwEventOptions);
+    public:
+        typedef union _LoaderStructs
+        {
+            typedef enum _ModuleFlags
+            {
+                DomainNeutralModule=0x1,
+                NativeModule=0x2,
+                DynamicModule=0x4,
+                ManifestModule=0x8,
+                IbcOptimized=0x10,
+                ReadyToRunModule=0x20,
+                PartialReadyToRunModule=0x40,
+            }ModuleFlags;
+        }LoaderStructs;
+        static void ModuleLoad(HANDLE pModule);
+    };
+}
 
 #else // FEATURE_EVENT_TRACE
 

@@ -42,7 +42,7 @@ namespace System.Net.Mail.Tests
         [InlineData(null)]
         [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", ~RuntimeConfiguration.Release)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/131", TestRuntimes.Mono)] // System.Net.Tests are flaky and/or long running
-        public async Task MailDelivery(string body)
+        public async Task MailDelivery(string? body)
         {
             Smtp.Credentials = new NetworkCredential("foo", "bar");
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", body);

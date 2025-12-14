@@ -136,12 +136,12 @@ bool Compiler::rpMustCreateEBPFrame(INDEBUG(const char** wbReason))
         INDEBUG(reason = "Method has Loops");
         result = true;
     }
-    if (!result && (optCallCount >= 2))
+    if (!result && (optCallCount >= optFastTailCallCount + 2))
     {
         INDEBUG(reason = "Call Count");
         result = true;
     }
-    if (!result && (optIndirectCallCount >= 1))
+    if (!result && (optIndirectCallCount >= optIndirectFastTailCallCount + 1))
     {
         INDEBUG(reason = "Indirect Call");
         result = true;

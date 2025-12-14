@@ -111,7 +111,7 @@ class Diff:
         self.spmi_location = os.path.join(coreclr_args.work_directory, "artifacts", "spmi")
 
         self.log_directory = coreclr_args.log_directory
-        self.host_os = "windows" if platform.system() == "Windows" else "linux"
+        self.host_os = CoreclrArguments.provide_default_host_os()
 
         with open(coreclr_args.partition_info, "r") as file:
             partition_info = json.load(file)
@@ -120,7 +120,11 @@ class Diff:
         self.target_os = partition_info["target_os"]
         self.arch_name = partition_info["target_arch"]
         self.col_name = partition_info["col_name"]
-        self.host_arch_name = "x64" if self.arch_name.endswith("64") else "x86"
+
+        if self.arch_name == "arm" or self.arch_name == "x86":
+            self.host_arch_name = "x86"
+        else:
+            self.host_arch_name = CoreclrArguments.provide_default_arch()
 
         # Core_Root is where the superpmi tools (superpmi.exe, mcs.exe) are expected to be found.
         # We pass the full path of the JITs to use as arguments.

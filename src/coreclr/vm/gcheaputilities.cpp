@@ -188,8 +188,12 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName, LPCWSTR libFilePath)
         return nullptr;
     }
 
+    // The APP_CONTEXT_BASE_DIRECTORY is always set by the host. In cases
+    // where the runtime is activated as a component, the base directory
+    // will be an empty string. If the base directory is an empty string, skip it.
     SString appBase;
-    if (HostInformation::GetProperty("APP_CONTEXT_BASE_DIRECTORY", appBase))
+    if (HostInformation::GetProperty("APP_CONTEXT_BASE_DIRECTORY", appBase)
+        && u16_strlen(appBase.GetUnicode()) != 0)
     {
         PathString libPath = appBase.GetUnicode();
         libPath.Append(libFileName);
@@ -203,7 +207,8 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName, LPCWSTR libFilePath)
     if (result == nullptr)
     {
         // Look for the standalone GC module next to the clr binary
-        PathString libPath = GetInternalSystemDirectory();
+        PathString libPath;
+        IfFailThrow(GetClrModuleDirectory(libPath));
         libPath.Append(libFileName);
 
         LOG((LF_GC, LL_INFO100, "Loading standalone GC by coreclr %s\n", libPath.GetUTF8()));

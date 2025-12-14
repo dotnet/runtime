@@ -132,16 +132,22 @@ namespace ILCompiler.Reflection.ReadyToRun
         private string _compilerIdentifier;
 
         /// <summary>
-        /// Underlying PE image reader is used to access raw PE structures like header
-        /// or section list.
+        /// Underlying binary image reader is used to access raw structures like headers
+        /// and sections. This can be either a PE or MachO image.
         /// </summary>
-        public PEReader CompositeReader { get; private set; }
+        public IBinaryImageReader CompositeReader { get; private set; }
 
         /// <summary>
         /// Byte array containing the ReadyToRun image
         /// </summary>
         public byte[] Image { get; private set; }
+
         private PinningReference ImagePin;
+
+        /// <summary>
+        /// NativeReader to read the image contents
+        /// </summary>
+        public NativeReader ImageReader { get; private set; }
 
         /// <summary>
         /// Name of the image file
@@ -388,7 +394,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         public ReadyToRunReader(IAssemblyResolver assemblyResolver, IAssemblyMetadata metadata, PEReader peReader, string filename)
         {
             _assemblyResolver = assemblyResolver;
-            CompositeReader = peReader;
+            CompositeReader = new PEImageReader(peReader);
             Filename = filename;
             Initialize(metadata);
         }
@@ -404,9 +410,10 @@ namespace ILCompiler.Reflection.ReadyToRun
         public ReadyToRunReader(IAssemblyResolver assemblyResolver, IAssemblyMetadata metadata, PEReader peReader, string filename, ReadOnlyMemory<byte> content)
         {
             _assemblyResolver = assemblyResolver;
-            CompositeReader = peReader;
+            CompositeReader = new PEImageReader(peReader);
             Filename = filename;
             Image = ConvertToArray(content);
+            ImageReader = new NativeReader(new MemoryStream(Image));
             Initialize(metadata);
         }
 
@@ -414,7 +421,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Minimally initializes the R2R reader.
         /// </summary>
         /// <param name="assemblyResolver">Assembly resolver</param>
-        /// <param name="filename">PE file name</param>
+        /// <param name="filename">Binary image file name</param>
         public unsafe ReadyToRunReader(IAssemblyResolver assemblyResolver, string filename)
         {
             _assemblyResolver = assemblyResolver;
@@ -426,13 +433,14 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Minimally initializes the R2R reader.
         /// </summary>
         /// <param name="assemblyResolver">Assembly resolver</param>
-        /// <param name="filename">PE file name</param>
-        /// <param name="content">PE image content</param>
+        /// <param name="filename">Binary image file name</param>
+        /// <param name="content">Binary image content</param>
         public unsafe ReadyToRunReader(IAssemblyResolver assemblyResolver, string filename, ReadOnlyMemory<byte> content)
         {
             _assemblyResolver = assemblyResolver;
             Filename = filename;
             Image = ConvertToArray(content);
+            ImageReader = new NativeReader(new MemoryStream(Image));
             Initialize(metadata: null);
         }
 
@@ -479,49 +487,68 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
         private unsafe void Initialize(IAssemblyMetadata metadata)
         {
-            _assemblyCache = new List<IAssemblyMetadata>();
+            try
+            {
+                _assemblyCache = new List<IAssemblyMetadata>();
 
-            if (CompositeReader == null)
-            {
-                Image ??= File.ReadAllBytes(Filename);
-                byte[] image = Image;
-                ImagePin = new PinningReference(image);
-                CompositeReader = new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image));
-            }
-            else
-            {
-                ImmutableArray<byte> content = CompositeReader.GetEntireImage().GetContent();
-                Image = Unsafe.As<ImmutableArray<byte>, byte[]>(ref content);
-                ImagePin = new PinningReference(Image);
-            }
-
-            if (metadata == null && CompositeReader.HasMetadata)
-            {
-                metadata = new StandaloneAssemblyMetadata(CompositeReader);
-            }
-
-            if (metadata != null)
-            {
-                if ((CompositeReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
+                if (CompositeReader == null)
                 {
-                    if (!TryLocateNativeReadyToRunHeader())
-                        throw new BadImageFormatException("The file is not a ReadyToRun image");
-
-                    Debug.Assert(Composite);
+                    Image ??= File.ReadAllBytes(Filename);
+                    ImageReader = new NativeReader(new MemoryStream(Image));
+                    byte[] image = Image;
+                    ImagePin = new PinningReference(image);
+                    if (MachO.MachObjectFile.IsMachOImage(Filename))
+                    {
+                        CompositeReader = new MachO.MachOImageReader(image);
+                    }
+                    else
+                    {
+                        CompositeReader = new PEImageReader(new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image)));
+                    }
                 }
                 else
                 {
-                    _assemblyCache.Add(metadata);
-
-                    DirectoryEntry r2rHeaderDirectory = CompositeReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
-                    _readyToRunHeaderRVA = r2rHeaderDirectory.RelativeVirtualAddress;
-                    Debug.Assert(!Composite);
+                    ImmutableArray<byte> content = CompositeReader.GetEntireImage();
+                    Image = Unsafe.As<ImmutableArray<byte>, byte[]>(ref content);
+                    ImageReader = new NativeReader(new MemoryStream(Image));
+                    ImagePin = new PinningReference(Image);
                 }
 
+                if (metadata == null)
+                {
+                    metadata = CompositeReader.GetStandaloneAssemblyMetadata();
+                }
+
+                if (!CompositeReader.TryGetReadyToRunHeader(out _readyToRunHeaderRVA, out _composite))
+                {
+                    throw new BadImageFormatException("The file is not a ReadyToRun image");
+                }
+
+                Debug.Assert(metadata != null || _composite);
+                if (metadata != null && !_composite)
+                {
+                    _assemblyCache.Add(metadata);
+                }
             }
-            else if (!TryLocateNativeReadyToRunHeader())
+            catch (BadImageFormatException)
             {
-                throw new BadImageFormatException($"ECMA metadata / RTR_HEADER not found in file '{Filename}'");
+                if (CompositeReader != null)
+                    DumpImageInformation();
+                throw;
+            }
+        }
+
+        internal void DumpImageInformation()
+        {
+            try
+            {
+                Console.Error.WriteLine($"Image file '{Filename}' information:");
+                Console.Error.WriteLine($"Size: {Image.Length} byte(s)");
+                CompositeReader.DumpImageInformation(Console.Error);
+            }
+            catch (Exception exc)
+            {
+                Console.Error.WriteLine($"Unhandled exception while dumping image information: {exc}");
             }
         }
 
@@ -560,7 +587,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                     for (int i = 0; i < count; i++)
                     {
-                        mHotColdMap.Add(new List<int> { NativeReader.ReadInt32(Image, ref hotColdMapOffset), NativeReader.ReadInt32(Image, ref hotColdMapOffset) });
+                        mHotColdMap.Add(new List<int> { ImageReader.ReadInt32(ref hotColdMapOffset), ImageReader.ReadInt32(ref hotColdMapOffset) });
                     }
 
                     for (int i = 0; i < count - 1; i++)
@@ -609,12 +636,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             return customMethods;
         }
 
-        private bool TryLocateNativeReadyToRunHeader()
-        {
-            _composite = CompositeReader.TryGetCompositeReadyToRunHeader(out _readyToRunHeaderRVA);
 
-            return _composite;
-        }
 
         private IAssemblyMetadata GetSystemModuleMetadataReader()
         {
@@ -646,21 +668,9 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 return;
             }
-            uint machine = (uint)CompositeReader.PEHeaders.CoffHeader.Machine;
-            _operatingSystem = OperatingSystem.Unknown;
-            foreach (OperatingSystem os in Enum.GetValues(typeof(OperatingSystem)))
-            {
-                _machine = (Machine)(machine ^ (uint)os);
-                if (Enum.IsDefined(typeof(Machine), _machine))
-                {
-                    _operatingSystem = os;
-                    break;
-                }
-            }
-            if (_operatingSystem == OperatingSystem.Unknown)
-            {
-                throw new BadImageFormatException($"Invalid Machine: {machine}");
-            }
+
+            _machine = CompositeReader.Machine;
+            _operatingSystem = CompositeReader.OperatingSystem;
 
             switch (_machine)
             {
@@ -682,12 +692,12 @@ namespace ILCompiler.Reflection.ReadyToRun
                     throw new NotImplementedException(Machine.ToString());
             }
 
-            _imageBase = CompositeReader.PEHeaders.PEHeader.ImageBase;
+            _imageBase = CompositeReader.ImageBase;
 
             // Initialize R2RHeader
             Debug.Assert(_readyToRunHeaderRVA != 0);
             int r2rHeaderOffset = GetOffset(_readyToRunHeaderRVA);
-            _readyToRunHeader = new ReadyToRunHeader(Image, _readyToRunHeaderRVA, r2rHeaderOffset);
+            _readyToRunHeader = new ReadyToRunHeader(ImageReader, _readyToRunHeaderRVA, r2rHeaderOffset);
 
             FindOwnerCompositeExecutable();
 
@@ -716,11 +726,11 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             int debugInfoSectionOffset = GetOffset(debugInfoSection.RelativeVirtualAddress);
 
-            NativeArray debugInfoArray = new NativeArray(Image, (uint)debugInfoSectionOffset);
+            NativeArray debugInfoArray = new NativeArray(ImageReader, (uint)debugInfoSectionOffset);
             for (uint i = 0; i < debugInfoArray.GetCount(); ++i)
             {
                 int offset = 0;
-                if (!debugInfoArray.TryGetAt(Image, i, ref offset))
+                if (!debugInfoArray.TryGetAt(i, ref offset))
                 {
                     continue;
                 }
@@ -741,7 +751,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 fixed (byte* image = Image)
                 {
                     _manifestReader = new MetadataReader(image + GetOffset(manifestMetadata.RelativeVirtualAddress), manifestMetadata.Size);
-                    _manifestAssemblyMetadata = new ManifestAssemblyMetadata(CompositeReader, _manifestReader);
+                    _manifestAssemblyMetadata = CompositeReader.GetManifestAssemblyMetadata(_manifestReader);
+
                     int assemblyRefCount = _manifestReader.GetTableRowCount(TableIndex.AssemblyRef);
                     for (int assemblyRefIndex = 1; assemblyRefIndex <= assemblyRefCount; assemblyRefIndex++)
                     {
@@ -837,13 +848,13 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             int assemblyIndex = GetAssemblyIndex(section);
             int methodDefEntryPointsOffset = GetOffset(section.RelativeVirtualAddress);
-            NativeArray methodEntryPoints = new NativeArray(Image, (uint)methodDefEntryPointsOffset);
+            NativeArray methodEntryPoints = new NativeArray(ImageReader, (uint)methodDefEntryPointsOffset);
             uint nMethodEntryPoints = methodEntryPoints.GetCount();
 
             for (uint rid = 1; rid <= nMethodEntryPoints; rid++)
             {
                 int offset = 0;
-                if (methodEntryPoints.TryGetAt(Image, rid - 1, ref offset))
+                if (methodEntryPoints.TryGetAt(rid - 1, ref offset))
                 {
                     EntityHandle methodHandle = MetadataTokens.MethodDefinitionHandle((int)rid);
                     int runtimeFunctionId;
@@ -870,13 +881,13 @@ namespace ILCompiler.Reflection.ReadyToRun
         private void ParseMethodDefEntrypointsSectionCustom<TType, TMethod, TGenericContext>(IR2RSignatureTypeProvider<TType, TMethod, TGenericContext> provider, Dictionary<TMethod, ReadyToRunMethod> foundMethods, ReadyToRunSection section, IAssemblyMetadata metadataReader)
         {
             int methodDefEntryPointsOffset = GetOffset(section.RelativeVirtualAddress);
-            NativeArray methodEntryPoints = new NativeArray(Image, (uint)methodDefEntryPointsOffset);
+            NativeArray methodEntryPoints = new NativeArray(ImageReader, (uint)methodDefEntryPointsOffset);
             uint nMethodEntryPoints = methodEntryPoints.GetCount();
 
             for (uint rid = 1; rid <= nMethodEntryPoints; rid++)
             {
                 int offset = 0;
-                if (methodEntryPoints.TryGetAt(Image, rid - 1, ref offset))
+                if (methodEntryPoints.TryGetAt(rid - 1, ref offset))
                 {
                     EntityHandle methodHandle = MetadataTokens.MethodDefinitionHandle((int)rid);
                     int runtimeFunctionId;
@@ -901,8 +912,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return;
             }
             int instMethodEntryPointsOffset = GetOffset(instMethodEntryPointSection.RelativeVirtualAddress);
-            NativeParser parser = new NativeParser(Image, (uint)instMethodEntryPointsOffset);
-            NativeHashtable instMethodEntryPoints = new NativeHashtable(Image, parser, (uint)(instMethodEntryPointsOffset + instMethodEntryPointSection.Size));
+            NativeParser parser = new NativeParser(ImageReader, (uint)instMethodEntryPointsOffset);
+            NativeHashtable instMethodEntryPoints = new NativeHashtable(ImageReader, parser, (uint)(instMethodEntryPointsOffset + instMethodEntryPointSection.Size));
             NativeHashtable.AllEntriesEnumerator allEntriesEnum = instMethodEntryPoints.EnumerateAllEntries();
             NativeParser curParser = allEntriesEnum.GetNext();
             while (!curParser.IsNull())
@@ -932,8 +943,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return;
             }
             int instMethodEntryPointsOffset = GetOffset(instMethodEntryPointSection.RelativeVirtualAddress);
-            NativeParser parser = new NativeParser(Image, (uint)instMethodEntryPointsOffset);
-            NativeHashtable instMethodEntryPoints = new NativeHashtable(Image, parser, (uint)(instMethodEntryPointsOffset + instMethodEntryPointSection.Size));
+            NativeParser parser = new NativeParser(ImageReader, (uint)instMethodEntryPointsOffset);
+            NativeHashtable instMethodEntryPoints = new NativeHashtable(ImageReader, parser, (uint)(instMethodEntryPointsOffset + instMethodEntryPointSection.Size));
             NativeHashtable.AllEntriesEnumerator allEntriesEnum = instMethodEntryPoints.EnumerateAllEntries();
             NativeParser curParser = allEntriesEnum.GetNext();
             while (!curParser.IsNull())
@@ -1069,8 +1080,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return;
             }
             int pgoInstrumentationDataOffset = GetOffset(pgoInstrumentationDataSection.RelativeVirtualAddress);
-            NativeParser parser = new NativeParser(Image, (uint)pgoInstrumentationDataOffset);
-            NativeHashtable pgoInstrumentationData = new NativeHashtable(Image, parser, (uint)(pgoInstrumentationDataOffset + pgoInstrumentationDataSection.Size));
+            NativeParser parser = new NativeParser(ImageReader, (uint)pgoInstrumentationDataOffset);
+            NativeHashtable pgoInstrumentationData = new NativeHashtable(ImageReader, parser, (uint)(pgoInstrumentationDataOffset + pgoInstrumentationDataSection.Size));
             NativeHashtable.AllEntriesEnumerator allEntriesEnum = pgoInstrumentationData.EnumerateAllEntries();
             NativeParser curParser = allEntriesEnum.GetNext();
             while (!curParser.IsNull())
@@ -1144,13 +1155,13 @@ namespace ILCompiler.Reflection.ReadyToRun
                 version = 0;
                 // get the id of the entry point runtime function from the MethodEntryPoints NativeArray
                 uint versionAndFlags = 0; // the RUNTIME_FUNCTIONS index
-                offset = (int)NativeReader.DecodeUnsigned(Image, (uint)offset, ref versionAndFlags);
+                offset = (int)ImageReader.DecodeUnsigned((uint)offset, ref versionAndFlags);
 
                 switch (versionAndFlags & 3)
                 {
                     case 3:
                         uint val = 0;
-                        NativeReader.DecodeUnsigned(Image, (uint)offset, ref val);
+                        ImageReader.DecodeUnsigned((uint)offset, ref val);
                         offset -= (int)val;
                         break;
                     case 1:
@@ -1329,8 +1340,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             _readyToRunAssemblies[assemblyIndex]._availableTypes = new List<string>();
             int availableTypesOffset = GetOffset(availableTypesSection.RelativeVirtualAddress);
-            NativeParser parser = new NativeParser(Image, (uint)availableTypesOffset);
-            NativeHashtable availableTypes = new NativeHashtable(Image, parser, (uint)(availableTypesOffset + availableTypesSection.Size));
+            NativeParser parser = new NativeParser(ImageReader, (uint)availableTypesOffset);
+            NativeHashtable availableTypes = new NativeHashtable(ImageReader, parser, (uint)(availableTypesOffset + availableTypesSection.Size));
             NativeHashtable.AllEntriesEnumerator allEntriesEnum = availableTypes.EnumerateAllEntries();
             NativeParser curParser = allEntriesEnum.GetNext();
             while (!curParser.IsNull())
@@ -1396,10 +1407,10 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             for (int assemblyIndex = 0; assemblyIndex < numberOfAssemblyHeaderRVAs; assemblyIndex++)
             {
-                ComponentAssembly assembly = new ComponentAssembly(Image, ref offset);
+                ComponentAssembly assembly = new ComponentAssembly(ImageReader, ref offset);
                 int headerOffset = GetOffset(assembly.AssemblyHeaderRVA);
 
-                ReadyToRunCoreHeader assemblyHeader = new ReadyToRunCoreHeader(Image, ref headerOffset);
+                ReadyToRunCoreHeader assemblyHeader = new ReadyToRunCoreHeader(ImageReader, ref headerOffset);
                 _readyToRunAssemblyHeaders.Add(assemblyHeader);
                 _readyToRunAssemblies.Add(new ReadyToRunAssembly(this));
             }
@@ -1420,10 +1431,23 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
+        private void EnsureImportSections()
+        {
+            try
+            {
+                EnsureImportSectionsImpl();
+            }
+            catch (BadImageFormatException)
+            {
+                DumpImageInformation();
+                throw;
+            }
+        }
+
         /// <summary>
         /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/zap/zapimport.cpp">ZapImportSectionsTable::Save</a>
         /// </summary>
-        private void EnsureImportSections()
+        private void EnsureImportSectionsImpl()
         {
             if (_importSections != null)
             {
@@ -1439,13 +1463,13 @@ namespace ILCompiler.Reflection.ReadyToRun
             int endOffset = offset + importSectionsSection.Size;
             while (offset < endOffset)
             {
-                int rva = NativeReader.ReadInt32(Image, ref offset);
+                int rva = ImageReader.ReadInt32(ref offset);
                 int sectionOffset = GetOffset(rva);
                 int startOffset = sectionOffset;
-                int size = NativeReader.ReadInt32(Image, ref offset);
-                ReadyToRunImportSectionFlags flags = (ReadyToRunImportSectionFlags)NativeReader.ReadUInt16(Image, ref offset);
-                ReadyToRunImportSectionType type = (ReadyToRunImportSectionType)NativeReader.ReadByte(Image, ref offset);
-                byte entrySize = NativeReader.ReadByte(Image, ref offset);
+                int size = ImageReader.ReadInt32(ref offset);
+                ReadyToRunImportSectionFlags flags = (ReadyToRunImportSectionFlags)ImageReader.ReadUInt16(ref offset);
+                ReadyToRunImportSectionType type = (ReadyToRunImportSectionType)ImageReader.ReadByte(ref offset);
+                byte entrySize = ImageReader.ReadByte(ref offset);
                 if (entrySize == 0)
                 {
                     switch (Machine)
@@ -1471,7 +1495,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     entryCount = size / entrySize;
                 }
-                int signatureRVA = NativeReader.ReadInt32(Image, ref offset);
+                int signatureRVA = ImageReader.ReadInt32(ref offset);
 
                 int signatureOffset = 0;
                 if (signatureRVA != 0)
@@ -1482,15 +1506,15 @@ namespace ILCompiler.Reflection.ReadyToRun
                 for (int i = 0; i < entryCount; i++)
                 {
                     int entryOffset = sectionOffset - startOffset;
-                    long section = NativeReader.ReadInt64(Image, ref sectionOffset);
-                    uint sigRva = NativeReader.ReadUInt32(Image, ref signatureOffset);
+                    long section = ImageReader.ReadInt64(ref sectionOffset);
+                    uint sigRva = ImageReader.ReadUInt32(ref signatureOffset);
                     int sigOffset = GetOffset((int)sigRva);
                     ReadyToRunSignature signature = MetadataNameFormatter.FormatSignature(_assemblyResolver, this, sigOffset);
                     entries.Add(new ReadyToRunImportSection.ImportSectionEntry(entries.Count, entryOffset, entryOffset + rva, section, sigRva, signature));
                     _importSignatures.Add(rva + entrySize * i, signature);
                 }
 
-                int auxDataRVA = NativeReader.ReadInt32(Image, ref offset);
+                int auxDataRVA = ImageReader.ReadInt32(ref offset);
                 int auxDataOffset = 0;
                 if (auxDataRVA != 0)
                 {
@@ -1539,13 +1563,13 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             // get the id of the entry point runtime function from the MethodEntryPoints NativeArray
             uint id = 0; // the RUNTIME_FUNCTIONS index
-            offset = (int)NativeReader.DecodeUnsigned(Image, (uint)offset, ref id);
+            offset = (int)ImageReader.DecodeUnsigned((uint)offset, ref id);
             if ((id & 1) != 0)
             {
                 if ((id & 2) != 0)
                 {
                     uint val = 0;
-                    NativeReader.DecodeUnsigned(Image, (uint)offset, ref val);
+                    ImageReader.DecodeUnsigned((uint)offset, ref val);
                     offset -= (int)val;
                 }
 

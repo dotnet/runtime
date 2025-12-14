@@ -37,8 +37,6 @@ class emitter;
 struct RegState
 {
     regMaskTP rsCalleeRegArgMaskLiveIn; // mask of register arguments (live on entry to method)
-    unsigned  rsCalleeRegArgCount;      // total number of incoming register arguments of this kind (int or float)
-    bool      rsIsFloat;                // true for float argument registers, false for integer argument registers
 };
 
 //-------------------- CodeGenInterface ---------------------------------
@@ -155,12 +153,14 @@ public:
                                    unsigned* mulPtr,
                                    ssize_t*  cnsPtr) = 0;
 
-    GCInfo gcInfo;
+    GCInfo   gcInfo;
+    RegSet   regSet;
+    RegState intRegState;
+    RegState floatRegState;
 
-    RegSet                regSet;
-    RegState              intRegState;
-    RegState              floatRegState;
+#if HAS_FIXED_REGISTER_SET
     NodeInternalRegisters internalRegisters;
+#endif
 
 protected:
     Compiler* compiler;
@@ -169,7 +169,8 @@ protected:
 private:
 #if defined(TARGET_XARCH)
     static const insFlags instInfo[INS_count];
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) ||        \
+    defined(TARGET_WASM)
     static const BYTE instInfo[INS_count];
 #else
 #error Unsupported target architecture
@@ -179,11 +180,15 @@ private:
 public:
     static bool instIsFP(instruction ins);
 #if defined(TARGET_XARCH)
-    static bool instIsEmbeddedBroadcastCompatible(instruction ins);
+    bool        instIsEmbeddedBroadcastCompatible(instruction ins);
     static bool instIsEmbeddedMaskingCompatible(instruction ins);
 
     static unsigned instInputSize(instruction ins);
     static unsigned instKMaskBaseSize(instruction ins);
+
+    static bool instHasPseudoName(instruction ins);
+
+    bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
 #endif // TARGET_XARCH
     //-------------------------------------------------------------------------
     // Liveness-related fields & methods
@@ -212,6 +217,8 @@ public:
 #ifdef DEBUG
     bool genWriteBarrierUsed;
 #endif
+
+    regMaskTP genGetGSCookieTempRegs(bool tailCall);
 
     // The following property indicates whether the current method sets up
     // an explicit stack frame or not.
@@ -263,7 +270,7 @@ public:
 #ifdef TARGET_XARCH
 #ifdef TARGET_AMD64
     // There are no reloc hints on x86
-    unsigned short genAddrRelocTypeHint(size_t addr);
+    CorInfoReloc genAddrRelocTypeHint(size_t addr);
 #endif
     bool genDataIndirAddrCanBeEncodedAsPCRelOffset(size_t addr);
     bool genCodeIndirAddrCanBeEncodedAsPCRelOffset(size_t addr);
@@ -825,10 +832,6 @@ public:
 
     virtual const char* siStackVarName(size_t offs, size_t size, unsigned reg, unsigned stkOffs) = 0;
 #endif // LATE_DISASM
-
-#if defined(TARGET_XARCH)
-    bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
-#endif
 };
 
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)

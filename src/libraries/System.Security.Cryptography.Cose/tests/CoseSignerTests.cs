@@ -10,28 +10,51 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void CoseSigner_ECDsa_Success()
         {
-            var signer = new CoseSigner(ECDsa.Create(), HashAlgorithmName.SHA256);
+            var signer = new CoseSigner(CoseTestHelpers.ES256, HashAlgorithmName.SHA256);
             Assert.NotNull(signer.ProtectedHeaders);
             Assert.NotNull(signer.UnprotectedHeaders);
             Assert.Null(signer.RSASignaturePadding);
+            Assert.Same(CoseTestHelpers.ES256, signer.Key);
         }
 
         [Fact]
         public void CoseSigner_RSA_Success()
         {
-            var signer = new CoseSigner(RSA.Create(), RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA256);
+            var signer = new CoseSigner(CoseTestHelpers.RSAKey, RSASignaturePadding.Pkcs1, HashAlgorithmName.SHA256);
             Assert.NotNull(signer.ProtectedHeaders);
             Assert.NotNull(signer.UnprotectedHeaders);
             Assert.NotNull(signer.RSASignaturePadding);
+            Assert.Same(CoseTestHelpers.RSAKey, signer.Key);
+        }
+
+        [Fact]
+        public void CoseSigner_CoseKey_ECDsa_Success()
+        {
+            CoseKey key = new CoseKey(CoseTestHelpers.ES256, HashAlgorithmName.SHA256);
+            var signer = new CoseSigner(key);
+            Assert.NotNull(signer.ProtectedHeaders);
+            Assert.NotNull(signer.UnprotectedHeaders);
+            Assert.Null(signer.RSASignaturePadding);
+            Assert.Same(CoseTestHelpers.ES256, signer.Key);
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public void CoseSigner_CoseKey_MLDsa_Success()
+        {
+            CoseKey key = new CoseKey(CoseTestHelpers.MLDsa44Key);
+            var signer = new CoseSigner(key);
+            Assert.NotNull(signer.ProtectedHeaders);
+            Assert.NotNull(signer.UnprotectedHeaders);
+            Assert.Null(signer.RSASignaturePadding);
+            Assert.Null(signer.Key);
         }
 
         [Fact]
         public void CoseSigner_RSAKeyNeedsSignaturePadding()
         {
-            RSA rsa = RSA.Create();
-            Assert.Throws<ArgumentException>("key", () => new CoseSigner(rsa, HashAlgorithmName.SHA256));
+            Assert.Throws<ArgumentException>("key", () => new CoseSigner(CoseTestHelpers.RSAKey, HashAlgorithmName.SHA256));
 
-            var signer = new CoseSigner(rsa, RSASignaturePadding.Pss, HashAlgorithmName.SHA256);
+            var signer = new CoseSigner(CoseTestHelpers.RSAKey, RSASignaturePadding.Pss, HashAlgorithmName.SHA256);
             Assert.Equal(signer.RSASignaturePadding, RSASignaturePadding.Pss);
         }
 
@@ -44,6 +67,7 @@ namespace System.Security.Cryptography.Cose.Tests
         [Fact]
         public void CoseSigner_NullKey()
         {
+            Assert.Throws<ArgumentNullException>("key", () => new CoseSigner((CoseKey)null!));
             Assert.Throws<ArgumentNullException>("key", () => new CoseSigner(null!, HashAlgorithmName.SHA256));
             Assert.Throws<ArgumentNullException>("key", () => new CoseSigner(null!, RSASignaturePadding.Pss, HashAlgorithmName.SHA256));
         }

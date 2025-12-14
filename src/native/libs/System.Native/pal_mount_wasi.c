@@ -11,6 +11,7 @@
 
 int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
 {
+    errno = ENOTSUP;
     return -1;
 }
 
@@ -18,13 +19,15 @@ int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInfor
 {
     assert(name != NULL);
     assert(mpi != NULL);
+    errno = ENOTSUP;
     return -1;
 }
 
 int32_t
-SystemNative_GetFormatInfoForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType)
+SystemNative_GetFileSystemTypeNameForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType)
 {
     assert((formatNameBuffer != NULL) && (formatType != NULL));
     assert(bufferLength > 0);
+    errno = ENOTSUP;
     return -1;
 }

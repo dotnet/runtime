@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out int value)
+        public void ToManaged(out int value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -47,7 +47,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out int? value)
+        public void ToManaged(out int? value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             value = new int[slot.Length];
             Marshal.Copy(slot.IntPtrValue, value, 0, slot.Length);
-            Marshal.FreeHGlobal(slot.IntPtrValue);
+            NativeMemory.Free((void*)slot.IntPtrValue);
         }
 
         /// <summary>
@@ -108,7 +108,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
             slot.Type = MarshalerType.Array;
-            slot.IntPtrValue = Marshal.AllocHGlobal(value.Length * sizeof(int));
+            slot.IntPtrValue = (IntPtr)NativeMemory.Alloc((nuint)(value.Length * sizeof(int)));
             slot.Length = value.Length;
             slot.ElementType = MarshalerType.Int32;
             Marshal.Copy(value, 0, slot.IntPtrValue, slot.Length);

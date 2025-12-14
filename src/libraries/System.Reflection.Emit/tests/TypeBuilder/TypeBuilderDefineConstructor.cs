@@ -114,14 +114,6 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<InvalidOperationException>(() => type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]));
         }
 
-        [Fact]
-        public void DefineConstructor_ConstructorNotCreated_ThrowsInvalidOperationExceptionOnCreation()
-        {
-            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]);
-            Assert.Throws<InvalidOperationException>(() => type.CreateTypeInfo());
-        }
-
         [Theory]
         [InlineData(CallingConventions.Any)]
         [InlineData(CallingConventions.VarArgs)]

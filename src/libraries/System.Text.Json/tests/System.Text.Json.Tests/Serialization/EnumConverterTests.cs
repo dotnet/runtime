@@ -1257,5 +1257,41 @@ namespace System.Text.Json.Serialization.Tests
             A,
             b,
         }
+
+        [Fact]
+        public static void EnumWithOverlappingBitsTests()
+        {
+            JsonSerializerOptions options = new() { Converters = { new JsonStringEnumConverter() } };
+
+            EnumWithOverlappingBits e1 = EnumWithOverlappingBits.BITS01 | EnumWithOverlappingBits.BIT3;
+            string json1 = JsonSerializer.Serialize(e1, options);
+            Assert.Equal("\"BITS01, BIT3\"", json1);
+
+            EnumWithOverlappingBits2 e2 = EnumWithOverlappingBits2.BITS01 | EnumWithOverlappingBits2.BIT3;
+            string json2 = JsonSerializer.Serialize(e2, options);
+            Assert.Equal("\"BITS01, BIT3\"", json2);
+        }
+
+        [Flags]
+        public enum EnumWithOverlappingBits
+        {
+            UNKNOWN = 0,
+            BIT0 = 1,
+            BIT1 = 2,
+            BIT2 = 4,
+            BIT3 = 8,
+            BITS01 = 3,
+        }
+
+        [Flags]
+        public enum EnumWithOverlappingBits2
+        {
+            UNKNOWN = 0,
+            BIT0 = 1,
+            // direct option for bit 1 missing
+            BIT2 = 4,
+            BIT3 = 8,
+            BITS01 = 3,
+        }
     }
 }

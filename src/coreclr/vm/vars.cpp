@@ -67,6 +67,12 @@ GPTR_IMPL(MethodTable,      g_TypedReferenceMT);
 GPTR_IMPL(MethodTable,      g_pWeakReferenceClass);
 GPTR_IMPL(MethodTable,      g_pWeakReferenceOfTClass);
 
+#ifdef DACCESS_COMPILE
+GPTR_IMPL(MethodTable,      g_pContinuationClassIfSubTypeCreated);
+#else
+GVAL_IMPL(Volatile<MethodTable*>, g_pContinuationClassIfSubTypeCreated);
+#endif
+
 #ifdef FEATURE_COMINTEROP
 GPTR_IMPL(MethodTable,      g_pBaseCOMObject);
 #endif
@@ -93,6 +99,9 @@ GPTR_IMPL(RCWCleanupList,g_pRCWCleanupList);
 GVAL_IMPL_INIT(DWORD, g_debuggerWordTLSIndex, TLS_OUT_OF_INDEXES);
 #endif
 GVAL_IMPL_INIT(DWORD, g_TlsIndex, TLS_OUT_OF_INDEXES);
+GVAL_IMPL_INIT(DWORD, g_offsetOfCurrentThreadInfo, 0);
+GVAL_IMPL_INIT(DWORD, g_gcNotificationFlags, 0);
+
 
 MethodTable* g_pCastHelpers;
 #ifdef FEATURE_EH_FUNCLETS
@@ -125,7 +134,6 @@ SpinConstants g_SpinConstants = {
     40000,     // dwMaximumDuration - ideally (20000 * max(2, numProc))
     3,         // dwBackoffFactor
     10,        // dwRepetitions
-    0          // dwMonitorSpinCount
 };
 
 // support for Event Tracing for Windows (ETW)
@@ -151,9 +159,6 @@ GVAL_IMPL_INIT(DWORD, g_externalMethodFixupTraceActiveCount, 0);
 #endif // DEBUGGING_SUPPORTED
 
 #if defined(PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPPORTED)
-// Profiling support
-HINSTANCE           g_pDebuggerDll = NULL;
-
 GVAL_IMPL(ProfControlBlock, g_profControlBlock);
 #endif // defined(PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPPORTED)
 
@@ -183,7 +188,11 @@ GVAL_IMPL(bool, g_fProcessDetach);
 GVAL_IMPL_INIT(bool, g_metadataUpdatesApplied, false);
 #endif
 
-GVAL_IMPL_INIT(DWORD, g_fEEShutDown, 0);
+#ifdef DACCESS_COMPILE
+GVAL_IMPL(DWORD, g_fEEShutDown);
+#else
+GVAL_IMPL(Volatile<DWORD>, g_fEEShutDown);
+#endif
 
 #ifndef TARGET_UNIX
 GVAL_IMPL(SIZE_T, g_runtimeLoadedBaseAddress);

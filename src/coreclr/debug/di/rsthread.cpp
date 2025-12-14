@@ -115,8 +115,7 @@ CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
 #endif
 
     // Set AppDomain
-    VMPTR_AppDomain vmAppDomain = pProcess->GetDAC()->GetCurrentAppDomain(vmThread);
-    m_pAppDomain = pProcess->LookupOrCreateAppDomain(vmAppDomain);
+    m_pAppDomain = pProcess->GetAppDomain();
     _ASSERTE(m_pAppDomain != NULL);
 }
 
@@ -783,7 +782,7 @@ CorDebugUserState CordbThread::GetUserState()
         m_userState = pDAC->GetUserState(m_vmThreadToken);
     }
 
-    return m_userState;
+    return (CorDebugUserState)m_userState;
 }
 
 
@@ -828,7 +827,7 @@ HRESULT CordbThread::GetCurrentException(ICorDebugValue ** ppExceptionObject)
 #if defined(_DEBUG)
                 // Since we know an exception is in progress on this thread, our assumption about the
                 // thread's current AppDomain should be correct
-                VMPTR_AppDomain vmAppDomain = pDAC->GetCurrentAppDomain(m_vmThreadToken);
+                VMPTR_AppDomain vmAppDomain = pDAC->GetCurrentAppDomain();
                 _ASSERTE(GetAppDomain()->GetADToken() == vmAppDomain);
 #endif // _DEBUG
 
@@ -887,7 +886,7 @@ HRESULT CordbThread::CreateStepper(ICorDebugStepper ** ppStepper)
 //Returns true if current user state of a thread is USER_WAIT_SLEEP_JOIN
 bool CordbThread::IsThreadWaitingOrSleeping()
 {
-    CorDebugUserState userState = m_userState;
+    int userState = m_userState;
     if (userState == kInvalidUserState)
     {
         //If m_userState is not ready, we'll read from DAC only part of it which
@@ -1843,12 +1842,8 @@ HRESULT CordbThread::GetCurrentAppDomain(CordbAppDomain ** ppAppDomain)
 
         if (SUCCEEDED(hr))
         {
-            IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-            VMPTR_AppDomain vmAppDomain = pDAC->GetCurrentAppDomain(m_vmThreadToken);
-
-            CordbAppDomain * pAppDomain = GetProcess()->LookupOrCreateAppDomain(vmAppDomain);
+            CordbAppDomain * pAppDomain = GetProcess()->GetAppDomain();
             _ASSERTE(pAppDomain != NULL);     // we should be aware of all AppDomains
-
             *ppAppDomain = pAppDomain;
         }
     }
@@ -1896,22 +1891,8 @@ HRESULT CordbThread::GetObject(ICorDebugValue ** ppThreadObject)
                 ThrowHR(E_FAIL);
             }
 
-            // We create the object relative to the current AppDomain of the thread
-            // Thread objects aren't really agile (eg. their m_Context field is domain-bound and
-            // fixed up manually during transitions).  This means that a thread object can only
-            // be used in the domain the thread was in when the object was created.
-            VMPTR_AppDomain vmAppDomain = pDAC->GetCurrentAppDomain(m_vmThreadToken);
-
-            CordbAppDomain * pThreadCurrentDomain = NULL;
-            pThreadCurrentDomain = GetProcess()->m_appDomains.GetBaseOrThrow(VmPtrToCookie(vmAppDomain));
+            CordbAppDomain * pThreadCurrentDomain = GetProcess()->GetAppDomain();
             _ASSERTE(pThreadCurrentDomain != NULL);     // we should be aware of all AppDomains
-
-            if (pThreadCurrentDomain == NULL)
-            {
-                // fall back to some domain to avoid crashes in retail -
-                // safe enough for getting the name of the thread etc.
-                pThreadCurrentDomain = GetProcess()->GetDefaultAppDomain();
-            }
 
             lockHolder.Release();
 
@@ -2442,7 +2423,7 @@ HRESULT CordbThread::GetCurrentCustomDebuggerNotification(ICorDebugValue ** ppNo
 #if defined(_DEBUG)
         // Since we know a notification has occurred on this thread, our assumption about the
         // thread's current AppDomain should be correct
-        VMPTR_AppDomain vmAppDomain = pDAC->GetCurrentAppDomain(m_vmThreadToken);
+        VMPTR_AppDomain vmAppDomain = pDAC->GetCurrentAppDomain();
 
         _ASSERTE(GetAppDomain()->GetADToken() == vmAppDomain);
 #endif // _DEBUG
@@ -2701,22 +2682,10 @@ void CordbThread::ClearStackFrameCache()
     m_stackFrames.Clear();
 }
 
-// ----------------------------------------------------------------------------
-// EnumerateBlockingObjectsCallback
-//
-// Description:
-//    A small helper used by CordbThread::GetBlockingObjects. This callback adds the enumerated items
-//    to a list
-//
-// Arguments:
-//    blockingObject - the object to add to the list
-//    pUserData - the list to add it to
-
-VOID EnumerateBlockingObjectsCallback(DacBlockingObject blockingObject, CALLBACK_DATA pUserData)
-{
-    CQuickArrayList<DacBlockingObject>* pDacBlockingObjs = (CQuickArrayList<DacBlockingObject>*)pUserData;
-    pDacBlockingObjs->Push(blockingObject);
-}
+typedef CordbEnumerator<CorDebugBlockingObject,
+                        CorDebugBlockingObject,
+                        ICorDebugBlockingObjectEnum, IID_ICorDebugBlockingObjectEnum,
+                        IdentityConvert<CorDebugBlockingObject> > CordbBlockingObjectEnumerator;
 
 // ----------------------------------------------------------------------------
 // CordbThread::GetBlockingObjects
@@ -2739,51 +2708,21 @@ HRESULT CordbThread::GetBlockingObjects(ICorDebugBlockingObjectEnum **ppBlocking
     VALIDATE_POINTER_TO_OBJECT(ppBlockingObjectEnum, ICorDebugBlockingObjectEnum **);
 
     HRESULT hr = S_OK;
-    CorDebugBlockingObject* blockingObjs = NULL;
+    *ppBlockingObjectEnum = NULL;
+
     EX_TRY
     {
-        CQuickArrayList<DacBlockingObject> dacBlockingObjects;
-        IDacDbiInterface* pDac = GetProcess()->GetDAC();
-        pDac->EnumerateBlockingObjects(m_vmThreadToken,
-            (IDacDbiInterface::FP_BLOCKINGOBJECT_ENUMERATION_CALLBACK) EnumerateBlockingObjectsCallback,
-            (CALLBACK_DATA) &dacBlockingObjects);
-        blockingObjs = new CorDebugBlockingObject[dacBlockingObjects.Size()];
-        for(SIZE_T i = 0 ; i < dacBlockingObjects.Size(); i++)
-        {
-            // ICorDebug API needs to flip the direction of the list from the way DAC stores it
-            SIZE_T dacObjIndex = dacBlockingObjects.Size()-i-1;
-            switch(dacBlockingObjects[dacObjIndex].blockingReason)
-            {
-                case DacBlockReason_MonitorCriticalSection:
-                    blockingObjs[i].blockingReason = BLOCKING_MONITOR_CRITICAL_SECTION;
-                    break;
-                case DacBlockReason_MonitorEvent:
-                    blockingObjs[i].blockingReason = BLOCKING_MONITOR_EVENT;
-                    break;
-                default:
-                    _ASSERTE(!"Should not get here");
-                    ThrowHR(E_FAIL);
-                    break;
-            }
-            blockingObjs[i].dwTimeout = dacBlockingObjects[dacObjIndex].dwTimeout;
-            CordbAppDomain* pAppDomain;
-            {
-                RSLockHolder holder(GetProcess()->GetProcessLock());
-                pAppDomain = GetProcess()->LookupOrCreateAppDomain(dacBlockingObjects[dacObjIndex].vmAppDomain);
-            }
-            blockingObjs[i].pBlockingObject = CordbValue::CreateHeapValue(pAppDomain,
-                dacBlockingObjects[dacObjIndex].vmBlockingObject);
-        }
-
-        CordbBlockingObjectEnumerator* objEnum = new CordbBlockingObjectEnumerator(GetProcess(),
-                                                                                  blockingObjs,
-                                                                                  (DWORD)dacBlockingObjects.Size());
+        // We don't have any blocking objects to enumerate from the native side,
+        // so we create an empty enumerator.
+        CordbBlockingObjectEnumerator* objEnum = new CordbBlockingObjectEnumerator(
+            GetProcess(),
+            new CorDebugBlockingObject[0],
+            0);
         GetProcess()->GetContinueNeuterList()->Add(GetProcess(), objEnum);
         hr = objEnum->QueryInterface(__uuidof(ICorDebugBlockingObjectEnum), (void**)ppBlockingObjectEnum);
-        _ASSERTE(SUCCEEDED(hr));
     }
     EX_CATCH_HRESULT(hr);
-    delete [] blockingObjs;
+
     return hr;
 }
 
@@ -3376,7 +3315,7 @@ bool CordbUnmanagedThread::IsCantStop()
     {
         _ASSERTE(!"IsCantStop: Failed updating debugger control block");
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     // Helper's canary thread is always can't-stop.
     if (this->m_id == GetProcess()->GetDCB()->m_CanaryThreadId)
@@ -3725,9 +3664,9 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
     // to avoid getting incomplete information and corrupt the thread context
     DT_CONTEXT context;
 #if defined(DT_CONTEXT_EXTENDED_REGISTERS)
-    context.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_EXTENDED_REGISTERS;
+    context.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT | DT_CONTEXT_EXTENDED_REGISTERS;
 #else
-    context.ContextFlags = DT_CONTEXT_FULL;
+    context.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT;
 #endif
     BOOL succ = DbiGetThreadContext(m_handle, &context);
     _ASSERTE(succ);
@@ -3738,9 +3677,9 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
         LOG((LF_CORDB, LL_ERROR, "CUT::SFCHFS: DbiGetThreadContext error=0x%x\n", error));
     }
 #if defined(DT_CONTEXT_EXTENDED_REGISTERS)
-    GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_EXTENDED_REGISTERS;
+    GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT | DT_CONTEXT_EXTENDED_REGISTERS;
 #else
-    GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL;
+    GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_FLOATING_POINT;
 #endif
     CORDbgCopyThreadContext(GetHijackCtx(), &context);
     LOG((LF_CORDB, LL_INFO10000, "CUT::SFCHFS: thread=0x%x Hijacking for sync. Original context is:\n", this));
@@ -4973,6 +4912,7 @@ HRESULT CordbValueEnum::Init()
         }
         case LOCAL_VARS_REJIT_IL:
         {
+#ifdef FEATURE_CODE_VERSIONING
             // Get the locals signature.
             ULONG localsCount;
             CordbReJitILCode* pCode = jil->GetReJitILCode();
@@ -4987,6 +4927,9 @@ HRESULT CordbValueEnum::Init()
                 // Grab the number of locals for the size of the enumeration.
                 m_iMax = localsCount;
             }
+#else
+            m_iMax = 0;
+#endif // FEATURE_CODE_VERSIONING
             break;
         }
     }
@@ -7533,7 +7476,11 @@ CordbJITILFrame::CordbJITILFrame(CordbNativeFrame *    pNativeFrame,
                                  GENERICS_TYPE_TOKEN   exactGenericArgsToken,
                                  DWORD                 dwExactGenericArgsTokenIndex,
                                  bool                  fVarArgFnx,
+#ifdef FEATURE_CODE_VERSIONING
                                  CordbReJitILCode *    pRejitCode,
+#else
+                                 void *                pRejitCode,
+#endif // FEATURE_CODE_VERSIONING
                                  bool                  fAdjustedIP)
   : CordbBase(pNativeFrame->GetProcess(), 0, enumCordbJITILFrame),
     m_nativeFrame(pNativeFrame),
@@ -7549,7 +7496,9 @@ CordbJITILFrame::CordbJITILFrame(CordbNativeFrame *    pNativeFrame,
     m_genericArgsLoaded(false),
     m_frameParamsToken(exactGenericArgsToken),
     m_dwFrameParamsTokenIndex(dwExactGenericArgsTokenIndex),
+#ifdef FEATURE_CODE_VERSIONING
     m_pReJitCode(pRejitCode),
+#endif // FEATURE_CODE_VERSIONING
     m_adjustedIP(fAdjustedIP)
 {
     // We'll initialize the SigParser in CordbJITILFrame::Init().
@@ -7762,7 +7711,9 @@ void CordbJITILFrame::Neuter()
         m_rgbSigParserBuf = NULL;
     }
 
+#ifdef FEATURE_CODE_VERSIONING
     m_pReJitCode.Clear();
+#endif // FEATURE_CODE_VERSIONING
 
     // If this class ever inherits from the CordbFrame we'll need a call
     // to CordbFrame::Neuter() here instead of to CordbBase::Neuter();
@@ -9068,8 +9019,13 @@ HRESULT CordbJITILFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
 
     if (flags != ILCODE_ORIGINAL_IL && flags != ILCODE_REJIT_IL)
         return E_INVALIDARG;
+#ifdef FEATURE_CODE_VERSIONING
     if (flags == ILCODE_REJIT_IL && m_pReJitCode == NULL)
         return E_INVALIDARG;
+#else
+    if (flags == ILCODE_REJIT_IL)
+        return E_INVALIDARG;
+#endif // FEATURE_CODE_VERSIONING
 
     const ICorDebugInfo::NativeVarInfo *pNativeInfo;
 
@@ -9100,7 +9056,11 @@ HRESULT CordbJITILFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
 
         // Get the type of this argument from the function
         CordbType *type;
+#ifdef FEATURE_CODE_VERSIONING
         CordbILCode* pActiveCode = m_pReJitCode != NULL ? m_pReJitCode : m_ilCode;
+#else
+        CordbILCode* pActiveCode = m_ilCode;
+#endif // FEATURE_CODE_VERSIONING
         hr = pActiveCode->GetLocalVariableType(dwIndex, &(this->m_genericArgs), &type);
         IfFailThrow(hr);
 
@@ -9111,6 +9071,7 @@ HRESULT CordbJITILFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
         //       (GetLocalVariableType will return E_INVALIDARG if not)
         // b) the type of local in the original signature matches the type of local in the instrumented signature
         //       (the code below will return CORDBG_E_IL_VAR_NOT_AVAILABLE)
+#ifdef FEATURE_CODE_VERSIONING
         if (flags == ILCODE_ORIGINAL_IL && m_pReJitCode != NULL)
         {
             CordbType* pOriginalType;
@@ -9121,6 +9082,7 @@ HRESULT CordbJITILFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
                 IfFailThrow(CORDBG_E_IL_VAR_NOT_AVAILABLE); // bad profiler, it shouldn't have changed types
             }
         }
+#endif // FEATURE_CODE_VERSIONING
 
 
         hr = GetNativeVariable(type, pNativeInfo, ppValue);
@@ -9147,11 +9109,15 @@ HRESULT CordbJITILFrame::GetCodeEx(ILCodeKind flags, ICorDebugCode **ppCode)
     }
     else
     {
+#ifdef FEATURE_CODE_VERSIONING
         *ppCode = m_pReJitCode;
         if (m_pReJitCode != NULL)
         {
             m_pReJitCode->ExternalAddRef();
         }
+#else
+        *ppCode = NULL;
+#endif // FEATURE_CODE_VERSIONING
     }
     return S_OK;
 }
@@ -9161,10 +9127,12 @@ CordbILCode* CordbJITILFrame::GetOriginalILCode()
     return m_ilCode;
 }
 
+#ifdef FEATURE_CODE_VERSIONING
 CordbReJitILCode* CordbJITILFrame::GetReJitILCode()
 {
     return m_pReJitCode;
 }
+#endif // FEATURE_CODE_VERSIONING
 
 void CordbJITILFrame::AdjustIPAfterException()
 {

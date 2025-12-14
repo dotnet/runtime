@@ -20,9 +20,6 @@ namespace System.Collections.Generic
     ** behavior.)
     **
     ===========================================================*/
-#if TYPE_LOADER_IMPLEMENTATION
-    [System.Runtime.CompilerServices.ForceDictionaryLookups]
-#endif
     internal class LowLevelDictionary<TKey, TValue> where TKey : IEquatable<TKey>
     {
         private const int DefaultSize = 17;
@@ -206,10 +203,6 @@ namespace System.Collections.Generic
             return (h % (numBuckets == 0 ? _buckets.Length : numBuckets));
         }
 
-
-#if TYPE_LOADER_IMPLEMENTATION
-        [System.Runtime.CompilerServices.ForceDictionaryLookups]
-#endif
         private sealed class Entry
         {
             public TKey m_key;
@@ -221,9 +214,6 @@ namespace System.Collections.Generic
         private int _numEntries;
         private int _version;
 
-#if TYPE_LOADER_IMPLEMENTATION
-        [System.Runtime.CompilerServices.ForceDictionaryLookups]
-#endif
         protected sealed class LowLevelDictEnumerator : IEnumerator<KeyValuePair<TKey, TValue>>
         {
             public LowLevelDictEnumerator(LowLevelDictionary<TKey, TValue> dict)

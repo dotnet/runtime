@@ -115,7 +115,7 @@ ICorDebugFrame * UpdateFrame(ICorDebugThread * pThread, ICorDebugFrame * pOldFra
         // continue with a NULL ICDFrame.  VS is able to handle this gracefully.
         pNewFrame.Assign(NULL);
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return pNewFrame;
 }

@@ -218,6 +218,7 @@ namespace ILCompiler
                 bool IDependencyNode<NodeFactory>.StaticDependenciesAreComputed => true;
                 bool IDependencyNode.Marked => true;
 
+                string IDependencyNode<NodeFactory>.GetName(NodeFactory context) => _name;
                 void ISymbolNode.AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb) => sb.Append(_name);
                 IEnumerable<CombinedDependencyListEntry> IDependencyNode<NodeFactory>.GetConditionalStaticDependencies(NodeFactory context) => throw new NotImplementedException();
                 IEnumerable<DependencyListEntry> IDependencyNode<NodeFactory>.GetStaticDependencies(NodeFactory context) => null;
@@ -239,7 +240,7 @@ namespace ILCompiler
 
             public override TypeSystemContext Context => _context;
             public override TypeDesc OwningType => _context.GeneratedAssembly.GetGlobalModuleType();
-            public override string Name => "InitializeReachabilityInfo";
+            public override ReadOnlySpan<byte> Name => "InitializeReachabilityInfo"u8;
             public override string DiagnosticName => "InitializeReachabilityInfo";
 
             public override MethodIL EmitIL()
@@ -252,7 +253,7 @@ namespace ILCompiler
                 codeStream.Emit(ILOpcode.ldsflda, dataFieldToken);
                 codeStream.Emit(ILOpcode.ldind_i4);
 
-                MethodDesc registerMethod = Context.GetHelperEntryPoint("ReachabilityInstrumentationSupport", "Register");
+                MethodDesc registerMethod = Context.GetHelperEntryPoint("ReachabilityInstrumentationSupport"u8, "Register"u8);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(registerMethod));
 
                 codeStream.Emit(ILOpcode.ret);

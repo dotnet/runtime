@@ -105,6 +105,7 @@ parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action=
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
 parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_true", default=False)
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
+parser.add_argument("--interpreter", dest="interpreter", action="store_true", default=False)
 
 parser.add_argument("--analyze_results_only", dest="analyze_results_only", action="store_true", default=False)
 parser.add_argument("--verbose", dest="verbose", action="store_true", default=False)
@@ -570,9 +571,6 @@ def call_msbuild(args):
                 "/p:Configuration=%s" % args.build_type,
                 "/p:__LogsDir=%s" % args.logs_dir]
 
-    if args.il_link:
-        command += ["/p:RunTestsViaIllink=true"]
-
     if args.limited_core_dumps:
         command += ["/p:LimitedCoreDumps=true"]
 
@@ -856,6 +854,11 @@ def run_tests(args,
         print("Running tests NativeAOT")
         os.environ["CLRCustomTestLauncher"] = args.nativeaottest_script_path
 
+    if args.interpreter:
+        print("Running tests with the interpreter")
+        print("Setting RunInterpreter=1")
+        os.environ["RunInterpreter"] = "1"
+
     if gc_stress:
         per_test_timeout *= 8
         print("Running GCStress, extending test timeout to cater for slower runtime.")
@@ -1010,6 +1013,11 @@ def setup_args(args):
                               lambda arg: True,
                               "Error setting run_nativeaot_tests")
 
+    coreclr_setup_args.verify(args,
+                              "interpreter",
+                              lambda arg: True,
+                              "Error setting interpreter")
+
     if coreclr_setup_args.sequential and coreclr_setup_args.parallel:
         print("Error: don't specify both --sequential and -parallel")
         sys.exit(1)
@@ -1089,7 +1097,7 @@ def find_test_from_name(host_os, test_location, test_name):
                 dir_contents[re.sub("[%s]" % string.punctuation, "_", item)] = item
 
             file_name_cache[test_path_dir] = dir_contents
-        
+
         return dir_contents
 
     def match_filename(test_path):
@@ -1275,7 +1283,7 @@ def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
                     # This doesn't do anything in the merged model.
                     type = type.split("._")[0]
                     test_name = type + "::" + method
-                    
+
                     # The "name" is something like:
                     # 1. Merged model: "JIT\Regression\CLR-x86-JIT\V1.2-M02\b00719\b00719\b00719.dll" or
                     # "_CompareVectorWithZero_r::CompareVectorWithZero.TestVector64Equality()"

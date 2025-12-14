@@ -15,7 +15,6 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/corunix.hpp"
 #include "pal/context.h"
 #include "pal/thread.hpp"
-#include "pal/mutex.hpp"
 #include "pal/handlemgr.hpp"
 #include "pal/seh.hpp"
 #include "pal/signal.hpp"
@@ -40,6 +39,10 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #if defined(__sun)
 #include <procfs.h>
 #include <fcntl.h>
+#endif
+
+#if defined(TARGET_BROWSER)
+#include <emscripten/stack.h>
 #endif
 
 #include <signal.h>
@@ -100,8 +103,7 @@ CObjectType CorUnix::otThread(
                 NULL,   // No process local data cleanup routine
                 CObjectType::WaitableObject,
                 CObjectType::SingleTransitionObject,
-                CObjectType::ThreadReleaseHasNoSideEffects,
-                CObjectType::NoOwner
+                CObjectType::ThreadReleaseHasNoSideEffects
                 );
 
 CAllowedObjectTypes aotThread(otiThread);
@@ -794,20 +796,6 @@ CorUnix::InternalEndCurrentThread(
     ISynchStateController *pSynchStateController = NULL;
 
     //
-    // Abandon any objects owned by this thread
-    //
-
-    palError = g_pSynchronizationManager->AbandonObjectsOwnedByThread(
-        pThread,
-        pThread
-        );
-
-    if (NO_ERROR != palError)
-    {
-        ERROR("Failure abandoning owned objects");
-    }
-
-    //
     // Need to synchronize setting the thread state to TS_DONE since
     // this is checked for in InternalSuspendThreadFromData.
     // TODO: Is this still needed after removing InternalSuspendThreadFromData?
@@ -1330,10 +1318,9 @@ CorUnix::GetThreadTimesInternal(
     CPalThread *pThread;
     CPalThread *pTargetThread;
     IPalObject *pobjThread = NULL;
+    clockid_t cid;
 #ifdef __sun
     int fd;
-#else // __sun
-    clockid_t cid;
 #endif // __sun
 
     pThread = InternalGetCurrentThread();
@@ -1584,13 +1571,6 @@ CPalThread::ThreadEntry(
             ASSERT("Error %i attempting to suspend new thread\n", palError);
             goto fail;
         }
-
-        //
-        // We need to run any APCs that have already been queued for
-        // this thread.
-        //
-
-        (void) g_pSynchronizationManager->DispatchPendingAPCs(pThread);
     }
     else
     {
@@ -2073,12 +2053,6 @@ CPalThread::RunPreCreateInitializers(
         goto RunPreCreateInitializersExit;
     }
 
-    palError = apcInfo.InitializePreCreate();
-    if (NO_ERROR != palError)
-    {
-        goto RunPreCreateInitializersExit;
-    }
-
 RunPreCreateInitializersExit:
 
     return palError;
@@ -2160,12 +2134,6 @@ CPalThread::RunPostCreateInitializers(
     }
 
     palError = suspensionInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
-    if (NO_ERROR != palError)
-    {
-        goto RunPostCreateInitializersExit;
-    }
-
-    palError = apcInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
     if (NO_ERROR != palError)
     {
         goto RunPostCreateInitializersExit;
@@ -2281,6 +2249,10 @@ Return :
 BOOL
 CPalThread::EnsureSignalAlternateStack()
 {
+#ifdef TARGET_WASM
+    // WebAssembly does not support alternate signal stacks.
+    return TRUE;
+#else // !TARGET_WASM
     int st = 0;
 
     if (g_registered_signal_handlers)
@@ -2334,6 +2306,7 @@ CPalThread::EnsureSignalAlternateStack()
     }
 
     return (st == 0);
+#endif // !TARGET_WASM
 }
 
 /*++
@@ -2351,6 +2324,7 @@ Return :
 void
 CPalThread::FreeSignalAlternateStack()
 {
+#ifndef TARGET_WASM // WebAssembly does not support alternate signal stacks.
     void *altstack = m_alternateStack;
     m_alternateStack = nullptr;
 
@@ -2374,6 +2348,7 @@ CPalThread::FreeSignalAlternateStack()
             }
         }
     }
+#endif // !TARGET_WASM
 }
 
 #endif // !HAVE_MACH_EXCEPTIONS
@@ -2444,6 +2419,7 @@ CPalThread::GetStackBase()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
+#ifndef TARGET_BROWSER
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
@@ -2460,7 +2436,10 @@ CPalThread::GetStackBase()
     _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
 
     stackBase = (void*)((size_t)stackAddr + stackSize);
-#endif
+#else // TARGET_BROWSER
+    stackBase = (void*)emscripten_stack_get_base();
+#endif // TARGET_BROWSER
+#endif // !TARGET_APPLE
 
     return stackBase;
 }
@@ -2484,6 +2463,7 @@ CPalThread::GetStackLimit()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
+#ifndef TARGET_BROWSER
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
@@ -2498,7 +2478,19 @@ CPalThread::GetStackLimit()
 
     status = pthread_attr_destroy(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
-#endif
+#else // TARGET_BROWSER
+    uintptr_t stackLimitMaybe = emscripten_stack_get_end();
+    if (stackLimitMaybe == 0) // emscripten_stack_get_end can return 0.
+    {
+        stackLimitMaybe += sizeof(size_t);
+
+        // CoreCLR doesn't like using 0 as a limit address.
+        // So we bump it up a bit and tell emscripten about it.
+        emscripten_stack_set_limits(GetStackBase(), (void*)stackLimitMaybe);
+    }
+    stackLimit = (void*)stackLimitMaybe;
+#endif // TARGET_BROWSER
+#endif // !TARGET_APPLE
 
     return stackLimit;
 }

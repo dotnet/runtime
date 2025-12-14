@@ -293,7 +293,7 @@ namespace CoreclrTestLib
             }
             if (collectedDump)
             {
-                TryPrintStackTraceFromDmp(crashDumpPath, outputWriter);
+                TryPrintStackTraceFromWindowsDmp(crashDumpPath, outputWriter);
             }
             return collectedDump;
         }
@@ -664,7 +664,7 @@ namespace CoreclrTestLib
             }
         }
 
-        public static bool TryPrintStackTraceFromDmp(string dmpFile, TextWriter outputWriter)
+        public static bool TryPrintStackTraceFromWindowsDmp(string dmpFile, TextWriter outputWriter)
         {
             string? targetArchitecture = Environment.GetEnvironmentVariable(TEST_TARGET_ARCHITECTURE_ENVIRONMENT_VAR);
             if (string.IsNullOrEmpty(targetArchitecture))
@@ -681,9 +681,17 @@ namespace CoreclrTestLib
             }
 
             string sosPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".dotnet", "sos", "sos.dll");
+            
+            string corDllArg = string.Empty;
+            string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
+            if (coreRoot is not null)
+            {
+                corDllArg = $".cordll -lp \"{coreRoot}\"";
+            }
 
             var cdbScriptPath = Path.GetTempFileName();
             File.WriteAllText(cdbScriptPath, $$"""
+                {{ corDllArg }}
                 .load {{sosPath}}
                 ~*k
                 !clrstack -f -all
@@ -852,7 +860,7 @@ namespace CoreclrTestLib
                                             break;
                                         }
                                         outputWriter.WriteLine($"Processing {dmpFile.FullName}");
-                                        TryPrintStackTraceFromDmp(dmpFile.FullName, outputWriter);
+                                        TryPrintStackTraceFromWindowsDmp(dmpFile.FullName, outputWriter);
                                     }
                                 }
                             }

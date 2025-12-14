@@ -123,6 +123,7 @@ const char* varTypeName(var_types vt)
     return varTypeNames[vt];
 }
 
+#if HAS_FIXED_REGISTER_SET
 /*****************************************************************************
  *
  *  Return the name of the given register.
@@ -147,6 +148,7 @@ const char* getRegName(regNumber reg)
     assert(reg < ArrLen(regNames));
     return regNames[reg];
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 const char* getRegName(unsigned reg) // this is for gcencode.cpp and disasm.cpp that dont use the regNumber type
 {
@@ -283,6 +285,7 @@ const char* getRegNameFloat(regNumber reg, var_types type)
  */
 const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regNumber regFirst, regNumber regLast)
 {
+#if HAS_FIXED_REGISTER_SET
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
            ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)) ||
@@ -419,6 +422,7 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
         regPrev = regNum;
     }
 
+#endif // HAS_FIXED_REGISTER_SET
     return sep;
 }
 
@@ -1087,7 +1091,7 @@ void ConfigDoubleArray::Dump()
 
 #endif // defined(DEBUG)
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
 void Counter::dump(FILE* output)
 {
@@ -1253,7 +1257,7 @@ void DumpOnShutdown::DumpAll()
     }
 }
 
-#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
+#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE
 
 /*****************************************************************************
  * Fixed bit vector class
@@ -1511,15 +1515,15 @@ void HelperCallProperties::init()
     {
         // Generally you want initialize these to their most typical/safest result
         //
-        bool isPure        = false; // true if the result only depends upon input args and not any global state
-        bool noThrow       = false; // true if the helper will never throw
-        bool alwaysThrow   = false; // true if the helper will always throw
-        bool nonNullReturn = false; // true if the result will never be null or zero
-        bool isAllocator   = false; // true if the result is usually a newly created heap item, or may throw OutOfMemory
-        bool mutatesHeap   = false; // true if any previous heap objects [are|can be] modified
-        bool mayRunCctor   = false; // true if the helper call may cause a static constructor to be run.
-        bool isNoEscape    = false; // true if none of the GC ref arguments can escape
-        bool isNoGC        = false; // true if the helper cannot trigger GC
+        bool              isPure = false; // true if the result only depends upon input args and not any global state
+        ExceptionSetFlags exceptions    = ExceptionSetFlags::UnknownException; // Exceptions the helper may throw
+        bool              alwaysThrow   = false;                               // true if the helper will always throw
+        bool              nonNullReturn = false; // true if the result will never be null or zero
+        bool isAllocator = false; // true if the result is usually a newly created heap item, or may throw OutOfMemory
+        bool mutatesHeap = false; // true if any previous heap objects [are|can be] modified
+        bool mayRunCctor = false; // true if the helper call may cause a static constructor to be run.
+        bool isNoEscape  = false; // true if none of the GC ref arguments can escape
+        bool isNoGC      = false; // true if the helper cannot trigger GC
 
         switch (helper)
         {
@@ -1534,22 +1538,19 @@ void HelperCallProperties::init()
             case CORINFO_HELP_LNG2DBL:
             case CORINFO_HELP_ULNG2FLT:
             case CORINFO_HELP_ULNG2DBL:
-            case CORINFO_HELP_DBL2INT:
             case CORINFO_HELP_DBL2LNG:
-            case CORINFO_HELP_DBL2UINT:
             case CORINFO_HELP_DBL2ULNG:
             case CORINFO_HELP_FLTREM:
             case CORINFO_HELP_DBLREM:
-                isPure  = true;
-                noThrow = true;
+                isPure     = true;
+                exceptions = ExceptionSetFlags::None;
                 break;
 
             // Arithmetic helpers that *can* throw.
 
             // This (or these) are not pure, in that they have "VM side effects"...but they don't mutate the heap.
             case CORINFO_HELP_ENDCATCH:
-
-                noThrow = true;
+                exceptions = ExceptionSetFlags::None;
                 break;
 
             // Arithmetic helpers that may throw
@@ -1587,7 +1588,7 @@ void HelperCallProperties::init()
 
                 isAllocator   = true;
                 nonNullReturn = true;
-                noThrow       = true; // only can throw OutOfMemory
+                exceptions    = ExceptionSetFlags::None; // only can throw OutOfMemory
                 break;
 
             // These allocation helpers do some checks on the size (and lower bound) inputs,
@@ -1598,20 +1599,11 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEW_MDARR_RARE:
             case CORINFO_HELP_NEWARR_1_DIRECT:
             case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
-            case CORINFO_HELP_NEWARR_1_OBJ:
+            case CORINFO_HELP_NEWARR_1_PTR:
             case CORINFO_HELP_READYTORUN_NEWARR_1:
 
                 isAllocator   = true;
                 nonNullReturn = true;
-                break;
-
-            // Heap Allocation helpers that are also pure
-            case CORINFO_HELP_STRCNS:
-
-                isPure        = true;
-                isAllocator   = true;
-                nonNullReturn = true;
-                noThrow       = true; // only can throw OutOfMemory
                 break;
 
             case CORINFO_HELP_BOX_NULLABLE:
@@ -1622,7 +1614,7 @@ void HelperCallProperties::init()
                 // will produce different results when the contents of the memory pointed to by the Byref changes
                 //
                 isAllocator = true;
-                noThrow     = true; // only can throw OutOfMemory
+                exceptions  = ExceptionSetFlags::None; // only can throw OutOfMemory
                 break;
 
             case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
@@ -1630,7 +1622,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                 // logging helpers are not technically pure but can be optimized away
                 isPure        = true;
-                noThrow       = true;
+                exceptions    = ExceptionSetFlags::None;
                 nonNullReturn = true;
                 break;
 
@@ -1643,13 +1635,13 @@ void HelperCallProperties::init()
             case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
             case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
 
-                isPure  = true;
-                noThrow = true; // These return null for a failing cast
+                isPure     = true;
+                exceptions = ExceptionSetFlags::None; // These return null for a failing cast
                 break;
 
             case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
-                isPure  = true;
-                noThrow = true;
+                isPure     = true;
+                exceptions = ExceptionSetFlags::None;
                 break;
 
             // type casting helpers that throw
@@ -1695,8 +1687,8 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GETCLASSFROMMETHODPARAM:
             case CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
 
-                isPure  = true;
-                noThrow = true;
+                isPure     = true;
+                exceptions = ExceptionSetFlags::None;
                 break;
 
             // Helpers that load the base address for static variables.
@@ -1729,7 +1721,7 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_INITCLASS:
             case CORINFO_HELP_INITINSTCLASS:
-                isPure      = true;
+                mutatesHeap = true;
                 mayRunCctor = true;
                 break;
 
@@ -1754,7 +1746,7 @@ void HelperCallProperties::init()
                 // These do not invoke static class constructors
                 //
                 isPure        = true;
-                noThrow       = true;
+                exceptions    = ExceptionSetFlags::None;
                 nonNullReturn = true;
                 break;
 
@@ -1813,8 +1805,8 @@ void HelperCallProperties::init()
 
             // This is a debugging aid; it simply returns a constant address.
             case CORINFO_HELP_LOOP_CLONE_CHOICE_ADDR:
-                isPure  = true;
-                noThrow = true;
+                isPure     = true;
+                exceptions = ExceptionSetFlags::None;
                 break;
 
             case CORINFO_HELP_INIT_PINVOKE_FRAME:
@@ -1829,7 +1821,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
-                noThrow = true;
+                exceptions = ExceptionSetFlags::None;
                 break;
 
             case CORINFO_HELP_TAILCALL: // Never present on stack at the time of GC.
@@ -1843,6 +1835,14 @@ void HelperCallProperties::init()
                 mutatesHeap = true; // Conservatively.
                 break;
 
+            case CORINFO_HELP_VIRTUAL_FUNC_PTR:
+            case CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
+            case CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
+                mutatesHeap = false;
+                isPure      = true;
+                exceptions  = ExceptionSetFlags::NullReferenceException;
+                break;
+
             default:
                 // The most pessimistic results are returned for these helpers.
                 mutatesHeap = true;
@@ -1850,7 +1850,7 @@ void HelperCallProperties::init()
         }
 
         m_isPure[helper]        = isPure;
-        m_noThrow[helper]       = noThrow;
+        m_exceptions[helper]    = exceptions;
         m_alwaysThrow[helper]   = alwaysThrow;
         m_nonNullReturn[helper] = nonNullReturn;
         m_isAllocator[helper]   = isAllocator;
@@ -3171,7 +3171,7 @@ double FloatingPointUtils::normalize(double value)
     }
 
     uint64_t bits;
-    static_assert_no_msg(sizeof(bits) == sizeof(value));
+    static_assert(sizeof(bits) == sizeof(value));
     memcpy(&bits, &value, sizeof(value));
     bits |= 1ull << 51;
     memcpy(&value, &bits, sizeof(bits));

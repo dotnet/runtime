@@ -61,6 +61,11 @@ bool CodeGen::genInstrWithConstant(
     {
         case INS_add:
         case INS_sub:
+            if (imm < 0)
+            {
+                imm = -imm;
+                ins = (ins == INS_add) ? INS_sub : INS_add;
+            }
             immFitsInIns = validImmForInstr(ins, (target_ssize_t)imm, flags);
             break;
 
@@ -379,7 +384,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 //
 void CodeGen::genLclHeap(GenTree* tree)
 {
-    assert(tree->OperGet() == GT_LCLHEAP);
+    assert(tree->OperIs(GT_LCLHEAP));
     assert(compiler->compLocallocUsed);
 
     GenTree* size = tree->AsOp()->gtOp1;
@@ -453,7 +458,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         // For small allocations we will generate up to four push instructions (either 2 or 4, exactly,
         // since STACK_ALIGN is 8, and REGSIZE_BYTES is 4).
-        static_assert_no_msg(STACK_ALIGN == (REGSIZE_BYTES * 2));
+        static_assert(STACK_ALIGN == (REGSIZE_BYTES * 2));
         assert(amount % REGSIZE_BYTES == 0);
         target_size_t pushCount = amount / REGSIZE_BYTES;
         if (pushCount <= 4)
@@ -649,6 +654,21 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genAsyncResumeInfo: emits address of async resume info for a specific state
+//
+// Parameters:
+//   treeNode - the GT_ASYNC_RESUME_INFO node
+//
+void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
+{
+    CORINFO_FIELD_HANDLE fieldOffs = genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1);
+    assert(compiler->eeIsJitDataOffs(fieldOffs));
+    genMov32RelocatableDataLabel(compiler->eeGetJitDataOffs(fieldOffs), treeNode->GetRegNum());
+
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
 // genGetInsForOper: Return instruction encoding of the operation tree.
 //
 instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
@@ -735,7 +755,7 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForNegNot(GenTree* tree)
+void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_NEG, GT_NOT));
 
@@ -799,7 +819,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     regNumber srcReg        = REG_NA;
 
     assert(source->isContained());
-    if (source->gtOper == GT_IND)
+    if (source->OperIs(GT_IND))
     {
         GenTree* srcAddr = source->gtGetOp1();
         assert(!srcAddr->isContained());
@@ -908,7 +928,7 @@ void CodeGen::genCodeForShiftLong(GenTree* tree)
     assert(oper == GT_LSH_HI || oper == GT_RSH_LO);
 
     GenTree* operand = tree->AsOp()->gtOp1;
-    assert(operand->OperGet() == GT_LONG);
+    assert(operand->OperIs(GT_LONG));
     assert(operand->AsOp()->gtOp1->isUsedFromReg());
     assert(operand->AsOp()->gtOp2->isUsedFromReg());
 
@@ -1200,7 +1220,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 //
 void CodeGen::genCkfinite(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_CKFINITE);
+    assert(treeNode->OperIs(GT_CKFINITE));
 
     emitter*  emit       = GetEmitter();
     var_types targetType = treeNode->TypeGet();
@@ -1307,7 +1327,7 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
 //
 void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 {
-    assert(tree->OperGet() == GT_RETURNTRAP);
+    assert(tree->OperIs(GT_RETURNTRAP));
 
     // this is nothing but a conditional call to CORINFO_HELP_STOP_FOR_GC
     // based on the contents of 'data'
@@ -1402,10 +1422,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 //
 void CodeGen::genLongToIntCast(GenTree* cast)
 {
-    assert(cast->OperGet() == GT_CAST);
+    assert(cast->OperIs(GT_CAST));
 
     GenTree* src = cast->gtGetOp1();
-    noway_assert(src->OperGet() == GT_LONG);
+    noway_assert(src->OperIs(GT_LONG));
 
     genConsumeRegs(src);
 
@@ -1485,7 +1505,7 @@ void CodeGen::genLongToIntCast(GenTree* cast)
 void CodeGen::genIntToFloatCast(GenTree* treeNode)
 {
     // int --> float/double conversions are always non-overflow ones
-    assert(treeNode->OperGet() == GT_CAST);
+    assert(treeNode->OperIs(GT_CAST));
     assert(!treeNode->gtOverflow());
 
     regNumber targetReg = treeNode->GetRegNum();
@@ -1550,7 +1570,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 {
     // we don't expect to see overflow detecting float/double --> int type conversions here
     // as they should have been converted into helper calls by front-end.
-    assert(treeNode->OperGet() == GT_CAST);
+    assert(treeNode->OperIs(GT_CAST));
     assert(!treeNode->gtOverflow());
 
     regNumber targetReg = treeNode->GetRegNum();
@@ -1616,7 +1636,16 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     else
 #endif
     {
-        addr = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, (void**)&pAddr);
+        CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
+        if (helperFunction.accessType == IAT_VALUE)
+        {
+            addr = helperFunction.addr;
+        }
+        else
+        {
+            assert(helperFunction.accessType == IAT_PVALUE);
+            pAddr = (void**)helperFunction.addr;
+        }
     }
 
     EmitCallParams params;

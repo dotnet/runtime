@@ -623,7 +623,7 @@ struct MSLAYOUT DacpTieredVersionData
 };
 
 // for JITType
-enum JITTypes {TYPE_UNKNOWN=0,TYPE_JIT,TYPE_PJIT};
+enum JITTypes {TYPE_UNKNOWN=0,TYPE_JIT,TYPE_PJIT,TYPE_INTERPRETER};
 
 struct MSLAYOUT DacpCodeHeaderData
 {
@@ -1039,8 +1039,6 @@ struct MSLAYOUT DacpJitCodeHeapInfo
 
     DacpJitCodeHeapInfo() : codeHeapType(0), LoaderHeap(0) {}
 };
-
-#include "static_assert.h"
 
 /* DAC datastructures are frozen as of dev11 shipping.  Do NOT add fields, remove fields, or change the fields of
  * these structs in any way.  The correct way to get new data out of the runtime is to create a new struct and

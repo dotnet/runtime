@@ -69,7 +69,7 @@
 
   <PropertyGroup>
     <!-- Define properties that depend on the host SDK RID here. -->
-    <BuildHostTools Condition="'$(DotNetBuildOrchestrator)' == 'true' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'">true</BuildHostTools>
+    <BuildHostTools Condition="'$(DotNetBuildFromVMR)' == 'true' and '$(TargetRid)' != '$(NETCoreSdkRuntimeIdentifier)'">true</BuildHostTools>
     <BuildHostILTools Condition="'$(BuildHostTools)' == 'true' and $([MSBuild]::IsOsPlatform(Windows))">true</BuildHostILTools>
   </PropertyGroup>
 
@@ -209,4 +209,6 @@
       <Analyzer Remove="@(_targetingPackExcludedAnalyzerReferenceWithProjectName->Metadata('OriginalIdentity'))" />
     </ItemGroup>
   </Target>
+
+  <Import Project="$(RepositoryEngineeringDir)pruning.targets" />
 </Project>

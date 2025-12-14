@@ -88,7 +88,7 @@ namespace System.Security.Cryptography
             out int bytesRead) =>
             _wrapped.ImportSubjectPublicKeyInfo(source, out bytesRead);
 
-        public override unsafe void ImportECPrivateKey(
+        public override void ImportECPrivateKey(
             ReadOnlySpan<byte> source,
             out int bytesRead) =>
             _wrapped.ImportECPrivateKey(source, out bytesRead);
@@ -174,10 +174,6 @@ namespace System.Security.Cryptography
 
         public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
             _wrapped.VerifyHash(hash, signature);
-
-        public override bool Equals(object? obj) => _wrapped.Equals(obj);
-
-        public override int GetHashCode() => _wrapped.GetHashCode();
 
         public override string ToString() => _wrapped.ToString()!;
 

@@ -75,10 +75,10 @@
           Outputs="$(MicrosoftNetCoreAppRuntimePackDir)data\PlatformManifest.txt"
           Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFile)"
-                              PackageId="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(OutputRID)"
+                              PackageId="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(TargetRid)"
                               PackageVersion="$(ProductVersion)"
                               PlatformManifestFile="$(MicrosoftNetCoreAppRuntimePackDir)data\PlatformManifest.txt"
-                              PreferredPackages="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(OutputRID)"
+                              PreferredPackages="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(TargetRid)"
                               PermitDllAndExeFilesLackingFileVersion="true" />
   </Target>
 
@@ -107,16 +107,16 @@
     <!-- Shared framework deps file generation. Produces a test shared-framework deps file. -->
     <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NetCoreAppCurrentTestHostSharedFrameworkPath)"
                                          RuntimeGraphFiles="$([MSBuild]::ValueOrDefault('$(RuntimeIdentifierGraphPath)', '$(BundledRuntimeIdentifierGraphFile)'))"
-                                         TargetRuntimeIdentifier="$(OutputRID)" />
+                                         TargetRuntimeIdentifier="$(TargetRid)" />
   </Target>
 
   <Target Name="GetRuntimePackFiles">
     <ItemGroup>
       <RuntimePackLibFile Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.*">
-        <TargetPath>runtimes/$(OutputRID)/lib/$(NetCoreAppCurrent)</TargetPath>
+        <TargetPath>runtimes/$(TargetRid)/lib/$(NetCoreAppCurrent)</TargetPath>
       </RuntimePackLibFile>
       <RuntimePackNativeFile Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)*.*">
-        <TargetPath>runtimes/$(OutputRID)/native</TargetPath>
+        <TargetPath>runtimes/$(TargetRid)/native</TargetPath>
         <IsNative>true</IsNative>
       </RuntimePackNativeFile>
       <!-- Clear the IsNative flag on System.Private.CoreLib given that it is present in native dir but it is actually managed -->

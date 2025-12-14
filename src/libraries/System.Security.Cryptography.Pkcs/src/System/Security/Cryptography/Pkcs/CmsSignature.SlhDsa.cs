@@ -100,26 +100,16 @@ namespace System.Security.Cryptography.Pkcs
                 // not enforce them here. It is up to the caller to choose an appropriate hash.
 
                 signatureParameters = null;
+                signatureAlgorithm = _signatureAlgorithm;
 
-                SlhDsa? signingKey = key as SlhDsa;
-                IDisposable? signingKeyResources = null;
-
-                if (signingKey is null)
+                using (GetSigningKey(key, certificate, silent, static cert => cert.GetSlhDsaPublicKey(), out SlhDsa? signingKey))
                 {
-                    // If there's no private key, fall back to the public key for a "no private key" exception.
-                    signingKeyResources = signingKey =
-                        PkcsPal.Instance.GetPrivateKeyForSigning<SlhDsa>(certificate, silent) ?? certificate.GetSlhDsaPublicKey();
-
                     if (signingKey is null)
                     {
-                        signatureAlgorithm = null;
                         signatureValue = null;
                         return false;
                     }
-                }
 
-                using (signingKeyResources)
-                {
                     // Don't pool because we will likely return this buffer to the caller.
                     byte[] signature = new byte[signingKey.Algorithm.SignatureSizeInBytes];
                     signingKey.SignData(dataHash, signature);
@@ -130,7 +120,6 @@ namespace System.Security.Cryptography.Pkcs
                         {
                             if (!certKey.VerifyData(dataHash, signature))
                             {
-                                signatureAlgorithm = null;
                                 signatureValue = null;
                                 return false;
                             }
@@ -138,7 +127,6 @@ namespace System.Security.Cryptography.Pkcs
                     }
 
                     signatureValue = signature;
-                    signatureAlgorithm = _signatureAlgorithm;
                     return true;
                 }
             }

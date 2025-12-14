@@ -26,7 +26,7 @@ namespace System.Threading.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void EventWaitHandle_Create_NameMultipleNew(string name)
+        public void EventWaitHandle_Create_NameMultipleNew(string? name)
         {
             EventWaitHandleSecurity security = GetBasicEventWaitHandleSecurity();
 

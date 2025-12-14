@@ -13,16 +13,16 @@ public class CompareVectorWithZero
     public static void TestVector64Equality()
     {
         TestEquality(Vector64.Create(0));
-        TestEquality(Vector64.Create(0.0f));
-        TestEquality(Vector64.Create(-0.0f));
-        TestEquality(Vector64.Create(0.0));
-        TestEquality(Vector64.Create(-0.0));
+        TestEquality(Vector64<float>.Zero);
+        TestEquality(Vector64<float>.NegativeZero);
+        TestEquality(Vector64<double>.Zero);
+        TestEquality(Vector64<double>.NegativeZero);
 
         TestEqualityUsingReversedInputs(Vector64.Create(0));
-        TestEqualityUsingReversedInputs(Vector64.Create(0.0f));
-        TestEqualityUsingReversedInputs(Vector64.Create(-0.0f));
-        TestEqualityUsingReversedInputs(Vector64.Create(0.0));
-        TestEqualityUsingReversedInputs(Vector64.Create(-0.0));
+        TestEqualityUsingReversedInputs(Vector64<float>.Zero);
+        TestEqualityUsingReversedInputs(Vector64<float>.NegativeZero);
+        TestEqualityUsingReversedInputs(Vector64<double>.Zero);
+        TestEqualityUsingReversedInputs(Vector64<double>.NegativeZero);
 
         TestEquality(Vector64.Create(-10));
         TestEquality(Vector64.Create(10));
@@ -32,16 +32,16 @@ public class CompareVectorWithZero
         TestEquality(Vector64.Create(0, 0, 0, 0, 0, 0, 0, -1));
 
         TestEqualityUsingAnd(Vector64.Create(0), Vector64.Create(0));
-        TestEqualityUsingAnd(Vector64.Create(0.0f), Vector64.Create(0.0f));
-        TestEqualityUsingAnd(Vector64.Create(-0.0f), Vector64.Create(-0.0f));
-        TestEqualityUsingAnd(Vector64.Create(0.0), Vector64.Create(0.0));
-        TestEqualityUsingAnd(Vector64.Create(-0.0), Vector64.Create(-0.0));
+        TestEqualityUsingAnd(Vector64<float>.Zero, Vector64<float>.Zero);
+        TestEqualityUsingAnd(Vector64<float>.NegativeZero, Vector64<float>.NegativeZero);
+        TestEqualityUsingAnd(Vector64<double>.Zero, Vector64<double>.Zero);
+        TestEqualityUsingAnd(Vector64<double>.NegativeZero, Vector64<double>.NegativeZero);
 
         TestEqualityUsingAndNot(Vector64.Create(0), Vector64.Create(0));
-        TestEqualityUsingAndNot(Vector64.Create(0.0f), Vector64.Create(0.0f));
-        TestEqualityUsingAndNot(Vector64.Create(-0.0f), Vector64.Create(-0.0f));
-        TestEqualityUsingAndNot(Vector64.Create(0.0), Vector64.Create(0.0));
-        TestEqualityUsingAndNot(Vector64.Create(-0.0), Vector64.Create(-0.0));
+        TestEqualityUsingAndNot(Vector64<float>.Zero, Vector64<float>.Zero);
+        TestEqualityUsingAndNot(Vector64<float>.NegativeZero, Vector64<float>.NegativeZero);
+        TestEqualityUsingAndNot(Vector64<double>.Zero, Vector64<double>.Zero);
+        TestEqualityUsingAndNot(Vector64<double>.NegativeZero, Vector64<double>.NegativeZero);
 
         TestEquality(Vector64.Create(0, 0, 0, 0, 0, 0, -1, 0));
         TestEquality(Vector64.Create(0, 0, 0, 0, 0, 0, -1, 0));
@@ -58,16 +58,16 @@ public class CompareVectorWithZero
     public static void TestVector128Equality()
     {
         TestEquality(Vector128.Create(0));
-        TestEquality(Vector128.Create(0.0f));
-        TestEquality(Vector128.Create(-0.0f));
-        TestEquality(Vector128.Create(0.0));
-        TestEquality(Vector128.Create(-0.0));
+        TestEquality(Vector128<float>.Zero);
+        TestEquality(Vector128<float>.NegativeZero);
+        TestEquality(Vector128<double>.Zero);
+        TestEquality(Vector128<double>.NegativeZero);
 
         TestEqualityUsingReversedInputs(Vector128.Create(0));
-        TestEqualityUsingReversedInputs(Vector128.Create(0.0f));
-        TestEqualityUsingReversedInputs(Vector128.Create(-0.0f));
-        TestEqualityUsingReversedInputs(Vector128.Create(0.0));
-        TestEqualityUsingReversedInputs(Vector128.Create(-0.0));
+        TestEqualityUsingReversedInputs(Vector128<float>.Zero);
+        TestEqualityUsingReversedInputs(Vector128<float>.NegativeZero);
+        TestEqualityUsingReversedInputs(Vector128<double>.Zero);
+        TestEqualityUsingReversedInputs(Vector128<double>.NegativeZero);
 
         TestEquality(Vector128.Create(-10));
         TestEquality(Vector128.Create(10));
@@ -77,16 +77,16 @@ public class CompareVectorWithZero
         TestEquality(Vector128.Create(0, 0, 0, 0, 0, 0, 0, -1));
 
         TestEqualityUsingAnd(Vector128.Create(0), Vector128.Create(0));
-        TestEqualityUsingAnd(Vector128.Create(0.0f), Vector128.Create(0.0f));
-        TestEqualityUsingAnd(Vector128.Create(-0.0f), Vector128.Create(-0.0f));
-        TestEqualityUsingAnd(Vector128.Create(0.0), Vector128.Create(0.0));
-        TestEqualityUsingAnd(Vector128.Create(-0.0), Vector128.Create(-0.0));
+        TestEqualityUsingAnd(Vector128<float>.Zero, Vector128<float>.Zero);
+        TestEqualityUsingAnd(Vector128<float>.NegativeZero, Vector128<float>.NegativeZero);
+        TestEqualityUsingAnd(Vector128<double>.Zero, Vector128<double>.Zero);
+        TestEqualityUsingAnd(Vector128<double>.NegativeZero, Vector128<double>.NegativeZero);
 
         TestEqualityUsingAndNot(Vector128.Create(0), Vector128.Create(0));
-        TestEqualityUsingAndNot(Vector128.Create(0.0f), Vector128.Create(0.0f));
-        TestEqualityUsingAndNot(Vector128.Create(-0.0f), Vector128.Create(-0.0f));
-        TestEqualityUsingAndNot(Vector128.Create(0.0), Vector128.Create(0.0));
-        TestEqualityUsingAndNot(Vector128.Create(-0.0), Vector128.Create(-0.0));
+        TestEqualityUsingAndNot(Vector128<float>.Zero, Vector128<float>.Zero);
+        TestEqualityUsingAndNot(Vector128<float>.NegativeZero, Vector128<float>.NegativeZero);
+        TestEqualityUsingAndNot(Vector128<double>.Zero, Vector128<double>.Zero);
+        TestEqualityUsingAndNot(Vector128<double>.NegativeZero, Vector128<double>.NegativeZero);
 
         TestEquality(Vector128.Create(0, 0, 0, 0, 0, 0, 1, 0));
         TestEquality(Vector128.Create(0, 0, 0, 0, 0, 0, 1, 0));
@@ -103,16 +103,16 @@ public class CompareVectorWithZero
     public static void TestVector256Equality()
     {
         TestEquality(Vector256.Create(0));
-        TestEquality(Vector256.Create(0.0f));
-        TestEquality(Vector256.Create(-0.0f));
-        TestEquality(Vector256.Create(0.0));
-        TestEquality(Vector256.Create(-0.0));
+        TestEquality(Vector256<float>.Zero);
+        TestEquality(Vector256<float>.NegativeZero);
+        TestEquality(Vector256<double>.Zero);
+        TestEquality(Vector256<double>.NegativeZero);
 
         TestEqualityUsingReversedInputs(Vector256.Create(0));
-        TestEqualityUsingReversedInputs(Vector256.Create(0.0f));
-        TestEqualityUsingReversedInputs(Vector256.Create(-0.0f));
-        TestEqualityUsingReversedInputs(Vector256.Create(0.0));
-        TestEqualityUsingReversedInputs(Vector256.Create(-0.0));
+        TestEqualityUsingReversedInputs(Vector256<float>.Zero);
+        TestEqualityUsingReversedInputs(Vector256<float>.NegativeZero);
+        TestEqualityUsingReversedInputs(Vector256<double>.Zero);
+        TestEqualityUsingReversedInputs(Vector256<double>.NegativeZero);
 
         TestEquality(Vector256.Create(-10));
         TestEquality(Vector256.Create(10));
@@ -122,16 +122,16 @@ public class CompareVectorWithZero
         TestEquality(Vector256.Create(0, 0, 0, 0, 0, 0, 0, -1));
 
         TestEqualityUsingAnd(Vector256.Create(0), Vector256.Create(0));
-        TestEqualityUsingAnd(Vector256.Create(0.0f), Vector256.Create(0.0f));
-        TestEqualityUsingAnd(Vector256.Create(-0.0f), Vector256.Create(-0.0f));
-        TestEqualityUsingAnd(Vector256.Create(0.0), Vector256.Create(0.0));
-        TestEqualityUsingAnd(Vector256.Create(-0.0), Vector256.Create(-0.0));
+        TestEqualityUsingAnd(Vector256<float>.Zero, Vector256<float>.Zero);
+        TestEqualityUsingAnd(Vector256<float>.NegativeZero, Vector256<float>.NegativeZero);
+        TestEqualityUsingAnd(Vector256<double>.Zero, Vector256<double>.Zero);
+        TestEqualityUsingAnd(Vector256<double>.NegativeZero, Vector256<double>.NegativeZero);
 
         TestEqualityUsingAndNot(Vector256.Create(0), Vector256.Create(0));
-        TestEqualityUsingAndNot(Vector256.Create(0.0f), Vector256.Create(0.0f));
-        TestEqualityUsingAndNot(Vector256.Create(-0.0f), Vector256.Create(-0.0f));
-        TestEqualityUsingAndNot(Vector256.Create(0.0), Vector256.Create(0.0));
-        TestEqualityUsingAndNot(Vector256.Create(-0.0), Vector256.Create(-0.0));
+        TestEqualityUsingAndNot(Vector256<float>.Zero, Vector256<float>.Zero);
+        TestEqualityUsingAndNot(Vector256<float>.NegativeZero, Vector256<float>.NegativeZero);
+        TestEqualityUsingAndNot(Vector256<double>.Zero, Vector256<double>.Zero);
+        TestEqualityUsingAndNot(Vector256<double>.NegativeZero, Vector256<double>.NegativeZero);
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/pull/65632#issuecomment-1046294324", TestRuntimes.Mono)]
@@ -139,16 +139,16 @@ public class CompareVectorWithZero
     public static void TestVector512Equality()
     {
         TestEquality(Vector512.Create(0));
-        TestEquality(Vector512.Create(0.0f));
-        TestEquality(Vector512.Create(-0.0f));
-        TestEquality(Vector512.Create(0.0));
-        TestEquality(Vector512.Create(-0.0));
+        TestEquality(Vector512<float>.Zero);
+        TestEquality(Vector512<float>.NegativeZero);
+        TestEquality(Vector512<double>.Zero);
+        TestEquality(Vector512<double>.NegativeZero);
 
         TestEqualityUsingReversedInputs(Vector512.Create(0));
-        TestEqualityUsingReversedInputs(Vector512.Create(0.0f));
-        TestEqualityUsingReversedInputs(Vector512.Create(-0.0f));
-        TestEqualityUsingReversedInputs(Vector512.Create(0.0));
-        TestEqualityUsingReversedInputs(Vector512.Create(-0.0));
+        TestEqualityUsingReversedInputs(Vector512<float>.Zero);
+        TestEqualityUsingReversedInputs(Vector512<float>.NegativeZero);
+        TestEqualityUsingReversedInputs(Vector512<double>.Zero);
+        TestEqualityUsingReversedInputs(Vector512<double>.NegativeZero);
 
         TestEquality(Vector512.Create(-10));
         TestEquality(Vector512.Create(10));
@@ -158,16 +158,16 @@ public class CompareVectorWithZero
         TestEquality(Vector512.Create(0, 0, 0, 0, 0, 0, 0, -1));
 
         TestEqualityUsingAnd(Vector512.Create(0), Vector512.Create(0));
-        TestEqualityUsingAnd(Vector512.Create(0.0f), Vector512.Create(0.0f));
-        TestEqualityUsingAnd(Vector512.Create(-0.0f), Vector512.Create(-0.0f));
-        TestEqualityUsingAnd(Vector512.Create(0.0), Vector512.Create(0.0));
-        TestEqualityUsingAnd(Vector512.Create(-0.0), Vector512.Create(-0.0));
+        TestEqualityUsingAnd(Vector512<float>.Zero, Vector512<float>.Zero);
+        TestEqualityUsingAnd(Vector512<float>.NegativeZero, Vector512<float>.NegativeZero);
+        TestEqualityUsingAnd(Vector512<double>.Zero, Vector512<double>.Zero);
+        TestEqualityUsingAnd(Vector512<double>.NegativeZero, Vector512<double>.NegativeZero);
 
         TestEqualityUsingAndNot(Vector512.Create(0), Vector512.Create(0));
-        TestEqualityUsingAndNot(Vector512.Create(0.0f), Vector512.Create(0.0f));
-        TestEqualityUsingAndNot(Vector512.Create(-0.0f), Vector512.Create(-0.0f));
-        TestEqualityUsingAndNot(Vector512.Create(0.0), Vector512.Create(0.0));
-        TestEqualityUsingAndNot(Vector512.Create(-0.0), Vector512.Create(-0.0));
+        TestEqualityUsingAndNot(Vector512<float>.Zero, Vector512<float>.Zero);
+        TestEqualityUsingAndNot(Vector512<float>.NegativeZero, Vector512<float>.NegativeZero);
+        TestEqualityUsingAndNot(Vector512<double>.Zero, Vector512<double>.Zero);
+        TestEqualityUsingAndNot(Vector512<double>.NegativeZero, Vector512<double>.NegativeZero);
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/pull/65632#issuecomment-1046294324", TestRuntimes.Mono)]
@@ -175,16 +175,16 @@ public class CompareVectorWithZero
     public static void TestVector64Inequality()
     {
         TestInequality(Vector64.Create(0));
-        TestInequality(Vector64.Create(0.0f));
-        TestInequality(Vector64.Create(-0.0f));
-        TestInequality(Vector64.Create(0.0));
-        TestInequality(Vector64.Create(-0.0));
+        TestInequality(Vector64<float>.Zero);
+        TestInequality(Vector64<float>.NegativeZero);
+        TestInequality(Vector64<double>.Zero);
+        TestInequality(Vector64<double>.NegativeZero);
 
         TestInequalityUsingReversedInputs(Vector64.Create(0));
-        TestInequalityUsingReversedInputs(Vector64.Create(0.0f));
-        TestInequalityUsingReversedInputs(Vector64.Create(-0.0f));
-        TestInequalityUsingReversedInputs(Vector64.Create(0.0));
-        TestInequalityUsingReversedInputs(Vector64.Create(-0.0));
+        TestInequalityUsingReversedInputs(Vector64<float>.Zero);
+        TestInequalityUsingReversedInputs(Vector64<float>.NegativeZero);
+        TestInequalityUsingReversedInputs(Vector64<double>.Zero);
+        TestInequalityUsingReversedInputs(Vector64<double>.NegativeZero);
 
         TestInequality(Vector64.Create(-10));
         TestInequality(Vector64.Create(10));
@@ -194,16 +194,16 @@ public class CompareVectorWithZero
         TestInequality(Vector64.Create(0, 0, 0, 0, 0, 0, 0, -1));
 
         TestInequalityUsingAnd(Vector64.Create(0), Vector64.Create(0));
-        TestInequalityUsingAnd(Vector64.Create(0.0f), Vector64.Create(0.0f));
-        TestInequalityUsingAnd(Vector64.Create(-0.0f), Vector64.Create(-0.0f));
-        TestInequalityUsingAnd(Vector64.Create(0.0), Vector64.Create(0.0));
-        TestInequalityUsingAnd(Vector64.Create(-0.0), Vector64.Create(-0.0));
+        TestInequalityUsingAnd(Vector64<float>.Zero, Vector64<float>.Zero);
+        TestInequalityUsingAnd(Vector64<float>.NegativeZero, Vector64<float>.NegativeZero);
+        TestInequalityUsingAnd(Vector64<double>.Zero, Vector64<double>.Zero);
+        TestInequalityUsingAnd(Vector64<double>.NegativeZero, Vector64<double>.NegativeZero);
 
         TestInequalityUsingAndNot(Vector64.Create(0), Vector64.Create(0));
-        TestInequalityUsingAndNot(Vector64.Create(0.0f), Vector64.Create(0.0f));
-        TestInequalityUsingAndNot(Vector64.Create(-0.0f), Vector64.Create(-0.0f));
-        TestInequalityUsingAndNot(Vector64.Create(0.0), Vector64.Create(0.0));
-        TestInequalityUsingAndNot(Vector64.Create(-0.0), Vector64.Create(-0.0));
+        TestInequalityUsingAndNot(Vector64<float>.Zero, Vector64<float>.Zero);
+        TestInequalityUsingAndNot(Vector64<float>.NegativeZero, Vector64<float>.NegativeZero);
+        TestInequalityUsingAndNot(Vector64<double>.Zero, Vector64<double>.Zero);
+        TestInequalityUsingAndNot(Vector64<double>.NegativeZero, Vector64<double>.NegativeZero);
 
         TestInequality(Vector64.Create(0, 0, 0, 0, 0, 0, -1, 0));
         TestInequality(Vector64.Create(0, 0, 0, 0, 0, 0, -1, 0));
@@ -220,16 +220,16 @@ public class CompareVectorWithZero
     public static void TestVector128Inequality()
     {
         TestInequality(Vector128.Create(0));
-        TestInequality(Vector128.Create(0.0f));
-        TestInequality(Vector128.Create(-0.0f));
-        TestInequality(Vector128.Create(0.0));
-        TestInequality(Vector128.Create(-0.0));
+        TestInequality(Vector128<float>.Zero);
+        TestInequality(Vector128<float>.NegativeZero);
+        TestInequality(Vector128<double>.Zero);
+        TestInequality(Vector128<double>.NegativeZero);
 
         TestInequalityUsingReversedInputs(Vector128.Create(0));
-        TestInequalityUsingReversedInputs(Vector128.Create(0.0f));
-        TestInequalityUsingReversedInputs(Vector128.Create(-0.0f));
-        TestInequalityUsingReversedInputs(Vector128.Create(0.0));
-        TestInequalityUsingReversedInputs(Vector128.Create(-0.0));
+        TestInequalityUsingReversedInputs(Vector128<float>.Zero);
+        TestInequalityUsingReversedInputs(Vector128<float>.NegativeZero);
+        TestInequalityUsingReversedInputs(Vector128<double>.Zero);
+        TestInequalityUsingReversedInputs(Vector128<double>.NegativeZero);
 
         TestInequality(Vector128.Create(-10));
         TestInequality(Vector128.Create(10));
@@ -239,16 +239,16 @@ public class CompareVectorWithZero
         TestInequality(Vector128.Create(0, 0, 0, 0, 0, 0, 0, -1));
 
         TestInequalityUsingAnd(Vector128.Create(0), Vector128.Create(0));
-        TestInequalityUsingAnd(Vector128.Create(0.0f), Vector128.Create(0.0f));
-        TestInequalityUsingAnd(Vector128.Create(-0.0f), Vector128.Create(-0.0f));
-        TestInequalityUsingAnd(Vector128.Create(0.0), Vector128.Create(0.0));
-        TestInequalityUsingAnd(Vector128.Create(-0.0), Vector128.Create(-0.0));
+        TestInequalityUsingAnd(Vector128<float>.Zero, Vector128<float>.Zero);
+        TestInequalityUsingAnd(Vector128<float>.NegativeZero, Vector128<float>.NegativeZero);
+        TestInequalityUsingAnd(Vector128<double>.Zero, Vector128<double>.Zero);
+        TestInequalityUsingAnd(Vector128<double>.NegativeZero, Vector128<double>.NegativeZero);
 
         TestInequalityUsingAndNot(Vector128.Create(0), Vector128.Create(0));
-        TestInequalityUsingAndNot(Vector128.Create(0.0f), Vector128.Create(0.0f));
-        TestInequalityUsingAndNot(Vector128.Create(-0.0f), Vector128.Create(-0.0f));
-        TestInequalityUsingAndNot(Vector128.Create(0.0), Vector128.Create(0.0));
-        TestInequalityUsingAndNot(Vector128.Create(-0.0), Vector128.Create(-0.0));
+        TestInequalityUsingAndNot(Vector128<float>.Zero, Vector128<float>.Zero);
+        TestInequalityUsingAndNot(Vector128<float>.NegativeZero, Vector128<float>.NegativeZero);
+        TestInequalityUsingAndNot(Vector128<double>.Zero, Vector128<double>.Zero);
+        TestInequalityUsingAndNot(Vector128<double>.NegativeZero, Vector128<double>.NegativeZero);
 
         TestInequality(Vector128.Create(0, 0, 0, 0, 0, 0, 1, 0));
         TestInequality(Vector128.Create(0, 0, 0, 0, 0, 0, 1, 0));
@@ -265,16 +265,16 @@ public class CompareVectorWithZero
     public static void TestVector256Inequality()
     {
         TestInequality(Vector256.Create(0));
-        TestInequality(Vector256.Create(0.0f));
-        TestInequality(Vector256.Create(-0.0f));
-        TestInequality(Vector256.Create(0.0));
-        TestInequality(Vector256.Create(-0.0));
+        TestInequality(Vector256<float>.Zero);
+        TestInequality(Vector256<float>.NegativeZero);
+        TestInequality(Vector256<double>.Zero);
+        TestInequality(Vector256<double>.NegativeZero);
 
         TestInequalityUsingReversedInputs(Vector256.Create(0));
-        TestInequalityUsingReversedInputs(Vector256.Create(0.0f));
-        TestInequalityUsingReversedInputs(Vector256.Create(-0.0f));
-        TestInequalityUsingReversedInputs(Vector256.Create(0.0));
-        TestInequalityUsingReversedInputs(Vector256.Create(-0.0));
+        TestInequalityUsingReversedInputs(Vector256<float>.Zero);
+        TestInequalityUsingReversedInputs(Vector256<float>.NegativeZero);
+        TestInequalityUsingReversedInputs(Vector256<double>.Zero);
+        TestInequalityUsingReversedInputs(Vector256<double>.NegativeZero);
 
         TestInequality(Vector256.Create(-10));
         TestInequality(Vector256.Create(10));
@@ -284,16 +284,16 @@ public class CompareVectorWithZero
         TestInequality(Vector256.Create(0, 0, 0, 0, 0, 0, 0, -1));
 
         TestInequalityUsingAnd(Vector256.Create(0), Vector256.Create(0));
-        TestInequalityUsingAnd(Vector256.Create(0.0f), Vector256.Create(0.0f));
-        TestInequalityUsingAnd(Vector256.Create(-0.0f), Vector256.Create(-0.0f));
-        TestInequalityUsingAnd(Vector256.Create(0.0), Vector256.Create(0.0));
-        TestInequalityUsingAnd(Vector256.Create(-0.0), Vector256.Create(-0.0));
+        TestInequalityUsingAnd(Vector256<float>.Zero, Vector256<float>.Zero);
+        TestInequalityUsingAnd(Vector256<float>.NegativeZero, Vector256<float>.NegativeZero);
+        TestInequalityUsingAnd(Vector256<double>.Zero, Vector256<double>.Zero);
+        TestInequalityUsingAnd(Vector256<double>.NegativeZero, Vector256<double>.NegativeZero);
 
         TestInequalityUsingAndNot(Vector256.Create(0), Vector256.Create(0));
-        TestInequalityUsingAndNot(Vector256.Create(0.0f), Vector256.Create(0.0f));
-        TestInequalityUsingAndNot(Vector256.Create(-0.0f), Vector256.Create(-0.0f));
-        TestInequalityUsingAndNot(Vector256.Create(0.0), Vector256.Create(0.0));
-        TestInequalityUsingAndNot(Vector256.Create(-0.0), Vector256.Create(-0.0));
+        TestInequalityUsingAndNot(Vector256<float>.Zero, Vector256<float>.Zero);
+        TestInequalityUsingAndNot(Vector256<float>.NegativeZero, Vector256<float>.NegativeZero);
+        TestInequalityUsingAndNot(Vector256<double>.Zero, Vector256<double>.Zero);
+        TestInequalityUsingAndNot(Vector256<double>.NegativeZero, Vector256<double>.NegativeZero);
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/pull/65632#issuecomment-1046294324", TestRuntimes.Mono)]
@@ -301,16 +301,16 @@ public class CompareVectorWithZero
     public static void TestVector512Inequality()
     {
         TestInequality(Vector512.Create(0));
-        TestInequality(Vector512.Create(0.0f));
-        TestInequality(Vector512.Create(-0.0f));
-        TestInequality(Vector512.Create(0.0));
-        TestInequality(Vector512.Create(-0.0));
+        TestInequality(Vector512<float>.Zero);
+        TestInequality(Vector512<float>.NegativeZero);
+        TestInequality(Vector512<double>.Zero);
+        TestInequality(Vector512<double>.NegativeZero);
 
         TestInequalityUsingReversedInputs(Vector512.Create(0));
-        TestInequalityUsingReversedInputs(Vector512.Create(0.0f));
-        TestInequalityUsingReversedInputs(Vector512.Create(-0.0f));
-        TestInequalityUsingReversedInputs(Vector512.Create(0.0));
-        TestInequalityUsingReversedInputs(Vector512.Create(-0.0));
+        TestInequalityUsingReversedInputs(Vector512<float>.Zero);
+        TestInequalityUsingReversedInputs(Vector512<float>.NegativeZero);
+        TestInequalityUsingReversedInputs(Vector512<double>.Zero);
+        TestInequalityUsingReversedInputs(Vector512<double>.NegativeZero);
 
         TestInequality(Vector512.Create(-10));
         TestInequality(Vector512.Create(10));
@@ -320,16 +320,16 @@ public class CompareVectorWithZero
         TestInequality(Vector512.Create(0, 0, 0, 0, 0, 0, 0, -1));
 
         TestInequalityUsingAnd(Vector512.Create(0), Vector512.Create(0));
-        TestInequalityUsingAnd(Vector512.Create(0.0f), Vector512.Create(0.0f));
-        TestInequalityUsingAnd(Vector512.Create(-0.0f), Vector512.Create(-0.0f));
-        TestInequalityUsingAnd(Vector512.Create(0.0), Vector512.Create(0.0));
-        TestInequalityUsingAnd(Vector512.Create(-0.0), Vector512.Create(-0.0));
+        TestInequalityUsingAnd(Vector512<float>.Zero, Vector512<float>.Zero);
+        TestInequalityUsingAnd(Vector512<float>.NegativeZero, Vector512<float>.NegativeZero);
+        TestInequalityUsingAnd(Vector512<double>.Zero, Vector512<double>.Zero);
+        TestInequalityUsingAnd(Vector512<double>.NegativeZero, Vector512<double>.NegativeZero);
 
         TestInequalityUsingAndNot(Vector512.Create(0), Vector512.Create(0));
-        TestInequalityUsingAndNot(Vector512.Create(0.0f), Vector512.Create(0.0f));
-        TestInequalityUsingAndNot(Vector512.Create(-0.0f), Vector512.Create(-0.0f));
-        TestInequalityUsingAndNot(Vector512.Create(0.0), Vector512.Create(0.0));
-        TestInequalityUsingAndNot(Vector512.Create(-0.0), Vector512.Create(-0.0));
+        TestInequalityUsingAndNot(Vector512<float>.Zero, Vector512<float>.Zero);
+        TestInequalityUsingAndNot(Vector512<float>.NegativeZero, Vector512<float>.NegativeZero);
+        TestInequalityUsingAndNot(Vector512<double>.Zero, Vector512<double>.Zero);
+        TestInequalityUsingAndNot(Vector512<double>.NegativeZero, Vector512<double>.NegativeZero);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

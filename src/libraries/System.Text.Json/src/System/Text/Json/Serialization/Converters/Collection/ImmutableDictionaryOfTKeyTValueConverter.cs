@@ -14,7 +14,19 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected sealed override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
-            ((Dictionary<TKey, TValue>)state.Current.ReturnValue!)[key] = value;
+            Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)state.Current.ReturnValue!;
+
+            if (options.AllowDuplicateProperties)
+            {
+                dictionary[key] = value;
+            }
+            else
+            {
+                if (!dictionary.TryAdd(key, value))
+                {
+                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed();
+                }
+            }
         }
 
         internal sealed override bool CanHaveMetadata => false;

@@ -159,7 +159,7 @@ namespace System.IO.Hashing
 
         public static void Initialize(ref State state, ulong seed)
         {
-            state.Seed = (ulong)seed;
+            state.Seed = seed;
 
             fixed (byte* secret = state.Secret)
             {
@@ -169,7 +169,7 @@ namespace System.IO.Hashing
                 }
                 else
                 {
-                    DeriveSecretFromSeed(secret, (ulong)seed);
+                    DeriveSecretFromSeed(secret, seed);
                 }
             }
 

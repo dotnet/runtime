@@ -11,20 +11,7 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
 {
     private readonly ContextHolder<AMD64Context> _holder = contextHolder;
 
-    void IPlatformFrameHandler.HandleFaultingExceptionFrame(FaultingExceptionFrame frame)
-    {
-        if (frame.TargetContext is not TargetPointer targetContext)
-        {
-            throw new InvalidOperationException("Unexpected null context pointer on FaultingExceptionFrame");
-        }
-        _holder.ReadFromAddress(_target, targetContext);
-
-        // Clear the CONTEXT_XSTATE, since the AMD64Context contains just plain CONTEXT structure
-        // that does not support holding any extended state.
-        _holder.Context.ContextFlags &= ~(uint)(ContextFlagsValues.CONTEXT_XSTATE & ContextFlagsValues.CONTEXT_AREA_MASK);
-    }
-
-    void IPlatformFrameHandler.HandleHijackFrame(HijackFrame frame)
+    public void HandleHijackFrame(HijackFrame frame)
     {
         HijackArgsAMD64 args = _target.ProcessedData.GetOrAdd<Data.HijackArgsAMD64>(frame.HijackArgsPtr);
 
@@ -43,5 +30,14 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
 
         Data.CalleeSavedRegisters calleeSavedRegisters = _target.ProcessedData.GetOrAdd<Data.CalleeSavedRegisters>(args.CalleeSavedRegisters);
         UpdateFromRegisterDict(calleeSavedRegisters.Registers);
+    }
+
+    public override void HandleFaultingExceptionFrame(FaultingExceptionFrame frame)
+    {
+        base.HandleFaultingExceptionFrame(frame);
+
+        // Clear the CONTEXT_XSTATE, since the AMD64Context contains just plain CONTEXT structure
+        // that does not support holding any extended state.
+        _holder.Context.ContextFlags &= ~(uint)(ContextFlagsValues.CONTEXT_XSTATE & ContextFlagsValues.CONTEXT_AREA_MASK);
     }
 }

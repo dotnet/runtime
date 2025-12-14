@@ -555,6 +555,9 @@ static code_t insEncodeReg3Scale(bool isScaled);
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 SVE vector instruction
 static code_t insEncodeSveElemsize(emitAttr size);
 
+// Returns the encoding to select the 1/2/4 byte elemsize for an Arm64 Sve narrowing vector instruction
+static code_t insEncodeNarrowingSveElemsize(emitAttr size);
+
 // Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
 // This specifically encodes the size at bit locations '22-21'.
 static code_t insEncodeSveElemsize_22_to_21(emitAttr size);
@@ -1054,6 +1057,9 @@ static bool emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr size);
 
 // true if this 'imm' can be encoded as the offset in an unscaled ldr/str instruction
 static bool emitIns_valid_imm_for_unscaled_ldst_offset(INT64 imm);
+
+// true if this 'imm' can be encoded as the offset in an scaled SVE ldr/str instruction
+static bool emitIns_valid_imm_for_scaled_sve_ldst_offset(INT64 imm);
 
 // true if this 'imm' can be encoded as a input operand to a ccmp instruction
 static bool emitIns_valid_imm_for_ccmp(INT64 imm);

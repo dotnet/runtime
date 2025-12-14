@@ -47,46 +47,50 @@ BOOL ProfilerFunctionEnum::Init(BOOL fWithReJITIDs)
 
     } CONTRACTL_END;
 
-    EEJitManager::CodeHeapIterator heapIterator;
-    while(heapIterator.Next())
+    BOOL result = TRUE;
+    EX_TRY
     {
-        MethodDesc *pMD = heapIterator.GetMethod();
-
-        // On AMD64 JumpStub is used to call functions that is 2GB away.  JumpStubs have a CodeHeader
-        // with NULL MethodDesc, are stored in code heap and are reported by EEJitManager::EnumCode.
-        if (pMD == NULL)
-            continue;
-
-        // There are two possible reasons to skip this MD.
-        //
-        // 1) If it has no metadata (i.e., LCG / IL stubs), then skip it
-        //
-        // 2) If it has no code compiled yet for it, then skip it.
-        //
-        if (pMD->IsNoMetadata() || !pMD->HasNativeCode())
+        CodeHeapIterator heapIterator = ExecutionManager::GetEEJitManager()->GetCodeHeapIterator();
+        while (heapIterator.Next())
         {
-            continue;
-        }
+            MethodDesc *pMD = heapIterator.GetMethod();
 
-        COR_PRF_FUNCTION * element = m_elements.Append();
-        if (element == NULL)
-        {
-            return FALSE;
-        }
-        element->functionId = (FunctionID) pMD;
+            // Stubs (see StubCodeBlockKind) have no MethodDesc. Skip them.
+            if (pMD == NULL)
+                continue;
 
-        if (fWithReJITIDs)
-        {
-            // This causes triggering and locking, while the non-rejitid case does not.
-            element->reJitId = ReJitManager::GetReJitId(pMD, heapIterator.GetMethodCode());
-        }
-        else
-        {
-            element->reJitId = 0;
+            // There are two possible reasons to skip this MD.
+            //
+            // 1) If it has no metadata (i.e., LCG / IL stubs), then skip it
+            //
+            // 2) If it has no code compiled yet for it, then skip it.
+            //
+            if (pMD->IsNoMetadata() || !pMD->HasNativeCode())
+            {
+                continue;
+            }
+
+            COR_PRF_FUNCTION * element = m_elements.AppendThrowing();
+            element->functionId = (FunctionID) pMD;
+
+            if (fWithReJITIDs)
+            {
+                // This causes triggering and locking, while the non-rejitid case does not.
+                element->reJitId = ReJitManager::GetReJitId(pMD, heapIterator.GetMethodCode());
+            }
+            else
+            {
+                element->reJitId = 0;
+            }
         }
     }
+    EX_CATCH
+    {
+        result = FALSE;
+    }
+    EX_END_CATCH
 
-    return TRUE;
+    return result;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -210,15 +214,8 @@ HRESULT IterateAppDomains(CallbackObject * callbackObj,
 
     // #ProfilerEnumAppDomains (See also code:#ProfilerEnumGeneral)
     //
-    // When enumerating AppDomains, ensure this timeline:
-    // AD available in catch-up enumeration
-    //     < AppDomainCreationFinished issued
-    //     < AD NOT available from catch-up enumeration
-    //
-    //     * AppDomainCreationFinished (with S_OK hrStatus) is issued once the AppDomain
-    //         reaches STAGE_ACTIVE.
     AppDomain * pAppDomain = ::GetAppDomain();
-    if (pAppDomain->IsActive())
+    if (pAppDomain)
     {
 
         // Of course, the AD could start unloading here, but if it does we're guaranteed
@@ -567,7 +564,7 @@ HRESULT ProfilerThreadEnum::Init()
     // 1. Include Thread::TS_FullyInitialized threads for ThreadCreated
     // 2. Exclude Thread::TS_Dead | Thread::TS_ReportDead for ThreadDestroyed
     //
-    while((pThread = ThreadStore::GetAllThreadList(
+    while ((pThread = ThreadStore::GetAllThreadList(
         pThread,
         Thread::TS_Dead | Thread::TS_ReportDead | Thread::TS_FullyInitialized,
         Thread::TS_FullyInitialized

@@ -124,16 +124,8 @@ NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
         mov         rdi, [rbx + OFFSETOF__Thread__m_pDeferredTransitionFrame]
         call        C_FUNC(RhpWaitForGC2)
 
-        mov         rax, [rbx + OFFSETOF__Thread__m_pDeferredTransitionFrame]
-        test        dword ptr [rax + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_THREAD_ABORT
-        jnz         LOCAL_LABEL(Abort)
         POP_PROBE_FRAME
         ret
-LOCAL_LABEL(Abort):
-        POP_PROBE_FRAME
-        mov         rcx, STATUS_REDHAWK_THREAD_ABORT
-        pop         rdx         // return address as exception RIP
-        jmp         C_FUNC(RhpThrowHwEx) // Throw the ThreadAbortException as a special kind of hardware exception
 
 NESTED_END RhpWaitForGC, _TEXT
 
@@ -148,7 +140,6 @@ LEAF_END RhpGcPoll, _TEXT
 
 NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
         PUSH_COOP_PINVOKE_FRAME rdi
-        END_PROLOGUE
         call        C_FUNC(RhpGcPoll2)
         POP_COOP_PINVOKE_FRAME
         ret

@@ -55,7 +55,6 @@ set __BuildTypeRelease=0
 set __PgoInstrument=0
 set __PgoOptimize=0
 set __EnforcePgo=0
-set __ConsoleLoggingParameters=/clp:ForceNoAlign;Summary
 
 REM __PassThroughArgs is a set of things that will be passed through to nested calls to build.cmd
 REM when using "all".
@@ -74,7 +73,7 @@ set __PgoOptDataPath=
 set __CMakeArgs=
 set __Ninja=1
 set __RequestedBuildComponents=
-set __OutputRid=
+set __TargetRid=
 set __SubDir=
 
 :Arg_Loop
@@ -140,7 +139,8 @@ if [!__PassThroughArgs!]==[] (
 if /i "%1" == "-hostos"              (set __HostOS=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-hostarch"            (set __HostArch=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-os"                  (set __TargetOS=%2&shift&shift&goto Arg_Loop)
-if /i "%1" == "-outputrid"           (set __OutputRid=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-targetrid"           (set __TargetRid=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-outputrid"           (set __TargetRid=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-subdir"              (set __SubDir=%2&shift&shift&goto Arg_Loop)
 
 if /i "%1" == "-cmakeargs"           (set __CMakeArgs=%2 %__CMakeArgs%&set __remainingArgs="!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
@@ -329,6 +329,9 @@ for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
     if not "!string:-jit-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! jit
     )
+    if not "!string:-wasmjit-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! wasmjit
+    )
     if not "!string:-alljits-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! alljits
     )
@@ -367,7 +370,7 @@ REM ============================================================================
 
 :: When the host runs on an unknown rid, it falls back to the output rid
 :: Strip the architecture
-for /f "delims=-" %%i in ("%__OutputRid%") do set __HostFallbackOS=%%i
+for /f "delims=-" %%i in ("%__TargetRid%") do set __HostFallbackOS=%%i
 :: The "win" host build is Windows 10 compatible
 if "%__HostFallbackOS%" == "win"       (set __HostFallbackOS=win10)
 :: Default to "win10" fallback
@@ -439,7 +442,7 @@ if %__BuildNative% EQU 1 (
     set "__MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!"
     set "__MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!"
     set "__MsbuildBinLog=/bl:!__BinLog!"
-    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog! !__ConsoleLoggingParameters!"
+    set "__Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!"
 
     set __CmakeBuildToolArgs=
     if %__Ninja% EQU 1 (

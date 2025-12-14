@@ -44,13 +44,6 @@
 
 #ifndef DACCESS_COMPILE
 
-#if defined(FEATURE_JIT_PITCHING)
-EXTERN_C void CheckStacksAndPitch();
-EXTERN_C void SavePitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode);
-EXTERN_C void DeleteFromPitchingCandidate(MethodDesc* pMD);
-EXTERN_C void MarkMethodNotPitchingCandidate(MethodDesc* pMD);
-#endif
-
 EXTERN_C void STDCALL ThePreStubPatch();
 
 #if defined(HAVE_GCCOVER)
@@ -73,7 +66,7 @@ void MethodDesc::Init()
 
 //==========================================================================
 
-PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BOOL fFullBackPatch)
+PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, bool fFullBackPatch)
 {
     CONTRACTL
     {
@@ -145,8 +138,10 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
                 }
             }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
             // Patch the fake entrypoint if necessary
             Precode::GetPrecodeFromEntryPoint(pExpected)->SetTargetInterlocked(pTarget);
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         }
 
         if (HasNonVtableSlot())
@@ -370,6 +365,8 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         shouldTier = false;
     }
 #endif // FEATURE_TIERED_COMPILATION
+
+#ifdef FEATURE_CODE_VERSIONING
     NativeCodeVersion nativeCodeVersion = pConfig->GetCodeVersion();
     if (shouldTier && !nativeCodeVersion.IsDefaultVersion())
     {
@@ -379,34 +376,10 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
             shouldTier = false;
         }
     }
+#endif // FEATURE_CODE_VERSIONING
 
     if (pConfig->MayUsePrecompiledCode())
     {
-#ifdef FEATURE_READYTORUN
-        if (IsDynamicMethod() && GetLoaderModule()->IsSystem() && MayUsePrecompiledILStub())
-        {
-            // Images produced using crossgen2 have non-shareable pinvoke stubs which can't be used with the IL
-            // stubs that the runtime generates (they take no secret parameter, and each pinvoke has a separate code)
-            if (GetModule()->IsReadyToRun() && !GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs())
-            {
-                DynamicMethodDesc* stubMethodDesc = this->AsDynamicMethodDesc();
-                if (stubMethodDesc->IsILStub() && stubMethodDesc->IsPInvokeStub())
-                {
-                    MethodDesc* pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
-                    if (pTargetMD != NULL)
-                    {
-                        pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
-                        if (pCode != (PCODE)NULL)
-                        {
-                            LOG_USING_R2R_CODE(this);
-                            pConfig->SetNativeCode(pCode, &pCode);
-                        }
-                    }
-                }
-            }
-        }
-#endif // FEATURE_READYTORUN
-
         if (pCode == (PCODE)NULL)
         {
             pCode = GetPrecompiledCode(pConfig, shouldTier);
@@ -429,16 +402,6 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         LOG((LF_CLASSLOADER, LL_INFO1000000,
             "    In PrepareILBasedCode, calling JitCompileCode\n"));
         pCode = JitCompileCode(pConfig);
-#ifdef FEATURE_INTERPRETER
-        if (pConfig->IsInterpreterCode())
-        {
-            AllocMemTracker amt;
-            InterpreterPrecode* pPrecode = Precode::AllocateInterpreterPrecode(pCode, GetLoaderAllocator(), &amt);
-            amt.SuppressRelease();
-            pCode = PINSTRToPCODE(pPrecode->GetEntryPoint());
-            SetNativeCodeInterlocked(pCode);
-        }
-#endif // FEATURE_INTERPRETER
     }
     else
     {
@@ -608,10 +571,6 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
         GetMethodTable()->GetDebugClassName(),
         m_pszDebugMethodName));
 
-#if defined(FEATURE_JIT_PITCHING)
-    CheckStacksAndPitch();
-#endif
-
     PCODE pCode = (PCODE)NULL;
     {
         // Enter the global lock which protects the list of all functions being JITd
@@ -727,15 +686,20 @@ namespace
         _ASSERTE(pConfig != NULL);
         _ASSERTE(pDecoderMemory != NULL);
 
+        if (!pMD->MayHaveILHeader())
+            return NULL;
+
         COR_ILMETHOD_DECODER* pHeader = NULL;
+
         COR_ILMETHOD* ilHeader = pConfig->GetILHeader();
 
         // For a Runtime Async method the methoddef maps to a Task-returning thunk with runtime-provided implementation,
         // while the default IL belongs to the Async implementation variant.
         // By default the config captures the default methoddesc, which would be a thunk, thus no IL header.
         // So, if config provides no header and we see an implementation method desc, then just ask the method desc itself.
-        if (ilHeader == NULL && pMD->IsAsyncVariantMethod() && !pMD->IsAsyncThunkMethod())
+        if (ilHeader == NULL && pMD->IsAsyncVariantMethod())
         {
+            _ASSERTE(!pMD->IsAsyncThunkMethod());
             ilHeader = pMD->GetILHeader();
         }
 
@@ -784,6 +748,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         // JITCompilationStarted. It isn't clear if this is the ideal policy for these
         // notifications yet.
         NativeCodeVersion nativeCodeVersion = pConfig->GetCodeVersion();
+#ifdef FEATURE_CODE_VERSIONING
         ReJITID rejitId = nativeCodeVersion.GetILCodeVersionId();
         if (rejitId != 0)
         {
@@ -793,14 +758,14 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 TRUE);
         }
         else
+#endif // FEATURE_CODE_VERSIONING
+        {
             // If profiling, need to give a chance for a tool to examine and modify
             // the IL before it gets to the JIT.  This allows one to add probe calls for
             // things like code coverage, performance, or whatever.
-        {
             if (!IsNoMetadata())
             {
                 (&g_profControlBlock)->JITCompilationStarted((FunctionID)this, TRUE);
-
             }
             else
             {
@@ -811,10 +776,12 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 (&g_profControlBlock)->DynamicMethodJITCompilationStarted((FunctionID)this, TRUE, ilHeaderPointer, ilSize);
             }
 
+#ifdef FEATURE_CODE_VERSIONING
             if (nativeCodeVersion.IsDefaultVersion())
             {
                 pConfig->SetProfilerMayHaveActivatedNonDefaultCodeVersion();
             }
+#endif // FEATURE_CODE_VERSIONING
         }
         END_PROFILER_CALLBACK();
     }
@@ -826,12 +793,13 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     // (don't want this for OSR, need to see how it works)
     COR_ILMETHOD_DECODER ilDecoderTemp;
     COR_ILMETHOD_DECODER* pilHeader = GetAndVerifyILHeader(this, pConfig, &ilDecoderTemp);
+    bool isInterpreterCode = false;
 
     if (!ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
         TRACE_LEVEL_VERBOSE,
         CLR_JIT_KEYWORD))
     {
-        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
+        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode, &isInterpreterCode);
     }
     else
     {
@@ -844,13 +812,24 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
             &methodSignature);
 #endif //FEATURE_EVENT_TRACE
 
-        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
+        pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode, &isInterpreterCode);
+
 #ifdef FEATURE_EVENT_TRACE
+        PCODE pNativeCodeStartAddress = pCode;
+#ifdef FEATURE_INTERPRETER
+        if (isInterpreterCode)
+        {
+            // If this is interpreter code, we need to get the native code start address from the interpreter Precode
+            InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
+            InterpByteCodeStart* interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+            pNativeCodeStartAddress = PINSTRToPCODE(dac_cast<TADDR>(interpreterCode));
+        }
+#endif // FEATURE_INTERPRETER
         ETW::MethodLog::MethodJitted(this,
             &namespaceOrClassName,
             &methodName,
             &methodSignature,
-            pCode,
+            pNativeCodeStartAddress,
             pConfig);
 #endif //FEATURE_EVENT_TRACE
     }
@@ -862,6 +841,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         // JITCompilationFinished. It isn't clear if this is the ideal policy for these
         // notifications yet.
         NativeCodeVersion nativeCodeVersion = pConfig->GetCodeVersion();
+#ifdef FEATURE_CODE_VERSIONING
         ReJITID rejitId = nativeCodeVersion.GetILCodeVersionId();
         if (rejitId != 0)
         {
@@ -872,10 +852,11 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 TRUE);
         }
         else
+#endif // FEATURE_CODE_VERSIONING
+        {
             // Notify the profiler that JIT completed.
             // Must do this after the address has been set.
             // @ToDo: Why must we set the address before notifying the profiler ??
-        {
             if (!IsNoMetadata())
             {
                 (&g_profControlBlock)->
@@ -888,10 +869,12 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 (&g_profControlBlock)->DynamicMethodJITCompilationFinished((FunctionID)this, pEntry->m_hrResultCode, TRUE);
             }
 
+#ifdef FEATURE_CODE_VERSIONING
             if (nativeCodeVersion.IsDefaultVersion())
             {
                 pConfig->SetProfilerMayHaveActivatedNonDefaultCodeVersion();
             }
+#endif // FEATURE_CODE_VERSIONING
         }
         END_PROFILER_CALLBACK();
     }
@@ -908,7 +891,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     return pCode;
 }
 
-PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pEntry, ULONG* pSizeOfCode)
+PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pEntry, ULONG* pSizeOfCode, bool *pIsInterpreterCode)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(pConfig != NULL);
@@ -922,7 +905,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     {
         Thread::CurrentPrepareCodeConfigHolder threadPrepareCodeConfigHolder(GetThread(), pConfig);
 
-        pCode = UnsafeJitFunction(pConfig, pilHeader, &isTier0, pSizeOfCode);
+        pCode = UnsafeJitFunction(pConfig, pilHeader, &isTier0, pIsInterpreterCode, pSizeOfCode);
     }
     EX_CATCH
     {
@@ -944,8 +927,9 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
             pEntry->m_hrResultCode = E_FAIL;
             EX_RETHROW;
         }
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions)
+    EX_END_CATCH
 
     if (pOtherCode != (PCODE)NULL)
     {
@@ -975,7 +959,25 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
             return pOtherCode;
         }
 
-        SetupGcCoverage(pConfig->GetCodeVersion(), (BYTE*)pCode);
+        NativeCodeVersion nativeCodeVersion = pConfig->GetCodeVersion();
+
+        if (IsILStub())
+        {
+            CodeHeader* pHdr = ((CodeHeader*)PCODEToPINSTR(pCode)) - 1;
+            MethodDesc* pActualMethodDesc = pHdr->GetMethodDesc();
+
+            if (pActualMethodDesc != this)
+            {
+                // Compensate for PInvoke MethodDesc adjustment done in EECodeGenManager::AllocCode.
+                // The GC stress instrumentation must save the non-instrumented version of the code
+                // on MethodDesc that matches CodeHeader so that it can be retrieved later during
+                // GC stress interrupts.
+                _ASSERTE(pActualMethodDesc->IsPInvoke());
+                nativeCodeVersion = NativeCodeVersion(pActualMethodDesc);
+            }
+        }
+
+        SetupGcCoverage(nativeCodeVersion, (BYTE*)pCode);
     }
 #endif // HAVE_GCCOVER
 
@@ -1001,6 +1003,21 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
         return pOtherCode;
     }
 
+#ifdef FEATURE_INTERPRETER
+    if (*pIsInterpreterCode)
+    {
+        InterpByteCodeStart* interpreterCode;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        interpreterCode = (InterpByteCodeStart*)PortableEntryPoint::GetInterpreterData(pCode);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+        InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
+        interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+        pConfig->GetMethodDesc()->SetInterpreterCode(interpreterCode);
+    }
+#endif // FEATURE_INTERPRETER
+
 #ifdef FEATURE_CODE_VERSIONING
     pConfig->SetGeneratedOrLoadedNewCode();
 #endif
@@ -1009,10 +1026,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
     {
         pConfig->SetShouldCountCalls();
     }
-#endif
-
-#if defined(FEATURE_JIT_PITCHING)
-    SavePitchingCandidate(this, *pSizeOfCode);
 #endif
 
 #ifdef FEATURE_MULTICOREJIT
@@ -1043,6 +1056,9 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
 bool MethodDesc::TryGenerateTransientILImplementation(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder)
 {
     STANDARD_VM_CONTRACT;
+
+    // When adding new methods implemented by Transient IL, consider if MethodDesc::IsDiagnosticsHidden() needs to be
+    // updated as well.
 
     if (TryGenerateAsyncThunk(resolver, methodILDecoder))
     {
@@ -1081,9 +1097,6 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
     m_jitSwitchedToMinOpt(false),
 #ifdef FEATURE_TIERED_COMPILATION
     m_jitSwitchedToOptimized(false),
-#endif
-#ifdef FEATURE_INTERPRETER
-    m_isInterpreterCode(false),
 #endif
     m_nextInSameThread(nullptr)
 {}
@@ -1393,47 +1406,29 @@ PrepareCodeConfigBuffer::PrepareCodeConfigBuffer(NativeCodeVersion codeVersion)
 
 #endif //FEATURE_CODE_VERSIONING
 
-// CreateDerivedTargetSigWithExtraParams:
+// CreateDerivedTargetSig:
 // This method is used to create the signature of the target of the ILStub for
-// instantiating, unboxing, and async variant stubs, when/where we need to
-// introduce a generic context/async continuation.
-// And since the generic context/async continuations are hidden parameters,
-// we're creating a signature that looks like non-generic but with additional
-// parameters right after the thisptr
-void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder *stubSigBuilder)
+// instantiating and unboxing stubs.
+void MethodDesc::CreateDerivedTargetSig(MetaSig& msig, SigBuilder *stubSigBuilder)
 {
     STANDARD_VM_CONTRACT;
 
     BYTE callingConvention = IMAGE_CEE_CS_CALLCONV_DEFAULT;
+    if (msig.HasAsyncContinuation())
+        callingConvention = IMAGE_CEE_CS_CALLCONV_ASYNC;
     if (msig.HasThis())
         callingConvention |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
+    if (msig.HasGenericContextArg())
+        callingConvention |= CORINFO_CALLCONV_PARAMTYPE;
     // CallingConvention
     stubSigBuilder->AppendByte(callingConvention);
 
-    unsigned numArgs = msig.NumFixedArgs();
-    if (msig.HasGenericContextArg())
-        numArgs++;
-    if (msig.HasAsyncContinuation())
-        numArgs++;
     // ParamCount
-    stubSigBuilder->AppendData(numArgs); // +1 is for context param
+    stubSigBuilder->AppendData(msig.NumFixedArgs());
 
     // Return type
     SigPointer pReturn = msig.GetReturnProps();
     pReturn.ConvertToInternalExactlyOne(msig.GetModule(), msig.GetSigTypeContext(), stubSigBuilder);
-
-#ifndef TARGET_X86
-    if (msig.HasGenericContextArg())
-    {
-        // The hidden context parameter
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
-    }
-
-    if (msig.HasAsyncContinuation())
-    {
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
-    }
-#endif // !TARGET_X86
 
     // Copy rest of the arguments
     msig.NextArg();
@@ -1442,30 +1437,14 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
     {
         pArgs.ConvertToInternalExactlyOne(msig.GetModule(), msig.GetSigTypeContext(), stubSigBuilder);
     }
-
-#ifdef TARGET_X86
-    if (msig.HasGenericContextArg())
-    {
-        // The hidden context parameter
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
-    }
-
-    if (msig.HasAsyncContinuation())
-    {
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
-    }
-#endif // TARGET_X86
 }
 
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
-
-Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetMD)
+Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
 {
 
     CONTRACT(Stub*)
     {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
@@ -1486,10 +1465,22 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
 
     // Build the new signature
     SigBuilder stubSigBuilder;
-    MethodDesc::CreateDerivedTargetSigWithExtraParams(msig, &stubSigBuilder);
+    MethodDesc::CreateDerivedTargetSig(msig, &stubSigBuilder);
 
     // Emit the method body
     mdToken tokRawData = pCode->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
+
+    if (pTargetMD->RequiresInstMethodTableArg())
+    {
+        // Push the hidden context param
+        // The context is going to be captured from the thisptr
+        pCode->EmitLoadThis();
+        pCode->EmitLDFLDA(tokRawData);
+        pCode->EmitLDC(Object::GetOffsetOfFirstField());
+        pCode->EmitSUB();
+        pCode->EmitLDIND_I();
+        pCode->EmitCALL(METHOD__RUNTIME_HELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
+    }
 
     // Push the thisptr
     // We need to skip over the MethodTable*
@@ -1497,29 +1488,11 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     pCode->EmitLoadThis();
     pCode->EmitLDFLDA(tokRawData);
 
-#if defined(TARGET_X86)
-    // Push the rest of the arguments for x86
+    // Push the rest of the arguments
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
-#endif
-
-    // Push the hidden context param
-    // The context is going to be captured from the thisptr
-    pCode->EmitLoadThis();
-    pCode->EmitLDFLDA(tokRawData);
-    pCode->EmitLDC(Object::GetOffsetOfFirstField());
-    pCode->EmitSUB();
-    pCode->EmitLDIND_I();
-
-#if !defined(TARGET_X86)
-    // Push the rest of the arguments for not x86
-    for (unsigned i = 0; i < msig.NumFixedArgs();i++)
-    {
-        pCode->EmitLDARG(i);
-    }
-#endif
 
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
@@ -1538,7 +1511,8 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
                                                             pTargetMD->GetModule(),
                                                             pSig, cbSig,
                                                             &typeContext,
-                                                            &sl);
+                                                            &sl,
+                                                            pTargetMD->IsAsyncMethod());
 
     ILStubResolver *pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
 
@@ -1556,8 +1530,7 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     CONTRACT(Stub*)
     {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pHiddenArg));
         POSTCONDITION(CheckPointer(RETVAL));
     }
@@ -1593,7 +1566,10 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     // Build the new signature
     SigBuilder stubSigBuilder;
-    MethodDesc::CreateDerivedTargetSigWithExtraParams(msig, &stubSigBuilder);
+    MethodDesc::CreateDerivedTargetSig(msig, &stubSigBuilder);
+
+    pCode->EmitLDC((TADDR)pHiddenArg);
+    pCode->EmitCALL(METHOD__RUNTIME_HELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
 
     // Emit the method body
     if (msig.HasThis())
@@ -1602,37 +1578,16 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
         pCode->EmitLoadThis();
     }
 
-#if defined(TARGET_X86)
-    // Push the rest of the arguments for x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
-#endif // TARGET_X86
-
-    // Push the hidden context param
-    // InstantiatingStub
-    pCode->EmitLDC((TADDR)pHiddenArg);
-
-    // Push the async continuation
-    if (msig.HasAsyncContinuation())
-    {
-        pCode->EmitLDNULL();
-    }
-
-#if !defined(TARGET_X86)
-    // Push the rest of the arguments for not x86
-    for (unsigned i = 0; i < msig.NumFixedArgs();i++)
-    {
-        pCode->EmitLDARG(i);
-    }
-#endif // !TARGET_X86
 
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
 
     // Do the calli
-    pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
+    pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + (msig.HasThis() ? 1 : 0), msig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
 
     PCCOR_SIGNATURE pSig;
@@ -1645,7 +1600,8 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
                                                             pTargetMD->GetModule(),
                                                             pSig, cbSig,
                                                             &typeContext,
-                                                            &sl);
+                                                            &sl,
+                                                            pTargetMD->IsAsyncMethod());
 
     ILStubResolver *pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
 
@@ -1656,15 +1612,13 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     RETURN Stub::NewStub(JitILStub(pStubMD));
 }
-#endif
 
 /* Make a stub that for a value class method that expects a BOXed this pointer */
 Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 {
     CONTRACT(Stub*)
     {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
@@ -1704,32 +1658,17 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 
         sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
 
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "UnboxingStub");
+        RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "UnboxingStub");
     }
-    else
-#endif
+#elif defined(TARGET_X86)
+    CPUSTUBLINKER sl;
+    if (sl.EmitUnboxMethodStub(pUnboxedMD))
     {
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
-#ifndef FEATURE_PORTABLE_SHUFFLE_THUNKS
-        if (pUnboxedMD->RequiresInstMethodTableArg())
-#endif // !FEATURE_PORTABLE_SHUFFLE_THUNKS
-        {
-            _ASSERTE(pUnboxedMD->RequiresInstMethodTableArg());
-            pstub = CreateUnboxingILStubForSharedGenericValueTypeMethods(pUnboxedMD);
-        }
-#ifndef FEATURE_PORTABLE_SHUFFLE_THUNKS
-        else
-#endif // !FEATURE_PORTABLE_SHUFFLE_THUNKS
-#endif // FEATURE_INSTANTIATINGSTUB_AS_IL
-#ifndef FEATURE_PORTABLE_SHUFFLE_THUNKS
-        {
-            CPUSTUBLINKER sl;
-            sl.EmitUnboxMethodStub(pUnboxedMD);
-            pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "UnboxingStub");
-        }
-#endif // !FEATURE_PORTABLE_SHUFFLE_THUNKS
+        RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "UnboxingStub");
     }
-    RETURN pstub;
+#endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
+
+    RETURN CreateUnboxingILStubForValueTypeMethods(pUnboxedMD);
 }
 
 #if defined(FEATURE_SHARE_GENERIC_CODE)
@@ -1737,8 +1676,7 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
 {
     CONTRACT(Stub*)
     {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(pMD->IsInstantiatingStub());
         PRECONDITION(!pMD->RequiresInstArg());
         PRECONDITION(!pMD->IsSharedByGenericMethodInstantiations());
@@ -1767,7 +1705,6 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
         // It's a per-instantiation static method
         extraArg = pMD->GetMethodTable();
     }
-    Stub *pstub = NULL;
 
 #ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
     StackSArray<ShuffleEntry> portableShuffle;
@@ -1777,23 +1714,17 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
         _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
         sl.EmitComputedInstantiatingMethodStub(pSharedMD, &portableShuffle[0], extraArg);
 
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "InstantiatingStub");
+        RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "InstantiatingStub");
     }
-    else
-#endif
+#elif defined(TARGET_X86)
+    CPUSTUBLINKER sl;
+    if (sl.EmitInstantiatingMethodStub(pSharedMD, extraArg))
     {
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
-        pstub = CreateInstantiatingILStub(pSharedMD, extraArg);
-#else
-        CPUSTUBLINKER sl;
-        _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
-        sl.EmitInstantiatingMethodStub(pSharedMD, extraArg);
-
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "InstantiatingStub");
-#endif
+        RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "InstantiatingStub");
     }
+#endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
-    RETURN pstub;
+    RETURN CreateInstantiatingILStub(pSharedMD, extraArg);
 }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE)
 
@@ -1972,7 +1903,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
             StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
             EX_RETHROW;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         {
             HardwareExceptionHolder;
@@ -1990,39 +1921,158 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 }
 
 #ifdef FEATURE_INTERPRETER
-extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr)
+static InterpThreadContext* GetInterpThreadContext()
 {
-    // Argument registers are in the TransitionBlock
-    // The stack arguments are right after the pTransitionBlock
     Thread *pThread = GetThread();
     InterpThreadContext *threadContext = pThread->GetInterpThreadContext();
     if (threadContext == nullptr || threadContext->pStackStart == nullptr)
     {
         COMPlusThrow(kOutOfMemoryException);
     }
+
+    return threadContext;
+}
+
+#ifdef DEBUGGING_SUPPORTED
+void DebuggerTraceCall(void* returnAddr, void* thunkDataMaybe);
+#endif
+
+extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
+{
+    // Argument registers are in the TransitionBlock
+    // The stack arguments are right after the pTransitionBlock
+    InterpThreadContext *threadContext = GetInterpThreadContext();
     int8_t *sp = threadContext->pStackPointer;
 
-    // This construct ensures that the InterpreterFrame is always stored at a higher address than the
-    // InterpMethodContextFrame. This is important for the stack walking code.
-    struct Frames
+    InterpByteCodeStart* pInterpreterCode = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
+#if defined(PROFILING_SUPPORTED)
+    MethodDesc* methodDescToReportAsTransition = nullptr;
+#endif
+
+    if (pInterpreterCode->Method->unmanagedCallersOnly)
     {
-        InterpMethodContextFrame interpMethodContextFrame = {0};
-        InterpreterFrame interpreterFrame;
+        Thread* thread = GetThreadNULLOk();
+        if (thread == NULL)
+            CREATETHREAD_IF_NULL_FAILFAST(thread, W("Failed to setup new thread during reverse P/Invoke"));
 
-        Frames(TransitionBlock* pTransitionBlock)
-        : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
+        // Verify the current thread isn't in COOP mode.
+        if (thread->PreemptiveGCDisabled())
+            ReversePInvokeBadTransition();
+
+#ifdef PROFILING_SUPPORTED
+        if (CORProfilerTrackTransitions())
         {
+            methodDescToReportAsTransition = pInterpreterCode->Method->methodHnd;
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+            void* thunkDataMaybe = nullptr;
+            if (pInterpreterCode->Method->publishSecretStubParam)
+                thunkDataMaybe = GetMostRecentUMEntryThunkDataNonDestructive();
+            if (thunkDataMaybe != NULL)
+            {
+                methodDescToReportAsTransition = ((UMEntryThunkData*)thunkDataMaybe)->GetMethod();
+            }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+            ProfilerUnmanagedToManagedTransitionMD(methodDescToReportAsTransition, COR_PRF_TRANSITION_CALL);
         }
+#endif
+#ifdef DEBUGGING_SUPPORTED
+        if (g_TrapReturningThreads && CORDebuggerTraceCall())
+        {
+            void* thunkDataMaybe = nullptr;
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+            if (pInterpreterCode->Method->publishSecretStubParam)
+                thunkDataMaybe = GetMostRecentUMEntryThunkDataNonDestructive();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+            DebuggerTraceCall((void*)pInterpreterCode->GetByteCodes(), thunkDataMaybe);
+        }
+#endif // DEBUGGING_SUPPORTED
     }
-    frames(pTransitionBlock);
 
-    frames.interpMethodContextFrame.startIp = (int32_t*)byteCodeAddr;
-    frames.interpMethodContextFrame.pStack = sp;
-    frames.interpMethodContextFrame.pRetVal = sp;
+    void* retVal;
+    {
+        GCX_MAYBE_COOP(pInterpreterCode->Method->unmanagedCallersOnly);
 
-    InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
+        // This construct ensures that the InterpreterFrame is always stored at a higher address than the
+        // InterpMethodContextFrame. This is important for the stack walking code.
+        struct Frames
+        {
+            InterpMethodContextFrame interpMethodContextFrame = {0};
+            InterpreterFrame interpreterFrame;
 
-    frames.interpreterFrame.Pop();
+            Frames(TransitionBlock* pTransitionBlock)
+            : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
+            {
+            }
+        }
+        frames(pTransitionBlock);
+
+        frames.interpMethodContextFrame.startIp = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
+        frames.interpMethodContextFrame.pStack = sp;
+        frames.interpMethodContextFrame.pRetVal = (retBuff != NULL) ? (int8_t*)retBuff : sp;
+
+        InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
+
+        ArgumentRegisters *pArgumentRegisters = (ArgumentRegisters*)(((uint8_t*)pTransitionBlock) + TransitionBlock::GetOffsetOfArgumentRegisters());
+
+    #if defined(TARGET_AMD64)
+        pArgumentRegisters->RCX = (INT_PTR)*frames.interpreterFrame.GetContinuationPtr();
+    #elif defined(TARGET_ARM64)
+        pArgumentRegisters->x[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
+    #elif defined(TARGET_RISCV64)
+        pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
+    #elif defined(TARGET_WASM)
+        // We do not yet have an ABI for WebAssembly native code to handle here.
+    #else
+        #error Unsupported architecture
+    #endif
+
+        frames.interpreterFrame.Pop();
+
+        retVal = frames.interpMethodContextFrame.pRetVal;
+    }
+
+#ifdef PROFILING_SUPPORTED
+    if ((methodDescToReportAsTransition != NULL) && CORProfilerTrackTransitions())
+    {
+        ProfilerManagedToUnmanagedTransitionMD(methodDescToReportAsTransition, COR_PRF_TRANSITION_RETURN);
+    }
+#endif
+
+    return retVal;
+}
+
+void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff, PCODE callerIp)
+{
+    // Copy arguments to the stack
+    if (argSize > 0)
+    {
+        _ASSERTE(args != NULL);
+        InterpThreadContext *threadContext = GetInterpThreadContext();
+        int8_t* sp = threadContext->pStackPointer;
+        memcpy(sp, args, argSize);
+    }
+
+    TransitionBlock block{};
+    block.m_ReturnAddress = (TADDR)callerIp;
+    (void)ExecuteInterpretedMethod(&block, (TADDR)targetIp, retBuff);
+}
+
+extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp)
+{
+    _ASSERTE(pMD != NULL);
+
+    // This path assumes the caller is unmanaged code. This assumption is important for
+    // because the DoPrestub call may trigger a GC. If a GC occurs, there would be no explicit
+    // protection for the arguments, but since this from an unmanaged caller, no protection is needed.
+
+    InterpByteCodeStart* targetIp = pMD->GetInterpreterCode();
+    if (targetIp == NULL)
+    {
+        GCX_PREEMP();
+        (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+        targetIp = pMD->GetInterpreterCode();
+    }
+    (void)ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argSize, ret, callerIp);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -2178,24 +2228,25 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 
         if (doBackpatch)
         {
-            RETURN DoBackpatch(pMT, pDispatchingMT, doFullBackpatch);
+            pCode = DoBackpatch(pMT, pDispatchingMT, doFullBackpatch);
+        }
+        else
+        {
+            _ASSERTE(!doFullBackpatch);
         }
 
         _ASSERTE(pCode != (PCODE)NULL);
-        _ASSERTE(!doFullBackpatch);
-        RETURN pCode;
+        goto Return;
     }
-#endif
+#endif // FEATURE_CODE_VERSIONING
 
-    if (!IsPointingToPrestub())
+    if (!ShouldCallPrestub())
     {
         LOG((LF_CLASSLOADER, LL_INFO10000,
             "    In PreStubWorker, method already jitted, backpatching call point\n"));
-        #if defined(FEATURE_JIT_PITCHING)
-            MarkMethodNotPitchingCandidate(this);
-        #endif
 
-        RETURN DoBackpatch(pMT, pDispatchingMT, TRUE);
+        pCode = DoBackpatch(pMT, pDispatchingMT, true /* doFullBackpatch */);
+        goto Return;
     }
 
     /**************************   CODE CREATION  *************************/
@@ -2211,16 +2262,19 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 #endif // defined(FEATURE_SHARE_GENERIC_CODE)
     else if (IsIL() || IsNoMetadata())
     {
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
         if (!IsNativeCodeStableAfterInit())
         {
             GetOrCreatePrecode();
         }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         pCode = PrepareInitialCode(callerGCMode);
     } // end else if (IsIL() || IsNoMetadata())
-    else if (IsNDirect())
+    else if (IsPInvoke())
     {
-        if (GetModule()->IsReadyToRun() && GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs() && MayUsePrecompiledILStub())
+        if (GetModule()->IsReadyToRun() && MayUsePrecompiledILStub())
         {
+            _ASSERTE(GetModule()->GetReadyToRunInfo()->HasNonShareablePInvokeStubs());
             // In crossgen2, we compile non-shareable IL stubs for pinvokes. If we can find code for such
             // a stub, we'll use it directly instead and avoid emitting an IL stub.
             PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
@@ -2236,19 +2290,43 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             pCode = GetStubForInteropMethod(this);
         }
 
-        GetOrCreatePrecode();
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        // Store the IL Stub interpreter data on the actual
+        // P/Invoke MethodDesc.
+        void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
+        _ASSERTE(ilStubInterpData != NULL);
+        SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
     else if (IsFCall())
     {
         // Get the fcall implementation
-        BOOL fSharedOrDynamicFCallImpl;
-        pCode = ECall::GetFCallImpl(this, &fSharedOrDynamicFCallImpl);
+        bool hasManagedImpl = false;
+        pCode = ECall::GetFCallImpl(this, true /* throwForInvalidFCall */, &hasManagedImpl);
 
-        if (fSharedOrDynamicFCallImpl)
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        if (!hasManagedImpl)
         {
-            // Fake ctors share one implementation that has to be wrapped by prestub
-            GetOrCreatePrecode();
+            // Update the PortableEntryPoint to point to the actual code for the FCall implementation.
+            // Return the PortableEntryPoint as the PCODE.
+            PCODE entryPoint = GetPortableEntryPoint();
+            PortableEntryPoint::SetActualCode(entryPoint, pCode);
+            pCode = entryPoint;
         }
+        else
+        {
+            MethodDesc* helperMD = PortableEntryPoint::GetMethodDesc(pCode);
+            // If the FCall implementation is managed, then we need to potentially set up the interpreter code for it as well.
+            // This is because the FCall may have been compiled to an IL stub that needs to be interpreted.
+            if (helperMD->ShouldCallPrestub())
+                (void)helperMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+            void* ilStubInterpData = helperMD->GetInterpreterCode();
+            SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+        }
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+        // FCalls are always wrapped in a precode to enable mapping of the entrypoint back to MethodDesc
+        GetOrCreatePrecode();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
     else if (IsArray())
     {
@@ -2293,6 +2371,15 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     }
     else
     {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        pCode = pStub->GetEntryPoint();
+        pStub->DecRef();
+
+        void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
+        _ASSERTE(ilStubInterpData != NULL);
+        SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+        SetCodeEntryPoint(pCode);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         if (!GetOrCreatePrecode()->SetTargetInterlocked(pStub->GetEntryPoint()))
         {
             if (pStub->HasExternalEntryPoint())
@@ -2312,12 +2399,17 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             // need to free the Stub allocation now.
             pStub->DecRef();
         }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
-    _ASSERTE(!IsPointingToPrestub());
+    _ASSERTE(!ShouldCallPrestub());
     _ASSERTE(HasStableEntryPoint());
 
-    RETURN DoBackpatch(pMT, pDispatchingMT, FALSE);
+    pCode = DoBackpatch(pMT, pDispatchingMT, false /* doFullBackpatch */);
+
+Return:
+
+    RETURN pCode;
 }
 
 #endif // !DACCESS_COMPILE
@@ -2354,10 +2446,14 @@ PCODE TheUMThunkPreStub()
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    UNREACHABLE_MSG("TheUMThunkPreStub not supported with FEATURE_PORTABLE_ENTRYPOINTS");
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     return GetEEFuncEntryPoint(TheUMEntryPrestub);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
-PCODE TheVarargNDirectStub(BOOL hasRetBuffArg)
+PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2378,14 +2474,13 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_RE
     STANDARD_VM_CONTRACT;
 
     //
-    // Skip fixup precode jump for better perf. Since we have MethodDesc available, we can use cheaper method
-    // than code:Precode::TryToSkipFixupPrecode.
+    // Skip fixup precode jump for better perf.
     //
 #ifdef HAS_FIXUP_PRECODE
     if (pMD->HasPrecode() && pMD->GetPrecode()->GetType() == PRECODE_FIXUP
         && pMD->IsNativeCodeStableAfterInit())
     {
-        PCODE pDirectTarget = pMD->IsFCall() ? ECall::GetFCallImpl(pMD) : pMD->GetNativeCode();
+        PCODE pDirectTarget = pMD->IsFCall() ? ECall::GetFCallImpl(pMD, false /* throwForInvalidFCall */) : pMD->GetNativeCode();
         if (pDirectTarget != (PCODE)NULL)
             pCode = pDirectTarget;
     }
@@ -2476,7 +2571,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     {
         GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
 
-        PEImageLayout *pNativeImage = pModule->GetReadyToRunImage();
+        ReadyToRunLoadedImage *pNativeImage = pModule->GetReadyToRunImage();
 
         RVA rva = pNativeImage->GetDataRva(pIndirection);
 
@@ -2723,7 +2818,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 #endif // _DEBUG
 
             //
-            // Note that we do not want to call code:MethodDesc::IsPointingToPrestub() here. It does not take remoting
+            // Note that we do not want to call code:MethodDesc::ShouldCallPrestub() here. It does not take remoting
             // interception into account and so it would cause otherwise intercepted methods to be JITed. It is a compat
             // issue if the JITing fails.
             //
@@ -2740,10 +2835,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 pCode = PatchNonVirtualExternalMethod(pMD, pCode, pImportSection, pIndirection);
             }
         }
-
-#if defined (FEATURE_JIT_PITCHING)
-        DeleteFromPitchingCandidate(pMD);
-#endif
     }
 
     // Force a GC on every jit if the stress level is high enough
@@ -2845,7 +2936,7 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
         pModule->GetLoaderAllocator()->GetHighFrequencyHeap()->
             AllocMem(S_SIZE_T(sizeof(StaticFieldAddressArgs))));
 
-    pArgs->staticBaseHelper = (FnStaticBaseHelper)CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)helpFunc);
+    pArgs->staticBaseHelper = CEEJitInfo::getHelperFtnStatic((CorInfoHelpFunc)helpFunc);
 
     switch(helpFunc)
     {
@@ -2881,8 +2972,14 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
     }
     pArgs->offset = pFD->GetOffset();
 
+    BinderMethodID managedHelperId = fUnbox ?
+        METHOD__STATICSHELPERS__STATICFIELDADDRESSUNBOX_DYNAMIC :
+        METHOD__STATICSHELPERS__STATICFIELDADDRESS_DYNAMIC;
+
+    MethodDesc *pManagedHelper = CoreLibBinder::GetMethod(managedHelperId);
+
     PCODE pHelper = DynamicHelpers::CreateHelper(pModule->GetLoaderAllocator(), (TADDR)pArgs,
-        fUnbox ? GetEEFuncEntryPoint(JIT_StaticFieldAddressUnbox_Dynamic) : GetEEFuncEntryPoint(JIT_StaticFieldAddress_Dynamic));
+        pManagedHelper->GetMultiCallableAddrOfCode());
 
     amTracker.SuppressRelease();
 
@@ -3086,7 +3183,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 {
     STANDARD_VM_CONTRACT;
 
-    PEImageLayout *pNativeImage = pModule->GetReadyToRunImage();
+    ReadyToRunLoadedImage *pNativeImage = pModule->GetReadyToRunImage();
 
     RVA rva = pNativeImage->GetDataRva((TADDR)pCell);
 
@@ -3289,7 +3386,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
             if (pHelper != (PCODE)NULL)
             {
-                *(TADDR *)pCell = pHelper;
+                VolatileStore((TADDR *)pCell, pHelper);
             }
 
 #ifdef _DEBUG
@@ -3300,7 +3397,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         EX_CATCH
         {
         }
-        EX_END_CATCH (SwallowAllExceptions);
+        EX_END_CATCH
     }
     else
     {

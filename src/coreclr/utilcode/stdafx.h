@@ -21,4 +21,3 @@ using std::max;
 #include <winwrap.h>
 
 #include "volatile.h"
-#include "static_assert.h"

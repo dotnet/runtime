@@ -9,7 +9,7 @@
 
 #define OS_PAGE_SIZE GCToOSInterface::GetPageSize()
 
-__forceinline size_t GCToOSInterface::GetPageSize()
+FORCEINLINE size_t GCToOSInterface::GetPageSize()
 {
     return 0x1000;
 }

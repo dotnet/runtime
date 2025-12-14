@@ -27,7 +27,7 @@
 #if !defined(DACCESS_COMPILE)
 #include "defaultassemblybinder.h"
 // Helper function in the VM, invoked by the Binder, to invoke the host assembly resolver
-extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin,
+extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pAssemblyLoadContextToBindWithin,
                                                  BINDER_SPACE::AssemblyName *pAssemblyName,
                                                  DefaultAssemblyBinder *pDefaultBinder,
                                                  AssemblyBinder *pBinder,
@@ -1147,7 +1147,7 @@ namespace BINDER_SPACE
 
 
 #if !defined(DACCESS_COMPILE)
-HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
+HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pAssemblyLoadContextToBindWithin,
                                                             /* in */ AssemblyName *pAssemblyName,
                                                             /* in */ DefaultAssemblyBinder *pDefaultBinder,
                                                             /* in */ AssemblyBinder *pBinder,
@@ -1155,11 +1155,11 @@ HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pMa
 {
     HRESULT hr = E_FAIL;
 
-    _ASSERTE(pManagedAssemblyLoadContextToBindWithin != (INT_PTR)NULL);
+    _ASSERTE(pAssemblyLoadContextToBindWithin != (INT_PTR)NULL);
 
     // RuntimeInvokeHostAssemblyResolver will perform steps 2-4 of CustomAssemblyBinder::BindAssemblyByName.
     BINDER_SPACE::Assembly *pLoadedAssembly = NULL;
-    hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin,
+    hr = RuntimeInvokeHostAssemblyResolver(pAssemblyLoadContextToBindWithin,
                                            pAssemblyName, pDefaultBinder, pBinder, &pLoadedAssembly);
     if (SUCCEEDED(hr))
     {
@@ -1232,7 +1232,7 @@ Retry:
                     hr = GET_EXCEPTION()->GetHR();
                     goto Exit;
                 }
-                EX_END_CATCH(SwallowAllExceptions);
+                EX_END_CATCH
 
 
                 mvidMismatch = incomingMVID != boundMVID;
@@ -1297,7 +1297,7 @@ HRESULT AssemblyBinderCommon::CreateDefaultBinder(DefaultAssemblyBinder** ppDefa
             hr = pApplicationContext->Init();
             if (SUCCEEDED(hr))
             {
-                pBinder->SetManagedAssemblyLoadContext((INT_PTR)NULL);
+                pBinder->SetAssemblyLoadContext((INT_PTR)NULL);
                 *ppDefaultBinder = pBinder.Extract();
             }
         }

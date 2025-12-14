@@ -8,29 +8,30 @@ using Mono.Cecil;
 
 namespace TLens.Analyzers
 {
-	sealed class LargeStaticCtorAnalyzer : Analyzer
-	{
-		readonly List<MethodDefinition> cctors = new List<MethodDefinition> ();
+    sealed class LargeStaticCtorAnalyzer : Analyzer
+    {
+        readonly List<MethodDefinition> cctors = new List<MethodDefinition>();
 
-		protected override void ProcessMethod (MethodDefinition method)
-		{
-			if (method.Name != ".cctor")
-				return;
+        protected override void ProcessMethod(MethodDefinition method)
+        {
+            if (method.Name != ".cctor")
+                return;
 
-			cctors.Add (method);
-		}
+            cctors.Add(method);
+        }
 
-		public override void PrintResults (int maxCount)
-		{
-			var entries = cctors.OrderByDescending (l => l.GetEstimatedSize ()).Take (maxCount);
-			if (!entries.Any ())
-				return;
+        public override void PrintResults(int maxCount)
+        {
+            var entries = cctors.OrderByDescending(l => l.GetEstimatedSize()).Take(maxCount);
+            if (!entries.Any())
+                return;
 
-			PrintHeader ("Large static constructors");
+            PrintHeader("Large static constructors");
 
-			foreach (var m in entries) {
-				Console.WriteLine (m.ToDisplay (showSize: true));
-			}
-		}
-	}
+            foreach (var m in entries)
+            {
+                Console.WriteLine(m.ToDisplay(showSize: true));
+            }
+        }
+    }
 }
