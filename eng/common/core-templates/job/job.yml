@@ -212,7 +212,15 @@ jobs:
           TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/log'
         continueOnError: true
         condition: always()
-      
+      - task: CopyFiles@2
+        displayName: Gather CMakeConfigureLog for publish to artifacts
+        inputs:
+          SourceFolder: 'artifacts/obj'
+          Contents: '**/CMakeConfigureLog.yaml'
+          TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/log/cmake'
+        continueOnError: true
+        condition: always()
+
   - ${{ if eq(parameters.enablePublishBuildArtifacts, 'true') }}:
     - task: CopyFiles@2
       displayName: Gather logs for publish to artifacts
