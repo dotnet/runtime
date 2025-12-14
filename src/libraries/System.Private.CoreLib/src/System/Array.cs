@@ -352,6 +352,8 @@ namespace System
             Copy(sourceArray, isourceIndex, destinationArray, idestinationIndex, ilength);
         }
 
+#if !MONO // implementation details of MethodTable
+
         // Provides a strong exception guarantee - either it succeeds, or
         // it throws an exception with no side effects.  The arrays must be
         // compatible array types based on the array element type - this
@@ -359,7 +361,6 @@ namespace System
         // It will up-cast, assuming the array types are correct.
         public static unsafe void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
-#if !MONO // implementation details of MethodTable
             if (sourceArray != null && destinationArray != null)
             {
                 MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
@@ -383,13 +384,10 @@ namespace System
                     return;
                 }
             }
-#endif
 
             // Less common
             CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
         }
-
-#if !MONO // implementation details of MethodTable
 
         // Copies length elements from sourceArray, starting at index 0, to
         // destinationArray, starting at index 0.
