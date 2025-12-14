@@ -517,5 +517,13 @@ namespace System.Tests
             UInt128 upper = UInt128.BigMul(a, b, out UInt128 lower);
             Assert.Equal(result, $"{upper:X32}{lower:X32}");
         }
+
+        [Fact]
+        public static void ExplicitConversionToDouble_LargeValue()
+        {
+            UInt128 value = UInt128.Parse("309485009821345068741558271");
+            double d = (double)value;
+            Assert.Equal(3.094850098213451E+26, d);
+        }
     }
 }
