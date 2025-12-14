@@ -275,7 +275,7 @@ namespace System
                 // for the precision loss that double will have. As such, the lower value effectively drops the
                 // lowest 24 bits and then or's them back to ensure rounding stays correct.
 
-                double lower = BitConverter.UInt64BitsToDouble(TwoPow76Bits | ((ulong)(value >> 12) >> 12) | (value._lower & 0xFFFFFF)) - TwoPow76;
+                double lower = BitConverter.UInt64BitsToDouble(TwoPow76Bits | ((ulong)(value >> 12) >> 12) | ((value._lower & 0xFFFFFF) != 0 ? 1UL : 0UL)) - TwoPow76;
                 double upper = BitConverter.UInt64BitsToDouble(TwoPow128Bits | (ulong)(value >> 76)) - TwoPow128;
 
                 return lower + upper;
