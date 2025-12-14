@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
 using SharedTypes.ComInterfaces;
 using Xunit;
 
@@ -18,6 +17,7 @@ namespace LibraryImportGenerator.IntegrationTests
     public class NativeMarshallingAttributeTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/122447")]
         public void GetSameComInterfaceTwiceReturnsUniqueInstances()
         {
             // When using NativeMarshalling with UniqueComInterfaceMarshaller,

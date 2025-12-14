@@ -186,12 +186,13 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         AssertBundle(config, buildOptions, isUsingWorkloads, isNativeBuild, wasmFingerprintDotnetJs);
     }
 
-    public BuildPaths GetBuildPaths(Configuration configuration, bool forPublish)
+    public BuildPaths GetBuildPaths(Configuration configuration, bool forPublish, string? projectDir = null)
     {
-        Assert.NotNull(ProjectDir);
+        projectDir ??= ProjectDir!;
+        Assert.NotNull(projectDir);
         string configStr = configuration.ToString();
-        string objDir = Path.Combine(ProjectDir, "obj", configStr, _defaultTargetFramework);
-        string binDir = Path.Combine(ProjectDir, "bin", configStr, _defaultTargetFramework);
+        string objDir = Path.Combine(projectDir, "obj", configStr, _defaultTargetFramework);
+        string binDir = Path.Combine(projectDir, "bin", configStr, _defaultTargetFramework);
         string binFrameworkDir = GetBinFrameworkDir(configuration, forPublish, _defaultTargetFramework);
 
         string objWasmDir = Path.Combine(objDir, "wasm", forPublish ? "for-publish" : "for-build");
