@@ -21,7 +21,6 @@ protocol SealedBoxProtocol {
     ) throws where C : DataProtocol, T : DataProtocol
 }
 
-@available(iOS 13, tvOS 13, *)
 protocol AEADSymmetricAlgorithm {
     associatedtype SealedBox : SealedBoxProtocol
 
@@ -31,29 +30,22 @@ protocol AEADSymmetricAlgorithm {
     static func open(_ sealedBox: SealedBox, using key: SymmetricKey) throws -> Data
 }
 
-@available(iOS 13, tvOS 13, *)
 extension AES.GCM.Nonce: NonceProtocol {}
 
-@available(iOS 13, tvOS 13, *)
 extension AES.GCM.SealedBox: SealedBoxProtocol {
     typealias Nonce = AES.GCM.Nonce
 }
 
-@available(iOS 13, tvOS 13, *)
 extension AES.GCM: AEADSymmetricAlgorithm {}
 
-@available(iOS 13, tvOS 13, *)
 extension ChaChaPoly.Nonce: NonceProtocol {}
 
-@available(iOS 13, tvOS 13, *)
 extension ChaChaPoly.SealedBox: SealedBoxProtocol {
     typealias Nonce = ChaChaPoly.Nonce
 }
 
-@available(iOS 13, tvOS 13, *)
 extension ChaChaPoly: AEADSymmetricAlgorithm {}
 
-@available(iOS 13, tvOS 13, *)
 func encrypt<Algorithm>(
     _ algorithm: Algorithm.Type,
     key: UnsafeBufferPointer<UInt8>,
@@ -79,7 +71,6 @@ func encrypt<Algorithm>(
     _ = resultTag.copyBytes(to: tag)
 }
 
-@available(iOS 13, tvOS 13, *)
 func decrypt<Algorithm>(
     _ algorithm: Algorithm.Type,
     key: UnsafeBufferPointer<UInt8>,
@@ -101,7 +92,6 @@ func decrypt<Algorithm>(
 }
 
 @_silgen_name("AppleCryptoNative_ChaCha20Poly1305Encrypt")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_ChaCha20Poly1305Encrypt(
     key: UnsafeBufferPointer<UInt8>,
     nonceData: UnsafeBufferPointer<UInt8>,
@@ -121,7 +111,6 @@ public func AppleCryptoNative_ChaCha20Poly1305Encrypt(
 }
 
 @_silgen_name("AppleCryptoNative_ChaCha20Poly1305Decrypt")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_ChaCha20Poly1305Decrypt(
     key: UnsafeBufferPointer<UInt8>,
     nonceData: UnsafeBufferPointer<UInt8>,
@@ -141,7 +130,6 @@ public func AppleCryptoNative_ChaCha20Poly1305Decrypt(
 }
 
 @_silgen_name("AppleCryptoNative_AesGcmEncrypt")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_AesGcmEncrypt(
     key: UnsafeBufferPointer<UInt8>,
     nonceData: UnsafeBufferPointer<UInt8>,
@@ -161,7 +149,6 @@ public func AppleCryptoNative_AesGcmEncrypt(
 }
 
 @_silgen_name("AppleCryptoNative_AesGcmDecrypt")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_AesGcmDecrypt(
     key: UnsafeBufferPointer<UInt8>,
     nonceData: UnsafeBufferPointer<UInt8>,
@@ -181,7 +168,6 @@ public func AppleCryptoNative_AesGcmDecrypt(
 }
 
 @_silgen_name("AppleCryptoNative_IsAuthenticationFailure")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_IsAuthenticationFailure(error: Error) -> Bool {
     if let error = error as? CryptoKitError {
         switch error {
