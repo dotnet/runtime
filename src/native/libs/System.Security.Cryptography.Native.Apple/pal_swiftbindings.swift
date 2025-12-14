@@ -4,7 +4,6 @@
 import CryptoKit
 import Foundation
 
-@available(iOS 13, tvOS 13, *)
 final class HashBox {
     var value: any HashFunction
     init(_ value: any HashFunction) {
@@ -360,7 +359,6 @@ public func AppleCryptoNative_HKDFDeriveKey(
 }
 
 @_silgen_name("AppleCryptoNative_DigestOneShot")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_DigestOneShot(
     algorithm: Int32,
     pbData: UnsafeMutableRawPointer?,
@@ -411,7 +409,6 @@ public func AppleCryptoNative_DigestOneShot(
 }
 
 @_silgen_name("AppleCryptoNative_DigestCreate")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_DigestCreate(algorithm: Int32, pcbDigest: UnsafeMutablePointer<Int32>?) -> UnsafeMutableRawPointer? {
     guard let pcbDigest, let hashAlgorithm = PAL_HashAlgorithm(rawValue: algorithm) else {
         return nil
@@ -445,7 +442,6 @@ public func AppleCryptoNative_DigestCreate(algorithm: Int32, pcbDigest: UnsafeMu
 }
 
 @_silgen_name("AppleCryptoNative_DigestUpdate")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_DigestUpdate(ctx: UnsafeMutableRawPointer?, pBuf: UnsafeMutableRawPointer?, cBuf: Int32) -> Int32 {
     if cBuf == 0 {
         return 1
@@ -464,7 +460,6 @@ public func AppleCryptoNative_DigestUpdate(ctx: UnsafeMutableRawPointer?, pBuf: 
 }
 
 @_silgen_name("AppleCryptoNative_DigestReset")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_DigestReset(ctx: UnsafeMutableRawPointer?) -> Int32 {
     guard let ctx else {
         return -1
@@ -494,7 +489,6 @@ public func AppleCryptoNative_DigestReset(ctx: UnsafeMutableRawPointer?) -> Int3
 }
 
 @_silgen_name("AppleCryptoNative_DigestFinal")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_DigestFinal(ctx: UnsafeMutableRawPointer?, pOutput: UnsafeMutablePointer<UInt8>?, cbOutput: Int32) -> Int32 {
     guard let ctx, let pOutput else {
         return -1
@@ -516,7 +510,6 @@ public func AppleCryptoNative_DigestFinal(ctx: UnsafeMutableRawPointer?, pOutput
 }
 
 @_silgen_name("AppleCryptoNative_DigestFree")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_DigestFree(ptr: UnsafeMutableRawPointer?) {
     if let ptr {
         Unmanaged<HashBox>.fromOpaque(ptr).release()
@@ -524,7 +517,6 @@ public func AppleCryptoNative_DigestFree(ptr: UnsafeMutableRawPointer?) {
 }
 
 @_silgen_name("AppleCryptoNative_DigestClone")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_DigestClone(ctx: UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer? {
     guard let ctx else {
         return nil
@@ -538,7 +530,6 @@ public func AppleCryptoNative_DigestClone(ctx: UnsafeMutableRawPointer?) -> Unsa
 }
 
 @_silgen_name("AppleCryptoNative_DigestCurrent")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_DigestCurrent(ctx: UnsafeMutableRawPointer?, pOutput: UnsafeMutablePointer<UInt8>?, cbOutput: Int32) -> Int32 {
     guard let ctx, let pOutput else {
         return -1
