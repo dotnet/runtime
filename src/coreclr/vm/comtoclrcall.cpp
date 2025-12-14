@@ -198,10 +198,6 @@ inline static void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJ
 
 #endif // TARGET_X86
 
-#if defined(_MSC_VER) && !defined(_DEBUG)
-#pragma optimize("t", on)   // optimize for speed
-#endif
-
 static OBJECTREF COMToCLRGetObjectAndTarget_Delegate(ComCallWrapper * pWrap, PCODE * ppManagedTargetOut)
 {
     CONTRACTL
@@ -546,11 +542,6 @@ ErrorExit:
 
     return retVal;
 }
-
-#if defined(_MSC_VER) && !defined(_DEBUG)
-#pragma optimize("", on)   // restore settings
-#endif
-
 
 static UINT64 __stdcall FieldCallWorker(Thread *pThread, ComMethodFrame* pFrame)
 {

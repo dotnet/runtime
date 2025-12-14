@@ -1,13 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef _DEBUG
-#ifdef _MSC_VER
-// optimize for speed
-#pragma optimize( "t", on )
-#endif
-#endif
-
 #ifdef __GNUC__
 #define inline __attribute__((always_inline)) inline
 #else
