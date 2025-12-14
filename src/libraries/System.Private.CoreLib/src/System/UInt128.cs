@@ -258,7 +258,7 @@ namespace System
                 // For values between 0 and ulong.MaxValue, we just use the existing conversion
                 return (double)(value._lower);
             }
-            else if ((value._upper >> 24) == 0) // value < (2^104)
+            else if ((value._upper >> 40) == 0) // value < (2^104)
             {
                 // For values greater than ulong.MaxValue but less than 2^104 this takes advantage
                 // that we can represent both "halves" of the uint128 within the 52-bit mantissa of

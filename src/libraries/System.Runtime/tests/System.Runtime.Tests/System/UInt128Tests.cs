@@ -521,9 +521,22 @@ namespace System.Tests
         [Fact]
         public static void ExplicitConversionToDouble_LargeValue()
         {
+            // Value: 309485009821345068741558271 (approx 2^88)
+            // This tests the path for values < 2^104 (after fix) or >= 2^88 (before fix)
             UInt128 value = UInt128.Parse("309485009821345068741558271");
             double d = (double)value;
             Assert.Equal(3.094850098213451E+26, d);
+
+            // Value >= 2^104
+            // 2^104 = 20282409603651670423947251286016
+            // We add 2^24 + 1 to ensure we test the sticky bit logic if it matters,
+            // or at least that the large value path doesn't crash or produce garbage.
+            // 2^104 + 2^24 + 1
+            UInt128 value2 = (UInt128.One << 104) + (UInt128.One << 24) + 1;
+            double d2 = (double)value2;
+            // Expected: 2^104. 2^24 is far below ULP (2^52).
+            double expected2 = 20282409603651670423947251286016.0;
+            Assert.Equal(expected2, d2);
         }
     }
 }
