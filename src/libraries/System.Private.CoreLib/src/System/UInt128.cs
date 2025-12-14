@@ -276,7 +276,7 @@ namespace System
                 // lowest 24 bits and then or's them back to ensure rounding stays correct.
 
                 double lower = BitConverter.UInt64BitsToDouble(TwoPow76Bits | ((ulong)(value >> 12) >> 12) | ((value._lower & 0xFFFFFF) != 0 ? 1UL : 0UL)) - TwoPow76;
-                double upper = BitConverter.UInt64BitsToDouble(TwoPow128Bits | (ulong)(value >> 76)) - TwoPow128;
+                double upper = BitConverter.UInt64BitsToDouble(TwoPow128Bits | (value._upper >> 12)) - TwoPow128;
 
                 return lower + upper;
             }

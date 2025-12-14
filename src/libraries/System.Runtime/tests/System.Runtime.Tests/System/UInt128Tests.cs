@@ -529,9 +529,9 @@ namespace System.Tests
 
             // Value >= 2^104
             // 2^104 = 20282409603651670423947251286016
-            // We add 2^24 + 1 to ensure we test the sticky bit logic if it matters,
-            // or at least that the large value path doesn't crash or produce garbage.
-            // 2^104 + 2^24 + 1
+            // The value is constructed as 2^104 + 2^24 + 1.
+            // This tests a value with a 1 at bit 104, a 1 at bit 24, and a 1 at bit 0.
+            // The lower bits (24 and 0) should contribute to the sticky bit calculation.
             UInt128 value2 = (UInt128.One << 104) + (UInt128.One << 24) + 1;
             double d2 = (double)value2;
             // Expected: 2^104. 2^24 is far below ULP (2^52).
