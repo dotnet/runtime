@@ -357,8 +357,35 @@ namespace System
         // compatible array types based on the array element type - this
         // method does not support casting, boxing, or primitive widening.
         // It will up-cast, assuming the array types are correct.
-        public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        public static unsafe void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
+#if !MONO // implementation details of MethodTable
+            if (sourceArray != null && destinationArray != null)
+            {
+                MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
+                if (MethodTable.AreSameType(pMT, RuntimeHelpers.GetMethodTable(destinationArray)) &&
+                    pMT->IsSzArray &&
+                    length >= 0 && sourceIndex >= 0 && destinationIndex >= 0 &&
+                    (uint)(sourceIndex + length) <= sourceArray.NativeLength &&
+                    (uint)(destinationIndex + length) <= destinationArray.NativeLength)
+                {
+                    nuint elementSize = (nuint)pMT->ComponentSize;
+                    nuint byteCount = (uint)length * elementSize;
+                    ref byte src = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(sourceArray).Data, (uint)sourceIndex * elementSize);
+                    ref byte dst = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(destinationArray).Data, (uint)destinationIndex * elementSize);
+
+                    if (pMT->ContainsGCPointers)
+                        Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+                    else
+                        SpanHelpers.Memmove(ref dst, ref src, byteCount);
+
+                    // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
+                    return;
+                }
+            }
+#endif
+
+            // Less common
             CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
         }
 
