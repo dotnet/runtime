@@ -1482,7 +1482,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
      *
      * First, determine at which position to partition imm into high32 and offset,
      * so that it yields the least instruction.
-     * Where high32 = imm[y:x] and imm[63:y] are all zeroes or all ones.
+     * Where high32 = sext(imm[y:x]) and imm[63:y] are all zeroes or all ones.
      *
      * From the above equation, the value of offset1 & offset2 are:
      * -> offset1 = imm[x-1:0]
@@ -1588,6 +1588,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     else if ((y - x) < 31)
     {
         y = x + 31;
+        y = (y > 63) ? 63 : y;
     }
     else
     {
