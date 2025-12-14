@@ -8578,6 +8578,65 @@ void Lowering::LowerShift(GenTreeOp* shift)
         shift->gtOp2->ClearContained();
     }
 
+    if (comp->opts.OptimizationEnabled() && shift->OperIs(GT_RSH, GT_RSZ) && shift->gtGetOp2()->IsCnsIntOrI())
+    {
+        GenTree* op1     = shift->gtGetOp1();
+        ssize_t  c2      = shift->gtGetOp2()->AsIntCon()->IconValue();
+        unsigned bitWidth = genTypeSize(shift->TypeGet()) * 8;
+
+        // Case 1: (shift (shift x c1) c2)
+        if (op1->OperIs(shift->OperGet()) && op1->gtGetOp2()->IsCnsIntOrI() && !op1->IsMultiReg())
+        {
+            ssize_t  c1            = op1->gtGetOp2()->AsIntCon()->IconValue();
+            unsigned innerBitWidth = genTypeSize(op1->TypeGet()) * 8;
+
+            // Check if combined shift is valid and types match
+            if ((c1 > 0) && (c2 > 0) && ((c1 + c2) < innerBitWidth) && ((c1 + c2) < bitWidth) &&
+                (op1->TypeGet() == shift->TypeGet()))
+            {
+                JITDUMP("Optimizing consecutive shifts: (x >> %d) >> %d -> x >> %d\n", (int)c1, (int)c2,
+                        (int)(c1 + c2));
+
+                shift->gtGetOp2()->AsIntCon()->SetIconValue(c1 + c2);
+                shift->gtOp1 = op1->gtGetOp1();
+                op1->gtGetOp1()->ClearContained();
+                BlockRange().Remove(op1->gtGetOp2());
+                BlockRange().Remove(op1);
+            }
+        }
+        // Case 2: (shift (cast (shift x c1)) c2)
+        // Optimization for: RSZ(CAST(RSZ(x, c1)), c2) -> CAST(RSZ(x, c1 + c2))
+        else if (shift->OperIs(GT_RSZ) && op1->OperIs(GT_CAST) && !op1->gtOverflow() && !op1->IsMultiReg())
+        {
+            GenTree* cast       = op1;
+            GenTree* innerShift = cast->gtGetOp1();
+            if (innerShift->OperIs(GT_RSZ) && innerShift->gtGetOp2()->IsCnsIntOrI() && !innerShift->IsMultiReg())
+            {
+                ssize_t  c1            = innerShift->gtGetOp2()->AsIntCon()->IconValue();
+                unsigned innerBitWidth = genTypeSize(innerShift->TypeGet()) * 8;
+
+                if ((c1 > 0) && (c2 > 0) && ((c1 + c2) < innerBitWidth))
+                {
+                    JITDUMP("Optimizing distinct type shifts: (cast (x >> %d)) >> %d -> cast (x >> %d)\n", (int)c1,
+                            (int)c2, (int)(c1 + c2));
+
+                    innerShift->gtGetOp2()->AsIntCon()->SetIconValue(c1 + c2);
+
+                    // Replace uses of 'shift' with 'cast', bypassing 'shift'
+                    LIR::Use use;
+                    if (BlockRange().TryGetUse(shift, &use))
+                    {
+                        use.ReplaceWith(cast);
+                    }
+
+                    // Remove 'c2' and turn 'shift' into NOP
+                    BlockRange().Remove(shift->gtGetOp2());
+                    shift->gtBashToNOP();
+                }
+            }
+        }
+    }
+
     ContainCheckShiftRotate(shift);
 
 #ifdef TARGET_ARM64
