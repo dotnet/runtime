@@ -121,7 +121,7 @@ namespace ILCompiler.ObjectWriter
             {
                 var machSymbol = new MachSymbol
                 {
-                    Name = new Utf8String($"lsection{sectionIndex}"),
+                    Name = new Utf8StringBuilder().Append("lsection"u8).Append(sectionIndex).ToUtf8String(),
                     Section = section,
                     Value = section.VirtualAddress,
                     Descriptor = N_NO_DEAD_STRIP,
@@ -375,7 +375,7 @@ namespace ILCompiler.ObjectWriter
 
             _sections.Add(machSection);
 
-            base.CreateSection(section, comdatName, symbolName.IsNull ? new Utf8String($"lsection{sectionIndex}") : symbolName, sectionIndex, sectionStream);
+            base.CreateSection(section, comdatName, symbolName.IsNull ? new Utf8StringBuilder().Append("lsection"u8).Append(sectionIndex).ToUtf8String() : symbolName, sectionIndex, sectionStream);
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
@@ -1159,7 +1159,7 @@ namespace ILCompiler.ObjectWriter
             public MachStringTable()
             {
                 // Always start the table with empty string
-                GetStringOffset(new Utf8String(""u8));
+                GetStringOffset(Utf8String.Empty);
             }
         }
     }

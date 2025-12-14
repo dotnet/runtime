@@ -175,7 +175,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     Section = _sections[sectionIndex],
                     Info = STT_NOTYPE,
-                    Name = new Utf8String($"$t.{sectionIndex}")
+                    Name = new Utf8StringBuilder().Append("$t."u8).Append(sectionIndex).ToUtf8String()
                 });
             }
 
@@ -309,7 +309,7 @@ namespace ILCompiler.ObjectWriter
                     {
                         sortedSymbols.Add(new ElfSymbol
                         {
-                            Name = new Utf8String($"{externSymbol}$thunk"),
+                            Name = Utf8String.Concat(externSymbol.AsSpan(), "$thunk"u8),
                             Value = (ulong)((thunkSymbolsIndex * 4) | 1u),
                             Size = 4u,
                             Section = _sections[thunkSectionIndex],
@@ -344,7 +344,7 @@ namespace ILCompiler.ObjectWriter
                 _sections[thunkSectionWriter.SectionIndex].RelocationStream = relocationStream;
                 foreach (Utf8String externSymbol in undefinedSymbols)
                 {
-                    if (_symbolNameToIndex.TryGetValue(new Utf8String($"{externSymbol}$thunk"), out uint thunkSymbolIndex))
+                    if (_symbolNameToIndex.TryGetValue(Utf8String.Concat(externSymbol.AsSpan(), "$thunk"u8), out uint thunkSymbolIndex))
                     {
                         // Write the relocation to external symbol for the thunk
                         BinaryPrimitives.WriteUInt32LittleEndian(relocationEntry, (uint)thunkSectionWriter.Position);
@@ -1094,7 +1094,7 @@ namespace ILCompiler.ObjectWriter
             public ElfStringTable()
             {
                 // Always start the table with empty string
-                GetStringOffset(new Utf8String(""u8));
+                GetStringOffset(Utf8String.Empty);
             }
         }
     }

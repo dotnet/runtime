@@ -12,6 +12,7 @@ namespace Internal.Text
         private readonly byte[] _value;
 
         public bool IsNull => _value == null;
+        public static readonly Utf8String Empty = new Utf8String([]);
 
         public Utf8String(byte[] underlyingArray)
         {

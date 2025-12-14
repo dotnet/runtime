@@ -189,7 +189,11 @@ namespace ILCompiler
                     hash = SHA256.HashData(literal.AsSpan());
                 }
 
-                mangledName = Utf8String.Concat(mangledName, new Utf8String("_" + Convert.ToHexString(hash)));
+                mangledName = new Utf8StringBuilder()
+                    .Append(mangledName)
+                    .Append('_')
+                    .AppendAscii(Convert.ToHexString(hash))
+                    .ToUtf8String();
             }
 
             return mangledName;

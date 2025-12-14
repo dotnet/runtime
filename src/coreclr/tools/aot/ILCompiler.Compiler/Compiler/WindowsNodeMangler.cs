@@ -116,9 +116,9 @@ namespace ILCompiler
 
             return callConv switch
             {
-                UnmanagedCallingConventions.Stdcall => new Utf8String($"_{unmangledName}@{signatureBytes}"),
-                UnmanagedCallingConventions.Fastcall => new Utf8String($"@{unmangledName}@{signatureBytes}"),
-                UnmanagedCallingConventions.Cdecl => new Utf8String($"_{unmangledName}"),
+                UnmanagedCallingConventions.Stdcall => new Utf8StringBuilder().Append('_').Append(unmangledName).Append('@').Append(signatureBytes).ToUtf8String(),
+                UnmanagedCallingConventions.Fastcall => new Utf8StringBuilder().Append('@').Append(unmangledName).Append('@').Append(signatureBytes).ToUtf8String(),
+                UnmanagedCallingConventions.Cdecl => Utf8String.Concat("_"u8, unmangledName.AsSpan()),
                 _ => throw new System.NotImplementedException()
             };
         }
