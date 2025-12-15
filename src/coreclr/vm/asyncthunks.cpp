@@ -65,7 +65,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
     _ASSERTE(!pAsyncCallVariant->IsAsyncThunkMethod());
 
     // Emits roughly the following code:
-    // 
+    //
     // ExecutionAndSyncBlockStore store = default;
     // store.Push();
     // try
@@ -569,7 +569,15 @@ void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig
     }
 
     // other(arg)
-    pCode->EmitCALL(userFuncToken, localArg, 1);
+    if (pTaskReturningVariant->IsAbstract())
+    {
+        _ASSERTE(pTaskReturningVariant->IsCLRToCOMCall());
+        pCode->EmitCALLVIRT(userFuncToken, localArg, 1);
+    }
+    else
+    {
+        pCode->EmitCALL(userFuncToken, localArg, 1);
+    }
 
     TypeHandle thLogicalRetType = msig.GetRetTypeHandleThrowing();
     if (IsValueTaskAsyncThunk())

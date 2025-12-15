@@ -1735,6 +1735,7 @@ LEAF_END Load_XMM7, _TEXT
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        set_cfa_register rbp, 0
         push_register r8
         push_register rax // align
 END_PROLOGUE
@@ -1752,6 +1753,7 @@ NESTED_END CallJittedMethodRetVoid, _TEXT
 NESTED_ENTRY CallJittedMethodRetBuffRDI, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        set_cfa_register rbp, 0
         push_register r8
         push_register rax // align
 END_PROLOGUE
@@ -1770,6 +1772,7 @@ NESTED_END CallJittedMethodRetBuffRDI, _TEXT
 NESTED_ENTRY CallJittedMethodRetBuffRSI, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        set_cfa_register rbp, 0
         push_register r8
         push_register rax // align
 END_PROLOGUE
@@ -1788,6 +1791,7 @@ NESTED_END CallJittedMethodRetBuffRSI, _TEXT
 NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        set_cfa_register rbp, 0
         push_register r8
         push_register rdx
 END_PROLOGUE
@@ -1807,6 +1811,7 @@ NESTED_END CallJittedMethodRetDouble, _TEXT
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        set_cfa_register rbp, 0
         push_register r8
         push_register rdx
 END_PROLOGUE
@@ -1826,6 +1831,7 @@ NESTED_END CallJittedMethodRetI8, _TEXT
 NESTED_ENTRY CallJittedMethodRetI8I8, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        set_cfa_register rbp, 0
         push_register r8
         push_register rdx
 END_PROLOGUE
@@ -1846,6 +1852,7 @@ NESTED_END CallJittedMethodRetI8I8, _TEXT
 NESTED_ENTRY CallJittedMethodRetI8Double, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        set_cfa_register rbp, 0
         push_register r8
         push_register rdx
 END_PROLOGUE
@@ -1866,6 +1873,7 @@ NESTED_END CallJittedMethodRetI8Double, _TEXT
 NESTED_ENTRY CallJittedMethodRetDoubleI8, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        set_cfa_register rbp, 0
         push_register r8
         push_register rdx
 END_PROLOGUE
@@ -1886,6 +1894,7 @@ NESTED_END CallJittedMethodRetDoubleI8, _TEXT
 NESTED_ENTRY CallJittedMethodRetDoubleDouble, _TEXT, NoHandler
         push_nonvol_reg rbp
         mov  rbp, rsp
+        set_cfa_register rbp, 0
         push_register r8
         push_register rdx
 END_PROLOGUE
