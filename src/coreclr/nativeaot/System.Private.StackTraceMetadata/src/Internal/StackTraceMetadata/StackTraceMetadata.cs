@@ -173,8 +173,19 @@ namespace Internal.StackTraceMetadata
                     }
 
                     int documentOffset = ((int*)documentsBlob)[documentIndex];
-                    string documentName = new string((sbyte*)documentsBlob + documentOffset);
+                    byte* documentAddress = documentsBlob + documentOffset;
+                    string documentName = System.Text.Encoding.UTF8.GetString(documentAddress, strlen(documentAddress));
                     return (documentName, currentLineNumber);
+
+                    static unsafe int strlen(byte* ptr)
+                    {
+                        int i = 0;
+
+                        while (ptr[i] != 0)
+                            i++;
+
+                        return i;
+                    }
                 }
             }
 

@@ -850,6 +850,8 @@ namespace ILCompiler
 
                 if ((GetMetadataCategory(method) & MetadataCategory.Description) == 0)
                 {
+                    // If we're in multifile compilation, we could end up with methods that should get runtime mapping here.
+                    // But multifile reflection is broken, so just don't crash the compiler.
                     Debug.Assert(!factory.CompilationModuleGroup.IsSingleFileCompilation);
                     continue;
                 }
