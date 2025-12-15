@@ -27,8 +27,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 //    ins  reg1, reg2, imm
 //
-// However the imm might not fit as a directly encodable immediate,
-// when it doesn't fit we generate extra instruction(s) that sets up
+// The immediate value may not fit as a directly encodable immediate.
+// In that case, additional instruction(s) are generated to set up
 // the 'regTmp' with the proper immediate value.
 //
 //     mov  regTmp, imm
@@ -60,7 +60,7 @@ bool CodeGen::genInstrWithConstant(instruction ins,
 
     // reg1 is usually a dest register
     // reg2 is always source register
-    assert(tmpReg != reg2); // tmpReg can not match any source register
+    assert(tmpReg != reg2); // tmpReg cannot match any source register
 
 #ifdef DEBUG
     switch (ins)
@@ -99,7 +99,7 @@ bool CodeGen::genInstrWithConstant(instruction ins,
     }
     else
     {
-        // caller can specify REG_NA  for tmpReg, when it "knows" that the immediate will always fit
+        // caller can specify REG_NA for tmpReg, when it "knows" that the immediate will always fit
         assert(tmpReg != REG_NA);
 
         // generate two or more instructions
@@ -133,8 +133,7 @@ bool CodeGen::genInstrWithConstant(instruction ins,
 // genStackPointerAdjustment: add a specified constant value to the stack pointer in either the prolog
 // or the epilog. The unwind codes for the generated instructions are produced. An available temporary
 // register is required to be specified, in case the constant is too large to encode in an "add"
-// instruction, such that we need to load the constant
-// into a register first, before using it.
+// instruction, such that we need to load the constant into a register first, before using it.
 //
 // Arguments:
 //    spDelta                 - the value to add to SP (can be negative)
@@ -184,7 +183,7 @@ void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool*
 // we need to use (SD) are encodable with the stack-pointer immediate offsets we need to use.
 //
 // The caller can tell us to fold in a stack pointer adjustment, which we will do with the first instruction.
-// Note that the stack pointer adjustment must be by a multiple of 16 to preserve the invariant that the
+// Note that the stack pointer adjustment must be a multiple of 16 to preserve the invariant that the
 // stack pointer is always 16 byte aligned. If we are saving an odd number of callee-saved
 // registers, though, we will have an empty alignment slot somewhere. It turns out we will put
 // it below (at a lower address) the callee-saved registers, as that is currently how we
@@ -1035,7 +1034,8 @@ void CodeGen::genCodeForIncSaturate(GenTree* tree)
     genProduceReg(tree);
 }
 
-// Generate code to get the high N bits of a N*N=2N bit multiplication result
+// Generate code to get the upper N bits of a 2N-bit product
+// Multiplying two N-bit operands yields a 2N-bit result; this method keeps the high half
 void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 {
     assert(!treeNode->gtOverflowEx());
@@ -1088,7 +1088,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 }
 
 // Generate code for ADD, SUB, MUL, AND, AND_NOT, OR, OR_NOT, XOR, and XOR_NOT
-// This method is expected to have called genConsumeOperands() before calling it.
+// genConsumeOperands() is expected to have been called before this method is invoked.
 void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
     const genTreeOps oper      = treeNode->OperGet();
