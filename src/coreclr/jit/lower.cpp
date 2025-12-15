@@ -8605,7 +8605,7 @@ void Lowering::LowerShift(GenTreeOp* shift)
 
                 if ((c1 > 0) && (c2 > 0))
                 {
-                    if (combined < bitWidth)
+                    if (combined < (ssize_t)bitWidth)
                     {
                         JITDUMP("Optimizing consecutive shifts: (x %s %d) %s %d -> x %s %d\n",
                                 GenTree::OpName(op1->OperGet()), (int)c1, GenTree::OpName(shift->OperGet()), (int)c2,
