@@ -249,12 +249,16 @@ public class Async2Reflection
     [Fact]
     public static void CurrentMethod()
     {
-        // Note: async1 leaks implementation details here and returns "Void MoveNext()"
-        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", GetCurrentMethodAsync().Result);
-        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", GetCurrentMethodAwait().Result);
+        // MethodBase.GetCurrentMethod() is not supported on NativeAOT
+        if (!TestLibrary.Utilities.IsNativeAot)
+        {
+            // Note: async1 leaks implementation details here and returns "Void MoveNext()"
+            Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", GetCurrentMethodAsync().Result);
+            Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", GetCurrentMethodAwait().Result);
 
-        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodTask().Result);
-        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodAwaitTask().Result);
+            Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodTask().Result);
+            Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodAwaitTask().Result);
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -324,6 +328,48 @@ public class Async2Reflection
         return await FromStackTask();
     }
 
+    // uses DiagnosticMethodInfo, which is supported on NativeAOT
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void FromStackDMI()
+    {
+        // Note: async1 leaks implementation details here and returns "Void MoveNext()"
+        Assert.Equal("FromStackDMIAsync", FromStackDMIAsync().Result);
+        Assert.Equal("FromStackDMIAsync", FromStackDMIAwait().Result);
+
+        Assert.Equal("FromStackDMITask", FromStackDMITask().Result);
+        Assert.Equal("FromStackDMITask", FromStackDMIAwaitTask().Result);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<string> FromStackDMIAsync()
+    {
+        await Task.Yield();
+        StackFrame stackFrame = new StackFrame(0);
+        DiagnosticMethodInfo mi = DiagnosticMethodInfo.Create(stackFrame);
+        return mi.Name;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<string> FromStackDMIAwait()
+    {
+        return await FromStackDMIAsync();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Task<string> FromStackDMITask()
+    {
+        StackFrame stackFrame = new StackFrame(0);
+        DiagnosticMethodInfo mi = DiagnosticMethodInfo.Create(stackFrame);
+        return Task.FromResult(mi.Name);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task<string> FromStackDMIAwaitTask()
+    {
+        return await FromStackDMITask();
+    }
+
     [Fact]
     public static void EnumerateAll()
     {
@@ -357,7 +403,7 @@ public class Async2Reflection
 
         public static string[] GetAll()
         {
-            Type t = Type.GetType(typeof(EnumAll).FullName!)!;
+            Type t = typeof(EnumAll);
             List<string> names = new();
             foreach (MethodInfo mi in t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static).OrderBy(it => it.Name))
             {
