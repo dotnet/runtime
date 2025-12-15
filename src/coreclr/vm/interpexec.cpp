@@ -136,7 +136,19 @@ void InvokeUnmanagedCalliWithTransition(PCODE ftn, void *cookie, int8_t *stack, 
     inlinedCallFrame.Push();
     {
         GCX_PREEMP();
+#ifdef PROFILING_SUPPORTED
+        if (CORProfilerTrackTransitions() && !pFrame->startIp->Method->methodHnd->IsILStub())
+        {
+            ProfilerManagedToUnmanagedTransitionMD(pFrame->startIp->Method->methodHnd, COR_PRF_TRANSITION_CALL);
+        }
+#endif
         InvokeUnmanagedCalli(ftn, cookie, pArgs, pRet);
+#ifdef PROFILING_SUPPORTED
+        if (CORProfilerTrackTransitions() && !pFrame->startIp->Method->methodHnd->IsILStub())
+        {
+            ProfilerUnmanagedToManagedTransitionMD(pFrame->startIp->Method->methodHnd, COR_PRF_TRANSITION_CALL);
+        }
+#endif
     }
     inlinedCallFrame.Pop();
 }
@@ -457,11 +469,50 @@ void* GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
 }
 
 #ifdef DEBUG
-static void InterpBreakpoint()
+static void InterpHalt()
 {
-
+    // Native debugging aid: INTOP_HALT is injected as the first instruction in methods matching
+    // DOTNET_InterpHalt. Set a native breakpoint here to break when the targeted method executes.
 }
-#endif
+#endif // DEBUG
+
+#ifdef DEBUGGING_SUPPORTED
+static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame)
+{
+    Thread *pThread = GetThread();
+    if (pThread != NULL && g_pDebugInterface != NULL)
+    {
+        EXCEPTION_RECORD exceptionRecord;
+        memset(&exceptionRecord, 0, sizeof(EXCEPTION_RECORD));
+        exceptionRecord.ExceptionCode = STATUS_BREAKPOINT;
+        exceptionRecord.ExceptionAddress = (PVOID)ip;
+
+        // Construct a CONTEXT for the debugger
+        CONTEXT ctx;
+        memset(&ctx, 0, sizeof(CONTEXT));
+
+        ctx.ContextFlags = CONTEXT_FULL;
+        SetSP(&ctx, (DWORD64)pFrame);
+        SetFP(&ctx, (DWORD64)stack);
+        SetIP(&ctx, (DWORD64)ip); 
+        SetFirstArgReg(&ctx, dac_cast<TADDR>(pInterpreterFrame)); // Enable debugger to iterate over interpreter frames
+
+        // We need to add a FaultingExceptionFrame because debugger checks for it
+        // before adjusting the IP (see `AdjustIPAfterException`).
+        FaultingExceptionFrame fef;
+        fef.InitAndLink(&ctx);
+
+        // Notify the debugger of the exception
+        g_pDebugInterface->FirstChanceNativeException(
+            &exceptionRecord,
+            &ctx,
+            STATUS_BREAKPOINT,
+            pThread);
+
+        fef.Pop();
+    }
+}
+#endif // DEBUGGING_SUPPORTED
 
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
@@ -674,14 +725,14 @@ template <typename TResult, typename TSource> void ConvOvfHelper(int8_t *stack, 
 static float CkfiniteHelper(float value)
 {
     if (!std::isfinite(value))
-        COMPlusThrow(kArithmeticException);
+        COMPlusThrow(kOverflowException);
     return value;
 }
 
 static double CkfiniteHelper(double value)
 {
     if (!std::isfinite(value))
-        COMPlusThrow(kArithmeticException);
+        COMPlusThrow(kOverflowException);
     return value;
 }
 
@@ -942,11 +993,18 @@ MAIN_LOOP:
             switch (*ip)
             {
 #ifdef DEBUG
-                case INTOP_BREAKPOINT:
-                    InterpBreakpoint();
+                case INTOP_HALT:
+                    InterpHalt();
                     ip++;
                     break;
-#endif
+#endif // DEBUG
+#ifdef DEBUGGING_SUPPORTED
+                case INTOP_BREAKPOINT:
+                {
+                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
+                    break;
+                }
+#endif // DEBUGGING_SUPPORTED
                 case INTOP_INITLOCALS:
                     memset(LOCAL_VAR_ADDR(ip[1], void), 0, ip[2]);
                     ip += 3;
@@ -1067,12 +1125,20 @@ MAIN_LOOP:
                     ip += 3;
                     break;
 
-                case INTOP_CONV_R_UN_I4:
+                case INTOP_CONV_R8_UN_I4:
                     LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], uint32_t);
                     ip += 3;
                     break;
-                case INTOP_CONV_R_UN_I8:
+                case INTOP_CONV_R8_UN_I8:
                     LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], uint64_t);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_R4_UN_I4:
+                    LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], uint32_t);
+                    ip += 3;
+                    break;
+                case INTOP_CONV_R4_UN_I8:
+                    LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], uint64_t);
                     ip += 3;
                     break;
                 case INTOP_CONV_I1_I4:
@@ -1385,7 +1451,16 @@ MAIN_LOOP:
                     ConvOvfHelper<uint32_t, uint64_t>(stack, ip);
                     ip += 3;
                     break;
-
+                case INTOP_CONV_U4_U8_SAT:
+                {
+                    uint64_t val = LOCAL_VAR(ip[2], uint64_t);
+                    if (val > UINT32_MAX)
+                        LOCAL_VAR(ip[1], uint32_t) = UINT32_MAX;
+                    else
+                        LOCAL_VAR(ip[1], uint32_t) = (uint32_t)val;
+                    ip += 3;
+                    break;
+                }
                 case INTOP_SWITCH:
                 {
                     uint32_t val = LOCAL_VAR(ip[1], uint32_t);
@@ -2750,9 +2825,11 @@ MAIN_LOOP:
                         if (isOpenVirtual)
                         {
                             targetMethod = COMDelegate::GetMethodDescForOpenVirtualDelegate(*delegateObj);
+                            OBJECTREF *pThisArg = LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF);
+                            NULL_CHECK(*pThisArg);
                             targetMethod = CallWithSEHWrapper(
-                                [&targetMethod, &callArgsOffset, &stack]() {
-                                    return targetMethod->GetMethodDescOfVirtualizedCode(LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF), targetMethod->GetMethodTable());
+                                [&targetMethod, &pThisArg]() {
+                                    return targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, targetMethod->GetMethodTable());
                                 });
 
                         }
@@ -3568,7 +3645,7 @@ do {                                                                           \
                             continue;
                         }
                         // CompareExchange succeeded
-                        LOCAL_VAR(ip[1], uint32_t) = (uint32_t)(uint8_t)(oldULONG >> shift);
+                        LOCAL_VAR(ip[1], uint32_t) = (uint32_t)(uint8_t)(compareExchangeResult >> shift);
                         break;
                     } while (true);
                     ip += 5;
@@ -3585,7 +3662,7 @@ do {                                                                           \
                     // This is not optimal, but 16-bit exchange is not a common operation.
                     ULONG* dstUINT32Aligned = (ULONG*)(uint16_t*)((size_t)dst & ~3);
                     int32_t shift = ((size_t)dst & 3) * 8;
-                    if (shift & 1)
+                    if (shift & 8)
                     {
                         // Attempt to do 16-bit exchange on 2-byte unaligned address
                         COMPlusThrow(kAccessViolationException);
@@ -3604,7 +3681,7 @@ do {                                                                           \
                             continue;
                         }
                         // CompareExchange succeeded
-                        LOCAL_VAR(ip[1], uint32_t) = (uint32_t)(uint16_t)(oldULONG >> shift);
+                        LOCAL_VAR(ip[1], uint32_t) = (uint32_t)(uint16_t)(compareExchangeResult >> shift);
                         break;
                     } while (true);
                     ip += 5;

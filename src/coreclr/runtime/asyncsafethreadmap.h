@@ -18,7 +18,7 @@ bool InsertThreadIntoAsyncSafeMap(size_t osThread, void* pThread);
 void RemoveThreadFromAsyncSafeMap(size_t osThread, void* pThread);
 
 // Find a thread in the async-safe map.
-// * osThread = The OS thread ID to search for.
+// * osThread - The OS thread ID to search for.
 // * return - A pointer to the thread object associated with the OS thread ID, or NULL if not found.
 void* FindThreadInAsyncSafeMap(size_t osThread);
 

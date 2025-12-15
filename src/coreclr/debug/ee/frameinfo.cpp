@@ -1715,6 +1715,13 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
             {
                 use = false;
             }
+#ifdef FEATURE_INTERPRETER
+            // Avoid treating interpreter frame as a managed frame
+            else if (frame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            {
+                use = false;
+            }
+#endif // FEATURE_INTERPRETER
             else
             {
                 d->info.managed = true;

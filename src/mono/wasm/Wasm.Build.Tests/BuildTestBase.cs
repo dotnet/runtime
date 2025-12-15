@@ -26,11 +26,13 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        public static readonly string DefaultTargetFramework = $"net{Environment.Version.Major}.0";
-        public static readonly string PreviousTargetFramework = $"net{Environment.Version.Major - 1}.0";
-        public static readonly string Previous2TargetFramework = $"net{Environment.Version.Major - 2}.0";
-        public static readonly string DefaultTargetFrameworkForBlazor = $"net{Environment.Version.Major}.0";
+        private const int TargetMajorVersion = 11; /* net11 */
+        public static readonly string DefaultTargetFramework = $"net{TargetMajorVersion}.0";
+        public static readonly string PreviousTargetFramework = $"net{TargetMajorVersion - 1}.0";
+        public static readonly string Previous2TargetFramework = $"net{TargetMajorVersion - 2}.0";
         public static readonly string TargetFrameworkForTasks = $"net{Environment.Version.Major}.0";
+        public static readonly string DefaultTargetFrameworkForBlazor = DefaultTargetFramework;
+        public static readonly string DefaultTargetFrameworkForBlazorTemplate = $"net{Environment.Version.Major}.0";
         private const string DefaultEnvironmentLocale = "en-US";
         protected static readonly string s_unicodeChars = "\u9FC0\u8712\u679B\u906B\u486B\u7149";
         protected static readonly bool s_skipProjectCleanup;
@@ -63,7 +65,7 @@ namespace Wasm.Build.Tests
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
         public static bool IsWorkloadWithMultiThreadingForDefaultFramework => s_buildEnv.IsWorkloadWithMultiThreadingForDefaultFramework;
         public static bool UseWebcil => s_buildEnv.UseWebcil;
-        public static string GetNuGetConfigPathFor(string targetFramework)
+        public static string GetNuGetConfigPath()
             => Path.Combine(BuildEnvironment.TestDataPath, "nuget.config");
 
         public TProvider GetProvider<TProvider>() where TProvider : ProjectProviderBase
@@ -232,9 +234,8 @@ namespace Wasm.Build.Tests
             return (_logPath, _nugetPackagesDir);
         }
 
-        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = true, string? targetFramework = null)
+        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = true)
         {
-            targetFramework ??= DefaultTargetFramework;
             if (Directory.Exists(dir))
                 Directory.Delete(dir, recursive: true);
             Directory.CreateDirectory(dir);
@@ -248,12 +249,12 @@ namespace Wasm.Build.Tests
             {
                 File.WriteAllText(targetNuGetConfigPath,
                                     GetNuGetConfigWithLocalPackagesPath(
-                                                GetNuGetConfigPathFor(targetFramework),
+                                                GetNuGetConfigPath(),
                                                 s_buildEnv.BuiltNuGetsPath));
             }
             else
             {
-                File.Copy(GetNuGetConfigPathFor(targetFramework), targetNuGetConfigPath);
+                File.Copy(GetNuGetConfigPath(), targetNuGetConfigPath);
             }
         }
 

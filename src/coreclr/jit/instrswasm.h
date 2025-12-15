@@ -37,12 +37,19 @@ INST(br,          "br",          0, IF_ULEB128, 0x0C)
 INST(br_if,       "br_if",       0, IF_ULEB128, 0x0D)
 INST(br_table,    "br_table",    0, IF_ULEB128, 0x0E)
 INST(return,      "return",      0, IF_OPCODE,  0x0F)
+INST(drop,        "drop",        0, IF_OPCODE,  0x1A)
 
 INST(local_get,   "local.get",   0, IF_ULEB128, 0x20)
+INST(local_set,   "local.set",   0, IF_ULEB128, 0x21)
 INST(i32_load,    "i32.load",    0, IF_MEMARG,  0x28)
 INST(i64_load,    "i64.load",    0, IF_MEMARG,  0x29)
 INST(f32_load,    "f32.load",    0, IF_MEMARG,  0x2A)
 INST(f64_load,    "f64.load",    0, IF_MEMARG,  0x2B)
+INST(i32_store,   "i32.store",   0, IF_MEMARG,  0x36)
+INST(i64_store,   "i64.store",   0, IF_MEMARG,  0x37)
+INST(f32_store,   "f32.store",   0, IF_MEMARG,  0x38)
+INST(f64_store,   "f64.store",   0, IF_MEMARG,  0x39)
+
 // 5.4.7 Numeric Instructions
 // Constants
 INST(i32_const,   "i32.const",   0, IF_SLEB128, 0x41)

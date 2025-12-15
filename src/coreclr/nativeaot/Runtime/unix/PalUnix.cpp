@@ -1031,7 +1031,7 @@ static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
         {
             // Make sure that errno is not modified
             int savedErrNo = errno;
-            Thread::HijackCallback((NATIVE_CONTEXT*)context, pThread);
+            Thread::HijackCallback((NATIVE_CONTEXT*)context, pThread, true /* doInlineSuspend */);
             errno = savedErrNo;
         }
 

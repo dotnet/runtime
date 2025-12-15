@@ -351,14 +351,16 @@ public class JsAsset
 public class SymbolsAsset
 {
     public string name { get; set; }
+    public string cache { get; set; }
 }
 
 [DataContract]
 public class WasmAsset
 {
     public string name { get; set; }
-    public string integrity { get; set; }
+    public string hash { get; set; }
     public string resolvedUrl { get; set; }
+    public string cache { get; set; }
 }
 
 [DataContract]
@@ -366,8 +368,9 @@ public class GeneralAsset
 {
     public string virtualPath { get; set; }
     public string name { get; set; }
-    public string integrity { get; set; }
+    public string hash { get; set; }
     public string resolvedUrl { get; set; }
+    public string cache { get; set; }
 }
 
 [DataContract]
@@ -375,8 +378,9 @@ public class VfsAsset
 {
     public string virtualPath { get; set; }
     public string name { get; set; }
-    public string integrity { get; set; }
+    public string hash { get; set; }
     public string resolvedUrl { get; set; }
+    public string cache { get; set; }
 }
 
 public enum GlobalizationMode : int

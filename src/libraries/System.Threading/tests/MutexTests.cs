@@ -232,13 +232,6 @@ namespace System.Threading.Tests
         {
             Assert.Throws<IOException>(() => new Mutex("Foo/Bar", options: default));
             Assert.Throws<IOException>(() => new Mutex("Global\\Foo/Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
-            if (PlatformDetection.IsCoreCLR)
-            {
-                AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(new string('a', 1000), options: default));
-                AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex("Foo\\Bar", options: default));
-                AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex("Foo\\Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
-                Assert.Throws<IOException>(() => new Mutex("Global\\Foo\\Bar", options: new NamedWaitHandleOptions { CurrentSessionOnly = false }));
-            }
         }
 
         [Theory]

@@ -1407,6 +1407,10 @@ PhaseStatus Compiler::fgWasmControlFlow()
         }
     }
 
+    // Publish the index to block map for use during codegen.
+    //
+    fgIndexToBlockMap = initialLayout;
+
     JITDUMPEXEC(fgDumpWasmControlFlow());
     JITDUMPEXEC(fgDumpWasmControlFlowDot());
 

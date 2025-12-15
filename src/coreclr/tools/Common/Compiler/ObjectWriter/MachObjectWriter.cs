@@ -265,7 +265,7 @@ namespace ILCompiler.ObjectWriter
 
                 case TargetOS.MacCatalyst:
                     buildVersion.Platform = PLATFORM_MACCATALYST;
-                    buildVersion.MinimumPlatformVersion = 0x0F_02_00; // 15.0.0
+                    buildVersion.MinimumPlatformVersion = 0x0F_02_00; // 15.2.0
                     break;
 
                 case TargetOS.iOS:
@@ -280,7 +280,7 @@ namespace ILCompiler.ObjectWriter
                         TargetOS.tvOSSimulator => PLATFORM_TVOSSIMULATOR,
                         _ => 0,
                     };
-                    buildVersion.MinimumPlatformVersion = 0x0C_02_00; // 12.2.0
+                    buildVersion.MinimumPlatformVersion = 0x0D_00_00; // 13.0.0
                     break;
             }
             buildVersion.Write(outputFileStream);

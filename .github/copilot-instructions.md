@@ -1,3 +1,7 @@
+---
+excludeAgent: code-review-agent
+---
+
 **Any code you commit SHOULD compile, and new and existing tests related to the change SHOULD pass.**
 
 You MUST make your best effort to ensure your changes satisfy those criteria before committing. If for any reason you were unable to build or test the changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.

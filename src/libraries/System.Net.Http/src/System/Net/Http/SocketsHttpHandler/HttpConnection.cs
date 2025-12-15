@@ -779,12 +779,7 @@ namespace System.Net.Http
 
                 // Create the response stream.
                 Stream responseStream;
-                if (request.Method.IsHead || response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotModified)
-                {
-                    responseStream = EmptyReadStream.Instance;
-                    CompleteResponse();
-                }
-                else if (request.Method.IsConnect && response.StatusCode == HttpStatusCode.OK)
+                if (request.Method.IsConnect && response.IsSuccessStatusCode)
                 {
                     // Successful response to CONNECT does not have body.
                     // What ever comes next should be opaque.
@@ -796,6 +791,11 @@ namespace System.Net.Http
 
                     _pool.InvalidateHttp11Connection(this);
                     _detachedFromPool = true;
+                }
+                else if (request.Method.IsHead || response.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotModified)
+                {
+                    responseStream = EmptyReadStream.Instance;
+                    CompleteResponse();
                 }
                 else if (response.StatusCode == HttpStatusCode.SwitchingProtocols)
                 {

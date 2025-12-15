@@ -134,8 +134,7 @@ CObjectType CorUnix::otFileMapping(
                 NULL,   // No process local data cleanup routine
                 CObjectType::UnwaitableObject,
                 CObjectType::SignalingNotApplicable,
-                CObjectType::ThreadReleaseNotApplicable,
-                CObjectType::OwnershipNotApplicable
+                CObjectType::ThreadReleaseNotApplicable
                 );
 
 CAllowedObjectTypes aotFileMapping(otiFileMapping);

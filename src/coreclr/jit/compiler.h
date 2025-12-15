@@ -5242,6 +5242,7 @@ public:
 
 #ifdef TARGET_WASM
     jitstd::vector<WasmInterval*>* fgWasmIntervals = nullptr;
+    BasicBlock** fgIndexToBlockMap = nullptr;
 #endif
 
     FlowGraphDfsTree* m_dfsTree = nullptr;

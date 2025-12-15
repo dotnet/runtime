@@ -98,7 +98,7 @@
     <RemoveDir Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'" Directories="$(PublishDir)" ContinueOnError="WarnAndContinue" />
   </Target>
 
-  <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
+  <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)" Runtime="NET" TaskFactory="TaskHostFactory" />
   <Target Name="GenerateRunScript">
     <PropertyGroup>
       <!-- RSP file support. -->

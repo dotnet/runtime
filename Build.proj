@@ -1,20 +1,13 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
   <ItemGroup>
-    <!-- Subsets are already imported by Directory.Build.props. -->
+    <ProjectReference Include="$(RepoTasksDir)tasks.proj" BuildInParallel="false" />
+    <!-- Subsets.props which defines @(ProjectToBuild) is already imported in Directory.Build.props. -->
     <ProjectReference Include="@(ProjectToBuild)" />
-    <!-- Only include tasks.proj during restore and build incrementally via a target. -->
-    <ProjectReference Include="$(RepoTasksDir)tasks.proj" Condition="'$(MSBuildRestoreSessionId)' != ''" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)SubsetValidation.targets" />
   <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
-
-  <Target Name="BuildLocalTasks"
-          BeforeTargets="Build">
-    <MSBuild Projects="$(RepoTasksDir)tasks.proj"
-             Targets="BuildIncrementally" />
-  </Target>
 
   <Target Name="SetupBootstrapLayout"
           AfterTargets="Build"
@@ -51,4 +44,5 @@
       SkipUnchangedFiles="true" />
     <Message Importance="high" Text="Bootstrap files copied to $(ArtifactsDir)bootstrap" />
   </Target>
+
 </Project>

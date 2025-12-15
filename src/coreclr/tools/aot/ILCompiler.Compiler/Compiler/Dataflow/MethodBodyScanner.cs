@@ -55,7 +55,7 @@ namespace ILCompiler.Dataflow
         protected MethodBodyScanner(FlowAnnotations annotations)
         {
             _annotations = annotations;
-            InterproceduralStateLattice = new InterproceduralStateLattice(new AsyncMaskingILProvider(annotations.ILProvider), default, default);
+            InterproceduralStateLattice = new InterproceduralStateLattice(annotations.ILProvider, default, default);
         }
 
         protected virtual void WarnAboutInvalidILInMethod(MethodIL method, int ilOffset)

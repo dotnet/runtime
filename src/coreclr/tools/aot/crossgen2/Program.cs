@@ -85,9 +85,19 @@ namespace ILCompiler
 
             TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
             TargetOS targetOS = Get(_command.TargetOS);
+            bool allowOptimistic = _command.OptimizationMode != OptimizationMode.PreferSize;
+
+            if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst)
+            {
+                // These platforms do not support jitted code, so we want to ensure that we don't
+                // need to fall back to the interpreter for any hardware-intrinsic optimizations.
+                // Disable optimistic instruction sets by default.
+                allowOptimistic = false;
+            }
+
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication, logger,
-                optimizingForSize: _command.OptimizationMode == OptimizationMode.PreferSize,
+                allowOptimistic: allowOptimistic,
                 isReadyToRun: true);
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
             var targetDetails = new TargetDetails(targetArchitecture, targetOS, Crossgen2RootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
@@ -562,6 +572,16 @@ namespace ILCompiler
                             }
                         }
                     }
+
+                    if (!typeSystemContext.TargetAllowsRuntimeCodeGeneration && typeSystemContext.BubbleIncludesCoreModule)
+                    {
+                        // For some platforms, we cannot JIT.
+                        // As a result, we need to ensure that we have a fallback implementation for all hardware intrinsics
+                        // that are marked as supported.
+                        // Otherwise, the interpreter won't have an implementation it can call for any non-ReadyToRun code.
+                        compilationRoots.Add(new ReadyToRunHardwareIntrinsicRootProvider(typeSystemContext));
+                    }
+
                     // In single-file compilation mode, use the assembly's DebuggableAttribute to determine whether to optimize
                     // or produce debuggable code if an explicit optimization level was not specified on the command line
                     OptimizationMode optimizationMode = _command.OptimizationMode;

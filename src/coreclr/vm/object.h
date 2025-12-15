@@ -1138,24 +1138,6 @@ class ReflectModuleBaseObject : public Object
 };
 
 class ThreadBaseObject;
-class SynchronizationContextObject: public Object
-{
-    friend class CoreLibBinder;
-private:
-    // These field are also defined in the managed representation.  (SecurityContext.cs)If you
-    // add or change these field you must also change the managed code so that
-    // it matches these.  This is necessary so that the object is the proper
-    // size.
-    CLR_BOOL _requireWaitNotification;
-public:
-    BOOL IsWaitNotificationRequired() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _requireWaitNotification;
-    }
-};
-
-
 class ExecutionContextObject: public Object
 {
     friend class CoreLibBinder;
@@ -1180,13 +1162,11 @@ public:
 typedef DPTR(class CultureInfoBaseObject) PTR_CultureInfoBaseObject;
 
 #ifdef USE_CHECKED_OBJECTREFS
-typedef REF<SynchronizationContextObject> SYNCHRONIZATIONCONTEXTREF;
 typedef REF<ExecutionContextObject> EXECUTIONCONTEXTREF;
 typedef REF<CultureInfoBaseObject> CULTUREINFOBASEREF;
 typedef REF<ArrayBase> ARRAYBASEREF;
 
 #else
-typedef SynchronizationContextObject*     SYNCHRONIZATIONCONTEXTREF;
 typedef CultureInfoBaseObject*     CULTUREINFOBASEREF;
 typedef ExecutionContextObject* EXECUTIONCONTEXTREF;
 typedef PTR_ArrayBase ARRAYBASEREF;
@@ -1247,6 +1227,10 @@ private:
     OBJECTREF     m_SynchronizationContext;
     STRINGREF     m_Name;
     OBJECTREF     m_StartHelper;
+#ifdef TARGET_UNIX
+    OBJECTREF     m_WaitInfo;
+    OBJECTREF     m_joinEvent;
+#endif // TARGET_UNIX
 
     // The next field (m_InternalThread) is declared as IntPtr in the managed
     // definition of Thread.  The loader will sort it next.
@@ -1297,12 +1281,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_ExecutionContext;
-    }
-
-    OBJECTREF GetSynchronizationContext()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_SynchronizationContext;
     }
 
     void      InitExisting();

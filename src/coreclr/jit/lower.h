@@ -417,6 +417,10 @@ private:
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
 #endif // TARGET_XARCH
 
+#ifdef TARGET_WASM
+    GenTree* LowerNeg(GenTreeOp* node);
+#endif
+
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
 
     bool TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode);

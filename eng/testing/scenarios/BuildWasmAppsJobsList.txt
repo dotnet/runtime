@@ -5,7 +5,6 @@ Wasm.Build.NativeRebuild.Tests.ReferenceNewAssemblyRebuildTest
 Wasm.Build.NativeRebuild.Tests.SimpleSourceChangeRebuildTest
 Wasm.Build.Tests.InterpPgoTests
 Wasm.Build.Templates.Tests.NativeBuildTests
-Wasm.Build.Tests.Blazor.AppsettingsTests
 Wasm.Build.Tests.Blazor.BuildPublishTests
 Wasm.Build.Tests.Blazor.SimpleRunTests
 Wasm.Build.Tests.Blazor.CleanTests
