@@ -63,7 +63,10 @@ namespace System.Threading
         // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
         private bool _mayNeedResetForThreadPool;
 
-        // Set in unmanaged and read in managed code.
+        // This is set in two places:
+        // For threads started with Thread.Start: Set in managed code as the thread is exiting.
+        // For external threads that attach to the runtime: Set in unmanaged code as part of thread detach.
+        // This is only read in managed code.
         private bool _isDead;
         private bool _isThreadPool;
 
