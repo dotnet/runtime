@@ -359,34 +359,9 @@ namespace System
         // compatible array types based on the array element type - this
         // method does not support casting, boxing, or primitive widening.
         // It will up-cast, assuming the array types are correct.
-        public static unsafe void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
-            if (sourceArray != null && destinationArray != null)
-            {
-                MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
-                if (MethodTable.AreSameType(pMT, RuntimeHelpers.GetMethodTable(destinationArray)) &&
-                    pMT->IsSzArray &&
-                    length >= 0 && sourceIndex >= 0 && destinationIndex >= 0 &&
-                    (uint)(sourceIndex + length) <= sourceArray.NativeLength &&
-                    (uint)(destinationIndex + length) <= destinationArray.NativeLength)
-                {
-                    nuint elementSize = (nuint)pMT->ComponentSize;
-                    nuint byteCount = (uint)length * elementSize;
-                    ref byte src = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(sourceArray).Data, (uint)sourceIndex * elementSize);
-                    ref byte dst = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(destinationArray).Data, (uint)destinationIndex * elementSize);
-
-                    if (pMT->ContainsGCPointers)
-                        Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
-                    else
-                        SpanHelpers.Memmove(ref dst, ref src, byteCount);
-
-                    // GC.KeepAlive(sourceArray) not required. pMT kept alive via sourceArray
-                    return;
-                }
-            }
-
-            // Less common
-            CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
+            Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
         }
 
         // Copies length elements from sourceArray, starting at index 0, to
@@ -421,7 +396,12 @@ namespace System
 
         // Copies length elements from sourceArray, starting at sourceIndex, to
         // destinationArray, starting at destinationIndex.
-        public static unsafe void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        public static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: false);
+        }
+
+        private static unsafe void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
             if (sourceArray != null && destinationArray != null)
             {
@@ -448,7 +428,7 @@ namespace System
             }
 
             // Less common
-            CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: false);
+            CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
         }
 
         // Reliability-wise, this method will either possibly corrupt your
