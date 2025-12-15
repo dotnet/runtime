@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            return ObjectNodeSection.TextSection;
+            return ObjectNodeSection.ReadOnlyDataSection;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
