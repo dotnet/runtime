@@ -99,19 +99,19 @@ namespace ILCompiler.ObjectWriter
 
         private protected override ObjectNodeSection GetEmitSection(ObjectNodeSection section)
         {
-            // RISC-V and LoongArch64 have a limited addressing range (±2GB).
-            // Don't merge sections to avoid relocation overflow.
-            if (_nodeFactory.Target.Architecture == TargetArchitecture.RiscV64
-                || _nodeFactory.Target.Architecture == TargetArchitecture.LoongArch64)
-            {
-                return section;
-            }
-
             // Put executable code into .text for PE files as AV software really
             // doesn't like executable code in non-standard sections.
             if (section == ObjectNodeSection.ManagedCodeWindowsContentSection)
             {
                 return ObjectNodeSection.TextSection;
+            }
+
+            // RISC-V and LoongArch64 have a limited addressing range (±2GB) for relocs.
+            // Don't merge rdata into text to avoid relocation overflow.
+            if (_nodeFactory.Target.Architecture == TargetArchitecture.RiscV64
+                || _nodeFactory.Target.Architecture == TargetArchitecture.LoongArch64)
+            {
+                return section;
             }
 
             // We want to reduce the number of sections in the PE files we emit,
