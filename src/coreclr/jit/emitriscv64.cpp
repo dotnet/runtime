@@ -732,51 +732,56 @@ void emitter::emitIns_R_R_I(
     code_t     code = emitInsCode(ins);
     instrDesc* id   = emitNewInstr(attr);
 
-    if ((INS_addi <= ins && INS_srai >= ins) || (INS_addiw <= ins && INS_sraiw >= ins) ||
-        (INS_lb <= ins && INS_lhu >= ins) || INS_ld == ins || INS_lw == ins || INS_jalr == ins || INS_fld == ins ||
-        INS_flw == ins || INS_slli_uw == ins || INS_rori == ins || INS_roriw == ins ||
-        (INS_bseti <= ins && ins <= INS_binvi))
+    switch (GetMajorOpcode(code))
     {
-        assert(isGeneralRegisterOrR0(reg2));
-        code |= (reg1 & 0x1f) << 7; // rd
-        code |= reg2 << 15;         // rs1
-        code |= imm << 20;          // imm
-    }
-    else if (INS_sd == ins || INS_sw == ins || INS_sh == ins || INS_sb == ins || INS_fsw == ins || INS_fsd == ins)
-    {
-        assert(isGeneralRegister(reg2));
-        code |= (reg1 & 0x1f) << 20;                               // rs2
-        code |= reg2 << 15;                                        // rs1
-        code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7); // imm
-    }
-    else if (INS_beq <= ins && INS_bgeu >= ins)
-    {
-        assert(isGeneralRegister(reg1));
-        assert(isGeneralRegister(reg2));
-        assert(isValidSimm13(imm));
-        assert(!(imm & 3));
-        code |= reg1 << 15;
-        code |= reg2 << 20;
-        code |= ((imm >> 11) & 0x1) << 7;
-        code |= ((imm >> 1) & 0xf) << 8;
-        code |= ((imm >> 5) & 0x3f) << 25;
-        code |= ((imm >> 12) & 0x1) << 31;
-        // TODO-RISCV64: Move jump logic to emitIns_J
-        // TODO-RISC64-RVC: Remove this once all branches uses emitIns_J
-        id->idAddr()->iiaSetInstrCount(static_cast<int>(imm / sizeof(code_t)));
-    }
-    else if (ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc)
-    {
-        assert(isGeneralRegisterOrR0(reg1));
-        assert(isGeneralRegisterOrR0(reg2));
-        assert(isValidUimm12(imm));
-        code |= reg1 << 7;
-        code |= reg2 << 15;
-        code |= imm << 20;
-    }
-    else
-    {
-        NYI_RISCV64("illegal ins within emitIns_R_R_I!");
+        case MajorOpcode::OpImm:
+        case MajorOpcode::OpImm32:
+        case MajorOpcode::Load:
+        case MajorOpcode::LoadFp:
+        case MajorOpcode::Jalr:
+            assert(!(INS_clz <= ins && ins <= INS_rev8)); // encoded under OpImm(32) but they don't take an immediate
+            assert(isGeneralRegisterOrR0(reg2));
+            code |= (reg1 & 0x1f) << 7; // rd
+            code |= reg2 << 15;         // rs1
+            code |= imm << 20;          // imm
+            break;
+
+        case MajorOpcode::Store:
+        case MajorOpcode::StoreFp:
+            assert(isGeneralRegister(reg2));
+            code |= (reg1 & 0x1f) << 20;                               // rs2
+            code |= reg2 << 15;                                        // rs1
+            code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7); // imm
+            break;
+
+        case MajorOpcode::Branch:
+            assert(isGeneralRegister(reg1));
+            assert(isGeneralRegister(reg2));
+            assert(isValidSimm13(imm));
+            assert(!(imm & 3));
+            code |= reg1 << 15;
+            code |= reg2 << 20;
+            code |= ((imm >> 11) & 0x1) << 7;
+            code |= ((imm >> 1) & 0xf) << 8;
+            code |= ((imm >> 5) & 0x3f) << 25;
+            code |= ((imm >> 12) & 0x1) << 31;
+            // TODO-RISCV64: Move jump logic to emitIns_J
+            // TODO-RISC64-RVC: Remove this once all branches uses emitIns_J
+            id->idAddr()->iiaSetInstrCount(static_cast<int>(imm / sizeof(code_t)));
+            break;
+
+        case MajorOpcode::System:
+            assert(ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc);
+            assert(isGeneralRegisterOrR0(reg1));
+            assert(isGeneralRegisterOrR0(reg2));
+            assert(isValidUimm12(imm));
+            code |= reg1 << 7;
+            code |= reg2 << 15;
+            code |= imm << 20;
+            break;
+
+        default:
+            NYI_RISCV64("illegal ins within emitIns_R_R_I!");
     }
 
     id->idIns(ins);
