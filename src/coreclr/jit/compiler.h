@@ -9386,6 +9386,13 @@ public:
             simdType = TYP_SIMD64;
         }
 #endif // TARGET_XARCH
+#if defined(TARGET_ARM64)
+        else if (size == SIZE_UNKNOWN)
+        {
+            assert(JitConfig.JitUseScalableVectorT());
+            simdType = TYP_SIMD;
+        }
+#endif
         else
         {
             noway_assert(!"Unexpected size for SIMD type");

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <!--  CilStrip.Sources doesn't play nicely with nullability -->
     <Nullable>disable</Nullable>
     <!-- CS0618,SYSLIB0003,SYSLIB0037: Mono.Cecil uses a number of other obsolete types
@@ -11,11 +11,9 @@
     <!-- the analyzers don't like Mono.Cecil either -->
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.CilStrip.Sources" Version="$(MicrosoftDotNetCilStripSourcesVersion)" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="AssemblyStripper.cs" />
-  </ItemGroup>
 </Project>
