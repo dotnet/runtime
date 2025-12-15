@@ -570,8 +570,8 @@ namespace System.Threading
         {
             // Consider this managed thread as dead.
             // The unmanaged thread is still alive, but will die soon, after cleaning up some state.
-            // We do this before OnThreadExiting and SetJoinHandle so that any threads
-            // waiting on this thread to end will correctly see that it is stopped
+            // We set _isDead = true before calling _waitInfo?.OnThreadExiting() and SetJoinHandle()
+            // so that any threads waiting on this thread to end will correctly see that it is stopped
             // when we set the join handle.
             _isDead = true;
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
