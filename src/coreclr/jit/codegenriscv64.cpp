@@ -912,6 +912,31 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     regSet.verifyRegUsed(reg);
 }
 
+//------------------------------------------------------------------------
+// genSetRegToConst: Generate code to load a constant value into a register.
+//
+// Arguments:
+//    targetReg  - The destination register to receive the constant value.
+//    targetType - The type of the value being loaded.
+//    tree       - The GenTree node representing the constant.
+//
+// Assumptions:
+//    - 'tree' is a constant node of type GT_CNS_INT or GT_CNS_DBL.
+//    - For floating-point constants, a temporary integer register is
+//      available when required.
+//
+// Notes:
+//    Integer constants are materialized using appropriate immediate load
+//    sequences, with the detailed instruction selection delegated to
+//    instGen_Set_Reg_To_Imm.
+//
+//    Floating-point constants whose bit patterns can be materialized using
+//    a single integer immediate instruction are first constructed in a
+//    temporary integer register using `addi` or `lui`, and then transferred
+//    to the FP register via `fmv_w_x` or `fmv_d_x`. For all other floating-point
+//    constants, the value is emitted into the data section and loaded
+//    from memory.
+//
 void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree)
 {
     switch (tree->gtOper)
