@@ -99,23 +99,6 @@ namespace ILCompiler
             return thunk;
         }
 
-        /// <summary>
-        /// Returns true of <paramref name="method"/> is a standin method for instantiating thunk target.
-        /// </summary>
-        public bool IsDefaultInterfaceMethodImplementationThunkTargetMethod(MethodDesc method)
-        {
-            return method.GetTypicalMethodDefinition().GetType() == typeof(DefaultInterfaceMethodImplementationWithHiddenParameter);
-        }
-
-        /// <summary>
-        /// Returns the real target method of an instantiating thunk.
-        /// </summary>
-        public MethodDesc GetRealDefaultInterfaceMethodImplementationThunkTargetMethod(MethodDesc method)
-        {
-            MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
-            return ((DefaultInterfaceMethodImplementationWithHiddenParameter)typicalMethod).MethodRepresented;
-        }
-
         private struct DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey
         {
             public readonly MethodDesc TargetMethod;
@@ -166,7 +149,6 @@ namespace ILCompiler
         private sealed partial class DefaultInterfaceMethodImplementationInstantiationThunk : ILStubMethod, IPrefixMangledMethod
         {
             private readonly MethodDesc _targetMethod;
-            private readonly DefaultInterfaceMethodImplementationWithHiddenParameter _nakedTargetMethod;
             private readonly TypeDesc _owningType;
             private readonly int _interfaceIndex;
             private readonly bool _useContextFromRuntime;
@@ -178,7 +160,6 @@ namespace ILCompiler
 
                 _owningType = owningType;
                 _targetMethod = targetMethod;
-                _nakedTargetMethod = new DefaultInterfaceMethodImplementationWithHiddenParameter(targetMethod, owningType);
                 _interfaceIndex = interfaceIndex;
                 _useContextFromRuntime = useContextFromRuntime;
             }
@@ -237,18 +218,8 @@ namespace ILCompiler
                 MethodDesc getOrdinalInterfaceMethod = Context.GetHelperEntryPoint("SharedCodeHelpers"u8, "GetOrdinalInterface"u8);
                 MethodDesc getCurrentContext = Context.GetHelperEntryPoint("SharedCodeHelpers"u8, "GetCurrentSharedThunkContext"u8);
 
-                bool isX86 = Context.Target.Architecture == TargetArchitecture.X86;
-
                 // Load "this"
                 codeStream.EmitLdArg(0);
-
-                if (isX86)
-                {
-                    for (int i = 0; i < _targetMethod.Signature.Length; i++)
-                    {
-                        codeStream.EmitLdArg(i + 1);
-                    }
-                }
 
                 // Load the instantiating argument.
                 if (_useContextFromRuntime)
@@ -267,93 +238,19 @@ namespace ILCompiler
                     codeStream.Emit(ILOpcode.call, emit.NewToken(getOrdinalInterfaceMethod));
                 }
 
-                if (!isX86)
+                codeStream.Emit(ILOpcode.call, emit.NewToken(Context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8, "SetNextCallGenericContext"u8, null)));
+
+                // Load rest of the arguments
+                for (int i = 0; i < _targetMethod.Signature.Length; i++)
                 {
-                    // Load rest of the arguments
-                    for (int i = 0; i < _targetMethod.Signature.Length; i++)
-                    {
-                        codeStream.EmitLdArg(i + 1);
-                    }
+                    codeStream.EmitLdArg(i + 1);
                 }
 
-                // Call an instance method on the target interface that has a fake instantiation parameter
-                // in it's signature. This will be swapped by the actual instance method after codegen is done.
-                codeStream.Emit(ILOpcode.call, emit.NewToken(_nakedTargetMethod));
+                codeStream.Emit(ILOpcode.call, emit.NewToken(_targetMethod));
                 codeStream.Emit(ILOpcode.ret);
 
                 return emit.Link(this);
             }
-        }
-
-        /// <summary>
-        /// Represents an instance method on a generic interface with an explicit instantiation parameter in the
-        /// signature. This is so that we can refer to the parameter from IL. References to this method will
-        /// be replaced by the actual instance method after codegen is done.
-        /// </summary>
-        internal sealed partial class DefaultInterfaceMethodImplementationWithHiddenParameter : MethodDesc
-        {
-            private readonly MethodDesc _methodRepresented;
-            private readonly TypeDesc _owningType;
-            private MethodSignature _signature;
-
-            public DefaultInterfaceMethodImplementationWithHiddenParameter(MethodDesc methodRepresented, TypeDesc owningType)
-            {
-                Debug.Assert(methodRepresented.OwningType.IsInterface);
-                Debug.Assert(!methodRepresented.Signature.IsStatic);
-
-                _methodRepresented = methodRepresented;
-                _owningType = owningType;
-            }
-
-            public MethodDesc MethodRepresented => _methodRepresented;
-
-            // We really don't want this method to be inlined.
-            public override bool IsNoInlining => true;
-
-            public override bool IsInternalCall => true;
-
-            public override bool IsIntrinsic => true;
-
-            public override TypeSystemContext Context => _methodRepresented.Context;
-            public override TypeDesc OwningType => _owningType;
-
-            public override ReadOnlySpan<byte> Name => _methodRepresented.Name;
-            public override string DiagnosticName => _methodRepresented.DiagnosticName;
-
-            public override MethodSignature Signature
-            {
-                get
-                {
-                    if (_signature == null)
-                    {
-                        TypeDesc[] parameters = new TypeDesc[_methodRepresented.Signature.Length + 1];
-
-                        // Shared instance methods on generic interfaces have a hidden parameter with the generic context.
-                        // We add it to the signature so that we can refer to it from IL.
-                        if (Context.Target.Architecture == TargetArchitecture.X86)
-                        {
-                            for (int i = 0; i < _methodRepresented.Signature.Length; i++)
-                                parameters[i] = _methodRepresented.Signature[i];
-                            parameters[_methodRepresented.Signature.Length] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
-                        }
-                        else
-                        {
-                            parameters[0] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
-                            for (int i = 0; i < _methodRepresented.Signature.Length; i++)
-                                parameters[i + 1] = _methodRepresented.Signature[i];
-                        }
-
-                        _signature = new MethodSignature(_methodRepresented.Signature.Flags,
-                            _methodRepresented.Signature.GenericParameterCount,
-                            _methodRepresented.Signature.ReturnType,
-                            parameters);
-                    }
-
-                    return _signature;
-                }
-            }
-
-            public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => false;
         }
     }
 }

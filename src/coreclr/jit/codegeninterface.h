@@ -270,7 +270,7 @@ public:
 #ifdef TARGET_XARCH
 #ifdef TARGET_AMD64
     // There are no reloc hints on x86
-    unsigned short genAddrRelocTypeHint(size_t addr);
+    CorInfoReloc genAddrRelocTypeHint(size_t addr);
 #endif
     bool genDataIndirAddrCanBeEncodedAsPCRelOffset(size_t addr);
     bool genCodeIndirAddrCanBeEncodedAsPCRelOffset(size_t addr);

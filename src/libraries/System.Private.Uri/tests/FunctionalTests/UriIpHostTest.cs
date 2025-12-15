@@ -219,6 +219,11 @@ namespace System.PrivateUri.Tests
             {
                 Assert.NotEqual(UriHostNameType.IPv4, testUri.HostNameType);
             }
+
+            if (Uri.TryCreate($"custom://{badIpv4String}/", UriKind.Absolute, out testUri))
+            {
+                Assert.NotEqual(UriHostNameType.IPv4, testUri.HostNameType);
+            }
         }
 
         #endregion Helpers
@@ -314,7 +319,6 @@ namespace System.PrivateUri.Tests
         [InlineData("::FFFF:0:192.168.0.1", "::ffff:0:192.168.0.1")] // SIIT
         [InlineData("::5EFE:192.168.0.1", "::5efe:192.168.0.1")] // ISATAP
         [InlineData("1::5EFE:192.168.0.1", "1::5efe:192.168.0.1")] // ISATAP
-        [InlineData("::192.168.0.010", "::192.168.0.10")] // Embedded IPv4 octal, read as decimal
         public void UriIPv6Host_EmbeddedIPv4_Success(string address, string expected)
         {
             ParseIPv6Address(address, expected);
@@ -461,6 +465,7 @@ namespace System.PrivateUri.Tests
 
             // TryCreate
             Assert.False(Uri.TryCreate($"http://[{badIpv6String}]/", UriKind.Absolute, out _), badIpv6String);
+            Assert.False(Uri.TryCreate($"custom://[{badIpv6String}]/", UriKind.Absolute, out _), badIpv6String);
         }
 
         #endregion Helpers

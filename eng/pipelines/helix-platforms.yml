@@ -176,39 +176,39 @@ variables:
   - name: helix_linux_musl_x64_latest
     value: (Alpine.edge.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-edge-helix-amd64
 
-  # Oldest: Alpine 3.20
+  # Oldest: Alpine 3.23
   - name: helix_linux_musl_x64_oldest
-    value: (Alpine.320.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-amd64
+    value: (Alpine.323.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-amd64
 
   # Linux musl ARM32
-  # Latest: Alpine 3.22
+  # Latest: Alpine 3.23
   - name: helix_linux_musl_arm32_latest
-    value: (Alpine.322.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-arm32v7
+    value: (Alpine.323.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
 
   - name: helix_linux_musl_arm32_latest_internal
-    value: (Alpine.322.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-arm32v7
+    value: (Alpine.323.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
 
-  # Oldest: Alpine 3.20
+  # Oldest: Alpine 3.23
   - name: helix_linux_musl_arm32_oldest
-    value: (Alpine.320.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-arm32v7
+    value: (Alpine.323.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
 
   - name: helix_linux_musl_arm32_oldest_internal
-    value: (Alpine.320.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-arm32v7
+    value: (Alpine.323.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm32v7
 
   # Linux musl ARM64
-  # Latest: Alpine 3.22
+  # Latest: Alpine 3.23
   - name: helix_linux_musl_arm64_latest
-    value: (Alpine.322.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-arm64v8
+    value: (Alpine.323.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
 
   - name: helix_linux_musl_arm64_latest_internal
-    value: (Alpine.322.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-arm64v8
+    value: (Alpine.323.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
 
-  # Oldest: Alpine 3.20
+  # Oldest: Alpine 3.23
   - name: helix_linux_musl_arm64_oldest
-    value: (Alpine.320.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-arm64v8
+    value: (Alpine.323.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
 
   - name: helix_linux_musl_arm64_oldest_internal
-    value: (Alpine.320.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-arm64v8
+    value: (Alpine.323.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-helix-arm64v8
 
   # ===========================================
   # Windows Platforms

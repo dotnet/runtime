@@ -670,11 +670,6 @@ CDAC_TYPE_FIELD(RealCodeHeader, /* T_RUNTIME_FUNCTION */, UnwindInfos, offsetof(
 #endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(RealCodeHeader)
 
-CDAC_TYPE_BEGIN(PatchpointInfo)
-CDAC_TYPE_SIZE(sizeof(PatchpointInfo))
-CDAC_TYPE_FIELD(PatchpointInfo, /*uint32*/, LocalCount, cdac_data<PatchpointInfo>::LocalCount)
-CDAC_TYPE_END(PatchpointInfo)
-
 CDAC_TYPE_BEGIN(CodeHeapListNode)
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, Next, offsetof(HeapList, hpNext))
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, StartAddress, offsetof(HeapList, startAddress))
@@ -1144,6 +1139,12 @@ CDAC_GLOBAL_POINTER(MethodDescSizeTable, &MethodDesc::s_ClassificationSizeTable)
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 
+
+// It is important for the subdescriptor pointers to be the last pointers in the global structure.
+// EnumMemDataDescriptors in enummem.cpp hardcodes the number of subdescriptors and utilizes
+// this order to find and enumerate the subdescriptors.
+//
+// When adding a new subdescriptor, EnumMemDescriptors must be updated appropriately.
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
 
 CDAC_GLOBAL_CONTRACT(CodeVersions, 1)

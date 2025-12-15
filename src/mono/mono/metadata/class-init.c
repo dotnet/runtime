@@ -388,7 +388,7 @@ mono_class_setup_fields (MonoClass *klass)
 					if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct must not have explicit layout."))
 						break;
 					else
-						; // failure occured during AOT compilation, continue execution
+						; // failure occurred during AOT compilation, continue execution
 				} else {
 					mono_class_set_type_load_failure (klass, "Inline array struct must not have explicit layout.");
 					break;
@@ -2359,7 +2359,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 							if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct size out of bounds, abnormally large."))
 								break;
 							else
-								size = initial_size; // failure occured during AOT compilation, continue execution
+								size = initial_size; // failure occurred during AOT compilation, continue execution
 						} else {
 							mono_class_set_type_load_failure (klass, "Inline array struct size out of bounds, abnormally large.");
 							break;

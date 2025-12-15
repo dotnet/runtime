@@ -471,11 +471,13 @@ namespace Internal.IL
                     _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null)), asyncReason);
                     _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null)), asyncReason);
                     _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null)), asyncReason);
                 }
 
                 // If this is the task await pattern, we're actually going to call the variant
                 // so switch our focus to the variant.
                 if (method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask()
+                    && !method.OwningType.IsDelegate
                     && MatchTaskAwaitPattern())
                 {
                     runtimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
@@ -776,22 +778,18 @@ namespace Internal.IL
                     {
                         ISymbolNode instParam = null;
 
-                        if (targetMethod.RequiresInstMethodDescArg())
+                        if (!_canonMethod.IsSharedByGenericInstantiations)
+                        {
+                            // Some handemitted IL helpers will call __Canon methods directly from unshared context.
+                            // This is fine, we just don't report any dependencies for the exact instantiation.
+                        }
+                        else if (targetMethod.RequiresInstMethodDescArg())
                         {
                             instParam = GetGenericLookupHelper(ReadyToRunHelperId.MethodDictionary, runtimeDeterminedMethod);
                         }
                         else if (targetMethod.RequiresInstMethodTableArg())
                         {
-                            bool hasHiddenParameter = true;
-
-                            if (targetMethod.IsIntrinsic)
-                            {
-                                if (_factory.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(targetMethod))
-                                    hasHiddenParameter = false;
-                            }
-
-                            if (hasHiddenParameter)
-                                instParam = GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType);
+                            instParam = GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType);
                         }
 
                         if (instParam != null)
