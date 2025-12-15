@@ -348,46 +348,62 @@ public class Async2Reflection
         return await FromStackTask(level);
     }
 
-    // uses DiagnosticMethodInfo, which is supported on NativeAOT
-    [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/122547", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
-    public static void FromStackDMI()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public static void FromStackDMI(int level)
     {
-        // Note: async1 leaks implementation details here and returns "Void MoveNext()"
-        Assert.Equal("FromStackDMIAsync", FromStackDMIAsync().Result);
-        Assert.Equal("FromStackDMIAsync", FromStackDMIAwait().Result);
+        if (level == 0)
+        {
+            // Note: async1 leaks implementation details here and returns "Void MoveNext()"
+            Assert.Equal("FromStackDMIAsync", FromStackDMIAsync(0).Result);
+            Assert.Equal("FromStackDMIAsync", FromStackDMIAwait(0).Result);
 
-        Assert.Equal("FromStackDMITask", FromStackDMITask().Result);
-        Assert.Equal("FromStackDMITask", FromStackDMIAwaitTask().Result);
+            Assert.Equal("FromStackDMITask", FromStackDMITask(0).Result);
+            Assert.Equal("FromStackDMITask", FromStackDMIAwaitTask(0).Result);
+        }
+        else
+        {
+            // Note: we go through suspend/resume, that is why we see dispatcher as the caller.
+            //       we do not see the resume stub though.
+            Assert.Equal("DispatchContinuations", FromStackDMIAsync(1).Result);
+            Assert.Equal("DispatchContinuations", FromStackDMIAwait(1).Result);
+
+            Assert.Equal("FromStackDMI", FromStackDMITask(1).Result);
+            // Note: we do not go through suspend/resume, that is why we see the actual caller.
+            //       we do not see the async->Task thunk though.
+            Assert.Equal("FromStackDMIAwaitTask", FromStackDMIAwaitTask(1).Result);
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task<string> FromStackDMIAsync()
+    private static async Task<string> FromStackDMIAsync(int level)
     {
         await Task.Yield();
-        StackFrame stackFrame = new StackFrame(0);
+        StackFrame stackFrame = new StackFrame(level);
         DiagnosticMethodInfo mi = DiagnosticMethodInfo.Create(stackFrame);
         return mi.Name;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task<string> FromStackDMIAwait()
+    private static async Task<string> FromStackDMIAwait(int level)
     {
-        return await FromStackDMIAsync();
+        return await FromStackDMIAsync(level);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Task<string> FromStackDMITask()
+    private static Task<string> FromStackDMITask(int level)
     {
-        StackFrame stackFrame = new StackFrame(0);
+        StackFrame stackFrame = new StackFrame(level);
         DiagnosticMethodInfo mi = DiagnosticMethodInfo.Create(stackFrame);
         return Task.FromResult(mi.Name);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task<string> FromStackDMIAwaitTask()
+    private static async Task<string> FromStackDMIAwaitTask(int level)
     {
-        return await FromStackDMITask();
+        return await FromStackDMITask(level);
     }
 
     [Fact]
