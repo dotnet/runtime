@@ -5,7 +5,7 @@ using System;
 using System.Globalization;
 using Xunit;
 //test case for delegate Equals method.
-namespace DelegateTest
+namespace DelegateEqualsTest
 {
     delegate bool booldelegate();
     public class DelegateEquals

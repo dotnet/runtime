@@ -5,6 +5,8 @@ using System;
 using System.Runtime.InteropServices; // For SafeHandle
 using Xunit;
 
+namespace SafeHandleDangerousReleaseTest;
+
 /// <summary>
 /// DangerousRelease
 /// </summary>

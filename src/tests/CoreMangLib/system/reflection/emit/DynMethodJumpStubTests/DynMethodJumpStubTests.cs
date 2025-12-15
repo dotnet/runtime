@@ -9,13 +9,15 @@ using System.Threading;
 using TestLibrary;
 using Xunit;
 
-[ConditionalClass(typeof(Utilities), nameof(Utilities.IsNotNativeAot))]
-[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
 public static class DynamicMethodJumpStubTests
 {
-    [Fact]
+    public static bool RunTests =>
+        OperatingSystem.IsWindows()
+        && Utilities.IsNotNativeAot
+        && PlatformDetection.Is64BitProcess;
+
+    [ConditionalFact(nameof(RunTests))]
     [OuterLoop]
-    [PlatformSpecific(TestPlatforms.Windows, "Test uses Win32 APIs to reserve memory to force jump stubs.")]
     public static void TestEntryPoint()
     {
         DynamicMethodJumpStubTest();
@@ -23,11 +25,6 @@ public static class DynamicMethodJumpStubTests
 
     public static void DynamicMethodJumpStubTest()
     {
-        if (!Environment.Is64BitProcess)
-        {
-            return;
-        }
-
         // Reserve memory around framework libraries. This is just a best attempt, it typically doesn't help since the
         // precode allocator may have already committed pages it can allocate from, or it may commit reserved pages close to
         // framework libraries.

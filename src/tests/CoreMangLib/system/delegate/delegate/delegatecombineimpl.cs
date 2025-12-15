@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Collections;
 using Xunit;
 //create for delegate combine(delegate a,delegate b) testing
-namespace DelegateTest
+namespace DelegateCombineImplTest
 {
     delegate bool booldelegate();
     delegate void voiddelegate();

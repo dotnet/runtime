@@ -5,7 +5,7 @@ using System;
 using System.Globalization;
 using Xunit;
 //test case for delegate Remove(System.Delegate,System.Delegate) method.
-namespace DelegateTest
+namespace DelegateRemoveTest
 {
     delegate bool booldelegate();
     delegate void voiddelegate();

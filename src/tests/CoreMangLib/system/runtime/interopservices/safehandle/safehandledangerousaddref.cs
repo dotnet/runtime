@@ -5,6 +5,7 @@ using System;
 using System.Runtime.InteropServices; // For SafeHandle
 using Xunit;
 
+namespace SafeHandleDangerousAddRefTest;
 
 [SecurityCritical]
 public class MySafeValidHandle : SafeHandle

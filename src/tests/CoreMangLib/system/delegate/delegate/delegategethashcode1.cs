@@ -5,7 +5,7 @@ using System;
 using System.Globalization;
 using Xunit;
 //test case for delegate GetHashCode method.
-namespace DelegateTest
+namespace DelegateGetHashCodeTest
 {
     delegate bool booldelegate();
     delegate void voiddelegate();

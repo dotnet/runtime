@@ -4,7 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*.ilproj" />
-    <Compile Include="**/*.cs" />
+    <MergedWrapperProjectReference Include="system/buffer/Asurt_99893.csproj" />
+    <Compile Include="**/*.cs" Exclude="system/buffer/Asurt_99893.cs" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
