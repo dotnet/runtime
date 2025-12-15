@@ -3183,6 +3183,11 @@ MethodTableBuilder::EnumerateClassMethods()
                 CONSISTENCY_CHECK(hr == S_OK);
                 type = mcPInvoke;
             }
+
+            if (type == mcPInvoke && IsMiAsync(dwImplFlags))
+            {
+                BuildMethodTableThrowException(BFA_ASYNC_PINVOKE_METHOD);
+            }
         }
         else if (IsMiRuntime(dwImplFlags))
         {
@@ -3441,6 +3446,13 @@ MethodTableBuilder::EnumerateClassMethods()
                     asyncVariantType = mcIL;
                 }
 #endif // FEATURE_COMINTEROP
+                if (type == mcPInvoke)
+                {
+                    // For P/Invoke methods,
+                    // we don't want to treat the async variant as a P/Invoke method
+                    // (as it isn't, it's a transient IL method).
+                    asyncVariantType = mcIL;
+                }
 
                 Signature newMemberSig(pNewMemberSignature, cAsyncThunkMemberSignature);
                 pNewMethod = new (GetStackingAllocator()) bmtMDMethod(

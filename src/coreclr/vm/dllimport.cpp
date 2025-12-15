@@ -2761,6 +2761,10 @@ void PInvokeStaticSigInfo::DllImportInit(
 
         PRECONDITION(CheckPointer(pMD));
 
+        // P/Invoke methods should never be marked as async.
+        // This should be blocked in the class loader.
+        PRECONDITION(!pMD->IsAsyncMethod());
+
         // These preconditions to prevent multithreaded regression
         // where pMD->m_szLibName was passed in directly, cleared
         // by this API, then accessed on another thread before being reset here.
@@ -2776,12 +2780,6 @@ void PInvokeStaticSigInfo::DllImportInit(
     IMDInternalImport  *pInternalImport = pMD->GetMDImport();
     CorPinvokeMap mappingFlags = pmMaxValue;
     mdModuleRef modref = mdModuleRefNil;
-
-    // P/Invoke methods should never be marked as async.
-    // We don't support generating a P/Invoke stub for an async method.
-    // Instead, we should generate an async variant stub that calls the task-returning interop stub.
-    if (pMD->IsAsyncMethod())
-        ThrowHR(COR_E_NOTSUPPORTED);
 
     if (FAILED(pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, ppEntryPointName, &modref)))
     {
@@ -3248,6 +3246,12 @@ BOOL PInvoke::MarshalingRequired(
     {
         STANDARD_VM_CHECK;
         PRECONDITION(pMD != NULL || (!sigPointer.IsNull() && pModule != NULL));
+
+        // We should never see an async method here.
+        // Delegate Invoke methods should never be async.
+        // Async P/Invokes are not supported.
+        // Async UnmanagedCallersOnly methods are not supported.
+        PRECONDITION(pMD == NULL || !pMD->IsAsyncMethod());
     }
     CONTRACTL_END;
 
@@ -3323,10 +3327,6 @@ BOOL PInvoke::MarshalingRequired(
     mdMethodDef methodToken = mdMethodDefNil;
     if (pMD != NULL)
     {
-        // Mark this as requiring marshalling so we go down the IL stub path that will throw the correct exception.
-        if (pMD->IsAsyncMethod())
-            return TRUE;
-
         methodToken = pMD->GetMemberDef();
     }
     CollateParamTokens(pMDImport, methodToken, numArgs - 1, pParamTokenArray);
@@ -6079,13 +6079,9 @@ static void GetILStubForCalli(VASigCookie* pVASigCookie, MethodDesc* pMD)
 
     if (pMD != NULL)
     {
+        _ASSERTE(pMD->IsPInvoke());
+        _ASSERTE(!pMD->IsAsyncMethod());
         PInvokeStaticSigInfo sigInfo(pMD);
-
-        // unmanaged vararg signatures should never be marked as async.
-        // We don't support generating a interop IL stub for an async method.
-        // Instead, we should generate an async variant stub that calls the task-returning interop stub.
-        if (pMD->IsAsyncMethod())
-            ThrowHR(COR_E_NOTSUPPORTED);
 
         md = pMD->GetMemberDef();
         nlFlags = sigInfo.GetLinkFlags();
