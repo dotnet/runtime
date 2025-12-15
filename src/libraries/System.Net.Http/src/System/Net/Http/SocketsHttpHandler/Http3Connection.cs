@@ -671,7 +671,16 @@ namespace System.Net.Http
                                 while (!VariableLengthIntegerHelper.TryRead(buffer.ActiveSpan, out unknownStreamType, out _))
                                 {
                                     buffer.EnsureAvailableSpace(VariableLengthIntegerHelper.MaximumEncodedLength);
-                                    bytesRead = await stream.ReadAsync(buffer.AvailableMemory, CancellationToken.None).ConfigureAwait(false);
+
+                                    try
+                                    {
+                                        bytesRead = await stream.ReadAsync(buffer.AvailableMemory, CancellationToken.None).ConfigureAwait(false);
+                                    }
+                                    catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted)
+                                    {
+                                        // Treat identical to receiving 0. Stream was reset before we could read the full stream type header.
+                                        bytesRead = 0;
+                                    }
 
                                     if (bytesRead == 0)
                                     {
