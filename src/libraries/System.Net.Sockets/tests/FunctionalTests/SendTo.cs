@@ -19,6 +19,14 @@ namespace System.Net.Sockets.Tests
         protected static IPEndPoint GetGetDummyTestEndpoint(AddressFamily addressFamily = AddressFamily.InterNetwork) =>
             addressFamily == AddressFamily.InterNetwork ? new IPEndPoint(IPAddress.Parse("1.2.3.4"), 1234) : new IPEndPoint(IPAddress.Parse("1:2:3::4"), 1234);
 
+        private static IPEndPoint CreateLoopbackUdpEndpoint(AddressFamily family, out Socket receiver)
+        {
+            IPAddress loopback = family == AddressFamily.InterNetwork ? IPAddress.Loopback : IPAddress.IPv6Loopback;
+            receiver = new Socket(family, SocketType.Dgram, ProtocolType.Udp);
+            receiver.Bind(new IPEndPoint(loopback, 0)); // ephemeral port on loopback
+            return (IPEndPoint)receiver.LocalEndPoint!;
+        }
+
         protected SendTo(ITestOutputHelper output) : base(output)
         {
         }
@@ -78,9 +86,11 @@ namespace System.Net.Sockets.Tests
         public async Task Datagram_UDP_ShouldImplicitlyBindLocalEndpoint()
         {
             using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            using Socket receiver;
+            IPEndPoint remote = CreateLoopbackUdpEndpoint(socket.AddressFamily, out receiver);
             byte[] buffer = new byte[32];
 
-            Task sendTask = SendToAsync(socket, new ArraySegment<byte>(buffer), GetGetDummyTestEndpoint());
+            Task sendTask = SendToAsync(socket, new ArraySegment<byte>(buffer), remote);
 
             // Asynchronous calls shall alter the property immediately:
             if (!UsesSync)
@@ -91,7 +101,11 @@ namespace System.Net.Sockets.Tests
             await sendTask;
 
             // In synchronous calls, we should wait for the completion of the helper task:
-            Assert.NotNull(socket.LocalEndPoint);
+            EndPoint? local = socket.LocalEndPoint;
+            Assert.NotNull(local);
+            var localIp = (IPEndPoint)local!;
+            Assert.NotEqual(0, localIp.Port);
+            Assert.True(IPAddress.IsLoopback(localIp.Address), "Implicit bind should select loopback when sending to loopback.");
         }
 
         [ConditionalFact]
@@ -109,7 +123,19 @@ namespace System.Net.Sockets.Tests
                 throw new SkipTestException("HostUnreachable indicates missing local network permission; this test might pass or fail depending on the environment. Please verify manually.");
             }
 
-            Assert.Equal(SocketError.AccessDenied, e.SocketErrorCode);
+            // On some mobile/restricted queues the send can fail earlier with unreachable
+            // rather than AccessDenied (see #120526, #114450).
+            if (OperatingSystem.IsAndroid() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            {
+                Assert.True(
+                    e.SocketErrorCode is SocketError.AccessDenied or SocketError.NetworkUnreachable or SocketError.HostUnreachable,
+                    $"Unexpected error: {e.SocketErrorCode}");
+            }
+            else
+            {
+                Assert.Equal(SocketError.AccessDenied, e.SocketErrorCode);
+            }
+
             Assert.Null(socket.LocalEndPoint);
         }
 
