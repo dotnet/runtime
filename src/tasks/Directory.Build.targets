@@ -1,5 +1,7 @@
 <Project>
 
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+
   <ItemGroup Condition="'$(MSBuildProjectName)' != 'tasks'">
     <!-- reference MSBuild directly to avoid bringing in it's package closure.  These all represent assemblies available to tasks and provided by MSBuild -->
     <PackageDownloadAndReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" Folder="ref/net472" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net472'))" />
@@ -24,6 +26,5 @@
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" Condition="'$(MSBuildProjectName)' != 'tasks'" />
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 
 </Project>
