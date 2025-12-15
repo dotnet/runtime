@@ -219,7 +219,7 @@ jobs:
           Contents: '**/CMakeConfigureLog.yaml'
           TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/log/cmake'
         continueOnError: true
-        condition: always()
+        condition: exists('artifacts/obj')
 
   - ${{ if eq(parameters.enablePublishBuildArtifacts, 'true') }}:
     - task: CopyFiles@2
