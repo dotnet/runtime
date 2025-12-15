@@ -247,18 +247,15 @@ public class Async2Reflection
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/122517", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void CurrentMethod()
     {
-        // MethodBase.GetCurrentMethod() is not supported on NativeAOT
-        if (!TestLibrary.Utilities.IsNativeAot)
-        {
-            // Note: async1 leaks implementation details here and returns "Void MoveNext()"
-            Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", GetCurrentMethodAsync().Result);
-            Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", GetCurrentMethodAwait().Result);
+        // Note: async1 leaks implementation details here and returns "Void MoveNext()"
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", GetCurrentMethodAsync().Result);
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodAsync()", GetCurrentMethodAwait().Result);
 
-            Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodTask().Result);
-            Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodAwaitTask().Result);
-        }
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodTask().Result);
+        Assert.Equal("System.Threading.Tasks.Task`1[System.String] GetCurrentMethodTask()", GetCurrentMethodAwaitTask().Result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -288,44 +285,67 @@ public class Async2Reflection
         return await GetCurrentMethodTask();
     }
 
-    [Fact]
-    public static void FromStack()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public static void FromStack(int level)
     {
-        // Note: async1 leaks implementation details here and returns "Void MoveNext()"
-        Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAsync()", FromStackAsync().Result);
-        Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAsync()", FromStackAwait().Result);
+        // StackFrame.GetMethod() is not supported on NativeAOT
+        if (TestLibrary.Utilities.IsNativeAot)
+        {
+            return;
+        }
 
-        Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackTask()", FromStackTask().Result);
-        Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackTask()", FromStackAwaitTask().Result);
+        if (level == 0)
+        {
+            // Note: async1 leaks implementation details here and returns "Void MoveNext()"
+            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAsync(Int32)", FromStackAsync(0).Result);
+            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAsync(Int32)", FromStackAwait(0).Result);
+
+            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackTask(Int32)", FromStackTask(0).Result);
+            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackTask(Int32)", FromStackAwaitTask(0).Result);
+        }
+        else
+        {
+            // Note: we go through suspend/resume, that is why we see dispatcher as the caller.
+            //       we do not see the resume stub though.
+            Assert.Equal("Void DispatchContinuations()", FromStackAsync(1).Result);
+            Assert.Equal("Void DispatchContinuations()", FromStackAwait(1).Result);
+
+            Assert.Equal("Void FromStack(Int32)", FromStackTask(1).Result);
+            // Note: we do not go through suspend/resume, that is why we see the actual caller.
+            //       we do not see the async->Task thunk though.
+            Assert.Equal("System.Threading.Tasks.Task`1[System.String] FromStackAwaitTask(Int32)", FromStackAwaitTask(1).Result);
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task<string> FromStackAsync()
+    private static async Task<string> FromStackAsync(int level)
     {
         await Task.Yield();
-        StackFrame stackFrame = new StackFrame(0);
+        StackFrame stackFrame = new StackFrame(level);
         MethodInfo mi = (MethodInfo)stackFrame.GetMethod();
         return mi.ToString()!;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task<string> FromStackAwait()
+    private static async Task<string> FromStackAwait(int level)
     {
-        return await FromStackAsync();
+        return await FromStackAsync(level);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Task<string> FromStackTask()
+    private static Task<string> FromStackTask(int level)
     {
-        StackFrame stackFrame = new StackFrame(0);
+        StackFrame stackFrame = new StackFrame(level);
         MethodInfo mi = (MethodInfo)stackFrame.GetMethod();
         return Task.FromResult(mi.ToString()!);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async Task<string> FromStackAwaitTask()
+    private static async Task<string> FromStackAwaitTask(int level)
     {
-        return await FromStackTask();
+        return await FromStackTask(level);
     }
 
     // uses DiagnosticMethodInfo, which is supported on NativeAOT
