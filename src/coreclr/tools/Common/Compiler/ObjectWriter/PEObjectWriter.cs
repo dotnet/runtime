@@ -106,10 +106,9 @@ namespace ILCompiler.ObjectWriter
                 return ObjectNodeSection.TextSection;
             }
 
-            // RISC-V and LoongArch64 have a limited addressing range (±2GB) for relocs.
+            // RISC-V has a limited addressing range (±2GB) for relocs.
             // Don't merge rdata into text to avoid relocation overflow.
-            if (_nodeFactory.Target.Architecture == TargetArchitecture.RiscV64
-                || _nodeFactory.Target.Architecture == TargetArchitecture.LoongArch64)
+            if (_nodeFactory.Target.Architecture == TargetArchitecture.RiscV64)
             {
                 return section;
             }
