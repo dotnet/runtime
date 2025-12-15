@@ -602,8 +602,6 @@ namespace ILCompiler.ObjectWriter
             string namePointerTableSymbol = GenerateSymbolNameForReloc("namePointerTable");
             string ordinalPointerTableSymbol = GenerateSymbolNameForReloc("ordinalPointerTable");
 
-            Debug.Assert(sectionWriter.Position == 0);
-
             // +0x00: reserved
             sectionWriter.WriteLittleEndian(0);
             // +0x04: time/date stamp
@@ -772,11 +770,11 @@ namespace ILCompiler.ObjectWriter
             // before writing if needed.
             var dataDirs = new OptionalHeaderDataDirectories();
             // Populate data directories if present.
-            PopulateDataDirectoryForWellKnownSymbolfPresent(dataDirs, ImageDirectoryEntry.Resource, SortableDependencyNode.ObjectNodeOrder.Win32ResourcesNode);
-            PopulateDataDirectoryForWellKnownSymbolfPresent(dataDirs, ImageDirectoryEntry.Debug, SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode);
-            PopulateDataDirectoryForWellKnownSymbolfPresent(dataDirs, ImageDirectoryEntry.CLRRuntimeHeader, SortableDependencyNode.ObjectNodeOrder.CorHeaderNode);
-            PopulateDataDirectoryForWellKnownSymbolfPresent(dataDirs, ImageDirectoryEntry.Exception, SortableDependencyNode.ObjectNodeOrder.RuntimeFunctionsTableNode);
-            PopulateDataDirectoryForWellKnownSymbolfPresent(dataDirs, ImageDirectoryEntry.Export, ExportDirectorySymbol);
+            PopulateDataDirectoryForWellKnownSymbolIfPresent(dataDirs, ImageDirectoryEntry.Resource, SortableDependencyNode.ObjectNodeOrder.Win32ResourcesNode);
+            PopulateDataDirectoryForWellKnownSymbolIfPresent(dataDirs, ImageDirectoryEntry.Debug, SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode);
+            PopulateDataDirectoryForWellKnownSymbolIfPresent(dataDirs, ImageDirectoryEntry.CLRRuntimeHeader, SortableDependencyNode.ObjectNodeOrder.CorHeaderNode);
+            PopulateDataDirectoryForWellKnownSymbolIfPresent(dataDirs, ImageDirectoryEntry.Exception, SortableDependencyNode.ObjectNodeOrder.RuntimeFunctionsTableNode);
+            PopulateDataDirectoryForWellKnownSymbolIfPresent(dataDirs, ImageDirectoryEntry.Export, ExportDirectorySymbol);
 
             if (_baseRelocSectionIndex != NoSectionIndex)
             {
@@ -833,15 +831,15 @@ namespace ILCompiler.ObjectWriter
             outputFileStream.SetLength(sizeOfImage);
         }
 
-        private void PopulateDataDirectoryForWellKnownSymbolfPresent(OptionalHeaderDataDirectories dataDirs, ImageDirectoryEntry directory, SortableDependencyNode.ObjectNodeOrder wellKnownSymbol)
+        private void PopulateDataDirectoryForWellKnownSymbolIfPresent(OptionalHeaderDataDirectories dataDirs, ImageDirectoryEntry directory, SortableDependencyNode.ObjectNodeOrder wellKnownSymbol)
         {
             if (_wellKnownSymbols.TryGetValue(wellKnownSymbol, out Utf8String symbolName))
             {
-                PopulateDataDirectoryForWellKnownSymbolfPresent(dataDirs, directory, symbolName);
+                PopulateDataDirectoryForWellKnownSymbolIfPresent(dataDirs, directory, symbolName);
             }
         }
 
-        private void PopulateDataDirectoryForWellKnownSymbolfPresent(OptionalHeaderDataDirectories dataDirs, ImageDirectoryEntry directory, Utf8String symbolName)
+        private void PopulateDataDirectoryForWellKnownSymbolIfPresent(OptionalHeaderDataDirectories dataDirs, ImageDirectoryEntry directory, Utf8String symbolName)
         {
             if (_definedSymbols.TryGetValue(symbolName, out SymbolDefinition symbol))
             {
