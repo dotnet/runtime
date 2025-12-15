@@ -345,8 +345,6 @@ struct InterpBasicBlock
     // Number of try blocks that enclose this basic block.
     int32_t enclosingTryBlockCount;
 
-    InterpBasicBlock(int32_t index) : InterpBasicBlock(index, 0) { }
-
     InterpBasicBlock(int32_t index, int32_t ilOffset)
     {
         this->index = index;
@@ -540,6 +538,57 @@ struct OpcodePeep
     }
 };
 
+class InterpreterRetryData
+{
+    bool m_needsRetry = false;
+    int32_t m_tryCount = 0;
+    const char *m_reasonString = "";
+
+    dn_simdhash_u32_ptr_holder m_ilMergePointStackTypes;
+
+    static void FreeStackInfo(uint32_t key, void *value, void *userdata)
+    {
+        free(value);
+    }
+public:
+
+    InterpreterRetryData()
+        : m_ilMergePointStackTypes(FreeStackInfo)
+    {
+
+    }
+    bool NeedsRetry() const
+    {
+        return m_needsRetry;
+    }
+
+    const char *GetReasonString() const
+    {
+        return m_reasonString;
+    }
+
+    void SetNeedsRetry(const char *reasonString)
+    {
+        assert(reasonString != nullptr);
+        m_reasonString = reasonString;
+        m_needsRetry = true;
+    }
+
+    void StartCompilationAttempt()
+    {
+        m_reasonString = "";
+        m_needsRetry = false;
+        m_tryCount++;
+        if (m_tryCount > 1000)
+        {
+            BADCODE("Exceeded maximum number of compilation attempts");
+        }
+    }
+
+    void SetOverrideILMergePointStack(int32_t ilOffset, uint32_t stackHeight, StackInfo *pStackInfo);
+    bool GetOverrideILMergePointStackType(int32_t ilOffset, uint32_t* stackHeight, StackInfo** stack);
+};
+
 class InterpCompiler
 {
     friend class InterpIAllocator;
@@ -552,6 +601,7 @@ private:
     CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
     CORINFO_METHOD_INFO* m_methodInfo;
+    CORJIT_FLAGS m_corJitFlags;
 
     void DeclarePointerIsClass(CORINFO_CLASS_HANDLE clsHnd)
     {
@@ -593,6 +643,7 @@ private:
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
 
+    InterpreterRetryData *m_pRetryData;
     const uint8_t* m_ip;
     uint8_t* m_pILCode;
     int32_t m_ILCodeSizeFromILHeader;
@@ -825,6 +876,9 @@ private:
     // Opcode peeps
     bool    FindAndApplyPeep(OpcodePeep* Peeps[]);
 
+    bool    IsConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo) { return true; }
+    int     ApplyConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
     bool    IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     int     ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
@@ -970,7 +1024,7 @@ private:
 #endif // DEBUG
 public:
 
-    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo);
+    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData *pretryData);
 
     InterpMethod* CompileMethod();
     void BuildGCInfo(InterpMethod *pInterpMethod);
