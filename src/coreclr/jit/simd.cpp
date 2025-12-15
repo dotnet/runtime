@@ -628,6 +628,15 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                         }
 
                         JITDUMP(" Found Vector<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
+
+#if defined(DEBUG) && defined(TARGET_ARM64)
+                        if (JitConfig.JitUseScalableVectorT() &&
+                            compOpportunisticallyDependsOn(InstructionSet_Sve_Arm64))
+                        {
+                            size = SIZE_UNKNOWN;
+                            break;
+                        }
+#endif
                         size = getVectorTByteLength();
 
                         if (size == 0)
@@ -765,7 +774,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
 
     if (simdBaseJitType != CORINFO_TYPE_UNDEF)
     {
-        assert(size == info.compCompHnd->getClassSize(typeHnd));
+        assert(size == info.compCompHnd->getClassSize(typeHnd) || size == SIZE_UNKNOWN);
         setUsesSIMDTypes(true);
     }
 
