@@ -398,7 +398,7 @@ namespace System.IO.Compression
                 case ZipArchiveMode.Read:
                     if (!IsEncrypted)
                     {
-                        throw new InvalidDataException("Entry is not encrypted");
+                        throw new InvalidDataException(SR.EntryNotEncrypted);
                     }
                     return OpenInReadMode(checkOpenable: true, password.AsMemory());
                 case ZipArchiveMode.Create:
@@ -407,7 +407,7 @@ namespace System.IO.Compression
                 default:
                     Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
 
-                    if (!_isEncrypted) throw new InvalidDataException("Entry is not encrypted.");
+                    if (!_isEncrypted) throw new InvalidDataException(SR.EntryNotEncrypted);
                     return OpenInReadMode(checkOpenable: true, password.AsMemory());
 
             }
@@ -937,7 +937,7 @@ namespace System.IO.Compression
             if (IsZipCryptoEncrypted())
             {
                 if (password.IsEmpty)
-                    throw new InvalidDataException("Password required for encrypted ZIP entry.");
+                    throw new InvalidDataException(SR.PasswordRequired);
 
                 byte expectedCheckByte = CalculateZipCryptoCheckByte();
                 streamToDecompress = new ZipCryptoStream(compressedStream, password, expectedCheckByte);
@@ -945,7 +945,7 @@ namespace System.IO.Compression
             else if (IsAesEncrypted())
             {
                 if (password.IsEmpty)
-                    throw new InvalidDataException("Password required for AES-encrypted ZIP entry.");
+                    throw new InvalidDataException(SR.PasswordRequired);
 
                 int keySizeBits = _encryptionMethod switch
                 {
@@ -992,7 +992,7 @@ namespace System.IO.Compression
             if (encryptionMethod == EncryptionMethod.ZipCrypto)
             {
                 if (string.IsNullOrEmpty(password))
-                    throw new InvalidOperationException("Password is required for encryption.");
+                    throw new InvalidOperationException(SR.NoPasswordProvided);
 
                 Encryption = encryptionMethod;
 
@@ -1009,7 +1009,7 @@ namespace System.IO.Compression
             else if (encryptionMethod is EncryptionMethod.Aes256 or EncryptionMethod.Aes192 or EncryptionMethod.Aes128)
             {
                 if (string.IsNullOrEmpty(password))
-                    throw new InvalidOperationException("Password is required for encryption.");
+                    throw new InvalidOperationException(SR.NoPasswordProvided);
 
                 Encryption = encryptionMethod;
 
@@ -1106,7 +1106,7 @@ namespace System.IO.Compression
                             1 => EncryptionMethod.Aes128,
                             2 => EncryptionMethod.Aes192,
                             3 => EncryptionMethod.Aes256,
-                            _ => throw new InvalidDataException("Unknown AES strength")
+                            _ => throw new InvalidDataException(SR.InvalidAesStrength)
                         };
 
                         // Store the detected encryption method

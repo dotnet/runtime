@@ -791,8 +791,7 @@ namespace System.IO.Compression
 
             if (_totalBytesRead == _expectedLength && _runningCrc != _expectedCrc)
             {
-                throw new InvalidDataException(
-                    $"CRC mismatch. Expected: 0x{_expectedCrc:X8}, Actual: 0x{_runningCrc:X8}");
+                throw new InvalidDataException(SR.CrcMismatch);
             }
         }
 

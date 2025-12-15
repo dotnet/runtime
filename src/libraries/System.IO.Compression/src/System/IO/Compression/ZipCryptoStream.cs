@@ -139,14 +139,14 @@ namespace System.IO.Compression
             }
             catch (EndOfStreamException)
             {
-                throw new InvalidDataException("Truncated ZipCrypto header.");
+                throw new InvalidDataException(SR.TruncatedZipCryptoHeader);
             }
 
             for (int i = 0; i < hdr.Length; i++)
                 hdr[i] = DecryptByte(hdr[i]);
 
             if (hdr[11] != expectedCheckByte)
-                throw new InvalidDataException("Invalid password for encrypted ZIP entry.");
+                throw new InvalidDataException(SR.InvalidPassword);
         }
 
         private void UpdateKeys(byte b)
@@ -178,7 +178,7 @@ namespace System.IO.Compression
         public override long Position
         {
             get => throw new NotSupportedException();
-            set => throw new NotSupportedException("ZipCryptoStream does not support seeking.");
+            set => throw new NotSupportedException();
         }
         public override void Flush() => _base.Flush();
 
@@ -197,7 +197,7 @@ namespace System.IO.Compression
                     destination[i] = DecryptByte(destination[i]);
                 return n;
             }
-            throw new NotSupportedException("Stream is in encryption (write-only) mode.");
+            throw new NotSupportedException(SR.ReadingNotSupported);
         }
 
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
@@ -210,7 +210,7 @@ namespace System.IO.Compression
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
-            if (!_encrypting) throw new NotSupportedException("Stream is in decryption (read-only) mode.");
+            if (!_encrypting) throw new NotSupportedException(SR.WritingNotSupported);
 
             EnsureHeader();
 
@@ -267,7 +267,7 @@ namespace System.IO.Compression
                     span[i] = DecryptByte(span[i]);
                 return n;
             }
-            throw new NotSupportedException("Stream is in encryption (write-only) mode.");
+            throw new NotSupportedException(SR.ReadingNotSupported);
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -278,7 +278,7 @@ namespace System.IO.Compression
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            if (!_encrypting) throw new NotSupportedException("Stream is in decryption (read-only) mode.");
+            if (!_encrypting) throw new NotSupportedException(SR.WritingNotSupported);
 
             cancellationToken.ThrowIfCancellationRequested();
 

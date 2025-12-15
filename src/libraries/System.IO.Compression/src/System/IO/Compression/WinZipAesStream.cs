@@ -97,10 +97,8 @@ namespace System.IO.Compression
             else
             {
                 // For decryption, we must know the total size to locate the auth tag
-                if (_totalStreamSize <= 0)
-                {
-                    throw new ArgumentException("Total stream size must be provided for decryption.", nameof(totalStreamSize));
-                }
+
+                Debug.Assert(_totalStreamSize > 0, "Total stream size must be provided for decryption.");
 
                 int saltSize = _keySizeBits / 16;
                 int headerSize = saltSize + 2;
@@ -111,7 +109,7 @@ namespace System.IO.Compression
 
                 if (_encryptedDataSize < 0)
                 {
-                    throw new InvalidDataException("Stream size is too small for WinZip AES format.");
+                    throw new InvalidDataException(SR.InvalidWinZipSize);//("Stream size is too small for WinZip AES format.");
                 }
 
                 ReadHeader(password);
@@ -189,7 +187,7 @@ namespace System.IO.Compression
 
                 // Compare the first 10 bytes of the expected hash
                 if (!storedAuth.AsSpan().SequenceEqual(expectedAuth.AsSpan(0, 10)))
-                    throw new InvalidDataException("Authentication code mismatch.");
+                    throw new InvalidDataException(SR.WinZipAuthCodeMismatch);
             }
 
             _authCodeValidated = true;
@@ -240,7 +238,7 @@ namespace System.IO.Compression
 
             if (!verifier.AsSpan().SequenceEqual(_passwordVerifier!))
             {
-                throw new InvalidDataException($"Invalid password");
+                throw new InvalidDataException(SR.InvalidPassword);
             }
 
             Debug.Assert(_hmacKey is not null, "HMAC key should be derived");
@@ -377,7 +375,7 @@ namespace System.IO.Compression
         {
             Debug.Assert(_encrypting, "WriteAuthCode should only be called during encryption.");
 
-            if ( _authCodeValidated)
+            if (_authCodeValidated)
                 return;
 
             _hmac.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
@@ -406,10 +404,9 @@ namespace System.IO.Compression
             ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (_encrypting)
-                throw new NotSupportedException("Stream is in encryption mode.");
+                throw new NotSupportedException(SR.ReadingNotSupported);
 
-            if (!_headerRead)
-                throw new InvalidOperationException("Header must be read before reading data.");
+            Debug.Assert(_headerRead, "Header must be read before reading data.");
         }
 
         private int GetBytesToRead(int requestedCount)
@@ -562,7 +559,7 @@ namespace System.IO.Compression
             ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (!_encrypting)
-                throw new NotSupportedException("Stream is in decryption mode.");
+                throw new NotSupportedException(SR.WritingNotSupported);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
