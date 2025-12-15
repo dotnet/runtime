@@ -85,13 +85,15 @@ static uint64_t SSL_set_options_dynamic(SSL* s, uint64_t options)
 static int32_t g_config_specified_ciphersuites = 0;
 static char* g_emptyAlpn = "";
 
+#define OPENSSL_CONFIG_ERROR_MSG " Check OpenSSL configuration (/etc/ssl/openssl.cnf)\n"
+
 static void DetectCiphersuiteConfiguration(void)
 {
     // Check to see if there's a registered default CipherString. If not, we will use our own.
     SSL_CTX* ctx = SSL_CTX_new(TLS_method());
     if (ctx == NULL)
     {
-        fprintf(stderr, "FATAL: SSL_CTX_new failed. Check OpenSSL configuration (/etc/ssl/openssl.cnf)\n");
+        fprintf(stderr, "FATAL: SSL_CTX_new failed." OPENSSL_CONFIG_ERROR_MSG);
         abort();
     }
 
@@ -110,7 +112,7 @@ static void DetectCiphersuiteConfiguration(void)
     int rv = SSL_CTX_set_cipher_list(ctx, "ALL");
     if (!rv)
     {
-        fprintf(stderr, "FATAL: SSL_CTX_set_cipher_list failed. Check OpenSSL configuration (/etc/ssl/openssl.cnf)\n");
+        fprintf(stderr, "FATAL: SSL_CTX_set_cipher_list failed." OPENSSL_CONFIG_ERROR_MSG);
         SSL_CTX_free(ctx);
         abort();
     }
@@ -134,7 +136,7 @@ static void DetectCiphersuiteConfiguration(void)
         rv = SSL_CTX_set_cipher_list(ctx, "RSA");
         if (!rv)
         {
-            fprintf(stderr, "FATAL: SSL_CTX_set_cipher_list failed. Check OpenSSL configuration (/etc/ssl/openssl.cnf)\n");
+            fprintf(stderr, "FATAL: SSL_CTX_set_cipher_list failed." OPENSSL_CONFIG_ERROR_MSG);
             SSL_CTX_free(ctx);
             abort();
         }
