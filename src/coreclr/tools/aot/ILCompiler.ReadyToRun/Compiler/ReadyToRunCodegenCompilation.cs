@@ -108,6 +108,12 @@ namespace ILCompiler
                 }
             }
 
+            if (callee.IsAsyncThunk())
+            {
+                // Async thunks require special handling in the compiler and should not be inlined
+                return false;
+            }
+
             _nodeFactory.DetectGenericCycles(caller, callee);
 
             return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
@@ -694,6 +700,52 @@ namespace ILCompiler
                                 CorInfoImpl.IsMethodCompilable(this, methodCodeNodeNeedingCode.Method))
                                 _methodsWhichNeedMutableILBodies.Add(ecmaMethod);
                         }
+                        if (method.IsAsyncThunk())
+                        {
+                            // The synthetic async thunks require references to methods/types that may not have existing methodRef entries in the version bubble.
+                            // These references need to be added to the mutable module if they don't exist.
+                            // Extract the required references by reading the IL of the thunk method.
+                            MethodIL methodIL = GetMethodIL(method);
+                            if (methodIL is null)
+                                continue;
+
+                            _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
+                            try
+                            {
+                                foreach (var entity in ILStubReferences.GetNecessaryReferencesFromIL(methodIL))
+                                {
+                                    switch (entity)
+                                    {
+                                        case MethodDesc md:
+                                            if (md.IsAsyncVariant())
+                                            {
+                                                Debug.Assert(((CompilerTypeSystemContext)md.Context).GetTargetOfAsyncVariantMethod(md.GetTypicalMethodDefinition()) == method);
+                                                Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: false, throwIfNotFound: true).IsNull);
+                                            }
+                                            else if (_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull)
+                                            {
+                                                _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(md);
+                                                Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForMethod(md, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
+                                            }
+                                            break;
+                                        case TypeDesc td:
+                                            if (_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull)
+                                            {
+                                                _nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(td);
+                                            }
+                                            Debug.Assert(!_nodeFactory.Resolver.GetModuleTokenForType(td, allowDynamicallyCreatedReference: true, throwIfNotFound: true).IsNull);
+                                            break;
+                                        default:
+                                            throw new NotImplementedException("Unexpected entity type in Async thunk.");
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = null;
+                            }
+                        }
+
                         if (!_nodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
                         {
                             // Validate that the typedef tokens for all of the instantiation parameters of the method
@@ -977,5 +1029,6 @@ namespace ILCompiler
         {
             return _printReproInstructions(method);
         }
+
     }
 }

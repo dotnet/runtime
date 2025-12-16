@@ -394,14 +394,8 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
     // grab a snapshot
     Thread::ThreadState state = thread->GetSnapshotState();
 
-    // If the thread is dead, just report that its dead.
-    // It's possible that the thread may still be in the final bits of shutting down,
-    // but for the purposes of the managed API surface, it should be reported
-    // as stopped.
     if (state & Thread::TS_Dead)
-    {
-        return ThreadNative::ThreadStopped;
-    }
+        res |= ThreadNative::ThreadStopped;
 
     if (state & Thread::TS_Background)
         res |= ThreadNative::ThreadBackground;
@@ -444,18 +438,6 @@ extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState(QCall::ThreadHand
     // Clear the state bits.
     thread->ResetThreadState(Thread::TS_Interruptible);
     thread->ResetThreadStateNC(Thread::TSNC_DebuggerSleepWaitJoin);
-}
-
-extern "C" void QCALLTYPE ThreadNative_ReportDead(QCall::ThreadHandle thread)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK_NO_GC_TRANSITION;
-        PRECONDITION(thread != NULL);
-    }
-    CONTRACTL_END;
-
-    thread->SetThreadState(Thread::TS_ReportDead);
 }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT

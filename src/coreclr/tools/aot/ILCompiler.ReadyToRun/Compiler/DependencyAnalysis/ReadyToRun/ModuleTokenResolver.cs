@@ -52,17 +52,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _manifestMutableModule = mutableModule;
         }
 
-        public ModuleToken GetModuleTokenForType(EcmaType type, bool allowDynamicallyCreatedReference, bool throwIfNotFound = true)
+        public ModuleToken GetModuleTokenForType(TypeDesc type, bool allowDynamicallyCreatedReference, bool throwIfNotFound = true)
         {
-            if (_compilationModuleGroup.VersionsWithType(type))
-            {
-                return new ModuleToken(type.Module, (mdToken)MetadataTokens.GetToken(type.Handle));
-            }
-
             ModuleToken token;
-            if (_typeToRefTokens.TryGetValue(type, out token))
+            if (type is EcmaType ecmaType)
             {
-                return token;
+                if (_compilationModuleGroup.VersionsWithType(ecmaType))
+                {
+                    return new ModuleToken(ecmaType.Module, (mdToken)MetadataTokens.GetToken(ecmaType.Handle));
+                }
+
+                if (_typeToRefTokens.TryGetValue(ecmaType, out token))
+                {
+                    return token;
+                }
             }
 
             // If the token was not lazily mapped, search the input compilation set for a type reference token
@@ -178,7 +181,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             MetadataReader metadataReader = token.MetadataReader;
             TokenResolverProvider rentedProvider = TokenResolverProvider.Rent(this, token.Module);
-            SignatureDecoder<DummyTypeInfo, ModuleTokenResolver> sigDecoder = new (rentedProvider, metadataReader, this);
+            SignatureDecoder<DummyTypeInfo, ModuleTokenResolver> sigDecoder = new(rentedProvider, metadataReader, this);
             BlobReader signature = metadataReader.GetBlobReader(signatureHandle);
 
             SignatureHeader header = signature.ReadSignatureHeader();

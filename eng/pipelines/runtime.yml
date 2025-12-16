@@ -1068,6 +1068,7 @@ extends:
           runtimeFlavor: coreclr
           platforms:
             - ios_arm64
+            # - tvos_arm64 TODO: Enable when Helix queue upgrade is finished https://github.com/dotnet/runtime/issues/122452
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1124,6 +1125,7 @@ extends:
             nameSuffix: AllSubsets_NativeAOT_Smoke
             buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
             timeoutInMinutes: 180
+            useNativeAOTRuntime: true
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),

@@ -46,6 +46,7 @@ namespace Internal.JitInterface
         RiscV64_RiscV64Base = InstructionSet_RiscV64.RiscV64Base,
         RiscV64_Zba = InstructionSet_RiscV64.Zba,
         RiscV64_Zbb = InstructionSet_RiscV64.Zbb,
+        RiscV64_Zbs = InstructionSet_RiscV64.Zbs,
         X64_X86Base = InstructionSet_X64.X86Base,
         X64_AVX = InstructionSet_X64.AVX,
         X64_AVX2 = InstructionSet_X64.AVX2,
@@ -177,6 +178,7 @@ namespace Internal.JitInterface
         RiscV64Base = 1,
         Zba = 2,
         Zbb = 3,
+        Zbs = 4,
     }
 
     public enum InstructionSet_X64
@@ -510,6 +512,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
                     if (resultflags.HasInstructionSet(InstructionSet.RiscV64_Zba))
                         resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
+                    if (resultflags.HasInstructionSet(InstructionSet.RiscV64_Zbs))
+                        resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
                     break;
 
                 case TargetArchitecture.X64:
@@ -778,6 +782,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.RiscV64_Zbb);
                     if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
                         resultflags.AddInstructionSet(InstructionSet.RiscV64_Zba);
+                    if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
+                        resultflags.AddInstructionSet(InstructionSet.RiscV64_Zbs);
                     break;
 
                 case TargetArchitecture.X64:
@@ -1016,6 +1022,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("base", "RiscV64Base", InstructionSet.RiscV64_RiscV64Base, true);
                     yield return new InstructionSetInfo("zba", "Zba", InstructionSet.RiscV64_Zba, true);
                     yield return new InstructionSetInfo("zbb", "Zbb", InstructionSet.RiscV64_Zbb, true);
+                    yield return new InstructionSetInfo("zbs", "Zbs", InstructionSet.RiscV64_Zbs, true);
                     break;
 
                 case TargetArchitecture.X64:
@@ -1423,6 +1430,9 @@ namespace Internal.JitInterface
 
                     case "Zbb":
                         { return InstructionSet.RiscV64_Zbb; }
+
+                    case "Zbs":
+                        { return InstructionSet.RiscV64_Zbs; }
 
                 }
                 break;

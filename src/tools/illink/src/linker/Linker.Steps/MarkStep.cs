@@ -254,7 +254,18 @@ namespace Mono.Linker.Steps
         {
             InitializeCorelibAttributeXml();
             Context.Pipeline.InitializeMarkHandlers(Context, MarkContext);
-            _typeMapHandler.Initialize(Context, this, Annotations.GetEntryPointAssembly());
+
+            // Check for TypeMappingEntryAssembly override
+            AssemblyDefinition? startingAssembly = null;
+            if (Context.TypeMapEntryAssembly is not null)
+            {
+                var assemblyName = AssemblyNameReference.Parse(Context.TypeMapEntryAssembly);
+                startingAssembly = Context.TryResolve(assemblyName);
+            }
+            // If resolution fails, fall back to entry point assembly
+            startingAssembly ??= Annotations.GetEntryPointAssembly();
+
+            _typeMapHandler.Initialize(Context, this, startingAssembly);
             ProcessMarkedPending();
         }
 
