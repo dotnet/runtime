@@ -2,27 +2,26 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
-using System.CommandLine.Invocation;
 using AutoBisect;
 
 namespace AutoBisect.Commands;
 
 internal static class BisectCommand
 {
-    public static async Task HandleAsync(InvocationContext context,
+    public static async Task<int> HandleAsync(CancellationToken cancellationToken,
         string org, string project, string pat,
         int goodBuildId, int badBuildId,
         string testName, string repoPath,
         bool manual, int pollInterval)
     {
-        var cancellationToken = context.GetCancellationToken();
 
         if (string.IsNullOrWhiteSpace(pat))
         {
             Console.Error.WriteLine("Error: PAT is required. Use --pat or set AZDO_PAT environment variable.");
             Environment.ExitCode = 1;
-            return;
+            return 1;
         }
 
         using var client = new AzDoClient(org, project, pat);
@@ -36,14 +35,14 @@ internal static class BisectCommand
         {
             Console.Error.WriteLine($"Good build {goodBuildId} not found.");
             Environment.ExitCode = 1;
-            return;
+            return 1;
         }
 
         if (badBuild == null)
         {
             Console.Error.WriteLine($"Bad build {badBuildId} not found.");
             Environment.ExitCode = 1;
-            return;
+            return 1;
         }
 
         var goodCommit = goodBuild.SourceVersion;
@@ -55,14 +54,14 @@ internal static class BisectCommand
         {
             Console.Error.WriteLine("Could not determine source commits for builds.");
             Environment.ExitCode = 1;
-            return;
+            return 1;
         }
 
         if (definitionId == null)
         {
             Console.Error.WriteLine("Could not determine pipeline definition ID.");
             Environment.ExitCode = 1;
-            return;
+            return 1;
         }
 
         Console.WriteLine($"Good commit: {goodCommit[..12]} (build {goodBuildId})");
@@ -91,7 +90,7 @@ internal static class BisectCommand
                 Console.Error.WriteLine($"  ... and {badFailures.Count - 10} more");
             }
             Environment.ExitCode = 1;
-            return;
+            return 1;
         }
 
         var fullTestName = matchingFailure.FullyQualifiedName;
@@ -107,7 +106,7 @@ internal static class BisectCommand
         {
             Console.Error.WriteLine($"Test '{fullTestName}' is also failing in the good build. Cannot bisect.");
             Environment.ExitCode = 1;
-            return;
+            return 1;
         }
 
         Console.WriteLine("Test status verified.");
@@ -122,7 +121,7 @@ internal static class BisectCommand
             Console.Error.WriteLine("No commits found between good and bad builds.");
             Console.Error.WriteLine("Make sure you're in the correct git repository and have fetched all commits.");
             Environment.ExitCode = 1;
-            return;
+            return 1;
         }
 
         Console.WriteLine($"Found {commits.Count} commit(s) to search.");
@@ -186,7 +185,7 @@ internal static class BisectCommand
                     Console.WriteLine($"         No existing build found. Queue a build for commit: {midCommit}");
                     Console.WriteLine();
                     Console.WriteLine("Once the build completes, re-run this command to continue bisecting.");
-                    return;
+                    return 0;
                 }
                 else
                 {
@@ -207,7 +206,7 @@ internal static class BisectCommand
                         Console.Error.WriteLine($"         Failed to queue build: {ex.Message}");
                         Console.Error.WriteLine("         Try running with --manual mode or queue the build manually.");
                         Environment.ExitCode = 1;
-                        return;
+                        return 1;
                     }
                 }
             }
@@ -220,7 +219,7 @@ internal static class BisectCommand
             {
                 Console.Error.WriteLine("         Build did not complete successfully.");
                 Environment.ExitCode = 1;
-                return;
+                return 1;
             }
 
             // Check if build was successful enough to have test results
@@ -264,5 +263,6 @@ internal static class BisectCommand
         Console.WriteLine($"       {culpritSubject}");
         Console.WriteLine($"       Full SHA: {culpritCommit}");
         Console.WriteLine("═══════════════════════════════════════════════════════════════════");
+        return 0;
     }
 }
