@@ -46,6 +46,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!method.IsRuntimeDeterminedExactMethod);
             Debug.Assert(canonicalMethod.Method == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            Debug.Assert(canonicalMethod.Method.IsSharedByGenericInstantiations);
             Method = method;
             CanonicalMethodNode = canonicalMethod;
         }

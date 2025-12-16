@@ -143,11 +143,13 @@ namespace ILCompiler.DependencyAnalysis
 
             var lookupContext = new GenericLookupResultContext(_dictionaryOwner, typeInstantiation, methodInstantiation);
 
-            // Check if the instantiation is not fully concrete (contains canonical types like __Canon)
             bool isNotConcreteInstantiation = ContainsCanonicalTypes(typeInstantiation) || ContainsCanonicalTypes(methodInstantiation);
 
             if (isNotConcreteInstantiation)
             {
+                // If this instantiation is not fully concrete, we may still need to track dependencies if the result
+                // of a generic substitution is concrete. Check the substitution for each helper type and if it is
+                // still canonical, we don't need to track any dependencies, except for shadow generic methods.
                 switch (_id)
                 {
                     case ReadyToRunHelperId.MethodHandle:
@@ -158,19 +160,20 @@ namespace ILCompiler.DependencyAnalysis
                             MethodDesc instantiatedMethod = ((MethodDesc)_target).GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
                             if (instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                             {
+                                // The substituted method is still not concrete, but it may have concrete dependencies
+                                // so we track it as a shadow node to ensure its dependencies are discovered.
                                 if (!instantiatedMethod.IsAbstract)
                                 {
                                     try
                                     {
                                         factory.TypeSystemContext.DetectGenericCycles(lookupContext.Context, instantiatedMethod);
-                                    result.Add(new DependencyListEntry(
-                                        factory.ShadowGenericMethod(instantiatedMethod),
-                                        "Partially instantiated generic dictionary dependencies"));
+                                        result.Add(new DependencyListEntry(
+                                            factory.ShadowGenericMethod(instantiatedMethod),
+                                            "Partially instantiated generic dictionary dependencies"));
                                     }
                                     catch (TypeSystemException)
                                     {
-                                        // It's fine to continue here - we will generate a bad slot helper when
-                                        // instantiating the dependencies of any concrete instantiations.
+                                        // Don't track any dependencies if we hit a generic cycle.
                                     }
                                 }
                                 return result.ToArray();
@@ -229,6 +232,9 @@ namespace ILCompiler.DependencyAnalysis
                             }
                         }
                         break;
+
+                    default:
+                        throw new NotImplementedException();
                 }
             }
 

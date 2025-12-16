@@ -72,7 +72,6 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected abstract int ClassCode { get; }
         public abstract ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary);
-
         public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
         public abstract override string ToString();
         protected abstract int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer);
