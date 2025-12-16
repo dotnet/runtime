@@ -11,6 +11,7 @@
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
 
+    <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">false</TestUsingWorkloads>
     <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
     <!-- these are imported in this project instead -->
     <SkipWorkloadsTestingTargetsImport>false</SkipWorkloadsTestingTargetsImport>
