@@ -53,18 +53,20 @@
 #define EP_BUFFER_HDR_OFFSET_THREADPTR 0x10
 #define EP_BUFFER_HDR_OFFSET_SEQNO     0x18
 #define EP_BUFFER_HDR_MAGIC            0x5452545346425045ULL /* "EPBFSTRT" little-endian */
+#define EP_BUFFER_HEADER_PADDING_BYTE  0x00
 
 // Footer (EP_BUFFER_FOOTER_GUARD_SIZE bytes) layout when EventPipeBufferGuardLevel is enabled:
 //   0x00: uint64 FooterMagic (ASCII "EPBFEND!")
 //   0x08: uint64 ~FooterMagic (bitwise inverse for quick integrity check)
 //   0x10: uint64 Checksum (creation_timestamp ^ writer_thread_pointer ^ first_event_sequence_number ^ EP_BUFFER_CHECKSUM_SALT)
-//   0x18..0x1F: Padding bytes (0xEF) retained as small overrun guard / visual marker
+//   0x18..0x1F: Padding bytes (0xEB) retained as small overrun guard / visual marker
 // The checksum excludes the magic values (they are validated independently) and uses a fixed salt.
 #define EP_BUFFER_FOOTER_OFFSET_MAGIC     0x00
 #define EP_BUFFER_FOOTER_OFFSET_MAGIC_INV 0x08
 #define EP_BUFFER_FOOTER_OFFSET_CHECKSUM  0x10
 #define EP_BUFFER_FOOTER_MAGIC            0x21444E4546425045ULL  /* "EPBFEND!" little-endian */
 #define EP_BUFFER_CHECKSUM_SALT           0x544C415346425045ULL  /* "EPBFSALT" little-endian salt */
+#define EP_BUFFER_FOOTER_PADDING_BYTE     0xEB
 
 #if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_BUFFER_GETTER_SETTER)
 struct _EventPipeBufferHeaderGuard {

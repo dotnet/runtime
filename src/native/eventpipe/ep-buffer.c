@@ -50,10 +50,10 @@ ep_buffer_alloc (
 
 		EP_ASSERT (sizeof(EventPipeBufferFooterGuard) == EP_BUFFER_FOOTER_GUARD_SIZE);
 		// Footer signature layout (placed at end of buffer):
-		// [ uint64 magic2 ][ uint64 magic2_inv ][ uint64 checksum ] and remaining bytes (if any) left as 0xEB.
+		// [ uint64 magic2 ][ uint64 magic2_inv ][ uint64 checksum ] and remaining bytes (if any) left as EP_BUFFER_FOOTER_PADDING_BYTE.
 		uint8_t *footer_base_bytes = instance->limit - EP_BUFFER_FOOTER_GUARD_SIZE;
 		EventPipeBufferFooterGuard *footer = (EventPipeBufferFooterGuard *)footer_base_bytes;
-		memset (footer, 0xEB, EP_BUFFER_FOOTER_GUARD_SIZE);
+		memset (footer, EP_BUFFER_FOOTER_PADDING_BYTE, EP_BUFFER_FOOTER_GUARD_SIZE);
 		footer->magic = EP_BUFFER_FOOTER_MAGIC;
 		footer->magic_inv = ~EP_BUFFER_FOOTER_MAGIC;
 		footer->checksum = (uint64_t)instance->creation_timestamp ^ header->writer_thread ^ header->first_event_sequence_number ^ EP_BUFFER_CHECKSUM_SALT;
@@ -280,9 +280,9 @@ ep_buffer_ensure_guard_consistency (const EventPipeBuffer *buffer)
 	if (header->magic != EP_BUFFER_HDR_MAGIC)
 		ep_rt_fatal_error_with_message (header_err);
 
-	// Header trailing padding bytes should still be 0x00
+	// Header trailing padding bytes should still be EP_BUFFER_HEADER_PADDING_BYTE
 	for (size_t i = 0; i < sizeof(header->padding); i++) {
-		if (header->padding[i] != 0x00)
+		if (header->padding[i] != EP_BUFFER_HEADER_PADDING_BYTE)
 			ep_rt_fatal_error_with_message ("EventPipeBuffer header guard padding is corrupted");
 	}
 
@@ -301,9 +301,9 @@ ep_buffer_ensure_guard_consistency (const EventPipeBuffer *buffer)
 	if (footer->checksum != expected_checksum)
 		ep_rt_fatal_error_with_message ("EventPipeBuffer header guard and footer checksum do not match, buffer is corrupted");
 
-	// Verify the remaining bytes in the footer guard are the fill value 0xEB.
+	// Verify the remaining bytes in the footer guard are the fill value EP_BUFFER_FOOTER_PADDING_BYTE.
 	for (size_t i = 0; i < sizeof(footer->padding); i++) {
-		if (footer->padding[i] != 0xEB)
+		if (footer->padding[i] != EP_BUFFER_FOOTER_PADDING_BYTE)
 			ep_rt_fatal_error_with_message ("EventPipeBuffer footer guard padding is corrupted");
 	}
 
