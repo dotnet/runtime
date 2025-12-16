@@ -1542,6 +1542,14 @@
     <Target>M:Mono.Linker.LinkContext.set_DisableGeneratedCodeHeuristics(System.Boolean)</Target>
   </Suppression>
   <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.get_TypeMapEntryAssembly</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.set_TypeMapEntryAssembly(System.String)</Target>
+  </Suppression>
+  <Suppression>
     <DiagnosticId>CP0008</DiagnosticId>
     <Target>T:Mono.Linker.LinkContext</Target>
   </Suppression>

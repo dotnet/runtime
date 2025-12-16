@@ -296,7 +296,6 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_GetThreadState)
     DllImportEntry(ThreadNative_SetWaitSleepJoinState)
     DllImportEntry(ThreadNative_ClearWaitSleepJoinState)
-    DllImportEntry(ThreadNative_ReportDead)
     DllImportEntry(ThreadNative_ReentrantWaitAny)
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     DllImportEntry(ThreadNative_GetApartmentState)
