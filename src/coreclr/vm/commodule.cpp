@@ -300,7 +300,6 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
     // Async variants should be hidden from reflection.
     _ASSERTE(!pMeth->IsAsyncVariantMethod());
 
-    // Otherwise, we want to return memberref token.
     if ((pMeth->GetMethodTable()->GetModule() == pModule))
     {
         // If the passed in method is defined in the same module, just return the MethodDef token
