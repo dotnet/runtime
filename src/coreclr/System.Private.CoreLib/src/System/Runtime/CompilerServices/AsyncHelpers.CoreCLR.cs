@@ -168,8 +168,6 @@ namespace System.Runtime.CompilerServices
         internal static unsafe AsyncDispatcherInfo* t_current; // Debugger depends on the exact name of this field.
     }
 
-
-
     public static partial class AsyncHelpers
     {
 #if FEATURE_INTERPRETER
