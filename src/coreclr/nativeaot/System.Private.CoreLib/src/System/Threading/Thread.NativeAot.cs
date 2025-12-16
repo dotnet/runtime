@@ -272,7 +272,7 @@ namespace System.Threading
 
         private int SetThreadStateBit(ThreadState bit)
         {
-            return Interlocked.Or(ref _threadState, newState);
+            return Interlocked.Or(ref _threadState, (int)bit);
         }
 
         private int ClearThreadStateBit(ThreadState bit)
