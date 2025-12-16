@@ -134,10 +134,6 @@ do
         --jitforcerelocs)
             export DOTNET_ForceRelocs=1
             ;;
-        --link=*)
-            export ILLINK=${i#*=}
-            export DoLink=true
-            ;;
         --ilasmroundtrip)
             ((ilasmroundtrip = 1))
             ;;

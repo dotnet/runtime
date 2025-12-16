@@ -306,7 +306,6 @@ set(VM_SOURCES_WKS
     commodule.cpp
     comsynchronizable.cpp
     comutilnative.cpp
-    comwaithandle.cpp
     coreassemblyspec.cpp
     corelib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
     customattribute.cpp
@@ -380,6 +379,12 @@ set(VM_SOURCES_WKS
     ${VM_SOURCES_GDBJIT}
 )
 
+if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND VM_SOURCES_WKS
+        ${RUNTIME_DIR}/asyncsafethreadmap.cpp
+    )
+endif()
+
 # coreclr needs to compile codeman.cpp differently depending on flavor (i.e. dll vs. static lib))
 list(REMOVE_ITEM VM_SOURCES_WKS codeman.cpp)
 
@@ -409,7 +414,6 @@ set(VM_HEADERS_WKS
     commodule.h
     comsynchronizable.h
     comutilnative.h
-    comwaithandle.h
     customattribute.h
     custommarshalerinfo.h
     autotrace.h
@@ -475,6 +479,12 @@ set(VM_HEADERS_WKS
     weakreferencenative.h
     ${VM_HEADERS_GDBJIT}
 )
+
+if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND VM_HEADERS_WKS
+        ${RUNTIME_DIR}/asyncsafethreadmap.h
+    )
+endif()
 
 set(GC_SOURCES_WKS
     ${GC_SOURCES_DAC_AND_WKS_COMMON}

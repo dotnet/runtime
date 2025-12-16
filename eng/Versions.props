@@ -3,24 +3,33 @@
   <Import Project="Version.Details.props" />
 
   <PropertyGroup>
-    <MajorVersion>10</MajorVersion>
+    <!-- The .NET product branding version -->
+    <ProductVersion>11.0.0</ProductVersion>
+    <!-- File version numbers -->
+    <MajorVersion>11</MajorVersion>
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
-    <PreReleaseVersionLabel>rc</PreReleaseVersionLabel>
-    <PreReleaseVersionIteration>3</PreReleaseVersionIteration>
-    <!-- Allowed values: '', 'prerelease', 'release'. Set to 'release' when stabilizing. -->
-    <DotNetFinalVersionKind></DotNetFinalVersionKind>
-
-    <!-- The .NET product branding version -->
-    <ProductVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</ProductVersion>
-    <PackageVersionNet9>9.0.3</PackageVersionNet9>
+    <PackageVersionNet10>10.0.0</PackageVersionNet10>
+    <PackageVersionNet9>9.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet10)').Build),12))</PackageVersionNet9>
     <PackageVersionNet8>8.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet9)').Build),11))</PackageVersionNet8>
     <PackageVersionNet7>7.0.20</PackageVersionNet7>
     <PackageVersionNet6>6.0.36</PackageVersionNet6>
-
-    <!-- SdkVersionForWorkloadTesting is used to compute the sdk band and version for workload testing. -->
+    <PreReleaseVersionLabel>alpha</PreReleaseVersionLabel>
+    <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
+    <!-- Enable to remove prerelease label. -->
+    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
+    <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
+    <!-- SdkVersionForWorkloadTesting is used to compute the sdk band and version for workload testing.
+         The published manifests are built in dotnet/sdk so these values are for testing purposes only.
+         We use $(MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion) unless it is lower
+         than the sdk version specified in global.json
+      -->
     <!-- NETCoreSdkVersion is normally set by the SDK, but for non-SDK projects we need extract from global.json -->
-    <SdkVersionForWorkloadTesting>$(MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportPackageVersion)</SdkVersionForWorkloadTesting>
+    <_GlobalJsonContent>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)../global.json'))</_GlobalJsonContent>
+    <_GlobalJsonSdkVersion Condition="'$(_GlobalJsonContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(_GlobalJsonContent), '"sdk"\s*:\s*\{[^\}]*"version"\s*:\s*"([^"]+)"', System.Text.RegularExpressions.RegexOptions.Singleline).Groups[1].Value)</_GlobalJsonSdkVersion>
+    <_DotnetSdkVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportVersion)</_DotnetSdkVersion>
+    <SdkVersionForWorkloadTesting Condition="$([System.String]::Compare('$(_GlobalJsonSdkVersion)', '$(_DotnetSdkVersion)')) &lt;= 0">$(_DotnetSdkVersion)</SdkVersionForWorkloadTesting>
+    <SdkVersionForWorkloadTesting Condition="'$(SdkVersionForWorkloadTesting)' == ''">$(_GlobalJsonSdkVersion)</SdkVersionForWorkloadTesting>
     <SdkMajorVersion>$([System.String]::Copy('$(SdkVersionForWorkloadTesting)').Split('.')[0])</SdkMajorVersion>
     <SdkBandVersion>$(SdkMajorVersion).0.100</SdkBandVersion>
     <SdkPreReleaseLabel>$([System.Text.RegularExpressions.Regex]::Match($(SdkVersionForWorkloadTesting), '-(?!rtm|servicing)(.+)\.[^.]+\.[^.]+$').Groups[1].Value)</SdkPreReleaseLabel>
@@ -132,6 +141,8 @@
     <MicrosoftBuildUtilitiesCoreVersion>17.11.48</MicrosoftBuildUtilitiesCoreVersion>
     <DotnetSosVersion>7.0.412701</DotnetSosVersion>
     <DotnetSosTargetFrameworkVersion>6.0</DotnetSosTargetFrameworkVersion>
+    <Antlr4CodeGeneratorVersion>4.6.6</Antlr4CodeGeneratorVersion>
+    <Antlr4RuntimeVersion>4.6.6</Antlr4RuntimeVersion>
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.6.0</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
@@ -154,21 +165,18 @@
     <MicrosoftPrivateIntellisenseVersion>10.0.0-preview-20251006.1</MicrosoftPrivateIntellisenseVersion>
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.16</MicrosoftNativeQuicMsQuicSchannelVersion>
-    <!-- emscripten / Node
-         Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
-               like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-10_0_100_Transport -->
-    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportVersion)</MicrosoftNETRuntimeEmscriptenVersion>
-    <!-- workloads -->
+    <!-- emscripten workload package when testing workloads -->
+    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftDotNetApiCompatTaskPackageVersion)</MicrosoftNETRuntimeEmscriptenVersion>
+    <EmsdkPackageVersion>10.0.0</EmsdkPackageVersion>
+    <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
+    <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
+    <EmsdkVersion>3.1.56</EmsdkVersion>
+    <!-- WiX 5+ dependencies for MSI generation -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
     <!-- BrowserDebugProxy libs -->
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
-    <!-- sdk version, for testing workloads -->
-    <EmsdkPackageVersion>10.0.0</EmsdkPackageVersion>
-    <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
-    <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
-    <EmsdkVersion>3.1.56</EmsdkVersion>
     <!-- WiX 5+ dependencies for MSI generation -->
     <MicrosoftWixVersion>5.0.2-dotnet.2811440</MicrosoftWixVersion>
     <MicrosoftWixToolsetUIWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetUIWixextVersion>

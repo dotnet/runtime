@@ -21,60 +21,9 @@ namespace System.Threading
 
         private ApartmentState _initialApartmentState = ApartmentState.Unknown;
 
+        private SafeWaitHandle GetJoinHandle() => _osHandle;
+
         partial void PlatformSpecificInitialize();
-
-        internal static void SleepInternal(int millisecondsTimeout)
-        {
-            Debug.Assert(millisecondsTimeout >= Timeout.Infinite);
-
-            CheckForPendingInterrupt();
-
-            Thread currentThread = CurrentThread;
-            if (millisecondsTimeout == Timeout.Infinite)
-            {
-                // Infinite wait - use alertable wait
-                currentThread.SetWaitSleepJoinState();
-                uint result;
-                while (true)
-                {
-                    result = Interop.Kernel32.SleepEx(Timeout.UnsignedInfinite, true);
-                    if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
-                    {
-                        break;
-                    }
-                    CheckForPendingInterrupt();
-                }
-
-                currentThread.ClearWaitSleepJoinState();
-            }
-            else
-            {
-                // Timed wait - use alertable wait
-                currentThread.SetWaitSleepJoinState();
-                long startTime = Environment.TickCount64;
-                while (true)
-                {
-                    uint result = Interop.Kernel32.SleepEx((uint)millisecondsTimeout, true);
-                    if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
-                    {
-                        break;
-                    }
-                    // Check if this was our interrupt APC
-                    CheckForPendingInterrupt();
-                    // Handle APC completion by adjusting timeout and retrying
-                    long currentTime = Environment.TickCount64;
-                    long elapsed = currentTime - startTime;
-                    if (elapsed >= millisecondsTimeout)
-                    {
-                        break;
-                    }
-                    millisecondsTimeout -= (int)elapsed;
-                    startTime = currentTime;
-                }
-
-                currentThread.ClearWaitSleepJoinState();
-            }
-        }
 
         // Platform-specific initialization of foreign threads, i.e. threads not created by Thread.Start
         private void PlatformSpecificInitializeExistingThread()
@@ -177,88 +126,6 @@ namespace System.Threading
             if (currentThread != null)
             {
                 StopThread(currentThread);
-            }
-        }
-
-        private bool JoinInternal(int millisecondsTimeout)
-        {
-            // This method assumes the thread has been started
-            Debug.Assert(!GetThreadStateBit(ThreadState.Unstarted) || (millisecondsTimeout == 0));
-            SafeWaitHandle waitHandle = _osHandle;
-
-            // If an OS thread is terminated and its Thread object is resurrected, _osHandle may be finalized and closed
-            if (waitHandle.IsClosed)
-            {
-                return true;
-            }
-
-            // Handle race condition with the finalizer
-            try
-            {
-                waitHandle.DangerousAddRef();
-            }
-            catch (ObjectDisposedException)
-            {
-                return true;
-            }
-
-            try
-            {
-                if (millisecondsTimeout == 0)
-                {
-                    int result = (int)Interop.Kernel32.WaitForSingleObject(waitHandle.DangerousGetHandle(), 0);
-                    return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
-                }
-                else
-                {
-                    Thread currentThread = CurrentThread;
-                    currentThread.SetWaitSleepJoinState();
-                    uint result;
-                    if (millisecondsTimeout == Timeout.Infinite)
-                    {
-                        // Infinite wait
-                        while (true)
-                        {
-                            result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), Timeout.UnsignedInfinite, Interop.BOOL.TRUE);
-                            if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
-                            {
-                                break;
-                            }
-                            // Check if this was our interrupt APC
-                            CheckForPendingInterrupt();
-                        }
-                    }
-                    else
-                    {
-                        long startTime = Environment.TickCount64;
-                        while (true)
-                        {
-                            result = Interop.Kernel32.WaitForSingleObjectEx(waitHandle.DangerousGetHandle(), (uint)millisecondsTimeout, Interop.BOOL.TRUE);
-                            if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
-                            {
-                                break;
-                            }
-                            // Check if this was our interrupt APC
-                            CheckForPendingInterrupt();
-                            // Handle APC completion by adjusting timeout and retrying
-                            long currentTime = Environment.TickCount64;
-                            long elapsed = currentTime - startTime;
-                            if (elapsed >= millisecondsTimeout)
-                            {
-                                result = Interop.Kernel32.WAIT_TIMEOUT;
-                                break;
-                            }
-                            millisecondsTimeout -= (int)elapsed;
-                            startTime = currentTime;
-                        }
-                    }
-                    currentThread.ClearWaitSleepJoinState();
-                    return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
-                }
-            }
-            finally
-            {
-                waitHandle.DangerousRelease();
             }
         }
 
@@ -537,6 +404,12 @@ namespace System.Threading
                 CurrentThread.ClearWaitSleepJoinState();
                 throw new ThreadInterruptedException();
             }
+        }
+
+        internal static unsafe int ReentrantWaitAny(bool alertable, int timeout, int count, IntPtr* handles)
+        {
+            Debug.Assert(ReentrantWaitsEnabled);
+            return RuntimeImports.RhCompatibleReentrantWaitAny(alertable, timeout, count, handles);
         }
 
         internal static bool ReentrantWaitsEnabled =>

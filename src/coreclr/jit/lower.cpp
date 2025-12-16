@@ -466,7 +466,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
             ContainCheckNeg(node->AsOp());
         }
 #endif
-        break;
+#ifdef TARGET_WASM
+            return LowerNeg(node->AsOp());
+#endif
+            break;
         case GT_NOT:
 #ifdef TARGET_ARM64
             ContainCheckNot(node->AsOp());
@@ -890,6 +893,12 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     }
 
     noway_assert(jumpCnt >= 2);
+
+#ifdef TARGET_WASM
+    // Wasm's br_table maps exactly to GT_SWITCH
+    //
+    return node->gtNext;
+#endif // TARGET_WASM
 
     // Spill the argument to the switch node into a local so that it can be used later.
     LIR::Use use(switchBBRange, &(node->AsOp()->gtOp1), node);
@@ -4517,12 +4526,12 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 //
 GenTree* Lowering::LowerCompare(GenTree* cmp)
 {
-#ifndef TARGET_64BIT
+#if LOWER_DECOMPOSE_LONGS
     if (cmp->gtGetOp1()->TypeIs(TYP_LONG))
     {
         return DecomposeLongCompare(cmp);
     }
-#endif
+#endif // LOWER_DECOMPOSE_LONGS
 
     if (cmp->gtGetOp2()->IsIntegralConst() && !comp->opts.MinOpts())
     {
@@ -6409,7 +6418,7 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
         {
             // This node is in the dataflow. See if we can move it ahead of the
             // range we are moving.
-            if (m_scratchSideEffects.InterferesWith(comp, cur, /* strict */ true))
+            if (cur->OperConsumesFlags() || m_scratchSideEffects.InterferesWith(comp, cur, /* strict */ true))
             {
                 // Stop moving the range, but keep going through the rest
                 // of the nodes to unmark them
@@ -9680,14 +9689,14 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 {
     assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
 
-#if !defined(TARGET_64BIT)
+#if LOWER_DECOMPOSE_LONGS
     if (ret->TypeIs(TYP_LONG))
     {
         GenTree* op1 = ret->AsOp()->GetReturnValue();
         noway_assert(op1->OperIs(GT_LONG));
         MakeSrcContained(ret, op1);
     }
-#endif // !defined(TARGET_64BIT)
+#endif // LOWER_DECOMPOSE_LONGS
 #if FEATURE_MULTIREG_RET
     if (ret->TypeIs(TYP_STRUCT))
     {

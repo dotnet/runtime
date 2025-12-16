@@ -5,4 +5,5 @@ public class TestAsset
     public static readonly TestAsset WasmBasicTestApp = new() { Name = "WasmBasicTestApp", RunnableProjectSubPath = "App" };
     public static readonly TestAsset BlazorBasicTestApp = new() { Name = "BlazorBasicTestApp", RunnableProjectSubPath = "App" };
     public static readonly TestAsset LibraryModeTestApp = new() { Name = "LibraryMode" };
+    public static readonly TestAsset BlazorWebWasm = new() { Name = "BlazorWebWasm", RunnableProjectSubPath = "BlazorWebWasm" };
 }
