@@ -1367,7 +1367,7 @@ void emitter::emitIns_R_R_Addr(instruction ins, emitAttr attr, regNumber regData
         ssize_t imm  = (ssize_t)addr;
         ssize_t lo12 = (imm << (64 - 12)) >> (64 - 12);
         imm -= lo12;
-        emitLoadImmediate(attr, regAddr, imm);
+        emitLoadImmediate<true>(attr, regAddr, imm);
         emitIns_R_R_I(ins, attr, regData, regAddr, lo12);
     }
 }
@@ -1457,7 +1457,7 @@ void emitter::emitIns_Jump(instruction ins, BasicBlock* dst, regNumber reg1, reg
 static inline constexpr unsigned WordMask(uint8_t bits);
 
 //------------------------------------------------------------------------
-// emitLoadImmediate: Emits load of 64-bit constant to register.
+// emitLoadImmediate<true>: Emits load of 64-bit constant to register.
 //
 // Arguments:
 //    size   - Attribute
@@ -1470,7 +1470,8 @@ static inline constexpr unsigned WordMask(uint8_t bits);
 //    But if the value cannot be synthesized using maximum 5 instructions, returns -1 to indicate that
 //    the constant should be loaded from the memory.
 //
-int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm, bool doEmit /* = true */)
+template <bool doEmit>
+int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 {
     assert(!EA_IS_RELOC(size));
     assert(!doEmit || isGeneralRegister(reg));
@@ -1794,6 +1795,8 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm, bool d
     }
     return 0;
 }
+template int emitter::emitLoadImmediate<false>(emitAttr attr, regNumber reg, ssize_t imm);
+template int emitter::emitLoadImmediate<true>(emitAttr attr, regNumber reg, ssize_t imm);
 
 /*****************************************************************************
  *
@@ -1857,7 +1860,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         ssize_t imm = (ssize_t)params.addr;
         jalrOffset  = (imm << (64 - 12)) >> (64 - 12); // low 12-bits, sign-extended
         imm -= jalrOffset;
-        emitLoadImmediate(EA_PTRSIZE, params.ireg, imm); // upper bits
+        emitLoadImmediate<true>(EA_PTRSIZE, params.ireg, imm); // upper bits
     }
 
     /* Managed RetVal: emit sequence point for the call */
@@ -4574,7 +4577,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     if (offset != 0)
                     {
                         addrReg = needTemp ? codeGen->internalRegisters.GetSingle(indir) : dataReg;
-                        emitLoadImmediate(EA_PTRSIZE, addrReg, offset);
+                        emitLoadImmediate<true>(EA_PTRSIZE, addrReg, offset);
                     }
                     emitIns_R_R_I(ins, attr, dataReg, addrReg, lo12);
                 }
@@ -4594,7 +4597,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
             // First load/store tmpReg with the large offset constant
-            emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
+            emitLoadImmediate<true>(EA_PTRSIZE, tmpReg, offset);
 
             // Then load/store dataReg from/to [memBase + tmpReg]
             emitAttr addType = varTypeIsGC(memBase) ? EA_BYREF : EA_PTRSIZE;

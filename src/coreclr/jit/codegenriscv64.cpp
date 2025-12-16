@@ -106,7 +106,7 @@ bool CodeGen::genInstrWithConstant(instruction ins,
 
         // first we load the immediate into tmpReg
         assert(!EA_IS_RELOC(size));
-        GetEmitter()->emitLoadImmediate(size, tmpReg, imm);
+        GetEmitter()->emitLoadImmediate<true>(size, tmpReg, imm);
         regSet.verifyRegUsed(tmpReg);
 
         // when we are in an unwind code region
@@ -906,7 +906,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     }
     else
     {
-        emit->emitLoadImmediate(size, reg, imm);
+        emit->emitLoadImmediate<true>(size, reg, imm);
     }
 
     regSet.verifyRegUsed(reg);
@@ -1257,7 +1257,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                 }
                 else
                 {
-                    emit->emitLoadImmediate(EA_PTRSIZE, dataReg, cnsVal);
+                    emit->emitLoadImmediate<true>(EA_PTRSIZE, dataReg, cnsVal);
                 }
             }
             else
@@ -1509,7 +1509,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             {
                 if (tempReg == REG_NA)
                     tempReg = internalRegisters.Extract(tree);
-                emit->emitLoadImmediate(EA_PTRSIZE, tempReg, amount);
+                emit->emitLoadImmediate<true>(EA_PTRSIZE, tempReg, amount);
                 emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
             }
 
@@ -1799,7 +1799,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 tempReg    = internalRegisters.GetSingle(tree);
                 divisorReg = tempReg;
             }
-            emit->emitLoadImmediate(EA_PTRSIZE, divisorReg, intConst);
+            emit->emitLoadImmediate<true>(EA_PTRSIZE, divisorReg, intConst);
         }
         else
         {
@@ -3728,7 +3728,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
     }
     else
     {
-        GetEmitter()->emitLoadImmediate(EA_PTRSIZE, regTmp, spDelta);
+        GetEmitter()->emitLoadImmediate<true>(EA_PTRSIZE, regTmp, spDelta);
         GetEmitter()->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, regTmp);
     }
 }
@@ -4966,7 +4966,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         }
         else
         {
-            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, tempReg, scale);
+            GetEmitter()->emitLoadImmediate<true>(EA_PTRSIZE, tempReg, scale);
 
             instruction ins;
             instruction ins2;
@@ -6006,7 +6006,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         regNumber tmpReg = internalRegisters.GetSingle(lea);
 
         // First load tmpReg with the large offset constant
-        emit->emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
+        emit->emitLoadImmediate<true>(EA_PTRSIZE, tmpReg, offset);
 
         // Then compute target reg from [memBase + tmpReg]
         emit->emitIns_R_R_R(INS_add, size, targetReg, memBaseReg, tmpReg);
@@ -6487,7 +6487,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
             else
             {
                 regNumber tempReg = rsGetRsvdReg();
-                emit->emitLoadImmediate(EA_PTRSIZE, tempReg, SPtoFPdelta);
+                emit->emitLoadImmediate<true>(EA_PTRSIZE, tempReg, SPtoFPdelta);
                 emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, tempReg);
             }
         }
@@ -6517,7 +6517,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     else
     {
         regNumber tempReg = rsGetRsvdReg();
-        emit->emitLoadImmediate(EA_PTRSIZE, tempReg, remainingSPSize);
+        emit->emitLoadImmediate<true>(EA_PTRSIZE, tempReg, remainingSPSize);
         emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
     }
     compiler->unwindAllocStack(remainingSPSize);
@@ -6535,7 +6535,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         else
         {
             regNumber tempReg = rsGetRsvdReg();
-            emit->emitLoadImmediate(EA_PTRSIZE, tempReg, tier0FrameSize);
+            emit->emitLoadImmediate<true>(EA_PTRSIZE, tempReg, tier0FrameSize);
             emit->emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
         }
         compiler->unwindAllocStack(tier0FrameSize);

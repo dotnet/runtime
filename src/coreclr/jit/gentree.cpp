@@ -5179,7 +5179,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
                 else
                 {
-                    int instructionCount = GetEmitter()->emitLoadImmediate(size, REG_NA, imm, /* doEmit */ false);
+                    int instructionCount = GetEmitter()->emitLoadImmediate<false>(size, REG_NA, imm);
 
                     assert(instructionCount != 0);
 
