@@ -594,7 +594,6 @@ namespace ILCompiler
             bool hasNonGcStatics = NodeFactory.MetadataManager.HasNonGcStaticBase(defType);
             bool hasGcStatics = NodeFactory.MetadataManager.HasGcStaticBase(defType);
             bool hasThreadStatics = NodeFactory.MetadataManager.HasThreadStaticBase(defType);
-            bool hasInstanceFields = defType.IsValueType || NodeFactory.MetadataManager.HasConstructedEEType(defType);
 
             bool isCanonical = defType.IsCanonicalSubtype(CanonicalFormKind.Any);
 
