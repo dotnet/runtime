@@ -7191,7 +7191,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 return fgMorphSmpOp(tree, mac);
             }
 
-#ifndef TARGET_64BIT
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
             if (typ == TYP_LONG)
             {
                 helper = CORINFO_HELP_LDIV;
@@ -7205,12 +7205,12 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 goto USE_HELPER_FOR_ARITH;
             }
 #endif
-#endif // !TARGET_64BIT
+#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
             break;
 
         case GT_UDIV:
 
-#ifndef TARGET_64BIT
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
             if (typ == TYP_LONG)
             {
                 helper = CORINFO_HELP_ULDIV;
@@ -7223,7 +7223,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 goto USE_HELPER_FOR_ARITH;
             }
 #endif
-#endif // TARGET_64BIT
+#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
             break;
 
         case GT_MOD:
