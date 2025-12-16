@@ -118,6 +118,10 @@ extends:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
                 parameters:
                   testBuildArgs: test JIT/interpreter/Interpreter.csproj
+              - template: /eng/pipelines/common/wasm-post-build-steps.yml
+                parameters:
+                  publishArtifactsForWorkload: true
+                  publishWBT: true
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
