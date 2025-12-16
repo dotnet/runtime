@@ -247,7 +247,6 @@ jobs:
         SourceFolder: 'artifacts/obj'
         Contents: '**/CMakeConfigureLog.yaml'
         TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/log/cmake'
-        flattenFolders: true
       continueOnError: true
       condition: always()
 
