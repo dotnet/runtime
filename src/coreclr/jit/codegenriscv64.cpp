@@ -1743,11 +1743,13 @@ void CodeGen::genCodeForBswap(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForDivMod: Produce code for a GT_DIV/GT_UDIV node.
-// (1) float/double MOD is morphed into a helper call by front-end.
+// genCodeForDivMod: Produce code for a GT_DIV/GT_UDIV/GT_MOD/GT_UMOD node.
 //
 // Arguments:
 //    tree - the node
+//
+// Notes:
+//    float/double MOD is morphed into a helper call by front-end.
 //
 void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 {
