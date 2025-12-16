@@ -62,7 +62,6 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     dependencies.Add(factory.ExactMethodInstantiationsHashtableEntry(_method), "GVM Dependency - runtime lookups");
                 }
-
             }
 
             return dependencies;
