@@ -58,7 +58,7 @@ bool WasmRegAlloc::isContainableMemoryOp(GenTree* node)
 // Bridges the field naming difference for common RA code.
 //
 // Return Value:
-//    The 'this->compiler' field.
+//    The 'this->m_compiler' field.
 //
 Compiler* WasmRegAlloc::GetCompiler() const
 {
@@ -138,7 +138,7 @@ void WasmRegAlloc::AllocateAndResolveBlock(BasicBlock* block)
 //
 void WasmRegAlloc::AllocateAndResolveNode(GenTree* node)
 {
-    if (node->OperIsLocal())
+    if (node->OperIsAnyLocal())
     {
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(node->AsLclVarCommon());
         if (!varDsc->lvIsRegCandidate())
@@ -239,6 +239,10 @@ void WasmRegAlloc::PublishAllocationResults()
     {
         codeGen->SetFramePointerReg(m_fpReg);
         codeGen->setFramePointerUsed(true);
+    }
+    else
+    {
+        codeGen->setFramePointerUsed(false);
     }
 
     m_compiler->raMarkStkVars();

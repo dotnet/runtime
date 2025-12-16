@@ -73,7 +73,7 @@ void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, Basi
 }
 
 //------------------------------------------------------------------------
-// emitIns_S: Emit a memory instruction with a stack-based address mode operand.
+// emitIns_S: Emit an instruction with a stack offset immediate.
 //
 void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
 {
