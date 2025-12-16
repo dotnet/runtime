@@ -103,11 +103,9 @@ namespace TestLibrary
         {
             get
             {
-                if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DOTNET_Interpreter")))
+                if (RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled)
                     return true;
-                if (int.TryParse(Environment.GetEnvironmentVariable("DOTNET_InterpMode") ?? "", out int mode) && (mode > 0))
-                    return true;
-                return false;
+                return CoreClrConfigurationDetection.IsCoreClrInterpreter;
             }
         }
 

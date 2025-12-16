@@ -11,8 +11,8 @@
 
 void CodeGen::genMarkLabelsForCodegen()
 {
-    // TODO-WASM: serialize fgWasmControlFlow results into codegen-level metadata/labels
-    // (or use them directly and leave this empty).
+    // No work needed here for now.
+    // We mark labels as needed in genEmitStartBlock.
 }
 
 void CodeGen::genFnEpilog(BasicBlock* block)
@@ -154,7 +154,7 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
     while (!wasmControlFlowStack->Empty() && (wasmControlFlowStack->Top()->End() == cursor))
     {
         instGen(INS_end);
-        wasmControlFlowStack->Pop();
+        WasmInterval* interval = wasmControlFlowStack->Pop();
     }
 
     // Push control flow for intervals that start here or earlier, and emit
@@ -178,6 +178,25 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 
             wasmCursor++;
             wasmControlFlowStack->Push(interval);
+
+            if (interval->IsLoop())
+            {
+                if (!block->HasFlag(BBF_HAS_LABEL))
+                {
+                    block->SetFlags(BBF_HAS_LABEL);
+                    genDefineTempLabel(block);
+                }
+            }
+            else
+            {
+                BasicBlock* const endBlock = compiler->fgIndexToBlockMap[interval->End()];
+
+                if (!endBlock->HasFlag(BBF_HAS_LABEL))
+                {
+                    endBlock->SetFlags(BBF_HAS_LABEL);
+                    genDefineTempLabel(endBlock);
+                }
+            }
 
             if (wasmCursor >= compiler->fgWasmIntervals->size())
             {
@@ -253,6 +272,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForLclVar(treeNode->AsLclVar());
             break;
 
+        case GT_STORE_LCL_VAR:
+            genCodeForStoreLclVar(treeNode->AsLclVar());
+            break;
+
         case GT_JTRUE:
             genCodeForJTrue(treeNode->AsOp());
             break;
@@ -269,10 +292,22 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             // Do nothing; this node is a marker for debug info.
             break;
 
+        case GT_NOP:
+            break;
+
+        case GT_NO_OP:
+            instGen(INS_nop);
+            break;
+
         case GT_CNS_INT:
         case GT_CNS_LNG:
         case GT_CNS_DBL:
             genCodeForConstant(treeNode);
+            break;
+
+        case GT_NEG:
+        case GT_NOT:
+            genCodeForNegNot(treeNode->AsOp());
             break;
 
         default:
@@ -337,14 +372,10 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     BBswtDesc* const desc      = block->GetSwitchTargets();
     unsigned const   caseCount = desc->GetCaseCount();
 
-    // TODO-WASM: update lowering not to peel off the default
+    // We don't expect degenerate or default-less switches
     //
-    assert(!desc->HasDefaultCase());
-
-    if (caseCount == 0)
-    {
-        return;
-    }
+    assert(caseCount > 0);
+    assert(desc->HasDefaultCase());
 
     GetEmitter()->emitIns_I(INS_br_table, EA_4BYTE, caseCount);
 
@@ -353,7 +384,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
         BasicBlock* const caseTarget = desc->GetCase(caseNum)->getDestinationBlock();
         unsigned          depth      = findTargetDepth(caseTarget);
 
-        GetEmitter()->emitIns_I(INS_label, EA_4BYTE, depth);
+        GetEmitter()->emitIns_J(INS_label, EA_4BYTE, depth, caseTarget);
     }
 }
 
@@ -663,6 +694,54 @@ void CodeGen::genCodeForShift(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForNegNot: Generate code for a neg/not
+//
+// Arguments:
+//    tree - neg/not tree node
+//
+void CodeGen::genCodeForNegNot(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_NEG, GT_NOT));
+    genConsumeOperands(tree);
+
+    instruction ins;
+    switch (PackOperAndType(tree))
+    {
+        case PackOperAndType(GT_NOT, TYP_INT):
+            GetEmitter()->emitIns_I(INS_i32_const, emitTypeSize(tree), -1);
+            ins = INS_i32_xor;
+            break;
+        case PackOperAndType(GT_NOT, TYP_LONG):
+            GetEmitter()->emitIns_I(INS_i64_const, emitTypeSize(tree), -1);
+            ins = INS_i64_xor;
+            break;
+        case PackOperAndType(GT_NOT, TYP_FLOAT):
+        case PackOperAndType(GT_NOT, TYP_DOUBLE):
+            unreached();
+            break;
+        case PackOperAndType(GT_NEG, TYP_INT):
+        case PackOperAndType(GT_NEG, TYP_LONG):
+            // We cannot easily emit i32.sub(0, x) here since x is already on the stack.
+            // So we transform these to SUB in lower.
+            unreached();
+            break;
+        case PackOperAndType(GT_NEG, TYP_FLOAT):
+            ins = INS_f32_neg;
+            break;
+        case PackOperAndType(GT_NEG, TYP_DOUBLE):
+            ins = INS_f64_neg;
+            break;
+
+        default:
+            unreached();
+            break;
+    }
+
+    GetEmitter()->emitIns(ins);
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
 // genCodeForLclVar: Produce code for a GT_LCL_VAR node.
 //
 // Arguments:
@@ -689,6 +768,39 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         assert(genIsValidReg(varDsc->GetRegNum()));
         unsigned wasmLclIndex = UnpackWasmReg(varDsc->GetRegNum());
         GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(tree), wasmLclIndex);
+    }
+}
+
+//------------------------------------------------------------------------
+// genCodeForStoreLclVar: Produce code for a GT_STORE_LCL_VAR node.
+//
+// Arguments:
+//    tree - the GT_STORE_LCL_VAR node
+//
+void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
+{
+    assert(tree->OperIs(GT_STORE_LCL_VAR));
+
+    GenTree* const op1 = tree->gtGetOp1();
+    assert(!op1->IsMultiRegNode());
+    genConsumeRegs(op1);
+
+    LclVarDsc* varDsc    = compiler->lvaGetDesc(tree);
+    regNumber  targetReg = varDsc->GetRegNum();
+
+    if (!varDsc->lvIsRegCandidate())
+    {
+        // TODO-WASM: handle these cases in lower/ra.
+        // Emit drop for now to simulate the store effect on the wasm stack.
+        GetEmitter()->emitIns(INS_drop);
+        genUpdateLife(tree);
+    }
+    else
+    {
+        assert(genIsValidReg(targetReg));
+        unsigned wasmLclIndex = UnpackWasmReg(targetReg);
+        GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), wasmLclIndex);
+        genUpdateLifeStore(tree, targetReg, varDsc);
     }
 }
 
@@ -783,15 +895,39 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
 {
     assert(treeNode->OperIsCmpCompare());
 
+    genTreeOps op          = treeNode->OperGet();
+    bool       invertSense = false;
+
     if ((treeNode->gtFlags & GTF_RELOP_NAN_UN) != 0)
     {
-        NYI_WASM("genCompareFloat: unordered compares");
+        // We don't expect to see GT_EQ unordered,
+        // since CIL doesn't have this mode.
+        //
+        assert(op != GT_EQ);
+
+        // Wasm float comparisons other than "fne" return false for NaNs.
+        // Our unordered float compares need to return true for NaNs.
+        //
+        // So we can re-express say GT_GE (UN) as !GT_LT
+        //
+        if (op != GT_NE)
+        {
+            op          = GenTree::ReverseRelop(op);
+            invertSense = true;
+        }
+    }
+    else
+    {
+        // We don't expect to see GT_NE ordered,
+        // since CIL doesn't have this mode.
+        //
+        assert(op != GT_NE);
     }
 
     genConsumeOperands(treeNode);
 
     instruction ins;
-    switch (PackOperAndType(treeNode->OperGet(), treeNode->gtOp1->TypeGet()))
+    switch (PackOperAndType(op, treeNode->gtOp1->TypeGet()))
     {
         case PackOperAndType(GT_EQ, TYP_FLOAT):
             ins = INS_f32_eq;
@@ -834,6 +970,12 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
     }
 
     GetEmitter()->emitIns(ins);
+
+    if (invertSense)
+    {
+        GetEmitter()->emitIns(INS_i32_eqz);
+    }
+
     genProduceReg(treeNode);
 }
 
@@ -882,7 +1024,7 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 {
     instruction    instr = emitter::emitJumpKindToIns(jmp);
     unsigned const depth = findTargetDepth(tgtBlock);
-    GetEmitter()->emitIns_I(instr, EA_4BYTE, depth);
+    GetEmitter()->emitIns_J(instr, EA_4BYTE, depth, tgtBlock);
 }
 
 void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* code))

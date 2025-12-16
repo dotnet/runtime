@@ -512,7 +512,7 @@ public:
         TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
 
-        TS_LegalToJoin            = 0x00000020,    // Is it now legal to attempt a Join()
+        // unused                 = 0x00000020,
 
         TS_ExecutingOnAltStack    = 0x00000040,    // Runtime is executing on an alternate stack located anywhere in the memory
 
@@ -598,7 +598,7 @@ public:
         // unused                       = 0x00000200,
         TSNC_OwnsSpinLock               = 0x00000400, // The thread owns a spinlock.
         TSNC_PreparingAbort             = 0x00000800, // Preparing abort.  This avoids recursive HandleThreadAbort call.
-        TSNC_OSAlertableWait            = 0x00001000, // Preparing abort.  This avoids recursive HandleThreadAbort call.
+        // unused                       = 0x00001000,
         // unused                       = 0x00002000,
         TSNC_CreatingTypeInitException  = 0x00004000, // Thread is trying to create a TypeInitException
         // unused                       = 0x00008000,
@@ -869,8 +869,8 @@ public:
     // the top of the object.  Also, we want cache line filling to work for us
     // so the critical stuff is ordered based on frequency of use.
 
-    Volatile<ThreadState> m_State;   // Bits for the state of the thread
 
+    Volatile<ThreadState> m_State;   // Bits for the state of the thread
     // If TRUE, GC is scheduled cooperatively with this thread.
     // NOTE: This "byte" is actually a boolean - we don't allow
     // recursive disables.
@@ -1127,6 +1127,7 @@ public:
     void        OnThreadTerminate(BOOL holdingLock);
 
     static void CleanupDetachedThreads();
+    static void CleanupFinalizedThreads();
     //--------------------------------------------------------------
     // Returns innermost active Frame.
     //--------------------------------------------------------------
@@ -1590,25 +1591,6 @@ public:
         return (ObjectFromHandle(m_ExposedObject) != NULL) ;
     }
 
-    void GetSynchronizationContext(OBJECTREF *pSyncContextObj)
-    {
-        CONTRACTL
-        {
-            MODE_COOPERATIVE;
-            GC_NOTRIGGER;
-            NOTHROW;
-            PRECONDITION(CheckPointer(pSyncContextObj));
-        }
-        CONTRACTL_END;
-
-        *pSyncContextObj = NULL;
-
-        THREADBASEREF ExposedThreadObj = (THREADBASEREF)GetExposedObjectRaw();
-        if (ExposedThreadObj != NULL)
-            *pSyncContextObj = ExposedThreadObj->GetSynchronizationContext();
-    }
-
-
     // When we create a managed thread, the thread is suspended.  We call StartThread to get
     // the thread start.
     DWORD StartThread();
@@ -1680,9 +1662,6 @@ public:
     BOOL SetThreadPriority(
         int nPriority   // thread priority level
     );
-    BOOL Alert ();
-    DWORD Join(DWORD timeout, BOOL alertable);
-    DWORD JoinEx(DWORD timeout, WaitMode mode);
 
     BOOL GetThreadContext(
         LPCONTEXT lpContext   // context structure
@@ -1769,8 +1748,6 @@ public:
     static bool    SysSweepThreadsForDebug(bool forceSync);
     static void    SysResumeFromDebug(AppDomain *pAppDomain);
 
-    void           UserSleep(INT32 time);
-
 private:
 
     // Specifies type of thread abort.
@@ -1846,8 +1823,6 @@ private:
     BOOL           ReadyForAsyncException();
 
 public:
-    void           UserInterrupt(ThreadInterruptMode mode);
-
     BOOL           ReadyForAbort()
     {
         return ReadyForAsyncException();
@@ -2109,14 +2084,10 @@ public:
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
     // Either perform WaitForSingleObject or MsgWaitForSingleObject as appropriate.
-    DWORD          DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
-                                     DWORD millis, WaitMode mode);
-
-    DWORD          DoSignalAndWait(HANDLE *handles, DWORD millis, BOOL alertable);
+    DWORD          DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout, WaitMode mode);
+    DWORD          DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mode);
 private:
-    void           DoAppropriateWaitAlertableHelper(WaitMode mode);
     DWORD          DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll, DWORD timeout, WaitMode mode);
-    DWORD          DoSyncContextWait(OBJECTREF *pSyncCtxObj, int countHandles, HANDLE *handles, BOOL waitAll, DWORD millis);
 public:
 
     //************************************************************************
@@ -2581,10 +2552,6 @@ private:
 
 #endif // FEATURE_HIJACK
 
-    // Support for Wait/Notify
-    DWORD       Wait(HANDLE *objs, int cntObjs, INT32 timeOut);
-    DWORD       Wait(CLREvent* pEvent, INT32 timeOut);
-
     // support for Thread.Interrupt() which breaks out of Waits, Sleeps, Joins
     LONG        m_UserInterrupt;
     DWORD       IsUserInterrupted()
@@ -2598,10 +2565,14 @@ private:
         InterlockedExchange(&m_UserInterrupt, 0);
     }
 
-    void        HandleThreadInterrupt();
+#ifdef TARGET_WINDOWS
+    static void WINAPI UserInterruptAPC(ULONG_PTR ignore);
+public:
+    void        UserInterrupt(ThreadInterruptMode mode);
+#endif // TARGET_WINDOWS
 
 public:
-    static void WINAPI UserInterruptAPC(ULONG_PTR ignore);
+    void        HandleThreadInterrupt();
 
     // Access to thread handle and ThreadId.
     HANDLE      GetThreadHandle()
@@ -5511,6 +5482,8 @@ public:
 private:
     Thread* m_PreviousValue;
 };
+
+EXTERN_C Thread* GetThreadAsyncSafe();
 
 #ifndef DACCESS_COMPILE
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
