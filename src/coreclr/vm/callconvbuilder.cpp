@@ -354,8 +354,28 @@ HRESULT CallConv::TryGetUnmanagedCallingConventionFromModOpt(
     }
     IfFailRet(sigPtr.GetData(NULL)); // arg count
 
+#ifdef DEBUG
     PCCOR_SIGNATURE pWalk = sigPtr.GetPtr();
     _ASSERTE(pWalk <= pSig + cSig);
+#endif
+
+    return TryGetUnmanagedCallingConventionFromModOptSigStartingAtRetType(
+        pModule,
+        sigPtr,
+        builder,
+        errorResID);
+}
+
+HRESULT CallConv::TryGetUnmanagedCallingConventionFromModOptSigStartingAtRetType(
+    _In_ CORINFO_MODULE_HANDLE pModule,
+    _In_ SigPointer sig,
+    _Inout_ CallConvBuilder* builder,
+    _Out_ UINT* errorResID)
+{
+    PCCOR_SIGNATURE pSig;
+    uint32_t cSig;
+    sig.GetSignature(&pSig, &cSig);
+    PCCOR_SIGNATURE pWalk = pSig;
 
     CallConvBuilder& callConvBuilder = *builder;
     while ((pWalk < (pSig + cSig)) && ((*pWalk == ELEMENT_TYPE_CMOD_OPT) || (*pWalk == ELEMENT_TYPE_CMOD_REQD) || (*pWalk == ELEMENT_TYPE_CMOD_INTERNAL)))
