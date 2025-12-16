@@ -11,6 +11,20 @@ final class HashBox {
     }
 }
 
+final class HmacBox {
+    let algorithm: PAL_HashAlgorithm
+    let length: Int
+    var key: SymmetricKey?
+    var hmac: Any?
+
+    init(_ algorithm: PAL_HashAlgorithm, length: Int) {
+        self.algorithm = algorithm
+        self.length = length
+        self.hmac = nil
+        self.key = nil
+    }
+}
+
 protocol NonceProtocol {
     init<D>(data: D) throws where D : DataProtocol
 }
@@ -535,4 +549,301 @@ public func AppleCryptoNative_DigestCurrent(ctx: UnsafeMutableRawPointer?, pOutp
     }
 
     return 1
+}
+
+@_silgen_name("AppleCryptoNative_HmacCreate")
+public func AppleCryptoNative_HmacCreate(algorithm: Int32, pcbHmac: UnsafeMutablePointer<Int32>?) -> UnsafeMutableRawPointer? {
+    guard let pcbHmac, let hashAlgorithm = PAL_HashAlgorithm(rawValue: algorithm) else {
+        return nil
+    }
+
+    switch hashAlgorithm {
+        case .md5:
+            pcbHmac.pointee = Int32(Insecure.MD5.byteCount)
+            let box = HmacBox(hashAlgorithm, length: Insecure.MD5.byteCount)
+            return Unmanaged.passRetained(box).toOpaque()
+        case .sha1:
+            let box = HmacBox(hashAlgorithm, length: Insecure.SHA1.byteCount)
+            pcbHmac.pointee = Int32(Insecure.SHA1.byteCount)
+            return Unmanaged.passRetained(box).toOpaque()
+        case .sha256:
+            let box = HmacBox(hashAlgorithm, length: SHA256.byteCount)
+            pcbHmac.pointee = Int32(SHA256.byteCount)
+            return Unmanaged.passRetained(box).toOpaque()
+        case .sha384:
+            let box = HmacBox(hashAlgorithm, length: SHA384.byteCount)
+            pcbHmac.pointee = Int32(SHA384.byteCount)
+            return Unmanaged.passRetained(box).toOpaque()
+        case .sha512:
+            let box = HmacBox(hashAlgorithm, length: SHA512.byteCount)
+            pcbHmac.pointee = Int32(SHA512.byteCount)
+            return Unmanaged.passRetained(box).toOpaque()
+        default:
+            pcbHmac.pointee = 0
+            return nil
+    }
+}
+
+@_silgen_name("AppleCryptoNative_HmacInit")
+public func AppleCryptoNative_HmacInit(ctx: UnsafeMutableRawPointer?, pbKey: UnsafeMutableRawPointer?, cbKey: Int32) -> Int32 {
+    guard let ctx, let pbKey, cbKey >= 0 else {
+        return 0
+    }
+
+    let keyData = Data(bytesNoCopy: pbKey, count: Int(cbKey), deallocator: .none)
+    let key = SymmetricKey(data: keyData)
+    let box = Unmanaged<HmacBox>.fromOpaque(ctx).takeUnretainedValue()
+    return HmacReset(box: box, key: key)
+}
+
+@_silgen_name("AppleCryptoNative_HmacUpdate")
+public func AppleCryptoNative_HmacUpdate(ctx: UnsafeMutableRawPointer?, pbData: UnsafeMutableRawPointer?, cbData: Int32) -> Int32 {
+    guard let ctx, let pbData, cbData >= 0 else {
+        return 0
+    }
+
+    if cbData == 0 {
+        return 1
+    }
+
+    let data = Data(bytesNoCopy: pbData, count: Int(cbData), deallocator: .none)
+    let box = Unmanaged<HmacBox>.fromOpaque(ctx).takeUnretainedValue()
+
+    switch box.algorithm {
+        case .md5:
+            var hmac = (box.hmac as! HMAC<Insecure.MD5>)
+            hmac.update(data: data)
+            box.hmac = hmac
+            return 1
+        case .sha1:
+            var hmac = (box.hmac as! HMAC<Insecure.SHA1>)
+            hmac.update(data: data)
+            box.hmac = hmac
+            return 1
+        case .sha256:
+            var hmac = (box.hmac as! HMAC<SHA256>)
+            hmac.update(data: data)
+            box.hmac = hmac
+            return 1
+        case .sha384:
+            var hmac = (box.hmac as! HMAC<SHA384>)
+            hmac.update(data: data)
+            box.hmac = hmac
+            return 1
+        case .sha512:
+            var hmac = (box.hmac as! HMAC<SHA512>)
+            hmac.update(data: data)
+            box.hmac = hmac
+            return 1
+        default:
+            return 0
+    }
+}
+
+@_silgen_name("AppleCryptoNative_HmacFinal")
+public func AppleCryptoNative_HmacFinal(ctx: UnsafeMutableRawPointer?, pOutput: UnsafeMutablePointer<UInt8>?) -> Int32 {
+    guard let ctx, let pOutput else {
+        return -1
+    }
+
+    let box = Unmanaged<HmacBox>.fromOpaque(ctx).takeUnretainedValue()
+
+    guard let key = box.key else {
+        return -2
+    }
+
+    let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: box.length)
+    let copied: Bool
+
+    switch box.algorithm {
+        case .md5:
+            let mac = (box.hmac as! HMAC<Insecure.MD5>).finalize()
+            copied = mac.withUnsafeBytes { $0.copyBytes(to: destination) == $0.count }
+            break
+        case .sha1:
+            let mac = (box.hmac as! HMAC<Insecure.SHA1>).finalize()
+            copied = mac.withUnsafeBytes { $0.copyBytes(to: destination) == $0.count }
+            break
+        case .sha256:
+            let mac = (box.hmac as! HMAC<SHA256>).finalize()
+            copied = mac.withUnsafeBytes { $0.copyBytes(to: destination) == $0.count }
+            break
+        case .sha384:
+            let mac = (box.hmac as! HMAC<SHA384>).finalize()
+            copied = mac.withUnsafeBytes { $0.copyBytes(to: destination) == $0.count }
+            break
+        case .sha512:
+            let mac = (box.hmac as! HMAC<SHA512>).finalize()
+            copied = mac.withUnsafeBytes { $0.copyBytes(to: destination) == $0.count }
+            break
+        default:
+            return 0
+    }
+
+    if !copied {
+        return 0
+    }
+
+    return HmacReset(box: box, key: key)
+}
+
+@_silgen_name("AppleCryptoNative_HmacCurrent")
+public func AppleCryptoNative_HmacCurrent(ctx: UnsafeMutableRawPointer?, pOutput: UnsafeMutablePointer<UInt8>?) -> Int32 {
+    guard let ctx, let pOutput else {
+        return -1
+    }
+
+    let box = Unmanaged<HmacBox>.fromOpaque(ctx).takeUnretainedValue()
+    let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: box.length)
+
+    switch box.algorithm {
+        case .md5:
+            let hmac = (box.hmac as! HMAC<Insecure.MD5>)
+            let mac = hmac.finalize()
+            return mac.withUnsafeBytes { $0.copyBytes(to: destination) == $0.count } ? 1 : 0
+        case .sha1:
+            let hmac = (box.hmac as! HMAC<Insecure.SHA1>)
+            let mac = hmac.finalize()
+            return mac.withUnsafeBytes { $0.copyBytes(to: destination) == $0.count } ? 1 : 0
+        case .sha256:
+            let hmac = (box.hmac as! HMAC<SHA256>)
+            let mac = hmac.finalize()
+            return mac.withUnsafeBytes { $0.copyBytes(to: destination) == $0.count } ? 1 : 0
+        case .sha384:
+            let hmac = (box.hmac as! HMAC<SHA384>)
+            let mac = hmac.finalize()
+            return mac.withUnsafeBytes { $0.copyBytes(to: destination) == $0.count } ? 1 : 0
+        case .sha512:
+            let hmac = (box.hmac as! HMAC<SHA512>)
+            let mac = hmac.finalize()
+            return mac.withUnsafeBytes { $0.copyBytes(to: destination) == $0.count } ? 1 : 0
+        default:
+            return 0
+    }
+}
+
+@_silgen_name("AppleCryptoNative_HmacFree")
+public func AppleCryptoNative_HmacFree(ctx: UnsafeMutableRawPointer?) {
+    if let ctx {
+        Unmanaged<HmacBox>.fromOpaque(ctx).release()
+    }
+}
+
+@_silgen_name("AppleCryptoNative_HmacClone")
+public func AppleCryptoNative_HmacClone(ctx: UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer? {
+    guard let ctx else {
+        return nil
+    }
+
+    let box = Unmanaged<HmacBox>.fromOpaque(ctx).takeUnretainedValue()
+    let cloneBox = HmacBox(box.algorithm, length: box.length)
+    cloneBox.key = box.key
+    cloneBox.hmac = box.hmac
+    return Unmanaged.passRetained(cloneBox).toOpaque()
+}
+
+/*
+int32_t AppleCryptoNative_HmacOneShot(PAL_HashAlgorithm algorithm,
+                                      const uint8_t* pKey,
+                                      int32_t cbKey,
+                                      const uint8_t* pBuf,
+                                      int32_t cbBuf,
+                                      uint8_t* pOutput,
+                                      int32_t cbOutput,
+                                      int32_t* pcbDigest)
+*/
+
+@_silgen_name("AppleCryptoNative_HmacOneShot")
+public func AppleCryptoNative_HmacOneShot(
+    algorithm: Int32,
+    pbKey: UnsafeMutableRawPointer?,
+    cbKey: Int32,
+    pbBuf: UnsafeMutableRawPointer?,
+    cbBuf: Int32,
+    pOutput: UnsafeMutablePointer<UInt8>?,
+    cbOutput: Int32,
+    pcbDigest: UnsafeMutablePointer<Int32>?
+    ) -> Int32 {
+    guard let pcbDigest, let pOutput, cbKey >= 0, cbBuf >= 0 else {
+        return -1
+    }
+
+    guard let hashAlgorithm = PAL_HashAlgorithm(rawValue: algorithm) else {
+        return -1
+    }
+
+    let data: Data
+    let keyData: Data
+
+    if let pbBuf, cbBuf > 0 {
+        data = Data(bytesNoCopy: pbBuf, count: Int(cbBuf), deallocator: .none)
+    } else {
+        data = Data()
+    }
+
+    if let pbKey, cbKey > 0 {
+        keyData = Data(bytesNoCopy: pbKey, count: Int(cbKey), deallocator: .none)
+    } else {
+        keyData = Data()
+    }
+
+    let key = SymmetricKey(data: keyData)
+    let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: Int(cbOutput))
+
+    switch hashAlgorithm {
+        case .md5:
+            pcbDigest.pointee = Int32(Insecure.MD5.byteCount)
+            return HMAC<Insecure.MD5>.authenticationCode(for: data, using: key).withUnsafeBytes { mac in
+                return mac.copyBytes(to: destination) == mac.count ? 1 : -1
+            }
+        case .sha1:
+            pcbDigest.pointee = Int32(Insecure.SHA1.byteCount)
+            return HMAC<Insecure.SHA1>.authenticationCode(for: data, using: key).withUnsafeBytes { mac in
+                return mac.copyBytes(to: destination) == mac.count ? 1 : -1
+            }
+        case .sha256:
+            pcbDigest.pointee = Int32(SHA256.byteCount)
+            return HMAC<SHA256>.authenticationCode(for: data, using: key).withUnsafeBytes { mac in
+                return mac.copyBytes(to: destination) == mac.count ? 1 : -1
+            }
+        case .sha384:
+            pcbDigest.pointee = Int32(SHA384.byteCount)
+            return HMAC<SHA384>.authenticationCode(for: data, using: key).withUnsafeBytes { mac in
+                return mac.copyBytes(to: destination) == mac.count ? 1 : -1
+            }
+        case .sha512:
+            pcbDigest.pointee = Int32(SHA512.byteCount)
+            return HMAC<SHA512>.authenticationCode(for: data, using: key).withUnsafeBytes { mac in
+                return mac.copyBytes(to: destination) == mac.count ? 1 : -1
+            }
+        default:
+            return -1
+    }
+}
+
+private func HmacReset(box: HmacBox, key: SymmetricKey) -> Int32 {
+    switch box.algorithm {
+        case .md5:
+            box.hmac = HMAC<Insecure.MD5>(key: key)
+            box.key = key
+            return 1
+        case .sha1:
+            box.hmac = HMAC<Insecure.SHA1>(key: key)
+            box.key = key
+            return 1
+        case .sha256:
+            box.hmac = HMAC<SHA256>(key: key)
+            box.key = key
+            return 1
+        case .sha384:
+            box.hmac = HMAC<SHA384>(key: key)
+            box.key = key
+            return 1
+        case .sha512:
+            box.hmac = HMAC<SHA512>(key: key)
+            box.key = key
+            return 1
+        default:
+            return 0
+    }
 }

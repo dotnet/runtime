@@ -7,7 +7,6 @@ append_extra_cryptography_apple_libs(NATIVE_LIBS_EXTRA)
 
 set(NATIVECRYPTO_SOURCES
     pal_ecc.c
-    pal_hmac.c
     pal_keyagree.c
     pal_keyderivation.c
     pal_random.c

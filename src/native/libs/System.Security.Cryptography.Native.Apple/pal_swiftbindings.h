@@ -24,3 +24,13 @@ EXTERN_C void* AppleCryptoNative_DigestCurrent;
 EXTERN_C void* AppleCryptoNative_DigestOneShot;
 EXTERN_C void* AppleCryptoNative_DigestReset;
 EXTERN_C void* AppleCryptoNative_DigestClone;
+
+EXTERN_C void* AppleCryptoNative_HmacFree;
+EXTERN_C void* AppleCryptoNative_HmacCreate;
+EXTERN_C void* AppleCryptoNative_HmacInit;
+EXTERN_C void* AppleCryptoNative_HmacUpdate;
+EXTERN_C void* AppleCryptoNative_HmacFinal;
+EXTERN_C void* AppleCryptoNative_HmacCurrent;
+EXTERN_C void* AppleCryptoNative_HmacOneShot;
+EXTERN_C void* AppleCryptoNative_HmacClone;
+

@@ -6,7 +6,6 @@
 // Include System.Security.Cryptography.Native.Apple headers
 #include "pal_digest.h"
 #include "pal_ecc.h"
-#include "pal_hmac.h"
 #include "pal_keyagree.h"
 #include "pal_keychain_macos.h"
 #include "pal_keyderivation.h"
