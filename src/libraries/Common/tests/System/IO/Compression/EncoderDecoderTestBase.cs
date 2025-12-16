@@ -348,7 +348,7 @@ namespace System.IO.Compression
                 DecoderAdapter decoder = CreateDecoder();
                 byte[] input = CreateTestData();
                 byte[] output = new byte[GetMaxCompressedLength(input.Length)];
-                Debug.Assert(TryCompress(input, output, out int compressedLength));
+                Assert.True(TryCompress(input, output, out int compressedLength));
 
                 decoder.Decompress(output.AsSpan(0, compressedLength), input, out _, out _);
                 // no Dispose()
