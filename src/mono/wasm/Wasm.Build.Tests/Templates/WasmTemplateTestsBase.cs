@@ -124,8 +124,27 @@ public class WasmTemplateTestsBase : BuildTestBase
             """;
         }
 
+        if (EnvironmentVariables.UseInTree)
+        {
+            s_buildEnv.EnvVars["WBTImportInTree"] = "true";
+        }
+
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
+    }
+
+    protected void CopyTestOutputToProject(TestAsset targetAsset)
+    {
+        TestAsset sourceAsset = TestAsset.WasmBasicTestApp;
+        var testOutputFilePath = Path.Combine(BuildEnvironment.TestAssetsPath, sourceAsset.Name, sourceAsset.RunnableProjectSubPath, "Common", "TestOutput.cs");
+
+        var destinationFilePath = _projectDir;
+        if (!string.IsNullOrEmpty(targetAsset.RunnableProjectSubPath))
+            destinationFilePath = Path.Combine(destinationFilePath, targetAsset.RunnableProjectSubPath);
+
+        destinationFilePath = Path.Combine(destinationFilePath, "TestOutput.cs");
+
+        File.Copy(testOutputFilePath, destinationFilePath, overwrite: true);
     }
 
     private void UpdateProjectFile(string projectFilePath, bool runAnalyzers, string extraProperties, string extraItems, string insertAtEnd)
@@ -328,7 +347,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             RunHost.WebServer =>
                     await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
                         string.IsNullOrEmpty(runOptions.CustomBundleDir) ?
-                            Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")) :
+                            Path.GetFullPath(Path.Combine(GetBinFrameworkDir(runOptions.Configuration, forPublish: true, _provider.DefaultTargetFramework), "..")) :
                             runOptions.CustomBundleDir,
                          runOptions),
 

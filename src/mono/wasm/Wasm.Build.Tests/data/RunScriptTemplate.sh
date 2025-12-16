@@ -51,15 +51,17 @@ function set_env_vars()
         export USE_JAVASCRIPT_BUNDLER_FOR_TESTS=false
     fi
 
-    local _SDK_DIR=
-    if [[ -n "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then
-        cp -r $BASE_DIR/$SDK_DIR_NAME $EXECUTION_DIR
-        _SDK_DIR=$EXECUTION_DIR/$SDK_DIR_NAME
-    else
-        _SDK_DIR=$BASE_DIR/$SDK_DIR_NAME
-    fi
+    if [ "x$SDK_FOR_WORKLOAD_TESTING_PATH" = "x" ]; then
+        local _SDK_DIR=
+        if [[ -n "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then
+            cp -r $BASE_DIR/$SDK_DIR_NAME $EXECUTION_DIR
+            _SDK_DIR=$EXECUTION_DIR/$SDK_DIR_NAME
+        else
+            _SDK_DIR=$BASE_DIR/$SDK_DIR_NAME
+        fi
 
-    export SDK_FOR_WORKLOAD_TESTING_PATH=$_SDK_DIR
+        export SDK_FOR_WORKLOAD_TESTING_PATH=$_SDK_DIR
+    fi
 }
 
 export TEST_LOG_PATH=${XHARNESS_OUT}/logs

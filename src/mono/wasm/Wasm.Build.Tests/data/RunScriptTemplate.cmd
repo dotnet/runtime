@@ -67,12 +67,14 @@ if [%WASM_BUNDLER_FRIENDLY_BOOT_CONFIG%] == [true] (
    set USE_JAVASCRIPT_BUNDLER_FOR_TESTS=false
 )
 
-if [%HELIX_CORRELATION_PAYLOAD%] NEQ [] (
-    robocopy /mt /np /nfl /NDL /nc /e %BASE_DIR%\%SDK_DIR_NAME% %EXECUTION_DIR%\%SDK_DIR_NAME%
-    set _SDK_DIR=%EXECUTION_DIR%\%SDK_DIR_NAME%
-) else (
-    set _SDK_DIR=%BASE_DIR%\%SDK_DIR_NAME%
-)
+if [%SDK_FOR_WORKLOAD_TESTING_PATH%] == [] (
+    if [%HELIX_CORRELATION_PAYLOAD%] NEQ [] (
+        robocopy /mt /np /nfl /NDL /nc /e %BASE_DIR%\%SDK_DIR_NAME% %EXECUTION_DIR%\%SDK_DIR_NAME%
+        set _SDK_DIR=%EXECUTION_DIR%\%SDK_DIR_NAME%
+    ) else (
+        set _SDK_DIR=%BASE_DIR%\%SDK_DIR_NAME%
+    )
 
-set "SDK_FOR_WORKLOAD_TESTING_PATH=%_SDK_DIR%"
+    set "SDK_FOR_WORKLOAD_TESTING_PATH=%_SDK_DIR%"
+)
 EXIT /b 0

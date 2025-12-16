@@ -3,7 +3,7 @@
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="ILStrip" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
 
-  <Import Sdk="Microsoft.NET.Sdk.WebAssembly" Project="Sdk.targets" Condition="'$(UsingNativeAOT)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'" />
+  <Import Sdk="Microsoft.NET.Sdk.WebAssembly" Project="Sdk.targets" Condition="'$(UsingNativeAOT)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' != 'true'" />
 
   <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true' and '$(ImportTargetingPacksTargetsInWasmAppTargets)' == 'true'"/>

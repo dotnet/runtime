@@ -11,7 +11,7 @@
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
 
-    <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
+    <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == '' and '$(TestUsingInTree)' == ''">true</TestUsingWorkloads>
     <!-- these are imported in this project instead -->
     <SkipWorkloadsTestingTargetsImport>false</SkipWorkloadsTestingTargetsImport>
     <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
@@ -109,6 +109,9 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
 
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_IN_TREE=$(TestUsingInTree)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_IN_TREE=$(TestUsingInTree)" />
+
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export SDK_DIR_NAME=$(_SdkPathForLocalTesting)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set SDK_DIR_NAME=$(_SdkPathForLocalTesting)" />
 
@@ -135,6 +138,10 @@
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)/" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TestUsingInTree)' == 'true'">
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export SDK_FOR_WORKLOAD_TESTING_PATH=$(NetCoreRoot)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set SDK_FOR_WORKLOAD_TESTING_PATH=$(NetCoreRoot)" />
     </ItemGroup>
 
     <PropertyGroup>
