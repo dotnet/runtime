@@ -14,6 +14,7 @@ namespace System.IO.Compression
 {
     public abstract class EncoderDecoderTestBase
     {
+        private const int ReasonablySizedData = 100 * 1024; // 100 KB
         protected virtual bool SupportsDictionaries => false;
         protected virtual bool SupportsReset => false;
 
@@ -143,7 +144,7 @@ namespace System.IO.Compression
         [Fact]
         public void TryCompress_WithValidInput_CompressesData()
         {
-            byte[] input = CreateTestData(100000);
+            byte[] input = CreateTestData(ReasonablySizedData);
             byte[] output = new byte[GetMaxCompressedLength(input.Length)];
 
             bool result = TryCompress(input, output, out int bytesWritten);
