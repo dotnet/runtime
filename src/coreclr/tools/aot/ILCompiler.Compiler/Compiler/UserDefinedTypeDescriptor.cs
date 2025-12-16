@@ -622,8 +622,13 @@ namespace ILCompiler
                 }
                 else
                 {
-                    if (!hasInstanceFields)
-                        continue;
+                    // Allow instance fields to be emitted even for types that are never instantiated.
+                    // This ensures DWARF debug info is generated for all type fields, which is
+                    // important for debugging scenarios where types are referenced but not constructed.
+                    // Previously, this guard would skip instance fields when hasInstanceFields was false,
+                    // preventing debug info generation for types like: var nullObj = (MyClass)null;
+                    // if (!hasInstanceFields)
+                    //     continue;
                 }
 
                 LayoutInt fieldOffset = fieldDesc.Offset;
