@@ -3817,8 +3817,9 @@ bool Compiler::optIsProfitableToHoistTree(GenTree*              tree,
         return false;
     }
 
-#ifdef TARGET_RISCV64
-    // Avoid hoisting a loop-invariant CNS_INT if it is expected to increase callee-saved register pressure.
+#if defined(TARGET_RISCV64)
+    // Avoid hoisting a loop-invariant CNS_INT into a local variable if it is expected
+    // to increase callee-saved register pressure in small loops.
     if (tree->OperIs(GT_CNS_INT) && (availRegCount <= CNT_CALLEE_ENREG))
     {
         return false;
