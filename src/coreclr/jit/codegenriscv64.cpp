@@ -6112,7 +6112,7 @@ void CodeGen::genCodeForSlliUw(GenTreeOp* tree)
 // Arguments:
 //    delta - the offset to add to the current stack pointer to establish the frame pointer
 //    reportUnwindData - true if establishing the frame pointer should be reported in the OS unwind data.
-
+//
 void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 {
     assert(compiler->compGeneratingProlog);
