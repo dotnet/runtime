@@ -915,8 +915,6 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
             op          = GenTree::ReverseRelop(op);
             invertSense = true;
         }
-
-        treeNode->gtFlags &= ~GTF_RELOP_NAN_UN;
     }
     else
     {
