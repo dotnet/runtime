@@ -13,19 +13,25 @@ internal static class TestsCommand
     {
         if (string.IsNullOrWhiteSpace(pat))
         {
-            Console.Error.WriteLine("Error: PAT is required. Use --pat or set AZDO_PAT environment variable.");
+            Console.Error.WriteLine(
+                "Error: PAT is required. Use --pat or set AZDO_PAT environment variable."
+            );
             Environment.ExitCode = 1;
             return;
         }
 
         using var client = new AzDoClient(org, project, pat);
         List<TestResult> results = [];
-        await AnsiConsole.Status()
+        await AnsiConsole
+            .Status()
             .Spinner(Spinner.Known.Dots)
-            .StartAsync($"[yellow]Fetching failed tests for build {buildId}...[/]", async ctx =>
-            {
-                results = (await client.GetFailedTestsAsync(buildId)).ToList();
-            });
+            .StartAsync(
+                $"[yellow]Fetching failed tests for build {buildId}...[/]",
+                async ctx =>
+                {
+                    results = (await client.GetFailedTestsAsync(buildId)).ToList();
+                }
+            );
 
         if (results.Count == 0)
         {
@@ -54,7 +60,7 @@ internal static class TestsCommand
             }
             table.AddRow($"[red]✗[/] {result.FullyQualifiedName.EscapeMarkup()}", errorMsg);
         }
-        
+
         AnsiConsole.Write(table);
     }
 }

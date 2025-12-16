@@ -9,11 +9,19 @@ namespace AutoBisect.Commands;
 
 internal static class DiffCommand
 {
-    public static async Task HandleAsync(string org, string project, string pat, int goodBuildId, int badBuildId)
+    public static async Task HandleAsync(
+        string org,
+        string project,
+        string pat,
+        int goodBuildId,
+        int badBuildId
+    )
     {
         if (string.IsNullOrWhiteSpace(pat))
         {
-            Console.Error.WriteLine("Error: PAT is required. Use --pat or set AZDO_PAT environment variable.");
+            Console.Error.WriteLine(
+                "Error: PAT is required. Use --pat or set AZDO_PAT environment variable."
+            );
             Environment.ExitCode = 1;
             return;
         }
@@ -23,16 +31,22 @@ internal static class DiffCommand
         List<TestResult> goodFailures = [];
         List<TestResult> badFailures = [];
 
-        await AnsiConsole.Status()
+        await AnsiConsole
+            .Status()
             .Spinner(Spinner.Known.Dots)
-            .StartAsync("[yellow]Fetching test results...[/]", async ctx =>
-            {
-                ctx.Status($"[yellow]Fetching failed tests for build {goodBuildId} (good)...[/]");
-                goodFailures = (await client.GetFailedTestsAsync(goodBuildId)).ToList();
-                
-                ctx.Status($"[yellow]Fetching failed tests for build {badBuildId} (bad)...[/]");
-                badFailures = (await client.GetFailedTestsAsync(badBuildId)).ToList();
-            });
+            .StartAsync(
+                "[yellow]Fetching test results...[/]",
+                async ctx =>
+                {
+                    ctx.Status(
+                        $"[yellow]Fetching failed tests for build {goodBuildId} (good)...[/]"
+                    );
+                    goodFailures = (await client.GetFailedTestsAsync(goodBuildId)).ToList();
+
+                    ctx.Status($"[yellow]Fetching failed tests for build {badBuildId} (bad)...[/]");
+                    badFailures = (await client.GetFailedTestsAsync(badBuildId)).ToList();
+                }
+            );
 
         var diff = TestDiffer.ComputeDiff(goodFailures, badFailures);
 
@@ -41,7 +55,7 @@ internal static class DiffCommand
             .BorderColor(Color.Red)
             .Title($"[bold red]New Failures ({diff.NewFailures.Count})[/]")
             .AddColumn("[bold]Test Name[/]");
-        
+
         if (diff.NewFailures.Count > 0)
         {
             foreach (var test in diff.NewFailures)
@@ -53,7 +67,7 @@ internal static class DiffCommand
         {
             newFailuresTable.AddRow("[dim]No new failures[/]");
         }
-        
+
         AnsiConsole.Write(newFailuresTable);
         AnsiConsole.WriteLine();
 
@@ -62,7 +76,7 @@ internal static class DiffCommand
             .BorderColor(Color.Yellow)
             .Title($"[bold yellow]Consistent Failures ({diff.ConsistentFailures.Count})[/]")
             .AddColumn("[bold]Test Name[/]");
-        
+
         if (diff.ConsistentFailures.Count > 0)
         {
             foreach (var test in diff.ConsistentFailures)
@@ -74,7 +88,7 @@ internal static class DiffCommand
         {
             consistentFailuresTable.AddRow("[dim]No consistent failures[/]");
         }
-        
+
         AnsiConsole.Write(consistentFailuresTable);
     }
 }

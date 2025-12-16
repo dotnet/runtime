@@ -10,10 +10,15 @@ internal static class BuildUtilities
 {
     public static void PrintBuildInfo(Build build)
     {
-        var shortSha = build.SourceVersion?.Substring(0, Math.Min(12, build.SourceVersion?.Length ?? 0)) ?? "unknown";
+        var shortSha =
+            build.SourceVersion?.Substring(0, Math.Min(12, build.SourceVersion?.Length ?? 0))
+            ?? "unknown";
         var statusColor = build.Status == BuildStatus.Completed ? "green" : "yellow";
-        var resultColor = build.Result == BuildResult.Succeeded ? "green" : build.Result == BuildResult.Failed ? "red" : "yellow";
-        
+        var resultColor =
+            build.Result == BuildResult.Succeeded ? "green"
+            : build.Result == BuildResult.Failed ? "red"
+            : "yellow";
+
         var table = new Table()
             .Border(TableBorder.Rounded)
             .BorderColor(Color.Blue)
@@ -26,46 +31,60 @@ internal static class BuildUtilities
             .AddRow("Queued", build.QueueTime?.ToString() ?? "N/A")
             .AddRow("Started", build.StartTime?.ToString() ?? "N/A")
             .AddRow("Finished", build.FinishTime?.ToString() ?? "N/A");
-        
+
         if (build.Links?.Web?.Href != null)
         {
             table.AddRow("URL", $"[link]{build.Links.Web.Href}[/]");
         }
-        
+
         AnsiConsole.Write(table);
     }
 
-    public static async Task<Build?> WaitForBuildAsync(AzDoClient client, int buildId, int pollIntervalSeconds, CancellationToken cancellationToken)
+    public static async Task<Build?> WaitForBuildAsync(
+        AzDoClient client,
+        int buildId,
+        int pollIntervalSeconds,
+        CancellationToken cancellationToken
+    )
     {
         var startTime = DateTime.UtcNow;
         Build? build = null;
-        
-        await AnsiConsole.Status()
+
+        await AnsiConsole
+            .Status()
             .Spinner(Spinner.Known.Dots)
-            .StartAsync($"[yellow]Waiting for build {buildId}...[/]", async ctx =>
-            {
-                while (true)
+            .StartAsync(
+                $"[yellow]Waiting for build {buildId}...[/]",
+                async ctx =>
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    build = await client.GetBuildAsync(buildId, cancellationToken);
-                    if (build == null)
+                    while (true)
                     {
-                        return;
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        build = await client.GetBuildAsync(buildId, cancellationToken);
+                        if (build == null)
+                        {
+                            return;
+                        }
+
+                        if (build.Status == BuildStatus.Completed)
+                        {
+                            return;
+                        }
+
+                        var elapsed = DateTime.UtcNow - startTime;
+                        ctx.Status(
+                            $"[yellow]Waiting for build {buildId}...[/] ({elapsed:hh\\:mm\\:ss} elapsed, status: {build.Status})"
+                        );
+
+                        await Task.Delay(
+                            TimeSpan.FromSeconds(pollIntervalSeconds),
+                            cancellationToken
+                        );
                     }
-
-                    if (build.Status == BuildStatus.Completed)
-                    {
-                        return;
-                    }
-
-                    var elapsed = DateTime.UtcNow - startTime;
-                    ctx.Status($"[yellow]Waiting for build {buildId}...[/] ({elapsed:hh\\:mm\\:ss} elapsed, status: {build.Status})");
-
-                    await Task.Delay(TimeSpan.FromSeconds(pollIntervalSeconds), cancellationToken);
                 }
-            });
-        
+            );
+
         return build;
     }
 }

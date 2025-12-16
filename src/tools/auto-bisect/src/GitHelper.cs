@@ -19,19 +19,22 @@ public static class GitHelper
         string goodCommit,
         string badCommit,
         string? workingDirectory = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         // First, verify both commits exist locally
         if (!await ValidateCommitAsync(goodCommit, workingDirectory, cancellationToken))
         {
             throw new InvalidOperationException(
-                $"Commit {goodCommit} not found locally. Try running: git fetch origin {goodCommit}");
+                $"Commit {goodCommit} not found locally. Try running: git fetch origin {goodCommit}"
+            );
         }
 
         if (!await ValidateCommitAsync(badCommit, workingDirectory, cancellationToken))
         {
             throw new InvalidOperationException(
-                $"Commit {badCommit} not found locally. Try running: git fetch origin {badCommit}");
+                $"Commit {badCommit} not found locally. Try running: git fetch origin {badCommit}"
+            );
         }
 
         // git rev-list returns commits in reverse chronological order (newest first)
@@ -42,7 +45,8 @@ public static class GitHelper
             result = await RunGitCommandAsync(
                 $"rev-list --ancestry-path {goodCommit}..{badCommit}",
                 workingDirectory,
-                cancellationToken);
+                cancellationToken
+            );
         }
         catch (InvalidOperationException)
         {
@@ -51,7 +55,8 @@ public static class GitHelper
             result = await RunGitCommandAsync(
                 $"rev-list {goodCommit}..{badCommit}",
                 workingDirectory,
-                cancellationToken);
+                cancellationToken
+            );
         }
 
         var commits = new List<string>();
@@ -75,12 +80,14 @@ public static class GitHelper
     public static async Task<string> GetShortShaAsync(
         string commit,
         string? workingDirectory = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await RunGitCommandAsync(
             $"rev-parse --short {commit}",
             workingDirectory,
-            cancellationToken);
+            cancellationToken
+        );
         return result.Trim();
     }
 
@@ -90,12 +97,14 @@ public static class GitHelper
     public static async Task<string> GetCommitSubjectAsync(
         string commit,
         string? workingDirectory = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var result = await RunGitCommandAsync(
             $"log -1 --format=%s {commit}",
             workingDirectory,
-            cancellationToken);
+            cancellationToken
+        );
         return result.Trim();
     }
 
@@ -105,14 +114,12 @@ public static class GitHelper
     public static async Task<bool> ValidateCommitAsync(
         string commit,
         string? workingDirectory = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         try
         {
-            await RunGitCommandAsync(
-                $"cat-file -t {commit}",
-                workingDirectory,
-                cancellationToken);
+            await RunGitCommandAsync($"cat-file -t {commit}", workingDirectory, cancellationToken);
             return true;
         }
         catch (InvalidOperationException)
@@ -124,7 +131,8 @@ public static class GitHelper
     private static async Task<string> RunGitCommandAsync(
         string arguments,
         string? workingDirectory,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         using var process = new Process
         {
@@ -136,8 +144,8 @@ public static class GitHelper
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
-                CreateNoWindow = true
-            }
+                CreateNoWindow = true,
+            },
         };
 
         process.Start();

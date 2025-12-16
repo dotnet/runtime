@@ -24,17 +24,29 @@ public interface IAzDoClient
     /// <summary>
     /// Gets failed test results for a specific build.
     /// </summary>
-    Task<IReadOnlyList<TestResult>> GetFailedTestsAsync(int buildId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<TestResult>> GetFailedTestsAsync(
+        int buildId,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Finds completed builds for a specific commit and pipeline definition.
     /// </summary>
-    Task<IReadOnlyList<Build>> FindBuildsAsync(string commitSha, int? definitionId = null, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Build>> FindBuildsAsync(
+        string commitSha,
+        int? definitionId = null,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Queues a new build for a specific commit.
     /// </summary>
-    Task<Build> QueueBuildAsync(int definitionId, string commitSha, string? sourceBranch = null, CancellationToken cancellationToken = default);
+    Task<Build> QueueBuildAsync(
+        int definitionId,
+        string commitSha,
+        string? sourceBranch = null,
+        CancellationToken cancellationToken = default
+    );
 }
 
 /// <summary>
@@ -47,11 +59,14 @@ public class AzDoClient : IAzDoClient, IDisposable
     private readonly string _project;
 
     public AzDoClient(string organization, string project, string personalAccessToken)
-        : this(organization, project, personalAccessToken, null)
-    {
-    }
+        : this(organization, project, personalAccessToken, null) { }
 
-    internal AzDoClient(string organization, string project, string personalAccessToken, HttpClient? httpClient)
+    internal AzDoClient(
+        string organization,
+        string project,
+        string personalAccessToken,
+        HttpClient? httpClient
+    )
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(organization);
         ArgumentException.ThrowIfNullOrWhiteSpace(project);
@@ -63,16 +78,27 @@ public class AzDoClient : IAzDoClient, IDisposable
         _httpClient = httpClient ?? new HttpClient();
         _httpClient.BaseAddress = new Uri($"https://dev.azure.com/{_organization}/{_project}/");
 
-        var credentials = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($":{personalAccessToken}"));
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
-        _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        var credentials = Convert.ToBase64String(
+            System.Text.Encoding.ASCII.GetBytes($":{personalAccessToken}")
+        );
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Basic",
+            credentials
+        );
+        _httpClient.DefaultRequestHeaders.Accept.Add(
+            new MediaTypeWithQualityHeaderValue("application/json")
+        );
     }
 
-    public async Task<Build?> GetBuildAsync(int buildId, CancellationToken cancellationToken = default)
+    public async Task<Build?> GetBuildAsync(
+        int buildId,
+        CancellationToken cancellationToken = default
+    )
     {
         var response = await _httpClient.GetAsync(
             $"_apis/build/builds/{buildId}?api-version=7.1",
-            cancellationToken);
+            cancellationToken
+        );
 
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
@@ -81,10 +107,16 @@ public class AzDoClient : IAzDoClient, IDisposable
 
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync(AzDoJsonContext.Default.Build, cancellationToken);
+        return await response.Content.ReadFromJsonAsync(
+            AzDoJsonContext.Default.Build,
+            cancellationToken
+        );
     }
 
-    public async Task<IReadOnlyList<TestResult>> GetFailedTestsAsync(int buildId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<TestResult>> GetFailedTestsAsync(
+        int buildId,
+        CancellationToken cancellationToken = default
+    )
     {
         var results = new List<TestResult>();
         var continuationToken = (string?)null;
@@ -100,7 +132,10 @@ public class AzDoClient : IAzDoClient, IDisposable
             var response = await _httpClient.GetAsync(url, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var runsResponse = await response.Content.ReadFromJsonAsync(AzDoJsonContext.Default.TestRunsResponse, cancellationToken);
+            var runsResponse = await response.Content.ReadFromJsonAsync(
+                AzDoJsonContext.Default.TestRunsResponse,
+                cancellationToken
+            );
             if (runsResponse?.Value == null)
             {
                 break;
@@ -112,16 +147,21 @@ public class AzDoClient : IAzDoClient, IDisposable
                 results.AddRange(testResults);
             }
 
-            continuationToken = response.Headers.TryGetValues("x-ms-continuationtoken", out var tokens)
+            continuationToken = response.Headers.TryGetValues(
+                "x-ms-continuationtoken",
+                out var tokens
+            )
                 ? tokens.FirstOrDefault()
                 : null;
-
         } while (continuationToken != null);
 
         return results;
     }
 
-    private async Task<IReadOnlyList<TestResult>> GetFailedTestsForRunAsync(int runId, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<TestResult>> GetFailedTestsForRunAsync(
+        int runId,
+        CancellationToken cancellationToken
+    )
     {
         var results = new List<TestResult>();
         int skip = 0;
@@ -131,10 +171,14 @@ public class AzDoClient : IAzDoClient, IDisposable
         {
             var response = await _httpClient.GetAsync(
                 $"_apis/test/runs/{runId}/results?api-version=7.1&$top={top}&$skip={skip}&outcomes=Failed",
-                cancellationToken);
+                cancellationToken
+            );
             response.EnsureSuccessStatusCode();
 
-            var resultsResponse = await response.Content.ReadFromJsonAsync(AzDoJsonContext.Default.TestResultsResponse, cancellationToken);
+            var resultsResponse = await response.Content.ReadFromJsonAsync(
+                AzDoJsonContext.Default.TestResultsResponse,
+                cancellationToken
+            );
             if (resultsResponse?.Value == null || resultsResponse.Value.Count == 0)
             {
                 break;
@@ -153,7 +197,11 @@ public class AzDoClient : IAzDoClient, IDisposable
         return results;
     }
 
-    public async Task<IReadOnlyList<Build>> FindBuildsAsync(string commitSha, int? definitionId = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Build>> FindBuildsAsync(
+        string commitSha,
+        int? definitionId = null,
+        CancellationToken cancellationToken = default
+    )
     {
         var allBuilds = new List<Build>();
 
@@ -163,7 +211,8 @@ public class AzDoClient : IAzDoClient, IDisposable
 
         foreach (var statusFilter in statusFilters)
         {
-            var url = $"_apis/build/builds?api-version=7.1&$top=500&queryOrder=queueTimeDescending&statusFilter={statusFilter}";
+            var url =
+                $"_apis/build/builds?api-version=7.1&$top=500&queryOrder=queueTimeDescending&statusFilter={statusFilter}";
 
             if (definitionId.HasValue)
             {
@@ -173,7 +222,10 @@ public class AzDoClient : IAzDoClient, IDisposable
             var response = await _httpClient.GetAsync(url, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var buildsResponse = await response.Content.ReadFromJsonAsync(AzDoJsonContext.Default.BuildsResponse, cancellationToken);
+            var buildsResponse = await response.Content.ReadFromJsonAsync(
+                AzDoJsonContext.Default.BuildsResponse,
+                cancellationToken
+            );
 
             if (buildsResponse?.Value != null)
             {
@@ -183,57 +235,86 @@ public class AzDoClient : IAzDoClient, IDisposable
 
         // Filter by commit SHA (case-insensitive prefix match to handle short SHAs)
         return allBuilds
-            .Where(b => b.SourceVersion != null &&
-                       (b.SourceVersion.StartsWith(commitSha, StringComparison.OrdinalIgnoreCase) ||
-                        commitSha.StartsWith(b.SourceVersion, StringComparison.OrdinalIgnoreCase)))
+            .Where(b =>
+                b.SourceVersion != null
+                && (
+                    b.SourceVersion.StartsWith(commitSha, StringComparison.OrdinalIgnoreCase)
+                    || commitSha.StartsWith(b.SourceVersion, StringComparison.OrdinalIgnoreCase)
+                )
+            )
             .ToList();
     }
 
-    public async Task<IReadOnlyList<Build>> GetActiveBuildsAsync(int definitionId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Build>> GetActiveBuildsAsync(
+        int definitionId,
+        CancellationToken cancellationToken = default
+    )
     {
         // Query specifically for in-progress and not-started builds
-        var url = $"_apis/build/builds?api-version=7.1&definitions={definitionId}&statusFilter=inProgress,notStarted&queryOrder=queueTimeDescending&$top=50";
+        var url =
+            $"_apis/build/builds?api-version=7.1&definitions={definitionId}&statusFilter=inProgress,notStarted&queryOrder=queueTimeDescending&$top=50";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var buildsResponse = await response.Content.ReadFromJsonAsync(AzDoJsonContext.Default.BuildsResponse, cancellationToken);
+        var buildsResponse = await response.Content.ReadFromJsonAsync(
+            AzDoJsonContext.Default.BuildsResponse,
+            cancellationToken
+        );
 
         return buildsResponse?.Value ?? [];
     }
 
-    public async Task<IReadOnlyList<Build>> GetRecentBuildsAsync(int definitionId, int top = 10, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Build>> GetRecentBuildsAsync(
+        int definitionId,
+        int top = 10,
+        CancellationToken cancellationToken = default
+    )
     {
         // Query completed builds, ordered by finish time descending
-        var url = $"_apis/build/builds?api-version=7.1&definitions={definitionId}&statusFilter=completed&queryOrder=finishTimeDescending&$top={top}";
+        var url =
+            $"_apis/build/builds?api-version=7.1&definitions={definitionId}&statusFilter=completed&queryOrder=finishTimeDescending&$top={top}";
 
         var response = await _httpClient.GetAsync(url, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var buildsResponse = await response.Content.ReadFromJsonAsync(AzDoJsonContext.Default.BuildsResponse, cancellationToken);
+        var buildsResponse = await response.Content.ReadFromJsonAsync(
+            AzDoJsonContext.Default.BuildsResponse,
+            cancellationToken
+        );
 
         return buildsResponse?.Value ?? [];
     }
 
-    public async Task<Build> QueueBuildAsync(int definitionId, string commitSha, string? sourceBranch = null, CancellationToken cancellationToken = default)
+    public async Task<Build> QueueBuildAsync(
+        int definitionId,
+        string commitSha,
+        string? sourceBranch = null,
+        CancellationToken cancellationToken = default
+    )
     {
         var request = new QueueBuildRequest
         {
             Definition = new BuildDefinitionReference { Id = definitionId },
             SourceVersion = commitSha,
-            SourceBranch = sourceBranch
+            SourceBranch = sourceBranch,
         };
 
         var response = await _httpClient.PostAsJsonAsync(
             "_apis/build/builds?api-version=7.1",
             request,
             AzDoJsonContext.Default.QueueBuildRequest,
-            cancellationToken);
+            cancellationToken
+        );
 
         response.EnsureSuccessStatusCode();
 
-        var build = await response.Content.ReadFromJsonAsync(AzDoJsonContext.Default.Build, cancellationToken);
-        return build ?? throw new InvalidOperationException("Failed to queue build - no response received");
+        var build = await response.Content.ReadFromJsonAsync(
+            AzDoJsonContext.Default.Build,
+            cancellationToken
+        );
+        return build
+            ?? throw new InvalidOperationException("Failed to queue build - no response received");
     }
 
     public void Dispose()
@@ -284,12 +365,15 @@ internal class BuildDefinitionReference
 /// </summary>
 [JsonSourceGenerationOptions(
     PropertyNameCaseInsensitive = true,
-    Converters = [typeof(JsonStringEnumConverter<BuildStatus>), typeof(JsonStringEnumConverter<BuildResult>), typeof(JsonStringEnumConverter<TestOutcome>)])]
+    Converters = [
+        typeof(JsonStringEnumConverter<BuildStatus>),
+        typeof(JsonStringEnumConverter<BuildResult>),
+        typeof(JsonStringEnumConverter<TestOutcome>),
+    ]
+)]
 [JsonSerializable(typeof(Build))]
 [JsonSerializable(typeof(TestRunsResponse))]
 [JsonSerializable(typeof(TestResultsResponse))]
 [JsonSerializable(typeof(BuildsResponse))]
 [JsonSerializable(typeof(QueueBuildRequest))]
-internal partial class AzDoJsonContext : JsonSerializerContext
-{
-}
+internal partial class AzDoJsonContext : JsonSerializerContext { }

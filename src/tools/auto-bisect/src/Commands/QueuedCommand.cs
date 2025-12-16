@@ -7,11 +7,19 @@ namespace AutoBisect.Commands;
 
 internal static class QueuedCommand
 {
-    public static async Task HandleAsync(string org, string project, string pat, int definitionId, bool showAll)
+    public static async Task HandleAsync(
+        string org,
+        string project,
+        string pat,
+        int definitionId,
+        bool showAll
+    )
     {
         if (string.IsNullOrWhiteSpace(pat))
         {
-            Console.Error.WriteLine("Error: PAT is required. Use --pat or set AZDO_PAT environment variable.");
+            Console.Error.WriteLine(
+                "Error: PAT is required. Use --pat or set AZDO_PAT environment variable."
+            );
             Environment.ExitCode = 1;
             return;
         }

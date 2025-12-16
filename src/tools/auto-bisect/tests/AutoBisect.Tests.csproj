@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -18,5 +17,4 @@
   <ItemGroup>
     <ProjectReference Include="..\src\auto-bisect.csproj" />
   </ItemGroup>
-
 </Project>

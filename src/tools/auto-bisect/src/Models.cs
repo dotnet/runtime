@@ -50,7 +50,7 @@ public enum BuildStatus
     Cancelling,
     Postponed,
     NotStarted,
-    All
+    All,
 }
 
 public enum BuildResult
@@ -59,7 +59,7 @@ public enum BuildResult
     Succeeded,
     PartiallySucceeded,
     Failed,
-    Canceled
+    Canceled,
 }
 
 /// <summary>
@@ -98,7 +98,7 @@ public enum TestOutcome
     NotApplicable,
     Paused,
     InProgress,
-    NotImpacted
+    NotImpacted,
 }
 
 /// <summary>
@@ -127,7 +127,8 @@ public static class TestDiffer
     /// </summary>
     public static TestFailureDiff ComputeDiff(
         IEnumerable<TestResult> goodBuildFailures,
-        IEnumerable<TestResult> badBuildFailures)
+        IEnumerable<TestResult> badBuildFailures
+    )
     {
         var goodFailures = goodBuildFailures
             .Select(t => t.FullyQualifiedName)
@@ -152,7 +153,7 @@ public static class TestDiffer
         return new TestFailureDiff
         {
             NewFailures = newFailures,
-            ConsistentFailures = consistentFailures
+            ConsistentFailures = consistentFailures,
         };
     }
 }

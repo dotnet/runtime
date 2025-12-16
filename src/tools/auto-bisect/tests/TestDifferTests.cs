@@ -1,6 +1,6 @@
-using Xunit;
-using AutoBisect;
 using System.Collections.Generic;
+using AutoBisect;
+using Xunit;
 
 namespace AutoBisect.Tests;
 

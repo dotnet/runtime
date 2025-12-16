@@ -11,16 +11,24 @@ namespace AutoBisect.Commands;
 
 internal static class BisectCommand
 {
-    public static async Task<int> HandleAsync(CancellationToken cancellationToken,
-        string org, string project, string pat,
-        int goodBuildId, int badBuildId,
-        string testName, string repoPath,
-        bool manual, int pollInterval)
+    public static async Task<int> HandleAsync(
+        CancellationToken cancellationToken,
+        string org,
+        string project,
+        string pat,
+        int goodBuildId,
+        int badBuildId,
+        string testName,
+        string repoPath,
+        bool manual,
+        int pollInterval
+    )
     {
-
         if (string.IsNullOrWhiteSpace(pat))
         {
-            Console.Error.WriteLine("Error: PAT is required. Use --pat or set AZDO_PAT environment variable.");
+            Console.Error.WriteLine(
+                "Error: PAT is required. Use --pat or set AZDO_PAT environment variable."
+            );
             Environment.ExitCode = 1;
             return 1;
         }
@@ -30,13 +38,17 @@ internal static class BisectCommand
         // Get build info for good and bad builds
         Build? goodBuild = null;
         Build? badBuild = null;
-        await AnsiConsole.Status()
+        await AnsiConsole
+            .Status()
             .Spinner(Spinner.Known.Dots)
-            .StartAsync("[yellow]Fetching build information...[/]", async ctx =>
-            {
-                goodBuild = await client.GetBuildAsync(goodBuildId, cancellationToken);
-                badBuild = await client.GetBuildAsync(badBuildId, cancellationToken);
-            });
+            .StartAsync(
+                "[yellow]Fetching build information...[/]",
+                async ctx =>
+                {
+                    goodBuild = await client.GetBuildAsync(goodBuildId, cancellationToken);
+                    badBuild = await client.GetBuildAsync(badBuildId, cancellationToken);
+                }
+            );
 
         if (goodBuild == null)
         {
@@ -81,20 +93,27 @@ internal static class BisectCommand
             .AddRow("Pipeline", $"{badBuild.Definition?.Name} ({definitionId})")
             .AddRow("Test", $"[yellow]{testName}[/]")
             .AddRow("Mode", manual ? "Manual" : "Auto-queue");
-        
+
         AnsiConsole.Write(configTable);
         AnsiConsole.WriteLine();
 
         // Verify the test actually fails in the bad build
         List<TestResult> badFailures = [];
-        await AnsiConsole.Status()
+        await AnsiConsole
+            .Status()
             .Spinner(Spinner.Known.Dots)
-            .StartAsync("[yellow]Verifying test fails in bad build...[/]", async ctx =>
-            {
-                badFailures = (await client.GetFailedTestsAsync(badBuildId, cancellationToken)).ToList();
-            });
+            .StartAsync(
+                "[yellow]Verifying test fails in bad build...[/]",
+                async ctx =>
+                {
+                    badFailures = (
+                        await client.GetFailedTestsAsync(badBuildId, cancellationToken)
+                    ).ToList();
+                }
+            );
         var matchingFailure = badFailures.FirstOrDefault(t =>
-            t.FullyQualifiedName.Contains(testName, StringComparison.OrdinalIgnoreCase));
+            t.FullyQualifiedName.Contains(testName, StringComparison.OrdinalIgnoreCase)
+        );
 
         if (matchingFailure == null)
         {
@@ -117,18 +136,27 @@ internal static class BisectCommand
 
         // Verify the test passes (or doesn't exist) in the good build
         List<TestResult> goodFailures = [];
-        await AnsiConsole.Status()
+        await AnsiConsole
+            .Status()
             .Spinner(Spinner.Known.Dots)
-            .StartAsync("[yellow]Verifying test passes in good build...[/]", async ctx =>
-            {
-                goodFailures = (await client.GetFailedTestsAsync(goodBuildId, cancellationToken)).ToList();
-            });
+            .StartAsync(
+                "[yellow]Verifying test passes in good build...[/]",
+                async ctx =>
+                {
+                    goodFailures = (
+                        await client.GetFailedTestsAsync(goodBuildId, cancellationToken)
+                    ).ToList();
+                }
+            );
         var goodMatchingFailure = goodFailures.FirstOrDefault(t =>
-            t.FullyQualifiedName.Equals(fullTestName, StringComparison.OrdinalIgnoreCase));
+            t.FullyQualifiedName.Equals(fullTestName, StringComparison.OrdinalIgnoreCase)
+        );
 
         if (goodMatchingFailure != null)
         {
-            Console.Error.WriteLine($"Test '{fullTestName}' is also failing in the good build. Cannot bisect.");
+            Console.Error.WriteLine(
+                $"Test '{fullTestName}' is also failing in the good build. Cannot bisect."
+            );
             Environment.ExitCode = 1;
             return 1;
         }
@@ -138,22 +166,37 @@ internal static class BisectCommand
 
         // Get the list of commits between good and bad
         List<string> commits = [];
-        await AnsiConsole.Status()
+        await AnsiConsole
+            .Status()
             .Spinner(Spinner.Known.Dots)
-            .StartAsync("[yellow]Enumerating commits...[/]", async ctx =>
-            {
-                commits = (await GitHelper.GetCommitRangeAsync(goodCommit, badCommit, repoPath, cancellationToken)).ToList();
-            });
+            .StartAsync(
+                "[yellow]Enumerating commits...[/]",
+                async ctx =>
+                {
+                    commits = (
+                        await GitHelper.GetCommitRangeAsync(
+                            goodCommit,
+                            badCommit,
+                            repoPath,
+                            cancellationToken
+                        )
+                    ).ToList();
+                }
+            );
 
         if (commits.Count == 0)
         {
             Console.Error.WriteLine("No commits found between good and bad builds.");
-            Console.Error.WriteLine("Make sure you're in the correct git repository and have fetched all commits.");
+            Console.Error.WriteLine(
+                "Make sure you're in the correct git repository and have fetched all commits."
+            );
             Environment.ExitCode = 1;
             return 1;
         }
 
-        var panel = new Panel($"[bold]Found {commits.Count} commit(s) to search.[/]\nBisect will require at most [yellow]{Math.Ceiling(Math.Log2(commits.Count + 1))}[/] build(s).")
+        var panel = new Panel(
+            $"[bold]Found {commits.Count} commit(s) to search.[/]\nBisect will require at most [yellow]{Math.Ceiling(Math.Log2(commits.Count + 1))}[/] build(s)."
+        )
             .BorderColor(Color.Green)
             .Header("[bold blue]Bisect Plan[/]");
         AnsiConsole.Write(panel);
@@ -173,26 +216,45 @@ internal static class BisectCommand
             var midIndex = remaining.Count / 2;
             var midCommit = remaining[midIndex];
             var shortSha = await GitHelper.GetShortShaAsync(midCommit, repoPath, cancellationToken);
-            var subject = await GitHelper.GetCommitSubjectAsync(midCommit, repoPath, cancellationToken);
+            var subject = await GitHelper.GetCommitSubjectAsync(
+                midCommit,
+                repoPath,
+                cancellationToken
+            );
 
             AnsiConsole.Write(new Rule($"[bold yellow]Step {step}[/]").RuleStyle("grey"));
-            AnsiConsole.MarkupLine($"Testing commit [cyan]{shortSha}[/] ([yellow]{remaining.Count}[/] commits remaining)");
+            AnsiConsole.MarkupLine(
+                $"Testing commit [cyan]{shortSha}[/] ([yellow]{remaining.Count}[/] commits remaining)"
+            );
             AnsiConsole.MarkupLine($"[dim]{subject.EscapeMarkup()}[/]");
 
             // Check if we already have a build for this commit
-            AnsiConsole.MarkupLine($"[dim]Searching for builds: definition={definitionId.Value}, commit={midCommit[..12]}...[/]");
-            var existingBuilds = await client.FindBuildsAsync(midCommit, definitionId.Value, cancellationToken);
+            AnsiConsole.MarkupLine(
+                $"[dim]Searching for builds: definition={definitionId.Value}, commit={midCommit[..12]}...[/]"
+            );
+            var existingBuilds = await client.FindBuildsAsync(
+                midCommit,
+                definitionId.Value,
+                cancellationToken
+            );
 
             // Debug: show what builds we found
             if (existingBuilds.Count > 0)
             {
-                AnsiConsole.MarkupLine($"[green]✓[/] Found {existingBuilds.Count} existing build(s) for this commit:");
+                AnsiConsole.MarkupLine(
+                    $"[green]✓[/] Found {existingBuilds.Count} existing build(s) for this commit:"
+                );
                 var tree = new Tree("[bold]Builds[/]");
                 foreach (var b in existingBuilds)
                 {
                     var statusColor = b.Status == BuildStatus.Completed ? "green" : "yellow";
-                    var resultColor = b.Result == BuildResult.Succeeded ? "green" : b.Result == BuildResult.Failed ? "red" : "yellow";
-                    tree.AddNode($"[{statusColor}]Build {b.Id}[/]: Status=[{statusColor}]{b.Status}[/], Result=[{resultColor}]{b.Result}[/]");
+                    var resultColor =
+                        b.Result == BuildResult.Succeeded ? "green"
+                        : b.Result == BuildResult.Failed ? "red"
+                        : "yellow";
+                    tree.AddNode(
+                        $"[{statusColor}]Build {b.Id}[/]: Status=[{statusColor}]{b.Status}[/], Result=[{resultColor}]{b.Result}[/]"
+                    );
                 }
                 AnsiConsole.Write(tree);
             }
@@ -202,23 +264,38 @@ internal static class BisectCommand
             }
 
             Build? buildToCheck = existingBuilds.FirstOrDefault(b =>
-                b.Status == BuildStatus.Completed &&
-                (b.Result == BuildResult.Succeeded || b.Result == BuildResult.PartiallySucceeded || b.Result == BuildResult.Failed));
+                b.Status == BuildStatus.Completed
+                && (
+                    b.Result == BuildResult.Succeeded
+                    || b.Result == BuildResult.PartiallySucceeded
+                    || b.Result == BuildResult.Failed
+                )
+            );
 
             if (buildToCheck == null)
             {
                 // Check for in-progress builds
                 var inProgressBuild = existingBuilds.FirstOrDefault(b =>
-                    b.Status == BuildStatus.InProgress || b.Status == BuildStatus.NotStarted);
+                    b.Status == BuildStatus.InProgress || b.Status == BuildStatus.NotStarted
+                );
 
                 if (inProgressBuild != null)
                 {
-                    AnsiConsole.MarkupLine($"[yellow]⏳[/] Build {inProgressBuild.Id} is in progress...");
-                    buildToCheck = await BuildUtilities.WaitForBuildAsync(client, inProgressBuild.Id, pollInterval, cancellationToken);
+                    AnsiConsole.MarkupLine(
+                        $"[yellow]⏳[/] Build {inProgressBuild.Id} is in progress..."
+                    );
+                    buildToCheck = await BuildUtilities.WaitForBuildAsync(
+                        client,
+                        inProgressBuild.Id,
+                        pollInterval,
+                        cancellationToken
+                    );
                 }
                 else if (manual)
                 {
-                    var manualPanel = new Panel($"[yellow]No existing build found.[/]\n\nQueue a build for commit: [cyan]{midCommit}[/]\n\nOnce the build completes, re-run this command to continue bisecting.")
+                    var manualPanel = new Panel(
+                        $"[yellow]No existing build found.[/]\n\nQueue a build for commit: [cyan]{midCommit}[/]\n\nOnce the build completes, re-run this command to continue bisecting."
+                    )
                         .BorderColor(Color.Yellow)
                         .Header("[bold]Manual Action Required[/]");
                     AnsiConsole.Write(manualPanel);
@@ -230,27 +307,47 @@ internal static class BisectCommand
                     try
                     {
                         Build? newBuild = null;
-                        await AnsiConsole.Status()
+                        await AnsiConsole
+                            .Status()
                             .Spinner(Spinner.Known.Dots)
-                            .StartAsync("[yellow]Queuing new build...[/]", async ctx =>
-                            {
-                                newBuild = await client.QueueBuildAsync(definitionId.Value, midCommit, sourceBranch, cancellationToken);
-                            });
-                        
+                            .StartAsync(
+                                "[yellow]Queuing new build...[/]",
+                                async ctx =>
+                                {
+                                    newBuild = await client.QueueBuildAsync(
+                                        definitionId.Value,
+                                        midCommit,
+                                        sourceBranch,
+                                        cancellationToken
+                                    );
+                                }
+                            );
+
                         if (newBuild != null)
                         {
-                            AnsiConsole.MarkupLine($"[green]✓[/] Queued build [cyan]{newBuild.Id}[/]");
+                            AnsiConsole.MarkupLine(
+                                $"[green]✓[/] Queued build [cyan]{newBuild.Id}[/]"
+                            );
                             if (newBuild.Links?.Web?.Href != null)
                             {
                                 AnsiConsole.MarkupLine($"[link]{newBuild.Links.Web.Href}[/]");
                             }
-                            buildToCheck = await BuildUtilities.WaitForBuildAsync(client, newBuild.Id, pollInterval, cancellationToken);
+                            buildToCheck = await BuildUtilities.WaitForBuildAsync(
+                                client,
+                                newBuild.Id,
+                                pollInterval,
+                                cancellationToken
+                            );
                         }
                     }
                     catch (HttpRequestException ex)
                     {
-                        AnsiConsole.MarkupLine($"[red]✗[/] Failed to queue build: {ex.Message.EscapeMarkup()}");
-                        AnsiConsole.MarkupLine("[yellow]Try running with --manual mode or queue the build manually.[/]");
+                        AnsiConsole.MarkupLine(
+                            $"[red]✗[/] Failed to queue build: {ex.Message.EscapeMarkup()}"
+                        );
+                        AnsiConsole.MarkupLine(
+                            "[yellow]Try running with --manual mode or queue the build manually.[/]"
+                        );
                         Environment.ExitCode = 1;
                         return 1;
                     }
@@ -258,8 +355,13 @@ internal static class BisectCommand
             }
             else
             {
-                var resultColor = buildToCheck.Result == BuildResult.Succeeded ? "green" : buildToCheck.Result == BuildResult.Failed ? "red" : "yellow";
-                AnsiConsole.MarkupLine($"[green]✓[/] Found existing build: [cyan]{buildToCheck.Id}[/] ([{resultColor}]{buildToCheck.Result}[/])");
+                var resultColor =
+                    buildToCheck.Result == BuildResult.Succeeded ? "green"
+                    : buildToCheck.Result == BuildResult.Failed ? "red"
+                    : "yellow";
+                AnsiConsole.MarkupLine(
+                    $"[green]✓[/] Found existing build: [cyan]{buildToCheck.Id}[/] ([{resultColor}]{buildToCheck.Result}[/])"
+                );
             }
 
             if (buildToCheck == null)
@@ -269,18 +371,11 @@ internal static class BisectCommand
                 return 1;
             }
 
-            // Check if build was successful enough to have test results
-            if (buildToCheck.Result == BuildResult.Failed)
-            {
-                AnsiConsole.MarkupLine($"[yellow]⚠[/] Build failed (not test failures). Treating as inconclusive, trying next commit...");
-                // Remove this commit from consideration and continue
-                remaining.RemoveAt(midIndex);
-                step++;
-                continue;
-            }
-
+            // Check test results - build failures can be due to test failures
             var failures = await client.GetFailedTestsAsync(buildToCheck.Id, cancellationToken);
-            var testFailed = failures.Any(t => t.FullyQualifiedName.Equals(fullTestName, StringComparison.OrdinalIgnoreCase));
+            var testFailed = failures.Any(t =>
+                t.FullyQualifiedName.Equals(fullTestName, StringComparison.OrdinalIgnoreCase)
+            );
 
             testedCommits[midCommit] = testFailed;
             var resultIcon = testFailed ? "[red]✗ FAILED[/]" : "[green]✓ PASSED[/]";
@@ -303,16 +398,27 @@ internal static class BisectCommand
 
         // Found the culprit
         var culpritCommit = remaining[0];
-        var culpritShortSha = await GitHelper.GetShortShaAsync(culpritCommit, repoPath, cancellationToken);
-        var culpritSubject = await GitHelper.GetCommitSubjectAsync(culpritCommit, repoPath, cancellationToken);
+        var culpritShortSha = await GitHelper.GetShortShaAsync(
+            culpritCommit,
+            repoPath,
+            cancellationToken
+        );
+        var culpritSubject = await GitHelper.GetCommitSubjectAsync(
+            culpritCommit,
+            repoPath,
+            cancellationToken
+        );
 
         var resultPanel = new Panel(
-            new Markup($"[bold red]First bad commit:[/] [cyan]{culpritShortSha}[/]\n\n" +
-                       $"[dim]{culpritSubject.EscapeMarkup()}[/]\n\n" +
-                       $"[bold]Full SHA:[/] [cyan]{culpritCommit}[/]"))
+            new Markup(
+                $"[bold red]First bad commit:[/] [cyan]{culpritShortSha}[/]\n\n"
+                    + $"[dim]{culpritSubject.EscapeMarkup()}[/]\n\n"
+                    + $"[bold]Full SHA:[/] [cyan]{culpritCommit}[/]"
+            )
+        )
             .BorderColor(Color.Red)
             .Header("[bold red]🔍 BISECT RESULT[/]");
-        
+
         AnsiConsole.Write(resultPanel);
         return 0;
     }

@@ -1,6 +1,6 @@
-using Xunit;
-using AutoBisect;
 using System.Collections.Generic;
+using AutoBisect;
+using Xunit;
 
 namespace AutoBisect.Tests;
 
@@ -14,7 +14,7 @@ public class ModelsTests
         {
             Id = 1,
             AutomatedTestName = "MyNamespace.MyClass.MyTest",
-            TestCaseTitle = "My Test Title"
+            TestCaseTitle = "My Test Title",
         };
 
         // Assert
@@ -29,7 +29,7 @@ public class ModelsTests
         {
             Id = 1,
             AutomatedTestName = null,
-            TestCaseTitle = "My Test Title"
+            TestCaseTitle = "My Test Title",
         };
 
         // Assert
@@ -44,7 +44,7 @@ public class ModelsTests
         {
             Id = 42,
             AutomatedTestName = null,
-            TestCaseTitle = null
+            TestCaseTitle = null,
         };
 
         // Assert
@@ -72,7 +72,7 @@ public class ModelsTests
         var diff = new TestFailureDiff
         {
             NewFailures = new List<string> { "Test1", "Test2" },
-            ConsistentFailures = new List<string>()
+            ConsistentFailures = new List<string>(),
         };
 
         // Assert

@@ -8,21 +8,21 @@ var rootCommand = new RootCommand("Azure DevOps bisect tool for finding test reg
 var orgOption = new Option<string>("--organization")
 {
     Description = "Azure DevOps organization name",
-    Required = true
+    Required = true,
 };
 orgOption.Aliases.Add("-o");
 
 var projectOption = new Option<string>("--project")
 {
     Description = "Azure DevOps project name",
-    Required = true
+    Required = true,
 };
 projectOption.Aliases.Add("-p");
 
 var patOption = new Option<string>("--pat")
 {
     Description = "Personal Access Token (or set AZDO_PAT environment variable)",
-    DefaultValueFactory = _ => Environment.GetEnvironmentVariable("AZDO_PAT") ?? ""
+    DefaultValueFactory = _ => Environment.GetEnvironmentVariable("AZDO_PAT") ?? "",
 };
 
 orgOption.Recursive = true;
@@ -45,10 +45,7 @@ return rootCommand.Parse(args).InvokeAsync().GetAwaiter().GetResult();
 Command CreateBuildCommand()
 {
     var command = new Command("build", "Get information about a build");
-    var buildIdArgument = new Argument<int>("build-id")
-    {
-        Description = "The build ID to fetch"
-    };
+    var buildIdArgument = new Argument<int>("build-id") { Description = "The build ID to fetch" };
 
     command.Arguments.Add(buildIdArgument);
     command.SetAction(parseResult =>
@@ -68,7 +65,7 @@ Command CreateTestsCommand()
     var command = new Command("tests", "Get failed test results for a build");
     var buildIdArgument = new Argument<int>("build-id")
     {
-        Description = "The build ID to fetch failed test results for"
+        Description = "The build ID to fetch failed test results for",
     };
 
     command.Arguments.Add(buildIdArgument);
@@ -91,14 +88,14 @@ Command CreateDiffCommand()
     var goodBuildOption = new Option<int>("--good")
     {
         Description = "Build ID of the known good build",
-        Required = true
+        Required = true,
     };
     goodBuildOption.Aliases.Add("-g");
-    
+
     var badBuildOption = new Option<int>("--bad")
     {
         Description = "Build ID of the known bad build",
-        Required = true
+        Required = true,
     };
     badBuildOption.Aliases.Add("-b");
 
@@ -124,13 +121,13 @@ Command CreateQueuedCommand()
     var definitionIdOption = new Option<int>("--definition")
     {
         Description = "Build definition ID to filter by",
-        Required = true
+        Required = true,
     };
     definitionIdOption.Aliases.Add("-d");
-    
+
     var showAllOption = new Option<bool>("--all")
     {
-        Description = "Show recent completed builds as well"
+        Description = "Show recent completed builds as well",
     };
     showAllOption.Aliases.Add("-a");
 
@@ -156,41 +153,41 @@ Command CreateBisectCommand()
     var goodBuildOption = new Option<int>("--good")
     {
         Description = "Build ID of the known good build (test passes)",
-        Required = true
+        Required = true,
     };
     goodBuildOption.Aliases.Add("-g");
-    
+
     var badBuildOption = new Option<int>("--bad")
     {
         Description = "Build ID of the known bad build (test fails)",
-        Required = true
+        Required = true,
     };
     badBuildOption.Aliases.Add("-b");
-    
+
     var testNameOption = new Option<string>("--test")
     {
         Description = "Fully qualified name of the test to track (or substring to match)",
-        Required = true
+        Required = true,
     };
     testNameOption.Aliases.Add("-t");
-    
+
     var repoPathOption = new Option<string>("--repo")
     {
         Description = "Path to the git repository (defaults to current directory)",
-        DefaultValueFactory = _ => Environment.CurrentDirectory
+        DefaultValueFactory = _ => Environment.CurrentDirectory,
     };
     repoPathOption.Aliases.Add("-r");
-    
+
     var manualOption = new Option<bool>("--manual")
     {
-        Description = "Don't auto-queue builds; just report what needs to be done"
+        Description = "Don't auto-queue builds; just report what needs to be done",
     };
     manualOption.Aliases.Add("-m");
-    
+
     var pollIntervalOption = new Option<int>("--poll-interval")
     {
         Description = "Seconds between polling for build completion",
-        DefaultValueFactory = _ => 300
+        DefaultValueFactory = _ => 300,
     };
 
     command.Options.Add(goodBuildOption);
@@ -200,22 +197,33 @@ Command CreateBisectCommand()
     command.Options.Add(manualOption);
     command.Options.Add(pollIntervalOption);
 
-    command.SetAction((parseResult, cancellationToken) =>
-    {
-        var org = parseResult.GetValue(orgOption)!;
-        var project = parseResult.GetValue(projectOption)!;
-        var pat = parseResult.GetValue(patOption)!;
-        var goodBuildId = parseResult.GetValue(goodBuildOption);
-        var badBuildId = parseResult.GetValue(badBuildOption);
-        var testName = parseResult.GetValue(testNameOption)!;
-        var repoPath = parseResult.GetValue(repoPathOption)!;
-        var manual = parseResult.GetValue(manualOption);
-        var pollInterval = parseResult.GetValue(pollIntervalOption);
+    command.SetAction(
+        (parseResult, cancellationToken) =>
+        {
+            var org = parseResult.GetValue(orgOption)!;
+            var project = parseResult.GetValue(projectOption)!;
+            var pat = parseResult.GetValue(patOption)!;
+            var goodBuildId = parseResult.GetValue(goodBuildOption);
+            var badBuildId = parseResult.GetValue(badBuildOption);
+            var testName = parseResult.GetValue(testNameOption)!;
+            var repoPath = parseResult.GetValue(repoPathOption)!;
+            var manual = parseResult.GetValue(manualOption);
+            var pollInterval = parseResult.GetValue(pollIntervalOption);
 
-        return BisectCommand.HandleAsync(cancellationToken, org, project, pat,
-            goodBuildId, badBuildId, testName, repoPath, manual, pollInterval);
-    });
+            return BisectCommand.HandleAsync(
+                cancellationToken,
+                org,
+                project,
+                pat,
+                goodBuildId,
+                badBuildId,
+                testName,
+                repoPath,
+                manual,
+                pollInterval
+            );
+        }
+    );
 
     return command;
 }
-

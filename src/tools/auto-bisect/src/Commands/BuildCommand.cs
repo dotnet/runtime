@@ -14,19 +14,25 @@ internal static class BuildCommand
     {
         if (string.IsNullOrWhiteSpace(pat))
         {
-            Console.Error.WriteLine("Error: PAT is required. Use --pat or set AZDO_PAT environment variable.");
+            Console.Error.WriteLine(
+                "Error: PAT is required. Use --pat or set AZDO_PAT environment variable."
+            );
             Environment.ExitCode = 1;
             return;
         }
 
         using var client = new AzDoClient(org, project, pat);
         Build? build = null;
-        await AnsiConsole.Status()
+        await AnsiConsole
+            .Status()
             .Spinner(Spinner.Known.Dots)
-            .StartAsync("[yellow]Fetching build information...[/]", async ctx =>
-            {
-                build = await client.GetBuildAsync(buildId);
-            });
+            .StartAsync(
+                "[yellow]Fetching build information...[/]",
+                async ctx =>
+                {
+                    build = await client.GetBuildAsync(buildId);
+                }
+            );
 
         if (build == null)
         {
@@ -36,7 +42,10 @@ internal static class BuildCommand
         }
 
         var statusColor = build.Status == BuildStatus.Completed ? "green" : "yellow";
-        var resultColor = build.Result == BuildResult.Succeeded ? "green" : build.Result == BuildResult.Failed ? "red" : "yellow";
+        var resultColor =
+            build.Result == BuildResult.Succeeded ? "green"
+            : build.Result == BuildResult.Failed ? "red"
+            : "yellow";
 
         var table = new Table()
             .Border(TableBorder.Rounded)
@@ -53,12 +62,12 @@ internal static class BuildCommand
             .AddRow("Queue Time", build.QueueTime?.ToString() ?? "N/A")
             .AddRow("Start Time", build.StartTime?.ToString() ?? "N/A")
             .AddRow("Finish Time", build.FinishTime?.ToString() ?? "N/A");
-        
+
         if (build.Links?.Web?.Href != null)
         {
             table.AddRow("Web URL", $"[link]{build.Links.Web.Href}[/]");
         }
-        
+
         AnsiConsole.Write(table);
 
         // Fetch and display test failures if the build has completed
@@ -66,19 +75,24 @@ internal static class BuildCommand
         {
             AnsiConsole.WriteLine();
             List<TestResult> failedTests = [];
-            await AnsiConsole.Status()
+            await AnsiConsole
+                .Status()
                 .Spinner(Spinner.Known.Dots)
-                .StartAsync("[yellow]Fetching failed tests...[/]", async ctx =>
-                {
-                    try
+                .StartAsync(
+                    "[yellow]Fetching failed tests...[/]",
+                    async ctx =>
                     {
-                        failedTests = (await client.GetFailedTestsAsync(buildId)).ToList();
+                        try
+                        {
+                            failedTests = (await client.GetFailedTestsAsync(buildId)).ToList();
+                        }
+                        catch (HttpRequestException ex)
+                            when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                        {
+                            // Will handle below
+                        }
                     }
-                    catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                    {
-                        // Will handle below
-                    }
-                });
+                );
 
             if (failedTests.Count > 0)
             {
@@ -100,9 +114,12 @@ internal static class BuildCommand
                         }
                         errorMsg = $"[dim]{firstLine.EscapeMarkup()}[/]";
                     }
-                    testTable.AddRow($"[red]✗[/] {test.FullyQualifiedName.EscapeMarkup()}", errorMsg);
+                    testTable.AddRow(
+                        $"[red]✗[/] {test.FullyQualifiedName.EscapeMarkup()}",
+                        errorMsg
+                    );
                 }
-                
+
                 AnsiConsole.Write(testTable);
             }
             else if (failedTests.Count == 0)
