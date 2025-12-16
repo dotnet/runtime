@@ -103,7 +103,7 @@ namespace Internal.IL
         /// </summary>
         public static MetadataType GetKnownNestedType(this MetadataType type, string name)
         {
-            MetadataType nestedType = type.GetNestedType(name);
+            MetadataType nestedType = type.GetNestedType(Encoding.UTF8.GetBytes(name));
             if (nestedType == null)
             {
                 throw new InvalidOperationException(string.Format("Expected type '{0}' not found on type '{1}'", name, type));

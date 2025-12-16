@@ -485,7 +485,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override EcmaType GetNestedType(string name)
+        public override EcmaType GetNestedType(ReadOnlySpan<byte> name)
         {
             var metadataReader = this.MetadataReader;
             var stringComparer = metadataReader.StringComparer;
@@ -496,13 +496,13 @@ namespace Internal.TypeSystem.Ecma
                 TypeDefinition type = metadataReader.GetTypeDefinition(handle);
                 if (type.Namespace.IsNil)
                 {
-                    nameMatched = stringComparer.Equals(type.Name, name);
+                    nameMatched = stringComparer.Equals(type.Name, System.Text.Encoding.UTF8.GetString(name));
                 }
                 else
                 {
-                    string typeName = metadataReader.GetString(type.Name);
-                    typeName = metadataReader.GetString(type.Namespace) + "." + typeName;
-                    nameMatched = typeName == name;
+                    ReadOnlySpan<byte> typeName = metadataReader.GetStringBytes(type.Name);
+                    typeName = metadataReader.GetStringBytes(type.Namespace).Append("."u8, typeName);
+                    nameMatched = typeName.SequenceEqual(name);
                 }
 
                 if (nameMatched)
