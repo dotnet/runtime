@@ -295,19 +295,12 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
     if (!pMeth)
         COMPlusThrow(kArgumentNullException);
 
+    // Should not have come here.
+    _ASSERTE(!pMeth->IsArray());
+    // Async variants should be hidden from reflection.
+    _ASSERTE(!pMeth->IsAsyncVariantMethod());
+
     // Otherwise, we want to return memberref token.
-    if (pMeth->IsArray())
-    {
-        _ASSERTE(!"Should not have come here!");
-        COMPlusThrow(kNotSupportedException);
-    }
-
-    if (pMeth->IsAsyncVariantMethod())
-    {
-        _ASSERTE(!"Async variants should be hidden from reflection.");
-        COMPlusThrow(kNotSupportedException);
-    }
-
     if ((pMeth->GetMethodTable()->GetModule() == pModule))
     {
         // If the passed in method is defined in the same module, just return the MethodDef token
