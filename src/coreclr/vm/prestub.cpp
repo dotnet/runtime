@@ -2372,7 +2372,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         {
             return pCode;
         }
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
         SetCodeEntryPoint(pCode);
     }
