@@ -23,10 +23,9 @@
 // InterpreterExecutionControl - Interpreter bytecode breakpoints
 //=============================================================================
 
-InterpreterExecutionControl InterpreterExecutionControl::s_instance;
-
 InterpreterExecutionControl* InterpreterExecutionControl::GetInstance()
 {
+    static InterpreterExecutionControl s_instance;
     return &s_instance;
 }
 

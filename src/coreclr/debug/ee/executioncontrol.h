@@ -26,8 +26,6 @@ public:
     virtual bool UnapplyPatch(DebuggerControllerPatch* patch) = 0;
 };
 
-typedef DPTR(IExecutionControl) PTR_IExecutionControl;
-
 // Interpreter execution control using bytecode patching
 class InterpreterExecutionControl : public IExecutionControl
 {
