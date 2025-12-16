@@ -5,7 +5,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.CommandLine;
-using AzdoBisect;
+using AutoBisect;
 
 var rootCommand = new RootCommand("Azure DevOps bisect tool for finding test regressions");
 

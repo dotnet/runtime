@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\azdo-bisect.csproj" />
+    <ProjectReference Include="..\src\auto-bisect.csproj" />
   </ItemGroup>
 
 </Project>

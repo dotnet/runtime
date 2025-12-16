@@ -1,8 +1,8 @@
-# Azure DevOps Bisect Tool - Test Strategy Document
+# Auto Bisect Tool - Test Strategy Document
 
 ## Overview
 
-This document outlines the testing strategy for the `azdo-bisect` tool. Given the tool's reliance on external services (Azure DevOps API) and long-running operations, the testing approach emphasizes:
+This document outlines the testing strategy for the `auto-bisect` tool. Given the tool's reliance on external services (Azure DevOps API) and long-running operations, the testing approach emphasizes:
 
 1. **Unit tests** for core logic with mocked dependencies
 2. **Integration tests** with recorded HTTP responses
@@ -136,7 +136,7 @@ For integration tests, record real API responses:
 
 ```bash
 # Record mode
-AZDO_BISECT_RECORD_MODE=true dotnet test --filter Category=Integration
+AUTO_BISECT_RECORD_MODE=true dotnet test --filter Category=Integration
 
 # Playback mode (default)
 dotnet test --filter Category=Integration
@@ -309,7 +309,7 @@ public async Task AzDO_FetchResults() { }
 
 ```
 /test/
-├── AzdoBisect.Tests/
+├── AutoBisect.Tests/
 │   ├── Unit/
 │   │   ├── BisectAlgorithmTests.cs
 │   │   ├── TrisectAlgorithmTests.cs
@@ -330,5 +330,5 @@ public async Task AzDO_FetchResults() { }
 │   └── TestData/
 │       ├── SampleSessions/
 │       └── SampleTestResults/
-└── AzdoBisect.Tests.csproj
+└── AutoBisect.Tests.csproj
 ```

@@ -9,7 +9,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace AzdoBisect;
+namespace AutoBisect;
 
 /// <summary>
 /// Interface for Azure DevOps API client operations.

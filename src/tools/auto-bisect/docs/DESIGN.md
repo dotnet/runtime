@@ -1,8 +1,8 @@
-# Azure DevOps Bisect Tool - Design Document
+# Auto Bisect Tool - Design Document
 
 ## Overview
 
-The Azure DevOps Bisect Tool (`azdo-bisect`) is a command-line utility designed to identify the root cause of test regressions in outer-loop CI pipelines. It automates the bisection process by:
+The Auto Bisect Tool (`auto-bisect`) is a command-line utility designed to identify the root cause of test regressions in outer-loop CI pipelines. It automates the bisection process by:
 
 1. Comparing test failures between two Azure DevOps build runs
 2. Allowing users to select a specific failing test to isolate
@@ -159,7 +159,7 @@ public class TestFailureDiff
 ### 1. Starting a Bisect Session
 
 ```
-User runs: azdo-bisect start --good <build-id> --bad <build-id>
+User runs: auto-bisect start --good <build-id> --bad <build-id>
 
 1. Fetch test results from both builds via AzDO API
 2. Compute diff of failing tests
@@ -213,7 +213,7 @@ while remaining_commits.length > 1:
 ### 3. Resuming a Session
 
 ```
-User runs: azdo-bisect resume [session-id]
+User runs: auto-bisect resume [session-id]
 
 1. Load BisectSession from disk
 2. Check status of any pending builds
@@ -227,16 +227,16 @@ User runs: azdo-bisect resume [session-id]
 Since builds can take hours:
 - Initial poll: 5 minutes after queue
 - Subsequent polls: exponential backoff up to 15 minutes
-- User can manually trigger status check with `azdo-bisect status`
+- User can manually trigger status check with `auto-bisect status`
 - Consider webhook integration for instant notification (future)
 
 ---
 
 ## CLI Commands
 
-### `azdo-bisect start`
+### `auto-bisect start`
 ```
-Usage: azdo-bisect start --good <build-id> --bad <build-id> [options]
+Usage: auto-bisect start --good <build-id> --bad <build-id> [options]
 
 Options:
   --good <build-id>       Build ID where test was passing (required)
@@ -248,9 +248,9 @@ Options:
   --dry-run               Show what would be done without queuing builds
 ```
 
-### `azdo-bisect status`
+### `auto-bisect status`
 ```
-Usage: azdo-bisect status [session-id]
+Usage: auto-bisect status [session-id]
 
 Shows current state of active or specified session:
   - Commits tested and results
@@ -259,9 +259,9 @@ Shows current state of active or specified session:
   - Estimated time to completion
 ```
 
-### `azdo-bisect resume`
+### `auto-bisect resume`
 ```
-Usage: azdo-bisect resume [session-id]
+Usage: auto-bisect resume [session-id]
 
 Resumes a bisect session:
   - Checks pending build status
@@ -269,9 +269,9 @@ Resumes a bisect session:
   - Reports if regression found
 ```
 
-### `azdo-bisect abort`
+### `auto-bisect abort`
 ```
-Usage: azdo-bisect abort [session-id]
+Usage: auto-bisect abort [session-id]
 
 Aborts an active session:
   - Cancels any pending builds
@@ -279,9 +279,9 @@ Aborts an active session:
   - Preserves history for reference
 ```
 
-### `azdo-bisect list`
+### `auto-bisect list`
 ```
-Usage: azdo-bisect list [--all]
+Usage: auto-bisect list [--all]
 
 Lists bisect sessions:
   - Active sessions (default)
@@ -294,7 +294,7 @@ Lists bisect sessions:
 
 ### File Structure
 ```
-~/.azdo-bisect/
+~/.auto-bisect/
 ├── config.json           # Default organization, project, PAT reference
 ├── sessions/
 │   ├── <session-id>.json # Individual session state
@@ -343,14 +343,14 @@ Lists bisect sessions:
 ## Authentication
 
 ### Azure DevOps PAT
-- Stored securely (environment variable `AZDO_PAT` or credential manager)
+- Stored securely (environment variable `AUTO_BISECT_PAT` or credential manager)
 - Required scopes: `Build (Read & Execute)`, `Test Management (Read)`
 - Never persisted in session files
 
 ### Configuration Priority
 1. Command-line arguments
 2. Environment variables
-3. Config file (`~/.azdo-bisect/config.json`)
+3. Config file (`~/.auto-bisect/config.json`)
 
 ---
 

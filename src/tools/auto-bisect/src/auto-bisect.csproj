@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <RootNamespace>AzdoBisect</RootNamespace>
+    <RootNamespace>AutoBisect</RootNamespace>
     <PublishAot>true</PublishAot>
   </PropertyGroup>
 

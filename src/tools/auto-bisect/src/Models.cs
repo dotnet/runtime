@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
 
-namespace AzdoBisect;
+namespace AutoBisect;
 
 /// <summary>
 /// Represents an Azure DevOps build.

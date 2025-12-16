@@ -1,8 +1,8 @@
 using Xunit;
-using AzdoBisect;
+using AutoBisect;
 using System.Collections.Generic;
 
-namespace AzdoBisect.Tests;
+namespace AutoBisect.Tests;
 
 public class ModelsTests
 {
