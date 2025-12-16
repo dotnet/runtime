@@ -742,17 +742,6 @@ public func AppleCryptoNative_HmacClone(ctx: UnsafeMutableRawPointer?) -> Unsafe
     return Unmanaged.passRetained(cloneBox).toOpaque()
 }
 
-/*
-int32_t AppleCryptoNative_HmacOneShot(PAL_HashAlgorithm algorithm,
-                                      const uint8_t* pKey,
-                                      int32_t cbKey,
-                                      const uint8_t* pBuf,
-                                      int32_t cbBuf,
-                                      uint8_t* pOutput,
-                                      int32_t cbOutput,
-                                      int32_t* pcbDigest)
-*/
-
 @_silgen_name("AppleCryptoNative_HmacOneShot")
 public func AppleCryptoNative_HmacOneShot(
     algorithm: Int32,
