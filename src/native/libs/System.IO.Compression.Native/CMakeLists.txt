@@ -79,7 +79,9 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         target_include_directories(System.IO.Compression.Native PRIVATE ${BROTLI_INCLUDE_DIRS})
         target_link_libraries(System.IO.Compression.Native PRIVATE ${BROTLI_LIBRARIES})
 
-        target_link_libraries(System.IO.Compression.Native PRIVATE libzstd_static)
+        if (NOT CLR_CMAKE_USE_SYSTEM_ZSTD)
+            target_link_libraries(System.IO.Compression.Native PRIVATE libzstd_static)
+        endif()
 
         if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
             set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/System.IO.Compression.Native_unixexports.src)
