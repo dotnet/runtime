@@ -426,7 +426,7 @@ namespace ILCompiler
             if (!method.IsNonVersionable())
                 return false;
 
-            return _tokenTranslationFreeNonVersionable.GetOrAdd((EcmaMethod)method.GetTypicalMethodDefinition(), _tokenTranslationFreeNonVersionableUncached);
+            return _tokenTranslationFreeNonVersionable.GetOrAdd(method.GetEcmaDefinition(), _tokenTranslationFreeNonVersionableUncached);
         }
 
         public override bool CrossModuleCompileable(MethodDesc method)
