@@ -895,15 +895,39 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
 {
     assert(treeNode->OperIsCmpCompare());
 
+    genTreeOps op          = treeNode->OperGet();
+    bool       invertSense = false;
+
     if ((treeNode->gtFlags & GTF_RELOP_NAN_UN) != 0)
     {
-        NYI_WASM("genCompareFloat: unordered compares");
+        // We don't expect to see GT_EQ unordered,
+        // since CIL doesn't have this mode.
+        //
+        assert(op != GT_EQ);
+
+        // Wasm float comparisons other than "fne" return false for NaNs.
+        // Our unordered float compares need to return true for NaNs.
+        //
+        // So we can re-express say GT_GE (UN) as !GT_LT
+        //
+        if (op != GT_NE)
+        {
+            op          = GenTree::ReverseRelop(op);
+            invertSense = true;
+        }
+    }
+    else
+    {
+        // We don't expect to see GT_NE ordered,
+        // since CIL doesn't have this mode.
+        //
+        assert(op != GT_NE);
     }
 
     genConsumeOperands(treeNode);
 
     instruction ins;
-    switch (PackOperAndType(treeNode->OperGet(), treeNode->gtOp1->TypeGet()))
+    switch (PackOperAndType(op, treeNode->gtOp1->TypeGet()))
     {
         case PackOperAndType(GT_EQ, TYP_FLOAT):
             ins = INS_f32_eq;
@@ -946,6 +970,12 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
     }
 
     GetEmitter()->emitIns(ins);
+
+    if (invertSense)
+    {
+        GetEmitter()->emitIns(INS_i32_eqz);
+    }
+
     genProduceReg(treeNode);
 }
 

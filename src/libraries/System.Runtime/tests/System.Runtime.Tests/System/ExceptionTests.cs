@@ -109,6 +109,7 @@ namespace System.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/mono/mono/issues/15140", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120055", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public static void ThrowStatementDoesNotResetExceptionStackLineSameMethod()
         {
             (string, string, int) rethrownExceptionStackFrame = (null, null, 0);
@@ -139,6 +140,7 @@ namespace System.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process), nameof(PlatformDetection.HasAssemblyFiles))]
         // [ActiveIssue(https://github.com/dotnet/runtime/issues/1871)] can't use ActiveIssue for archs
         [ActiveIssue("https://github.com/mono/mono/issues/15141", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120055", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsX64Process), nameof(PlatformDetection.IsCoreCLR))]
         public static void ThrowStatementDoesNotResetExceptionStackLineOtherMethod()
         {
             (string, string, int) rethrownExceptionStackFrame = (null, null, 0);
