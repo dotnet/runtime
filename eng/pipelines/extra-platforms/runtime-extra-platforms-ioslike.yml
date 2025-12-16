@@ -168,7 +168,7 @@ jobs:
             buildAllTestsAsStandalone: true
 
 #
-# Build the whole product using CoreCLR and run runtime tests
+# Build the whole product using CoreCLR R2R and run runtime tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -211,7 +211,7 @@ jobs:
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=false
 
 #
-# Build the whole product using CoreCLR and run library tests
+# Build the whole product using CoreCLR R2R and run library tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

@@ -205,7 +205,7 @@ jobs:
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
 
 #
-# Build the whole product using CoreCLR and run runtime tests
+# Build the whole product using CoreCLR R2R and run runtime tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -247,7 +247,7 @@ jobs:
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
 
 #
-# Build the whole product using CoreCLR and run library tests
+# Build the whole product using CoreCLR R2R and run library tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
