@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AutoBisect;
+using Spectre.Console;
 
 namespace AutoBisect.Commands;
 
@@ -17,26 +20,61 @@ internal static class DiffCommand
 
         using var client = new AzDoClient(org, project, pat);
 
-        Console.WriteLine($"Fetching failed tests for build {goodBuildId} (good)...");
-        var goodFailures = await client.GetFailedTestsAsync(goodBuildId);
+        List<TestResult> goodFailures = [];
+        List<TestResult> badFailures = [];
 
-        Console.WriteLine($"Fetching failed tests for build {badBuildId} (bad)...");
-        var badFailures = await client.GetFailedTestsAsync(badBuildId);
+        await AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .StartAsync("[yellow]Fetching test results...[/]", async ctx =>
+            {
+                ctx.Status($"[yellow]Fetching failed tests for build {goodBuildId} (good)...[/]");
+                goodFailures = (await client.GetFailedTestsAsync(goodBuildId)).ToList();
+                
+                ctx.Status($"[yellow]Fetching failed tests for build {badBuildId} (bad)...[/]");
+                badFailures = (await client.GetFailedTestsAsync(badBuildId)).ToList();
+            });
 
         var diff = TestDiffer.ComputeDiff(goodFailures, badFailures);
 
-        Console.WriteLine();
-        Console.WriteLine($"New failures ({diff.NewFailures.Count}):");
-        foreach (var test in diff.NewFailures)
+        var newFailuresTable = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Red)
+            .Title($"[bold red]New Failures ({diff.NewFailures.Count})[/]")
+            .AddColumn("[bold]Test Name[/]");
+        
+        if (diff.NewFailures.Count > 0)
         {
-            Console.WriteLine($"  ✗ {test}");
+            foreach (var test in diff.NewFailures)
+            {
+                newFailuresTable.AddRow($"[red]✗[/] {test.EscapeMarkup()}");
+            }
         }
+        else
+        {
+            newFailuresTable.AddRow("[dim]No new failures[/]");
+        }
+        
+        AnsiConsole.Write(newFailuresTable);
+        AnsiConsole.WriteLine();
 
-        Console.WriteLine();
-        Console.WriteLine($"Consistent failures ({diff.ConsistentFailures.Count}):");
-        foreach (var test in diff.ConsistentFailures)
+        var consistentFailuresTable = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Yellow)
+            .Title($"[bold yellow]Consistent Failures ({diff.ConsistentFailures.Count})[/]")
+            .AddColumn("[bold]Test Name[/]");
+        
+        if (diff.ConsistentFailures.Count > 0)
         {
-            Console.WriteLine($"  - {test}");
+            foreach (var test in diff.ConsistentFailures)
+            {
+                consistentFailuresTable.AddRow($"[yellow]─[/] {test.EscapeMarkup()}");
+            }
         }
+        else
+        {
+            consistentFailuresTable.AddRow("[dim]No consistent failures[/]");
+        }
+        
+        AnsiConsole.Write(consistentFailuresTable);
     }
 }

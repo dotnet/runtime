@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoBisect;
+using Spectre.Console;
 
 namespace AutoBisect;
 
@@ -10,39 +11,61 @@ internal static class BuildUtilities
     public static void PrintBuildInfo(Build build)
     {
         var shortSha = build.SourceVersion?.Substring(0, Math.Min(12, build.SourceVersion?.Length ?? 0)) ?? "unknown";
-        Console.WriteLine($"  Build {build.Id}:");
-        Console.WriteLine($"    Status:   {build.Status}");
-        Console.WriteLine($"    Result:   {build.Result}");
-        Console.WriteLine($"    Commit:   {shortSha}");
-        Console.WriteLine($"    Queued:   {build.QueueTime}");
-        Console.WriteLine($"    Started:  {build.StartTime}");
-        Console.WriteLine($"    Finished: {build.FinishTime}");
-        Console.WriteLine($"    URL:      {build.Links?.Web?.Href}");
-        Console.WriteLine();
+        var statusColor = build.Status == BuildStatus.Completed ? "green" : "yellow";
+        var resultColor = build.Result == BuildResult.Succeeded ? "green" : build.Result == BuildResult.Failed ? "red" : "yellow";
+        
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Blue)
+            .Title($"[bold]Build {build.Id}[/]")
+            .AddColumn("[bold]Property[/]")
+            .AddColumn("[bold]Value[/]")
+            .AddRow("Status", $"[{statusColor}]{build.Status}[/]")
+            .AddRow("Result", $"[{resultColor}]{build.Result}[/]")
+            .AddRow("Commit", $"[cyan]{shortSha}[/]")
+            .AddRow("Queued", build.QueueTime?.ToString() ?? "N/A")
+            .AddRow("Started", build.StartTime?.ToString() ?? "N/A")
+            .AddRow("Finished", build.FinishTime?.ToString() ?? "N/A");
+        
+        if (build.Links?.Web?.Href != null)
+        {
+            table.AddRow("URL", $"[link]{build.Links.Web.Href}[/]");
+        }
+        
+        AnsiConsole.Write(table);
     }
 
     public static async Task<Build?> WaitForBuildAsync(AzDoClient client, int buildId, int pollIntervalSeconds, CancellationToken cancellationToken)
     {
         var startTime = DateTime.UtcNow;
-        while (true)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var build = await client.GetBuildAsync(buildId, cancellationToken);
-            if (build == null)
+        Build? build = null;
+        
+        await AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .StartAsync($"[yellow]Waiting for build {buildId}...[/]", async ctx =>
             {
-                return null;
-            }
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
 
-            if (build.Status == BuildStatus.Completed)
-            {
-                return build;
-            }
+                    build = await client.GetBuildAsync(buildId, cancellationToken);
+                    if (build == null)
+                    {
+                        return;
+                    }
 
-            var elapsed = DateTime.UtcNow - startTime;
-            Console.WriteLine($"         Waiting for build... ({elapsed:hh\\:mm\\:ss} elapsed, status: {build.Status})");
+                    if (build.Status == BuildStatus.Completed)
+                    {
+                        return;
+                    }
 
-            await Task.Delay(TimeSpan.FromSeconds(pollIntervalSeconds), cancellationToken);
-        }
+                    var elapsed = DateTime.UtcNow - startTime;
+                    ctx.Status($"[yellow]Waiting for build {buildId}...[/] ({elapsed:hh\\:mm\\:ss} elapsed, status: {build.Status})");
+
+                    await Task.Delay(TimeSpan.FromSeconds(pollIntervalSeconds), cancellationToken);
+                }
+            });
+        
+        return build;
     }
 }

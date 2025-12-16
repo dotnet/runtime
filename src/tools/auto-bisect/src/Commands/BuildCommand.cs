@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AutoBisect;
+using Spectre.Console;
 
 namespace AutoBisect.Commands;
 
@@ -18,60 +20,94 @@ internal static class BuildCommand
         }
 
         using var client = new AzDoClient(org, project, pat);
-        var build = await client.GetBuildAsync(buildId);
+        Build? build = null;
+        await AnsiConsole.Status()
+            .Spinner(Spinner.Known.Dots)
+            .StartAsync("[yellow]Fetching build information...[/]", async ctx =>
+            {
+                build = await client.GetBuildAsync(buildId);
+            });
 
         if (build == null)
         {
-            Console.Error.WriteLine($"Build {buildId} not found.");
+            AnsiConsole.MarkupLine($"[red]✗[/] Build {buildId} not found.");
             Environment.ExitCode = 1;
             return;
         }
 
-        Console.WriteLine($"Build ID:       {build.Id}");
-        Console.WriteLine($"Build Number:   {build.BuildNumber}");
-        Console.WriteLine($"Status:         {build.Status}");
-        Console.WriteLine($"Result:         {build.Result}");
-        Console.WriteLine($"Source Version: {build.SourceVersion}");
-        Console.WriteLine($"Source Branch:  {build.SourceBranch}");
-        Console.WriteLine($"Definition:     {build.Definition?.Name} ({build.Definition?.Id})");
-        Console.WriteLine($"Queue Time:     {build.QueueTime}");
-        Console.WriteLine($"Start Time:     {build.StartTime}");
-        Console.WriteLine($"Finish Time:    {build.FinishTime}");
-        Console.WriteLine($"Web URL:        {build.Links?.Web?.Href}");
+        var statusColor = build.Status == BuildStatus.Completed ? "green" : "yellow";
+        var resultColor = build.Result == BuildResult.Succeeded ? "green" : build.Result == BuildResult.Failed ? "red" : "yellow";
+
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Blue)
+            .AddColumn("[bold]Property[/]")
+            .AddColumn("[bold]Value[/]")
+            .AddRow("Build ID", $"[cyan]{build.Id}[/]")
+            .AddRow("Build Number", build.BuildNumber ?? "N/A")
+            .AddRow("Status", $"[{statusColor}]{build.Status}[/]")
+            .AddRow("Result", $"[{resultColor}]{build.Result}[/]")
+            .AddRow("Source Version", $"[cyan]{build.SourceVersion?[..12]}[/]")
+            .AddRow("Source Branch", build.SourceBranch ?? "N/A")
+            .AddRow("Definition", $"{build.Definition?.Name} ({build.Definition?.Id})")
+            .AddRow("Queue Time", build.QueueTime?.ToString() ?? "N/A")
+            .AddRow("Start Time", build.StartTime?.ToString() ?? "N/A")
+            .AddRow("Finish Time", build.FinishTime?.ToString() ?? "N/A");
+        
+        if (build.Links?.Web?.Href != null)
+        {
+            table.AddRow("Web URL", $"[link]{build.Links.Web.Href}[/]");
+        }
+        
+        AnsiConsole.Write(table);
 
         // Fetch and display test failures if the build has completed
         if (build.Status == BuildStatus.Completed)
         {
-            Console.WriteLine();
-            Console.WriteLine("Fetching failed tests...");
-            try
-            {
-                var failedTests = await client.GetFailedTestsAsync(buildId);
-
-                Console.WriteLine($"Failed Tests:   {failedTests.Count}");
-
-                if (failedTests.Count > 0)
+            AnsiConsole.WriteLine();
+            List<TestResult> failedTests = [];
+            await AnsiConsole.Status()
+                .Spinner(Spinner.Known.Dots)
+                .StartAsync("[yellow]Fetching failed tests...[/]", async ctx =>
                 {
-                    Console.WriteLine();
-                    foreach (var test in failedTests.OrderBy(t => t.FullyQualifiedName))
+                    try
                     {
-                        Console.WriteLine($"  ✗ {test.FullyQualifiedName}");
-                        if (!string.IsNullOrWhiteSpace(test.ErrorMessage))
-                        {
-                            // Show first line of error message, indented
-                            var firstLine = test.ErrorMessage.Split('\n')[0].Trim();
-                            if (firstLine.Length > 100)
-                            {
-                                firstLine = firstLine.Substring(0, 97) + "...";
-                            }
-                            Console.WriteLine($"      {firstLine}");
-                        }
+                        failedTests = (await client.GetFailedTestsAsync(buildId)).ToList();
                     }
-                }
-            }
-            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    {
+                        // Will handle below
+                    }
+                });
+
+            if (failedTests.Count > 0)
             {
-                Console.WriteLine("  (Unable to fetch test results - PAT needs 'Test Management (Read)' scope)");
+                var testTable = new Table()
+                    .Border(TableBorder.Rounded)
+                    .BorderColor(Color.Red)
+                    .AddColumn("[bold red]Failed Tests[/]")
+                    .AddColumn("[bold]Error Message[/]");
+
+                foreach (var test in failedTests.OrderBy(t => t.FullyQualifiedName))
+                {
+                    var errorMsg = "";
+                    if (!string.IsNullOrWhiteSpace(test.ErrorMessage))
+                    {
+                        var firstLine = test.ErrorMessage.Split('\n')[0].Trim();
+                        if (firstLine.Length > 100)
+                        {
+                            firstLine = firstLine.Substring(0, 97) + "...";
+                        }
+                        errorMsg = $"[dim]{firstLine.EscapeMarkup()}[/]";
+                    }
+                    testTable.AddRow($"[red]✗[/] {test.FullyQualifiedName.EscapeMarkup()}", errorMsg);
+                }
+                
+                AnsiConsole.Write(testTable);
+            }
+            else if (failedTests.Count == 0)
+            {
+                AnsiConsole.MarkupLine("[green]✓[/] No failed tests found.");
             }
         }
     }
