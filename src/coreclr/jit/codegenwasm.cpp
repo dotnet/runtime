@@ -181,12 +181,6 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
     {
         instGen(INS_end);
         WasmInterval* interval = wasmControlFlowStack->Pop();
-
-        if (!interval->IsLoop() && !block->HasFlag(BBF_HAS_LABEL))
-        {
-            block->SetFlags(BBF_HAS_LABEL);
-            genDefineTempLabel(block);
-        }
     }
 
     // Push control flow for intervals that start here or earlier, and emit
@@ -211,10 +205,23 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             wasmCursor++;
             wasmControlFlowStack->Push(interval);
 
-            if (interval->IsLoop() && !block->HasFlag(BBF_HAS_LABEL))
+            if (interval->IsLoop())
             {
-                block->SetFlags(BBF_HAS_LABEL);
-                genDefineTempLabel(block);
+                if (!block->HasFlag(BBF_HAS_LABEL))
+                {
+                    block->SetFlags(BBF_HAS_LABEL);
+                    genDefineTempLabel(block);
+                }
+            }
+            else
+            {
+                BasicBlock* const endBlock = compiler->fgIndexToBlockMap[interval->End()];
+
+                if (!endBlock->HasFlag(BBF_HAS_LABEL))
+                {
+                    endBlock->SetFlags(BBF_HAS_LABEL);
+                    genDefineTempLabel(endBlock);
+                }
             }
 
             if (wasmCursor >= compiler->fgWasmIntervals->size())
@@ -289,6 +296,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_LCL_VAR:
             genCodeForLclVar(treeNode->AsLclVar());
+            break;
+
+        case GT_STORE_LCL_VAR:
+            genCodeForStoreLclVar(treeNode->AsLclVar());
             break;
 
         case GT_JTRUE:
@@ -787,6 +798,39 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForStoreLclVar: Produce code for a GT_STORE_LCL_VAR node.
+//
+// Arguments:
+//    tree - the GT_STORE_LCL_VAR node
+//
+void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
+{
+    assert(tree->OperIs(GT_STORE_LCL_VAR));
+
+    GenTree* const op1 = tree->gtGetOp1();
+    assert(!op1->IsMultiRegNode());
+    genConsumeRegs(op1);
+
+    LclVarDsc* varDsc    = compiler->lvaGetDesc(tree);
+    regNumber  targetReg = varDsc->GetRegNum();
+
+    if (!varDsc->lvIsRegCandidate())
+    {
+        // TODO-WASM: handle these cases in lower/ra.
+        // Emit drop for now to simulate the store effect on the wasm stack.
+        GetEmitter()->emitIns(INS_drop);
+        genUpdateLife(tree);
+    }
+    else
+    {
+        assert(genIsValidReg(targetReg));
+        unsigned wasmLclIndex = UnpackWasmReg(targetReg);
+        GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), wasmLclIndex);
+        genUpdateLifeStore(tree, targetReg, varDsc);
+    }
+}
+
+//------------------------------------------------------------------------
 // genCodeForCompare: Produce code for a GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT node.
 //
 // Arguments:
@@ -877,15 +921,39 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
 {
     assert(treeNode->OperIsCmpCompare());
 
+    genTreeOps op          = treeNode->OperGet();
+    bool       invertSense = false;
+
     if ((treeNode->gtFlags & GTF_RELOP_NAN_UN) != 0)
     {
-        NYI_WASM("genCompareFloat: unordered compares");
+        // We don't expect to see GT_EQ unordered,
+        // since CIL doesn't have this mode.
+        //
+        assert(op != GT_EQ);
+
+        // Wasm float comparisons other than "fne" return false for NaNs.
+        // Our unordered float compares need to return true for NaNs.
+        //
+        // So we can re-express say GT_GE (UN) as !GT_LT
+        //
+        if (op != GT_NE)
+        {
+            op          = GenTree::ReverseRelop(op);
+            invertSense = true;
+        }
+    }
+    else
+    {
+        // We don't expect to see GT_NE ordered,
+        // since CIL doesn't have this mode.
+        //
+        assert(op != GT_NE);
     }
 
     genConsumeOperands(treeNode);
 
     instruction ins;
-    switch (PackOperAndType(treeNode->OperGet(), treeNode->gtOp1->TypeGet()))
+    switch (PackOperAndType(op, treeNode->gtOp1->TypeGet()))
     {
         case PackOperAndType(GT_EQ, TYP_FLOAT):
             ins = INS_f32_eq;
@@ -928,6 +996,12 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
     }
 
     GetEmitter()->emitIns(ins);
+
+    if (invertSense)
+    {
+        GetEmitter()->emitIns(INS_i32_eqz);
+    }
+
     genProduceReg(treeNode);
 }
 

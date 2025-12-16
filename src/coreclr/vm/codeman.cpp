@@ -29,6 +29,9 @@
 #include "strsafe.h"
 
 #include "configuration.h"
+#if !defined(DACCESS_COMPILE)
+#include "../debug/ee/executioncontrol.h"
+#endif // !DACCESS_COMPILE
 
 #include <minipal/cpufeatures.h>
 #include <minipal/cpuid.h>
@@ -1432,6 +1435,11 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & RiscV64IntrinsicConstants_Zbb) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableRiscV64Zbb))
     {
         CPUCompileFlags.Set(InstructionSet_Zbb);
+    }
+
+    if (((cpuFeatures & RiscV64IntrinsicConstants_Zbs) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableRiscV64Zbs))
+    {
+        CPUCompileFlags.Set(InstructionSet_Zbs);
     }
 #endif
 
@@ -4569,6 +4577,14 @@ void InterpreterJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& Method
     methodRegionInfo->coldStartAddress = 0;
     methodRegionInfo->coldSize         = 0;
 }
+
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_BROWSER)
+IExecutionControl* InterpreterJitManager::GetExecutionControl()
+{
+    LIMITED_METHOD_CONTRACT;
+    return InterpreterExecutionControl::GetInstance();
+}
+#endif // !DACCESS_COMPILE
 
 #endif // FEATURE_INTERPRETER
 
