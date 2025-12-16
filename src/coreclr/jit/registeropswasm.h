@@ -16,21 +16,7 @@ enum class WasmValueType : unsigned
 #endif
 };
 
-static const char *const WasmValueTypeNames[] = {
-    "Invalid",
-    "i32",
-    "i64",
-    "f32",
-    "f64",
-    "Count",
-};
-
-inline const char* WasmValueTypeName(WasmValueType type)
-{
-    static_assert(ArrLen(WasmValueTypeNames) == static_cast<unsigned>(WasmValueType::Count) + 1);
-    return WasmValueTypeNames[static_cast<unsigned>(type)];
-}
-
+const char* WasmValueTypeName(WasmValueType type);
 regNumber MakeWasmReg(unsigned index, var_types type);
 unsigned  UnpackWasmReg(regNumber reg, WasmValueType* pType = nullptr);
 unsigned  WasmRegToIndex(regNumber reg);

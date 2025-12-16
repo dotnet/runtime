@@ -5650,33 +5650,12 @@ void CodeGen::genFnProlog()
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
 #else  // defined(TARGET_WASM)
-    // TODO-WASM: proper local count, local declarations, and shadow stack maintenance
-    assert(compiler->info.compLocalsCount >= compiler->info.compArgsCount);
-    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, (unsigned)WasmValueType::Count - 1);
     genWasmLocals();
     GetEmitter()->emitMarkPrologEnd();
 #endif // !defined(TARGET_WASM)
 
     GetEmitter()->emitEndProlog();
 }
-
-#if defined(TARGET_WASM)
-
-//------------------------------------------------------------------------
-// genWasmLocals: generate wasm locals for all locals
-//
-// TODO-WASM: pre-declare all "register" locals
-void CodeGen::genWasmLocals()
-{
-    // Emit 1 local of each supported value type to ensure
-    // the declarations can be encoded.
-    // TODO-WASM: remove and declare locals based on RA assignments once this is supported.
-    for (unsigned i = (uint8_t)WasmValueType::Invalid + 1; i < (unsigned)WasmValueType::Count; i++)
-    {
-        GetEmitter()->emitIns_I_Ty(INS_local_decl, 1, static_cast<WasmValueType>(i));
-    }
-}
-#endif
 
 #if !defined(TARGET_WASM)
 

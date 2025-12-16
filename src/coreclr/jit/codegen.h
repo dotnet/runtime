@@ -14,10 +14,6 @@
 #include "regset.h"
 #include "jitgcinfo.h"
 
-#if defined(TARGET_WASM)
-#include "wasmtypesdef.h"
-#endif
-
 class CodeGen final : public CodeGenInterface
 {
     friend class emitter;

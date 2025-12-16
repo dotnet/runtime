@@ -138,8 +138,8 @@ void emitter::emitIns_I_Ty(instruction ins, cnsval_ssize_t imm, WasmValueType va
     id->idIns(ins);
     id->idInsFmt(fmt);
 
-    this->dispIns(id);
-    this->appendToCurIG(id);
+    dispIns(id);
+    appendToCurIG(id);
 }
 
 WasmValueType emitter::emitGetLclVarDeclType(instrDesc* id)

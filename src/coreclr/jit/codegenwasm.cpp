@@ -15,6 +15,23 @@ void CodeGen::genMarkLabelsForCodegen()
     // We mark labels as needed in genEmitStartBlock.
 }
 
+//------------------------------------------------------------------------
+// genWasmLocals: generate wasm locals for all locals
+//
+// TODO-WASM: pre-declare all "register" locals
+void CodeGen::genWasmLocals()
+{
+    // TODO-WASM: proper local count, local declarations, and shadow stack maintenance
+    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, (unsigned)WasmValueType::Count - 1);
+    // Emit 1 local of each supported value type to ensure
+    // the declarations can be encoded.
+    // TODO-WASM: remove and declare locals based on RA assignments once this is supported.
+    for (unsigned i = (uint8_t)WasmValueType::Invalid + 1; i < (unsigned)WasmValueType::Count; i++)
+    {
+        GetEmitter()->emitIns_I_Ty(INS_local_decl, 1, static_cast<WasmValueType>(i));
+    }
+}
+
 void CodeGen::genFnEpilog(BasicBlock* block)
 {
 #ifdef DEBUG
@@ -40,12 +57,16 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     // TODO-WASM: shadow stack maintenance
     // TODO-WASM-CQ: do not emit "return" in case this is the last block
-    instGen(INS_return);
+   // instGen(INS_return);
     // TODO-WASM: this condition will not be sufficient if we have funclet to determine if we're at the end of
     // codegen for a method. Revisit later.
-    if (block->IsLast()) 
+    if (block->IsLast() || compiler->bbIsFuncletBeg(block)) 
     {
         instGen(INS_end);
+    }
+    else
+    {
+        instGen(INS_return);
     }
 }
 

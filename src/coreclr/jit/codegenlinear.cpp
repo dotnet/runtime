@@ -574,7 +574,7 @@ void CodeGen::genCodeForBBlist()
         // For example, if the following IR ends the current block, no code will have been generated for
         // offset 21:
         //
-        //          (  0,  0) [000040] ------------   /             il_offset void   IL offset: 21
+        //          (  0,  0) [000040] ------------                il_offset void   IL offset: 21
         //
         //     N001 (  0,  0) [000039] ------------                nop       void
         //
