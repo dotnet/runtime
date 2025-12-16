@@ -412,8 +412,15 @@ namespace ILCompiler
             ILProvider unsubstitutedILProvider = ilProvider;
             ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider, new DevirtualizationManager());
 
-            bool stackTraceLineNumbers = Get(_command.EmitStackTraceLineNumbers);
-            var stackTracePolicy = Get(_command.EmitStackTraceData) ?
+            (bool emitStackTraceData, bool stackTraceLineNumbers) = Get(_command.StackTraceData) switch
+            {
+                null or "none" => (false, false),
+                "frames" => (true, false),
+                "lines" => (true, true),
+                _ => throw new CommandLineException($"Unknown stack trace data: {Get(_command.StackTraceData)}"),
+            };
+
+            var stackTracePolicy = emitStackTraceData ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy(stackTraceLineNumbers) : new NoStackTraceEmissionPolicy();
 
             MetadataBlockingPolicy mdBlockingPolicy;

@@ -57,6 +57,8 @@ namespace Internal.Reflection.Extensions.NonPortable
             {
                 if (!ReflectionExecution.ExecutionEnvironment.TryGetMethodForOriginalLdFtnResult(originalLdFtnResult, ref typeOfFirstParameterIfInstanceDelegate, out methodHandle, out genericMethodTypeArgumentHandles))
                 {
+                    // If this is reached, it's a compiler bug - it should not be possible to get a delegate that points
+                    // to managed code that doesn't have MethodInfo
                     throw new NotSupportedException(SR.DelegateGetMethodInfo_NoDynamic);
                 }
             }
