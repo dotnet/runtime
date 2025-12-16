@@ -844,6 +844,9 @@ CONFIG_STRING(JitRawHexCodeFile, "JitRawHexCodeFile")
 //    3: force all frames to use the frame types that save FP/LR registers with the callee-saved registers (at the top
 //    of the frame) and also force using the large funclet frame variation (frame 5) if possible.
 CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, "JitSaveFpLrWithCalleeSavedRegisters", 0)
+
+// Experimental support for vector length agnostic implementation of Vector<T>
+CONFIG_INTEGER(JitUseScalableVectorT, "JitUseScalableVectorT", 0)
 #endif // defined(TARGET_ARM64)
 
 #if defined(TARGET_LOONGARCH64)

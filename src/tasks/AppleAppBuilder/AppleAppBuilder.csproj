@@ -1,29 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <OutputType>Library</OutputType>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
+    <DefaultExcludesInProjectFolder>$(DefaultExcludesInProjectFolder);Templates\*.*</DefaultExcludesInProjectFolder>
   </PropertyGroup>
+
   <ItemGroup>
     <EmbeddedResource Include="Templates\*.*" />
     <EmbeddedResource Include="$(CoreClrProjectRoot)hosts\inc\coreclrhost.h" Link="Templates\coreclrhost.h" />
     <EmbeddedResource Include="$(SharedNativeRoot)corehost\host_runtime_contract.h" Link="Templates\host_runtime_contract.h" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="AppleAppBuilder.cs" />
     <Compile Include="..\Common\Utils.cs" />
-    <Compile Include="TargetOS.cs" />
-    <Compile Include="TargetRuntime.cs" />
-    <Compile Include="Xcode.cs" />
   </ItemGroup>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*"
-                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*" TargetPath="tasks\$(NetCoreAppToolCurrent)" />
     </ItemGroup>
   </Target>
 

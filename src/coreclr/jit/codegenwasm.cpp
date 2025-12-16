@@ -163,12 +163,6 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
     {
         instGen(INS_end);
         WasmInterval* interval = wasmControlFlowStack->Pop();
-
-        if (!interval->IsLoop() && !block->HasFlag(BBF_HAS_LABEL))
-        {
-            block->SetFlags(BBF_HAS_LABEL);
-            genDefineTempLabel(block);
-        }
     }
 
     // Push control flow for intervals that start here or earlier, and emit
@@ -193,10 +187,23 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             wasmCursor++;
             wasmControlFlowStack->Push(interval);
 
-            if (interval->IsLoop() && !block->HasFlag(BBF_HAS_LABEL))
+            if (interval->IsLoop())
             {
-                block->SetFlags(BBF_HAS_LABEL);
-                genDefineTempLabel(block);
+                if (!block->HasFlag(BBF_HAS_LABEL))
+                {
+                    block->SetFlags(BBF_HAS_LABEL);
+                    genDefineTempLabel(block);
+                }
+            }
+            else
+            {
+                BasicBlock* const endBlock = compiler->fgIndexToBlockMap[interval->End()];
+
+                if (!endBlock->HasFlag(BBF_HAS_LABEL))
+                {
+                    endBlock->SetFlags(BBF_HAS_LABEL);
+                    genDefineTempLabel(endBlock);
+                }
             }
 
             if (wasmCursor >= compiler->fgWasmIntervals->size())

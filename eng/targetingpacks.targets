@@ -16,9 +16,10 @@
     <TargetingpacksTargetsImported>true</TargetingpacksTargetsImported>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(DisableImplicitFrameworkReferences)' != 'true' and
-                            '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                            '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)'">
+  <PropertyGroup Condition="('$(DisableImplicitFrameworkReferences)' != 'true' and
+                             '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                             '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)')
+                            or '$(UseBootstrapLayout)' == 'true'">
     <UseLocalTargetingRuntimePack Condition="'$(UseLocalTargetingRuntimePack)' == ''">true</UseLocalTargetingRuntimePack>
   </PropertyGroup>
 
