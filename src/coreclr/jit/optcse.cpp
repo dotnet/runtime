@@ -1794,6 +1794,14 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         {
             return false;
         }
+
+#if defined(TARGET_RISCV64)
+        GenTree* parent = tree->gtGetParent(nullptr);
+        if ((parent != nullptr) && parent->OperIs(GT_FIELD_LIST))
+        {
+            return false;
+        }
+#endif
     }
 
     // Don't allow non-SIMD struct CSEs under a return; we don't fully
