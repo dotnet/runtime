@@ -909,3 +909,11 @@ FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_ReleaseThinLock, Object* obj)
     return obj->GetHeader()->ReleaseHeaderThinLock(GetThread()->GetThreadId());
 }
 FCIMPLEND
+
+FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_IsThinLockOwnedByThread, Object* obj)
+{
+    FCALL_CONTRACT;
+
+    return obj->GetHeader()->IsHeaderThinLockOwnedByThread(GetThread()->GetThreadId());
+}
+FCIMPLEND

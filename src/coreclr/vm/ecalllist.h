@@ -256,8 +256,9 @@ FCFuncStart(gThreadFuncs)
 FCFuncEnd()
 
 FCFuncStart(gObjectHeaderFuncs)
-    FCFuncElement("AcquireInternal", ObjHeader_AcquireThinLock)
+    FCFuncElement("Acquire", ObjHeader_AcquireThinLock)
     FCFuncElement("Release", ObjHeader_ReleaseThinLock)
+    FCFuncElement("IsAcquired", ObjHeader_IsThinLockOwnedByThread)
 FCFuncEnd()
 
 FCFuncStart(gMonitorFuncs)

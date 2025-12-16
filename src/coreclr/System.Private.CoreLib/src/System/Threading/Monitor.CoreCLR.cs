@@ -56,7 +56,8 @@ namespace System.Threading
         #region Public Enter/Exit methods
         public static void Enter(object obj)
         {
-            ObjectHeader.HeaderLockResult result = ObjectHeader.TryAcquireThinLock(obj);
+            ArgumentNullException.ThrowIfNull(obj);
+            ObjectHeader.HeaderLockResult result = ObjectHeader.Acquire(obj);
             if (result == ObjectHeader.HeaderLockResult.Success)
                 return;
 
@@ -65,7 +66,8 @@ namespace System.Threading
 
         public static bool TryEnter(object obj)
         {
-            ObjectHeader.HeaderLockResult result = ObjectHeader.TryAcquireThinLock(obj);
+            ArgumentNullException.ThrowIfNull(obj);
+            ObjectHeader.HeaderLockResult result = ObjectHeader.Acquire(obj);
             if (result == ObjectHeader.HeaderLockResult.Success)
                 return true;
 
@@ -78,8 +80,9 @@ namespace System.Threading
         public static bool TryEnter(object obj, int millisecondsTimeout)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
+            ArgumentNullException.ThrowIfNull(obj);
 
-            ObjectHeader.HeaderLockResult result = ObjectHeader.TryAcquireThinLock(obj);
+            ObjectHeader.HeaderLockResult result = ObjectHeader.Acquire(obj);
             if (result == ObjectHeader.HeaderLockResult.Success)
                 return true;
 
@@ -105,10 +108,9 @@ namespace System.Threading
             GetLockObject(obj).Exit();
         }
 
-        // Marked no-inlining to prevent recursive inlining of IsAcquired.
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool IsEntered(object obj)
         {
+            ArgumentNullException.ThrowIfNull(obj);
             ObjectHeader.HeaderLockResult result = ObjectHeader.IsAcquired(obj);
             if (result == ObjectHeader.HeaderLockResult.Success)
                 return true;
@@ -122,7 +124,8 @@ namespace System.Threading
 
         internal static void SynchronizedMethodEnter(object obj, ref bool lockTaken)
         {
-            ObjectHeader.HeaderLockResult result = ObjectHeader.TryAcquireThinLock(obj);
+            ArgumentNullException.ThrowIfNull(obj);
+            ObjectHeader.HeaderLockResult result = ObjectHeader.Acquire(obj);
             if (result == ObjectHeader.HeaderLockResult.Success)
             {
                 lockTaken = true;
@@ -135,6 +138,7 @@ namespace System.Threading
 
         internal static void SynchronizedMethodExit(object obj, ref bool lockTaken)
         {
+            Debug.Assert(obj is not null);
             // Inlined Monitor.Exit with a few tweaks
             if (!lockTaken)
                 return;

@@ -958,7 +958,12 @@ class ObjHeader
 
     HeaderLockResult ReleaseHeaderThinLock(DWORD tid);
 
+    HeaderLockResult IsHeaderThinLockOwnedByThread(DWORD tid);
+
     friend struct ::cdac_data<ObjHeader>;
+
+    private:
+    HeaderLockResult AcquireHeaderThinLockWithSpin(DWORD tid);
 };
 
 template<>
