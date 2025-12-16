@@ -212,19 +212,6 @@ jobs:
           TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/log'
         continueOnError: true
         condition: always()
-      - task: PythonScript@0
-        displayName: Gather CMakeConfigureLog for publish to artifacts
-        inputs:
-          scriptSource: inline
-          script: |
-            import os, shutil, glob
-            if os.path.isdir('artifacts/obj'):
-                dest = '$(Build.ArtifactStagingDirectory)/artifacts/log/cmake'
-                os.makedirs(dest, exist_ok=True)
-                for f in glob.glob('artifacts/obj/**/CMakeConfigureLog.yaml', recursive=True):
-                    shutil.copy(f, dest)
-        continueOnError: true
-        condition: always()
 
   - ${{ if eq(parameters.enablePublishBuildArtifacts, 'true') }}:
     - task: CopyFiles@2
