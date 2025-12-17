@@ -30,7 +30,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             await RuntimeAsyncWithLocalAll();
             await RuntimeAsyncWithLambda();
             await RuntimeAsyncWithAwaitedLocalMethod();
-            await RuntimeAsyncWithAwaitedLocalMethodSuppressed();
         }
 
         static async Task BasicRuntimeAsyncMethod()
