@@ -1037,7 +1037,7 @@ InternalCreateProcessExit:
     }
 
     return palError;
-    #endif // !TARGET_TVOS
+#endif // !TARGET_TVOS
 }
 
 
