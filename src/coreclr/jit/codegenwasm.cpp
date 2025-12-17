@@ -16,7 +16,7 @@ void CodeGen::genMarkLabelsForCodegen()
 }
 
 //------------------------------------------------------------------------
-// genWasmLocals: generate wasm locals for all locals
+// genWasmLocals: generate wasm local declarations
 //
 // TODO-WASM: pre-declare all "register" locals
 void CodeGen::genWasmLocals()
