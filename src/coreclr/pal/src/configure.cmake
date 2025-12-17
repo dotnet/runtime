@@ -127,7 +127,6 @@ int main(int argc, char **argv) {
   thread_set_exception_ports(mach_thread_self(), EXC_MASK_BAD_ACCESS, port, EXCEPTION_DEFAULT, MACHINE_THREAD_STATE);
   return 0;
 }" HAVE_MACH_EXCEPTIONS)
-
 check_cxx_source_compiles("
 #include <signal.h>
 #include <stdlib.h>
