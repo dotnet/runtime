@@ -11904,14 +11904,14 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             }
             else if ((typ == TYP_LONG) || (typ == TYP_ULONG))
             {
-                tree->gtVNPair.SetBoth(vnStore->VNForLongCon(INT64(tree->AsIntConCommon()->LngValue())));
+                tree->gtVNPair.SetBoth(vnStore->VNForLongCon(tree->AsIntConCommon()->IntegralValue()));
             }
             else
             {
                 tree->gtVNPair.SetBoth(vnStore->VNForIntCon(int(tree->AsIntConCommon()->IconValue())));
             }
 
-            if (tree->IsCnsIntOrI())
+            if (tree->IsIntegralConst())
             {
                 fgValueNumberRegisterConstFieldSeq(tree->AsIntCon());
             }
