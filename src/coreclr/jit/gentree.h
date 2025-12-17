@@ -3491,7 +3491,7 @@ public:
     GenTreeDblCon(double val, var_types type = TYP_DOUBLE)
         : GenTree(GT_CNS_DBL, type)
     {
-        assert(varTypeIsFloating(type));
+        assert(varTypeIsFloating(type) || type == TYP_HALF);
         SetDconValue(val);
     }
 #if DEBUGGABLE_GENTREE

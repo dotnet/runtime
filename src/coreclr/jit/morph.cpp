@@ -14992,7 +14992,7 @@ PhaseStatus Compiler::fgPromoteStructs()
             }
             tooManyLocalsReported = true;
         }
-        else if (varTypeIsStruct(varDsc))
+        else if (varTypeIsStruct(varDsc) && TypeGet(varDsc) != TYP_HALF)
         {
             assert(structPromotionHelper != nullptr);
             promotedVar = structPromotionHelper->TryPromoteStructVar(lclNum);
