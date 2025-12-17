@@ -12,5 +12,13 @@
     <ProjectReference Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.proj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <ProjectReference Include="Microsoft.NETCore.BrowserDebugHost.Transport\Microsoft.NETCore.BrowserDebugHost.Transport.pkgproj" />
+    <ProjectReference Include="..\wasm\templates\Microsoft.NET.Runtime.WebAssembly.Templates.csproj" />
+    <ProjectReference Include="Microsoft.NET.Sdk.WebAssembly.Pack\Microsoft.NET.Sdk.WebAssembly.Pack.pkgproj" />
+
+    <ProjectReference Include="Microsoft.NET.Runtime.WorkloadTesting.Internal\Microsoft.NET.Runtime.WorkloadTesting.Internal.pkgproj" />
+  </ItemGroup>
+
   <Import Project="versioning.targets" />
 </Project>
