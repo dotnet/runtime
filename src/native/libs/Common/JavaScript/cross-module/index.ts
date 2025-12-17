@@ -146,6 +146,7 @@ export function dotnetUpdateInternalsSubscriber() {
             installVfsFile: table[1],
             loadIcuData: table[2],
             getExitStatus: table[3],
+            initializeCoreCLR: table[4],
         };
         Object.assign(native, nativeLocal);
     }

@@ -6,7 +6,7 @@ import type { LoadBootResourceCallback, JsModuleExports, JsAsset, AssemblyAsset,
 import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module } from "./cross-module";
 import { getIcuResourceName } from "./icu";
 import { getLoaderConfig } from "./config";
-import { BrowserHost_InitializeCoreCLR } from "./run";
+import { initializeCoreCLR } from "./run";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { locateFile } from "./bootstrap";
 import { fetchLike } from "./polyfills";
@@ -76,7 +76,7 @@ export async function createRuntime(downloadOnly: boolean, loadBootResource?: Lo
     await icuDataPromise;
     await wasmNativePromise; // this is just to propagate errors
     if (!downloadOnly) {
-        BrowserHost_InitializeCoreCLR();
+        initializeCoreCLR();
     }
 
     await assembliesPromise;

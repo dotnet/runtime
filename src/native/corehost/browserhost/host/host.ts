@@ -89,6 +89,10 @@ export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
     );
 }
 
+export function initializeCoreCLR(): number {
+    return _BrowserHost_InitializeCoreCLR();
+}
+
 // bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
 export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStartPtr: VoidPtrPtr, outSize: VoidPtr) {
     const path = Module.UTF8ToString(pathPtr);

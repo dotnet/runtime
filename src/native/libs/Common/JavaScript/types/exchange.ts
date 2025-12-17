@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { installVfsFile, registerDllBytes, loadIcuData, getExitStatus } from "../../../../corehost/browserhost/host/host";
+import type { installVfsFile, registerDllBytes, loadIcuData, getExitStatus, initializeCoreCLR } from "../../../../corehost/browserhost/host/host";
 import type { check, error, info, warn, debug } from "../../../../corehost/browserhost/loader/logging";
 import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../../../../corehost/browserhost/loader/promise-completion-source";
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise } from "../../../../corehost/browserhost/loader/run";
@@ -82,6 +82,7 @@ export type BrowserHostExports = {
     installVfsFile: typeof installVfsFile
     loadIcuData: typeof loadIcuData
     getExitStatus: typeof getExitStatus
+    initializeCoreCLR: typeof initializeCoreCLR
 }
 
 export type BrowserHostExportsTable = [
@@ -89,6 +90,7 @@ export type BrowserHostExportsTable = [
     typeof installVfsFile,
     typeof loadIcuData,
     typeof getExitStatus,
+    typeof initializeCoreCLR,
 ]
 
 export type InteropJavaScriptExports = {
