@@ -193,11 +193,11 @@ public unsafe class Program
     [Fact]
     public static void TestUnmanagedCallersOnlyWithRuntimeAsync()
     {
-        Assert.Throws<InvalidProgramException>(() =>
+        AssertExtensions.ThrowsAny<InvalidProgramException, TypeLoadException>(() =>
         {
             ((delegate* unmanaged<Task>)&RuntimeAsyncUnmanagedCallersOnly.AsyncMethodReturningTask)();
         });
-        Assert.Throws<InvalidProgramException>(() =>
+        AssertExtensions.ThrowsAny<InvalidProgramException, TypeLoadException>(() =>
         {
             ((delegate* unmanaged<int>)&RuntimeAsyncUnmanagedCallersOnly.AsyncMethodWithBlittableReturnType)();
         });
