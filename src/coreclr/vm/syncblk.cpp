@@ -1783,21 +1783,19 @@ bool SyncBlock::TryUpgradeThinLockToFullLock(OBJECTHANDLE lockHandle)
 
     if (thinLock != 0)
     {
-        // We have thin-lock info that needs to be transferred to the lock object.
-        OBJECTREF lockObj = ObjectFromHandle(lockHandle);
-        GCPROTECT_BEGIN(lockObj);
-
         DWORD lockThreadId = thinLock & SBLK_MASK_LOCK_THREADID;
         DWORD recursionLevel = (thinLock & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT;
         _ASSERTE(lockThreadId != 0);
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__LOCK__INITIALIZE_FOR_MONITOR);
+
+        // We have thin-lock info that needs to be transferred to the lock object.
+        OBJECTREF lockObj = ObjectFromHandle(lockHandle);
+
         DECLARE_ARGHOLDER_ARRAY(args, 3);
         args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(lockObj);
         args[ARGNUM_1] = DWORD_TO_ARGHOLDER(lockThreadId);
         args[ARGNUM_2] = DWORD_TO_ARGHOLDER(recursionLevel);
         CALL_MANAGED_METHOD_NORET(args);
-
-        GCPROTECT_END();
     }
 
     VolatileStore(&m_Lock, lockHandle);
