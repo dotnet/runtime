@@ -21,6 +21,6 @@ export async function runSecondRuntimeAndTestStaticState(guid) {
 }
 
 async function getIncrementStateFunction(runtime) {
-    const exports = await runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests.dll");
+    const exports = await runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests");
     return exports.System.Runtime.InteropServices.JavaScript.Tests.SecondRuntimeTest.Interop.IncrementState;
 }

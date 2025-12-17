@@ -624,10 +624,10 @@ namespace
             return NULL;
 
         void* thunk = LookupThunk(keyBuffer);
-#ifdef _DEBUG
+
         if (thunk == NULL)
             printf("WASM calli missing for key: %s\n", keyBuffer);
-#endif
+
         return thunk;
     }
 

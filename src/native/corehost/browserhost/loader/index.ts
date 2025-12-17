@@ -27,7 +27,7 @@ export function dotnetInitializeModule(): RuntimeAPI {
     const dotnetApi: Partial<RuntimeAPI> = {
         INTERNAL: {},
         Module: {} as any,
-        runtimeId: -1,
+        runtimeId: undefined,
         runtimeBuildInfo: {
             productVersion: ProductVersion,
             gitHash: GitHash,
