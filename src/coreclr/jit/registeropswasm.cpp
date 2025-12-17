@@ -64,16 +64,11 @@ regNumber MakeWasmReg(unsigned index, var_types type)
 const char* WasmValueTypeName(WasmValueType type)
 {
     static const char* const WasmValueTypeNames[] = {
-        "Invalid",
-        "i32",
-        "i64",
-        "f32",
-        "f64",
+        "Invalid", "i32", "i64", "f32", "f64",
     };
     static_assert(ArrLen(WasmValueTypeNames) == static_cast<unsigned>(WasmValueType::Count));
-
-    assert(type < WasmValueType::Count);
-    return WasmValueTypeNames[static_cast<unsigned>(type)];
+    assert(WasmValueType::Invalid <= type && type < WasmValueType::Count);
+    return WasmValueTypeNames[(unsigned)type];
 }
 
 //------------------------------------------------------------------------

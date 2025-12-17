@@ -638,6 +638,9 @@ protected:
         bool              idCatchRet;    // Instruction is for a catch 'return'
         CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
         BasicBlock*       idTargetBlock; // Target block for branches
+#ifdef TARGET_WASM
+        int lclOffset;
+#endif
     };
 
 #ifdef TARGET_ARM
@@ -2346,8 +2349,8 @@ protected:
     struct instrDescLclVarDecl : instrDesc
     {
         instrDescLclVarDecl() = delete;
-        cnsval_ssize_t    lclCnt;
-        WasmValueType lclType;
+        cnsval_ssize_t lclCnt;
+        WasmValueType  lclType;
 
         void idLclType(WasmValueType type)
         {

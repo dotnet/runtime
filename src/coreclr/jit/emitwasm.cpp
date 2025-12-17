@@ -116,11 +116,15 @@ bool emitter::emitInsIsStore(instruction ins)
     return false;
 }
 
-emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr attr, cnsval_ssize_t localCount, WasmValueType type)
+emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr       attr,
+                                                    cnsval_ssize_t localCount,
+                                                    WasmValueType  type,
+                                                    int            lclOffset)
 {
     instrDescLclVarDecl* id = static_cast<instrDescLclVarDecl*>(emitAllocAnyInstr(sizeof(instrDescLclVarDecl), attr));
     id->idLclCnt(localCount);
     id->idLclType(type);
+    id->idDebugOnlyInfo()->lclOffset = lclOffset;
 
     return id;
 }
@@ -130,13 +134,19 @@ emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr attr, cnsval_ssize_
 // a count (immediate) and a value type. This is specifically used for local variable
 // declarations that require both the number of locals and their type to be encoded.
 //
-void emitter::emitIns_I_Ty(instruction ins, cnsval_ssize_t imm, WasmValueType valType)
+// Arguments:
+//   ins      - instruction to emit
+//   imm      - immediate value (local count)
+//   valType  - value type of the local variable
+//   offs     - local variable offset (= count of preceding locals) for debug info
+void emitter::emitIns_I_Ty(instruction ins, cnsval_ssize_t imm, WasmValueType valType, int offs)
 {
-    instrDesc* id  = this->emitNewInstrLclVarDecl(EA_8BYTE, imm, valType);
-    insFormat  fmt = this->emitInsFormat(ins);
+    instrDesc* id  = emitNewInstrLclVarDecl(EA_8BYTE, imm, valType, offs);
+    insFormat  fmt = emitInsFormat(ins);
 
     id->idIns(ins);
     id->idInsFmt(fmt);
+    id->idDebugOnlyInfo()->lclOffset = offs;
 
     dispIns(id);
     appendToCurIG(id);
@@ -267,9 +277,9 @@ unsigned emitter::instrDesc::idCodeSize() const
         case IF_LOCAL_DECL:
         {
             assert(idIsLclVarDecl());
-            instrDescLclVarDecl* idl = static_cast<instrDescLclVarDecl*>(const_cast<instrDesc*>(this));
-            uint8_t typeCode = getWasmValueTypeCode(idl->lclType);
-            size                     = SizeOfULEB128(idl->lclCnt) + sizeof(typeCode);
+            instrDescLclVarDecl* idl      = static_cast<instrDescLclVarDecl*>(const_cast<instrDesc*>(this));
+            uint8_t              typeCode = getWasmValueTypeCode(idl->lclType);
+            size                          = SizeOfULEB128(idl->lclCnt) + sizeof(typeCode);
             break;
         }
         case IF_ULEB128:
@@ -432,8 +442,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_LOCAL_DECL:
         {
             assert(id->idIsLclVarDecl());
-            cnsval_ssize_t    count   = emitGetLclVarDeclCount(id);
-            uint8_t valType = getWasmValueTypeCode(emitGetLclVarDeclType(id));
+            cnsval_ssize_t count   = emitGetLclVarDeclCount(id);
+            uint8_t        valType = getWasmValueTypeCode(emitGetLclVarDeclType(id));
             dst += emitOutputULEB128(dst, (uint64_t)count);
             // TODO-WASM: currently assuming all locals are numtypes which are single byte encoded.
             // vec types are also single byte encoded. If we end up using reftypes, we'll need to handle the more
@@ -569,9 +579,19 @@ void emitter::emitDispIns(
 
         case IF_LOCAL_DECL:
         {
-            cnsval_ssize_t    imm     = emitGetLclVarDeclCount(id);
+            cnsval_ssize_t count   = emitGetLclVarDeclCount(id);
             WasmValueType  valType = emitGetLclVarDeclType(id);
-            printf(" %llu %s", (uint64_t)imm, WasmValueTypeName(valType));
+            int            offs    = id->idDebugOnlyInfo()->lclOffset;
+
+            assert(count > 0); // we should not be declaring a local entry with zero count.
+            if (count > 1)
+            {
+                printf("[%llu..%llu] type=%s", offs, offs + (uint64_t)count - 1, WasmValueTypeName(valType));
+            }
+            else // single local case
+            {
+                printf("[%llu] type=%s", offs, WasmValueTypeName(valType));
+            }
         }
         break;
 

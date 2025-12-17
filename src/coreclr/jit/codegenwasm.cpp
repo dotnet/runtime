@@ -26,9 +26,12 @@ void CodeGen::genWasmLocals()
     // Emit 1 local of each supported value type to ensure
     // the declarations can be encoded.
     // TODO-WASM: remove and declare locals based on RA assignments once this is supported.
+    int localOffset  = 0;
+    int countPerType = 1;
     for (unsigned i = (uint8_t)WasmValueType::Invalid + 1; i < (unsigned)WasmValueType::Count; i++)
     {
-        GetEmitter()->emitIns_I_Ty(INS_local_decl, 1, static_cast<WasmValueType>(i));
+        GetEmitter()->emitIns_I_Ty(INS_local_decl, countPerType, static_cast<WasmValueType>(i), localOffset);
+        localOffset += countPerType;
     }
 }
 
@@ -56,11 +59,9 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 
     // TODO-WASM: shadow stack maintenance
-    // TODO-WASM-CQ: do not emit "return" in case this is the last block
-   // instGen(INS_return);
-    // TODO-WASM: this condition will not be sufficient if we have funclet to determine if we're at the end of
-    // codegen for a method. Revisit later.
-    if (block->IsLast() || compiler->bbIsFuncletBeg(block)) 
+    // TODO-WASM: we need to handle the end-of-function case if we reach the end of a codegen for a function
+    // and do NOT have an epilog. In those cases we currently will not emit an end instruction.
+    if (block->IsLast() || compiler->bbIsFuncletBeg(block))
     {
         instGen(INS_end);
     }
