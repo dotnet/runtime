@@ -372,6 +372,13 @@ HRESULT CallConv::TryGetUnmanagedCallingConventionFromModOptSigStartingAtRetType
     _Inout_ CallConvBuilder* builder,
     _Out_ UINT* errorResID)
 {
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(builder != NULL);
+        PRECONDITION(errorResID != NULL);
+    }
+    CONTRACTL_END;
     PCCOR_SIGNATURE pSig;
     uint32_t cSig;
     sig.GetSignature(&pSig, &cSig);
