@@ -4,22 +4,20 @@
 import { DotnetHostBuilder } from "../types";
 import { findResources, isNodeHosted, isShellHosted } from "./bootstrap";
 import { dotnetAssert, dotnetBrowserHostExports } from "./cross-module";
-import { exit } from "./exit";
+import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 
-let CoreCLRInitialized = false;
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
 export function initializeCoreCLR(): void {
-    dotnetAssert.check(!CoreCLRInitialized, "CoreCLR should be initialized just once");
-    CoreCLRInitialized = true;
-
+    dotnetAssert.check(!runtimeState.runtimeReady, "CoreCLR should be initialized just once");
     const res = dotnetBrowserHostExports.initializeCoreCLR();
     if (res != 0) {
         const reason = new Error("Failed to initialize CoreCLR");
         runMainPromiseController.reject(reason);
         exit(res, reason);
     }
+    runtimeState.runtimeReady = true;
 }
 
 export function resolveRunMainPromise(exitCode: number): void {
