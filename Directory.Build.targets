@@ -217,4 +217,5 @@
     </ItemGroup>
   </Target>
 
+  <Import Project="$(RepositoryEngineeringDir)pruning.targets" />
 </Project>
