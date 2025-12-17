@@ -1037,7 +1037,7 @@ InternalCreateProcessExit:
     }
 
     return palError;
-#endif // !TARGET_TVOS
+    #endif // !TARGET_TVOS
 }
 
 
@@ -2404,7 +2404,7 @@ PROCCreateCrashDump(
     INT cbErrorMessageBuffer,
     bool serialize)
 {
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
     return FALSE;
 #else
     _ASSERTE(argv.size() > 0);

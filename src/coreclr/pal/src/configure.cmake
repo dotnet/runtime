@@ -128,13 +128,6 @@ int main(int argc, char **argv) {
   return 0;
 }" HAVE_MACH_EXCEPTIONS)
 
-# tvOS devices prohibit Mach exception port operations at runtime, even though
-# the APIs may be present in headers and compile. Using them can terminate the
-# process early (e.g., SIGSYS).
-if (CLR_CMAKE_TARGET_TVOS)
-  set(HAVE_MACH_EXCEPTIONS 0)
-endif()
-
 check_cxx_source_compiles("
 #include <signal.h>
 #include <stdlib.h>
