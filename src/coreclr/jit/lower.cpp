@@ -8590,11 +8590,9 @@ void Lowering::LowerShift(GenTreeOp* shift)
         // Case 1: (shift (shift x c1) c2)
         // We can combine if:
         // 1. Same operation (LSH/LSH, RSH/RSH, RSZ/RSZ)
-        // 2. Mixed: Outer RSH, Inner RSZ (Effective result is RSZ because sign bit is 0)
         bool sameOp  = op1->OperIs(shift->OperGet());
-        bool mixedOp = shift->OperIs(GT_RSH) && op1->OperIs(GT_RSZ);
 
-        if ((sameOp || mixedOp) && op1->gtGetOp2()->IsCnsIntOrI() && !op1->IsMultiReg())
+        if (sameOp && op1->gtGetOp2()->IsCnsIntOrI() && !op1->IsMultiRegNode())
         {
             ssize_t  c1            = op1->gtGetOp2()->AsIntCon()->IconValue();
             unsigned innerBitWidth = genTypeSize(op1->TypeGet()) * 8;
@@ -8612,13 +8610,7 @@ void Lowering::LowerShift(GenTreeOp* shift)
                     {
                         JITDUMP("Optimizing consecutive shifts: (x %s %d) %s %d -> x %s %d\n",
                                 GenTree::OpName(op1->OperGet()), (int)c1, GenTree::OpName(shift->OperGet()), (int)c2,
-                                GenTree::OpName(mixedOp ? GT_RSZ : shift->OperGet()), (int)combined);
-
-                        // If we had RSH(RSZ), result is RSZ.
-                        if (mixedOp)
-                        {
-                            shift->SetOper(GT_RSZ);
-                        }
+                                GenTree::OpName(shift->OperGet()), (int)combined);
 
                         shift->gtGetOp2()->AsIntCon()->SetIconValue(combined);
                         shift->gtOp1 = op1->gtGetOp1();
@@ -8632,13 +8624,13 @@ void Lowering::LowerShift(GenTreeOp* shift)
                         JITDUMP("Optimizing overshift: (x %s %d) %s %d\n", GenTree::OpName(op1->OperGet()), (int)c1,
                                 GenTree::OpName(shift->OperGet()), (int)c2);
 
-                        if (shift->OperIs(GT_RSH) /* Implies sameOp since mixedOp is effectively RSZ */)
+                        if (shift->OperIs(GT_RSH))
                         {
                             // RSH saturates to sign bit (shift by bitWidth - 1)
                             // (x >> 30) >> 30 -> x >> 31 (for 32-bit)
                             JITDUMP(" -> x >> %d\n", bitWidth - 1);
 
-                            shift->gtGetOp2()->AsIntCon()->SetIconValue(bitWidth - 1);
+                            shift->gtGetOp2()->AsIntCon()->SetIconValue(static_cast<ssize_t>(bitWidth) - 1);
                             shift->gtOp1 = op1->gtGetOp1();
                             op1->gtGetOp1()->ClearContained();
                             BlockRange().Remove(op1->gtGetOp2());
@@ -8646,7 +8638,7 @@ void Lowering::LowerShift(GenTreeOp* shift)
                         }
                         else
                         {
-                            // LSH, RSZ, or Mixed(RSH after RSZ) -> 0
+                            // LSH or RSZ -> 0
                             // (x << 30) << 2 -> 0
                             // (x >>> 30) >>> 2 -> 0
                             JITDUMP(" -> 0\n");
@@ -8682,16 +8674,29 @@ void Lowering::LowerShift(GenTreeOp* shift)
         }
         // Case 2: (shift (cast (shift x c1)) c2)
         // Optimization for: RSZ(CAST(RSZ(x, c1)), c2) -> CAST(RSZ(x, c1 + c2))
-        else if (shift->OperIs(GT_RSZ) && op1->OperIs(GT_CAST) && !op1->gtOverflow() && !op1->IsMultiReg())
+        else if (shift->OperIs(GT_RSZ) && op1->OperIs(GT_CAST) && !op1->gtOverflow() && !op1->IsMultiRegNode())
         {
             GenTree* cast       = op1;
             GenTree* innerShift = cast->gtGetOp1();
-            if (innerShift->OperIs(GT_RSZ) && innerShift->gtGetOp2()->IsCnsIntOrI() && !innerShift->IsMultiReg())
+
+            // Only optimize if strict widening or same width (narrowing casts can have side effects on bits)
+            // Example: (long)(intVar >>> 30) >>> 2
+            // If normal: (long)(00...011) >>> 2 = 0
+            // If combined: (long)(intVar) >>> 32 = 0 (maybe?)
+            // But: (short)(intVar >>> 16) >>> 1
+            // Real: (short)(0x....1234) -> 0x1234 -> 0x091a
+            // Combined: (short)(intVar >>> 17) -> 0x091a
+            // However, truncation behavior is subtle.
+            // Prompt requested: "Ensure cast doesn't change signedness or truncate in a way that invalidates the optimization"
+            // Safest is to disable for narrowing.
+            bool isNarrowing = genTypeSize(cast->TypeGet()) < genTypeSize(innerShift->TypeGet());
+
+            if (!isNarrowing && innerShift->OperIs(GT_RSZ) && innerShift->gtGetOp2()->IsCnsIntOrI() && !innerShift->IsMultiRegNode())
             {
                 ssize_t  c1            = innerShift->gtGetOp2()->AsIntCon()->IconValue();
                 unsigned innerBitWidth = genTypeSize(innerShift->TypeGet()) * 8;
 
-                if ((c1 > 0) && (c2 > 0) && ((c1 + c2) < innerBitWidth))
+                if ((c1 > 0) && (c2 > 0) && ((c1 + c2) < (ssize_t)innerBitWidth))
                 {
                     JITDUMP("Optimizing distinct type shifts: (cast (x >> %d)) >> %d -> cast (x >> %d)\n", (int)c1,
                             (int)c2, (int)(c1 + c2));
