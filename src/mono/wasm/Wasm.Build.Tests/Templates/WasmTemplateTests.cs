@@ -312,6 +312,7 @@ namespace Wasm.Build.Tests
                 });
             }
 
+            // Publishing without WASM SDK is expected to fail
             bool expectSuccess = useWasmSdk || !isPublish;
             if (isPublish)
                 PublishProject(info, config, new PublishOptions(AssertAppBundle: useWasmSdk, ExpectSuccess: expectSuccess));
