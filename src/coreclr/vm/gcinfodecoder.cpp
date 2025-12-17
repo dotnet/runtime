@@ -6,6 +6,7 @@
 #endif
 
 #include "gcinfodecoder.h"
+#include "interpexec.h"
 
 #ifdef USE_GC_INFO_DECODER
 
@@ -2114,6 +2115,9 @@ template <typename GcInfoEncoding> OBJECTREF* TGcInfoDecoder<GcInfoEncoding>::Ge
 #endif // Unknown platform
 
 #ifdef FEATURE_INTERPRETER
+
+uintptr_t ZeroValue = 0;
+
 template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
                         INT32           spOffset,
                         GcStackSlotBase spBase,
@@ -2139,7 +2143,25 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
         _ASSERTE(fp);
         pObjRef = (OBJECTREF*)(fp + spOffset);
     }
+    InterpMethodContextFrame* pFrame = (InterpMethodContextFrame*)GetSP(pRD->pCurrentContext);
+    _ASSERTE(pFrame->pStack == (int8_t *)GetFP(pRD->pCurrentContext));
+    InterpMethodContextFrame* pFrameCallee = pFrame->pNext;
 
+    // If the stack slot is in a callee's frame, then we do not actually need to report it. This should ONLY happen if the
+    // stack slot is in the argument area of the caller. As a double check, we validate that we only return this address if
+    // the 
+    if (pFrameCallee != NULL)
+    {
+        if (pFrameCallee->ip != 0)
+        {
+            _ASSERTE(pFrameCallee->pStack > pFrame->pStack); // Since only the last funclet is GC reported, we shouldn't have any cases where the stack doesn't grow
+            if (pFrameCallee->pStack <= (int8_t*)pObjRef)
+            {
+                // The stack slot is in the callee's frame, not the caller's frame.
+                pObjRef = (OBJECTREF*)&ZeroValue;
+            }
+        }
+    }
     return pObjRef;
 }
 #endif
@@ -2221,7 +2243,16 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportSt
 
     OBJECTREF* pObjRef = GetStackSlot(spOffset, spBase, pRD);
     _ASSERTE(IS_ALIGNED(pObjRef, sizeof(OBJECTREF*)));
-
+#ifdef FEATURE_INTERPRETER
+    // This value is returned when the interpreter stack slot is not actually meaningful.
+    // This should only happen for stack slots which are conservatively reported, and for better perf
+    // we completely skip reporting them.
+    if (pObjRef == (OBJECTREF*)&ZeroValue)
+    {
+        _ASSERTE((gcFlags & (GC_CALL_PINNED | GC_CALL_INTERIOR)) == (GC_CALL_PINNED | GC_CALL_INTERIOR));
+        return;
+    }
+#endif // FEATURE_INTERPRETER
 #ifdef _DEBUG
     LOG((LF_GCROOTS, LL_INFO1000, /* Part One */
              "Reporting %s" FMT_STK,
