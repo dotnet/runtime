@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Text;
@@ -103,7 +104,7 @@ namespace System.Text.RegularExpressions.Generator
             if (staticMethodsToDetect.Contains(method))
             {
                 // Validate that arguments pattern and options are constant and timeout was not passed in.
-                if (!ValidateParameters(invocationOperation.Arguments, out IArgumentOperation? patternArgument))
+                if (!ValidateParameters(invocationOperation.Arguments))
                 {
                     return;
                 }
@@ -111,7 +112,7 @@ namespace System.Text.RegularExpressions.Generator
                 // Report the diagnostic with a location that doesn't span the potentially multi-line pattern.
                 SyntaxNode? syntaxNodeForDiagnostic = invocationOperation.Syntax;
                 Debug.Assert(syntaxNodeForDiagnostic is not null);
-                Location location = GetLocationWithoutPattern(syntaxNodeForDiagnostic, patternArgument);
+                Location location = GetLocationBeforeArguments(syntaxNodeForDiagnostic);
                 context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, location));
             }
         }
@@ -136,7 +137,7 @@ namespace System.Text.RegularExpressions.Generator
                 return;
             }
 
-            if (!ValidateParameters(operation.Arguments, out IArgumentOperation? patternArgument))
+            if (!ValidateParameters(operation.Arguments))
             {
                 return;
             }
@@ -144,7 +145,7 @@ namespace System.Text.RegularExpressions.Generator
             // Report the diagnostic with a location that doesn't span the potentially multi-line pattern.
             SyntaxNode? syntaxNodeForDiagnostic = operation.Syntax;
             Debug.Assert(syntaxNodeForDiagnostic is not null);
-            Location location = GetLocationWithoutPattern(syntaxNodeForDiagnostic, patternArgument);
+            Location location = GetLocationBeforeArguments(syntaxNodeForDiagnostic);
             context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, location));
         }
 
@@ -152,12 +153,10 @@ namespace System.Text.RegularExpressions.Generator
         /// Validates the operation arguments ensuring they all have constant values, and if so it stores the argument
         /// indices for the pattern and options. If timeout argument was used, then this returns false.
         /// </summary>
-        private static bool ValidateParameters(ImmutableArray<IArgumentOperation> arguments, out IArgumentOperation? patternArgument)
+        private static bool ValidateParameters(ImmutableArray<IArgumentOperation> arguments)
         {
             const string timeoutArgumentName = "timeout";
             const string matchTimeoutArgumentName = "matchTimeout";
-
-            patternArgument = null;
 
             if (arguments == null)
             {
@@ -182,7 +181,7 @@ namespace System.Text.RegularExpressions.Generator
                     return false;
                 }
 
-                // If the argument is the pattern, then we validate that it is constant and we store the index.
+                // If the argument is the pattern, then we validate that it is constant.
                 if (argumentName.Equals(PatternArgumentName, StringComparison.OrdinalIgnoreCase))
                 {
                     if (!argument.Value.ConstantValue.HasValue)
@@ -202,7 +201,6 @@ namespace System.Text.RegularExpressions.Generator
                         return false;
                     }
 
-                    patternArgument = argument;
                     continue;
                 }
 
@@ -228,20 +226,27 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>
-        /// Gets a location for the diagnostic that excludes the pattern argument.
+        /// Gets a location for the diagnostic that excludes the argument list.
         /// This prevents multi-line patterns from causing adornments on every line.
         /// </summary>
-        private static Location GetLocationWithoutPattern(SyntaxNode syntaxNode, IArgumentOperation? patternArgument)
+        private static Location GetLocationBeforeArguments(SyntaxNode syntaxNode)
         {
-            // If we have a pattern argument, create a span from the start of the syntax
-            // to just before the pattern starts.
-            if (patternArgument?.Syntax is SyntaxNode patternSyntax)
+            // Get the span that ends just before the opening parenthesis of the argument list.
+            // For invocations like Regex.IsMatch(input, pattern), this gives us just "Regex.IsMatch".
+            // For object creations like new Regex(pattern), this gives us just "new Regex".
+            int? argumentListStart = syntaxNode switch
+            {
+                InvocationExpressionSyntax invocation => invocation.ArgumentList?.SpanStart,
+                ObjectCreationExpressionSyntax creation => creation.ArgumentList?.SpanStart,
+                _ => null
+            };
+
+            if (argumentListStart is int end)
             {
                 SyntaxTree? tree = syntaxNode.SyntaxTree;
                 if (tree is not null)
                 {
                     int start = syntaxNode.SpanStart;
-                    int end = patternSyntax.SpanStart;
                     if (end > start)
                     {
                         TextSpan span = TextSpan.FromBounds(start, end);
