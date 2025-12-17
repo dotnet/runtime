@@ -9,6 +9,14 @@
 #include "codegen.h"
 #include "fgwasm.h"
 
+#ifdef TARGET_64BIT
+static const instruction INS_I_const = INS_i64_const;
+static const instruction INS_I_add   = INS_i64_add;
+#else  // !TARGET_64BIT
+static const instruction INS_I_const = INS_i32_const;
+static const instruction INS_I_add   = INS_i32_add;
+#endif // !TARGET_64BIT
+
 void CodeGen::genMarkLabelsForCodegen()
 {
     // No work needed here for now.
@@ -266,6 +274,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_GE:
         case GT_GT:
             genCodeForCompare(treeNode->AsOp());
+            break;
+
+        case GT_LCL_ADDR:
+            genCodeForLclAddr(treeNode->AsLclFld());
+            break;
+
+        case GT_LCL_FLD:
+            genCodeForLclFld(treeNode->AsLclFld());
             break;
 
         case GT_LCL_VAR:
@@ -742,6 +758,38 @@ void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForLclAddr: Generates the code for GT_LCL_ADDR.
+//
+// Arguments:
+//    lclAddrNode - the node.
+//
+void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
+{
+    assert(lclAddrNode->OperIs(GT_LCL_ADDR));
+
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+    GetEmitter()->emitIns_S(INS_I_const, EA_PTRSIZE, lclAddrNode->GetLclNum(), lclAddrNode->GetLclOffs());
+    GetEmitter()->emitIns(INS_I_add);
+    genProduceReg(lclAddrNode);
+}
+
+//------------------------------------------------------------------------
+// genCodeForLclFld: Produce code for a GT_LCL_FLD node.
+//
+// Arguments:
+//    tree - the GT_LCL_FLD node
+//
+void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
+{
+    assert(tree->OperIs(GT_LCL_FLD));
+    LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
+
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+    GetEmitter()->emitIns_S(ins_Load(tree->TypeGet()), emitTypeSize(tree), tree->GetLclNum(), tree->GetLclOffs());
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
 // genCodeForLclVar: Produce code for a GT_LCL_VAR node.
 //
 // Arguments:
@@ -759,14 +807,14 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     if (!varDsc->lvIsRegCandidate())
     {
         var_types type = varDsc->GetRegisterType(tree);
-        // TODO-WASM: actually local.get the frame base local here.
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
         GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(tree), tree->GetLclNum(), 0);
         genProduceReg(tree);
     }
     else
     {
         assert(genIsValidReg(varDsc->GetRegNum()));
-        unsigned wasmLclIndex = UnpackWasmReg(varDsc->GetRegNum());
+        unsigned wasmLclIndex = WasmRegToIndex(varDsc->GetRegNum());
         GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(tree), wasmLclIndex);
     }
 }
@@ -785,23 +833,15 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     assert(!op1->IsMultiRegNode());
     genConsumeRegs(op1);
 
+    // We rewrite all stack stores to STOREIND because the address must be first on the operand stack, so here only
+    // enregistered locals need to be handled.
     LclVarDsc* varDsc    = compiler->lvaGetDesc(tree);
     regNumber  targetReg = varDsc->GetRegNum();
+    assert(genIsValidReg(targetReg) && varDsc->lvIsRegCandidate());
 
-    if (!varDsc->lvIsRegCandidate())
-    {
-        // TODO-WASM: handle these cases in lower/ra.
-        // Emit drop for now to simulate the store effect on the wasm stack.
-        GetEmitter()->emitIns(INS_drop);
-        genUpdateLife(tree);
-    }
-    else
-    {
-        assert(genIsValidReg(targetReg));
-        unsigned wasmLclIndex = UnpackWasmReg(targetReg);
-        GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), wasmLclIndex);
-        genUpdateLifeStore(tree, targetReg, varDsc);
-    }
+    unsigned wasmLclIndex = WasmRegToIndex(targetReg);
+    GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), wasmLclIndex);
+    genUpdateLifeStore(tree, targetReg, varDsc);
 }
 
 //------------------------------------------------------------------------
