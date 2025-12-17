@@ -1144,7 +1144,6 @@ PhaseStatus Compiler::fgWasmControlFlow()
             }
 
             // Branch to next needs no block, unless this is a switch
-            // (eventually when we leave the default on the switch we can remove this).
             //
             if ((succNum == (cursor + 1)) && !block->KindIs(BBJ_SWITCH))
             {
@@ -1408,6 +1407,10 @@ PhaseStatus Compiler::fgWasmControlFlow()
         }
     }
 
+    // Publish the index to block map for use during codegen.
+    //
+    fgIndexToBlockMap = initialLayout;
+
     JITDUMPEXEC(fgDumpWasmControlFlow());
     JITDUMPEXEC(fgDumpWasmControlFlowDot());
 
@@ -1623,13 +1626,10 @@ void Compiler::fgDumpWasmControlFlow()
                 BBswtDesc* const desc      = block->GetSwitchTargets();
                 unsigned const   caseCount = desc->GetCaseCount();
 
-                // BR_TABLE supports a default case, so we need to ensure
-                // that wasm lower does not remove it.
+                // BR_TABLE supports a default case.
+                // Wasm lower should not remove it.
                 //
-                // For now, we expect non-wasm lower has made the default case check explicit
-                // and so our BR_TABLE emission is deficient.
-                //
-                assert(!desc->HasDefaultCase());
+                assert(desc->HasDefaultCase());
 
                 if (caseCount == 0)
                 {

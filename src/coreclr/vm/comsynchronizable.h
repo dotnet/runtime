@@ -56,18 +56,26 @@ extern "C" void QCALLTYPE ThreadNative_PollGC();
 extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId();
 extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t);
 extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle thread);
+extern "C" void QCALLTYPE ThreadNative_SetWaitSleepJoinState(QCall::ThreadHandle thread);
+extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState(QCall::ThreadHandle thread);
+extern "C" INT32 QCALLTYPE ThreadNative_ReentrantWaitAny(BOOL alertable, INT32 timeout, INT32 count, HANDLE *handles);
+#ifdef TARGET_WINDOWS
+extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread);
+extern "C" void QCALLTYPE ThreadNative_CheckForPendingInterrupt(QCall::ThreadHandle thread);
+#endif // TARGET_WINDOWS
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 extern "C" INT32 QCALLTYPE ThreadNative_GetApartmentState(QCall::ObjectHandleOnStack t);
 extern "C" INT32 QCALLTYPE ThreadNative_SetApartmentState(QCall::ObjectHandleOnStack t, INT32 iState);
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-extern "C" BOOL QCALLTYPE ThreadNative_Join(QCall::ObjectHandleOnStack thread, INT32 Timeout);
+#ifdef TARGET_WINDOWS
+extern "C" HANDLE QCALLTYPE ThreadNative_GetOSHandle(QCall::ThreadHandle t);
+#endif // TARGET_WINDOWS
+
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_ResetAbort();
 extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations);
-extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread);
-extern "C" void QCALLTYPE ThreadNative_Sleep(INT32 iTime);
 #ifdef FEATURE_COMINTEROP
 extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::ThreadHandle thread);
 #endif // FEATURE_COMINTEROP

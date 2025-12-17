@@ -425,6 +425,7 @@ extern "C" PCODE TheUMEntryPrestubWorker(UMEntryThunkData * pUMEntryThunk);
 
 #if defined(FEATURE_INTERPRETER)
 UMEntryThunkData* GetMostRecentUMEntryThunkData();
+UMEntryThunkData* GetMostRecentUMEntryThunkDataNonDestructive();
 #endif // FEATURE_INTERPRETER
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
