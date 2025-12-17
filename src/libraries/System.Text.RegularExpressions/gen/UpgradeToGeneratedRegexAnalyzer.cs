@@ -150,8 +150,8 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>
-        /// Validates the operation arguments ensuring they all have constant values, and if so it stores the argument
-        /// indices for the pattern and options. If timeout argument was used, then this returns false.
+        /// Validates the operation arguments ensuring the pattern and options are constant values.
+        /// Returns false if a timeout argument is used.
         /// </summary>
         private static bool ValidateParameters(ImmutableArray<IArgumentOperation> arguments)
         {
