@@ -1829,8 +1829,12 @@ class CodeHeapIterator final
         EECodeGenManagerReleaseIteratorHolder& operator=(EECodeGenManagerReleaseIteratorHolder&& other)
         {
             LIMITED_METHOD_CONTRACT;
-            m_manager = other.m_manager;
-            other.m_manager = NULL;
+
+            if (this != &other)
+            {
+                m_manager = other.m_manager;
+                other.m_manager = NULL;
+            }
             return *this;
         }
         ~EECodeGenManagerReleaseIteratorHolder();
