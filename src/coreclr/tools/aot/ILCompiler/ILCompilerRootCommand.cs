@@ -182,6 +182,8 @@ namespace ILCompiler
             new("--generateunmanagedentrypoints") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Generate unmanaged entrypoints for a given assembly" };
         public Option<bool> DisableGeneratedCodeHeuristics { get; } =
             new("--disable-generated-code-heuristics") { Description = "Disable heuristics for detecting compiler-generated code" };
+        public Option<string> TypeMapEntryAssembly { get; } =
+            new("--typemap-entry-assembly") { Description = "Assembly name to use as entry point for TypeMap generation" };
 
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
@@ -273,6 +275,7 @@ namespace ILCompiler
             Options.Add(MakeReproPath);
             Options.Add(UnmanagedEntryPointsAssemblies);
             Options.Add(DisableGeneratedCodeHeuristics);
+            Options.Add(TypeMapEntryAssembly);
 
             this.SetAction(result =>
             {

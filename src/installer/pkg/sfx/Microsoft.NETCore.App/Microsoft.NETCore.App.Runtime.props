@@ -8,6 +8,7 @@
     <!-- These components are installed by the root shared framework, but not others. -->
     <IncludeWerRelatedKeys>true</IncludeWerRelatedKeys>
     <IncludeBreadcrumbStoreFolder>true</IncludeBreadcrumbStoreFolder>
+    <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
     <MacOSPackageDescription>The .NET Shared Framework</MacOSPackageDescription>
   </PropertyGroup>
 

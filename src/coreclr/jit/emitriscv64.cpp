@@ -4525,7 +4525,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 {
                     regNumber addrReg = needTemp ? codeGen->internalRegisters.GetSingle(indir) : dataReg;
                     attr              = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
-                    emitIns_R_AI(ins, attr, dataReg, addrReg, (size_t)offset, offset, addr->GetIconHandleFlag());
+                    emitIns_R_AI(ins, attr, dataReg, addrReg,
+                                 (size_t)offset DEBUGARG(offset) DEBUGARG(addr->GetIconHandleFlag()));
                 }
                 else
                 {
