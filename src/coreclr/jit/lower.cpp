@@ -4172,8 +4172,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 {
     assert(cmp->gtGetOp2()->IsIntegralConst());
 
-    GenTree*       op1 = cmp->gtGetOp1();
-    GenTreeIntCon* op2 = cmp->gtGetOp2()->AsIntCon();
+    GenTree*             op1 = cmp->gtGetOp1();
+    GenTreeIntConCommon* op2 = cmp->gtGetOp2()->AsIntConCommon();
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
@@ -4206,7 +4206,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         return false;
     };
 
-    ssize_t op2Value = op2->IconValue();
+    INT64 op2Value = op2->IntegralValue();
 
 #ifdef TARGET_XARCH
     var_types op1Type = op1->TypeGet();
@@ -4260,7 +4260,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 bool cmpEq = cmp->OperIs(GT_EQ);
 
                 cmp->SetOperRaw(cmpEq ? GT_TEST_EQ : GT_TEST_NE);
-                op2->SetIconValue(0xff);
+                op2->SetIntegralValue(0xff);
                 op2->gtType = castOp->gtType;
 #else
                 castOp->gtType = castToType;
