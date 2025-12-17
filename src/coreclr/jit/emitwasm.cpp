@@ -129,10 +129,10 @@ bool emitter::emitInsIsStore(instruction ins)
 // Notes:
 //   `lclOffset` is stored as debug info attached to the instruction,
 //    so the offset will only be used if m_debugInfoSize > 0
-emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr       attr,
-                                                    cnsval_ssize_t localCount,
-                                                    WasmValueType  type,
-                                                    int            lclOffset)
+emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr      attr,
+                                                    unsigned int  localCount,
+                                                    WasmValueType type,
+                                                    int           lclOffset)
 {
     instrDescLclVarDecl* id = static_cast<instrDescLclVarDecl*>(emitAllocAnyInstr(sizeof(instrDescLclVarDecl), attr));
     id->idLclCnt(localCount);
@@ -156,7 +156,7 @@ emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr       attr,
 //   imm      - immediate value (local count)
 //   valType  - value type of the local variable
 //   offs     - local variable offset (= count of preceding locals) for debug info
-void emitter::emitIns_I_Ty(instruction ins, cnsval_ssize_t imm, WasmValueType valType, int offs)
+void emitter::emitIns_I_Ty(instruction ins, unsigned int imm, WasmValueType valType, int offs)
 {
     instrDesc* id  = emitNewInstrLclVarDecl(EA_8BYTE, imm, valType, offs);
     insFormat  fmt = emitInsFormat(ins);
@@ -168,16 +168,16 @@ void emitter::emitIns_I_Ty(instruction ins, cnsval_ssize_t imm, WasmValueType va
     appendToCurIG(id);
 }
 
-WasmValueType emitter::emitGetLclVarDeclType(instrDesc* id)
+WasmValueType emitter::emitGetLclVarDeclType(const instrDesc* id)
 {
     assert(id->idIsLclVarDecl());
-    return static_cast<instrDescLclVarDecl*>(id)->lclType;
+    return static_cast<const instrDescLclVarDecl*>(id)->lclType;
 }
 
-cnsval_ssize_t emitter::emitGetLclVarDeclCount(instrDesc* id)
+unsigned int emitter::emitGetLclVarDeclCount(const instrDesc* id)
 {
     assert(id->idIsLclVarDecl());
-    return static_cast<instrDescLclVarDecl*>(id)->lclCnt;
+    return static_cast<const instrDescLclVarDecl*>(id)->lclCnt;
 }
 
 emitter::insFormat emitter::emitInsFormat(instruction ins)
@@ -292,9 +292,8 @@ unsigned emitter::instrDesc::idCodeSize() const
         case IF_LOCAL_DECL:
         {
             assert(idIsLclVarDecl());
-            instrDescLclVarDecl* idl      = static_cast<instrDescLclVarDecl*>(const_cast<instrDesc*>(this));
-            uint8_t              typeCode = GetWasmValueTypeCode(idl->lclType);
-            size                          = SizeOfULEB128(idl->lclCnt) + sizeof(typeCode);
+            uint8_t typeCode = GetWasmValueTypeCode(emitGetLclVarDeclType(this));
+            size             = SizeOfULEB128(emitGetLclVarDeclCount(this)) + sizeof(typeCode);
             break;
         }
         case IF_ULEB128:
@@ -584,28 +583,27 @@ void emitter::emitDispIns(
 
         case IF_LOCAL_DECL:
         {
-            cnsval_ssize_t count   = emitGetLclVarDeclCount(id);
-            WasmValueType  valType = emitGetLclVarDeclType(id);
-            int            offs    = id->idDebugOnlyInfo()->lclOffset;
+            unsigned int  count   = emitGetLclVarDeclCount(id);
+            WasmValueType valType = emitGetLclVarDeclType(id);
             assert(count > 0); // we should not be declaring a local entry with zero count
 
             if (m_debugInfoSize > 0)
             {
                 // With debug info: print the local offsets being declared
+                int offs = id->idDebugOnlyInfo()->lclOffset;
                 if (count > 1)
                 {
-                    printf("[%llu..%llu] type=%s", offs, offs + (uint64_t)count - 1, WasmValueTypeName(valType));
+                    printf("[%u..%u] type=%s", offs, offs + count - 1, WasmValueTypeName(valType));
                 }
                 else // single local case
                 {
-                    printf("[%llu] type=%s", offs, WasmValueTypeName(valType));
+                    printf("[%u] type=%s", offs, WasmValueTypeName(valType));
                 }
             }
             else
             {
                 // No debug info case: just print the count and type of the locals
-                printf(" count=%llu type=%s", (uint64_t)count, WasmValueTypeName(valType));
-                break;
+                printf(" count=%u type=%s", count, WasmValueTypeName(valType));
             }
         }
         break;

@@ -2349,15 +2349,15 @@ protected:
     struct instrDescLclVarDecl : instrDesc
     {
         instrDescLclVarDecl() = delete;
-        cnsval_ssize_t lclCnt;
-        WasmValueType  lclType;
+        unsigned int  lclCnt;
+        WasmValueType lclType;
 
         void idLclType(WasmValueType type)
         {
             lclType = type;
         }
 
-        void idLclCnt(cnsval_ssize_t cnt)
+        void idLclCnt(unsigned int cnt)
         {
             lclCnt = cnt;
         }
