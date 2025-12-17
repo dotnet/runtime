@@ -2609,7 +2609,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
         // Skip the explicit this argument
         sig.NextArg();
 
-    // Copy rest of the arguments
+        // Copy rest of the arguments
         sig.NextArg();
         SigPointer pArgs = sig.GetArgProps();
         for (unsigned i = 1; i < sig.NumFixedArgs(); i++)
