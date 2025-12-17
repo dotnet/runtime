@@ -116,6 +116,19 @@ bool emitter::emitInsIsStore(instruction ins)
     return false;
 }
 
+//-----------------------------------------------------------------------------
+// emitNewInstrLclVarDecl: Construct an instrDesc corresponding to a wasm local
+// declaration.
+//
+// Arguments:
+//   attr        - emit attributes
+//   localCount  - the count of locals in this declaration
+//   type        - the type of local in the declaration
+//   lclOffset   - used to provide the starting index of this local
+//
+// Notes:
+//   `lclOffset` is stored as debug info attached to the instruction,
+//    so the offset will only be used if m_debugInfoSize > 0
 emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr       attr,
                                                     cnsval_ssize_t localCount,
                                                     WasmValueType  type,
@@ -150,11 +163,6 @@ void emitter::emitIns_I_Ty(instruction ins, cnsval_ssize_t imm, WasmValueType va
 
     id->idIns(ins);
     id->idInsFmt(fmt);
-
-    if (m_debugInfoSize > 0)
-    {
-        id->idDebugOnlyInfo()->lclOffset = offs;
-    }
 
     dispIns(id);
     appendToCurIG(id);
