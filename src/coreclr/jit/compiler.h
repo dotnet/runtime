@@ -5970,6 +5970,7 @@ public:
     // Returns true if the provided type should be treated as a primitive type
     // for the unmanaged calling conventions.
     bool isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd);
+    bool isNativeHalfStructType(CORINFO_CLASS_HANDLE clsHnd);
 
     enum structPassingKind
     {

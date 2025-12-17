@@ -568,6 +568,32 @@ bool Compiler::isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd)
     return strcmp(typeName, "CLong") == 0 || strcmp(typeName, "CULong") == 0 || strcmp(typeName, "NFloat") == 0;
 }
 
+bool Compiler::isNativeHalfStructType(CORINFO_CLASS_HANDLE clsHnd)
+{
+#if defined(TARGET_XARCH)
+    if (!compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+    {
+        return false;
+    }
+
+    if (!isIntrinsicType(clsHnd))
+    {
+        return false;
+    }
+    const char* namespaceName = nullptr;
+    const char* typeName      = getClassNameFromMetadata(clsHnd, &namespaceName);
+
+    if (strcmp(namespaceName, "System") != 0)
+    {
+        return false;
+    }
+
+    return strcmp(typeName, "Half") == 0;
+#else
+    return false;
+#endif
+}
+
 //-----------------------------------------------------------------------------
 // getPrimitiveTypeForStruct:
 //     Get the "primitive" type that is used for a struct
@@ -642,7 +668,7 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             break;
 
         case 2:
-            useType = TYP_USHORT;
+            useType = isNativeHalfStructType(clsHnd) ? TYP_HALF : TYP_USHORT;
             break;
 
 #if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
