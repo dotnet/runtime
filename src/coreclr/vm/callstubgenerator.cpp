@@ -2574,14 +2574,18 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
     // in the places where it is needed such as computation of return buffers.
     if (sig.GetCallingConventionInfo() & IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS)
     {
+#if LOG_COMPUTE_CALL_STUB
         printf("Managed ExplicitThis to HasThis conversion needed\n");
+#endif // LOG_COMPUTE_CALL_STUB
         rewriteMetaSigFromExplicitThisToHasThis = true;
     }
 
     SigBuilder sigBuilder;
     if (rewriteMetaSigFromExplicitThisToHasThis)
     {
+#if LOG_COMPUTE_CALL_STUB
         printf("Rewriting ExplicitThis to implicit this\n");
+#endif // LOG_COMPUTE_CALL_STUB
         sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS);
         if ((sig.NumFixedArgs() == 0) || (sig.HasThis() && !sig.HasExplicitThis()))
         {
