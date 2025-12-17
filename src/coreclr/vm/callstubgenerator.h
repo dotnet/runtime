@@ -69,12 +69,23 @@ class CallStubGenerator
     enum ReturnType
     {
         ReturnTypeVoid,
+        ReturnTypeI1,
+        ReturnTypeU1,
+        ReturnTypeI2,
+        ReturnTypeU2,
         ReturnTypeI8,
         ReturnTypeDouble,
-#ifdef TARGET_AMD64
+#ifdef TARGET_32BIT
+        ReturnTypeI4,
+        ReturnTypeFloat,
+#endif // TARGET_32BIT
+#if defined(TARGET_AMD64) || defined(TARGET_ARM)
         ReturnTypeBuffArg1,
         ReturnTypeBuffArg2,
 #else
+#if defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+        ReturnTypeBuffArg2,
+#endif
         ReturnTypeBuff,
 #endif
 #ifdef UNIX_AMD64_ABI
@@ -143,10 +154,10 @@ class CallStubGenerator
     CallStubHeader::InvokeFunctionPtr m_pInvokeFunction = NULL;
     bool m_interpreterToNative = false;
 
-#ifndef UNIX_AMD64_ABI
+#if !defined(UNIX_AMD64_ABI) && defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
     PCODE GetGPRegRefRoutine(int r);
     PCODE GetStackRefRoutine();
-#endif // !UNIX_AMD64_ABI
+#endif // !UNIX_AMD64_ABI && ENREGISTERED_PARAMTYPE_MAXSIZE
     PCODE GetStackRoutine();
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
     PCODE GetStackRoutine_1B();
@@ -157,14 +168,20 @@ class CallStubGenerator
 #ifdef TARGET_ARM64
     PCODE GetFPReg128RangeRoutine(int x1, int x2);
     PCODE GetFPReg32RangeRoutine(int x1, int x2);
-#endif    
+#endif // TARGET_ARM64
     PCODE GetGPRegRangeRoutine(int r1, int r2);
-    ReturnType GetReturnType(ArgIterator *pArgIt);
+    template<typename ArgIteratorType>
+    ReturnType GetReturnType(ArgIteratorType *pArgIt);
     CallStubHeader::InvokeFunctionPtr GetInvokeFunctionPtr(ReturnType returnType);
     PCODE GetInterpreterReturnTypeHandler(ReturnType returnType);
+#ifdef TARGET_ARM
+    PCODE GetRegRoutine_4B(int r1, int r2);
+    PCODE GetStackRoutine_4B();
+#endif // TARGET_ARM
 
     // Process the argument described by argLocDesc. This function is called for each argument in the method signature.
-    void ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocDesc, PCODE *pRoutines);
+    template<typename ArgIteratorType>
+    void ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& argLocDesc, PCODE *pRoutines);
 public:
     // Generate the call stub for the given method.
     CallStubHeader *GenerateCallStub(MethodDesc *pMD, AllocMemTracker *pamTracker, bool interpreterToNative);
@@ -179,7 +196,9 @@ private:
         // The size of the routines array is three times the number of arguments plus one slot for the target method pointer.
         return sizeof(CallStubHeader) + ((numArgs + 1) * 3 + 1) * sizeof(PCODE);
     }
-    void ComputeCallStub(MetaSig &sig, PCODE *pRoutines);
+    void ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD);
+    template<typename ArgIteratorType>
+    void ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfoCallConvExtension unmanagedCallConv, MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD);
 
     void TerminateCurrentRoutineIfNotOfNewType(RoutineType type, PCODE *pRoutines);
 };

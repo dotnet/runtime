@@ -450,9 +450,9 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
             MethodDesc* pMeth = (MethodDesc*) getMethodHandle.Call_RetLPVOID(&GetMethodHandleArg);
             if (pMeth)
             {
-                // TODO: (async) revisit and examine if this needs to be supported somehow
+                // We don't expose runtime-async methods via IDispatch.
                 if (pMeth->IsAsyncMethod())
-                    ThrowHR(COR_E_NOTSUPPORTED);
+                    RETURN NULL;
 
                 pMemberProps = pMemberMap->GetMethodProps(pMeth->GetMemberDef(), pMeth->GetModule());
             }
@@ -830,14 +830,11 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pMD));
+        PRECONDITION(!pMD->IsAsyncMethod());
     }
     CONTRACTL_END;
 
     GCX_PREEMP();
-
-    // TODO: (async) revisit and examine if this needs to be supported somehow
-    if (pMD->IsAsyncMethod())
-        ThrowHR(COR_E_NOTSUPPORTED);
 
     MetaSig         msig(pMD);
     LPCSTR          szName;
@@ -2584,7 +2581,7 @@ bool DispatchInfo::IsPropertyAccessorVisible(bool fIsSetter, OBJECTREF* pMemberI
 
         // Check to see if the new method is a property accessor.
         mdToken tkMember = mdTokenNil;
-        // TODO: (async) revisit and examine if this needs to be supported somehow
+        // Runtime-async property accessors are not visible from COM
         if (pMDForProperty->IsAsyncVariantMethod())
         {
             return false;

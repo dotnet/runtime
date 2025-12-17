@@ -137,8 +137,11 @@ OPDEF(INTOP_NOT_I8, "not.i8", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CKFINITE_R4, "ckfinite.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CKFINITE_R8, "ckfinite.r8", 3, 1, 1, InterpOpNoArgs)
 
-OPDEF(INTOP_CONV_R_UN_I4, "conv.r.un.i4", 3, 1, 1, InterpOpNoArgs)
-OPDEF(INTOP_CONV_R_UN_I8, "conv.r.un.i8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_R4_UN_I4, "conv.r4.un.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_R4_UN_I8, "conv.r4.un.i8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_CONV_R8_UN_I4, "conv.r8.un.i4", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_CONV_R8_UN_I8, "conv.r8.un.i8", 3, 1, 1, InterpOpNoArgs)
 
 OPDEF(INTOP_CONV_I1_I4, "conv.i1.i4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_I1_I8, "conv.i1.i8", 3, 1, 1, InterpOpNoArgs)
@@ -163,6 +166,7 @@ OPDEF(INTOP_CONV_U2_R8, "conv.u2.r8", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_I4_R4, "conv.i4.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_I4_R8, "conv.i4.r8", 3, 1, 1, InterpOpNoArgs)
 
+OPDEF(INTOP_CONV_U4_U8_SAT, "conv.u4.u8.sat", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_U4_R4, "conv.u4.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_U4_R8, "conv.u4.r8", 3, 1, 1, InterpOpNoArgs)
 
@@ -424,6 +428,7 @@ OPDEF(INTOP_INITBLK, "initblk", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_CPBLK, "cpblk", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_LOCALLOC, "localloc", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_BREAKPOINT, "breakpoint", 1, 0, 0, InterpOpNoArgs)
+OPDEF(INTOP_HALT, "halt", 1, 0, 0, InterpOpNoArgs)
 
 OPDEF(INTOP_THROW, "throw", 4, 0, 1, InterpOpInt)
 OPDEF(INTOP_RETHROW, "rethrow", 1, 0, 0, InterpOpInt)

@@ -42,6 +42,7 @@
     <RestoreProjects Include="Common\XHarnessRunnerLibrary\XHarnessRunnerLibrary.csproj" />
     <RestoreProjects Include="Common\external\external.csproj" />
     <RestoreProjects Include="Common\ilasm\ilasm.ilproj" />
+    <RestoreProjects Include="tracing\userevents\common\userevents_common.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -381,6 +382,7 @@
       <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
       <AllRunnableTestPaths Remove="%(SkipTestDirsPaths.Identity)\**\*.$(TestScriptExtension)" />
       <MergedAssemblyMarkerPaths Include="$(XunitTestBinBase)\**\*.MergedTestAssembly"/>
+      <MergedAssemblyMarkerPaths Include="$(XunitTestBinBase)\**\*.MergedTestAssemblyForStress"/>
       <MergedAssemblyFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyMarkerPaths.Identity)'))" />
       <MergedAssemblyParentFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyFolders.Identity)'))" />
       <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" Condition="'@(MergedAssemblyParentFolders)' != ''" />
@@ -495,6 +497,8 @@
       <GroupBuildCmd Condition="'$(TargetOS)' == 'browser' and '$(ContinuousIntegrationBuild)' == 'true'">$(GroupBuildCmd) /m:1</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TargetOS)' == 'wasi'">$(GroupBuildCmd) /m:1</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">$(GroupBuildCmd) "/p:DevTeamProvisioning=-"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(UseMonoRuntime)' != ''">$(GroupBuildCmd) "/p:UseMonoRuntime=$(UseMonoRuntime)"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(UseNativeAOTRuntime)' != ''">$(GroupBuildCmd) "/p:UseNativeAOTRuntime=$(UseNativeAOTRuntime)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /bl:$(ArtifactsDir)/log/$(Configuration)/InnerManagedTestBuild.$(__TestGroupToBuild).binlog</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(CrossBuild)' == 'true'">$(GroupBuildCmd) "/p:CrossBuild=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(CppCompilerAndLinker)' != ''">$(GroupBuildCmd) "/p:CppCompilerAndLinker=$(CppCompilerAndLinker)"</GroupBuildCmd>

@@ -19,7 +19,15 @@
         const exports = {};
         libBrowserHost(exports);
 
-        let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP", "$ENV", "$FS", "$NODEFS", "wasm_load_icu_data"];
+        // libBrowserHostFn is too complex for acorn-optimizer.mjs to find the dependencies
+        let explicitDeps = [
+            "wasm_load_icu_data", "BrowserHost_CreateHostContract", "BrowserHost_InitializeCoreCLR", "BrowserHost_ExecuteAssembly"
+        ];
+        let commonDeps = [
+            "$DOTNET", "$DOTNET_INTEROP", "$ENV", "$FS", "$NODEFS",
+            "$libBrowserHostFn",
+            ...explicitDeps
+        ];
         const lib = {
             $BROWSER_HOST: {
                 selfInitialize: () => {
@@ -31,26 +39,19 @@
                         exports.dotnetInitializeModule(dotnetInternals);
                         BROWSER_HOST.assignExports(exports, BROWSER_HOST);
 
-                        const HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES = "TRUSTED_PLATFORM_ASSEMBLIES";
-                        const HOST_PROPERTY_ENTRY_ASSEMBLY_NAME = "ENTRY_ASSEMBLY_NAME";
-                        const HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES = "NATIVE_DLL_SEARCH_DIRECTORIES";
-                        const HOST_PROPERTY_APP_PATHS = "APP_PATHS";
-
-                        const config = dotnetInternals[2/*InternalExchangeIndex.LoaderConfig*/];
-                        if (!config.resources.assembly ||
-                            !config.resources.coreAssembly ||
-                            config.resources.coreAssembly.length === 0 ||
-                            !config.mainAssemblyName ||
-                            !config.virtualWorkingDirectory ||
-                            !config.environmentVariables) {
+                        const loaderConfig = dotnetInternals[2/*InternalExchangeIndex.LoaderConfig*/];
+                        if (!loaderConfig.resources.assembly ||
+                            !loaderConfig.resources.coreAssembly ||
+                            loaderConfig.resources.coreAssembly.length === 0 ||
+                            !loaderConfig.mainAssemblyName ||
+                            !loaderConfig.virtualWorkingDirectory ||
+                            !loaderConfig.environmentVariables) {
                             throw new Error("Invalid runtime config, cannot initialize the runtime.");
                         }
-                        const assemblyPaths = config.resources.assembly.map(a => a.virtualPath);
-                        const coreAssemblyPaths = config.resources.coreAssembly.map(a => a.virtualPath);
-                        ENV[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = config.environmentVariables[HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES] = [...coreAssemblyPaths, ...assemblyPaths].join(":");
-                        ENV[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.environmentVariables[HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES] = config.virtualWorkingDirectory;
-                        ENV[HOST_PROPERTY_APP_PATHS] = config.environmentVariables[HOST_PROPERTY_APP_PATHS] = config.virtualWorkingDirectory;
-                        ENV[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.environmentVariables[HOST_PROPERTY_ENTRY_ASSEMBLY_NAME] = config.mainAssemblyName;
+
+                        for (const key in loaderConfig.environmentVariables) {
+                            ENV[key] = loaderConfig.environmentVariables[key];
+                        }
 
                         if (ENVIRONMENT_IS_NODE) {
                             Module.preInit = [() => {
@@ -68,17 +69,18 @@
         };
 
         let assignExportsBuilder = "";
+        let explicitImportsBuilder = "";
         for (const exportName of Reflect.ownKeys(exports)) {
             const name = String(exportName);
             if (name === "dotnetInitializeModule") continue;
             lib[name] = () => "dummy";
             assignExportsBuilder += `_${String(name)} = exports.${String(name)};\n`;
-            const fn = exports[name];
-            if (fn.__deps) {
-                lib[name + "__deps"] = fn.__deps;
-            }
+        }
+        for (const importName of explicitDeps) {
+            explicitImportsBuilder += `_${importName}();\n`;
         }
         lib.$BROWSER_HOST.assignExports = new Function("exports", assignExportsBuilder);
+        lib.$BROWSER_HOST.explicitImports = new Function(explicitImportsBuilder);
 
         autoAddDeps(lib, "$BROWSER_HOST");
         addToLibrary(lib);

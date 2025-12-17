@@ -33,5 +33,28 @@ namespace System.SpanTests
 
             Assert.Throws<ArgumentException>(() => MemoryMarshal.AsRef<TestHelpers.StructWithReferences>(new Span<byte>(new byte[100])));
         }
+
+        [Fact]
+        public static void AsRef_ImplicitSpanConversion_ReturnsMutableRef()
+        {
+            // Validates that when a type has an implicit conversion to Span<byte>,
+            // AsRef returns a mutable ref (not ref readonly). This is enabled by
+            // [OverloadResolutionPriority(1)] on the Span<byte> overload.
+            SpanConvertibleStruct s = new();
+            ref int value = ref MemoryMarshal.AsRef<int>(s);
+            value = 42;
+            Assert.Equal(42, s.Value);
+        }
+
+        private struct SpanConvertibleStruct
+        {
+#pragma warning disable CS0649 // Field is assigned via MemoryMarshal.AsRef
+            private int _value;
+#pragma warning restore CS0649
+            public int Value => _value;
+
+            public static implicit operator Span<byte>(in SpanConvertibleStruct s) =>
+                MemoryMarshal.CreateSpan(ref Unsafe.As<int, byte>(ref Unsafe.AsRef(in s._value)), sizeof(int));
+        }
     }
 }

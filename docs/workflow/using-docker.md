@@ -47,7 +47,7 @@ The main Docker images are the most commonly used ones, and the ones you will pr
 | Azure Linux (x64) | Debian sid                 | LoongArch     | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-loongarch64`   | `/crossrootfs/loongarch64` |
 | Azure Linux (x64) | Ubuntu 18.04               | S390x         | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-s390x`         | `/crossrootfs/s390x`   |
 | Azure Linux (x64) | Ubuntu 18.04 (Wasm)        | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-webassembly-amd64`   | `/crossrootfs/x64`     |
-| Debian (x64)      | Debian 12                  | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc15-amd64`                     |        *N/A*           |
+| Debian (x64)      | Debian 13                  | x64           | `mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-gcc15-amd64`                     |        *N/A*           |
 | Ubuntu (x64)      | Tizen 9.0                  | Arm32 (armel) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-armel-tizen`            | `/crossrootfs/armel`   |
 
 ## Build the Repo

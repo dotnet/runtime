@@ -23,5 +23,7 @@ await initPolyfillsAsync();
 export const dotnet: DotnetHostBuilder | undefined = new HostBuilder() as DotnetHostBuilder;
 export { exit };
 
+dotnet.withConfig(/*! dotnetBootConfig */{});
+
 // Auto-start when in Node.js or Shell environment
 selfHostNodeJS(dotnet!).catch();

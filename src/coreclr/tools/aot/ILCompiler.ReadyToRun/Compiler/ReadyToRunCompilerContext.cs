@@ -57,11 +57,12 @@ namespace ILCompiler
         public ReadyToRunCompilerContext(
             TargetDetails details,
             SharedGenericsMode genericsMode,
-            bool bubbleIncludesCorelib,
+            bool bubbleIncludesCoreModule,
             InstructionSetSupport instructionSetSupport,
             CompilerTypeSystemContext oldTypeSystemContext)
             : base(details, genericsMode)
         {
+            BubbleIncludesCoreModule = bubbleIncludesCoreModule;
             InstructionSetSupport = instructionSetSupport;
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
@@ -94,7 +95,27 @@ namespace ILCompiler
             }
         }
 
+        public bool BubbleIncludesCoreModule { get; }
+
         public InstructionSetSupport InstructionSetSupport { get; }
+
+        public bool TargetAllowsRuntimeCodeGeneration
+        {
+            get
+            {
+                if (Target.OperatingSystem is TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator)
+                {
+                    return false;
+                }
+
+                if (Target.Architecture is TargetArchitecture.Wasm32)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+        }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
@@ -184,7 +205,7 @@ namespace ILCompiler
             {
                 if (_asyncStateMachineBox == null)
                 {
-                    _asyncStateMachineBox = SystemModule.GetType("System.Runtime.CompilerServices"u8, "AsyncTaskMethodBuilder`1"u8).GetNestedType("AsyncStateMachineBox`1");
+                    _asyncStateMachineBox = SystemModule.GetType("System.Runtime.CompilerServices"u8, "AsyncTaskMethodBuilder`1"u8).GetNestedType("AsyncStateMachineBox`1"u8);
                     if (_asyncStateMachineBox == null)
                         throw new Exception();
                 }

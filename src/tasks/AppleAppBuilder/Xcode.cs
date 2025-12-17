@@ -235,7 +235,7 @@ internal sealed class Xcode
         else
         {
             // arch is passed later when invoking xcodebuild
-            cmakeArgs.Append(" -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2");
+            cmakeArgs.Append(" -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0");
         }
 
         Utils.RunProcess(Logger, "cmake", cmakeArgs.ToString(), workingDir: cmakeDirectoryPath);
@@ -690,7 +690,7 @@ internal sealed class Xcode
                         .Append(" -UseModernBuildSystem=YES")
                         .Append(" -archivePath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
                         .Append(" -derivedDataPath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
-                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.0");
+                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.2");
                     break;
             }
         }
@@ -715,7 +715,7 @@ internal sealed class Xcode
                         .Append(" -UseModernBuildSystem=YES")
                         .Append(" -archivePath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
                         .Append(" -derivedDataPath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
-                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.0");
+                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.2");
                     break;
             }
         }

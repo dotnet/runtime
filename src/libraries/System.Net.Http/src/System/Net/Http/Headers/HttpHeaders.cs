@@ -480,7 +480,7 @@ namespace System.Net.Http.Headers
 
         public bool Remove(string name) => Remove(GetHeaderDescriptor(name));
 
-        internal bool RemoveParsedValue(HeaderDescriptor descriptor, object value)
+        internal bool RemoveParsedValue(HeaderDescriptor descriptor, object value, bool removeAll = false)
         {
             Debug.Assert(value != null);
 
@@ -519,8 +519,9 @@ namespace System.Net.Http.Headers
                 }
                 else
                 {
-                    foreach (object item in parsedValues)
+                    for (int i = 0; i < parsedValues.Count; i++)
                     {
+                        object item = parsedValues[i];
                         if (item is not InvalidValue)
                         {
                             Debug.Assert(item.GetType() == value.GetType(),
@@ -528,11 +529,27 @@ namespace System.Net.Http.Headers
 
                             if (AreEqual(value, item, comparer))
                             {
-                                // Remove 'item' rather than 'value', since the 'comparer' may consider two values
-                                // equal even though the default obj.Equals() may not (e.g. if 'comparer' does
-                                // case-insensitive comparison for strings, but string.Equals() is case-sensitive).
-                                result = parsedValues.Remove(item);
-                                break;
+                                parsedValues.RemoveAt(i);
+                                i--;
+
+                                if (!result)
+                                {
+                                    result = true;
+
+                                    if (!removeAll)
+                                    {
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    // We've removed a second item. Fallback to RemoveAll in case there are more to maintain a linear worst-case.
+                                    // Create a copy of the locals to avoid the capture allocation in the common case.
+                                    object valueLocal = value;
+                                    IEqualityComparer? comparerLocal = comparer;
+                                    parsedValues.RemoveAll(item => item is not InvalidValue && AreEqual(valueLocal, item, comparerLocal));
+                                    break;
+                                }
                             }
                         }
                     }
