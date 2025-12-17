@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Runtime.General;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
@@ -174,18 +175,8 @@ namespace Internal.StackTraceMetadata
 
                     int documentOffset = ((int*)documentsBlob)[documentIndex];
                     byte* documentAddress = documentsBlob + documentOffset;
-                    string documentName = System.Text.Encoding.UTF8.GetString(documentAddress, strlen(documentAddress));
+                    string documentName = System.Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(documentAddress));
                     return (documentName, currentLineNumber);
-
-                    static unsafe int strlen(byte* ptr)
-                    {
-                        int i = 0;
-
-                        while (ptr[i] != 0)
-                            i++;
-
-                        return i;
-                    }
                 }
             }
 
