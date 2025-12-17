@@ -42,7 +42,7 @@
     .maxstack  1
     ldsfld valuetype Struct Struct::s
     ret
-  } // end of method Struct::InstanceMethod
+  } // end of method Struct::InstanceMethodReturningLargeValuetype
 } // end of class Struct
 
 .class public auto beforefieldinit Program
