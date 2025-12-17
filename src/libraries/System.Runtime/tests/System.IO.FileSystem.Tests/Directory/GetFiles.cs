@@ -229,10 +229,10 @@ namespace System.IO.Tests
         {
             DirectoryInfo parentDir = Directory.CreateDirectory(GetTestFilePath());
             string problematicDirPath = Path.Combine(parentDir.FullName, dirName);
-            Directory.CreateDirectory(@"\\?\" + problematicDirPath);
+            Directory.CreateDirectory(problematicDirPath);
 
             string normalFileName = "normalfile.txt";
-            string filePath = Path.Combine(problematicDirPath, normalFileName);
+            string filePath = Path.Combine(Path.GetFullPath(problematicDirPath), normalFileName);
             File.Create(filePath).Dispose();
 
             string[] files = GetEntries(problematicDirPath);
