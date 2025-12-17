@@ -350,7 +350,7 @@ inline bool varTypeUsesFloatArgReg(T vt)
     return varTypeUsesFloatReg(vt);
 #else
     // Other targets pass them as regular structs - by reference or by value.
-    return varTypeIsFloating(vt);
+    return varTypeIsFloating(vt) || TypeGet(vt) == TYP_HALF;
 #endif
 }
 

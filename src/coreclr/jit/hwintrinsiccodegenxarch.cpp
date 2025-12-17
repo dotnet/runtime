@@ -1925,7 +1925,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             }
             else
             {
-                assert(varTypeIsFloating(baseType));
+                assert(varTypeIsFloating(baseType) || TypeGet(baseType) == TYP_HALF);
 
                 attr = emitTypeSize(baseType);
 
@@ -2219,7 +2219,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             }
             else
             {
-                assert(varTypeIsFloating(baseType));
+                assert(varTypeIsFloating(baseType) || TypeGet(baseType) == TYP_HALF);
                 assert(instOptions == INS_OPTS_NONE);
 
                 // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
