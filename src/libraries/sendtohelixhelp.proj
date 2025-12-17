@@ -346,7 +346,7 @@
 
   <Target Name="SetHelixJobName" BeforeTargets="CoreTest">
     <PropertyGroup>
-      <HelixJobName>$(WorkItemPrefix.TrimEnd('-'))</HelixJobName>
+      <HelixJobName Condition="'$(WorkItemPrefix)' != ''">$(WorkItemPrefix.TrimEnd('-'))</HelixJobName>
     </PropertyGroup>
   </Target>
 
