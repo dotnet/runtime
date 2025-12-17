@@ -48,19 +48,12 @@ Abstract:
 #include <semaphore.h>
 #endif // HAVE_SYS_SEMAPHORE_H
 
-#elif HAS_PTHREAD_MUTEXES && HAVE_MACH_EXCEPTIONS
+#elif HAS_PTHREAD_MUTEXES && (HAVE_MACH_EXCEPTIONS || defined(TARGET_TVOS))
 
 // Can only use the pthread solution if we're not using signals since pthread mutexes are not signal safe.
-#define USE_PTHREAD_CONDVARS 1
 
-#include <pthread.h>
-
-#elif HAS_PTHREAD_MUTEXES && (defined(TARGET_TVOS) || defined(TARGET_MACCATALYST))
-
-// On tvOS, HAVE_MACH_EXCEPTIONS may be 0 because thread_set_exception_ports is not available in the SDK.
-// However, System V IPC (semget) is also not available due to sandbox restrictions.
-// Use pthread condvars instead. This is safe because these platforms don't use signal-based exception
-// handling for thread suspension.
+// On tvOS, HAVE_MACH_EXCEPTIONS is 0 because thread_set_exception_ports is not available in the SDK.
+// However, System V IPC (semget) is also not available due to sandbox restrictions so we use pthread instead.
 #define USE_PTHREAD_CONDVARS 1
 
 #include <pthread.h>
