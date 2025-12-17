@@ -313,7 +313,7 @@ namespace Wasm.Build.Tests
             }
 
             if (isPublish)
-                PublishProject(info, config, new BuildOptions(AssertAppBundle: useWasmSdk));
+                PublishProject(info, config, new PublishOptions(AssertAppBundle: useWasmSdk));
             else
                 BuildProject(info, config, new BuildOptions(AssertAppBundle: useWasmSdk));
 
