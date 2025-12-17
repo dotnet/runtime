@@ -234,7 +234,7 @@ unsigned emitter::SizeOfSLEB128(int64_t value)
     return (x * 37) >> 8;
 }
 
-static uint8_t getWasmValueTypeCode(WasmValueType type)
+static uint8_t GetWasmValueTypeCode(WasmValueType type)
 {
     // clang-format off
     static const uint8_t typecode_mapping[] = {
