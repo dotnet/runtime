@@ -192,17 +192,24 @@ namespace Internal.TypeSystem
             if (!newConvention.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
                 return existing;
 
-            UnmanagedCallingConventions? addedCallConv = newConvention.GetName() switch
-            {
-                "CallConvCdecl" => UnmanagedCallingConventions.Cdecl,
-                "CallConvStdcall" => UnmanagedCallingConventions.Stdcall,
-                "CallConvFastcall" => UnmanagedCallingConventions.Fastcall,
-                "CallConvThiscall" => UnmanagedCallingConventions.Thiscall,
-                "CallConvSuppressGCTransition" => UnmanagedCallingConventions.IsSuppressGcTransition,
-                "CallConvMemberFunction" => UnmanagedCallingConventions.IsMemberFunction,
-                "CallConvSwift" => UnmanagedCallingConventions.Swift,
-                _ => null
-            };
+            ReadOnlySpan<byte> newConventionName = newConvention.Name;
+
+            UnmanagedCallingConventions? addedCallConv = null;
+
+            if (newConventionName.SequenceEqual("CallConvCdecl"u8))
+                addedCallConv = UnmanagedCallingConventions.Cdecl;
+            else if (newConventionName.SequenceEqual("CallConvStdcall"u8))
+                addedCallConv = UnmanagedCallingConventions.Stdcall;
+            else if (newConventionName.SequenceEqual("CallConvFastcall"u8))
+                addedCallConv = UnmanagedCallingConventions.Fastcall;
+            else if (newConventionName.SequenceEqual("CallConvThiscall"u8))
+                addedCallConv = UnmanagedCallingConventions.Thiscall;
+            else if (newConventionName.SequenceEqual("CallConvSuppressGCTransition"u8))
+                addedCallConv = UnmanagedCallingConventions.IsSuppressGcTransition;
+            else if (newConventionName.SequenceEqual("CallConvMemberFunction"u8))
+                addedCallConv = UnmanagedCallingConventions.IsMemberFunction;
+            else if (newConventionName.SequenceEqual("CallConvSwift"u8))
+                addedCallConv = UnmanagedCallingConventions.Swift;
 
             if (addedCallConv == null)
                 return existing;
