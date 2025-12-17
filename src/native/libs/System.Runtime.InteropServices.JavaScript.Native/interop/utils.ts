@@ -1,6 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import type { TimeStamp } from "./types";
+
+import { dotnetAssert, dotnetDiagnosticsExports, dotnetLoaderExports } from "./cross-module";
+import { jsInteropState } from "./marshal";
+
 export function fixupPointer(signature: any, shiftAmount: number): any {
     return ((signature as any) >>> shiftAmount) as any;
 }
@@ -18,32 +23,40 @@ export function normalizeException(ex: any) {
             else
                 res += "\n" + stack;
         }
-
-        // TODO-WASM
-        // res = mono_wasm_symbolicate_string(res);
+        if (dotnetDiagnosticsExports.symbolicateStackTrace) {
+            res = dotnetDiagnosticsExports.symbolicateStackTrace(res);
+        }
     }
     return res;
 }
 
 export function isRuntimeRunning(): boolean {
-    // TODO-WASM
-    return true;
+    return dotnetLoaderExports.isRuntimeRunning();
 }
 
 export function assertRuntimeRunning(): void {
-    // TODO-WASM
+    dotnetAssert.check(isRuntimeRunning(), "The runtime is not running.");
 }
 
 export function assertJsInterop(): void {
-    // TODO-WASM
+    dotnetAssert.check(isRuntimeRunning() && jsInteropState.isInitialized, "The runtime is not running.");
 }
 
-export function startMeasure(): number {
-    // TODO-WASM
-    return 0;
+
+export function startMeasure(): TimeStamp {
+    if (jsInteropState.enablePerfMeasure) {
+        return globalThis.performance.now() as any;
+    }
+    return undefined as any;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function endMeasure(mark: number, fqn: string, additionalInfo: string): void {
-    // TODO-WASM
+export function endMeasure(start: TimeStamp, block: string, id?: string) {
+    if (jsInteropState.enablePerfMeasure && start) {
+        // API is slightly different between web and Nodejs
+        const options = ENVIRONMENT_IS_WEB
+            ? { start: start as any }
+            : { startTime: start as any };
+        const name = id ? `${block}${id} ` : block;
+        globalThis.performance.measure(name, options);
+    }
 }

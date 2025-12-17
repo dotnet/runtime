@@ -37,6 +37,9 @@ export type CSFnHandle = {
 export interface JSFunctionSignature extends NativePointer {
     __brand: "JSFunctionSignatures"
 }
+export type TimeStamp = {
+    __brand: "TimeStamp"
+}
 
 export type WeakRefInternal<T extends object> = WeakRef<T> & {
     dispose?: () => void

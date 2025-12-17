@@ -11,6 +11,7 @@ import { initializeMarshalersToCs } from "./marshal-to-cs";
 import { releaseCSOwnedObject } from "./gc-handles";
 import { cancelPromise } from "./cancelable-promise";
 import { loadLazyAssembly, loadSatelliteAssemblies } from "./lazy";
+import { jsInteropState } from "./marshal";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
@@ -46,6 +47,8 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
 
     initializeMarshalersToJs();
     initializeMarshalersToCs();
+    jsInteropState.isInitialized = true;
+    jsInteropState.enablePerfMeasure = globalThis.performance && typeof globalThis.performance.measure === "function";
 
     function runtimeExportsToTable(map: RuntimeExports): RuntimeExportsTable {
         // keep in sync with runtimeExportsFromTable()

@@ -10,6 +10,8 @@ export const jsInteropState = {
     isPendingSynchronousCall: false,
     proxyGCHandle: undefined as GCHandle | undefined,
     cspPolicy: false,
+    isInitialized: false,
+    enablePerfMeasure: false,
     managedThreadTID: 0 as any as PThreadPtr,
 };
 
