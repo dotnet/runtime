@@ -8985,8 +8985,14 @@ void Lowering::FindInducedParameterRegisterLocals()
             // We always use the full width for integer registers even if the
             // width is shorter, because various places in the JIT will type
             // accesses larger to generate smaller code.
+
+#ifdef TARGET_WASM
+            var_types fullWidthType = TYP_LONG;
+#else
+            var_types fullWidthType = TYP_I_IMPL;
+#endif
             var_types registerType =
-                genIsValidIntReg(regSegment->GetRegister()) ? TYP_I_IMPL : regSegment->GetRegisterType();
+                genIsValidIntReg(regSegment->GetRegister()) ? fullWidthType : regSegment->GetRegisterType();
             if ((registerType == TYP_I_IMPL) && varTypeIsGC(fld))
             {
                 registerType = fld->TypeGet();
