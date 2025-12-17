@@ -2508,7 +2508,6 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
             {
                 unmanagedCallConv = CorInfoCallConvExtension::C;
             }
-            unmanagedCallConv = unmanagedCallConv;
         }
         else
         {
