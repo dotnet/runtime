@@ -498,6 +498,9 @@ CorUnix::InternalCreateProcess(
     LPPROCESS_INFORMATION lpProcessInformation
     )
 {
+#ifdef TARGET_TVOS
+    return ERROR_NOT_SUPPORTED;
+#else
     PAL_ERROR palError = NO_ERROR;
     IPalObject *pobjProcess = NULL;
     IPalObject *pobjProcessRegistered = NULL;
@@ -1034,6 +1037,7 @@ InternalCreateProcessExit:
     }
 
     return palError;
+#endif // !TARGET_TVOS
 }
 
 
