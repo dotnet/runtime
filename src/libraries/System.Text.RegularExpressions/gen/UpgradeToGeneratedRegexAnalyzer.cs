@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
+using Microsoft.CodeAnalysis.Text;
 
 namespace System.Text.RegularExpressions.Generator
 {
@@ -102,15 +103,16 @@ namespace System.Text.RegularExpressions.Generator
             if (staticMethodsToDetect.Contains(method))
             {
                 // Validate that arguments pattern and options are constant and timeout was not passed in.
-                if (!ValidateParameters(invocationOperation.Arguments))
+                if (!ValidateParameters(invocationOperation.Arguments, out IArgumentOperation? patternArgument))
                 {
                     return;
                 }
 
-                // Report the diagnostic.
+                // Report the diagnostic with a location that doesn't span the potentially multi-line pattern.
                 SyntaxNode? syntaxNodeForDiagnostic = invocationOperation.Syntax;
-                Debug.Assert(syntaxNodeForDiagnostic != null);
-                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, syntaxNodeForDiagnostic.GetLocation()));
+                Debug.Assert(syntaxNodeForDiagnostic is not null);
+                Location location = GetLocationWithoutPattern(syntaxNodeForDiagnostic, patternArgument);
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, location));
             }
         }
 
@@ -134,25 +136,28 @@ namespace System.Text.RegularExpressions.Generator
                 return;
             }
 
-            if (!ValidateParameters(operation.Arguments))
+            if (!ValidateParameters(operation.Arguments, out IArgumentOperation? patternArgument))
             {
                 return;
             }
 
-            // Report the diagnostic.
+            // Report the diagnostic with a location that doesn't span the potentially multi-line pattern.
             SyntaxNode? syntaxNodeForDiagnostic = operation.Syntax;
             Debug.Assert(syntaxNodeForDiagnostic is not null);
-            context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, syntaxNodeForDiagnostic.GetLocation()));
+            Location location = GetLocationWithoutPattern(syntaxNodeForDiagnostic, patternArgument);
+            context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.UseRegexSourceGeneration, location));
         }
 
         /// <summary>
         /// Validates the operation arguments ensuring they all have constant values, and if so it stores the argument
         /// indices for the pattern and options. If timeout argument was used, then this returns false.
         /// </summary>
-        private static bool ValidateParameters(ImmutableArray<IArgumentOperation> arguments)
+        private static bool ValidateParameters(ImmutableArray<IArgumentOperation> arguments, out IArgumentOperation? patternArgument)
         {
             const string timeoutArgumentName = "timeout";
             const string matchTimeoutArgumentName = "matchTimeout";
+
+            patternArgument = null;
 
             if (arguments == null)
             {
@@ -197,6 +202,7 @@ namespace System.Text.RegularExpressions.Generator
                         return false;
                     }
 
+                    patternArgument = argument;
                     continue;
                 }
 
@@ -219,6 +225,33 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Gets a location for the diagnostic that excludes the pattern argument.
+        /// This prevents multi-line patterns from causing adornments on every line.
+        /// </summary>
+        private static Location GetLocationWithoutPattern(SyntaxNode syntaxNode, IArgumentOperation? patternArgument)
+        {
+            // If we have a pattern argument, create a span from the start of the syntax
+            // to just before the pattern starts.
+            if (patternArgument?.Syntax is SyntaxNode patternSyntax)
+            {
+                SyntaxTree? tree = syntaxNode.SyntaxTree;
+                if (tree is not null)
+                {
+                    int start = syntaxNode.SpanStart;
+                    int end = patternSyntax.SpanStart;
+                    if (end > start)
+                    {
+                        TextSpan span = TextSpan.FromBounds(start, end);
+                        return Location.Create(tree, span);
+                    }
+                }
+            }
+
+            // Fall back to the full syntax location if we can't create a narrower span.
+            return syntaxNode.GetLocation();
         }
 
         /// <summary>
