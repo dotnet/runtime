@@ -17,6 +17,7 @@
   <PropertyGroup Condition="'$(BuildAsStandalone)' == 'true' or '$(ReferenceXUnitWrapperGenerator)' == 'false'">
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>100</ExpectedExitCode>
+    <EmitXHarnessNoRunnerMarkerFile>true</EmitXHarnessNoRunnerMarkerFile>
   </PropertyGroup>
 
   <Target Name="_AddRuntimeLibsToPublishAssets" BeforeTargets="PrepareForPublish" DependsOnTargets="ResolveLibrariesRuntimeFilesFromLocalBuild;ResolveRuntimeFilesFromLocalBuild">
