@@ -254,7 +254,7 @@ namespace ILCompiler
                     _reflectableMethods.Add(methodNode.Method);
             }
 
-            methodNode ??= obj as ShadowGenericMethodNode;
+            methodNode ??= obj as ShadowConcreteMethodNode;
 
             if (methodNode != null)
             {

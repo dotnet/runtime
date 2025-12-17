@@ -749,8 +749,9 @@ namespace ILLink.Shared.TrimAnalysis
 
             public MakeGenericMethodSite(MethodDesc method) => _method = method;
 
-            public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+            public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation)
             {
+                Debug.Assert(isConcreteInstantiation);
                 var list = new DependencyList();
                 MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
                 if (instantiatedMethod.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
@@ -765,8 +766,9 @@ namespace ILLink.Shared.TrimAnalysis
 
             public MakeGenericTypeSite(TypeDesc type) => _type = type;
 
-            public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+            public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiotion)
             {
+                Debug.Assert(isConcreteInstantiotion);
                 var list = new DependencyList();
                 TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
                 if (instantiatedType.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))

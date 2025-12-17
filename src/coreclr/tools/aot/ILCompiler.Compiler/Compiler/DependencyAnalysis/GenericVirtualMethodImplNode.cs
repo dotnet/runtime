@@ -56,7 +56,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     dependencies.Add(factory.NativeLayout.TemplateMethodEntry(_method), "GVM Dependency - Template entry");
                     dependencies.Add(factory.NativeLayout.TemplateMethodLayout(_method), "GVM Dependency - Template");
-                    dependencies.Add(factory.ShadowGenericMethod(_method), "GVM Dependency - shadow generic method");
+                    dependencies.Add(factory.ShadowNonConcreteMethod(_method), "GVM Dependency - shadow generic method");
                 }
                 else
                 {

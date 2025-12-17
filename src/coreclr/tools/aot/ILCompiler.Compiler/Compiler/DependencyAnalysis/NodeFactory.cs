@@ -408,7 +408,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new ObjectGetTypeFlowDependenciesNode(type);
             });
 
-            _shadowGenericMethods = new ShadowGenericMethodHashtable(this);
+            _shadowConcreteMethods = new ShadowConcreteMethodHashtable(this);
+
+            _shadowNonConcreteMethods = new ShadowNonConcreteMethodHashtable(this);
 
             _virtMethods = new VirtualMethodUseHashtable(this);
 
@@ -1157,7 +1159,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             if (method != canonMethod)
-                return ShadowGenericMethod(method);
+                return ShadowConcreteMethod(method);
             else
                 return MethodEntrypoint(method);
         }
@@ -1265,22 +1267,40 @@ namespace ILCompiler.DependencyAnalysis
             return _objectGetTypeFlowDependencies.GetOrAdd(type);
         }
 
-        private sealed class ShadowGenericMethodHashtable : LockFreeReaderHashtable<MethodDesc, ShadowGenericMethodNode>
+        private sealed class ShadowConcreteMethodHashtable : LockFreeReaderHashtable<MethodDesc, ShadowConcreteMethodNode>
         {
             private readonly NodeFactory _factory;
-            public ShadowGenericMethodHashtable(NodeFactory factory) => _factory = factory;
-            protected override bool CompareKeyToValue(MethodDesc key, ShadowGenericMethodNode value) => key == value.Method;
-            protected override bool CompareValueToValue(ShadowGenericMethodNode value1, ShadowGenericMethodNode value2) => value1.Method == value2.Method;
-            protected override ShadowGenericMethodNode CreateValueFromKey(MethodDesc key) =>
-                new ShadowGenericMethodNode(key, _factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+            public ShadowConcreteMethodHashtable(NodeFactory factory) => _factory = factory;
+            protected override bool CompareKeyToValue(MethodDesc key, ShadowConcreteMethodNode value) => key == value.Method;
+            protected override bool CompareValueToValue(ShadowConcreteMethodNode value1, ShadowConcreteMethodNode value2) => value1.Method == value2.Method;
+            protected override ShadowConcreteMethodNode CreateValueFromKey(MethodDesc key) =>
+                new ShadowConcreteMethodNode(key, _factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
             protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
-            protected override int GetValueHashCode(ShadowGenericMethodNode value) => value.Method.GetHashCode();
+            protected override int GetValueHashCode(ShadowConcreteMethodNode value) => value.Method.GetHashCode();
         }
 
-        private ShadowGenericMethodHashtable _shadowGenericMethods;
-        public ShadowGenericMethodNode ShadowGenericMethod(MethodDesc method)
+        private ShadowConcreteMethodHashtable _shadowConcreteMethods;
+        public ShadowConcreteMethodNode ShadowConcreteMethod(MethodDesc method)
         {
-            return _shadowGenericMethods.GetOrCreateValue(method);
+            return _shadowConcreteMethods.GetOrCreateValue(method);
+        }
+
+        private sealed class ShadowNonConcreteMethodHashtable : LockFreeReaderHashtable<MethodDesc, ShadowNonConcreteMethodNode>
+        {
+            private readonly NodeFactory _factory;
+            public ShadowNonConcreteMethodHashtable(NodeFactory factory) => _factory = factory;
+            protected override bool CompareKeyToValue(MethodDesc key, ShadowNonConcreteMethodNode value) => key == value.Method;
+            protected override bool CompareValueToValue(ShadowNonConcreteMethodNode value1, ShadowNonConcreteMethodNode value2) => value1.Method == value2.Method;
+            protected override ShadowNonConcreteMethodNode CreateValueFromKey(MethodDesc key) =>
+                new ShadowNonConcreteMethodNode(key, _factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+            protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
+            protected override int GetValueHashCode(ShadowNonConcreteMethodNode value) => value.Method.GetHashCode();
+        }
+
+        private ShadowNonConcreteMethodHashtable _shadowNonConcreteMethods;
+        public ShadowNonConcreteMethodNode ShadowNonConcreteMethod(MethodDesc method)
+        {
+            return _shadowNonConcreteMethods.GetOrCreateValue(method);
         }
 
         private static readonly string[][] s_helperEntrypointNames = new string[][] {

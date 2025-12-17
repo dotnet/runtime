@@ -790,13 +790,17 @@ namespace Internal.IL
                         {
                             instParam = GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType);
                         }
+                        else if (targetMethod.AcquiresInstMethodTableFromThis())
+                        {
+                            _dependencies.Add(_factory.ShadowConcreteMethod(concreteMethod), reason);
+                        }
 
                         if (instParam != null)
                         {
                             _dependencies.Add(instParam, reason);
                         }
 
-                        _dependencies.Add(_factory.ShadowGenericMethod(concreteMethod), reason);
+                        _dependencies.Add(_factory.CanonicalEntrypoint(targetMethod), reason);
                     }
                     else
                     {

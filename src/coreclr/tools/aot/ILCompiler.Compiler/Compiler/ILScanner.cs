@@ -63,7 +63,7 @@ namespace ILCompiler
                 {
                     // To compute dependencies of the shadow method that tracks dictionary
                     // dependencies we need to ensure there is code for the canonical method body.
-                    var dependencyMethod = (ShadowGenericMethodNode)dependency;
+                    var dependencyMethod = (ShadowConcreteMethodNode)dependency;
                     methodCodeNodeNeedingCode = (ScannedMethodNode)dependencyMethod.CanonicalMethodNode;
                 }
 

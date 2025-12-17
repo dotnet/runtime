@@ -137,106 +137,10 @@ namespace ILCompiler.DependencyAnalysis
             return false;
         }
 
-        public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        public IEnumerable<DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation)
         {
             DependencyList result = new DependencyList();
-
             var lookupContext = new GenericLookupResultContext(_dictionaryOwner, typeInstantiation, methodInstantiation);
-
-            bool isNotConcreteInstantiation = ContainsCanonicalTypes(typeInstantiation) || ContainsCanonicalTypes(methodInstantiation);
-
-            if (isNotConcreteInstantiation)
-            {
-                // If this instantiation is not fully concrete, we may still need to track dependencies if the result
-                // of a generic substitution is concrete. Check the substitution for each helper type and if it is
-                // still canonical, we don't need to track any dependencies, except for shadow generic methods.
-                switch (_id)
-                {
-                    case ReadyToRunHelperId.MethodHandle:
-                    case ReadyToRunHelperId.MethodDictionary:
-                    case ReadyToRunHelperId.VirtualDispatchCell:
-                    case ReadyToRunHelperId.MethodEntry:
-                        {
-                            MethodDesc instantiatedMethod = ((MethodDesc)_target).GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
-                            if (instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any))
-                            {
-                                // The substituted method is still not concrete, but it may have concrete dependencies
-                                // so we track it as a shadow node to ensure its dependencies are discovered.
-                                if (!instantiatedMethod.IsAbstract)
-                                {
-                                    try
-                                    {
-                                        factory.TypeSystemContext.DetectGenericCycles(lookupContext.Context, instantiatedMethod);
-                                        result.Add(new DependencyListEntry(
-                                            factory.ShadowGenericMethod(instantiatedMethod),
-                                            "Partially instantiated generic dictionary dependencies"));
-                                    }
-                                    catch (TypeSystemException)
-                                    {
-                                        // Don't track any dependencies if we hit a generic cycle.
-                                    }
-                                }
-                                return result.ToArray();
-                            }
-                        }
-                        break;
-
-                    case ReadyToRunHelperId.TypeHandle:
-                    case ReadyToRunHelperId.NecessaryTypeHandle:
-                    case ReadyToRunHelperId.MetadataTypeHandle:
-                    case ReadyToRunHelperId.TypeHandleForCasting:
-                    case ReadyToRunHelperId.GetGCStaticBase:
-                    case ReadyToRunHelperId.GetNonGCStaticBase:
-                    case ReadyToRunHelperId.GetThreadStaticBase:
-                    case ReadyToRunHelperId.DefaultConstructor:
-                    case ReadyToRunHelperId.ObjectAllocator:
-                        {
-                            TypeDesc instantiatedType = ((TypeDesc)_target).GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
-                            if (instantiatedType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                            {
-                                return result.ToArray();
-                            }
-                        }
-                        break;
-
-                    case ReadyToRunHelperId.FieldHandle:
-                        {
-                            FieldDesc field = (FieldDesc)_target;
-                            TypeDesc instantiatedOwningType = field.OwningType.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
-                            if (instantiatedOwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                            {
-                                return result.ToArray();
-                            }
-                        }
-                        break;
-
-                    case ReadyToRunHelperId.DelegateCtor:
-                        {
-                            DelegateCreationInfo createInfo = (DelegateCreationInfo)_target;
-                            MethodDesc instantiatedMethod = createInfo.PossiblyUnresolvedTargetMethod.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
-                            if (instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any))
-                            {
-                                return result.ToArray();
-                            }
-                        }
-                        break;
-
-                    case ReadyToRunHelperId.ConstrainedDirectCall:
-                        {
-                            ConstrainedCallInfo callInfo = (ConstrainedCallInfo)_target;
-                            MethodDesc instantiatedMethod = callInfo.Method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(typeInstantiation, methodInstantiation);
-                            TypeDesc instantiatedConstrainedType = callInfo.ConstrainedType.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
-                            if (instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any) || instantiatedConstrainedType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                            {
-                                return result.ToArray();
-                            }
-                        }
-                        break;
-
-                    default:
-                        throw new NotImplementedException();
-                }
-            }
 
             switch (_id)
             {
@@ -249,7 +153,7 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             result.Add(
                                 new DependencyListEntry(
-                                    factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)_target).GetTarget(factory, lookupContext),
+                                    factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)_target).GetTarget(factory, lookupContext, isConcreteInstantiation),
                                     "Dictionary dependency"));
                         }
                     }
@@ -279,7 +183,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // All generic lookups depend on the thing they point to
                 result.Add(new DependencyListEntry(
-                            _lookupSignature.GetTarget(factory, lookupContext),
+                            _lookupSignature.GetTarget(factory, lookupContext, isConcreteInstantiation),
                             "Dictionary dependency"));
             }
             catch (TypeSystemException)

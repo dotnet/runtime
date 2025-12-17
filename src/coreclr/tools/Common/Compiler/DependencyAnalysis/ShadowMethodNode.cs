@@ -13,13 +13,13 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents a generic method on a generic type (or a generic method) that doesn't
+    /// Represents a method on a generic type (or a generic method) that doesn't
     /// have code emitted in the executable because it's physically backed by a canonical
     /// method body. The purpose of this node is to track the dependencies of the generic
     /// method body, as if it was generated. The node acts as a symbol for the canonical
     /// method for convenience.
     /// </summary>
-    public class ShadowGenericMethodNode : DependencyNodeCore<NodeFactory>, IMethodNode, ISymbolNodeWithLinkage
+    public abstract class ShadowMethodNode : DependencyNodeCore<NodeFactory>, IMethodNode, ISymbolNodeWithLinkage
     {
         /// <summary>
         /// Gets the canonical method body that defines the dependencies of this node.
@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed
             => CanonicalMethodNode.StaticDependenciesAreComputed;
 
-        public ShadowGenericMethodNode(MethodDesc method, IMethodNode canonicalMethod)
+        public ShadowMethodNode(MethodDesc method, IMethodNode canonicalMethod)
         {
             Debug.Assert(!method.IsRuntimeDeterminedExactMethod);
             Debug.Assert(canonicalMethod.Method == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
@@ -76,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
                     var runtimeDep = canonDep.Node as INodeWithRuntimeDeterminedDependencies;
                     if (runtimeDep != null)
                     {
-                        dependencies.AddRange(runtimeDep.InstantiateDependencies(factory, typeInst, methodInst));
+                        dependencies.AddRange(runtimeDep.InstantiateDependencies(factory, typeInst, methodInst, isConcreteInstantiation: !Method.IsSharedByGenericInstantiations));
                     }
                 }
             }
@@ -101,12 +101,13 @@ namespace ILCompiler.DependencyAnalysis
                     var node = canonDep.Node;
                     if (node is INodeWithRuntimeDeterminedDependencies runtimeDeterminedNode)
                     {
-                        foreach (var nodeInner in runtimeDeterminedNode.InstantiateDependencies(factory, typeInst, methodInst))
+                        foreach (var nodeInner in runtimeDeterminedNode.InstantiateDependencies(factory, typeInst, methodInst, isConcreteInstantiation: !Method.IsSharedByGenericInstantiations))
                             yield return new CombinedDependencyListEntry(nodeInner.Node, canonDep.OtherReasonNode, nodeInner.Reason);
                     }
                 }
             }
         }
+
 
         protected override string GetName(NodeFactory factory) => $"{Method} backed by {CanonicalMethodNode.GetMangledName(factory.NameMangler)}";
 
@@ -116,15 +117,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public sealed override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
 
-        int ISortableNode.ClassCode => -1440570971;
+        int ISortableNode.ClassCode => ClassCode;
 
-        int ISortableNode.CompareToImpl(ISortableNode other, CompilerComparer comparer)
-        {
-            var compare = comparer.Compare(Method, ((ShadowGenericMethodNode)other).Method);
-            if (compare != 0)
-                return compare;
+        protected abstract int ClassCode { get; }
 
-            return comparer.Compare(CanonicalMethodNode, ((ShadowGenericMethodNode)other).CanonicalMethodNode);
-        }
+        int ISortableNode.CompareToImpl(ISortableNode other, CompilerComparer comparer) => CompareToImpl(other, comparer);
+
+        protected abstract int CompareToImpl(ISortableNode other, CompilerComparer comparer);
     }
 }
