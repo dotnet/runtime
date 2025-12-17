@@ -2039,8 +2039,8 @@ BOOL DebuggerController::AddBindAndActivateILReplicaPatch(DebuggerControllerPatc
         // causing the patch table to grow and move.
         SIZE_T primaryILOffset = primary->offset;
 
-        // Loop through all the native offsets mapped to the given IL offset.  On x86 the mapping
-        // should be 1:1.  On WIN64, because there are funclets, we have a 1:N mapping.
+        // Loop through all the native offsets mapped to the given IL offset.
+        // It is 1:N mapping due to optimizations like funclet inlining or loop cloning.
         DebuggerJitInfo::ILToNativeOffsetIterator it;
         for (dji->InitILToNativeOffsetIterator(it, primaryILOffset); !it.IsAtEnd(); it.Next())
         {
@@ -5294,7 +5294,7 @@ bool DebuggerStepper::IsRangeAppropriate(ControllerStackInfo *info)
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
-    // There are three scenarios which make this function more complicated on WIN64.
+    // There are three scenarios which make this function more complicated with funclets.
     // 1)  We initiate a step in the parent method or a funclet but end up stepping into another funclet closer to the leaf.
     //      a)  start in the parent method
     //      b)  start in a funclet
@@ -6348,7 +6348,7 @@ bool DebuggerStepper::IsAddrWithinFrame(DebuggerJitInfo *dji,
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
-    // On WIN64, we also check whether the targetAddr and the currentAddr is in the same funclet.
+    // Also check whether the targetAddr and the currentAddr is in the same funclet.
     _ASSERTE(currentAddr != NULL);
     if (result)
     {
@@ -6895,7 +6895,7 @@ bool DebuggerStepper::SetRangesFromIL(DebuggerJitInfo *dji, COR_DEBUG_STEP_RANGE
         rToEnd  = rTo + realRangeCount;
 
         // <NOTE>
-        // rTo may also be incremented in the middle of the loop on WIN64 platforms.
+        // rTo may also be incremented in the middle of the loop
         // </NOTE>
         for (/**/; r < rEnd; r++, rTo++)
         {

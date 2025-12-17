@@ -78,7 +78,7 @@ extern "C" void Store_Ref_RDX();
 extern "C" void Store_Ref_R8();
 extern "C" void Store_Ref_R9();
 
-PCODE GPRegsRoutines[] =
+static const PCODE GPRegsRoutines[] =
 {
     (PCODE)Load_RCX,            // 00
     (PCODE)Load_RCX_RDX,        // 01
@@ -98,7 +98,7 @@ PCODE GPRegsRoutines[] =
     (PCODE)Load_R9              // 33
 };
 
-PCODE GPRegsStoreRoutines[] =
+static const PCODE GPRegsStoreRoutines[] =
 {
     (PCODE)Store_RCX,            // 00
     (PCODE)Store_RCX_RDX,        // 01
@@ -118,7 +118,7 @@ PCODE GPRegsStoreRoutines[] =
     (PCODE)Store_R9              // 33
 };
 
-PCODE GPRegsRefRoutines[] =
+static const PCODE GPRegsRefRoutines[] =
 {
     (PCODE)Load_Ref_RCX,        // 0
     (PCODE)Load_Ref_RDX,        // 1
@@ -126,7 +126,7 @@ PCODE GPRegsRefRoutines[] =
     (PCODE)Load_Ref_R9,         // 3
 };
 
-PCODE GPRegsRefStoreRoutines[] =
+static const PCODE GPRegsRefStoreRoutines[] =
 {
     (PCODE)Store_Ref_RCX,        // 0
     (PCODE)Store_Ref_RDX,        // 1
@@ -134,7 +134,7 @@ PCODE GPRegsRefStoreRoutines[] =
     (PCODE)Store_Ref_R9,         // 3
 };
 
-PCODE FPRegsRoutines[] =
+static const PCODE FPRegsRoutines[] =
 {
     (PCODE)Load_XMM0,                // 00
     (PCODE)Load_XMM0_XMM1,           // 01
@@ -154,7 +154,7 @@ PCODE FPRegsRoutines[] =
     (PCODE)Load_XMM3                 // 33
 };
 
-PCODE FPRegsStoreRoutines[] =
+static const PCODE FPRegsStoreRoutines[] =
 {
     (PCODE)Store_XMM0,                // 00
     (PCODE)Store_XMM0_XMM1,           // 01
@@ -220,7 +220,7 @@ extern "C" void Store_R8();
 extern "C" void Store_R8_R9();
 extern "C" void Store_R9();
 
-PCODE GPRegsRoutines[] =
+static const PCODE GPRegsRoutines[] =
 {
     (PCODE)Load_RDI,                    // 00
     (PCODE)Load_RDI_RSI,                // 01
@@ -260,7 +260,7 @@ PCODE GPRegsRoutines[] =
     (PCODE)Load_R9                      // 55
 };
 
-PCODE GPRegsStoreRoutines[] =
+static const PCODE GPRegsStoreRoutines[] =
 {
     (PCODE)Store_RDI,                    // 00
     (PCODE)Store_RDI_RSI,                // 01
@@ -374,7 +374,7 @@ extern "C" void Store_XMM6();
 extern "C" void Store_XMM6_XMM7();
 extern "C" void Store_XMM7();
 
-PCODE FPRegsRoutines[] =
+static const PCODE FPRegsRoutines[] =
 {
     (PCODE)Load_XMM0,                                   // 00
     (PCODE)Load_XMM0_XMM1,                              // 01
@@ -442,7 +442,7 @@ PCODE FPRegsRoutines[] =
     (PCODE)Load_XMM7                                    // 77
 };
 
-PCODE FPRegsStoreRoutines[] =
+static const PCODE FPRegsStoreRoutines[] =
 {
     (PCODE)Store_XMM0,                                   // 00
     (PCODE)Store_XMM0_XMM1,                              // 01
@@ -608,7 +608,7 @@ extern "C" void Store_Ref_X5();
 extern "C" void Store_Ref_X6();
 extern "C" void Store_Ref_X7();
 
-PCODE GPRegsRoutines[] =
+static const PCODE GPRegsRoutines[] =
 {
     (PCODE)Load_X0,                         // 00
     (PCODE)Load_X0_X1,                      // 01
@@ -676,7 +676,7 @@ PCODE GPRegsRoutines[] =
     (PCODE)Load_X7                          // 77
 };
 
-PCODE GPRegsStoreRoutines[] =
+static const PCODE GPRegsStoreRoutines[] =
 {
     (PCODE)Store_X0,                         // 00
     (PCODE)Store_X0_X1,                      // 01
@@ -744,7 +744,7 @@ PCODE GPRegsStoreRoutines[] =
     (PCODE)Store_X7                          // 77
 };
 
-PCODE GPRegsRefRoutines[] =
+static const PCODE GPRegsRefRoutines[] =
 {
     (PCODE)Load_Ref_X0,        // 0
     (PCODE)Load_Ref_X1,        // 1
@@ -756,7 +756,7 @@ PCODE GPRegsRefRoutines[] =
     (PCODE)Load_Ref_X7         // 7
 };
 
-PCODE GPRegsRefStoreRoutines[] =
+static const PCODE GPRegsRefStoreRoutines[] =
 {
     (PCODE)Store_Ref_X0,        // 0
     (PCODE)Store_Ref_X1,        // 1
@@ -992,7 +992,7 @@ extern "C" void Store_S6();
 extern "C" void Store_S6_S7();
 extern "C" void Store_S7();
 
-PCODE FPRegsStoreRoutines[] =
+static const PCODE FPRegsStoreRoutines[] =
 {
     (PCODE)Store_D0,                         // 00
     (PCODE)Store_D0_D1,                      // 01
@@ -1060,7 +1060,7 @@ PCODE FPRegsStoreRoutines[] =
     (PCODE)Store_D7                          // 77
 };
 
-PCODE FPRegsRoutines[] =
+static const PCODE FPRegsRoutines[] =
 {
     (PCODE)Load_D0,                         // 00
     (PCODE)Load_D0_D1,                      // 01
@@ -1196,7 +1196,7 @@ PCODE FPRegs128StoreRoutines[] =
     (PCODE)Store_Q7                          // 77
 };
 
-PCODE FPRegs128LoadRoutines[] =
+static const PCODE FPRegs128LoadRoutines[] =
 {
     (PCODE)Load_Q0,                         // 00
     (PCODE)Load_Q0_Q1,                      // 01
@@ -1264,7 +1264,7 @@ PCODE FPRegs128LoadRoutines[] =
     (PCODE)Load_Q7                          // 77
 };
 
-PCODE FPRegs32StoreRoutines[] =
+static const PCODE FPRegs32StoreRoutines[] =
 {
     (PCODE)Store_S0,                         // 00
     (PCODE)Store_S0_S1,                      // 01
@@ -1332,7 +1332,7 @@ PCODE FPRegs32StoreRoutines[] =
     (PCODE)Store_S7                          // 77
 };
 
-PCODE FPRegs32LoadRoutines[] =
+static const PCODE FPRegs32LoadRoutines[] =
 {
     (PCODE)Load_S0,                         // 00
     (PCODE)Load_S0_S1,                      // 01
