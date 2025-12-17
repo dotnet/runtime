@@ -44,11 +44,13 @@ internal static class BuildUtilities
         AzDoClient client,
         int buildId,
         int pollIntervalSeconds,
-        CancellationToken cancellationToken
+        string? testName = null,
+        CancellationToken cancellationToken = default
     )
     {
         var startTime = DateTime.UtcNow;
         Build? build = null;
+        var earlyExit = false;
 
         await AnsiConsole
             .Status()
@@ -72,6 +74,24 @@ internal static class BuildUtilities
                             return;
                         }
 
+                        // If a test name is provided, check if it has already failed
+                        if (!string.IsNullOrEmpty(testName))
+                        {
+                            var hasTestFailed = await client.HasTestFailedAsync(
+                                buildId,
+                                testName,
+                                cancellationToken
+                            );
+                            if (hasTestFailed)
+                            {
+                                AnsiConsole.MarkupLine(
+                                    $"[yellow]⚡[/] Test '{testName.EscapeMarkup()}' has already failed - stopping early"
+                                );
+                                earlyExit = true;
+                                return;
+                            }
+                        }
+
                         var elapsed = DateTime.UtcNow - startTime;
                         ctx.Status(
                             $"[yellow]Waiting for build {buildId}...[/] ({elapsed:hh\\:mm\\:ss} elapsed, status: {build.Status})"
@@ -84,6 +104,14 @@ internal static class BuildUtilities
                     }
                 }
             );
+
+        // If we exited early due to test failure, treat the build as if it completed with failure
+        if (earlyExit && build != null)
+        {
+            // We'll still return the build object, but mark it conceptually as failed
+            // The calling code will check the actual test results anyway
+            AnsiConsole.MarkupLine($"[dim]Build {buildId} still running, but test failure detected[/]");
+        }
 
         return build;
     }

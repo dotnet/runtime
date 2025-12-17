@@ -29,7 +29,10 @@ internal static class TestsCommand
                 $"[yellow]Fetching failed tests for build {buildId}...[/]",
                 async ctx =>
                 {
-                    results = (await client.GetFailedTestsAsync(buildId)).ToList();
+                    await foreach (var test in client.GetFailedTestsAsync(buildId))
+                    {
+                        results.Add(test);
+                    }
                 }
             );
 

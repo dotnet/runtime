@@ -106,9 +106,10 @@ internal static class BisectCommand
                 "[yellow]Verifying test fails in bad build...[/]",
                 async ctx =>
                 {
-                    badFailures = (
-                        await client.GetFailedTestsAsync(badBuildId, cancellationToken)
-                    ).ToList();
+                    await foreach (var test in client.GetFailedTestsAsync(badBuildId, cancellationToken))
+                    {
+                        badFailures.Add(test);
+                    }
                 }
             );
         var matchingFailure = badFailures.FirstOrDefault(t =>
@@ -143,9 +144,10 @@ internal static class BisectCommand
                 "[yellow]Verifying test passes in good build...[/]",
                 async ctx =>
                 {
-                    goodFailures = (
-                        await client.GetFailedTestsAsync(goodBuildId, cancellationToken)
-                    ).ToList();
+                    await foreach (var test in client.GetFailedTestsAsync(goodBuildId, cancellationToken))
+                    {
+                        goodFailures.Add(test);
+                    }
                 }
             );
         var goodMatchingFailure = goodFailures.FirstOrDefault(t =>
@@ -288,6 +290,7 @@ internal static class BisectCommand
                         client,
                         inProgressBuild.Id,
                         pollInterval,
+                        fullTestName,
                         cancellationToken
                     );
                 }
@@ -336,6 +339,7 @@ internal static class BisectCommand
                                 client,
                                 newBuild.Id,
                                 pollInterval,
+                                fullTestName,
                                 cancellationToken
                             );
                         }
@@ -372,10 +376,15 @@ internal static class BisectCommand
             }
 
             // Check test results - build failures can be due to test failures
-            var failures = await client.GetFailedTestsAsync(buildToCheck.Id, cancellationToken);
-            var testFailed = failures.Any(t =>
-                t.FullyQualifiedName.Equals(fullTestName, StringComparison.OrdinalIgnoreCase)
-            );
+            var testFailed = false;
+            await foreach (var failure in client.GetFailedTestsAsync(buildToCheck.Id, cancellationToken))
+            {
+                if (failure.FullyQualifiedName.Equals(fullTestName, StringComparison.OrdinalIgnoreCase))
+                {
+                    testFailed = true;
+                    break;
+                }
+            }
 
             testedCommits[midCommit] = testFailed;
             var resultIcon = testFailed ? "[red]✗ FAILED[/]" : "[green]✓ PASSED[/]";

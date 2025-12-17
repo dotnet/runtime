@@ -24,8 +24,17 @@ public interface IAzDoClient
     /// <summary>
     /// Gets failed test results for a specific build.
     /// </summary>
-    Task<IReadOnlyList<TestResult>> GetFailedTestsAsync(
+    IAsyncEnumerable<TestResult> GetFailedTestsAsync(
         int buildId,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>
+    /// Checks if a specific test has failed in a build (even if the build is still running).
+    /// </summary>
+    Task<bool> HasTestFailedAsync(
+        int buildId,
+        string testName,
         CancellationToken cancellationToken = default
     );
 
@@ -113,12 +122,11 @@ public class AzDoClient : IAzDoClient, IDisposable
         );
     }
 
-    public async Task<IReadOnlyList<TestResult>> GetFailedTestsAsync(
+    public async IAsyncEnumerable<TestResult> GetFailedTestsAsync(
         int buildId,
-        CancellationToken cancellationToken = default
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default
     )
     {
-        var results = new List<TestResult>();
         var continuationToken = (string?)null;
 
         do
@@ -143,8 +151,10 @@ public class AzDoClient : IAzDoClient, IDisposable
 
             foreach (var run in runsResponse.Value)
             {
-                var testResults = await GetFailedTestsForRunAsync(run.Id, cancellationToken);
-                results.AddRange(testResults);
+                await foreach (var testResult in GetFailedTestsForRunAsync(run.Id, cancellationToken))
+                {
+                    yield return testResult;
+                }
             }
 
             continuationToken = response.Headers.TryGetValues(
@@ -154,16 +164,60 @@ public class AzDoClient : IAzDoClient, IDisposable
                 ? tokens.FirstOrDefault()
                 : null;
         } while (continuationToken != null);
-
-        return results;
     }
 
-    private async Task<IReadOnlyList<TestResult>> GetFailedTestsForRunAsync(
-        int runId,
-        CancellationToken cancellationToken
+    public async Task<bool> HasTestFailedAsync(
+        int buildId,
+        string testName,
+        CancellationToken cancellationToken = default
     )
     {
-        var results = new List<TestResult>();
+        try
+        {
+            var url = $"_apis/test/runs?buildUri=vstfs:///Build/Build/{buildId}&api-version=7.1";
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return false;
+            }
+
+            var runsResponse = await response.Content.ReadFromJsonAsync(
+                AzDoJsonContext.Default.TestRunsResponse,
+                cancellationToken
+            );
+
+            if (runsResponse?.Value == null)
+            {
+                return false;
+            }
+
+            // Check each test run for the specific failure
+            foreach (var run in runsResponse.Value)
+            {
+                await foreach (var testResult in GetFailedTestsForRunAsync(run.Id, cancellationToken))
+                {
+                    if (testResult.FullyQualifiedName.Equals(testName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+        catch
+        {
+            // If we can't check, assume not failed yet
+            return false;
+        }
+    }
+
+    private async IAsyncEnumerable<TestResult> GetFailedTestsForRunAsync(
+        int runId,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken
+    )
+    {
         int skip = 0;
         const int top = 1000;
 
@@ -184,7 +238,10 @@ public class AzDoClient : IAzDoClient, IDisposable
                 break;
             }
 
-            results.AddRange(resultsResponse.Value);
+            foreach (var result in resultsResponse.Value)
+            {
+                yield return result;
+            }
 
             if (resultsResponse.Value.Count < top)
             {
@@ -193,8 +250,6 @@ public class AzDoClient : IAzDoClient, IDisposable
 
             skip += top;
         }
-
-        return results;
     }
 
     public async Task<IReadOnlyList<Build>> FindBuildsAsync(

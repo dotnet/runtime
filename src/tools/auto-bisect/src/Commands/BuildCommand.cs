@@ -84,7 +84,10 @@ internal static class BuildCommand
                     {
                         try
                         {
-                            failedTests = (await client.GetFailedTestsAsync(buildId)).ToList();
+                            await foreach (var test in client.GetFailedTestsAsync(buildId))
+                            {
+                                failedTests.Add(test);
+                            }
                         }
                         catch (HttpRequestException ex)
                             when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)

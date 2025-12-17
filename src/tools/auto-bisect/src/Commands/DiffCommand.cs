@@ -41,10 +41,16 @@ internal static class DiffCommand
                     ctx.Status(
                         $"[yellow]Fetching failed tests for build {goodBuildId} (good)...[/]"
                     );
-                    goodFailures = (await client.GetFailedTestsAsync(goodBuildId)).ToList();
+                    await foreach (var test in client.GetFailedTestsAsync(goodBuildId))
+                    {
+                        goodFailures.Add(test);
+                    }
 
                     ctx.Status($"[yellow]Fetching failed tests for build {badBuildId} (bad)...[/]");
-                    badFailures = (await client.GetFailedTestsAsync(badBuildId)).ToList();
+                    await foreach (var test in client.GetFailedTestsAsync(badBuildId))
+                    {
+                        badFailures.Add(test);
+                    }
                 }
             );
 
