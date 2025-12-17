@@ -4295,10 +4295,14 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         // If we don't have a 0 compare we can get one by transforming ((x AND mask) EQ|NE mask)
         // into ((x AND mask) NE|EQ 0) when mask is a single bit.
         //
-        if ((op2Value != 0) && isPow2(static_cast<target_size_t>(op2Value)) && andOp2->IsIntegralConst(op2Value))
+        // TODO-Wasm: would like to use
+        //   andOp2->IsIntegralValue(op2Value);
+        //
+        if ((op2Value != 0) && genExactlyOneBit(op2Value) && andOp2->IsIntegralConst() &&
+            (andOp2->AsIntConCommon()->IntegralValue() == op2Value))
         {
             op2Value = 0;
-            op2->SetIconValue(0);
+            op2->SetIntegralValue(0);
             cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
         }
 
