@@ -498,9 +498,6 @@ CorUnix::InternalCreateProcess(
     LPPROCESS_INFORMATION lpProcessInformation
     )
 {
-#ifdef TARGET_TVOS
-    return ERROR_NOT_SUPPORTED;
-#else
     PAL_ERROR palError = NO_ERROR;
     IPalObject *pobjProcess = NULL;
     IPalObject *pobjProcessRegistered = NULL;
@@ -1037,7 +1034,6 @@ InternalCreateProcessExit:
     }
 
     return palError;
-#endif // !TARGET_TVOS
 }
 
 
@@ -2404,7 +2400,7 @@ PROCCreateCrashDump(
     INT cbErrorMessageBuffer,
     bool serialize)
 {
-#if defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
     return FALSE;
 #else
     _ASSERTE(argv.size() > 0);
@@ -2475,7 +2471,7 @@ PROCCreateCrashDump(
         int bytesRead;
         while((bytesRead = read(child_read_pipe, &buffer, 1)) < 0 && errno == EINTR);
         close(child_read_pipe);
-        
+
         if (bytesRead != 1)
         {
             fprintf(stderr, "Problem reading from createdump child_read_pipe: %s (%d)\n", strerror(errno), errno);
