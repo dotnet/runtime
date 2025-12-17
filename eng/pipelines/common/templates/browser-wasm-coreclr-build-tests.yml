@@ -110,7 +110,7 @@ jobs:
           /p:WasmSkipMissingRuntimePackBuild=true
           /p:PreparePackagesForWorkloadInstall=false
           /p:WorkloadsTestPreviousVersions=$(workloadsTestPreviousVersionsVar)
-          /p:runtimeFlavor=CoreCLR
+          /p:RuntimeFlavor=CoreCLR
         timeoutInMinutes: 180
         condition: >-
           or(
