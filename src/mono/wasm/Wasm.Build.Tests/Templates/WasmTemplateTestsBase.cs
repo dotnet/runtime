@@ -291,8 +291,8 @@ public class WasmTemplateTestsBase : BuildTestBase
             mainJsContent,
             ".create()",
             (targetFrameworkVersion.Major >= 8)
-                    ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
-                    : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()"
+                    ? ".withConfig({ forwardConsoleLogsToWS: true, appendElementOnExit: true, logExitCode: true, exitOnUnhandledError: true }).create()"
+                    : ".withConfig({ forwardConsoleLogsToWS: true, appendElementOnExit: true, logExitCode: true }).create()"
             );
 
         // dotnet.run() is used instead of runMain() in net9.0+
