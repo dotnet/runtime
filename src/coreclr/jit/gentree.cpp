@@ -27267,12 +27267,12 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(
 //
 GenTree* Compiler::gtNewSimdToScalarNode(var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize)
 {
-    assert(varTypeIsArithmetic(type));
+    assert(varTypeIsArithmetic(type) || TypeGet(type) == TYP_HALF);
 
     assert(op1 != nullptr);
     assert(varTypeIsSIMD(op1));
 
-    assert(varTypeIsArithmetic(simdBaseType));
+    assert(varTypeIsArithmetic(simdBaseType) || TypeGet(simdBaseType) == TYP_HALF);
 
     NamedIntrinsic intrinsic = NI_Illegal;
 
