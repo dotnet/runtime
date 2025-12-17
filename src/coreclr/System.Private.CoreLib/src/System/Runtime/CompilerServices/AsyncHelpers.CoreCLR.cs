@@ -531,6 +531,7 @@ namespace System.Runtime.CompilerServices
         //                 }
         //             }
         // }
+        Debug.Fail("Exception stack frame appending not implemented in NativeAOT");
 #endif
                     if (continuation == null || (continuation.Flags & ContinuationFlags.HasException) != 0)
                         return continuation;
