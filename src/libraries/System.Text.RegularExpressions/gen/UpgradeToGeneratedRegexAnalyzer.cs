@@ -234,10 +234,12 @@ namespace System.Text.RegularExpressions.Generator
             // Get the span that ends just before the opening parenthesis of the argument list.
             // For invocations like Regex.IsMatch(input, pattern), this gives us just "Regex.IsMatch".
             // For object creations like new Regex(pattern), this gives us just "new Regex".
+            // For target-typed new like new("pattern"), this gives us just "new".
             int? argumentListStart = syntaxNode switch
             {
                 InvocationExpressionSyntax invocation => invocation.ArgumentList?.SpanStart,
                 ObjectCreationExpressionSyntax creation => creation.ArgumentList?.SpanStart,
+                ImplicitObjectCreationExpressionSyntax implicitCreation => implicitCreation.ArgumentList?.SpanStart,
                 _ => null
             };
 

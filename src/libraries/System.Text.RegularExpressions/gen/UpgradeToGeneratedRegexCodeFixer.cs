@@ -50,9 +50,9 @@ namespace System.Text.RegularExpressions.Generator
                 return;
             }
 
-            // The diagnostic span covers just the method/constructor name (e.g., "Regex.IsMatch" or "new Regex"),
+            // The diagnostic span covers just the method/constructor name (e.g., "Regex.IsMatch" or "new Regex" or "new"),
             // so we need to find the containing invocation or object creation expression.
-            SyntaxNode? nodeToFix = node.AncestorsAndSelf().FirstOrDefault(n => n is InvocationExpressionSyntax or ObjectCreationExpressionSyntax);
+            SyntaxNode? nodeToFix = node.AncestorsAndSelf().FirstOrDefault(n => n is InvocationExpressionSyntax or ObjectCreationExpressionSyntax or ImplicitObjectCreationExpressionSyntax);
             if (nodeToFix is null)
             {
                 return;

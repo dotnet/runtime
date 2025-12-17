@@ -1426,6 +1426,27 @@ public partial class C
         }
 
         [Fact]
+        public async Task TestTargetTypedNew()
+        {
+            string test = @"using System.Text.RegularExpressions;
+public class C
+{
+    private static readonly Regex r = [|new|](""abc"");
+}
+";
+
+            string fixedCode = @"using System.Text.RegularExpressions;
+public partial class C
+{
+    [GeneratedRegex(""abc"")]
+    private static partial Regex r { get; }
+}
+";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedCode);
+        }
+
+        [Fact]
         public async Task InvalidRegexOptions()
         {
             string test = @"using System.Text.RegularExpressions;
