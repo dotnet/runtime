@@ -320,7 +320,7 @@ namespace Wasm.Build.Tests
             if (useWasmSdk)
             {
                 var result = isPublish
-                    ? await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 100));
+                    ? await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 100))
                     : await RunForBuildWithDotnetRun(new BrowserRunOptions(config, ExpectedExitCode: 100));
 
                 Assert.Contains("WASM Library MyExport is called", result.TestOutput);
