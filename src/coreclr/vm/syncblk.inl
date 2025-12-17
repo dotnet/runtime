@@ -75,7 +75,7 @@ FORCEINLINE ObjHeader::HeaderLockResult ObjHeader::AcquireHeaderThinLock(DWORD t
     }
 
     // We failed to acquire the lock in one shot.
-    // If we have only have one processor, don't waste time spinning.
+    // If we only have one processor, don't waste time spinning.
     if (g_SystemInfo.dwNumberOfProcessors == 1)
     {
         return HeaderLockResult::UseSlowPath;
@@ -114,7 +114,7 @@ inline ObjHeader::HeaderLockResult ObjHeader::AcquireHeaderThinLockWithSpin(DWOR
     // under 16 tries.
     //
     // As for the backoff strategy we have two choices:
-    // Exponential back-off with a lmit:
+    // Exponential back-off with a limit:
     //   0, 1, 2, 4, 8, 8, 8, 8, 8, 8, 8, . . . .
     //
     // Linear back-off
@@ -133,7 +133,6 @@ inline ObjHeader::HeaderLockResult ObjHeader::AcquireHeaderThinLockWithSpin(DWOR
                         SBLK_MASK_LOCK_THREADID +
                         SBLK_MASK_LOCK_RECLEVEL)) == 0)
         {
-
             LONG newValue = oldValue | tid;
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
             if (FastInterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
@@ -144,7 +143,10 @@ inline ObjHeader::HeaderLockResult ObjHeader::AcquireHeaderThinLockWithSpin(DWOR
                 return HeaderLockResult::Success;
             }
 
-            return HeaderLockResult::Failure;
+            // Someone else just beat us to the lock.
+            // Try again.
+            YieldProcessorNormalized(i);
+            continue;
         }
 
         if (oldValue & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
