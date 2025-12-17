@@ -105,7 +105,7 @@ jobs:
           $(wbtProjectArg) $(Build.SourcesDirectory)/src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj
           /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/Build.binlog
           /p:Configuration=$(_BuildConfig)
-          /p:TestUsingWorkloads=true
+          /p:TestUsingWorkloads=false
           /p:InstallWorkloadForTesting=true
           /p:WasmSkipMissingRuntimePackBuild=true
           /p:PreparePackagesForWorkloadInstall=false
