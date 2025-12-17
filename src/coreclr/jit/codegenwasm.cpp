@@ -61,7 +61,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     // TODO-WASM: shadow stack maintenance
     // TODO-WASM: we need to handle the end-of-function case if we reach the end of a codegen for a function
     // and do NOT have an epilog. In those cases we currently will not emit an end instruction.
-    if (block->IsLast() || compiler->bbIsFuncletBeg(block))
+    if (block->IsLast() || compiler->bbIsFuncletBeg(block->Next()))
     {
         instGen(INS_end);
     }
