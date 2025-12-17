@@ -1548,7 +1548,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
     JITDUMP("Passed in ");
     DBEXEC(comp->verbose, abiInfo.Dump());
 
-#if !defined(TARGET_64BIT)
+#if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
     if (comp->opts.compUseSoftFP && arg->TypeIs(TYP_DOUBLE))
     {
         // Unlike TYP_LONG we do no decomposition for doubles, yet we maintain
@@ -1582,7 +1582,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
 
         JITDUMP("Transformed long arg on 32-bit to FIELD_LIST node\n");
     }
-#endif
+#endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
 
 #if FEATURE_ARG_SPLIT
     // Structs can be split into register(s) and stack on some targets
@@ -8176,6 +8176,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
     return false;
 }
 
+//------------------------------------------------------------------------
 // LowerConstIntDivOrMod: Transform integer GT_DIV/GT_MOD nodes with a power of 2
 //     const divisor into equivalent but faster sequences.
 //
@@ -8210,6 +8211,14 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
     }
     assert(!node->OperIs(GT_MOD));
 #endif // TARGET_ARM64
+
+#if defined(TARGET_WASM)
+    // TODO-Wasm: evaluate if this is worth doing for Wasm, since some cases will increase
+    // code size and the underlying engine may do something similar. If it is worth doing,
+    // fix the code below to work properly for a 32 bit target that supports 64 bit math.
+    //
+    return false;
+#endif // TARGET_WASM
 
     if (!divisor->IsCnsIntOrI())
     {
@@ -8450,6 +8459,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
     *nextNode = newDivMod->gtNext;
     return true;
 }
+
 //------------------------------------------------------------------------
 // LowerSignedDivOrMod: transform integer GT_DIV/GT_MOD nodes with a power of 2
 // const divisor into equivalent but faster sequences.

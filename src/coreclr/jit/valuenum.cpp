@@ -11911,7 +11911,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 tree->gtVNPair.SetBoth(vnStore->VNForIntCon(int(tree->AsIntConCommon()->IconValue())));
             }
 
-            if (tree->IsIntegralConst())
+            if (tree->IsCnsIntOrI())
             {
                 fgValueNumberRegisterConstFieldSeq(tree->AsIntCon());
             }
