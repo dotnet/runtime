@@ -653,6 +653,10 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         {
             if (GetCurrentPalThread())
             {
+#if defined(TARGET_TVOS)
+                (void)!write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
+                PROCAbort(SIGSEGV, siginfo, context);
+#else // TARGET_TVOS
                 size_t handlerStackTop = __sync_val_compare_and_swap((size_t*)&g_stackOverflowHandlerStack, (size_t)g_stackOverflowHandlerStack, 0);
                 if (handlerStackTop == 0)
                 {
@@ -681,6 +685,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
                     PROCAbort(SIGSEGV, siginfo, context);
                 }
                 (void)!write(STDERR_FILENO, StackOverflowHandlerReturnedMessage, sizeof(StackOverflowHandlerReturnedMessage) - 1);
+#endif // TARGET_TVOS
             }
             else
             {
