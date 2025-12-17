@@ -623,16 +623,16 @@ namespace System.Net.Http
                         buffer.EnsureAvailableSpace(VariableLengthIntegerHelper.MaximumEncodedLength);
                     }
 
-                    if (NetEventSource.Log.IsEnabled())
-                    {
-                        NetEventSource.Info(this, $"Received server-initiated stream of type {streamType}, CanWrite={stream.CanWrite}");
-                    }
-
                     // Check if this is a bidirectional stream (which we don't support from the server).
                     if (stream.CanWrite)
                     {
                         // Server initiated bidirectional streams are either push streams or extensions, and we support neither.
                         throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.StreamCreationError);
+                    }
+
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(this, $"Received server-initiated unidirectional stream of type {streamType}");
                     }
 
                     // Process the stream based on its type.
