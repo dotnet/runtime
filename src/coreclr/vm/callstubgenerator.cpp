@@ -2459,7 +2459,7 @@ void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, 
 //    it is not a struct at the unmanaged ABI boundary.
 //
 // Arguments:
-//    clsHnd - the handle for the struct type.
+//    pMT - the handle for the struct type.
 //
 // Return Value:
 //    true if the given struct type should be treated as a primitive for unmanaged calls,
