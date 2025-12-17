@@ -466,7 +466,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
             ContainCheckNeg(node->AsOp());
         }
 #endif
-        break;
+#ifdef TARGET_WASM
+            return LowerNeg(node->AsOp());
+#endif
+            break;
         case GT_NOT:
 #ifdef TARGET_ARM64
             ContainCheckNot(node->AsOp());
@@ -4523,12 +4526,12 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 //
 GenTree* Lowering::LowerCompare(GenTree* cmp)
 {
-#ifndef TARGET_64BIT
+#if LOWER_DECOMPOSE_LONGS
     if (cmp->gtGetOp1()->TypeIs(TYP_LONG))
     {
         return DecomposeLongCompare(cmp);
     }
-#endif
+#endif // LOWER_DECOMPOSE_LONGS
 
     if (cmp->gtGetOp2()->IsIntegralConst() && !comp->opts.MinOpts())
     {
@@ -9686,14 +9689,14 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 {
     assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
 
-#if !defined(TARGET_64BIT)
+#if LOWER_DECOMPOSE_LONGS
     if (ret->TypeIs(TYP_LONG))
     {
         GenTree* op1 = ret->AsOp()->GetReturnValue();
         noway_assert(op1->OperIs(GT_LONG));
         MakeSrcContained(ret, op1);
     }
-#endif // !defined(TARGET_64BIT)
+#endif // LOWER_DECOMPOSE_LONGS
 #if FEATURE_MULTIREG_RET
     if (ret->TypeIs(TYP_STRUCT))
     {

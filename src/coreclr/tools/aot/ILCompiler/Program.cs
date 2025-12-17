@@ -314,8 +314,16 @@ namespace ILCompiler
                     compilationRoots.Add(new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode(linkTrimFilePath));
                 }
 
-                if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
+                // Get TypeMappingEntryAssembly from command-line option if specified
+                string typeMappingEntryAssembly = Get(_command.TypeMapEntryAssembly);
+                if (typeMappingEntryAssembly is not null)
                 {
+                    var typeMapEntryAssembly = (EcmaAssembly)typeSystemContext.ResolveAssembly(AssemblyNameInfo.Parse(typeMappingEntryAssembly), throwIfNotFound: true);
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(typeMapEntryAssembly, typeSystemContext));
+                }
+                else if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
+                {
+                    // Fall back to entryassembly if not specified
                     typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext));
                 }
             }
