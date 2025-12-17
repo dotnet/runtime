@@ -47,7 +47,7 @@ jobs:
             - build_browser_wasm_windows_Debug_AllSubsets_CoreCLR
         isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
         testGroup: innerloop
-        nameSuffix: WasmBuildTests
+        nameSuffix: CoreCLR_WasmBuildTests
 
         preBuildSteps:
           # Download single threaded runtime packs, and tasks needed to build WBT
