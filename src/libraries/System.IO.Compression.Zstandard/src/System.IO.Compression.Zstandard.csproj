@@ -3,21 +3,17 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <UseCompilerGeneratedDocXmlFile>true</UseCompilerGeneratedDocXmlFile>
-
-    <!-- Disabling baseline validation since this is a brand new package.
-       Once this package has shipped a stable version, the following line
-       should be removed in order to re-enable validation. -->
+    <!-- Disabling baseline validation since this is a brand new package. Once this package has shipped a stable version, the following line should be removed in order to re-enable validation. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
-
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.IOCompressionZstandard_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">
+      SR.IOCompressionZstandard_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
 
-    <!--missing xml comments on net10.0 (not supported stubs)-->
+    <!-- missing xml comments on net11.0 (not supported stubs)-->
     <NoWarn Condition="'$(TargetPlatformIdentifier)' == ''">$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
@@ -31,25 +27,18 @@
     <Compile Include="System\IO\Compression\ZstandardDecoder.cs" />
     <Compile Include="System\IO\Compression\ZstandardDictionary.cs" />
     <Compile Include="System\IO\Compression\ZstandardUtils.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeZstdHandle.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeZstdHandle.cs" />
-
-    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs">
-       <Link>Common\System\Net\ArrayBuffer.cs</Link>
-    </Compile>
-
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeZstdHandle.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeZstdHandle.cs" />
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />
   </ItemGroup>
 
   <!-- Windows specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
-             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
   </ItemGroup>
 
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' ">
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
-             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
 
   <ItemGroup>
