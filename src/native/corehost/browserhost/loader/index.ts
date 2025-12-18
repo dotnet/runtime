@@ -4,7 +4,8 @@
 import type {
     LoggerType, AssertType, RuntimeAPI, LoaderExports,
     NativeBrowserExportsTable, LoaderExportsTable, RuntimeExportsTable, InternalExchange, BrowserHostExportsTable, InteropJavaScriptExportsTable, BrowserUtilsExportsTable,
-    EmscriptenModuleInternal
+    EmscriptenModuleInternal,
+    DiagnosticsExportsTable
 } from "./types";
 import { InternalExchangeIndex } from "../types";
 
@@ -13,21 +14,21 @@ import BuildConfiguration from "consts:configuration";
 import GitHash from "consts:gitHash";
 
 import { netLoaderConfig, getLoaderConfig } from "./config";
-import { exit } from "./exit";
+import { exit, isExited, isRuntimeRunning, addOnExitListener, registerExit, quitNow } from "./exit";
 import { invokeLibraryInitializers } from "./lib-initializers";
 import { check, error, info, warn, debug } from "./logging";
 
 import { dotnetAssert, dotnetLoaderExports, dotnetLogger, dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
 import { rejectRunMainPromise, resolveRunMainPromise, getRunMainPromise } from "./run";
 import { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "./promise-completion-source";
-import { instantiateWasm } from "./assets";
+import { abortStartup, instantiateWasm } from "./assets";
 
 export function dotnetInitializeModule(): RuntimeAPI {
 
     const dotnetApi: Partial<RuntimeAPI> = {
         INTERNAL: {},
         Module: {} as any,
-        runtimeId: -1,
+        runtimeId: undefined,
         runtimeBuildInfo: {
             productVersion: ProductVersion,
             gitHash: GitHash,
@@ -51,6 +52,7 @@ export function dotnetInitializeModule(): RuntimeAPI {
         undefined as any as InteropJavaScriptExportsTable, //6
         undefined as any as NativeBrowserExportsTable, //7
         undefined as any as BrowserUtilsExportsTable, //8
+        undefined as any as DiagnosticsExportsTable, //9
     ];
     const loaderFunctions: LoaderExports = {
         getRunMainPromise,
@@ -59,6 +61,11 @@ export function dotnetInitializeModule(): RuntimeAPI {
         createPromiseCompletionSource,
         isControllablePromise,
         getPromiseCompletionSource,
+        isExited,
+        isRuntimeRunning,
+        addOnExitListener,
+        abortStartup,
+        quitNow,
     };
     Object.assign(dotnetLoaderExports, loaderFunctions);
     const logger: LoggerType = {
@@ -83,6 +90,8 @@ export function dotnetInitializeModule(): RuntimeAPI {
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
     return dotnetApi as RuntimeAPI;
 
+    registerExit();
+
     function loaderExportsToTable(logger: LoggerType, assert: AssertType, dotnetLoaderExports: LoaderExports): LoaderExportsTable {
         // keep in sync with loaderExportsFromTable()
         return [
@@ -97,6 +106,11 @@ export function dotnetInitializeModule(): RuntimeAPI {
             dotnetLoaderExports.createPromiseCompletionSource,
             dotnetLoaderExports.isControllablePromise,
             dotnetLoaderExports.getPromiseCompletionSource,
+            dotnetLoaderExports.isExited,
+            dotnetLoaderExports.isRuntimeRunning,
+            dotnetLoaderExports.addOnExitListener,
+            dotnetLoaderExports.abortStartup,
+            dotnetLoaderExports.quitNow,
         ];
     }
 }

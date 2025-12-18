@@ -3,10 +3,10 @@
 
 import type { LoadBootResourceCallback, JsModuleExports, JsAsset, AssemblyAsset, PdbAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, InstantiateWasmSuccessCallback } from "./types";
 
-import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateInternals } from "./cross-module";
+import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module } from "./cross-module";
 import { getIcuResourceName } from "./icu";
 import { getLoaderConfig } from "./config";
-import { BrowserHost_InitializeCoreCLR } from "./run";
+import { initializeCoreCLR } from "./run";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { locateFile } from "./bootstrap";
 import { fetchLike } from "./polyfills";
@@ -24,15 +24,36 @@ let wasmBinaryPromise: any = undefined;
 // WASM-TODO: no-cache, force-cache, integrity
 // WASM-TODO: LoadBootResourceCallback
 // WASM-TODO: fail fast for missing WASM features - SIMD, EH, BigInt detection
+// WASM-TODO: onDownloadResourceProgress
+// WASM-TODO: onDotnetReady
+// WASM-TODO: Module.locateFile
+// WASM-TODO: loadBootResource
+// WASM-TODO: loadAllSatelliteResources
+// WASM-TODO: runtimeOptions
+// WASM-TODO: debugLevel
+// WASM-TODO: load symbolication json
+
+export function abortStartup(reason: any): void {
+    nativeModulePromiseController.reject(reason);
+}
 
 export async function createRuntime(downloadOnly: boolean, loadBootResource?: LoadBootResourceCallback): Promise<any> {
     if (loadBootResource) throw new Error("TODO: loadBootResource is not implemented yet");
     const config = getLoaderConfig();
     if (!config.resources || !config.resources.coreAssembly || !config.resources.coreAssembly.length) throw new Error("Invalid config, resources is not set");
 
-    const nativeModulePromise = loadJSModule(config.resources.jsModuleNative[0]);
-    const runtimeModulePromise = loadJSModule(config.resources.jsModuleRuntime[0]);
-    const wasmNativePromise = fetchWasm(config.resources.wasmNative[0]);
+
+    if (Module.onConfigLoaded) {
+        await Module.onConfigLoaded?.(config);
+    }
+
+    if (config.resources.jsModuleDiagnostics && config.resources.jsModuleDiagnostics.length > 0) {
+        const diagnosticsModule = await loadJSModule(config.resources.jsModuleDiagnostics[0]);
+        diagnosticsModule.dotnetInitializeModule<void>(dotnetGetInternals());
+    }
+    const nativeModulePromise: Promise<JsModuleExports> = loadJSModule(config.resources.jsModuleNative[0]);
+    const runtimeModulePromise: Promise<JsModuleExports> = loadJSModule(config.resources.jsModuleRuntime[0]);
+    const wasmNativePromise: Promise<Response> = fetchWasm(config.resources.wasmNative[0]);
 
     const coreAssembliesPromise = Promise.all(config.resources.coreAssembly.map(fetchDll));
     const coreVfsPromise = Promise.all((config.resources.coreVfs || []).map(fetchVfs));
@@ -55,7 +76,7 @@ export async function createRuntime(downloadOnly: boolean, loadBootResource?: Lo
     await icuDataPromise;
     await wasmNativePromise; // this is just to propagate errors
     if (!downloadOnly) {
-        BrowserHost_InitializeCoreCLR();
+        initializeCoreCLR();
     }
 
     await assembliesPromise;
@@ -64,7 +85,7 @@ export async function createRuntime(downloadOnly: boolean, loadBootResource?: Lo
 
 async function loadJSModule(asset: JsAsset): Promise<JsModuleExports> {
     if (asset.name && !asset.resolvedUrl) {
-        asset.resolvedUrl = locateFile(asset.name);
+        asset.resolvedUrl = locateFile(asset.name, true);
     }
     if (!asset.resolvedUrl) throw new Error("Invalid config, resources is not set");
     return await import(/* webpackIgnore: true */ asset.resolvedUrl);

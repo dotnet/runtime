@@ -15,6 +15,11 @@
   <Import Project="..\Directory.Build.props"/>
 
   <PropertyGroup>
+    <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120248 -->
+    <WasmEnableWebcil Condition="'$(RuntimeFlavor)' == 'CoreCLR'">false</WasmEnableWebcil>
+    <EnableAggressiveTrimming Condition="'$(RuntimeFlavor)' == 'CoreCLR'">false</EnableAggressiveTrimming>
+    <PublishTrimmed Condition="'$(RuntimeFlavor)' == 'CoreCLR'">false</PublishTrimmed>
+
     <OutputPath>bin</OutputPath>
     <WasmAppDir>$(MSBuildProjectDirectory)\bin\wwwroot\</WasmAppDir>
     <CompressionEnabled>false</CompressionEnabled>

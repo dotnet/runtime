@@ -29,7 +29,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'browser', 'emsdk'))</EMSDK_PATH>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
-    <PublishTrimmed>true</PublishTrimmed>
+    <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
     <RunAnalyzers>false</RunAnalyzers>
 
     <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>

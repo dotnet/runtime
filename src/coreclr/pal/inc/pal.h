@@ -3653,6 +3653,7 @@ public:
     // The exception is a hardware exception coming from a native code out of
     // the well known runtime helpers
     bool IsExternal;
+    bool IgnoreInManagedExceptionDispatcher;
 
     void(*ManagedToNativeExceptionCallback)(void* context);
     void* ManagedToNativeExceptionCallbackContext;
@@ -3665,6 +3666,7 @@ public:
         TargetIp = 0;
         RecordsOnStack = onStack;
         IsExternal = false;
+        IgnoreInManagedExceptionDispatcher = false;
         ManagedToNativeExceptionCallback = NULL;
         ManagedToNativeExceptionCallbackContext = NULL;
     }
@@ -3709,6 +3711,11 @@ public:
         ManagedToNativeExceptionCallbackContext = NULL;
     }
 
+    bool HasTargetFrame()
+    {
+        return TargetFrameSp != NoTargetFrameSp;
+    }
+
     CONTEXT* GetContextRecord()
     {
         return ExceptionPointers.ContextRecord;
@@ -3717,16 +3724,6 @@ public:
     EXCEPTION_RECORD* GetExceptionRecord()
     {
         return ExceptionPointers.ExceptionRecord;
-    }
-
-    bool IsFirstPass()
-    {
-        return (TargetFrameSp == NoTargetFrameSp);
-    }
-
-    void SecondPassDone()
-    {
-        TargetFrameSp = NoTargetFrameSp;
     }
 
     bool HasPropagateExceptionCallback()
@@ -3845,8 +3842,7 @@ public:
         if (disposition == EXCEPTION_CONTINUE_SEARCH)                           \
         {                                                                       \
             throw;                                                              \
-        }                                                                       \
-        ex.SecondPassDone();
+        }
 
 // Start of an exception handler. It works the same way as the PAL_EXCEPT except
 // that the disposition is obtained by calling the specified filter.
@@ -3891,7 +3887,7 @@ public:
 #define PAL_CPP_CATCH_NON_DERIVED_NOARG(type) } catch (type) {
 #define PAL_CPP_CATCH_ALL               } catch (...) {                                           \
                                             try { throw; }                                        \
-                                            catch (PAL_SEHException& ex) { ex.SecondPassDone(); } \
+                                            catch (PAL_SEHException& ex) { } \
                                             catch (...) {}
 
 #define PAL_CPP_ENDTRY                  }

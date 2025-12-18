@@ -2493,7 +2493,13 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
     RealCOMPlusThrow(throwable, FALSE);
 }
 
-VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj)
+EXCEPTION_DISPOSITION SetTargetFrame(PAL_SEHException& ex, UINT_PTR targetSP)
+{
+    ex.TargetFrameSp = targetSP;
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
+VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *exceptionObj, UINT_PTR targetSP)
 {
     CONTRACTL
     {
@@ -2503,8 +2509,26 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
     }
     CONTRACTL_END;
 
-    OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
-    RealCOMPlusThrowWorker(throwable, FALSE);
+    struct Param
+    {
+        Object *exceptionObj;
+        UINT_PTR targetSP;
+    } param = { exceptionObj, targetSP };
+
+#ifdef TARGET_WASM
+    PAL_TRY(Param *, pParam, &param)
+    {
+#endif // TARGET_WASM
+        OBJECTREF throwable = ObjectToOBJECTREF(pParam->exceptionObj);
+        RealCOMPlusThrowWorker(throwable, FALSE);
+#ifdef TARGET_WASM
+    }
+    PAL_EXCEPT(SetTargetFrame(ex, __param->targetSP))
+    {
+    }
+    PAL_ENDTRY
+#endif // TARGET_WASM
+    UNREACHABLE();
 }
 
 // this function finds the managed callback to get a resource

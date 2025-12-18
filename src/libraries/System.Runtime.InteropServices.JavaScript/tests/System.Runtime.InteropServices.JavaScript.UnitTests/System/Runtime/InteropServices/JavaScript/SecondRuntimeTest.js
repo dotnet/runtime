@@ -2,7 +2,7 @@ export async function runSecondRuntimeAndTestStaticState(guid) {
     const { dotnet: dotnet2 } = await import('./_framework/dotnet.js?instance=2-' + guid);
     const runtime2 = await dotnet2
         .withConfig({
-            forwardConsoleLogsToWS: false,
+            forwardConsole: false,
             diagnosticTracing: false,
             appendElementOnExit: false,
             logExitCode: false,
@@ -21,6 +21,6 @@ export async function runSecondRuntimeAndTestStaticState(guid) {
 }
 
 async function getIncrementStateFunction(runtime) {
-    const exports = await runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests.dll");
+    const exports = await runtime.getAssemblyExports("System.Runtime.InteropServices.JavaScript.Tests");
     return exports.System.Runtime.InteropServices.JavaScript.Tests.SecondRuntimeTest.Interop.IncrementState;
 }

@@ -3,25 +3,21 @@
 
 import { DotnetHostBuilder } from "../types";
 import { findResources, isNodeHosted, isShellHosted } from "./bootstrap";
-import { Module, dotnetAssert } from "./cross-module";
-import { exit } from "./exit";
+import { dotnetAssert, dotnetBrowserHostExports } from "./cross-module";
+import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 
-let CoreCLRInitialized = false;
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
-export function BrowserHost_InitializeCoreCLR(): void {
-    dotnetAssert.check(!CoreCLRInitialized, "CoreCLR should be initialized just once");
-    CoreCLRInitialized = true;
-
-    // int BrowserHost_InitializeCoreCLR(void)
-    // WASM-TODO: add more formal ccall wrapper like cwraps in Mono
-    const res = Module.ccall("BrowserHost_InitializeCoreCLR", "number") as number;
+export function initializeCoreCLR(): void {
+    dotnetAssert.check(!runtimeState.runtimeReady, "CoreCLR should be initialized just once");
+    const res = dotnetBrowserHostExports.initializeCoreCLR();
     if (res != 0) {
         const reason = new Error("Failed to initialize CoreCLR");
         runMainPromiseController.reject(reason);
         exit(res, reason);
     }
+    runtimeState.runtimeReady = true;
 }
 
 export function resolveRunMainPromise(exitCode: number): void {
