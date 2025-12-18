@@ -454,6 +454,20 @@ static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types toType, var
     return ((uint32_t)oper << shift1) | ((uint32_t)fromType) | ((uint32_t)toType << shift2);
 }
 
+static constexpr uint32_t PackTypes(var_types toType, var_types  fromType)
+{
+    if (toType == TYP_BYREF)
+    {
+        toType = TYP_I_IMPL;
+    }
+    if (fromType == TYP_BYREF)
+    {
+        fromType = TYP_I_IMPL;
+    }
+    const int shift1 = ConstLog2<TYP_COUNT>::value + 1;
+    return ((uint32_t)toType) | ((uint32_t)fromType << shift1);
+}
+
 //------------------------------------------------------------------------
 // genCodeForCast: Generate code for a cast operation
 //
@@ -462,35 +476,46 @@ static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types toType, var
 //
 void CodeGen::genCodeForCast(GenTreeOp* tree)
 {
+    assert(tree->OperIs(GT_CAST));
+    if (tree->gtOverflow())
+        NYI_WASM("Overflow checks");
+
     genConsumeOperands(tree);
 
     instruction ins;
-    switch (PackOperAndType(tree->OperGet(), /* toType */ tree->TypeGet(), /* fromType */ tree->gtOp1->TypeGet()))
+    var_types   fromType = genActualType(tree->gtOp1->TypeGet());
+    // cases for GT_CAST(A <- B)
+    switch (PackTypes(/* toType */ tree->TypeGet(), /* fromType */ fromType)) 
     {
         // NOTE: For this, RyuJIT seems to just generate an i32 load of the i64 operand instead of a GT_CAST.
         // I suspect once we implement use of wasm locals instead of the linear stack, GT_CAST will appear.
-        case PackOperAndType(GT_CAST, TYP_INT, TYP_LONG):
-            if (tree->gtOverflow())
-                NYI_WASM("Overflow checks");
+        case PackTypes(TYP_INT, TYP_LONG):
             ins = INS_i32_wrap_i64;
             break;
 
-        case PackOperAndType(GT_CAST, TYP_LONG, TYP_INT):
+        case PackTypes(TYP_LONG, TYP_INT):
             // FIXME: Use extend8/extend16 as appropriate
             ins = tree->IsUnsigned() ? INS_i64_extend_u_i32 : INS_i64_extend_s_i32;
             break;
 
-        case PackOperAndType(GT_CAST, TYP_DOUBLE, TYP_FLOAT):
+        case PackTypes(TYP_DOUBLE, TYP_FLOAT):
             // NOTE: This name is wrong in the spec.
             ins = INS_f64_promote_f32;
             break;
 
-        case PackOperAndType(GT_CAST, TYP_FLOAT, TYP_DOUBLE):
+        case PackTypes(TYP_FLOAT, TYP_DOUBLE):
             ins = INS_f32_demote_f64;
             break;
 
-            // TODO: Floating point conversions - we need to figure out where semantics require a helper and where they
-            // don't.
+        // TODO: Floating point conversions - we need to figure out where semantics require a helper and where they
+        // don't.
+        case PackTypes(TYP_FLOAT, TYP_INT):
+        case PackTypes(TYP_FLOAT, TYP_LONG):
+        case PackTypes(TYP_DOUBLE, TYP_INT):
+        case PackTypes(TYP_DOUBLE, TYP_LONG):
+            ins = INS_none;
+            NYI_WASM("genCodeForCast: float from int");
+            break;
 
         default:
             ins = INS_none;
