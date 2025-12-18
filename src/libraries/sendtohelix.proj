@@ -107,7 +107,7 @@
       <_TestUsingCrossProductValues Remove="@(_TestUsingCrossProductValues)" Condition="'%(_TestUsingCrossProductValues.Workloads)' == 'false' and '%(_TestUsingCrossProductValues.Fingerprinting)' == 'false'" />
       
       <!-- Add combination for JavascriptBundler friendliness -->
-      <_TestUsingCrossProductValues Include="JavaScriptBundlerFriendly">
+      <_TestUsingCrossProductValues Include="JavaScriptBundlerFriendly" Condition="'$(RuntimeFlavor)' == 'Mono'">
         <Workloads>true</Workloads>
         <Webcil>true</Webcil>
         <Fingerprinting>true</Fingerprinting>
