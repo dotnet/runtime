@@ -595,9 +595,9 @@ namespace System.Net.Http
                     // Read the stream type, which is a variable-length integer.
                     // This may require multiple reads if the integer is encoded in multiple bytes.
                     long streamType;
-                    int bytesRead;
                     while (true)
                     {
+                        int bytesRead;
                         try
                         {
                             bytesRead = await stream.ReadAsync(buffer.AvailableMemory, CancellationToken.None).ConfigureAwait(false);
