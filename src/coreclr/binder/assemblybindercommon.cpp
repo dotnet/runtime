@@ -847,10 +847,16 @@ namespace BINDER_SPACE
             {
                 // Search Assembly.ni.dll, then Assembly.dll
                 // The Assembly.ni.dll paths are rare, and intended for supporting managed C++ R2R assemblies.
-                const WCHAR* const candidates[] = { W(".ni.dll"),  W(".dll") };
+                // Do not try to load ni images on WASM as they are not supported anymore and can slow down startup
+                const WCHAR* const candidates[] = {
+#ifndef TARGET_WASM
+                    W(".ni.dll"),
+#endif // TARGET_WASM
+                    W(".dll")
+                };
 
                 // Loop through the binding paths looking for a matching assembly
-                for (int i = 0; i < 2; i++)
+                for (int i = 0; i < ARRAY_SIZE(candidates); i++)
                 {
                     SString assemblyFileName(simpleName);
                     assemblyFileName.Append(candidates[i]);
