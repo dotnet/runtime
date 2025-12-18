@@ -516,6 +516,27 @@ CodeHeapIterator::EECodeGenManagerReleaseIteratorHolder::~EECodeGenManagerReleas
     }
 }
 
+CodeHeapIterator::EECodeGenManagerReleaseIteratorHolder& CodeHeapIterator::EECodeGenManagerReleaseIteratorHolder::operator=(EECodeGenManagerReleaseIteratorHolder&& other)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (this != &other)
+    {
+        if (m_manager)
+        {
+            m_manager->ReleaseIterator();
+        }
+        m_manager = other.m_manager;
+        other.m_manager = NULL;
+    }
+    return *this;
+}
+
 bool CodeHeapIterator::Next()
 {
     CONTRACTL

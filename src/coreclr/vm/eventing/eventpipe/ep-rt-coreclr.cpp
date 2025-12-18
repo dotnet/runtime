@@ -68,7 +68,7 @@ stack_walk_callback (
 		}
 #endif
 		// With FUNCTIONSONLY flag, we may hit frames without a meaningful control_pc, but with a valid MethodDesc.
-		// there is no point in reporting those frames as ep_stack_contents_append doesn't actually record the function
+		// There is no point in reporting those frames as ep_stack_contents_append doesn't actually record the function
 		// in a Frame in release builds, it only records the control_pc.
 		return SWA_CONTINUE;
 	}

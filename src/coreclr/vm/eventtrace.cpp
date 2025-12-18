@@ -5000,9 +5000,8 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
 #endif
             ExecutionManager::GetEEJitManager()->GetCodeHeapIterator(pLoaderAllocatorFilter)
 #ifdef FEATURE_INTERPRETER
-        :
+        :   ExecutionManager::GetInterpreterJitManager()->GetCodeHeapIterator(pLoaderAllocatorFilter);
 #endif
-            ExecutionManager::GetInterpreterJitManager()->GetCodeHeapIterator(pLoaderAllocatorFilter);
         while (heapIterator.Next())
         {
             MethodDesc * pMD = heapIterator.GetMethod();
@@ -5034,7 +5033,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
                 if (nativeCodeVersion.IsNull())
                 {
                     // The code version manager hasn't been updated with the jitted code
-                    if (codeStart != MethodAndStartAddressToEECodeInfoPointer(pMD, NULL))
+                    if (codeStart != MethodAndStartAddressToEECodeInfoPointer(pMD, (PCODE)NULL))
                     {
                         continue;
                     }
@@ -5047,7 +5046,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
             }
             else
 #endif // FEATURE_CODE_VERSIONING
-            if (codeStart != MethodAndStartAddressToEECodeInfoPointer(pMD, NULL))
+            if (codeStart != MethodAndStartAddressToEECodeInfoPointer(pMD, (PCODE)NULL))
             {
                 continue;
             }
