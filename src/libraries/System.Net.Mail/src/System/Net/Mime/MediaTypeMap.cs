@@ -13,8 +13,8 @@ namespace System.Net.Mime
     /// </summary>
     public static class MediaTypeMap
     {
-        private const int ExtensionToMediaTypeCount = 403;
-        private const int MediaTypeToExtensionCount = 294;
+        private const int ExtensionToMediaTypeCount = 404;
+        private const int MediaTypeToExtensionCount = 295;
         private const int MaxExtensionLength = 12; // Length of longest extension including the dot
 
         private static readonly Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> s_extensionToMediaType = new Dictionary<string, string>(ExtensionToMediaTypeCount, StringComparer.OrdinalIgnoreCase)
@@ -62,6 +62,7 @@ namespace System.Net.Mime
             [".cbor"] = "application/cbor",
             [".cdf"] = "application/x-cdf",
             [".cer"] = "application/x-x509-ca-cert",
+            [".cgm"] = "image/cgm",
             [".cjs"] = "text/javascript",
             [".class"] = "application/java-vm",
             [".clp"] = "application/x-msclip",
@@ -629,6 +630,7 @@ namespace System.Net.Mime
             ["image/apng"] = ".apng",
             ["image/avif"] = ".avif",
             ["image/bmp"] = ".bmp",
+            ["image/cgm"] = ".cgm",
             ["image/gif"] = ".gif",
             ["image/heic"] = ".heic",
             ["image/heif"] = ".heif",
