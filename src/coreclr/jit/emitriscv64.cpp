@@ -3464,8 +3464,14 @@ bool emitter::emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& 
     return true;
 }
 
-void emitter::emitDispBranchOffset(const instrDesc* id, const insGroup* ig) const
+void emitter::emitDispBranchOffset(const instrDesc* id, const insGroup* ig, bool printOffsetPlaceholder) const
 {
+    if (printOffsetPlaceholder)
+    {
+        printf("pc+??");
+        return;
+    }
+
     int instrCount = id->idAddr()->iiaGetInstrCount();
     if (ig == nullptr)
     {
@@ -3497,7 +3503,7 @@ void emitter::emitDispBranchLabel(const instrDesc* id) const
 }
 
 bool emitter::emitDispBranch(
-    unsigned opcode2, unsigned rs1, unsigned rs2, const instrDesc* id, const insGroup* ig) const
+    unsigned opcode2, unsigned rs1, unsigned rs2, const instrDesc* id, const insGroup* ig, bool printOffsetPlaceholder) const
 {
     bool print_second_reg = true;
     if (!emitDispBranchInstrType(opcode2, rs2 == REG_ZERO, print_second_reg))
@@ -3513,7 +3519,7 @@ bool emitter::emitDispBranch(
     if (id->idAddr()->iiaHasInstrCount())
     {
         // Branch is jumping to some non-labeled offset
-        emitDispBranchOffset(id, ig);
+        emitDispBranchOffset(id, ig, printOffsetPlaceholder);
     }
     else
     {
@@ -4116,7 +4122,9 @@ void emitter::emitDispInsName(
             unsigned opcode2 = (code >> 12) & 0x7;
             unsigned rs1     = (code >> 15) & 0x1f;
             unsigned rs2     = (code >> 20) & 0x1f;
-            if (!emitDispBranch(opcode2, rs1, rs2, id, ig))
+            bool printPlaceholder = addr == nullptr;
+            
+            if (!emitDispBranch(opcode2, rs1, rs2, id, ig, printPlaceholder))
             {
                 emitDispIllegalInstruction(code);
             }
@@ -4219,11 +4227,11 @@ void emitter::emitDispInsName(
                     if ((addr == nullptr) && (offset == 0))
                     {
                         // If address is not given, print placeholder instead.
-                        printf("pc%+??");
+                        printf("pc+??");
                     }
                     else
                     {
-                        printf("pc%+");
+                        printf("pc+");
                         emitDispImmediate(offset / sizeof(code_t));
                         printf(" instructions");
                     }
