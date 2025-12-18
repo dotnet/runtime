@@ -135,6 +135,7 @@
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">$(_XUnitTraitArg) -trait category=no-fingerprinting</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">$(_XUnitTraitArg) -trait category=bundler-friendly</_XUnitTraitArg>
+    <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">-trait category=$(RuntimeFlavor)</_XUnitTraitArg>
   </PropertyGroup>
 
   <PropertyGroup>

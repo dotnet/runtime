@@ -16,7 +16,7 @@ jobs:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
       helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
       buildConfig: Debug
-      runtimeFlavor: mono
+      runtimeFlavor: CoreCLR
       platforms:
         - ${{ platform }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
