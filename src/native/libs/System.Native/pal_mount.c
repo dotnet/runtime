@@ -66,6 +66,11 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
                 errno = ENOMEM;
                 return -1;
             }
+            if (bufferSize > INT_MAX)
+            {
+                errno = ENOMEM;
+                return -1;
+            }
 #if HAVE_STATFS
             mounts = (struct statfs*)malloc(bufferSize);
 #else
@@ -85,7 +90,7 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
         }
 
         // Get actual mount point information
-        count = getfsstat(mounts, bufferSize, MNT_NOWAIT);
+        count = getfsstat(mounts, (int)bufferSize, MNT_NOWAIT);
         if (count < 0)
         {
             free(mounts);
