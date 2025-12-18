@@ -305,7 +305,7 @@ export async function createEmscripten (moduleFactory: DotnetModuleConfig | ((ap
         mono_log_info(`starting in ${loaderHelpers.scriptDirectory}`);
     }
     if (loaderHelpers.config.exitOnUnhandledError) {
-        loaderHelpers.installUnhandledErrorHandler();
+        installUnhandledErrorHandler();
     }
 
     registerEmscriptenExitHandlers();
