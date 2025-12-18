@@ -26,7 +26,7 @@ More details are provided in the [data descriptor spec](./data_descriptor.md).  
 
 #### Global Values
 
-Global values which can be either primitive integer constants or pointers.
+Global values which can be either primitive integer constants, pointers, or strings.
 All global values have a string describing their name, a type, and a value of one of the above types.
 
 #### Data Structure Layout
@@ -40,6 +40,10 @@ Determinate sizes are used by contracts for pointer arithmetic such as for itera
 The determinate size of a structure may be larger than the sum of the sizes of the fields specified
 in the data descriptor (that is, the data descriptor does not include every field and may not
 include padding bytes).
+
+#### (Optional) Sub-descriptor pointers
+
+Sub-descriptors are special global values which contain a pointer to another data descriptor. These are used when data definitions are not known by the runtime at compile time but may be known by an external component. In that case the data descriptor defers to the external component to describe its data.
 
 ### Compatible Contract
 

@@ -93,7 +93,7 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
 
     curThread = GetThread();
 
-    static_assert_no_msg(sizeof(curThread->dangerousObjRefs) == sizeof(ObjRefTable));
+    static_assert(sizeof(curThread->dangerousObjRefs) == sizeof(ObjRefTable));
     memcpy(ObjRefTable, curThread->dangerousObjRefs, sizeof(ObjRefTable));
 
     // If the current thread owns spinlock it cannot call managed code.
@@ -180,11 +180,11 @@ void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStruc
 #endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
 // Helper for VM->managed calls with simple signatures.
-void * DispatchCallSimple(
-                    SIZE_T *pSrc,
-                    DWORD numStackSlotsToCopy,
-                    PCODE pTargetAddress,
-                    DWORD dwDispatchCallSimpleFlags)
+void* DispatchCallSimple(
+    SIZE_T *pSrc,
+    DWORD numStackSlotsToCopy,
+    PCODE pTargetAddress,
+    DWORD dwDispatchCallSimpleFlags)
 {
     CONTRACTL
     {
@@ -223,6 +223,17 @@ void * DispatchCallSimple(
 #endif
     callDescrData.fpReturnSize = 0;
     callDescrData.pTarget = pTargetAddress;
+
+#ifdef TARGET_WASM
+    static_assert(2*sizeof(ARGHOLDER_TYPE) == INTERP_STACK_SLOT_SIZE);
+    callDescrData.nArgsSize = numStackSlotsToCopy * sizeof(ARGHOLDER_TYPE)*2;
+    LPVOID pOrigSrc = callDescrData.pSrc;
+    callDescrData.pSrc = (LPVOID)_alloca(callDescrData.nArgsSize);
+    for (int i = 0; i < numStackSlotsToCopy; i++)
+    {
+        ((ARGHOLDER_TYPE*)callDescrData.pSrc)[i*2] = ((ARGHOLDER_TYPE*)pOrigSrc)[i];
+    }
+#endif // TARGET_WASM
 
     if ((dwDispatchCallSimpleFlags & DispatchCallSimple_CatchHandlerFoundNotification) != 0)
     {
@@ -531,6 +542,9 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 #endif
     callDescrData.fpReturnSize = fpReturnSize;
     callDescrData.pTarget = m_pCallTarget;
+#ifdef TARGET_WASM
+    callDescrData.nArgsSize = nStackBytes;
+#endif // TARGET_WASM
 
     CallDescrWorkerWithHandler(&callDescrData);
 

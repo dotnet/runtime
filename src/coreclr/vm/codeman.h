@@ -79,6 +79,7 @@ class ReadyToRunJitManager;
 class ExecutionManager;
 class Thread;
 class CrawlFrame;
+class IExecutionControl;
 struct EE_ILEXCEPTION;
 struct EE_ILEXCEPTION_CLAUSE;
 typedef struct
@@ -404,12 +405,11 @@ typedef DPTR(InterpreterCodeHeader) PTR_InterpreterCodeHeader;
 // When creating new JumpStubs we have a constarint that the address used
 // should be in the range [loAddr..hiAddr]
 //
-struct CodeHeapRequestInfo
+class CodeHeapRequestInfo final
 {
-    MethodDesc * m_pMD;
     LoaderAllocator* m_pAllocator;
-    const BYTE * m_loAddr;          // lowest address to use to satisfy our request (0 -- don't care)
-    const BYTE * m_hiAddr;          // hihest address to use to satisfy our request (0 -- don't care)
+    const BYTE*  m_loAddr;          // lowest address to use to satisfy our request (0 -- don't care)
+    const BYTE*  m_hiAddr;          // highest address to use to satisfy our request (0 -- don't care)
     size_t       m_requestSize;     // minimum size that must be made available
     size_t       m_reserveSize;     // Amount that VirtualAlloc will reserved
     size_t       m_reserveForJumpStubs; // Amount to reserve for jump stubs (won't be allocated)
@@ -418,42 +418,35 @@ struct CodeHeapRequestInfo
     bool         m_isInterpreted;
     bool         m_throwOnOutOfMemoryWithinRange;
 
+public:
+    CodeHeapRequestInfo(MethodDesc* pMD);
+    CodeHeapRequestInfo(LoaderAllocator* pAllocator);
+    CodeHeapRequestInfo(MethodDesc* pMD, LoaderAllocator* pAllocator, BYTE* loAddr, BYTE* hiAddr);
+
+    LoaderAllocator* GetAllocator()             { return m_pAllocator;         }
+
     bool   IsDynamicDomain()                    { return m_isDynamicDomain;    }
     void   SetDynamicDomain()                   { m_isDynamicDomain = true;    }
 
+    const BYTE* GetLoAddr()                     { return m_loAddr;             }
+    const BYTE* GetHiAddr()                     { return m_hiAddr;             }
+
     bool   IsCollectible()                      { return m_isCollectible;      }
 
-    bool   IsInterpreted()                      { return m_isInterpreted;       }
+    bool   IsInterpreted()                      { return m_isInterpreted;      }
     void   SetInterpreted()                     { m_isInterpreted = true;      }
 
-    size_t getRequestSize()                     { return m_requestSize;        }
-    void   setRequestSize(size_t requestSize)   { m_requestSize = requestSize; }
+    size_t GetRequestSize()                     { return m_requestSize;        }
+    void   SetRequestSize(size_t requestSize)   { m_requestSize = requestSize; }
 
-    size_t getReserveSize()                     { return m_reserveSize;        }
-    void   setReserveSize(size_t reserveSize)   { m_reserveSize = reserveSize; }
+    size_t GetReserveSize()                     { return m_reserveSize;        }
+    void   SetReserveSize(size_t reserveSize)   { m_reserveSize = reserveSize; }
 
-    size_t getReserveForJumpStubs()             { return m_reserveForJumpStubs; }
-    void   setReserveForJumpStubs(size_t size)  { m_reserveForJumpStubs = size; }
+    size_t GetReserveForJumpStubs()             { return m_reserveForJumpStubs; }
+    void   SetReserveForJumpStubs(size_t size)  { m_reserveForJumpStubs = size; }
 
-    bool   getThrowOnOutOfMemoryWithinRange()   { return m_throwOnOutOfMemoryWithinRange; }
-    void   setThrowOnOutOfMemoryWithinRange(bool value) { m_throwOnOutOfMemoryWithinRange = value; }
-
-    void   Init();
-
-    CodeHeapRequestInfo(MethodDesc *pMD)
-        : m_pMD(pMD), m_pAllocator(0),
-          m_loAddr(0), m_hiAddr(0),
-          m_requestSize(0), m_reserveSize(0), m_reserveForJumpStubs(0)
-        , m_isInterpreted(false)
-    { WRAPPER_NO_CONTRACT;   Init(); }
-
-    CodeHeapRequestInfo(MethodDesc *pMD, LoaderAllocator* pAllocator,
-                        BYTE * loAddr, BYTE * hiAddr)
-        : m_pMD(pMD), m_pAllocator(pAllocator),
-          m_loAddr(loAddr), m_hiAddr(hiAddr),
-          m_requestSize(0), m_reserveSize(0), m_reserveForJumpStubs(0)
-        , m_isInterpreted(false)
-    { WRAPPER_NO_CONTRACT;   Init(); }
+    bool   GetThrowOnOutOfMemoryWithinRange()   { return m_throwOnOutOfMemoryWithinRange; }
+    void   SetThrowOnOutOfMemoryWithinRange(bool value) { m_throwOnOutOfMemoryWithinRange = value; }
 };
 
 //-----------------------------------------------------------------------------
@@ -1724,6 +1717,14 @@ public:
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32* pNumRichMappings) = 0;
 
+    virtual BOOL GetAsyncDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32* pcAsyncVars) = 0;
+
     virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset) = 0;
 
     virtual BOOL JitCodeToMethodInfo(
@@ -1790,6 +1791,11 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return m_runtimeSupport;
     }
+
+#if !defined(DACCESS_COMPILE)
+    // Returns execution control, currently NULL outside of CoreCLR interpreter.
+    virtual IExecutionControl* GetExecutionControl() { return NULL; }
+#endif
 
 protected:
     PTR_ICodeManager m_runtimeSupport;
@@ -1908,6 +1914,14 @@ protected:
         OUT ULONG32* pNumInlineTree,
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32* pNumRichMappings);
+
+    BOOL GetAsyncDebugInfoWorker(
+        PTR_BYTE pDebugInfo,
+        IN FP_IDS_NEW fpNew, IN void* pNewData,
+        OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32* pcAsyncVars);
 
     template<typename TCodeHeader>
     BOOL JitCodeToMethodInfoWorker(
@@ -2124,6 +2138,14 @@ public:
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32* pNumRichMappings);
 
+    virtual BOOL GetAsyncDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32* pcAsyncVars);
+
     virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset);
 
     virtual BOOL JitCodeToMethodInfo(RangeSection * pRangeSection,
@@ -2232,7 +2254,16 @@ public:
     HINSTANCE           m_AltJITCompiler;
     bool                m_AltJITRequired;
 #endif //ALLOW_SXS_JIT
+
+    friend struct ::cdac_data<EEJitManager>;
 };
+
+template<>
+struct cdac_data<EEJitManager>
+{
+    static constexpr size_t StoreRichDebugInfo = offsetof(EEJitManager, m_storeRichDebugInfo);
+};
+
 
 //*****************************************************************************
 //
@@ -2268,10 +2299,14 @@ public:
     };
 
     // Returns default scan flag for current thread
-    static ScanFlag GetScanFlags();
+    static ScanFlag GetScanFlags(Thread *pThread = NULL);
 
-    // Returns whether currentPC is in managed code. Returns false for jump stubs on WIN64.
+    // Returns whether currentPC is in managed code. Returns false for jump stubs.
     static BOOL IsManagedCode(PCODE currentPC);
+
+    // Returns whether currentPC is in managed code. Returns false for jump stubs.
+    // Does not acquire the reader lock. Caller must ensure it is safe.
+    static BOOL IsManagedCodeNoLock(PCODE currentPC);
 
     // Returns true if currentPC is ready to run codegen
     static BOOL IsReadyToRunCode(PCODE currentPC);
@@ -2387,14 +2422,14 @@ public:
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
     static PCODE jumpStub(MethodDesc* pMD,
                           PCODE target,
                           BYTE * loAddr,
                           BYTE * hiAddr,
                           LoaderAllocator *pLoaderAllocator = NULL,
                           bool throwOnOutOfMemoryWithinRange = true);
-#endif
+#endif // !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
 
 private:
     static RangeSection * FindCodeRangeWithLock(PCODE currentPC);
@@ -2458,13 +2493,13 @@ private:
     }
 #endif // defined(_DEBUG)
 
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
     static PCODE getNextJumpStub(MethodDesc* pMD,
                                  PCODE target,
                                  BYTE * loAddr,  BYTE * hiAddr,
                                  LoaderAllocator *pLoaderAllocator,
                                  bool throwOnOutOfMemoryWithinRange);
-#endif
+#endif // !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
 
 private:
     // ***************************************************************************
@@ -2667,6 +2702,14 @@ public:
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32*                           pNumRichMappings);
 
+    virtual BOOL GetAsyncDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32* pcAsyncVars);
+
     virtual BOOL JitCodeToMethodInfo(RangeSection * pRangeSection,
                                      PCODE currentPC,
                                      MethodDesc** ppMethodDesc,
@@ -2674,7 +2717,7 @@ public:
 
     virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset);
 
-    static ReadyToRunInfo * JitTokenToReadyToRunInfo(const METHODTOKEN& MethodToken);
+    static PTR_ReadyToRunInfo JitTokenToReadyToRunInfo(const METHODTOKEN& MethodToken);
     static UINT32 JitTokenToGCInfoVersion(const METHODTOKEN& MethodToken);
 
     static PTR_RUNTIME_FUNCTION JitTokenToRuntimeFunction(const METHODTOKEN& MethodToken);
@@ -2749,8 +2792,8 @@ public:
     virtual DWORD GetCodeType()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        // Interpreter-TODO: consider adding some extra flag for the interpreter
-        return (miManaged | miIL);
+        // Reuse the OPTIL flag to indicate interpreter code
+        return (miManaged | miIL | miOPTIL);
     }
 
     GCInfoToken GetGCInfoToken(const METHODTOKEN& MethodToken);
@@ -2794,6 +2837,19 @@ public:
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32* pNumRichMappings);
 
+    virtual BOOL GetAsyncDebugInfo(
+        const DebugInfoRequest & request,
+        IN FP_IDS_NEW fpNew, IN void * pNewData,
+        OUT ICorDebugInfo::AsyncInfo* pAsyncInfo,
+        OUT ICorDebugInfo::AsyncSuspensionPoint** ppSuspensionPoints,
+        OUT ICorDebugInfo::AsyncContinuationVarInfo** ppAsyncVars,
+        OUT ULONG32* pcAsyncVars);
+
+#ifndef DACCESS_COMPILE
+    virtual TypeHandle  ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
+                                        CrawlFrame *pCf);
+#endif // #ifndef DACCESS_COMPILE
+
 #if defined(FEATURE_EH_FUNCLETS)
     virtual PTR_RUNTIME_FUNCTION LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
     {
@@ -2821,6 +2877,11 @@ public:
     {
         return STUB_CODE_BLOCK_UNKNOWN;
     }
+
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_BROWSER)
+    // Return execution control for interpreter bytecode breakpoints
+    virtual IExecutionControl* GetExecutionControl();
+#endif
 
 #if defined(DACCESS_COMPILE)
 
@@ -2875,6 +2936,11 @@ public:
     EECodeInfo(PCODE codeAddress)
     {
         Init(codeAddress);
+    }
+
+    EECodeInfo(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
+    {
+        Init(codeAddress, scanFlag);
     }
 
     // Explicit initialization
@@ -3052,5 +3118,7 @@ inline TADDR InterpreterJitManager::JitTokenToStartAddress(const METHODTOKEN& Me
 #include "codeman.inl"
 
 void ThrowOutOfMemoryWithinRange();
+
+bool SafeToReportGenericParamContext(CrawlFrame* pCF);
 
 #endif // !__CODEMAN_HPP__

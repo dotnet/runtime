@@ -194,7 +194,7 @@ After the initial precode type is determined, for stub precodes a refined precod
     internal enum KnownPrecodeType
     {
         Stub = 1,
-        PInvokeImport, // also known as NDirectImport in the runtime
+        PInvokeImport,
         Fixup,
         ThisPtrRetBuf,
         UMEntry,

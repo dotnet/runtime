@@ -23,7 +23,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData("&H123", 291)]
         [InlineData("&O123", 83)]
         [InlineData("123", 123)]
-        public void FromString(string value, decimal expected)
+        public void FromString(string? value, decimal expected)
         {
             Assert.Equal(expected, DecimalType.FromString(value));
         }

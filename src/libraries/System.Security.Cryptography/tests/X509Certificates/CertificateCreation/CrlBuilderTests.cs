@@ -297,6 +297,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
         [Theory]
         [MemberData(nameof(NoHashAlgorithmCertKinds))]
+        [SkipOnPlatform(TestPlatforms.Android, "No algorithms are supported")]
         public static void BuildPqcWithHashAlgorithm(CertKind certKind)
         {
             BuildCertificateAndRun(
@@ -776,8 +777,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 () => builder.AddEntry(serial, reason: X509RevocationReason.RemoveFromCrl));
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void DsaNotDirectlySupported()
         {
             CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();

@@ -1503,7 +1503,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
               (pPrevFrame->GetFrameType() == Frame::TYPE_EXIT) &&
               !HasExitRuntime(pPrevFrame, d, NULL) )
     {
-        // This is for the inlined NDirectMethodFrameGeneric case.  We have not exit the runtime yet, so the current
+        // This is for the inlined PInvokeMethodFrameGeneric case.  We have not exit the runtime yet, so the current
         // frame should still be regarded as the leaf frame.
         d->info.fIsLeaf = true;
     }
@@ -1715,6 +1715,13 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
             {
                 use = false;
             }
+#ifdef FEATURE_INTERPRETER
+            // Avoid treating interpreter frame as a managed frame
+            else if (frame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            {
+                use = false;
+            }
+#endif // FEATURE_INTERPRETER
             else
             {
                 d->info.managed = true;

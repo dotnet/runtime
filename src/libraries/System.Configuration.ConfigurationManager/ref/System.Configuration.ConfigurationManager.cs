@@ -267,7 +267,7 @@ namespace System.Configuration
     public partial class ConfigurationErrorsException : System.Configuration.ConfigurationException
     {
         public ConfigurationErrorsException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -289,7 +289,7 @@ namespace System.Configuration
         public static string GetFilename(System.Xml.XmlReader reader) { throw null; }
         public static int GetLineNumber(System.Xml.XmlNode node) { throw null; }
         public static int GetLineNumber(System.Xml.XmlReader reader) { throw null; }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -299,7 +299,7 @@ namespace System.Configuration
     {
         [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -320,7 +320,7 @@ namespace System.Configuration
         public virtual string Filename { get { throw null; } }
         public virtual int Line { get { throw null; } }
         public override string Message { get { throw null; } }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -470,7 +470,7 @@ namespace System.Configuration
         public System.Configuration.ConfigurationSection Get(string name) { throw null; }
         public override System.Collections.IEnumerator GetEnumerator() { throw null; }
         public string GetKey(int index) { throw null; }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -506,7 +506,7 @@ namespace System.Configuration
         public System.Configuration.ConfigurationSectionGroup Get(string name) { throw null; }
         public override System.Collections.IEnumerator GetEnumerator() { throw null; }
         public string GetKey(int index) { throw null; }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -887,7 +887,7 @@ namespace System.Configuration
         public System.Configuration.PropertyInformation this[string propertyName] { get { throw null; } }
         public void CopyTo(System.Configuration.PropertyInformation[] array, int index) { }
         public override System.Collections.IEnumerator GetEnumerator() { throw null; }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -1173,7 +1173,7 @@ namespace System.Configuration
     public partial class SettingsPropertyIsReadOnlyException : System.Exception
     {
         public SettingsPropertyIsReadOnlyException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -1184,7 +1184,7 @@ namespace System.Configuration
     public partial class SettingsPropertyNotFoundException : System.Exception
     {
         public SettingsPropertyNotFoundException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -1221,7 +1221,7 @@ namespace System.Configuration
     public partial class SettingsPropertyWrongTypeException : System.Exception
     {
         public SettingsPropertyWrongTypeException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
@@ -1610,7 +1610,7 @@ namespace System.Configuration.Provider
     public partial class ProviderException : System.Exception
     {
         public ProviderException() { }
-#if NET8_0_OR_GREATER
+#if NET
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif

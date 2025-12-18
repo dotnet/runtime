@@ -167,6 +167,30 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    public static void DCJS_DateOnlyAsRoot()
+    {
+        DateOnly value = new DateOnly(2024, 12, 31);
+        string expected = "\"2024-12-31\""; // JSON primitive as string
+            Assert.StrictEqual(value, SerializeAndDeserialize<DateOnly>(value, expected));
+
+        DateOnly? nullable = new DateOnly(2001, 1, 1);
+        string expectedNullable = "\"2001-01-01\"";
+            Assert.StrictEqual(nullable, SerializeAndDeserialize<DateOnly?>(nullable, expectedNullable));
+    }
+
+    [Fact]
+    public static void DCJS_TimeOnlyAsRoot()
+    {
+        TimeOnly value = new TimeOnly(13, 5, 7, 123);
+        string expected = "\"13:05:07.123\"";
+            Assert.StrictEqual(value, SerializeAndDeserialize<TimeOnly>(value, expected));
+
+        TimeOnly whole = new TimeOnly(6, 30, 0);
+        string expectedWhole = "\"06:30:00\"";
+            Assert.StrictEqual(whole, SerializeAndDeserialize<TimeOnly>(whole, expectedWhole));
+    }
+
+    [Fact]
     public static void DCJS_GuidAsRoot()
     {
         foreach (Guid value in new Guid[] { Guid.NewGuid(), Guid.Empty })
@@ -1395,7 +1419,6 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCJS_ClassWithDatetimeOffsetTypeProperty()
     {
         var value = new TypeWithDateTimeOffsetTypeProperty() { ModifiedTime = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc)) };
@@ -1464,7 +1487,6 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCJS_TypeWithKnownTypeAttributeAndInterfaceMember()
     {
         TypeWithKnownTypeAttributeAndInterfaceMember value = new TypeWithKnownTypeAttributeAndInterfaceMember();
@@ -1476,7 +1498,6 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCJS_TypeWithKnownTypeAttributeAndListOfInterfaceMember()
     {
         TypeWithKnownTypeAttributeAndListOfInterfaceMember value = new TypeWithKnownTypeAttributeAndListOfInterfaceMember();
@@ -2600,7 +2621,6 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCJS_VerifyDateTimeForFormatStringDCJsonSerSettings()
     {
         var jsonTypes = new JsonTypes();

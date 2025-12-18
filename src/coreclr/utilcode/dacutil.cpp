@@ -12,6 +12,7 @@
 #include <winwrap.h>
 #include <utilcode.h>
 #include <dacprivate.h>
+#include <pedecoder.h>
 
 //----------------------------------------------------------------------------
 //
@@ -74,15 +75,7 @@ LiveProcDataTarget::GetMachineType(
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(TARGET_X86)
-    *machine = IMAGE_FILE_MACHINE_I386;
-#elif defined(TARGET_AMD64)
-    *machine = IMAGE_FILE_MACHINE_AMD64;
-#elif defined(TARGET_ARM)
-    *machine = IMAGE_FILE_MACHINE_ARMNT;
-#else
-    PORTABILITY_ASSERT("Unknown Processor");
-#endif
+    *machine = IMAGE_FILE_MACHINE_NATIVE;
     return S_OK;
 }
 

@@ -46,7 +46,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 return this;
             }
 
-            internal JsonObject ToJson()
+            public JsonObject ToJson()
             {
                 JsonObject frameworkReference = new();
 

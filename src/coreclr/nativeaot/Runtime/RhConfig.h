@@ -109,6 +109,8 @@ private:
 
 extern RhConfig * g_pRhConfig;
 
+size_t GetDefaultStackSizeSetting();
+
 #endif //!DACCESS_COMPILE
 
 #endif // RHCONFIG_H

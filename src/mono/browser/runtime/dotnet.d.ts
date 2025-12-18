@@ -128,7 +128,7 @@ interface DotnetHostBuilder {
     /**
      * Runs the Main() method of the application and exits the runtime.
      * You can provide "command line" arguments for the Main() method using
-     * - dotnet.withApplicationArguments(["A", "B", "C"])
+     * - dotnet.withApplicationArguments("A", "B", "C")
      * - dotnet.withApplicationArgumentsFromQuery()
      * Note: after the runtime exits, it would reject all further calls to the API.
      * You can use runMain() if you want to keep the runtime alive.
@@ -290,16 +290,19 @@ type Asset = {
 type WasmAsset = Asset & {
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 };
 type AssemblyAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 };
 type PdbAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 };
 type JsAsset = Asset & {
     /**
@@ -311,16 +314,19 @@ type JsAsset = Asset & {
 };
 type SymbolsAsset = Asset & {
     name: string;
+    cache?: RequestCache;
 };
 type VfsAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 };
 type IcuAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 };
 /**
  * A "key" is name of the file, a "value" is optional hash for integrity check.
@@ -776,4 +782,5 @@ declare global {
 }
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
-export { type AssetBehaviors, type AssetEntry, type CreateDotnetRuntimeType, type DotnetHostBuilder, type DotnetModuleConfig, type EmscriptenModule, GlobalizationMode, type IMemoryView, type ModuleAPI, type MonoConfig, type RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { GlobalizationMode, createDotnetRuntime as default, dotnet, exit };
+export type { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, ModuleAPI, MonoConfig, RuntimeAPI };

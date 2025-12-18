@@ -222,10 +222,7 @@ namespace System.Data.OleDb
 #endif
             set
             {
-                if (null != _bindInfo)
-                {
-                    _bindInfo[_index].bPrecision = value;
-                }
+                _bindInfo?[_index].bPrecision = value;
                 _dbbindings[_index].bPrecision = value;
                 _dbcolumns[_index].bPrecision = value;
             }
@@ -237,10 +234,7 @@ namespace System.Data.OleDb
 #endif
             set
             {
-                if (null != _bindInfo)
-                {
-                    _bindInfo[_index].bScale = value;
-                }
+                _bindInfo?[_index].bScale = value;
                 _dbbindings[_index].bScale = value;
                 _dbcolumns[_index].bScale = value;
             }

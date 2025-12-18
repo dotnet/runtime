@@ -35,13 +35,13 @@ namespace System.Net.NetworkInformation
 
         private bool GetIsForwardingEnabled()
         {
-            string[] paths = new string[]
-            {
+            ReadOnlySpan<string> paths =
+            [
                 // /proc/sys/net/ipv4/conf/<name>/forwarding
                 Path.Join(NetworkFiles.Ipv4ConfigFolder, _linuxNetworkInterface.Name, NetworkFiles.ForwardingFileName),
                 // Fall back to global forwarding config /proc/sys/net/ipv4/ip_forward
                 NetworkFiles.Ipv4GlobalForwardingFile
-            };
+            ];
 
             for (int i = 0; i < paths.Length; i++)
             {

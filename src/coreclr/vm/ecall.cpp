@@ -51,29 +51,38 @@ Utf8String, but String is similar.)
 
 // METHOD__STRING__CTORF_XXX has to be in same order as ECall::CtorCharXxx
 #define METHOD__STRING__CTORF_FIRST METHOD__STRING__CTORF_CHARARRAY
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 0 == METHOD__STRING__CTORF_CHARARRAY);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 1 == METHOD__STRING__CTORF_CHARARRAY_START_LEN);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 2 == METHOD__STRING__CTORF_CHAR_COUNT);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 3 == METHOD__STRING__CTORF_CHARPTR);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 4 == METHOD__STRING__CTORF_CHARPTR_START_LEN);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 5 == METHOD__STRING__CTORF_READONLYSPANOFCHAR);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 6 == METHOD__STRING__CTORF_SBYTEPTR);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 7 == METHOD__STRING__CTORF_SBYTEPTR_START_LEN);
-static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 8 == METHOD__STRING__CTORF_SBYTEPTR_START_LEN_ENCODING);
+static_assert(METHOD__STRING__CTORF_FIRST + 0 == METHOD__STRING__CTORF_CHARARRAY);
+static_assert(METHOD__STRING__CTORF_FIRST + 1 == METHOD__STRING__CTORF_CHARARRAY_START_LEN);
+static_assert(METHOD__STRING__CTORF_FIRST + 2 == METHOD__STRING__CTORF_CHAR_COUNT);
+static_assert(METHOD__STRING__CTORF_FIRST + 3 == METHOD__STRING__CTORF_CHARPTR);
+static_assert(METHOD__STRING__CTORF_FIRST + 4 == METHOD__STRING__CTORF_CHARPTR_START_LEN);
+static_assert(METHOD__STRING__CTORF_FIRST + 5 == METHOD__STRING__CTORF_READONLYSPANOFCHAR);
+static_assert(METHOD__STRING__CTORF_FIRST + 6 == METHOD__STRING__CTORF_SBYTEPTR);
+static_assert(METHOD__STRING__CTORF_FIRST + 7 == METHOD__STRING__CTORF_SBYTEPTR_START_LEN);
+static_assert(METHOD__STRING__CTORF_FIRST + 8 == METHOD__STRING__CTORF_SBYTEPTR_START_LEN_ENCODING);
 
 // ECall::CtorCharXxx has to be in same order as METHOD__STRING__CTORF_XXX
 #define ECallCtor_First ECall::CtorCharArrayManaged
-static_assert_no_msg(ECallCtor_First + 0 == ECall::CtorCharArrayManaged);
-static_assert_no_msg(ECallCtor_First + 1 == ECall::CtorCharArrayStartLengthManaged);
-static_assert_no_msg(ECallCtor_First + 2 == ECall::CtorCharCountManaged);
-static_assert_no_msg(ECallCtor_First + 3 == ECall::CtorCharPtrManaged);
-static_assert_no_msg(ECallCtor_First + 4 == ECall::CtorCharPtrStartLengthManaged);
-static_assert_no_msg(ECallCtor_First + 5 == ECall::CtorReadOnlySpanOfCharManaged);
-static_assert_no_msg(ECallCtor_First + 6 == ECall::CtorSBytePtrManaged);
-static_assert_no_msg(ECallCtor_First + 7 == ECall::CtorSBytePtrStartLengthManaged);
-static_assert_no_msg(ECallCtor_First + 8 == ECall::CtorSBytePtrStartLengthEncodingManaged);
+static_assert(ECallCtor_First + 0 == ECall::CtorCharArrayManaged);
+static_assert(ECallCtor_First + 1 == ECall::CtorCharArrayStartLengthManaged);
+static_assert(ECallCtor_First + 2 == ECall::CtorCharCountManaged);
+static_assert(ECallCtor_First + 3 == ECall::CtorCharPtrManaged);
+static_assert(ECallCtor_First + 4 == ECall::CtorCharPtrStartLengthManaged);
+static_assert(ECallCtor_First + 5 == ECall::CtorReadOnlySpanOfCharManaged);
+static_assert(ECallCtor_First + 6 == ECall::CtorSBytePtrManaged);
+static_assert(ECallCtor_First + 7 == ECall::CtorSBytePtrStartLengthManaged);
+static_assert(ECallCtor_First + 8 == ECall::CtorSBytePtrStartLengthEncodingManaged);
 
 #define NumberOfStringConstructors 9
+
+static bool IsManagedFCall(DWORD index)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (ECallCtor_First <= index && index < ECallCtor_First + NumberOfStringConstructors)
+        return true;
+    return false;
+}
 
 void ECall::PopulateManagedStringConstructors()
 {
@@ -89,8 +98,7 @@ void ECall::PopulateManagedStringConstructors()
         _ASSERTE(pMD != NULL);
 
         PCODE pDest = pMD->GetMultiCallableAddrOfCode();
-
-        ECall::DynamicallyAssignFCallImpl(pDest, ECallCtor_First + i);
+        ECall::DynamicallyAssignFCallImpl(pDest, (DWORD)(ECallCtor_First + i));
     }
 
     INDEBUG(fInitialized = true);
@@ -113,13 +121,7 @@ PCODE g_FCDynamicallyAssignedImplementations[ECall::NUM_DYNAMICALLY_ASSIGNED_FCA
 
 void ECall::DynamicallyAssignFCallImpl(PCODE impl, DWORD index)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(index < NUM_DYNAMICALLY_ASSIGNED_FCALL_IMPLEMENTATIONS);
     g_FCDynamicallyAssignedImplementations[index] = impl;
@@ -289,7 +291,7 @@ static ECFunc* FindECFuncForMethod(MethodDesc* pMD)
 * Returns 0 if it is an ECALL,
 * Otherwise returns the native entry point (FCALL)
 */
-PCODE ECall::GetFCallImpl(MethodDesc * pMD, bool throwForInvalidFCall)
+PCODE ECall::GetFCallImpl(MethodDesc * pMD, bool throwForInvalidFCall, bool* pHasManagedImpl)
 {
     CONTRACTL
     {
@@ -300,6 +302,10 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, bool throwForInvalidFCall)
     }
     CONTRACTL_END;
 
+    // Avoid null checks in the common case
+    bool hasManagedImplDummy = false;
+    if (pHasManagedImpl == nullptr) pHasManagedImpl = &hasManagedImplDummy;
+
     MethodTable * pMT = pMD->GetMethodTable();
 
     //
@@ -309,6 +315,8 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, bool throwForInvalidFCall)
     if (pMT->IsDelegate())
     {
         _ASSERTE(pMD->IsCtor());
+
+        *pHasManagedImpl = true;
 
         // We need to set up the ECFunc properly.  We don't want to use the pMD passed in,
         // since it may disappear.  Instead, use the stable one on Delegate.  Remember
@@ -378,9 +386,8 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, bool throwForInvalidFCall)
     int iDynamicID = ret->DynamicID();
     if (iDynamicID != InvalidDynamicFCallId)
     {
+        *pHasManagedImpl = IsManagedFCall(iDynamicID);
         pImplementation = g_FCDynamicallyAssignedImplementations[iDynamicID];
-        _ASSERTE(pImplementation != (PCODE)NULL);
-        return pImplementation;
     }
 
     _ASSERTE(pImplementation != (PCODE)NULL);

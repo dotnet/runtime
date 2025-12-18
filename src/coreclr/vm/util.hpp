@@ -427,11 +427,11 @@ extern LockOwner g_lockTrustMeIAmThreadSafe;
 class EEThreadId
 {
 private:
-    void *m_FiberPtrId;
+    static SIZE_T const UNKNOWN_ID = INVALID_POINTER_CD;
+    SIZE_T m_FiberPtrId;
 public:
 #ifdef _DEBUG
-    EEThreadId()
-    : m_FiberPtrId(NULL)
+    EEThreadId() : m_FiberPtrId(UNKNOWN_ID)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -441,28 +441,27 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        m_FiberPtrId = ClrTeb::GetFiberPtrId();
+        m_FiberPtrId = (SIZE_T)ClrTeb::GetFiberPtrId();
     }
 
     bool IsCurrentThread() const
     {
         WRAPPER_NO_CONTRACT;
 
-        return (m_FiberPtrId == ClrTeb::GetFiberPtrId());
+        return (m_FiberPtrId == (SIZE_T)ClrTeb::GetFiberPtrId());
     }
-
 
 #ifdef _DEBUG
     bool IsUnknown() const
     {
         LIMITED_METHOD_CONTRACT;
-        return m_FiberPtrId == NULL;
+        return m_FiberPtrId == UNKNOWN_ID;
     }
 #endif
     void Clear()
     {
         LIMITED_METHOD_CONTRACT;
-        m_FiberPtrId = NULL;
+        m_FiberPtrId = UNKNOWN_ID;
     }
 };
 
@@ -632,106 +631,10 @@ private:
     JITNotification *m_jitTable;
 };
 
-typedef DPTR(struct GcNotification) PTR_GcNotification;
-
-inline
-BOOL IsValidGcNotification(GcEvt_t evType)
-{ return (evType < GC_EVENT_TYPE_MAX); }
-
-#define CLRDATA_GC_NONE  0
-
-struct GcNotification
+namespace GcNotifications
 {
-    GcEvtArgs ev;
-
-    GcNotification() { SetFree(); }
-    BOOL IsFree() { return ev.typ == CLRDATA_GC_NONE; }
-    void SetFree() { memset(this, 0, sizeof(*this)); ev.typ = (GcEvt_t) CLRDATA_GC_NONE; }
-    void Set(GcEvtArgs ev_)
-    {
-        _ASSERTE(IsValidGcNotification(ev_.typ));
-        ev = ev_;
-    }
-    BOOL IsMatch(GcEvtArgs ev_)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (ev.typ != ev_.typ)
-        {
-            return FALSE;
-        }
-        switch (ev.typ)
-        {
-        case GC_MARK_END:
-            if (ev_.condemnedGeneration == 0 ||
-                (ev.condemnedGeneration & ev_.condemnedGeneration) != 0)
-            {
-                return TRUE;
-            }
-            break;
-        default:
-            break;
-        }
-
-        return FALSE;
-    }
-};
-
-GPTR_DECL(GcNotification, g_pGcNotificationTable);
-
-class GcNotifications
-{
-public:
-    GcNotifications(GcNotification *gcTable);
-    BOOL SetNotification(GcEvtArgs ev);
-    GcEvtArgs* GetNotification(GcEvtArgs ev)
-    {
-        LIMITED_METHOD_CONTRACT;
-        UINT idx;
-        if (FindItem(ev, &idx))
-        {
-            return &m_gcTable[idx].ev;
-        }
-        else
-        {
-            return NULL;
-        }
-    }
-
-    // if clrModule is NULL, all active notifications are changed to NType
-    inline BOOL IsActive()
-    { return m_gcTable != NULL; }
-
-    UINT GetTableSize()
-    { return Size(); }
-
-#ifdef DACCESS_COMPILE
-    static GcNotification *InitializeNotificationTable(UINT TableSize);
-    // Updates target table from host copy
-    BOOL UpdateOutOfProcTable();
-#endif
-
-private:
-    UINT& Length()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(IsActive());
-        UINT *pLen = (UINT *) &(m_gcTable[-1].ev.typ);
-        return *pLen;
-    }
-    UINT& Size()
-    {
-        _ASSERTE(IsActive());
-        UINT *pLen = (UINT *) &(m_gcTable[-1].ev.typ);
-        return *(pLen+1);
-    }
-    void IncrementLength()
-    { ++Length(); }
-    void DecrementLength()
-    { --Length(); }
-
-    BOOL FindItem(GcEvtArgs ev, UINT *indexOut);
-
-    GcNotification *m_gcTable;
+    VOID SetNotification(GcEvtArgs ev);
+    BOOL GetNotification(GcEvtArgs ev);
 };
 
 

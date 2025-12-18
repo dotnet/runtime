@@ -112,7 +112,7 @@ struct OverrideProcArgs
     };
 };
 
-typedef MarshalerOverrideStatus (*OVERRIDEPROC)(NDirectStubLinker*    psl,
+typedef MarshalerOverrideStatus (*OVERRIDEPROC)(PInvokeStubLinker*    psl,
                                                 BOOL                  byref,
                                                 BOOL                  fin,
                                                 BOOL                  fout,
@@ -121,7 +121,7 @@ typedef MarshalerOverrideStatus (*OVERRIDEPROC)(NDirectStubLinker*    psl,
                                                 UINT*                 pResID,
                                                 UINT                  argidx);
 
-typedef MarshalerOverrideStatus (*RETURNOVERRIDEPROC)(NDirectStubLinker*  psl,
+typedef MarshalerOverrideStatus (*RETURNOVERRIDEPROC)(PInvokeStubLinker*  psl,
                                                       BOOL                fManagedToNative,
                                                       BOOL                fHresultSwap,
                                                       OverrideProcArgs*   pargs,
@@ -301,7 +301,7 @@ public:
 
                 );
 
-    VOID EmitOrThrowInteropParamException(NDirectStubLinker* psl, BOOL fMngToNative, UINT resID, UINT paramIdx);
+    VOID EmitOrThrowInteropParamException(PInvokeStubLinker* psl, BOOL fMngToNative, UINT resID, UINT paramIdx);
 
     void ThrowTypeLoadExceptionForInvalidFieldMarshal(FieldDesc* pFieldDesc, UINT resID);
 
@@ -314,17 +314,17 @@ public:
                                 Assembly *pAssembly,
                                 BOOL isArrayClass = FALSE);
 
-    void GenerateArgumentIL(NDirectStubLinker* psl,
+    void GenerateArgumentIL(PInvokeStubLinker* psl,
                             int argOffset, // the argument's index is m_paramidx + argOffset
                             BOOL fMngToNative);
 
-    void GenerateReturnIL(NDirectStubLinker* psl,
+    void GenerateReturnIL(PInvokeStubLinker* psl,
                           int argOffset, // the argument's index is m_paramidx + argOffset
                           BOOL fMngToNative,
                           BOOL fieldGetter,
                           BOOL retval);
 
-    void GenerateFieldIL(NDirectStubLinker* psl,
+    void GenerateFieldIL(PInvokeStubLinker* psl,
                         UINT32 managedOffset, // the field's byte offset into the managed object
                         UINT32 nativeOffset, // the field's byte offset into the native object
                         FieldDesc* pFieldDesc); // The field descriptor for reporting errors

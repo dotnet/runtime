@@ -1865,7 +1865,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 
 		emit_uleb128 (w, need_loclist ? ABBREV_PARAM_LOCLIST : ABBREV_PARAM);
 		/* name */
-		if (pname[0] == '\0') {
+		if (!pname || pname[0] == '\0') {
 			sprintf (pname_buf, "param%d", i - sig->hasthis);
 			pname = pname_buf;
 		}

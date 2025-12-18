@@ -19,7 +19,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return NamePrefix;
+                return System.Text.Encoding.UTF8.GetString(NamePrefix);
             }
         }
     }

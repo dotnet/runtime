@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -20,7 +21,7 @@ namespace Internal.IL.Stubs
 
             Method = method;
             Signature = new MethodSignature(MethodSignatureFlags.Static, 0,
-                Context.SystemModule.GetKnownType("System.Reflection", "MethodBase"), TypeDesc.EmptyTypes);
+                Context.SystemModule.GetKnownType("System.Reflection"u8, "MethodBase"u8), TypeDesc.EmptyTypes);
         }
 
         public override TypeSystemContext Context
@@ -36,7 +37,7 @@ namespace Internal.IL.Stubs
             get;
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
@@ -72,16 +73,16 @@ namespace Internal.IL.Stubs
 
             codeStream.Emit(ILOpcode.ldtoken, emit.NewToken(Method));
 
-            string helperName;
+            ReadOnlySpan<byte> helperName;
             if (Method.OwningType.HasInstantiation)
             {
                 codeStream.Emit(ILOpcode.ldtoken, emit.NewToken(Method.OwningType));
-                helperName = "GetCurrentMethodGeneric";
+                helperName = "GetCurrentMethodGeneric"u8;
             }
             else
-                helperName = "GetCurrentMethodNonGeneric";
+                helperName = "GetCurrentMethodNonGeneric"u8;
 
-            MethodDesc classlibHelper = Context.GetHelperEntryPoint("ReflectionHelpers", helperName);
+            MethodDesc classlibHelper = Context.GetHelperEntryPoint("ReflectionHelpers"u8, helperName);
 
             codeStream.Emit(ILOpcode.call, emit.NewToken(classlibHelper));
             codeStream.Emit(ILOpcode.ret);

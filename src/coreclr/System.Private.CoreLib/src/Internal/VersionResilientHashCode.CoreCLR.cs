@@ -19,6 +19,9 @@ namespace Internal
         public static int TypeHashCode(RuntimeType type)
             => TypeHashCode(new QCallTypeHandle(ref type));
 
+        private static int NameHashCode(string s1, string s2)
+            => NameHashCode(System.Text.Encoding.UTF8.GetBytes(s1), System.Text.Encoding.UTF8.GetBytes(s2));
+
         /// <summary>
         /// CoreCLR 1-parameter <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/versionresilienthashcode.cpp#L109">GetVersionResilientTypeHashCode</a>
         /// </summary>

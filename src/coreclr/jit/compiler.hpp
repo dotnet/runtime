@@ -918,6 +918,7 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
     }
 }
 
+#if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------------------------
 // genRegNumFromMask : Maps a single register mask to a register number.
 //
@@ -1131,6 +1132,7 @@ inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask)
 
     return regNum;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 /*****************************************************************************
  *
@@ -1606,7 +1608,7 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 /*****************************************************************************/
 
 //------------------------------------------------------------------------------
-// gtNewHelperCallNode : Helper to create a call helper node.
+// gtNewVirtualFunctionLookupHelperCallNode : Helper to create a virtual function lookup helper node.
 //
 //
 // Arguments:
@@ -1754,8 +1756,8 @@ inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
 inline void Compiler::gtAnnotateNewArrLen(GenTree* arrLen)
 {
     assert(arrLen->OperIs(GT_ARR_LENGTH, GT_MDARR_LENGTH));
-    static_assert_no_msg(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
-    static_assert_no_msg(GTF_MDARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
+    static_assert(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
+    static_assert(GTF_MDARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
     arrLen->SetIndirExceptionFlags(this);
 }
 
@@ -1812,7 +1814,7 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
 {
     GenTreeMDArr* arrOp = new (this, GT_MDARR_LOWER_BOUND) GenTreeMDArr(GT_MDARR_LOWER_BOUND, arrayOp, dim, rank);
 
-    static_assert_no_msg(GTF_MDARRLOWERBOUND_NONFAULTING == GTF_IND_NONFAULTING);
+    static_assert(GTF_MDARRLOWERBOUND_NONFAULTING == GTF_IND_NONFAULTING);
     arrOp->SetIndirExceptionFlags(this);
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrOp;
@@ -1935,8 +1937,9 @@ inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool f
 
 inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object, bool onStack)
 {
+    static_assert(VPTR_OFFS == 0);
     assert(onStack || object->TypeIs(TYP_REF));
-    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object, GTF_IND_INVARIANT);
+    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object, GTF_IND_INVARIANT | GTF_IND_NONNULL);
     return result;
 }
 
@@ -2100,11 +2103,11 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 template <typename T>
 void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
 {
-    static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
-                          std::is_same<T, long long>::value || std::is_same<T, float>::value ||
-                          std::is_same<T, ssize_t>::value || std::is_same<T, double>::value));
+    static_assert((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
+                   std::is_same<T, long long>::value || std::is_same<T, float>::value ||
+                   std::is_same<T, ssize_t>::value || std::is_same<T, double>::value));
 
-    static_assert_no_msg(sizeof(int64_t) == sizeof(long long));
+    static_assert(sizeof(int64_t) == sizeof(long long));
 
     var_types typeOfValue = TYP_UNDEF;
     if (std::is_floating_point<T>::value)
@@ -3569,6 +3572,7 @@ inline int getJitStressLevel()
 
 #endif // DEBUG
 
+#if HAS_FIXED_REGISTER_SET
 /*****************************************************************************/
 /* Map a register argument number ("RegArgNum") to a register number ("RegNum").
  * A RegArgNum is in this range:
@@ -3604,7 +3608,7 @@ inline regNumber genMapFloatRegArgNumToRegNum(unsigned argNum)
 #endif
 }
 
-__forceinline regNumber genMapRegArgNumToRegNum(unsigned argNum, var_types type, CorInfoCallConvExtension callConv)
+FORCEINLINE regNumber genMapRegArgNumToRegNum(unsigned argNum, var_types type, CorInfoCallConvExtension callConv)
 {
     if (varTypeUsesFloatArgReg(type))
     {
@@ -3641,7 +3645,7 @@ inline regMaskTP genMapFloatRegArgNumToRegMask(unsigned argNum)
 #endif
 }
 
-__forceinline regMaskTP genMapArgNumToRegMask(unsigned argNum, var_types type)
+FORCEINLINE regMaskTP genMapArgNumToRegMask(unsigned argNum, var_types type)
 {
     regMaskTP result;
     if (varTypeUsesFloatArgReg(type))
@@ -3776,6 +3780,7 @@ inline unsigned genMapRegNumToRegArgNum(regNumber regNum, var_types type, CorInf
         return genMapIntRegNumToRegArgNum(regNum, callConv);
     }
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -4052,7 +4057,7 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
     bool result1 =
         // More helpers being added to IsSharedStaticHelper (that have similar behaviors but are not true
         // ShareStaticHelpers)
-        helper == CORINFO_HELP_STRCNS || helper == CORINFO_HELP_BOX ||
+        helper == CORINFO_HELP_BOX ||
 
         // helpers being added to IsSharedStaticHelper
         helper == CORINFO_HELP_GETSTATICFIELDADDR_TLS ||
@@ -4232,19 +4237,8 @@ inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc*
         // The struct is not enregistered
         return PROMOTION_TYPE_DEPENDENT;
     }
-    if (!varDsc->lvIsParam)
-    {
-        // The struct is a register candidate
-        return PROMOTION_TYPE_INDEPENDENT;
-    }
 
-// We have a parameter that could be enregistered
-#if defined(TARGET_ARM)
-    // TODO-Cleanup: return INDEPENDENT for arm32.
-    return PROMOTION_TYPE_DEPENDENT;
-#else  // !TARGET_ARM
     return PROMOTION_TYPE_INDEPENDENT;
-#endif // !TARGET_ARM
 }
 
 /*****************************************************************************
@@ -4501,6 +4495,7 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
+        case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -4532,6 +4527,7 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_RECORD_ASYNC_RESUME:
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
@@ -4713,7 +4709,8 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
     }
     if (OperIs(GT_CALL))
     {
-        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(AsCall());
+        GenTreeCall*         call    = AsCall();
+        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
         if (lclAddr != nullptr)
         {
             unsigned storeSize = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
@@ -4755,7 +4752,8 @@ GenTree::VisitResult GenTree::VisitLocalDefNodes(Compiler* comp, TVisitor visito
     }
     if (OperIs(GT_CALL))
     {
-        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(AsCall());
+        GenTreeCall*         call    = AsCall();
+        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
         if (lclAddr != nullptr)
         {
             return visitor(lclAddr);
@@ -5107,22 +5105,31 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 // fgRunDfs: Run DFS over the flow graph.
 //
 // Type parameters:
-//   VisitPreorder  - Functor type that takes a BasicBlock* and its preorder number
-//   VisitPostorder - Functor type that takes a BasicBlock* and its postorder number
-//   VisitEdge      - Functor type that takes two BasicBlock*.
-//   useProfile     - If true, determines order of successors visited using profile data
+//   SuccessorEnumerator - Functor type to enumerate successors of a block
+//   VisitPreorder       - Functor type that takes a BasicBlock* and its preorder number
+//   VisitPostorder      - Functor type that takes a BasicBlock* and its postorder number
+//   VisitEdge           - Functor type that takes two BasicBlock*.
+//   useProfile          - If true, determines order of successors visited using profile data
 //
 // Parameters:
 //   visitPreorder  - Functor to visit block in its preorder
 //   visitPostorder - Functor to visit block in its postorder
 //   visitEdge      - Functor to visit an edge. Called after visitPreorder (if
 //                    this is the first time the successor is seen).
+//   entryBlocks    - vector of entry blocks for the flow graph
 //
 // Returns:
 //   Number of blocks visited.
 //
-template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile /* = false */>
-unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPostorder, VisitEdge visitEdge)
+template <typename SuccessorEnumerator,
+          typename VisitPreorder,
+          typename VisitPostorder,
+          typename VisitEdge,
+          const bool useProfile /* = false */>
+unsigned Compiler::fgRunDfs(VisitPreorder                visitPreorder,
+                            VisitPostorder               visitPostorder,
+                            VisitEdge                    visitEdge,
+                            jitstd::vector<BasicBlock*>& entryBlocks)
 {
     BitVecTraits traits(fgBBNumMax + 1, this);
     BitVec       visited(BitVecOps::MakeEmpty(&traits));
@@ -5130,7 +5137,7 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
     unsigned preOrderIndex  = 0;
     unsigned postOrderIndex = 0;
 
-    ArrayStack<AllSuccessorEnumerator> blocks(getAllocator(CMK_DepthFirstSearch));
+    ArrayStack<SuccessorEnumerator> blocks(getAllocator(CMK_DepthFirstSearch));
 
     auto dfsFrom = [&](BasicBlock* firstBB) {
         BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
@@ -5160,23 +5167,14 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
         }
     };
 
-    dfsFrom(fgFirstBB);
+    assert(!entryBlocks.empty());
 
-    if ((fgEntryBB != nullptr) && !BitVecOps::IsMember(&traits, visited, fgEntryBB->bbNum))
+    for (BasicBlock* const entryBlock : entryBlocks)
     {
-        // OSR methods will early on create flow that looks like it goes to the
-        // patchpoint, but during morph we may transform to something that
-        // requires the original entry (fgEntryBB).
-        assert(opts.IsOSR());
-        dfsFrom(fgEntryBB);
-    }
-
-    if ((genReturnBB != nullptr) && !BitVecOps::IsMember(&traits, visited, genReturnBB->bbNum))
-    {
-        assert(!fgGlobalMorphDone);
-        // We introduce the merged return BB before morph and will redirect
-        // other returns to it as part of morph; keep it reachable.
-        dfsFrom(genReturnBB);
+        if (!BitVecOps::IsMember(&traits, visited, entryBlock->bbNum))
+        {
+            dfsFrom(entryBlock);
+        }
     }
 
     assert(preOrderIndex == postOrderIndex);
@@ -5385,6 +5383,171 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
     }
 
     return BasicBlockVisit::Continue;
+}
+
+//-----------------------------------------------------------
+// gtComplexityExceeds: Check if a tree exceeds a specified complexity limit.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+
+// Arguments:
+//    tree              - The tree to check
+//    limit             - complexity limit
+//    getTreeComplexity - Callback functor that takes a GenTree* and returns its complexity
+//
+// Return Value:
+//     True if 'tree' exceeds the complexity limit, otherwise false.
+//
+template <typename TFunc>
+bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit, TFunc getComplexity)
+{
+    struct ComplexityVisitor : GenTreeVisitor<ComplexityVisitor>
+    {
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        ComplexityVisitor(Compiler* comp, unsigned limit, TFunc getComplexity)
+            : GenTreeVisitor<ComplexityVisitor>(comp)
+            , m_complexity(0)
+            , m_limit(limit)
+            , m_getComplexity(getComplexity)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            m_complexity += m_getComplexity(*use);
+            return (m_complexity > m_limit) ? WALK_ABORT : WALK_CONTINUE;
+        }
+
+    private:
+        unsigned       m_complexity;
+        const unsigned m_limit;
+        TFunc          m_getComplexity;
+    };
+
+    assert(tree != nullptr);
+
+    ComplexityVisitor visitor(this, limit, getComplexity);
+
+    fgWalkResult result = visitor.WalkTree(&tree, nullptr);
+
+    return (result == WALK_ABORT);
+}
+
+//------------------------------------------------------------------------
+// ComplexityExceeds: Check if the trees in a block exceed a specified complexity limit.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//    comp              - compiler instance
+//    limit             - complexity limit
+//    getTreeComplexity - Callback functor that takes a GenTree* and returns its complexity
+//
+// Returns:
+//   True if the trees in the block exceed the complexity limit, otherwise false.
+//
+template <typename TFunc>
+bool BasicBlock::ComplexityExceeds(Compiler* comp, unsigned limit, TFunc getTreeComplexity)
+{
+    assert(comp != nullptr);
+
+    unsigned localCount    = 0;
+    auto     getComplexity = [&](GenTree* tree) -> unsigned {
+        const unsigned treeComplexity = getTreeComplexity(tree);
+        localCount += treeComplexity;
+        return treeComplexity;
+    };
+
+    for (Statement* const stmt : Statements())
+    {
+        const unsigned slack = limit - localCount;
+        if (comp->gtComplexityExceeds(stmt->GetRootNode(), slack, getComplexity))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// ComplexityExceeds: Check if the trees in a range of blocks exceed a specified complexity limit.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//    comp              - compiler instance
+//    limit             - complexity limit
+//    getTreeComplexity - Callback functor that takes a GenTree* and returns its complexity
+//
+// Returns:
+//    True if the trees in the block range exceed the complexity limit, otherwise false.
+//
+template <typename TFunc>
+bool BasicBlockRangeList::ComplexityExceeds(Compiler* comp, unsigned limit, TFunc getTreeComplexity)
+{
+    assert(comp != nullptr);
+
+    unsigned localCount    = 0;
+    auto     getComplexity = [&](GenTree* tree) -> unsigned {
+        const unsigned treeComplexity = getTreeComplexity(tree);
+        localCount += treeComplexity;
+        return treeComplexity;
+    };
+
+    for (BasicBlock* const block : *this)
+    {
+        const unsigned slack = limit - localCount;
+        if (block->ComplexityExceeds(comp, slack, getComplexity))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// optLoopComplexityExceeds: Check if the trees in a loop exceed a specified complexity limit.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//    comp              - compiler instance
+//    limit             - complexity limit
+//    getTreeComplexity - Callback functor that takes a GenTree* and returns its complexity
+//
+// Returns:
+//     True if the trees in 'loop' exceed the complexity limit, otherwise false.
+//
+template <typename TFunc>
+bool Compiler::optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned limit, TFunc getTreeComplexity)
+{
+    assert(loop != nullptr);
+
+    unsigned loopComplexity = 0;
+    auto     getComplexity  = [&](GenTree* tree) -> unsigned {
+        const unsigned treeComplexity = getTreeComplexity(tree);
+        loopComplexity += treeComplexity;
+        return treeComplexity;
+    };
+
+    BasicBlockVisit const result = loop->VisitLoopBlocks([&](BasicBlock* block) {
+        assert(limit >= loopComplexity);
+        const unsigned slack = limit - loopComplexity;
+        return block->ComplexityExceeds(this, slack, getComplexity) ? BasicBlockVisit::Abort
+                                                                    : BasicBlockVisit::Continue;
+    });
+
+    return (result == BasicBlockVisit::Abort);
 }
 
 /*****************************************************************************/

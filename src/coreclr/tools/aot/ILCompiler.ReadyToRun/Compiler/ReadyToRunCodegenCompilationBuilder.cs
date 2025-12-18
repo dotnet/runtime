@@ -45,6 +45,7 @@ namespace ILCompiler
         private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
         private int _genericCycleDetectionDepthCutoff = -1;
         private int _genericCycleDetectionBreadthCutoff = -1;
+        private ReadyToRunContainerFormat _format = ReadyToRunContainerFormat.PE;
 
         private string _jitPath;
         private string _outputFile;
@@ -220,6 +221,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseContainerFormat(ReadyToRunContainerFormat format)
+        {
+            _format = format;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -227,7 +234,7 @@ namespace ILCompiler
             EcmaModule singleModule = _compilationGroup.IsCompositeBuildMode ? null : inputModules.First();
             CopiedCorHeaderNode corHeaderNode = new CopiedCorHeaderNode(singleModule);
             // TODO: proper support for multiple input files
-            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(singleModule, _outputFile, _generatePdbFile, _generatePerfMapFile);
+            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(singleModule, _outputFile, _generatePdbFile, _generatePerfMapFile, _perfMapFormatVersion);
 
             // Produce a ResourceData where the IBC PROFILE_DATA entry has been filtered out
             // TODO: proper support for multiple input files
@@ -269,6 +276,7 @@ namespace ILCompiler
                 win32Resources,
                 flags,
                 _nodeFactoryOptimizationFlags,
+                _format,
                 _imageBase,
                 automaticTypeValidation ? singleModule : null,
                 genericCycleDepthCutoff: _genericCycleDetectionDepthCutoff,
@@ -344,7 +352,8 @@ namespace ILCompiler
                 _r2rMethodLayoutAlgorithm,
                 _r2rFileLayoutAlgorithm,
                 _customPESectionAlignment,
-                _verifyTypeAndFieldLayout);
+                _verifyTypeAndFieldLayout,
+                _format);
         }
     }
 }

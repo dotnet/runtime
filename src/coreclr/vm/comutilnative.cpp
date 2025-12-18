@@ -33,6 +33,7 @@
 #include "typestring.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
+#include <minipal/memorybarrierprocesswide.h>
 
 #ifdef FEATURE_COMINTEROP
     #include "comcallablewrapper.h"
@@ -375,21 +376,21 @@ extern "C" void QCALLTYPE ExceptionNative_GetMessageFromNativeResources(Exceptio
 
     switch(kind) {
     case ExceptionMessageKind::ThreadAbort:
-        hr = buffer.LoadResourceAndReturnHR(CCompRC::Error, IDS_EE_THREAD_ABORT);
+        hr = buffer.LoadResourceAndReturnHR(IDS_EE_THREAD_ABORT);
         if (FAILED(hr)) {
             wszFallbackString = W("Thread was being aborted.");
         }
         break;
 
     case ExceptionMessageKind::ThreadInterrupted:
-        hr = buffer.LoadResourceAndReturnHR(CCompRC::Error, IDS_EE_THREAD_INTERRUPTED);
+        hr = buffer.LoadResourceAndReturnHR(IDS_EE_THREAD_INTERRUPTED);
         if (FAILED(hr)) {
             wszFallbackString = W("Thread was interrupted from a waiting state.");
         }
         break;
 
     case ExceptionMessageKind::OutOfMemory:
-        hr = buffer.LoadResourceAndReturnHR(CCompRC::Error, IDS_EE_OUT_OF_MEMORY);
+        hr = buffer.LoadResourceAndReturnHR(IDS_EE_OUT_OF_MEMORY);
         if (FAILED(hr)) {
             wszFallbackString = W("Insufficient memory to continue the execution of the program.");
         }
@@ -1561,7 +1562,7 @@ extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide()
 {
     QCALL_CONTRACT;
 
-    FlushProcessWriteBuffers();
+    minipal_memory_barrier_process_wide();
 }
 
 static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD methodSlot)
@@ -1586,7 +1587,7 @@ static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD meth
 
     // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
     // to detect match reliably
-    if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
+    if (NonVirtualEntry2MethodDesc(actual) == NonVirtualEntry2MethodDesc(base))
     {
         return FALSE;
     }
@@ -1912,7 +1913,7 @@ static bool HasOverriddenStreamMethod(MethodTable* streamMT, MethodTable* pMT, W
 
     // If CoreLib is JITed, the slots can be patched and thus we need to compare
     // the actual MethodDescs to detect match reliably.
-    return MethodTable::GetMethodDescForSlotAddress(actual) != MethodTable::GetMethodDescForSlotAddress(base);
+    return NonVirtualEntry2MethodDesc(actual) != NonVirtualEntry2MethodDesc(base);
 }
 
 extern "C" BOOL QCALLTYPE Stream_HasOverriddenSlow(MethodTable* pMT, BOOL isRead)

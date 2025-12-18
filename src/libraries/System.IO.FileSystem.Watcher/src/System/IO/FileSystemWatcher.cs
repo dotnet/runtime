@@ -733,7 +733,7 @@ namespace System.IO
 
                 public void Clear() => Items = Array.Empty<string>();
 
-                public bool Contains(string item) => Array.IndexOf(Items, item) != -1;
+                public bool Contains(string item) => Array.IndexOf(Items, item) >= 0;
 
                 public void CopyTo(string[] array, int arrayIndex) => Items.CopyTo(array, arrayIndex);
 

@@ -225,7 +225,9 @@ HRESULT
 ClrDataAccess::ServerGCInterestingInfoData(CLRDATA_ADDRESS addr, DacpGCInterestingInfoData *interestingInfoData)
 {
 #ifdef GC_CONFIG_DRIVEN
-    dac_gc_heap *pHeap = __DPtr<dac_gc_heap>(TO_TADDR(addr));
+    TADDR heapAddress = TO_TADDR(addr);
+    dac_gc_heap heap = LoadGcHeapData(heapAddress);
+    dac_gc_heap* pHeap = &heap;
 
     size_t* dataPoints = (size_t*)&(pHeap->interesting_data_per_heap);
     for (int i = 0; i < NUM_GC_DATA_POINTS; i++)

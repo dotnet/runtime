@@ -13,7 +13,7 @@ public unsafe class ThreadTests
     private static Target CreateTarget(MockDescriptors.Thread thread)
     {
         MockTarget.Architecture arch = thread.Builder.TargetTestHelpers.Arch;
-        var target = new TestPlaceholderTarget(arch, thread.Builder.GetReadContext().ReadFromTarget, thread.Types, thread.Globals);
+        var target = new TestPlaceholderTarget(arch, thread.Builder.GetMemoryContext().ReadFromTarget, thread.Types, thread.Globals);
         target.SetContracts(Mock.Of<ContractRegistry>(
             c => c.Thread == ((IContractFactory<IThread>)new ThreadFactory()).CreateContract(target, 1)));
         return target;

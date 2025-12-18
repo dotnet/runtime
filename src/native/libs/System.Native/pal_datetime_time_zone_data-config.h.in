@@ -1,0 +1,2 @@
+#cmakedefine TZ_FILES_DIR "${TZ_FILES_DIR}"
+#cmakedefine TZ_FILES "${TZ_FILES}"

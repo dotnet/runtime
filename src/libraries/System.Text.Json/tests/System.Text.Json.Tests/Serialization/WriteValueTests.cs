@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Text.Encodings.Web;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -22,7 +23,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async static void NullInputTypeThrows()
+        public async static Task NullInputTypeThrows()
         {
             ArgumentException ex;
             Utf8JsonWriter writer = new Utf8JsonWriter(new MemoryStream());
@@ -44,7 +45,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async static void NullValueWithValueTypeThrows()
+        public async static Task NullValueWithValueTypeThrows()
         {
             JsonException ex;
 
@@ -63,7 +64,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async static void NullValueWithNullableSuccess()
+        public async static Task NullValueWithNullableSuccess()
         {
             byte[] nullUtf8Literal = "null"u8.ToArray();
 

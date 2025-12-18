@@ -59,7 +59,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         // The type.GetMethods call generates a warning because we're not able to correctly track the value of the "this".
         // (there's a ldind.ref insruction here which we currently don't handle and the "this" becomes unknown)
-        [UnexpectedWarning("IL2065", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/2158")]
+        [UnexpectedWarning("IL2065", Tool.All, "https://github.com/dotnet/linker/issues/2158")]
         static void TestAssignStaticToAnnotatedRefParameter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] ref Type type)
         {
             type = typeof(TestTypeWithRequires);
@@ -72,7 +72,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         // The type.GetMethods call generates a warning because we're not able to correctly track the value of the "this".
         // (there's a ldind.ref insruction here which we currently don't handle and the "this" becomes unknown)
-        [UnexpectedWarning("IL2065", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/2158")]
+        [UnexpectedWarning("IL2065", Tool.All, "https://github.com/dotnet/linker/issues/2158")]
         static void TestAssignParameterToAnnotatedRefParameter(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] ref Type type,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type typeWithFields)

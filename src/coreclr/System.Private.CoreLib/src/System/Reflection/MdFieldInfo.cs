@@ -53,7 +53,7 @@ namespace System.Reflection
                 ReferenceEquals(fi.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
 
         public override int GetHashCode() =>
-            HashCode.Combine(m_tkField.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
+            HashCode.Combine(m_tkField, m_declaringType.GetUnderlyingNativeHandle(), m_reflectedTypeCache.GetRuntimeType().GetUnderlyingNativeHandle());
         #endregion
 
         #region FieldInfo Overrides
@@ -122,15 +122,9 @@ namespace System.Reflection
             }
         }
 
-        public override Type[] GetRequiredCustomModifiers()
-        {
-            return Type.EmptyTypes;
-        }
+        public override Type[] GetRequiredCustomModifiers() => [];
 
-        public override Type[] GetOptionalCustomModifiers()
-        {
-            return Type.EmptyTypes;
-        }
+        public override Type[] GetOptionalCustomModifiers() => [];
 
         #endregion
     }

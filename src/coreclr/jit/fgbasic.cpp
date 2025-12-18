@@ -1182,8 +1182,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_AVX2_TrailingZeroCount:
                             case NI_AVX2_X64_LeadingZeroCount:
                             case NI_AVX2_X64_TrailingZeroCount:
-                            case NI_SSE42_PopCount:
-                            case NI_SSE42_X64_PopCount:
+                            case NI_X86Base_PopCount:
+                            case NI_X86Base_X64_PopCount:
                             case NI_Vector256_Create:
                             case NI_Vector512_Create:
                             case NI_Vector256_CreateScalar:
@@ -1245,7 +1245,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_SRCS_UNSAFE_AreSame:
                             case NI_SRCS_UNSAFE_ByteOffset:
                             case NI_SRCS_UNSAFE_IsAddressGreaterThan:
+                            case NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo:
                             case NI_SRCS_UNSAFE_IsAddressLessThan:
+                            case NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo:
                             case NI_SRCS_UNSAFE_IsNullRef:
                             case NI_SRCS_UNSAFE_Subtract:
                             case NI_SRCS_UNSAFE_SubtractByteOffset:
@@ -1260,7 +1262,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                     {
                                         case NI_SRCS_UNSAFE_AreSame:
                                         case NI_SRCS_UNSAFE_IsAddressGreaterThan:
+                                        case NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo:
                                         case NI_SRCS_UNSAFE_IsAddressLessThan:
+                                        case NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo:
                                         case NI_SRCS_UNSAFE_IsNullRef:
                                         {
                                             fgObserveInlineConstants(opcode, pushedStack, isInlining);
@@ -1479,18 +1483,54 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 #if defined(FEATURE_HW_INTRINSICS)
 #if defined(TARGET_ARM64)
                             case NI_Vector64_get_AllBitsSet:
+                            case NI_Vector64_get_E:
+                            case NI_Vector64_get_Epsilon:
+                            case NI_Vector64_get_NaN:
+                            case NI_Vector64_get_NegativeInfinity:
+                            case NI_Vector64_get_NegativeOne:
+                            case NI_Vector64_get_NegativeZero:
                             case NI_Vector64_get_One:
+                            case NI_Vector64_get_Pi:
+                            case NI_Vector64_get_PositiveInfinity:
+                            case NI_Vector64_get_Tau:
                             case NI_Vector64_get_Zero:
 #endif // TARGET_ARM64
                             case NI_Vector128_get_AllBitsSet:
+                            case NI_Vector128_get_E:
+                            case NI_Vector128_get_Epsilon:
+                            case NI_Vector128_get_NaN:
+                            case NI_Vector128_get_NegativeInfinity:
+                            case NI_Vector128_get_NegativeOne:
+                            case NI_Vector128_get_NegativeZero:
                             case NI_Vector128_get_One:
+                            case NI_Vector128_get_Pi:
+                            case NI_Vector128_get_PositiveInfinity:
+                            case NI_Vector128_get_Tau:
                             case NI_Vector128_get_Zero:
 #if defined(TARGET_XARCH)
                             case NI_Vector256_get_AllBitsSet:
+                            case NI_Vector256_get_E:
+                            case NI_Vector256_get_Epsilon:
+                            case NI_Vector256_get_NaN:
+                            case NI_Vector256_get_NegativeInfinity:
+                            case NI_Vector256_get_NegativeOne:
+                            case NI_Vector256_get_NegativeZero:
                             case NI_Vector256_get_One:
+                            case NI_Vector256_get_Pi:
+                            case NI_Vector256_get_PositiveInfinity:
+                            case NI_Vector256_get_Tau:
                             case NI_Vector256_get_Zero:
                             case NI_Vector512_get_AllBitsSet:
+                            case NI_Vector512_get_E:
+                            case NI_Vector512_get_Epsilon:
+                            case NI_Vector512_get_NaN:
+                            case NI_Vector512_get_NegativeInfinity:
+                            case NI_Vector512_get_NegativeOne:
+                            case NI_Vector512_get_NegativeZero:
                             case NI_Vector512_get_One:
+                            case NI_Vector512_get_Pi:
+                            case NI_Vector512_get_PositiveInfinity:
+                            case NI_Vector512_get_Tau:
                             case NI_Vector512_get_Zero:
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
@@ -3737,30 +3777,31 @@ void Compiler::fgFindBasicBlocks()
         }
         else
         {
-            HBtab->ebdTyp = clause.ClassToken;
-
-            /* Set bbCatchTyp as appropriate */
-
+            // Set ebdTyp and bbCatchTyp as appropriate
+            //
             if (clause.Flags & CORINFO_EH_CLAUSE_FINALLY)
             {
                 hndBegBB->bbCatchTyp = BBCT_FINALLY;
+                HBtab->ebdTyp        = 0;
             }
             else
             {
                 if (clause.Flags & CORINFO_EH_CLAUSE_FAULT)
                 {
                     hndBegBB->bbCatchTyp = BBCT_FAULT;
+                    HBtab->ebdTyp        = 0;
                 }
                 else
                 {
-                    hndBegBB->bbCatchTyp = clause.ClassToken;
-
                     // These values should be non-zero value that will
                     // not collide with real tokens for bbCatchTyp
                     if (clause.ClassToken == 0)
                     {
                         BADCODE("Exception catch type is Null");
                     }
+
+                    hndBegBB->bbCatchTyp = clause.ClassToken;
+                    HBtab->ebdTyp        = clause.ClassToken;
 
                     noway_assert(clause.ClassToken != BBCT_FAULT);
                     noway_assert(clause.ClassToken != BBCT_FINALLY);
@@ -4799,11 +4840,34 @@ BasicBlock* Compiler::fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node)
             }
         }
 
-        curr->bbCodeOffsEnd = max(curr->bbCodeOffs, splitPointILOffset);
+        if (splitPointILOffset == BAD_IL_OFFSET)
+        {
+            // Try to look forwards in the next block
+            for (GenTree* node : LIR::AsRange(newBlock))
+            {
+                if (node->OperIs(GT_IL_OFFSET))
+                {
+                    GenTreeILOffset* ilOffset = node->AsILOffset();
+                    DebugInfo        rootDI   = ilOffset->gtStmtDI.GetRoot();
+                    if (rootDI.IsValid())
+                    {
+                        splitPointILOffset = rootDI.GetLocation().GetOffset();
+                        break;
+                    }
+                }
+            }
+        }
 
-        // Also use this as the beginning offset of the next block. Presumably we could/should
-        // look to see if the first node is a GT_IL_OFFSET node, and use that instead.
-        newBlock->bbCodeOffs = min(splitPointILOffset, newBlock->bbCodeOffsEnd);
+        if (splitPointILOffset == BAD_IL_OFFSET)
+        {
+            // If we found no IL_OFFSET in the block then we cannot do anything
+            // but guess. Let's make the old block (upper part) contain
+            // everything if we have an end, and otherwise nothing.
+            splitPointILOffset = curr->bbCodeOffsEnd == BAD_IL_OFFSET ? curr->bbCodeOffs : curr->bbCodeOffsEnd;
+        }
+
+        curr->bbCodeOffsEnd  = splitPointILOffset;
+        newBlock->bbCodeOffs = splitPointILOffset;
     }
     else
     {
@@ -4868,7 +4932,7 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 //    Returns a new block, that is a successor of 'curr' and which branches unconditionally to 'succ'
 //
 // Assumptions:
-//    'curr' must have a bbKind of BBJ_COND, BBJ_ALWAYS, or BBJ_SWITCH
+//    'curr' must have a bbKind of BBJ_COND, BBJ_ALWAYS, BBJ_SWITCH, or BBJ_CALLFINALLYRET
 //
 // Notes:
 //    The returned block is empty.
@@ -4876,7 +4940,7 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 
 BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 {
-    assert(curr->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_ALWAYS));
+    assert(curr->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_ALWAYS, BBJ_CALLFINALLYRET));
     assert(fgPredsComputed);
     assert(fgGetPredForBlock(succ, curr) != nullptr);
 
@@ -5212,39 +5276,6 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
     // Set to retless flag to avoid future asserts.
     bCallFinally->SetFlags(BBF_RETLESS_CALL);
     block->SetKind(BBJ_ALWAYS);
-}
-
-/*****************************************************************************
- *
- *  Is the BasicBlock bJump a forward branch?
- *   Optionally bSrc can be supplied to indicate that
- *   bJump must be forward with respect to bSrc
- */
-bool Compiler::fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc /* = NULL */)
-{
-    assert((bJump->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && bJump->TargetIs(bDest)) ||
-           (bJump->KindIs(BBJ_COND) && bJump->TrueTargetIs(bDest)));
-
-    bool        result = false;
-    BasicBlock* bTemp  = (bSrc == nullptr) ? bJump : bSrc;
-
-    while (true)
-    {
-        bTemp = bTemp->Next();
-
-        if (bTemp == nullptr)
-        {
-            break;
-        }
-
-        if (bTemp == bDest)
-        {
-            result = true;
-            break;
-        }
-    }
-
-    return result;
 }
 
 /*****************************************************************************

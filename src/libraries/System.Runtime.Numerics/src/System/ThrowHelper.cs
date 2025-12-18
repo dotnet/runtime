@@ -32,5 +32,11 @@ namespace System
         {
             throw new FormatException(SR.Argument_BadFormatSpecifier);
         }
+
+        [DoesNotReturn]
+        internal static void ThrowUnreachableException()
+        {
+            throw new UnreachableException();
+        }
     }
 }

@@ -190,7 +190,9 @@ namespace Internal.TypeSystem
                         return canonType;
                 }
 
-                return module.GetType(TypeName.Unescape(typeName.Namespace), TypeName.Unescape(typeName.Name), throwIfNotFound: false);
+                return module.GetType(
+                    System.Text.Encoding.UTF8.GetBytes(TypeName.Unescape(typeName.Namespace)),
+                    System.Text.Encoding.UTF8.GetBytes(TypeName.Unescape(typeName.Name)), throwIfNotFound: false);
             }
 
             private TypeDesc GetGenericType(TypeName typeName)

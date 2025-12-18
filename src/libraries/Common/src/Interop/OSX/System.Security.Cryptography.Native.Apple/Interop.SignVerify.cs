@@ -15,7 +15,6 @@ internal static partial class Interop
         internal enum PAL_SignatureAlgorithm : uint
         {
             Unknown = 0,
-            DSA = 1,
             RsaPkcs1 = 2,
             RsaPss = 3,
             RsaRaw = 4,

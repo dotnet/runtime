@@ -53,12 +53,13 @@ namespace System.Runtime.InteropServices
             IntPtr handle = _handle;
             GCHandle.CheckUninitialized(handle);
             // Skip the type check to provide lowest overhead.
-            T? obj = Unsafe.As<T?>(GCHandle.InternalGet(handle));
+            T? obj = Unsafe.As<T>(GCHandle.InternalGet(handle));
             target = obj;
             return obj != null;
         }
 
         /// <summary>Sets the object this handle represents.</summary>
+        /// <param name="target">The object to assign to this handle.</param>
         /// <exception cref="NullReferenceException">If the handle is not initialized or already disposed.</exception>
         public readonly void SetTarget(T target)
         {

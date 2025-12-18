@@ -5,7 +5,7 @@ using Xunit;
 
 
 
-namespace DefaultNamespace
+namespace b12668
 {
 
     using System;

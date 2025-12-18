@@ -615,6 +615,32 @@ unsigned short Compiler::bbFindInnermostCommonTryRegion(BasicBlock* bbOne, Basic
     return 0;
 }
 
+/******************************************************************************************
+ * Given a one-biased region index (which may be 0, indicating method region) and a block,
+ * return one-biased index for the inner-most enclosing try region that contains the block and the region.
+ * Return 0 if it does not find any try region (which means the inner-most region
+ * is the method itself).
+ */
+
+unsigned short Compiler::bbFindInnermostCommonTryRegion(unsigned index, BasicBlock* bbTwo)
+{
+    assert(index <= compHndBBtabCount);
+
+    if (index == 0)
+        return 0;
+
+    for (unsigned XTnum = index - 1; XTnum < compHndBBtabCount; XTnum++)
+    {
+        if (bbInTryRegions(XTnum, bbTwo))
+        {
+            noway_assert(XTnum < MAX_XCPTN_INDEX);
+            return (unsigned short)(XTnum + 1); // Return the tryIndex
+        }
+    }
+
+    return 0;
+}
+
 // bbIsTryBeg() returns true if this block is the start of any try region.
 //              This is computed by examining the current values in the
 //              EH table rather than just looking at the block's bbFlags.
@@ -1522,6 +1548,8 @@ void Compiler::fgAllocEHTable()
 
     compHndBBtab = new (this, CMK_BasicBlock) EHblkDsc[compHndBBtabAllocCount];
 
+    memset(compHndBBtab, 0, compHndBBtabAllocCount * sizeof(*compHndBBtab));
+
     compHndBBtabCount = info.compXcptnsCount;
 }
 
@@ -1882,6 +1910,10 @@ EHblkDsc* Compiler::fgTryAddEHTableEntries(unsigned XTnum, unsigned count, bool 
         compHndBBtabAllocCount = newHndBBtabAllocCount;
 
         EHblkDsc* newTable = new (this, CMK_BasicBlock) EHblkDsc[compHndBBtabAllocCount];
+
+        // Zero the storage
+
+        memset(newTable, 0, compHndBBtabAllocCount * sizeof(*compHndBBtab));
 
         // Move over the stuff before the new entries
 

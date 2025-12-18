@@ -1,12 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Pack">
-  <ItemGroup Condition="'$(TargetOS)' == 'windows' or '$(DotNetBuildSourceOnly)' == 'true'">
-    <ProjectReference Include="Microsoft.NET.Sdk.IL\Microsoft.NET.Sdk.IL.pkgproj" />
-    <ProjectReference Include="Microsoft.ILVerification\Microsoft.ILVerification.pkgproj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
-    <ProjectReference Include="dotnet-ilverify\dotnet-ilverify.pkgproj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(DotNetBuildSourceOnly)' != 'true'">
-    <ProjectReference Include="ILCompiler.Reflection.ReadyToRun.Experimental\ILCompiler.Reflection.ReadyToRun.Experimental.pkgproj" />
+  <ItemGroup>
+    <ProjectReference Include="Microsoft.NET.Sdk.IL\Microsoft.NET.Sdk.IL.proj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true' ">

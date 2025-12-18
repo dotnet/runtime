@@ -18,14 +18,17 @@ namespace Internal.TypeSystem.Ecma
     /// </summary>
     public sealed partial class EcmaType : MetadataType, EcmaModule.IEntityHandleObject
     {
+        private const TypeAttributes TypeAttributesExtendedLayout = (TypeAttributes)0x00000018;
         private EcmaModule _module;
         private TypeDefinitionHandle _handle;
 
         private TypeDefinition _typeDefinition;
 
         // Cached values
-        private string _typeName;
-        private string _typeNamespace;
+        private unsafe volatile byte* _namePointer;
+        private int _nameLength;
+        private unsafe volatile byte* _namespacePointer;
+        private int _namespaceLength;
         private TypeDesc[] _genericParameters;
         private MetadataType _baseType;
         private int _hashcode;
@@ -38,12 +41,6 @@ namespace Internal.TypeSystem.Ecma
             _typeDefinition = module.MetadataReader.GetTypeDefinition(handle);
 
             _baseType = this; // Not yet initialized flag
-
-#if DEBUG
-            // Initialize name eagerly in debug builds for convenience
-            InitializeName();
-            InitializeNamespace();
-#endif
         }
 
         public override int GetHashCode()
@@ -55,23 +52,15 @@ namespace Internal.TypeSystem.Ecma
 
         private int InitializeHashCode()
         {
+            int hashCode = VersionResilientHashCode.NameHashCode(Namespace, Name);
+
             DefType containingType = ContainingType;
-            if (containingType == null)
+            if (containingType != null)
             {
-                string ns = Namespace;
-                var hashCodeBuilder = new TypeHashingAlgorithms.HashCodeBuilder(ns);
-                if (ns.Length > 0)
-                    hashCodeBuilder.Append(".");
-                hashCodeBuilder.Append(Name);
-                _hashcode = hashCodeBuilder.ToHashCode();
-            }
-            else
-            {
-                _hashcode = TypeHashingAlgorithms.ComputeNestedTypeHashCode(
-                    containingType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(Name));
+                hashCode = VersionResilientHashCode.NestedTypeHashCode(containingType.GetHashCode(), hashCode);
             }
 
-            return _hashcode;
+            return _hashcode = hashCode;
         }
 
         EntityHandle EcmaModule.IEntityHandleObject.Handle
@@ -120,15 +109,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override ModuleDesc Module
-        {
-            get
-            {
-                return _module;
-            }
-        }
-
-        public EcmaModule EcmaModule
+        public override EcmaModule Module
         {
             get
             {
@@ -165,23 +146,13 @@ namespace Internal.TypeSystem.Ecma
             if (type == null)
             {
                 // PREFER: "new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadBadFormat, this)" but the metadata is too broken
-                ThrowHelper.ThrowTypeLoadException(Namespace, Name, Module);
+                ThrowHelper.ThrowTypeLoadException(GetNamespace(), GetName(), Module);
             }
             _baseType = type;
             return type;
         }
 
-        public override DefType BaseType
-        {
-            get
-            {
-                if (_baseType == this)
-                    return InitializeBaseType();
-                return _baseType;
-            }
-        }
-
-        public override MetadataType MetadataBaseType
+        public override MetadataType BaseType
         {
             get
             {
@@ -275,41 +246,49 @@ namespace Internal.TypeSystem.Ecma
             return flags;
         }
 
-        private string InitializeName()
+        private unsafe ReadOnlySpan<byte> InitializeName()
         {
-            var metadataReader = this.MetadataReader;
-            _typeName = metadataReader.GetString(_typeDefinition.Name);
-            return _typeName;
+            StringHandle handle = _typeDefinition.Name;
+            _nameLength = MetadataReader.GetStringBytes(handle).Length;
+            _namePointer = MetadataReader.MetadataPointer + MetadataReader.GetHeapMetadataOffset(HeapIndex.String) + MetadataReader.GetHeapOffset(handle);
+            return new ReadOnlySpan<byte>(_namePointer, _nameLength);
         }
 
-        public override string Name
-        {
-            get
-            {
-                if (_typeName == null)
-                    return InitializeName();
-                return _typeName;
-            }
-        }
-
-        private string InitializeNamespace()
-        {
-            var metadataReader = this.MetadataReader;
-            _typeNamespace = metadataReader.GetString(_typeDefinition.Namespace);
-            return _typeNamespace;
-        }
-
-        public override string Namespace
+        public override unsafe ReadOnlySpan<byte> Name
         {
             get
             {
-                if (_typeNamespace == null)
-                    return InitializeNamespace();
-                return _typeNamespace;
+                byte* namePointer = _namePointer;
+                if (namePointer != null)
+                {
+                    return new ReadOnlySpan<byte>(namePointer, _nameLength);
+                }
+                return InitializeName();
             }
         }
 
-        public override IEnumerable<MethodDesc> GetMethods()
+        private unsafe ReadOnlySpan<byte> InitializeNamespace()
+        {
+            StringHandle handle = _typeDefinition.Namespace;
+            _namespaceLength = MetadataReader.GetStringBytes(handle).Length;
+            _namespacePointer = MetadataReader.MetadataPointer + MetadataReader.GetHeapMetadataOffset(HeapIndex.String) + MetadataReader.GetHeapOffset(handle);
+            return new ReadOnlySpan<byte>(_namespacePointer, _namespaceLength);
+        }
+
+        public override unsafe ReadOnlySpan<byte> Namespace
+        {
+            get
+            {
+                byte* namespacePointer = _namespacePointer;
+                if (namespacePointer != null)
+                {
+                    return new ReadOnlySpan<byte>(namespacePointer, _namespaceLength);
+                }
+                return InitializeNamespace();
+            }
+        }
+
+        public override IEnumerable<EcmaMethod> GetMethods()
         {
             foreach (var handle in _typeDefinition.GetMethods())
             {
@@ -317,7 +296,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override IEnumerable<MethodDesc> GetVirtualMethods()
+        public override IEnumerable<EcmaMethod> GetVirtualMethods()
         {
             MetadataReader reader = _module.MetadataReader;
             foreach (var handle in _typeDefinition.GetMethods())
@@ -328,14 +307,24 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
+        /// <summary>
+        /// Gets a named method on the type. This method only looks at methods defined
+        /// in type's metadata. The <paramref name="signature"/> parameter can be null.
+        /// If signature is not specified and there are multiple matches, the first one
+        /// is returned. Returns null if method not found.
+        /// </summary>
+        public new EcmaMethod GetMethod(ReadOnlySpan<byte> name, MethodSignature signature)
+        {
+            return GetMethod(name, signature, default(Instantiation));
+        }
+
+        public override EcmaMethod GetMethod(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
         {
             var metadataReader = this.MetadataReader;
-            var stringComparer = metadataReader.StringComparer;
 
             foreach (var handle in _typeDefinition.GetMethods())
             {
-                if (stringComparer.Equals(metadataReader.GetMethodDefinition(handle).Name, name))
+                if (metadataReader.StringEquals(metadataReader.GetMethodDefinition(handle).Name, name))
                 {
                     var method = _module.GetMethod(handle, this);
                     if (signature == null || signature.Equals(method.Signature.ApplySubstitution(substitution)))
@@ -346,14 +335,13 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override MethodDesc GetMethodWithEquivalentSignature(string name, MethodSignature signature, Instantiation substitution)
+        public override EcmaMethod GetMethodWithEquivalentSignature(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
         {
             var metadataReader = this.MetadataReader;
-            var stringComparer = metadataReader.StringComparer;
 
             foreach (var handle in _typeDefinition.GetMethods())
             {
-                if (stringComparer.Equals(metadataReader.GetMethodDefinition(handle).Name, name))
+                if (metadataReader.StringEquals(metadataReader.GetMethodDefinition(handle).Name, name))
                 {
                     var method = _module.GetMethod(handle, this);
                     if (signature == null || signature.EquivalentTo(method.Signature.ApplySubstitution(substitution)))
@@ -364,7 +352,7 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override MethodDesc GetStaticConstructor()
+        public override EcmaMethod GetStaticConstructor()
         {
             var metadataReader = this.MetadataReader;
             var stringComparer = metadataReader.StringComparer;
@@ -383,7 +371,7 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override MethodDesc GetDefaultConstructor()
+        public override EcmaMethod GetDefaultConstructor()
         {
             if (IsAbstract)
                 return null;
@@ -423,7 +411,7 @@ namespace Internal.TypeSystem.Ecma
                 return null;
 
             TypeDesc objectType = Context.GetWellKnownType(WellKnownType.Object);
-            MethodDesc decl = objectType.GetMethod("Finalize", null);
+            MethodDesc decl = objectType.GetMethod("Finalize"u8, null);
 
             if (decl != null)
             {
@@ -446,7 +434,7 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override IEnumerable<FieldDesc> GetFields()
+        public override IEnumerable<EcmaField> GetFields()
         {
             foreach (var handle in _typeDefinition.GetFields())
             {
@@ -473,14 +461,13 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override FieldDesc GetField(string name)
+        public override EcmaField GetField(ReadOnlySpan<byte> name)
         {
             var metadataReader = this.MetadataReader;
-            var stringComparer = metadataReader.StringComparer;
 
             foreach (var handle in _typeDefinition.GetFields())
             {
-                if (stringComparer.Equals(metadataReader.GetFieldDefinition(handle).Name, name))
+                if (metadataReader.StringEquals(metadataReader.GetFieldDefinition(handle).Name, name))
                 {
                     var field = _module.GetField(handle, this);
                     return field;
@@ -490,7 +477,7 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
-        public override IEnumerable<MetadataType> GetNestedTypes()
+        public override IEnumerable<EcmaType> GetNestedTypes()
         {
             foreach (var handle in _typeDefinition.GetNestedTypes())
             {
@@ -498,7 +485,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override MetadataType GetNestedType(string name)
+        public override EcmaType GetNestedType(string name)
         {
             var metadataReader = this.MetadataReader;
             var stringComparer = metadataReader.StringComparer;
@@ -519,7 +506,7 @@ namespace Internal.TypeSystem.Ecma
                 }
 
                 if (nameMatched)
-                    return (EcmaType)_module.GetObject(handle);
+                    return _module.GetType(handle);
             }
 
             return null;
@@ -533,7 +520,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override DefType ContainingType
+        public override EcmaType ContainingType
         {
             get
             {
@@ -541,7 +528,7 @@ namespace Internal.TypeSystem.Ecma
                     return null;
 
                 var handle = _typeDefinition.GetDeclaringType();
-                return (DefType)_module.GetType(handle);
+                return _module.GetType(handle);
             }
         }
 
@@ -551,26 +538,67 @@ namespace Internal.TypeSystem.Ecma
                 attributeNamespace, attributeName).IsNil;
         }
 
-        public override int GetInlineArrayLength()
-        {
-            Debug.Assert(this.IsInlineArray);
-
-            var attr = MetadataReader.GetCustomAttribute(MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
-                "System.Runtime.CompilerServices", "InlineArrayAttribute"));
-
-            var value = attr.DecodeValue(new CustomAttributeTypeProvider(_module)).FixedArguments[0].Value;
-
-            return value is int intValue ? intValue : 0;
-        }
-
         public override ClassLayoutMetadata GetClassLayout()
         {
             TypeLayout layout = _typeDefinition.GetLayout();
+            int inlineArrayLength = 0;
+
+            if (IsInlineArray)
+            {
+                var attr = MetadataReader.GetCustomAttribute(MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
+                    "System.Runtime.CompilerServices", "InlineArrayAttribute"));
+
+                var value = attr.DecodeValue(new CustomAttributeTypeProvider(_module)).FixedArguments[0].Value;
+
+                inlineArrayLength = value is int intValue ? intValue : 0;
+            }
+
+            MetadataLayoutKind layoutKind = MetadataLayoutKind.Auto;
+            if ((Attributes & TypeAttributes.LayoutMask) == TypeAttributes.SequentialLayout)
+            {
+                layoutKind = MetadataLayoutKind.Sequential;
+            }
+            else if ((Attributes & TypeAttributes.LayoutMask) == TypeAttributes.ExplicitLayout)
+            {
+                layoutKind = MetadataLayoutKind.Explicit;
+            }
+            else if ((Attributes & TypeAttributes.LayoutMask) == TypeAttributesExtendedLayout)
+            {
+                var attrHandle = MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
+                    "System.Runtime.InteropServices", "ExtendedLayoutAttribute");
+
+                if (attrHandle.IsNil)
+                {
+                    ThrowHelper.ThrowTypeLoadException(this);
+                }
+
+                var attr = MetadataReader.GetCustomAttribute(attrHandle);
+
+                var attrValue = attr.DecodeValue(new CustomAttributeTypeProvider(_module));
+
+                if (attrValue.FixedArguments is not [{ Value: int kind }])
+                {
+                    ThrowHelper.ThrowTypeLoadException(this);
+                    return default;
+                }
+
+                switch (kind)
+                {
+                    case 0:
+                        layoutKind = MetadataLayoutKind.CStruct;
+                        break;
+                    default:
+                        ThrowHelper.ThrowTypeLoadException(this);
+                        return default; // Invalid kind value
+                }
+            }
 
             return new ClassLayoutMetadata
             {
+                Kind = layoutKind,
                 PackingSize = layout.PackingSize,
-                Size = layout.Size
+                Size = layout.Size,
+                InlineArrayLength = inlineArrayLength,
             };
         }
 
@@ -578,7 +606,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return (_typeDefinition.Attributes & TypeAttributes.ExplicitLayout) != 0;
+                return (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributes.ExplicitLayout;
             }
         }
 
@@ -586,7 +614,23 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return (_typeDefinition.Attributes & TypeAttributes.SequentialLayout) != 0;
+                return (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributes.SequentialLayout;
+            }
+        }
+
+        public override bool IsExtendedLayout
+        {
+            get
+            {
+                return (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributesExtendedLayout;
+            }
+        }
+
+        public override bool IsAutoLayout
+        {
+            get
+            {
+                return (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributes.AutoLayout;
             }
         }
 

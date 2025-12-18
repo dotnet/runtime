@@ -124,4 +124,3 @@ public class OptionsUsingValidationAttributes
 public partial class LocalOptionsValidator : IValidateOptions<OptionsUsingValidationAttributes>
 {
 }
-

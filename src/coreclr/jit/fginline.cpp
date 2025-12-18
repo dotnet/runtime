@@ -701,20 +701,21 @@ private:
             // we may be able to sharpen the type for the local.
             if (tree->TypeIs(TYP_REF))
             {
-                LclVarDsc* lcl = m_compiler->lvaGetDesc(lclNum);
+                LclVarDsc* const lcl = m_compiler->lvaGetDesc(lclNum);
 
                 if (lcl->lvSingleDef)
                 {
-                    bool                 isExact;
-                    bool                 isNonNull;
-                    CORINFO_CLASS_HANDLE newClass = m_compiler->gtGetClassHandle(value, &isExact, &isNonNull);
-
-                    if (newClass != NO_CLASS_HANDLE)
+                    if (lcl->lvClassHnd == NO_CLASS_HANDLE)
                     {
-                        m_compiler->lvaUpdateClass(lclNum, newClass, isExact);
-                        m_madeChanges                    = true;
-                        m_compiler->hasUpdatedTypeLocals = true;
+                        m_compiler->lvaSetClass(lclNum, value);
                     }
+                    else
+                    {
+                        m_compiler->lvaUpdateClass(lclNum, value);
+                    }
+
+                    m_madeChanges                    = true;
+                    m_compiler->hasUpdatedTypeLocals = true;
                 }
             }
 
@@ -731,9 +732,38 @@ private:
         else if (tree->OperIs(GT_JTRUE))
         {
             // See if this jtrue is now foldable.
-            BasicBlock* block    = m_compiler->compCurBB;
-            GenTree*    condTree = tree->AsOp()->gtOp1;
+            BasicBlock* block        = m_compiler->compCurBB;
+            GenTree*    condTree     = tree->AsOp()->gtOp1;
+            bool        modifiedTree = false;
             assert(tree == block->lastStmt()->GetRootNode());
+
+            while (condTree->OperIs(GT_COMMA))
+            {
+                // Tree is a root node, and condTree its only child.
+                // Move comma effects to a prior statement.
+                //
+                GenTree* sideEffects = nullptr;
+                m_compiler->gtExtractSideEffList(condTree->gtGetOp1(), &sideEffects);
+
+                if (sideEffects != nullptr)
+                {
+                    m_compiler->fgNewStmtNearEnd(block, sideEffects);
+                }
+
+                // Splice out the comma with its value
+                //
+                GenTree* const valueTree = condTree->gtGetOp2();
+                condTree                 = valueTree;
+                tree->AsOp()->gtOp1      = valueTree;
+                modifiedTree             = true;
+            }
+
+            if (modifiedTree)
+            {
+                m_compiler->gtUpdateNodeSideEffects(tree);
+            }
+
+            assert(condTree->OperIs(GT_CNS_INT) || condTree->OperIsCompare());
 
             if (condTree->OperIs(GT_CNS_INT))
             {
@@ -1021,9 +1051,10 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
             inliningFailed = true;
 
             // Clear the Inline Candidate flag so we can ensure later we tried
-            // inlining all candidates.
+            // inlining all candidates. In debug, remember that this was an inline candidate.
             //
             call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
+            INDEBUG(call->SetWasInlineCandidate());
         }
     }
     else
@@ -1100,7 +1131,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
     }
 #endif // defined(DEBUG)
 
-    if (lvaCount >= MAX_LV_NUM_COUNT_FOR_INLINING)
+    if (lvaHaveManyLocals(0.9f))
     {
         // For now, attributing this to call site, though it's really
         // more of a budget issue (lvaCount currently includes all
@@ -1233,7 +1264,7 @@ Compiler::fgWalkResult Compiler::fgFindNonInlineCandidate(GenTree** pTree, fgWal
 
 void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
 {
-    if (call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate())
+    if (call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate() || call->WasInlineCandidate())
     {
         return;
     }
@@ -1330,7 +1361,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     struct Param
     {
         Compiler*             pThis;
-        GenTree*              call;
+        GenTreeCall*          call;
         CORINFO_METHOD_HANDLE fncHandle;
         InlineCandidateInfo*  inlineCandidateInfo;
         InlineInfo*           inlineInfo;
@@ -1385,12 +1416,14 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
 
             // The following flags are lost when inlining.
             // (This is checked in Compiler::compInitOptions().)
-            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR);
-            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS);
             compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
             compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
             compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
             compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_TRACK_TRANSITIONS);
+            if (!pParam->call->IsAsync())
+            {
+                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_ASYNC);
+            }
 
 #ifdef DEBUG
             if (pParam->pThis->verbose)
@@ -1591,8 +1624,8 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
             noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
 
-            // Todo: we may want to exclude other flags here.
-            iciBlock->SetFlags(inlineeBlockFlags & ~BBF_RUN_RARELY);
+            // Todo: we may want to exclude some flags here.
+            iciBlock->SetFlags(inlineeBlockFlags);
 
 #ifdef DEBUG
             if (verbose)
@@ -2287,6 +2320,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         {
             case WellKnownArg::RetBuffer:
             case WellKnownArg::AsyncContinuation:
+            case WellKnownArg::AsyncExecutionContext:
+            case WellKnownArg::AsyncSynchronizationContext:
                 continue;
             case WellKnownArg::InstParam:
                 argInfo = inlineInfo->inlInstParamArgInfo;

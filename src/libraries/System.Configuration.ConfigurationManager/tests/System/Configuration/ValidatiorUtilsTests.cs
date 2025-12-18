@@ -14,7 +14,7 @@ namespace System.ConfigurationTests
             InlineData(@"a", typeof(int), true),
             InlineData(1, typeof(string), true),
             ]
-        public void HelperParamValidation(object value, Type allowedType, bool shouldThrow)
+        public void HelperParamValidation(object? value, Type allowedType, bool shouldThrow)
         {
             Action action = () => ValidatorUtils.HelperParamValidation(value, allowedType);
             if (!shouldThrow)
@@ -43,7 +43,7 @@ namespace System.ConfigurationTests
             InlineData(2, 1, 1, 1, false, true, "Validation_scalar_range_violation_not_equal"),
             InlineData(3, 1, 2, 1, false, true, "Validation_scalar_range_violation_not_in_range"),
             ]
-        public void ValidateIntScalar(int value, int min, int max, int resolution, bool exclusiveRange, bool shouldThrow, string message)
+        public void ValidateIntScalar(int value, int min, int max, int resolution, bool exclusiveRange, bool shouldThrow, string? message)
         {
             Action action = () => ValidatorUtils.ValidateScalar(value, min, max, resolution, exclusiveRange);
             if (!shouldThrow)
@@ -62,7 +62,7 @@ namespace System.ConfigurationTests
             InlineData(1, 1, 1, 1, false, false, null),
             InlineData(1, 1, 1, 2, false, true, "Validator_scalar_resolution_violation")
             ]
-        public void ValidateIntBadResolution(int value, int min, int max, int resolution, bool exclusiveRange, bool shouldThrow, string message)
+        public void ValidateIntBadResolution(int value, int min, int max, int resolution, bool exclusiveRange, bool shouldThrow, string? message)
         {
             Action action = () => ValidatorUtils.ValidateScalar(value, min, max, resolution, exclusiveRange);
             if (!shouldThrow)
