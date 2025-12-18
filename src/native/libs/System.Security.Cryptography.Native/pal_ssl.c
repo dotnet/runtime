@@ -99,9 +99,9 @@ static void DetectCiphersuiteConfiguration(void)
     int rv = SSL_CTX_set_cipher_list(ctx, "ALL");
     if (!rv)
     {
-        // If cipher list configuration fails, treat it like system_default not found.
-        // This can happen with broken OpenSSL configurations, but we can still
-        // use the default cipher list.
+        // If cipher list configuration fails, assume no custom cipher configuration.
+        // This can happen with broken OpenSSL configurations. By returning early,
+        // g_config_specified_ciphersuites stays 0 and we use the default cipher list.
         ERR_clear_error();
         SSL_CTX_free(ctx);
         return;
@@ -121,7 +121,7 @@ static void DetectCiphersuiteConfiguration(void)
         rv = SSL_CTX_set_cipher_list(ctx, "RSA");
         if (!rv)
         {
-            // If cipher list configuration fails, treat it like system_default not found.
+            // If cipher list configuration fails, assume no custom cipher configuration.
             ERR_clear_error();
             SSL_CTX_free(ctx);
             return;
