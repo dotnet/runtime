@@ -590,7 +590,7 @@
 
     <!-- Include our marker file that this test has no special runner (if specified). -->
     <Copy
-      SourceFiles="$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner" 
+      SourceFiles="$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner"
       DestinationFiles="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName).XHarnessNoRunner"
       Lines="@(FilteredTestExclusionList)"
       Condition="'@(_TestExclusionListPlaceholder)' != ''" />
@@ -627,7 +627,7 @@
 
     <!-- Include our marker file that this test has no special runner (if specified). -->
     <Copy
-      SourceFiles="$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner" 
+      SourceFiles="$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner"
       DestinationFiles="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName).XHarnessNoRunner"
       Lines="@(FilteredTestExclusionList)"
       Condition="'@(_TestExclusionListPlaceholder)' != ''" />
@@ -871,18 +871,18 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
-    <MergedPayloads>
+    <MergedPayloads Update="@(MergedPayloads)">
       <PayloadGroup>%(FileName)%(Extension)</PayloadGroup>
       <!-- Android package names can't have dashes, so we replace them with underscores. -->
       <ApkFileName>$([System.String]::new('%(FileName)%(Extension)').Replace('-', '_'))</ApkFileName>
     </MergedPayloads>
-    <MergedPayloads>
+    <MergedPayloads Update="@(MergedPayloads)">
       <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(ApkFileName).apk</ApkPath>
       <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
     </MergedPayloads>
 
     <!-- For tests where we aren't using the XHarness test runner, specify as such on the payload item. -->
-    <MergedPayloads Condition="Exists($(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).XHarnessNoRunner)">
+    <MergedPayloads Update="@(MergedPayloads)" Condition="Exists($(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).XHarnessNoRunner)">
       <IncludesTestRunner>false</IncludesTestRunner>
       <ExpectedExitCode>100</ExpectedExitCode>
     </MergedPayloads>
