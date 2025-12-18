@@ -122,7 +122,7 @@ jobs:
           - template: /eng/pipelines/libraries/helix.yml
             parameters:
               creator: dotnet-bot
-              testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
+              testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)_$(_hostedOs)
               extraHelixArguments: /p:BrowserHost=$(_hostedOs)
               scenarios:
               - buildwasmapps
