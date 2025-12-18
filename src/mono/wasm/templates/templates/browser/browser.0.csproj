@@ -3,6 +3,9 @@
     <TargetFramework>netX.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+<!--#if (UseMonoRuntime) -->
+    <UseMonoRuntime>true</UseMonoRuntime>
+<!--#endif -->
   </PropertyGroup>
 
   <ItemGroup>
