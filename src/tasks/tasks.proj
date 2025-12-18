@@ -1,28 +1,29 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
-  <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
-    <ProjectReference Include="AndroidAppBuilder\AndroidAppBuilder.csproj" />
-    <ProjectReference Include="AotCompilerTask\MonoAOTCompiler.csproj" />
-    <ProjectReference Include="AppleAppBuilder\AppleAppBuilder.csproj" />
-    <ProjectReference Include="LibraryBuilder\LibraryBuilder.csproj" />
-    <ProjectReference Include="Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
-    <ProjectReference Include="Microsoft.NET.WebAssembly.Webcil\Microsoft.NET.WebAssembly.Webcil.csproj" />
-    <ProjectReference Include="MobileBuildTasks\MobileBuildTasks.csproj" />
-    <ProjectReference Include="MonoTargetsTasks\MonoTargetsTasks.csproj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
-    <ProjectReference Include="MonoTargetsTasks\ILStrip\AssemblyStripper\AssemblyStripper.csproj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
-    <ProjectReference Include="TestExclusionListTasks\TestExclusionListTasks.csproj" />
-    <ProjectReference Include="WasmAppBuilder\WasmAppBuilder.csproj" />
-    <ProjectReference Include="WasmBuildTasks\WasmBuildTasks.csproj" />
-  
-    <!-- For WasmBuildTests or any other configuration that tests against workloads -->
-    <ProjectReference Include="WorkloadBuildTasks\WorkloadBuildTasks.csproj" />
+  <ItemGroup>
+    <ProjectReference Include="**\*.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- This could be conditioned on '$(RuntimeFlavor)' == 'CoreCLR' but Mono legs still need it right now -->
-    <ProjectReference Include="Crossgen2Tasks\Crossgen2Tasks.csproj" />
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
+    <ProjectReference Remove="AndroidAppBuilder\AndroidAppBuilder.csproj" />
+    <ProjectReference Remove="AotCompilerTask\MonoAOTCompiler.csproj" />
+    <ProjectReference Remove="AppleAppBuilder\AppleAppBuilder.csproj" />
+    <ProjectReference Remove="LibraryBuilder\LibraryBuilder.csproj" />
+    <ProjectReference Remove="Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
+    <ProjectReference Remove="Microsoft.NET.WebAssembly.Webcil\Microsoft.NET.WebAssembly.Webcil.csproj" />
+    <ProjectReference Remove="MobileBuildTasks\MobileBuildTasks.csproj" />
+    <ProjectReference Remove="TestExclusionListTasks\TestExclusionListTasks.csproj" />
+    <ProjectReference Remove="WasmAppBuilder\WasmAppBuilder.csproj" />
+    <ProjectReference Remove="WasmBuildTasks\WasmBuildTasks.csproj" />
 
-    <ProjectReference Include="installer.tasks\installer.tasks.csproj" />
+    <!-- For WasmBuildTests or any other configuration that tests against workloads -->
+    <ProjectReference Remove="WorkloadBuildTasks\WorkloadBuildTasks.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true' or '$(DotNetBuildSourceOnly)' == 'true'">
+    <ProjectReference Remove="MonoTargetsTasks\MonoTargetsTasks.csproj" />
+    <ProjectReference Remove="AssemblyStripper\AssemblyStripper.csproj" />
   </ItemGroup>
 
 </Project>
+
