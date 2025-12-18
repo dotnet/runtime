@@ -625,9 +625,6 @@ namespace System.Net.Http
                             buffer.Discard(streamTypeLength);
                             break;
                         }
-
-                        // Need more data to read the full stream type.
-                        buffer.EnsureAvailableSpace(VariableLengthIntegerHelper.MaximumEncodedLength);
                     }
 
                     if (NetEventSource.Log.IsEnabled())
