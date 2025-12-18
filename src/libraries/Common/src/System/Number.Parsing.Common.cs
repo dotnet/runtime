@@ -10,7 +10,7 @@ namespace System
 {
     internal static partial class Number
     {
-        private static unsafe bool TryParseNumber<TChar>(scoped ref TChar* str, TChar* strEnd, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
+        private static unsafe bool TryParseNumber<TChar>(TChar* str, TChar* strEnd, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(str != null);
@@ -269,33 +269,37 @@ namespace System
                             number.IsNegative = false;
                         }
                     }
-                    str = p;
-                    return true;
+
+                    int index = (int)(p - str);
+                    int length = (int)(strEnd - str);
+
+                    if ((index == length) || ((styles & NumberStyles.AllowTrailingInvalidCharacters) != 0) || TrailingZeros(new ReadOnlySpan<TChar>(str, length), index))
+                    {
+                        // For AllowTrailingInvalidCharacters, we want to stop at the first invalid character
+                        // including trailing nulls (zeros). Otherwise, for compatibility we still need to
+                        // process any trailing nulls that exist and report them as having been consumed.
+
+                        elementsConsumed = index;
+                        return true;
+                    }
                 }
             }
-            str = p;
+
+            elementsConsumed = 0;
             return false;
         }
 
-        internal static unsafe bool TryStringToNumber<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
+        internal static unsafe bool TryStringToNumber<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(info != null);
 
             fixed (TChar* stringPointer = &MemoryMarshal.GetReference(value))
             {
-                TChar* p = stringPointer;
-
-                if (!TryParseNumber(ref p, p + value.Length, styles, ref number, info)
-                    || ((int)(p - stringPointer) < value.Length && !TrailingZeros(value, (int)(p - stringPointer))))
-                {
-                    number.CheckConsistency();
-                    return false;
-                }
+                bool succeeded = TryParseNumber(stringPointer, stringPointer + value.Length, styles, ref number, info, out elementsConsumed);
+                number.CheckConsistency();
+                return succeeded;
             }
-
-            number.CheckConsistency();
-            return true;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // rare slow path that shouldn't impact perf of the main use case

@@ -2132,13 +2132,25 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Complex result)
-            => TryParse(MemoryMarshal.Cast<char, Utf16Char>(s), style, provider, out result);
+            => TryParse(MemoryMarshal.Cast<char, Utf16Char>(s), style, provider, out result, out _);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Complex result)
-            => TryParse(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out result);
+            => TryParse(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out result, out _);
 
-        private static bool TryParse<TChar>(ReadOnlySpan<TChar> text, NumberStyles style, IFormatProvider? provider, out Complex result)
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Complex result, out int charsConsumed)
+            => TryParse(s.AsSpan(), style, provider, out result, out charsConsumed);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Complex result, out int bytesConsumed)
+            => TryParse(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, provider, out result, out bytesConsumed);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Complex result, out int charsConsumed)
+            => TryParse(MemoryMarshal.Cast<char, Utf16Char>(s), style, provider, out result, out charsConsumed);
+
+        private static bool TryParse<TChar>(ReadOnlySpan<TChar> text, NumberStyles style, IFormatProvider? provider, out Complex result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             ValidateParseStyleFloatingPoint(style);
@@ -2153,15 +2165,17 @@ namespace System.Numerics
                 // We also expect a to find an open bracket, a semicolon, and a closing bracket in that order
 
                 result = default;
+                elementsConsumed = 0;
                 return false;
             }
 
-            if ((openBracket != 0) && (((style & NumberStyles.AllowLeadingWhite) == 0) || !text.Slice(0, openBracket).IsWhiteSpace()))
+            if ((openBracket != 0) && (((style & NumberStyles.AllowLeadingWhite) == 0) || !text.Slice(0, openBracket).IsWhiteSpace(out _)))
             {
                 // The opening bracket wasn't the first and we either didn't allow leading whitespace
                 // or one of the leading characters wasn't whitespace at all.
 
                 result = default;
+                elementsConsumed = 0;
                 return false;
             }
 
@@ -2172,6 +2186,7 @@ namespace System.Numerics
                 : !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice), style, provider, out real))
             {
                 result = default;
+                elementsConsumed = 0;
                 return false;
             }
 
@@ -2192,19 +2207,37 @@ namespace System.Numerics
                 : !double.TryParse(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(slice), style, provider, out imaginary))
             {
                 result = default;
+                elementsConsumed = 0;
                 return false;
             }
 
-            if ((closeBracket != (text.Length - 1)) && (((style & NumberStyles.AllowTrailingWhite) == 0) || !text.Slice(closeBracket).IsWhiteSpace()))
-            {
-                // The closing bracket wasn't the last and we either didn't allow trailing whitespace
-                // or one of the trailing characters wasn't whitespace at all.
+            int trailingWhiteLength = 0;
 
-                result = default;
-                return false;
+            if (closeBracket != (text.Length - 1))
+            {
+                bool isInvalid = true;
+
+                if ((style & NumberStyles.AllowTrailingWhite) != 0)
+                {
+                    if (text.Slice(closeBracket).IsWhiteSpace(out trailingWhiteLength))
+                    {
+                        isInvalid = false;
+                    }
+                }
+
+                if (isInvalid && ((style & NumberStyles.AllowTrailingInvalidCharacters) == 0))
+                {
+                    // The closing bracket wasn't the last and we either didn't allow trailing whitespace
+                    // or one of the trailing characters wasn't whitespace at all.
+
+                    result = default;
+                    elementsConsumed = 0;
+                    return false;
+                }
             }
 
             result = new Complex(real, imaginary);
+            elementsConsumed = closeBracket + trailingWhiteLength;
             return true;
         }
 

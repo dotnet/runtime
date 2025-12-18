@@ -941,7 +941,7 @@ namespace System
                 NumberFormatInfo numberFormat = NumberFormatInfo.InvariantInfo;
                 const NumberStyles NumberStyle = NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingWhite;
 
-                Number.ParsingStatus status = Number.TryParseBinaryIntegerStyle(value, NumberStyle, numberFormat, out result);
+                Number.ParsingStatus status = Number.TryParseBinaryIntegerStyle(value, NumberStyle, numberFormat, out result, out _);
                 if (status == Number.ParsingStatus.OK)
                 {
                     return true;
