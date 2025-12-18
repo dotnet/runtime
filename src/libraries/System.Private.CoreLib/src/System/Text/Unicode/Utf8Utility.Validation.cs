@@ -939,10 +939,10 @@ namespace System.Text.Unicode
                         contv += Vector128.LessThanOrEqual(Vector128.AsSByte(currentBlock), largestcont);
                         n4v += Vector128.GreaterThan(currentBlock, fourthByteMinusOne).AsSByte();
                         overflowCounter++;
-                        // We have a risk of overflow if overflowCounter reaches 255,
+                        // We have a risk of overflow if overflowCounter reaches 127,
                         // in which case, we empty contv and n4v, and update contbytes and
                         // n4.
-                        if (overflowCounter == 0xff)
+                        if (overflowCounter == 0x7f)
                         {
                             overflowCounter = 0;
                             contbytes += -AdvSimd.Arm64.AddAcrossWidening(contv).ToScalar();
