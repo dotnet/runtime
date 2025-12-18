@@ -179,7 +179,12 @@ void emitDispInsName(code_t code, const instrDesc* id);
 void emitDispInsName(
     code_t code, const BYTE* addr, bool doffs, unsigned insOffset, const instrDesc* id, const insGroup* ig);
 void emitDispInsInstrNum(const instrDesc* id) const;
-bool emitDispBranch(unsigned opcode2, unsigned rs1, unsigned rs2, const instrDesc* id, const insGroup* ig, bool printOffsetPlaceholder) const;
+bool emitDispBranch(unsigned         opcode2,
+                    unsigned         rs1,
+                    unsigned         rs2,
+                    const instrDesc* id,
+                    const insGroup*  ig,
+                    bool             printOffsetPlaceholder) const;
 void emitDispBranchOffset(const instrDesc* id, const insGroup* ig, bool printOffsetPlaceholder) const;
 void emitDispBranchLabel(const instrDesc* id) const;
 bool emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& print_second_reg) const;

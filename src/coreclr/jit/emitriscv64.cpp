@@ -3502,8 +3502,12 @@ void emitter::emitDispBranchLabel(const instrDesc* id) const
     printf("L_M%03u_", FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
 }
 
-bool emitter::emitDispBranch(
-    unsigned opcode2, unsigned rs1, unsigned rs2, const instrDesc* id, const insGroup* ig, bool printOffsetPlaceholder) const
+bool emitter::emitDispBranch(unsigned         opcode2,
+                             unsigned         rs1,
+                             unsigned         rs2,
+                             const instrDesc* id,
+                             const insGroup*  ig,
+                             bool             printOffsetPlaceholder) const
 {
     bool print_second_reg = true;
     if (!emitDispBranchInstrType(opcode2, rs2 == REG_ZERO, print_second_reg))
@@ -4119,11 +4123,11 @@ void emitter::emitDispInsName(
         }
         case MajorOpcode::Branch:
         {
-            unsigned opcode2 = (code >> 12) & 0x7;
-            unsigned rs1     = (code >> 15) & 0x1f;
-            unsigned rs2     = (code >> 20) & 0x1f;
-            bool printPlaceholder = addr == nullptr;
-            
+            unsigned opcode2          = (code >> 12) & 0x7;
+            unsigned rs1              = (code >> 15) & 0x1f;
+            unsigned rs2              = (code >> 20) & 0x1f;
+            bool     printPlaceholder = addr == nullptr;
+
             if (!emitDispBranch(opcode2, rs1, rs2, id, ig, printPlaceholder))
             {
                 emitDispIllegalInstruction(code);
