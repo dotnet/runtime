@@ -487,14 +487,14 @@ static void InterpHalt()
 #endif // DEBUG
 
 #ifdef DEBUGGING_SUPPORTED
-static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame)
+static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack, InterpreterFrame *pInterpreterFrame, DWORD exceptionCode)
 {
     Thread *pThread = GetThread();
     if (pThread != NULL && g_pDebugInterface != NULL)
     {
         EXCEPTION_RECORD exceptionRecord;
         memset(&exceptionRecord, 0, sizeof(EXCEPTION_RECORD));
-        exceptionRecord.ExceptionCode = STATUS_BREAKPOINT;
+        exceptionRecord.ExceptionCode = exceptionCode;
         exceptionRecord.ExceptionAddress = (PVOID)ip;
 
         // Construct a CONTEXT for the debugger
@@ -516,7 +516,7 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
         g_pDebugInterface->FirstChanceNativeException(
             &exceptionRecord,
             &ctx,
-            STATUS_BREAKPOINT,
+            exceptionCode,
             pThread);
 
         fef.Pop();
@@ -1020,7 +1020,12 @@ MAIN_LOOP:
 #ifdef DEBUGGING_SUPPORTED
                 case INTOP_BREAKPOINT:
                 {
-                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
+                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame, STATUS_BREAKPOINT);
+                    break;
+                }
+                case INTOP_SINGLESTEP:
+                {
+                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame, STATUS_SINGLE_STEP);
                     break;
                 }
 #endif // DEBUGGING_SUPPORTED
