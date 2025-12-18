@@ -296,7 +296,7 @@ namespace Wasm.Build.Tests
             }
         }
 
-        [Theory]
+        [Theory, TestCategory("no-workload")]
         [InlineData(false, false)]
         [InlineData(true, false)]
         [InlineData(false, true)]
