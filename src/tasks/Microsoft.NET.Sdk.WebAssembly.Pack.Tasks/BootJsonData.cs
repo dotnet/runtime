@@ -59,11 +59,6 @@ public class BootJsonData
     public int debugLevel { get; set; }
 
     /// <summary>
-    /// Gets a value that determines if the linker is enabled.
-    /// </summary>
-    public bool? linkerEnabled { get; set; }
-
-    /// <summary>
     /// Config files for the application
     /// </summary>
     /// <remarks>
