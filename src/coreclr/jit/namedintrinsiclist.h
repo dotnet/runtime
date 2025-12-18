@@ -189,6 +189,15 @@ enum NamedIntrinsic : unsigned short
     NI_System_Half_op_Multiply,
     NI_System_Half_op_Subtraction,
 
+    NI_System_Half_get_MinValue,
+    NI_System_Half_get_MaxValue,
+    NI_System_Half_get_Epsilon,
+    NI_System_Half_get_NaN,
+    NI_System_Half_get_PositiveInfinity,
+    NI_System_Half_get_NegativeInfinity,
+    NI_System_Half_get_One,
+    NI_System_Half_get_Zero,
+
 #ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
 #if defined(TARGET_XARCH)
