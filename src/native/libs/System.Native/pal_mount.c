@@ -54,12 +54,16 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
             return -1;
         }
 
-        // Reallocate buffer if needed
-        if (count > capacity)
+        // Reallocate buffer if needed - allocate one extra to detect if more mounts were added
+        if (count >= capacity)
         {
             free(mounts);
-            capacity = count;
-            mounts = malloc((size_t)capacity * sizeof(*mounts));
+            capacity = count + 1;
+#if HAVE_STATFS
+            mounts = (struct statfs*)malloc((size_t)capacity * sizeof(*mounts));
+#else
+            mounts = (struct statvfs*)malloc((size_t)capacity * sizeof(*mounts));
+#endif
             if (mounts == NULL)
             {
                 errno = ENOMEM;
@@ -74,15 +78,15 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
         }
 
         // Get actual mount point information
-        count = getfsstat(mounts, capacity * (int)sizeof(*mounts), MNT_NOWAIT);
+        count = getfsstat(mounts, (size_t)capacity * sizeof(*mounts), MNT_NOWAIT);
         if (count < 0)
         {
             free(mounts);
             return -1;
         }
 
-        // If count fits in capacity, we got all mount points
-        if (count <= capacity)
+        // If count is less than capacity, we got all mount points
+        if (count < capacity)
         {
             break;
         }
