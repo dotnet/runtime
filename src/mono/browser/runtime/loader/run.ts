@@ -274,7 +274,7 @@ async function prepareEmscripten (moduleFactory: DotnetModuleConfig | ((api: Run
         return;
     }
     emscriptenPrepared = true;
-    if (ENVIRONMENT_IS_WEB && loaderHelpers.config.forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
+    if (ENVIRONMENT_IS_WEB && loaderHelpers.config.forwardConsole && typeof globalThis.WebSocket != "undefined") {
         setup_proxy_console("main", globalThis.console, globalThis.location.origin);
     }
     mono_assert(emscriptenModule, "Null moduleConfig");

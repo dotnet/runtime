@@ -9,7 +9,7 @@ function displayMeaning(meaning) {
 
 try {
     const { setModuleImports, getAssemblyExports, runMain } = await dotnet
-        .withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, forwardConsoleLogsToWS: true, logExitCode: true })
+        .withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, forwardConsole: true, logExitCode: true })
         .create();
 
     setModuleImports("main.js", {
