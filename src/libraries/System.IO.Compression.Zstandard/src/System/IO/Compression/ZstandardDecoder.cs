@@ -162,6 +162,10 @@ namespace System.IO.Compression
 
                     if (ZstandardUtils.IsError(result))
                     {
+                        if (ZstandardEventSource.Log.IsEnabled())
+                        {
+                            ZstandardEventSource.Error(null, $"Decompression error: {Interop.Zstd.ZSTD_getErrorName(result)}");
+                        }
                         return OperationStatus.InvalidData;
                     }
 
@@ -243,6 +247,10 @@ namespace System.IO.Compression
 
                     if (ZstandardUtils.IsError(result))
                     {
+                        if (ZstandardEventSource.Log.IsEnabled())
+                        {
+                            ZstandardEventSource.Error(null, $"Decompression error: {Interop.Zstd.ZSTD_getErrorName(result)}");
+                        }
                         return false;
                     }
 
@@ -288,6 +296,10 @@ namespace System.IO.Compression
 
                     if (ZstandardUtils.IsError(result))
                     {
+                        if (ZstandardEventSource.Log.IsEnabled())
+                        {
+                            ZstandardEventSource.Error(null, $"Decompression error: {Interop.Zstd.ZSTD_getErrorName(result)}");
+                        }
                         return false;
                     }
 
@@ -323,6 +335,11 @@ namespace System.IO.Compression
 
             if (ZstandardUtils.IsError(result))
             {
+                if (ZstandardEventSource.Log.IsEnabled())
+                {
+                    ZstandardEventSource.Error(_context, $"SetPrefix error: {Interop.Zstd.ZSTD_getErrorName(result)}");
+                }
+
                 if ((Interop.Zstd.ZSTD_error)result == Interop.Zstd.ZSTD_error.stage_wrong)
                 {
                     throw new InvalidOperationException(SR.ZstandardDecoder_InvalidState);

@@ -252,6 +252,11 @@ namespace System.IO.Compression
                     nuint result = Interop.Zstd.ZSTD_compressStream2(_context, ref output, ref input, endDirective);
                     if (ZstandardUtils.IsError(result))
                     {
+                        if (ZstandardEventSource.Log.IsEnabled())
+                        {
+                            ZstandardEventSource.Error(_context, $"Compression error: {Interop.Zstd.ZSTD_getErrorName(result)}");
+                        }
+
                         if ((Interop.Zstd.ZSTD_error)result == Interop.Zstd.ZSTD_error.srcSize_wrong)
                         {
                             return OperationStatus.InvalidData;
@@ -371,6 +376,11 @@ namespace System.IO.Compression
 
                     if (ZstandardUtils.IsError(result))
                     {
+                        if (ZstandardEventSource.Log.IsEnabled())
+                        {
+                            ZstandardEventSource.Error(null, $"Compression error: {Interop.Zstd.ZSTD_getErrorName(result)}");
+                        }
+
                         return false;
                     }
 
@@ -406,6 +416,11 @@ namespace System.IO.Compression
 
             if (ZstandardUtils.IsError(result))
             {
+                if (ZstandardEventSource.Log.IsEnabled())
+                {
+                    ZstandardEventSource.Error(_context, $"SetPrefix error: {Interop.Zstd.ZSTD_getErrorName(result)}");
+                }
+
                 if ((Interop.Zstd.ZSTD_error)result == Interop.Zstd.ZSTD_error.stage_wrong)
                 {
                     throw new InvalidOperationException(SR.ZstandardEncoder_InvalidState);

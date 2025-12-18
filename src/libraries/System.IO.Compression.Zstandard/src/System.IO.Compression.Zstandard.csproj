@@ -20,12 +20,13 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="$(CommonPath)Interop\Interop.Zstd.cs" />
     <Compile Include="System\IO\Compression\ZstandardCompressionOptions.cs" />
-    <Compile Include="System\IO\Compression\ZstandardStream.cs" />
-    <Compile Include="System\IO\Compression\ZstandardStream.Compress.cs" />
-    <Compile Include="System\IO\Compression\ZstandardStream.Decompress.cs" />
-    <Compile Include="System\IO\Compression\ZstandardEncoder.cs" />
     <Compile Include="System\IO\Compression\ZstandardDecoder.cs" />
     <Compile Include="System\IO\Compression\ZstandardDictionary.cs" />
+    <Compile Include="System\IO\Compression\ZstandardEncoder.cs" />
+    <Compile Include="System\IO\Compression\ZstandardEventSource.cs" />
+    <Compile Include="System\IO\Compression\ZstandardStream.Compress.cs" />
+    <Compile Include="System\IO\Compression\ZstandardStream.Decompress.cs" />
+    <Compile Include="System\IO\Compression\ZstandardStream.cs" />
     <Compile Include="System\IO\Compression\ZstandardUtils.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeZstdHandle.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeZstdHandle.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />
@@ -44,10 +45,11 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Console\src\System.Console.csproj" Condition="'$(Configuration)' == 'Debug'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Tracing\src\System.Diagnostics.Tracing.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Compression\src\System.IO.Compression.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
   </ItemGroup>
 
