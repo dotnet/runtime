@@ -4,6 +4,7 @@
 #include "pal_config.h"
 #include "pal_mount.h"
 #include "pal_utilities.h"
+#include "pal_safecrt.h"
 #include <assert.h>
 #include <string.h>
 #include <errno.h>
@@ -42,6 +43,7 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
 
     int count;
     int capacity = 0;
+    size_t bufferSize = 0;
 
     // Loop to handle the case where mount points are added between calls
     while (1)
@@ -59,10 +61,15 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
         {
             free(mounts);
             capacity = count + 1;
+            if (!multiply_s((size_t)capacity, sizeof(*mounts), &bufferSize))
+            {
+                errno = ENOMEM;
+                return -1;
+            }
 #if HAVE_STATFS
-            mounts = (struct statfs*)malloc((size_t)capacity * sizeof(*mounts));
+            mounts = (struct statfs*)malloc(bufferSize);
 #else
-            mounts = (struct statvfs*)malloc((size_t)capacity * sizeof(*mounts));
+            mounts = (struct statvfs*)malloc(bufferSize);
 #endif
             if (mounts == NULL)
             {
@@ -78,7 +85,7 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
         }
 
         // Get actual mount point information
-        count = getfsstat(mounts, (size_t)capacity * sizeof(*mounts), MNT_NOWAIT);
+        count = getfsstat(mounts, bufferSize, MNT_NOWAIT);
         if (count < 0)
         {
             free(mounts);
