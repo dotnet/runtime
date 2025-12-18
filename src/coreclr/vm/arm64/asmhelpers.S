@@ -713,7 +713,7 @@ LOCAL_LABEL(NoManagedThreadOrCallStub):
     SAVE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
 #endif
 
-    add x0, sp, #__PWTB_TransitionBlock + 16
+    add x0, sp, #__PWTB_TransitionBlock
     mov x1, x19
     bl C_FUNC(GetInterpThreadContextWithPossiblyMissingThreadOrCallStub)
     mov x11, x0
@@ -741,6 +741,8 @@ LOCAL_LABEL(HaveInterpThreadContext):
     // Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
     ldr x11, [x10], #8
     blr x11
+    // Fill in the ContinuationContext register
+    ldr x2, [sp, #(__PWTB_ArgumentRegister_FirstArg + 16)]
 
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
@@ -2298,16 +2300,20 @@ LEAF_END Load_Q1_Q2_Q3_Q4_Q5_Q6_Q7
 
 // X0 - routines array
 // X1 - interpreter stack args location
-// X2 - stack arguments size (properly aligned)
+// X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
+    ldr x4, [fp, #16]
+    str x2, [x4]
     EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRetVoid, _TEXT
 
@@ -2315,16 +2321,20 @@ NESTED_END CallJittedMethodRetVoid, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+    str x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     mov x8, x2
     ldr x11, [x10], #8
     blr x11
+    ldr x4, [fp, #16]
+    str x2, [x4]
     EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRetBuff, _TEXT
 
@@ -2332,16 +2342,19 @@ NESTED_END CallJittedMethodRetBuff, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    str x0, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str x0, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2351,16 +2364,19 @@ NESTED_END CallJittedMethodRetI8, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet2I8, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    stp x0, x1, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    stp x0, x1, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2370,16 +2386,19 @@ NESTED_END CallJittedMethodRet2I8, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    str d0, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str d0, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2389,16 +2408,19 @@ NESTED_END CallJittedMethodRetDouble, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet2Double, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    stp d0, d1, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    stp d0, d1, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2408,17 +2430,20 @@ NESTED_END CallJittedMethodRet2Double, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet3Double, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    stp d0, d1, [x2], #16
-    str d2, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    stp d0, d1, [x9], #16
+    str d2, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2428,17 +2453,20 @@ NESTED_END CallJittedMethodRet3Double, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet4Double, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    stp d0, d1, [x2], #16
-    stp d2, d3, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    stp d0, d1, [x9], #16
+    stp d2, d3, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2448,16 +2476,19 @@ NESTED_END CallJittedMethodRet4Double, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    str s0, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str s0, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2467,16 +2498,19 @@ NESTED_END CallJittedMethodRetFloat, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet2Float, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    stp s0, s1, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    stp s0, s1, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2486,17 +2520,20 @@ NESTED_END CallJittedMethodRet2Float, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet3Float, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    stp s0, s1, [x2], #8
-    str s2, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    stp s0, s1, [x9], #8
+    str s2, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2506,17 +2543,20 @@ NESTED_END CallJittedMethodRet3Float, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet4Float, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    stp s0, s1, [x2], #8
-    stp s2, s3, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    stp s0, s1, [x9], #8
+    stp s2, s3, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2526,16 +2566,19 @@ NESTED_END CallJittedMethodRet4Float, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetVector64, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    str d0, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str d0, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2545,17 +2588,20 @@ NESTED_END CallJittedMethodRetVector64, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet2Vector64, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    str d0, [x2], #8
-    str d1, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str d0, [x9], #8
+    str d1, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2565,18 +2611,21 @@ NESTED_END CallJittedMethodRet2Vector64, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet3Vector64, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    str d0, [x2], #8
-    str d1, [x2], #8
-    str d2, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str d0, [x9], #8
+    str d1, [x9], #8
+    str d2, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2586,19 +2635,22 @@ NESTED_END CallJittedMethodRet3Vector64, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet4Vector64, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    str d0, [x2], #8
-    str d1, [x2], #8
-    str d2, [x2], #8
-    str d3, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str d0, [x9], #8
+    str d1, [x9], #8
+    str d2, [x9], #8
+    str d3, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2608,16 +2660,19 @@ NESTED_END CallJittedMethodRet4Vector64, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetVector128, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    str q0, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str q0, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2627,17 +2682,20 @@ NESTED_END CallJittedMethodRetVector128, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet2Vector128, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    str q0, [x2], #16
-    str q1, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str q0, [x9], #16
+    str q1, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2647,18 +2705,21 @@ NESTED_END CallJittedMethodRet2Vector128, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet3Vector128, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    str q0, [x2], #16
-    str q1, [x2], #16
-    str q2, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str q0, [x9], #16
+    str q1, [x9], #16
+    str q2, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
@@ -2668,19 +2729,22 @@ NESTED_END CallJittedMethodRet3Vector128, _TEXT
 // X1 - interpreter stack args location
 // X2 - interpreter stack return value location
 // X3 - stack arguments size (properly aligned)
+// X4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet4Vector128, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [fp, #16]
+    stp x2, x4, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [fp, #16]
-    str q0, [x2], #16
-    str q1, [x2], #16
-    str q2, [x2], #16
-    str q3, [x2]
+    ldr x9, [fp, #24]
+    str x2, [x9]
+    ldr x9, [fp, #16]
+    str q0, [x9], #16
+    str q1, [x9], #16
+    str q2, [x9], #16
+    str q3, [x9]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN

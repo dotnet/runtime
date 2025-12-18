@@ -130,8 +130,7 @@ CObjectType CorUnix::otProcess(
                 NULL,   // No process local data cleanup routine
                 CObjectType::WaitableObject,
                 CObjectType::SingleTransitionObject,
-                CObjectType::ThreadReleaseHasNoSideEffects,
-                CObjectType::NoOwner
+                CObjectType::ThreadReleaseHasNoSideEffects
                 );
 
 CAllowedObjectTypes aotProcess(otiProcess);
@@ -174,7 +173,6 @@ DWORD gSID = (DWORD) -1;
 LPCSTR gApplicationGroupId = nullptr;
 int gApplicationGroupIdLength = 0;
 #endif // __APPLE__
-PathCharString* gSharedFilesPath = nullptr;
 
 // The lowest common supported semaphore length, including null character
 // NetBSD-7.99.25: 15 characters
@@ -2477,7 +2475,7 @@ PROCCreateCrashDump(
         int bytesRead;
         while((bytesRead = read(child_read_pipe, &buffer, 1)) < 0 && errno == EINTR);
         close(child_read_pipe);
-        
+
         if (bytesRead != 1)
         {
             fprintf(stderr, "Problem reading from createdump child_read_pipe: %s (%d)\n", strerror(errno), errno);

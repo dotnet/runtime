@@ -279,12 +279,12 @@ function logOnExit (exit_code: number, reason: any) {
     }
     if (!ENVIRONMENT_IS_WORKER && loaderHelpers.config) {
         if (loaderHelpers.config.logExitCode) {
-            if (loaderHelpers.config.forwardConsoleLogsToWS) {
+            if (loaderHelpers.config.forwardConsole) {
                 teardown_proxy_console("WASM EXIT " + exit_code);
             } else {
                 mono_log_info_no_prefix("WASM EXIT " + exit_code);
             }
-        } else if (loaderHelpers.config.forwardConsoleLogsToWS) {
+        } else if (loaderHelpers.config.forwardConsole) {
             teardown_proxy_console();
         }
     }

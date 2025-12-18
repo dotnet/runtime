@@ -102,6 +102,35 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 }
 
 //------------------------------------------------------------------------
+// LowerNeg: Lower a GT_NEG node.
+//
+// Arguments:
+//    node - The node to lower
+//
+// Return Value:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerNeg(GenTreeOp* node)
+{
+    if (!node->TypeIs(TYP_INT, TYP_LONG))
+    {
+        return node->gtNext;
+    }
+
+    // For integer types (TYP_INT and TYP_LONG), NEG(x) ==> SUB(0, x)
+    //
+    GenTree* x    = node->gtGetOp1();
+    GenTree* zero = comp->gtNewZeroConNode(node->TypeGet());
+    BlockRange().InsertBefore(x, zero);
+    LowerNode(zero);
+    node->ChangeOper(GT_SUB);
+    node->gtOp1 = zero;
+    node->gtOp2 = x;
+
+    return LowerNode(node);
+}
+
+//------------------------------------------------------------------------
 // Lowering::LowerJTrue: Lowers a JTRUE node.
 //
 // Arguments:
@@ -110,10 +139,13 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 // Return Value:
 //    The next node to lower (usually nullptr).
 //
+// Notes:
+//    For wasm we handle all this in codegen
+//
 GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
-    NYI_WASM("LowerJTrue");
-    return jtrue->gtNext;
+    // TODO-WASM: recognize eqz cases
+    return nullptr;
 }
 
 //------------------------------------------------------------------------

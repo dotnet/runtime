@@ -115,6 +115,15 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
                 else if (!strcmp(methodName, "SetNextCallAsyncContinuation"))
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation;
             }
+            else if (!strcmp(className, "AsyncHelpers"))
+            {
+                if (!strcmp(methodName, "AsyncSuspend"))
+                    return NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend;
+                else if (!strcmp(methodName, "AsyncCallContinuation"))
+                    return NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation;
+                else if (!strcmp(methodName, "Await"))
+                    return NI_System_Runtime_CompilerServices_AsyncHelpers_Await;
+            }
         }
         else if (!strcmp(namespaceName, "System.Runtime.InteropServices"))
         {
@@ -149,6 +158,15 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
                 return NI_System_Threading_Volatile_ReadBarrier;
             else if (!strcmp(methodName, "WriteBarrier"))
                 return NI_System_Threading_Volatile_WriteBarrier;
+        }
+    }
+    else if (!strcmp(namespaceName, "System.Threading.Tasks"))
+    {
+        if (!strcmp(methodName, "ConfigureAwait"))
+        {
+            if (!strcmp(className, "Task`1") || !strcmp(className, "Task") ||
+                !strcmp(className, "ValueTask`1") || !strcmp(className, "ValueTask"))
+                return NI_System_Threading_Tasks_Task_ConfigureAwait;
         }
     }
 

@@ -4,7 +4,9 @@
 #if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
 
 #include "callstubgenerator.h"
+#include "callconvbuilder.hpp"
 #include "ecall.h"
+#include "dllimport.h"
 
 extern "C" void InjectInterpStackAlign();
 extern "C" void Load_Stack();
@@ -78,7 +80,7 @@ extern "C" void Store_Ref_RDX();
 extern "C" void Store_Ref_R8();
 extern "C" void Store_Ref_R9();
 
-PCODE GPRegsRoutines[] =
+static const PCODE GPRegsRoutines[] =
 {
     (PCODE)Load_RCX,            // 00
     (PCODE)Load_RCX_RDX,        // 01
@@ -98,7 +100,7 @@ PCODE GPRegsRoutines[] =
     (PCODE)Load_R9              // 33
 };
 
-PCODE GPRegsStoreRoutines[] =
+static const PCODE GPRegsStoreRoutines[] =
 {
     (PCODE)Store_RCX,            // 00
     (PCODE)Store_RCX_RDX,        // 01
@@ -118,7 +120,7 @@ PCODE GPRegsStoreRoutines[] =
     (PCODE)Store_R9              // 33
 };
 
-PCODE GPRegsRefRoutines[] =
+static const PCODE GPRegsRefRoutines[] =
 {
     (PCODE)Load_Ref_RCX,        // 0
     (PCODE)Load_Ref_RDX,        // 1
@@ -126,7 +128,7 @@ PCODE GPRegsRefRoutines[] =
     (PCODE)Load_Ref_R9,         // 3
 };
 
-PCODE GPRegsRefStoreRoutines[] =
+static const PCODE GPRegsRefStoreRoutines[] =
 {
     (PCODE)Store_Ref_RCX,        // 0
     (PCODE)Store_Ref_RDX,        // 1
@@ -134,7 +136,7 @@ PCODE GPRegsRefStoreRoutines[] =
     (PCODE)Store_Ref_R9,         // 3
 };
 
-PCODE FPRegsRoutines[] =
+static const PCODE FPRegsRoutines[] =
 {
     (PCODE)Load_XMM0,                // 00
     (PCODE)Load_XMM0_XMM1,           // 01
@@ -154,7 +156,7 @@ PCODE FPRegsRoutines[] =
     (PCODE)Load_XMM3                 // 33
 };
 
-PCODE FPRegsStoreRoutines[] =
+static const PCODE FPRegsStoreRoutines[] =
 {
     (PCODE)Store_XMM0,                // 00
     (PCODE)Store_XMM0_XMM1,           // 01
@@ -220,7 +222,7 @@ extern "C" void Store_R8();
 extern "C" void Store_R8_R9();
 extern "C" void Store_R9();
 
-PCODE GPRegsRoutines[] =
+static const PCODE GPRegsRoutines[] =
 {
     (PCODE)Load_RDI,                    // 00
     (PCODE)Load_RDI_RSI,                // 01
@@ -260,7 +262,7 @@ PCODE GPRegsRoutines[] =
     (PCODE)Load_R9                      // 55
 };
 
-PCODE GPRegsStoreRoutines[] =
+static const PCODE GPRegsStoreRoutines[] =
 {
     (PCODE)Store_RDI,                    // 00
     (PCODE)Store_RDI_RSI,                // 01
@@ -374,7 +376,7 @@ extern "C" void Store_XMM6();
 extern "C" void Store_XMM6_XMM7();
 extern "C" void Store_XMM7();
 
-PCODE FPRegsRoutines[] =
+static const PCODE FPRegsRoutines[] =
 {
     (PCODE)Load_XMM0,                                   // 00
     (PCODE)Load_XMM0_XMM1,                              // 01
@@ -442,7 +444,7 @@ PCODE FPRegsRoutines[] =
     (PCODE)Load_XMM7                                    // 77
 };
 
-PCODE FPRegsStoreRoutines[] =
+static const PCODE FPRegsStoreRoutines[] =
 {
     (PCODE)Store_XMM0,                                   // 00
     (PCODE)Store_XMM0_XMM1,                              // 01
@@ -608,7 +610,7 @@ extern "C" void Store_Ref_X5();
 extern "C" void Store_Ref_X6();
 extern "C" void Store_Ref_X7();
 
-PCODE GPRegsRoutines[] =
+static const PCODE GPRegsRoutines[] =
 {
     (PCODE)Load_X0,                         // 00
     (PCODE)Load_X0_X1,                      // 01
@@ -676,7 +678,7 @@ PCODE GPRegsRoutines[] =
     (PCODE)Load_X7                          // 77
 };
 
-PCODE GPRegsStoreRoutines[] =
+static const PCODE GPRegsStoreRoutines[] =
 {
     (PCODE)Store_X0,                         // 00
     (PCODE)Store_X0_X1,                      // 01
@@ -744,7 +746,7 @@ PCODE GPRegsStoreRoutines[] =
     (PCODE)Store_X7                          // 77
 };
 
-PCODE GPRegsRefRoutines[] =
+static const PCODE GPRegsRefRoutines[] =
 {
     (PCODE)Load_Ref_X0,        // 0
     (PCODE)Load_Ref_X1,        // 1
@@ -756,7 +758,7 @@ PCODE GPRegsRefRoutines[] =
     (PCODE)Load_Ref_X7         // 7
 };
 
-PCODE GPRegsRefStoreRoutines[] =
+static const PCODE GPRegsRefStoreRoutines[] =
 {
     (PCODE)Store_Ref_X0,        // 0
     (PCODE)Store_Ref_X1,        // 1
@@ -992,7 +994,7 @@ extern "C" void Store_S6();
 extern "C" void Store_S6_S7();
 extern "C" void Store_S7();
 
-PCODE FPRegsStoreRoutines[] =
+static const PCODE FPRegsStoreRoutines[] =
 {
     (PCODE)Store_D0,                         // 00
     (PCODE)Store_D0_D1,                      // 01
@@ -1060,7 +1062,7 @@ PCODE FPRegsStoreRoutines[] =
     (PCODE)Store_D7                          // 77
 };
 
-PCODE FPRegsRoutines[] =
+static const PCODE FPRegsRoutines[] =
 {
     (PCODE)Load_D0,                         // 00
     (PCODE)Load_D0_D1,                      // 01
@@ -1196,7 +1198,7 @@ PCODE FPRegs128StoreRoutines[] =
     (PCODE)Store_Q7                          // 77
 };
 
-PCODE FPRegs128LoadRoutines[] =
+static const PCODE FPRegs128LoadRoutines[] =
 {
     (PCODE)Load_Q0,                         // 00
     (PCODE)Load_Q0_Q1,                      // 01
@@ -1264,7 +1266,7 @@ PCODE FPRegs128LoadRoutines[] =
     (PCODE)Load_Q7                          // 77
 };
 
-PCODE FPRegs32StoreRoutines[] =
+static const PCODE FPRegs32StoreRoutines[] =
 {
     (PCODE)Store_S0,                         // 00
     (PCODE)Store_S0_S1,                      // 01
@@ -1332,7 +1334,7 @@ PCODE FPRegs32StoreRoutines[] =
     (PCODE)Store_S7                          // 77
 };
 
-PCODE FPRegs32LoadRoutines[] =
+static const PCODE FPRegs32LoadRoutines[] =
 {
     (PCODE)Load_S0,                         // 00
     (PCODE)Load_S0_S1,                      // 01
@@ -1968,35 +1970,35 @@ PCODE CallStubGenerator::GetFPReg32RangeRoutine(int x1, int x2)
 }
 #endif // TARGET_ARM64
 
-extern "C" void CallJittedMethodRetVoid(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetVoid(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetVoid();
 extern "C" void InterpreterStubRetDouble();
 extern "C" void InterpreterStubRetI8();
 
 #ifdef TARGET_AMD64
 #ifdef TARGET_WINDOWS
-extern "C" void CallJittedMethodRetBuffRCX(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetBuffRDX(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetBuffRCX(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetBuffRDX(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetBuffRCX();
 extern "C" void InterpreterStubRetBuffRDX();
 #else // TARGET_WINDOWS
-extern "C" void CallJittedMethodRetBuffRDI(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetBuffRSI(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetBuffRDI(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetBuffRSI(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetBuffRDI();
 extern "C" void InterpreterStubRetBuffRSI();
 #endif // TARGET_WINDOWS
 #else // TARGET_AMD64
-extern "C" void CallJittedMethodRetBuff(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetBuff(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetBuff();
 #endif // TARGET_AMD64
 
 #ifdef UNIX_AMD64_ABI
-extern "C" void CallJittedMethodRetI8I8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetI8Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetDoubleI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetDoubleDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetI8I8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetI8Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetDoubleI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetDoubleDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetI8I8();
 extern "C" void InterpreterStubRetI8Double();
 extern "C" void InterpreterStubRetDoubleI8();
@@ -2004,22 +2006,22 @@ extern "C" void InterpreterStubRetDoubleDouble();
 #endif
 
 #ifdef TARGET_ARM64
-extern "C" void CallJittedMethodRet2I8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet2Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet3Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet4Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet2Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet3Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet4Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetVector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet2Vector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet3Vector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet4Vector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetVector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet2Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet3Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet4Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
+extern "C" void CallJittedMethodRet2I8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet2Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet3Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet4Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet2Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet3Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet4Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetVector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet2Vector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet3Vector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet4Vector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetVector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet2Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet3Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet4Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRet2I8();
 extern "C" void InterpreterStubRet2Double();
 extern "C" void InterpreterStubRet3Double();
@@ -2039,10 +2041,10 @@ extern "C" void InterpreterStubRet4Vector128();
 #endif // TARGET_ARM64
 
 #if defined(TARGET_RISCV64)
-extern "C" void CallJittedMethodRet2I8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet2Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetFloatInt(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetIntFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRet2I8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRet2Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetFloatInt(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetIntFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRet2I8();
 extern "C" void InterpreterStubRet2Double();
 extern "C" void InterpreterStubRetFloatInt();
@@ -2267,21 +2269,21 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     PCODE *pRoutines = (PCODE*)alloca(tempStorageSize);
     memset(pRoutines, 0, tempStorageSize);
 
-    ComputeCallStub(sig, pRoutines);
+    ComputeCallStub(sig, pRoutines, pMD);
 
     LoaderAllocator *pLoaderAllocator = pMD->GetLoaderAllocator();
     S_SIZE_T finalStubSize(sizeof(CallStubHeader) + m_routineIndex * sizeof(PCODE));
     void *pHeaderStorage = pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(finalStubSize));
 
-    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), m_pInvokeFunction);
+    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_pInvokeFunction);
 
     return pHeader;
 }
 
 struct CachedCallStubKey
 {
-    CachedCallStubKey(int32_t hashCode, int numRoutines, PCODE *pRoutines, int totalStackSize, CallStubHeader::InvokeFunctionPtr pInvokeFunction)
-     : HashCode(hashCode), NumRoutines(numRoutines), TotalStackSize(totalStackSize), Invoke(pInvokeFunction), Routines(pRoutines)
+    CachedCallStubKey(int32_t hashCode, int numRoutines, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, CallStubHeader::InvokeFunctionPtr pInvokeFunction)
+     : HashCode(hashCode), NumRoutines(numRoutines), TotalStackSize(totalStackSize), HasContinuationRet(hasContinuationRet), Invoke(pInvokeFunction), Routines(pRoutines)
     {
     }
 
@@ -2289,7 +2291,7 @@ struct CachedCallStubKey
     {
         LIMITED_METHOD_CONTRACT;
 
-        if (HashCode != other.HashCode || NumRoutines != other.NumRoutines || TotalStackSize != other.TotalStackSize || Invoke != other.Invoke)
+        if (HashCode != other.HashCode || NumRoutines != other.NumRoutines || TotalStackSize != other.TotalStackSize || Invoke != other.Invoke || HasContinuationRet != other.HasContinuationRet)
             return false;
 
         for (int i = 0; i < NumRoutines; i++)
@@ -2303,15 +2305,16 @@ struct CachedCallStubKey
     const int32_t HashCode = 0;
     const int NumRoutines = 0;
     const int TotalStackSize = 0;
+    const bool HasContinuationRet = false;
     const CallStubHeader::InvokeFunctionPtr Invoke = NULL; // Pointer to the invoke function
     const PCODE *Routines;
 };
 
 struct CachedCallStub
 {
-    CachedCallStub(int32_t hashCode, int numRoutines, PCODE *pRoutines, int totalStackSize, CallStubHeader::InvokeFunctionPtr pInvokeFunction) :
+    CachedCallStub(int32_t hashCode, int numRoutines, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, CallStubHeader::InvokeFunctionPtr pInvokeFunction) :
         HashCode(hashCode),
-        Header(numRoutines, pRoutines, totalStackSize, pInvokeFunction)
+        Header(numRoutines, pRoutines, totalStackSize, hasContinuationRet, pInvokeFunction)
     {
     }
 
@@ -2325,6 +2328,7 @@ struct CachedCallStub
             Header.NumRoutines,
             &Header.Routines[0],
             Header.TotalStackSize,
+            Header.HasContinuationRet,
             Header.Invoke);
     }
 
@@ -2362,7 +2366,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
 
     m_interpreterToNative = true; // We always generate the interpreter to native call stub here
 
-    ComputeCallStub(sig, pRoutines);
+    ComputeCallStub(sig, pRoutines, NULL);
 
     xxHash hashState;
     for (int i = 0; i < m_routineIndex; i++)
@@ -2371,12 +2375,14 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
     }
     hashState.Add(m_totalStackSize);
     hashState.AddPointer((void*)m_pInvokeFunction);
+    hashState.Add(sig.IsAsyncCall() ? 1 : 0);
 
     CachedCallStubKey cachedHeaderKey(
         hashState.ToHashCode(),
         m_routineIndex,
         pRoutines,
         ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE),
+        sig.IsAsyncCall(),
         m_pInvokeFunction);
 
     CrstHolder lockHolder(&s_callStubCrst);
@@ -2396,7 +2402,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         // We only need to allocate the actual pRoutines array, and then we can just use the cachedHeader we already constructed
         size_t finalCachedCallStubSize = sizeof(CachedCallStub) + m_routineIndex * sizeof(PCODE);
         void* pHeaderStorage = amTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(finalCachedCallStubSize)));
-        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), m_pInvokeFunction);
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_pInvokeFunction);
         s_callStubCache->Add(pHeader);
         amTracker.SuppressRelease();
 
@@ -2447,8 +2453,179 @@ void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, 
     return;
 }
 
-void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
+//---------------------------------------------------------------------------
+// isNativePrimitiveStructType:
+//    Check if the given struct type is an intrinsic type that should be treated as though
+//    it is not a struct at the unmanaged ABI boundary.
+//
+// Arguments:
+//    pMT - the handle for the struct type.
+//
+// Return Value:
+//    true if the given struct type should be treated as a primitive for unmanaged calls,
+//    false otherwise.
+//
+bool isNativePrimitiveStructType(MethodTable* pMT)
 {
+    if (!pMT->IsIntrinsicType())
+    {
+        return false;
+    }
+    const char* namespaceName = nullptr;
+    const char* typeName      = pMT->GetFullyQualifiedNameInfo(&namespaceName);
+
+    if ((namespaceName == NULL) || (typeName == NULL))
+    {
+        return false;
+    }
+
+    if (strcmp(namespaceName, "System.Runtime.InteropServices") != 0)
+    {
+        return false;
+    }
+
+    return strcmp(typeName, "CLong") == 0 || strcmp(typeName, "CULong") == 0 || strcmp(typeName, "NFloat") == 0;
+}
+
+void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD)
+{
+    bool rewriteMetaSigFromExplicitThisToHasThis = false;
+    bool unmanagedThisCallConv = false;
+
+    bool hasUnmanagedCallConv = false;
+    CorInfoCallConvExtension unmanagedCallConv = CorInfoCallConvExtension::C;
+
+    if (pMD != NULL && (pMD->IsPInvoke()))
+    {
+        PInvoke::GetCallingConvention_IgnoreErrors(pMD, &unmanagedCallConv, NULL);
+        hasUnmanagedCallConv = true;
+    }
+    else if (pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute())
+    {
+        if (CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
+        {
+            if (sig.GetCallingConvention() == IMAGE_CEE_CS_CALLCONV_VARARG)
+            {
+                unmanagedCallConv = CorInfoCallConvExtension::C;
+            }
+        }
+        else
+        {
+            unmanagedCallConv = CallConv::GetDefaultUnmanagedCallingConvention();
+        }
+        hasUnmanagedCallConv = true;
+    }
+    else
+    {
+        switch (sig.GetCallingConvention())
+        {
+            case IMAGE_CEE_CS_CALLCONV_THISCALL:
+                unmanagedCallConv = CorInfoCallConvExtension::Thiscall;
+                hasUnmanagedCallConv = true;
+                break;
+            case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
+                unmanagedCallConv = GetUnmanagedCallConvExtension(&sig);
+                hasUnmanagedCallConv = true;
+                break;
+        }
+    }
+
+    if (hasUnmanagedCallConv)
+    {
+        switch (unmanagedCallConv)
+        {
+            case CorInfoCallConvExtension::Thiscall:
+            case CorInfoCallConvExtension::CMemberFunction:
+            case CorInfoCallConvExtension::StdcallMemberFunction:
+            case CorInfoCallConvExtension::FastcallMemberFunction:
+                unmanagedThisCallConv = true;
+                break;
+            default:
+                break;
+        }
+    }
+
+#if defined(TARGET_WINDOWS)
+    // On these platforms, when making a ThisCall, or other call using a C++ MemberFunction calling convention,
+    // the "this" pointer is passed in the first argument slot.
+    bool rewriteReturnTypeToForceRetBuf = false;
+    if (unmanagedThisCallConv)
+    {
+        rewriteMetaSigFromExplicitThisToHasThis = true;
+        // Also, any struct type other than a few special cases is returned via return buffer for unmanaged calls
+        CorElementType retType = sig.GetReturnType();
+        sig.Reset();
+
+        if (retType == ELEMENT_TYPE_VALUETYPE)
+        {
+            TypeHandle thRetType = sig.GetRetTypeHandleThrowing();
+            MethodTable* pMTRetType = thRetType.AsMethodTable();
+
+            if (pMTRetType->GetInternalCorElementType() == ELEMENT_TYPE_VALUETYPE && !isNativePrimitiveStructType(pMTRetType))
+            {
+                rewriteReturnTypeToForceRetBuf = true;
+            }
+        }
+    }
+#endif // defined(TARGET_WINDOWS)
+
+    // Rewrite ExplicitThis to HasThis. This allows us to use ArgIterator which is unaware of ExplicitThis
+    // in the places where it is needed such as computation of return buffers.
+    if (sig.GetCallingConventionInfo() & IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS)
+    {
+#if LOG_COMPUTE_CALL_STUB
+        printf("Managed ExplicitThis to HasThis conversion needed\n");
+#endif // LOG_COMPUTE_CALL_STUB
+        rewriteMetaSigFromExplicitThisToHasThis = true;
+    }
+
+    SigBuilder sigBuilder;
+    if (rewriteMetaSigFromExplicitThisToHasThis)
+    {
+#if LOG_COMPUTE_CALL_STUB
+        printf("Rewriting ExplicitThis to implicit this\n");
+#endif // LOG_COMPUTE_CALL_STUB
+        sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS);
+        if ((sig.NumFixedArgs() == 0) || (sig.HasThis() && !sig.HasExplicitThis()))
+        {
+            ThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+        sigBuilder.AppendData(sig.NumFixedArgs() - 1);
+        TypeHandle thRetType = sig.GetRetTypeHandleThrowing();
+#if defined(TARGET_WINDOWS)
+        if (rewriteReturnTypeToForceRetBuf)
+        {
+            // Change the return type to type large enough it will always need to be returned via return buffer
+            thRetType = CoreLibBinder::GetClass(CLASS__STACKFRAMEITERATOR);
+            _ASSERTE(thRetType.IsValueType());
+            _ASSERTE(thRetType.GetSize() > 64);
+            sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
+            sigBuilder.AppendPointer(thRetType.AsPtr());
+        }
+        else
+#endif
+        {
+            SigPointer pReturn = sig.GetReturnProps();
+            pReturn.ConvertToInternalExactlyOne(sig.GetModule(), sig.GetSigTypeContext(), &sigBuilder);
+        }
+
+        // Skip the explicit this argument
+        sig.NextArg();
+
+        // Copy rest of the arguments
+        sig.NextArg();
+        SigPointer pArgs = sig.GetArgProps();
+        for (unsigned i = 1; i < sig.NumFixedArgs(); i++)
+        {
+            pArgs.ConvertToInternalExactlyOne(sig.GetModule(), sig.GetSigTypeContext(), &sigBuilder);
+        }
+
+        DWORD cSig;
+        PCCOR_SIGNATURE pNewSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&cSig);
+        MetaSig newSig(pNewSig, cSig, sig.GetModule(), NULL, MetaSig::sigMember);
+        sig = newSig;
+    }
+
     ArgIterator argIt(&sig);
     int32_t interpreterStackOffset = 0;
 
@@ -2488,6 +2665,18 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
         ArgLocDesc paramArgLocDesc;
         argIt.GetParamTypeLoc(&paramArgLocDesc);
         ProcessArgument(NULL, paramArgLocDesc, pRoutines);
+        interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
+    }
+
+    if (argIt.HasAsyncContinuation())
+    {
+#if LOG_COMPUTE_CALL_STUB
+        printf("argIt.HasAsyncContinuation\n");
+#endif
+        // In the Interpreter calling convention the argument after the param type is the async continuation
+        ArgLocDesc asyncContinuationLocDesc;
+        argIt.GetAsyncContinuationLoc(&asyncContinuationLocDesc);
+        ProcessArgument(NULL, asyncContinuationLocDesc, pRoutines);
         interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
     }
 
