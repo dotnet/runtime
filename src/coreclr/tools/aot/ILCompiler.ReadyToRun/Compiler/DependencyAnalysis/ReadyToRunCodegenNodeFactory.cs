@@ -480,8 +480,8 @@ namespace ILCompiler.DependencyAnalysis
 #if DEBUG
                 if ((!methodCodeNode.IsEmpty || CompilationModuleGroup.VersionsWithMethodBody(method)) && method.IsPrimaryMethodDesc())
                 {
-                    EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition().GetPrimaryMethodDesc()).Module;
-                    ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method.GetPrimaryMethodDesc(), allowDynamicallyCreatedReference: true, throwIfNotFound: true);
+                    EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
+                    ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
 
                     IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null), false, false, false);
                     MethodWithGCInfo methodCodeNodeDebug = methodNodeDebug as MethodWithGCInfo;
