@@ -9,6 +9,7 @@ using Xunit;
 using Microsoft.DotNet.XUnitExtensions;
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.IO.Compression
 {
@@ -19,6 +20,7 @@ namespace System.IO.Compression
         protected virtual bool SupportsReset => false;
 
         protected virtual string WindowLogParamName => "windowLog";
+        protected virtual string InputLengthParamName => "inputLength";
 
         protected abstract int ValidQuality { get; }
         protected abstract int ValidWindowLog { get; }
@@ -340,6 +342,12 @@ namespace System.IO.Compression
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
+        }
+
+        [Fact]
+        public void GetMaxCompressedLength_OutOfRangeInput_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(InputLengthParamName, () => GetMaxCompressedLength(-1));
         }
 
         [Fact]

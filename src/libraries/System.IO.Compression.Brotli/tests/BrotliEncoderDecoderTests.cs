@@ -14,6 +14,7 @@ namespace System.IO.Compression
         protected override bool SupportsReset => false;
 
         protected override string WindowLogParamName => "window";
+        protected override string InputLengthParamName => "inputSize";
 
         protected override int ValidQuality => 3;
         protected override int ValidWindowLog => 10;

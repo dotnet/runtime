@@ -285,6 +285,11 @@ namespace System.IO.Compression
         {
             ArgumentOutOfRangeException.ThrowIfNegative(inputLength);
 
+            if (inputLength > (long)nuint.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inputLength));
+            }
+
             nuint result = Interop.Zstd.ZSTD_compressBound((nuint)inputLength);
             if (ZstandardUtils.IsError(result))
             {

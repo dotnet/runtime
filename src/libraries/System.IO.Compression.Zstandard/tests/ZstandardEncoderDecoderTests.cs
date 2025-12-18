@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Xunit;
@@ -116,6 +117,12 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentOutOfRangeException>("maxWindowLog", () => new ZstandardDecoder(maxWindowLog: 33));
             Assert.Throws<ArgumentOutOfRangeException>("maxWindowLog", () => new ZstandardDecoder(dictionary, maxWindowLog: 8));
             Assert.Throws<ArgumentOutOfRangeException>("maxWindowLog", () => new ZstandardDecoder(dictionary, maxWindowLog: 33));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
+        public void GetMaxCompressedLength_TruncationOn32Bit_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("inputSize", () => GetMaxCompressedLength(uint.MaxValue + 1L));
         }
 
         [Fact]
