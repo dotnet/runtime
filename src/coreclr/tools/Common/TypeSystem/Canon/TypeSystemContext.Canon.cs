@@ -93,13 +93,15 @@ namespace Internal.TypeSystem
         public abstract bool SupportsCanon { get; }
         public abstract bool SupportsUniversalCanon { get; }
 
-        public DefType GetCanonType(ReadOnlySpan<byte> name)
+        public DefType GetCanonType(string name)
         {
-            if (name.SequenceEqual("System.__Canon"u8))
-                return CanonType;
-
-            if (name.SequenceEqual("System.__UniversalCanon"u8))
-                return UniversalCanonType;
+            switch (name)
+            {
+                case "System.__Canon":
+                    return CanonType;
+                case "System.__UniversalCanon":
+                    return UniversalCanonType;
+            }
 
             return null;
         }

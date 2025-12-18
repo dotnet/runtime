@@ -774,7 +774,7 @@ namespace ILCompiler
             ModuleDesc systemModule = context.SystemModule;
 
             TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName, false,
-                (module, typeDefName) => (MetadataType)module.Context.GetCanonType(Encoding.UTF8.GetBytes(typeDefName)));
+                (module, typeDefName) => (MetadataType)module.Context.GetCanonType(typeDefName));
 
             if (foundType == null)
                 throw new CommandLineException($"Type '{typeName}' not found");
