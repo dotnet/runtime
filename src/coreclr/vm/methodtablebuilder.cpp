@@ -3301,6 +3301,23 @@ MethodTableBuilder::EnumerateClassMethods()
             }
         }
 
+        // Vararg methods are not allowed to be marked MethodImpl.Async
+        // and even when they return Tasks they are still treated as NormalMethod.
+        if (returnKind != MethodReturnKind::NormalMethod)
+        {
+            if (MetaSig::IsVarArg(Signature(pMemberSignature, cMemberSignature)))
+            {
+                if (IsMiAsync(dwImplFlags))
+                {
+                    BuildMethodTableThrowException(IDS_EE_VARARG_NOT_SUPPORTED);
+                }
+                else
+                {
+                    returnKind = MethodReturnKind::NormalMethod;
+                }
+            }
+        }
+
         //
         // Create a new bmtMDMethod representing this method and add it to the
         // declared method list.
