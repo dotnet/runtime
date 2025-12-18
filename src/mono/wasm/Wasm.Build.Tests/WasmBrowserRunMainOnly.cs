@@ -13,7 +13,10 @@ public class WasmBrowserRunMainOnly(ITestOutputHelper output, SharedBuildPerTest
         Configuration config = Configuration.Debug;
 
         ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBrowserRunMainOnly, $"WasmBrowserRunMainOnly");
-        PublishProject(info, config);
+        var (_, buildOutput) = PublishProject(info, config);
+
+        // ** MicrosoftNetCoreAppRuntimePackDir : '....microsoft.netcore.app.runtime.browser-wasm\11.0.0-dev'
+        Assert.Contains("microsoft.netcore.app.runtime.browser-wasm", buildOutput);
 
         var result = await RunForPublishWithWebServer(new BrowserRunOptions(
             Configuration: config

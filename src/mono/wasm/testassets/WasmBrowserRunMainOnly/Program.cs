@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
+using System.Threading.Tasks;
 
-TestOutput.WriteLine("Hello from WasmBrowserRunMainOnly!");
-
-// TODO-WASM: CoreCLR currently doesn't exit from Main
-Console.WriteLine("WASM EXIT 0");
-return 0;
+class Program
+{
+    static Task<int> Main(string[] args)
+    {
+        TestOutput.WriteLine("Hello from WasmBrowserRunMainOnly!");
+        return Task.FromResult(0);
+    }
+}
