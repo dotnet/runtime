@@ -27,6 +27,7 @@
     <TrimMode>partial</TrimMode>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
 
     <!-- Forced by ILLink targets -->
     <SelfContained>true</SelfContained>
