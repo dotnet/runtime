@@ -17,14 +17,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "compiler.h"
 #include "phase.h"
 #include "sideeffects.h"
-
-#if HAS_FIXED_REGISTER_SET
-#include "lsra.h"
-#endif
-
-#ifdef TARGET_WASM
-#include "regallocwasm.h"
-#endif
+#include "regallocimpl.h"
 
 class Lowering final : public Phase
 {
@@ -202,6 +195,7 @@ private:
     GenTree* LowerNonvirtPinvokeCall(GenTreeCall* call);
     GenTree* LowerTailCallViaJitHelper(GenTreeCall* callNode, GenTree* callTarget);
     void     LowerFastTailCall(GenTreeCall* callNode);
+    GenTree* FirstOperand(GenTree* node);
     void     RehomeArgForFastTailCall(unsigned int lclNum,
                                       GenTree*     insertTempBefore,
                                       GenTree*     lookForUsesStart,
@@ -415,6 +409,10 @@ private:
 #ifdef TARGET_XARCH
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
 #endif // TARGET_XARCH
+
+#ifdef TARGET_WASM
+    GenTree* LowerNeg(GenTreeOp* node);
+#endif
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
 

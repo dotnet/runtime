@@ -27,7 +27,6 @@
 #include "comdatetime.h"
 #include "debugdebugger.h"
 #include "assemblynative.hpp"
-#include "comwaithandle.h"
 
 #include "proftoeeinterfaceimpl.h"
 
@@ -78,6 +77,10 @@
 #ifdef TARGET_BROWSER
 #include "entrypoints.h"
 #endif // TARGET_BROWSER
+
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
 
 static const Entry s_QCall[] =
 {
@@ -158,6 +161,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_InternalAlloc)
     DllImportEntry(RuntimeTypeHandle_InternalAllocNoChecks)
     DllImportEntry(RuntimeTypeHandle_AllocateTypeAssociatedMemory)
+    DllImportEntry(RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned)
     DllImportEntry(RuntimeTypeHandle_RegisterCollectibleTypeDependency)
     DllImportEntry(MethodBase_GetCurrentMethod)
     DllImportEntry(RuntimeMethodHandle_InvokeMethod)
@@ -277,7 +281,6 @@ static const Entry s_QCall[] =
     DllImportEntry(MultiCoreJIT_InternalStartProfile)
 #endif
     DllImportEntry(LoaderAllocator_Destroy)
-    DllImportEntry(String_StrCns)
     DllImportEntry(String_Intern)
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
@@ -291,27 +294,26 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)
     DllImportEntry(ThreadNative_Initialize)
     DllImportEntry(ThreadNative_GetThreadState)
+    DllImportEntry(ThreadNative_SetWaitSleepJoinState)
+    DllImportEntry(ThreadNative_ClearWaitSleepJoinState)
+    DllImportEntry(ThreadNative_ReentrantWaitAny)
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     DllImportEntry(ThreadNative_GetApartmentState)
     DllImportEntry(ThreadNative_SetApartmentState)
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    DllImportEntry(ThreadNative_Join)
     DllImportEntry(ThreadNative_Abort)
     DllImportEntry(ThreadNative_ResetAbort)
     DllImportEntry(ThreadNative_SpinWait)
+#ifdef TARGET_WINDOWS
+    DllImportEntry(ThreadNative_CheckForPendingInterrupt)
     DllImportEntry(ThreadNative_Interrupt)
-    DllImportEntry(ThreadNative_Sleep)
+    DllImportEntry(ThreadNative_GetOSHandle)
+#endif // TARGET_WINDOWS
     DllImportEntry(ThreadNative_PollGC)
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
 #endif // FEATURE_COMINTEROP
     DllImportEntry(Monitor_GetOrCreateLockObject)
-    DllImportEntry(WaitHandle_WaitOneCore)
-    DllImportEntry(WaitHandle_WaitMultipleIgnoringSyncContext)
-    DllImportEntry(WaitHandle_SignalAndWait)
-#ifdef TARGET_UNIX
-    DllImportEntry(WaitHandle_WaitOnePrioritized)
-#endif // TARGET_UNIX
     DllImportEntry(ClrConfig_GetConfigBoolValue)
     DllImportEntry(Buffer_Clear)
     DllImportEntry(Buffer_MemMove)
@@ -478,25 +480,11 @@ static const Entry s_QCall[] =
     DllImportEntry(EventPipeInternal_WaitForSessionSignal)
 #endif // FEATURE_PERFTRACING
 #if defined(TARGET_UNIX)
-    DllImportEntry(CloseHandle)
-    DllImportEntry(CreateEventExW)
-    DllImportEntry(CreateMutexExW)
-    DllImportEntry(CreateSemaphoreExW)
-    DllImportEntry(FormatMessageW)
     DllImportEntry(FreeEnvironmentStringsW)
     DllImportEntry(GetEnvironmentStringsW)
     DllImportEntry(GetEnvironmentVariableW)
-    DllImportEntry(OpenEventW)
-    DllImportEntry(OpenMutexW)
-    DllImportEntry(OpenSemaphoreW)
     DllImportEntry(OutputDebugStringW)
-    DllImportEntry(PAL_CreateMutexW)
-    DllImportEntry(PAL_OpenMutexW)
-    DllImportEntry(ReleaseMutex)
-    DllImportEntry(ReleaseSemaphore)
-    DllImportEntry(ResetEvent)
     DllImportEntry(SetEnvironmentVariableW)
-    DllImportEntry(SetEvent)
 #endif
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     DllImportEntry(X86BaseCpuId)
@@ -546,6 +534,9 @@ static const Entry s_QCall[] =
     DllImportEntry(SystemJS_ScheduleTimer)
     DllImportEntry(SystemJS_ScheduleBackgroundJob)
 #endif // TARGET_BROWSER
+#ifdef FEATURE_INTERPRETER
+    DllImportEntry(AsyncHelpers_ResumeInterpreterContinuation)
+#endif // FEATURE_INTERPRETER
 };
 
 const void* QCallResolveDllImport(const char* name)

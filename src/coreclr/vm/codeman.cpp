@@ -29,6 +29,9 @@
 #include "strsafe.h"
 
 #include "configuration.h"
+#if !defined(DACCESS_COMPILE)
+#include "../debug/ee/executioncontrol.h"
+#endif // !DACCESS_COMPILE
 
 #include <minipal/cpufeatures.h>
 #include <minipal/cpuid.h>
@@ -858,7 +861,7 @@ IJitManager::IJitManager()
 // been stopped when we suspend the EE so they won't be touching an element that is about to be deleted.
 // However for pre-emptive mode threads, they could be stalled right on top of the element we want
 // to delete, so we need to apply the reader lock to them and wait for them to drain.
-ExecutionManager::ScanFlag ExecutionManager::GetScanFlags()
+ExecutionManager::ScanFlag ExecutionManager::GetScanFlags(Thread *pThread)
 {
     CONTRACTL {
         NOTHROW;
@@ -869,7 +872,10 @@ ExecutionManager::ScanFlag ExecutionManager::GetScanFlags()
 #if !defined(DACCESS_COMPILE)
 
 
-    Thread *pThread = GetThreadNULLOk();
+    if (!pThread)
+    {
+        pThread = GetThreadNULLOk();
+    }
 
     if (!pThread)
         return ScanNoReaderLock;
@@ -1429,6 +1435,11 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & RiscV64IntrinsicConstants_Zbb) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableRiscV64Zbb))
     {
         CPUCompileFlags.Set(InstructionSet_Zbb);
+    }
+
+    if (((cpuFeatures & RiscV64IntrinsicConstants_Zbs) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableRiscV64Zbs))
+    {
+        CPUCompileFlags.Set(InstructionSet_Zbs);
     }
 #endif
 
@@ -4567,6 +4578,14 @@ void InterpreterJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& Method
     methodRegionInfo->coldSize         = 0;
 }
 
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_BROWSER)
+IExecutionControl* InterpreterJitManager::GetExecutionControl()
+{
+    LIMITED_METHOD_CONTRACT;
+    return InterpreterExecutionControl::GetInstance();
+}
+#endif // !DACCESS_COMPILE
+
 #endif // FEATURE_INTERPRETER
 
 StubCodeBlockKind EEJitManager::GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC)
@@ -5223,6 +5242,24 @@ BOOL ExecutionManager::IsManagedCode(PCODE currentPC)
 
     if (GetScanFlags() == ScanReaderLock)
         return IsManagedCodeWithLock(currentPC);
+
+    // Since ScanReaderLock is not set, then we must assume that the ReaderLock is effectively taken.
+    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked;
+    return IsManagedCodeWorker(currentPC, &lockState);
+}
+
+//**************************************************************************
+BOOL ExecutionManager::IsManagedCodeNoLock(PCODE currentPC)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    if (currentPC == (PCODE)NULL)
+        return FALSE;
+
+    _ASSERTE(GetScanFlags() != ScanReaderLock);
 
     // Since ScanReaderLock is not set, then we must assume that the ReaderLock is effectively taken.
     RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked;
