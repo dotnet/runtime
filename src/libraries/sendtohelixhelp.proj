@@ -173,6 +173,7 @@
   <ItemGroup>
     <HelixProperties Condition="'$(RuntimeFlavor)' != ''" Include="runtimeFlavor" Value="$(RuntimeFlavor)" />
     <HelixProperties Condition="'$(Scenario)' != ''" Include="scenario" Value="$(Scenario)" />
+    <HelixProperties Condition="'$(WorkItemPrefix)' != ''" Include="jobName" Value="$(WorkItemPrefix.TrimEnd('-'))" />
   </ItemGroup>
 
   <!-- Ensure that all HelixPreCommand items are ready before this -->
@@ -341,6 +342,12 @@
 
   <Target Name="PrintBuildTargetFramework">
     <Message Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
+  </Target>
+
+  <Target Name="SetHelixJobName" BeforeTargets="CoreTest">
+    <PropertyGroup>
+      <HelixJobName Condition="'$(WorkItemPrefix)' != ''">$(WorkItemPrefix.TrimEnd('-'))</HelixJobName>
+    </PropertyGroup>
   </Target>
 
   <!--
