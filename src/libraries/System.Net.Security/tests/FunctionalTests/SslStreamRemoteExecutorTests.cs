@@ -94,15 +94,13 @@ namespace System.Net.Security.Tests
         {
             // This test verifies that when OpenSSL has a malformed configuration,
             // the SSL initialization gracefully falls back to defaults instead of crashing.
-            // This addresses: https://github.com/dotnet/runtime/issues/...
 
             // Create a malformed OpenSSL configuration file
             var tempConfigFile = Path.GetTempFileName();
             try
             {
                 // Write a malformed config that references a non-existent provider section
-                File.WriteAllText(tempConfigFile, @"
-openssl_conf = openssl_init
+                File.WriteAllText(tempConfigFile, @"openssl_conf = openssl_init
 
 [openssl_init]
 providers = provider_sect
@@ -115,12 +113,12 @@ legacy = legacy_sect
 activate = 1
 
 # The legacy_sect section is intentionally missing to cause a configuration error
-# [legacy_sect]
-# activate = 1
 ");
 
-                var psi = new ProcessStartInfo();
-                psi.Environment.Add("OPENSSL_CONF", tempConfigFile);
+                var psi = new ProcessStartInfo
+                {
+                    Environment = { { "OPENSSL_CONF", tempConfigFile } }
+                };
 
                 // The test should complete successfully without crashing
                 await RemoteExecutor.Invoke(async () =>
