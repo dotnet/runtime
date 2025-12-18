@@ -284,11 +284,7 @@ namespace System.IO.Compression
         public static long GetMaxCompressedLength(long inputLength)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(inputLength);
-
-            if (inputLength > (long)nuint.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(inputLength));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(inputLength, (long)nuint.MaxValue);
 
             nuint result = Interop.Zstd.ZSTD_compressBound((nuint)inputLength);
             if (ZstandardUtils.IsError(result))
