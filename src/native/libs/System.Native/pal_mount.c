@@ -48,7 +48,7 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
 
     // Allocate buffer for mount points (with extra capacity in case new mounts appear)
     size_t bufferSize = (size_t)(count + 4) * sizeof(*mounts);
-    mounts = (typeof(mounts))malloc(bufferSize);
+    mounts = malloc(bufferSize);
     if (mounts == NULL)
     {
         errno = ENOMEM;
