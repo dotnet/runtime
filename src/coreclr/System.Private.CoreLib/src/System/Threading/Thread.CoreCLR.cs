@@ -317,7 +317,6 @@ namespace System.Threading
         }
 
         // Temporary workaround for https://github.com/dotnet/runtime/issues/122479
-        // The NoInlining and NoOptimization attributes prevent compiler optimizations that may cause issues
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         internal void ClearWaitSleepJoinState()
         {
