@@ -88,19 +88,43 @@ namespace System
 
         // Well-defined and commonly used values
 
-        public static Half Epsilon => new Half(EpsilonBits);                        //  5.9604645E-08
+        public static Half Epsilon
+        {
+            [Intrinsic]
+            get => new Half(EpsilonBits);                        //  5.9604645E-08
+        }
 
-        public static Half PositiveInfinity => new Half(PositiveInfinityBits);      //  1.0 / 0.0;
+        public static Half PositiveInfinity
+        {
+            [Intrinsic]
+            get => new Half(PositiveInfinityBits);      //  1.0 / 0.0;
+        }
 
-        public static Half NegativeInfinity => new Half(NegativeInfinityBits);      // -1.0 / 0.0
+        public static Half NegativeInfinity
+        {
+            [Intrinsic]
+            get => new Half(NegativeInfinityBits);      // -1.0 / 0.0
+        }
 
-        public static Half NaN => new Half(NegativeQNaNBits);                       //  0.0 / 0.0
+        public static Half NaN
+        {
+            [Intrinsic]
+            get => new Half(NegativeQNaNBits);                       //  0.0 / 0.0
+        }
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
-        public static Half MinValue => new Half(MinValueBits);                      // -65504
+        public static Half MinValue
+        {
+            [Intrinsic]
+            get => new Half(MinValueBits);                      // -65504
+        }
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
-        public static Half MaxValue => new Half(MaxValueBits);                      //  65504
+        public static Half MaxValue
+        {
+            [Intrinsic]
+            get => new Half(MaxValueBits);                      //  65504
+        }
 
         internal readonly ushort _value;
 
@@ -1771,13 +1795,21 @@ namespace System
         //
 
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        public static Half One => new Half(PositiveOneBits);
+        public static Half One
+        {
+            [Intrinsic]
+            get => new Half(PositiveOneBits);
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
         static int INumberBase<Half>.Radix => 2;
 
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        public static Half Zero => new Half(PositiveZeroBits);
+        public static Half Zero
+        {
+            [Intrinsic]
+            get => new Half(PositiveZeroBits);
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
         public static Half Abs(Half value) => new Half((ushort)(value._value & ~SignMask));

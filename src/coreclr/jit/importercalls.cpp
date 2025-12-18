@@ -4633,6 +4633,67 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #endif
                 break;
             }
+
+            case NI_System_Half_get_MaxValue:
+            case NI_System_Half_get_MinValue:
+            case NI_System_Half_get_Epsilon:
+            case NI_System_Half_get_NaN:
+            case NI_System_Half_get_PositiveInfinity:
+            case NI_System_Half_get_NegativeInfinity:
+            case NI_System_Half_get_One:
+            case NI_System_Half_get_Zero:
+            {
+#ifdef TARGET_XARCH
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+
+                    NamedIntrinsic opId = lookupHalfConversionIntrinsic(TYP_INT, TYP_HALF);
+                    if (opId == NI_Illegal)
+                    {
+                        break;
+                    }
+
+                    int halfBits = 0;
+                    switch (ni)
+                    {
+                        case NI_System_Half_get_MaxValue:
+                            halfBits = 0x7BFF; // 65504
+                            break;
+                        case NI_System_Half_get_MinValue:
+                            halfBits = 0xFBFF; // -65504
+                            break;
+                        case NI_System_Half_get_Epsilon:
+                            halfBits = 0x1400; // 0.00006103515625
+                            break;
+                        case NI_System_Half_get_NaN:
+                            halfBits = 0xFE00; // Negative NaN
+                            break;
+                        case NI_System_Half_get_PositiveInfinity:
+                            halfBits = 0x7C00; // +Infinity
+                            break;
+                        case NI_System_Half_get_NegativeInfinity:
+                            halfBits = 0xFC00; // -Infinity
+                            break;
+                        case NI_System_Half_get_One:
+                            halfBits = 0x3C00; // 1.0
+                            break;
+                        case NI_System_Half_get_Zero:
+                            halfBits = 0x0000; // 0.0
+                            break;
+                        default:
+                            noway_assert(!"Unknown Half static property");
+                    }
+
+                    GenTree* zeroVec =
+                        gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), TYP_HALF, 16);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, zeroVec, gtNewIconNode(halfBits, TYP_INT), opId, TYP_INT, 16);
+                    retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
+                }
+#endif
+                break;
+            }
+
+
 #endif // FEATURE_HW_INTRINSICS
 
             case NI_System_Math_Abs:
@@ -10691,6 +10752,38 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "Sqrt") == 0)
                         {
                             result = NI_System_Half_Sqrt;
+                        }
+                        else if (strcmp(methodName, "get_MinValue") == 0)
+                        {
+                            result = NI_System_Half_get_MinValue;
+                        }
+                        else if (strcmp(methodName, "get_MaxValue") == 0)
+                        {
+                            result = NI_System_Half_get_MaxValue;
+                        }
+                        else if (strcmp(methodName, "get_Epsilon") == 0)
+                        {
+                            result = NI_System_Half_get_Epsilon;
+                        }
+                        else if (strcmp(methodName, "get_NaN") == 0)
+                        {
+                            result = NI_System_Half_get_NaN;
+                        }
+                        else if (strcmp(methodName, "get_PositiveInfinity") == 0)
+                        {
+                            result = NI_System_Half_get_PositiveInfinity;
+                        }
+                        else if (strcmp(methodName, "get_NegativeInfinity") == 0)
+                        {
+                            result = NI_System_Half_get_NegativeInfinity;
+                        }
+                        else if (strcmp(methodName, "get_One") == 0)
+                        {
+                            result = NI_System_Half_get_One;
+                        }
+                        else if (strcmp(methodName, "get_Zero") == 0)
+                        {
+                            result = NI_System_Half_get_Zero;
                         }
 
                         break;
