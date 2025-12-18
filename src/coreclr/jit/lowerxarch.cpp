@@ -901,8 +901,8 @@ void Lowering::LowerCast(GenTree* tree)
 
             if (varTypeIsUnsigned(dstType) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
             {
-                // EVEX unsigned conversion instructions saturate positive overflow properly, so as
-                // long as we fix up NaN and negative values, we can preserve the existing cast node.
+                // EVEX unsigned conversion instructions saturate positive overflow properly, so we
+                // only need special handling for NaN and negative values.
                 //
                 // maxs[sd] will take the value from the second operand if the first operand's value is
                 // NaN, which allows us to fix up both negative and NaN values with a single instruction.
@@ -1057,10 +1057,10 @@ void Lowering::LowerCast(GenTree* tree)
                         // We're going to use ovfFloatingValue twice, so replace the constant with a lclVar.
                         castRange.InsertAtEnd(ovfFloatingValue);
 
-                        LIR::Use maxFloatUse;
-                        LIR::Use::MakeDummyUse(castRange, ovfFloatingValue, &maxFloatUse);
-                        maxFloatUse.ReplaceWithLclVar(comp);
-                        ovfFloatingValue = maxFloatUse.Def();
+                        LIR::Use ovfFloatUse;
+                        LIR::Use::MakeDummyUse(castRange, ovfFloatingValue, &ovfFloatUse);
+                        ovfFloatUse.ReplaceWithLclVar(comp);
+                        ovfFloatingValue = ovfFloatUse.Def();
 
                         GenTree* floorVal = comp->gtClone(srcVector);
                         castRange.InsertAtEnd(floorVal);
