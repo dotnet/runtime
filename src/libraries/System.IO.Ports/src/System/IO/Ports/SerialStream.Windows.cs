@@ -634,7 +634,7 @@ namespace System.IO.Ports
                 // set constant properties of the DCB
                 InitializeDCB(baudRate, parity, dataBits, stopBits, discardNull);
 
-                //if device doesnt support DTR and DTR is disabled, then dont try to set DTR 
+                //if device doesnt support DTR and DTR is disabled, then dont try to set DTR
                 if (DtrEnable || ((_commProp.dwProvCapabilities & Interop.Kernel32.COMMPROP.PCF_DTRDSR) != 0)) {
                     DtrEnable = dtrEnable;
 
@@ -720,7 +720,6 @@ namespace System.IO.Ports
 
                     // turn off all events and signal WaitCommEvent
                     Interop.Kernel32.SetCommMask(_handle, 0);
-                    
                     //if device supports DTR then clear
                     if ((_commProp.dwProvCapabilities & Interop.Kernel32.COMMPROP.PCF_DTRDSR) != 0) {
                         if (!Interop.Kernel32.EscapeCommFunction(_handle, Interop.Kernel32.CommFunctions.CLRDTR))
