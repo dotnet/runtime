@@ -302,6 +302,7 @@ internal static partial class Interop
             KDF_CONTEXT = 14,
             KDF_SALT = 15,
             KDF_ITERATION_COUNT = 16,
+            KDF_HKDF_INFO = 20,
             NCRYPTBUFFER_ECC_CURVE_NAME = 60,
         }
 

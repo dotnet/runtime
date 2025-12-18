@@ -5,6 +5,9 @@
 // its input parameter to a local, allowing it to be promoted.
 // The JIT should be able to generate identical code for these.
 
+
+namespace GitHub_5556;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

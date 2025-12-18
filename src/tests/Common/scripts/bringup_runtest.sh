@@ -527,7 +527,7 @@ function read_array {
             theArray[${#theArray[@]}]=$line
         fi
     done < "$1"
-    echo ${theArray[@]}
+    echo "${theArray[@]}"
 }
 
 function load_unsupported_tests {
@@ -1085,10 +1085,6 @@ do
             ;;
         --jitforcerelocs)
             export DOTNET_ForceRelocs=1
-            ;;
-        --link=*)
-            export ILLINK=${i#*=}
-            export DoLink=true
             ;;
         --tieredcompilation)
             export DOTNET_TieredCompilation=1

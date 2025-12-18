@@ -403,12 +403,12 @@ namespace System
                     Vector128<short> even = AdvSimd.Arm64.TransposeEven(nibbles, Vector128<byte>.Zero).AsInt16();
                     Vector128<short> odd = AdvSimd.Arm64.TransposeOdd(nibbles, Vector128<byte>.Zero).AsInt16();
 
-                    even = AdvSimd.ShiftLeftLogical(even, 4).AsInt16();
+                    even = (even << 4).AsInt16();
                     output = AdvSimd.AddSaturate(even, odd).AsByte();
                 }
                 else if (PackedSimd.IsSupported)
                 {
-                    Vector128<byte> shiftedNibbles = PackedSimd.ShiftLeft(nibbles, 4);
+                    Vector128<byte> shiftedNibbles = nibbles << 4;
                     Vector128<byte> zipped = PackedSimd.BitwiseSelect(nibbles, shiftedNibbles, Vector128.Create<ushort>(0xFF00).AsByte());
                     output = PackedSimd.AddPairwiseWidening(zipped).AsByte();
                 }

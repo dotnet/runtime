@@ -15,7 +15,6 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/corunix.hpp"
 #include "pal/context.h"
 #include "pal/thread.hpp"
-#include "pal/mutex.hpp"
 #include "pal/handlemgr.hpp"
 #include "pal/seh.hpp"
 #include "pal/signal.hpp"
@@ -104,8 +103,7 @@ CObjectType CorUnix::otThread(
                 NULL,   // No process local data cleanup routine
                 CObjectType::WaitableObject,
                 CObjectType::SingleTransitionObject,
-                CObjectType::ThreadReleaseHasNoSideEffects,
-                CObjectType::NoOwner
+                CObjectType::ThreadReleaseHasNoSideEffects
                 );
 
 CAllowedObjectTypes aotThread(otiThread);
@@ -796,20 +794,6 @@ CorUnix::InternalEndCurrentThread(
 {
     PAL_ERROR palError = NO_ERROR;
     ISynchStateController *pSynchStateController = NULL;
-
-    //
-    // Abandon any objects owned by this thread
-    //
-
-    palError = g_pSynchronizationManager->AbandonObjectsOwnedByThread(
-        pThread,
-        pThread
-        );
-
-    if (NO_ERROR != palError)
-    {
-        ERROR("Failure abandoning owned objects");
-    }
 
     //
     // Need to synchronize setting the thread state to TS_DONE since
@@ -1587,13 +1571,6 @@ CPalThread::ThreadEntry(
             ASSERT("Error %i attempting to suspend new thread\n", palError);
             goto fail;
         }
-
-        //
-        // We need to run any APCs that have already been queued for
-        // this thread.
-        //
-
-        (void) g_pSynchronizationManager->DispatchPendingAPCs(pThread);
     }
     else
     {
@@ -2076,12 +2053,6 @@ CPalThread::RunPreCreateInitializers(
         goto RunPreCreateInitializersExit;
     }
 
-    palError = apcInfo.InitializePreCreate();
-    if (NO_ERROR != palError)
-    {
-        goto RunPreCreateInitializersExit;
-    }
-
 RunPreCreateInitializersExit:
 
     return palError;
@@ -2163,12 +2134,6 @@ CPalThread::RunPostCreateInitializers(
     }
 
     palError = suspensionInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
-    if (NO_ERROR != palError)
-    {
-        goto RunPostCreateInitializersExit;
-    }
-
-    palError = apcInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
     if (NO_ERROR != palError)
     {
         goto RunPostCreateInitializersExit;
@@ -2514,7 +2479,16 @@ CPalThread::GetStackLimit()
     status = pthread_attr_destroy(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
 #else // TARGET_BROWSER
-    stackLimit = (void*)emscripten_stack_get_end();
+    uintptr_t stackLimitMaybe = emscripten_stack_get_end();
+    if (stackLimitMaybe == 0) // emscripten_stack_get_end can return 0.
+    {
+        stackLimitMaybe += sizeof(size_t);
+
+        // CoreCLR doesn't like using 0 as a limit address.
+        // So we bump it up a bit and tell emscripten about it.
+        emscripten_stack_set_limits(GetStackBase(), (void*)stackLimitMaybe);
+    }
+    stackLimit = (void*)stackLimitMaybe;
 #endif // TARGET_BROWSER
 #endif // !TARGET_APPLE
 

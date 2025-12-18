@@ -5592,30 +5592,6 @@ bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONG
 
     return false;
 }
-
-#ifdef TARGET_LINUX
-#include "user_events.h"
-bool UserEventsHelper::Enabled()
-{
-    return IsUserEventsEnabled();
-}
-
-bool UserEventsHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword)
-{
-    return IsUserEventsEnabledByKeyword(Context.UserEventsProvider.id, Level, Keyword);
-}
-#else // TARGET_LINUX
-bool UserEventsHelper::Enabled()
-{
-    return false;
-}
-
-bool UserEventsHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword)
-{
-    return false;
-}
-#endif // TARGET_LINUX
-
 #endif // FEATURE_PERFTRACING
 
 #if defined(HOST_UNIX)  && defined(FEATURE_PERFTRACING)

@@ -30,6 +30,7 @@
 NativeCodeVersion::NativeCodeVersion(PTR_MethodDesc pMethod) : m_pMethodDesc(pMethod) {}
 BOOL NativeCodeVersion::IsDefaultVersion() const { return TRUE; }
 PCODE NativeCodeVersion::GetNativeCode() const { return m_pMethodDesc->GetNativeCode(); }
+ReJITID NativeCodeVersion::GetILCodeVersionId() const { return 0; }
 
 #ifndef DACCESS_COMPILE
 BOOL NativeCodeVersion::SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected) { return m_pMethodDesc->SetNativeCodeInterlocked(pCode, pExpected); }
@@ -320,7 +321,7 @@ MethodDescVersioningState* NativeCodeVersion::GetMethodDescVersioningState()
     CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
     return pCodeVersionManager->GetMethodDescVersioningState(pMethodDesc);
 }
-#endif
+#endif // !DACCESS_COMPILE
 
 bool NativeCodeVersion::IsFinalTier() const
 {
@@ -1737,7 +1738,7 @@ PCODE CodeVersionManager::PublishVersionableCodeIfNecessary(
             break;
         }
 
-        if (!pMethodDesc->IsPointingToPrestub())
+        if (!pMethodDesc->ShouldCallPrestub())
         {
             *doFullBackpatchRef = true;
             return (PCODE)NULL;

@@ -1017,24 +1017,24 @@ static struct sigaction g_previousActivationHandler;
 
 static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 {
-    // Only accept activations from the current process
-    if (siginfo->si_pid == getpid()
-#ifdef HOST_APPLE
-        // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
-        // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
-        || siginfo->si_pid == 0
-#endif
-        )
-    {
-        // Make sure that errno is not modified
-        int savedErrNo = errno;
-        Thread::HijackCallback((NATIVE_CONTEXT*)context, NULL);
-        errno = savedErrNo;
-    }
-
-    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailable();
+    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailableAsyncSafe();
     if (pThread)
     {
+        // Only accept activations from the current process
+        if (siginfo->si_pid == getpid()
+#ifdef HOST_APPLE
+            // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
+            // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
+            || siginfo->si_pid == 0
+#endif
+            )
+        {
+            // Make sure that errno is not modified
+            int savedErrNo = errno;
+            Thread::HijackCallback((NATIVE_CONTEXT*)context, pThread, true /* doInlineSuspend */);
+            errno = savedErrNo;
+        }
+
         pThread->SetActivationPending(false);
     }
 
@@ -1088,6 +1088,11 @@ HijackFunc* PalGetHijackTarget(HijackFunc* defaultHijackTarget)
 
 void PalHijack(Thread* pThreadToHijack)
 {
+    if (pThreadToHijack->IsActivationPending())
+    {
+        return;
+    }
+
     pThreadToHijack->SetActivationPending(true);
 
     int status = pthread_kill(pThreadToHijack->GetOSThreadHandle(), INJECT_ACTIVATION_SIGNAL);
@@ -1232,21 +1237,6 @@ int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBa
     *pModuleNameOut = dl.dli_fname;
     return strlen(dl.dli_fname);
 #endif // defined(HOST_WASM)
-}
-
-static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
-static const int64_t SECS_TO_100NS = 10000000; /* 10^7 */
-
-void PalGetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
-{
-    struct timeval time = { 0 };
-    gettimeofday(&time, NULL);
-
-    int64_t result = ((int64_t)time.tv_sec + SECS_BETWEEN_1601_AND_1970_EPOCHS) * SECS_TO_100NS +
-        (time.tv_usec * 10);
-
-    lpSystemTimeAsFileTime->dwLowDateTime = (uint32_t)result;
-    lpSystemTimeAsFileTime->dwHighDateTime = (uint32_t)(result >> 32);
 }
 
 uint64_t PalGetCurrentOSThreadId()

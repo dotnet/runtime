@@ -1,6 +1,8 @@
-# Threaded runtime #
+# Threaded runtime
 
-## Building the runtime ##
+For WebAssembly documentation including building, testing, and debugging, see [WebAssembly Documentation](../../../docs/workflow/wasm-documentation.md).
+
+## Building the runtime
 
 Build the runtime with `/p:WasmEnableThreads=true` to enable support for multi-threading.
 

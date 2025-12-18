@@ -44,8 +44,30 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_ByteArrayNull()
+    {
+        Assert.Null(SerializeAndDeserialize<byte[]>(null,
+@"<?xml version=""1.0""?>
+<base64Binary d1p1:nil=""true"" xmlns:d1p1=""http://www.w3.org/2001/XMLSchema-instance"" />"));
+        byte[] x = new byte[] { 1, 2 };
+        byte[] y = SerializeAndDeserialize<byte[]>(x,
+@"<?xml version=""1.0""?>
+<base64Binary>AQI=</base64Binary>");
+        Assert.Equal(x, y);
+    }
+
+    [Fact]
     public static void Xml_CharAsRoot()
     {
+        Assert.StrictEqual(char.MinValue, SerializeAndDeserialize<char>(char.MinValue,
+@"<?xml version=""1.0""?>
+<char>0</char>"));
+        Assert.StrictEqual(char.MaxValue, SerializeAndDeserialize<char>(char.MaxValue,
+@"<?xml version=""1.0""?>
+<char>65535</char>"));
+        Assert.StrictEqual('a', SerializeAndDeserialize<char>('a',
+@"<?xml version=""1.0""?>
+<char>97</char>"));
         Assert.StrictEqual('\u00F1', SerializeAndDeserialize<char>('\u00F1',
 @"<?xml version=""1.0""?>
 <char>241</char>"));
@@ -2313,14 +2335,32 @@ public static partial class XmlSerializerTests
                 "<?xml version=\"1.0\"?>\r\n<anyType d1p1:type=\"boolean\" xmlns:d1p1=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.w3.org/2001/XMLSchema\">true</anyType>",
                 () => ser));
 
+        Assert.Equal(
+            "abc",
+            SerializeAndDeserialize<object>(
+                "abc",
+                "<?xml version=\"1.0\"?>\r\n<anyType d1p1:type=\"string\" xmlns:d1p1=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.w3.org/2001/XMLSchema\">abc</anyType>",
+                () => ser));
+
+        var nullDeserialized = SerializeAndDeserialize<object>(
+                null,
+                "<?xml version=\"1.0\"?>\r\n<xsd:anyType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />",
+                () => ser);
+        Assert.NotNull(nullDeserialized);
+        Assert.True(typeof(object) == nullDeserialized.GetType());
+    }
+
+    [Fact]
+    public static void Xml_Soap_ObjectAsRoot_Nullable()
+    {
         XmlTypeMapping nullableTypeMapping = new SoapReflectionImporter().ImportTypeMapping(typeof(TypeWithNullableObject));
-        var nullableSer = new XmlSerializer(nullableTypeMapping);
+        var ser = new XmlSerializer(nullableTypeMapping);
 
         var value = new TypeWithNullableObject { MyObject = null };
         TypeWithNullableObject actual = SerializeAndDeserialize(
                 value,
                 "<?xml version=\"1.0\"?>\r\n<TypeWithNullableObject xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" id=\"id1\">\r\n  <MyObject xsi:nil=\"true\" />\r\n</TypeWithNullableObject>",
-                () => nullableSer);
+                () => ser);
         Assert.NotNull(actual);
         Assert.Null(actual.MyObject);
     }
@@ -2449,6 +2489,34 @@ public static partial class XmlSerializerTests
         Assert.NotNull(cg);
     }
     
+    [Fact]
+    // XmlTypeMapping is not included in System.Xml.XmlSerializer 4.0.0.0 facade in GAC
+    public static void Xml_FromMappings()
+    {
+        var types = new[] { typeof(Guid), typeof(List<string>) };
+        XmlReflectionImporter importer = new XmlReflectionImporter();
+        XmlTypeMapping[] mappings = new XmlTypeMapping[types.Length];
+        for (int i = 0; i < types.Length; i++)
+        {
+            mappings[i] = importer.ImportTypeMapping(types[i]);
+        }
+        var serializers = XmlSerializer.FromMappings(mappings, typeof(object));
+        Xml_GuidAsRoot_Helper(serializers[0]);
+        Xml_ListGenericRoot_Helper(serializers[1]);
+    }
+
+    [Fact]
+    // XmlTypeMapping is not included in System.Xml.XmlSerializer 4.0.0.0 facade in GAC
+    public static void Xml_ConstructorWithTypeMapping()
+    {
+        XmlTypeMapping mapping = null;
+        XmlSerializer serializer = null;
+        Assert.Throws<ArgumentNullException>(() => { new XmlSerializer(mapping); });
+
+        mapping = new XmlReflectionImporter(null, null).ImportTypeMapping(typeof(List<string>));
+        serializer = new XmlSerializer(mapping);
+        Xml_ListGenericRoot_Helper(serializer);
+    }
 
     [Fact]
     public static void XmlMembersMapping_PrimitiveValue()

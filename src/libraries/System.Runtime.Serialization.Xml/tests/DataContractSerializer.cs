@@ -1512,6 +1512,34 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_DateTimeOffsetInIXmlSerializableContainer()
+    {
+        // Ensures DateTimeOffset deserialization works correctly when DCS is used
+        // within an IXmlSerializable implementation (regression coverage).
+        var originalDate = new DateTimeOffset(2025, 4, 17, 22, 45, 0, TimeSpan.FromHours(-4));
+        var container = new DateTimeOffsetIXmlSerializableContainer { Date = originalDate };
+
+        var serializer = new DataContractSerializer(typeof(DateTimeOffsetIXmlSerializableContainer));
+
+        string serialized;
+        using (var ms = new MemoryStream())
+        {
+            serializer.WriteObject(ms, container);
+            serialized = Encoding.UTF8.GetString(ms.ToArray());
+        }
+
+        DateTimeOffsetIXmlSerializableContainer deserialized;
+        using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(serialized)))
+        {
+            deserialized = (DateTimeOffsetIXmlSerializableContainer)serializer.ReadObject(ms);
+        }
+
+        Assert.Equal(originalDate, deserialized.Date);
+        Assert.Equal(originalDate.DateTime, deserialized.Date.DateTime);
+        Assert.Equal(originalDate.Offset, deserialized.Date.Offset);
+        Assert.Equal(originalDate.UtcDateTime, deserialized.Date.UtcDateTime);
+    }
+    [Fact]
     public static void DCS_PrivateTypeSerialization()
     {
         var value = new PrivateType();

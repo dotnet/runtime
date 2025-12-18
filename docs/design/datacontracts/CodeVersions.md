@@ -48,6 +48,9 @@ public virtual TargetPointer GetGCStressCodeCopy(NativeCodeVersionHandle codeVer
 
 // Gets the IL address given a code version
 public virtual TargetPointer GetIL(ILCodeVersionHandle ilCodeVersionHandle);
+
+// Determines whether an IL code version has default IL
+public virtual bool HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle);
 ```
 ### Extension Methods
 ```csharp
@@ -378,5 +381,13 @@ TargetPointer ICodeVersions.GetIL(ILCodeVersionHandle ilCodeVersionHandle, Targe
     }
 
     return ilAddress;
+}
+```
+
+### Do we have default IL
+```csharp
+bool ICodeVersions.HasDefaultIL(ILCodeVersionHandle ilCodeVersionHandle)
+{
+    return ilCodeVersionHandle.IsExplicit ? AsNode(ilCodeVersionHandle).ILAddress == TargetPointer.Null : true;
 }
 ```

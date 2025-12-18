@@ -303,8 +303,6 @@ UInt32_BOOL PalResetEvent(HANDLE arg1);
 UInt32_BOOL PalSetEvent(HANDLE arg1);
 uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3);
 
-void PalGetSystemTimeAsFileTime(FILETIME * arg1);
-
 void RuntimeThreadShutdown(void* thread);
 
 typedef void (*ThreadExitCallback)();

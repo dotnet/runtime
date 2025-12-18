@@ -196,7 +196,7 @@ namespace {lc.Namespace}
 ");
                 GenCases(lm, nestedIndentation);
                 _builder.Append($@"
-                    {nestedIndentation}_ => throw new global::System.IndexOutOfRangeException(nameof(index)),  // return the same exception LoggerMessage.Define returns in this case
+                    {nestedIndentation}_ => throw new global::System.IndexOutOfRangeException(),  // return the same exception LoggerMessage.Define returns in this case
                 {nestedIndentation}}};
             }}
 

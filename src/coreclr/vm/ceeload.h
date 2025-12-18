@@ -22,7 +22,6 @@
 #include "peassembly.h"
 #include "typehash.h"
 #include "contractimpl.h"
-#include "bitmask.h"
 #include "instmethhash.h"
 #include "eetwain.h"    // For EnumGCRefs (we should probably move that somewhere else, but can't
                         // find anything better (modulo common or vars.hpp)
@@ -686,6 +685,8 @@ private:
         RUNTIME_MARSHALLING_ENABLED_IS_CACHED = 0x00008000,
         //If runtime marshalling is enabled for this assembly
         RUNTIME_MARSHALLING_ENABLED = 0x00010000,
+
+        SKIP_TYPE_VALIDATION = 0x00020000,
     };
 
     Volatile<DWORD>          m_dwTransientFlags;
@@ -740,15 +741,17 @@ private:
     // For generic methods, IsGenericTypeDefinition() is true i.e. instantiation at formals
     LookupMap<PTR_MethodDesc>       m_MethodDefToDescMap;
 
-    // Linear mapping from MethodDef token to ILCodeVersioningState *
-    // This is used for Code Versioning logic
-    LookupMap<PTR_ILCodeVersioningState>    m_ILCodeVersioningStateMap;
-
     // Linear mapping from FieldDef token to FieldDesc*
     LookupMap<PTR_FieldDesc>        m_FieldDefToDescMap;
 
     // Linear mapping from GenericParam token to TypeVarTypeDesc*
     LookupMap<PTR_TypeVarTypeDesc>  m_GenericParamToDescMap;
+
+#ifdef FEATURE_CODE_VERSIONING
+    // Linear mapping from MethodDef token to ILCodeVersioningState *
+    // This is used for Code Versioning logic
+    LookupMap<PTR_ILCodeVersioningState>    m_ILCodeVersioningStateMap;
+#endif // FEATURE_CODE_VERSIONING
 
     // IL stub cache with fabricated MethodTable parented by this module.
     ILStubCache                *m_pILStubCache;
@@ -871,7 +874,9 @@ protected:
 
     void ApplyMetaData();
 
+#ifdef FEATURE_IJW
     void FixupVTables();
+#endif // FEATURE_IJW
 
     void FreeClassTables();
 
@@ -1252,6 +1257,7 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
+#ifdef FEATURE_CODE_VERSIONING
     PTR_ILCodeVersioningState LookupILCodeVersioningState(mdMethodDef token);
 
 #ifndef DACCESS_COMPILE
@@ -1270,6 +1276,7 @@ public:
         m_ILCodeVersioningStateMap.SetElement(RidFromToken(token), value);
     }
 #endif // !DACCESS_COMPILE
+#endif // FEATURE_CODE_VERSIONING
 
 #ifndef DACCESS_COMPILE
     FieldDesc *LookupFieldDef(mdFieldDef token)
@@ -1437,7 +1444,7 @@ public:
     LPCUTF8 GetDebugName() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetDebugName(); }
 #endif
 
-    PEImageLayout * GetReadyToRunImage();
+    ReadyToRunLoadedImage * GetReadyToRunImage();
     PTR_READYTORUN_IMPORT_SECTION GetImportSections(COUNT_T *pCount);
     PTR_READYTORUN_IMPORT_SECTION GetImportSectionFromIndex(COUNT_T index);
     PTR_READYTORUN_IMPORT_SECTION GetImportSectionForRVA(RVA rva);
@@ -1482,7 +1489,7 @@ public:
     BOOL FixupDelayListAux(TADDR pFixupList,
                            Ptr pThis, FixupNativeEntryCallback pfnCB,
                            PTR_READYTORUN_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
-                           PEDecoder * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
+                           ReadyToRunLoadedImage * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
     void RunEagerFixups();
     void RunEagerFixupsUnlocked();
 
@@ -1500,6 +1507,12 @@ public:
 #endif
     }
 
+    bool SkipTypeValidation() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return (m_dwPersistedFlags & SKIP_TYPE_VALIDATION) != 0;
+    }
 #ifdef FEATURE_READYTORUN
     PTR_ReadyToRunInfo GetReadyToRunInfo() const
     {
@@ -1714,7 +1727,9 @@ struct cdac_data<Module>
     static constexpr size_t MethodDefToDescMap = offsetof(Module, m_MethodDefToDescMap);
     static constexpr size_t TypeDefToMethodTableMap = offsetof(Module, m_TypeDefToMethodTableMap);
     static constexpr size_t TypeRefToMethodTableMap = offsetof(Module, m_TypeRefToMethodTableMap);
+#ifdef FEATURE_CODE_VERSIONING
     static constexpr size_t MethodDefToILCodeVersioningStateMap = offsetof(Module, m_ILCodeVersioningStateMap);
+#endif // FEATURE_CODE_VERSIONING
     static constexpr size_t DynamicILBlobTable = offsetof(Module, m_debuggerSpecificData.m_pDynamicILBlobTable);
 };
 

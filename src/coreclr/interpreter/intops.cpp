@@ -96,6 +96,8 @@ const uint32_t g_CEEOpNameOffsets[] = {
 
 const char* CEEOpName(OPCODE op)
 {
+    if (op >= (sizeof(g_CEEOpNameOffsets) / sizeof(g_CEEOpNameOffsets[0])))
+        return "unused";
     return ((const char*)&g_CEEOpNameCharacters) + g_CEEOpNameOffsets[op];
 }
 

@@ -14,6 +14,7 @@
 //
 #include "arraynative.h"
 #include "objectnative.h"
+#include "dllimport.h"
 #include "comdelegate.h"
 #include "customattribute.h"
 #include "comdynamic.h"
@@ -32,7 +33,6 @@
 #include "comdatetime.h"
 #include "debugdebugger.h"
 #include "assemblynative.hpp"
-#include "comwaithandle.h"
 
 #include "proftoeeinterfaceimpl.h"
 

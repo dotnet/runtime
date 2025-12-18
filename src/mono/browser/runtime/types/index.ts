@@ -77,7 +77,7 @@ export interface DotnetHostBuilder {
     /**
      * Runs the Main() method of the application and exits the runtime.
      * You can provide "command line" arguments for the Main() method using
-     * - dotnet.withApplicationArguments(["A", "B", "C"])
+     * - dotnet.withApplicationArguments("A", "B", "C")
      * - dotnet.withApplicationArgumentsFromQuery()
      * Note: after the runtime exits, it would reject all further calls to the API.
      * You can use runMain() if you want to keep the runtime alive.
@@ -251,18 +251,21 @@ export type Asset = {
 export type WasmAsset = Asset & {
     name: string;
     hash?: string | null | "";
+    cache?: RequestCache;
 }
 
 export type AssemblyAsset = Asset & {
     virtualPath: string;
     name: string; // actually URL
     hash?: string | null | "";
+    cache?: RequestCache;
 }
 
 export type PdbAsset = Asset & {
     virtualPath: string;
     name: string; // actually URL
     hash?: string | null | "";
+    cache?: RequestCache;
 }
 
 export type JsAsset = Asset & {
@@ -277,18 +280,21 @@ export type JsAsset = Asset & {
 
 export type SymbolsAsset = Asset & {
     name: string; // actually URL
+    cache?: RequestCache;
 }
 
 export type VfsAsset = Asset & {
     virtualPath: string;
     name: string; // actually URL
     hash?: string | null | "";
+    cache?: RequestCache;
 }
 
 export type IcuAsset = Asset & {
     virtualPath: string;
     name: string; // actually URL
     hash?: string | null | "";
+    cache?: RequestCache;
 }
 
 /**

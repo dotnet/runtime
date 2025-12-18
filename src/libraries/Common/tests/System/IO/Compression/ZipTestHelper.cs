@@ -336,9 +336,22 @@ namespace System.IO.Compression.Tests
 
         public static void DirFileNamesEqual(string actual, string expected)
         {
-            IOrderedEnumerable<string> actualEntries = Directory.EnumerateFileSystemEntries(actual, "*", SearchOption.AllDirectories).Order();
-            IOrderedEnumerable<string> expectedEntries = Directory.EnumerateFileSystemEntries(expected, "*", SearchOption.AllDirectories).Order();
-            AssertExtensions.SequenceEqual(expectedEntries.Select(Path.GetFileName).ToArray(), actualEntries.Select(Path.GetFileName).ToArray());
+            IEnumerable<string> actualEntries = Directory.EnumerateFileSystemEntries(actual, "*", SearchOption.AllDirectories).Select(Path.GetFileName);
+            IEnumerable<string> expectedEntries = Directory.EnumerateFileSystemEntries(expected, "*", SearchOption.AllDirectories).Select(Path.GetFileName);
+
+            if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
+            {
+                // iOS/tvOS filesystems use NFD by default for non-ASCII characters, so we normalize to NFC for cross-platform comparison
+                actualEntries = actualEntries.Select(name => name.Normalize(NormalizationForm.FormC)).Order();
+                expectedEntries = expectedEntries.Select(name => name.Normalize(NormalizationForm.FormC)).Order();
+            }
+            else
+            {
+                actualEntries = actualEntries.Order();
+                expectedEntries = expectedEntries.Order();
+            }
+
+            AssertExtensions.SequenceEqual(actualEntries.ToArray(), expectedEntries.ToArray());
         }
 
         private static async Task ItemEqual(string[] actualList, List<FileData> expectedList, bool isFile)
