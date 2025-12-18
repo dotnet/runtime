@@ -9,8 +9,6 @@
 #include "pal_x509.h"
 
 #include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -85,45 +83,32 @@ static uint64_t SSL_set_options_dynamic(SSL* s, uint64_t options)
 static int32_t g_config_specified_ciphersuites = 0;
 static char* g_emptyAlpn = "";
 
-#define OPENSSL_CONFIG_ERROR_MSG " Check OpenSSL configuration (/etc/ssl/openssl.cnf)\n"
-
 static void DetectCiphersuiteConfiguration(void)
 {
     // Check to see if there's a registered default CipherString. If not, we will use our own.
     SSL_CTX* ctx = SSL_CTX_new(TLS_method());
-    if (ctx == NULL)
-    {
-        fprintf(stderr, "FATAL: SSL_CTX_new failed." OPENSSL_CONFIG_ERROR_MSG);
-        abort();
-    }
+    assert(ctx != NULL);
 
     // SSL_get_ciphers returns a shared pointer, no need to save/free it.
     // It gets invalidated every time we touch the configuration, so we can't ask just once, either.
     SSL* ssl = SSL_new(ctx);
-    if (ssl == NULL)
-    {
-        fprintf(stderr, "FATAL: SSL_new failed\n");
-        SSL_CTX_free(ctx);
-        abort();
-    }
+    assert(ssl != NULL);
     int defaultCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
     SSL_free(ssl);
 
     int rv = SSL_CTX_set_cipher_list(ctx, "ALL");
     if (!rv)
     {
-        fprintf(stderr, "FATAL: SSL_CTX_set_cipher_list failed." OPENSSL_CONFIG_ERROR_MSG);
+        // If cipher list configuration fails, treat it like system_default not found.
+        // This can happen with broken OpenSSL configurations, but we can still
+        // use the default cipher list.
+        ERR_clear_error();
         SSL_CTX_free(ctx);
-        abort();
+        return;
     }
 
     ssl = SSL_new(ctx);
-    if (ssl == NULL)
-    {
-        fprintf(stderr, "FATAL: SSL_new failed\n");
-        SSL_CTX_free(ctx);
-        abort();
-    }
+    assert(ssl != NULL);
     int allCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
     SSL_free(ssl);
 
@@ -136,26 +121,17 @@ static void DetectCiphersuiteConfiguration(void)
         rv = SSL_CTX_set_cipher_list(ctx, "RSA");
         if (!rv)
         {
-            fprintf(stderr, "FATAL: SSL_CTX_set_cipher_list failed." OPENSSL_CONFIG_ERROR_MSG);
+            // If cipher list configuration fails, treat it like system_default not found.
+            ERR_clear_error();
             SSL_CTX_free(ctx);
-            abort();
+            return;
         }
         ssl = SSL_new(ctx);
-        if (ssl == NULL)
-        {
-            fprintf(stderr, "FATAL: SSL_new failed\n");
-            SSL_CTX_free(ctx);
-            abort();
-        }
+        assert(ssl != NULL);
         allCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
         SSL_free(ssl);
         // If the implicit default, "ALL", and "RSA" all have the same cardinality, just fail.
-        if (allCount == defaultCount)
-        {
-            fprintf(stderr, "FATAL: OpenSSL cipher configuration is broken\n");
-            SSL_CTX_free(ctx);
-            abort();
-        }
+        assert(allCount != defaultCount);
     }
 
     if (!SSL_CTX_config(ctx, "system_default"))
@@ -166,12 +142,7 @@ static void DetectCiphersuiteConfiguration(void)
     else
     {
         ssl = SSL_new(ctx);
-        if (ssl == NULL)
-        {
-            fprintf(stderr, "FATAL: SSL_new failed\n");
-            SSL_CTX_free(ctx);
-            abort();
-        }
+        assert(ssl != NULL);
         int after = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
         SSL_free(ssl);
 
