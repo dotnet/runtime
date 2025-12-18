@@ -19,12 +19,12 @@ namespace System.Net.Sockets.Tests
         protected static IPEndPoint GetGetDummyTestEndpoint(AddressFamily addressFamily = AddressFamily.InterNetwork) =>
             addressFamily == AddressFamily.InterNetwork ? new IPEndPoint(IPAddress.Parse("1.2.3.4"), 1234) : new IPEndPoint(IPAddress.Parse("1:2:3::4"), 1234);
 
-        private static IPEndPoint CreateLoopbackUdpEndpoint(AddressFamily family, out Socket receiver)
+        private static (IPEndPoint endpoint, Socket receiver) CreateLoopbackUdpEndpoint(AddressFamily family)
         {
             IPAddress loopback = family == AddressFamily.InterNetwork ? IPAddress.Loopback : IPAddress.IPv6Loopback;
-            receiver = new Socket(family, SocketType.Dgram, ProtocolType.Udp);
+            Socket receiver = new Socket(family, SocketType.Dgram, ProtocolType.Udp);
             receiver.Bind(new IPEndPoint(loopback, 0)); // ephemeral port on loopback
-            return (IPEndPoint)receiver.LocalEndPoint!;
+            return ((IPEndPoint)receiver.LocalEndPoint!, receiver);
         }
 
         protected SendTo(ITestOutputHelper output) : base(output)
@@ -86,26 +86,28 @@ namespace System.Net.Sockets.Tests
         public async Task Datagram_UDP_ShouldImplicitlyBindLocalEndpoint()
         {
             using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            using Socket receiver;
-            IPEndPoint remote = CreateLoopbackUdpEndpoint(socket.AddressFamily, out receiver);
-            byte[] buffer = new byte[32];
-
-            Task sendTask = SendToAsync(socket, new ArraySegment<byte>(buffer), remote);
-
-            // Asynchronous calls shall alter the property immediately:
-            if (!UsesSync)
+            var (remote, receiver) = CreateLoopbackUdpEndpoint(socket.AddressFamily);
+            using (receiver)
             {
-                Assert.NotNull(socket.LocalEndPoint);
+                byte[] buffer = new byte[32];
+
+                Task sendTask = SendToAsync(socket, new ArraySegment<byte>(buffer), remote);
+
+                // Asynchronous calls shall alter the property immediately:
+                if (!UsesSync)
+                {
+                    Assert.NotNull(socket.LocalEndPoint);
+                }
+
+                await sendTask;
+
+                // In synchronous calls, we should wait for the completion of the helper task:
+                EndPoint? local = socket.LocalEndPoint;
+                Assert.NotNull(local);
+                var localIp = (IPEndPoint)local!;
+                Assert.NotEqual(0, localIp.Port);
+                Assert.True(IPAddress.IsLoopback(localIp.Address), "Implicit bind should select loopback when sending to loopback.");
             }
-
-            await sendTask;
-
-            // In synchronous calls, we should wait for the completion of the helper task:
-            EndPoint? local = socket.LocalEndPoint;
-            Assert.NotNull(local);
-            var localIp = (IPEndPoint)local!;
-            Assert.NotEqual(0, localIp.Port);
-            Assert.True(IPAddress.IsLoopback(localIp.Address), "Implicit bind should select loopback when sending to loopback.");
         }
 
         [ConditionalFact]
