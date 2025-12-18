@@ -9,10 +9,38 @@
 #include "codegen.h"
 #include "fgwasm.h"
 
+#ifdef TARGET_64BIT
+static const instruction INS_I_const = INS_i64_const;
+static const instruction INS_I_add   = INS_i64_add;
+#else  // !TARGET_64BIT
+static const instruction INS_I_const = INS_i32_const;
+static const instruction INS_I_add   = INS_i32_add;
+#endif // !TARGET_64BIT
+
 void CodeGen::genMarkLabelsForCodegen()
 {
     // No work needed here for now.
     // We mark labels as needed in genEmitStartBlock.
+}
+
+//------------------------------------------------------------------------
+// genWasmLocals: generate wasm local declarations
+//
+// TODO-WASM: pre-declare all "register" locals
+void CodeGen::genWasmLocals()
+{
+    // TODO-WASM: proper local count, local declarations, and shadow stack maintenance
+    GetEmitter()->emitIns_I(INS_local_cnt, EA_8BYTE, (unsigned)WasmValueType::Count - 1);
+    // Emit 1 local of each supported value type to ensure
+    // the declarations can be encoded.
+    // TODO-WASM: remove and declare locals based on RA assignments once this is supported.
+    int localOffset  = 0;
+    int countPerType = 1;
+    for (unsigned i = (uint8_t)WasmValueType::Invalid + 1; i < (unsigned)WasmValueType::Count; i++)
+    {
+        GetEmitter()->emitIns_I_Ty(INS_local_decl, countPerType, static_cast<WasmValueType>(i), localOffset);
+        localOffset += countPerType;
+    }
 }
 
 void CodeGen::genFnEpilog(BasicBlock* block)
@@ -39,9 +67,16 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 
     // TODO-WASM: shadow stack maintenance
-    // TODO-WASM-CQ: do not emit "return" in case this is the last block
-
-    instGen(INS_return);
+    // TODO-WASM: we need to handle the end-of-function case if we reach the end of a codegen for a function
+    // and do NOT have an epilog. In those cases we currently will not emit an end instruction.
+    if (block->IsLast() || compiler->bbIsFuncletBeg(block->Next()))
+    {
+        instGen(INS_end);
+    }
+    else
+    {
+        instGen(INS_return);
+    }
 }
 
 void CodeGen::genCaptureFuncletPrologEpilogInfo()
@@ -266,6 +301,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_GE:
         case GT_GT:
             genCodeForCompare(treeNode->AsOp());
+            break;
+
+        case GT_LCL_ADDR:
+            genCodeForLclAddr(treeNode->AsLclFld());
+            break;
+
+        case GT_LCL_FLD:
+            genCodeForLclFld(treeNode->AsLclFld());
             break;
 
         case GT_LCL_VAR:
@@ -742,6 +785,38 @@ void CodeGen::genCodeForNegNot(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForLclAddr: Generates the code for GT_LCL_ADDR.
+//
+// Arguments:
+//    lclAddrNode - the node.
+//
+void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
+{
+    assert(lclAddrNode->OperIs(GT_LCL_ADDR));
+
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+    GetEmitter()->emitIns_S(INS_I_const, EA_PTRSIZE, lclAddrNode->GetLclNum(), lclAddrNode->GetLclOffs());
+    GetEmitter()->emitIns(INS_I_add);
+    genProduceReg(lclAddrNode);
+}
+
+//------------------------------------------------------------------------
+// genCodeForLclFld: Produce code for a GT_LCL_FLD node.
+//
+// Arguments:
+//    tree - the GT_LCL_FLD node
+//
+void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
+{
+    assert(tree->OperIs(GT_LCL_FLD));
+    LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
+
+    GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
+    GetEmitter()->emitIns_S(ins_Load(tree->TypeGet()), emitTypeSize(tree), tree->GetLclNum(), tree->GetLclOffs());
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
 // genCodeForLclVar: Produce code for a GT_LCL_VAR node.
 //
 // Arguments:
@@ -759,14 +834,14 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     if (!varDsc->lvIsRegCandidate())
     {
         var_types type = varDsc->GetRegisterType(tree);
-        // TODO-WASM: actually local.get the frame base local here.
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetFramePointerReg()));
         GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(tree), tree->GetLclNum(), 0);
         genProduceReg(tree);
     }
     else
     {
         assert(genIsValidReg(varDsc->GetRegNum()));
-        unsigned wasmLclIndex = UnpackWasmReg(varDsc->GetRegNum());
+        unsigned wasmLclIndex = WasmRegToIndex(varDsc->GetRegNum());
         GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(tree), wasmLclIndex);
     }
 }
@@ -785,23 +860,15 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     assert(!op1->IsMultiRegNode());
     genConsumeRegs(op1);
 
+    // We rewrite all stack stores to STOREIND because the address must be first on the operand stack, so here only
+    // enregistered locals need to be handled.
     LclVarDsc* varDsc    = compiler->lvaGetDesc(tree);
     regNumber  targetReg = varDsc->GetRegNum();
+    assert(genIsValidReg(targetReg) && varDsc->lvIsRegCandidate());
 
-    if (!varDsc->lvIsRegCandidate())
-    {
-        // TODO-WASM: handle these cases in lower/ra.
-        // Emit drop for now to simulate the store effect on the wasm stack.
-        GetEmitter()->emitIns(INS_drop);
-        genUpdateLife(tree);
-    }
-    else
-    {
-        assert(genIsValidReg(targetReg));
-        unsigned wasmLclIndex = UnpackWasmReg(targetReg);
-        GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), wasmLclIndex);
-        genUpdateLifeStore(tree, targetReg, varDsc);
-    }
+    unsigned wasmLclIndex = WasmRegToIndex(targetReg);
+    GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(tree), wasmLclIndex);
+    genUpdateLifeStore(tree, targetReg, varDsc);
 }
 
 //------------------------------------------------------------------------
@@ -895,15 +962,39 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
 {
     assert(treeNode->OperIsCmpCompare());
 
+    genTreeOps op          = treeNode->OperGet();
+    bool       invertSense = false;
+
     if ((treeNode->gtFlags & GTF_RELOP_NAN_UN) != 0)
     {
-        NYI_WASM("genCompareFloat: unordered compares");
+        // We don't expect to see GT_EQ unordered,
+        // since CIL doesn't have this mode.
+        //
+        assert(op != GT_EQ);
+
+        // Wasm float comparisons other than "fne" return false for NaNs.
+        // Our unordered float compares need to return true for NaNs.
+        //
+        // So we can re-express say GT_GE (UN) as !GT_LT
+        //
+        if (op != GT_NE)
+        {
+            op          = GenTree::ReverseRelop(op);
+            invertSense = true;
+        }
+    }
+    else
+    {
+        // We don't expect to see GT_NE ordered,
+        // since CIL doesn't have this mode.
+        //
+        assert(op != GT_NE);
     }
 
     genConsumeOperands(treeNode);
 
     instruction ins;
-    switch (PackOperAndType(treeNode->OperGet(), treeNode->gtOp1->TypeGet()))
+    switch (PackOperAndType(op, treeNode->gtOp1->TypeGet()))
     {
         case PackOperAndType(GT_EQ, TYP_FLOAT):
             ins = INS_f32_eq;
@@ -946,6 +1037,12 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
     }
 
     GetEmitter()->emitIns(ins);
+
+    if (invertSense)
+    {
+        GetEmitter()->emitIns(INS_i32_eqz);
+    }
+
     genProduceReg(treeNode);
 }
 
