@@ -6909,6 +6909,82 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
     return fIsInEpilog;
 }
 
+#if defined(TARGET_ARM64)
+// This function is used to check if Pointer Authentication (PAC) is enabled for this stack frame or not.
+bool IsPacPresent(EECodeInfo *pCodeInfo)
+{
+    _ASSERTE(pCodeInfo->IsValid());
+
+    // Lookup the function entry for the IP
+    PTR_RUNTIME_FUNCTION FunctionEntry = pCodeInfo->GetFunctionEntry();
+
+    // We should always get a function entry for a managed method
+    _ASSERTE(FunctionEntry != NULL);
+    DWORD_PTR ImageBase = pCodeInfo->GetModuleBase();
+
+    _ASSERTE((FunctionEntry->UnwindData & 3) == 0); // Packed unwind data are not used with managed code
+    ULONG_PTR UnwindDataPtr = (ULONG_PTR)(ImageBase + FunctionEntry->UnwindData);
+
+    // Read the header word. For unwind info layout details refer https://learn.microsoft.com/en-us/cpp/build/arm64-exception-handling?view=msvc-170#arm64-exception-handling-information
+    DWORD HeaderWord = *(DWORD*)UnwindDataPtr;
+    UnwindDataPtr += 4;
+
+    _ASSERTE(((HeaderWord >> 18) & 3) == 0); // Version 0 is the only supported version.
+
+    ULONG UnwindWords = (HeaderWord >> 27) & 31;
+    ULONG EpilogScopeCount = (HeaderWord >> 22) & 31;
+    if (EpilogScopeCount == 0 && UnwindWords == 0)
+    {
+        EpilogScopeCount = *(DWORD*)UnwindDataPtr;
+        UnwindDataPtr += 4;
+        UnwindWords = (EpilogScopeCount >> 16) & 0xff;
+        EpilogScopeCount &= 0xffff;
+    }
+
+    if ((HeaderWord & (1 << 21)) != 0)
+    {
+        EpilogScopeCount = 0;
+    }
+
+    ULONG_PTR UnwindCodePtr = UnwindDataPtr + 4 * EpilogScopeCount;
+    ULONG_PTR UnwindCodesEndPtr = UnwindCodePtr + 4 * UnwindWords;
+
+    while (UnwindCodePtr < UnwindCodesEndPtr)
+    {
+        ULONG CurCode = *(BYTE*)UnwindCodePtr;
+        if ((CurCode & 0xfe) == 0xe4)   // The last unwind code
+        {
+            break;
+        }
+
+        if (CurCode == 0xFC) // Unwind code for PAC (pac_sign_lr)
+        {
+            return true;
+        }
+
+        if (CurCode < 0xC0)
+        {
+            UnwindCodePtr += 1;
+        }
+        else if (CurCode < 0xE0)
+        {
+            UnwindCodePtr += 2;
+        }
+        else
+        {
+            static const BYTE UnwindCodeSizeTable[32] =
+            {
+                4,1,2,1,1,1,1,3, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 2,3,4,5,1,1,1,1
+            };
+
+            UnwindCodePtr += UnwindCodeSizeTable[CurCode - 0xE0];
+        }
+    }
+
+    return false;
+}
+#endif // TARGET_ARM64
+
 #endif // FEATURE_HIJACK && (!TARGET_X86 || TARGET_UNIX)
 
 #define EXCEPTION_VISUALCPP_DEBUGGER        ((DWORD) (1<<30 | 0x6D<<16 | 5000))

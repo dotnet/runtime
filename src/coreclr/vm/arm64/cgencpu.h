@@ -218,7 +218,8 @@ typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
 
 inline PCODE GetIP(const T_CONTEXT * context) {
     LIMITED_METHOD_DAC_CONTRACT;
-    return context->Pc;
+    //TODO-PAC: Strip/Authenticate while populating the context.
+    return (PCODE) context->Pc;
 }
 
 inline void SetIP(T_CONTEXT *context, PCODE eip) {

@@ -4543,9 +4543,20 @@ void CodeGen::genPushCalleeSavedRegisters()
 
             assert(totalFrameSize <= STACK_PROBE_BOUNDARY_THRESHOLD_BYTES);
 
-            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, -totalFrameSize,
-                                          INS_OPTS_PRE_INDEX);
-            compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -totalFrameSize);
+            if (JitConfig.JitPacEnabled() != 0)
+            {
+                // Avoid pre-indexed variant of store to save FP/LR when PAC is enabled.
+                genStackPointerAdjustment(-totalFrameSize, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
+                GetEmitter()->emitPacInProlog();
+                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
+                compiler->unwindSaveRegPair(REG_FP, REG_LR, 0);
+            }
+            else
+            {
+                GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, -totalFrameSize,
+                                              INS_OPTS_PRE_INDEX);
+                compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -totalFrameSize);
+            }
 
             maskSaveRegsInt &= ~(RBM_FP | RBM_LR);                        // We've already saved FP/LR
             offset = (int)compiler->compLclFrameSize + 2 * REGSIZE_BYTES; // 2 for FP/LR
@@ -4596,6 +4607,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 
                 assert(compiler->lvaOutgoingArgSpaceSize + 2 * REGSIZE_BYTES <= (unsigned)totalFrameSize);
 
+                GetEmitter()->emitPacInProlog();
                 GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
                                               compiler->lvaOutgoingArgSpaceSize);
                 compiler->unwindSaveRegPair(REG_FP, REG_LR, compiler->lvaOutgoingArgSpaceSize);
@@ -4710,6 +4722,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     }
     else
     {
+        GetEmitter()->emitPacInProlog();
         // No frame pointer (no chaining).
         assert((maskSaveRegsInt & RBM_FP) == 0);
         assert((maskSaveRegsInt & RBM_LR) != 0);
