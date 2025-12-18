@@ -112,7 +112,7 @@ namespace JIT.HardwareIntrinsics.Arm
             where U : unmanaged, INumber<U>
             where T : unmanaged, INumber<T>
         {
-            U result = U.Zero;
+            int result = 0;
 
             if (mask[i] != T.Zero)
             {
@@ -125,13 +125,13 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            return result;
+            return U.CreateChecked(result);
         }
 
         public static byte CountMatchingElementsIn128BitSegments<T>(T[] left, T[] right, int i)
             where T : unmanaged, INumber<T>
         {
-            byte result = 0;
+            int result = 0;
 
             for (int j = 0; j < right.Length; j++)
             {
@@ -141,7 +141,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 }
             }
 
-            return result;
+            return byte.CreateChecked(result);
         }
 
         public static unsafe int HighestSetBit<T>(T value)
