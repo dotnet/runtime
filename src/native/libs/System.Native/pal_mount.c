@@ -39,28 +39,53 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
 #else
     struct statvfs* mounts = NULL;
 #endif
-    // First call to get the number of mount points
-    int count = getfsstat(NULL, 0, MNT_NOWAIT);
-    if (count <= 0)
-    {
-        return count < 0 ? -1 : 0;
-    }
 
-    // Allocate buffer for mount points (with extra capacity in case new mounts appear)
-    size_t bufferSize = (size_t)(count + 4) * sizeof(*mounts);
-    mounts = malloc(bufferSize);
-    if (mounts == NULL)
-    {
-        errno = ENOMEM;
-        return -1;
-    }
+    int count;
+    int capacity = 0;
 
-    // Second call to get actual mount point information
-    count = getfsstat(mounts, (int)bufferSize, MNT_NOWAIT);
-    if (count < 0)
+    // Loop to handle the case where mount points are added between calls
+    while (1)
     {
-        free(mounts);
-        return -1;
+        // Get the current number of mount points
+        count = getfsstat(NULL, 0, MNT_NOWAIT);
+        if (count < 0)
+        {
+            free(mounts);
+            return -1;
+        }
+        if (count == 0)
+        {
+            free(mounts);
+            return 0;
+        }
+
+        // Reallocate buffer if needed
+        if (count > capacity)
+        {
+            free(mounts);
+            capacity = count;
+            mounts = malloc((size_t)capacity * sizeof(*mounts));
+            if (mounts == NULL)
+            {
+                errno = ENOMEM;
+                return -1;
+            }
+        }
+
+        // Get actual mount point information
+        count = getfsstat(mounts, capacity * (int)sizeof(*mounts), MNT_NOWAIT);
+        if (count < 0)
+        {
+            free(mounts);
+            return -1;
+        }
+
+        // If count fits in capacity, we got all mount points
+        if (count <= capacity)
+        {
+            break;
+        }
+        // Otherwise, more mounts were added - loop again with larger buffer
     }
 
     for (int32_t i = 0; i < count; i++)
