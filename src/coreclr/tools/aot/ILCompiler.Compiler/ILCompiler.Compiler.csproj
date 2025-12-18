@@ -612,6 +612,8 @@
     <Compile Include="Compiler\DependencyAnalysis\UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\SealedVTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\StackTraceDocumentsNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\StackTraceLineNumbersNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StackTraceMethodMappingNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunHelperNode.cs" />

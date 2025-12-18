@@ -100,8 +100,8 @@ namespace ILCompiler
             new("--ildump") { Description = "Dump IL assembly listing for compiler-generated IL" };
         public Option<bool> NoInlineTls { get; } =
             new("--noinlinetls") { Description = "Do not generate inline thread local statics" };
-        public Option<bool> EmitStackTraceData { get; } =
-            new("--stacktracedata") { Description = "Emit data to support generating stack trace strings at runtime" };
+        public Option<string> StackTraceData { get; } =
+            new("--stacktracedata") { Description = "Stack trace data to generate (one of: frames, lines, none)" };
         public Option<string> MethodBodyFolding { get; } =
             new("--methodbodyfolding") { Description = "Fold identical method bodies (one of: none, generic, all" };
         public Option<string[]> InitAssemblies { get; } =
@@ -234,7 +234,7 @@ namespace ILCompiler
             Options.Add(NoScanner);
             Options.Add(NoInlineTls);
             Options.Add(IlDump);
-            Options.Add(EmitStackTraceData);
+            Options.Add(StackTraceData);
             Options.Add(MethodBodyFolding);
             Options.Add(InitAssemblies);
             Options.Add(FeatureSwitches);

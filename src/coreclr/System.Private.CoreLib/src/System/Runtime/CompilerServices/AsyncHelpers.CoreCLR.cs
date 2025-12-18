@@ -146,6 +146,28 @@ namespace System.Runtime.CompilerServices
         }
     }
 
+    [StructLayout(LayoutKind.Explicit)]
+    internal unsafe ref struct AsyncDispatcherInfo
+    {
+        // Dispatcher info for next dispatcher present on stack, or
+        // null if none.
+        [FieldOffset(0)]
+        public AsyncDispatcherInfo* Next;
+
+        // Next continuation the dispatcher will process.
+#if TARGET_64BIT
+        [FieldOffset(8)]
+#else
+        [FieldOffset(4)]
+#endif
+        public Continuation? NextContinuation;
+
+        // Information about current task dispatching, to be used for async
+        // stackwalking.
+        [ThreadStatic]
+        internal static unsafe AsyncDispatcherInfo* t_current; // Debugger depends on the exact name of this field.
+    }
+
     public static partial class AsyncHelpers
     {
 #if FEATURE_INTERPRETER
@@ -417,19 +439,19 @@ namespace System.Runtime.CompilerServices
                 ExecutionAndSyncBlockStore contexts = default;
                 contexts.Push();
 
-                RuntimeAsyncTaskCore.DispatcherInfo dispatcherInfo;
-                dispatcherInfo.Next = RuntimeAsyncTaskCore.t_dispatcherInfo;
-                dispatcherInfo.NextContinuation = MoveContinuationState();
-                RuntimeAsyncTaskCore.t_dispatcherInfo = &dispatcherInfo;
+                AsyncDispatcherInfo asyncDispatcherInfo;
+                asyncDispatcherInfo.Next = AsyncDispatcherInfo.t_current;
+                asyncDispatcherInfo.NextContinuation = MoveContinuationState();
+                AsyncDispatcherInfo.t_current = &asyncDispatcherInfo;
 
                 while (true)
                 {
-                    Debug.Assert(dispatcherInfo.NextContinuation != null);
+                    Debug.Assert(asyncDispatcherInfo.NextContinuation != null);
                     try
                     {
-                        Continuation curContinuation = dispatcherInfo.NextContinuation;
+                        Continuation curContinuation = asyncDispatcherInfo.NextContinuation;
                         Continuation? nextContinuation = curContinuation.Next;
-                        dispatcherInfo.NextContinuation = nextContinuation;
+                        asyncDispatcherInfo.NextContinuation = nextContinuation;
 
                         ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref GetResultStorage();
                         Continuation? newContinuation = curContinuation.ResumeInfo->Resume(curContinuation, ref resultLoc);
@@ -439,13 +461,13 @@ namespace System.Runtime.CompilerServices
                             newContinuation.Next = nextContinuation;
                             HandleSuspended();
                             contexts.Pop();
-                            RuntimeAsyncTaskCore.t_dispatcherInfo = dispatcherInfo.Next;
+                            AsyncDispatcherInfo.t_current = asyncDispatcherInfo.Next;
                             return;
                         }
                     }
                     catch (Exception ex)
                     {
-                        Continuation? handlerContinuation = UnwindToPossibleHandler(dispatcherInfo.NextContinuation);
+                        Continuation? handlerContinuation = UnwindToPossibleHandler(asyncDispatcherInfo.NextContinuation);
                         if (handlerContinuation == null)
                         {
                             // Tail of AsyncTaskMethodBuilderT.SetException
@@ -455,7 +477,7 @@ namespace System.Runtime.CompilerServices
 
                             contexts.Pop();
 
-                            RuntimeAsyncTaskCore.t_dispatcherInfo = dispatcherInfo.Next;
+                            AsyncDispatcherInfo.t_current = asyncDispatcherInfo.Next;
 
                             if (!successfullySet)
                             {
@@ -466,16 +488,16 @@ namespace System.Runtime.CompilerServices
                         }
 
                         handlerContinuation.SetException(ex);
-                        dispatcherInfo.NextContinuation = handlerContinuation;
+                        asyncDispatcherInfo.NextContinuation = handlerContinuation;
                     }
 
-                    if (dispatcherInfo.NextContinuation == null)
+                    if (asyncDispatcherInfo.NextContinuation == null)
                     {
                         bool successfullySet = TrySetResult(m_result);
 
                         contexts.Pop();
 
-                        RuntimeAsyncTaskCore.t_dispatcherInfo = dispatcherInfo.Next;
+                        AsyncDispatcherInfo.t_current = asyncDispatcherInfo.Next;
 
                         if (!successfullySet)
                         {
@@ -485,10 +507,10 @@ namespace System.Runtime.CompilerServices
                         return;
                     }
 
-                    if (QueueContinuationFollowUpActionIfNecessary(dispatcherInfo.NextContinuation))
+                    if (QueueContinuationFollowUpActionIfNecessary(asyncDispatcherInfo.NextContinuation))
                     {
                         contexts.Pop();
-                        RuntimeAsyncTaskCore.t_dispatcherInfo = dispatcherInfo.Next;
+                        AsyncDispatcherInfo.t_current = asyncDispatcherInfo.Next;
                         return;
                     }
                 }
@@ -581,31 +603,6 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(state is RuntimeAsyncTask<T>);
                 ((RuntimeAsyncTask<T>)state).DispatchContinuations();
             };
-        }
-
-        internal static class RuntimeAsyncTaskCore
-        {
-            [StructLayout(LayoutKind.Explicit)]
-            internal unsafe ref struct DispatcherInfo
-            {
-                // Dispatcher info for next dispatcher present on stack, or
-                // null if none.
-                [FieldOffset(0)]
-                public DispatcherInfo* Next;
-
-                // Next continuation the dispatcher will process.
-#if TARGET_64BIT
-                [FieldOffset(8)]
-#else
-                [FieldOffset(4)]
-#endif
-                public Continuation? NextContinuation;
-            }
-
-            // Information about current task dispatching, to be used for async
-            // stackwalking.
-            [ThreadStatic]
-            internal static unsafe DispatcherInfo* t_dispatcherInfo;
         }
 
         // Change return type to RuntimeAsyncTask<T?> -- no benefit since this is used for Task returning thunks only

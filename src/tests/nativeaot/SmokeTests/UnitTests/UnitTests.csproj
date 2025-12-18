@@ -12,6 +12,7 @@
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
 
     <IlcOrderFile>order.txt</IlcOrderFile>
+    <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
   </PropertyGroup>
 
   <!-- Enable runtime async; delete this block once it's on by default -->

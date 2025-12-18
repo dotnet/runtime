@@ -589,6 +589,9 @@ protected:
     void genReserveProlog(BasicBlock* block); // currently unused
     void genReserveEpilog(BasicBlock* block);
     void genFnProlog();
+#if defined(TARGET_WASM)
+    void genWasmLocals();
+#endif
     void genFnEpilog(BasicBlock* block);
 
     void genReserveFuncletProlog(BasicBlock* block);

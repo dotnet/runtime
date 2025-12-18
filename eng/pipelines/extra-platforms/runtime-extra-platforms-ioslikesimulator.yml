@@ -148,7 +148,7 @@ jobs:
     platforms:
       - iossimulator_x64
       - iossimulator_arm64
-      # - tvossimulator_arm64 TODO: https://github.com/dotnet/runtime/issues/120055
+      - tvossimulator_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -192,7 +192,7 @@ jobs:
     platforms:
       - iossimulator_x64
       - iossimulator_arm64
-      # - tvossimulator_arm64 TODO: https://github.com/dotnet/runtime/issues/120055
+      - tvossimulator_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange

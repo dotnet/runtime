@@ -267,7 +267,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="--runtimeknob:RUNTIME_IDENTIFIER=$(RuntimeIdentifier)" />
       <IlcArg Condition="$(ServerGarbageCollection) == 'true'" Include="--runtimeopt:gcServer=1" />
       <IlcArg Condition="$(IlcGenerateCompleteTypeMetadata) == 'true'" Include="--completetypemetadata" />
-      <IlcArg Condition="$(StackTraceSupport) != 'false'" Include="--stacktracedata" />
+      <IlcArg Condition="$(StackTraceSupport) != 'false' and $(StackTraceLineNumberSupport) != 'true'" Include="--stacktracedata:frames" />
+      <IlcArg Condition="$(StackTraceSupport) != 'false' and $(StackTraceLineNumberSupport) == 'true'" Include="--stacktracedata:lines" />
       <IlcArg Condition="$(IlcScanReflection) != 'false'" Include="--scanreflection" />
       <IlcArg Include="--methodbodyfolding:$(_IlcMethodBodyFoldingValue)" />
       <IlcArg Condition="$(Optimize) == 'true' and $(OptimizationPreference) == 'Size'" Include="--Os" />

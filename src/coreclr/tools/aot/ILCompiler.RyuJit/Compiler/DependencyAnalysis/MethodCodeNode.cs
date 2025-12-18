@@ -256,6 +256,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEnumerable<NativeSequencePoint> GetNativeSequencePoints()
         {
+            // This can be null if we're not generating debug info
+            if (_debugLocInfos == null)
+                yield break;
+
             var sequencePoints = new (string Document, int LineNumber)[_debugLocInfos.Length * 4 /* chosen empirically */];
             try
             {

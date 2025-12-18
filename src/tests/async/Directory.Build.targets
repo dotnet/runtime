@@ -9,10 +9,5 @@
     <DisableProjectBuild Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetArchitecture)' == 'arm64'">true</DisableProjectBuild>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <!-- runtime async testing in main repo NYI -->
-    <DisableProjectBuild Condition="'$(TestBuildMode)' != 'nativeaot'">true</DisableProjectBuild>
-  </PropertyGroup>
-
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 </Project>

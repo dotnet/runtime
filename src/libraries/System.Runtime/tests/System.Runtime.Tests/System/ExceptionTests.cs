@@ -181,15 +181,7 @@ namespace System.Tests
         {
             try
             {
-                string frameParserRegex;
-                if (PlatformDetection.IsLineNumbersSupported)
-                {
-                    frameParserRegex = @"\s+at\s.+\.(?<memberName>[^(.]+)\([^)]*\)\sin\s(?<filePath>.*)\:line\s(?<lineNumber>[\d]+)";
-                }
-                else
-                {
-                    frameParserRegex = @"\s+at\s.+\.(?<memberName>[^(.]+)";
-                }
+                string frameParserRegex = @"\s+at\s.+\.(?<memberName>[^(.]+)\([^)]*\)\sin\s(?<filePath>.*)\:line\s(?<lineNumber>[\d]+)";
 
                 using (var sr = new StringReader(reportedCallStack))
                 {
@@ -200,12 +192,8 @@ namespace System.Tests
                     var match = Regex.Match(frame, frameParserRegex);
                     Assert.True(match.Success);
                     Assert.Equal(expectedStackFrame.CallerMemberName, match.Groups["memberName"].Value);
-
-                    if (PlatformDetection.IsLineNumbersSupported)
-                    {
-                        Assert.Equal(expectedStackFrame.SourceFilePath, match.Groups["filePath"].Value);
-                        Assert.Equal(expectedStackFrame.SourceLineNumber, Convert.ToInt32(match.Groups["lineNumber"].Value));
-                    }
+                    Assert.Equal(expectedStackFrame.SourceFilePath, match.Groups["filePath"].Value);
+                    Assert.Equal(expectedStackFrame.SourceLineNumber, Convert.ToInt32(match.Groups["lineNumber"].Value));
                 }
             }
             catch
