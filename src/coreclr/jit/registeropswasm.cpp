@@ -61,6 +61,23 @@ regNumber MakeWasmReg(unsigned index, var_types type)
     return static_cast<regNumber>(regValue);
 }
 
+const char* WasmValueTypeName(WasmValueType type)
+{
+    // clang-format off
+    static const char* const WasmValueTypeNames[] = {
+        "Invalid",
+        "i32",
+        "i64",
+        "f32",
+        "f64",
+    };
+    static_assert(ArrLen(WasmValueTypeNames) == static_cast<unsigned>(WasmValueType::Count));
+    // clang-format on
+
+    assert(WasmValueType::Invalid <= type && type < WasmValueType::Count);
+    return WasmValueTypeNames[(unsigned)type];
+}
+
 //------------------------------------------------------------------------
 // UnpackWasmReg: Extract the WASM local's index and type out of a register
 //

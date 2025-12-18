@@ -1412,6 +1412,8 @@ namespace Internal.JitInterface
                 {
                     if (resultMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
                         resultMethod = rawPinvoke.Target;
+                    if (resultMethod is AsyncMethodVariant asyncVariant)
+                        resultMethod = asyncVariant.Target;
 
                     // It's okay to strip the instantiation away because we don't need a MethodSpec
                     // token - SignatureBuilder will generate the generic method signature
@@ -1419,7 +1421,11 @@ namespace Internal.JitInterface
                     resultMethod = resultMethod.GetTypicalMethodDefinition();
 
                     Debug.Assert(resultMethod is EcmaMethod);
-                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultMethod).OwningType));
+                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultMethod).OwningType))
+                    {
+                        ModuleToken result = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(resultMethod, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
+                        return result;
+                    }
                     token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultMethod).Handle);
                     module = ((EcmaMethod)resultMethod).Module;
                 }
@@ -1439,7 +1445,11 @@ namespace Internal.JitInterface
                 {
                     if (resultDef is EcmaType ecmaType)
                     {
-                        Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(ecmaType));
+                        if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(ecmaType))
+                        {
+                            ModuleToken result = _compilation.NodeFactory.Resolver.GetModuleTokenForType(ecmaType, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
+                            return result;
+                        }
                         token = (mdToken)MetadataTokens.GetToken(ecmaType.Handle);
                         module = ecmaType.Module;
                     }
