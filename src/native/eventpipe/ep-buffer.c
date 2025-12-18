@@ -126,11 +126,13 @@ ep_buffer_write_event (
 
 	// Don't write if the guards are not valid, helps narrow time windows for buffer corruption
 	if (buffer->buffer_guard_level != EP_BUFFER_GUARD_LEVEL_NONE)
+	{
 		ep_buffer_ensure_guard_consistency (buffer);
 
-	if ((buffer->buffer_guard_level >= EP_BUFFER_GUARD_LEVEL_PROTECT_OUTSIDE_WRITES) &&
-		!ep_rt_vprotect (buffer->buffer, buffer->limit - buffer->buffer, EP_PAGE_PROTECTION_READWRITE))
-		ep_rt_fatal_error_with_message ("Failed to add read-write protection to EventPipeBuffer");
+		if ((buffer->buffer_guard_level >= EP_BUFFER_GUARD_LEVEL_PROTECT_OUTSIDE_WRITES) &&
+			!ep_rt_vprotect (buffer->buffer, buffer->limit - buffer->buffer, EP_PAGE_PROTECTION_READWRITE))
+			ep_rt_fatal_error_with_message ("Failed to add read-write protection to EventPipeBuffer");
+	}
 
 	// Calculate the location of the data payload.
 	data_dest = (ep_event_payload_get_size (payload) == 0 ? NULL : buffer->current + sizeof (*instance) - sizeof (instance->stack_contents_instance.stack_frames) + ep_stack_contents_get_full_size (stack));
@@ -257,11 +259,13 @@ ep_buffer_convert_to_read_only (EventPipeBuffer *buffer)
 		buffer->current_read_event = NULL;
 
 	if (buffer->buffer_guard_level != EP_BUFFER_GUARD_LEVEL_NONE)
-		ep_buffer_ensure_guard_consistency (buffer);
+	{
+		if ((buffer->buffer_guard_level >= EP_BUFFER_GUARD_LEVEL_PROTECT_ON_READONLY) &&
+			!ep_rt_vprotect (buffer->buffer, buffer->limit - buffer->buffer, EP_PAGE_PROTECTION_READONLY))
+			ep_rt_fatal_error_with_message ("Failed to add read-only protection to EventPipeBuffer");
 
-	if ((buffer->buffer_guard_level >= EP_BUFFER_GUARD_LEVEL_PROTECT_ON_READONLY) &&
-		!ep_rt_vprotect (buffer->buffer, buffer->limit - buffer->buffer, EP_PAGE_PROTECTION_READONLY))
-		ep_rt_fatal_error_with_message ("Failed to add read-only protection to EventPipeBuffer");
+		ep_buffer_ensure_guard_consistency (buffer);
+	}
 }
 
 void

@@ -852,7 +852,7 @@ ep_buffer_manager_alloc (
 		instance->remaining_sequence_point_alloc_budget = sequence_point_allocation_budget;
 	}
 
-	buffer_guard_level = EP_MIN (ep_rt_config_value_get_buffer_guard_level (), EP_BUFFER_GUARD_LEVEL_PROTECT_OUTSIDE_WRITES);
+	buffer_guard_level = EP_MIN (ep_rt_config_value_get_buffer_guard_level (), EP_BUFFER_GUARD_LEVEL_MAX);
 	instance->buffer_guard_level = (EventPipeBufferGuardLevel)buffer_guard_level;
 
 ep_on_exit:

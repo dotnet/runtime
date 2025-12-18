@@ -23,6 +23,7 @@
 #include "rhassert.h"
 #include <RhConfig.h>
 #include <runtime_version.h>
+#include <stdio.h>
 
 #ifdef TARGET_UNIX
 #define sprintf_s snprintf
@@ -1836,7 +1837,7 @@ ep_rt_vprotect (
 }
 
 /*
- * Fail fast
+ * Fail fast and ensure proper crash dump and diagnostic reporting.
  */
 
 static
@@ -1844,7 +1845,15 @@ inline
 void
 ep_rt_fatal_error_with_message (const ep_char8_t *message)
 {
-    /* Not implemented, no-op */
+    STATIC_CONTRACT_NOTHROW;
+    if (message != nullptr)
+    {
+        fputs(reinterpret_cast<const char*>(message), stderr);
+        fputs("\n", stderr);
+        fflush(stderr);
+    }
+
+    RhFailFast();
 }
 
 #endif /* ENABLE_PERFTRACING */

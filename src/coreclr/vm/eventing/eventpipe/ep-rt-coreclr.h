@@ -1956,10 +1956,9 @@ ep_rt_vprotect (
 }
 
 /*
- * Fail fast
- * Uses COR_E_EXECUTIONENGINE to classify as runtime/internal corruption and routes through EEPOLICY
- * to ensure proper crash dump and diagnostic reporting.
+ * Fail fast and ensure proper crash dump and diagnostic reporting.
  */
+
 static
 EP_ALWAYS_INLINE
 void
@@ -1967,7 +1966,7 @@ ep_rt_fatal_error_with_message (const ep_char8_t *message)
 {
 	if (message != nullptr) {
 		fputs(reinterpret_cast<const char*>(message), stderr);
-		fputc('\n', stderr);
+		fputs("\n", stderr);
 		fflush(stderr);
 	}
 
