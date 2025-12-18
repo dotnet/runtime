@@ -766,6 +766,11 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
         case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             return RBM_VALIDATE_INDIRECT_CALL_TRASH;
 
+#ifdef RBM_INTERFACELOOKUP_FOR_SLOT_TRASH
+        case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
+            return RBM_INTERFACELOOKUP_FOR_SLOT_TRASH;
+#endif
+
         default:
             return RBM_CALLEE_TRASH;
     }
@@ -5849,6 +5854,7 @@ void CodeGen::genDefinePendingCallLabel(GenTreeCall* call)
         {
             case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             case CORINFO_HELP_VIRTUAL_FUNC_PTR:
+            case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
             case CORINFO_HELP_MEMSET:
             case CORINFO_HELP_MEMCPY:
                 return;

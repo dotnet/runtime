@@ -1897,6 +1897,47 @@ void CallArgs::RemoveUnsafe(CallArg* arg)
     assert(!"Did not find arg to remove in CallArgs::Remove");
 }
 
+//---------------------------------------------------------------
+// RemoveLate: Remove an argument from the argument list and late argument list.
+//
+// Parameters:
+//   arg - The arg to remove.
+//
+// Remarks:
+//   This can be used to remove arguments after ABI determination and after morph.
+//   It removes the argument from both the early and late list. However, no ABI
+//   information is updated. Caller needs to know what they are doing.
+//
+void CallArgs::RemoveLate(CallArg* arg)
+{
+    CallArg** slot = &m_lateHead;
+    while (*slot != nullptr)
+    {
+        if (*slot == arg)
+        {
+            *slot = arg->GetLateNext();
+            break;
+        }
+
+        slot = &(*slot)->LateNextRef();
+    }
+
+    slot = &m_head;
+    while (*slot != nullptr)
+    {
+        if (*slot == arg)
+        {
+            *slot = arg->GetNext();
+            RemovedWellKnownArg(arg->GetWellKnownArg());
+            return;
+        }
+
+        slot = &(*slot)->NextRef();
+    }
+
+    assert(!"Did not find arg to remove in CallArgs::RemoveLate");
+}
+
 #ifdef TARGET_XARCH
 //---------------------------------------------------------------
 // NeedsVzeroupper: Determines if the call needs a vzeroupper emitted before it is invoked

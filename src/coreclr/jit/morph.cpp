@@ -1021,12 +1021,12 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         }
     }
 
-    // When CFG is enabled and this is a delegate call or vtable call we must
+    // When CFG is enabled and this is a delegate call or virtual call we must
     // compute the call target before all late args. However this will
     // effectively null-check 'this', which should happen only after all
     // arguments are evaluated. Thus we must evaluate all args with side
     // effects to a temp.
-    if (comp->opts.IsCFGEnabled() && (call->IsVirtualVtable() || call->IsDelegateInvoke()))
+    if (comp->opts.IsCFGEnabled() && (call->IsVirtual() || call->IsDelegateInvoke()))
     {
         // Always evaluate 'this' to temp.
         assert(HasThisPointer());

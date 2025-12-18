@@ -43,6 +43,27 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
 #undef CALLEE_SAVED_REGISTER
 }
 
+#ifdef TARGET_WINDOWS
+void UpdateRegDisplayFromArgumentRegisters(REGDISPLAY * pRD, ArgumentRegisters* pRegs)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // TODO: Fix ENUM_ARGUMENT_REGISTERS to have consistent casing for rcx and rdx
+
+    T_CONTEXT * pContext = pRD->pCurrentContext;
+    pContext->Rcx = pRegs->RCX;
+    pContext->Rdx = pRegs->RDX;
+    pContext->R8 = pRegs->R8;
+    pContext->R9 = pRegs->R9;
+
+    KNONVOLATILE_CONTEXT_POINTERS * pContextPointers = pRD->pCurrentContextPointers;
+    pContextPointers->Rcx = (PULONG64)&pRegs->RCX;
+    pContextPointers->Rdx = (PULONG64)&pRegs->RDX;
+    pContextPointers->R8 = (PULONG64)&pRegs->R8;
+    pContextPointers->R9 = (PULONG64)&pRegs->R9;
+}
+#endif
+
 void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
 {
     LIMITED_METHOD_CONTRACT;
@@ -82,6 +103,11 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, GetCalleeSavedRegisters());
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
+
+#ifdef TARGET_WINDOWS
+    // TODO: Quick hack
+    UpdateRegDisplayFromArgumentRegisters(pRD, GetArgumentRegisters());
+#endif
 
     SyncRegDisplayToCurrentContext(pRD);
 

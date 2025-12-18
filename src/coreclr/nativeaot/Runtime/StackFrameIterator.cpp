@@ -36,6 +36,10 @@
 #if defined(FEATURE_DYNAMIC_CODE)
 EXTERN_C CODE_LOCATION ReturnFromUniversalTransition;
 EXTERN_C CODE_LOCATION ReturnFromUniversalTransition_DebugStepTailCall;
+#if (defined(HOST_AMD64) || defined(HOST_ARM64)) && defined(HOST_WINDOWS)
+EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionReturnResult;
+EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionReturnResult_DebugStepTailCall;
+#endif
 #endif
 
 EXTERN_C CODE_LOCATION RhpCallCatchFunclet2;
@@ -2233,7 +2237,13 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
 
 #if defined(FEATURE_DYNAMIC_CODE)
     if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransition) ||
-             EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransition_DebugStepTailCall))
+             EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransition_DebugStepTailCall)
+#if (defined(HOST_AMD64) || defined(HOST_ARM64)) && defined(HOST_WINDOWS)
+             ||
+             EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransitionReturnResult) ||
+             EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransitionReturnResult_DebugStepTailCall)
+#endif
+             )
     {
         return InUniversalTransitionThunk;
     }

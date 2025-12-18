@@ -4840,6 +4840,7 @@ public:
     CallArg* InsertAfterThisOrFirst(Compiler* comp, const NewCallArg& arg);
     void     PushLateBack(CallArg* arg);
     void     Remove(CallArg* arg);
+    void     RemoveLate(CallArg* arg);
     void     RemoveUnsafe(CallArg* arg);
 
     template <typename CopyNodeFunc>
