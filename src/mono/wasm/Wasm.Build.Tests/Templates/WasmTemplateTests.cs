@@ -349,5 +349,30 @@ namespace Wasm.Build.Tests
                 Assert.False(fileExists, $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
             }
         }
+
+        [Theory]
+        [InlineData("true", true)]
+        [InlineData("false", false)]
+        [InlineData("", true)] // Default case
+        public void UseMonoRuntimeParameter(string useMonoRuntimeArg, bool expectUseMonoRuntime)
+        {
+            Configuration config = Configuration.Debug;
+            string extraArgs = string.IsNullOrEmpty(useMonoRuntimeArg) ? "" : $"--UseMonoRuntime {useMonoRuntimeArg}";
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "usemonoruntime", extraArgs: extraArgs);
+
+            string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
+            string projectFile = File.ReadAllText(info.ProjectFilePath);
+
+            // Verify UseMonoRuntime presence in the project file
+            bool containsUseMonoRuntime = projectFile.Contains("<UseMonoRuntime>true</UseMonoRuntime>");
+            if (expectUseMonoRuntime)
+            {
+                Assert.True(containsUseMonoRuntime, $"Expected <UseMonoRuntime>true</UseMonoRuntime> to be present in the project file when --UseMonoRuntime {useMonoRuntimeArg}");
+            }
+            else
+            {
+                Assert.False(containsUseMonoRuntime, $"Expected <UseMonoRuntime>true</UseMonoRuntime> to not be present in the project file when --UseMonoRuntime {useMonoRuntimeArg}");
+            }
+        }
     }
 }
