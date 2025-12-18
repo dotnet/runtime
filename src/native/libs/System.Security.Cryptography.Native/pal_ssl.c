@@ -130,8 +130,13 @@ static void DetectCiphersuiteConfiguration(void)
         assert(ssl != NULL);
         allCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
         SSL_free(ssl);
-        // If the implicit default, "ALL", and "RSA" all have the same cardinality, just fail.
-        assert(allCount != defaultCount);
+        // If the implicit default, "ALL", and "RSA" all have the same cardinality,
+        // we can't determine if there's a custom configuration, so treat it like not found.
+        if (allCount == defaultCount)
+        {
+            SSL_CTX_free(ctx);
+            return;
+        }
     }
 
     if (!SSL_CTX_config(ctx, "system_default"))
