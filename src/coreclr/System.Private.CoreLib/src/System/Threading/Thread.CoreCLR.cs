@@ -63,7 +63,10 @@ namespace System.Threading
         // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
         private bool _mayNeedResetForThreadPool;
 
-        // Set in unmanaged and read in managed code.
+        // This is set in two places:
+        // For threads started with Thread.Start: Set in managed code as the thread is exiting.
+        // For external threads that attach to the runtime: Set in unmanaged code as part of thread detach.
+        // This is only read in managed code.
         private bool _isDead;
         private bool _isThreadPool;
 
@@ -290,6 +293,11 @@ namespace System.Threading
         {
             get
             {
+                if (_isDead)
+                {
+                    return ThreadState.Stopped;
+                }
+
                 var state = (ThreadState)GetThreadState(GetNativeHandle());
                 GC.KeepAlive(this);
                 return state;
@@ -323,16 +331,6 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ClearWaitSleepJoinState")]
         [SuppressGCTransition]
         private static partial void ClearWaitSleepJoinState(ThreadHandle t);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ReportDead")]
-        [SuppressGCTransition]
-        private static partial void ReportDead(ThreadHandle t);
-
-        internal void NotifyThreadDeath()
-        {
-            ReportDead(GetNativeHandle());
-            GC.KeepAlive(this);
-        }
 
         /// <summary>
         /// An unstarted thread can be marked to indicate that it will host a
@@ -568,16 +566,15 @@ namespace System.Threading
         }
 #endif
 
-#pragma warning disable CA1822 // Member 'OnThreadExiting' does not access instance data and can be marked as static
         private void OnThreadExiting()
-#pragma warning restore CA1822 // Member 'OnThreadExiting' does not access instance data and can be marked as static
         {
-#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
-            // Update the native side to report that the thread is dead.
-            // We do this before OnThreadExiting and SetJoinHandle so that any threads
-            // waiting on this thread to end will correctly see that it is stopped
+            // Consider this managed thread as dead.
+            // The unmanaged thread is still alive, but will die soon, after cleaning up some state.
+            // We set _isDead = true before calling _waitInfo?.OnThreadExiting() and SetJoinHandle()
+            // so that any threads waiting on this thread to end will correctly see that it is stopped
             // when we set the join handle.
-            NotifyThreadDeath();
+            _isDead = true;
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
             // Inform the wait subsystem that the thread is exiting. For instance, this would abandon any mutexes locked by
             // the thread.
             _waitInfo?.OnThreadExiting();

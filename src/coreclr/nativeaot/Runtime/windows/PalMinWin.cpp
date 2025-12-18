@@ -673,9 +673,9 @@ static void* g_returnAddressHijackTarget = NULL;
 static void NTAPI ActivationHandler(ULONG_PTR parameter)
 {
     CLONE_APC_CALLBACK_DATA* data = (CLONE_APC_CALLBACK_DATA*)parameter;
-    Thread::HijackCallback((NATIVE_CONTEXT*)data->ContextRecord, NULL);
-
     Thread* pThread = (Thread*)data->Parameter;
+    Thread::HijackCallback((NATIVE_CONTEXT*)data->ContextRecord, pThread, true /* doInlineSuspend */);
+
     pThread->SetActivationPending(false);
 }
 
@@ -833,7 +833,7 @@ void PalHijack(Thread* pThreadToHijack)
 
         if (isSafeToRedirect)
         {
-            Thread::HijackCallback((NATIVE_CONTEXT*)&win32ctx, pThreadToHijack);
+            Thread::HijackCallback((NATIVE_CONTEXT*)&win32ctx, pThreadToHijack, false /* doInlineSuspend */);
         }
     }
 
