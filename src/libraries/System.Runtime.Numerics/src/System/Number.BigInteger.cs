@@ -21,7 +21,7 @@ namespace System
                                                            | NumberStyles.AllowParentheses | NumberStyles.AllowDecimalPoint
                                                            | NumberStyles.AllowThousands | NumberStyles.AllowExponent
                                                            | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier
-                                                           | NumberStyles.AllowBinarySpecifier);
+                                                           | NumberStyles.AllowBinarySpecifier | NumberStyles.AllowTrailingInvalidCharacters);
 
         private static nuint[]? s_cachedPowersOf1e9;
 
@@ -42,27 +42,20 @@ namespace System
 
         internal static bool TryValidateParseStyleInteger(NumberStyles style, [NotNullWhen(false)] out ArgumentException? e)
         {
-            // Check for undefined flags
-            if ((style & InvalidNumberStyles) != 0)
+            // Check for undefined flags or using AllowHexSpecifier/AllowBinarySpecifier each with anything other than AllowLeadingWhite/AllowTrailingWhite/AllowTrailingInvalidCharacters.
+            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0 &&
+                (style & ~(NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters)) != 0 &&
+                (style & ~(NumberStyles.BinaryNumber | NumberStyles.AllowTrailingInvalidCharacters)) != 0)
             {
-                e = new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
+                e = new ArgumentException((style & InvalidNumberStyles) != 0 ? SR.Argument_InvalidNumberStyles : SR.Argument_InvalidHexBinaryStyle, nameof(style));
                 return false;
-            }
-
-            if ((style & NumberStyles.AllowHexSpecifier) != 0)
-            { // Check for hex number
-                if ((style & ~NumberStyles.HexNumber) != 0)
-                {
-                    e = new ArgumentException(SR.Argument_InvalidHexStyle, nameof(style));
-                    return false;
-                }
             }
 
             e = null;
             return true;
         }
 
-        internal static ParsingStatus TryParseBigInteger<TChar>(ReadOnlySpan<TChar> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
+        internal static ParsingStatus TryParseBigInteger<TChar>(ReadOnlySpan<TChar> value, NumberStyles style, NumberFormatInfo info, out BigInteger result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             if (!TryValidateParseStyleInteger(style, out ArgumentException? e))
@@ -72,18 +65,18 @@ namespace System
 
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
             {
-                return TryParseBigIntegerHexOrBinaryNumberStyle<BigIntegerHexParser<TChar>, TChar>(value, style, out result);
+                return TryParseBigIntegerHexOrBinaryNumberStyle<BigIntegerHexParser<TChar>, TChar>(value, style, out result, out elementsConsumed);
             }
 
             if ((style & NumberStyles.AllowBinarySpecifier) != 0)
             {
-                return TryParseBigIntegerHexOrBinaryNumberStyle<BigIntegerBinaryParser<TChar>, TChar>(value, style, out result);
+                return TryParseBigIntegerHexOrBinaryNumberStyle<BigIntegerBinaryParser<TChar>, TChar>(value, style, out result, out elementsConsumed);
             }
 
-            return TryParseBigIntegerNumber(value, style, info, out result);
+            return TryParseBigIntegerNumber(value, style, info, out result, out elementsConsumed);
         }
 
-        internal static unsafe ParsingStatus TryParseBigIntegerNumber<TChar>(ReadOnlySpan<TChar> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
+        internal static unsafe ParsingStatus TryParseBigIntegerNumber<TChar>(ReadOnlySpan<TChar> value, NumberStyles style, NumberFormatInfo info, out BigInteger result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             scoped Span<byte> buffer;
@@ -92,6 +85,7 @@ namespace System
             if (value.Length == 0)
             {
                 result = default;
+                elementsConsumed = 0;
                 return ParsingStatus.Failed;
             }
 
@@ -110,7 +104,7 @@ namespace System
             {
                 NumberBuffer number = new(NumberBufferKind.Integer, buffer);
 
-                if (!TryStringToNumber(value, style, ref number, info))
+                if (!TryStringToNumber(value, style, ref number, info, out elementsConsumed))
                 {
                     result = default;
                     ret = ParsingStatus.Failed;
@@ -137,38 +131,41 @@ namespace System
                 throw e;
             }
 
-            ParsingStatus status = TryParseBigInteger(value, style, info, out BigInteger result);
+            ParsingStatus status = TryParseBigInteger(value, style, info, out BigInteger result, out _);
+
             if (status != ParsingStatus.OK)
             {
                 ThrowOverflowOrFormatException(status);
             }
-
             return result;
         }
 
-        internal static ParsingStatus TryParseBigIntegerHexOrBinaryNumberStyle<TParser, TChar>(ReadOnlySpan<TChar> value, NumberStyles style, out BigInteger result)
+        internal static ParsingStatus TryParseBigIntegerHexOrBinaryNumberStyle<TParser, TChar>(ReadOnlySpan<TChar> value, NumberStyles style, out BigInteger result, out int elementsConsumed)
             where TParser : struct, IBigIntegerHexOrBinaryParser<TParser, TChar>
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            int whiteIndex;
+            int index = 0;
+            int trailingWhiteLength = 0;
 
             // Skip past any whitespace at the beginning.
             if ((style & NumberStyles.AllowLeadingWhite) != 0)
             {
-                for (whiteIndex = 0; whiteIndex < value.Length; whiteIndex++)
+                for (index = 0; index < value.Length; index++)
                 {
-                    if (!IsWhite(TChar.CastToUInt32(value[whiteIndex])))
+                    if (!IsWhite(TChar.CastToUInt32(value[index])))
                     {
                         break;
                     }
                 }
 
-                value = value[whiteIndex..];
+                value = value[index..];
             }
 
             // Skip past any whitespace at the end.
             if ((style & NumberStyles.AllowTrailingWhite) != 0)
             {
+                int whiteIndex;
+
                 for (whiteIndex = value.Length - 1; whiteIndex >= 0; whiteIndex--)
                 {
                     if (!IsWhite(TChar.CastToUInt32(value[whiteIndex])))
@@ -176,8 +173,10 @@ namespace System
                         break;
                     }
                 }
+                whiteIndex++;
 
-                value = value[..(whiteIndex + 1)];
+                value = value[..whiteIndex];
+                trailingWhiteLength = value.Length - whiteIndex;
             }
 
             if (value.IsEmpty)
@@ -203,7 +202,9 @@ namespace System
 
                 // Fill leading sign bits
                 leading |= signBits << (leadingBitsCount * TParser.BitsPerDigit);
+
                 value = value[leadingBitsCount..];
+                index += leadingBitsCount;
             }
 
             // Skip all the blocks consists of the same bit of sign
@@ -215,11 +216,14 @@ namespace System
                 }
 
                 value = value[TParser.DigitsPerBlock..];
+                index += TParser.DigitsPerBlock;
             }
 
             if (value.IsEmpty)
             {
                 // There's nothing beyond significant leading block. Return it as the result.
+                elementsConsumed = index + trailingWhiteLength;
+
                 nint signedLeading = (nint)leading;
                 if ((nint)(leading ^ signBits) >= 0 && int.MinValue < signedLeading && signedLeading <= int.MaxValue)
                 {
@@ -253,16 +257,29 @@ namespace System
             if (totalUIntCount > BigInteger.MaxLength)
             {
                 result = default;
+                elementsConsumed = 0;
                 return ParsingStatus.Overflow;
             }
 
             nuint[] bits = new nuint[totalUIntCount];
             Span<nuint> wholeBlockDestination = bits.AsSpan(0, wholeBlockCount);
 
-            if (!TParser.TryParseWholeBlocks(value, wholeBlockDestination))
+            if (!TParser.TryParseWholeBlocks(value, wholeBlockDestination, out int blocksWritten))
             {
-                goto FailExit;
+                if ((style & NumberStyles.AllowTrailingInvalidCharacters) != 0)
+                {
+                    nuint[] actualBits = new nuint[blocksWritten];
+                    wholeBlockDestination.Slice(0, blocksWritten).CopyTo(actualBits);
+
+                    bits = actualBits;
+                    trailingWhiteLength = 0;
+                }
+                else
+                {
+                    goto FailExit;
+                }
             }
+            index += (TParser.DigitsPerBlock * blocksWritten);
 
             bits[^1] = leading;
 
@@ -280,6 +297,7 @@ namespace System
                     if (bits.Length + 1 > BigInteger.MaxLength)
                     {
                         result = default;
+                        elementsConsumed = 0;
                         return ParsingStatus.Overflow;
                     }
 
@@ -288,6 +306,7 @@ namespace System
                 }
 
                 result = new BigInteger(-1, bits);
+                elementsConsumed = index + trailingWhiteLength;
                 return ParsingStatus.OK;
             }
             else
@@ -296,11 +315,13 @@ namespace System
 
                 // For positive values, it's done
                 result = new BigInteger(1, bits);
+                elementsConsumed = index + trailingWhiteLength;
                 return ParsingStatus.OK;
             }
 
         FailExit:
             result = default;
+            elementsConsumed = 0;
             return ParsingStatus.Failed;
         }
 
@@ -1548,7 +1569,7 @@ namespace System
         static virtual bool TryParseSingleBlock(ReadOnlySpan<TChar> input, out nuint result)
             => TParser.TryParseUnalignedBlock(input, out result);
 
-        static virtual bool TryParseWholeBlocks(ReadOnlySpan<TChar> input, Span<nuint> destination)
+        static virtual bool TryParseWholeBlocks(ReadOnlySpan<TChar> input, Span<nuint> destination, out int blocksWritten)
         {
             Debug.Assert(destination.Length * TParser.DigitsPerBlock == input.Length);
 
@@ -1557,10 +1578,12 @@ namespace System
                 int blockStart = input.Length - (i + 1) * TParser.DigitsPerBlock;
                 if (!TParser.TryParseSingleBlock(input.Slice(blockStart, TParser.DigitsPerBlock), out destination[i]))
                 {
+                    blocksWritten = i;
                     return false;
                 }
             }
 
+            blocksWritten = destination.Length;
             return true;
         }
     }

@@ -84,7 +84,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsWhiteSpace<TChar>(this ReadOnlySpan<TChar> span)
+        internal static bool IsWhiteSpace<TChar>(this ReadOnlySpan<TChar> span, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             int elemsConsumed;
@@ -93,15 +93,18 @@ namespace System
             {
                 if (DecodeFromUtfChar(span, out Rune rune, out elemsConsumed) != OperationStatus.Done)
                 {
+                    elementsConsumed = i;
                     return false;
                 }
 
                 if (!Rune.IsWhiteSpace(rune))
                 {
+                    elementsConsumed = i;
                     return false;
                 }
             }
 
+            elementsConsumed = span.Length;
             return true;
         }
 
