@@ -5000,8 +5000,9 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
 #endif
             ExecutionManager::GetEEJitManager()->GetCodeHeapIterator(pLoaderAllocatorFilter)
 #ifdef FEATURE_INTERPRETER
-        :   ExecutionManager::GetInterpreterJitManager()->GetCodeHeapIterator(pLoaderAllocatorFilter);
+        :   ExecutionManager::GetInterpreterJitManager()->GetCodeHeapIterator(pLoaderAllocatorFilter)
 #endif
+            ;
         while (heapIterator.Next())
         {
             MethodDesc * pMD = heapIterator.GetMethod();
