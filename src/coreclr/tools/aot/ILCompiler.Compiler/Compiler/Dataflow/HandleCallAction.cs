@@ -751,8 +751,12 @@ namespace ILLink.Shared.TrimAnalysis
 
             public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation)
             {
-                Debug.Assert(isConcreteInstantiation);
                 var list = new DependencyList();
+                if (!isConcreteInstantiation)
+                {
+                    return list;
+                }
+
                 MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
                 if (instantiatedMethod.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
                     RootingHelpers.TryGetDependenciesForReflectedMethod(ref list, factory, instantiatedMethod, "MakeGenericMethod");
@@ -768,8 +772,11 @@ namespace ILLink.Shared.TrimAnalysis
 
             public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiotion)
             {
-                Debug.Assert(isConcreteInstantiotion);
                 var list = new DependencyList();
+                if (!isConcreteInstantiotion)
+                {
+                    return list;
+                }
                 TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
                 if (instantiatedType.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
                     RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, instantiatedType, "MakeGenericType");

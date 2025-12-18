@@ -151,10 +151,11 @@ namespace ILCompiler.DependencyAnalysis
                         // because that's where the class constructor context is.
                         if (TriggersLazyStaticConstructor(factory))
                         {
-                            result.Add(
-                                new DependencyListEntry(
-                                    factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)_target).GetTarget(factory, lookupContext, isConcreteInstantiation),
-                                    "Dictionary dependency"));
+                            var lookupTarget = factory.GenericLookup.TypeNonGCStaticBase((TypeDesc)_target).GetTarget(factory, lookupContext, isConcreteInstantiation);
+                            if (lookupTarget != null)
+                            {
+                                result.Add(new DependencyListEntry(lookupTarget, "Dictionary dependency"));
+                            }
                         }
                     }
                     break;
@@ -181,10 +182,12 @@ namespace ILCompiler.DependencyAnalysis
 
             try
             {
-                // All generic lookups depend on the thing they point to
-                result.Add(new DependencyListEntry(
-                            _lookupSignature.GetTarget(factory, lookupContext, isConcreteInstantiation),
-                            "Dictionary dependency"));
+                var lookupTarget = _lookupSignature.GetTarget(factory, lookupContext, isConcreteInstantiation);
+                if (lookupTarget != null)
+                {
+                    // All generic lookups depend on the thing they point to
+                    result.Add(new DependencyListEntry(lookupTarget, "Dictionary dependency"));
+                }
             }
             catch (TypeSystemException)
             {
