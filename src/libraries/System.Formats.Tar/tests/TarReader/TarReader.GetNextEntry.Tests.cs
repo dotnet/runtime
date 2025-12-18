@@ -300,5 +300,81 @@ namespace System.Formats.Tar.Tests
             e = reader.GetNextEntry(copyData);
             Assert.Null(e);
         }
+
+        [Fact]
+        public void Read_BinaryEncodedChecksum()
+        {
+            // Create a tar header with binary-encoded checksum (0x80 prefix).
+            // This tests that ParseNumeric handles binary-encoded checksums correctly.
+            byte[] header = new byte[512];
+
+            // Name: "test" (null-terminated)
+            byte[] name = "test\0"u8.ToArray();
+            name.CopyTo(header, 0);
+
+            // Mode: "0000644\0" at offset 100
+            byte[] mode = "0000644\0"u8.ToArray();
+            mode.CopyTo(header, 100);
+
+            // Uid: "0000000\0" at offset 108
+            byte[] uid = "0000000\0"u8.ToArray();
+            uid.CopyTo(header, 108);
+
+            // Gid: "0000000\0" at offset 116
+            byte[] gid = "0000000\0"u8.ToArray();
+            gid.CopyTo(header, 116);
+
+            // Size: "00000000000\0" at offset 124
+            byte[] size = "00000000000\0"u8.ToArray();
+            size.CopyTo(header, 124);
+
+            // Mtime: "00000000000\0" at offset 136
+            byte[] mtime = "00000000000\0"u8.ToArray();
+            mtime.CopyTo(header, 136);
+
+            // TypeFlag: '0' (regular file) at offset 156
+            header[156] = (byte)'0';
+
+            // Magic: "ustar\0" at offset 257
+            byte[] magic = "ustar\0"u8.ToArray();
+            magic.CopyTo(header, 257);
+
+            // Version: "00" at offset 263
+            byte[] version = "00"u8.ToArray();
+            version.CopyTo(header, 263);
+
+            // Calculate the correct checksum value.
+            // During checksum calculation, the checksum field (offset 148-155) is treated as all spaces.
+            int calculatedChecksum = 0;
+            for (int i = 0; i < 512; i++)
+            {
+                if (i >= 148 && i < 156)
+                {
+                    calculatedChecksum += (byte)' ';
+                }
+                else
+                {
+                    calculatedChecksum += header[i];
+                }
+            }
+
+            // Write checksum as binary-encoded (0x80 prefix) at offset 148.
+            // The checksum field is 8 bytes. With 0x80 prefix, remaining 7 bytes store the value in big-endian.
+            header[148] = 0x80;
+            header[149] = 0;
+            header[150] = 0;
+            header[151] = 0;
+            header[152] = (byte)((calculatedChecksum >> 24) & 0xFF);
+            header[153] = (byte)((calculatedChecksum >> 16) & 0xFF);
+            header[154] = (byte)((calculatedChecksum >> 8) & 0xFF);
+            header[155] = (byte)(calculatedChecksum & 0xFF);
+
+            using MemoryStream archive = new MemoryStream(header);
+            using TarReader reader = new TarReader(archive);
+            TarEntry? entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal("test", entry.Name);
+            Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
+        }
     }
 }

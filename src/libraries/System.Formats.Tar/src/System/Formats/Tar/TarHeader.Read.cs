@@ -374,7 +374,9 @@ namespace System.Formats.Tar
             int checksum;
             try
             {
-                checksum = (int)TarHelpers.ParseOctal<uint>(spanChecksum);
+                // Use ParseNumeric to handle both octal and binary-encoded checksums.
+                // Some tar tools use the GNU binary format (0x80 prefix) for all numeric fields including checksum.
+                checksum = TarHelpers.ParseNumeric<int>(spanChecksum);
             }
             catch (InvalidDataException)
             {
