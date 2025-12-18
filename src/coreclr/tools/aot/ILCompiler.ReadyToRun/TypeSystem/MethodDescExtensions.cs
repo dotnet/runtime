@@ -28,5 +28,10 @@ namespace ILCompiler.ReadyToRun.TypeSystem
                 _ => method,
             };
         }
+
+        public static bool IsPrimaryMethodDesc(this MethodDesc method)
+        {
+            return method == method.GetPrimaryMethodDesc();
+        }
     }
 }

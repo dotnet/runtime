@@ -25,6 +25,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using System.Text;
 using System.Runtime.CompilerServices;
+using ILCompiler.ReadyToRun.TypeSystem;
 
 namespace Internal.JitInterface
 {
@@ -123,20 +124,51 @@ namespace Internal.JitInterface
         }
     }
 
+#nullable enable
     public class MethodWithToken
     {
+        /// <summary>
+        /// The MethodDesc this represents.
+        /// </summary>
         public readonly MethodDesc Method;
+
+        /// <summary>
+        /// The ModuleToken that represents the definition of Method.
+        /// </summary>
         public readonly ModuleToken Token;
-        public readonly TypeDesc ConstrainedType;
+
+        /// <summary>
+        /// For constrained calls, the type that the call is constrained to.
+        /// </summary>
+        public readonly TypeDesc? ConstrainedType;
+
+        /// <summary>
+        /// Whether this method is for an unboxing stub.
+        /// </summary>
         public readonly bool Unboxing;
+
+        /// <summary>
+        /// Indicates whether the owning type is different than indicated by the ModuleToken for the method.
+        /// </summary>
         public readonly bool OwningTypeNotDerivedFromToken;
+
+        /// <summary>
+        /// The type that owns the method instance.
+        /// </summary>
         public readonly TypeDesc OwningType;
 
-
-        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, object context, TypeDesc devirtualizedMethodOwner = null)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="method">The MethodDesc this represents.</param>
+        /// <param name="token">The ModuleToken that represents the definition of <paramref name="method"/></param>
+        /// <param name="constrainedType">For constrained calls, the type that the call is constrained to.</param>
+        /// <param name="unboxing">If the method is an unboxing stub</param>
+        /// <param name="context">A MethodDesc or TypeDesc from which the generic context is determined for finding the owning type.</param>
+        /// <param name="devirtualizedMethodOwner">The type that owns the devirtualized method, if any.</param>
+        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc? constrainedType = null, bool unboxing = false, object? context = null, TypeDesc? devirtualizedMethodOwner = null)
         {
             Debug.Assert(!method.IsUnboxingThunk());
-            Debug.Assert(!method.IsAsyncVariant());
             Method = method;
             Token = token;
             ConstrainedType = constrainedType;
@@ -144,7 +176,7 @@ namespace Internal.JitInterface
             OwningType = GetMethodTokenOwningType(this, constrainedType, context, devirtualizedMethodOwner, out OwningTypeNotDerivedFromToken);
         }
 
-        private static TypeDesc GetMethodTokenOwningType(MethodWithToken methodToken, TypeDesc constrainedType, object context, TypeDesc devirtualizedMethodOwner, out bool owningTypeNotDerivedFromToken)
+        private static TypeDesc GetMethodTokenOwningType(MethodWithToken methodToken, TypeDesc? constrainedType, object? context, TypeDesc? devirtualizedMethodOwner, out bool owningTypeNotDerivedFromToken)
         {
             ModuleToken moduleToken = methodToken.Token;
             owningTypeNotDerivedFromToken = false;
@@ -179,7 +211,7 @@ namespace Internal.JitInterface
                     return methodToken.Method.OwningType;
             }
 
-            TypeDesc HandleContext(IEcmaModule module, EntityHandle handle, TypeDesc methodTargetOwner, TypeDesc constrainedType, object context, TypeDesc devirtualizedMethodOwner, ref bool owningTypeNotDerivedFromToken)
+            TypeDesc HandleContext(IEcmaModule module, EntityHandle handle, TypeDesc methodTargetOwner, TypeDesc? constrainedType, object? context, TypeDesc? devirtualizedMethodOwner, ref bool owningTypeNotDerivedFromToken)
             {
                 var tokenOnlyOwningType = module.GetType(handle);
                 TypeDesc actualOwningType;
@@ -204,7 +236,7 @@ namespace Internal.JitInterface
                         typeInstantiation = typeContext.Instantiation;
                     }
 
-                    TypeDesc instantiatedOwningType = null;
+                    TypeDesc? instantiatedOwningType = null;
 
                     if (devirtualizedMethodOwner != null)
                     {
@@ -304,7 +336,7 @@ namespace Internal.JitInterface
             }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is MethodWithToken methodWithToken &&
                 Equals(methodWithToken);
@@ -416,6 +448,7 @@ namespace Internal.JitInterface
             return comparer.Compare(OwningType, other.OwningType);
         }
     }
+#nullable restore
 
     public struct GenericContext : IEquatable<GenericContext>
     {
@@ -558,6 +591,11 @@ namespace Internal.JitInterface
 
         public static bool ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport instructionSetSupport, MethodDesc method)
         {
+            if (method.IsAsyncVariant())
+            {
+                return false;
+            }
+
             EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
 
             var metadataReader = ecmaMethod.MetadataReader;
@@ -1410,15 +1448,10 @@ namespace Internal.JitInterface
 
                 if (resultDef is MethodDesc resultMethod)
                 {
-                    if (resultMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
-                        resultMethod = rawPinvoke.Target;
-                    if (resultMethod is AsyncMethodVariant asyncVariant)
-                        resultMethod = asyncVariant.Target;
-
                     // It's okay to strip the instantiation away because we don't need a MethodSpec
                     // token - SignatureBuilder will generate the generic method signature
                     // using instantiation parameters from the MethodDesc entity.
-                    resultMethod = resultMethod.GetTypicalMethodDefinition();
+                    resultMethod = resultMethod.GetTypicalMethodDefinition().GetPrimaryMethodDesc();
 
                     Debug.Assert(resultMethod is EcmaMethod);
                     if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultMethod).OwningType))
