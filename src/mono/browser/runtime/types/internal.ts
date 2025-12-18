@@ -82,7 +82,7 @@ export type MonoConfigInternal = MonoConfig & {
     interopCleanupOnExit?: boolean
     dumpThreadsOnNonZeroExit?: boolean
     logExitCode?: boolean
-    forwardConsoleLogsToWS?: boolean,
+    forwardConsole?: boolean,
     asyncFlushOnExit?: boolean
     exitOnUnhandledError?: boolean
     loadAllSatelliteResources?: boolean

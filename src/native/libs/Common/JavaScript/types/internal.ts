@@ -83,10 +83,10 @@ export type LoaderConfigInternal = LoaderConfig & {
     logExitCode?: boolean
     asyncFlushOnExit?: boolean
     interopCleanupOnExit?: boolean
-    forwardConsoleLogsToWS?: boolean
     dumpThreadsOnNonZeroExit?: boolean
     exitOnUnhandledError?: boolean
     loadAllSatelliteResources?: boolean
+    forwardConsole?: boolean,
 };
 
 

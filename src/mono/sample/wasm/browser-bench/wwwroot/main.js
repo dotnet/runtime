@@ -229,7 +229,7 @@ try {
         //  console to see statistics on how much code it generated and whether any new opcodes
         //  are causing traces to fail to compile
         .withRuntimeOptions(["--jiterpreter-stats-enabled"])
-        .withConfig({ exitOnUnhandledError: true, logExitCode: true })
+        .withConfig({ exitOnUnhandledError: true, logExitCode: true, appendElementOnExit: true })
         .create();
 
     await mainApp.init(runtime);

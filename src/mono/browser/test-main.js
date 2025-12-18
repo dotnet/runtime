@@ -260,7 +260,7 @@ function configureRuntime(dotnet, runArgs) {
             appendElementOnExit: true,
             logExitCode: true,
             exitOnUnhandledError: true,
-            forwardConsoleLogsToWS: runArgs.forwardConsole,
+            forwardConsole: runArgs.forwardConsole,
             asyncFlushOnExit: ENVIRONMENT_IS_NODE,
             interopCleanupOnExit: true,
             dumpThreadsOnNonZeroExit: true,
