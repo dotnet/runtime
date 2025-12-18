@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using AutoBisect;
 using Spectre.Console;
 
 namespace AutoBisect.Commands;
@@ -204,19 +203,57 @@ internal static class BisectCommand
         AnsiConsole.Write(panel);
         AnsiConsole.WriteLine();
 
-        // Binary search through commits
-        var remaining = commits.ToList();
-        var testedCommits = new Dictionary<string, bool>(); // commit -> failed
-
-        // We know the endpoints
-        testedCommits[goodCommit] = false;
-        testedCommits[badCommit] = true;
+        // Binary search through commits using the BisectAlgorithm
+        var bisect = new BisectAlgorithm(commits);
 
         var step = 1;
-        while (remaining.Count > 1)
+        while (true)
         {
-            var midIndex = remaining.Count / 2;
-            var midCommit = remaining[midIndex];
+            var bisectStep = bisect.GetNextStep();
+            if (bisectStep.IsComplete)
+            {
+                // Found the culprit
+                var culpritCommit = bisect.GetCommit(bisectStep.FirstBadCommitIndex);
+                var culpritShortSha = await GitHelper.GetShortShaAsync(
+                    culpritCommit,
+                    repoPath,
+                    cancellationToken
+                );
+                var culpritSubject = await GitHelper.GetCommitSubjectAsync(
+                    culpritCommit,
+                    repoPath,
+                    cancellationToken
+                );
+
+                var resultPanel = new Panel(
+                    new Markup(
+                        $"[bold red]First bad commit:[/] [cyan]{culpritShortSha}[/]\n\n"
+                            + $"[dim]{culpritSubject.EscapeMarkup()}[/]\n\n"
+                            + $"[bold]Full SHA:[/] [cyan]{culpritCommit}[/]"
+                    )
+                )
+                    .BorderColor(Color.Red)
+                    .Header("[bold red]🔍 BISECT RESULT[/]");
+
+                AnsiConsole.Write(resultPanel);
+                AnsiConsole.WriteLine();
+
+                // Display summary for filing an issue
+                var summaryPanel = new Panel(
+                    $"[bold]Test:[/] {fullTestName.EscapeMarkup()}\n" +
+                    $"[bold]First bad commit:[/] {culpritShortSha} ({culpritCommit})\n" +
+                    $"[bold]Good build:[/] {goodBuildId} (commit {goodCommit[..12]})\n" +
+                    $"[bold]Bad build:[/] {badBuildId} (commit {badCommit[..12]})\n" +
+                    $"[bold]Commits searched:[/] {bisect.TotalCommits}"
+                )
+                    .BorderColor(Color.Blue)
+                    .Header("[bold blue]📋 Issue Summary[/]");
+
+                AnsiConsole.Write(summaryPanel);
+                return 0;
+            }
+
+            var midCommit = bisect.GetCommit(bisectStep.CommitIndexToTest);
             var shortSha = await GitHelper.GetShortShaAsync(midCommit, repoPath, cancellationToken);
             var subject = await GitHelper.GetCommitSubjectAsync(
                 midCommit,
@@ -226,7 +263,7 @@ internal static class BisectCommand
 
             AnsiConsole.Write(new Rule($"[bold yellow]Step {step}[/]").RuleStyle("grey"));
             AnsiConsole.MarkupLine(
-                $"Testing commit [cyan]{shortSha}[/] ([yellow]{remaining.Count}[/] commits remaining)"
+                $"Testing commit [cyan]{shortSha}[/] ([yellow]{bisect.RemainingCount}[/] commits remaining)"
             );
             AnsiConsole.MarkupLine($"[dim]{subject.EscapeMarkup()}[/]");
 
@@ -386,49 +423,13 @@ internal static class BisectCommand
                 }
             }
 
-            testedCommits[midCommit] = testFailed;
             var resultIcon = testFailed ? "[red]✗ FAILED[/]" : "[green]✓ PASSED[/]";
             AnsiConsole.MarkupLine($"Test result: {resultIcon}");
             AnsiConsole.WriteLine();
 
-            if (testFailed)
-            {
-                // Bug was introduced at or before this commit
-                remaining = remaining.Take(midIndex + 1).ToList();
-            }
-            else
-            {
-                // Bug was introduced after this commit
-                remaining = remaining.Skip(midIndex).ToList();
-            }
+            bisect.RecordResult(bisectStep.CommitIndexToTest, testFailed);
 
             step++;
         }
-
-        // Found the culprit
-        var culpritCommit = remaining[0];
-        var culpritShortSha = await GitHelper.GetShortShaAsync(
-            culpritCommit,
-            repoPath,
-            cancellationToken
-        );
-        var culpritSubject = await GitHelper.GetCommitSubjectAsync(
-            culpritCommit,
-            repoPath,
-            cancellationToken
-        );
-
-        var resultPanel = new Panel(
-            new Markup(
-                $"[bold red]First bad commit:[/] [cyan]{culpritShortSha}[/]\n\n"
-                    + $"[dim]{culpritSubject.EscapeMarkup()}[/]\n\n"
-                    + $"[bold]Full SHA:[/] [cyan]{culpritCommit}[/]"
-            )
-        )
-            .BorderColor(Color.Red)
-            .Header("[bold red]🔍 BISECT RESULT[/]");
-
-        AnsiConsole.Write(resultPanel);
-        return 0;
     }
 }
