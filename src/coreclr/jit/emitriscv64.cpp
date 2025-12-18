@@ -3468,7 +3468,7 @@ void emitter::emitDispBranchOffset(const instrDesc* id, const insGroup* ig, bool
 {
     if (printOffsetPlaceholder)
     {
-        printf("pc+??");
+        printf("pc+?? instructions");
         return;
     }
 
