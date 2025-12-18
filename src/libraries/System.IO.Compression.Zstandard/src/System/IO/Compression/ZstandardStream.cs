@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO.Compression
 {
@@ -24,14 +25,11 @@ namespace System.IO.Compression
         // When owned, they are disposed; when not owned, they are reset
         private bool _encoderOwned = true;
 
-        private ZstandardStream(Stream stream, CompressionMode mode, bool leaveOpen, int _ignored)
+        [MemberNotNull(nameof(_stream))]
+        [MemberNotNull(nameof(_buffer))]
+        private void Init(Stream stream, CompressionMode mode)
         {
-            _ = _ignored; // to differentiate from other ctors
-
             ArgumentNullException.ThrowIfNull(stream);
-
-            _mode = mode;
-            _leaveOpen = leaveOpen;
 
             switch (mode)
             {
@@ -61,8 +59,12 @@ namespace System.IO.Compression
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
-        public ZstandardStream(Stream stream, CompressionMode mode, bool leaveOpen) : this(stream, mode, leaveOpen, 0)
+        public ZstandardStream(Stream stream, CompressionMode mode, bool leaveOpen)
         {
+            Init(stream, mode);
+            _leaveOpen = leaveOpen;
+            _mode = mode;
+
             if (mode == CompressionMode.Compress)
             {
                 _encoder = new ZstandardEncoder();
@@ -85,9 +87,13 @@ namespace System.IO.Compression
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="dictionary"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="mode"/> is not a valid <see cref="CompressionMode"/> value, or the stream does not support the required operation.</exception>
-        public ZstandardStream(Stream stream, CompressionMode mode, ZstandardDictionary dictionary, bool leaveOpen = false) : this(stream, mode, leaveOpen, 0)
+        public ZstandardStream(Stream stream, CompressionMode mode, ZstandardDictionary dictionary, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
+
+            Init(stream, mode);
+            _mode = mode;
+            _leaveOpen = leaveOpen;
 
             if (mode == CompressionMode.Compress)
             {
