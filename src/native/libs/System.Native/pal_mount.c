@@ -53,11 +53,6 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
             free(mounts);
             return -1;
         }
-        if (count == 0)
-        {
-            free(mounts);
-            return 0;
-        }
 
         // Reallocate buffer if needed
         if (count > capacity)
@@ -70,6 +65,12 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
                 errno = ENOMEM;
                 return -1;
             }
+        }
+
+        // If count is 0, break - post-loop code handles empty case
+        if (count == 0)
+        {
+            break;
         }
 
         // Get actual mount point information
