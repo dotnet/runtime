@@ -583,6 +583,13 @@ namespace System.Net.Http
             {
                 await using (stream.ConfigureAwait(false))
                 {
+                    // Check if this is a bidirectional stream (which we don't support from the server).
+                    if (stream.CanWrite)
+                    {
+                        // Server initiated bidirectional streams are either push streams or extensions, and we support neither.
+                        throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.StreamCreationError);
+                    }
+
                     buffer = new ArrayBuffer(initialSize: 32, usePool: true);
 
                     // Read the stream type, which is a variable-length integer.
@@ -623,22 +630,15 @@ namespace System.Net.Http
                         buffer.EnsureAvailableSpace(VariableLengthIntegerHelper.MaximumEncodedLength);
                     }
 
-                    // Check if this is a bidirectional stream (which we don't support from the server).
-                    if (stream.CanWrite)
-                    {
-                        // Server initiated bidirectional streams are either push streams or extensions, and we support neither.
-                        throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.StreamCreationError);
-                    }
-
                     if (NetEventSource.Log.IsEnabled())
                     {
                         NetEventSource.Info(this, $"Received server-initiated unidirectional stream of type {streamType}");
                     }
 
                     // Process the stream based on its type.
-                    switch (streamType)
+                    switch ((Http3StreamType)streamType)
                     {
-                        case (long)Http3StreamType.Control:
+                        case Http3StreamType.Control:
                             if (Interlocked.Exchange(ref _haveServerControlStream, true))
                             {
                                 // A second control stream has been received.
@@ -651,7 +651,7 @@ namespace System.Net.Http
 
                             await ProcessServerControlStreamAsync(stream, bufferCopy).ConfigureAwait(false);
                             return;
-                        case (long)Http3StreamType.QPackDecoder:
+                        case Http3StreamType.QPackDecoder:
                             if (Interlocked.Exchange(ref _haveServerQpackDecodeStream, true))
                             {
                                 // A second QPack decode stream has been received.
@@ -662,7 +662,7 @@ namespace System.Net.Http
                             buffer.Dispose();
                             await stream.CopyToAsync(Stream.Null).ConfigureAwait(false);
                             return;
-                        case (long)Http3StreamType.QPackEncoder:
+                        case Http3StreamType.QPackEncoder:
                             if (Interlocked.Exchange(ref _haveServerQpackEncodeStream, true))
                             {
                                 // A second QPack encode stream has been received.
@@ -674,7 +674,7 @@ namespace System.Net.Http
                             buffer.Dispose();
                             await stream.CopyToAsync(Stream.Null).ConfigureAwait(false);
                             return;
-                        case (long)Http3StreamType.Push:
+                        case Http3StreamType.Push:
                             // We don't support push streams.
                             // Because no maximum push stream ID was negotiated via a MAX_PUSH_ID frame, server should not have sent this. Abort the connection with H3_ID_ERROR.
                             throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.IdError);
