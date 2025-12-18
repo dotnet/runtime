@@ -882,7 +882,7 @@
     </MergedPayloads>
 
     <!-- For tests where we aren't using the XHarness test runner, specify as such on the payload item. -->
-    <MergedPayloads Update="@(MergedPayloads)" Condition="Exists($(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).XHarnessNoRunner)">
+    <MergedPayloads Update="@(MergedPayloads)" Condition="Exists('$(MergedPayloadsRootDirectory)%(PayloadGroup)/%(PayloadGroup).XHarnessNoRunner')">
       <IncludesTestRunner>false</IncludesTestRunner>
       <ExpectedExitCode>100</ExpectedExitCode>
     </MergedPayloads>
