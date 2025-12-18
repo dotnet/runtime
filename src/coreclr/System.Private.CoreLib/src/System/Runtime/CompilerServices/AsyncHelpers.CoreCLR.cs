@@ -513,25 +513,25 @@ namespace System.Runtime.CompilerServices
 #if !NATIVEAOT
                         AddContinuationToExInternal(continuation.ResumeInfo->DiagnosticIP, ex);
 #else
-        // {
-        //             IntPtr ip = (IntPtr)continuation.ResumeInfo->DiagnosticIP;
-        //             int flags = 0;
-        //             IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(ip,
-        //                 ClassLibFunctionId.AppendExceptionStackFrame);
+        {
+                    IntPtr ip = (IntPtr)continuation.ResumeInfo->DiagnosticIP;
+                    int flags = 0;
+                    IntPtr pAppendStackFrame = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromCodeAddress(ip,
+                        ClassLibFunctionId.AppendExceptionStackFrame);
 
-        //             if (pAppendStackFrame != IntPtr.Zero)
-        //             {
-        //                 try
-        //                 {
-        //                     ((delegate*<object, IntPtr, int, void>)pAppendStackFrame)(ex, ip, flags);
-        //                 }
-        //                 catch
-        //                 {
-        //                     // disallow all exceptions leaking out of callbacks
-        //                 }
-        //             }
-        // }
-        Debug.Fail("Exception stack frame appending not implemented in NativeAOT");
+                    if (pAppendStackFrame != IntPtr.Zero)
+                    {
+                        try
+                        {
+                            ((delegate*<object, IntPtr, int, void>)pAppendStackFrame)(ex, ip, flags);
+                        }
+                        catch
+                        {
+                            // disallow all exceptions leaking out of callbacks
+                        }
+                    }
+        }
+
 #endif
                     if (continuation == null || (continuation.Flags & ContinuationFlags.HasException) != 0)
                         return continuation;

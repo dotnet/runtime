@@ -158,6 +158,7 @@
     <PlatformManifestFileEntry Include="libstandalonegc-enabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libaotminipal.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstdc++compat.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="debugucrt.txt" IsNative="false" />
     <!-- NativeAOT/Windows specific files -->
     <PlatformManifestFileEntry Include="bootstrapper.obj" IsNative="true" />
     <PlatformManifestFileEntry Include="bootstrapperdll.obj" IsNative="true" />
