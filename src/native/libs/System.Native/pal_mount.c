@@ -8,8 +8,9 @@
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdlib.h>
 
-// Check if we should use getmntinfo or /proc/mounts
+// Check if we should use getfsstat or /proc/mounts
 #if HAVE_MNTINFO
 #include <sys/mount.h>
 #else
@@ -32,18 +33,42 @@
 int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
 {
 #if HAVE_MNTINFO
-    // getmntinfo returns pointers to OS-internal structs, so we don't need to worry about free'ing the object
+    // Use getfsstat which is thread-safe (unlike getmntinfo which uses internal static buffers)
 #if HAVE_STATFS
     struct statfs* mounts = NULL;
 #else
     struct statvfs* mounts = NULL;
 #endif
-    int count = getmntinfo(&mounts, MNT_WAIT);
+    // First call to get the number of mount points
+    int count = getfsstat(NULL, 0, MNT_NOWAIT);
+    if (count <= 0)
+    {
+        return count < 0 ? -1 : 0;
+    }
+
+    // Allocate buffer for mount points (with extra capacity in case new mounts appear)
+    size_t bufferSize = (size_t)(count + 4) * sizeof(*mounts);
+    mounts = (typeof(mounts))malloc(bufferSize);
+    if (mounts == NULL)
+    {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    // Second call to get actual mount point information
+    count = getfsstat(mounts, (int)bufferSize, MNT_NOWAIT);
+    if (count < 0)
+    {
+        free(mounts);
+        return -1;
+    }
+
     for (int32_t i = 0; i < count; i++)
     {
         onFound(context, mounts[i].f_mntonname);
     }
 
+    free(mounts);
     return 0;
 }
 
