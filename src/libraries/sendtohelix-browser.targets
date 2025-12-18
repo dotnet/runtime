@@ -246,7 +246,7 @@
     <ItemGroup>
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnV8'"                 Include="$(TestArchiveRoot)runonly/**/*.Console.V8.*.Sample.zip" />
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnChrome'"             Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
-      <!-- xharness -> selenium -> firefox doesn't support forwarding console without dotnet.withConsoleForwarding()
+      <!-- xharness -> selenium -> firefox doesn't support forwarding console without forwardConsole
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnFirefox'"            Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
       -->
 
