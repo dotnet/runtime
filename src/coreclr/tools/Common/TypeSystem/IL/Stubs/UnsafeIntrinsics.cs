@@ -18,123 +18,100 @@ namespace Internal.IL.Stubs
         {
             Debug.Assert(((MetadataType)method.OwningType).Name.SequenceEqual("Unsafe"u8));
 
-            // Using if-else chain to avoid string allocation and comparison.
-            if (method.Name.SequenceEqual("AsPointer"u8))
-            {
+            bool Is(ReadOnlySpan<byte> name) => method.Name.SequenceEqual(name);
+
+            if (Is("AsPointer"u8))
                 return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.conv_u, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-            }
-            else if (method.Name.SequenceEqual("As"u8) || method.Name.SequenceEqual("AsRef"u8))
-            {
+
+            if (Is("As"u8) || Is("AsRef"u8))
                 return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-            }
-            else if (method.Name.SequenceEqual("Add"u8))
-            {
+
+            if (Is("Add"u8))
                 return EmitAdd(method);
-            }
-            else if (method.Name.SequenceEqual("AddByteOffset"u8))
-            {
+
+            if (Is("AddByteOffset"u8))
                 return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1, (byte)ILOpcode.add, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-            }
-            else if (method.Name.SequenceEqual("Copy"u8))
-            {
+
+            if (Is("Copy"u8))
                 return EmitCopy(method);
-            }
-            else if (method.Name.SequenceEqual("CopyBlock"u8))
-            {
+
+            if (Is("CopyBlock"u8))
                 return EmitCopyBlock(method, unaligned: false);
-            }
-            else if (method.Name.SequenceEqual("CopyBlockUnaligned"u8))
-            {
+
+            if (Is("CopyBlockUnaligned"u8))
                 return EmitCopyBlock(method, unaligned: true);
-            }
-            else if (method.Name.SequenceEqual("InitBlock"u8))
-            {
+
+            if (Is("InitBlock"u8))
                 return EmitInitBlock(method, unaligned: false);
-            }
-            else if (method.Name.SequenceEqual("InitBlockUnaligned"u8))
-            {
+
+            if (Is("InitBlockUnaligned"u8))
                 return EmitInitBlock(method, unaligned: true);
-            }
-            else if (method.Name.SequenceEqual("Read"u8))
-            {
+
+            if (Is("Read"u8))
                 return EmitReadWrite(method, write: false);
-            }
-            else if (method.Name.SequenceEqual("Write"u8))
-            {
+
+            if (Is("Write"u8))
                 return EmitReadWrite(method, write: true);
-            }
-            else if (method.Name.SequenceEqual("ReadUnaligned"u8))
-            {
+
+            if (Is("ReadUnaligned"u8))
                 return EmitReadWrite(method, write: false, unaligned: true);
-            }
-            else if (method.Name.SequenceEqual("WriteUnaligned"u8))
-            {
+
+            if (Is("WriteUnaligned"u8))
                 return EmitReadWrite(method, write: true, unaligned: true);
-            }
-            else if (method.Name.SequenceEqual("AreSame"u8))
-            {
+
+            if (Is("AreSame"u8))
                 return new ILStubMethodIL(method, new byte[]
                 {
                     (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1,
                     (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.ceq),
                     (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-            }
-            else if (method.Name.SequenceEqual("IsAddressGreaterThan"u8))
-            {
+
+            if (Is("IsAddressGreaterThan"u8))
                 return new ILStubMethodIL(method, new byte[]
                 {
                     (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1,
                     (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.cgt_un),
                     (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-            }
-            else if (method.Name.SequenceEqual("IsAddressLessThan"u8))
-            {
+
+            if (Is("IsAddressLessThan"u8))
                 return new ILStubMethodIL(method, new byte[]
                 {
                     (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1,
                     (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.clt_un),
                     (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-            }
-            else if (method.Name.SequenceEqual("ByteOffset"u8))
-            {
+
+            if (Is("ByteOffset"u8))
                 return new ILStubMethodIL(method, new byte[]
                 {
                     (byte)ILOpcode.ldarg_1, (byte)ILOpcode.ldarg_0,
                     (byte)ILOpcode.sub,
                     (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-            }
-            else if (method.Name.SequenceEqual("NullRef"u8))
-            {
+
+            if (Is("NullRef"u8))
                 return new ILStubMethodIL(method, new byte[]
                 {
                     (byte)ILOpcode.ldc_i4_0, (byte)ILOpcode.conv_u,
                     (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-            }
-            else if (method.Name.SequenceEqual("IsNullRef"u8))
-            {
+
+            if (Is("IsNullRef"u8))
                 return new ILStubMethodIL(method, new byte[]
                 {
                     (byte)ILOpcode.ldarg_0,
                     (byte)ILOpcode.ldc_i4_0, (byte)ILOpcode.conv_u,
                     (byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.ceq),
                     (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-            }
-            else if (method.Name.SequenceEqual("SkipInit"u8))
-            {
+
+            if (Is("SkipInit"u8))
                 return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-            }
-            else if (method.Name.SequenceEqual("Subtract"u8))
-            {
+
+            if (Is("Subtract"u8))
                 return EmitSubtract(method);
-            }
-            else if (method.Name.SequenceEqual("SubtractByteOffset"u8))
-            {
+
+            if (Is("SubtractByteOffset"u8))
                 return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldarg_0, (byte)ILOpcode.ldarg_1, (byte)ILOpcode.sub, (byte)ILOpcode.ret }, Array.Empty<LocalVariableDefinition>(), null);
-            }
-            else if (method.Name.SequenceEqual("Unbox"u8))
-            {
+
+            if (Is("Unbox"u8))
                 return EmitUnbox(method);
-            }
 
             return null;
         }
