@@ -19,8 +19,6 @@ namespace System.Threading
         private readonly int _spinCount;
         private readonly Action _onWait;
 
-        private const int SpinSleep0Threshold = 10;
-
         public LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount, int spinCount, Action onWait)
         {
             Debug.Assert(initialSignalCount >= 0);
@@ -95,10 +93,10 @@ namespace System.Threading
             }
 
             bool isSingleProcessor = Environment.IsSingleProcessor;
-            int spinIndex = isSingleProcessor ? SpinSleep0Threshold : 0;
+            int spinIndex = isSingleProcessor ? spinCount : 0;
             while (spinIndex < spinCount)
             {
-                LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, isSingleProcessor);
+                LowLevelSpinWaiter.Wait(spinIndex, int.MaxValue, isSingleProcessor);
                 spinIndex++;
 
                 // Try to acquire the semaphore and unregister as a spinner
