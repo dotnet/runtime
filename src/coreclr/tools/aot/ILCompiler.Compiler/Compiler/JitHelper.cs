@@ -28,6 +28,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.Rethrow:
                     mangledName = "RhpRethrow";
                     break;
+                case ReadyToRunHelper.ThrowExact:
+                    mangledName = "RhpThrowExact";
+                    break;
 
                 case ReadyToRunHelper.Overflow:
                     methodDesc = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowOverflowException"u8);

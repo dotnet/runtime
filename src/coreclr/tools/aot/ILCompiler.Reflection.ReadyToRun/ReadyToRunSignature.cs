@@ -1639,6 +1639,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("RETHROW");
                     break;
 
+                case ReadyToRunHelper.ThrowExact:
+                    builder.Append("THROW_EXACT");
+                    break;
+
                 case ReadyToRunHelper.Overflow:
                     builder.Append("OVERFLOW");
                     break;
