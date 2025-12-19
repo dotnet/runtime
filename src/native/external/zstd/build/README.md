@@ -33,7 +33,7 @@ following projects:
 - `zstd` : Command Line Utility, supporting gzip-like arguments
 - `datagen` : Synthetic and parametrable data generator, for tests
 - `fullbench`  : Precisely measure speed for each zstd inner functions
-- `fuzzer` : Test tool, to check zstd integrity on target platform 
+- `fuzzer` : Test tool, to check zstd integrity on target platform
 - `libzstd` : A static ZSTD library compiled to `libzstd_static.lib`
 - `libzstd-dll` : A dynamic ZSTD library (DLL) compiled to `libzstd.dll` with the import library `libzstd.lib`
 - `fullbench-dll` : The fullbench program compiled with the import library; the executable requires ZSTD DLL
@@ -53,4 +53,4 @@ a project using Visual C++.
    then the directory has to be added to `Linker\General\Additional Library Directories`.
 
 The compiled executable will require ZSTD DLL which is available at
-`visual\VS2010\bin\$(Platform)_$(Configuration)\libzstd.dll`. 
+`visual\VS2010\bin\$(Platform)_$(Configuration)\libzstd.dll`.
