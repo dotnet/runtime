@@ -45,6 +45,17 @@ namespace System.Threading
             }
 
             /// <summary>
+            /// Reduces the number of threads processing work items by one.
+            /// </summary>
+            public void DecrementProcessingWork()
+            {
+                // This should never underflow
+                Debug.Assert(NumProcessingWork > 0);
+                Interlocked.Decrement(ref _data);
+                Debug.Assert(NumProcessingWork >= 0);
+            }
+
+            /// <summary>
             /// Number of thread pool threads that currently exist.
             /// </summary>
             public short NumExistingThreads
