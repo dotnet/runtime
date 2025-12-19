@@ -192,23 +192,21 @@ namespace Internal.TypeSystem
             if (!newConvention.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
                 return existing;
 
-            bool Is(ReadOnlySpan<byte> name) => newConvention.Name.SequenceEqual(name);
-
             UnmanagedCallingConventions? addedCallConv = null;
 
-            if (Is("CallConvCdecl"u8))
+            if (newConvention.Name.SequenceEqual("CallConvCdecl"u8))
                 addedCallConv = UnmanagedCallingConventions.Cdecl;
-            else if (Is("CallConvStdcall"u8))
+            else if (newConvention.Name.SequenceEqual("CallConvStdcall"u8))
                 addedCallConv = UnmanagedCallingConventions.Stdcall;
-            else if (Is("CallConvFastcall"u8))
+            else if (newConvention.Name.SequenceEqual("CallConvFastcall"u8))
                 addedCallConv = UnmanagedCallingConventions.Fastcall;
-            else if (Is("CallConvThiscall"u8))
+            else if (newConvention.Name.SequenceEqual("CallConvThiscall"u8))
                 addedCallConv = UnmanagedCallingConventions.Thiscall;
-            else if (Is("CallConvSuppressGCTransition"u8))
+            else if (newConvention.Name.SequenceEqual("CallConvSuppressGCTransition"u8))
                 addedCallConv = UnmanagedCallingConventions.IsSuppressGcTransition;
-            else if (Is("CallConvMemberFunction"u8))
+            else if (newConvention.Name.SequenceEqual("CallConvMemberFunction"u8))
                 addedCallConv = UnmanagedCallingConventions.IsMemberFunction;
-            else if (Is("CallConvSwift"u8))
+            else if (newConvention.Name.SequenceEqual("CallConvSwift"u8))
                 addedCallConv = UnmanagedCallingConventions.Swift;
 
             if (addedCallConv == null)

@@ -488,7 +488,6 @@ namespace Internal.TypeSystem.Ecma
         public override EcmaType GetNestedType(ReadOnlySpan<byte> name)
         {
             var metadataReader = this.MetadataReader;
-            var stringComparer = metadataReader.StringComparer;
 
             foreach (var handle in _typeDefinition.GetNestedTypes())
             {
@@ -496,7 +495,7 @@ namespace Internal.TypeSystem.Ecma
                 TypeDefinition type = metadataReader.GetTypeDefinition(handle);
                 if (type.Namespace.IsNil)
                 {
-                    nameMatched = stringComparer.Equals(type.Name, System.Text.Encoding.UTF8.GetString(name));
+                    nameMatched = metadataReader.StringEquals(type.Name, name);
                 }
                 else
                 {

@@ -18,7 +18,6 @@ namespace Internal.IL.Stubs
         {
             Debug.Assert(((MetadataType)method.OwningType).Name.SequenceEqual("Unsafe"u8));
 
-            // TODO: Use method.Name directly to avoid string allocations.
             switch (method.GetName())
             {
                 case "AsPointer":

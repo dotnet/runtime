@@ -29,7 +29,7 @@ namespace Internal.IL.Stubs
 
                 // Append calling convention details to the prefix
                 if (_targetSignature.HasEmbeddedSignatureData)
-                    prefix.Append(System.Text.Encoding.ASCII.GetBytes(_targetSignature.GetStandaloneMethodSignatureCallingConventions().ToString("x")));
+                    prefix = prefix.Append(System.Text.Encoding.ASCII.GetBytes(_targetSignature.GetStandaloneMethodSignatureCallingConventions().ToString("x")));
 
                 return prefix;
             }
