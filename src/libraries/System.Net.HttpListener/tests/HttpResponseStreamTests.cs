@@ -576,5 +576,52 @@ namespace System.Net.Tests
                 Assert.Throws<InvalidOperationException>(() => outputStream.EndWrite(beginWriteResult));
             }
         }
+
+        [Fact]
+        public async Task ConcurrentBeginWrite_Chunked_ProducesValidChunkedResponse()
+        {
+            const int writeCount = 5;
+            const int bufferSize = 100 * 1024;
+
+            Task<HttpListenerContext> serverContextTask = _listener.GetContextAsync();
+
+            using (HttpClient client = new HttpClient())
+            {
+                Task<byte[]> clientTask = client.GetByteArrayAsync(_factory.ListeningUrl);
+
+                HttpListenerContext serverContext = await serverContextTask;
+                using (HttpListenerResponse response = serverContext.Response)
+                {
+                    response.SendChunked = true;
+
+                    Stream outputStream = response.OutputStream;
+
+                    IAsyncResult[] asyncResults = new IAsyncResult[writeCount];
+                    byte[][] buffers = new byte[writeCount][];
+
+                    for (int i = 0; i < writeCount; i++)
+                    {
+                        buffers[i] = new byte[bufferSize];
+                        Array.Fill(buffers[i], (byte)(i + 1));
+                    }
+
+                    for (int i = 0; i < writeCount; i++)
+                    {
+                        asyncResults[i] = outputStream.BeginWrite(buffers[i], 0, bufferSize, null, null);
+                    }
+
+                    for (int i = 0; i < writeCount; i++)
+                    {
+                        outputStream.EndWrite(asyncResults[i]);
+                    }
+
+                    outputStream.Close();
+                }
+
+                byte[] result = await clientTask;
+
+                Assert.Equal(writeCount * bufferSize, result.Length);
+            }
+        }
     }
 }
