@@ -16,7 +16,7 @@ namespace System.Threading
         {
             private static readonly short ThreadsToKeepAlive = DetermineThreadsToKeepAlive();
 
-            private const int SemaphoreSpinCountDefault = 70;
+            private const int SemaphoreSpinCountDefault = 10;
 
             // This value represents an assumption of how much uncommitted stack space a worker thread may use in the future.
             // Used in calculations to estimate when to throttle the rate of thread injection to reduce the possibility of
