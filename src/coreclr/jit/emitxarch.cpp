@@ -127,9 +127,9 @@ bool emitter::Is3OpRmwInstruction(instruction ins)
         default:
         {
             return ((ins >= FIRST_FMA_INSTRUCTION) && (ins <= LAST_FMA_INSTRUCTION)) ||
-                   (IsAVXVNNIFamilyInstruction(ins)) ||
-                   ((ins >= FIRST_AVXIFMA_INSTRUCTION) && (ins <= LAST_AVXIFMA_INSTRUCTION) ||
-                    ((ins >= FIRST_AVX10V1_FMA_INSTR) && (ins <= LAST_AVX10V1_FMA_INSTR)));
+                   IsAVXVNNIFamilyInstruction(ins) ||
+                   ((ins >= FIRST_AVXIFMA_INSTRUCTION) && (ins <= LAST_AVXIFMA_INSTRUCTION)) ||
+                    ((ins >= FIRST_AVX10V1_FMA_INSTR) && (ins <= LAST_AVX10V1_FMA_INSTR));
         }
     }
 }
