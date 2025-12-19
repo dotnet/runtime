@@ -2500,7 +2500,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
         PInvoke::GetCallingConvention_IgnoreErrors(pMD, &unmanagedCallConv, NULL);
         hasUnmanagedCallConv = true;
     }
-    else if (pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute())
+    else if (pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute() && !pMD->IsILStub()) // NOTE: IL stubs don't actually have an UnmanagedCallersOnly attribute, even though the HasUnmanagedCallersOnlyAttribute method may return true for them.
     {
         if (CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
         {
