@@ -12414,6 +12414,7 @@ NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
 
 NamedIntrinsic Compiler::lookupHalfConversionIntrinsic(var_types fromType, var_types toType)
 {
+#ifdef FEATURE_HW_INTRINSICS
 #if defined(TARGET_XARCH)
     assert(compOpportunisticallyDependsOn(InstructionSet_AVX10v1));
 
@@ -12479,6 +12480,7 @@ NamedIntrinsic Compiler::lookupHalfConversionIntrinsic(var_types fromType, var_t
             break;
     }
 
+#endif
 #endif
     return NI_Illegal;
 }
