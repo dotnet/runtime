@@ -124,6 +124,29 @@ public class WasmTemplateTestsBase : BuildTestBase
             """;
         }
 
+        if (EnvironmentVariables.RuntimeFlavor == "CoreCLR")
+        {
+            // TODO-WASM: https://github.com/dotnet/sdk/issues/51213
+            string versionSuffix = s_buildEnv.IsRunningOnCI ? "ci" : "dev";
+
+            extraProperties +=
+            """
+                <UseMonoRuntime>false</UseMonoRuntime>
+            """;
+            extraItems +=
+            $$"""
+                <KnownFrameworkReference Update="Microsoft.NETCore.App">
+                  <TargetingPackVersion>11.0.0-{{versionSuffix}}</TargetingPackVersion>
+                  <DefaultRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</DefaultRuntimeFrameworkVersion>
+                  <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
+                  <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
+                </KnownFrameworkReference>
+                <KnownWebAssemblySdkPack Update="Microsoft.NET.Sdk.WebAssembly.Pack">
+                  <WebAssemblySdkPackVersion>11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
+                </KnownWebAssemblySdkPack>
+            """;
+        }
+
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
     }
