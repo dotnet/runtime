@@ -10691,7 +10691,7 @@ regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 {
     // Is it a helper with a special saved set?
     bool            isNoGCHelper = emitNoGChelper(methHnd);
-    CorInfoHelpFunc helper = Compiler::eeGetHelperNum(methHnd);
+    CorInfoHelpFunc helper       = Compiler::eeGetHelperNum(methHnd);
 
     if (isNoGCHelper)
     {
