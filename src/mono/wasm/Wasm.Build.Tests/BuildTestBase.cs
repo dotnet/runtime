@@ -244,17 +244,20 @@ namespace Wasm.Build.Tests
             if (UseWBTOverridePackTargets)
                 File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(dir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
 
-            string targetNuGetConfigPath = Path.Combine(dir, "nuget.config");
-            if (addNuGetSourceForLocalPackages)
+            if (!EnvironmentVariables.UseInTree)
             {
-                File.WriteAllText(targetNuGetConfigPath,
-                                    GetNuGetConfigWithLocalPackagesPath(
-                                                GetNuGetConfigPath(),
-                                                s_buildEnv.BuiltNuGetsPath));
-            }
-            else
-            {
-                File.Copy(GetNuGetConfigPath(), targetNuGetConfigPath);
+                string targetNuGetConfigPath = Path.Combine(dir, "nuget.config");
+                if (addNuGetSourceForLocalPackages)
+                {
+                    File.WriteAllText(targetNuGetConfigPath,
+                                        GetNuGetConfigWithLocalPackagesPath(
+                                                    GetNuGetConfigPath(),
+                                                    s_buildEnv.BuiltNuGetsPath));
+                }
+                else
+                {
+                    File.Copy(GetNuGetConfigPath(), targetNuGetConfigPath);
+                }
             }
         }
 

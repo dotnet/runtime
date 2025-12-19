@@ -1,5 +1,12 @@
 <Project>
+
   <Target Name="PrintRuntimePackPath" BeforeTargets="Build">
     <Message Text="** MicrosoftNetCoreAppRuntimePackDir : '@(ResolvedRuntimePack -> '%(PackageDirectory)')'" Importance="High" Condition="@(ResolvedRuntimePack->Count()) > 0" />
   </Target>
+
+  <ImportGroup Condition="'$(WBTImportInTree)' == 'true'">
+    <Import Project="..\..\..\..\..\..\..\..\Directory.Build.targets" />
+    <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets" />
+  </ImportGroup>
+
 </Project>

@@ -1,1 +1,11 @@
-<Project />
+<Project>
+  
+  <Import Project="..\..\..\..\..\..\..\..\Directory.Build.props" Condition="'$(WBTImportInTree)' == 'true'" />
+  
+  <PropertyGroup Condition="'$(WBTImportInTree)' == 'true'">
+    <OutputPath>bin\$(Configuration)</OutputPath>
+  </PropertyGroup>
+
+  <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.props" Condition="'$(WBTImportInTree)' == 'true'" />
+
+</Project>
