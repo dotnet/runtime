@@ -51,16 +51,6 @@ public sealed class BisectAlgorithm
     }
 
     /// <summary>
-    /// Gets the starting (oldest/good) commit.
-    /// </summary>
-    public string StartCommit => _commits[0];
-
-    /// <summary>
-    /// Gets the ending (newest/bad) commit.
-    /// </summary>
-    public string EndCommit => _commits[^1];
-
-    /// <summary>
     /// Gets the total number of commits in the search space.
     /// </summary>
     public int TotalCommits => _commits.Count;
