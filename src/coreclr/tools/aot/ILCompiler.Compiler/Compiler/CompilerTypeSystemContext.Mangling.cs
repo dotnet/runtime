@@ -38,11 +38,11 @@ namespace ILCompiler
                 }
             }
 
-            string IPrefixMangledMethod.Prefix
+            ReadOnlySpan<byte> IPrefixMangledMethod.Prefix
             {
                 get
                 {
-                    return "unbox";
+                    return "unbox"u8;
                 }
             }
         }
@@ -57,11 +57,11 @@ namespace ILCompiler
                 }
             }
 
-            string IPrefixMangledMethod.Prefix
+            ReadOnlySpan<byte> IPrefixMangledMethod.Prefix
             {
                 get
                 {
-                    return "unbox";
+                    return "unbox"u8;
                 }
             }
         }
