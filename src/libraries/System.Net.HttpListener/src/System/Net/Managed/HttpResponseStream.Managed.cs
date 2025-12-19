@@ -225,25 +225,14 @@ namespace System.Net
                     ms.Write(bytes, 0, bytes.Length);
                 }
                 ms.Write(buffer, offset, size);
-                if (chunked)
-                {
-                    ms.Write(s_crlf, 0, 2);
-                }
                 buffer = ms.GetBuffer();
                 offset = (int)start;
                 size = (int)(ms.Position - start);
             }
             else if (chunked)
             {
-                // Build a combined buffer with header + body + terminator to ensure atomic write
                 bytes = GetChunkSizeBytes(size, false);
-                byte[] combinedBuffer = new byte[bytes.Length + size + 2];
-                Buffer.BlockCopy(bytes, 0, combinedBuffer, 0, bytes.Length);
-                Buffer.BlockCopy(buffer, offset, combinedBuffer, bytes.Length, size);
-                Buffer.BlockCopy(s_crlf, 0, combinedBuffer, bytes.Length + size, 2);
-                buffer = combinedBuffer;
-                offset = 0;
-                size = combinedBuffer.Length;
+                InternalWrite(bytes, 0, bytes.Length);
             }
 
             try
@@ -277,6 +266,8 @@ namespace System.Net
                 try
                 {
                     _stream.EndWrite(asyncResult);
+                    if (_response.SendChunked)
+                        _stream.Write(s_crlf, 0, 2);
                 }
                 catch { }
             }
@@ -285,6 +276,8 @@ namespace System.Net
                 try
                 {
                     _stream.EndWrite(asyncResult);
+                    if (_response.SendChunked)
+                        _stream.Write(s_crlf, 0, 2);
                 }
                 catch (IOException ex)
                 {
