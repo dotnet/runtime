@@ -113,7 +113,7 @@ namespace System.Threading
 
                 while (true)
                 {
-                    while (semaphore.Wait(timeoutMs, true))
+                    while (semaphore.Wait(timeoutMs))
                     {
                         WorkerDoWork(threadPoolInstance);
                     }
@@ -129,13 +129,13 @@ namespace System.Threading
 
             private static void WorkerDoWork(PortableThreadPool threadPoolInstance)
             {
-
                 do
                 {
-                    // We generally avoid spurious wakes as they are wasteful, so nearly 100% we should see a request.
+                    // We generally avoid spurious wakes as they are wasteful, so we nearly always should see a request.
                     // However, we allow external wakes when thread goals change, which can result in "stolen" requests,
                     // thus sometimes there is no active request and we need to check.
-                    if (Interlocked.Exchange(ref threadPoolInstance._separated._hasOutstandingThreadRequest, 0) != 0)
+                    if (threadPoolInstance._separated._hasOutstandingThreadRequest != 0 &&
+                        Interlocked.Exchange(ref threadPoolInstance._separated._hasOutstandingThreadRequest, 0) != 0)
                     {
                         // We took the request, now we must Dispatch some work items.
                         threadPoolInstance.NotifyDispatchProgress(Environment.TickCount);
@@ -146,9 +146,10 @@ namespace System.Threading
                         }
                     }
 
-                    // We could not find more work in the queue.
-                    // if there is uncleared overflow we will be back again after clearing.
-                } while (!RemoveWorkingWorker(threadPoolInstance));
+                    // We could not find more work in the queue and will try to stop being active.
+                    // One caveat - in overflow state we may have cleared a work request without asking for a worker.
+                    // Thus if there is uncleared overflow, one thread will be back for another round - without consuming a wake.
+                } while (!TryRemoveWorkingWorker(threadPoolInstance));
             }
 
             // returns true if the worker is shutting down
@@ -212,9 +213,11 @@ namespace System.Threading
             }
 
             /// <summary>
-            /// Reduce the number of working workers by one, but maybe add back a worker (possibily this thread) if a thread request comes in while we are marking this thread as not working.
+            /// Tries to reduce the number of working workers by one.
+            /// If we are in a state of overflow, clears the overflow instead and returns false.
+            /// Returns true if number of active threads was actually reduced.
             /// </summary>
-            private static bool RemoveWorkingWorker(PortableThreadPool threadPoolInstance)
+            private static bool TryRemoveWorkingWorker(PortableThreadPool threadPoolInstance)
             {
                 while (true)
                 {
@@ -225,11 +228,12 @@ namespace System.Threading
                     {
                         return decremented;
                     }
-
-                    // TODO: VS expowait, many threads could be exiting at once
                 }
             }
 
+            /// In a state of overflow does nothing.
+            /// Otherwise increments the active worker count and signals the semaphore.
+            /// Incrementing the count may turn on the overflow state if the active thread limit is reached.
             internal static void MaybeAddWorkingWorker(PortableThreadPool threadPoolInstance)
             {
                 ThreadCounts oldCounts, newCounts;
@@ -244,8 +248,6 @@ namespace System.Threading
                     {
                         break;
                     }
-
-                    // TODO: VS expowait? the add is rarely concurrent, perhaps not
                 }
 
                 if (!incremented)
@@ -254,7 +256,7 @@ namespace System.Threading
                 }
 
                 Debug.Assert(newCounts.NumProcessingWork - oldCounts.NumProcessingWork == 1);
-                s_semaphore.Release(1);
+                s_semaphore.Signal();
 
                 int toCreate = newCounts.NumExistingThreads - oldCounts.NumExistingThreads;
                 Debug.Assert(toCreate == 0 || toCreate == 1);

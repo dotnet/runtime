@@ -35,7 +35,7 @@ namespace System.Threading
             Create(maximumSignalCount);
         }
 
-        public bool Wait(int timeoutMs, bool spinWait)
+        public bool Wait(int timeoutMs)
         {
             Debug.Assert(timeoutMs >= -1);
 
@@ -43,7 +43,7 @@ namespace System.Threading
             Thread.AssureBlockingPossible();
 #endif
 
-            int spinCount = spinWait ? _spinCount : 0;
+            int spinCount = Environment.IsSingleProcessor ? _spinCount : 0;
 
             // Try to acquire the semaphore or
             // a) register as a spinner if spinCount > 0 and timeoutMs > 0
@@ -92,12 +92,9 @@ namespace System.Threading
                 counts = countsBeforeUpdate;
             }
 
-            bool isSingleProcessor = Environment.IsSingleProcessor;
-            int spinIndex = isSingleProcessor ? spinCount : 0;
-            while (spinIndex < spinCount)
+            for (int spinIndex = 0; spinIndex < spinCount; spinIndex++)
             {
-                LowLevelSpinWaiter.Wait(spinIndex, int.MaxValue, isSingleProcessor);
-                spinIndex++;
+                LowLevelSpinWaiter.Wait(spinIndex, int.MaxValue, isSingleProcessor: false);
 
                 // Try to acquire the semaphore and unregister as a spinner
                 counts = _separated._counts;
@@ -200,11 +197,8 @@ namespace System.Threading
             }
         }
 
-        public void Release(int releaseCount)
+        public void Signal()
         {
-            Debug.Assert(releaseCount > 0);
-            Debug.Assert(releaseCount <= _maximumSignalCount);
-
             int countOfWaitersToWake;
             Counts counts = _separated._counts;
             while (true)
@@ -212,7 +206,7 @@ namespace System.Threading
                 Counts newCounts = counts;
 
                 // Increase the signal count. The addition doesn't overflow because of the limit on the max signal count in constructor.
-                newCounts.AddSignalCount((uint)releaseCount);
+                newCounts.AddSignalCount(1);
 
                 // Determine how many waiters to wake, taking into account how many spinners and waiters there are and how many waiters
                 // have previously been signaled to wake but have not yet woken
@@ -226,9 +220,9 @@ namespace System.Threading
                     // WaitForSignal() does not have enough information to tell whether a woken thread was signaled, and due to the cap
                     // below, it's possible for countOfWaitersSignaledToWake to be less than the number of threads that have actually
                     // been signaled to wake.
-                    if (countOfWaitersToWake > releaseCount)
+                    if (countOfWaitersToWake > 1)
                     {
-                        countOfWaitersToWake = releaseCount;
+                        countOfWaitersToWake = 1;
                     }
 
                     // Cap countOfWaitersSignaledToWake to its max value. It's ok to ignore some woken threads in this count, it just
@@ -239,7 +233,7 @@ namespace System.Threading
                 Counts countsBeforeUpdate = _separated._counts.InterlockedCompareExchange(newCounts, counts);
                 if (countsBeforeUpdate == counts)
                 {
-                    Debug.Assert(releaseCount <= _maximumSignalCount - counts.SignalCount);
+                    Debug.Assert(_maximumSignalCount - counts.SignalCount >= 1);
                     if (countOfWaitersToWake > 0)
                         ReleaseCore(countOfWaitersToWake);
                     return;
