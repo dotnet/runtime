@@ -791,9 +791,9 @@ namespace Internal.IL
                         {
                             instParam = GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType);
                         }
-                        else if (targetMethod.AcquiresInstMethodTableFromThis())
+                        else if (targetMethod.AcquiresInstMethodTableFromThis() && concreteMethod.IsSharedByGenericInstantiations)
                         {
-                            _dependencies.Add(_factory.ShadowConcreteMethod(concreteMethod), reason);
+                            _dependencies.Add(_factory.ShadowNonConcreteMethod(concreteMethod), reason);
                         }
 
                         if (instParam != null)
