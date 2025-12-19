@@ -9,9 +9,11 @@ A tool for automatically finding the first commit that introduced a test failure
 3. The name of a test to track. `auto-bisect diff` can help you find tests that newly fail in between two builds.
 
 **Usage:**
+Inside the src directory, run
+
 ```bash
 export AZDO_PAT=<token>
-auto-bisect bisect \
+dotnet run -- bisect \
   -o <org> -p <project> \
   --good <build-id> --bad <build-id> \
   --test <test-name>
