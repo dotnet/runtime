@@ -5,9 +5,10 @@ using System.Threading.Tasks;
 
 class Program
 {
-    static Task<int> Main(string[] args)
+    static async Task<int> Main(string[] args)
     {
         TestOutput.WriteLine("Hello from WasmBrowserRunMainOnly!");
-        return Task.FromResult(0);
+        await Task.Delay(1);
+        return 0;
     }
 }
