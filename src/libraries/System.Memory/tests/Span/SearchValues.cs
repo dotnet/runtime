@@ -565,5 +565,15 @@ namespace System.SpanTests
                 Assert.Fail($"Expected {expected}, got {approach}={actual} for impl='{impl}', needle='{readableNeedle}', haystack='{readableHaystack}'");
             }
         }
+
+        [Fact]
+        public static void SearchValues_Contains_NonAsciiChar()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/XXXXX
+            // Verifies that non-ASCII characters like char(200) are correctly found
+            char c = (char)200;
+            SearchValues<char> searchValues = SearchValues.Create([c]);
+            Assert.True(searchValues.Contains(c));
+        }
     }
 }
