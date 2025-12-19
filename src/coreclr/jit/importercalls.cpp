@@ -12334,6 +12334,7 @@ GenTree* Compiler::impKeepAliveIntrinsic(GenTree* objToKeepAlive)
 
 NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
 {
+#ifdef FEATURE_HW_INTRINSICS
 #if defined(TARGET_XARCH)
     assert(compOpportunisticallyDependsOn(InstructionSet_AVX10v1));
 
@@ -12382,6 +12383,7 @@ NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
         default:
             break;
     }
+#endif
 #endif
     return NI_Illegal;
 }
