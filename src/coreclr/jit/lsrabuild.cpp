@@ -4388,9 +4388,9 @@ int LinearScan::BuildReturn(GenTree* tree)
 #ifdef TARGET_X86
                         useCandidates = RBM_FLOATRET;
 #else
-                    useCandidates = RBM_FLOATRET.GetFloatRegSet();
-                    break;
+                        useCandidates = RBM_FLOATRET.GetFloatRegSet();
 #endif
+                        break;
                     case TYP_FLOAT:
 #ifdef TARGET_X86
                         useCandidates = RBM_FLOATRET;
