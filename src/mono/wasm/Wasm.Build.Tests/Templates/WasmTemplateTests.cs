@@ -360,7 +360,6 @@ namespace Wasm.Build.Tests
             string extraArgs = string.IsNullOrEmpty(useMonoRuntimeArg) ? "" : $"--UseMonoRuntime {useMonoRuntimeArg}";
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "usemonoruntime", extraArgs: extraArgs);
 
-            string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
             string projectFile = File.ReadAllText(info.ProjectFilePath);
 
             // Verify UseMonoRuntime presence in the project file
