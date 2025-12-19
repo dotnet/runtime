@@ -141,7 +141,7 @@ public class WasmTemplateTestsBase : BuildTestBase
                   <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
                   <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
                 </KnownFrameworkReference>
-                <KnownWebAssemblySdkPack Update="Microsoft.NET.Sdk.WebAssembly.Pack"
+                <KnownWebAssemblySdkPack Update="Microsoft.NET.Sdk.WebAssembly.Pack">
                   <WebAssemblySdkPackVersion>11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
                 </KnownWebAssemblySdkPack>
             """;
