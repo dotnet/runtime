@@ -12394,7 +12394,6 @@ NamedIntrinsic Compiler::lookupHalfConversionIntrinsic(var_types fromType, var_t
     switch (toType)
     {
         case TYP_HALF:
-        {
             switch (fromType)
             {
                 case TYP_FLOAT:
@@ -12408,54 +12407,47 @@ NamedIntrinsic Compiler::lookupHalfConversionIntrinsic(var_types fromType, var_t
                     return NI_Illegal;
             }
             break;
-        }
         case TYP_FLOAT:
-        {
             if (fromType == TYP_HALF)
             {
                 return NI_AVX10v1_ConvertScalarToVector128Single;
             }
-        }
+            break;
+
         case TYP_DOUBLE:
-        {
             if (fromType == TYP_HALF)
             {
                 return NI_AVX10v1_ConvertScalarToVector128Double;
             }
-        }
-        break;
+            break;
 
         case TYP_INT:
-        {
             if (fromType == TYP_HALF)
             {
                 return NI_AVX10v1_ConvertToInt32;
             }
-        }
+            break;
 
         case TYP_LONG:
-        {
             if (fromType == TYP_HALF)
             {
                 return NI_AVX10v1_ConvertToInt64;
             }
-        }
+            break;
 
         case TYP_UINT:
-        {
             if (fromType == TYP_HALF)
             {
                 return NI_AVX10v1_ConvertToUInt32;
             }
-        }
+            break;
 
         case TYP_ULONG:
-        {
             if (fromType == TYP_HALF)
             {
                 return NI_AVX10v1_ConvertToUInt64;
             }
-        }
+            break;
 
         default:
             break;
