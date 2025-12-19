@@ -351,10 +351,10 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [InlineData("true", true)]
-        [InlineData("false", false)]
-        [InlineData("", true)] // Default case
-        public void UseMonoRuntimeParameter(string useMonoRuntimeArg, bool expectUseMonoRuntime)
+        [InlineData("true", false)]
+        [InlineData("false", true)]
+        [InlineData("", false)] // Default case
+        public void UseMonoRuntimeParameter(string useMonoRuntimeArg, bool expectUseMonoRuntimeProperty)
         {
             Configuration config = Configuration.Debug;
             string extraArgs = string.IsNullOrEmpty(useMonoRuntimeArg) ? "" : $"--UseMonoRuntime {useMonoRuntimeArg}";
@@ -364,14 +364,14 @@ namespace Wasm.Build.Tests
             string projectFile = File.ReadAllText(info.ProjectFilePath);
 
             // Verify UseMonoRuntime presence in the project file
-            bool containsUseMonoRuntime = projectFile.Contains("<UseMonoRuntime>true</UseMonoRuntime>");
-            if (expectUseMonoRuntime)
+            bool containsUseMonoRuntime = projectFile.Contains("<UseMonoRuntime>false</UseMonoRuntime>");
+            if (expectUseMonoRuntimeProperty)
             {
-                Assert.True(containsUseMonoRuntime, $"Expected <UseMonoRuntime>true</UseMonoRuntime> to be present in the project file when --UseMonoRuntime {useMonoRuntimeArg}");
+                Assert.True(containsUseMonoRuntime, $"Expected <UseMonoRuntime>false</UseMonoRuntime> to be present in the project file when --UseMonoRuntime {useMonoRuntimeArg}");
             }
             else
             {
-                Assert.False(containsUseMonoRuntime, $"Expected <UseMonoRuntime>true</UseMonoRuntime> to not be present in the project file when --UseMonoRuntime {useMonoRuntimeArg}");
+                Assert.False(containsUseMonoRuntime, $"Expected <UseMonoRuntime>false</UseMonoRuntime> to not be present in the project file when --UseMonoRuntime {useMonoRuntimeArg}");
             }
         }
     }
