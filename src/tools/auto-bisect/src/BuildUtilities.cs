@@ -32,7 +32,7 @@ internal static class BuildUtilities
             .AddRow("Started", build.StartTime?.ToString() ?? "N/A")
             .AddRow("Finished", build.FinishTime?.ToString() ?? "N/A");
 
-        if (build.Links?.Web?.Href != null)
+        if (build.Links?.Web?.Href is not null)
         {
             table.AddRow("URL", $"[link]{build.Links.Web.Href}[/]");
         }
@@ -64,12 +64,12 @@ internal static class BuildUtilities
                         cancellationToken.ThrowIfCancellationRequested();
 
                         build = await client.GetBuildAsync(buildId, cancellationToken);
-                        if (build == null)
+                        if (build is null)
                         {
                             return;
                         }
 
-                        if (build.Status == BuildStatus.Completed)
+                        if (build.Status is BuildStatus.Completed)
                         {
                             return;
                         }
@@ -106,7 +106,7 @@ internal static class BuildUtilities
             );
 
         // If we exited early due to test failure, treat the build as if it completed with failure
-        if (earlyExit && build != null)
+        if (earlyExit && build is not null)
         {
             // We'll still return the build object, but mark it conceptually as failed
             // The calling code will check the actual test results anyway

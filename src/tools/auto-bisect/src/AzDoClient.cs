@@ -132,10 +132,7 @@ public class AzDoClient : IAzDoClient, IDisposable
         do
         {
             var url = $"_apis/test/runs?buildUri=vstfs:///Build/Build/{buildId}&api-version=7.1";
-            if (continuationToken != null)
-            {
-                url += $"&continuationToken={continuationToken}";
-            }
+            url += continuationToken != null ? $"&continuationToken={continuationToken}" : "";
 
             var response = await _httpClient.GetAsync(url, cancellationToken);
             response.EnsureSuccessStatusCode();
@@ -144,12 +141,12 @@ public class AzDoClient : IAzDoClient, IDisposable
                 AzDoJsonContext.Default.TestRunsResponse,
                 cancellationToken
             );
-            if (runsResponse?.Value == null)
+            if (runsResponse?.Value is not { } runs)
             {
                 break;
             }
 
-            foreach (var run in runsResponse.Value)
+            foreach (var run in runs)
             {
                 await foreach (var testResult in GetFailedTestsForRunAsync(run.Id, cancellationToken))
                 {
@@ -187,13 +184,13 @@ public class AzDoClient : IAzDoClient, IDisposable
                 cancellationToken
             );
 
-            if (runsResponse?.Value == null)
+            if (runsResponse?.Value is not { } runs)
             {
                 return false;
             }
 
             // Check each test run for the specific failure
-            foreach (var run in runsResponse.Value)
+            foreach (var run in runs)
             {
                 await foreach (var testResult in GetFailedTestsForRunAsync(run.Id, cancellationToken))
                 {
@@ -233,12 +230,12 @@ public class AzDoClient : IAzDoClient, IDisposable
                 AzDoJsonContext.Default.TestResultsResponse,
                 cancellationToken
             );
-            if (resultsResponse?.Value == null || resultsResponse.Value.Count == 0)
+            if (resultsResponse?.Value is not { Count: > 0 } results)
             {
                 break;
             }
 
-            foreach (var result in resultsResponse.Value)
+            foreach (var result in results)
             {
                 yield return result;
             }
@@ -282,9 +279,9 @@ public class AzDoClient : IAzDoClient, IDisposable
                 cancellationToken
             );
 
-            if (buildsResponse?.Value != null)
+            if (buildsResponse?.Value is { } builds)
             {
-                allBuilds.AddRange(buildsResponse.Value);
+                allBuilds.AddRange(builds);
             }
         }
 

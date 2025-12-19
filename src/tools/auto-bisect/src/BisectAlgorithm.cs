@@ -40,9 +40,9 @@ public sealed class BisectAlgorithm
     /// <param name="commits">List of commits ordered from oldest to newest.</param>
     public BisectAlgorithm(IReadOnlyList<string> commits)
     {
-        if (commits == null || commits.Count == 0)
+        if (commits.Count == 0)
         {
-            throw new ArgumentException("Commits list cannot be null or empty.", nameof(commits));
+            throw new ArgumentException("Commits list cannot be empty.", nameof(commits));
         }
 
         _commits = commits;

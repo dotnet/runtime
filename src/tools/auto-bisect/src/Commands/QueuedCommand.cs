@@ -15,15 +15,6 @@ internal static class QueuedCommand
         bool showAll
     )
     {
-        if (string.IsNullOrWhiteSpace(pat))
-        {
-            Console.Error.WriteLine(
-                "Error: PAT is required. Use --pat or set AZDO_PAT environment variable."
-            );
-            Environment.ExitCode = 1;
-            return;
-        }
-
         using var client = new AzDoClient(org, project, pat);
 
         Console.WriteLine($"Fetching builds for definition {definitionId}...");

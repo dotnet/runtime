@@ -6,12 +6,6 @@ namespace AutoBisect.Tests;
 public class BisectAlgorithmTests
 {
     [Fact]
-    public void Constructor_NullCommits_ThrowsArgumentException()
-    {
-        Assert.Throws<ArgumentException>(() => new BisectAlgorithm(null!));
-    }
-
-    [Fact]
     public void Constructor_EmptyCommits_ThrowsArgumentException()
     {
         Assert.Throws<ArgumentException>(() => new BisectAlgorithm(Array.Empty<string>()));

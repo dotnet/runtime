@@ -12,15 +12,6 @@ internal static class BuildCommand
 {
     public static async Task HandleAsync(string org, string project, string pat, int buildId)
     {
-        if (string.IsNullOrWhiteSpace(pat))
-        {
-            Console.Error.WriteLine(
-                "Error: PAT is required. Use --pat or set AZDO_PAT environment variable."
-            );
-            Environment.ExitCode = 1;
-            return;
-        }
-
         using var client = new AzDoClient(org, project, pat);
         Build? build = null;
         await AnsiConsole

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.CommandLine;
+using System.CommandLine.Parsing;
+using System.Threading.Tasks;
 using AutoBisect.Commands;
 
 var rootCommand = new RootCommand("Azure DevOps bisect tool for finding test regressions");
@@ -24,6 +26,14 @@ var patOption = new Option<string>("--pat")
     Description = "Personal Access Token (or set AZDO_PAT environment variable)",
     DefaultValueFactory = _ => Environment.GetEnvironmentVariable("AZDO_PAT") ?? "",
 };
+patOption.Validators.Add(result =>
+{
+    var value = result.GetValueOrDefault<string>();
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        result.AddError("PAT is required. Use --pat or set AZDO_PAT environment variable.");
+    }
+});
 
 orgOption.Recursive = true;
 projectOption.Recursive = true;
@@ -50,11 +60,12 @@ Command CreateBuildCommand()
     command.Arguments.Add(buildIdArgument);
     command.SetAction(parseResult =>
     {
-        var org = parseResult.GetValue(orgOption)!;
-        var project = parseResult.GetValue(projectOption)!;
-        var pat = parseResult.GetValue(patOption)!;
         var buildId = parseResult.GetValue(buildIdArgument);
-        return BuildCommand.HandleAsync(org, project, pat, buildId);
+        return BuildCommand.HandleAsync(
+            parseResult.GetValue(orgOption)!,
+            parseResult.GetValue(projectOption)!,
+            parseResult.GetValue(patOption)!,
+            buildId);
     });
 
     return command;
@@ -71,11 +82,12 @@ Command CreateTestsCommand()
     command.Arguments.Add(buildIdArgument);
     command.SetAction(parseResult =>
     {
-        var org = parseResult.GetValue(orgOption)!;
-        var project = parseResult.GetValue(projectOption)!;
-        var pat = parseResult.GetValue(patOption)!;
         var buildId = parseResult.GetValue(buildIdArgument);
-        return TestsCommand.HandleAsync(org, project, pat, buildId);
+        return TestsCommand.HandleAsync(
+            parseResult.GetValue(orgOption)!,
+            parseResult.GetValue(projectOption)!,
+            parseResult.GetValue(patOption)!,
+            buildId);
     });
 
     return command;
@@ -103,12 +115,12 @@ Command CreateDiffCommand()
     command.Options.Add(badBuildOption);
     command.SetAction(parseResult =>
     {
-        var org = parseResult.GetValue(orgOption)!;
-        var project = parseResult.GetValue(projectOption)!;
-        var pat = parseResult.GetValue(patOption)!;
-        var goodBuildId = parseResult.GetValue(goodBuildOption);
-        var badBuildId = parseResult.GetValue(badBuildOption);
-        return DiffCommand.HandleAsync(org, project, pat, goodBuildId, badBuildId);
+        return DiffCommand.HandleAsync(
+            parseResult.GetValue(orgOption)!,
+            parseResult.GetValue(projectOption)!,
+            parseResult.GetValue(patOption)!,
+            parseResult.GetValue(goodBuildOption),
+            parseResult.GetValue(badBuildOption));
     });
 
     return command;
@@ -135,12 +147,12 @@ Command CreateQueuedCommand()
     command.Options.Add(showAllOption);
     command.SetAction(parseResult =>
     {
-        var org = parseResult.GetValue(orgOption)!;
-        var project = parseResult.GetValue(projectOption)!;
-        var pat = parseResult.GetValue(patOption)!;
-        var definitionId = parseResult.GetValue(definitionIdOption);
-        var showAll = parseResult.GetValue(showAllOption);
-        return QueuedCommand.HandleAsync(org, project, pat, definitionId, showAll);
+        return QueuedCommand.HandleAsync(
+            parseResult.GetValue(orgOption)!,
+            parseResult.GetValue(projectOption)!,
+            parseResult.GetValue(patOption)!,
+            parseResult.GetValue(definitionIdOption),
+            parseResult.GetValue(showAllOption));
     });
 
     return command;
@@ -200,27 +212,17 @@ Command CreateBisectCommand()
     command.SetAction(
         (parseResult, cancellationToken) =>
         {
-            var org = parseResult.GetValue(orgOption)!;
-            var project = parseResult.GetValue(projectOption)!;
-            var pat = parseResult.GetValue(patOption)!;
-            var goodBuildId = parseResult.GetValue(goodBuildOption);
-            var badBuildId = parseResult.GetValue(badBuildOption);
-            var testName = parseResult.GetValue(testNameOption)!;
-            var repoPath = parseResult.GetValue(repoPathOption)!;
-            var manual = parseResult.GetValue(manualOption);
-            var pollInterval = parseResult.GetValue(pollIntervalOption);
-
             return BisectCommand.HandleAsync(
                 cancellationToken,
-                org,
-                project,
-                pat,
-                goodBuildId,
-                badBuildId,
-                testName,
-                repoPath,
-                manual,
-                pollInterval
+                parseResult.GetValue(orgOption)!,
+                parseResult.GetValue(projectOption)!,
+                parseResult.GetValue(patOption)!,
+                parseResult.GetValue(goodBuildOption),
+                parseResult.GetValue(badBuildOption),
+                parseResult.GetValue(testNameOption)!,
+                parseResult.GetValue(repoPathOption)!,
+                parseResult.GetValue(manualOption),
+                parseResult.GetValue(pollIntervalOption)
             );
         }
     );

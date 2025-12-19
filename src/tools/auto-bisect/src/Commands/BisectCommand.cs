@@ -23,15 +23,6 @@ internal static class BisectCommand
         int pollInterval
     )
     {
-        if (string.IsNullOrWhiteSpace(pat))
-        {
-            Console.Error.WriteLine(
-                "Error: PAT is required. Use --pat or set AZDO_PAT environment variable."
-            );
-            Environment.ExitCode = 1;
-            return 1;
-        }
-
         using var client = new AzDoClient(org, project, pat);
 
         // Get build info for good and bad builds
@@ -115,7 +106,7 @@ internal static class BisectCommand
             t.FullyQualifiedName.Contains(testName, StringComparison.OrdinalIgnoreCase)
         );
 
-        if (matchingFailure == null)
+        if (matchingFailure is null)
         {
             Console.Error.WriteLine($"Test '{testName}' is not failing in the bad build.");
             Console.Error.WriteLine("Available failing tests:");
@@ -153,7 +144,7 @@ internal static class BisectCommand
             t.FullyQualifiedName.Equals(fullTestName, StringComparison.OrdinalIgnoreCase)
         );
 
-        if (goodMatchingFailure != null)
+        if (goodMatchingFailure is not null)
         {
             Console.Error.WriteLine(
                 $"Test '{fullTestName}' is also failing in the good build. Cannot bisect."
@@ -311,14 +302,14 @@ internal static class BisectCommand
                 )
             );
 
-            if (buildToCheck == null)
+            if (buildToCheck is null)
             {
                 // Check for in-progress builds
                 var inProgressBuild = existingBuilds.FirstOrDefault(b =>
                     b.Status == BuildStatus.InProgress || b.Status == BuildStatus.NotStarted
                 );
 
-                if (inProgressBuild != null)
+                if (inProgressBuild is not null)
                 {
                     AnsiConsole.MarkupLine(
                         $"[yellow]⏳[/] Build {inProgressBuild.Id} is in progress..."
@@ -363,12 +354,12 @@ internal static class BisectCommand
                                 }
                             );
 
-                        if (newBuild != null)
+                        if (newBuild is not null)
                         {
                             AnsiConsole.MarkupLine(
                                 $"[green]✓[/] Queued build [cyan]{newBuild.Id}[/]"
                             );
-                            if (newBuild.Links?.Web?.Href != null)
+                            if (newBuild.Links?.Web?.Href is not null)
                             {
                                 AnsiConsole.MarkupLine($"[link]{newBuild.Links.Web.Href}[/]");
                             }
@@ -405,7 +396,7 @@ internal static class BisectCommand
                 );
             }
 
-            if (buildToCheck == null)
+            if (buildToCheck is null)
             {
                 Console.Error.WriteLine("         Build did not complete successfully.");
                 Environment.ExitCode = 1;
