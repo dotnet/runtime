@@ -138,7 +138,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (targetMethod.OwningType.IsInterface)
                         {
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.InterfaceDispatchCell(targetMethod));
-                            encoder.EmitJMP(factory.ExternFunctionSymbol(new Utf8String("RhpResolveInterfaceMethod"u8)));
+                            encoder.EmitJMP(factory.ExternFunctionSymbol(s_RhpResolveInterfaceMethod));
                         }
                         else
                         {

@@ -382,17 +382,17 @@ namespace ILCompiler
                     break;
                 case TypeFlags.SzArray:
                     mangledName = new Utf8StringBuilder().Append("__Array"u8)
-                        .Append(NestMangledName(GetMangledTypeName(((ArrayType)type).ElementType))).ToUtf8String();
+                        .Append('<').Append(GetMangledTypeName(((ArrayType)type).ElementType)).Append('>').ToUtf8String();
                     break;
                 case TypeFlags.ByRef:
                     mangledName = new Utf8StringBuilder()
                         .Append(GetMangledTypeName(((ByRefType)type).ParameterType))
-                        .Append(NestMangledName(new Utf8String("ByRef"u8))).ToUtf8String();
+                        .Append('<').Append("ByRef"u8).Append('>').ToUtf8String();
                     break;
                 case TypeFlags.Pointer:
                     mangledName = new Utf8StringBuilder()
                         .Append(GetMangledTypeName(((PointerType)type).ParameterType))
-                        .Append(NestMangledName(new Utf8String("Pointer"u8))).ToUtf8String();
+                        .Append('<').Append("Pointer"u8).Append('>').ToUtf8String();
                     break;
                 case TypeFlags.FunctionPointer:
                 {
@@ -447,7 +447,13 @@ namespace ILCompiler
                     {
                         // This is a type definition. Since we didn't fall in the `is EcmaType` case above,
                         // it's likely a compiler-generated type.
-                        mangledName = new Utf8String(SanitizeName(((DefType)type).GetFullName()));
+                        var defType = (DefType)type;
+                        var sb = new Utf8StringBuilder();
+                        if (defType.Namespace.Length > 0)
+                            sb.Append(SanitizeName(defType.Namespace)).Append('_');
+
+                        sb.Append(SanitizeName(defType.Name));
+                        mangledName = sb.ToUtf8String();
                     }
                     break;
             }
