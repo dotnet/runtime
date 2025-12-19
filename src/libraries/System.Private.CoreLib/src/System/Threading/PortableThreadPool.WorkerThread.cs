@@ -113,10 +113,9 @@ namespace System.Threading
 
                 while (true)
                 {
-                    bool spinWait = true;
-                    while (semaphore.Wait(timeoutMs, spinWait))
+                    while (semaphore.Wait(timeoutMs, true))
                     {
-                        WorkerDoWork(threadPoolInstance, ref spinWait);
+                        WorkerDoWork(threadPoolInstance);
                     }
 
                     // We've timed out waiting on the semaphore. Time to exit.
@@ -128,38 +127,28 @@ namespace System.Threading
                 }
             }
 
-            private static void WorkerDoWork(PortableThreadPool threadPoolInstance, ref bool spinWait)
+            private static void WorkerDoWork(PortableThreadPool threadPoolInstance)
             {
-                bool alreadyRemovedWorkingWorker = false;
 
-                // We allow the requests to be "stolen" by threads who are done dispatching,
-                // thus it is not guaranteed at this point that there is a request.
-                while (threadPoolInstance._separated._hasOutstandingThreadRequest != 0 &&
-                        Interlocked.Exchange(ref threadPoolInstance._separated._hasOutstandingThreadRequest, 0) != 0)
+                do
                 {
-                    // We took the request, now we must Dispatch some work items.
-                    threadPoolInstance.NotifyDispatchProgress(Environment.TickCount);
-                    if (!ThreadPoolWorkQueue.Dispatch())
+                    // We generally avoid spurious wakes as they are wasteful, so nearly 100% we should see a request.
+                    // However, we allow external wakes when thread goals change, which can result in "stolen" requests,
+                    // thus sometimes there is no active request and we need to check.
+                    if (Interlocked.Exchange(ref threadPoolInstance._separated._hasOutstandingThreadRequest, 0) != 0)
                     {
-                        // ShouldStopProcessingWorkNow() caused the thread to stop processing work, and it would have
-                        // already removed this working worker in the counts. This typically happens when hill climbing
-                        // decreases the worker thread count goal.
-                        alreadyRemovedWorkingWorker = true;
-                        break;
+                        // We took the request, now we must Dispatch some work items.
+                        threadPoolInstance.NotifyDispatchProgress(Environment.TickCount);
+                        if (!ThreadPoolWorkQueue.Dispatch())
+                        {
+                            // We are above goal and would have already removed this working worker in the counts.
+                            return;
+                        }
                     }
-                }
 
-                // Don't spin-wait on the semaphore next time if the thread was actively stopped from processing work,
-                // as it's unlikely that the worker thread count goal would be increased again so soon afterwards that
-                // the semaphore would be released within the spin-wait window
-                spinWait = !alreadyRemovedWorkingWorker;
-
-                if (!alreadyRemovedWorkingWorker)
-                {
-                    // If we woke up but couldn't find a request, or ran out of work items to process, we need to update
-                    // the number of working workers to reflect that we are done working for now
-                    RemoveWorkingWorker(threadPoolInstance);
-                }
+                    // We could not find more work in the queue.
+                    // if there is uncleared overflow we will be back again after clearing.
+                } while (!RemoveWorkingWorker(threadPoolInstance));
             }
 
             // returns true if the worker is shutting down
@@ -225,58 +214,49 @@ namespace System.Threading
             /// <summary>
             /// Reduce the number of working workers by one, but maybe add back a worker (possibily this thread) if a thread request comes in while we are marking this thread as not working.
             /// </summary>
-            private static void RemoveWorkingWorker(PortableThreadPool threadPoolInstance)
+            private static bool RemoveWorkingWorker(PortableThreadPool threadPoolInstance)
             {
-                threadPoolInstance._separated.counts.DecrementProcessingWork();
-
-                // It's possible that a thread request was not actionable due to being at max active threads.
-                // Now we may be able to add a thread and if we can we must add.
-                // Otherwise, if all workers happen to quit at once, there will be noone left running while
-                // there is a request.
-
-                // NOTE: The request check must happen after the active count was updated,
-                // which the interlocked decrement guarantees.
-
-                if (threadPoolInstance._separated._hasOutstandingThreadRequest != 0)
+                while (true)
                 {
-                    MaybeAddWorkingWorker(threadPoolInstance);
+                    ThreadCounts oldCounts = threadPoolInstance._separated.counts;
+                    ThreadCounts newCounts = oldCounts;
+                    bool decremented = newCounts.TryDecrementProcessingWork();
+                    if (threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, oldCounts) == oldCounts)
+                    {
+                        return decremented;
+                    }
+
+                    // TODO: VS expowait, many threads could be exiting at once
                 }
             }
 
             internal static void MaybeAddWorkingWorker(PortableThreadPool threadPoolInstance)
             {
-                ThreadCounts counts = threadPoolInstance._separated.counts;
-                short numExistingThreads, numProcessingWork, newNumExistingThreads, newNumProcessingWork;
+                ThreadCounts oldCounts, newCounts;
+                bool incremented;
                 while (true)
                 {
-                    numProcessingWork = counts.NumProcessingWork;
-                    if (numProcessingWork >= counts.NumThreadsGoal)
-                    {
-                        return;
-                    }
-
-                    newNumProcessingWork = (short)(numProcessingWork + 1);
-                    numExistingThreads = counts.NumExistingThreads;
-                    newNumExistingThreads = Math.Max(numExistingThreads, newNumProcessingWork);
-
-                    ThreadCounts newCounts = counts;
-                    newCounts.NumProcessingWork = newNumProcessingWork;
-                    newCounts.NumExistingThreads = newNumExistingThreads;
-
-                    ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
-
-                    if (oldCounts == counts)
+                    oldCounts = threadPoolInstance._separated.counts;
+                    newCounts = oldCounts;
+                    incremented = newCounts.TryIncrementProcessingWork();
+                    newCounts.NumExistingThreads = Math.Max(newCounts.NumProcessingWork, newCounts.NumExistingThreads);
+                    if (threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, oldCounts) == oldCounts)
                     {
                         break;
                     }
 
-                    counts = oldCounts;
+                    // TODO: VS expowait? the add is rarely concurrent, perhaps not
                 }
 
-                Debug.Assert(newNumProcessingWork - numProcessingWork == 1);
+                if (!incremented)
+                {
+                    return;
+                }
+
+                Debug.Assert(newCounts.NumProcessingWork - oldCounts.NumProcessingWork == 1);
                 s_semaphore.Release(1);
 
-                int toCreate = newNumExistingThreads - numExistingThreads;
+                int toCreate = newCounts.NumExistingThreads - oldCounts.NumExistingThreads;
                 Debug.Assert(toCreate == 0 || toCreate == 1);
                 if (toCreate != 0)
                 {
@@ -298,10 +278,7 @@ namespace System.Threading
                     // When there are more threads processing work than the thread count goal, it may have been decided
                     // to decrease the number of threads. Stop processing if the counts can be updated. We may have more
                     // threads existing than the thread count goal and that is ok, the cold ones will eventually time out if
-                    // the thread count goal is not increased again. This logic is a bit different from the original CoreCLR
-                    // code from which this implementation was ported, which turns a processing thread into a retired thread
-                    // and checks for pending requests like RemoveWorkingWorker. In this implementation there are
-                    // no retired threads, so only the count of threads processing work is considered.
+                    // the thread count goal is not increased again.
                     if (counts.NumProcessingWork <= counts.NumThreadsGoal)
                     {
                         return false;

@@ -44,15 +44,64 @@ namespace System.Threading
                 }
             }
 
-            /// <summary>
-            /// Reduces the number of threads processing work items by one.
-            /// </summary>
-            public void DecrementProcessingWork()
+            // Returns "true" if TryIncrementProcessingWork could not
+            // increment NumProcessingWork due to the limit.
+            // NOTE: it is possible to have overflow and NumProcessingWork under the limit
+            // at the same time if the limit has been changed afterwards. That is ok.
+            // While changes in NumProcessingWork need to be matched with semaphore Waits/Releases,
+            // the redundantly set overflow is mostly harmless and should self-correct when
+            // a worker that sees no work calls TryDecrementProcessingWork, possibly at cost of
+            // redundant check for work.
+            public bool IsOverflow
             {
-                // This should never underflow
-                Debug.Assert(NumProcessingWork > 0);
-                Interlocked.Decrement(ref _data);
+                get
+                {
+                    return (long)_data < 0;
+                }
+            }
+
+            /// <summary>
+            /// Tries to increases the number of threads processing work items by one.
+            /// If at or above goal, returns false and sets overflow flag instead.
+            /// NOTE: only if "true" is returned the NumProcessingWork is incremented.
+            /// </summary>
+            public bool TryIncrementProcessingWork()
+            {
                 Debug.Assert(NumProcessingWork >= 0);
+                if (NumProcessingWork < NumThreadsGoal)
+                {
+                    NumProcessingWork++;
+                    // This should never overflow
+                    Debug.Assert(NumProcessingWork > 0);
+                    return true;
+                }
+                else
+                {
+                    _data |= (1ul << 63);
+                    return false;
+                }
+            }
+
+            /// <summary>
+            /// Tries to reduces the number of threads processing work items by one.
+            /// If in an overflow state, clears the overflow flag and returns false.
+            /// NOTE: only if "true" is returned the NumProcessingWork is decremented.
+            /// </summary>
+            public bool TryDecrementProcessingWork()
+            {
+                Debug.Assert(NumProcessingWork > 0);
+                if (IsOverflow)
+                {
+                    _data &= ~(1ul << 63);
+                    return false;
+                }
+                else
+                {
+                    NumProcessingWork--;
+                    // This should never underflow
+                    Debug.Assert(NumProcessingWork >= 0);
+                    return true;
+                }
             }
 
             /// <summary>
