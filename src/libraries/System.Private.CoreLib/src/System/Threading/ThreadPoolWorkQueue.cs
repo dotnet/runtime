@@ -931,7 +931,6 @@ namespace System.Threading
 
             if (s_assignableWorkItemQueueCount > 0)
             {
-                // NOTE: this takes locks and may block and spend unknown time blocked.
                 workQueue.AssignWorkItemQueue(tl);
             }
 
