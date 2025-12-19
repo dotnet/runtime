@@ -43,9 +43,6 @@ public class GenerateWasmBootJson : Task
     public string DebugLevel { get; set; }
 
     [Required]
-    public bool LinkerEnabled { get; set; }
-
-    [Required]
     public bool CacheBootResources { get; set; }
 
     public bool LoadFullICUData { get; set; }
@@ -134,14 +131,10 @@ public class GenerateWasmBootJson : Task
                 if (CacheBootResources)
                     result.cacheBootResources = CacheBootResources;
             }
-
-            if (LinkerEnabled)
-                result.linkerEnabled = LinkerEnabled;
         }
         else
         {
             result.cacheBootResources = CacheBootResources;
-            result.linkerEnabled = LinkerEnabled;
             result.config = new();
             result.debugBuild = DebugBuild;
             result.entryAssembly = entryAssemblyName;

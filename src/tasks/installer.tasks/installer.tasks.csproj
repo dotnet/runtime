@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppToolCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <Nullable>disable</Nullable>
     <IsShipping>false</IsShipping>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
