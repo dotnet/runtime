@@ -72,6 +72,7 @@ namespace System.Net.Http
             Debug.Assert(_headers is null);
             Debug.Assert(headers is not null);
 
+            headers._parent = this;
             _headers = headers;
         }
 
