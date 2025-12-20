@@ -1,11 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk.WebAssembly">
   <PropertyGroup>
-    <TargetFramework>netX.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
-<!--#if (!UseMonoRuntime) -->
-    <UseMonoRuntime>false</UseMonoRuntime>
-<!--#endif -->
   </PropertyGroup>
 
   <ItemGroup>
