@@ -8878,10 +8878,10 @@ retry_emit:
 				memcpy (td->stack, exit_bb->stack_state, exit_bb->stack_height * sizeof(td->stack [0]));
 			td->sp = td->stack + exit_bb->stack_height;
 		}
-		// If exit_bb is not reached by any other bb in this method, just mark it as dead so the
-		// method that does the inlining no longer generates code for the following IL opcodes.
+		// If exit_bb is not reached by any other bb in this method, it means the method always
+		// throws an exception. Inlining it isn't beneficial since this shouldn't be perf sensitive code.
 		if (exit_bb->in_count == 0)
-			exit_bb->dead = TRUE;
+			INLINE_FAILURE;
 		else
 			exit_bb->emit_state = BB_STATE_EMITTING;
 	}
