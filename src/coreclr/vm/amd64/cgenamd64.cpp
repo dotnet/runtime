@@ -48,7 +48,7 @@ void UpdateRegDisplayFromArgumentRegisters(REGDISPLAY * pRD, ArgumentRegisters* 
 {
     LIMITED_METHOD_CONTRACT;
 
-    // TODO: Fix ENUM_ARGUMENT_REGISTERS to have consistent casing for rcx and rdx
+    // Bridge inconsistent casing between ArgumentRegisters and T_CONTEXT
 
     T_CONTEXT * pContext = pRD->pCurrentContext;
     pContext->Rcx = pRegs->RCX;
@@ -103,11 +103,6 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, GetCalleeSavedRegisters());
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
-
-#ifdef TARGET_WINDOWS
-    // TODO: Quick hack
-    UpdateRegDisplayFromArgumentRegisters(pRD, GetArgumentRegisters());
-#endif
 
     SyncRegDisplayToCurrentContext(pRD);
 
