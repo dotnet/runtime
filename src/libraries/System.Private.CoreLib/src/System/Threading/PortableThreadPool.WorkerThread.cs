@@ -16,7 +16,11 @@ namespace System.Threading
         {
             private static readonly short ThreadsToKeepAlive = DetermineThreadsToKeepAlive();
 
-            private const int SemaphoreSpinCountDefault = 10;
+            // Spinning in the threadpool semaphore is not always useful.
+            // For example the new workitems may be produced by non-pool threads and could only arrive if pool threads start blocking.
+            // We will limit spinning to roughly 512-1024 spinwaits, each taking 35-50ns. That should be under 50 usec total.
+            // For reference the wakeup latency of a futex/event with threads queued up is reported to be in 5-50 usec range. (year 2025)
+            private const int SemaphoreSpinCountDefault = 9;
 
             // This value represents an assumption of how much uncommitted stack space a worker thread may use in the future.
             // Used in calculations to estimate when to throttle the rate of thread injection to reduce the possibility of
@@ -43,7 +47,6 @@ namespace System.Threading
             /// </summary>
             private static readonly LowLevelLifoSemaphore s_semaphore =
                 new LowLevelLifoSemaphore(
-                    0,
                     MaxPossibleThreadCount,
                     AppContextConfigHelper.GetInt32ComPlusOrDotNetConfig(
                         "System.Threading.ThreadPool.UnfairSemaphoreSpinLimit",
