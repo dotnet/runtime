@@ -266,27 +266,6 @@ PAL_GenerateCoreDump(
     LPSTR errorMessageBuffer,
     INT cbErrorMessageBuffer);
 
-typedef VOID (*PPAL_STARTUP_CALLBACK)(
-    char *modulePath,
-    HMODULE hModule,
-    PVOID parameter);
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_RegisterForRuntimeStartup(
-    IN DWORD dwProcessId,
-    IN LPCWSTR lpApplicationGroupId,
-    IN PPAL_STARTUP_CALLBACK pfnCallback,
-    IN PVOID parameter,
-    OUT PVOID *ppUnregisterToken);
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_UnregisterForRuntimeStartup(
-    IN PVOID pUnregisterToken);
-
 PALIMPORT
 BOOL
 PALAPI

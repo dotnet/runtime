@@ -8,8 +8,6 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using Internal.DeveloperExperience;
-
 namespace System
 {
     public static partial class Environment

@@ -2301,10 +2301,10 @@ public:
     // Returns default scan flag for current thread
     static ScanFlag GetScanFlags(Thread *pThread = NULL);
 
-    // Returns whether currentPC is in managed code. Returns false for jump stubs on WIN64.
+    // Returns whether currentPC is in managed code. Returns false for jump stubs.
     static BOOL IsManagedCode(PCODE currentPC);
 
-    // Returns whether currentPC is in managed code. Returns false for jump stubs on WIN64.
+    // Returns whether currentPC is in managed code. Returns false for jump stubs.
     // Does not acquire the reader lock. Caller must ensure it is safe.
     static BOOL IsManagedCodeNoLock(PCODE currentPC);
 
