@@ -240,7 +240,7 @@ namespace System.Threading
 
             /// In a state of overflow does nothing.
             /// Otherwise increments the active worker count and signals the semaphore.
-            /// Incrementing the count may turn on the overflow state if the active thread limit is reached.
+            /// Incrementing the count turns on the overflow state if the active thread limit is reached.
             internal static void MaybeAddWorkingWorker(PortableThreadPool threadPoolInstance)
             {
                 ThreadCounts oldCounts, newCounts;
@@ -257,7 +257,7 @@ namespace System.Threading
                         break;
                     }
 
-                    // This is less contentious than Remove as reasons to add threads are more complex and typically staged.
+                    // This is less contentious than Remove as reasons to add threads are more complex to avoid adding too many too fast.
                     // We can still see some amount of failed interlocked operations here when a burst of work is scheduled.
                     Backoff.Exponential(collisionCount++);
                 }

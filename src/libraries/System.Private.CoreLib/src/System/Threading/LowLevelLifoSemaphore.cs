@@ -61,9 +61,9 @@ namespace System.Threading
         private bool WaitSlow(int timeoutMs)
         {
             // Now spin briefly with exponential backoff.
-            // We use random exponential backoff is because:
+            // We use random exponential backoff because:
             // - we do not know how soon a signal appears, but with exponential backoff we will not be more than 2x off the ideal guess
-            // - it gives mild preference to the most recent spinners. We want LIFO here so that hot threads keep running.
+            // - it gives mild preference to the most recent spinners. We want LIFO here so that hot(er) threads keep running.
             // - it is possible that spinning workers prevent non-pool threads from submitting more work to the pool,
             //   so we want some workers to sleep earlier than others.
             uint spinCount = Environment.IsSingleProcessor ? 0 : _spinCount;

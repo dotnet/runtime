@@ -44,13 +44,12 @@ namespace System.Threading
                 }
             }
 
-            // Returns "true" if TryIncrementProcessingWork could not
-            // increment NumProcessingWork due to the limit.
+            // Returns "true" if adding NumProcessingWork has reached the limit.
             // NOTE: it is possible to have overflow and NumProcessingWork under the limit
             // at the same time if the limit has been changed afterwards. That is ok.
-            // While changes in NumProcessingWork need to be matched with semaphore Waits/Releases,
+            // While changes in NumProcessingWork need to be matched with semaphore Wait/Signal,
             // the redundantly set overflow is mostly harmless and should self-correct when
-            // a worker that sees no work calls TryDecrementProcessingWork, possibly at cost of
+            // a worker that sees no work calls TryDecrementProcessingWork, possibly at a cost of
             // redundant check for work.
             public bool IsOverflow
             {
