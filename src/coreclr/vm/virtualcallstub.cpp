@@ -1697,6 +1697,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     return target;
 }
 
+#ifdef FEATURE_RESOLVE_HELPER_DISPATCH
 PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock, TADDR siteAddrForRegisterIndirect)
 {
     CONTRACTL {
@@ -1713,12 +1714,10 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
     Thread::ObjectRefFlush(CURRENT_THREAD);
 #endif
 
-    StubDispatchFrame frame(pTransitionBlock);
-    StubDispatchFrame * pSDFrame = &frame;
+    ResolveHelperFrame frame(pTransitionBlock);
+    ResolveHelperFrame * pSDFrame = &frame;
 
-    PCODE returnAddress = pSDFrame->GetUnadjustedReturnAddress();
-
-    StubCallSite callSite(siteAddrForRegisterIndirect, returnAddress);
+    StubCallSite callSite(siteAddrForRegisterIndirect, pTransitionBlock->m_ReturnAddress);
 
     OBJECTREF *protectedObj = pSDFrame->GetThisPtr();
     _ASSERTE(protectedObj != NULL);
@@ -1737,8 +1736,6 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
         _ASSERTE(!"Throw returned");
     }
-
-    pSDFrame->SetCallSite(NULL, (TADDR)callSite.GetIndirectCell());
 
     DispatchToken representativeToken = DispatchToken(VirtualCallStubManager::GetTokenFromStub(callSite.GetSiteTarget(), NULL));
 
@@ -1772,14 +1769,6 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
 
     target = pMgr->ResolveWorker(&callSite, &pObj, representativeToken, stubKind);
 
-#if _DEBUG
-    if (pSDFrame->GetGCRefMap() != NULL)
-    {
-        GCX_PREEMP();
-        _ASSERTE(CheckGCRefMapEqual(pSDFrame->GetGCRefMap(), pSDFrame->GetFunction(), true));
-    }
-#endif // _DEBUG
-
     GCPROTECT_END();
     GCPROTECT_END();
 
@@ -1789,6 +1778,7 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
 
     return target;
 }
+#endif // FEATURE_RESOLVE_HELPER_DISPATCH
 
 void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR siteAddrForRegisterIndirect)
 {

@@ -114,6 +114,37 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
+#ifdef FEATURE_RESOLVE_HELPER_DISPATCH
+void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD, GetSP());
+        _ASSERTE(pRD->pCurrentContext->Rip == GetReturnAddress());
+        _ASSERTE(pRD->pCurrentContext->Rsp == GetSP());
+    }
+#endif // DACCESS_COMPILE
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+
+    pRD->pCurrentContext->Rip = GetReturnAddress();
+    pRD->pCurrentContext->Rsp = GetSP();
+
+    UpdateRegDisplayFromCalleeSavedRegisters(pRD, GetCalleeSavedRegisters());
+    ClearRegDisplayArgumentAndScratchRegisters(pRD);
+
+    UpdateRegDisplayFromArgumentRegisters(pRD, GetArgumentRegisters());
+
+    SyncRegDisplayToCurrentContext(pRD);
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
+}
+#endif // FEATURE_RESOLVE_HELPER_DISPATCH
+
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     CONTRACTL
