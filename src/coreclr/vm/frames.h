@@ -1723,6 +1723,70 @@ struct cdac_data<StubDispatchFrame>
 
 typedef DPTR(class StubDispatchFrame) PTR_StubDispatchFrame;
 
+//------------------------------------------------------------------------
+// CodePointerLookupFrame is used for resolving interface dispatch calls.
+// Unlike StubDispatchFrame, it inherits directly from TransitionFrame to
+// avoid double GC reporting of argument registers. The calling code handles
+// GC reporting via the TransitionFrame base class.
+//------------------------------------------------------------------------
+
+class CodePointerLookupFrame : public TransitionFrame
+{
+    TADDR m_pTransitionBlock;
+
+    // Indirection cell and containing module.
+    PTR_Module      m_pZapModule;
+    TADDR           m_pIndirection;
+
+public:
+    CodePointerLookupFrame(TransitionBlock * pTransitionBlock);
+
+    TADDR GetTransitionBlock_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_pTransitionBlock;
+    }
+
+#ifndef DACCESS_COMPILE
+    void SetCallSite(Module * pZapModule, TADDR pIndirection)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        m_pZapModule = pZapModule;
+        m_pIndirection = pIndirection;
+    }
+#endif
+
+    PCODE GetUnadjustedReturnAddress()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return GetReturnAddress_Impl();
+    }
+
+    BOOL TraceFrame_Impl(Thread *thread, BOOL fromPatch,
+                    TraceDestination *trace, REGDISPLAY *regs);
+
+    int GetFrameType_Impl()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return TYPE_CALL;
+    }
+
+    Interception GetInterception_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return INTERCEPTION_NONE;
+    }
+
+    ETransitionType GetTransitionType_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return TT_InternalCall;
+    }
+};
+
+typedef DPTR(class CodePointerLookupFrame) PTR_CodePointerLookupFrame;
+
 typedef DPTR(class CallCountingHelperFrame) PTR_CallCountingHelperFrame;
 
 class CallCountingHelperFrame : public FramedMethodFrame

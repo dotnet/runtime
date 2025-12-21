@@ -953,6 +953,29 @@ Frame::Interception StubDispatchFrame::GetInterception_Impl()
 }
 
 #ifndef DACCESS_COMPILE
+CodePointerLookupFrame::CodePointerLookupFrame(TransitionBlock * pTransitionBlock)
+    : TransitionFrame(FrameIdentifier::CodePointerLookupFrame), m_pTransitionBlock(dac_cast<TADDR>(pTransitionBlock))
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_pZapModule = NULL;
+    m_pIndirection = (TADDR)NULL;
+}
+#endif
+
+BOOL CodePointerLookupFrame::TraceFrame_Impl(Thread *thread, BOOL fromPatch,
+                                    TraceDestination *trace, REGDISPLAY *regs)
+{
+    WRAPPER_NO_CONTRACT;
+
+    // CodePointerLookupFrame is used for interface dispatch resolution and never directly calls managed code.
+    // Returning false instructs the debugger to step out of the call that erected this frame.
+    LOG((LF_CORDB, LL_INFO1000, "CodePointerLookupFrame::TraceFrame: return FALSE\n"));
+
+    return FALSE;
+}
+
+#ifndef DACCESS_COMPILE
 CallCountingHelperFrame::CallCountingHelperFrame(TransitionBlock *pTransitionBlock, MethodDesc *pMD)
     : FramedMethodFrame(FrameIdentifier::CallCountingHelperFrame, pTransitionBlock, pMD)
 {
