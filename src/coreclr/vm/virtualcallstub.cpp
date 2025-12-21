@@ -1754,14 +1754,14 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
     INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
-    GCPROTECT_BEGIN(*protectedObj);
+    GCPROTECT_BEGIN(pObj);
 
     // For Virtual Delegates the m_siteAddr is a field of a managed object
     // Thus we have to report it as an interior pointer,
     // so that it is updated during a gc
     GCPROTECT_BEGININTERIOR( *(callSite.GetIndirectCellAddress()) );
 
-    GCStress<vsd_on_resolve>::MaybeTriggerAndProtect(pObj);
+    GCStress<vsd_on_resolve>::MaybeTrigger();
 
     PCODE callSiteTarget = callSite.GetSiteTarget();
     CONSISTENCY_CHECK(callSiteTarget != (PCODE)NULL);
@@ -1770,7 +1770,7 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget, &stubKind);
     _ASSERTE(pMgr != NULL);
 
-    target = pMgr->ResolveWorker(&callSite, protectedObj, representativeToken, stubKind);
+    target = pMgr->ResolveWorker(&callSite, &pObj, representativeToken, stubKind);
 
 #if _DEBUG
     if (pSDFrame->GetGCRefMap() != NULL)
