@@ -48,7 +48,7 @@ namespace System.Threading
             private static readonly LowLevelLifoSemaphore s_semaphore =
                 new LowLevelLifoSemaphore(
                     MaxPossibleThreadCount,
-                    AppContextConfigHelper.GetInt32ComPlusOrDotNetConfig(
+                    (uint)AppContextConfigHelper.GetInt32ComPlusOrDotNetConfig(
                         "System.Threading.ThreadPool.UnfairSemaphoreSpinLimit",
                         "ThreadPool_UnfairSemaphoreSpinLimit",
                         SemaphoreSpinCountDefault,
@@ -222,6 +222,7 @@ namespace System.Threading
             /// </summary>
             private static bool TryRemoveWorkingWorker(PortableThreadPool threadPoolInstance)
             {
+                uint collisionCount = 0;
                 while (true)
                 {
                     ThreadCounts oldCounts = threadPoolInstance._separated.counts;
@@ -231,6 +232,9 @@ namespace System.Threading
                     {
                         return decremented;
                     }
+
+                    // This can be fairly contentious when threadpool runs out of work and all threads try to leave.
+                    Backoff.Exponential(collisionCount++);
                 }
             }
 
@@ -241,6 +245,7 @@ namespace System.Threading
             {
                 ThreadCounts oldCounts, newCounts;
                 bool incremented;
+                uint collisionCount = 0;
                 while (true)
                 {
                     oldCounts = threadPoolInstance._separated.counts;
@@ -251,6 +256,10 @@ namespace System.Threading
                     {
                         break;
                     }
+
+                    // This is less contentious than Remove as reasons to add threads are more complex and typically staged.
+                    // We can still see some amount of failed interlocked operations here when a burst of work is scheduled.
+                    Backoff.Exponential(collisionCount++);
                 }
 
                 if (!incremented)
