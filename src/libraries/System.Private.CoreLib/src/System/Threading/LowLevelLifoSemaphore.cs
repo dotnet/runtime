@@ -16,10 +16,10 @@ namespace System.Threading
         private CacheLineSeparatedCounts _separated;
 
         private readonly int _maximumSignalCount;
-        private readonly int _spinCount;
+        private readonly uint _spinCount;
         private readonly Action _onWait;
 
-        public LowLevelLifoSemaphore(int maximumSignalCount, int spinCount, Action onWait)
+        public LowLevelLifoSemaphore(int maximumSignalCount, uint spinCount, Action onWait)
         {
             Debug.Assert(maximumSignalCount > 0);
             Debug.Assert(maximumSignalCount <= short.MaxValue);
@@ -64,13 +64,12 @@ namespace System.Threading
             // We use random exponential backoff is because:
             // - we do not know how soon a signal appears, but with exponential backoff we will not be more than 2x off the ideal guess
             // - it gives mild preference to the most recent spinners. We want LIFO here so that hot threads keep running.
-            // - it is possible that spinning workers prevent non-pool threads from creating more work for the pool,
-            //   so we want some workers to sleep early.
-
-            int spinCount = Environment.IsSingleProcessor ? 0 : _spinCount;
-            for (int spinIndex = 0; spinIndex < spinCount; spinIndex++)
+            // - it is possible that spinning workers prevent non-pool threads from submitting more work to the pool,
+            //   so we want some workers to sleep earlier than others.
+            uint spinCount = Environment.IsSingleProcessor ? 0 : _spinCount;
+            for (uint iteration = 0; iteration < spinCount; iteration++)
             {
-                Thread.SpinWait(1 << Math.Min(spinIndex, 10));
+                Backoff.Exponential(iteration);
 
                 Counts counts = _separated._counts;
                 if (counts.SignalCount != 0)
@@ -89,8 +88,8 @@ namespace System.Threading
             // Now we will try registering as a waiter and wait.
             // If signaled before that, we have to acquire as this can be the last thread that could take that signal.
             // The difference with spinning above is that we are not waiting for a signal. We should immediately succeed
-            // unless a lot of threads are trying to update the counts.
-            int collisionCount = 0;
+            // unless a lot of threads are trying to update the counts. Thus we use a different attempt counter.
+            uint collisionCount = 0;
             while (true)
             {
                 Counts counts = _separated._counts;
@@ -110,8 +109,7 @@ namespace System.Threading
                     return counts.SignalCount != 0 || WaitForSignal(timeoutMs);
                 }
 
-                Thread.SpinWait(1 << Math.Min(collisionCount, 10));
-                collisionCount++;
+                Backoff.Exponential(collisionCount++);
             }
         }
 
@@ -133,7 +131,7 @@ namespace System.Threading
                 }
                 int endWaitTicks = timeoutMs != -1 ? Environment.TickCount : 0;
 
-                int collisionCount = 0;
+                uint collisionCount = 0;
                 while (true)
                 {
                     Counts counts = _separated._counts;
@@ -163,8 +161,7 @@ namespace System.Threading
                     }
 
                     // collision, try again.
-                    Thread.SpinWait(1 << Math.Min(collisionCount, 10));
-                    collisionCount++;
+                    Backoff.Exponential(collisionCount++);
                 }
 
                 // we will wait again, reduce timeout
@@ -185,7 +182,7 @@ namespace System.Threading
             Counts counts = _separated._counts.InterlockedIncrementSignalCount();
 
             // Now check if waiters need to be woken
-            int collisionCount = 0;
+            uint collisionCount = 0;
             while (true)
             {
                 // Determine how many waiters to wake.
@@ -209,8 +206,7 @@ namespace System.Threading
                 }
 
                 // collision, try again.
-                Thread.SpinWait(1 << Math.Min(collisionCount, 10));
-                collisionCount++;
+                Backoff.Exponential(collisionCount++);
 
                 counts = _separated._counts;
             }
