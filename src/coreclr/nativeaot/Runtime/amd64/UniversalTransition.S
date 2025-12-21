@@ -4,8 +4,6 @@
 .intel_syntax noprefix
 #include <unixasmmacros.inc>
 
-#ifdef FEATURE_DYNAMIC_CODE
-
 #ifdef _DEBUG
 #define TRASH_SAVED_ARGUMENT_REGISTERS 1
 #endif
@@ -154,5 +152,3 @@ NESTED_END Rhp\FunctionName, _TEXT
 .endm // UNIVERSAL_TRANSITION
 
         UNIVERSAL_TRANSITION UniversalTransitionTailCall
-
-#endif // FEATURE_DYNAMIC_CODE

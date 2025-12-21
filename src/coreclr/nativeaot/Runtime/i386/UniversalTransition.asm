@@ -8,8 +8,6 @@
 
 include AsmMacros.inc
 
-ifdef FEATURE_DYNAMIC_CODE
-
 ;;
 ;; Defines an assembly thunk used to make a transition from managed code to a callee,
 ;; then (based on the return value from the callee), either returning or jumping to
@@ -87,7 +85,5 @@ FASTCALL_ENDFUNC
         endm
 
         UNIVERSAL_TRANSITION UniversalTransitionTailCall
-
-endif
 
 end

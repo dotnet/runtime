@@ -3,8 +3,6 @@
 
 include AsmMacros.inc
 
-ifdef FEATURE_DYNAMIC_CODE
-
 ifdef _DEBUG
 TRASH_SAVED_ARGUMENT_REGISTERS equ 1
 else
@@ -153,7 +151,5 @@ NESTED_END Rhp&FunctionName, _TEXT
         endm
 
         UNIVERSAL_TRANSITION UniversalTransitionTailCall
-
-endif
 
 end
