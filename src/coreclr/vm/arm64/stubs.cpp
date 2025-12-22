@@ -202,12 +202,14 @@ void UpdateRegDisplayFromArgumentRegisters(REGDISPLAY * pRD, ArgumentRegisters* 
     {
         pContext->X[i] = pRegs->x[i];
     }
+    pContext->X[8] = *(&pRegs->x[0] - 1); // m_x8RetBuffReg
 
     Arm64VolatileContextPointer * pContextPointers = &pRD->volatileCurrContextPointers;
     for (int i = 0; i < 8; i++)
     {
         pContextPointers->X[i] = (PDWORD64)&pRegs->x[i];
     }
+    pContextPointers->X[8] = (PDWORD64)(&pRegs->x[0] - 1); // m_x8RetBuffReg
 }
 
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
