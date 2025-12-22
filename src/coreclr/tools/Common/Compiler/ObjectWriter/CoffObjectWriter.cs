@@ -89,6 +89,8 @@ namespace ILCompiler.ObjectWriter
                 {
                     SectionType.ReadOnly =>
                         SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData,
+                    SectionType.UnwindData =>
+                        SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData,
                     SectionType.Writeable =>
                         SectionCharacteristics.MemRead | SectionCharacteristics.MemWrite |
                         SectionCharacteristics.ContainsInitializedData,
@@ -102,7 +104,7 @@ namespace ILCompiler.ObjectWriter
                 }
             };
 
-            if (section == DebugTypesSection || section == ObjectNodeSection.DebugDirectorySection)
+            if (section == DebugTypesSection)
             {
                 sectionHeader.SectionCharacteristics =
                     SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData |
