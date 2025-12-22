@@ -181,25 +181,16 @@ namespace BINDER_SPACE
                     GO_WITH_HRESULT(E_INVALIDARG);
                 }
 
-                const SString sNiDll(SString::Literal, W(".ni.dll"));
-                const SString sNiExe(SString::Literal, W(".ni.exe"));
                 const SString sDll(SString::Literal, W(".dll"));
                 const SString sExe(SString::Literal, W(".exe"));
 
-                if (dllOnly && (outPath.EndsWithCaseInsensitive(sExe) ||
-                    outPath.EndsWithCaseInsensitive(sNiExe)))
+                if (dllOnly && outPath.EndsWithCaseInsensitive(sExe))
                 {
                     // Skip exe files when the caller requested only dlls
                     continue;
                 }
 
-                if (outPath.EndsWithCaseInsensitive(sNiDll) ||
-                    outPath.EndsWithCaseInsensitive(sNiExe))
-                {
-                    simpleName.Set(outPath, iSimpleNameStart, outPath.End() - 7);
-                    isNativeImage = true;
-                }
-                else if (outPath.EndsWithCaseInsensitive(sDll) ||
+                if (outPath.EndsWithCaseInsensitive(sDll) ||
                     outPath.EndsWithCaseInsensitive(sExe))
                 {
                     simpleName.Set(outPath, iSimpleNameStart, outPath.End() - 4);
