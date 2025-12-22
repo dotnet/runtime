@@ -298,9 +298,8 @@ namespace BINDER_SPACE
             {
                 SString fileName;
                 SString simpleName;
-                bool isNativeImage = false;
                 HRESULT pathResult = S_OK;
-                IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ true, fileName, simpleName, isNativeImage));
+                IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ true, fileName, simpleName));
                 if (pathResult == S_FALSE)
                 {
                     break;
@@ -887,25 +886,13 @@ namespace BINDER_SPACE
             const SimpleNameToFileNameMapEntry *pTpaEntry = tpaMap->LookupPtr(simpleName.GetUnicode());
             if (pTpaEntry != nullptr)
             {
-                if (pTpaEntry->m_wszNIFileName != nullptr)
-                {
-                    SString fileName(pTpaEntry->m_wszNIFileName);
+                _ASSERTE(pTpaEntry->m_wszILFileName != nullptr);
+                SString fileName(pTpaEntry->m_wszILFileName);
 
-                    hr = GetAssembly(fileName,
-                                     TRUE,  // fIsInTPA
-                                     &pTPAAssembly);
-                    BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
-                }
-                else
-                {
-                    _ASSERTE(pTpaEntry->m_wszILFileName != nullptr);
-                    SString fileName(pTpaEntry->m_wszILFileName);
-
-                    hr = GetAssembly(fileName,
-                                     TRUE,  // fIsInTPA
-                                     &pTPAAssembly);
-                    BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
-                }
+                hr = GetAssembly(fileName,
+                                    TRUE,  // fIsInTPA
+                                    &pTPAAssembly);
+                BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
 
                 pBindResult->SetAttemptResult(hr, pTPAAssembly);
 

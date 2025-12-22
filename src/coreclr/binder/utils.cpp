@@ -143,11 +143,9 @@ namespace BINDER_SPACE
         return hr;
     }
 
-    HRESULT GetNextTPAPath(const SString& paths, SString::CIterator& startPos, bool dllOnly, SString& outPath, SString& simpleName, bool& isNativeImage)
+    HRESULT GetNextTPAPath(const SString& paths, SString::CIterator& startPos, bool dllOnly, SString& outPath, SString& simpleName)
     {
         HRESULT hr = S_OK;
-        isNativeImage = false;
-
         HRESULT pathResult = S_OK;
         while(true)
         {
