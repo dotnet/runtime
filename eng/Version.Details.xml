@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-rtm.25574.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-rtm.25612.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>e18dd5d9e047367be7486ab66636b892cbe24a67</Sha>
+      <Sha>33609ad57e782840bf8ba45e33cf9737560f4ab2</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="9.0.0-alpha.1.24167.3">
       <Uri>https://github.com/dotnet/msquic</Uri>
@@ -54,14 +54,14 @@
       <Sha>803d8598f98fb4efd94604b32627ee9407f246db</Sha>
       <SourceBuild RepoName="command-line-api" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.5-alpha.25566.3">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.5-alpha.25614.3">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>60faa90ec95fd499f8aba4b7d212da1993b7ee15</Sha>
+      <Sha>ae1be73265b57e63b7b7e8b996c11849a36553b1</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.5-alpha.25566.3">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.5-alpha.25614.3">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>60faa90ec95fd499f8aba4b7d212da1993b7ee15</Sha>
+      <Sha>ae1be73265b57e63b7b7e8b996c11849a36553b1</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.11-servicing.25529.3">
@@ -320,17 +320,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>b030c4dfdfa1bf287f10f96006619a06bc2000ae</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="9.0.0-prerelease.25601.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="9.0.0-prerelease.25615.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>6f1b3efbfb1dcb66d10e3872842bf2d87dd6a64e</Sha>
+      <Sha>c26361a23526ea459ca0a19b34b285eda1bffecb</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="9.0.0-prerelease.25601.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="9.0.0-prerelease.25615.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>6f1b3efbfb1dcb66d10e3872842bf2d87dd6a64e</Sha>
+      <Sha>c26361a23526ea459ca0a19b34b285eda1bffecb</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="9.0.0-prerelease.25601.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="9.0.0-prerelease.25615.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>6f1b3efbfb1dcb66d10e3872842bf2d87dd6a64e</Sha>
+      <Sha>c26361a23526ea459ca0a19b34b285eda1bffecb</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="9.0.0-beta.25555.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -372,13 +372,13 @@
       <Uri>https://github.com/dotnet/roslyn</Uri>
       <Sha>fc52718eccdb37693a40a518b1178b1e23114e68</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.25173.3">
+    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.25615.3">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>16865ea61910500f1022ad2b96c499e5df02c228</Sha>
+      <Sha>7576c1d00aeef14c682c31b193ff8e58273cdd16</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.25173.3">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.25615.3">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>16865ea61910500f1022ad2b96c499e5df02c228</Sha>
+      <Sha>7576c1d00aeef14c682c31b193ff8e58273cdd16</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
     <Dependency Name="Microsoft.SourceBuild.Intermediate.roslyn" Version="4.12.0-3.25609.5">
