@@ -8578,8 +8578,14 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
 #elif defined(FEATURE_64BIT_ALIGNMENT)
                 if (pByValueMT->RequiresAlign8())
                 {
+#ifdef TARGET_WASM
+                    int fieldAlignmentRequirement = max(8, pByValueMT->GetFieldAlignmentRequirement());
+                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, fieldAlignmentRequirement);
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, fieldAlignmentRequirement);
+#else // !TARGET_WASM
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, 8);
                     largestAlignmentRequirement = max(largestAlignmentRequirement, 8);
+#endif // !TARGET_WASM
                 }
                 else
 #endif // FEATURE_64BIT_ALIGNMENT

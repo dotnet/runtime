@@ -98,7 +98,11 @@ namespace
 #elif defined(FEATURE_64BIT_ALIGNMENT)
             if (pNestedType.RequiresAlign8())
             {
+#ifdef TARGET_WASM
+                placementInfo.m_alignment = max(8, pNestedType.GetMethodTable()->GetFieldAlignmentRequirement());
+#else // !TARGET_WASM
                 placementInfo.m_alignment = 8;
+#endif // !TARGET_WASM
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
