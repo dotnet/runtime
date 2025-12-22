@@ -172,7 +172,7 @@
 
 // Dispatch interface calls via resolve helper followed by an indirect call.
 // Slow functional implementation, only used for stress-testing of DOTNET_JitForceControlFlowGuard=1.
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
 #define FEATURE_RESOLVE_HELPER_DISPATCH
 #endif
 

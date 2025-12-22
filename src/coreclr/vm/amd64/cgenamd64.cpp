@@ -48,8 +48,6 @@ void UpdateRegDisplayFromArgumentRegisters(REGDISPLAY * pRD, ArgumentRegisters* 
 {
     LIMITED_METHOD_CONTRACT;
 
-    // Bridge inconsistent casing between ArgumentRegisters and T_CONTEXT
-
     T_CONTEXT * pContext = pRD->pCurrentContext;
     pContext->Rcx = pRegs->RCX;
     pContext->Rdx = pRegs->RDX;
@@ -136,7 +134,7 @@ void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updat
 
     SyncRegDisplayToCurrentContext(pRD);
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResolveHelperFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 #endif // FEATURE_RESOLVE_HELPER_DISPATCH
 
