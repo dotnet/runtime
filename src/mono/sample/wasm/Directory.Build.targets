@@ -1,4 +1,9 @@
 <Project>
+  <PropertyGroup>
+    <!-- RuntimeFlavor must be set during evaluation to import correct targets -->
+    <RuntimeFlavor Condition="'$(Nested_RuntimeFlavor)' != ''">$(Nested_RuntimeFlavor)</RuntimeFlavor>
+  </PropertyGroup>
+
   <Import Project="../Directory.Build.targets" />
   <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets" />
 
@@ -37,6 +42,10 @@
     <NestedBuildProperty Include="EnableDiagnostics" />
     <NestedBuildProperty Include="DiagnosticPorts" />
     <NestedBuildProperty Include="WasmPerformanceInstrumentation" />
+    <NestedBuildProperty Include="RuntimeFlavor" />
+    <NestedBuildProperty Include="WasmEnableWebcil" />
+    <NestedBuildProperty Include="EnableAggressiveTrimming" />
+    <NestedBuildProperty Include="TrimMode" />
   </ItemGroup>
 
   <Target Name="BuildSampleInTree"

@@ -23,6 +23,8 @@
 #include <corhlprpriv.h>
 #include "argdestination.h"
 #include "multicorejit.h"
+#include "callconvbuilder.hpp"
+#include "dynamicmethod.h"
 
 /*******************************************************************/
 const CorTypeInfo::CorTypeInfoEntry CorTypeInfo::info[ELEMENT_TYPE_MAX] =
@@ -5903,3 +5905,26 @@ BOOL CompareTypeLayout(mdToken tk1, mdToken tk2, Module *pModule1, Module *pModu
 
     return TRUE;
 }
+
+#ifndef DACCESS_COMPILE
+CorInfoCallConvExtension GetUnmanagedCallConvExtension(MetaSig* pSig)
+{
+    STANDARD_VM_CONTRACT;
+    CallConvBuilder builder;
+    UINT errorResID;
+
+    HRESULT hr = CallConv::TryGetUnmanagedCallingConventionFromModOptSigStartingAtRetType(GetScopeHandle(pSig->GetModule()), pSig->GetReturnProps(), &builder, &errorResID);
+
+    if (FAILED(hr))
+        COMPlusThrowHR(hr, errorResID);
+
+    CorInfoCallConvExtension callConvLocal = builder.GetCurrentCallConv();
+
+    if (callConvLocal == CallConvBuilder::UnsetValue)
+    {
+        callConvLocal = CallConv::GetDefaultUnmanagedCallingConvention();
+    }
+
+    return callConvLocal;
+}
+#endif // DACCESS_COMPILE
