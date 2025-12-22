@@ -7,7 +7,7 @@ include AsmMacros.inc
 ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
 EXTERN RhpCidResolve : PROC
-EXTERN RhpUniversalTransitionReturnResult_DebugStepTailCall : PROC
+EXTERN RhpUniversalTransitionReturnResult : PROC
 
 ;; Fast version of RhpResolveInterfaceMethod
 LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
@@ -54,7 +54,7 @@ LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
       RhpResolveInterfaceMethodFast_SlowPath:
         ;; r11 contains indirection cell address
         lea     r10, RhpCidResolve
-        jmp     RhpUniversalTransitionReturnResult_DebugStepTailCall
+        jmp     RhpUniversalTransitionReturnResult
 
 LEAF_END RhpResolveInterfaceMethodFast, _TEXT
 

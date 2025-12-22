@@ -8,7 +8,7 @@
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
     EXTERN RhpCidResolve
-    EXTERN RhpUniversalTransitionReturnResult_DebugStepTailCall
+    EXTERN RhpUniversalTransitionReturnResult
 
     NESTED_ENTRY RhpResolveInterfaceMethodFast, _TEXT
 
@@ -51,7 +51,7 @@ RhpResolveInterfaceMethodFast_NextEntry
 RhpResolveInterfaceMethodFast_SlowPath
         ldr     xip0, =RhpCidResolve
         mov     xip1, x11
-        b       RhpUniversalTransitionReturnResult_DebugStepTailCall
+        b       RhpUniversalTransitionReturnResult
 
     NESTED_END RhpResolveInterfaceMethodFast
 
