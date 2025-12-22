@@ -4004,7 +4004,7 @@ void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pRes
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 }
 
-static bool DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* calleeSig)
+bool InterpCompiler::DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* calleeSig)
 {
     // We allow only the return value types to differ between caller and callee as long as their stack types are the same.
     // In principle we could allow more differences (e.g. I8 coercion to I4, or O to I) but for now we keep it simple.
@@ -4022,6 +4022,16 @@ static bool DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* call
     if (callerSig->isAsyncCall())
     {
         // Disallow tail calls from async methods for now
+        return true;
+    }
+    if (m_isSynchronized)
+    {
+        // Disallow tail calls from synchronized methods
+        return true;
+    }
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE))
+    {
+        // Disallow tail calls from reverse pinvoke methods
         return true;
     }
     return false;
@@ -4388,6 +4398,12 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             m_ip += 5;
         }
 
+        if (newObj)
+        {
+            // The jit is expected to call the getNewHelper api to trigger a set of validations
+            bool hasSideEffects = false;
+            m_compHnd->getNewHelper(resolvedCallToken.hClass, &hasSideEffects);
+        }
 
         CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
         if (isVirtual)
@@ -4482,7 +4498,14 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 #endif
     }
 
-    if (tailcall && DisallowTailCall(&m_methodInfo->args, &callInfo.sig))
+    if (tailcall && (
+        DisallowTailCall(&m_methodInfo->args, &callInfo.sig) // Disallow tail-calls for code gen reasons
+        || !m_compHnd->canTailCall(m_methodHnd, // Disallow tail calls due to rules specified by the VM
+                                   isCalli ? (CORINFO_METHOD_HANDLE)NULL : callInfo.hMethod, // The method we are attempting to call logically
+                                   isCalli ? (CORINFO_METHOD_HANDLE)NULL : (callInfo.kind == CORINFO_CALL ? callInfo.hMethod : (CORINFO_METHOD_HANDLE)NULL),
+                                   true) // The method we are calling exactly. We only know this if it's a non-virtual call
+        || (!isJmp && *m_ip != CEE_RET) // Disallow tailcalls that are not immediately before a ret
+        ))
     {
         if (isJmp)
         {
@@ -9037,7 +9060,7 @@ retry_emit:
                 tailcall = false;
                 break;
             case CEE_CALLI:
-                EmitCall(NULL /*pConstrainedToken*/, false /* readonly*/, false /* tailcall*/, false /*newObj*/, true /*isCalli*/);
+                EmitCall(NULL /*pConstrainedToken*/, false /* readonly*/, tailcall /* tailcall*/, false /*newObj*/, true /*isCalli*/);
                 pConstrainedToken = NULL;
                 readonly = false;
                 tailcall = false;

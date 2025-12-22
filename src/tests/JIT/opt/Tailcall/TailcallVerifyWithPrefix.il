@@ -28,6 +28,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern TestLibrary
+{
+  .ver 0:0:0:0
+}
 .assembly TailcallVerifyWithPrefix
 {
   .custom instance void [mscorlib]System.Reflection.AssemblyDescriptionAttribute::.ctor(string) = ( 01 00 00 00 00 )
@@ -3341,6 +3345,14 @@
     + "one - ReturnType: void; Callee<string>: Arguments: None - ReturnType: v"
     + "oid"
     IL_0005:  call       void [System.Console]System.Console::WriteLine(string)
+    // This test assumes that regular calls will be converted to tail-calls when possible
+    call bool [TestLibrary]TestLibrary.Utilities::get_IsCoreClrInterpreter()
+    ldc.i4.0
+    beq IL_000a
+    ldstr "Skipping test on interpreter, as it doesn't support converting regular calls into tail-calls"
+    call void [System.Console]System.Console::WriteLine(string)
+    ldc.i4.s 100
+    ret
     IL_000a:  ldc.i4.s   100
     IL_000c:  stsfld     int32 TailcallVerify.Condition10::Result
     .try
@@ -3457,6 +3469,14 @@
     + "alueType3Bytes>: Caller: Arguments: None - ReturnType: void; Callee: Ar"
     + "guments: None - ReturnType: void"
     IL_0023:  call       void [System.Console]System.Console::WriteLine(string)
+    // This test assumes that regular calls will be converted to tail-calls when possible
+    call bool [TestLibrary]TestLibrary.Utilities::get_IsCoreClrInterpreter()
+    ldc.i4.0
+    beq IL_0028
+    ldstr "Skipping test on interpreter, as it doesn't support converting regular calls into tail-calls"
+    call void [System.Console]System.Console::WriteLine(string)
+    ldc.i4.s 100
+    ret
     IL_0028:  ldc.i4.s   100
     IL_002a:  stsfld     int32 TailcallVerify.Condition10::Result
     .try
@@ -3536,6 +3556,14 @@
     + "alueType3Bytes>: Caller: Arguments: string, ValueType3Bytes - ReturnTyp"
     + "e: void; Callee: Arguments: string - ReturnType: void"
     IL_0023:  call       void [System.Console]System.Console::WriteLine(string)
+    // This test assumes that regular calls will be converted to tail-calls when possible
+    call bool [TestLibrary]TestLibrary.Utilities::get_IsCoreClrInterpreter()
+    ldc.i4.0
+    beq IL_0028
+    ldstr "Skipping test on interpreter, as it doesn't support converting regular calls into tail-calls"
+    call void [System.Console]System.Console::WriteLine(string)
+    ldc.i4.s 100
+    ret
     IL_0028:  ldc.i4.s   100
     IL_002a:  stsfld     int32 TailcallVerify.Condition10::Result
     .try

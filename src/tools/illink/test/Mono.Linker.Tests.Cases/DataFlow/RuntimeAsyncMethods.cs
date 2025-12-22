@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -28,6 +29,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             await RuntimeAsyncWithCorrectParameter(null);
             await RuntimeAsyncWithLocalAll();
             await RuntimeAsyncWithLambda();
+            await RuntimeAsyncWithAwaitedLocalMethod();
         }
 
         static async Task BasicRuntimeAsyncMethod()
@@ -115,6 +117,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         static async Task RuntimeAsyncWithLambda()
         {
             await Task.Run([ExpectedWarning("IL2026", nameof(TypeWithRucMethod.RucMethod))] () => typeof(TypeWithRucMethod).GetMethods());
+        }
+
+        static async Task RuntimeAsyncWithAwaitedLocalMethod()
+        {
+            await GetTheMethods();
+
+            [ExpectedWarning("IL2026", nameof(TypeWithRucMethod.RucMethod))]
+            static async Task<MethodInfo[]> GetTheMethods()
+            {
+                return typeof(TypeWithRucMethod).GetMethods();
+            }
         }
     }
 }

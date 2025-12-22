@@ -872,6 +872,7 @@ private:
     void PushInterpType(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd);
     void PushTypeVT(CORINFO_CLASS_HANDLE clsHnd, int size);
     void ConvertFloatingPointStackEntryToStackType(StackInfo* entry, StackType type);
+    bool DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* calleeSig);
 
     // Opcode peeps
     bool    FindAndApplyPeep(OpcodePeep* Peeps[]);

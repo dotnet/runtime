@@ -4,7 +4,9 @@
 #if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
 
 #include "callstubgenerator.h"
+#include "callconvbuilder.hpp"
 #include "ecall.h"
+#include "dllimport.h"
 
 extern "C" void InjectInterpStackAlign();
 extern "C" void Load_Stack();
@@ -2267,7 +2269,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     PCODE *pRoutines = (PCODE*)alloca(tempStorageSize);
     memset(pRoutines, 0, tempStorageSize);
 
-    ComputeCallStub(sig, pRoutines);
+    ComputeCallStub(sig, pRoutines, pMD);
 
     LoaderAllocator *pLoaderAllocator = pMD->GetLoaderAllocator();
     S_SIZE_T finalStubSize(sizeof(CallStubHeader) + m_routineIndex * sizeof(PCODE));
@@ -2364,7 +2366,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
 
     m_interpreterToNative = true; // We always generate the interpreter to native call stub here
 
-    ComputeCallStub(sig, pRoutines);
+    ComputeCallStub(sig, pRoutines, NULL);
 
     xxHash hashState;
     for (int i = 0; i < m_routineIndex; i++)
@@ -2451,8 +2453,181 @@ void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, 
     return;
 }
 
-void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
+//---------------------------------------------------------------------------
+// isNativePrimitiveStructType:
+//    Check if the given struct type is an intrinsic type that should be treated as though
+//    it is not a struct at the unmanaged ABI boundary.
+//
+// Arguments:
+//    pMT - the handle for the struct type.
+//
+// Return Value:
+//    true if the given struct type should be treated as a primitive for unmanaged calls,
+//    false otherwise.
+//
+bool isNativePrimitiveStructType(MethodTable* pMT)
 {
+    if (!pMT->IsIntrinsicType())
+    {
+        return false;
+    }
+    const char* namespaceName = nullptr;
+    const char* typeName      = pMT->GetFullyQualifiedNameInfo(&namespaceName);
+
+    if ((namespaceName == NULL) || (typeName == NULL))
+    {
+        return false;
+    }
+
+    if (strcmp(namespaceName, "System.Runtime.InteropServices") != 0)
+    {
+        return false;
+    }
+
+    return strcmp(typeName, "CLong") == 0 || strcmp(typeName, "CULong") == 0 || strcmp(typeName, "NFloat") == 0;
+}
+
+void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDesc *pMD)
+{
+    bool rewriteMetaSigFromExplicitThisToHasThis = false;
+    bool unmanagedThisCallConv = false;
+
+    bool hasUnmanagedCallConv = false;
+    CorInfoCallConvExtension unmanagedCallConv = CorInfoCallConvExtension::C;
+
+    if (pMD != NULL && (pMD->IsPInvoke()))
+    {
+        PInvoke::GetCallingConvention_IgnoreErrors(pMD, &unmanagedCallConv, NULL);
+        hasUnmanagedCallConv = true;
+    }
+    // NOTE: IL stubs don't actually have an UnmanagedCallersOnly attribute,
+    // even though the HasUnmanagedCallersOnlyAttribute method may return true for them.
+    else if (pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute() && !pMD->IsILStub())
+    {
+        if (CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
+        {
+            if (sig.GetCallingConvention() == IMAGE_CEE_CS_CALLCONV_VARARG)
+            {
+                unmanagedCallConv = CorInfoCallConvExtension::C;
+            }
+        }
+        else
+        {
+            unmanagedCallConv = CallConv::GetDefaultUnmanagedCallingConvention();
+        }
+        hasUnmanagedCallConv = true;
+    }
+    else
+    {
+        switch (sig.GetCallingConvention())
+        {
+            case IMAGE_CEE_CS_CALLCONV_THISCALL:
+                unmanagedCallConv = CorInfoCallConvExtension::Thiscall;
+                hasUnmanagedCallConv = true;
+                break;
+            case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
+                unmanagedCallConv = GetUnmanagedCallConvExtension(&sig);
+                hasUnmanagedCallConv = true;
+                break;
+        }
+    }
+
+    if (hasUnmanagedCallConv)
+    {
+        switch (unmanagedCallConv)
+        {
+            case CorInfoCallConvExtension::Thiscall:
+            case CorInfoCallConvExtension::CMemberFunction:
+            case CorInfoCallConvExtension::StdcallMemberFunction:
+            case CorInfoCallConvExtension::FastcallMemberFunction:
+                unmanagedThisCallConv = true;
+                break;
+            default:
+                break;
+        }
+    }
+
+#if defined(TARGET_WINDOWS)
+    // On these platforms, when making a ThisCall, or other call using a C++ MemberFunction calling convention,
+    // the "this" pointer is passed in the first argument slot.
+    bool rewriteReturnTypeToForceRetBuf = false;
+    if (unmanagedThisCallConv)
+    {
+        rewriteMetaSigFromExplicitThisToHasThis = true;
+        // Also, any struct type other than a few special cases is returned via return buffer for unmanaged calls
+        CorElementType retType = sig.GetReturnType();
+        sig.Reset();
+
+        if (retType == ELEMENT_TYPE_VALUETYPE)
+        {
+            TypeHandle thRetType = sig.GetRetTypeHandleThrowing();
+            MethodTable* pMTRetType = thRetType.AsMethodTable();
+
+            if (pMTRetType->GetInternalCorElementType() == ELEMENT_TYPE_VALUETYPE && !isNativePrimitiveStructType(pMTRetType))
+            {
+                rewriteReturnTypeToForceRetBuf = true;
+            }
+        }
+    }
+#endif // defined(TARGET_WINDOWS)
+
+    // Rewrite ExplicitThis to HasThis. This allows us to use ArgIterator which is unaware of ExplicitThis
+    // in the places where it is needed such as computation of return buffers.
+    if (sig.GetCallingConventionInfo() & IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS)
+    {
+#if LOG_COMPUTE_CALL_STUB
+        printf("Managed ExplicitThis to HasThis conversion needed\n");
+#endif // LOG_COMPUTE_CALL_STUB
+        rewriteMetaSigFromExplicitThisToHasThis = true;
+    }
+
+    SigBuilder sigBuilder;
+    if (rewriteMetaSigFromExplicitThisToHasThis)
+    {
+#if LOG_COMPUTE_CALL_STUB
+        printf("Rewriting ExplicitThis to implicit this\n");
+#endif // LOG_COMPUTE_CALL_STUB
+        sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS);
+        if ((sig.NumFixedArgs() == 0) || (sig.HasThis() && !sig.HasExplicitThis()))
+        {
+            ThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+        sigBuilder.AppendData(sig.NumFixedArgs() - 1);
+        TypeHandle thRetType = sig.GetRetTypeHandleThrowing();
+#if defined(TARGET_WINDOWS)
+        if (rewriteReturnTypeToForceRetBuf)
+        {
+            // Change the return type to type large enough it will always need to be returned via return buffer
+            thRetType = CoreLibBinder::GetClass(CLASS__STACKFRAMEITERATOR);
+            _ASSERTE(thRetType.IsValueType());
+            _ASSERTE(thRetType.GetSize() > 64);
+            sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
+            sigBuilder.AppendPointer(thRetType.AsPtr());
+        }
+        else
+#endif
+        {
+            SigPointer pReturn = sig.GetReturnProps();
+            pReturn.ConvertToInternalExactlyOne(sig.GetModule(), sig.GetSigTypeContext(), &sigBuilder);
+        }
+
+        // Skip the explicit this argument
+        sig.NextArg();
+
+        // Copy rest of the arguments
+        sig.NextArg();
+        SigPointer pArgs = sig.GetArgProps();
+        for (unsigned i = 1; i < sig.NumFixedArgs(); i++)
+        {
+            pArgs.ConvertToInternalExactlyOne(sig.GetModule(), sig.GetSigTypeContext(), &sigBuilder);
+        }
+
+        DWORD cSig;
+        PCCOR_SIGNATURE pNewSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&cSig);
+        MetaSig newSig(pNewSig, cSig, sig.GetModule(), NULL, MetaSig::sigMember);
+        sig = newSig;
+    }
+
     ArgIterator argIt(&sig);
     int32_t interpreterStackOffset = 0;
 

@@ -711,7 +711,12 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zbs,             W("EnableRiscV64
 #endif
 
 // Runtime-async
+#if defined(TARGET_BROWSER)
+// WASM-TODO: https://github.com/dotnet/runtime/issues/121064
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RuntimeAsync, W("RuntimeAsync"), 0, "Enables runtime async method support")
+#else
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RuntimeAsync, W("RuntimeAsync"), 1, "Enables runtime async method support")
+#endif // TARGET_BROWSER
 
 ///
 /// Uncategorized

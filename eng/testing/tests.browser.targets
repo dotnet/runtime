@@ -20,6 +20,10 @@
       ReadWasmNativeAssetsFromFileSystem;
       UpdateWasmNativeAssetOriginalItemSpec
     </ResolveWasmOutputsDependsOn>
+    <ResolveWasmOutputsDependsOn Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+      $(ResolveWasmOutputsDependsOn);
+      AddTestRunnersToReferenceCopyLocalPaths
+    </ResolveWasmOutputsDependsOn>
 
     <!-- set this when provisioning emsdk on CI -->
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(BrowserProjectRoot), 'emsdk'))</EMSDK_PATH>
@@ -173,6 +177,24 @@
       <WasmNativeAsset Update="@(WasmNativeAsset)">
         <OriginalItemSpec>%(Identity)</OriginalItemSpec>
       </WasmNativeAsset>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddTestRunnersToReferenceCopyLocalPaths"
+          AfterTargets=""
+          Condition="'$(TestFramework)' == 'xunit'">
+    <ItemGroup>
+      <_runnerFilesToBuild Include="$(WasmTestRunnerDir)*" />
+
+      <!-- Remove runner files that already exist in ReferenceCopyLocalPaths to avoid double Building -->
+      <_resolvedFilesToBuildToFileName Include="@(ReferenceCopyLocalPaths -> '%(FileName)%(Extension)')" />
+
+      <_runnerFilesToBuildToFileName Include="@(_runnerFilesToBuild -> '%(FileName)%(Extension)')">
+        <OriginalIdentity>%(Identity)</OriginalIdentity>
+      </_runnerFilesToBuildToFileName>
+      <_runnerFilesToBuildToFileName Remove="@(_resolvedFilesToBuildToFileName)" />
+
+      <ReferenceCopyLocalPaths Include="@(_runnerFilesToBuildToFileName -> '%(OriginalIdentity)')" RelativePath="%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
     </ItemGroup>
   </Target>
 

@@ -1,0 +1,7 @@
+Zstandard v1.5.7
+Commit: f8745da6ff1ad1e7bab384bd1f9d742439278e99
+URL: https://github.com/facebook/zstd/releases/tag/v1.5.7
+
+This is the Zstandard v1.5.7 library, released on February 19, 2024. 
+The source code was downloaded from the official GitHub repository and extracted.
+Only the 'lib' and 'build' directories from the original source were included to minimize unnecessary code.

@@ -32,125 +32,6 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    // internal
-    withOnConfigLoaded (onConfigLoaded: (config: MonoConfig) => void | Promise<void>): DotnetHostBuilder {
-        try {
-            deep_merge_module(emscriptenModule, {
-                onConfigLoaded
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    withConsoleForwarding (): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                forwardConsoleLogsToWS: true
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    withExitOnUnhandledError (): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                exitOnUnhandledError: true
-            });
-            installUnhandledErrorHandler();
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    withAsyncFlushOnExit (): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                asyncFlushOnExit: true
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    withExitCodeLogging (): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                logExitCode: true
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    withElementOnExit (): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                appendElementOnExit: true
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    withInteropCleanupOnExit (): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                interopCleanupOnExit: true
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    withDumpThreadsOnNonZeroExit (): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                dumpThreadsOnNonZeroExit: true
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    // internal
-    //  todo fallback later by debugLevel
-    withWaitingForDebugger (level: number): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                waitForDebugger: level
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
     withInterpreterPgo (value: boolean, autoSaveDelay?: number): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
@@ -393,7 +274,7 @@ async function prepareEmscripten (moduleFactory: DotnetModuleConfig | ((api: Run
         return;
     }
     emscriptenPrepared = true;
-    if (ENVIRONMENT_IS_WEB && loaderHelpers.config.forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
+    if (ENVIRONMENT_IS_WEB && loaderHelpers.config.forwardConsole && typeof globalThis.WebSocket != "undefined") {
         setup_proxy_console("main", globalThis.console, globalThis.location.origin);
     }
     mono_assert(emscriptenModule, "Null moduleConfig");
@@ -422,6 +303,9 @@ export async function createEmscripten (moduleFactory: DotnetModuleConfig | ((ap
     if (BuildConfiguration === "Debug" && !ENVIRONMENT_IS_WORKER) {
         mono_log_info(`starting script ${loaderHelpers.scriptUrl}`);
         mono_log_info(`starting in ${loaderHelpers.scriptDirectory}`);
+    }
+    if (loaderHelpers.config.exitOnUnhandledError) {
+        installUnhandledErrorHandler();
     }
 
     registerEmscriptenExitHandlers();

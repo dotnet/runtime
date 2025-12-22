@@ -18,6 +18,12 @@ public class AssetsComputingHelper
         "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm",
     };
 
+    private static readonly string[] coreclrPackageIds = new[]
+    {
+        "Microsoft.NETCore.App.Runtime.browser-wasm",
+        "Microsoft.NETCore.App.Runtime.multithread.browser-wasm",
+    };
+
     private static readonly string[] dotnetJsSingleThreadNames = new[]
     {
         "dotnet",
@@ -52,7 +58,7 @@ public class AssetsComputingHelper
         var extension = candidate.GetMetadata("Extension");
         var fileName = candidate.GetMetadata("FileName");
         var assetType = candidate.GetMetadata("AssetType");
-        bool fromMonoPackage = IsFromMonoPackage(candidate);
+        bool fromMonoPackage = IsFromRuntimePack(candidate);
 
         // A similar logic is in ReadWasmNativeAssetsFromFileSystem target for RuntimeTests
         reason = extension switch
@@ -96,10 +102,10 @@ public class AssetsComputingHelper
             string.IsNullOrEmpty(customIcuCandidateFilename);
     }
 
-    private static bool IsFromMonoPackage(ITaskItem candidate)
+    private static bool IsFromRuntimePack(ITaskItem candidate)
     {
         string packageId = candidate.GetMetadata("NuGetPackageId");
-        return monoPackageIds.Contains(packageId, StringComparer.Ordinal);
+        return monoPackageIds.Contains(packageId, StringComparer.Ordinal) || coreclrPackageIds.Contains(packageId, StringComparer.Ordinal);
     }
 
     public static string GetCandidateRelativePath(ITaskItem candidate, bool fingerprintAssets, bool fingerprintDotNetJs)

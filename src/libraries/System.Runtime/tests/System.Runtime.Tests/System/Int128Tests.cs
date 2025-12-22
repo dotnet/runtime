@@ -586,5 +586,34 @@ namespace System.Tests
             Int128 upper = Int128.BigMul(a, b, out Int128 lower);
             Assert.Equal(result, $"{upper:X32}{lower:X32}");
         }
+
+        [Fact]
+        public static void ExplicitConversionToDouble_LargeValue()
+        {
+            // Value: 309485009821345068741558271 (approx 2^88)
+            Int128 value = Int128.Parse("309485009821345068741558271");
+            double d = (double)value;
+            Assert.Equal(309485009821345068741558271.0, d);
+
+            // Negative Value
+            Int128 valueNeg = -value;
+            double dNeg = (double)valueNeg;
+            Assert.Equal(-309485009821345068741558271.0, dNeg);
+
+            // Value >= 2^104
+            // The value is constructed as 2^104 + 2^24 + 1.
+            // This tests a value with a 1 at bit 104, a 1 at bit 24, and a 1 at bit 0.
+            // The lower bits (24 and 0) should contribute to the sticky bit calculation.
+            Int128 value2 = new(0x0100_0000_0000, 0x0100_0001);
+            double d2 = (double)value2;
+            double expected2 = 20282409603651670423947251286016.0;
+            Assert.Equal(expected2, d2);
+
+            // Negative Value >= 2^104
+            Int128 value2Neg = -value2;
+            double d2Neg = (double)value2Neg;
+            Assert.Equal(-expected2, d2Neg);
+        }
     }
 }
+

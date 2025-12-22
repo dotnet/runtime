@@ -78,13 +78,14 @@ export interface AssetEntryInternal extends AssetEntry {
 }
 
 export type LoaderConfigInternal = LoaderConfig & {
-    linkerEnabled?: boolean,
     runtimeOptions?: string[], // array of runtime options as strings
     appendElementOnExit?: boolean
     logExitCode?: boolean
     exitOnUnhandledError?: boolean
     loadAllSatelliteResources?: boolean
-    resourcesHash?: string,
+    forwardConsole?: boolean,
+    asyncFlushOnExit?: boolean
+    interopCleanupOnExit?: boolean
 };
 
 

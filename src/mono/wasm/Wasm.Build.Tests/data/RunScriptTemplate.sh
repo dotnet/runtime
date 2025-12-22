@@ -51,6 +51,10 @@ function set_env_vars()
         export USE_JAVASCRIPT_BUNDLER_FOR_TESTS=false
     fi
 
+    if [[ -n "$RUNTIME_FLAVOR" ]]; then
+        export RUNTIME_FLAVOR_FOR_TESTS=$RUNTIME_FLAVOR
+    fi
+
     local _SDK_DIR=
     if [[ -n "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then
         cp -r $BASE_DIR/$SDK_DIR_NAME $EXECUTION_DIR
