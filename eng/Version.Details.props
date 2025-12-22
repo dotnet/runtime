@@ -97,9 +97,9 @@ This file should be imported by eng/Versions.props
     <SystemTextRegularExpressionsTestDataPackageVersion>11.0.0-beta.25574.4</SystemTextRegularExpressionsTestDataPackageVersion>
     <SystemWindowsExtensionsTestDataPackageVersion>11.0.0-beta.25574.4</SystemWindowsExtensionsTestDataPackageVersion>
     <!-- dotnet/xharness dependencies -->
-    <MicrosoftDotNetXHarnessCLIPackageVersion>11.0.0-prerelease.25603.1</MicrosoftDotNetXHarnessCLIPackageVersion>
-    <MicrosoftDotNetXHarnessTestRunnersCommonPackageVersion>11.0.0-prerelease.25603.1</MicrosoftDotNetXHarnessTestRunnersCommonPackageVersion>
-    <MicrosoftDotNetXHarnessTestRunnersXunitPackageVersion>11.0.0-prerelease.25603.1</MicrosoftDotNetXHarnessTestRunnersXunitPackageVersion>
+    <MicrosoftDotNetXHarnessCLIPackageVersion>11.0.0-prerelease.25615.1</MicrosoftDotNetXHarnessCLIPackageVersion>
+    <MicrosoftDotNetXHarnessTestRunnersCommonPackageVersion>11.0.0-prerelease.25615.1</MicrosoftDotNetXHarnessTestRunnersCommonPackageVersion>
+    <MicrosoftDotNetXHarnessTestRunnersXunitPackageVersion>11.0.0-prerelease.25615.1</MicrosoftDotNetXHarnessTestRunnersXunitPackageVersion>
     <!-- _git/dotnet-optimization dependencies -->
     <optimizationlinuxarm64MIBCRuntimePackageVersion>1.0.0-prerelease.25502.1</optimizationlinuxarm64MIBCRuntimePackageVersion>
     <optimizationlinuxx64MIBCRuntimePackageVersion>1.0.0-prerelease.25502.1</optimizationlinuxx64MIBCRuntimePackageVersion>
