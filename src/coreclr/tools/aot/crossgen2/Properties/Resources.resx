@@ -201,9 +201,6 @@
   <data name="MissingOutputFile" xml:space="preserve">
     <value>Output filename must be specified (--out &lt;file&gt;)</value>
   </data>
-  <data name="MissingOutNearInput" xml:space="preserve">
-    <value>Single file compilation mode requires --out-near-input option</value>
-  </data>
   <data name="InputWasNotLoadable" xml:space="preserve">
     <value>No input files are loadable</value>
   </data>
@@ -215,9 +212,6 @@
   </data>
   <data name="OptimizeSpeedOption" xml:space="preserve">
     <value>Enable optimizations, favor code speed</value>
-  </data>
-  <data name="OutNearInputOption" xml:space="preserve">
-    <value>Create output files near input files with ni.dll suffix</value>
   </data>
   <data name="OutputFilePath" xml:space="preserve">
     <value>Output file path</value>
@@ -248,9 +242,6 @@
   </data>
   <data name="PrintReproInstructionsOption" xml:space="preserve">
     <value>When compiling each method, print out the set of arguments needed to compile that method only</value>
-  </data>
-  <data name="SingleFileCompilationOption" xml:space="preserve">
-    <value>Compile each of the input files separately</value>
   </data>
   <data name="SingleMethodGenericArgs" xml:space="preserve">
     <value>Single method compilation: generic arguments to the method</value>
