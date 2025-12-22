@@ -124,6 +124,29 @@ public class WasmTemplateTestsBase : BuildTestBase
             """;
         }
 
+        if (EnvironmentVariables.RuntimeFlavor == "CoreCLR")
+        {
+            // TODO-WASM: https://github.com/dotnet/sdk/issues/51213
+            string versionSuffix = s_buildEnv.IsRunningOnCI ? "ci" : "dev";
+
+            extraProperties +=
+            """
+                <UseMonoRuntime>false</UseMonoRuntime>
+            """;
+            extraItems +=
+            $$"""
+                <KnownFrameworkReference Update="Microsoft.NETCore.App">
+                  <TargetingPackVersion>11.0.0-{{versionSuffix}}</TargetingPackVersion>
+                  <DefaultRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</DefaultRuntimeFrameworkVersion>
+                  <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
+                  <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
+                </KnownFrameworkReference>
+                <KnownWebAssemblySdkPack Update="Microsoft.NET.Sdk.WebAssembly.Pack">
+                  <WebAssemblySdkPackVersion>11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
+                </KnownWebAssemblySdkPack>
+            """;
+        }
+
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
     }
@@ -291,8 +314,8 @@ public class WasmTemplateTestsBase : BuildTestBase
             mainJsContent,
             ".create()",
             (targetFrameworkVersion.Major >= 8)
-                    ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
-                    : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()"
+                    ? ".withConfig({ forwardConsole: true, appendElementOnExit: true, logExitCode: true, exitOnUnhandledError: true }).create()"
+                    : ".withConfig({ forwardConsole: true, appendElementOnExit: true, logExitCode: true }).create()"
             );
 
         // dotnet.run() is used instead of runMain() in net9.0+

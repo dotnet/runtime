@@ -316,6 +316,8 @@ namespace System.Threading
             GC.KeepAlive(this);
         }
 
+        // Temporary workaround for https://github.com/dotnet/runtime/issues/122479
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         internal void ClearWaitSleepJoinState()
         {
             // This method is called when the thread is no longer in a wait, sleep, or join state.
