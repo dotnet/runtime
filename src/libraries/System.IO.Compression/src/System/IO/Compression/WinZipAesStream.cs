@@ -19,9 +19,7 @@ namespace System.IO.Compression
         private readonly int _keySizeBits;
         private readonly Aes _aes;
         private ICryptoTransform? _aesEncryptor;
-#pragma warning disable CA1416 // HMACSHA1 is available on all platforms
-        private readonly HMACSHA1 _hmac;
-#pragma warning restore CA1416
+        private IncrementalHash? _hmac;
         private readonly byte[] _counterBlock = new byte[BlockSize];
         private byte[]? _key;
         private byte[]? _hmacKey;
@@ -42,6 +40,7 @@ namespace System.IO.Compression
         private readonly byte[] _keystreamBuffer = new byte[KeystreamBufferSize];
         private int _keystreamOffset = KeystreamBufferSize; // Start depleted to force initial generation
 
+
         public WinZipAesStream(Stream baseStream, ReadOnlyMemory<char> password, bool encrypting, int keySizeBits = 256, long totalStreamSize = -1, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(baseStream);
@@ -49,19 +48,13 @@ namespace System.IO.Compression
             _baseStream = baseStream;
             _encrypting = encrypting;
             _keySizeBits = keySizeBits;
-            _totalStreamSize = totalStreamSize; // Store the total size
+            _totalStreamSize = totalStreamSize;
             _leaveOpen = leaveOpen;
 #pragma warning disable CA1416 // HMACSHA1 is available on all platforms
             _aes = Aes.Create();
 #pragma warning restore CA1416
             _aes.Mode = CipherMode.ECB;
             _aes.Padding = PaddingMode.None;
-
-#pragma warning disable CA1416 // HMACSHA1 available on all platforms ?
-#pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms ?
-            _hmac = new HMACSHA1();
-#pragma warning restore CA5350 // Do Not Use Weak Cryptographic Algorithms
-#pragma warning restore CA1416
 
             Array.Clear(_counterBlock, 0, 16);
             _counterBlock[0] = 1;
@@ -91,13 +84,14 @@ namespace System.IO.Compression
                 DeriveKeysFromPassword(password, _salt);
 
                 Debug.Assert(_hmacKey is not null, "HMAC key should be derived");
-                _hmac.Key = _hmacKey!;
+#pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms - required by WinZip AES spec
+                _hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA1, _hmacKey!);
+#pragma warning restore CA5350
                 InitCipher();
             }
             else
             {
                 // For decryption, we must know the total size to locate the auth tag
-
                 Debug.Assert(_totalStreamSize > 0, "Total stream size must be provided for decryption.");
 
                 int saltSize = _keySizeBits / 16;
@@ -109,13 +103,12 @@ namespace System.IO.Compression
 
                 if (_encryptedDataSize < 0)
                 {
-                    throw new InvalidDataException(SR.InvalidWinZipSize);//("Stream size is too small for WinZip AES format.");
+                    throw new InvalidDataException(SR.InvalidWinZipSize);
                 }
 
                 ReadHeader(password);
             }
         }
-
         private void DeriveKeysFromPassword(ReadOnlyMemory<char> password, byte[] salt)
         {
             // Calculate sizes
@@ -163,32 +156,29 @@ namespace System.IO.Compression
         private async Task ValidateAuthCodeCoreAsync(bool isAsync, CancellationToken cancellationToken)
         {
             Debug.Assert(!_encrypting, "ValidateAuthCode should only be called during decryption.");
+            Debug.Assert(_hmac is not null, "HMAC should have been initialized");
 
             if (_authCodeValidated)
                 return;
 
             // Finalize HMAC computation
-            _hmac.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-            byte[]? expectedAuth = _hmac.Hash;
+            byte[] expectedAuth = _hmac.GetHashAndReset();
 
-            if (expectedAuth is not null)
+            // Read the 10-byte stored authentication code from the stream
+            byte[] storedAuth = new byte[10];
+
+            if (isAsync)
             {
-                // Read the 10-byte stored authentication code from the stream
-                byte[] storedAuth = new byte[10];
-
-                if (isAsync)
-                {
-                    await _baseStream.ReadExactlyAsync(storedAuth, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    _baseStream.ReadExactly(storedAuth);
-                }
-
-                // Compare the first 10 bytes of the expected hash
-                if (!storedAuth.AsSpan().SequenceEqual(expectedAuth.AsSpan(0, 10)))
-                    throw new InvalidDataException(SR.WinZipAuthCodeMismatch);
+                await _baseStream.ReadExactlyAsync(storedAuth, cancellationToken).ConfigureAwait(false);
             }
+            else
+            {
+                _baseStream.ReadExactly(storedAuth);
+            }
+
+            // Compare the first 10 bytes of the expected hash
+            if (!storedAuth.AsSpan().SequenceEqual(expectedAuth.AsSpan(0, 10)))
+                throw new InvalidDataException(SR.WinZipAuthCodeMismatch);
 
             _authCodeValidated = true;
         }
@@ -242,7 +232,9 @@ namespace System.IO.Compression
             }
 
             Debug.Assert(_hmacKey is not null, "HMAC key should be derived");
-            _hmac.Key = _hmacKey!;
+#pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms - required by WinZip AES spec
+            _hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA1, _hmacKey!);
+#pragma warning restore CA5350
             InitCipher();
 
             Array.Clear(_counterBlock, 0, 16);
@@ -250,7 +242,6 @@ namespace System.IO.Compression
 
             _headerRead = true;
         }
-
         private void InitCipher()
         {
             Debug.Assert(_key is not null, "_key is not null");
@@ -293,13 +284,14 @@ namespace System.IO.Compression
             return WriteHeaderCoreAsync(isAsync: true, cancellationToken);
         }
 
-        private void ProcessBlock(byte[] buffer, int offset, int count)
+        private void ProcessBlock(Span<byte> buffer)
         {
             Debug.Assert(_aesEncryptor is not null, "Cipher should have been initialized before processing blocks");
+            Debug.Assert(_hmac is not null, "HMAC should have been initialized");
 
             int processed = 0;
 
-            while (processed < count)
+            while (processed < buffer.Length)
             {
                 // Ensure we have enough keystream bytes available
                 int keystreamAvailable = KeystreamBufferSize - _keystreamOffset;
@@ -310,9 +302,9 @@ namespace System.IO.Compression
                 }
 
                 // Process as many bytes as possible with the available keystream
-                int bytesToProcess = Math.Min(count - processed, keystreamAvailable);
+                int bytesToProcess = Math.Min(buffer.Length - processed, keystreamAvailable);
 
-                Span<byte> dataSpan = buffer.AsSpan(offset + processed, bytesToProcess);
+                Span<byte> dataSpan = buffer.Slice(processed, bytesToProcess);
                 ReadOnlySpan<byte> keystreamSpan = _keystreamBuffer.AsSpan(_keystreamOffset, bytesToProcess);
 
                 // For encryption: XOR first, then HMAC the ciphertext
@@ -321,13 +313,13 @@ namespace System.IO.Compression
                     // XOR the data with the keystream to create ciphertext
                     XorBytes(dataSpan, keystreamSpan);
                     // HMAC is computed on the ciphertext (after XOR)
-                    _hmac.TransformBlock(buffer, offset + processed, bytesToProcess, null, 0);
+                    _hmac.AppendData(dataSpan);
                 }
                 // For decryption: HMAC first (on ciphertext), then XOR
                 else
                 {
                     // HMAC is computed on the ciphertext (before XOR)
-                    _hmac.TransformBlock(buffer, offset + processed, bytesToProcess, null, 0);
+                    _hmac.AppendData(dataSpan);
                     // XOR the ciphertext with the keystream to recover plaintext
                     XorBytes(dataSpan, keystreamSpan);
                 }
@@ -336,7 +328,6 @@ namespace System.IO.Compression
                 processed += bytesToProcess;
             }
         }
-
         private void GenerateKeystreamBuffer()
         {
             Debug.Assert(_aesEncryptor is not null, "Cipher should have been initialized");
@@ -374,31 +365,27 @@ namespace System.IO.Compression
         private async Task WriteAuthCodeCoreAsync(bool isAsync, CancellationToken cancellationToken)
         {
             Debug.Assert(_encrypting, "WriteAuthCode should only be called during encryption.");
+            Debug.Assert(_hmac is not null, "HMAC should have been initialized");
 
             if (_authCodeValidated)
                 return;
 
-            _hmac.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-            byte[]? authCode = _hmac.Hash;
+            byte[] authCode = _hmac.GetHashAndReset();
 
-            if (authCode is not null)
+            // WinZip AES spec requires only the first 10 bytes of the HMAC
+            if (isAsync)
             {
-                // WinZip AES spec requires only the first 10 bytes of the HMAC
-                if (isAsync)
-                {
-                    await _baseStream.WriteAsync(authCode.AsMemory(0, 10), cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    _baseStream.Write(authCode, 0, 10);
-                }
-
-                Debug.WriteLine($"Wrote authentication code: {BitConverter.ToString(authCode, 0, 10)}");
+                await _baseStream.WriteAsync(authCode.AsMemory(0, 10), cancellationToken).ConfigureAwait(false);
             }
+            else
+            {
+                _baseStream.Write(authCode, 0, 10);
+            }
+
+            Debug.WriteLine($"Wrote authentication code: {BitConverter.ToString(authCode, 0, 10)}");
 
             _authCodeValidated = true;
         }
-
         private void ThrowIfNotReadable()
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -434,15 +421,13 @@ namespace System.IO.Compression
                 return 0;
             }
 
-            // We need a byte[] for ProcessBlock due to HMAC.TransformBlock requirement
-            byte[] tempArray = new byte[bytesToRead];
-            int bytesRead = _baseStream.Read(tempArray, 0, bytesToRead);
+            Span<byte> readBuffer = buffer.Slice(0, bytesToRead);
+            int bytesRead = _baseStream.Read(readBuffer);
 
             if (bytesRead > 0)
             {
                 _encryptedDataRemaining -= bytesRead;
-                ProcessBlock(tempArray, 0, bytesRead);
-                tempArray.AsSpan(0, bytesRead).CopyTo(buffer);
+                ProcessBlock(readBuffer.Slice(0, bytesRead));
 
                 // Validate auth code immediately when we've read all encrypted data
                 if (_encryptedDataRemaining <= 0)
@@ -480,19 +465,7 @@ namespace System.IO.Compression
             if (bytesRead > 0)
             {
                 _encryptedDataRemaining -= bytesRead;
-
-                // Try to process in-place if Memory is array-backed
-                if (MemoryMarshal.TryGetArray(buffer.Slice(0, bytesRead), out ArraySegment<byte> segment))
-                {
-                    ProcessBlock(segment.Array!, segment.Offset, bytesRead);
-                }
-                else
-                {
-                    // Fallback for non-array-backed Memory (rare)
-                    byte[] temp = buffer.Slice(0, bytesRead).ToArray();
-                    ProcessBlock(temp, 0, bytesRead);
-                    temp.CopyTo(buffer.Span);
-                }
+                ProcessBlock(buffer.Span.Slice(0, bytesRead));
 
                 // Validate auth code immediately when we've read all encrypted data
                 if (_encryptedDataRemaining <= 0)
@@ -526,7 +499,7 @@ namespace System.IO.Compression
                 // If full, encrypt and write immediately
                 if (_partialBlockBytes == BlockSize)
                 {
-                    ProcessBlock(_partialBlock, 0, BlockSize);
+                    ProcessBlock(_partialBlock.AsSpan(0, BlockSize));
                     _baseStream.Write(_partialBlock, 0, BlockSize);
                     _partialBlockBytes = 0;
                 }
@@ -539,7 +512,7 @@ namespace System.IO.Compression
                 bytesToProcess = (bytesToProcess / BlockSize) * BlockSize;
 
                 buffer.Slice(inputOffset, bytesToProcess).CopyTo(workBuffer);
-                ProcessBlock(workBuffer, 0, bytesToProcess);
+                ProcessBlock(workBuffer.AsSpan(0, bytesToProcess));
                 _baseStream.Write(workBuffer, 0, bytesToProcess);
 
                 inputOffset += bytesToProcess;
@@ -611,7 +584,7 @@ namespace System.IO.Compression
                 // If full, encrypt and write immediately
                 if (_partialBlockBytes == BlockSize)
                 {
-                    ProcessBlock(_partialBlock, 0, BlockSize);
+                    ProcessBlock(_partialBlock.AsSpan(0, BlockSize));
                     await _baseStream.WriteAsync(_partialBlock.AsMemory(0, BlockSize), cancellationToken).ConfigureAwait(false);
                     _partialBlockBytes = 0;
                 }
@@ -624,7 +597,7 @@ namespace System.IO.Compression
                 bytesToProcess = (bytesToProcess / BlockSize) * BlockSize;
 
                 buffer.Slice(inputOffset, bytesToProcess).CopyTo(workBuffer);
-                ProcessBlock(workBuffer, 0, bytesToProcess);
+                ProcessBlock(workBuffer.AsSpan(0, bytesToProcess));
                 await _baseStream.WriteAsync(workBuffer.AsMemory(0, bytesToProcess), cancellationToken).ConfigureAwait(false);
 
                 inputOffset += bytesToProcess;
@@ -646,7 +619,7 @@ namespace System.IO.Compression
             if (_partialBlockBytes > 0)
             {
                 // Encrypt the partial block (ProcessBlock handles partials by XORing only available bytes)
-                ProcessBlock(_partialBlock, 0, _partialBlockBytes);
+                ProcessBlock(_partialBlock.AsSpan(0, _partialBlockBytes));
 
                 if (isAsync)
                 {
@@ -684,8 +657,7 @@ namespace System.IO.Compression
                 {
                     _aesEncryptor?.Dispose();
                     _aes.Dispose();
-                    _hmac.Dispose();
-                    // Removed _encryptionBuffer.Dispose()
+                    _hmac!.Dispose();
 
                     if (!_leaveOpen) _baseStream.Dispose();
                 }
@@ -715,7 +687,7 @@ namespace System.IO.Compression
             {
                 _aesEncryptor?.Dispose();
                 _aes.Dispose();
-                _hmac.Dispose();
+                _hmac!.Dispose();
 
                 if (!_leaveOpen) await _baseStream.DisposeAsync().ConfigureAwait(false);
             }

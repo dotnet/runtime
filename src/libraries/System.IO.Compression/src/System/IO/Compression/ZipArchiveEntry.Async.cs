@@ -186,11 +186,10 @@ public partial class ZipArchiveEntry
 
             // Write WinZip AES extra field AFTER Zip64 (matching sync version order)
             // Must match the exact check used in the sync version WriteCentralDirectoryFileHeader
-            if (ForAesEncryption())
+            if (UseAesEncryption())
             {
                 var aesExtraField = new WinZipAesExtraField
                 {
-                    VendorVersion = 2, // AE-2
                     AesStrength = Encryption switch
                     {
                         EncryptionMethod.Aes128 => (byte)1,
@@ -320,7 +319,7 @@ public partial class ZipArchiveEntry
         else if (IsEncrypted && CompressionMethod == ZipCompressionMethod.Aes)
         {
             _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-            _aesCompressionMethod = ZipCompressionMethod.Aes;
+            _headerCompressionMethod = ZipCompressionMethod.Aes;
             var (success, aesExtraField) = await ZipLocalFileHeader.TrySkipBlockAESAwareAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
             if (!success)
             {
@@ -382,11 +381,10 @@ public partial class ZipArchiveEntry
 
             // Write WinZip AES extra field if using AES encryption
             // Must match the exact check used in the sync version WriteLocalFileHeader
-            if (ForAesEncryption())
+            if (UseAesEncryption())
             {
                 var aesExtraField = new WinZipAesExtraField
                 {
-                    VendorVersion = 2, // AE-2
                     AesStrength = Encryption switch
                     {
                         EncryptionMethod.Aes128 => (byte)1,
