@@ -21,10 +21,7 @@ function countChars(str) {
 }
 
 // Prepare base runtime parameters
-dotnet
-    .withElementOnExit()
-    .withExitCodeLogging()
-    .withExitOnUnhandledError();
+dotnet.withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true });
 
 const logLevel = params.get("MONO_LOG_LEVEL");
 const logMask = params.get("MONO_LOG_MASK");
@@ -95,6 +92,12 @@ switch (testCase) {
             }
         });
         break;
+    case "AssetIntegrity":
+        dotnet.withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+            testOutput(`Asset '${name}' has integrity '${integrity}'`);
+            return defaultUri;
+        });
+        break;
     case "OutErrOverrideWorks":
         dotnet.withModuleConfig({
             out: (message) => {
@@ -109,7 +112,7 @@ switch (testCase) {
         break;
     case "InterpPgoTest":
         dotnet
-            .withConsoleForwarding()
+            .withConfig({ forwardConsole: true })
             .withRuntimeOptions(['--interp-pgo-logging'])
             .withInterpreterPgo(true);
         break;
@@ -238,6 +241,7 @@ try {
             exit(0);
             break;
         case "DownloadResourceProgressTest":
+        case "AssetIntegrity":
             exit(0);
             break;
         case "OutErrOverrideWorks":

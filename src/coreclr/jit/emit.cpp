@@ -1729,6 +1729,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         assert(info->idFinallyCall == false);
         assert(info->idCatchRet == false);
         assert(info->idCallSig == nullptr);
+        assert(info->idTargetBlock == nullptr);
 
         info->idNum  = emitInsCount;
         info->idSize = sz;

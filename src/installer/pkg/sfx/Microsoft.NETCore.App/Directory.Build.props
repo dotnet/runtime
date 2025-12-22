@@ -121,8 +121,9 @@
     <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="clrjit.pgd" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Condition="('$(RuntimeConfiguration)' == 'Debug' or '$(RuntimeConfiguration)' == 'Checked') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')" Include="clrinterpreter.dll" IsNative="true" />
     <PlatformManifestFileEntry Condition="('$(RuntimeConfiguration)' == 'Debug' or '$(RuntimeConfiguration)' == 'Checked') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'riscv64')" Include="libclrinterpreter.so" IsNative="true" />
-    <PlatformManifestFileEntry Condition="('$(RuntimeConfiguration)' == 'Debug' or '$(RuntimeConfiguration)' == 'Checked') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'riscv64')" Include="libclrinterpreter.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Condition="('$(RuntimeConfiguration)' == 'Debug' or '$(RuntimeConfiguration)' == 'Checked') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')" Include="libclrinterpreter.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="mscordaccore.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.dylib" IsNative="true" />
@@ -271,8 +272,8 @@
     <PlatformManifestFileEntry Include="libnativeresourcestring.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libBrowserHost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="libBrowserHost.js.map" IsNative="true" />
-    <PlatformManifestFileEntry Include="libSystem.Browser.Utils.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="libSystem.Browser.Utils.js.map" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Native.Browser.Utils.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Native.Browser.Utils.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Native.Browser.js" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Native.Browser.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Runtime.InteropServices.JavaScript.Native.js" IsNative="true" />

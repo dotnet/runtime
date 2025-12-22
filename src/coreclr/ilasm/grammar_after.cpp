@@ -1792,7 +1792,7 @@ void AsmParse::error(const char* fmt, ...)
     va_start(args, fmt);
 
     if((penv) && (penv->in)) psz+=sprintf_s(psz, (dwUniBuf >> 1), "%s(%d) : ", penv->in->name(), penv->curLine);
-    psz+=sprintf_s(psz, (dwUniBuf >> 1), "error : ");
+    psz+=sprintf_s(psz, (dwUniBuf >> 1), assem->OnErrGo ? "warning : " : "error : ");
     _vsnprintf_s(psz, (dwUniBuf >> 1),(dwUniBuf >> 1)-strlen(sz)-1, fmt, args);
     PrintANSILine(pF,sz);
 }

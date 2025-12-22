@@ -2213,6 +2213,11 @@ void CodeGen::genEmitMachineCode()
 //
 void CodeGen::genEmitUnwindDebugGCandEH()
 {
+#ifdef TARGET_WASM
+    // TODO-WASM: Fix this phase causing an assertion failure even for methods with no GC locals or EH clauses
+    return;
+#endif
+
     /* Now that the code is issued, we can finalize and emit the unwind data */
 
     compiler->unwindEmit(*codePtr, coldCodePtr);
@@ -5645,7 +5650,7 @@ void CodeGen::genFnProlog()
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
 #else  // defined(TARGET_WASM)
-    // TODO-WASM: prolog zeroing, shadow stack maintenance
+    genWasmLocals();
     GetEmitter()->emitMarkPrologEnd();
 #endif // !defined(TARGET_WASM)
 
