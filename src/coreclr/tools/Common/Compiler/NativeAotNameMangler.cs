@@ -382,17 +382,17 @@ namespace ILCompiler
                     break;
                 case TypeFlags.SzArray:
                     mangledName = new Utf8StringBuilder().Append("__Array"u8)
-                        .Append('<').Append(GetMangledTypeName(((ArrayType)type).ElementType)).Append('>').ToUtf8String();
+                        .Append(EnterNameScopeSequence).Append(GetMangledTypeName(((ArrayType)type).ElementType)).Append(ExitNameScopeSequence).ToUtf8String();
                     break;
                 case TypeFlags.ByRef:
                     mangledName = new Utf8StringBuilder()
                         .Append(GetMangledTypeName(((ByRefType)type).ParameterType))
-                        .Append('<').Append("ByRef"u8).Append('>').ToUtf8String();
+                        .Append(EnterNameScopeSequence).Append("ByRef"u8).Append(ExitNameScopeSequence).ToUtf8String();
                     break;
                 case TypeFlags.Pointer:
                     mangledName = new Utf8StringBuilder()
                         .Append(GetMangledTypeName(((PointerType)type).ParameterType))
-                        .Append('<').Append("Pointer"u8).Append('>').ToUtf8String();
+                        .Append(EnterNameScopeSequence).Append("Pointer"u8).Append(ExitNameScopeSequence).ToUtf8String();
                     break;
                 case TypeFlags.FunctionPointer:
                 {
