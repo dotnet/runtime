@@ -55,6 +55,12 @@ set(COMMON_RUNTIME_SOURCES
     ${CLR_SRC_NATIVE_DIR}/minipal/xoshiro128pp.c
 )
 
+if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND COMMON_RUNTIME_SOURCES
+        ${RUNTIME_DIR}/asyncsafethreadmap.cpp
+    )
+endif()
+
 set(SERVER_GC_SOURCES
     ${GC_DIR}/gceesvr.cpp
     ${GC_DIR}/gcsvr.cpp

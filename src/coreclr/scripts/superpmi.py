@@ -146,13 +146,13 @@ to get that version. Otherwise, use "unknown-jit-ee-version".
 
 host_os_help = "OS (windows, osx, linux). Default: current OS."
 
-arch_help = "Architecture (x64, x86, arm, arm64, loongarch64, riscv64). Default: current architecture."
+arch_help = "Architecture (x64, x86, arm, arm64, loongarch64, riscv64, wasm). Default: current architecture."
 
 target_os_help = "Target OS, for use with cross-compilation JIT (windows, osx, linux). Default: current OS."
 
-target_arch_help = "Target architecture, for use with cross-compilation JIT (x64, x86, arm, arm64, loongarch64, riscv64). Passed as asm diffs target to SuperPMI. Default: current architecture."
+target_arch_help = "Target architecture, for use with cross-compilation JIT (x64, x86, arm, arm64, loongarch64, riscv64, wasm). Passed as asm diffs target to SuperPMI. Default: current architecture."
 
-mch_arch_help = "Architecture of MCH files to download, used for cross-compilation altjit (x64, x86, arm, arm64, loongarch64, riscv64). Default: target architecture."
+mch_arch_help = "Architecture of MCH files to download, used for cross-compilation altjit (x64, x86, arm, arm64, loongarch64, riscv64, wasm). Default: target architecture."
 
 build_type_help = "Build type (Debug, Checked, Release). Default: Checked."
 
@@ -4675,11 +4675,17 @@ def setup_args(args):
                             lambda mch_arch: "Unknown mch_arch {}\nSupported architectures: {}".format(mch_arch, (", ".join(coreclr_args.valid_arches))),
                             modify_arg=lambda mch_arch: mch_arch if mch_arch is not None else coreclr_args.target_arch) # Default to `target_arch`
 
-        # For LoongArch64, RiscV64, assume we are doing altjit cross-compilation and set mch_arch to 'arch', and target_os to Linux.
+        # For LoongArch64, RiscV64 assume we are doing altjit cross-compilation and set mch_arch to 'arch', and target_os to Linux.
         if coreclr_args.target_arch == "loongarch64" or coreclr_args.target_arch == "riscv64":
             if coreclr_args.target_os == coreclr_args.host_os and coreclr_args.target_os != "linux":
                 logging.warning("Overriding 'target_os' to 'linux'")
                 coreclr_args.target_os = "linux"
+            if coreclr_args.mch_arch == coreclr_args.target_arch and coreclr_args.mch_arch != coreclr_args.arch:
+                logging.warning("Overriding 'mch_arch' to '%s'", coreclr_args.arch)
+                coreclr_args.mch_arch = coreclr_args.arch
+
+        # For wasm assume we are doing altjit cross-compilation and set mch_arch to 'arch'
+        if coreclr_args.target_arch == "wasm":
             if coreclr_args.mch_arch == coreclr_args.target_arch and coreclr_args.mch_arch != coreclr_args.arch:
                 logging.warning("Overriding 'mch_arch' to '%s'", coreclr_args.arch)
                 coreclr_args.mch_arch = coreclr_args.arch
