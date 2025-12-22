@@ -452,48 +452,6 @@ namespace System.Threading
             RefreshLoggingEnabled();
         }
 
-        private void AssignWorkItemQueue(ThreadPoolWorkQueueThreadLocals tl)
-        {
-            Debug.Assert(s_assignableWorkItemQueueCount > 0);
-
-            _queueAssignmentLock.Acquire();
-
-            // Determine the first queue that has not yet been assigned to the limit of worker threads
-            int queueIndex = -1;
-            int minCount = int.MaxValue;
-            int minCountQueueIndex = 0;
-            for (int i = 0; i < s_assignableWorkItemQueueCount; i++)
-            {
-                int count = _assignedWorkItemQueueThreadCounts[i];
-                Debug.Assert(count >= 0);
-                if (count < ProcessorsPerAssignableWorkItemQueue)
-                {
-                    queueIndex = i;
-                    _assignedWorkItemQueueThreadCounts[queueIndex] = count + 1;
-                    break;
-                }
-
-                if (count < minCount)
-                {
-                    minCount = count;
-                    minCountQueueIndex = i;
-                }
-            }
-
-            if (queueIndex < 0)
-            {
-                // All queues have been fully assigned. Choose the queue that has been assigned to the least number of worker
-                // threads.
-                queueIndex = minCountQueueIndex;
-                _assignedWorkItemQueueThreadCounts[queueIndex]++;
-            }
-
-            _queueAssignmentLock.Release();
-
-            tl.queueIndex = queueIndex;
-            tl.assignedGlobalWorkItemQueue = _assignableWorkItemQueues[queueIndex];
-        }
-
         private void TryReassignWorkItemQueue(ThreadPoolWorkQueueThreadLocals tl)
         {
             Debug.Assert(s_assignableWorkItemQueueCount > 0);
@@ -507,6 +465,13 @@ namespace System.Threading
             if (!_queueAssignmentLock.TryAcquire())
             {
                 return;
+            }
+
+            // if not assigned yet, assume temporarily that the last queue is assigned
+            if (queueIndex == -1)
+            {
+                queueIndex = _assignedWorkItemQueueThreadCounts.Length - 1;
+                _assignedWorkItemQueueThreadCounts[queueIndex]++;
             }
 
             // If the currently assigned queue is assigned to other worker threads, try to reassign an earlier queue to this
@@ -537,6 +502,11 @@ namespace System.Threading
             Debug.Assert(s_assignableWorkItemQueueCount > 0);
 
             int queueIndex = tl.queueIndex;
+            if (queueIndex == -1)
+            {
+                // a queue was never assigned
+                return;
+            }
 
             _queueAssignmentLock.Acquire();
             int newCount = --_assignedWorkItemQueueThreadCounts[queueIndex];
@@ -562,6 +532,10 @@ namespace System.Threading
             {
                 ThreadPool.EnsureWorkerRequested();
             }
+
+            // unassigned state
+            tl.queueIndex = -1;
+            tl.assignedGlobalWorkItemQueue = workItems;
         }
 
         public ThreadPoolWorkQueueThreadLocals GetOrCreateThreadLocals() =>
@@ -929,11 +903,6 @@ namespace System.Threading
             // After this point, this method is no longer responsible for ensuring thread requests except for missed steals
             //
 
-            if (s_assignableWorkItemQueueCount > 0)
-            {
-                workQueue.AssignWorkItemQueue(tl);
-            }
-
             // Has the desire for logging changed since the last time we entered?
             workQueue.RefreshLoggingEnabled();
 
@@ -1061,6 +1030,10 @@ namespace System.Threading
                 {
                     // Due to hill climbing, over time arbitrary worker threads may stop working and eventually unbalance the
                     // queue assignments. Periodically try to reassign a queue to keep the assigned queues busy.
+                    //
+                    // This can also be the first time the queue is assigned.
+                    // We do not assign eagerly at the beginning of Dispatch as we would need to take _queueAssignmentLock
+                    // and that lock may cause massive contentions if many threads start dispatching.
                     workQueue.TryReassignWorkItemQueue(tl);
                 }
 
@@ -1135,6 +1108,7 @@ namespace System.Threading
         public ThreadPoolWorkQueueThreadLocals(ThreadPoolWorkQueue tpq)
         {
             assignedGlobalWorkItemQueue = tpq.workItems;
+            queueIndex = -1;
             workQueue = tpq;
             workStealingQueue = new ThreadPoolWorkQueue.WorkStealingQueue();
             ThreadPoolWorkQueue.WorkStealingQueueList.Add(workStealingQueue);
