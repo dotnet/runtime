@@ -181,7 +181,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void EmitObjectFile(Stream outputFileStream)
+        private protected override void EmitObjectFile(Stream outputFileStream, Logger logger)
         {
 #if !READYTORUN
             _sections.Add(_compactUnwindSection);

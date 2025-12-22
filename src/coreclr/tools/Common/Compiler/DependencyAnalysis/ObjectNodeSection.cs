@@ -21,6 +21,7 @@ namespace ILCompiler.DependencyAnalysis
         public string Name { get; }
         public SectionType Type { get; }
         public string ComdatName { get; }
+        public bool NeedsAlignment { get; } = true;
 
         public ObjectNodeSection(string name, SectionType type, string comdatName)
         {
@@ -31,6 +32,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public ObjectNodeSection(string name, SectionType type) : this(name, type, null)
         { }
+
+        public ObjectNodeSection(string name, SectionType type, bool needsAlign = true) : this(name, type, null)
+        {
+            NeedsAlignment = needsAlign;
+        }
 
         public static readonly ObjectNodeSection XDataSection = new ObjectNodeSection("xdata", SectionType.ReadOnly);
         public static readonly ObjectNodeSection DataSection = new ObjectNodeSection("data", SectionType.Writeable);
@@ -56,5 +62,12 @@ namespace ILCompiler.DependencyAnalysis
         public static readonly ObjectNodeSection CorMetaSection = new ObjectNodeSection("cormeta", SectionType.ReadOnly);
         public static readonly ObjectNodeSection Win32ResourcesSection = new ObjectNodeSection("rsrc", SectionType.ReadOnly);
         public static readonly ObjectNodeSection PDataSection = new ObjectNodeSection("pdata", SectionType.ReadOnly);
+
+        public static readonly ObjectNodeSection WasmCodeSection = new ObjectNodeSection("wasm.code", SectionType.Executable, needsAlign: false);
+        // TODO-Wasm: consider alignment of data sections
+        public static readonly ObjectNodeSection WasmDataSection = new ObjectNodeSection("wasm.data", SectionType.Writeable, needsAlign: false);
+        public static readonly ObjectNodeSection WasmFunctionSection = new ObjectNodeSection("wasm.function", SectionType.ReadOnly, needsAlign: false);
+        public static readonly ObjectNodeSection WasmTypeSection = new ObjectNodeSection("wasm.type", SectionType.ReadOnly, needsAlign: false);
+        public static readonly ObjectNodeSection WasmExportSection = new ObjectNodeSection("wasm.export", SectionType.ReadOnly, needsAlign: false);
     }
 }

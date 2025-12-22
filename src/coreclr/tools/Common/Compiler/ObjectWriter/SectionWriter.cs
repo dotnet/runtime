@@ -16,6 +16,7 @@ namespace ILCompiler.ObjectWriter
         private readonly SectionData _sectionData;
 
         public int SectionIndex { get; init; }
+        public readonly IBufferWriter<byte> Buffer => _sectionData.BufferWriter;
 
         internal SectionWriter(
             ObjectWriter objectWriter,

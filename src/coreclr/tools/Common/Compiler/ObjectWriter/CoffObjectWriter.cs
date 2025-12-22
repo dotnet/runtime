@@ -374,7 +374,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void EmitObjectFile(Stream outputFileStream)
+        private protected override void EmitObjectFile(Stream outputFileStream, Logger logger)
         {
             var stringTable = new CoffStringTable();
             var coffHeader = new CoffHeader

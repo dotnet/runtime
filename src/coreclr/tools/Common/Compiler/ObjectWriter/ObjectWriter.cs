@@ -20,6 +20,7 @@ namespace ILCompiler.ObjectWriter
 {
     public abstract partial class ObjectWriter
     {
+        protected virtual CodeDataLayoutMode LayoutMode => CodeDataLayoutMode.Unified;
         private protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
         protected sealed record SymbolicRelocation(long Offset, RelocType Type, Utf8String SymbolName, long Addend = 0);
         private sealed record BlockToRelocate(int SectionIndex, long Offset, byte[] Data, Relocation[] Relocations);
@@ -33,7 +34,7 @@ namespace ILCompiler.ObjectWriter
 
         private readonly Dictionary<ISymbolNode, Utf8String> _mangledNameMap = new();
 
-        private readonly byte _insPaddingByte;
+        private readonly byte? _insPaddingByte;
 
         // Standard sections
         private readonly Dictionary<string, int> _sectionNameToSectionIndex = new(StringComparer.Ordinal);
@@ -51,11 +52,12 @@ namespace ILCompiler.ObjectWriter
             _outputInfoBuilder = outputInfoBuilder;
             _isSingleFileCompilation = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation;
 
-            // Padding byte for code sections (NOP for x86/x64)
+            // Padding byte for code sections (NOP for x86/x64) and null for Wasm
             _insPaddingByte = factory.Target.Architecture switch
             {
                 TargetArchitecture.X86 => 0x90,
                 TargetArchitecture.X64 => 0x90,
+                TargetArchitecture.Wasm32 => null,
                 _ => 0
             };
         }
@@ -89,7 +91,15 @@ namespace ILCompiler.ObjectWriter
 
             if (!comdatName.IsNull || !_sectionNameToSectionIndex.TryGetValue(section.Name, out sectionIndex))
             {
-                sectionData = new SectionData(section.Type == SectionType.Executable ? _insPaddingByte : (byte)0);
+                if (_insPaddingByte.HasValue)
+                {
+                    sectionData = new SectionData(section.Type == SectionType.Executable ? _insPaddingByte.Value : (byte)0);
+                }
+                else
+                {
+                    sectionData = new SectionData();
+                }
+
                 sectionIndex = _sectionIndexToData.Count;
                 CreateSection(section, comdatName, symbolName, sectionIndex, sectionData.GetReadStream());
                 _sectionIndexToData.Add(sectionData);
@@ -140,6 +150,7 @@ namespace ILCompiler.ObjectWriter
         }
 
         private unsafe void EmitOrResolveRelocation(
+            Logger logger,
             int sectionIndex,
             long offset,
             Span<byte> data,
@@ -147,6 +158,12 @@ namespace ILCompiler.ObjectWriter
             Utf8String symbolName,
             long addend)
         {
+            if (_nodeFactory.Target.IsWasm)
+            {
+                logger.LogMessage($"Emitting relocation in section {sectionIndex} of type {relocType} at offset {offset}");
+                return;
+            }
+
             if (!UsesSubsectionsViaSymbols &&
                 relocType is IMAGE_REL_BASED_REL32 or IMAGE_REL_BASED_RELPTR32 or IMAGE_REL_BASED_ARM64_BRANCH26
                 or IMAGE_REL_BASED_THUMB_BRANCH24 or IMAGE_REL_BASED_THUMB_MOV32_PCREL &&
@@ -291,7 +308,7 @@ namespace ILCompiler.ObjectWriter
         {
         }
 
-        private protected abstract void EmitObjectFile(Stream outputFileStream);
+        private protected abstract void EmitObjectFile(Stream outputFileStream, Logger logger = null);
 
         partial void EmitDebugInfo(IReadOnlyCollection<DependencyNode> nodes, Logger logger);
 
@@ -309,15 +326,17 @@ namespace ILCompiler.ObjectWriter
             return undefinedSymbolSet;
         }
 
+
         public virtual void EmitObject(Stream outputFileStream, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
         {
+            logger.LogMessage("Starting object file emission...");
             // Pre-create some of the sections
             GetOrCreateSection(ObjectNodeSection.TextSection);
             if (_nodeFactory.Target.OperatingSystem == TargetOS.Windows)
             {
                 GetOrCreateSection(ObjectNodeSection.ManagedCodeWindowsContentSection);
             }
-            else
+            else if (_nodeFactory.Target.OperatingSystem != TargetOS.Browser)
             {
                 GetOrCreateSection(ObjectNodeSection.ManagedCodeUnixContentSection);
             }
@@ -346,8 +365,12 @@ namespace ILCompiler.ObjectWriter
             List<ChecksumsToCalculate> checksumRelocations = [];
             foreach (DependencyNode depNode in nodes)
             {
+                logger.LogMessage("--------------------------------------------------------------");
+                logger.LogMessage($"Processing dependency node of type {depNode.GetType()}");
+                logger.LogMessage("--------------------------------------------------------------");
                 if (depNode is ISymbolRangeNode symbolRange)
                 {
+                    logger.LogMessage($"Deferring emission of symbol range node {GetMangledName(symbolRange)}");
                     symbolRangeNodes.Add(symbolRange);
                     continue;
                 }
@@ -387,7 +410,10 @@ namespace ILCompiler.ObjectWriter
                     GetOrCreateSection(section, currentSymbolName, currentSymbolName) :
                     GetOrCreateSection(section);
 
-                sectionWriter.EmitAlignment(nodeContents.Alignment);
+                if (section.NeedsAlignment)
+                {
+                    sectionWriter.EmitAlignment(nodeContents.Alignment);
+                }
 
                 bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
 #if !READYTORUN
@@ -398,8 +424,16 @@ namespace ILCompiler.ObjectWriter
                 // R2R records the thumb bit in the addend when needed, so we don't have to do it here.
                 long thumbBit = 0;
 #endif
+
+                // TODO-WASM: handle AssemblyStub case here
+                if (node is IMethodBodyNode methodNode && LayoutMode is CodeDataLayoutMode.Separate)
+                {
+                    RecordMethod((ISymbolDefinitionNode)node, methodNode.Method, nodeContents);
+                }
+
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
+                    logger.LogMessage($"Emitting defined symbol {GetMangledName(n)} at offset {n.Offset} in section {section.Name}");
                     Utf8String mangledName = n == node ? currentSymbolName : GetMangledName(n);
                     sectionWriter.EmitSymbolDefinition(
                         mangledName,
@@ -480,9 +514,14 @@ namespace ILCompiler.ObjectWriter
                     }
                 }
 
-                // Write the data. Note that this has to be done last as not to advance
-                // the section writer position.
-                sectionWriter.EmitData(nodeContents.Data);
+                // Write the data if:
+                // 1. We are in unified code/data layout mode so separating code and data nodes doesn't matter, OR
+                // 2. We are writing non-text nodes
+                // Note that this has to be done last as not to advance the section writer position. 
+                if (LayoutMode == CodeDataLayoutMode.Unified || node.GetSection(_nodeFactory) != ObjectNodeSection.TextSection)
+                {
+                    sectionWriter.EmitData(nodeContents.Data);
+                }
             }
 
             foreach (ISymbolRangeNode range in symbolRangeNodes)
@@ -542,6 +581,7 @@ namespace ILCompiler.ObjectWriter
                     Utf8String relocSymbolName = GetMangledName(relocTarget);
 
                     EmitOrResolveRelocation(
+                        logger,
                         blockToRelocate.SectionIndex,
                         blockToRelocate.Offset + reloc.Offset,
                         blockToRelocate.Data.AsSpan(reloc.Offset),
@@ -574,7 +614,7 @@ namespace ILCompiler.ObjectWriter
                 relocSectionIndex++;
             }
 
-            EmitObjectFile(outputFileStream);
+            EmitObjectFile(outputFileStream, logger);
 
             if (checksumRelocations.Count > 0)
             {
@@ -587,6 +627,14 @@ namespace ILCompiler.ObjectWriter
                 {
                     _outputInfoBuilder.AddSection(outputSection);
                 }
+            }
+        }
+
+        private protected virtual void RecordMethod(ISymbolDefinitionNode node, MethodDesc desc, ObjectData methodData)
+        {
+            if (LayoutMode != CodeDataLayoutMode.Separate)
+            {
+                throw new InvalidOperationException($"RecordMethod() must only be called on platforms with separated code and data, arch = {_nodeFactory.Target.Architecture}");
             }
         }
 
