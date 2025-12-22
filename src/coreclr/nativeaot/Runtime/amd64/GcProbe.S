@@ -7,7 +7,7 @@
 
 //
 // See PUSH_COOP_PINVOKE_FRAME, this macro is very similar, but also saves RAX/RCX/RDX and accepts the register
-// bitmask in RCX
+// bitmask in R8
 //
 // On entry:
 //  - BITMASK: bitmask describing pushes, may be volatile register or constant value

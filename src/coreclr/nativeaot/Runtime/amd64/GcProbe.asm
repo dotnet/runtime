@@ -158,7 +158,7 @@ LEAF_END RhpGcStressHijack, _TEXT
 ;;
 ;; Register state on entry:
 ;;  RDX: thread pointer
-;;  RCX: register bitmask
+;;  R8: register bitmask
 ;;
 ;; Register state on exit:
 ;;  Scratch registers, except for RAX/RCX, have been trashed
