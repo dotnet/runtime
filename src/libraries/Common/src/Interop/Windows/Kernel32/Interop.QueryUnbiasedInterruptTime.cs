@@ -12,7 +12,7 @@ internal static partial class Interop
         //          _Out_ PULONGLONG UnbiasedTime
         //      );
         //
-        // We take a long* (rather than a out long) to avoid the pinning overhead.
+        // We take a ulong* (rather than a out ulong) to avoid the pinning overhead.
         // We don't set last error since we don't need the extended error info.
 
         [LibraryImport(Libraries.Kernel32)]
