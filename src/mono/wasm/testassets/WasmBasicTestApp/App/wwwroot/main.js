@@ -20,6 +20,10 @@ function countChars(str) {
     return length;
 }
 
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 // Prepare base runtime parameters
 dotnet.withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true });
 
@@ -218,10 +222,12 @@ try {
                 await INTERNAL.loadLazyAssembly(`LazyLibrary${lazyAssemblyExtension}`);
                 const { LazyLibrary } = await getAssemblyExports("LazyLibrary");
                 const resLazy = LazyLibrary.Foo.Bar();
+                await delay(200);
                 exit(resLazy == 42 ? 0 : 1);
             }
             else {
                 exports.LazyLoadingTest.Run();
+                await delay(200);
                 exit(0);
             }
             break;

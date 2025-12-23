@@ -133,11 +133,11 @@ public class GenerateWasmBootJson : Task
 
         if (IsTargeting110OrLater())
         {
-            result.exitOnUnhandledError = ExitOnUnhandledError;
-            result.appendElementOnExit = AppendElementOnExit;
-            result.logExitCode = LogExitCode;
-            result.asyncFlushOnExit = AsyncFlushOnExit;
-            result.forwardConsole = ForwardConsole;
+            if (ExitOnUnhandledError) result.exitOnUnhandledError = true;
+            if (AppendElementOnExit) result.appendElementOnExit = true;
+            if (LogExitCode) result.logExitCode = true;
+            if (AsyncFlushOnExit) result.asyncFlushOnExit = true;
+            if (ForwardConsole) result.forwardConsole = true;
         }
 
         if (IsTargeting80OrLater())

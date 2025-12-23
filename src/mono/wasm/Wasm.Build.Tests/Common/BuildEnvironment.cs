@@ -142,12 +142,12 @@ namespace Wasm.Build.Tests
             if (EnvironmentVariables.RuntimeFlavor == "CoreCLR")
             {
                 EnvVars["WasmTestSupport"] = "true";
+                EnvVars["WasmTestForwardConsole"] = "true";
+                EnvVars["WasmTestExitOnUnhandledError"] = "true";
+                EnvVars["WasmTestLogExitCode"] = "true";
+                // EnvVars["WasmTestAsyncFlushOnExit"] = "true";
+                // EnvVars["WasmTestAppendElementOnExit"] = "true";
             }
-            EnvVars["WasmTestExitOnUnhandledError"] = "true";
-            EnvVars["WasmTestLogExitCode"] = "true";
-            EnvVars["WasmTestForwardConsole"] = "true";
-            // EnvVars["WasmTestAsyncFlushOnExit"] = "true";
-            // EnvVars["WasmTestAppendElementOnExit"] = "true";
 
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

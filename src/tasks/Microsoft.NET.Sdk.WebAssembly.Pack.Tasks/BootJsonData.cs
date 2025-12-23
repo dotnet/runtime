@@ -122,31 +122,31 @@ public class BootJsonData
     /// internal flags for test instrumentation
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
-    public bool exitOnUnhandledError { get; set; }
+    public bool? exitOnUnhandledError { get; set; }
 
     /// <summary>
     /// internal flags for test instrumentation
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
-    public bool appendElementOnExit { get; set; }
+    public bool? appendElementOnExit { get; set; }
 
     /// <summary>
     /// internal flags for test instrumentation
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
-    public bool logExitCode { get; set; }
+    public bool? logExitCode { get; set; }
 
     /// <summary>
     /// internal flags for test instrumentation
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
-    public bool asyncFlushOnExit { get; set; }
+    public bool? asyncFlushOnExit { get; set; }
 
     /// <summary>
     /// internal flags for test instrumentation
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
-    public bool forwardConsole { get; set; }
+    public bool? forwardConsole { get; set; }
 }
 
 /// <summary>
