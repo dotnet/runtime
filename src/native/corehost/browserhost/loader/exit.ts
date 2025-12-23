@@ -124,7 +124,7 @@ export function exit(exitCode: number, reason: any): void {
         }
         try {
             if (!runtimeState.runtimeReady) {
-                dotnetLogger.debug(() => `abort_startup, reason: ${reason}`);
+                dotnetLogger.debug(() => `Aborting startup, reason: ${reason}`);
                 dotnetLoaderExports.abortStartup(reason);
             }
         } catch (err) {

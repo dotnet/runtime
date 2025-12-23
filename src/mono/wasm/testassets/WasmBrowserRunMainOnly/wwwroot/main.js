@@ -3,4 +3,4 @@
 
 import { dotnet } from './_framework/dotnet.js'
 
-await dotnet.runAndExit();
+await dotnet.runMainAndExit();

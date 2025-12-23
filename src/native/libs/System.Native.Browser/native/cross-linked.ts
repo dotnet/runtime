@@ -8,6 +8,7 @@ declare global {
     export let ABORT: boolean;
     export let EXITSTATUS: number;
     export function _emscripten_force_exit(exitCode: number): void;
+    export function _exit(exitCode: number, implicit?: boolean): void;
     export function _GetDotNetRuntimeContractDescriptor(): void;
     export function _SystemJS_ExecuteTimerCallback(): void;
     export function _SystemJS_ExecuteBackgroundJobCallback(): void;

@@ -130,7 +130,7 @@ interface DotnetHostBuilder {
      * - dotnet.withApplicationArguments("A", "B", "C")
      * - dotnet.withApplicationArgumentsFromQuery()
      */
-    run(): Promise<number>;
+    runMain(): Promise<number>;
     /**
      * Runs the Main() method of the application and exits the runtime.
      * You can provide "command line" arguments for the Main() method using
@@ -139,7 +139,7 @@ interface DotnetHostBuilder {
      * Note: after the runtime exits, it would reject all further calls to the API.
      * You can use run() if you want to keep the runtime alive.
      */
-    runAndExit(): Promise<number>;
+    runMainAndExit(): Promise<number>;
 }
 type LoaderConfig = {
     /**

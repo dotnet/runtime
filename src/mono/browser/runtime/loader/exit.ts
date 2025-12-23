@@ -15,7 +15,7 @@ export function is_runtime_running () {
 }
 
 export function assert_runtime_running () {
-    mono_assert(!is_exited(), () => `.NET runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}. You can use runtime.runMain() which doesn't exit the runtime.`);
+    mono_assert(!is_exited(), () => `.NET runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}. You can use dotnet.runMain() which doesn't exit the runtime.`);
     if (WasmEnableThreads && ENVIRONMENT_IS_WORKER) {
         mono_assert(runtimeHelpers.runtimeReady, "The WebWorker is not attached to the runtime. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
     } else {

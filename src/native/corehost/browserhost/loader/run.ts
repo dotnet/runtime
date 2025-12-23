@@ -108,7 +108,7 @@ export async function selfHostNodeJS(dotnet: DotnetHostBuilder): Promise<void> {
     try {
         if (isNodeHosted()) {
             await findResources(dotnet);
-            await dotnet.run();
+            await dotnet.runMainAndExit();
         } else if (isShellHosted()) {
             // because in V8 we can't probe directories to find assemblies
             throw new Error("Shell/V8 hosting is not supported");

@@ -121,7 +121,11 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    async run(): Promise<number> {
+    run(): Promise<number> {
+        return this.runMain();
+    }
+
+    async runMain(): Promise<number> {
         try {
             if (!this.dotnetApi) {
                 await this.create();
@@ -135,7 +139,7 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    async runAndExit(): Promise<number> {
+    async runMainAndExit(): Promise<number> {
         try {
             if (!this.dotnetApi) {
                 await this.create();
