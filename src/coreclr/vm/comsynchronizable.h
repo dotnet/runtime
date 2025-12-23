@@ -86,6 +86,5 @@ FCDECL1(OBJECTHANDLE, Monitor_GetLockHandleIfExists, Object* obj);
 
 FCDECL1(ObjHeader::HeaderLockResult, ObjHeader_AcquireThinLock, Object* obj);
 FCDECL1(ObjHeader::HeaderLockResult, ObjHeader_ReleaseThinLock, Object* obj);
-FCDECL1(ObjHeader::HeaderLockResult, ObjHeader_IsThinLockOwnedByThread, Object* obj);
 #endif // _COMSYNCHRONIZABLE_H
 

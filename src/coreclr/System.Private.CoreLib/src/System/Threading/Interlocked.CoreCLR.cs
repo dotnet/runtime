@@ -127,6 +127,27 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int CompareExchange32(ref int location1, int value, int comparand);
 
+        // This is used internally in cases where having a managed
+        // ref to the location is unsafe (Ex: it is the syncblock of a pinned object).
+        // The intrinsic expansion for this overload is exactly the same as for the `ref int`
+        // variant and will go on the same path since expansion is triggered by the name and
+        // return type of the method.
+        // The important part is avoiding `ref *location` in the unexpanded scenario, like
+        // in a case when compiling the Debug flavor of the app.
+        [Intrinsic]
+        internal static unsafe int CompareExchange(int* location1, int value, int comparand)
+        {
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+            return CompareExchange(location1, value, comparand); // Must expand intrinsic
+#else
+            Debug.Assert(location1 != null);
+            return RuntimeImports.InterlockedCompareExchange(location1, value, comparand);
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static unsafe extern int CompareExchange32Pointer(int* location1, int value, int comparand);
+
         /// <summary>Compares two 64-bit signed integers for equality and, if they are equal, replaces the first value.</summary>
         /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
         /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>

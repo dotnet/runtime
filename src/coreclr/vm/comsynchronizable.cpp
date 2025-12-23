@@ -862,14 +862,6 @@ FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_ReleaseThinLock, Object* obj)
 }
 FCIMPLEND
 
-FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_IsThinLockOwnedByThread, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    return obj->GetHeader()->IsHeaderThinLockOwnedByThread(GetThread()->GetThreadId());
-}
-FCIMPLEND
-
 extern "C" INT32 QCALLTYPE ThreadNative_ReentrantWaitAny(BOOL alertable, INT32 timeout, INT32 count, HANDLE *handles)
 {
     QCALL_CONTRACT;
