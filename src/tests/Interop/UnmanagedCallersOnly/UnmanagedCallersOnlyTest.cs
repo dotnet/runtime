@@ -191,6 +191,7 @@ public unsafe class Program
     }
 
     [Fact]
+    [SkipOnMono("Mono doesn't support runtime async and doesn't check the async bit.")]
     public static void TestUnmanagedCallersOnlyWithRuntimeAsync()
     {
         AssertExtensions.ThrowsAny<InvalidProgramException, TypeLoadException>(() =>
