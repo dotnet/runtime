@@ -139,6 +139,16 @@ namespace Wasm.Build.Tests
                 EnvVars["WasmFingerprintAssets"] = "false";
             }
 
+            if (EnvironmentVariables.RuntimeFlavor == "CoreCLR")
+            {
+                EnvVars["WasmTestSupport"] = "true";
+            }
+            EnvVars["WasmTestExitOnUnhandledError"] = "true";
+            EnvVars["WasmTestLogExitCode"] = "true";
+            EnvVars["WasmTestForwardConsole"] = "true";
+            // EnvVars["WasmTestAsyncFlushOnExit"] = "true";
+            // EnvVars["WasmTestAppendElementOnExit"] = "true";
+
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 DotNet += ".exe";

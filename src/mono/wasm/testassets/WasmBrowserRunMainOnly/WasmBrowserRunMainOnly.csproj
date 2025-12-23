@@ -3,6 +3,13 @@
     <TargetFramework>net11.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    
+    <WasmTestSupport>true</WasmTestSupport>
+    <WasmTestExitOnUnhandledError>true</WasmTestExitOnUnhandledError>
+    <WasmTestAppendElementOnExit>true</WasmTestAppendElementOnExit>
+    <WasmTestLogExitCode>true</WasmTestLogExitCode>
+    <WasmTestAsyncFlushOnExit>true</WasmTestAsyncFlushOnExit>
+    <WasmTestForwardConsole>true</WasmTestForwardConsole>
   </PropertyGroup>
 
   <ItemGroup>
