@@ -202,6 +202,11 @@ namespace ILCompiler
             }
             else if (intrinsicOwningType.Name.SequenceEqual("MethodBase"u8) && intrinsicOwningType.Namespace.SequenceEqual("System.Reflection"u8))
             {
+                if (callsiteMethod.IsAsync)
+                {
+                    // For async methods, we need to get the MethodBase for the thunk variant.
+                    callsiteMethod = TypeSystemContext.GetTargetOfAsyncVariantMethod(callsiteMethod);
+                }
                 if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name.SequenceEqual("GetCurrentMethod"u8))
                 {
                     return _methodBaseGetCurrentMethodThunks.GetHelper(callsiteMethod).InstantiateAsOpen();
