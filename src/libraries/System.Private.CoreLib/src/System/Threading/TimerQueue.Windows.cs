@@ -12,8 +12,6 @@ namespace System.Threading
             _id = id;
         }
 
-        public static long TickCount64 => Environment.TickCount64;
-
         private bool SetTimer(uint actualDuration) =>
             ThreadPool.UseWindowsThreadPool ?
             SetTimerWindowsThreadPool(actualDuration) :
