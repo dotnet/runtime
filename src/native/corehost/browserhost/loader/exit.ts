@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { OnExitListener } from "../types";
-import { dotnetLogger, dotnetLoaderExports, Module, dotnetBrowserHostExports, dotnetBrowserUtilsExports } from "./cross-module";
+import { dotnetLogger, dotnetLoaderExports, Module, dotnetBrowserUtilsExports } from "./cross-module";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB } from "./per-module";
 
 export const runtimeState = {
@@ -57,7 +57,7 @@ function onEmAbort(reason: any) {
 }
 
 function createExitStatus(exitCode: number, message: string): any {
-    const ExitStatus = dotnetBrowserHostExports.getExitStatus();
+    const ExitStatus = dotnetBrowserUtilsExports.getExitStatus();
     const ex = typeof ExitStatus === "function"
         ? new ExitStatus(exitCode)
         : new Error("Exit with code " + exitCode + " " + message);

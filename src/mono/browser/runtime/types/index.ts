@@ -75,7 +75,7 @@ export interface DotnetHostBuilder {
     create(): Promise<RuntimeAPI>;
 
     /**
-     * @deprecated use runMainAndExit() or runMain() instead.
+     * @deprecated use runMain() or runMainAndExit() instead.
      */
     run(): Promise<number>;
 

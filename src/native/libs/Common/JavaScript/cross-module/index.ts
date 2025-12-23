@@ -139,8 +139,7 @@ export function dotnetUpdateInternalsSubscriber() {
             registerDllBytes: table[0],
             installVfsFile: table[1],
             loadIcuData: table[2],
-            getExitStatus: table[3],
-            initializeCoreCLR: table[4],
+            initializeCoreCLR: table[3],
         };
         Object.assign(native, nativeLocal);
     }
@@ -178,6 +177,7 @@ export function dotnetUpdateInternalsSubscriber() {
             isSharedArrayBuffer: table[5],
             abortTimers: table[6],
             abortPosix: table[7],
+            getExitStatus: table[8],
         };
         Object.assign(interop, interopLocal);
     }

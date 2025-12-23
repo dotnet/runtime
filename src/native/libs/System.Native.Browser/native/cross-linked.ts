@@ -5,8 +5,6 @@
 import { } from "../../Common/JavaScript/cross-linked";
 declare global {
     export const DOTNET: any;
-    export let ABORT: boolean;
-    export let EXITSTATUS: number;
     export function _emscripten_force_exit(exitCode: number): void;
     export function _exit(exitCode: number, implicit?: boolean): void;
     export function _GetDotNetRuntimeContractDescriptor(): void;

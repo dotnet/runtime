@@ -13,7 +13,7 @@ import {
     isSharedArrayBuffer,
 } from "./memory";
 import { stringToUTF16, stringToUTF16Ptr, stringToUTF8Ptr, utf16ToString } from "./strings";
-import { abortPosix, abortTimers, setEnvironmentVariable } from "./host";
+import { abortPosix, abortTimers, getExitStatus, setEnvironmentVariable } from "./host";
 import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "../utils/cross-module";
 import { initPolyfills } from "../utils/polyfills";
 import { registerRuntime } from "./runtime-list";
@@ -44,6 +44,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         isSharedArrayBuffer,
         abortTimers,
         abortPosix,
+        getExitStatus,
     });
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
     function browserUtilsExportsToTable(map: BrowserUtilsExports): BrowserUtilsExportsTable {
@@ -57,6 +58,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
             map.isSharedArrayBuffer,
             map.abortTimers,
             map.abortPosix,
+            map.getExitStatus,
         ];
     }
 }

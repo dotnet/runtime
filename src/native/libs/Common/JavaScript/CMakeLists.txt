@@ -70,6 +70,7 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/types.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/cdac.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/cross-module.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/cross-linked.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/host.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/index.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/memory.ts"

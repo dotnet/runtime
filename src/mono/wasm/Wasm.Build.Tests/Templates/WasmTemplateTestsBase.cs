@@ -321,7 +321,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (targetFrameworkVersion.Major >= 11)
         {
             // runMainAndExit() is used instead of runMain() in net11.0+
-            updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "dotnet.runMainAndExit()");
+            updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "runMainAndExit()");
         }
         else if (targetFrameworkVersion.Major >= 9)
         {

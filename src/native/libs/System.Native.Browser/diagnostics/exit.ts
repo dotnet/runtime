@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { LoaderConfigInternal } from "./types";
-import { dotnetLogger, dotnetLoaderExports, dotnetBrowserHostExports, dotnetApi } from "./cross-module";
+import { dotnetLogger, dotnetLoaderExports, dotnetApi, dotnetBrowserUtilsExports } from "./cross-module";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB } from "./per-module";
 import { teardownProxyConsole } from "./console-proxy";
 import { symbolicateStackTrace } from "./symbolicate";
@@ -73,7 +73,7 @@ function logExitReason(exit_code: number, reason: any) {
 }
 
 function isExitStatus(reason: any): boolean {
-    const ExitStatus = dotnetBrowserHostExports.getExitStatus();
+    const ExitStatus = dotnetBrowserUtilsExports.getExitStatus();
     return ExitStatus && reason instanceof ExitStatus;
 }
 

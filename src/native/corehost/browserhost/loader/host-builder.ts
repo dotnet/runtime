@@ -121,6 +121,9 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    /**
+     * @deprecated use runMain() or runMainAndExit() instead.
+     */
     run(): Promise<number> {
         return this.runMain();
     }

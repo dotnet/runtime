@@ -9,6 +9,10 @@ export function setEnvironmentVariable(name: string, value: string): void {
     throw new Error("Not implemented");
 }
 
+export function getExitStatus(): new (exitCode: number) => any {
+    return ExitStatus as any;
+}
+
 export function abortTimers(): void {
     if (DOTNET.lastScheduledTimerId) {
         globalThis.clearTimeout(DOTNET.lastScheduledTimerId);

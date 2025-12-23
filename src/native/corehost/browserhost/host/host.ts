@@ -47,10 +47,6 @@ export function loadIcuData(bytes: Uint8Array) {
     }
 }
 
-export function getExitStatus(): new (exitCode: number) => any {
-    return ExitStatus as any;
-}
-
 export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
     const virtualName: string = typeof (asset.virtualPath) === "string"
         ? asset.virtualPath
