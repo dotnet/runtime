@@ -55,6 +55,12 @@ set(COMMON_RUNTIME_SOURCES
     ${CLR_SRC_NATIVE_DIR}/minipal/xoshiro128pp.c
 )
 
+if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND COMMON_RUNTIME_SOURCES
+        ${RUNTIME_DIR}/asyncsafethreadmap.cpp
+    )
+endif()
+
 set(SERVER_GC_SOURCES
     ${GC_DIR}/gceesvr.cpp
     ${GC_DIR}/gcsvr.cpp
@@ -266,8 +272,6 @@ if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_WASM)
   add_definitions(-DFEATURE_64BIT_ALIGNMENT)
 endif()
 
-add_definitions(-DFEATURE_CUSTOM_IMPORTS)
-add_definitions(-DFEATURE_DYNAMIC_CODE)
 add_compile_definitions($<$<CONFIG:Debug,Checked>:FEATURE_GC_STRESS>)
 add_definitions(-DFEATURE_NATIVEAOT)
 add_definitions(-DVERIFY_HEAP)

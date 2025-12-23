@@ -732,50 +732,56 @@ void emitter::emitIns_R_R_I(
     code_t     code = emitInsCode(ins);
     instrDesc* id   = emitNewInstr(attr);
 
-    if ((INS_addi <= ins && INS_srai >= ins) || (INS_addiw <= ins && INS_sraiw >= ins) ||
-        (INS_lb <= ins && INS_lhu >= ins) || INS_ld == ins || INS_lw == ins || INS_jalr == ins || INS_fld == ins ||
-        INS_flw == ins || INS_slli_uw == ins || INS_rori == ins || INS_roriw == ins)
+    switch (GetMajorOpcode(code))
     {
-        assert(isGeneralRegisterOrR0(reg2));
-        code |= (reg1 & 0x1f) << 7; // rd
-        code |= reg2 << 15;         // rs1
-        code |= imm << 20;          // imm
-    }
-    else if (INS_sd == ins || INS_sw == ins || INS_sh == ins || INS_sb == ins || INS_fsw == ins || INS_fsd == ins)
-    {
-        assert(isGeneralRegister(reg2));
-        code |= (reg1 & 0x1f) << 20;                               // rs2
-        code |= reg2 << 15;                                        // rs1
-        code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7); // imm
-    }
-    else if (INS_beq <= ins && INS_bgeu >= ins)
-    {
-        assert(isGeneralRegister(reg1));
-        assert(isGeneralRegister(reg2));
-        assert(isValidSimm13(imm));
-        assert(!(imm & 3));
-        code |= reg1 << 15;
-        code |= reg2 << 20;
-        code |= ((imm >> 11) & 0x1) << 7;
-        code |= ((imm >> 1) & 0xf) << 8;
-        code |= ((imm >> 5) & 0x3f) << 25;
-        code |= ((imm >> 12) & 0x1) << 31;
-        // TODO-RISCV64: Move jump logic to emitIns_J
-        // TODO-RISC64-RVC: Remove this once all branches uses emitIns_J
-        id->idAddr()->iiaSetInstrCount(static_cast<int>(imm / sizeof(code_t)));
-    }
-    else if (ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc)
-    {
-        assert(isGeneralRegisterOrR0(reg1));
-        assert(isGeneralRegisterOrR0(reg2));
-        assert(isValidUimm12(imm));
-        code |= reg1 << 7;
-        code |= reg2 << 15;
-        code |= imm << 20;
-    }
-    else
-    {
-        NYI_RISCV64("illegal ins within emitIns_R_R_I!");
+        case MajorOpcode::OpImm:
+        case MajorOpcode::OpImm32:
+        case MajorOpcode::Load:
+        case MajorOpcode::LoadFp:
+        case MajorOpcode::Jalr:
+            assert(!(INS_clz <= ins && ins <= INS_rev8)); // encoded under OpImm(32) but they don't take an immediate
+            assert(isGeneralRegisterOrR0(reg2));
+            code |= (reg1 & 0x1f) << 7; // rd
+            code |= reg2 << 15;         // rs1
+            code |= imm << 20;          // imm
+            break;
+
+        case MajorOpcode::Store:
+        case MajorOpcode::StoreFp:
+            assert(isGeneralRegister(reg2));
+            code |= (reg1 & 0x1f) << 20;                               // rs2
+            code |= reg2 << 15;                                        // rs1
+            code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7); // imm
+            break;
+
+        case MajorOpcode::Branch:
+            assert(isGeneralRegister(reg1));
+            assert(isGeneralRegister(reg2));
+            assert(isValidSimm13(imm));
+            assert(!(imm & 3));
+            code |= reg1 << 15;
+            code |= reg2 << 20;
+            code |= ((imm >> 11) & 0x1) << 7;
+            code |= ((imm >> 1) & 0xf) << 8;
+            code |= ((imm >> 5) & 0x3f) << 25;
+            code |= ((imm >> 12) & 0x1) << 31;
+            // TODO-RISCV64: Move jump logic to emitIns_J
+            // TODO-RISC64-RVC: Remove this once all branches uses emitIns_J
+            id->idAddr()->iiaSetInstrCount(static_cast<int>(imm / sizeof(code_t)));
+            break;
+
+        case MajorOpcode::System:
+            assert(ins == INS_csrrs || ins == INS_csrrw || ins == INS_csrrc);
+            assert(isGeneralRegisterOrR0(reg1));
+            assert(isGeneralRegisterOrR0(reg2));
+            assert(isValidUimm12(imm));
+            code |= reg1 << 7;
+            code |= reg2 << 15;
+            code |= imm << 20;
+            break;
+
+        default:
+            NYI_RISCV64("illegal ins within emitIns_R_R_I!");
     }
 
     id->idIns(ins);
@@ -839,7 +845,8 @@ void emitter::emitIns_R_R_R(
         (INS_addw <= ins && ins <= INS_sraw) || (INS_fadd_s <= ins && ins <= INS_fmax_s) ||
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
         (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d) ||
-        (INS_sh1add <= ins && ins <= INS_sh3add_uw) || (INS_rol <= ins && ins <= INS_maxu))
+        (INS_sh1add <= ins && ins <= INS_sh3add_uw) || (INS_rol <= ins && ins <= INS_maxu) ||
+        (INS_bset <= ins && ins <= INS_binv))
     {
 #ifdef DEBUG
         switch (ins)
@@ -946,6 +953,11 @@ void emitter::emitIns_R_R_R(
             case INS_minu:
             case INS_max:
             case INS_maxu:
+
+            case INS_bset:
+            case INS_bclr:
+            case INS_bext:
+            case INS_binv:
                 break;
             default:
                 NYI_RISCV64("illegal ins within emitIns_R_R_R!");
@@ -1211,19 +1223,6 @@ void emitter::emitIns_R_C(
     id->idInsOpt(INS_OPTS_RC);
     id->idCodeSize(2 * sizeof(code_t)); // auipc + load/addi
 
-    if (EA_IS_GCREF(attr))
-    {
-        /* A special value indicates a GCref pointer value */
-        id->idGCref(GCT_GCREF);
-        id->idOpSize(EA_PTRSIZE);
-    }
-    else if (EA_IS_BYREF(attr))
-    {
-        /* A special value indicates a Byref pointer value */
-        id->idGCref(GCT_BYREF);
-        id->idOpSize(EA_PTRSIZE);
-    }
-
     // TODO-RISCV64: this maybe deleted.
     id->idSetIsBound(); // We won't patch address since we will know the exact distance
                         // once JIT code and data are allocated together.
@@ -1243,41 +1242,26 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 // This computes address from the immediate which is relocatable.
 void emitter::emitIns_R_AI(instruction  ins,
                            emitAttr     attr,
-                           regNumber    reg,
+                           regNumber    dataReg,
+                           regNumber    addrReg,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
-    assert(EA_IS_RELOC(attr)); // EA_PTR_DSP_RELOC
-    assert(ins == INS_jal);    // for special.
-    assert(isGeneralRegister(reg));
-    // INS_OPTS_RELOC: placeholders.  2-ins:
-    //  case:EA_HANDLE_CNS_RELOC
-    //   auipc  reg, off-hi-20bits
-    //   addi   reg, reg, off-lo-12bits
-    //  case:EA_PTR_DSP_RELOC
-    //   auipc  reg, off-hi-20bits
-    //   ld     reg, reg, off-lo-12bits
+    assert(EA_IS_RELOC(attr));
+    assert(emitComp->opts.compReloc || (CorInfoReloc::RELATIVE32 == emitComp->eeGetRelocTypeHint((void*)addr)));
+    assert(ins == INS_addi || emitInsIsLoadOrStore(ins));
+    assert(emitInsIsStore(ins) || isFloatReg(dataReg) || (dataReg == REG_ZERO) || (dataReg == addrReg));
+    assert(isGeneralRegister(addrReg));
+    // 2-ins:
+    //   auipc  addrReg, off-hi-20bits
+    //   ins    dataReg, addrReg, off-lo-12bits
 
     instrDesc* id = emitNewInstr(attr);
 
     id->idIns(ins);
-    assert(reg != REG_R0); // for special. reg Must not be R0.
-    id->idReg1(reg);       // destination register that will get the constant value.
+    id->idReg1(dataReg);
+    id->idReg2(addrReg);
 
     id->idInsOpt(INS_OPTS_RELOC);
-
-    if (EA_IS_GCREF(attr))
-    {
-        /* A special value indicates a GCref pointer value */
-        id->idGCref(GCT_GCREF);
-        id->idOpSize(EA_PTRSIZE);
-    }
-    else if (EA_IS_BYREF(attr))
-    {
-        /* A special value indicates a Byref pointer value */
-        id->idGCref(GCT_BYREF);
-        id->idOpSize(EA_PTRSIZE);
-    }
-
     id->idAddr()->iiaAddr = (BYTE*)addr;
     id->idCodeSize(8);
 
@@ -1353,19 +1337,6 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     id->idCodeSize(2 * sizeof(code_t));
     id->idReg1(reg);
 
-    if (EA_IS_GCREF(attr))
-    {
-        /* A special value indicates a GCref pointer value */
-        id->idGCref(GCT_GCREF);
-        id->idOpSize(EA_PTRSIZE);
-    }
-    else if (EA_IS_BYREF(attr))
-    {
-        /* A special value indicates a Byref pointer value */
-        id->idGCref(GCT_BYREF);
-        id->idOpSize(EA_PTRSIZE);
-    }
-
 #ifdef DEBUG
     // Mark the catch return
     if (emitComp->compCurBB->KindIs(BBJ_EHCATCHRET))
@@ -1375,6 +1346,43 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 #endif // DEBUG
 
     appendToCurIG(id);
+}
+
+//------------------------------------------------------------------------
+// emitIns_R_R_Addr: emit instruction sequence for a long (address pointer) immediate
+//
+// If the address is approximately in range, emits a PC-relative combo with a relocation:
+//     auipc regAddr, offset_hi20
+//     ins   regData, regAddr, offset_lo12
+// Otherwise, synthesizes an absolute address combo:
+//     li regAddr, (addr - lo12)
+//     ins regData, regAddr, lo12
+//
+// Arguments:
+//    ins     - an instruction that is a 64-bit adder with 12-bit immediate (addi/load/store)
+//    attr    - attribute
+//    regData - destination register for addi/load, source for stores
+//    regAddr - temporary register to synthesize the address into (pass same as regData if possible)
+//    addr    - the address
+//
+void emitter::emitIns_R_R_Addr(instruction ins, emitAttr attr, regNumber regData, regNumber regAddr, void* addr)
+{
+    assert(ins == INS_addi || emitInsIsLoadOrStore(ins));
+    assert(!EA_IS_RELOC(attr) && EA_SIZE(attr) == EA_PTRSIZE);
+
+    if (IsAddressInRange(addr))
+    {
+        attr = EA_SET_FLG(attr, EA_PTR_DSP_RELOC);
+        emitIns_R_AI(ins, attr, regData, regAddr, (ssize_t)addr);
+    }
+    else
+    {
+        ssize_t imm  = (ssize_t)addr;
+        ssize_t lo12 = (imm << (64 - 12)) >> (64 - 12);
+        imm -= lo12;
+        emitLoadImmediate(attr, regAddr, imm);
+        emitIns_R_R_I(ins, attr, regData, regAddr, lo12);
+    }
 }
 
 void emitter::emitIns_J(instruction ins, BasicBlock* dst)
@@ -1749,7 +1757,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
         appendToCurIG(id);
     }
-    else if (size == EA_PTRSIZE)
+    else if (EA_SIZE(size) == EA_PTRSIZE)
     {
         assert(!emitComp->compGeneratingProlog && !emitComp->compGeneratingEpilog);
         auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
@@ -1783,11 +1791,8 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     /* Sanity check the arguments depending on callType */
 
     assert(params.callType < EC_COUNT);
-    assert((params.callType != EC_FUNC_TOKEN) ||
-           (params.ireg == REG_NA && params.xreg == REG_NA && params.xmul == 0 && params.disp == 0));
-    assert(params.callType < EC_INDIR_R || params.addr == nullptr || isValidSimm12((ssize_t)params.addr));
-    assert(params.callType != EC_INDIR_R ||
-           (params.ireg < REG_COUNT && params.xreg == REG_NA && params.xmul == 0 && params.disp == 0));
+    assert(isGeneralRegister(params.ireg));
+    assert(params.callType < EC_INDIR_R || params.addr == nullptr);
 
     // RISCV64 never uses these
     assert(params.xreg == REG_NA && params.xmul == 0 && params.disp == 0);
@@ -1815,6 +1820,19 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         printf("\n");
     }
 #endif
+
+    ssize_t jalrOffset = 0;
+    if (params.callType == EC_FUNC_TOKEN && !IsAddressInRange(params.addr))
+    {
+        // Load upper bits of the absolute call address into a register:
+        // li   ireg, addr_upper
+        // jalr zero/ra, ireg, addr_lo12 (emitted below)
+        assert(params.addr != nullptr);
+        ssize_t imm = (ssize_t)params.addr;
+        jalrOffset  = (imm << (64 - 12)) >> (64 - 12); // low 12-bits, sign-extended
+        imm -= jalrOffset;
+        emitLoadImmediate(EA_PTRSIZE, params.ireg, imm); // upper bits
+    }
 
     /* Managed RetVal: emit sequence point for the call */
     if (emitComp->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
@@ -1885,40 +1903,32 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     id->idIns(INS_jalr);
 
     id->idInsOpt(INS_OPTS_C);
-    // INS_OPTS_C: placeholders.  1/2-ins:
-    //   if (callType == EC_INDIR_R)
-    //      jalr zero/ra, ireg, offset
-    //   else if (callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR)
-    //      auipc t2/ra, offset-hi20
-    //      jalr zero/ra, t2/ra, offset-lo12
 
     /* Record the address: method, indirection, or funcptr */
-    if (params.callType == EC_INDIR_R)
+    if ((params.callType == EC_INDIR_R) || (params.callType == EC_FUNC_TOKEN && !IsAddressInRange(params.addr)))
     {
         /* This is an indirect call (either a virtual call or func ptr call) */
-        // assert(callType == EC_INDIR_R);
+
+        //      jalr zero/ra, ireg, offset
 
         id->idSetIsCallRegPtr();
 
         regNumber reg_jalr = params.isJump ? REG_R0 : REG_RA;
         id->idReg4(reg_jalr);
         id->idReg3(params.ireg); // NOTE: for EC_INDIR_R, using idReg3.
-        id->idSmallCns(0);       // SmallCns will contain JALR's offset.
-        if (params.addr != nullptr)
-        {
-            // If addr is not NULL, it must contain JALR's offset, which is set to the lower 12 bits of address.
-            id->idSmallCns((size_t)params.addr);
-        }
-        assert(params.xreg == REG_NA);
-
+        id->idSmallCns(jalrOffset);
         id->idCodeSize(4);
     }
     else
     {
         /* This is a simple direct call: "call helper/method/addr" */
 
+        //      auipc t2/ra, offset-hi20
+        //      jalr zero/ra, t2/ra, offset-lo12
+
         assert(params.callType == EC_FUNC_TOKEN);
-        assert(params.addr != NULL);
+        assert(params.addr != nullptr);
+        assert(IsAddressInRange(params.addr));
 
         void* addr =
             (void*)(((size_t)params.addr) + (params.isJump ? 0 : 1)); // NOTE: low-bit0 is used for jalr ra/r0,rd,0
@@ -2022,7 +2032,7 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id)
         dst += emitOutput_ITypeInstr(dst, INS_jalr, linkReg, tempReg, 0);
 
         assert(id->idIsDspReloc());
-        emitRecordRelocation(origDst, (BYTE*)addr, CorInfoReloc::RISCV64_PC);
+        emitRecordRelocation(origDst, (BYTE*)addr, CorInfoReloc::RISCV64_CALL_PLT);
     }
 
     // If the method returns a GC ref, mark INTRET (A0) appropriately.
@@ -2867,25 +2877,20 @@ static ssize_t UpperWordOfDoubleWordDoubleSignExtend(ssize_t doubleWord)
 
 BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins)
 {
-    BYTE* const     dstBase = dst;
-    const regNumber reg1    = id->idReg1();
+    BYTE* const dstBase = dst;
 
-    dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, 0);
+    regNumber dataReg = id->idReg1();
+    regNumber addrReg = id->idReg2();
 
-    if (id->idIsCnsReloc())
-    {
-        *ins = INS_addi;
-    }
-    else
-    {
-        assert(id->idIsDspReloc());
-        *ins = INS_ld;
-    }
+    *ins = id->idIns();
+    assert(*ins == INS_addi || emitInsIsLoadOrStore(*ins));
+    dst += emitOutput_UTypeInstr(dst, INS_auipc, addrReg, 0);
+    emitGCregDeadUpd(addrReg, dst);
+    dst += emitInsIsStore(*ins) ? emitOutput_STypeInstr(dst, *ins, addrReg, dataReg, 0)
+                                : emitOutput_ITypeInstr(dst, *ins, dataReg, addrReg, 0);
 
-    dst += emitOutput_ITypeInstr(dst, *ins, reg1, reg1, 0);
-
-    emitRecordRelocation(dstBase, id->idAddr()->iiaAddr, CorInfoReloc::RISCV64_PC);
-
+    CorInfoReloc type = emitInsIsStore(*ins) ? CorInfoReloc::RISCV64_PCREL_S : CorInfoReloc::RISCV64_PCREL_I;
+    emitRecordRelocation(dstBase, id->idAddr()->iiaAddr, type);
     return dst;
 }
 
@@ -3406,7 +3411,7 @@ void emitter::emitDispInsName(
                 case 0x1:
                 {
                     unsigned funct6 = (imm12 >> 6) & 0x3f;
-                    unsigned shamt  = imm12 & 0x3f; // 6 BITS for SHAMT in RISCV6
+                    unsigned shamt  = imm12 & 0x3f; // 6 BITS for SHAMT in RISCV64
                     switch (funct6)
                     {
                         case 0b011000:
@@ -3423,12 +3428,20 @@ void emitter::emitDispInsName(
                         }
                         case 0b000000:
                             printLength = printf("slli");
-                            imm12       = shamt;
                             break;
-
+                        case 0b001010:
+                            printLength = printf("bseti");
+                            break;
+                        case 0b010010:
+                            printLength = printf("bclri");
+                            break;
+                        case 0b011010:
+                            printLength = printf("binvi");
+                            break;
                         default:
                             return emitDispIllegalInstruction(code);
                     }
+                    imm12 = shamt;
                 }
                 break;
                 case 0x2: // SLTI
@@ -3448,7 +3461,7 @@ void emitter::emitDispInsName(
                         printLength = printf("xori");
                     }
                     break;
-                case 0x5: // SRLI & SRAI
+                case 0x5:
                 {
                     unsigned funct6 = (imm12 >> 6) & 0x3f;
                     imm12 &= 0x3f; // 6BITS for SHAMT in RISCV64
@@ -3462,6 +3475,9 @@ void emitter::emitDispInsName(
                             break;
                         case 0b011000:
                             printLength = printf("rori");
+                            break;
+                        case 0b010010:
+                            printLength = printf("bexti");
                             break;
                         case 0b011010:
                             if (imm12 != 0b111000) // shift amount is treated as additional funct opcode
@@ -3713,6 +3729,28 @@ void emitter::emitDispInsName(
                     printf("%s           %s, %s, %s\n", names[opcode3 & 0b11], rd, rs1, rs2);
                     return;
                 }
+                case 0b0010100:
+                    if (opcode3 != 0b001)
+                        return emitDispIllegalInstruction(code);
+                    printf("bset           %s, %s, %s\n", rd, rs1, rs2);
+                    return;
+                case 0b0100100:
+                    switch (opcode3)
+                    {
+                        case 0b001:
+                            printf("bclr           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0b101:
+                            printf("bext           %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
+                case 0b0110100:
+                    if (opcode3 != 0b001)
+                        return emitDispIllegalInstruction(code);
+                    printf("binv           %s, %s, %s\n", rd, rs1, rs2);
+                    return;
                 default:
                     return emitDispIllegalInstruction(code);
             }
@@ -4488,7 +4526,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 #endif // DEBUG
 
 // Generate code for a load or store operation with a potentially complex addressing mode
-// This method handles the case of a GT_IND with contained GT_LEA op1 of the x86 form [base + index*sccale + offset]
+// This method handles the case of a GT_IND with contained GT_LEA op1 of the form [base + offset]
 //
 void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir)
 {
@@ -4497,192 +4535,79 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
     if (addr->isContained())
     {
         assert(addr->OperIs(GT_LCL_ADDR, GT_LEA, GT_CNS_INT));
+        assert(!addr->OperIs(GT_LEA) || (!addr->AsAddrMode()->HasIndex() && addr->AsAddrMode()->gtScale <= 1));
 
-        int   offset = 0;
-        DWORD lsl    = 0;
-
-        if (addr->OperIs(GT_LEA))
-        {
-            offset = addr->AsAddrMode()->Offset();
-            if (addr->AsAddrMode()->gtScale > 0)
-            {
-                assert(isPow2(addr->AsAddrMode()->gtScale));
-                BitScanForward(&lsl, addr->AsAddrMode()->gtScale);
-            }
-        }
+        ssize_t offset = indir->Offset();
 
         GenTree* memBase = indir->Base();
-        emitAttr addType = varTypeIsGC(memBase) ? EA_BYREF : EA_PTRSIZE;
 
-        if (indir->HasIndex())
+        if (addr->OperIs(GT_LCL_ADDR))
         {
-            GenTree* index = indir->Index();
-
-            if (offset != 0)
+            GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
+            unsigned             lclNum  = varNode->GetLclNum();
+            unsigned             lclOffs = varNode->GetLclOffs();
+            if (emitInsIsStore(ins))
             {
-                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
-
-                if (isValidSimm12(offset))
-                {
-                    if (lsl > 0)
-                    {
-                        // Generate code to set tmpReg = base + index*scale
-                        emitIns_R_R_I(INS_slli, addType, tmpReg, index->GetRegNum(), lsl);
-                        emitIns_R_R_R(INS_add, addType, tmpReg, memBase->GetRegNum(), tmpReg);
-                    }
-                    else // no scale
-                    {
-                        // Generate code to set tmpReg = base + index
-                        emitIns_R_R_R(INS_add, addType, tmpReg, memBase->GetRegNum(), index->GetRegNum());
-                    }
-
-                    noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
-
-                    // Then load/store dataReg from/to [tmpReg + offset]
-                    emitIns_R_R_I(ins, attr, dataReg, tmpReg, offset);
-                }
-                else // large offset
-                {
-                    // First load/store tmpReg with the large offset constant
-                    emitLoadImmediate(EA_PTRSIZE, tmpReg,
-                                      offset); // codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
-                    // Then add the base register
-                    //      rd = rd + base
-                    emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, memBase->GetRegNum());
-
-                    noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
-                    noway_assert(tmpReg != index->GetRegNum());
-
-                    regNumber scaleReg = codeGen->internalRegisters.GetSingle(indir);
-                    // Then load/store dataReg from/to [tmpReg + index*scale]
-                    emitIns_R_R_I(INS_slli, addType, scaleReg, index->GetRegNum(), lsl);
-                    emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, scaleReg);
-                    emitIns_R_R_I(ins, attr, dataReg, tmpReg, 0);
-                }
-            }
-            else // (offset == 0)
-            {
-                // Then load/store dataReg from/to [memBase + index]
-                switch (EA_SIZE(emitTypeSize(indir->TypeGet())))
-                {
-                    case EA_1BYTE:
-                        assert(((ins <= INS_lhu) && (ins >= INS_lb)) || ins == INS_lwu || ins == INS_ld ||
-                               ((ins <= INS_sw) && (ins >= INS_sb)) || ins == INS_sd);
-                        if (ins <= INS_lhu || ins == INS_lwu || ins == INS_ld)
-                        {
-                            if (varTypeIsUnsigned(indir->TypeGet()))
-                                ins = INS_lbu;
-                            else
-                                ins = INS_lb;
-                        }
-                        else
-                            ins = INS_sb;
-                        break;
-                    case EA_2BYTE:
-                        assert(((ins <= INS_lhu) && (ins >= INS_lb)) || ins == INS_lwu || ins == INS_ld ||
-                               ((ins <= INS_sw) && (ins >= INS_sb)) || ins == INS_sd);
-                        if (ins <= INS_lhu || ins == INS_lwu || ins == INS_ld)
-                        {
-                            if (varTypeIsUnsigned(indir->TypeGet()))
-                                ins = INS_lhu;
-                            else
-                                ins = INS_lh;
-                        }
-                        else
-                            ins = INS_sh;
-                        break;
-                    case EA_4BYTE:
-                        assert(((ins <= INS_lhu) && (ins >= INS_lb)) || ins == INS_lwu || ins == INS_ld ||
-                               ((ins <= INS_sw) && (ins >= INS_sb)) || ins == INS_sd || ins == INS_fsw ||
-                               ins == INS_flw);
-                        assert(INS_fsw > INS_sd);
-                        if (ins <= INS_lhu || ins == INS_lwu || ins == INS_ld)
-                        {
-                            if (varTypeIsUnsigned(indir->TypeGet()))
-                                ins = INS_lwu;
-                            else
-                                ins = INS_lw;
-                        }
-                        else if (ins != INS_flw && ins != INS_fsw)
-                            ins = INS_sw;
-                        break;
-                    case EA_8BYTE:
-                        assert(((ins <= INS_lhu) && (ins >= INS_lb)) || ins == INS_lwu || ins == INS_ld ||
-                               ((ins <= INS_sw) && (ins >= INS_sb)) || ins == INS_sd || ins == INS_fld ||
-                               ins == INS_fsd);
-                        assert(INS_fsd > INS_sd);
-                        if (ins <= INS_lhu || ins == INS_lwu || ins == INS_ld)
-                        {
-                            ins = INS_ld;
-                        }
-                        else if (ins != INS_fld && ins != INS_fsd)
-                            ins = INS_sd;
-                        break;
-                    default:
-                        NO_WAY("illegal ins within emitInsLoadStoreOp!");
-                }
-
-                if (lsl > 0)
-                {
-                    // Then load/store dataReg from/to [memBase + index*scale]
-                    emitIns_R_R_I(INS_slli, emitActualTypeSize(index->TypeGet()), codeGen->rsGetRsvdReg(),
-                                  index->GetRegNum(), lsl);
-                    emitIns_R_R_R(INS_add, addType, codeGen->rsGetRsvdReg(), memBase->GetRegNum(),
-                                  codeGen->rsGetRsvdReg());
-                    emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), 0);
-                }
-                else // no scale
-                {
-                    emitIns_R_R_R(INS_add, addType, codeGen->rsGetRsvdReg(), memBase->GetRegNum(), index->GetRegNum());
-                    emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), 0);
-                }
-            }
-        }
-        else // no Index register
-        {
-            if (addr->OperIs(GT_LCL_ADDR))
-            {
-                GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
-                unsigned             lclNum  = varNode->GetLclNum();
-                unsigned             offset  = varNode->GetLclOffs();
-                if (emitInsIsStore(ins))
-                {
-                    emitIns_S_R(ins, attr, dataReg, lclNum, offset);
-                }
-                else
-                {
-                    emitIns_R_S(ins, attr, dataReg, lclNum, offset);
-                }
-            }
-            else if (addr->OperIs(GT_CNS_INT))
-            {
-                assert(memBase == indir->Addr());
-                ssize_t cns = addr->AsIntCon()->IconValue();
-
-                ssize_t off = (cns << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
-                cns -= off;
-
-                emitLoadImmediate(EA_PTRSIZE, codeGen->rsGetRsvdReg(), cns);
-                emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), off);
-            }
-            else if (isValidSimm12(offset))
-            {
-                // Then load/store dataReg from/to [memBase + offset]
-                emitIns_R_R_I(ins, attr, dataReg, memBase->GetRegNum(), offset);
+                emitIns_S_R(ins, attr, dataReg, lclNum, lclOffs);
             }
             else
             {
-                // We require a tmpReg to hold the offset
-                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
-
-                // First load/store tmpReg with the large offset constant
-                emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
-                // codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
-
-                // Then load/store dataReg from/to [memBase + tmpReg]
-                emitIns_R_R_R(INS_add, addType, tmpReg, memBase->GetRegNum(), tmpReg);
-                emitIns_R_R_I(ins, attr, dataReg, tmpReg, 0);
+                emitIns_R_S(ins, attr, dataReg, lclNum, lclOffs);
             }
+        }
+        else if (addr->OperIs(GT_CNS_INT))
+        {
+            assert(memBase == addr);
+            assert(offset == addr->AsIntCon()->IconValue());
+            if (!addr->AsIntCon()->AddrNeedsReloc(emitComp) && isValidSimm12(offset))
+            {
+                emitIns_R_R_I(ins, attr, dataReg, REG_ZERO, offset);
+            }
+            else
+            {
+                bool needTemp = indir->OperIs(GT_STOREIND, GT_NULLCHECK) || varTypeIsFloating(indir);
+                if (addr->AsIntCon()->FitsInAddrBase(emitComp) && addr->AsIntCon()->AddrNeedsReloc(emitComp))
+                {
+                    regNumber addrReg = needTemp ? codeGen->internalRegisters.GetSingle(indir) : dataReg;
+                    attr              = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
+                    emitIns_R_AI(ins, attr, dataReg, addrReg,
+                                 (size_t)offset DEBUGARG(offset) DEBUGARG(addr->GetIconHandleFlag()));
+                }
+                else
+                {
+                    ssize_t lo12 = (offset << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
+                    offset -= lo12;
+
+                    regNumber addrReg = REG_ZERO;
+                    if (offset != 0)
+                    {
+                        addrReg = needTemp ? codeGen->internalRegisters.GetSingle(indir) : dataReg;
+                        emitLoadImmediate(EA_PTRSIZE, addrReg, offset);
+                    }
+                    emitIns_R_R_I(ins, attr, dataReg, addrReg, lo12);
+                }
+            }
+        }
+        else if (isValidSimm12(offset))
+        {
+            // Then load/store dataReg from/to [memBase + offset]
+            emitIns_R_R_I(ins, attr, dataReg, memBase->GetRegNum(), offset);
+        }
+        else
+        {
+            ssize_t lo12 = (offset << (64 - 12)) >> (64 - 12);
+            offset -= lo12;
+
+            // We require a tmpReg to hold the offset
+            regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
+
+            // First load/store tmpReg with the large offset constant
+            emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
+
+            // Then load/store dataReg from/to [memBase + tmpReg]
+            emitAttr addType = varTypeIsGC(memBase) ? EA_BYREF : EA_PTRSIZE;
+            emitIns_R_R_R(INS_add, addType, tmpReg, memBase->GetRegNum(), tmpReg);
+            emitIns_R_R_I(ins, attr, dataReg, tmpReg, lo12);
         }
     }
     else // addr is not contained, so we evaluate it into a register
@@ -4836,8 +4761,22 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             ins = INS_addiw;
             imm = -imm;
         }
+        else if (ins == INS_bseti || ins == INS_bclri || ins == INS_bexti || ins == INS_binvi)
+        {
+            // Use base instructions where possible:
+            // "bexti rd, rs, 0" is equivalent to "andi rd, rs, 1"
+            // "bseti/bclri/binvi rd, rs, imm" are equivalent to "ori/andi/xori rd, rs, (~)(1 << imm)" for imm < 11
+            int minBitIndex = (ins == INS_bexti) ? 1 : 11;
+            int maxBitIndex = emitActualTypeSize(src1) * 8;
+            if (ins != INS_bexti && attr == EA_4BYTE)
+                maxBitIndex--; // can't touch the sign bit alone, it affects sign extension
 
-        assert(ins == INS_addi || ins == INS_addiw || ins == INS_andi || ins == INS_ori || ins == INS_xori);
+            assert(imm >= minBitIndex);
+            assert(imm < maxBitIndex);
+        }
+
+        assert(ins == INS_addi || ins == INS_addiw || ins == INS_andi || ins == INS_ori || ins == INS_xori ||
+               ins == INS_bseti || ins == INS_bclri || ins == INS_bexti || ins == INS_binvi);
 
         regNumber tempReg = needCheckOv ? codeGen->internalRegisters.Extract(dst) : REG_NA;
 
@@ -4976,6 +4915,9 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             case GT_OR_NOT:
             case GT_XOR:
             case GT_XOR_NOT:
+            case GT_BIT_SET:
+            case GT_BIT_CLEAR:
+            case GT_BIT_INVERT:
             {
                 emitIns_R_R_R(ins, attr, dstReg, src1Reg, src2Reg);
 
@@ -5129,6 +5071,21 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 unsigned emitter::get_curTotalCodeSize()
 {
     return emitTotalCodeSize;
+}
+
+//----------------------------------------------------------------------------------------
+// IsAddressInRange: Returns whether an address should be attempted to be reached with an auipc + load/store/jalr/addi
+// instruction combo.
+//
+// Arguments:
+//    addr - The address to check
+//
+// Return Value:
+//    A struct containing the current instruction execution characteristics
+bool emitter::IsAddressInRange(void* addr)
+{
+    return emitComp->opts.compReloc || (INDEBUG(emitComp->opts.compEnablePCRelAddr&&)(
+                                           CorInfoReloc::RELATIVE32 == emitComp->eeGetRelocTypeHint(addr)));
 }
 
 #if defined(DEBUG) || defined(LATE_DISASM)

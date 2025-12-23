@@ -61,7 +61,7 @@ else()
             set(JS_SYSTEM_NATIVE_BROWSER
                 "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.js")
             set(JS_SYSTEM_BROWSER_UTILS
-                "${STATIC_LIB_DESTINATION}/libSystem.Browser.Utils.js")
+                "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.Utils.js")
             set(JS_CORE_RUN
                 "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.extpost.js")
             set_target_properties(corerun PROPERTIES

@@ -77,6 +77,7 @@ namespace System.Threading
 
         public static long CompletedWorkItemCount => 0;
 
+        [DynamicDependency("BackgroundJobHandler")] // https://github.com/dotnet/runtime/issues/101434
         internal static unsafe void RequestWorkerThread()
         {
             if (_callbackQueued)

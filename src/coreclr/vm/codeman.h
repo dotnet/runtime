@@ -79,6 +79,7 @@ class ReadyToRunJitManager;
 class ExecutionManager;
 class Thread;
 class CrawlFrame;
+class IExecutionControl;
 struct EE_ILEXCEPTION;
 struct EE_ILEXCEPTION_CLAUSE;
 typedef struct
@@ -1791,6 +1792,11 @@ public:
         return m_runtimeSupport;
     }
 
+#if !defined(DACCESS_COMPILE)
+    // Returns execution control, currently NULL outside of CoreCLR interpreter.
+    virtual IExecutionControl* GetExecutionControl() { return NULL; }
+#endif
+
 protected:
     PTR_ICodeManager m_runtimeSupport;
 };
@@ -2293,10 +2299,14 @@ public:
     };
 
     // Returns default scan flag for current thread
-    static ScanFlag GetScanFlags();
+    static ScanFlag GetScanFlags(Thread *pThread = NULL);
 
-    // Returns whether currentPC is in managed code. Returns false for jump stubs on WIN64.
+    // Returns whether currentPC is in managed code. Returns false for jump stubs.
     static BOOL IsManagedCode(PCODE currentPC);
+
+    // Returns whether currentPC is in managed code. Returns false for jump stubs.
+    // Does not acquire the reader lock. Caller must ensure it is safe.
+    static BOOL IsManagedCodeNoLock(PCODE currentPC);
 
     // Returns true if currentPC is ready to run codegen
     static BOOL IsReadyToRunCode(PCODE currentPC);
@@ -2867,6 +2877,11 @@ public:
     {
         return STUB_CODE_BLOCK_UNKNOWN;
     }
+
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_BROWSER)
+    // Return execution control for interpreter bytecode breakpoints
+    virtual IExecutionControl* GetExecutionControl();
+#endif
 
 #if defined(DACCESS_COMPILE)
 

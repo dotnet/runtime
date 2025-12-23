@@ -43,9 +43,6 @@ public class GenerateWasmBootJson : Task
     public string DebugLevel { get; set; }
 
     [Required]
-    public bool LinkerEnabled { get; set; }
-
-    [Required]
     public bool CacheBootResources { get; set; }
 
     public bool LoadFullICUData { get; set; }
@@ -134,14 +131,10 @@ public class GenerateWasmBootJson : Task
                 if (CacheBootResources)
                     result.cacheBootResources = CacheBootResources;
             }
-
-            if (LinkerEnabled)
-                result.linkerEnabled = LinkerEnabled;
         }
         else
         {
             result.cacheBootResources = CacheBootResources;
-            result.linkerEnabled = LinkerEnabled;
             result.config = new();
             result.debugBuild = DebugBuild;
             result.entryAssembly = entryAssemblyName;
@@ -359,11 +352,11 @@ public class GenerateWasmBootJson : Task
                 {
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as VFS resource '{1}'.", resource.ItemSpec, assetTraitValue);
 
-                    var targetPath = assetTraitValue.Substring("vfs:".Length);
+                    var targetPath = assetTraitValue.Substring("vfs:".Length).Replace("\\", "/");
 
                     resourceData.vfs ??= [];
                     resourceData.vfs[targetPath] = [];
-                    AddResourceToList(resource, resourceData.vfs[targetPath], resourceEndpoint);
+                    AddResourceToList(resource, resourceData.vfs[targetPath], resourceEndpoint.Replace("\\", "/"));
                 }
                 else
                 {

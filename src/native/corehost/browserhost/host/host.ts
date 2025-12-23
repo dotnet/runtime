@@ -24,6 +24,27 @@ export function registerDllBytes(bytes: Uint8Array, asset: { name: string, virtu
     }
 }
 
+export function loadIcuData(bytes: Uint8Array) {
+    const sp = Module.stackSave();
+    try {
+        const sizeOfPtr = 4;
+        const ptrPtr = Module.stackAlloc(sizeOfPtr);
+        if (Module._posix_memalign(ptrPtr as any, 16, bytes.length)) {
+            throw new Error("posix_memalign failed for ICU data");
+        }
+
+        const ptr = Module.HEAPU32[ptrPtr as any >>> 2];
+        Module.HEAPU8.set(bytes, ptr >>> 0);
+
+        const result = _wasm_load_icu_data(ptr as unknown as VoidPtr);
+        if (!result) {
+            throw new Error("Failed to initialize ICU data");
+        }
+    } finally {
+        Module.stackRestore(sp);
+    }
+}
+
 export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
     const virtualName: string = typeof (asset.virtualPath) === "string"
         ? asset.virtualPath
@@ -83,6 +104,10 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
     const config = dotnetApi.getConfig();
     if (!mainAssemblyName) {
         mainAssemblyName = config.mainAssemblyName!;
+    }
+    // TODO-WASM: Difference in boot config generator
+    if (!mainAssemblyName.endsWith(".dll")) {
+        mainAssemblyName += ".dll";
     }
     const mainAssemblyNamePtr = dotnetBrowserUtilsExports.stringToUTF8Ptr(mainAssemblyName) as any;
 
