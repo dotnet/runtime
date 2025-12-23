@@ -81,7 +81,7 @@ The following images are used for more extended scenarios, including for communi
 | Azure Linux (x64)     | Ubuntu 24.04               | RISC-V            | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-riscv64`      | `/crossrootfs/riscv64` |
 | Azure Linux (x64)     | Ubuntu 18.04               | S390x             | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-cross-s390x`        | `/crossrootfs/s390x`   |
 | Azure Linux (x64)     | Ubuntu 16.04 (Wasm)        | x64               | `mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-webassembly-amd64`  | `/crossrootfs/x64`     |
-| Debian (x64)          | Debian 12                  | x64               | `mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc14-amd64`                    | `/crossrootfs/armv6`   |
+| Debian (x64)          | Debian 13                  | x64               | `mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-gcc14-amd64`                    | `/crossrootfs/armv6`   |
 | Ubuntu (x64)          | Ubuntu 22.04               | x64               | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-debpkg`                      |                        |
 | Ubuntu (x64)          | Tizen 9.0                  | Arm32 (armel)     | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-armel-tizen`           | `/crossrootfs/armel`   |
 | Ubuntu (x64)          | Ubuntu 20.04               | Arm32 (v6)        | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-cross-armv6-raspbian-10`     | `/crossrootfs/armv6`   |
