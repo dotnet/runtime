@@ -160,7 +160,11 @@ namespace ILCompiler.ObjectWriter
         {
             if (_nodeFactory.Target.IsWasm)
             {
-                logger.LogMessage($"Emitting relocation in section {sectionIndex} of type {relocType} at offset {offset}");
+                if (logger.IsVerbose)
+                {
+                    logger.LogMessage($"Emitting relocation for {symbolName} in section {sectionIndex} of type {relocType} at offset {offset}");
+                }
+
                 return;
             }
 
@@ -258,7 +262,7 @@ namespace ILCompiler.ObjectWriter
         /// <remarks>
         /// This methods is guaranteed to run after <see cref="EmitSymbolTable" />.
         /// </remarks>
-        private protected abstract void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList);
+        private protected abstract void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList, Logger logger);
 
         /// <summary>
         /// Emit new symbol definition at specified location in a given section.
@@ -329,7 +333,6 @@ namespace ILCompiler.ObjectWriter
 
         public virtual void EmitObject(Stream outputFileStream, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
         {
-            logger.LogMessage("Starting object file emission...");
             // Pre-create some of the sections
             GetOrCreateSection(ObjectNodeSection.TextSection);
             if (_nodeFactory.Target.OperatingSystem == TargetOS.Windows)
@@ -365,9 +368,6 @@ namespace ILCompiler.ObjectWriter
             List<ChecksumsToCalculate> checksumRelocations = [];
             foreach (DependencyNode depNode in nodes)
             {
-                logger.LogMessage("--------------------------------------------------------------");
-                logger.LogMessage($"Processing dependency node of type {depNode.GetType()}");
-                logger.LogMessage("--------------------------------------------------------------");
                 if (depNode is ISymbolRangeNode symbolRange)
                 {
                     logger.LogMessage($"Deferring emission of symbol range node {GetMangledName(symbolRange)}");
@@ -433,7 +433,10 @@ namespace ILCompiler.ObjectWriter
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
-                    logger.LogMessage($"Emitting defined symbol {GetMangledName(n)} at offset {n.Offset} in section {section.Name}");
+                    if (logger.IsVerbose)
+                    {
+                        logger.LogMessage($"Emitting defined symbol {GetMangledName(n)} at offset {n.Offset} in section {section.Name}");
+                    }
                     Utf8String mangledName = n == node ? currentSymbolName : GetMangledName(n);
                     sectionWriter.EmitSymbolDefinition(
                         mangledName,
@@ -610,7 +613,7 @@ namespace ILCompiler.ObjectWriter
             int relocSectionIndex = 0;
             foreach (List<SymbolicRelocation> relocationList in _sectionIndexToRelocations)
             {
-                EmitRelocations(relocSectionIndex, relocationList);
+                EmitRelocations(relocSectionIndex, relocationList, logger);
                 relocSectionIndex++;
             }
 

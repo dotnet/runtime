@@ -81,13 +81,11 @@ namespace ILCompiler.ObjectWriter
         {
             string name = ObjectNodeSection.TextSection.Name;
             SectionWriter writer = GetOrCreateSection(ObjectNodeSection.TextSection);
-            Console.WriteLine($"writer.Position: {writer.Position}");
 
             // Write the number of functions
             writer.WriteULEB128((ulong)methodBodies.Count);
             for (int i = 0; i < methodBodies.Count; i++)
             {
-                logger.LogMessage("Writing method: {i}");
                 ObjectData methodBody = methodBodies[i];
                 writer.WriteULEB128((ulong)methodBody.Data.Length);
                 writer.EmitData(methodBody.Data);
@@ -211,13 +209,19 @@ namespace ILCompiler.ObjectWriter
             IEnumerable<WasmFuncType> uniqueSignatures = _methodSignatures.ToArray().Distinct();
             Dictionary<WasmFuncType, int> signatureMap = uniqueSignatures.Select((sig, i) => (sig, i)).ToDictionary();
 
-            foreach (var section in _sections)
+            if (logger.IsVerbose)
             {
-                logger.LogMessage($"Section: {section.Name} of kind {section.Type}");
+                foreach (var section in _sections)
+                {
+                    logger.LogMessage($"Section: {section.Name} of kind {section.Type}");
+                }
             }
 
             WasmDataSection dataSection = WriteDataSection(_sections.Where(s => s.Type == WasmSectionType.Data));
-            logger.LogMessage($"Data contents size: {dataSection.ContentSize}");
+            if (logger.IsVerbose)
+            {
+                logger.LogMessage($"Data contents size: {dataSection.ContentSize}");
+            }
 
             EmitWasmHeader(outputFileStream);
             WriteTypeSection(uniqueSignatures, logger).Emit(outputFileStream, logger);
@@ -228,14 +232,22 @@ namespace ILCompiler.ObjectWriter
             dataSection.Emit(outputFileStream, logger);
         }
 
-        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
+        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList, Logger logger)
         {
-            // This is a no-op for now under Wasm
-
+            if (logger.IsVerbose)
+            {
+                logger.LogMessage($"Emitting relocations for section index {sectionIndex}: {_sections[sectionIndex].Name}");
+                // This is a no-op for now under Wasm
+                foreach (SymbolicRelocation reloc in relocationList)
+                {
+                    logger.LogMessage($"Emitting reloc: {reloc.SymbolName} for offset {reloc.Offset}");
+                }
+            }
         }
+
         private protected override void EmitSymbolTable(IDictionary<Utf8String, SymbolDefinition> definedSymbols, SortedSet<Utf8String> undefinedSymbols)
         {
-            // This is a no-op for now under wasm
+            // No-op for Wasm for now
         }
     }
 

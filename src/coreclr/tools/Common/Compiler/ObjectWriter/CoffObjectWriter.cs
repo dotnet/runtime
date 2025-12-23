@@ -274,7 +274,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
+        private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList, Logger logger)
         {
             CoffSectionHeader sectionHeader = _sections[sectionIndex].Header;
             List<CoffRelocation> coffRelocations = _sections[sectionIndex].Relocations;
