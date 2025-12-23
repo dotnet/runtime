@@ -783,7 +783,7 @@ CorDebugUserState CordbThread::GetUserState()
         m_userState = pDAC->GetUserState(m_vmThreadToken);
     }
 
-    return m_userState;
+    return (CorDebugUserState)m_userState;
 }
 
 
@@ -887,7 +887,7 @@ HRESULT CordbThread::CreateStepper(ICorDebugStepper ** ppStepper)
 //Returns true if current user state of a thread is USER_WAIT_SLEEP_JOIN
 bool CordbThread::IsThreadWaitingOrSleeping()
 {
-    CorDebugUserState userState = m_userState;
+    int userState = m_userState;
     if (userState == kInvalidUserState)
     {
         //If m_userState is not ready, we'll read from DAC only part of it which
@@ -3721,14 +3721,14 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
     LOG((LF_CORDB, LL_INFO10000, "CUT::SFCHFS: hijackCtx started as:\n"));
     LogContext(GetHijackCtx());
 
-    // Save the thread's full context for all platforms except for x86 because we need the 
+    // Save the thread's full context for all platforms except for x86 because we need the
     // DT_CONTEXT_EXTENDED_REGISTERS to avoid getting incomplete information and corrupt the thread context
     DT_CONTEXT context;
-#ifdef TARGET_X86    
+#ifdef TARGET_X86
     context.ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_EXTENDED_REGISTERS;
 #else
     context.ContextFlags = DT_CONTEXT_FULL;
-#endif 
+#endif
 
     BOOL succ = DbiGetThreadContext(m_handle, &context);
     _ASSERTE(succ);
@@ -3739,7 +3739,7 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
         LOG((LF_CORDB, LL_ERROR, "CUT::SFCHFS: DbiGetThreadContext error=0x%x\n", error));
     }
 
-#ifdef TARGET_X86    
+#ifdef TARGET_X86
     GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL | DT_CONTEXT_EXTENDED_REGISTERS;
 #else
     GetHijackCtx()->ContextFlags = DT_CONTEXT_FULL;
