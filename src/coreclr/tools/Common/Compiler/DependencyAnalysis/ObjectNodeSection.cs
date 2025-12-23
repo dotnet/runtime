@@ -69,5 +69,6 @@ namespace ILCompiler.DependencyAnalysis
         public static readonly ObjectNodeSection WasmFunctionSection = new ObjectNodeSection("wasm.function", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection WasmTypeSection = new ObjectNodeSection("wasm.type", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection WasmExportSection = new ObjectNodeSection("wasm.export", SectionType.ReadOnly, needsAlign: false);
+        public static readonly ObjectNodeSection WasmMemorySection = new ObjectNodeSection("wasm.memory", SectionType.ReadOnly, needsAlign: false);
     }
 }
