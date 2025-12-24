@@ -564,7 +564,6 @@ namespace System.Runtime.CompilerServices
                         return continuation;
 
                     continuation = continuation.Next;
-
                 }
             }
 

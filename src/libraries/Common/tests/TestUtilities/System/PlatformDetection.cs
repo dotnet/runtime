@@ -442,7 +442,7 @@ namespace System
             }
         }
 
-        public static bool IsRuntimeAsyncSupported => !IsCoreClrInterpreter && !IsMonoRuntime && !IsMonoAOT && !IsMonoInterpreter && IsNotNativeAot;
+        public static bool IsRuntimeAsyncSupported => !IsCoreClrInterpreter && !IsMonoRuntime && !IsMonoAOT && !IsMonoInterpreter;
 
         private static Version GetICUVersion()
         {

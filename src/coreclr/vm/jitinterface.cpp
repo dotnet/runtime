@@ -61,7 +61,6 @@
 
 #include "tailcallhelp.h"
 #include "patchpointinfo.h"
-#include "ilstubresolver.h"
 
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //

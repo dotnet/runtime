@@ -919,11 +919,6 @@ extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached()
 }
 #endif // !DACCESS_COMPILE
 
-BYTE* DebugInfoStoreNew2(void * pData, size_t cBytes)
-{
-    return new BYTE[cBytes];
-}
-
 void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                                                   GetStackFramesData *pData,
                                                   PTRARRAYREF * pDynamicMethodArray /*= NULL*/
@@ -1598,7 +1593,6 @@ void ValidateILOffsets(MethodDesc *pFunc, uint8_t* ipColdStart, size_t coldLen, 
 
 // Initialization done outside the TSL.
 // This may need to call locking operations that aren't safe under the TSL.
-
 void DebugStackTrace::Element::InitPass2()
 {
     CONTRACTL

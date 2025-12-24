@@ -105,7 +105,6 @@
     <PlatformManifestFileEntry Include="libSystem.Native.Browser.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Runtime.InteropServices.JavaScript.Native.a" IsNative="true" />
     <PlatformManifestFileEntry Include="coreclr.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="clrinterpreter.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr_static.a" IsNative="true" />
@@ -159,7 +158,6 @@
     <PlatformManifestFileEntry Include="libstandalonegc-enabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libaotminipal.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstdc++compat.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="debugucrt.txt" IsNative="false" />
     <!-- NativeAOT/Windows specific files -->
     <PlatformManifestFileEntry Include="bootstrapper.obj" IsNative="true" />
     <PlatformManifestFileEntry Include="bootstrapperdll.obj" IsNative="true" />
