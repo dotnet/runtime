@@ -995,7 +995,6 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 UINT_PTR ip = cur.ip;
                 if (cur.flags & STEF_CONTINUATION)
                 {
-                    DebugInfoRequest request;
                     EECodeInfo codeInfo((PCODE)ip);
                     if (codeInfo.IsValid())
                     {
