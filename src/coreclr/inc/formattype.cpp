@@ -8,6 +8,10 @@
 /******************************************************************************/
 #include "formattype.h"
 
+#ifdef _DEBUG
+#include "../md/debug_metadata.h"   // for Debug_ReportError
+#endif
+
 /******************************************************************************/
 char* asString(CQuickBytes *out) {
     CONTRACTL
