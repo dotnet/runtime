@@ -87,12 +87,28 @@ static void DetectCiphersuiteConfiguration(void)
 {
     // Check to see if there's a registered default CipherString. If not, we will use our own.
     SSL_CTX* ctx = SSL_CTX_new(TLS_method());
-    assert(ctx != NULL);
+    if (ctx == NULL)
+    {
+        // Sometimes when OpnenSSL is misconfigured the call above fails on first try.
+        // This gibves it one more chance amnd we bail out if it still fails.
+        ctx = SSL_CTX_new(TLS_method());
+        if (ctx == NULL)
+        {
+            ERR_clear_error();
+            return;
+        }
+    }
+
 
     // SSL_get_ciphers returns a shared pointer, no need to save/free it.
     // It gets invalidated every time we touch the configuration, so we can't ask just once, either.
     SSL* ssl = SSL_new(ctx);
-    assert(ssl != NULL);
+    if (ssl == NULL)
+    {
+        ERR_clear_error();
+        SSL_CTX_free(ctx);
+        return;
+    }
     int defaultCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
     SSL_free(ssl);
 
@@ -108,7 +124,13 @@ static void DetectCiphersuiteConfiguration(void)
     }
 
     ssl = SSL_new(ctx);
-    assert(ssl != NULL);
+    if (ssl == NULL)
+    {
+        ERR_clear_error();
+        SSL_CTX_free(ctx);
+        return;
+    }
+
     int allCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
     SSL_free(ssl);
 
@@ -147,11 +169,13 @@ static void DetectCiphersuiteConfiguration(void)
     else
     {
         ssl = SSL_new(ctx);
-        assert(ssl != NULL);
-        int after = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
-        SSL_free(ssl);
+        if (ssl != NULL)
+        {
+            int after = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
+            SSL_free(ssl);
 
-        g_config_specified_ciphersuites = (allCount != after);
+            g_config_specified_ciphersuites = (allCount != after);
+        }
     }
 
     SSL_CTX_free(ctx);
