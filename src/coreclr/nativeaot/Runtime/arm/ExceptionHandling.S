@@ -81,6 +81,24 @@ NESTED_END RhpThrowHwEx
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
+// RhpThrowExact
+//
+// SUMMARY:  Similar to RhpThrowEx, except that it sets the rethrow flag
+//
+// INPUT:  R0:  exception object
+//
+// OUTPUT:
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+NESTED_ENTRY RhpThrowExact, _TEXT, NoHandler
+
+        mov         r5, #4                                          // r5 = ExKind.RethrowFlag
+        b           LOCAL_LABEL(RhpThrowExImpl)
+
+NESTED_END RhpThrowExact, _TEXT
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
 // RhpThrowEx
 //
 // INPUT:  R0:  exception object
@@ -89,6 +107,10 @@ NESTED_END RhpThrowHwEx
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
+
+        mov         r5, #1                                          // r5 = ExKind.Throw
+
+LOCAL_LABEL(RhpThrowExImpl):
 
         // Setup a PAL_LIMITED_CONTEXT on the stack {
         PROLOG_VPUSH {d8-d15}
@@ -158,114 +180,7 @@ LOCAL_LABEL(NotHiJacked):
         str         r3, [r1, #OFFSETOF__ExInfo__m_exception] 	      // init the exception object to null
         mov         r3, #1
         strb        r3, [r1, #OFFSETOF__ExInfo__m_passNumber]       // init to the first pass
-        strb        r3, [r1, #OFFSETOF__ExInfo__m_kind]
-        mov         r3, #0xFFFFFFFF
-        str         r3, [r1, #OFFSETOF__ExInfo__m_idxCurClause]     // ExKind.Throw
-
-        // link the ExInfo into the thread's ExInfo chain
-        ldr         r3, [r0, #OFFSETOF__Thread__m_pExInfoStackHead]
-        str         r3, [r1, #OFFSETOF__ExInfo__m_pPrevExInfo]  	  // pExInfo->m_pPrevExInfo = m_pExInfoStackHead
-        str         r1, [r0, #OFFSETOF__Thread__m_pExInfoStackHead] // m_pExInfoStackHead = pExInfo
-
-        // set the exception context field on the ExInfo
-        add         r3, sp, #rsp_offsetof_Context             // r3 <- PAL_LIMITED_CONTEXT*
-        str         r3, [r1, #OFFSETOF__ExInfo__m_pExContext] // init ExInfo.m_pExContext
-
-        mov         r0, r4 // Restore exception object
-        // r0 contains the exception object
-        // r1 contains the address of the new ExInfo
-        bl          C_FUNC(RhThrowEx)
-
-GLOBAL_LABEL RhpThrowEx2
-
-        // no return
-        EMIT_BREAKPOINT
-
-NESTED_END RhpThrowEx, _TEXT
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// RhpThrowExact
-//
-// SUMMARY:  Similar to RhpThrowEx, except that it sets the rethrow flag
-//
-// INPUT:  R0:  exception object
-//
-// OUTPUT:
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpThrowExact, _TEXT, NoHandler
-
-        // Setup a PAL_LIMITED_CONTEXT on the stack {
-        PROLOG_VPUSH {d8-d15}
-        PROLOG_PUSH "{r0,lr}"        	// Reserve space for SP and store LR
-        PROLOG_PUSH "{r0,r4-r11,lr}"
-        // } end PAL_LIMITED_CONTEXT
-
-        PROLOG_STACK_ALLOC STACKSIZEOF_ExInfo
-
-        // Calculate  SP at callsite and save into the PAL_LIMITED_CONTEXT
-        add         r4, sp, #(STACKSIZEOF_ExInfo + SIZEOF__PAL_LIMITED_CONTEXT)
-        str         r4, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__SP)]
-
-        mov         r4, r0 // Save exception object
-        // r0 = GetThread()
-        INLINE_GETTHREAD
-
-        add         r2, sp, #(rsp_offsetof_Context + SIZEOF__PAL_LIMITED_CONTEXT + 0x8) 	// r2 <- addr of return address
-
-        // There is runtime C# code that can tail call to RhpThrowExact using a binder intrinsic. So  the return
-        // address could have been hijacked when we were in that C# code and we must remove the hijack and
-        // reflect the correct return address in our exception context record.  The other throw helpers don't
-        // need this because they cannot be tail-called from C#.
-        // NOTE: we cannot use INLINE_THREAD_UNHIJACK because it will write into the stack at the location
-        // where the tail-calling thread had saved LR, which may not match where we have saved LR.
-
-        ldr         r1, [r0, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
-        cbz         r1, LOCAL_LABEL(NotHiJacked)
-
-        ldr         r3, [r0, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-
-        // r4: exception object
-        // r1: hijacked return address
-        // r0: pThread
-        // r3: hijacked return address location
-
-        add         r12, sp, #(STACKSIZEOF_ExInfo + SIZEOF__PAL_LIMITED_CONTEXT)        // re-compute SP at callsite
-        cmp         r3, r12             // if (m_ppvHijackedReturnAddressLocation < SP at callsite)
-        blo         LOCAL_LABEL(TailCallWasHijacked)
-
-        // normal case where a valid return address location is hijacked
-        str         r1, [r3]
-        b           LOCAL_LABEL(ClearThreadState)
-
-LOCAL_LABEL(TailCallWasHijacked):
-
-        // Abnormal case where the return address location is now invalid because we ended up here via a tail
-        // call.  In this case, our hijacked return address should be the correct caller of this method.
-        //
-
-        // stick the previous return address in LR as well as in the right spots in our PAL_LIMITED_CONTEXT.
-        mov         lr, r1
-        str         lr, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__LR)]
-        str         lr, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__IP)]
-
-LOCAL_LABEL(ClearThreadState):
-
-        // clear the Thread's hijack state
-        mov         r3, #0
-        str         r3, [r0, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-        str         r3, [r0, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
-
-LOCAL_LABEL(NotHiJacked):
-
-        add         r1, sp, #rsp_offsetof_ExInfo                    // r1 <- ExInfo*
-        mov         r3, #0
-        str         r3, [r1, #OFFSETOF__ExInfo__m_exception] 	      // init the exception object to null
-        mov         r3, #1
-        strb        r3, [r1, #OFFSETOF__ExInfo__m_passNumber]       // init to the first pass
-        mov         r3, #4
-        strb        r3, [r1, #OFFSETOF__ExInfo__m_kind]             // ExKind.RethrowFlag
+        strb        r5, [r1, #OFFSETOF__ExInfo__m_kind]             // ExKind (from r5)
         mov         r3, #0xFFFFFFFF
         str         r3, [r1, #OFFSETOF__ExInfo__m_idxCurClause]
 
@@ -283,12 +198,13 @@ LOCAL_LABEL(NotHiJacked):
         // r1 contains the address of the new ExInfo
         bl          C_FUNC(RhThrowEx)
 
+GLOBAL_LABEL RhpThrowEx2
 GLOBAL_LABEL RhpThrowExact2
 
         // no return
         EMIT_BREAKPOINT
 
-NESTED_END RhpThrowExact, _TEXT
+NESTED_END RhpThrowEx, _TEXT
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////

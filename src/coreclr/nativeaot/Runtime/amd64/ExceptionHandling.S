@@ -80,6 +80,24 @@ NESTED_END RhpThrowHwEx, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
+// RhpThrowExact
+//
+// SUMMARY:  Similar to RhpThrowEx, except that it sets the rethrow flag
+//
+// INPUT:  RDI:  exception object
+//
+// OUTPUT:
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+NESTED_ENTRY RhpThrowExact, _TEXT, NoHandler
+
+        mov     r8d, 4                  // r8d = ExKind.RethrowFlag
+        jmp     LOCAL_LABEL(RhpThrowExImpl)
+
+NESTED_END RhpThrowExact, _TEXT
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
 // RhpThrowEx
 //
 // INPUT:  RDI:  exception object
@@ -88,6 +106,10 @@ NESTED_END RhpThrowHwEx, _TEXT
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
+
+        mov     r8d, 1                  // r8d = ExKind.Throw
+
+LOCAL_LABEL(RhpThrowExImpl):
 
         STACKSIZEOF_ExInfo      = ((SIZEOF__ExInfo + 15) & (~ 15))
         rsp_offsetof_Context    = STACKSIZEOF_ExInfo
@@ -136,7 +158,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
         mov     [rsi + OFFSETOF__ExInfo__m_exception], rdx          // init the exception object to null
         mov     byte ptr [rsi + OFFSETOF__ExInfo__m_passNumber], 1  // init to the first pass
         mov     dword ptr [rsi + OFFSETOF__ExInfo__m_idxCurClause], 0xFFFFFFFF
-        mov     byte ptr [rsi + OFFSETOF__ExInfo__m_kind], 1        // ExKind.Throw
+        mov     byte ptr [rsi + OFFSETOF__ExInfo__m_kind], r8b      // ExKind (from r8b)
 
         // link the ExInfo into the thread's ExInfo chain
         mov     rdx, [rax + OFFSETOF__Thread__m_pExInfoStackHead]
@@ -152,93 +174,12 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
         call    EXTERNAL_C_FUNC(RhThrowEx)
 
 ALTERNATE_ENTRY RhpThrowEx2
-
-        // no return
-        int 3
-
-NESTED_END RhpThrowEx, _TEXT
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// RhpThrowExact
-//
-// SUMMARY:  Similar to RhpThrowEx, except that it sets the rethrow flag
-//
-// INPUT:  RDI:  exception object
-//
-// OUTPUT:
-//
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpThrowExact, _TEXT, NoHandler
-
-        STACKSIZEOF_ExInfo      = ((SIZEOF__ExInfo + 15) & (~ 15))
-        rsp_offsetof_Context    = STACKSIZEOF_ExInfo
-
-        lea     rax, [rsp+8]    // save the RSP of the throw site
-        mov     rsi, [rsp]      // get return address
-
-        xor     rdx, rdx
-        push_register   rdx             // padding
-
-//  struct PAL_LIMITED_CONTEXT
-//  {
-        push_nonvol_reg r15
-        push_nonvol_reg r14
-        push_nonvol_reg r13
-        push_nonvol_reg r12
-        push_register   rdx             // rdx set to 0
-        push_nonvol_reg rbx
-        push_register   rdx             // rax set to 0
-        push_nonvol_reg rbp
-        push_register   rax             // 'faulting' RSP
-        push_register   rsi             // 'faulting' IP
-//  }
-
-        // allocate space for the ExInfo
-        alloc_stack     STACKSIZEOF_ExInfo
-
-        END_PROLOGUE
-
-        mov     rbx, rdi
-        INLINE_GETTHREAD
-        mov     rdi, rbx
-
-        lea                     rbx, [rsp + rsp_offsetof_Context + SIZEOF__PAL_LIMITED_CONTEXT + 0x8]    // rbx <- addr of return address
-
-        // There is runtime C# code that can tail call to RhpThrowExact using a binder intrinsic.  So the return
-        // address could have been hijacked when we were in that C# code and we must remove the hijack and
-        // reflect the correct return address in our exception context record.  The other throw helpers don't
-        // need this because they cannot be tail-called from C#.
-        INLINE_THREAD_UNHIJACK  rax, rcx, rsi        // trashes RCX, RSI
-        mov                     rsi, [rbx]           // rdx <- return address
-        mov                     [rsp + rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__IP], rsi   // set 'faulting' IP after unhijack
-
-        mov     rsi, rsp                                            // rsi <- ExInfo*
-
-        mov     [rsi + OFFSETOF__ExInfo__m_exception], rdx          // init the exception object to null
-        mov     byte ptr [rsi + OFFSETOF__ExInfo__m_passNumber], 1  // init to the first pass
-        mov     dword ptr [rsi + OFFSETOF__ExInfo__m_idxCurClause], 0xFFFFFFFF
-        mov     byte ptr [rsi + OFFSETOF__ExInfo__m_kind], 4        // ExKind.RethrowFlag
-
-        // link the ExInfo into the thread's ExInfo chain
-        mov     rdx, [rax + OFFSETOF__Thread__m_pExInfoStackHead]
-        mov     [rsi + OFFSETOF__ExInfo__m_pPrevExInfo], rdx        // pExInfo->m_pPrevExInfo = m_pExInfoStackHead
-        mov     [rax + OFFSETOF__Thread__m_pExInfoStackHead], rsi   // m_pExInfoStackHead = pExInfo
-
-        // set the exception context field on the ExInfo
-        lea     rdx, [rsp + rsp_offsetof_Context]                   // rdx <- PAL_LIMITED_CONTEXT*
-        mov     [rsi + OFFSETOF__ExInfo__m_pExContext], rdx         // init ExInfo.m_pExContext
-
-        // rdi still contains the exception object
-        // rsi contains the address of the ExInfo
-        call    EXTERNAL_C_FUNC(RhThrowEx)
-
 ALTERNATE_ENTRY RhpThrowExact2
 
         // no return
         int 3
 
-NESTED_END RhpThrowExact, _TEXT
+NESTED_END RhpThrowEx, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
