@@ -15,7 +15,7 @@
 #include "corsym.h"
 
 #include "pedecoder.h"
-#include "../md/inc/stgpool.h"
+#include "stgpool.h"
 
 //---------------------------------------------------------------------------------------
 // Initialize a new CordbModule around a Module in the target.

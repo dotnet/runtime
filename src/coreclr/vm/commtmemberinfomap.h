@@ -97,7 +97,7 @@ public:
             THROWS;
             GC_NOTRIGGER;
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
+            POSTCONDITION(CheckPointer(RETVAL));
         }
         CONTRACT_END;
 
@@ -106,16 +106,8 @@ public:
         {
             // Allocate a new segment
             ULONG cbSegmentSize = max(DefaultSegmentSize, nBytes);
-            SegmentNode* pNewNode = new (nothrow) SegmentNode();
-            if (pNewNode == NULL)
-                RETURN NULL;
-
-            pNewNode->pData = new (nothrow) BYTE[cbSegmentSize];
-            if (pNewNode->pData == NULL)
-            {
-                delete pNewNode;
-                RETURN NULL;
-            }
+            SegmentNode* pNewNode = new SegmentNode();
+            pNewNode->pData = new BYTE[cbSegmentSize];
 
             pNewNode->cbSize = cbSegmentSize;
             pNewNode->cbUsed = 0;
