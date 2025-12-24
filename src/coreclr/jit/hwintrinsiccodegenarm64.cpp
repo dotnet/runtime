@@ -584,7 +584,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert((targetReg != embMaskOp2Reg) || (embMaskOp1Reg == embMaskOp2Reg) ||
                            genIsSameLocalVar(intrinEmbMask.op1, intrinEmbMask.op2));
                     assert(intrin.op3->isContained() || !intrin.op1->IsTrueMask(node->GetSimdBaseType()));
-                    GetEmitter()->emitInsSve_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
+                    return INS_SVE_MOV_OPTS_ZEROING;
                 }
                 else
                 {
@@ -613,10 +613,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (falseReg == embMaskOp1Reg)
                         {
                             // If falseReg value and embMaskOp1Reg value are same, then just mov the value
-                            // to the target.
+                            // to the target unpredicated.
 
-                            GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, embMaskOp1Reg,
-                                                      /* canSkip */ true);
+                            return INS_SVE_MOV_OPTS_UNPRED;
                         }
                         else
                         {
@@ -626,6 +625,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             GetEmitter()->emitInsSve_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, embMaskOp1Reg,
                                                              falseReg, opt);
+                            // embMaskOp1Reg becomes targetReg, then use unpredicated movprfx.
+                            embMaskOp1Reg = targetReg;
+                            return INS_SVE_MOV_OPTS_UNPRED;
                         }
                     }
                     else if (targetReg != embMaskOp1Reg)
@@ -633,10 +635,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         // If target already contains the values of `falseReg`, just merge the lanes from
                         // `embMaskOp1Reg`, again because this is RMW semantics.
 
-                        GetEmitter()->emitInsSve_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg,
-                                                       opt, INS_SCALABLE_OPTS_PREDICATE_MERGE);
+                        return INS_SVE_MOV_OPTS_MERGING;
                     }
                 }
+                return INS_SVE_MOV_OPTS_UNPRED;
             };
 
             switch (intrinEmbMask.numOperands)
@@ -690,6 +692,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // inside ConditionalSelect.
                                 // As such, no need to move the `falseReg` to `targetReg`
                                 // because the predicated instruction will eventually set it.
+                                GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                            embOpt);
                             }
                             else
                             {
@@ -697,8 +701,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                                 // If falseValue is zero, just zero out those lanes of targetReg using `movprfx`
                                 // and /Z
-                                GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, targetReg,
-                                                            opt);
+                                GetEmitter()->emitInsSve_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, targetReg,
+                                                                 embMaskOp1Reg, embOpt, INS_SCALABLE_OPTS_NONE,
+                                                                 INS_SVE_MOV_OPTS_ZEROING);
                             }
                         }
                         else if (emitter::isVectorRegister(embMaskOp1Reg) && (targetReg == embMaskOp1Reg))
@@ -714,25 +719,19 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
                                                           falseReg, opt);
-                            break;
-                        }
-                        else if (HWIntrinsicInfo::IsZeroingMaskedOperation(intrinEmbMask.id))
-                        {
-                            // At this point, target != embMaskOp1Reg != falseReg, so just go ahead
-                            // and move the falseReg unpredicated into targetReg.
-                            // Cannot use movprfx for zeroing mask operations.
-                            GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, falseReg,
-                                                      /* canSkip */ true);
                         }
                         else
                         {
                             // At this point, target != embMaskOp1Reg != falseReg, so just go ahead
                             // and move the falseReg unpredicated into targetReg.
-                            GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, falseReg);
+                            GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, falseReg,
+                                                          embMaskOp1Reg, embOpt);
                         }
                     }
-
-                    GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, embOpt);
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, embOpt);
+                    }
                     break;
                 }
 
@@ -839,18 +838,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     auto emitInsMovPrfxHelper = [&](regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4) {
                         if (hasImmShift)
                         {
-                            HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op2, op2->AsHWIntrinsic(), 2);
+                            int                    numInstrs = (reg1 != reg3) ? 2 : 1;
+                            HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op2, op2->AsHWIntrinsic(), numInstrs);
                             for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                             {
-                                GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, reg1, reg3);
-                                GetEmitter()->emitInsSve_R_R_I(insEmbMask, emitSize, reg1, reg2, helper.ImmValue(),
-                                                               embOpt, sopt);
+                                GetEmitter()->emitInsSve_R_R_R_I(insEmbMask, emitSize, reg1, reg2, reg3,
+                                                                 helper.ImmValue(), embOpt, sopt);
                             }
                         }
                         else
                         {
-                            GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, reg1, reg3);
-                            GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, reg1, reg2, reg4, embOpt, sopt);
+                            GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, reg1, reg2, reg3, reg4, embOpt, sopt);
                         }
                     };
 
@@ -864,17 +862,15 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             case NI_Sve_CreateBreakPropagateMask:
                                 assert((targetReg == embMaskOp2Reg) || (targetReg != embMaskOp1Reg) ||
                                        genIsSameLocalVar(intrinEmbMask.op1, intrinEmbMask.op2));
-                                GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp2Reg,
-                                                          /* canSkip */ true);
-                                emitInsHelper(targetReg, maskReg, embMaskOp1Reg);
+                                GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                              embMaskOp2Reg, embOpt, sopt);
                                 break;
 
                             case NI_Sve_AddSequentialAcross:
                                 assert((targetReg == op1Reg) || (targetReg != embMaskOp2Reg) ||
                                        genIsSameLocalVar(intrinEmbMask.op1, intrinEmbMask.op2));
-                                GetEmitter()->emitIns_Mov(INS_fmov, GetEmitter()->optGetSveElemsize(embOpt), targetReg,
-                                                          embMaskOp1Reg, /* canSkip */ true);
-                                emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
+                                GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                              embMaskOp2Reg, embOpt, sopt);
                                 break;
 
                             case NI_Sve2_AddSaturate:
@@ -903,9 +899,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // These instructions have unpredictable behaviour when using predicated movprfx,
                                 // so the unpredicated variant must be used here.
                                 assert(!intrin.op3->isContained() && falseReg != REG_NA);
-                                GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, embMaskOp1Reg);
-                                GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
-                                                            embOpt, sopt);
+                                GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                              embMaskOp2Reg, embOpt, sopt);
                                 GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
                                                               falseReg, opt);
                                 break;
@@ -915,9 +910,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // TODO-SVE: Optimise away the explicit copying of `embMaskOp1Reg` to `targetReg`.
                                 // For these intrinsics we cannot use movprfx instruction to populate `targetReg` with
                                 // `embMaskOp1Reg`. Thus, we need to perform move before the operation.
-                                GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp1Reg,
-                                                          /* canSkip */ true, INS_OPTS_SCALABLE_S);
-                                emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
+                                GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                              embMaskOp2Reg, embOpt, sopt);
                                 break;
 
                             default:
@@ -931,18 +925,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                     HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op2, op2->AsHWIntrinsic(), 2);
                                     for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                                     {
-                                        GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, maskReg,
-                                                                    embMaskOp1Reg, opt);
-                                        GetEmitter()->emitInsSve_R_R_I(insEmbMask, emitSize, targetReg, maskReg,
-                                                                       helper.ImmValue(), embOpt, sopt);
+                                        GetEmitter()->emitInsSve_R_R_R_I(insEmbMask, emitSize, targetReg, maskReg,
+                                                                         embMaskOp1Reg, helper.ImmValue(), embOpt, sopt,
+                                                                         INS_SVE_MOV_OPTS_ZEROING);
                                     }
                                 }
                                 else
                                 {
-                                    GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, maskReg,
-                                                                embMaskOp1Reg, opt);
-                                    GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
-                                                                embOpt, sopt);
+                                    GetEmitter()->emitInsSve_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg,
+                                                                     embMaskOp1Reg, embMaskOp2Reg, embOpt, sopt,
+                                                                     INS_SVE_MOV_OPTS_ZEROING);
                                 }
                                 break;
                         }
@@ -959,10 +951,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             // For these intrinsics we cannot use movprfx instruction to populate `targetReg` with
                             // `embMaskOp1Reg`. Thus, we need to perform move before the operation, and then "sel" to
                             // select the active lanes.
-                            assert((targetReg != embMaskOp2Reg) || (embMaskOp1Reg == targetReg));
-                            GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp1Reg,
-                                                      /* canSkip */ true, INS_OPTS_SCALABLE_S);
-                            emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
+                            GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                          embMaskOp2Reg, embOpt, sopt);
                             GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
                                                           falseReg, opt);
                         }
@@ -1125,17 +1115,19 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                       emitEmbeddedMaskSetupInstrs() + 1);
                         for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                         {
-                            emitEmbeddedMaskSetup();
-                            GetEmitter()->emitInsSve_R_R_R_I(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
-                                                             helper.ImmValue(), opt);
+                            insSveMovOpts mopt = emitEmbeddedMaskSetup();
+                            GetEmitter()->emitInsSve_R_R_R_R_I(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                               embMaskOp2Reg, helper.ImmValue(), opt,
+                                                               INS_SCALABLE_OPTS_NONE, mopt);
                         }
                     }
                     else
                     {
                         assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id));
-                        emitEmbeddedMaskSetup();
-                        GetEmitter()->emitInsSve_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
-                                                         embMaskOp3Reg, opt);
+                        insSveMovOpts mopt = emitEmbeddedMaskSetup();
+                        GetEmitter()->emitInsSve_R_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                           embMaskOp2Reg, embMaskOp3Reg, opt, INS_SCALABLE_OPTS_NONE,
+                                                           mopt);
                     }
 
                     break;
@@ -1151,9 +1143,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                   emitEmbeddedMaskSetupInstrs() + 1);
                     for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                     {
-                        emitEmbeddedMaskSetup();
-                        GetEmitter()->emitInsSve_R_R_R_R_I(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
-                                                           embMaskOp3Reg, helper.ImmValue(), opt);
+                        insSveMovOpts mopt = emitEmbeddedMaskSetup();
+                        GetEmitter()->emitInsSve_R_R_R_R_R_I(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                             embMaskOp2Reg, embMaskOp3Reg, helper.ImmValue(), opt,
+                                                             INS_SCALABLE_OPTS_NONE, mopt);
                     }
 
                     break;
