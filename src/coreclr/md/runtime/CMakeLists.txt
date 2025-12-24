@@ -10,6 +10,9 @@ set(MDRUNTIME_SOURCES
   mdinternaldisp.cpp
   mdinternalro.cpp
   strongnameinternal.cpp
+  stgpool.cpp
+  stgpooli.cpp
+  stgpoolreadonly.cpp
 )
 
 set(MDRUNTIME_HEADERS
@@ -31,6 +34,8 @@ set(MDRUNTIME_HEADERS
   ../inc/portablepdbmdds.h
   ../inc/portablepdbmdi.h
   ../inc/recordpool.h
+  ../inc/stgpool.h
+  ../inc/stgpooli.h
   metamodelcolumndefs.h
   mdinternaldisp.h
   mdinternalro.h

@@ -7,7 +7,7 @@
 #include "stdafx.h"
 
 #include "corerror.h"
-#include "stgpool.h"
+#include "../inc/stgpool.h"
 
 
 //*****************************************************************************

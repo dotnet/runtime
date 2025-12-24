@@ -16,6 +16,6 @@
 #include "../external.h"
 #include "../export.h"
 
-#include <stgpool.h>
+#include "../inc/stgpool.h"
 #include <metamodelpub.h>
 #include <utilcode.h>

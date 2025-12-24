@@ -20,7 +20,6 @@
 
 // Forward declarations.
 struct ComMethodTable;
-class CDescPool;
 class MethodDesc;
 
 
@@ -56,20 +55,38 @@ struct ComMTMethodProps
 //  TypeLib creation.  Memory is not moved as the heap is expanded, and
 //  all of the allocations are cleaned up in the destructor.
 //*****************************************************************************
-class CDescPool : public StgPool
+class CDescPool
 {
-public:
-    CDescPool() : StgPool()
+private:
+    struct SegmentNode
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
+        SegmentNode* pNext;
+        BYTE* pData;
+        ULONG cbSize;
+        ULONG cbUsed;
+    };
 
-        IfFailThrow(InitNew());
+    SegmentNode* m_pHead;
+    SegmentNode* m_pCurrent;
+    static const ULONG DefaultSegmentSize = 4096;
+
+public:
+    CDescPool() : m_pHead(NULL), m_pCurrent(NULL)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
+    ~CDescPool()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SegmentNode* pNode = m_pHead;
+        while (pNode != NULL)
+        {
+            SegmentNode* pNext = pNode->pNext;
+            delete[] pNode->pData;
+            delete pNode;
+            pNode = pNext;
+        }
     }
 
     // Allocate some bytes from the pool.
@@ -77,39 +94,50 @@ public:
     {
         CONTRACT (BYTE*)
         {
-            DISABLED(THROWS); // Fix when StgPool throws
+            THROWS;
             GC_NOTRIGGER;
             MODE_ANY;
             POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
         CONTRACT_END;
 
-        BYTE *pRslt;
-        if (!Grow(nBytes))
-            RETURN NULL;
-        pRslt = GetNextLocation();
-        SegAllocate(nBytes);
-        RETURN pRslt;
-    }
-
-    // Allocate and clear some bytes.
-    BYTE* AllocZero(ULONG nBytes)
-    {
-        CONTRACT (BYTE*)
+        // Check if current segment has enough space
+        if (m_pCurrent == NULL || (m_pCurrent->cbSize - m_pCurrent->cbUsed) < nBytes)
         {
-            DISABLED(THROWS);   // Fix when StgPool throws
-            GC_NOTRIGGER;
-            MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-        }
-        CONTRACT_END;
+            // Allocate a new segment
+            ULONG cbSegmentSize = max(DefaultSegmentSize, nBytes);
+            SegmentNode* pNewNode = new (nothrow) SegmentNode();
+            if (pNewNode == NULL)
+                RETURN NULL;
 
-        BYTE *pRslt = Alloc(nBytes);
-        if (pRslt)
-            memset(pRslt, 0, nBytes);
-        RETURN pRslt;
+            pNewNode->pData = new (nothrow) BYTE[cbSegmentSize];
+            if (pNewNode->pData == NULL)
+            {
+                delete pNewNode;
+                RETURN NULL;
+            }
+
+            pNewNode->cbSize = cbSegmentSize;
+            pNewNode->cbUsed = 0;
+            pNewNode->pNext = NULL;
+
+            // Add to the list
+            if (m_pHead == NULL)
+            {
+                m_pHead = pNewNode;
+            }
+            else
+            {
+                m_pCurrent->pNext = pNewNode;
+            }
+            m_pCurrent = pNewNode;
+        }
+
+        BYTE* pResult = m_pCurrent->pData + m_pCurrent->cbUsed;
+        m_pCurrent->cbUsed += nBytes;
+        RETURN pResult;
     }
-}; // class CDescPool : public StgPool
+}; // class CDescPool
 
 
 
