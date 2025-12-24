@@ -16,6 +16,7 @@
 
 #include "pedecoder.h"
 #include "stgpool.h"
+#include "memorystreams.h"
 
 //---------------------------------------------------------------------------------------
 // Initialize a new CordbModule around a Module in the target.

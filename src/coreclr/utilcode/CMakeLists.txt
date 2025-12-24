@@ -22,6 +22,7 @@ set(UTILCODE_COMMON_SOURCES
   comex.cpp
   guidfromname.cpp
   memorypool.cpp
+  memorystreams.cpp
   loaderheap.cpp
   interleavedloaderheap.cpp
   loaderheap_shared.cpp

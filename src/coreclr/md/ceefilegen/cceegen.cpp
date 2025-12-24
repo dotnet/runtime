@@ -8,6 +8,7 @@
 
 #include "corerror.h"
 #include "stgpool.h"
+#include <memorystreams.h>
 
 
 //*****************************************************************************

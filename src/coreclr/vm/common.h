@@ -234,7 +234,7 @@ namespace Loader
 #include "utilcode.h"
 #include "log.h"
 #include "loaderheap.h"
-#include "../md/inc/stgpool.h"  // For CGrowableStream used in ceeload.h
+#include "memorystreams.h"  // For CGrowableStream used in ceeload.h
 
 // src/vm
 #include "gcenv.interlocked.h"
