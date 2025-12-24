@@ -61,17 +61,17 @@ private:
     struct SegmentNode
     {
         SegmentNode* pNext;
-        BYTE* pData;
-        ULONG cbSize;
-        ULONG cbUsed;
+        BYTE data[1];
     };
 
-    SegmentNode* m_pHead;
     SegmentNode* m_pCurrent;
-    static const ULONG DefaultSegmentSize = 4096;
+    ULONG m_cbUsed;
+    ULONG m_cbSize;
+        
+    static const ULONG DefaultSegmentSize = 4096 - sizeof(SegmentNode*);
 
 public:
-    CDescPool() : m_pHead(NULL), m_pCurrent(NULL)
+    CDescPool() : m_pCurrent(NULL), m_cbUsed(0), m_cbSize(0)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -79,12 +79,11 @@ public:
     ~CDescPool()
     {
         LIMITED_METHOD_CONTRACT;
-        SegmentNode* pNode = m_pHead;
+        SegmentNode* pNode = m_pCurrent;
         while (pNode != NULL)
         {
             SegmentNode* pNext = pNode->pNext;
-            delete[] pNode->pData;
-            delete pNode;
+            delete[] reinterpret_cast<BYTE*>(pNode);
             pNode = pNext;
         }
     }
@@ -102,31 +101,21 @@ public:
         CONTRACT_END;
 
         // Check if current segment has enough space
-        if (m_pCurrent == NULL || (m_pCurrent->cbSize - m_pCurrent->cbUsed) < nBytes)
+        if (m_pCurrent == NULL || (m_cbSize - m_cbUsed) < nBytes)
         {
             // Allocate a new segment
             ULONG cbSegmentSize = max(DefaultSegmentSize, nBytes);
-            SegmentNode* pNewNode = new SegmentNode();
-            pNewNode->pData = new BYTE[cbSegmentSize];
+            BYTE* pBuffer = new BYTE[sizeof(SegmentNode*) + cbSegmentSize];
+            SegmentNode* pNewNode = reinterpret_cast<SegmentNode*>(pBuffer);
 
-            pNewNode->cbSize = cbSegmentSize;
-            pNewNode->cbUsed = 0;
-            pNewNode->pNext = NULL;
-
-            // Add to the list
-            if (m_pHead == NULL)
-            {
-                m_pHead = pNewNode;
-            }
-            else
-            {
-                m_pCurrent->pNext = pNewNode;
-            }
+            pNewNode->pNext = m_pCurrent;
             m_pCurrent = pNewNode;
+            m_cbSize = cbSegmentSize;
+            m_cbUsed = 0;
         }
 
-        BYTE* pResult = m_pCurrent->pData + m_pCurrent->cbUsed;
-        m_pCurrent->cbUsed += nBytes;
+        BYTE* pResult = m_pCurrent->data + m_cbUsed;
+        m_cbUsed += nBytes;
         RETURN pResult;
     }
 }; // class CDescPool

@@ -18,6 +18,7 @@
 #include "olevariant.h"
 #include "ilmarshalers.h"
 #include "interoputil.h"
+#include "../md/inc/stgpooli.h"  // For CPackedLen
 
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"

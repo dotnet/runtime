@@ -6,6 +6,10 @@
 
 #include "corpriv.h"					// for IMDInternalImport
 
+#ifdef _DEBUG
+#include "../md/debug_metadata.h"   // for Debug_ReportError
+#endif
+
 // ILDASM code doesn't memcpy on gc pointers, so it prefers the real
 // memcpy rather than GCSafeMemCpy.
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
