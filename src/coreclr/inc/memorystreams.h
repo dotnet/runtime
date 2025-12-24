@@ -10,7 +10,7 @@
 #ifndef __MemoryStreams_h__
 #define __MemoryStreams_h__
 
-#include "memoryrange.h"
+#include <objidl.h>
 
 // Forward declaration for cdac_data
 template<typename T> struct cdac_data;
@@ -28,7 +28,7 @@ public:
         m_cbCurrent(0),
         m_cRef(1),
         m_dataCopy(NULL)
-    { LIMITED_METHOD_CONTRACT; }
+    { }
 
     virtual ~CInMemoryStream() {}
 
@@ -36,15 +36,12 @@ public:
         void        *pMem,
         ULONG       cbSize)
     {
-        LIMITED_METHOD_CONTRACT;
-
         m_pMem = pMem;
         m_cbSize = cbSize;
         m_cbCurrent = 0;
     }
 
     ULONG STDMETHODCALLTYPE AddRef() {
-        LIMITED_METHOD_CONTRACT;
         return InterlockedIncrement(&m_cRef);
     }
 
@@ -66,10 +63,7 @@ public:
     __checkReturn
     HRESULT STDMETHODCALLTYPE SetSize(ULARGE_INTEGER libNewSize)
     {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FAULT; //E_OUTOFMEMORY;
-
-        return (BadError(E_NOTIMPL));
+        return (E_NOTIMPL);
     }
 
     __checkReturn
@@ -83,19 +77,13 @@ public:
     HRESULT STDMETHODCALLTYPE Commit(
         DWORD       grfCommitFlags)
     {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FAULT; //E_OUTOFMEMORY;
-
-        return (BadError(E_NOTIMPL));
+        return (E_NOTIMPL);
     }
 
     __checkReturn
     HRESULT STDMETHODCALLTYPE Revert()
     {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FAULT; //E_OUTOFMEMORY;
-
-        return (BadError(E_NOTIMPL));
+        return (E_NOTIMPL);
     }
 
     __checkReturn
@@ -104,10 +92,7 @@ public:
         ULARGE_INTEGER cb,
         DWORD       dwLockType)
     {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FAULT; //E_OUTOFMEMORY;
-
-        return (BadError(E_NOTIMPL));
+        return (E_NOTIMPL);
     }
 
     __checkReturn
@@ -116,10 +101,7 @@ public:
         ULARGE_INTEGER cb,
         DWORD       dwLockType)
     {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FAULT; //E_OUTOFMEMORY;
-
-        return (BadError(E_NOTIMPL));
+        return (E_NOTIMPL);
     }
 
     __checkReturn
@@ -127,9 +109,6 @@ public:
         STATSTG     *pstatstg,
         DWORD       grfStatFlag)
     {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FAULT; //E_OUTOFMEMORY;
-
         pstatstg->cbSize.QuadPart = m_cbSize;
         return (S_OK);
     }
@@ -138,10 +117,7 @@ public:
     HRESULT STDMETHODCALLTYPE Clone(
         IStream     **ppstm)
     {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_FAULT; //E_OUTOFMEMORY;
-
-        return (BadError(E_NOTIMPL));
+        return (E_NOTIMPL);
     }
 
     __checkReturn
@@ -173,8 +149,7 @@ private:
 // use this.
 //*****************************************************************************
 
-// DPTR instead of VPTR because we don't actually call any of the virtuals.
-typedef DPTR(class CGrowableStream) PTR_CGrowableStream;
+#ifndef DACCESS_COMPILE
 
 class CGrowableStream : public IStream
 {
@@ -189,24 +164,21 @@ public:
     //   increased memory usage.
     CGrowableStream(float multiplicativeGrowthRate = 2.0, DWORD additiveGrowthRate = 4096);
 
-#ifndef DACCESS_COMPILE
     virtual ~CGrowableStream();
-#endif
 
     // Expose the total raw buffer.
-    // This can be used by DAC to get the raw contents.
-    // This becomes potentiallyinvalid on the next call on the class, because the underlying storage can be
+    // This can be used to get the raw contents.
+    // This becomes potentially invalid on the next call on the class, because the underlying storage can be
     // reallocated.
-    MemoryRange GetRawBuffer() const
+    void GetRawBuffer(BYTE **ppbBuffer, DWORD *pcbSize) const
     {
-        SUPPORTS_DAC;
-        PTR_VOID p = m_swBuffer;
-        return MemoryRange(p, m_dwBufferSize);
+        *ppbBuffer = m_swBuffer;
+        *pcbSize = m_dwBufferSize;
     }
 
 private:
     // Raw pointer to buffer. This may change as the buffer grows and gets reallocated.
-    PTR_BYTE  m_swBuffer;
+    BYTE  *m_swBuffer;
 
     // Total size of the buffer in bytes.
     DWORD   m_dwBufferSize;
@@ -231,9 +203,7 @@ private:
     // IStream methods
 public:
 
-#ifndef DACCESS_COMPILE
     ULONG STDMETHODCALLTYPE AddRef() {
-        LIMITED_METHOD_CONTRACT;
         return InterlockedIncrement(&m_cRef);
     }
 
@@ -264,22 +234,22 @@ public:
          IStream * pstm,
          ULARGE_INTEGER cb,
          ULARGE_INTEGER * pcbRead,
-         ULARGE_INTEGER * pcbWritten) { STATIC_CONTRACT_NOTHROW; STATIC_CONTRACT_FAULT; return E_NOTIMPL; }
+         ULARGE_INTEGER * pcbWritten) { return E_NOTIMPL; }
 
     STDMETHOD(Commit)(
-         DWORD grfCommitFlags) { STATIC_CONTRACT_NOTHROW; STATIC_CONTRACT_FAULT; return NOERROR; }
+         DWORD grfCommitFlags) { return NOERROR; }
 
-    STDMETHOD(Revert)( void) {STATIC_CONTRACT_NOTHROW; STATIC_CONTRACT_FAULT;  return E_NOTIMPL; }
+    STDMETHOD(Revert)( void) { return E_NOTIMPL; }
 
     STDMETHOD(LockRegion)(
          ULARGE_INTEGER libOffset,
          ULARGE_INTEGER cb,
-         DWORD dwLockType) { STATIC_CONTRACT_NOTHROW; STATIC_CONTRACT_FAULT; return E_NOTIMPL; }
+         DWORD dwLockType) { return E_NOTIMPL; }
 
     STDMETHOD(UnlockRegion)(
          ULARGE_INTEGER libOffset,
          ULARGE_INTEGER cb,
-         DWORD dwLockType) {STATIC_CONTRACT_NOTHROW; STATIC_CONTRACT_FAULT;   return E_NOTIMPL; }
+         DWORD dwLockType) { return E_NOTIMPL; }
 
     STDMETHOD(Stat)(
          STATSTG * pstatstg,
@@ -288,17 +258,8 @@ public:
     // Make a deep copy of the stream into a new CGrowableStream instance
     STDMETHOD(Clone)(
          IStream ** ppstm);
-
-#endif // DACCESS_COMPILE
-
-    friend struct cdac_data<CGrowableStream>;
 }; // class CGrowableStream
 
-template<>
-struct cdac_data<CGrowableStream>
-{
-    static constexpr size_t Buffer = offsetof(CGrowableStream, m_swBuffer);
-    static constexpr size_t Size = offsetof(CGrowableStream, m_dwBufferSize);
-};
+#endif // !DACCESS_COMPILE
 
 #endif // __MemoryStreams_h__
