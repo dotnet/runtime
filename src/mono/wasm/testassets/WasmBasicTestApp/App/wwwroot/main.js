@@ -21,10 +21,7 @@ function countChars(str) {
 }
 
 // Prepare base runtime parameters
-dotnet
-    .withElementOnExit()
-    .withExitCodeLogging()
-    .withExitOnUnhandledError();
+dotnet.withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true });
 
 const logLevel = params.get("MONO_LOG_LEVEL");
 const logMask = params.get("MONO_LOG_MASK");
@@ -115,7 +112,7 @@ switch (testCase) {
         break;
     case "InterpPgoTest":
         dotnet
-            .withConsoleForwarding()
+            .withConfig({ forwardConsole: true })
             .withRuntimeOptions(['--interp-pgo-logging'])
             .withInterpreterPgo(true);
         break;

@@ -1517,6 +1517,19 @@ void Interval::setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l
 }
 
 //------------------------------------------------------------------------
+// GetCompiler: Get the compiler field.
+//
+// Bridges the field naming difference for common RA code.
+//
+// Return Value:
+//    The 'this->compiler' field.
+//
+Compiler* LinearScan::GetCompiler() const
+{
+    return compiler;
+}
+
+//------------------------------------------------------------------------
 // LinearScan:identifyCandidatesExceptionDataflow: Build the set of variables exposed on EH flow edges
 //
 // Notes:
@@ -1573,148 +1586,6 @@ void LinearScan::identifyCandidatesExceptionDataflow()
         }
     }
 #endif
-}
-
-bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
-{
-    if (!enregisterLocalVars)
-    {
-        return false;
-    }
-    assert(compiler->compEnregLocals());
-
-    if (!varDsc->lvTracked)
-    {
-        return false;
-    }
-
-#if !defined(TARGET_64BIT)
-    if (varDsc->lvType == TYP_LONG)
-    {
-        // Long variables should not be register candidates.
-        // Lowering will have split any candidate lclVars into lo/hi vars.
-        return false;
-    }
-#endif // !defined(TARGET_64BIT)
-
-    // If we have JMP, reg args must be put on the stack
-
-    if (compiler->compJmpOpUsed && varDsc->lvIsRegArg)
-    {
-        return false;
-    }
-
-    // Don't allocate registers for dependently promoted struct fields
-    if (compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc))
-    {
-        return false;
-    }
-
-    // Don't enregister if the ref count is zero.
-    if (varDsc->lvRefCnt() == 0)
-    {
-        varDsc->setLvRefCntWtd(0);
-        return false;
-    }
-
-    // Variables that are address-exposed are never enregistered, or tracked.
-    // A struct may be promoted, and a struct that fits in a register may be fully enregistered.
-    // Pinned variables may not be tracked (a condition of the GCInfo representation)
-    // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
-    // references when using the general GC encoding.
-    unsigned lclNum = compiler->lvaGetLclNum(varDsc);
-    if (varDsc->IsAddressExposed() || !varDsc->IsEnregisterableType() ||
-        (!compiler->compEnregStructLocals() && (varDsc->lvType == TYP_STRUCT)))
-    {
-#ifdef DEBUG
-        DoNotEnregisterReason dner;
-        if (varDsc->IsAddressExposed())
-        {
-            dner = DoNotEnregisterReason::AddrExposed;
-        }
-        else if (!varDsc->IsEnregisterableType())
-        {
-            dner = DoNotEnregisterReason::NotRegSizeStruct;
-        }
-        else
-        {
-            dner = DoNotEnregisterReason::DontEnregStructs;
-        }
-#endif // DEBUG
-        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(dner));
-        return false;
-    }
-    else if (varDsc->lvPinned)
-    {
-        varDsc->lvTracked = 0;
-#ifdef JIT32_GCENCODER
-        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
-#endif // JIT32_GCENCODER
-        return false;
-    }
-
-    //  Are we not optimizing and we have exception handlers?
-    //   if so mark all args and locals as volatile, so that they
-    //   won't ever get enregistered.
-    //
-    if (compiler->opts.MinOpts() && compiler->compHndBBtabCount > 0)
-    {
-        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-    }
-
-    if (varDsc->lvDoNotEnregister)
-    {
-        return false;
-    }
-
-    switch (genActualType(varDsc->TypeGet()))
-    {
-        case TYP_FLOAT:
-        case TYP_DOUBLE:
-            return !compiler->opts.compDbgCode;
-
-        case TYP_INT:
-        case TYP_LONG:
-        case TYP_REF:
-        case TYP_BYREF:
-            break;
-
-#ifdef FEATURE_SIMD
-        case TYP_SIMD8:
-        case TYP_SIMD12:
-        case TYP_SIMD16:
-#if defined(TARGET_XARCH)
-        case TYP_SIMD32:
-        case TYP_SIMD64:
-#endif // TARGET_XARCH
-#ifdef FEATURE_MASKED_HW_INTRINSICS
-        case TYP_MASK:
-#endif // FEATURE_MASKED_HW_INTRINSICS
-        {
-            return !varDsc->lvPromoted;
-        }
-#endif // FEATURE_SIMD
-
-        case TYP_STRUCT:
-        {
-            // TODO-1stClassStructs: support vars with GC pointers. The issue is that such
-            // vars will have `lvMustInit` set, because emitter has poor support for struct liveness,
-            // but if the variable is tracked the prolog generator would expect it to be in liveIn set,
-            // so an assert in `genFnProlog` will fire.
-            return compiler->compEnregStructLocals() && !varDsc->HasGCPtr();
-        }
-
-        case TYP_UNDEF:
-        case TYP_UNKNOWN:
-            noway_assert(!"lvType not set correctly");
-            varDsc->lvType = TYP_INT;
-            return false;
-
-        default:
-            return false;
-    }
-
-    return true;
 }
 
 template void LinearScan::identifyCandidates<true>();
