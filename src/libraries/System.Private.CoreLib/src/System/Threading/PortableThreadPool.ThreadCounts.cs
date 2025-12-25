@@ -60,7 +60,7 @@ namespace System.Threading
             }
 
             /// <summary>
-            /// Tries to increases the number of threads processing work items by one.
+            /// Tries to increase the number of threads processing work items by one.
             /// If at or above goal, returns false and sets overflow flag instead.
             /// NOTE: only if "true" is returned the NumProcessingWork is incremented.
             /// </summary>
@@ -82,7 +82,7 @@ namespace System.Threading
             }
 
             /// <summary>
-            /// Tries to reduces the number of threads processing work items by one.
+            /// Tries to reduce the number of threads processing work items by one.
             /// If in an overflow state, clears the overflow flag and returns false.
             /// NOTE: only if "true" is returned the NumProcessingWork is decremented.
             /// </summary>
