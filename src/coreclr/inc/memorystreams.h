@@ -12,6 +12,10 @@
 
 #include <objidl.h>
 
+#ifdef DACCESS_COMPILE
+#include "daccess.h"
+#endif
+
 // Forward declaration for cdac_data
 template<typename T> struct cdac_data;
 
@@ -148,6 +152,17 @@ private:
 // fast. A grow does a realloc, so be aware of that if you're going to
 // use this.
 //*****************************************************************************
+
+// Forward declaration for DAC
+class CGrowableStream;
+
+#ifdef DACCESS_COMPILE
+// DPTR typedef for DAC access
+typedef DPTR(class CGrowableStream) PTR_CGrowableStream;
+#else
+// For non-DAC builds, PTR_CGrowableStream is just a regular pointer
+typedef CGrowableStream* PTR_CGrowableStream;
+#endif
 
 #ifndef DACCESS_COMPILE
 
