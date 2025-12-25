@@ -234,7 +234,7 @@ namespace System.Threading
             public Counts InterlockedIncrementSignalCount()
             {
                 var countsAfterUpdate = new Counts(Interlocked.Add(ref _data, 1ul << SignalCountShift));
-                Debug.Assert(countsAfterUpdate.SignalCount != ushort.MaxValue); // underflow check
+                Debug.Assert(countsAfterUpdate.SignalCount != ushort.MaxValue); // overflow check
                 return countsAfterUpdate;
             }
 
@@ -264,7 +264,7 @@ namespace System.Threading
             public void InterlockedDecrementWaiterCount()
             {
                 var countsAfterUpdate = new Counts(Interlocked.Add(ref _data, unchecked((ulong)-1) << WaiterCountShift));
-                Debug.Assert(countsAfterUpdate.WaiterCount != ushort.MaxValue); // overflow check
+                Debug.Assert(countsAfterUpdate.WaiterCount != ushort.MaxValue); // underflow check
             }
 
             public ushort CountOfWaitersSignaledToWake
