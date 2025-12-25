@@ -4,14 +4,10 @@
 /***
 *tsplitpath_s.inl - general implementation of _tsplitpath_s
 *
-
-*
 *Purpose:
 *       This file contains the general algorithm for _splitpath_s and its variants.
-*
 *******************************************************************************/
 
-_FUNC_PROLOGUE
 errno_t __cdecl _FUNC_NAME(
     _In_z_ const _CHAR *_Path,
     _Out_writes_opt_z_(_DriveSize) _CHAR *_Drive, _In_ size_t _DriveSize,

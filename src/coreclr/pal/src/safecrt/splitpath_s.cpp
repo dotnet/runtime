@@ -4,12 +4,9 @@
 /***
 *splitpath_s.c - break down path name into components
 *
-
-*
 *Purpose:
 *   To provide support for accessing the individual components of an
 *   arbitrary path name
-*
 *******************************************************************************/
 
 #include <string.h>
@@ -19,7 +16,6 @@
 
 #include "mbusafecrt_internal.h"
 
-#define _FUNC_PROLOGUE
 #define _FUNC_NAME _splitpath_s
 #define _CHAR char
 #define _TCSNCPY_S strncpy_s

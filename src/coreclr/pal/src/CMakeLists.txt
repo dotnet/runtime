@@ -176,7 +176,6 @@ set(SOURCES
   objmgr/palobjbase.cpp
   objmgr/listedobject.cpp
   objmgr/listedobjectmanager.cpp
-  safecrt/makepath_s.cpp
   safecrt/memcpy_s.cpp
   safecrt/memmove_s.cpp
   safecrt/mbusafecrt.cpp

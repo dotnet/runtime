@@ -4,14 +4,10 @@
 /***
 *   mbusafecrt.h - public declarations for SafeCRT lib
 *
-
-*
 *   Purpose:
 *       This file contains the public declarations SafeCRT
 *       functions ported to MacOS. These are the safe versions of
 *       functions standard functions banned by SWI
-*
-
 ****/
 
 /* shields! */
@@ -65,7 +61,6 @@ extern int vsprintf_s( char* string, size_t sizeInBytes, const char* format, va_
 extern int _vsnprintf_s( char* string, size_t sizeInBytes, size_t count, const char* format, va_list arglist );
 
 extern int sscanf_s( const char *string, const char *format, ... );
-extern int swscanf_s( const WCHAR *string, const WCHAR *format, ... );
 
 extern errno_t memcpy_s( void * dst, size_t sizeInBytes, const void * src, size_t count );
 extern errno_t memmove_s( void * dst, size_t sizeInBytes, const void * src, size_t count );

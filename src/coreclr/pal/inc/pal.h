@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     pal.h
 
 Abstract:
-
     CoreCLR Platform Adaptation Layer (PAL) header file.  This file
     defines all types and API calls required by the CoreCLR when
     compiled for Unix-like systems.
@@ -27,7 +24,6 @@ Abstract:
 
     If you want to add a PAL_ wrapper function to a native function in
     here, you also need to edit palinternal.h and win32pal.h.
-
 --*/
 
 #ifndef __PAL_H__
@@ -3445,16 +3441,6 @@ VOID
 PALAPI
 GetSystemInfo(
           OUT LPSYSTEM_INFO lpSystemInfo);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_SetCurrentThreadAffinity(WORD procNo);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 
 //
 // The types of events that can be logged.
