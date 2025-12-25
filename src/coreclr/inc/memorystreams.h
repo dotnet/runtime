@@ -153,16 +153,8 @@ private:
 // use this.
 //*****************************************************************************
 
-// Forward declaration for DAC
-class CGrowableStream;
-
-#ifdef DACCESS_COMPILE
-// DPTR typedef for DAC access
+// DPTR instead of VPTR because we don't actually call any of the virtuals.
 typedef DPTR(class CGrowableStream) PTR_CGrowableStream;
-#else
-// For non-DAC builds, PTR_CGrowableStream is just a regular pointer
-typedef CGrowableStream* PTR_CGrowableStream;
-#endif
 
 #ifndef DACCESS_COMPILE
 
