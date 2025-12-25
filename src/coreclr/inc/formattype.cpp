@@ -8,10 +8,6 @@
 /******************************************************************************/
 #include "formattype.h"
 
-#ifdef _DEBUG
-#include "../md/debug_metadata.h"   // for Debug_ReportError
-#endif
-
 /******************************************************************************/
 char* asString(CQuickBytes *out) {
     CONTRACTL
@@ -738,10 +734,6 @@ PCCOR_SIGNATURE PrettyPrintType(
                 str = " modreq(";
             ADDCLASSTOCMOD:
                 typePtr += CorSigUncompressToken(typePtr, &tk);
-                if (IsNilToken(tk))
-                {
-                    Debug_ReportError("Nil token in custom modifier");
-                }
                 tmp.Shrink(0);
                 appendStr(&tmp, KEYWORD((char*)str));
                 PrettyPrintClass(&tmp, tk, pIMDI);
