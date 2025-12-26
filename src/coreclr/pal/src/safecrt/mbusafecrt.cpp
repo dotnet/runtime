@@ -16,19 +16,6 @@
 
 #include "mbusafecrt_internal.h"
 
-/* global data */
-tSafeCRT_AssertFuncPtr sMBUSafeCRTAssertFunc = NULL;
-
-/***
-*   MBUSafeCRTSetAssertFunc - Set the function called when an assert fails.
-****/
-
-void MBUSafeCRTSetAssertFunc( tSafeCRT_AssertFuncPtr inAssertFuncPtr )
-{
-    /* set it */
-    sMBUSafeCRTAssertFunc = inAssertFuncPtr;
-}
-
 /***
 *   _getc_nolock - getc for the miniFILE stream.
 ****/

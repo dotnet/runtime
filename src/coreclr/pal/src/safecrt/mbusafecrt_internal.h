@@ -52,8 +52,6 @@ typedef __builtin_va_list va_list;
 
 #define CASSERT(p) extern int sanity_check_dummy[1+((!(p))*(-2))];
 
-extern tSafeCRT_AssertFuncPtr sMBUSafeCRTAssertFunc;
-
 typedef struct miniFILE_struct
 {
     char* _ptr;

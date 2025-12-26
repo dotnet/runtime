@@ -30,9 +30,6 @@ typedef int errno_t;
     extern "C" {
 #endif
 
-typedef void ( *tSafeCRT_AssertFuncPtr )( const char* inExpression, const char* inComment, const char* inFile, const unsigned long inLineNum );
-void MBUSafeCRTSetAssertFunc( tSafeCRT_AssertFuncPtr inAssertFuncPtr );
-
 extern errno_t strcat_s( char* ioDest, size_t inDestBufferSize, const char* inSrc );
 extern errno_t wcscat_s( WCHAR* ioDest, size_t inDestBufferSize, const WCHAR* inSrc );
 
@@ -44,14 +41,10 @@ extern errno_t wcscpy_s( WCHAR* outDest, size_t inDestBufferSize, const WCHAR* i
 
 extern errno_t strncpy_s( char* outDest, size_t inDestBufferSize, const char* inSrc, size_t inCount );
 extern errno_t wcsncpy_s( WCHAR* outDest, size_t inDestBufferSize, const WCHAR* inSrc, size_t inCount );
-extern errno_t wcsncpy_s( WCHAR* outDest, size_t inDestBufferSize, const WCHAR* inSrc, size_t inCount );
 
 extern size_t PAL_wcsnlen( const WCHAR* inString, size_t inMaxSize );
 
-extern errno_t _makepath_s( char* outDest, size_t inDestBufferSize, const char* inDrive, const char* inDirectory, const char* inFilename, const char* inExtension );
 extern errno_t _wmakepath_s( WCHAR* outDest, size_t inDestBufferSize, const WCHAR* inDrive, const WCHAR* inDirectory, const WCHAR* inFilename, const WCHAR* inExtension );
-
-extern errno_t _splitpath_s( const char* inPath, char* outDrive, size_t inDriveSize, char* outDirectory, size_t inDirectorySize, char* outFilename, size_t inFilenameSize, char* outExtension, size_t inExtensionSize );
 
 extern int sprintf_s( char *string, size_t sizeInBytes, const char *format, ... );
 
