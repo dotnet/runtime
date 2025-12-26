@@ -14,8 +14,9 @@
 
 #include "daccess.h"
 
-// Forward declaration for cdac_data
+// Forward declarations
 template<typename T> struct cdac_data;
+class MemoryRange;
 
 //*****************************************************************************
 // CInMemoryStream is a simple IStream implementation that provides
@@ -180,6 +181,9 @@ public:
         *ppbBuffer = m_swBuffer;
         *pcbSize = m_dwBufferSize;
     }
+
+    // Returns a MemoryRange for the raw buffer (for DAC and VM usage)
+    MemoryRange GetRawBuffer() const;
 
 private:
     // Raw pointer to buffer. This may change as the buffer grows and gets reallocated.
