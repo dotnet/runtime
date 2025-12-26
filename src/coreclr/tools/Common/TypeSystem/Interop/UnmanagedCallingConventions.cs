@@ -103,7 +103,7 @@ namespace Internal.TypeSystem
         {
             Debug.Assert(method.IsPInvoke);
 
-            UnmanagedCallingConventions result;
+            UnmanagedCallingConventions result = 0;
 
             if (method is Internal.IL.Stubs.PInvokeTargetNativeMethod pinvokeTarget)
                 method = pinvokeTarget.Target;

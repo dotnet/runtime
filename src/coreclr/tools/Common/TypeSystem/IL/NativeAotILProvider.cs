@@ -22,6 +22,11 @@ namespace Internal.IL
             // methods that are treated specially by the codegen.
 
             Debug.Assert(method.IsRuntimeImplemented);
+            
+            if (method.IsAsync)
+            {
+                ThrowHelper.ThrowBadImageFormatException();
+            }
 
             TypeDesc owningType = method.OwningType;
 
