@@ -405,6 +405,7 @@ namespace System.Buffers
                     return true;
                 }
 
+                // Reset 2 bits because each ushort match sets 2 consecutive bits in the byte mask
                 mask = BitOperations.ResetLowestSetBit(BitOperations.ResetLowestSetBit(mask));
             }
             while (mask != 0);
@@ -434,6 +435,7 @@ namespace System.Buffers
                     return true;
                 }
 
+                // Reset 2 bits because each ushort match sets 2 consecutive bits in the byte mask
                 mask = BitOperations.ResetLowestSetBit(BitOperations.ResetLowestSetBit(mask));
             }
             while (mask != 0);
