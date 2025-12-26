@@ -1735,17 +1735,13 @@ OBJECTHANDLE SyncBlock::GetOrCreateLock(OBJECTREF lockObj)
 
     // We'll likely need to put this lock object into the sync block.
     // Create the handle here.
-    OBJECTHANDLE lockHandle = GetAppDomain()->CreateHandle(lockObj);
+    OBJECTHANDLEHolder lockHandle = GetAppDomain()->CreateHandle(lockObj);
 
-    if (TryUpgradeThinLockToFullLock(lockHandle))
+    if (TryUpgradeThinLockToFullLock(lockHandle.GetValue()))
     {
         // Our lock instance is the one in the sync block now.
-        return lockHandle;
+        return lockHandle.Extract();
     }
-
-    // Another thread beat us to the upgrade.
-    // Delete our GC handle.
-    DestroyHandle(lockHandle);
 
     return VolatileLoad(&m_Lock);
 }
