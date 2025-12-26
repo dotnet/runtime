@@ -53,10 +53,10 @@ namespace System.Linq
 
             public override void Dispose()
             {
-                if (_enumerator is not null)
+                if (_enumerator is { } e)
                 {
-                    _enumerator.Dispose();
                     _enumerator = null;
+                    e.Dispose();
                 }
 
                 base.Dispose();
