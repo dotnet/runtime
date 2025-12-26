@@ -210,7 +210,7 @@ ASN1_OBJECT* CryptoNative_GetX509PublicKeyAlgorithm(X509* x509)
 
     if (x509)
     {
-        X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
+        const X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
         ASN1_OBJECT* algOid;
 
         if (pubkey && X509_PUBKEY_get0_param(&algOid, NULL, NULL, NULL, pubkey))
@@ -272,7 +272,7 @@ int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, i
         return 0;
     }
 
-    X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
+    const X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
 
     if (!pubkey)
     {
@@ -324,7 +324,7 @@ Return values:
 NULL if the public key cannot be determined, a pointer to the ASN1_BIT_STRING structure representing
 the public key.
 */
-ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509)
+const ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509)
 {
     // No error queue impact.
 
