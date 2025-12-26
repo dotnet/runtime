@@ -210,7 +210,12 @@ ASN1_OBJECT* CryptoNative_GetX509PublicKeyAlgorithm(X509* x509)
 
     if (x509)
     {
-        const X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+        // In OpenSSL 4.0 this is const X509_PUBKEY*. OpenSSL 1.1.1's X509_PUBKEY_get0_param
+        // does not accept a const X509_PUBKEY*.
+        X509_PUBKEY* pubkey = (X509_PUBKEY*)X509_get_X509_PUBKEY(x509);
+#pragma clang diagnostic pop
         ASN1_OBJECT* algOid;
 
         if (pubkey && X509_PUBKEY_get0_param(&algOid, NULL, NULL, NULL, pubkey))
@@ -272,7 +277,12 @@ int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, i
         return 0;
     }
 
-    const X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+        // In OpenSSL 4.0 this is const X509_PUBKEY*. OpenSSL 1.1.1's X509_PUBKEY_get0_param
+        // does not accept a const X509_PUBKEY*.
+        X509_PUBKEY* pubkey = (X509_PUBKEY*)X509_get_X509_PUBKEY(x509);
+#pragma clang diagnostic pop
 
     if (!pubkey)
     {
