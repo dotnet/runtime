@@ -80,6 +80,28 @@ namespace System.Buffers
             }
         }
 
+        /// <summary>
+        /// For a two-string search, we only need one additional anchor character per string (the first character is always used).
+        /// </summary>
+        public static int GetSecondCharacterOffset(string value, bool ignoreCase)
+        {
+            Debug.Assert(value.Length > 1);
+            Debug.Assert(!ignoreCase || char.IsAscii(value[0]));
+
+            int ch2Offset = IndexOfAsciiCharWithLowestFrequency(value, ignoreCase);
+
+            if (ch2Offset < 0)
+            {
+                // We have fewer than 2 ASCII chars in the value.
+                Debug.Assert(!ignoreCase);
+
+                // We don't have a frequency table for non-ASCII characters, pick the last one.
+                ch2Offset = value.Length - 1;
+            }
+
+            return ch2Offset;
+        }
+
         private static int IndexOfAsciiCharWithLowestFrequency(ReadOnlySpan<char> span, bool ignoreCase, int excludeIndex = -1)
         {
             float minFrequency = float.MaxValue;

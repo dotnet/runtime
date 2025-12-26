@@ -127,6 +127,13 @@ namespace System.Buffers
                 return CreateForSingleValue(values[0], uniqueValues, ignoreCase, allAscii, asciiLettersOnly);
             }
 
+            if (values.Length == 2 &&
+                Vector128.IsHardwareAccelerated &&
+                TryCreateForTwoValues(values, uniqueValues, ignoreCase, allAscii, asciiLettersOnly, nonAsciiAffectedByCaseConversion) is { } twoValuesSearchValues)
+            {
+                return twoValuesSearchValues;
+            }
+
             if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) &&
                 TryGetTeddyAcceleratedValues(values, uniqueValues, ignoreCase, allAscii, asciiLettersOnly, nonAsciiAffectedByCaseConversion, minLength) is { } searchValues)
             {
@@ -405,6 +412,87 @@ namespace System.Buffers
             return ignoreCase
                 ? new SingleStringSearchValuesFallback<SearchValues.TrueConst>(value, uniqueValues)
                 : new SingleStringSearchValuesFallback<SearchValues.FalseConst>(value, uniqueValues);
+        }
+
+        private static SearchValues<string>? TryCreateForTwoValues(
+            ReadOnlySpan<string> values,
+            HashSet<string> uniqueValues,
+            bool ignoreCase,
+            bool allAscii,
+            bool asciiLettersOnly,
+            bool nonAsciiAffectedByCaseConversion)
+        {
+            Debug.Assert(values.Length == 2);
+
+            string value0 = values[0];
+            string value1 = values[1];
+
+            // Both values must have at least 2 characters
+            if (value0.Length < 2 || value1.Length < 2)
+            {
+                return null;
+            }
+
+            // For simplicity, require both values to have the same length.
+            // This avoids complex boundary conditions in the vectorized search.
+            if (value0.Length != value1.Length)
+            {
+                return null;
+            }
+
+            // For case-insensitive matching with non-ASCII affected by case conversion,
+            // we need ASCII anchor characters in both values
+            if (nonAsciiAffectedByCaseConversion)
+            {
+                // Check that both values have at least 2 ASCII characters (for anchor points)
+                if (!char.IsAscii(value0[0]) || !char.IsAscii(value1[0]))
+                {
+                    return null;
+                }
+
+                // Need at least one more ASCII character in each value for the second anchor
+                if (!value0.AsSpan(1).ContainsAnyInRange((char)0, (char)127) ||
+                    !value1.AsSpan(1).ContainsAnyInRange((char)0, (char)127))
+                {
+                    return null;
+                }
+            }
+
+            // Get the optimal second character offset for each value
+            int v0Ch2Offset = CharacterFrequencyHelper.GetSecondCharacterOffset(value0, ignoreCase);
+            int v1Ch2Offset = CharacterFrequencyHelper.GetSecondCharacterOffset(value1, ignoreCase);
+
+            // For case-insensitive search, ensure anchor characters are ASCII
+            if (ignoreCase)
+            {
+                if (!char.IsAscii(value0[0]) || !char.IsAscii(value0[v0Ch2Offset]) ||
+                    !char.IsAscii(value1[0]) || !char.IsAscii(value1[v1Ch2Offset]))
+                {
+                    return null;
+                }
+            }
+
+            if (!ignoreCase)
+            {
+                return new TwoStringSearchValuesThreeChars<CaseSensitive>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
+            }
+
+            if (asciiLettersOnly)
+            {
+                return new TwoStringSearchValuesThreeChars<CaseInsensitiveAsciiLetters>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
+            }
+
+            if (allAscii)
+            {
+                return new TwoStringSearchValuesThreeChars<CaseInsensitiveAscii>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
+            }
+
+            if (nonAsciiAffectedByCaseConversion)
+            {
+                return new TwoStringSearchValuesThreeChars<CaseInsensitiveUnicode>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
+            }
+
+            return new TwoStringSearchValuesThreeChars<CaseInsensitiveAscii>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
         }
 
         private static SearchValues<string>? TryCreateSingleValuesThreeChars<TValueLength>(
