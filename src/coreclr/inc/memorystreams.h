@@ -12,9 +12,7 @@
 
 #include <objidl.h>
 
-#ifdef DACCESS_COMPILE
 #include "daccess.h"
-#endif
 
 // Forward declaration for cdac_data
 template<typename T> struct cdac_data;
