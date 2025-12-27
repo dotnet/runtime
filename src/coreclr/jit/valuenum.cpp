@@ -6165,7 +6165,7 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
 
         if (defSsaNum != SsaConfig::RESERVED_SSA_NUM)
         {
-            unsigned lclSize = lvaLclExactSize(defLclNum);
+            unsigned lclSize = lvaLclSymbolicSize(defLclNum);
 
             ValueNumPair newLclValue;
             if (vnStore->LoadStoreIsEntire(lclSize, defOffset, defSize))
@@ -12116,7 +12116,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
         case GT_STORE_LCL_VAR:
         {
             GenTreeLclVarCommon* lcl = store->AsLclVarCommon();
-            fgValueNumberLocalStore(store, lcl, 0, lvaLclExactSize(lcl->GetLclNum()), valueVNPair,
+            fgValueNumberLocalStore(store, lcl, 0, lvaLclSymbolicSize(lcl->GetLclNum()), valueVNPair,
                                     /* normalize */ false);
         }
         break;

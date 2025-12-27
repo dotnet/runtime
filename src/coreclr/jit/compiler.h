@@ -986,6 +986,7 @@ public:
     }
 
     unsigned lvExactSize() const;
+    unsigned lvSymbolicSize() const;
 
     unsigned lvSlotNum; // original slot # (if remapped)
 
@@ -4208,6 +4209,7 @@ public:
 
     unsigned lvaLclStackHomeSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
+    unsigned lvaLclSymbolicSize(unsigned varNum);
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;
 

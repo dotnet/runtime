@@ -1160,6 +1160,11 @@ extern const BYTE genTypeStSzs[TYP_COUNT];
 template <class T>
 inline unsigned genTypeStSz(T value)
 {
+#ifdef TARGET_ARM64
+    // The size of these types cannot be evaluated in static contexts.
+    noway_assert(TypeGet(value) != TYP_SIMD);
+    noway_assert(TypeGet(value) != TYP_MASK);
+#endif
     assert((unsigned)TypeGet(value) < ArrLen(genTypeStSzs));
 
     return genTypeStSzs[TypeGet(value)];
@@ -3436,6 +3441,12 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
 //
 inline bool Compiler::IsValidLclAddr(unsigned lclNum, unsigned offset)
 {
+#ifdef TARGET_ARM64
+    if (varTypeHasUnknownSize(lvaGetDesc(lclNum)))
+    {
+        return false;
+    }
+#endif
     return (offset < UINT16_MAX) && (offset < lvaLclExactSize(lclNum));
 }
 
@@ -4699,7 +4710,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 {
     if (OperIs(GT_STORE_LCL_VAR))
     {
-        unsigned size = comp->lvaLclExactSize(AsLclVarCommon()->GetLclNum());
+        unsigned size = comp->lvaLclSymbolicSize(AsLclVarCommon()->GetLclNum());
         return visitor(LocalDef(AsLclVarCommon(), /* isEntire */ true, 0, size));
     }
     if (OperIs(GT_STORE_LCL_FLD))
