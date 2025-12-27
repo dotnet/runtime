@@ -635,7 +635,8 @@ namespace System.IO.Ports
                 InitializeDCB(baudRate, parity, dataBits, stopBits, discardNull);
 
                 //if device doesnt support DTR and DTR is disabled, then dont try to set DTR
-                if (DtrEnable || ((_commProp.dwProvCapabilities & Interop.Kernel32.COMMPROP.PCF_DTRDSR) != 0)) {
+                if (DtrEnable || ((_commProp.dwProvCapabilities & Interop.Kernel32.COMMPROP.PCF_DTRDSR) != 0))
+                {
                     DtrEnable = dtrEnable;
 
                     // query and cache the initial RtsEnable value
