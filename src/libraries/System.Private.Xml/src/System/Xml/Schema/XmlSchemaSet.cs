@@ -410,7 +410,7 @@ namespace System.Xml.Schema
 
                     //Removal list is all schemas imported by this schema directly or indirectly
                     //Need to check if other schemas in the set import schemaToRemove / any of its imports
-                    ArrayList needToCheckSchemaList = new ArrayList();
+                    List<XmlSchema> needToCheckSchemaList = new List<XmlSchema>();
                     for (int i = 0; i < _schemas.Count; i++)
                     {
                         XmlSchema mainSchema = (XmlSchema)_schemas.GetByIndex(i)!;
@@ -424,7 +424,7 @@ namespace System.Xml.Schema
 
                     for (int i = 0; i < needToCheckSchemaList.Count; i++)
                     { //Perf: Not using nested foreach here
-                        XmlSchema mainSchema = (XmlSchema)needToCheckSchemaList[i]!;
+                        XmlSchema mainSchema = needToCheckSchemaList[i]!;
 
                         if (mainSchema.ImportedNamespaces.Count > 0)
                         {
