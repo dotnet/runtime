@@ -152,9 +152,6 @@ private:
 // use this.
 //*****************************************************************************
 
-// DPTR instead of VPTR because we don't actually call any of the virtuals.
-typedef DPTR(class CGrowableStream) PTR_CGrowableStream;
-
 #ifndef DACCESS_COMPILE
 
 class CGrowableStream : public IStream
@@ -268,5 +265,8 @@ public:
 }; // class CGrowableStream
 
 #endif // !DACCESS_COMPILE
+
+// DPTR instead of VPTR because we don't actually call any of the virtuals.
+typedef DPTR(class CGrowableStream) PTR_CGrowableStream;
 
 #endif // __MemoryStreams_h__
