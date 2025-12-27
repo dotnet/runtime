@@ -13,10 +13,7 @@
 #include <objidl.h>
 
 #include "daccess.h"
-
-#ifndef FEATURE_UTILCODE_NO_DEPENDENCIES
 #include "memoryrange.h"
-#endif
 
 // Forward declarations
 template<typename T> struct cdac_data;
@@ -172,18 +169,15 @@ public:
 
     virtual ~CGrowableStream();
 
-#ifndef FEATURE_UTILCODE_NO_DEPENDENCIES
     // Expose the total raw buffer.
     // This can be used by DAC to get the raw contents.
     // This becomes potentially invalid on the next call on the class, because the underlying storage can be
     // reallocated.
     MemoryRange GetRawBuffer() const
     {
-        SUPPORTS_DAC;
         PTR_VOID p = dac_cast<PTR_VOID>(m_swBuffer);
         return MemoryRange(p, m_dwBufferSize);
     }
-#endif // FEATURE_UTILCODE_NO_DEPENDENCIES
 
 private:
     // Raw pointer to buffer. This may change as the buffer grows and gets reallocated.
