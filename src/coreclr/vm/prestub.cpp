@@ -1923,14 +1923,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 #ifdef FEATURE_INTERPRETER
 static InterpThreadContext* GetInterpThreadContext()
 {
-    Thread *pThread = GetThread();
-    InterpThreadContext *threadContext = pThread->GetInterpThreadContext();
-    if (threadContext == nullptr || threadContext->pStackStart == nullptr)
-    {
-        COMPlusThrow(kOutOfMemoryException);
-    }
-
-    return threadContext;
+    return GetThread()->GetOrCreateInterpThreadContext();
 }
 
 #ifdef DEBUGGING_SUPPORTED

@@ -2701,13 +2701,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     DWORD CurrentThreadID = pCurrentThread?pCurrentThread->GetThreadId():0;
     DWORD ThisThreadID = GetThreadId();
 
-#ifdef FEATURE_INTERPRETER
-    if (m_pInterpThreadContext != nullptr)
-    {
-        delete m_pInterpThreadContext;
-    }
-#endif // FEATURE_INTERPRETER
-
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // If the currently running thread is the thread that died and it is an STA thread, then we
     // need to release all the RCW's in the current context. However, we cannot do this if we
@@ -2732,6 +2725,13 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     // We took a count during construction, and we rely on the count being
     // non-zero as we terminate the thread here.
     _ASSERTE(m_ExternalRefCount > 0);
+
+#ifdef FEATURE_INTERPRETER
+    if (m_pInterpThreadContext != nullptr)
+    {
+        delete m_pInterpThreadContext;
+    }
+#endif // FEATURE_INTERPRETER
 
     // The thread is no longer running.  It's important that we zero any general OBJECTHANDLE's
     // on this Thread object.  That's because we need the managed Thread object to be subject to
@@ -6819,11 +6819,23 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
 #ifdef FEATURE_INTERPRETER
 InterpThreadContext* Thread::GetInterpThreadContext()
 {
-    WRAPPER_NO_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
+    return m_pInterpThreadContext;
+}
+
+InterpThreadContext* Thread::GetOrCreateInterpThreadContext()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (m_pInterpThreadContext == nullptr)
     {
-        m_pInterpThreadContext = new (nothrow) InterpThreadContext();
+        m_pInterpThreadContext = new InterpThreadContext();
     }
 
     return m_pInterpThreadContext;
@@ -6839,9 +6851,7 @@ InterpThreadContext* GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_W
     }
     CONTRACTL_END;
 
-    InterpThreadContext *pThreadContext = currentThread->GetInterpThreadContext();
-    if (pThreadContext == NULL)
-        COMPlusThrowOM();
+    InterpThreadContext *pThreadContext = currentThread->GetOrCreateInterpThreadContext();
     CreateNativeToInterpreterCallStub(pByteCodeStart->Method);
 
     return pThreadContext;
