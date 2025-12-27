@@ -46,7 +46,7 @@ namespace System.Net.Http
         private string[] _headerValues = Array.Empty<string>();
 
         /// <summary>Any trailing headers.</summary>
-        private List<(HeaderDescriptor name, string value)>? _trailingHeaders;
+        private HttpResponseHeaders? _trailingHeaders;
 
         // When reading response content, keep track of the number of bytes left in the current data frame.
         private long _responseDataPayloadRemaining;
@@ -632,7 +632,7 @@ namespace System.Net.Http
 
         private async ValueTask ProcessTrailersAsync(long payloadLength, CancellationToken cancellationToken)
         {
-            _trailingHeaders = new List<(HeaderDescriptor name, string value)>();
+            _trailingHeaders = new HttpResponseHeaders(containsTrailingHeaders: true);
             await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
 
             // In typical cases, there should be no more frames. Make sure to read the EOS.
@@ -651,13 +651,9 @@ namespace System.Net.Http
 
         private void CopyTrailersToResponseMessage(HttpResponseMessage responseMessage)
         {
-            if (_trailingHeaders?.Count > 0)
+            if (_trailingHeaders is not null)
             {
-                foreach ((HeaderDescriptor name, string value) in _trailingHeaders)
-                {
-                    responseMessage.TrailingHeaders.TryAddWithoutValidation(name, value);
-                }
-                _trailingHeaders.Clear();
+                responseMessage.StoreReceivedTrailingHeaders(_trailingHeaders);
             }
         }
 
@@ -1156,7 +1152,7 @@ namespace System.Net.Http
                         _response!.Headers.TryAddWithoutValidation(descriptor.HeaderType.HasFlag(HttpHeaderType.Request) ? descriptor.AsCustomHeader() : descriptor, headerValue);
                         break;
                     case HeaderState.TrailingHeaders:
-                        _trailingHeaders!.Add((descriptor.HeaderType.HasFlag(HttpHeaderType.Request) ? descriptor.AsCustomHeader() : descriptor, headerValue));
+                        _trailingHeaders!.TryAddWithoutValidation(descriptor.HeaderType.HasFlag(HttpHeaderType.Request) ? descriptor.AsCustomHeader() : descriptor, headerValue);
                         break;
                     default:
                         Debug.Fail($"Unexpected {nameof(Http3RequestStream)}.{nameof(_headerState)} '{_headerState}'.");
