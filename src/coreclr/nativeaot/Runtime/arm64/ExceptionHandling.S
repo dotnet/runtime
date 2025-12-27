@@ -262,7 +262,7 @@
 // OUTPUT:
 //
 
-    LEAF_ENTRY RhpThrowExact, _TEXT, NoHandler
+    LEAF_ENTRY RhpThrowExact, _TEXT
 
         mov         w4, #4                                          // w4 = ExKind.RethrowFlag
         b           LOCAL_LABEL(RhpThrowExImpl)

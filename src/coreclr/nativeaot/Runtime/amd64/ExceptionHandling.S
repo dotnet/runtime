@@ -89,7 +89,7 @@ NESTED_END RhpThrowHwEx, _TEXT
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-LEAF_ENTRY RhpThrowExact, _TEXT, NoHandler
+LEAF_ENTRY RhpThrowExact, _TEXT
 
         mov     r8d, 4                  // r8d = ExKind.RethrowFlag
         jmp     LOCAL_LABEL(RhpThrowExImpl)

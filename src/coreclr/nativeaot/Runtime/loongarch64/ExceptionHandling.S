@@ -278,7 +278,7 @@
 // OUTPUT:
 //
 
-    LEAF_ENTRY RhpThrowExact, _TEXT, NoHandler
+    LEAF_ENTRY RhpThrowExact, _TEXT
 
         ori  $a4, $zero, 4                               // a4 = ExKind.RethrowFlag
         b  LOCAL_LABEL(RhpThrowExImpl)
