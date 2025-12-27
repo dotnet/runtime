@@ -6,6 +6,7 @@ import type { VoidPtr } from "./types";
 
 declare global {
     export const BROWSER_HOST: any;
+    export function _BrowserHost_InitializeCoreCLR(): number;
     export function _BrowserHost_ExecuteAssembly(mainAssemblyNamePtr: number, argsLength: number, argsPtr: number): number;
     export function _wasm_load_icu_data(dataPtr: VoidPtr): number;
 }

@@ -141,9 +141,16 @@ public class WasmTemplateTestsBase : BuildTestBase
                   <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
                   <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
                 </KnownFrameworkReference>
-                <KnownWebAssemblySdkPack Update="Microsoft.NET.Sdk.WebAssembly.Pack">
-                  <WebAssemblySdkPackVersion>11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
-                </KnownWebAssemblySdkPack>
+            """;
+            insertAtEnd +=
+            $$"""
+                <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences">
+                    <ItemGroup>
+                    <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
+                        <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net11.0'">11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
+                    </KnownWebAssemblySdkPack>
+                    </ItemGroup>
+                </Target>
             """;
         }
 
@@ -318,9 +325,16 @@ public class WasmTemplateTestsBase : BuildTestBase
                     : ".withConfig({ forwardConsole: true, appendElementOnExit: true, logExitCode: true }).create()"
             );
 
-        // dotnet.run() is used instead of runMain() in net9.0+
-        if (targetFrameworkVersion.Major >= 9)
+        if (targetFrameworkVersion.Major >= 11)
+        {
+            // runMainAndExit() is used instead of runMain() in net11.0+
+            updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "runMainAndExit()");
+        }
+        else if (targetFrameworkVersion.Major >= 9)
+        {
+            // dotnet.run() is used instead of runMain() in net9.0+
             updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "dotnet.run()");
+        }
 
         updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
 

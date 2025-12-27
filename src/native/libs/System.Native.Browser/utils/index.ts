@@ -13,7 +13,7 @@ import {
     isSharedArrayBuffer,
 } from "./memory";
 import { stringToUTF16, stringToUTF16Ptr, stringToUTF8Ptr, utf16ToString } from "./strings";
-import { exit, setEnvironmentVariable } from "./host";
+import { abortPosix, abortTimers, getExitStatus, setEnvironmentVariable } from "./host";
 import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "../utils/cross-module";
 import { initPolyfills } from "../utils/polyfills";
 import { registerRuntime } from "./runtime-list";
@@ -29,7 +29,6 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
     const runtimeApiLocal: Partial<RuntimeAPI> = {
         setEnvironmentVariable,
-        exit,
         setHeapB32, setHeapB8, setHeapU8, setHeapU16, setHeapU32, setHeapI8, setHeapI16, setHeapI32, setHeapI52, setHeapU52, setHeapI64Big, setHeapF32, setHeapF64,
         getHeapB32, getHeapB8, getHeapU8, getHeapU16, getHeapU32, getHeapI8, getHeapI16, getHeapI32, getHeapI52, getHeapU52, getHeapI64Big, getHeapF32, getHeapF64,
         localHeapViewI8, localHeapViewI16, localHeapViewI32, localHeapViewI64Big, localHeapViewU8, localHeapViewU16, localHeapViewU32, localHeapViewF32, localHeapViewF64,
@@ -43,6 +42,9 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         stringToUTF8Ptr,
         zeroRegion,
         isSharedArrayBuffer,
+        abortTimers,
+        abortPosix,
+        getExitStatus,
     });
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
     function browserUtilsExportsToTable(map: BrowserUtilsExports): BrowserUtilsExportsTable {
@@ -54,6 +56,9 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
             map.stringToUTF8Ptr,
             map.zeroRegion,
             map.isSharedArrayBuffer,
+            map.abortTimers,
+            map.abortPosix,
+            map.getExitStatus,
         ];
     }
 }
