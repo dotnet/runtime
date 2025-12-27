@@ -336,5 +336,20 @@ namespace System.Formats.Tar.Tests
             e = await reader.GetNextEntryAsync(copyData);
             Assert.Null(e);
         }
+
+        [Fact]
+        public async Task Read_BinaryEncodedChecksum_Async()
+        {
+            // Create a tar header with binary-encoded checksum (0x80 prefix).
+            // This tests that ParseNumeric handles binary-encoded checksums correctly.
+            byte[] header = CreateTarHeaderWithBinaryEncodedChecksum();
+
+            await using MemoryStream archive = new MemoryStream(header);
+            await using TarReader reader = new TarReader(archive);
+            TarEntry? entry = await reader.GetNextEntryAsync();
+            Assert.NotNull(entry);
+            Assert.Equal("test", entry.Name);
+            Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
+        }
     }
 }

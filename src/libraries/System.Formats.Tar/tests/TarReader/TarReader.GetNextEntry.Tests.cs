@@ -300,5 +300,20 @@ namespace System.Formats.Tar.Tests
             e = reader.GetNextEntry(copyData);
             Assert.Null(e);
         }
+
+        [Fact]
+        public void Read_BinaryEncodedChecksum()
+        {
+            // Create a tar header with binary-encoded checksum (0x80 prefix).
+            // This tests that ParseNumeric handles binary-encoded checksums correctly.
+            byte[] header = CreateTarHeaderWithBinaryEncodedChecksum();
+
+            using MemoryStream archive = new MemoryStream(header);
+            using TarReader reader = new TarReader(archive);
+            TarEntry? entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal("test", entry.Name);
+            Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
+        }
     }
 }
