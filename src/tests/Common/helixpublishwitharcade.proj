@@ -344,8 +344,9 @@
     <ItemGroup>
       <!-- Exclude WASM support files. They can interfere with our discovery process and create extra work items that don't work. -->
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssembly" />
+      <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssemblyForStress" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssemblyForStress" />
 
-      <_MergedWrapperMarker Update="@(_MergedWrapperMarker)">
+      <_MergedWrapperMarker>
         <TestExecutionScriptPath Condition="'$(TargetsMobile)' != 'true'">$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
         <TestExecutionScriptPath Condition="'$(TargetsMobile)' == 'true'">%(RootDir)%(Directory)$(MobileAppBundleDirName)/$(_AppBundleRunScriptName).$(TestScriptExtension)</TestExecutionScriptPath>
       </_MergedWrapperMarker>
@@ -555,7 +556,7 @@
 
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
-      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+      <_MergedWrapperName>$([System.Text.RegularExpressions.Regex]::Replace('%(_MergedWrapperMarker.FileName)', '\.MergedTestAssembly(ForStress)?\.\d+\.\d+$', ''))</_MergedWrapperName>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -586,6 +587,13 @@
     <WriteLinesToFile File="@(_TestExclusionListPlaceholder->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')"
       Lines="@(FilteredTestExclusionList)"
       Condition="'@(_TestExclusionListPlaceholder)' != ''" />
+
+    <!-- Include our marker file that this test has no special runner (if specified). -->
+    <Copy
+      SourceFiles="$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner"
+      DestinationFiles="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName).XHarnessNoRunner"
+      Lines="@(FilteredTestExclusionList)"
+      Condition="'@(_TestExclusionListPlaceholder)' != ''" />
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectoryForAppleMobileBuildOnHelix"
@@ -595,7 +603,7 @@
 
     <PropertyGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
-      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+      <_MergedWrapperName>$([System.Text.RegularExpressions.Regex]::Replace('%(_MergedWrapperMarker.FileName)', '\.MergedTestAssembly(ForStress)?\.\d+\.\d+$', ''))</_MergedWrapperName>
     </PropertyGroup>
 
     <ItemGroup Condition="'@(_MergedWrapperMarker)' != ''" >
@@ -614,6 +622,13 @@
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
     <!-- Write the real test exclusion list instead of the placeholder. -->
     <WriteLinesToFile File="@(_TestExclusionListPlaceholder->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')"
+      Lines="@(FilteredTestExclusionList)"
+      Condition="'@(_TestExclusionListPlaceholder)' != ''" />
+
+    <!-- Include our marker file that this test has no special runner (if specified). -->
+    <Copy
+      SourceFiles="$(_MergedWrapperDirectory)$(_MergedWrapperName).XHarnessNoRunner"
+      DestinationFiles="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName).XHarnessNoRunner"
       Lines="@(FilteredTestExclusionList)"
       Condition="'@(_TestExclusionListPlaceholder)' != ''" />
   </Target>
@@ -867,6 +882,17 @@
     </MergedPayloads>
   </ItemGroup>
 
+  <Target Name="MarkMergedPayloadsWithoutXHarnessRunner"
+          BeforeTargets="PrepareMergedStressHelixWorkItems;PrepareMergedHelixWorkItems"
+          Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
+    <ItemGroup>
+      <!-- For tests where we aren't using the XHarness test runner, specify as such on the payload item. -->
+      <MergedPayloads Update="@(MergedPayloads)" Condition="Exists('$(MergedPayloadsRootDirectory)%(MergedPayloads.PayloadGroup)/%(MergedPayloads.PayloadGroup).XHarnessNoRunner')">
+        <IncludesTestRunner>false</IncludesTestRunner>
+        <ExpectedExitCode>100</ExpectedExitCode>
+      </MergedPayloads>
+    </ItemGroup>
+  </Target>
   <PropertyGroup>
     <!-- Enable stress work item striping on GCstress only -->
     <StripeMergedStressWorkItems Condition="$(Scenario.Contains('gcstress'))">true</StripeMergedStressWorkItems>
