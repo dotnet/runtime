@@ -843,12 +843,14 @@ Dictionary::PopulateEntry(
             }
             IfFailThrow(ptr.SkipExactlyOne());
 
+            PTR_MethodTable pMT = th.IsByRef() ? th.GetTypeParam().GetMethodTable() : th.GetMethodTable();
+
             if (!declaringType.IsNull())
             {
-                th = th.GetMethodTable()->GetMethodTableMatchingParentClass(declaringType.AsMethodTable());
+                th = pMT->GetMethodTableMatchingParentClass(declaringType.AsMethodTable());
+                pMT = th.GetMethodTable();
             }
 
-            PTR_MethodTable pMT = th.IsByRef() ? th.GetTypeParam().GetMethodTable() : th.GetMethodTable();
             pMT->EnsureInstanceActive();
 
             result = (CORINFO_GENERIC_HANDLE)th.AsPtr();

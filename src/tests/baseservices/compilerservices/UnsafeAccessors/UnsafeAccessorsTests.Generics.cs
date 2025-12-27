@@ -126,7 +126,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SetType")]
         public extern static void SetType(ref GenericStruct<V> s, Type type);
-        
+
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SetType")]
         public extern static void SetType<U>(ref GenericStruct<V> s);
 
