@@ -15,7 +15,6 @@
 #include "corsym.h"
 
 #include "pedecoder.h"
-#include "stgpool.h"
 #include "memorystreams.h"
 
 //---------------------------------------------------------------------------------------
