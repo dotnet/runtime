@@ -241,6 +241,15 @@ jobs:
         useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
         shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
+    - task: CopyFiles@2
+      displayName: Gather CMakeConfigureLog for publish to artifacts
+      inputs:
+        SourceFolder: 'artifacts/obj'
+        Contents: '**/CMakeConfigureLog.yaml'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/log/cmake'
+      continueOnError: true
+      condition: always()
+
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*

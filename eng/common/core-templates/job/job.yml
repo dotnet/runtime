@@ -212,7 +212,7 @@ jobs:
           TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/log'
         continueOnError: true
         condition: always()
-      
+
   - ${{ if eq(parameters.enablePublishBuildArtifacts, 'true') }}:
     - task: CopyFiles@2
       displayName: Gather logs for publish to artifacts
