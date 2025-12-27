@@ -121,8 +121,8 @@ namespace
         version_t empty;
         trace::verbose(_X("Adding files from %s dir %s"), dir_name.c_str(), dir.c_str());
 
-        // Managed extensions in priority order, pick DLL over EXE and NI over IL.
-        const pal::string_t managed_ext[] = { _X(".ni.dll"), _X(".dll"), _X(".ni.exe"), _X(".exe") };
+        // Managed extensions in priority order, pick DLL over EXE.
+        const pal::string_t managed_ext[] = { _X(".dll"), _X(".exe") };
 
         // List of files in the dir
         std::vector<pal::string_t> files;
