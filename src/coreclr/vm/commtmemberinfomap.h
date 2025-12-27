@@ -65,10 +65,10 @@ private:
     };
 
     SegmentNode* m_pCurrent;
-    ULONG m_cbUsed;
-    ULONG m_cbSize;
+    size_t m_cbUsed;
+    size_t m_cbSize;
         
-    static const ULONG DefaultSegmentSize = 4096 - sizeof(SegmentNode*);
+    static const size_t DefaultSegmentSize = 4096 - offsetof(SegmentNode, data);
 
 public:
     CDescPool() : m_pCurrent(NULL), m_cbUsed(0), m_cbSize(0)
@@ -89,7 +89,7 @@ public:
     }
 
     // Allocate some bytes from the pool.
-    BYTE* Alloc(ULONG nBytes)
+    BYTE* Alloc(size_t nBytes)
     {
         CONTRACT (BYTE*)
         {
@@ -104,8 +104,8 @@ public:
         if (m_pCurrent == NULL || (m_cbSize - m_cbUsed) < nBytes)
         {
             // Allocate a new segment
-            ULONG cbSegmentSize = max(DefaultSegmentSize, nBytes);
-            BYTE* pBuffer = new BYTE[sizeof(SegmentNode*) + cbSegmentSize];
+            size_t cbSegmentSize = max(DefaultSegmentSize, nBytes);
+            BYTE* pBuffer = new BYTE[offsetof(SegmentNode, data) + cbSegmentSize];
             SegmentNode* pNewNode = reinterpret_cast<SegmentNode*>(pBuffer);
 
             pNewNode->pNext = m_pCurrent;
