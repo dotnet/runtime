@@ -357,6 +357,24 @@ namespace System.Memory.Tests.Span
         // These should hit the Aho-Corasick implementation
         [InlineData("a", "b")]
         [InlineData("ab", "c")]
+        // Two-string specialization with same length values
+        [InlineData("foo", "bar")]
+        [InlineData("ab", "cd")]
+        [InlineData("hello", "world")]
+        [InlineData("test1", "test2")]
+        // Two-string specialization with same first character
+        [InlineData("abc", "axy")]
+        [InlineData("hello", "happy")]
+        // Two-string specialization with different first characters
+        [InlineData("abc", "xyz")]
+        [InlineData("foo", "baz")]
+        // Two-string specialization with different length values
+        [InlineData("ab", "abc")]
+        [InlineData("foo", "foobar")]
+        [InlineData("hello", "hi")]
+        [InlineData("test", "testing123")]
+        [InlineData("xy", "xyz123")]
+        [InlineData("abcdefgh", "ab")]
         // Simple Teddy cases
         [InlineData("abc", "cde")]
         [InlineData("abc", "cd")]
