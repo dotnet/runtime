@@ -89,12 +89,12 @@ NESTED_END RhpThrowHwEx, _TEXT
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpThrowExact, _TEXT, NoHandler
+LEAF_ENTRY RhpThrowExact, _TEXT, NoHandler
 
         mov     r8d, 4                  // r8d = ExKind.RethrowFlag
         jmp     LOCAL_LABEL(RhpThrowExImpl)
 
-NESTED_END RhpThrowExact, _TEXT
+LEAF_END RhpThrowExact, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -174,7 +174,6 @@ LOCAL_LABEL(RhpThrowExImpl):
         call    EXTERNAL_C_FUNC(RhThrowEx)
 
 ALTERNATE_ENTRY RhpThrowEx2
-ALTERNATE_ENTRY RhpThrowExact2
 
         // no return
         int 3

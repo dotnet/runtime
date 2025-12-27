@@ -3,8 +3,8 @@
 // RuntimeExceptionKind.h
 //
 
-#ifndef __exkind_h__
-#define __exkind_h__
+#ifndef HAVE_EXKIND_H
+#define HAVE_EXKIND_H
 
 #include <cstdint>
 
@@ -17,12 +17,9 @@ enum class ExKind : uint8_t
     Throw = 1,
     HardwareFault = 2,
     KindMask = 3,
-
     RethrowFlag = 4,
-
     SupersededFlag = 8,
-
     InstructionFaultFlag = 0x10
 };
 
-#endif  // __exkind_h__
+#endif  // HAVE_EXKIND_H

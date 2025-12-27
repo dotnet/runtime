@@ -90,12 +90,12 @@ NESTED_END RhpThrowHwEx
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpThrowExact, _TEXT, NoHandler
+LEAF_ENTRY RhpThrowExact, _TEXT, NoHandler
 
-        mov         r5, #4                                          // r5 = ExKind.RethrowFlag
+        mov         r2, #4                                          // r2 = ExKind.RethrowFlag
         b           LOCAL_LABEL(RhpThrowExImpl)
 
-NESTED_END RhpThrowExact, _TEXT
+LEAF_END RhpThrowExact, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -108,7 +108,7 @@ NESTED_END RhpThrowExact, _TEXT
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
 
-        mov         r5, #1                                          // r5 = ExKind.Throw
+        mov         r2, #1                                          // r2 = ExKind.Throw
 
 LOCAL_LABEL(RhpThrowExImpl):
 
@@ -127,8 +127,6 @@ LOCAL_LABEL(RhpThrowExImpl):
         mov         r4, r0 // Save exception object
         // r0 = GetThread()
         INLINE_GETTHREAD
-
-        add         r2, sp, #(rsp_offsetof_Context + SIZEOF__PAL_LIMITED_CONTEXT + 0x8) 	// r2 <- addr of return address
 
         // There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic. So  the return
         // address could have been hijacked when we were in that C# code and we must remove the hijack and
@@ -180,7 +178,7 @@ LOCAL_LABEL(NotHiJacked):
         str         r3, [r1, #OFFSETOF__ExInfo__m_exception] 	      // init the exception object to null
         mov         r3, #1
         strb        r3, [r1, #OFFSETOF__ExInfo__m_passNumber]       // init to the first pass
-        strb        r5, [r1, #OFFSETOF__ExInfo__m_kind]             // ExKind (from r5)
+        strb        r2, [r1, #OFFSETOF__ExInfo__m_kind]             // ExKind (from r2)
         mov         r3, #0xFFFFFFFF
         str         r3, [r1, #OFFSETOF__ExInfo__m_idxCurClause]
 
@@ -199,7 +197,6 @@ LOCAL_LABEL(NotHiJacked):
         bl          C_FUNC(RhThrowEx)
 
 GLOBAL_LABEL RhpThrowEx2
-GLOBAL_LABEL RhpThrowExact2
 
         // no return
         EMIT_BREAKPOINT

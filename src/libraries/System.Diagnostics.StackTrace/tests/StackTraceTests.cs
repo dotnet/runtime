@@ -411,36 +411,36 @@ namespace System.Diagnostics.Tests
         {
             { "Foo", new[] {
                 @"Not Found from Foo2",
-                @"Program\.Foo2\(Int32 i\).*Program\.cs:line 53",
-                @"Program\.Foo1\(Int32 i\).*Program\.cs:line 26",
-                @"V1Methods\.Test1\(Func`2 method\).*Program\.cs:line 17",
-                @"V1Methods\.Test0\(Func`2 method\).*Program\.cs:line 8",
-                @"Program\.Foo\(\).*Program\.cs:line 12"
+                @"Program\.Foo2\(Int32.*Program\.cs:line 3",
+                @"Program\.Foo1\(Int32.*Program\.cs:line 2",
+                @"V1Methods\.Test1\(Func`2.*Program\.cs:line 2",
+                @"V1Methods\.Test0\(Func`2.*Program\.cs:line 1",
+                @"Program\.Foo\(\).*Program\.cs:line 1"
             }},
             { "Bar", new[] {
                 @"Exception from Bar",
-                @"Program\.Bar\(Int32 i\).*Program\.cs:line 61",
-                @"Program\.Bar\(Int32 i\).*Program\.cs:line 63"
+                @"Program\.Bar\(Int32.*Program\.cs:line 4",
+                @"Program\.Bar\(Int32.*Program\.cs:line 5"
             }},
             { "Baz", new[] {
                 @"Exception from Baz",
-                @"Program\.Baz\(\).*Program\.cs:line 69"
+                @"Program\.Baz\(\).*Program\.cs:line 6"
             }},
             { "Qux", new[] {
                 @"Exception from Qux",
-                @"Program\.Qux\(Int32 i\).*Program\.cs:line 82"
+                @"Program\.Qux\(Int32.*Program\.cs:line 7"
             }},
             {"Quux", new[] {
                 @"Not Found from Quux1",
-                @"Program\.Quux1\(Int32 i\).*Program\.cs:line 107",
-                @"V1Methods\.Test1\(Func`2 method\).*Program\.cs:line 17",
-                @"V1Methods\.Test0\(Func`2 method\).*Program\.cs:line 8",
-                @"Program\.Quux\(\).*Program\.cs:line 93"
+                @"Program\.Quux1\(Int32.*Program\.cs:line 9",
+                @"V1Methods\.Test1\(Func`2.*Program\.cs:line 2",
+                @"V1Methods\.Test0\(Func`2.*Program\.cs:line 1",
+                @"Program\.Quux\(\).*Program\.cs:line 8"
             }},
             { "Quuux", new[] {
                 @"Exception from Quuux2",
-                @"Program\.Quuux2\(\).*Program\.cs:line 127",
-                @"Program\.Quuux\(\).*Program\.cs:line 120"
+                @"Program\.Quuux2\(\).*Program\.cs:line 11",
+                @"Program\.Quuux\(\).*Program\.cs:line 10"
             }}
         };
 

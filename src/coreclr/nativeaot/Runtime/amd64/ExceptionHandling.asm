@@ -116,12 +116,12 @@ NESTED_END RhpThrowHwEx, _TEXT
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpThrowExact, _TEXT
+LEAF_ENTRY RhpThrowExact, _TEXT
 
         mov     r9d, 4                  ;; r9d = ExKind.RethrowFlag
         jmp     RhpThrowExImpl
 
-NESTED_END RhpThrowExact, _TEXT
+LEAF_END RhpThrowExact, _TEXT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -136,7 +136,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT
 
         mov     r9d, 1                  ;; r9d = ExKind.Throw
 
-ALTERNATE_ENTRY RhpThrowExImpl
+RhpThrowExImpl::
 
         SIZEOF_XmmSaves equ SIZEOF__PAL_LIMITED_CONTEXT - OFFSETOF__PAL_LIMITED_CONTEXT__Xmm6
         STACKSIZEOF_ExInfo equ ((SIZEOF__ExInfo + 15) AND (NOT 15))
@@ -219,7 +219,6 @@ ALTERNATE_ENTRY RhpThrowExImpl
         call    RhThrowEx
 
 ALTERNATE_ENTRY RhpThrowEx2
-ALTERNATE_ENTRY RhpThrowExact2
 
         ;; no return
         int 3

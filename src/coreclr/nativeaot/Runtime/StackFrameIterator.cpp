@@ -44,7 +44,6 @@ EXTERN_C CODE_LOCATION RhpCallFilterFunclet2;
 EXTERN_C CODE_LOCATION RhpThrowEx2;
 EXTERN_C CODE_LOCATION RhpThrowHwEx2;
 EXTERN_C CODE_LOCATION RhpRethrow2;
-EXTERN_C CODE_LOCATION RhpThrowExact2;
 #endif // !defined(FEATURE_PORTABLE_HELPERS)
 
 // Addresses of functions in the DAC won't match their runtime counterparts so we
@@ -2242,8 +2241,7 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
 
     if (EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowEx2) ||
         EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowHwEx2) ||
-        EQUALS_RETURN_ADDRESS(returnAddress, RhpRethrow2) ||
-        EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowExact2))
+        EQUALS_RETURN_ADDRESS(returnAddress, RhpRethrow2))
     {
         return InThrowSiteThunk;
     }

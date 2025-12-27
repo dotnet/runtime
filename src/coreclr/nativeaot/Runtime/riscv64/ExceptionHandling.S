@@ -313,12 +313,12 @@
 // OUTPUT:
 //
 
-    NESTED_ENTRY RhpThrowExact, _TEXT, NoHandler
+    LEAF_ENTRY RhpThrowExact, _TEXT, NoHandler
 
         li  a4, 4                                       // a4 = ExKind.RethrowFlag
         j   LOCAL_LABEL(RhpThrowExImpl)
 
-    NESTED_END RhpThrowExact, _TEXT
+    LEAF_END RhpThrowExact, _TEXT
 
 //
 // RhpThrowEx
@@ -394,7 +394,6 @@ LOCAL_LABEL(NotHijacked):
         call C_FUNC(RhThrowEx)
 
     ALTERNATE_ENTRY RhpThrowEx2
-    ALTERNATE_ENTRY RhpThrowExact2
 
         // No return
         EMIT_BREAKPOINT

@@ -315,7 +315,7 @@ extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
         StackTraceInfo::AppendElement(
             handle,
             (UINT_PTR)diagnosticIP,
-            NULL,
+            0,
             methodDesc,
             NULL);
     }
