@@ -177,21 +177,14 @@ public:
     virtual ~CGrowableStream();
 
     // Expose the total raw buffer.
-    // This can be used to get the raw contents.
+    // This can be used by DAC to get the raw contents.
     // This becomes potentially invalid on the next call on the class, because the underlying storage can be
     // reallocated.
-    void GetRawBuffer(BYTE **ppbBuffer, DWORD *pcbSize) const
-    {
-        *ppbBuffer = m_swBuffer;
-        *pcbSize = m_dwBufferSize;
-    }
-
 #ifndef _UTILCODE_NO_DEPENDENCIES
-    // Returns a MemoryRange for the raw buffer (for DAC and VM usage)
-    // This method is only available when memoryrange.h can be included (VM/DAC builds)
     MemoryRange GetRawBuffer() const
     {
-        PTR_VOID p = m_swBuffer;
+        SUPPORTS_DAC;
+        PTR_VOID p = dac_cast<PTR_VOID>(m_swBuffer);
         return MemoryRange(p, m_dwBufferSize);
     }
 #endif // !_UTILCODE_NO_DEPENDENCIES
