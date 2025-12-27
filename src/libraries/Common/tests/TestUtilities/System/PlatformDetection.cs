@@ -442,6 +442,8 @@ namespace System
             }
         }
 
+        public static bool IsRuntimeAsyncSupported => !IsCoreClrInterpreter && !IsMonoRuntime && !IsMonoAOT && !IsMonoInterpreter;
+
         private static Version GetICUVersion()
         {
             int version = 0;

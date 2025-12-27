@@ -11,6 +11,7 @@
 
 #include "eexcp.h"
 #include "exstatecommon.h"
+#include "exkind.h"
 
 // This address lies in the NULL pointer partition of the process memory.
 // Accessing it will result in AV.
@@ -30,7 +31,7 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD     pExceptionRe
 
 void NormalizeThrownObject(OBJECTREF *ppThrowable);
 
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT *pExceptionContext, EXCEPTION_RECORD *pExceptionRecord = NULL);
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT *pExceptionContext, EXCEPTION_RECORD *pExceptionRecord = NULL, ExKind exKind = ExKind::None);
 VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable);
 VOID DECLSPEC_NORETURN DispatchManagedException(RuntimeExceptionKind reKind);
 VOID DECLSPEC_NORETURN DispatchRethrownManagedException();

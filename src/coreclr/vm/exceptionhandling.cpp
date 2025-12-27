@@ -1563,7 +1563,7 @@ void NormalizeThrownObject(OBJECTREF *ppThrowable)
     }
 }
 
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext, EXCEPTION_RECORD* pExceptionRecord)
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext, EXCEPTION_RECORD* pExceptionRecord, ExKind exKind  /* = ExKind::None */)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1591,7 +1591,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
         newExceptionRecord.ExceptionRecord = NULL;
     }
 
-    ExInfo exInfo(pThread, &newExceptionRecord, pExceptionContext, ExKind::Throw);
+    ExInfo exInfo(pThread, &newExceptionRecord, pExceptionContext, (ExKind)((uint8_t)ExKind::Throw | (uint8_t)exKind));
 
 #ifdef HOST_WINDOWS
     // On Windows, this enables the possibility to propagate a longjmp across managed frames. Longjmp

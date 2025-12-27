@@ -95,6 +95,7 @@ namespace System
         {
             RH_EH_FIRST_FRAME = 1,
             RH_EH_FIRST_RETHROW_FRAME = 2,
+            RH_EH_RUNTIME_ASYNC_FRAME = 4,
         }
 
         // Performance metric to count the number of exceptions thrown
@@ -117,9 +118,10 @@ namespace System
 
                 bool isFirstFrame = (flags & (int)RhEHFrameType.RH_EH_FIRST_FRAME) != 0;
                 bool isFirstRethrowFrame = (flags & (int)RhEHFrameType.RH_EH_FIRST_RETHROW_FRAME) != 0;
+                bool isRuntimeAsyncFrame = (flags & (int)RhEHFrameType.RH_EH_RUNTIME_ASYNC_FRAME) != 0;
 
                 // track count for metrics
-                if (isFirstFrame && !isFirstRethrowFrame)
+                if ((isFirstFrame && !isFirstRethrowFrame) || isRuntimeAsyncFrame)
                     Interlocked.Increment(ref s_exceptionCount);
 
                 // When we're throwing an exception object, we first need to clear its stacktrace with two exceptions:
@@ -137,7 +139,7 @@ namespace System
                     ex.AppendStackIP(IP, isFirstRethrowFrame);
 
 #if FEATURE_PERFTRACING
-                if (isFirstFrame && NativeRuntimeEventSource.Log.IsEnabled())
+                if ((isFirstFrame || isRuntimeAsyncFrame) && NativeRuntimeEventSource.Log.IsEnabled())
                 {
                     string typeName = !fatalOutOfMemory ? ex.GetType().ToString() : "System.OutOfMemoryException";
                     string message = !fatalOutOfMemory ? ex.Message :

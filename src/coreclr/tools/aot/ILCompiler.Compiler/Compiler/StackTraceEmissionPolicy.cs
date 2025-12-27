@@ -45,6 +45,11 @@ namespace ILCompiler
                 result |= MethodStackTraceVisibilityFlags.IsHidden;
             }
 
+            if (method is ILCompiler.AsyncResumptionStub asyncStub && asyncStub.TargetMethod.IsAsyncVariant())
+            {
+                result |= MethodStackTraceVisibilityFlags.RuntimeAsync;
+            }
+
             return method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod
                 ? result | MethodStackTraceVisibilityFlags.HasMetadata
                 : result;
@@ -57,5 +62,6 @@ namespace ILCompiler
         HasMetadata = 0x1,
         IsHidden = 0x2,
         HasLineNumbers = 0x4,
+        RuntimeAsync = 0x8,
     }
 }

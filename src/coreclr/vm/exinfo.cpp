@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "exinfo.h"
+#include "exkind.h"
 #include "dbginterface.h"
 
 #ifdef FEATURE_EH_FUNCLETS
