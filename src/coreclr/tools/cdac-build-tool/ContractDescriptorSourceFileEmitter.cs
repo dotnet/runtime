@@ -23,7 +23,7 @@ public partial class ContractDescriptorSourceFileEmitter
     }
 
     [GeneratedRegex("%%([a-zA-Z0-9_]+)%%", RegexOptions.CultureInvariant)]
-    private static partial Regex FindTemplatePlaceholderRegex();
+    private static partial Regex FindTemplatePlaceholderRegex { get; }
 
     private string GetTemplateString()
     {
@@ -44,20 +44,20 @@ public partial class ContractDescriptorSourceFileEmitter
     public void SetJsonDescriptor(string jsonDescriptor)
     {
         var count = jsonDescriptor.Length; // return the length before escaping
-        var escaped = CStringEscape().Replace(jsonDescriptor, "\\$1");
+        var escaped = CStringEscape.Replace(jsonDescriptor, "\\$1");
         Elements[JsonDescriptorKey] = escaped;
         Elements[JsonDescriptorSizeKey] = count.ToString();
     }
 
     [GeneratedRegex("(\")", RegexOptions.CultureInvariant)]
-    private static partial Regex CStringEscape();
+    private static partial Regex CStringEscape { get; }
 
     public Dictionary<string, string> Elements { get; } = new();
 
     public void Emit(TextWriter dest)
     {
         var template = GetTemplateString();
-        var matches = FindTemplatePlaceholderRegex().Matches(template);
+        var matches = FindTemplatePlaceholderRegex.Matches(template);
         var prevPos = 0;
         foreach (Match match in matches)
         {
