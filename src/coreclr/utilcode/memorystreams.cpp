@@ -9,7 +9,6 @@
 
 #include "stdafx.h"
 #include "memorystreams.h"
-#include "memoryrange.h"
 #include <posterror.h>
 #include <safemath.h>
 
@@ -541,13 +540,6 @@ CGrowableStream::Stat(
 
     return S_OK;
 } // CGrowableStream::Stat
-
-// Returns a MemoryRange for the raw buffer
-MemoryRange CGrowableStream::GetRawBuffer() const
-{
-    PTR_VOID p = m_swBuffer;
-    return MemoryRange(p, m_dwBufferSize);
-}
 
 //
 // Clone - Make a deep copy of the stream into a new cGrowableStream instance

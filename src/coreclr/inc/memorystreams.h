@@ -14,9 +14,13 @@
 
 #include "daccess.h"
 
+#ifndef _UTILCODE_NO_DEPENDENCIES
+// MemoryRange is only available in VM/DAC builds, not in utilcode
+#include "memoryrange.h"
+#endif
+
 // Forward declarations
 template<typename T> struct cdac_data;
-class MemoryRange;
 
 //*****************************************************************************
 // CInMemoryStream is a simple IStream implementation that provides
@@ -182,8 +186,15 @@ public:
         *pcbSize = m_dwBufferSize;
     }
 
+#ifndef _UTILCODE_NO_DEPENDENCIES
     // Returns a MemoryRange for the raw buffer (for DAC and VM usage)
-    MemoryRange GetRawBuffer() const;
+    // This method is only available when memoryrange.h can be included (VM/DAC builds)
+    MemoryRange GetRawBuffer() const
+    {
+        PTR_VOID p = m_swBuffer;
+        return MemoryRange(p, m_dwBufferSize);
+    }
+#endif // !_UTILCODE_NO_DEPENDENCIES
 
 private:
     // Raw pointer to buffer. This may change as the buffer grows and gets reallocated.
