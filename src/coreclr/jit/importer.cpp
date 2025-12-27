@@ -1167,7 +1167,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags*
 //    Normalizing the type involves examining the struct type to determine if it should
 //    be modified to one that is handled specially by the JIT, possibly being a candidate
 //    for full enregistration, e.g. TYP_SIMD16. If the size of the struct is already known
-//    call structSizeMightRepresentSIMDType to determine if this api needs to be called.
+//    call structSizeMightRepresentAcceleratedType to determine if this api needs to be called.
 //
 var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseJitType)
 {
@@ -1179,22 +1179,37 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
     const DWORD structFlags = info.compCompHnd->getClassAttribs(structHnd);
 
     // Don't bother if the struct contains GC references of byrefs, it can't be a SIMD type.
-    if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0)
+    if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0 &&
+        (structFlags & CORINFO_FLG_INTRINSIC_TYPE) != 0)
     {
         unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
 
-        if (structSizeMightRepresentSIMDType(originalSize))
+        if (structSizeMightRepresentAcceleratedType(originalSize))
         {
             unsigned int sizeBytes;
             var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
+
             if (simdBaseType != TYP_UNDEF)
             {
                 assert(sizeBytes == originalSize || sizeBytes == SIZE_UNKNOWN);
-                structType = getSIMDTypeForSize(sizeBytes);
-                if (pSimdBaseJitType != nullptr)
+                if (sizeBytes < getMinVectorByteLength())
                 {
-                    *pSimdBaseJitType = simdBaseType;
+                    // The struct itself is accelerated, in this case, it is `Half`.
+                    structType = simdBaseType;
+                    if (pSimdBaseJitType != nullptr)
+                    {
+                        *pSimdBaseJitType = TYP_UNDEF;
+                    }
                 }
+                else
+                {
+                    structType = getSIMDTypeForSize(sizeBytes);
+                    if (pSimdBaseJitType != nullptr)
+                    {
+                        *pSimdBaseJitType = simdBaseType;
+                    }
+                }
+
                 // Also indicate that we use floating point registers.
                 compFloatingPointUsed = true;
             }

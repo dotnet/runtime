@@ -174,7 +174,7 @@ var_types Compiler::getBaseTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls
 //    sizeBytes if non-null is set to size in bytes.
 //
 // Notes:
-//    If the size of the struct is already known call structSizeMightRepresentSIMDType
+//    If the size of the struct is already known call structSizeMightRepresentAcceleratedType
 //    to determine if this api needs to be called.
 //
 //    The type handle passed here can only be used in a subset of JIT-EE calls
@@ -350,6 +350,40 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                     }
                 }
                 break;
+            }
+
+            default:
+            {
+                return TYP_UNDEF;
+            }
+        }
+    }
+    else if (strcmp(namespaceName, "System") == 0)
+    {
+        switch (className[0])
+        {
+            case 'H':
+            {
+                if (strcmp(className, "Half") != 0)
+                {
+                    return TYP_UNDEF;
+                }
+
+                JITDUMP("  Known type Half\n");
+
+#if defined(TARGET_XARCH)
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    // We must treat as a regular struct if AVX isn't supported
+                    return TYP_UNDEF;
+                }
+
+                simdBaseType = TYP_HALF;
+                size         = genTypeSize(TYP_HALF);
+                break;
+#else
+                return TYP_UNDEF;
+#endif
             }
 
             default:

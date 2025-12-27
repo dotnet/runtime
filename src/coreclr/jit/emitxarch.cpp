@@ -127,8 +127,9 @@ bool emitter::Is3OpRmwInstruction(instruction ins)
         default:
         {
             return ((ins >= FIRST_FMA_INSTRUCTION) && (ins <= LAST_FMA_INSTRUCTION)) ||
-                   (IsAVXVNNIFamilyInstruction(ins)) ||
-                   ((ins >= FIRST_AVXIFMA_INSTRUCTION) && (ins <= LAST_AVXIFMA_INSTRUCTION));
+                   IsAVXVNNIFamilyInstruction(ins) ||
+                   ((ins >= FIRST_AVXIFMA_INSTRUCTION) && (ins <= LAST_AVXIFMA_INSTRUCTION)) ||
+                    ((ins >= FIRST_AVX10V1_FMA_INSTR) && (ins <= LAST_AVX10V1_FMA_INSTR));
         }
     }
 }
@@ -2994,7 +2995,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         if (sizePrefix == 0)
         {
             // no simd prefix for EVEX2 - AVX10.2 and above
-            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) ||
+            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1) ||
                    emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT) ||
                    emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT_V512));
         }
@@ -3077,7 +3078,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         //                          1. An escape byte 0F (For isa before AVX10.2)
         //                          2. A map number from 0 to 7 (For AVX10.2 and above)
         leadingBytes = check;
-        assert((leadingBytes == 0x0F) || ((emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) ||
+        assert((leadingBytes == 0x0F) || ((emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1) ||
                                            (emitComp->compIsaSupportedDebugOnly(InstructionSet_APX))) &&
                                           (leadingBytes >= 0x00) && (leadingBytes <= 0x07)));
 
@@ -3104,7 +3105,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         // 0x0000RM11.
         leadingBytes = (code >> 16) & 0xFF;
         assert(leadingBytes == 0x0F ||
-               (emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) && leadingBytes >= 0x00 &&
+               ((emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1)) && leadingBytes >= 0x00 &&
                 leadingBytes <= 0x07) ||
                (IsApxExtendedEvexInstruction(ins) && leadingBytes == 0));
         code &= 0xFFFF;
@@ -3159,15 +3160,21 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
 
         case 0x05:
         {
-            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2));
+            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
             evexPrefix |= (0x05 << 16);
+            break;
+        }
+
+        case 0x06:
+        {
+            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
+            evexPrefix |= (0x06 << 16);
             break;
         }
 
         case 0x01:
         case 0x02:
         case 0x03:
-        case 0x06:
         case 0x07:
         default:
         {
@@ -5388,10 +5395,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
 
         assert((attrSize == EA_4BYTE) || (attrSize == EA_PTRSIZE)                               // Only for x64
                || (attrSize == EA_16BYTE) || (attrSize == EA_32BYTE) || (attrSize == EA_64BYTE) // only for x64
-               || (ins == INS_movzx) || (ins == INS_movsx) ||
+               || (ins == INS_movzx) || (ins == INS_movsx) || (ins == INS_vmovsh) ||
                (ins == INS_cmpxchg)
-               // kmov instructions reach this path with EA_8BYTE size, even on x86
-               || IsKMOVInstruction(ins)
                // The prefetch instructions are always 3 bytes and have part of their modr/m byte hardcoded
                || isPrefetch(ins));
 
@@ -7430,6 +7435,7 @@ bool emitter::IsMovInstruction(instruction ins)
 
 #if defined(TARGET_AMD64)
         case INS_movsxd:
+        case INS_vmovsh:
         {
             return true;
         }
@@ -7619,6 +7625,12 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
         {
             // Zero-extends the source
             hasSideEffect = true;
+            break;
+        }
+
+        case INS_vmovsh:
+        {
+            hasSideEffect = false;
             break;
         }
 
@@ -7892,6 +7904,12 @@ bool emitter::emitIns_Mov(
         case INS_kmovq_gpr:
         {
             assert(isGeneralRegister(dstReg) || isGeneralRegister(srcReg));
+            break;
+        }
+
+        case INS_vmovsh:
+        {
+            assert(isFloatReg(dstReg) && isFloatReg(srcReg));
             break;
         }
 
@@ -11798,7 +11816,11 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
         case EA_2BYTE:
         {
 #if defined(TARGET_AMD64)
-            if (reg > REG_RDI)
+            if (IsXMMReg(reg))
+            {
+                return emitXMMregName(reg);
+            }
+            else if (reg > REG_RDI)
             {
                 suffix = 'w';
                 goto APPEND_SUFFIX;
@@ -14520,7 +14542,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // Is this a 'big' opcode?
     else if (code & 0xFF000000)
     {
-        if (size == EA_2BYTE)
+        if (size == EA_2BYTE && ins != INS_vmovsh)
         {
             assert(ins == INS_movbe);
 
@@ -15388,7 +15410,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // Is this a 'big' opcode?
     else if (code & 0xFF000000)
     {
-        if (size == EA_2BYTE)
+        if (size == EA_2BYTE && (ins != INS_vmovsh && ins != INS_vaddsh))
         {
             assert(ins == INS_movbe);
 
@@ -20892,6 +20914,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movups:
         case INS_movapd:
         case INS_movupd:
+        // todo-xarch-half: come back to fix
+        case INS_vmovsh:
         {
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
@@ -21382,6 +21406,20 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
             assert((unsigned)ins < ArrLen(insLatencyInfos));
             float insLatency = insLatencyInfos[ins];
+
+            // todo-xarch-half: hacking an exit on the unhandled ins to make prototyping easier
+            if (ins == INS_vcvtss2sh || ins == INS_vcvtsh2ss || ins == INS_vaddsh || ins == INS_vsubsh ||
+                ins == INS_vmulsh || ins == INS_vdivsh || ins == INS_vcomish || ins == INS_vsqrtsh ||
+                ins == INS_vmaxsh || ins == INS_vminsh || ins == INS_vrcpsh || ins == INS_vrsqrtsh ||
+                ins == INS_vrndscalesh || ins == INS_vfmadd213sh || ins == INS_vcvtsd2sh || ins == INS_vcvtsh2sd ||
+                ins == INS_vcvtsi2sh32 || ins == INS_vcvtsi2sh64 || ins == INS_vcvtsh2si32 || ins == INS_vcvtsh2si64 ||
+                ins == INS_vcvtusi2sh32 || ins == INS_vcvtusi2sh64 || ins == INS_vcvtsh2usi32 ||
+                ins == INS_vcvtsh2usi64)
+            {
+                result.insLatency    = PERFSCORE_LATENCY_1C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                break;
+            }
 
             if ((insLatency == PERFSCORE_LATENCY_ILLEGAL) || (insThroughput == PERFSCORE_THROUGHPUT_ILLEGAL))
             {

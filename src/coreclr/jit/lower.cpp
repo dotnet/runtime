@@ -6000,6 +6000,7 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
     CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
     Compiler::structPassingKind howToReturnStruct;
     var_types returnType = comp->getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
+
     assert(returnType != TYP_STRUCT && returnType != TYP_UNKNOWN);
     var_types origType = call->TypeGet();
     call->gtType       = genActualType(returnType);
@@ -9777,6 +9778,11 @@ bool Lowering::TryRemoveBitCast(GenTreeUnOp* node)
         return false;
     }
 
+    //if (node->TypeGet() == TYP_HALF)
+    //{
+    //    return false;
+    //}
+
     GenTree* op = node->gtGetOp1();
     assert(genTypeSize(node) == genTypeSize(genActualType(op)));
 
@@ -11628,7 +11634,7 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
 {
     assert(store->OperIsStore());
 
-    if (!varTypeIsFloating(store))
+    if (!varTypeIsFloating(store) || store->TypeIs(TYP_HALF))
     {
         return;
     }
