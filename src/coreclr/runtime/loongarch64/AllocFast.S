@@ -196,10 +196,9 @@ LOCAL_LABEL(ArraySizeOverflow):
 //  $a1 == element count
     LEAF_ENTRY RhpNewPtrArrayFast, _Text
 
-        // Delegate overflow handling to the generic helper conservatively
-
-        li.w  $a2, (0x40000000 / 8) // sizeof(void*)
-        bgeu  $a1, $a2, C_FUNC(RhpNewArrayFast)
+        // we want to limit the element count to the non-negative 32-bit int range
+        li.w  $a2, 0x7FFFFFFF
+        bgeu  $a1, $a2, LOCAL_LABEL(ArraySizeOverflow)
 
         // In this case we know the element size is sizeof(void *), or 8 for arm64
         // This helps us in two ways - we can shift instead of multiplying, and
