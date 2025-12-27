@@ -433,13 +433,6 @@ namespace System.Buffers
                 return null;
             }
 
-            // For simplicity, require both values to have the same length.
-            // This avoids complex boundary conditions in the vectorized search.
-            if (value0.Length != value1.Length)
-            {
-                return null;
-            }
-
             // For case-insensitive matching with non-ASCII affected by case conversion,
             // we need ASCII anchor characters in both values
             if (nonAsciiAffectedByCaseConversion)
@@ -458,9 +451,12 @@ namespace System.Buffers
                 }
             }
 
-            // Get the optimal second character offset for each value
-            int v0Ch2Offset = CharacterFrequencyHelper.GetSecondCharacterOffset(value0, ignoreCase);
-            int v1Ch2Offset = CharacterFrequencyHelper.GetSecondCharacterOffset(value1, ignoreCase);
+            // Get the optimal second character offset for each value.
+            // Constrain offsets to be within the shorter value's length so both can be used
+            // with the same bounds in the vectorized inner loop.
+            int minLength = Math.Min(value0.Length, value1.Length);
+            int v0Ch2Offset = CharacterFrequencyHelper.GetSecondCharacterOffset(value0, ignoreCase, minLength);
+            int v1Ch2Offset = CharacterFrequencyHelper.GetSecondCharacterOffset(value1, ignoreCase, minLength);
 
             // For case-insensitive search, ensure anchor characters are ASCII
             if (ignoreCase)

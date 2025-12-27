@@ -29,6 +29,7 @@ namespace System.Buffers
         private readonly string _value0;
         private readonly string _value1;
         private readonly nint _minusValueTailLength;
+        private readonly int _minValueLength;
 
         // Anchor characters and their offsets for value0 (first character is at offset 0)
         private readonly nuint _v0Ch2ByteOffset;
@@ -47,21 +48,24 @@ namespace System.Buffers
         {
             Debug.Assert(value0.Length > 1);
             Debug.Assert(value1.Length > 1);
-            Debug.Assert(value0.Length == value1.Length);
             Debug.Assert(v0Ch2Offset > 0);
             Debug.Assert(v1Ch2Offset > 0);
 
             _value0 = value0;
             _value1 = value1;
 
-            // Since both values have the same length, we just need to account for that length
-            // and the maximum ch2 offset for safe reads
-            int valueLength = value0.Length;
+            // Use the shorter value's length for bounds - both ch2 offsets are already
+            // constrained to be within this length, so we can safely read at those offsets.
+            int minLength = Math.Min(value0.Length, value1.Length);
+            _minValueLength = minLength;
             int maxCh2Offset = Math.Max(v0Ch2Offset, v1Ch2Offset);
 
+            Debug.Assert(v0Ch2Offset < minLength);
+            Debug.Assert(v1Ch2Offset < minLength);
+
             // We need to reserve space for reading at offset maxCh2Offset from the starting position,
-            // and for verifying the full value (valueLength - 1 chars after the starting position)
-            _minusValueTailLength = -Math.Max(valueLength - 1, maxCh2Offset);
+            // and for verifying the full value (minLength - 1 chars after the starting position for the shorter value)
+            _minusValueTailLength = -Math.Max(minLength - 1, maxCh2Offset);
 
             _v0Ch1 = value0[0];
             _v0Ch2 = value0[v0Ch2Offset];
@@ -245,8 +249,9 @@ namespace System.Buffers
             }
 
         ShortInput:
-            // Both values have the same length, iterate through all valid starting positions
-            nint shortInputEnd = searchSpaceLength - _value0.Length + 1;
+            // Iterate through all valid starting positions where the shorter value could match.
+            // StartsWith will correctly handle matching both values regardless of their lengths.
+            nint shortInputEnd = searchSpaceLength - _minValueLength + 1;
             for (nint i = 0; i < shortInputEnd; i++)
             {
                 ref char cur = ref Unsafe.Add(ref searchSpace, i);
