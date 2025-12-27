@@ -167,10 +167,15 @@ namespace Internal.IL
 
                 if (method.IsAsync)
                 {
-                    // We should not be creating any AsyncMethodVariants yet.
-                    // This hasn't been implemented.
-                    Debug.Assert(!method.IsAsyncVariant());
-                    return null;
+                    if (ecmaMethod.Signature.ReturnsTaskOrValueTask())
+                    {
+                        return AsyncThunkILEmitter.EmitTaskReturningThunk(ecmaMethod, ((CompilerTypeSystemContext)ecmaMethod.Context).GetAsyncVariantMethod(ecmaMethod));
+                    }
+                    else if (ecmaMethod.OwningType.Module != ecmaMethod.Context.SystemModule)
+                    {
+                        // We only allow non-Task returning runtime async methods in CoreLib
+                        ThrowHelper.ThrowBadImageFormatException();
+                    }
                 }
 
                 // Check to see if there is an override for the EcmaMethodIL. If there is not

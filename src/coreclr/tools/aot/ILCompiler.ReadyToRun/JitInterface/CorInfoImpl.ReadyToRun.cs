@@ -25,6 +25,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using System.Text;
 using System.Runtime.CompilerServices;
+using ILCompiler.ReadyToRun.TypeSystem;
 
 namespace Internal.JitInterface
 {
@@ -136,7 +137,6 @@ namespace Internal.JitInterface
         public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, object context, TypeDesc devirtualizedMethodOwner = null)
         {
             Debug.Assert(!method.IsUnboxingThunk());
-            Debug.Assert(!method.IsAsyncVariant());
             Method = method;
             Token = token;
             ConstrainedType = constrainedType;
@@ -558,6 +558,9 @@ namespace Internal.JitInterface
 
         public static bool ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport instructionSetSupport, MethodDesc method)
         {
+            if (method.IsAsyncVariant())
+                return false;
+
             EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
 
             var metadataReader = ecmaMethod.MetadataReader;
@@ -1410,22 +1413,17 @@ namespace Internal.JitInterface
 
                 if (resultDef is MethodDesc resultMethod)
                 {
-                    if (resultMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
-                        resultMethod = rawPinvoke.Target;
-                    if (resultMethod is AsyncMethodVariant asyncVariant)
-                        resultMethod = asyncVariant.Target;
-
                     // It's okay to strip the instantiation away because we don't need a MethodSpec
                     // token - SignatureBuilder will generate the generic method signature
                     // using instantiation parameters from the MethodDesc entity.
-                    resultMethod = resultMethod.GetTypicalMethodDefinition();
+                    resultMethod = resultMethod.GetTypicalMethodDefinition().GetPrimaryMethodDesc();
 
-                    Debug.Assert(resultMethod is EcmaMethod);
-                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultMethod).OwningType))
+                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(resultMethod.OwningType))
                     {
                         ModuleToken result = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(resultMethod, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
                         return result;
                     }
+                    Debug.Assert(resultMethod is EcmaMethod);
                     token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultMethod).Handle);
                     module = ((EcmaMethod)resultMethod).Module;
                 }
