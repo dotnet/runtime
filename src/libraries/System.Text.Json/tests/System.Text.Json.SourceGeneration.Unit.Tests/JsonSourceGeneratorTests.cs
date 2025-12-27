@@ -861,6 +861,33 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
         }
 
+#if ROSLYN4_4_OR_GREATER && NET
+        [Fact]
+        public void InitOnlyPropertyWithReservedKeywordName_CompilesSuccessfully()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/116507
+            // Verbatim identifiers like @else should be correctly handled in property initializers.
+
+            string source = """
+                #nullable enable
+                using System.Text.Json.Serialization;
+
+                public record A
+                {
+                    public A? @else { get; init; }
+                }
+
+                [JsonSerializable(typeof(A))]
+                public partial class MyContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+        }
+#endif
+
         [Fact]
         public void RefStructPropertyWithJsonIgnore_CompilesSuccessfully()
         {
