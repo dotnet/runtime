@@ -13,11 +13,7 @@
 #include <objidl.h>
 
 #include "daccess.h"
-
-#ifndef _UTILCODE_NO_DEPENDENCIES
-// MemoryRange is only available in VM/DAC builds, not in utilcode
 #include "memoryrange.h"
-#endif
 
 // Forward declarations
 template<typename T> struct cdac_data;
@@ -180,14 +176,12 @@ public:
     // This can be used by DAC to get the raw contents.
     // This becomes potentially invalid on the next call on the class, because the underlying storage can be
     // reallocated.
-#ifndef _UTILCODE_NO_DEPENDENCIES
     MemoryRange GetRawBuffer() const
     {
         SUPPORTS_DAC;
         PTR_VOID p = dac_cast<PTR_VOID>(m_swBuffer);
         return MemoryRange(p, m_dwBufferSize);
     }
-#endif // !_UTILCODE_NO_DEPENDENCIES
 
 private:
     // Raw pointer to buffer. This may change as the buffer grows and gets reallocated.
