@@ -18,9 +18,9 @@ internal static partial class Interop
             int dwIndex,
             ref char lpName,
             ref int lpcbName,
-            int[]? lpReserved,
+            [In] int[]? lpReserved,
             [Out] char[]? lpClass,
-            int[]? lpcbClass,
-            long[]? lpftLastWriteTime);
+            [In, Out] int[]? lpcbClass,
+            [Out] long[]? lpftLastWriteTime);
     }
 }
