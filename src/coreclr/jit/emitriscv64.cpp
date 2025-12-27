@@ -308,7 +308,6 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
     ssize_t imm;
 
     assert(tmpReg != codeGen->rsGetRsvdReg());
-    assert(reg1 != codeGen->rsGetRsvdReg());
 
     emitAttr size = EA_SIZE(attr);
 
@@ -1380,7 +1379,7 @@ void emitter::emitIns_R_R_Addr(instruction ins, emitAttr attr, regNumber regData
         ssize_t imm  = (ssize_t)addr;
         ssize_t lo12 = (imm << (64 - 12)) >> (64 - 12);
         imm -= lo12;
-        emitLoadImmediate(attr, regAddr, imm);
+        emitLoadImmediate<true>(attr, regAddr, imm);
         emitIns_R_R_I(ins, attr, regData, regAddr, lo12);
     }
 }
@@ -1469,20 +1468,33 @@ void emitter::emitIns_Jump(instruction ins, BasicBlock* dst, regNumber reg1, reg
 
 static inline constexpr unsigned WordMask(uint8_t bits);
 
-/*****************************************************************************
- *
- *  Emits load of 64-bit constant to register.
- *
- */
-void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
+//------------------------------------------------------------------------
+// emitLoadImmediate<true>: Emits load of 64-bit constant to register.
+//
+// Arguments:
+//    size   - Attribute
+//    reg    - Destination register for addi/load, source for stores
+//    imm    - An immediate value to be synthesized
+//    doEmit - If true, emit the instruction. if false, just calculate the number of instructions.
+//
+// Returns:
+//    Returns a positive integer which is the required number of instructions to synthesize a constant.
+//    But if the value cannot be synthesized using maximum 5 instructions, returns -1 to indicate that
+//    the constant should be loaded from the memory.
+//
+template <bool doEmit>
+int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 {
     assert(!EA_IS_RELOC(size));
-    assert(isGeneralRegister(reg));
+    assert(!doEmit || isGeneralRegister(reg));
 
     if (isValidSimm12(imm))
     {
-        emitIns_R_R_I(INS_addi, size, reg, REG_R0, imm & 0xFFF);
-        return;
+        if (doEmit)
+        {
+            emitIns_R_R_I(INS_addi, size, reg, REG_R0, imm & 0xFFF);
+        }
+        return 1;
     }
 
     /* The following algorithm works based on the following equation:
@@ -1493,7 +1505,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
      *
      * First, determine at which position to partition imm into high32 and offset,
      * so that it yields the least instruction.
-     * Where high32 = imm[y:x] and imm[63:y] are all zeroes or all ones.
+     * Where high32 = imm[y:x] and imm[63:y] are all zeros or all ones.
      *
      * From the above equation, the value of offset1 & offset2 are:
      * -> offset1 = imm[x-1:0]
@@ -1666,14 +1678,20 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     }
     if (upper != 0)
     {
-        ins[numberOfInstructions]    = INS_lui;
-        values[numberOfInstructions] = ((upper >> 19) & 0b1) ? (upper + 0xFFF00000) : upper;
+        if (doEmit)
+        {
+            ins[numberOfInstructions]    = INS_lui;
+            values[numberOfInstructions] = ((upper >> 19) & 0b1) ? (upper + 0xFFF00000) : upper;
+        }
         numberOfInstructions += 1;
     }
     if (lower != 0)
     {
-        ins[numberOfInstructions]    = INS_addiw;
-        values[numberOfInstructions] = lower;
+        if (doEmit)
+        {
+            ins[numberOfInstructions]    = INS_addiw;
+            values[numberOfInstructions] = lower;
+        }
         numberOfInstructions += 1;
     }
 
@@ -1705,17 +1723,20 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
             {
                 break;
             }
-            ins[numberOfInstructions - 2]    = INS_slli;
-            values[numberOfInstructions - 2] = shift;
-            if (isSubtractMode)
+            if (doEmit)
             {
-                ins[numberOfInstructions - 1]    = INS_addi;
-                values[numberOfInstructions - 1] = -(int32_t)chunk;
-            }
-            else
-            {
-                ins[numberOfInstructions - 1]    = INS_addi;
-                values[numberOfInstructions - 1] = chunk;
+                ins[numberOfInstructions - 2]    = INS_slli;
+                values[numberOfInstructions - 2] = shift;
+                if (isSubtractMode)
+                {
+                    ins[numberOfInstructions - 1]    = INS_addi;
+                    values[numberOfInstructions - 1] = -(int32_t)chunk;
+                }
+                else
+                {
+                    ins[numberOfInstructions - 1]    = INS_addi;
+                    values[numberOfInstructions - 1] = chunk;
+                }
             }
             shift = 0;
         }
@@ -1730,7 +1751,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     if (shift > 0)
     {
         numberOfInstructions += 1;
-        if (numberOfInstructions <= insCountLimit)
+        if (doEmit && (numberOfInstructions <= insCountLimit))
         {
             ins[numberOfInstructions - 1]    = INS_slli;
             values[numberOfInstructions - 1] = shift;
@@ -1741,33 +1762,53 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
     if (numberOfInstructions <= insCountLimit)
     {
-        instrDescLoadImm* id = static_cast<instrDescLoadImm*>(emitNewInstrLoadImm(size, originalImm));
-        id->idReg1(reg);
-        memcpy(id->ins, ins, sizeof(instruction) * numberOfInstructions);
-        memcpy(id->values, values, sizeof(int32_t) * numberOfInstructions);
+        instrDescLoadImm* id;
+        if (doEmit)
+        {
+            id = static_cast<instrDescLoadImm*>(emitNewInstrLoadImm(size, originalImm));
+            id->idReg1(reg);
+            memcpy(id->ins, ins, sizeof(instruction) * numberOfInstructions);
+            memcpy(id->values, values, sizeof(int32_t) * numberOfInstructions);
+        }
+
         if (utilizeSRLI)
         {
             numberOfInstructions += 1;
             assert(numberOfInstructions < absMaxInsCount);
-            id->ins[numberOfInstructions - 1]    = INS_srli;
-            id->values[numberOfInstructions - 1] = srliShiftAmount;
+            if (doEmit)
+            {
+                id->ins[numberOfInstructions - 1]    = INS_srli;
+                id->values[numberOfInstructions - 1] = srliShiftAmount;
+            }
         }
-        id->idCodeSize(numberOfInstructions * 4);
-        id->idIns(id->ins[numberOfInstructions - 1]);
 
-        appendToCurIG(id);
+        if (doEmit)
+        {
+            id->idCodeSize(numberOfInstructions * 4);
+            id->idIns(id->ins[numberOfInstructions - 1]);
+            appendToCurIG(id);
+        }
+
+        return numberOfInstructions;
     }
     else if (EA_SIZE(size) == EA_PTRSIZE)
     {
-        assert(!emitComp->compGeneratingProlog && !emitComp->compGeneratingEpilog);
-        auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
-        emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr));
+        if (doEmit)
+        {
+            assert(!emitComp->compGeneratingProlog && !emitComp->compGeneratingEpilog);
+            auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
+            emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr));
+        }
+        return -1;
     }
     else
     {
         assert(false && "If number of instruction exceeds MAX_NUM_OF_LOAD_IMM_INS, imm must be 8 bytes");
     }
+    return 0;
 }
+template int emitter::emitLoadImmediate<false>(emitAttr attr, regNumber reg, ssize_t imm);
+template int emitter::emitLoadImmediate<true>(emitAttr attr, regNumber reg, ssize_t imm);
 
 /*****************************************************************************
  *
@@ -1831,7 +1872,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         ssize_t imm = (ssize_t)params.addr;
         jalrOffset  = (imm << (64 - 12)) >> (64 - 12); // low 12-bits, sign-extended
         imm -= jalrOffset;
-        emitLoadImmediate(EA_PTRSIZE, params.ireg, imm); // upper bits
+        emitLoadImmediate<true>(EA_PTRSIZE, params.ireg, imm); // upper bits
     }
 
     /* Managed RetVal: emit sequence point for the call */
@@ -4582,7 +4623,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     if (offset != 0)
                     {
                         addrReg = needTemp ? codeGen->internalRegisters.GetSingle(indir) : dataReg;
-                        emitLoadImmediate(EA_PTRSIZE, addrReg, offset);
+                        emitLoadImmediate<true>(EA_PTRSIZE, addrReg, offset);
                     }
                     emitIns_R_R_I(ins, attr, dataReg, addrReg, lo12);
                 }
@@ -4602,7 +4643,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
             // First load/store tmpReg with the large offset constant
-            emitLoadImmediate(EA_PTRSIZE, tmpReg, offset);
+            emitLoadImmediate<true>(EA_PTRSIZE, tmpReg, offset);
 
             // Then load/store dataReg from/to [memBase + tmpReg]
             emitAttr addType = varTypeIsGC(memBase) ? EA_BYREF : EA_PTRSIZE;

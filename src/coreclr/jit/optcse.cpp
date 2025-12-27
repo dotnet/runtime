@@ -1794,6 +1794,16 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         {
             return false;
         }
+
+#if defined(TARGET_RISCV64)
+        // Don't apply constant CSE on the operands of FIELD_LIST, as it prevents constant folding
+        // when lowering GT_CALL with a GT_FIELD_LIST operand, which results in generating bloated code.
+        GenTree* parent = tree->gtGetParent(nullptr);
+        if ((parent != nullptr) && parent->OperIs(GT_FIELD_LIST))
+        {
+            return false;
+        }
+#endif
     }
 
     // Don't allow non-SIMD struct CSEs under a return; we don't fully
@@ -5873,12 +5883,12 @@ bool Compiler::optSharedConstantCSEEnabled()
     {
         enableSharedConstCSE = true;
     }
-#if defined(TARGET_ARMARCH)
-    else if (configValue == CONST_CSE_ENABLE_ARM)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
+    else if (configValue == CONST_CSE_ENABLE_ARM_RISCV64)
     {
         enableSharedConstCSE = true;
     }
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_RISCV64
 
     return enableSharedConstCSE;
 }
@@ -5898,8 +5908,8 @@ bool Compiler::optConstantCSEEnabled()
     {
         enableConstCSE = true;
     }
-#if defined(TARGET_ARMARCH)
-    else if ((configValue == CONST_CSE_ENABLE_ARM) || (configValue == CONST_CSE_ENABLE_ARM_NO_SHARING))
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
+    else if ((configValue == CONST_CSE_ENABLE_ARM_RISCV64) || (configValue == CONST_CSE_ENABLE_ARM_RISCV64_NO_SHARING))
     {
         enableConstCSE = true;
     }

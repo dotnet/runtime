@@ -5164,9 +5164,40 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             case GT_CNS_LNG:
             case GT_CNS_INT:
-                costEx = 1;
-                costSz = 4;
+            {
+                GenTreeIntConCommon* con            = tree->AsIntConCommon();
+                bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
+                bool                 addrNeedsReloc = con->AddrNeedsReloc(this);
+                ssize_t              imm            = static_cast<ssize_t>(con->LngValue());
+                emitAttr             size           = EA_SIZE(emitActualTypeSize(tree));
+
+                if (iconNeedsReloc || addrNeedsReloc)
+                {
+                    // auipc + addi
+                    costSz = 8;
+                    costEx = 2;
+                }
+                else
+                {
+                    int instructionCount = GetEmitter()->emitLoadImmediate<false>(size, REG_NA, imm);
+
+                    assert(instructionCount != 0);
+
+                    if (instructionCount == -1)
+                    {
+                        // Cannot emit code in a 5 instruction sequence
+                        // Create a 8-byte constant(8) and load it with auipc(4) + ld(4)
+                        costSz = 16;
+                        costEx = 1 + IND_COST_EX;
+                    }
+                    else
+                    {
+                        costSz = 4 * instructionCount;
+                        costEx = instructionCount;
+                    }
+                }
                 goto COMMON_CNS;
+            }
 #elif defined(TARGET_WASM)
             case GT_CNS_STR:
                 costEx = IND_COST_EX + 2;
