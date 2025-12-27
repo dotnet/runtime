@@ -24,6 +24,7 @@
     <Compile Include="System\Linq\AnyAsync.cs" />
     <Compile Include="System\Linq\Append.cs" />
     <Compile Include="System\Linq\AsyncEnumerable.cs" />
+    <Compile Include="System\Linq\AsyncIterator.cs" />
     <Compile Include="System\Linq\AverageAsync.cs" />
     <Compile Include="System\Linq\Cast.cs" />
     <Compile Include="System\Linq\Chunk.cs" />
@@ -63,6 +64,7 @@
     <Compile Include="System\Linq\SequenceEqualAsync.cs" />
     <Compile Include="System\Linq\Shuffle.cs" />
     <Compile Include="System\Linq\SingleAsync.cs" />
+    <Compile Include="System\Linq\SingleLinkedNode.cs" />
     <Compile Include="System\Linq\Skip.cs" />
     <Compile Include="System\Linq\SkipLast.cs" />
     <Compile Include="System\Linq\SkipWhile.cs" />
