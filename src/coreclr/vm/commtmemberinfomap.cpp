@@ -450,14 +450,12 @@ UnLink:
             // property names.  This is an obscure corner case.
             m_MethodProps[i].pName = m_MethodProps[m_MethodProps[i].property].pName;
             WCHAR *pNewName;
-            //string length + "get" + null terminator.
-            //XXX Fri 11/19/2004 Why is this + 4 rather than +3?
-            size_t cchpNewName = u16_strlen(m_MethodProps[ixGet].pName) + 4 + 1;
+            size_t cchpNewName = u16_strlen(m_MethodProps[ixGet].pName) + 3 + 1;
             pNewName = reinterpret_cast<WCHAR*>(m_sNames.Alloc(cchpNewName * sizeof(WCHAR)));
             wcscpy_s(pNewName, cchpNewName, W("get"));
             wcscat_s(pNewName, cchpNewName, m_MethodProps[ixGet].pName);
             m_MethodProps[ixGet].pName = pNewName;
-            cchpNewName = u16_strlen(m_MethodProps[ixSet].pName) + 4 + 1;
+            cchpNewName = u16_strlen(m_MethodProps[ixSet].pName) + 3 + 1;
             pNewName = reinterpret_cast<WCHAR*>(m_sNames.Alloc(cchpNewName * sizeof(WCHAR));
             wcscpy_s(pNewName, cchpNewName, W("set"));
             wcscat_s(pNewName, cchpNewName, m_MethodProps[ixSet].pName);
