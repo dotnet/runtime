@@ -44,6 +44,65 @@ namespace System.Threading
                 }
             }
 
+            // Returns "true" if adding NumProcessingWork has reached the limit.
+            // NOTE: it is possible to have overflow and NumProcessingWork under the limit
+            // at the same time if the limit has been changed afterwards. That is ok.
+            // While changes in NumProcessingWork need to be matched with semaphore Wait/Signal,
+            // the redundantly set overflow is mostly harmless and should self-correct when
+            // a worker that sees no work calls TryDecrementProcessingWork, possibly at a cost of
+            // redundant check for work.
+            public bool IsOverflow
+            {
+                get
+                {
+                    return (long)_data < 0;
+                }
+            }
+
+            /// <summary>
+            /// Tries to increase the number of threads processing work items by one.
+            /// If at or above goal, returns false and sets overflow flag instead.
+            /// NOTE: only if "true" is returned the NumProcessingWork is incremented.
+            /// </summary>
+            public bool TryIncrementProcessingWork()
+            {
+                Debug.Assert(NumProcessingWork >= 0);
+                if (NumProcessingWork < NumThreadsGoal)
+                {
+                    NumProcessingWork++;
+                    // This should never overflow
+                    Debug.Assert(NumProcessingWork > 0);
+                    return true;
+                }
+                else
+                {
+                    _data |= (1ul << 63);
+                    return false;
+                }
+            }
+
+            /// <summary>
+            /// Tries to reduce the number of threads processing work items by one.
+            /// If in an overflow state, clears the overflow flag and returns false.
+            /// NOTE: only if "true" is returned the NumProcessingWork is decremented.
+            /// </summary>
+            public bool TryDecrementProcessingWork()
+            {
+                Debug.Assert(NumProcessingWork > 0);
+                if (IsOverflow)
+                {
+                    _data &= ~(1ul << 63);
+                    return false;
+                }
+                else
+                {
+                    NumProcessingWork--;
+                    // This should never underflow
+                    Debug.Assert(NumProcessingWork >= 0);
+                    return true;
+                }
+            }
+
             /// <summary>
             /// Number of thread pool threads that currently exist.
             /// </summary>
