@@ -100,6 +100,8 @@ public:
         }
         CONTRACT_END;
 
+        nBytes = ALIGN_UP(nBytes, sizeof(void*));
+
         // Check if current segment has enough space
         if (m_pCurrent == NULL || (m_cbSize - m_cbUsed) < nBytes)
         {
