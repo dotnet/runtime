@@ -598,7 +598,7 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     CORINFO_METHOD_HANDLE guardedMethodUnboxedEntryHandle;
     CORINFO_METHOD_HANDLE guardedMethodInstantiatedEntryHandle;
     unsigned              likelihood;
-    bool                  arrayInterface;
+    bool                  needsMethodContext;
 
     CORINFO_METHOD_INFO methInfo;
 

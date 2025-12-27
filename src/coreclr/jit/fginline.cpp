@@ -544,32 +544,6 @@ private:
     }
 #endif // FEATURE_MULTIREG_RET
 
-    CORINFO_METHOD_HANDLE GetMethodHandle(GenTreeCall* call)
-    {
-        assert(call->IsDevirtualizationCandidate(m_compiler));
-        if (call->IsVirtual())
-        {
-            return call->gtCallMethHnd;
-        }
-        else
-        {
-            GenTree* runtimeMethHndNode =
-                call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetNode();
-            assert(runtimeMethHndNode != nullptr);
-            switch (runtimeMethHndNode->OperGet())
-            {
-                case GT_RUNTIMELOOKUP:
-                    return runtimeMethHndNode->AsRuntimeLookup()->GetMethodHandle();
-                case GT_CNS_INT:
-                    return CORINFO_METHOD_HANDLE(runtimeMethHndNode->AsIntCon()->IconValue());
-                default:
-                    assert(!"Unexpected type in RuntimeMethodHandle arg.");
-                    return nullptr;
-            }
-            return nullptr;
-        }
-    }
-
     //------------------------------------------------------------------------
     // LateDevirtualization: re-examine calls after inlining to see if we
     //   can do more devirtualization
@@ -612,9 +586,9 @@ private:
 
         if (tree->OperIs(GT_CALL))
         {
-            GenTreeCall* call = tree->AsCall();
-            // TODO-CQ: Drop `call->gtCallType == CT_USER_FUNC` once we have GVM devirtualization
-            bool tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler) && (call->gtCallType == CT_USER_FUNC);
+            GenTreeCall*          call          = tree->AsCall();
+            CORINFO_METHOD_HANDLE method        = NO_METHOD_HANDLE;
+            bool                  tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler, &method);
 
 #ifdef DEBUG
             tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization() == 1);
@@ -632,10 +606,11 @@ private:
 
                 CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
                 InlineContext*         inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
-                CORINFO_METHOD_HANDLE  method                 = GetMethodHandle(call);
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
+
+                assert(method != NO_METHOD_HANDLE);
 
                 CORINFO_CONTEXT_HANDLE contextInput = context;
                 context                             = nullptr;
