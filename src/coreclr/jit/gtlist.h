@@ -69,7 +69,7 @@ GTNODE(KEEPALIVE        , GenTree            ,0,0,GTK_UNOP|GTK_NOVALUE)   // kee
 GTNODE(CAST             , GenTreeCast        ,0,0,GTK_UNOP|GTK_EXOP)      // conversion to another type
 GTNODE(BITCAST          , GenTreeOp          ,0,1,GTK_UNOP)               // reinterpretation of bits as another type
 GTNODE(CKFINITE         , GenTreeOp          ,0,1,GTK_UNOP|DBK_NOCONTAIN) // Check for NaN
-GTNODE(LCLHEAP          , GenTreeOp          ,0,1,GTK_UNOP|DBK_NOCONTAIN) // alloca()
+GTNODE(LCLHEAP          , GenTreeOpWithILOffset, 0,1,GTK_UNOP|GTK_EXOP|DBK_NOCONTAIN) // alloca()
 
 GTNODE(BOUNDS_CHECK     , GenTreeBoundsChk   ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // a bounds check - for arrays/spans/SIMDs/HWINTRINSICs
 
