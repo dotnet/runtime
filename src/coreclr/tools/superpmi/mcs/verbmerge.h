@@ -83,9 +83,9 @@ private:
     static char* ConvertWideCharToMultiByte(LPCWSTR wstr);
     static WCHAR* ConvertMultiByteToWideChar(LPCSTR str);
 
-    static int AppendFileRaw(HANDLE hFileOut, LPCWSTR fileFullPath, unsigned char* buffer, size_t bufferSize);
-    static int AppendFile(HANDLE hFileOut, LPCWSTR fileFullPath, bool dedup, unsigned char* buffer, size_t bufferSize);
-    static int AppendAllInDir(HANDLE              hFileOut,
+    static int AppendFileRaw(FILE* fpOut, LPCWSTR fileFullPath, unsigned char* buffer, size_t bufferSize);
+    static int AppendFile(FILE* fpOut, LPCWSTR fileFullPath, bool dedup, unsigned char* buffer, size_t bufferSize);
+    static int AppendAllInDir(FILE*               fpOut,
                               LPCWSTR             dir,
                               LPCWSTR             file,
                               unsigned char*      buffer,
