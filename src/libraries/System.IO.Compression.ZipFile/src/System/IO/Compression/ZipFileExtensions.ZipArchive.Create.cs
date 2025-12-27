@@ -77,6 +77,10 @@ namespace System.IO.Compression
                                                           string sourceFileName, string entryName, CompressionLevel compressionLevel) =>
             DoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel);
 
+        public static ZipArchiveEntry CreateEntryFromFile(this ZipArchive destination,
+                                                  string sourceFileName, string entryName, CompressionLevel compressionLevel, string password, ZipArchiveEntry.EncryptionMethod encryption) =>
+    DoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel);
+
         internal static ZipArchiveEntry DoCreateEntryFromFile(this ZipArchive destination,
                                                               string sourceFileName, string entryName, CompressionLevel? compressionLevel)
         {
@@ -107,8 +111,8 @@ namespace System.IO.Compression
             FileStream fs = new FileStream(sourceFileName, FileMode.Open, FileAccess.Read, FileShare.Read, ZipFile.FileStreamBufferSize, useAsync);
 
             ZipArchiveEntry entry = compressionLevel.HasValue ?
-                                    destination.CreateEntry(entryName, compressionLevel.Value) :
-                                    destination.CreateEntry(entryName);
+                             destination.CreateEntry(entryName, compressionLevel.Value)
+                            : destination.CreateEntry(entryName);
 
             DateTime lastWrite = File.GetLastWriteTime(sourceFileName);
 

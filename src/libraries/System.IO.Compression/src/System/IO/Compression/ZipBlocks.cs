@@ -670,7 +670,109 @@ namespace System.IO.Compression
             bytesRead = stream.ReadAtLeast(blockBytes, blockBytes.Length, throwOnEndOfStream: false);
             return TrySkipBlockFinalize(stream, blockBytes, bytesRead);
         }
+
+        public static bool TrySkipBlockAESAware(Stream stream, out WinZipAesExtraField? aesExtraField)
+        {
+            aesExtraField = null;
+            BinaryReader reader = new BinaryReader(stream);
+
+            // Read the first 4 bytes (local file header signature)
+            byte[] signatureBytes = reader.ReadBytes(4);
+            if (!signatureBytes.AsSpan().SequenceEqual(SignatureConstantBytes))
+            {
+                return false; // Not a valid local file header
+            }
+
+            // Read fixed-size fields after signature
+            // Skip version through mod date (10 bytes), then skip CRC32 + sizes (12 bytes)
+            reader.ReadBytes(22); // Skip 22 bytes total
+
+            ushort nameLength = reader.ReadUInt16();
+            ushort extraLength = reader.ReadUInt16();
+
+            // Skip file name
+            stream.Seek(nameLength, SeekOrigin.Current);
+
+            // Parse extra fields if present
+            if (extraLength > 0)
+            {
+                long extraStart = stream.Position;
+                long extraEnd = extraStart + extraLength;
+
+                while (stream.Position < extraEnd)
+                {
+                    ushort headerId = reader.ReadUInt16();
+                    ushort dataSize = reader.ReadUInt16();
+
+                    if (headerId == WinZipAesExtraField.HeaderId) // 0x9901
+                    {
+                        // AES extra field structure:
+                        // Vendor version (2) + Vendor ID (2) + AES strength (1) + Original compression (2)
+                        ushort vendorVersion = reader.ReadUInt16();
+                        reader.ReadBytes(2); // Skip vendor ID 'AE'
+                        byte aesStrength = reader.ReadByte(); // 1, 2, or 3
+                        ushort compressionMethod = reader.ReadUInt16();
+
+                        aesExtraField = new WinZipAesExtraField(vendorVersion, aesStrength, compressionMethod);
+                        break;
+                    }
+                    else
+                    {
+                        stream.Seek(dataSize, SeekOrigin.Current); // Skip unknown extra field
+                    }
+                }
+            }
+
+            return true;
+        }
     }
+    internal struct WinZipAesExtraField
+    {
+        public const ushort HeaderId = 0x9901;
+        private ushort _vendorVersion = 2;
+        private byte _aesStrength;
+        private ushort _compressionMethod;
+
+        public WinZipAesExtraField(ushort VendorVersion, byte AesStrength, ushort CompressionMethod)
+        {
+            this.VendorVersion = VendorVersion;
+            this.AesStrength = AesStrength;
+            this.CompressionMethod = CompressionMethod;
+        }
+
+        public ushort VendorVersion { get => _vendorVersion; set => _vendorVersion = value; }
+        public byte AesStrength { get => _aesStrength; set => _aesStrength = value; } // 1=128bit, 2=192bit, 3=256bit
+        public ushort CompressionMethod { get => _compressionMethod; set => _compressionMethod = value; } // Original compression method
+
+        public static int TotalSize => 11; // 2 (header) + 2 (size) + 7 (data)
+
+        public void WriteBlock(Stream stream)
+        {
+            Span<byte> buffer = new byte[TotalSize];
+            WriteBlockCore(buffer);
+            stream.Write(buffer);
+        }
+
+        public async Task WriteBlockAsync(Stream stream, CancellationToken cancellationToken = default)
+        {
+            byte[] buffer = new byte[TotalSize];
+            WriteBlockCore(buffer);
+            await stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+        }
+
+        private void WriteBlockCore(Span<byte> buffer)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(0), HeaderId);
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(2), 7); // DataSize
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(4), VendorVersion);
+            buffer[6] = (byte)'A';
+            buffer[7] = (byte)'E';
+            buffer[8] = AesStrength;
+
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer[9..], CompressionMethod);
+        }
+    }
+
 
     internal sealed partial class ZipCentralDirectoryFileHeader
     {
