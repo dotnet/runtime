@@ -368,6 +368,13 @@ namespace System.Memory.Tests.Span
         // Two-string specialization with different first characters
         [InlineData("abc", "xyz")]
         [InlineData("foo", "baz")]
+        // Two-string specialization with different length values
+        [InlineData("ab", "abc")]
+        [InlineData("foo", "foobar")]
+        [InlineData("hello", "hi")]
+        [InlineData("test", "testing123")]
+        [InlineData("xy", "xyz123")]
+        [InlineData("abcdefgh", "ab")]
         // Simple Teddy cases
         [InlineData("abc", "cde")]
         [InlineData("abc", "cd")]

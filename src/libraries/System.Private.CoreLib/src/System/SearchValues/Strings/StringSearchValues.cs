@@ -458,19 +458,16 @@ namespace System.Buffers
             int v0Ch2Offset = CharacterFrequencyHelper.GetSecondCharacterOffset(value0, ignoreCase, minLength);
             int v1Ch2Offset = CharacterFrequencyHelper.GetSecondCharacterOffset(value1, ignoreCase, minLength);
 
-            // For case-insensitive search, ensure anchor characters are ASCII
-            if (ignoreCase)
-            {
-                if (!char.IsAscii(value0[0]) || !char.IsAscii(value0[v0Ch2Offset]) ||
-                    !char.IsAscii(value1[0]) || !char.IsAscii(value1[v1Ch2Offset]))
-                {
-                    return null;
-                }
-            }
-
             if (!ignoreCase)
             {
                 return new TwoStringSearchValuesThreeChars<CaseSensitive>(uniqueValues, value0, value1, v0Ch2Offset, v1Ch2Offset);
+            }
+
+            // For case-insensitive search, ensure anchor characters are ASCII
+            if (!char.IsAscii(value0[0]) || !char.IsAscii(value0[v0Ch2Offset]) ||
+                !char.IsAscii(value1[0]) || !char.IsAscii(value1[v1Ch2Offset]))
+            {
+                return null;
             }
 
             if (asciiLettersOnly)
