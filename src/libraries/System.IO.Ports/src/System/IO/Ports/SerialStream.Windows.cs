@@ -721,7 +721,8 @@ namespace System.IO.Ports
                     // turn off all events and signal WaitCommEvent
                     Interop.Kernel32.SetCommMask(_handle, 0);
                     //if device supports DTR then clear
-                    if ((_commProp.dwProvCapabilities & Interop.Kernel32.COMMPROP.PCF_DTRDSR) != 0) {
+                    if ((_commProp.dwProvCapabilities & Interop.Kernel32.COMMPROP.PCF_DTRDSR) != 0)
+                    {
                         if (!Interop.Kernel32.EscapeCommFunction(_handle, Interop.Kernel32.CommFunctions.CLRDTR))
                         {
                             int hr = Marshal.GetLastPInvokeError();
