@@ -1078,9 +1078,10 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         firstArgType = context.DeclarationMetaSig.GetLastTypeHandleThrowing();
 
         // For instance member access on value types, the first argument (this) must be a byref.
-        // However, the target type must not be parameterized. Keeping the byref here can lead to
-        // incorrect shared generic context lookups at runtime.
-        if (firstArgCorType == ELEMENT_TYPE_BYREF)
+        // However, the target type used for token emission must not be parameterized. Keeping the
+        // byref here can lead to incorrect shared generic context lookups at runtime.
+        if ((context.Kind == UnsafeAccessorKind::Method || context.Kind == UnsafeAccessorKind::Field)
+            && firstArgCorType == ELEMENT_TYPE_BYREF)
         {
             SigPointer targetTypeSig = context.TargetTypeSig;
             CorElementType elemType;
