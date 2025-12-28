@@ -366,8 +366,8 @@ namespace System.Memory.Tests.Span
         [InlineData("test1", "test2")]
         // Two-string specialization with same length values (longer strings for vector testing)
         [InlineData("abcdefghij", "klmnopqrst")]
-        [InlineData("0123456789abcdef", "fedcba9876543210")]
-        [InlineData("thequickbrownfox", "jumpsoverlazydog")]
+        [InlineData("abcdefghijklmno", "123456789abcdef")]
+        [InlineData("helloworld1234", "goodbyeworld56")]
         // Two-string specialization with same first character
         [InlineData("abc", "axy")]
         [InlineData("hello", "happy")]
