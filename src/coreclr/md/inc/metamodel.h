@@ -14,7 +14,7 @@
 #endif
 
 #include <cor.h>
-#include "stgpool.h"
+#include <stgpool.h>
 #include <metamodelpub.h>
 
 #include "../datablob.h"

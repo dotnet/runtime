@@ -9,7 +9,7 @@
 //
 //*****************************************************************************
 #include "stdafx.h"                     // Standard include.
-#include "stgpool.h"                    // Our interface definitions.
+#include <stgpool.h>                    // Our interface definitions.
 
 //
 //

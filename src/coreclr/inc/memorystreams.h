@@ -152,7 +152,8 @@ private:
 // use this.
 //*****************************************************************************
 
-#ifndef DACCESS_COMPILE
+// DPTR instead of VPTR because we don't actually call any of the virtuals.
+typedef DPTR(class CGrowableStream) PTR_CGrowableStream;
 
 class CGrowableStream : public IStream
 {
@@ -167,7 +168,9 @@ public:
     //   increased memory usage.
     CGrowableStream(float multiplicativeGrowthRate = 2.0, DWORD additiveGrowthRate = 4096);
 
+#ifndef DACCESS_COMPILE
     virtual ~CGrowableStream();
+#endif
 
     // Expose the total raw buffer.
     // This can be used by DAC to get the raw contents.
@@ -175,13 +178,13 @@ public:
     // reallocated.
     MemoryRange GetRawBuffer() const
     {
-        PTR_VOID p = dac_cast<PTR_VOID>(m_swBuffer);
+        PTR_VOID p = m_swBuffer;
         return MemoryRange(p, m_dwBufferSize);
     }
 
 private:
     // Raw pointer to buffer. This may change as the buffer grows and gets reallocated.
-    BYTE  *m_swBuffer;
+    PTR_BYTE m_swBuffer;
 
     // Total size of the buffer in bytes.
     DWORD   m_dwBufferSize;
@@ -206,6 +209,7 @@ private:
     // IStream methods
 public:
 
+#ifndef DACCESS_COMPILE
     ULONG STDMETHODCALLTYPE AddRef() {
         return InterlockedIncrement(&m_cRef);
     }
@@ -261,11 +265,18 @@ public:
     // Make a deep copy of the stream into a new CGrowableStream instance
     STDMETHOD(Clone)(
          IStream ** ppstm);
+
+#endif // DACCESS_COMPILE
+
+    friend struct cdac_data<CGrowableStream>;
 }; // class CGrowableStream
 
-#endif // !DACCESS_COMPILE
 
-// DPTR instead of VPTR because we don't actually call any of the virtuals.
-typedef DPTR(class CGrowableStream) PTR_CGrowableStream;
+template<>
+struct cdac_data<CGrowableStream>
+{
+    static constexpr size_t Buffer = offsetof(CGrowableStream, m_swBuffer);
+    static constexpr size_t Size = offsetof(CGrowableStream, m_dwBufferSize);
+};
 
 #endif // __MemoryStreams_h__

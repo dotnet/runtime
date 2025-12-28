@@ -13,7 +13,7 @@
 #pragma once
 #endif
 
-#include "stgpool.h"
+#include <stgpool.h>
 
 //*****************************************************************************
 // This Record pool class collects user Records into a big consecutive heap.

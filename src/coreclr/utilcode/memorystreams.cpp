@@ -9,22 +9,17 @@
 
 #include "stdafx.h"
 #include "memorystreams.h"
-#include <posterror.h>
-#include <safemath.h>
-
-using std::min;
-using std::max;
-using std::nothrow;
+#include "utilcode.h"
+#include "posterror.h"
 
 //
 // CInMemoryStream
 //
 
-
 ULONG
 STDMETHODCALLTYPE CInMemoryStream::Release()
 {
-ULONG       cRef = InterlockedDecrement(&m_cRef);
+    ULONG cRef = InterlockedDecrement(&m_cRef);
     if (cRef == 0)
     {
         if (m_dataCopy != NULL)
@@ -39,7 +34,7 @@ HRESULT
 STDMETHODCALLTYPE
 CInMemoryStream::QueryInterface(REFIID riid, PVOID *ppOut)
 {
-if (!ppOut)
+    if (!ppOut)
     {
         return E_POINTER;
     }
@@ -63,7 +58,6 @@ CInMemoryStream::Read(
     ULONG  cb,
     ULONG *pcbRead)
 {
-
     ULONG       cbRead = min(cb, m_cbSize - m_cbCurrent);
 
     if (cbRead == 0)
@@ -82,9 +76,8 @@ CInMemoryStream::Write(
     ULONG       cb,
     ULONG      *pcbWritten)
 {
-
     if (ovadd_gt(m_cbCurrent, cb, m_cbSize))
-        return (E_OUTOFMEMORY);
+        return (PostError(OutOfMemory()));
 
     memcpy((BYTE *) m_pMem + m_cbCurrent, pv, cb);
     m_cbCurrent += cb;
@@ -99,7 +92,6 @@ CInMemoryStream::Seek(
     DWORD           dwOrigin,
     ULARGE_INTEGER *plibNewPosition)
 {
-
     _ASSERTE(dwOrigin == STREAM_SEEK_SET || dwOrigin == STREAM_SEEK_CUR);
     _ASSERTE(dlibMove.QuadPart <= static_cast<LONGLONG>(UINT32_MAX));
 
@@ -129,7 +121,6 @@ CInMemoryStream::CopyTo(
     ULARGE_INTEGER *pcbRead,
     ULARGE_INTEGER *pcbWritten)
 {
-
     HRESULT     hr;
     // We don't handle pcbRead or pcbWritten.
     _ASSERTE(pcbRead == 0);
@@ -138,30 +129,24 @@ CInMemoryStream::CopyTo(
     _ASSERTE(cb.QuadPart <= UINT32_MAX);
     ULONG       cbTotal = min(static_cast<ULONG>(cb.QuadPart), m_cbSize - m_cbCurrent);
     ULONG       cbRead=min((ULONG)1024, cbTotal);
-    void        *pBuf = malloc(cbRead);
+    CQuickBytes rBuf;
+    void        *pBuf = rBuf.AllocNoThrow(cbRead);
     if (pBuf == 0)
-        return (E_OUTOFMEMORY);
+        return (PostError(OutOfMemory()));
 
     while (cbTotal)
         {
             if (cbRead > cbTotal)
                 cbRead = cbTotal;
             if (FAILED(hr=Read(pBuf, cbRead, 0)))
-            {
-                free(pBuf);
                 return (hr);
-            }
             if (FAILED(hr=pstm->Write(pBuf, cbRead, 0)))
-            {
-                free(pBuf);
                 return (hr);
-            }
             cbTotal -= cbRead;
         }
 
     // Adjust seek pointer to the end.
     m_cbCurrent = m_cbSize;
-    free(pBuf);
 
     return (S_OK);
 } // CInMemoryStream::CopyTo
@@ -173,9 +158,9 @@ CInMemoryStream::CreateStreamOnMemory(
     IStream **ppIStream,                // Return stream object here.
     BOOL      fDeleteMemoryOnRelease)
 {
-CInMemoryStream *pIStream;          // New stream object.
+    CInMemoryStream *pIStream;          // New stream object.
     if ((pIStream = new (nothrow) CInMemoryStream) == 0)
-        return (E_OUTOFMEMORY);
+        return (PostError(OutOfMemory()));
     pIStream->InitNew(pMem, cbSize);
     if (fDeleteMemoryOnRelease)
     {
@@ -192,9 +177,9 @@ CInMemoryStream::CreateStreamOnMemoryCopy(
     ULONG     cbSize,
     IStream **ppIStream)
 {
-CInMemoryStream *pIStream;          // New stream object.
+    CInMemoryStream *pIStream;          // New stream object.
     if ((pIStream = new (nothrow) CInMemoryStream) == 0)
-        return (E_OUTOFMEMORY);
+        return (PostError(OutOfMemory()));
 
     // Init the stream.
     pIStream->m_cbCurrent = 0;
@@ -206,7 +191,7 @@ CInMemoryStream *pIStream;          // New stream object.
     if (pIStream->m_dataCopy == NULL)
     {
         delete pIStream;
-        return (E_OUTOFMEMORY);
+        return (PostError(OutOfMemory()));
     }
 
     pIStream->m_pMem = pIStream->m_dataCopy;
@@ -233,7 +218,7 @@ CInMemoryStream *pIStream;          // New stream object.
 //   increased memory usage.
 CGrowableStream::CGrowableStream(float multiplicativeGrowthRate, DWORD additiveGrowthRate)
 {
-m_swBuffer = NULL;
+    m_swBuffer = NULL;
     m_dwBufferSize = 0;
     m_dwBufferIndex = 0;
     m_dwStreamLength = 0;
@@ -252,7 +237,7 @@ m_swBuffer = NULL;
 
 CGrowableStream::~CGrowableStream()
 {
-// Destroy the buffer.
+    // Destroy the buffer.
     if (m_swBuffer != NULL)
         delete [] m_swBuffer;
 
@@ -323,7 +308,8 @@ HRESULT CGrowableStream::EnsureCapacity(DWORD newLogicalSize)
 ULONG
 STDMETHODCALLTYPE
 CGrowableStream::Release()
-{ULONG cRef = InterlockedDecrement(&m_cRef);
+{
+    ULONG cRef = InterlockedDecrement(&m_cRef);
 
     if (cRef == 0)
         delete this;
@@ -337,7 +323,6 @@ CGrowableStream::QueryInterface(
     REFIID riid,
     PVOID *ppOut)
 {
-
     if (riid != IID_IUnknown && riid!=IID_ISequentialStream && riid!=IID_IStream)
         return E_NOINTERFACE;
 
@@ -352,7 +337,6 @@ CGrowableStream::Read(
     ULONG  cb,
     ULONG *pcbRead)
 {
-
     HRESULT hr = S_OK;
     DWORD dwCanReadBytes = 0;
 
@@ -398,7 +382,6 @@ CGrowableStream::Write(
     ULONG       cb,
     ULONG      *pcbWritten)
 {
-
     HRESULT hr = S_OK;
     DWORD dwActualWrite = 0;
 
@@ -456,7 +439,6 @@ CGrowableStream::Seek(
     DWORD           dwOrigin,
     ULARGE_INTEGER *plibNewPosition)
 {
-
     // a Seek() call on STREAM_SEEK_CUR and a dlibMove == 0 is a
     // request to get the current seek position.
     if ((dwOrigin == STREAM_SEEK_CUR && dlibMove.u.LowPart == 0) &&
@@ -493,7 +475,6 @@ STDMETHODIMP
 CGrowableStream::SetSize(
     ULARGE_INTEGER libNewSize)
 {
-
     DWORD dwNewSize = libNewSize.u.LowPart;
 
     _ASSERTE(libNewSize.u.HighPart == 0);
@@ -521,7 +502,6 @@ CGrowableStream::Stat(
     STATSTG *pstatstg,
     DWORD    grfStatFlag)
 {
-
     if (NULL == pstatstg)
         return E_POINTER;
 
@@ -554,7 +534,6 @@ HRESULT
 CGrowableStream::Clone(
     IStream **ppStream)
 {
-
     if (NULL == ppStream)
         return E_POINTER;
 

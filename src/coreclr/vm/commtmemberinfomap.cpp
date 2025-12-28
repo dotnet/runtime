@@ -457,7 +457,7 @@ UnLink:
             wcscat_s(pNewName, cchpNewName, m_MethodProps[ixGet].pName);
             m_MethodProps[ixGet].pName = pNewName;
             cchpNewName = u16_strlen(m_MethodProps[ixSet].pName) + 3 + 1;
-            pNewName = reinterpret_cast<WCHAR*>(m_sNames.Alloc(cchpNewName * sizeof(WCHAR));
+            pNewName = reinterpret_cast<WCHAR*>(m_sNames.Alloc(cchpNewName * sizeof(WCHAR)));
             wcscpy_s(pNewName, cchpNewName, W("set"));
             wcscat_s(pNewName, cchpNewName, m_MethodProps[ixSet].pName);
             m_MethodProps[ixSet].pName = pNewName;
