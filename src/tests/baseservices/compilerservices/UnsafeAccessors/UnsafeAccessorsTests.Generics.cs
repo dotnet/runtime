@@ -12,15 +12,33 @@ using Xunit;
 struct Struct
 {
     public Type Value;
-    private void SetType(Type type) => Value = type;
-    private void SetType<T>() => Value = typeof(T);
+    private void SetType(Type type)
+    {
+        Value = type;
+        Console.WriteLine(type);
+    }
+    private void SetType<T>()
+    {
+        Value = typeof(T);
+        Console.WriteLine(typeof(T));
+    }
 }
 
 struct GenericStruct<T>
 {
     public Type Value;
-    private void SetType(Type type) => Value = type;
-    private void SetType<U>() => Value = typeof(U);
+    private void SetType(Type type)
+    {
+        Value = type;
+        Console.WriteLine(type);
+        Console.WriteLine(typeof(T));
+    }
+    private void SetType<U>()
+    {
+        Value = typeof(U);
+        Console.WriteLine(typeof(U));
+        Console.WriteLine(typeof(T));
+    }
 }
 
 interface I1 { }
