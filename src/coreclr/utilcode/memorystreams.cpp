@@ -528,7 +528,7 @@ CGrowableStream::Stat(
 //   ppStream - required output parameter for the new stream instance
 //
 // Returns:
-//   S_OK on succeess, or an error code on failure.
+//   S_OK on success, or an error code on failure.
 //
 HRESULT
 CGrowableStream::Clone(
