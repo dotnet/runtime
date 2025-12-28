@@ -843,15 +843,16 @@ Dictionary::PopulateEntry(
             }
             IfFailThrow(ptr.SkipExactlyOne());
 
-            PTR_MethodTable pMT = th.IsByRef() ? th.GetTypeParam().GetMethodTable() : th.GetMethodTable();
-
             if (!declaringType.IsNull())
             {
-                th = pMT->GetMethodTableMatchingParentClass(declaringType.AsMethodTable());
-                pMT = th.GetMethodTable();
+                th = th.GetMethodTable()->GetMethodTableMatchingParentClass(declaringType.AsMethodTable());
             }
 
-            pMT->EnsureInstanceActive();
+            MethodTable *pMT = th.GetMethodTable();
+            if (pMT)
+            {
+                pMT->EnsureInstanceActive();
+            }
 
             result = (CORINFO_GENERIC_HANDLE)th.AsPtr();
             break;
@@ -995,7 +996,7 @@ Dictionary::PopulateEntry(
                 if (nonExpansive)
                     return NULL;
 
-                pOwnerMT = ownerType.IsByRef() ? ownerType.GetTypeParam().GetMethodTable() : ownerType.GetMethodTable();
+                pOwnerMT = ownerType.GetMethodTable();
                 _ASSERTE(pOwnerMT != NULL);
 
                 IfFailThrow(ptr.GetData(&methodFlags));
