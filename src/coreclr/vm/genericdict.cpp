@@ -848,9 +848,10 @@ Dictionary::PopulateEntry(
                 th = th.GetMethodTable()->GetMethodTableMatchingParentClass(declaringType.AsMethodTable());
             }
 
-            MethodTable *pMT = th.GetMethodTable();
-            if (pMT)
+            if (!th.IsTypeDesc())
             {
+                MethodTable* pMT = th.AsMethodTable();
+                _ASSERTE(pMT != NULL);
                 pMT->EnsureInstanceActive();
             }
 
