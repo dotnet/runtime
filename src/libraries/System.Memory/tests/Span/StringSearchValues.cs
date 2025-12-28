@@ -357,27 +357,54 @@ namespace System.Memory.Tests.Span
         // These should hit the Aho-Corasick implementation
         [InlineData("a", "b")]
         [InlineData("ab", "c")]
-        // Two-string specialization with same length values
-        [InlineData("foo", "bar")]
+        // Two-string specialization with same length values (short strings)
         [InlineData("ab", "cd")]
+        [InlineData("ab", "xy")]
+        // Two-string specialization with same length values (medium strings)
+        [InlineData("foo", "bar")]
         [InlineData("hello", "world")]
         [InlineData("test1", "test2")]
+        // Two-string specialization with same length values (longer strings for vector testing)
+        [InlineData("abcdefghij", "klmnopqrst")]
+        [InlineData("0123456789abcdef", "fedcba9876543210")]
+        [InlineData("thequickbrownfox", "jumpsoverlazydog")]
         // Two-string specialization with same first character
         [InlineData("abc", "axy")]
         [InlineData("hello", "happy")]
+        [InlineData("ab", "ac")]
+        [InlineData("test", "toad")]
         // Two-string specialization with different first characters
         [InlineData("abc", "xyz")]
         [InlineData("foo", "baz")]
         [InlineData("abc", "cde")]
         [InlineData("abc", "cd")]
-        // Two-string specialization with different length values
+        // Two-string specialization with different length values (short/medium)
         [InlineData("ab", "abc")]
+        [InlineData("ab", "abcd")]
         [InlineData("foo", "foobar")]
         [InlineData("hello", "hi")]
         [InlineData("test", "testing123")]
         [InlineData("xy", "xyz123")]
         [InlineData("abcdefgh", "ab")]
-        // Two-string specialization with case permutations
+        // Two-string specialization with different length values (longer strings)
+        [InlineData("ab", "abcdefghijklmnop")]
+        [InlineData("abcdefghijklmnop", "xy")]
+        [InlineData("hello", "helloworld12345")]
+        // Two-string specialization with special characters
+        [InlineData("ab", "!@")]
+        [InlineData("a!", "b@")]
+        [InlineData("foo!", "bar?")]
+        [InlineData("test%", "data#")]
+        // Two-string specialization with numbers
+        [InlineData("12", "34")]
+        [InlineData("123", "456")]
+        [InlineData("abc123", "def456")]
+        [InlineData("12ab", "34cd")]
+        // Two-string specialization with mixed case (will be tested case-sensitive and case-insensitive)
+        [InlineData("Ab", "Cd")]
+        [InlineData("Hello", "World")]
+        [InlineData("ABC", "XYZ")]
+        // Two-string specialization edge cases
         [InlineData("ab", "bc")]
         [InlineData("ab", "c!")]
         [InlineData("abc", "bc")]
