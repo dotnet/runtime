@@ -450,7 +450,7 @@ UnLink:
             // property names.  This is an obscure corner case.
             m_MethodProps[i].pName = m_MethodProps[m_MethodProps[i].property].pName;
             WCHAR *pNewName;
-            //string length + "get" + null terminator.
+            // string length + 3 chars for "get"/"set" + 1 for null terminator.
             size_t cchpNewName = u16_strlen(m_MethodProps[ixGet].pName) + 3 + 1;
             pNewName = reinterpret_cast<WCHAR*>(m_sNames.Alloc(cchpNewName * sizeof(WCHAR)));
             wcscpy_s(pNewName, cchpNewName, W("get"));
