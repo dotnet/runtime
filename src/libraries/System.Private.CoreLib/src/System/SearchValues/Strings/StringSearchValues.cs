@@ -433,28 +433,29 @@ namespace System.Buffers
                 return null;
             }
 
+            // Constrain offsets to be within the shorter value's length so both can be used
+            // with the same bounds in the vectorized inner loop.
+            int minLength = Math.Min(value0.Length, value1.Length);
+
             // For case-insensitive matching with non-ASCII affected by case conversion,
-            // we need ASCII anchor characters in both values
+            // we need ASCII anchor characters within the minLength range of both values
             if (nonAsciiAffectedByCaseConversion)
             {
-                // Check that both values have at least 2 ASCII characters (for anchor points)
+                // Check that both values have at least 2 ASCII characters within minLength (for anchor points)
                 if (!char.IsAscii(value0[0]) || !char.IsAscii(value1[0]))
                 {
                     return null;
                 }
 
-                // Need at least one more ASCII character in each value for the second anchor
-                if (!value0.AsSpan(1).ContainsAnyInRange((char)0, (char)127) ||
-                    !value1.AsSpan(1).ContainsAnyInRange((char)0, (char)127))
+                // Need at least one more ASCII character in each value within the minLength range for the second anchor
+                if (!value0.AsSpan(1, minLength - 1).ContainsAnyInRange((char)0, (char)127) ||
+                    !value1.AsSpan(1, minLength - 1).ContainsAnyInRange((char)0, (char)127))
                 {
                     return null;
                 }
             }
 
             // Get the optimal second character offset for each value.
-            // Constrain offsets to be within the shorter value's length so both can be used
-            // with the same bounds in the vectorized inner loop.
-            int minLength = Math.Min(value0.Length, value1.Length);
             int v0Ch2Offset = CharacterFrequencyHelper.GetSecondCharacterOffset(value0, ignoreCase, minLength);
             int v1Ch2Offset = CharacterFrequencyHelper.GetSecondCharacterOffset(value1, ignoreCase, minLength);
 
