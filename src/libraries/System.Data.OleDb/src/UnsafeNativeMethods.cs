@@ -562,14 +562,17 @@ namespace System.Data.Common
                 [MarshalUsing(typeof(UniqueComInterfaceMarshaller<ISQLErrorInfo>))]
                 out ISQLErrorInfo ppObject);
 
-            [return: MarshalUsing(typeof(UniqueComInterfaceMarshaller<IErrorInfo>))]
-            IErrorInfo GetErrorInfo(
+            [PreserveSig]
+            System.Data.OleDb.OleDbHResult GetErrorInfo(
                 int ulRecordNum,
-                int lcid);
+                int lcid,
+                [MarshalUsing(typeof(UniqueComInterfaceMarshaller<IErrorInfo>))]
+                out IErrorInfo ppErrorInfo);
 
             [Obsolete("not used")] void GetErrorParameters(/*deleted parameter signature*/);
 
-            int GetRecordCount();
+            [PreserveSig]
+            System.Data.OleDb.OleDbHResult GetRecordCount(out int pcRecords);
         }
 #if false
     MIDL_INTERFACE("0c733a67-2a1c-11ce-ade5-00aa0044773d")

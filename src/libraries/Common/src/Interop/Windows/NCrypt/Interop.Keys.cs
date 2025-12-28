@@ -26,7 +26,7 @@ internal static partial class Interop
         internal static partial ErrorCode NCryptImportKey(SafeNCryptProviderHandle hProvider, IntPtr hImportKey, string pszBlobType, ref NCryptBufferDesc pParameterList, out SafeNCryptKeyHandle phKey, ref byte pbData, int cbData, int dwFlags);
 
         [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial ErrorCode NCryptExportKey(SafeNCryptKeyHandle hKey, IntPtr hExportKey, string pszBlobType, IntPtr pParameterList, byte[]? pbOutput, int cbOutput, out int pcbResult, int dwFlags);
+        internal static partial ErrorCode NCryptExportKey(SafeNCryptKeyHandle hKey, IntPtr hExportKey, string pszBlobType, IntPtr pParameterList, [Out] byte[]? pbOutput, int cbOutput, out int pcbResult, int dwFlags);
 
         [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial ErrorCode NCryptExportKey(SafeNCryptKeyHandle hKey, IntPtr hExportKey, string pszBlobType, IntPtr pParameterList, ref byte pbOutput, int cbOutput, out int pcbResult, int dwFlags);

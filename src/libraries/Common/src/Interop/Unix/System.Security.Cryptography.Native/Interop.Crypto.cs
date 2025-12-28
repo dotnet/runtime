@@ -36,10 +36,10 @@ internal static partial class Interop
         internal static partial int BioSeek(SafeBioHandle bio, int pos);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509Thumbprint")]
-        private static partial int GetX509Thumbprint(SafeX509Handle x509, byte[]? buf, int cBuf);
+        private static partial int GetX509Thumbprint(SafeX509Handle x509, [Out] byte[]? buf, int cBuf);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameRawBytes")]
-        private static partial int GetX509NameRawBytes(IntPtr x509Name, byte[]? buf, int cBuf);
+        private static partial int GetX509NameRawBytes(IntPtr x509Name, [Out] byte[]? buf, int cBuf);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ReadX509AsDerFromBio")]
         internal static partial SafeX509Handle ReadX509AsDerFromBio(SafeBioHandle bio);
@@ -51,13 +51,13 @@ internal static partial class Interop
         internal static partial int GetX509Version(SafeX509Handle x509);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509PublicKeyParameterBytes")]
-        private static partial int GetX509PublicKeyParameterBytes(SafeX509Handle x509, byte[]? buf, int cBuf);
+        private static partial int GetX509PublicKeyParameterBytes(SafeX509Handle x509, [Out] byte[]? buf, int cBuf);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameInfo")]
         internal static partial SafeBioHandle GetX509NameInfo(SafeX509Handle x509, int nameType, [MarshalAs(UnmanagedType.Bool)] bool forIssuer);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetAsn1StringBytes")]
-        private static partial int GetAsn1StringBytes(IntPtr asn1, byte[]? buf, int cBuf);
+        private static partial int GetAsn1StringBytes(IntPtr asn1, [Out] byte[]? buf, int cBuf);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PushX509StackField")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -99,7 +99,7 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.Bool)] bool isDst);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509IpAddress", StringMarshalling = StringMarshalling.Utf8)]
-        internal static partial int CheckX509IpAddress(SafeX509Handle x509, byte[] addressBytes, int addressLen, string hostname, int cchHostname);
+        internal static partial int CheckX509IpAddress(SafeX509Handle x509, [In] byte[] addressBytes, int addressLen, string hostname, int cchHostname);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_CheckX509Hostname", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial int CheckX509Hostname(SafeX509Handle x509, string hostname, int cchHostname);

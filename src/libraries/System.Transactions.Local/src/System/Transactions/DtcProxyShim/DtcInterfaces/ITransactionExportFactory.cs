@@ -14,6 +14,6 @@ internal partial interface ITransactionExportFactory
 
     void Create(
         uint cbWhereabouts,
-        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] byte[] rgbWhereabouts,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0), In] byte[] rgbWhereabouts,
         [MarshalAs(UnmanagedType.Interface)] out ITransactionExport ppExport);
 }

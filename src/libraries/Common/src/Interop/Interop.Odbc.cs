@@ -169,7 +169,7 @@ internal static partial class Interop
         internal static partial ODBC32.SQLRETURN SQLGetConnectAttrW(
             /*SQLHBDC*/OdbcConnectionHandle ConnectionHandle,
             /*SQLINTEGER*/ODBC32.SQL_ATTR Attribute,
-            /*SQLPOINTER*/byte[] Value,
+            /*SQLPOINTER*/[Out] byte[] Value,
             /*SQLINTEGER*/int BufferLength,
             /*SQLINTEGER* */out int StringLength);
 
@@ -196,9 +196,9 @@ internal static partial class Interop
             /*SQLSMALLINT*/ODBC32.SQL_HANDLE HandleType,
             /*SQLHANDLE*/OdbcHandle Handle,
             /*SQLSMALLINT*/short RecNumber,
-            /*SQLCHAR* */  char[] rchState,
+            /*SQLCHAR* */  [Out] char[] rchState,
             /*SQLINTEGER* */out int NativeError,
-            /*SQLCHAR* */  char[] MessageText,
+            /*SQLCHAR* */  [Out] char[] MessageText,
             /*SQLSMALLINT*/short BufferLength,
             /*SQLSMALLINT* */out short TextLength);
 
@@ -208,7 +208,7 @@ internal static partial class Interop
            /*SQLHANDLE*/   OdbcHandle Handle,
            /*SQLSMALLINT*/ short RecNumber,
            /*SQLSMALLINT*/ short DiagIdentifier,
-           /*SQLPOINTER*/  char[] rchState,
+           /*SQLPOINTER*/  [Out] char[] rchState,
            /*SQLSMALLINT*/ short BufferLength,
            /*SQLSMALLINT* */ out short StringLength);
 
@@ -222,7 +222,7 @@ internal static partial class Interop
         internal static partial ODBC32.SQLRETURN SQLGetInfoW(
             /*SQLHBDC*/OdbcConnectionHandle hdbc,
             /*SQLUSMALLINT*/ODBC32.SQL_INFO fInfoType,
-            /*SQLPOINTER*/byte[] rgbInfoValue,
+            /*SQLPOINTER*/[Out] byte[] rgbInfoValue,
             /*SQLSMALLINT*/short cbInfoValueMax,
             /*SQLSMALLINT* */out short pcbInfoValue);
 
@@ -230,7 +230,7 @@ internal static partial class Interop
         internal static partial ODBC32.SQLRETURN SQLGetInfoW(
             /*SQLHBDC*/OdbcConnectionHandle hdbc,
             /*SQLUSMALLINT*/ODBC32.SQL_INFO fInfoType,
-            /*SQLPOINTER*/byte[] rgbInfoValue,
+            /*SQLPOINTER*/[Out] byte[] rgbInfoValue,
             /*SQLSMALLINT*/short cbInfoValueMax,
             /*SQLSMALLINT* */IntPtr pcbInfoValue);
 

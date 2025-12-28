@@ -20,7 +20,7 @@ internal static partial class Interop
             int dwFormatStrType,      // select multiline
             IntPtr pFormatStruct,     // unused - pass IntPtr.Zero
             byte* lpszStructType,     // OID value
-            byte[] pbEncoded,         // Data to be formatted
+            [In] byte[] pbEncoded,         // Data to be formatted
             int cbEncoded,            // Length of data to be formatted
             void* pbFormat,           // Receives formatted string.
             ref int pcbFormat);       // Sends/receives length of formatted string in bytes

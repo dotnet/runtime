@@ -10,6 +10,6 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static partial bool CryptHashData(SafeHashHandle hHash, byte[] pbData, int dwDataLen, int dwFlags);
+        public static partial bool CryptHashData(SafeHashHandle hHash, [In] byte[] pbData, int dwDataLen, int dwFlags);
     }
 }

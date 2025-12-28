@@ -14,7 +14,7 @@ internal static partial class Interop
         internal static partial int WebSocketGetAction(
             SafeHandle webSocketHandle,
             ActionQueue actionQueue,
-            Buffer[] dataBuffers,
+            [In, Out] Buffer[] dataBuffers,
             ref uint dataBufferCount,
             out System.Net.WebSockets.WebSocketProtocolComponent.Action action,
             out BufferType bufferType,

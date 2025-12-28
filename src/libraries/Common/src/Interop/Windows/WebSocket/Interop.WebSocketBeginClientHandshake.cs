@@ -15,7 +15,7 @@ internal static partial class Interop
             uint subProtocolCount,
             IntPtr extensions,
             uint extensionCount,
-            HttpHeader[] initialHeaders,
+            [In] HttpHeader[] initialHeaders,
             uint initialHeaderCount,
             out WEB_SOCKET_HTTP_HEADER* additionalHeadersPtr,
             out uint additionalHeaderCount);

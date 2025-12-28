@@ -158,15 +158,15 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool DsaKeyCreateByExplicitParameters(
             out SafeDsaHandle dsa,
-            byte[] p,
+            [In] byte[] p,
             int pLength,
-            byte[] q,
+            [In] byte[] q,
             int qLength,
-            byte[] g,
+            [In] byte[] g,
             int gLength,
-            byte[] y,
+            [In] byte[] y,
             int yLength,
-            byte[]? x,
+            [In] byte[]? x,
             int xLength);
 
         /// <summary>

@@ -16,12 +16,12 @@ internal partial interface ITransactionTransmitter
 
     void MarshalPropagationToken(
         uint cbToken,
-        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] byte[] rgbToken,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0), Out] byte[] rgbToken,
         out uint pcbUsed);
 
     void UnmarshalReturnToken(
         uint cbReturnToken,
-        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] byte[] rgbToken);
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0), In] byte[] rgbToken);
 
     void Reset();
 }

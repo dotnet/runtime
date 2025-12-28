@@ -11,7 +11,7 @@ internal static partial class Interop
         [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "LookupAccountSidW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         public static unsafe partial int LookupAccountSid(
             string lpSystemName,
-            byte[] Sid,
+            [In] byte[] Sid,
             char* Name,
             ref int cchName,
             char* ReferencedDomainName,

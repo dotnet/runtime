@@ -39,7 +39,7 @@ internal static partial class Interop
             ref byte pkcs8PrivateKey,
             int pkcs8PrivateKeyLen,
             PAL_KeyAlgorithm algorithm,
-            IntPtr[] certs,
+            [In] IntPtr[] certs,
             int certsLen);
         internal static SafeSslHandle SSLStreamCreateWithCertificates(
             SslStream.JavaProxy sslStreamProxy,
@@ -126,7 +126,7 @@ internal static partial class Interop
         }
 
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamSetApplicationProtocols")]
-        private static unsafe partial int SSLStreamSetApplicationProtocols(SafeSslHandle sslHandle, ApplicationProtocolData[] protocolData, int count);
+        private static unsafe partial int SSLStreamSetApplicationProtocols(SafeSslHandle sslHandle, [In] ApplicationProtocolData[] protocolData, int count);
         internal static unsafe void SSLStreamSetApplicationProtocols(SafeSslHandle sslHandle, List<SslApplicationProtocol> protocols)
         {
             int count = protocols.Count;
@@ -172,7 +172,7 @@ internal static partial class Interop
         internal static partial PAL_SSLStreamStatus SSLStreamHandshake(SafeSslHandle sslHandle);
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamGetApplicationProtocol")]
-        private static partial int SSLStreamGetApplicationProtocol(SafeSslHandle ssl, byte[]? buf, ref int len);
+        private static partial int SSLStreamGetApplicationProtocol(SafeSslHandle ssl, [Out] byte[]? buf, ref int len);
         internal static byte[]? SSLStreamGetApplicationProtocol(SafeSslHandle ssl)
         {
             int len = 0;

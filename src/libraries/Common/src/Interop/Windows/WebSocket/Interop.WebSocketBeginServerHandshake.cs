@@ -14,7 +14,7 @@ internal static partial class Interop
             IntPtr subProtocol,
             IntPtr extensions,
             uint extensionCount,
-            HttpHeader[] requestHeaders,
+            [In] HttpHeader[] requestHeaders,
             uint requestHeaderCount,
             out IntPtr responseHeadersPtr,
             out uint responseHeaderCount);

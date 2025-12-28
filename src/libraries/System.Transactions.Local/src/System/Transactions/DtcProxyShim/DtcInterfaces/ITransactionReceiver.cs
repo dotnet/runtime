@@ -12,7 +12,7 @@ internal partial interface ITransactionReceiver
 {
     void UnmarshalPropagationToken(
         uint cbToken,
-        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] byte[] rgbToken,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0), In] byte[] rgbToken,
         [MarshalAs(UnmanagedType.Interface)] out ITransaction ppTransaction);
 
     void GetReturnTokenSize(out uint pcbReturnToken);

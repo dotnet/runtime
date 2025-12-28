@@ -45,7 +45,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Asn1OctetStringSet")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool Asn1OctetStringSet(SafeAsn1OctetStringHandle o, byte[] d, int len);
+        internal static partial bool Asn1OctetStringSet(SafeAsn1OctetStringHandle o, [In] byte[] d, int len);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Asn1OctetStringFree")]
         internal static partial void Asn1OctetStringFree(IntPtr o);

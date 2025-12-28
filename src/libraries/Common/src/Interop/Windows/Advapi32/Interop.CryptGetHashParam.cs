@@ -29,6 +29,6 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static partial bool CryptSetHashParam(SafeHashHandle hHash, CryptHashProperty dwParam, byte[] buffer, int dwFlags);
+        public static partial bool CryptSetHashParam(SafeHashHandle hHash, CryptHashProperty dwParam, [In] byte[] buffer, int dwFlags);
     }
 }

@@ -13,7 +13,7 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CheckTokenMembership(
             SafeAccessTokenHandle TokenHandle,
-            byte[] SidToCheck,
+            [In] byte[] SidToCheck,
             [MarshalAs(UnmanagedType.Bool)] ref bool IsMember);
     }
 }

@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class Activeds
     {
         [LibraryImport(Libraries.Activeds)]
-        internal static partial int ADsGetLastError(out int error, char[] errorBuffer, int errorBufferLength, char[] nameBuffer, int nameBufferLength);
+        internal static partial int ADsGetLastError(out int error, [Out] char[] errorBuffer, int errorBufferLength, [Out] char[] nameBuffer, int nameBufferLength);
     }
 }

@@ -18,7 +18,7 @@ internal static partial class Interop
         internal static partial int GetOcspRequestDerSize(SafeOcspRequestHandle req);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeOcspRequest")]
-        internal static partial int EncodeOcspRequest(SafeOcspRequestHandle req, byte[] buf);
+        internal static partial int EncodeOcspRequest(SafeOcspRequestHandle req, [Out] byte[] buf);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509BuildOcspRequest")]
         internal static partial SafeOcspRequestHandle X509BuildOcspRequest(IntPtr subject, IntPtr issuer);
