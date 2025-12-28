@@ -368,6 +368,8 @@ namespace System.Memory.Tests.Span
         // Two-string specialization with different first characters
         [InlineData("abc", "xyz")]
         [InlineData("foo", "baz")]
+        [InlineData("abc", "cde")]
+        [InlineData("abc", "cd")]
         // Two-string specialization with different length values
         [InlineData("ab", "abc")]
         [InlineData("foo", "foobar")]
@@ -375,9 +377,14 @@ namespace System.Memory.Tests.Span
         [InlineData("test", "testing123")]
         [InlineData("xy", "xyz123")]
         [InlineData("abcdefgh", "ab")]
-        // Simple Teddy cases
-        [InlineData("abc", "cde")]
-        [InlineData("abc", "cd")]
+        // Two-string specialization with case permutations
+        [InlineData("ab", "bc")]
+        [InlineData("ab", "c!")]
+        [InlineData("abc", "bc")]
+        // Simple Teddy cases (3+ strings to ensure Teddy is used, not two-string specialization)
+        [InlineData("abc", "cde", "efg")]
+        [InlineData("abc", "cd", "ef")]
+        [InlineData("ab", "cd", "ef")]
         // Teddy where all starting chars are letters, but not all other characters are
         [InlineData("ab", "de%", "ghi", "jkl!")]
         [InlineData("abc", "def%", "ghi", "jkl!")]
@@ -388,13 +395,9 @@ namespace System.Memory.Tests.Span
         [InlineData("12", "45b", "789")]
         [InlineData("123", "456", "789")]
         [InlineData("123", "456a", "789b")]
-        // We'll expand these values to all case permutations
-        [InlineData("ab", "bc")]
-        [InlineData("ab", "c!")]
+        // These will be expanded to all case permutations (3+ strings to test Teddy)
         [InlineData("ab", "c!", "!%")]
-        // These won't be expanded as they would produce more than 8 permutations
         [InlineData("ab", "bc", "c!")]
-        [InlineData("abc", "bc")]
         // Rabin-Karp where one of the values is longer than what the implementation can match (17)
         [InlineData("abc", "a012345678012345678")]
         // Rabin-Karp where all of the values are longer than what the implementation can match (17)
